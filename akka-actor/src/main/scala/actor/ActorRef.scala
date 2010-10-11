@@ -644,7 +644,8 @@ class LocalActorRef private[akka] (
   private[akka] lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
   @volatile
   private[akka] var _supervisor: Option[ActorRef] = None
-  private val maxNrOfRetriesCount = new AtomicInteger(0)
+  @volatile
+  private var maxNrOfRetriesCount: Int = 0
   @volatile
   private var restartsWithinTimeRangeTimestamp: Long = 0L
   @volatile
@@ -1041,11 +1042,13 @@ class LocalActorRef private[akka] (
                             false
                           }
                           else if (withinTimeRange.isEmpty) { // restrict number of restarts
-                            maxNrOfRetriesCount.incrementAndGet > maxNrOfRetries.get
+                            maxNrOfRetriesCount += 1 //Increment number of retries
+                            maxNrOfRetriesCount > maxNrOfRetries.get
                           } else {  // cannot restart more than N within M timerange
+                            maxNrOfRetriesCount += 1 //Increment number of retries
                             val windowStart = restartsWithinTimeRangeTimestamp
                             val now         = System.currentTimeMillis
-                            val retries     = maxNrOfRetriesCount.incrementAndGet
+                            val retries     = maxNrOfRetriesCount
                             //We are within the time window if it isn't the first restart, or if the window hasn't closed
                             val insideWindow   = if (windowStart == 0)
                                                   false
@@ -1059,7 +1062,7 @@ class LocalActorRef private[akka] (
                               restartsWithinTimeRangeTimestamp = now
 
                             if (windowStart != 0 && !insideWindow) //Reset number of restarts if window has expired
-                              maxNrOfRetriesCount.set(1)
+                              maxNrOfRetriesCount = 1
 
                             unrestartable
                           }
