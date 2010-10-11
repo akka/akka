@@ -34,8 +34,6 @@ class ThreadBasedDispatcher(private val actor: ActorRef, _mailboxType: MailboxTy
     if (actorRef != actor) throw new IllegalArgumentException("Cannot register to anyone but " + actor)
     super.register(actorRef)
   }
-
-  override def toString = "ThreadBasedDispatcher[" + name + "]"
 }
 
 object ThreadBasedDispatcher {
