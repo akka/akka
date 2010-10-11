@@ -21,6 +21,16 @@ import se.scalablesolutions.akka.stm.TransactionConfig
 import scala.reflect.BeanProperty
 
 /**
+ * @author Martin Krasser
+ */
+object ActorComponent {
+  /**
+   * Name of the message header containing the actor id or uuid.
+   */
+  val ActorIdentifier = "CamelActorIdentifier"
+}
+
+/**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
  *
  * @see se.scalablesolutions.akka.camel.component.ActorEndpoint
@@ -30,16 +40,19 @@ import scala.reflect.BeanProperty
  */
 class ActorComponent extends DefaultComponent {
   def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint = {
-    val (idType, idValue) = parseIdentifier(remaining)
+    val (idType, idValue) = parsePath(remaining)
     new ActorEndpoint(uri, this, idType, idValue)
   }
 
-  private def parseIdentifier(remaining: String): Tuple2[String, String] = remaining match {
+  private def parsePath(remaining: String): Tuple2[String, Option[String]] = remaining match {
     case null | "" => throw new IllegalArgumentException("invalid path: [%s] - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format remaining)
-    case   id if id   startsWith "id:"   => ("id",   id   substring 3)
-    case uuid if uuid startsWith "uuid:" => ("uuid", uuid substring 5)
-    case   id                            => ("id",   id)
+    case   id if id   startsWith "id:"   => ("id",   parseIdentifier(id substring 3))
+    case uuid if uuid startsWith "uuid:" => ("uuid", parseIdentifier(uuid substring 5))
+    case   id                            => ("id",   parseIdentifier(id))
   }
+
+  private def parseIdentifier(identifier: String): Option[String] =
+    if (identifier.length > 0) Some(identifier) else None
 }
 
 /**
@@ -59,7 +72,7 @@ class ActorComponent extends DefaultComponent {
 class ActorEndpoint(uri: String,
                     comp: ActorComponent,
                     val idType: String,
-                    val idValue: String) extends DefaultEndpoint(uri, comp) {
+                    val idValue: Option[String]) extends DefaultEndpoint(uri, comp) {
 
   /**
    * Whether to block caller thread during two-way message exchanges with (untyped) actors. This is
@@ -107,7 +120,7 @@ class ActorEndpoint(uri: String,
 class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with AsyncProcessor {
   import ActorProducer._
 
-  private lazy val uuid = uuidFrom(ep.idValue);
+  private lazy val uuid = uuidFrom(ep.idValue.getOrElse(throw new ActorIdentifierNotSetException))
 
   def process(exchange: Exchange) =
     if (exchange.getPattern.isOutCapable) sendSync(exchange) else sendAsync(exchange)
@@ -132,7 +145,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
   }
 
   private def sendSync(exchange: Exchange) = {
-    val actor = target
+    val actor = target(exchange)
     val result: Any = actor !! requestFor(exchange)
 
     result match {
@@ -144,22 +157,33 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
   }
 
   private def sendAsync(exchange: Exchange, sender: Option[ActorRef] = None) =
-    target.!(requestFor(exchange))(sender)
+    target(exchange).!(requestFor(exchange))(sender)
 
-  private def target =
-    targetOption getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
+  private def target(exchange: Exchange) =
+    targetOption(exchange) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
 
-  private def targetOption: Option[ActorRef] = ep.idType match {
-    case "id"   => targetById
-    case "uuid" => targetByUuid
+  private def targetOption(exchange: Exchange): Option[ActorRef] = ep.idType match {
+    case "id"   => targetById(targetId(exchange))
+    case "uuid" => targetByUuid(targetUuid(exchange))
   }
 
-  private def targetById = ActorRegistry.actorsFor(ep.idValue) match {
+  private def targetId(exchange: Exchange) = exchange.getIn.getHeader(ActorComponent.ActorIdentifier) match {
+    case id: String  => id
+    case null        => ep.idValue.getOrElse(throw new ActorIdentifierNotSetException)
+  }
+
+  private def targetUuid(exchange: Exchange) = exchange.getIn.getHeader(ActorComponent.ActorIdentifier) match {
+    case uuid: Uuid   => uuid
+    case uuid: String => uuidFrom(uuid)
+    case null         => uuid
+  }
+
+  private def targetById(id: String) = ActorRegistry.actorsFor(id) match {
     case actors if actors.length == 0 => None
     case actors                       => Some(actors(0))
   }
 
-  private def targetByUuid = ActorRegistry.actorFor(uuid)
+  private def targetByUuid(uuid: Uuid) = ActorRegistry.actorFor(uuid)
 }
 
 /**
@@ -178,6 +202,15 @@ private[camel] object ActorProducer {
  */
 class ActorNotRegisteredException(uri: String) extends RuntimeException {
   override def getMessage = "%s not registered" format uri
+}
+
+/**
+ * Thrown to indicate that no actor identifier has been set.
+ *
+ * @author Martin Krasser
+ */
+class ActorIdentifierNotSetException extends RuntimeException {
+  override def getMessage = "actor identifier not set"
 }
 
 /**
