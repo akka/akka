@@ -98,10 +98,13 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
    * @return
    */
   private def processMailbox(mailbox: MessageQueue): Boolean = {
+    if (mailbox.suspended.isOn)
+        return false
+
     var messageInvocation = mailbox.dequeue
     while (messageInvocation ne null) {
       messageInvocation.invoke
-      if (messageInvocation.receiver.isBeingRestarted)
+      if (mailbox.suspended.isOn)
         return false
       messageInvocation = mailbox.dequeue
     }
@@ -174,6 +177,17 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     log.debug("Shutting down %s", toString)
     executor.shutdownNow
     uuids.clear
+  }
+
+
+  def suspend(actorRef: ActorRef) {
+    getMailbox(actorRef).suspended.switchOn
+  }
+
+  def resume(actorRef: ActorRef) {
+    val mbox = getMailbox(actorRef)
+    mbox.suspended.switchOff
+    executor execute mbox
   }
 
   def ensureNotActive(): Unit = if (active.isOn) throw new IllegalActorStateException(
