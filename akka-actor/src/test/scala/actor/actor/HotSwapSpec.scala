@@ -13,10 +13,9 @@ class HotSwapSpec extends WordSpec with MustMatchers {
     "be able to hotswap its behavior with HotSwap(..)" in {
       val barrier = new CyclicBarrier(2)
       @volatile var _log = ""
-      val a = actor {
-        case _ => 
-          _log += "default"
-      }
+      val a = actorOf( new Actor {
+        def receive = { case _ => _log += "default" }
+      }).start
       a ! HotSwap {
         case _ => 
           _log += "swapped"
@@ -58,11 +57,13 @@ class HotSwapSpec extends WordSpec with MustMatchers {
     "be able to revert hotswap its behavior with RevertHotSwap(..)" in {
       val barrier = new CyclicBarrier(2)
       @volatile var _log = ""
-      val a = actor {
-        case "init" => 
-          _log += "init"
-          barrier.await
-      }      
+      val a = actorOf( new Actor {
+        def receive = {
+          case "init" =>
+            _log += "init"
+            barrier.await
+          }
+      }).start
 
       a ! "init"
       barrier.await

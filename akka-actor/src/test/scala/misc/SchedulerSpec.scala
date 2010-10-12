@@ -20,9 +20,9 @@ class SchedulerSpec extends JUnitSuite {
 
     case object Tick
     val countDownLatch = new CountDownLatch(3)
-    val tickActor = actor {
-      case Tick => countDownLatch.countDown
-    }
+    val tickActor = actorOf(new Actor {
+      def receive = { case Tick => countDownLatch.countDown }
+    }).start
     // run every 50 millisec
     Scheduler.schedule(tickActor, Tick, 0, 50, TimeUnit.MILLISECONDS)
 
@@ -40,9 +40,9 @@ class SchedulerSpec extends JUnitSuite {
   @Test def schedulerShouldScheduleOnce = withCleanEndState {
     case object Tick
     val countDownLatch = new CountDownLatch(3)
-    val tickActor = actor {
-      case Tick => countDownLatch.countDown
-    }
+    val tickActor = actorOf(new Actor {
+      def receive = { case Tick => countDownLatch.countDown }
+    }).start
     // run every 50 millisec
     Scheduler.scheduleOnce(tickActor, Tick, 50, TimeUnit.MILLISECONDS)
     Scheduler.scheduleOnce( () => countDownLatch.countDown, 50, TimeUnit.MILLISECONDS)

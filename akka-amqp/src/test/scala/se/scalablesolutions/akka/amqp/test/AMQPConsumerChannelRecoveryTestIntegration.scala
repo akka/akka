@@ -9,11 +9,11 @@ import com.rabbitmq.client.ShutdownSignalException
 import se.scalablesolutions.akka.amqp._
 import org.scalatest.matchers.MustMatchers
 import java.util.concurrent.TimeUnit
-import se.scalablesolutions.akka.actor.ActorRef
 import org.junit.Test
 import se.scalablesolutions.akka.amqp.AMQP._
 import org.scalatest.junit.JUnitSuite
 import se.scalablesolutions.akka.actor.Actor._
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 
 class AMQPConsumerChannelRecoveryTestIntegration extends JUnitSuite with MustMatchers {
 
@@ -27,24 +27,27 @@ class AMQPConsumerChannelRecoveryTestIntegration extends JUnitSuite with MustMat
 
       val consumerStartedLatch = new StandardLatch
       val consumerRestartedLatch = new StandardLatch
-      val consumerChannelCallback: ActorRef = actor {
-        case Started => {
-          if (!consumerStartedLatch.isOpen) {
-            consumerStartedLatch.open
-          } else {
-            consumerRestartedLatch.open
+      val consumerChannelCallback: ActorRef = actorOf( new Actor {
+        def receive = {
+          case Started => {
+            if (!consumerStartedLatch.isOpen) {
+              consumerStartedLatch.open
+            } else {
+              consumerRestartedLatch.open
+            }
           }
+          case Restarting => ()
+          case Stopped => ()
         }
-        case Restarting => ()
-        case Stopped => ()
-      }
+      }).start
 
       val payloadLatch = new StandardLatch
       val consumerExchangeParameters = ExchangeParameters("text_exchange")
       val consumerChannelParameters = ChannelParameters(channelCallback = Some(consumerChannelCallback))
-      val consumer = AMQP.newConsumer(connection, ConsumerParameters("non.interesting.routing.key", actor {
-        case Delivery(payload, _, _, _, _) => payloadLatch.open
-      }, exchangeParameters = Some(consumerExchangeParameters), channelParameters = Some(consumerChannelParameters)))
+      val consumer = AMQP.newConsumer(connection, ConsumerParameters("non.interesting.routing.key", actorOf( new Actor {
+        def receive = { case Delivery(payload, _, _, _, _) => payloadLatch.open }
+      }).start,
+        exchangeParameters = Some(consumerExchangeParameters), channelParameters = Some(consumerChannelParameters)))
       consumerStartedLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
 
       val listenerLatch = new StandardLatch
