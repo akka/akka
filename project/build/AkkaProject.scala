@@ -115,6 +115,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     // Compile
 
+		val httpclient = "maven2" at "http://repo1.maven.org/maven2/"
+		val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
+		
+		val scalatoolsSnapshot = "Scala Tools Snapshot" at "http://scala-tools.org/repo-snapshots/"
+		val specs = "org.scala-tools.testing" %% "specs" % "1.6.5" % "test"
+
+
     lazy val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
 
     lazy val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile"
@@ -502,6 +509,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaHbaseProject(_), akka_persistence_common)
     lazy val akka_persistence_voldemort = project("akka-persistence-voldemort", "akka-persistence-voldemort",
       new AkkaVoldemortProject(_), akka_persistence_common)
+    lazy val akka_persistence_couchdb = project("akka-persistence-couchdb", "akka-persistence-couchdb",
+      new AkkaCouchDBProject(_), akka_persistence_common)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -521,7 +530,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val commons_codec = Dependencies.commons_codec
     val redis         = Dependencies.redis
 
-    override def testOptions = createTestFilter( _.endsWith("Test"))
+    // override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -534,6 +543,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     override def testOptions = createTestFilter( _.endsWith("Test"))
   }
+
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-persistence-cassandra subproject
@@ -601,6 +611,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def testOptions = createTestFilter({ s:String=> s.endsWith("Suite") || s.endsWith("Test")})
   }
 
+  class AkkaCouchDBProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  	val couch = Dependencies.commonsHttpClient
+		val spec = Dependencies.specs
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-kernel subproject
@@ -709,7 +723,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val commons_fileupload = "commons-fileupload"        % "commons-fileupload" % "1.2.1" % "compile" intransitive
     val jms_1_1            = "org.apache.geronimo.specs" % "geronimo-jms_1.1_spec" % "1.1.1" % "compile" intransitive
     val joda               = "joda-time"                 % "joda-time" % "1.6" intransitive
-
+    
     override def packageAction =
       task {
         val libs: Seq[Path] = managedClasspath(config("compile")).get.toSeq
