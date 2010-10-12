@@ -59,10 +59,15 @@ class ActorComponent extends DefaultComponent {
  * Camel endpoint for sending messages to and receiving replies from (untyped) actors. Actors
  * are referenced using <code>actor</code> endpoint URIs of the following format:
  * <code>actor:<actor-id></code>,
- * <code>actor:id:<actor-id></code> and
- * <code>actor:uuid:<actor-uuid></code>,
- * where <code>actor-id</code> refers to <code>ActorRef.id</code> and  <code>actor-uuid</code>
- * refers to the String-representation od <code>ActorRef.uuid</code>. 
+ * <code>actor:id:[<actor-id>]</code> and
+ * <code>actor:uuid:[<actor-uuid>]</code>,
+ * where <code><actor-id></code> refers to <code>ActorRef.id</code> and <code><actor-uuid></code>
+ * refers to the String-representation od <code>ActorRef.uuid</code>. In URIs that contain
+ * <code>id:</code> or <code>uuid:</code>, an actor identifier (id or uuid) is optional. In this
+ * case, the in-message of an exchange produced to this endpoint must contain a message header
+ * with name <code>CamelActorIdentifier</code> and a value that is the target actor's identifier.
+ * If the URI contains an actor identifier, a message with a <code>CamelActorIdentifier</code>
+ * header overrides the identifier in the endpoint URI.
  *
  * @see se.scalablesolutions.akka.camel.component.ActorComponent
  * @see se.scalablesolutions.akka.camel.component.ActorProducer
@@ -99,7 +104,8 @@ class ActorEndpoint(uri: String,
 }
 
 /**
- * Sends the in-message of an exchange to an (untyped) actor.
+ * Sends the in-message of an exchange to an (untyped) actor, identified by an
+ * actor endpoint URI or by a <code>CamelActorIdentifier</code> message header.
  * <ul>
  * <li>If the exchange pattern is out-capable and <code>blocking</code> is set to
  * <code>true</code> then the producer waits for a reply, using the !! operator.</li>
