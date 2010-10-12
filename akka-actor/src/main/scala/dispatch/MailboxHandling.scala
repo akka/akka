@@ -5,13 +5,13 @@
 package se.scalablesolutions.akka.dispatch
 
 import se.scalablesolutions.akka.actor.{Actor, ActorType, ActorRef, ActorInitializationException}
-import se.scalablesolutions.akka.util.{SimpleLock, Duration, HashCode, Logging}
 import se.scalablesolutions.akka.util.ReflectiveAccess.EnterpriseModule
 import se.scalablesolutions.akka.AkkaException
 
 import java.util.{Queue, List}
 import java.util.concurrent._
 import concurrent.forkjoin.LinkedTransferQueue
+import se.scalablesolutions.akka.util._
 
 class MessageQueueAppendFailedException(message: String) extends AkkaException(message)
 
@@ -20,6 +20,7 @@ class MessageQueueAppendFailedException(message: String) extends AkkaException(m
  */
 trait MessageQueue {
   val dispatcherLock = new SimpleLock
+  val suspended = new Switch(false)
   def enqueue(handle: MessageInvocation)
   def dequeue(): MessageInvocation
   def size: Int

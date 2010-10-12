@@ -12,6 +12,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ConsumerParameters, ChannelParameters, ProducerParameters}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+import se.scalablesolutions.akka.actor.Actor
 
 class AMQPConsumerMessageTestIntegration extends JUnitSuite with MustMatchers {
 
@@ -19,19 +20,21 @@ class AMQPConsumerMessageTestIntegration extends JUnitSuite with MustMatchers {
   def consumerMessage = AMQPTest.withCleanEndState {
     val connection = AMQP.newConnection()
     val countDown = new CountDownLatch(2)
-    val channelCallback = actor {
-      case Started => countDown.countDown
-      case Restarting => ()
-      case Stopped => ()
-    }
+    val channelCallback = actorOf(new Actor {
+      def receive = {
+        case Started => countDown.countDown
+        case Restarting => ()
+        case Stopped => ()
+      }
+    }).start
 
     val exchangeParameters = ExchangeParameters("text_exchange")
     val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
 
     val payloadLatch = new StandardLatch
-    val consumer = AMQP.newConsumer(connection, ConsumerParameters("non.interesting.routing.key", actor {
-      case Delivery(payload, _, _, _, _) => payloadLatch.open
-    }, exchangeParameters = Some(exchangeParameters), channelParameters = Some(channelParameters)))
+    val consumer = AMQP.newConsumer(connection, ConsumerParameters("non.interesting.routing.key", actorOf(new Actor {
+      def receive = { case Delivery(payload, _, _, _, _) => payloadLatch.open }
+    }).start, exchangeParameters = Some(exchangeParameters), channelParameters = Some(channelParameters)))
 
     val producer = AMQP.newProducer(connection,
       ProducerParameters(Some(exchangeParameters), channelParameters = Some(channelParameters)))

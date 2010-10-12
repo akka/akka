@@ -1,9 +1,9 @@
 package se.scalablesolutions.akka.actor
 
-import se.scalablesolutions.akka.actor.Actor.transactor
 import org.scalatest.Suite
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
+import Actor._
 
 import org.junit.runner.RunWith
 import org.junit.Test
@@ -45,9 +45,9 @@ class AgentSpec extends junit.framework.TestCase with Suite with MustMatchers {
     case object Go
     val agent = Agent(5)
     val latch = new CountDownLatch(1)
-    val tx = transactor {
-      case Go => agent send { e => latch.countDown; e + 1 }
-    }
+    val tx = actorOf( new Transactor {
+      def receive = { case Go => agent send { e => latch.countDown; e + 1 } }
+    } ).start
     tx ! Go
     assert(latch.await(5, TimeUnit.SECONDS))
     val result = agent()
