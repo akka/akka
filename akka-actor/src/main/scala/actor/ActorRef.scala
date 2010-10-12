@@ -21,13 +21,13 @@ import org.multiverse.api.exceptions.DeadTransactionException
 
 import java.net.InetSocketAddress
 import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ ScheduledFuture, ConcurrentHashMap, TimeUnit }
 import java.util.{ Map => JMap }
 import java.lang.reflect.Field
 
 import scala.reflect.BeanProperty
 import scala.collection.immutable.Stack
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 private[akka] object ActorRefInternals {
 
@@ -1037,24 +1037,37 @@ class LocalActorRef private[akka] (
     }
   }
 
-  protected[akka] def canRestart(maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Boolean = {
-    if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty) {  //Immortal
-      true
-    }
-    else if (withinTimeRange.isEmpty) { // restrict number of restarts
-      maxNrOfRetriesCount < maxNrOfRetries.get
-    } else {  // cannot restart more than N within M timerange
-      val maxRetries = if (maxNrOfRetries.isEmpty) 1 else maxNrOfRetries.get //Default to 1, has to match timerange also
-       !((maxNrOfRetriesCount >= maxRetries) &&
-        (System.currentTimeMillis - restartsWithinTimeRangeTimestamp < withinTimeRange.get))
-    }
-  }
-
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = {
-    if (maxNrOfRetriesCount == 0) restartsWithinTimeRangeTimestamp = System.currentTimeMillis
+    val isUnrestartable = if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty) {  //Immortal
+                            false
+                          }
+                          else if (withinTimeRange.isEmpty) { // restrict number of restarts
+                            maxNrOfRetriesCount += 1 //Increment number of retries
+                            maxNrOfRetriesCount > maxNrOfRetries.get
+                          } else {  // cannot restart more than N within M timerange
+                            maxNrOfRetriesCount += 1 //Increment number of retries
+                            val windowStart = restartsWithinTimeRangeTimestamp
+                            val now         = System.currentTimeMillis
+                            val retries     = maxNrOfRetriesCount
+                            //We are within the time window if it isn't the first restart, or if the window hasn't closed
+                            val insideWindow   = if (windowStart == 0)
+                                                  false
+                                                else
+                                                  (now - windowStart) <= withinTimeRange.get
 
-    if (!canRestart(maxNrOfRetries, withinTimeRange)) {
-      val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
+                            //The actor is dead if it dies X times within the window of restart
+                            val unrestartable = insideWindow && retries > maxNrOfRetries.getOrElse(1)
+
+                            if (windowStart == 0 || !insideWindow) //(Re-)set the start of the window
+                              restartsWithinTimeRangeTimestamp = now
+
+                            if (windowStart != 0 && !insideWindow) //Reset number of restarts if window has expired
+                              maxNrOfRetriesCount = 1
+
+                            unrestartable
+                          }
+
+    if (isUnrestartable) {
       Actor.log.warning(
         "Maximum number of restarts [%s] within time range [%s] reached." +
         "\n\tWill *not* restart actor [%s] anymore." +
@@ -1063,6 +1076,7 @@ class LocalActorRef private[akka] (
         maxNrOfRetries, withinTimeRange, this, reason)
       _supervisor.foreach { sup =>
         // can supervisor handle the notification?
+        val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
         if (sup.isDefinedAt(notification)) notifySupervisorWithMessage(notification)
         else Actor.log.warning(
           "No message handler defined for system message [MaximumNumberOfRestartsWithinTimeRangeReached]" +
@@ -1071,29 +1085,26 @@ class LocalActorRef private[akka] (
 
       stop
     } else {
-      _status = ActorRefInternals.BEING_RESTARTED
-      val failedActor = actorInstance.get
       guard.withGuard {
+        _status = ActorRefInternals.BEING_RESTARTED
         lifeCycle match {
           case Temporary => shutDownTemporaryActor(this)
           case _ =>
+            val failedActor = actorInstance.get
+            
             // either permanent or none where default is permanent
             Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
             Actor.log.debug("Restarting linked actors for actor [%s].", id)
             restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
 
             Actor.log.debug("Invoking 'preRestart' for failed actor instance [%s].", id)
-            if (isProxyableDispatcher(failedActor)) restartProxyableDispatcher(failedActor, reason)
-            else restartActor(failedActor, reason)
+            if (isProxyableDispatcher(failedActor))
+              restartProxyableDispatcher(failedActor, reason)
+            else
+              restartActor(failedActor, reason)
 
             _status = ActorRefInternals.RUNNING
-
-            // update restart parameters
-            if (maxNrOfRetries.isDefined && maxNrOfRetriesCount % maxNrOfRetries.get == 0 && maxNrOfRetriesCount != 0)
-              restartsWithinTimeRangeTimestamp = System.currentTimeMillis
-            else if (!maxNrOfRetries.isDefined)
-              restartsWithinTimeRangeTimestamp = System.currentTimeMillis
-            maxNrOfRetriesCount += 1
+            dispatcher.resume(this)
         }
       }
     }
@@ -1242,7 +1253,9 @@ class LocalActorRef private[akka] (
   private def handleExceptionInDispatch(reason: Throwable, message: Any, topLevelTransaction: Boolean) = {
     Actor.log.error(reason, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
 
-    _status = ActorRefInternals.BEING_RESTARTED
+    //Prevent any further messages to be processed until the actor has been restarted
+    dispatcher.suspend(this)
+
     // abort transaction set
     if (isTransactionSetInScope) {
       val txSet = getTransactionSetInScope
@@ -1261,7 +1274,7 @@ class LocalActorRef private[akka] (
     else {
       lifeCycle match {
         case Temporary => shutDownTemporaryActor(this)
-        case _ =>
+        case _ => dispatcher.resume(this) //Resume processing for this actor
       }
     }
   }
