@@ -114,13 +114,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   object Dependencies {
 
     // Compile
-
-		val httpclient = "maven2" at "http://repo1.maven.org/maven2/"
-		val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
-		
-		val scalatoolsSnapshot = "Scala Tools Snapshot" at "http://scala-tools.org/repo-snapshots/"
-		val specs = "org.scala-tools.testing" %% "specs" % "1.6.5" % "test"
-
+		lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
 
     lazy val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
 
@@ -243,6 +237,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test"
     lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test"
     lazy val scalatest      = "org.scalatest"          % "scalatest"           % SCALATEST_VERSION % "test"
+    lazy val specs          = "org.scala-tools.testing" %% "specs"             % "1.6.5"           % "test"
 
     //HBase testing
     lazy val hadoop_test    = "org.apache.hadoop"      % "hadoop-test"         % "0.20.2"          % "test"
@@ -614,6 +609,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaCouchDBProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
   	val couch = Dependencies.commonsHttpClient
 		val spec = Dependencies.specs
+
+    override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
   // -------------------------------------------------------------------------------------------------------------------

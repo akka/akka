@@ -30,17 +30,19 @@ private [akka] object CouchDBStorageBackend extends
 		def writes(o: Map[String,Any]): JsValue = JsValue(o)
 	}
 
-	val URL = config.getString("akka.storage.couchdb.url", "http://localhost:5984/testakka/")
+	lazy val URL = config.
+                   getString("akka.storage.couchdb.url").
+                   getOrElse(throw new IllegalArgumentException("'akka.storage.couchdb.url' not found in config"))
 
   def drop() = {
-    val client: HttpClient = new HttpClient()
-		val delete: DeleteMethod = new DeleteMethod(URL)
+    val client = new HttpClient()
+		val delete = new DeleteMethod(URL)
 		client.executeMethod(delete)
   }
   
   def create() = {
-    val client: HttpClient = new HttpClient()
-    val put: PutMethod = new PutMethod(URL)
+    val client = new HttpClient()
+    val put = new PutMethod(URL)
     put.setRequestEntity(new StringRequestEntity("", null, "utf-8"))
     put.setRequestHeader("Content-Type", "application/json")
 	  client.executeMethod(put)
@@ -64,7 +66,7 @@ private [akka] object CouchDBStorageBackend extends
 
 	def insertMapStorageEntriesFor(name: String, entries: List[(Array[Byte], Array[Byte])]) ={
 		val newDoc = getResponseForNameAsMap(name, "_map").getOrElse(Map[String, Any]()) ++ 
-		  entries.map(e=>(new String(e._1) -> new String(e._2))).toMap
+		  entries.map(e => (new String(e._1) -> new String(e._2))).toMap
     storeMap(name, "_map", newDoc)
 	}
 	
@@ -73,24 +75,23 @@ private [akka] object CouchDBStorageBackend extends
 	}
 	
 	
-  def removeMapStorageFor(name: String): Unit = {
-		findDocRev(name + "_map").flatMap(deleteData(URL + name + "_map", _))
+  def removeMapStorageFor(name: String) {
+    lazy val url = URL + name + "_map"
+		findDocRev(name + "_map").foreach(deleteData(url, _))
 	}
 	
   def removeMapStorageFor(name: String, key: Array[Byte]): Unit = {
-		getResponseForNameAsMap(name, "_map").flatMap(doc=>{ // if we can't find the map for name, then we don't need to delete it.
-    	storeMap(name, "_map", doc - new String(key))
-    })
+    lazy val sKey = new String(key)
+    // if we can't find the map for name, then we don't need to delete it.
+		getResponseForNameAsMap(name, "_map").foreach(doc => storeMap(name, "_map", doc - sKey))
 	}
 	
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = {
-    getResponseForNameAsMap(name, "_map").flatMap(_.get(new String(key))).asInstanceOf[Option[String]]
-      .map(_.getBytes)
+    lazy val sKey = new String(key)
+    getResponseForNameAsMap(name, "_map").flatMap(_.get(sKey)).asInstanceOf[Option[String]].map(_.getBytes)
 	}
   
-	def getMapStorageSizeFor(name: String): Int = {
-		getMapStorageFor(name).size
-	}
+	def getMapStorageSizeFor(name: String): Int = getMapStorageFor(name).size
 	
   def getMapStorageFor(name: String): List[(Array[Byte], Array[Byte])] = {
 		val m = getResponseForNameAsMap(name, "_map").map(_ - ("_id", "_rev")).getOrElse(Map[String, Any]())
@@ -119,7 +120,7 @@ private [akka] object CouchDBStorageBackend extends
 
   def insertVectorStorageEntriesFor(name: String, elements: List[Array[Byte]]) = {
     val m = getResponseForNameAsMap(name, "_vector").getOrElse(Map[String, Any]())
-    val v = elements.map(x=>new String(x)) ::: m.getOrElse("vector", List[String]()).asInstanceOf[List[String]]
+    val v = elements.map(x =>new String(x)) ::: m.getOrElse("vector", List[String]()).asInstanceOf[List[String]]
     storeMap(name, "_vector", m + ("vector" -> v))
   }
 
@@ -152,7 +153,7 @@ private [akka] object CouchDBStorageBackend extends
   }
 	
   def insertRefStorageFor(name: String, element: Array[Byte]) ={
-		val newDoc = getResponseForNameAsMap(name, "_ref").getOrElse(Map[String, Any]()) ++ Map("ref" -> new String(element))
+		val newDoc = getResponseForNameAsMap(name, "_ref").getOrElse(Map[String, Any]()) + ("ref" -> new String(element))
 		storeMap(name, "_ref", newDoc)
 	}
 	
@@ -166,8 +167,8 @@ private [akka] object CouchDBStorageBackend extends
 	}
 
 	private def deleteData(url:String, rev:String): Option[String] = {
-		val client: HttpClient = new HttpClient()
-		val delete: DeleteMethod = new DeleteMethod(url)
+		val client = new HttpClient()
+		val delete = new DeleteMethod(url)
 		delete.setRequestHeader("If-Match", rev)
 		client.executeMethod(delete)
 		
@@ -179,8 +180,8 @@ private [akka] object CouchDBStorageBackend extends
 	}
 
 	private def postData(url: String, data: String): Option[String] = {
-  	val client: HttpClient = new HttpClient()
-  	val post: PostMethod = new PostMethod(url)
+  	val client = new HttpClient()
+  	val post = new PostMethod(url)
   	post.setRequestEntity(new StringRequestEntity(data, null, "utf-8"))
   	post.setRequestHeader("Content-Type", "application/json")
   	client.executeMethod(post)
