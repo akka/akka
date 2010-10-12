@@ -54,9 +54,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
   @Test def testLogger = {
     val msgs = new java.util.concurrent.ConcurrentSkipListSet[Any]
     val latch = new CountDownLatch(2)
-    val t1 = actor {
-      case _ =>
-    }
+    val t1 = actorOf(new Actor { def receive = { case _ => } }).start
     val l = loggerActor(t1,(x) => { msgs.add(x); latch.countDown }).start
     val foo : Any = "foo"
     val bar : Any = "bar"
@@ -72,18 +70,22 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
   @Test def testSmallestMailboxFirstDispatcher = {
     val t1ProcessedCount = new AtomicInteger(0)
     val latch = new CountDownLatch(500)
-    val t1 = actor {
-      case x =>
-        Thread.sleep(50) // slow actor
-        t1ProcessedCount.incrementAndGet
-        latch.countDown
-    }
+    val t1 = actorOf(new Actor {
+      def receive = {
+        case x =>
+          Thread.sleep(50) // slow actor
+          t1ProcessedCount.incrementAndGet
+          latch.countDown
+      }
+    }).start
 
     val t2ProcessedCount = new AtomicInteger(0)
-    val t2 = actor {
-      case x => t2ProcessedCount.incrementAndGet
-              latch.countDown
-    }
+    val t2 = actorOf(new Actor {
+      def receive = {
+        case x => t2ProcessedCount.incrementAndGet
+                  latch.countDown
+      }
+    }).start
     val d = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
     for (i <- 1 to 500) d ! i
     val done = latch.await(10,TimeUnit.SECONDS)
@@ -103,12 +105,14 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     })
     i.start
 
-    def newListener = actor {
-      case "bar" =>
-        num.incrementAndGet
-        latch.countDown
-      case "foo" => foreachListener.countDown
-    }
+    def newListener = actorOf(new Actor {
+      def receive = {
+        case "bar" =>
+          num.incrementAndGet
+          latch.countDown
+        case "foo" => foreachListener.countDown
+      }
+    }).start
 
     val a1 = newListener
     val a2 = newListener

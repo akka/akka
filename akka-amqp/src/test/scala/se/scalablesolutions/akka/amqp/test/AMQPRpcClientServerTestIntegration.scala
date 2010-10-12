@@ -13,6 +13,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import se.scalablesolutions.akka.amqp.AMQP._
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+import se.scalablesolutions.akka.actor.Actor
 
 class AMQPRpcClientServerTestIntegration extends JUnitSuite with MustMatchers {
 
@@ -22,11 +23,13 @@ class AMQPRpcClientServerTestIntegration extends JUnitSuite with MustMatchers {
     val connection = AMQP.newConnection()
 
     val countDown = new CountDownLatch(3)
-    val channelCallback = actor {
-      case Started => countDown.countDown
-      case Restarting => ()
-      case Stopped => ()
-    }
+    val channelCallback = actorOf( new Actor {
+      def receive = {
+        case Started => countDown.countDown
+        case Restarting => ()
+        case Stopped => ()
+      }
+    }).start
 
     val exchangeName = "text_topic_exchange"
     val channelParameters = ChannelParameters(channelCallback

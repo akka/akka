@@ -8,11 +8,11 @@ import se.scalablesolutions.akka.actor.Actor._
 import org.scalatest.matchers.MustMatchers
 import se.scalablesolutions.akka.amqp._
 import org.junit.Test
-import se.scalablesolutions.akka.actor.ActorRef
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ConsumerParameters, ChannelParameters, ProducerParameters}
 import org.multiverse.api.latches.StandardLatch
 import org.scalatest.junit.JUnitSuite
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 
 class AMQPConsumerManualRejectTestIntegration extends JUnitSuite with MustMatchers {
 
@@ -22,21 +22,23 @@ class AMQPConsumerManualRejectTestIntegration extends JUnitSuite with MustMatche
     try {
       val countDown = new CountDownLatch(2)
       val restartingLatch = new StandardLatch
-      val channelCallback = actor {
-        case Started => countDown.countDown
-        case Restarting => restartingLatch.open
-        case Stopped => ()
-      }
+      val channelCallback = actorOf(new Actor {
+        def receive = {
+          case Started => countDown.countDown
+          case Restarting => restartingLatch.open
+          case Stopped => ()
+        }
+      }).start
       val exchangeParameters = ExchangeParameters("text_exchange")
       val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
 
       val rejectedLatch = new StandardLatch
-      val consumer:ActorRef = AMQP.newConsumer(connection, ConsumerParameters("manual.reject.this", actor {
-        case Delivery(payload, _, deliveryTag, _, sender) => {
-          sender.foreach(_ ! Reject(deliveryTag))
+      val consumer:ActorRef = AMQP.newConsumer(connection, ConsumerParameters("manual.reject.this", actorOf( new Actor {
+        def receive = {
+          case Delivery(payload, _, deliveryTag, _, sender) => sender.foreach(_ ! Reject(deliveryTag))
+          case Rejected(deliveryTag) => rejectedLatch.open
         }
-        case Rejected(deliveryTag) => rejectedLatch.open
-      }, queueName = Some("self.reject.queue"), exchangeParameters = Some(exchangeParameters),
+      }).start, queueName = Some("self.reject.queue"), exchangeParameters = Some(exchangeParameters),
         selfAcknowledging = false, channelParameters = Some(channelParameters)))
 
       val producer = AMQP.newProducer(connection,
