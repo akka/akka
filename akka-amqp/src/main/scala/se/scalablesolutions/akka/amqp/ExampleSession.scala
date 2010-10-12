@@ -69,9 +69,10 @@ object ExampleSession {
 
     val exchangeParameters = ExchangeParameters("my_direct_exchange", Direct)
 
-    val consumer = AMQP.newConsumer(connection, ConsumerParameters("some.routing", actor {
-      case Delivery(payload, _, _, _, _) => log.info("@george_bush received message from: %s", new String(payload))
-    }, None, Some(exchangeParameters)))
+    val consumer = AMQP.newConsumer(connection, ConsumerParameters("some.routing", actorOf( new Actor {
+      def receive = { case Delivery(payload, _, _, _, _) =>
+                        log.info("@george_bush received message from: %s", new String(payload)) }
+    }).start, None, Some(exchangeParameters)))
 
     val producer = AMQP.newProducer(connection, ProducerParameters(Some(exchangeParameters)))
     producer ! Message("@jonas_boner: You sucked!!".getBytes, "some.routing")
@@ -84,13 +85,15 @@ object ExampleSession {
 
     val exchangeParameters = ExchangeParameters("my_fanout_exchange", Fanout)
 
-    val bushConsumer = AMQP.newConsumer(connection, ConsumerParameters("@george_bush", actor {
-      case Delivery(payload, _, _, _, _) => log.info("@george_bush received message from: %s", new String(payload))
-    }, None, Some(exchangeParameters)))
+    val bushConsumer = AMQP.newConsumer(connection, ConsumerParameters("@george_bush", actorOf( new Actor {
+      def receive = { case Delivery(payload, _, _, _, _) =>
+                        log.info("@george_bush received message from: %s", new String(payload)) }
+    }).start, None, Some(exchangeParameters)))
 
-    val obamaConsumer = AMQP.newConsumer(connection, ConsumerParameters("@barack_obama", actor {
-      case Delivery(payload, _, _, _, _) => log.info("@barack_obama received message from: %s", new String(payload))
-    }, None, Some(exchangeParameters)))
+    val obamaConsumer = AMQP.newConsumer(connection, ConsumerParameters("@barack_obama", actorOf( new Actor {
+      def receive = { case Delivery(payload, _, _, _, _) =>
+                        log.info("@barack_obama received message from: %s", new String(payload)) }
+    }).start, None, Some(exchangeParameters)))
 
     val producer = AMQP.newProducer(connection, ProducerParameters(Some(exchangeParameters)))
     producer ! Message("@jonas_boner: I'm going surfing".getBytes, "")
@@ -103,13 +106,15 @@ object ExampleSession {
 
     val exchangeParameters = ExchangeParameters("my_topic_exchange", Topic)
 
-    val bushConsumer = AMQP.newConsumer(connection, ConsumerParameters("@george_bush", actor {
-      case Delivery(payload, _, _, _, _) => log.info("@george_bush received message from: %s", new String(payload))
-    }, None, Some(exchangeParameters)))
+    val bushConsumer = AMQP.newConsumer(connection, ConsumerParameters("@george_bush", actorOf( new Actor {
+      def receive = { case Delivery(payload, _, _, _, _) =>
+                        log.info("@george_bush received message from: %s", new String(payload)) }
+    }).start, None, Some(exchangeParameters)))
 
-    val obamaConsumer = AMQP.newConsumer(connection, ConsumerParameters("@barack_obama", actor {
-      case Delivery(payload, _, _, _, _) => log.info("@barack_obama received message from: %s", new String(payload))
-    }, None, Some(exchangeParameters)))
+    val obamaConsumer = AMQP.newConsumer(connection, ConsumerParameters("@barack_obama", actorOf( new Actor {
+      def receive = { case Delivery(payload, _, _, _, _) =>
+                        log.info("@barack_obama received message from: %s", new String(payload)) }
+    }).start, None, Some(exchangeParameters)))
 
     val producer = AMQP.newProducer(connection, ProducerParameters(Some(exchangeParameters)))
     producer ! Message("@jonas_boner: You still suck!!".getBytes, "@george_bush")
@@ -120,27 +125,31 @@ object ExampleSession {
 
     val channelCountdown = new CountDownLatch(2)
 
-    val connectionCallback = actor {
-      case Connected => log.info("Connection callback: Connected!")
-      case Reconnecting => () // not used, sent when connection fails and initiates a reconnect
-      case Disconnected => log.info("Connection callback: Disconnected!")
-    }
+    val connectionCallback = actorOf( new Actor {
+      def receive = {
+        case Connected => log.info("Connection callback: Connected!")
+        case Reconnecting => () // not used, sent when connection fails and initiates a reconnect
+        case Disconnected => log.info("Connection callback: Disconnected!")
+      }
+    }).start
     val connection = AMQP.newConnection(new ConnectionParameters(connectionCallback = Some(connectionCallback)))
 
-    val channelCallback = actor {
-      case Started => {
-        log.info("Channel callback: Started")
-        channelCountdown.countDown
+    val channelCallback = actorOf( new Actor {
+      def receive = {
+        case Started => {
+          log.info("Channel callback: Started")
+          channelCountdown.countDown
+        }
+        case Restarting => // not used, sent when channel or connection fails and initiates a restart
+        case Stopped => log.info("Channel callback: Stopped")
       }
-      case Restarting => // not used, sent when channel or connection fails and initiates a restart
-      case Stopped => log.info("Channel callback: Stopped")
-    }
+    }).start
     val exchangeParameters = ExchangeParameters("my_callback_exchange", Direct)
     val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
 
-    val consumer = AMQP.newConsumer(connection, ConsumerParameters("callback.routing", actor {
-      case _ => () // not used
-    }, None, Some(exchangeParameters), channelParameters = Some(channelParameters)))
+    val consumer = AMQP.newConsumer(connection, ConsumerParameters("callback.routing",
+      actorOf( new Actor { def receive = { case _ => } }).start,
+    None, Some(exchangeParameters), channelParameters = Some(channelParameters)))
 
     val producer = AMQP.newProducer(connection, ProducerParameters(Some(exchangeParameters)))
 

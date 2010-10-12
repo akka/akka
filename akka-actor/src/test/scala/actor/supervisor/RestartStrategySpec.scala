@@ -221,16 +221,17 @@ class RestartStrategySpec extends JUnitSuite {
   }
 
   @Test
-  def slaveShouldNotRestartWithinTimeRange = {
+  def slaveShouldNotRestartWithinsTimeRange = {
+
+    val restartLatch,stopLatch,maxNoOfRestartsLatch = new StandardLatch
+    val countDownLatch = new CountDownLatch(2)
+      
     val boss = actorOf(new Actor{
       self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), None, Some(1000))
-      protected def receive = { case _ => () }
+      protected def receive = {
+        case m:MaximumNumberOfRestartsWithinTimeRangeReached => maxNoOfRestartsLatch.open
+      }
     }).start
-
-    val restartLatch = new StandardLatch
-    val countDownLatch = new CountDownLatch(3)
-    val stopLatch = new StandardLatch
-
 
     val slave = actorOf(new Actor{
 
@@ -238,6 +239,7 @@ class RestartStrategySpec extends JUnitSuite {
         case Ping => countDownLatch.countDown
         case Crash => throw new Exception("Crashing...")
       }
+      
       override def postRestart(reason: Throwable) = {
         restartLatch.open
       }
@@ -265,6 +267,8 @@ class RestartStrategySpec extends JUnitSuite {
 
     slave ! Crash
     assert(stopLatch.tryAwait(1, TimeUnit.SECONDS))
+
+    assert(maxNoOfRestartsLatch.tryAwait(1,TimeUnit.SECONDS))
 
     assert(!slave.isRunning)
   }

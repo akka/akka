@@ -8,11 +8,11 @@ import se.scalablesolutions.akka.actor.Actor._
 import org.scalatest.matchers.MustMatchers
 import se.scalablesolutions.akka.amqp._
 import org.junit.Test
-import se.scalablesolutions.akka.actor.ActorRef
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.multiverse.api.latches.StandardLatch
 import org.scalatest.junit.JUnitSuite
 import se.scalablesolutions.akka.amqp.AMQP._
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 
 class AMQPConsumerManualAcknowledgeTestIntegration extends JUnitSuite with MustMatchers {
 
@@ -21,29 +21,33 @@ class AMQPConsumerManualAcknowledgeTestIntegration extends JUnitSuite with MustM
     val connection = AMQP.newConnection()
     try {
       val countDown = new CountDownLatch(2)
-      val channelCallback = actor {
-        case Started => countDown.countDown
-        case Restarting => ()
-        case Stopped => ()
-      }
+      val channelCallback = actorOf( new Actor {
+        def receive = {
+          case Started => countDown.countDown
+          case Restarting => ()
+          case Stopped => ()
+        }
+      }).start
       val exchangeParameters = ExchangeParameters("text_exchange")
       val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
 
       val failLatch = new StandardLatch
       val acknowledgeLatch = new StandardLatch
       var deliveryTagCheck: Long = -1
-      val consumer:ActorRef = AMQP.newConsumer(connection, ConsumerParameters("manual.ack.this", actor {
-        case Delivery(payload, _, deliveryTag, _, sender) => {
-          if (!failLatch.isOpen) {
-            failLatch.open
-            error("Make it fail!")
-          } else {
-            deliveryTagCheck = deliveryTag
-            sender.foreach(_ ! Acknowledge(deliveryTag))
+      val consumer:ActorRef = AMQP.newConsumer(connection, ConsumerParameters("manual.ack.this", actorOf( new Actor {
+        def receive = {
+          case Delivery(payload, _, deliveryTag, _, sender) => {
+            if (!failLatch.isOpen) {
+              failLatch.open
+              error("Make it fail!")
+            } else {
+              deliveryTagCheck = deliveryTag
+              sender.foreach(_ ! Acknowledge(deliveryTag))
+            }
           }
+          case Acknowledged(deliveryTag) => if (deliveryTagCheck == deliveryTag) acknowledgeLatch.open
         }
-        case Acknowledged(deliveryTag) => if (deliveryTagCheck == deliveryTag) acknowledgeLatch.open
-      }, queueName = Some("self.ack.queue"), exchangeParameters = Some(exchangeParameters),
+      }).start, queueName = Some("self.ack.queue"), exchangeParameters = Some(exchangeParameters),
         selfAcknowledging = false, channelParameters = Some(channelParameters),
         queueDeclaration = ActiveDeclaration(autoDelete = false)))
 

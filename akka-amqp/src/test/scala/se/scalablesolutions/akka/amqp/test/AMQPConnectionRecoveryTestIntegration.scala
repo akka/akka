@@ -24,16 +24,18 @@ class AMQPConnectionRecoveryTestIntegration extends JUnitSuite with MustMatchers
     val reconnectedLatch = new StandardLatch
     val disconnectedLatch = new StandardLatch
 
-    val connectionCallback: ActorRef = Actor.actor({
-      case Connected =>
-        if (!connectedLatch.isOpen) {
-          connectedLatch.open
-        } else {
-          reconnectedLatch.open
-        }
-      case Reconnecting => reconnectingLatch.open
-      case Disconnected => disconnectedLatch.open
-    })
+    val connectionCallback: ActorRef = Actor.actorOf( new Actor {
+      def receive = {
+        case Connected =>
+          if (!connectedLatch.isOpen) {
+            connectedLatch.open
+          } else {
+            reconnectedLatch.open
+          }
+        case Reconnecting => reconnectingLatch.open
+        case Disconnected => disconnectedLatch.open
+      }
+    }).start
 
     val connection = AMQP.newConnection(ConnectionParameters(initReconnectDelay = 50, connectionCallback = Some(connectionCallback)))
     try {

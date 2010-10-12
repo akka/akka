@@ -169,6 +169,9 @@ class HawtDispatcher(val aggregate: Boolean = true, val parent: DispatchQueue = 
     else new HawtDispatcherMailbox(queue)
   }
 
+  def suspend(actorRef: ActorRef) = mailbox(actorRef).suspend
+  def resume(actorRef:ActorRef)   = mailbox(actorRef).resume
+
   def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = null.asInstanceOf[AnyRef]
 
   /**
@@ -185,6 +188,9 @@ class HawtDispatcherMailbox(val queue: DispatchQueue) {
       invocation.invoke
     }
   }
+
+  def suspend = queue.suspend
+  def resume  = queue.resume
 }
 
 class AggregatingHawtDispatcherMailbox(queue:DispatchQueue) extends HawtDispatcherMailbox(queue) {
@@ -193,6 +199,9 @@ class AggregatingHawtDispatcherMailbox(queue:DispatchQueue) extends HawtDispatch
   source.resume
 
   private def drain_source = source.getData.foreach(_.invoke)
+
+  override def suspend = source.suspend
+  override def resume  = source.resume
 
   override def dispatch(invocation: MessageInvocation) {
     if (getCurrentQueue eq null) {
