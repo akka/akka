@@ -158,9 +158,10 @@ object Actor extends Logging {
    * }
    * </pre>
    */
-  def spawn(body: => Unit): Unit = {
+  def spawn(body: => Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit = {
     case object Spawn
     actorOf(new Actor() {
+      self.dispatcher = dispatcher
       def receive = {
         case Spawn => try { body } finally { self.stop }
       }
