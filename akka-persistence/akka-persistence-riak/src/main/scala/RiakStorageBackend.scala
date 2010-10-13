@@ -477,7 +477,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
       val objs = riakClient.fetch(bucket, key, quorum)
       objs.size match {
         case 0 => null;
-        case _ => objs.last.getValue.isEmpty match {
+        case _ => objs(0).getValue.isEmpty match {
           case true => null
           case false => objs(0).getValue
         }
