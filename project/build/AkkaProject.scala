@@ -29,11 +29,36 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Deploy/dist settings
   // -------------------------------------------------------------------------------------------------------------------
-
+  def distName = "%s_%s-%s".format(name, buildScalaVersion, version)
   lazy val deployPath = info.projectPath / "deploy"
   lazy val distPath = info.projectPath / "dist"
-  def distName = "%s_%s-%s.zip".format(name, buildScalaVersion, version)
-  lazy val dist = zipTask(allArtifacts, "dist", distName) dependsOn (`package`) describedAs("Zips up the distribution.")
+
+  //The distribution task, packages Akka into a zipfile and places it into the projectPath/dist directory
+  lazy val dist = task {
+
+    def transferFile(from: Path, to: Path) =
+      if ( from.asFile.renameTo(to.asFile) ) None
+      else Some("Couldn't transfer %s to %s".format(from,to))
+
+    //Creates a temporary directory where we can assemble the distribution
+    val genDistDir = Path.fromFile({
+      val d = File.createTempFile("akka","dist")
+      d.delete //delete the file
+      d.mkdir  //Recreate it as a dir
+      d
+    }).## //## is needed to make sure that the zipped archive has the correct root folder
+
+    //Temporary directory to hold the dist currently being generated
+    val currentDist = genDistDir / distName
+    //ArchiveName = name of the zip file distribution that will be generated
+    val archiveName = distName + ".zip"
+
+    FileUtilities.copy(allArtifacts.get, currentDist, log).left.toOption orElse //Copy all needed artifacts into the root archive
+    FileUtilities.zip(List(currentDist),distName + ".zip",true,log) orElse //Compress the root archive into a zipfile
+    transferFile(info.projectPath / archiveName,distPath / archiveName) orElse //Move the archive into the dist folder
+    FileUtilities.clean(genDistDir,log) //Cleanup the generated jars
+
+  } dependsOn (`package`) describedAs("Zips up the distribution.")
 
   // -------------------------------------------------------------------------------------------------------------------
   // All repositories *must* go here! See ModuleConigurations below.
