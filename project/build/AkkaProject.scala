@@ -86,7 +86,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val casbahModuleConfig      = ModuleConfiguration("com.novus", CasbahRepo)
   lazy val timeModuleConfig        = ModuleConfiguration("org.scala-tools", "time", CasbahSnapshotRepo)
   lazy val voldemortModuleConfig   = ModuleConfiguration("voldemort", ClojarsRepo)
-  lazy val riakPBModuleConfig      = ModuleConfiguration("org.clojars.mmcgrana", ClojarsRepo)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -251,7 +250,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val dbcp = "commons-dbcp" % "commons-dbcp" % "1.2.2" % "test"
 
     //Riak PB Client
-    lazy val riak_pb_client = "org.clojars.mmcgrana"   %  "riak-java-pb-client"      % "0.1.0-SNAPSHOT"  % "compile"
+    lazy val riak_pb_client = "com.trifork"   %  "riak-java-pb-client"      % "1.0-for-akka-by-ticktock"  % "compile"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -615,6 +614,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaRiakProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val riak_pb = Dependencies.riak_pb_client
+    val protobuf = Dependencies.protobuf
     //testing
     val scalatest = Dependencies.scalatest
 
