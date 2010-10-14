@@ -470,16 +470,20 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     val default: Int = 0xfffffffb
 
     def put(key: Array[Byte], value: Array[Byte]) = {
-      riakClient.store(new RiakObject(bucket, key, value), new RequestMeta().w(quorum).dw(quorum))
+      val objs: Array[RiakObject] = riakClient.fetch(bucket, key, quorum)
+      objs.size match {
+        case 0 => riakClient.store(new RiakObject(bucket, key, value), new RequestMeta().w(quorum).dw(quorum))
+        case _ => riakClient.store(new RiakObject(objs(0).getVclock, bucket, key, value),new RequestMeta().w(quorum).dw(quorum)) 
+      }
     }
 
     def getValue(key: Array[Byte]): Array[Byte] = {
       val objs = riakClient.fetch(bucket, key, quorum)
       objs.size match {
         case 0 => null;
-        case _ => objs(0).getValue.isEmpty match {
+        case _ => objs.last.getValue.isEmpty match {
           case true => null
-          case false => objs(0).getValue
+          case false => objs.last.getValue
         }
       }
     }

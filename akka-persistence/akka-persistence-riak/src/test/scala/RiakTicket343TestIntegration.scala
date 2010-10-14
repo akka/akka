@@ -10,7 +10,7 @@ import org.scalatest.junit.JUnitRunner
 import se.scalablesolutions.akka.persistence.common._
 
 @RunWith(classOf[JUnitRunner])
-class RiakTicket343Test extends Ticket343Test  {
+class RiakTicket343TestIntegration extends Ticket343Test  {
   def dropMapsAndVectors: Unit = {
     RiakStorageBackend.VectorClient.drop
     RiakStorageBackend.MapClient.drop
