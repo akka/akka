@@ -44,15 +44,15 @@ class HttpConcurrencyTestStress extends JUnitSuite {
 
 object HttpConcurrencyTestStress {
   @BeforeClass
-  def beforeClass = {
+  def beforeClass: Unit = {
     startCamelService
 
     val workers = for (i <- 1 to 8) yield actorOf[HttpServerWorker].start
     val balancer = loadBalancerActor(new CyclicIterator(workers.toList))
 
-    val completion = service.get.expectEndpointActivationCount(1)
-    val server = actorOf(new HttpServerActor(balancer)).start
-    completion.await
+    service.get.awaitEndpointActivation(1) {
+      actorOf(new HttpServerActor(balancer)).start
+    }
   }
 
   @AfterClass
