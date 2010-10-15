@@ -11,8 +11,8 @@ import org.apache.camel.CamelContext
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.{AspectInitRegistry, ActorRegistry}
 import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.japi.{Option => JOption}
 import se.scalablesolutions.akka.util.{Logging, Bootable}
+import se.scalablesolutions.akka.japi.{SideEffect, Option => JOption}
 
 /**
  * Publishes (untyped) consumer actors and typed consumer actors via Camel endpoints. Actors
@@ -101,7 +101,7 @@ trait CamelService extends Bootable with Logging {
    * Other timeout values can be set via the <code>timeout</code> and <code>timeUnit</code>
    * parameters.
    */
-  def awaitEndpointActivation(count: Int, timeout: Long = 10, timeUnit: TimeUnit = TimeUnit.SECONDS)(f: => Unit) = {
+  def awaitEndpointActivation(count: Int, timeout: Long = 10, timeUnit: TimeUnit = TimeUnit.SECONDS)(f: => Unit): Boolean = {
     val activation = expectEndpointActivationCount(count)
     f;  activation.await(timeout, timeUnit)
   }
@@ -112,9 +112,51 @@ trait CamelService extends Bootable with Logging {
    * Other timeout values can be set via the <code>timeout</code> and <code>timeUnit</code>
    * parameters.
    */
-  def awaitEndpointDeactivation(count: Int, timeout: Long = 10, timeUnit: TimeUnit = TimeUnit.SECONDS)(f: => Unit) = {
+  def awaitEndpointDeactivation(count: Int, timeout: Long = 10, timeUnit: TimeUnit = TimeUnit.SECONDS)(f: => Unit): Boolean = {
     val activation = expectEndpointDeactivationCount(count)
     f;  activation.await(timeout, timeUnit)
+  }
+
+  /**
+   * Waits for an expected number (<code>count</code>) of endpoints to be activated
+   * during execution of <code>p</code>. The wait timeout is 10 seconds.
+   * <p>
+   * Java API
+   */
+  def awaitEndpointActivation(count: Int, p: SideEffect): Boolean = {
+    awaitEndpointActivation(count, 10, TimeUnit.SECONDS, p)
+  }
+
+  /**
+   * Waits for an expected number (<code>count</code>) of endpoints to be activated
+   * during execution of <code>p</code>. Timeout values can be set via the
+   * <code>timeout</code> and <code>timeUnit</code> parameters.
+   * <p>
+   * Java API
+   */
+  def awaitEndpointActivation(count: Int, timeout: Long, timeUnit: TimeUnit, p: SideEffect): Boolean = {
+    awaitEndpointActivation(count, timeout, timeUnit) { p.apply }
+  }
+
+  /**
+   * Waits for an expected number (<code>count</code>) of endpoints to be de-activated
+   * during execution of <code>p</code>. The wait timeout is 10 seconds.
+   * <p>
+   * Java API
+   */
+  def awaitEndpointDeactivation(count: Int, p: SideEffect): Boolean = {
+    awaitEndpointDeactivation(count, 10, TimeUnit.SECONDS, p)
+  }
+
+  /**
+   * Waits for an expected number (<code>count</code>) of endpoints to be de-activated
+   * during execution of <code>p</code>. Timeout values can be set via the
+   * <code>timeout</code> and <code>timeUnit</code> parameters.
+   * <p>
+   * Java API
+   */
+  def awaitEndpointDeactivation(count: Int, timeout: Long, timeUnit: TimeUnit, p: SideEffect): Boolean = {
+    awaitEndpointDeactivation(count, timeout, timeUnit) { p.apply }
   }
 
   /**
