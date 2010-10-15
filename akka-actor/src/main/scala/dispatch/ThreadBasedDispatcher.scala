@@ -34,12 +34,10 @@ class ThreadBasedDispatcher(private val actor: ActorRef, _mailboxType: MailboxTy
     if (actorRef != actor) throw new IllegalArgumentException("Cannot register to anyone but " + actor)
     super.register(actorRef)
   }
-
-  override def toString = "ThreadBasedDispatcher[" + name + "]"
 }
 
 object ThreadBasedDispatcher {
-  def oneThread(b: ThreadPoolBuilder) {
+  val oneThread: (ThreadPoolBuilder) => Unit = b => {
     b setCorePoolSize 1
     b setMaxPoolSize 1
     b setAllowCoreThreadTimeout true

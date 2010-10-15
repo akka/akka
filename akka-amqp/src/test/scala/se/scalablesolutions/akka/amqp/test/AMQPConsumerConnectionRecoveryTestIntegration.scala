@@ -24,17 +24,19 @@ class AMQPConsumerConnectionRecoveryTestIntegration extends JUnitSuite with Must
     try {
       val producerStartedLatch = new StandardLatch
       val producerRestartedLatch = new StandardLatch
-      val producerChannelCallback: ActorRef = actor {
-        case Started => {
-          if (!producerStartedLatch.isOpen) {
-            producerStartedLatch.open
-          } else {
-            producerRestartedLatch.open
+      val producerChannelCallback: ActorRef = actorOf( new Actor {
+        def receive = {
+          case Started => {
+            if (!producerStartedLatch.isOpen) {
+              producerStartedLatch.open
+            } else {
+              producerRestartedLatch.open
+            }
           }
+          case Restarting => ()
+          case Stopped => ()
         }
-        case Restarting => ()
-        case Stopped => ()
-      }
+      }).start
 
       val channelParameters = ChannelParameters(channelCallback = Some(producerChannelCallback))
       val producer = AMQP.newProducer(connection, ProducerParameters(
@@ -44,25 +46,28 @@ class AMQPConsumerConnectionRecoveryTestIntegration extends JUnitSuite with Must
 
       val consumerStartedLatch = new StandardLatch
       val consumerRestartedLatch = new StandardLatch
-      val consumerChannelCallback: ActorRef = actor {
-        case Started => {
-          if (!consumerStartedLatch.isOpen) {
-            consumerStartedLatch.open
-          } else {
-            consumerRestartedLatch.open
+      val consumerChannelCallback: ActorRef = actorOf( new Actor {
+        def receive = {
+          case Started => {
+            if (!consumerStartedLatch.isOpen) {
+              consumerStartedLatch.open
+            } else {
+              consumerRestartedLatch.open
+            }
           }
+          case Restarting => ()
+          case Stopped => ()
         }
-        case Restarting => ()
-        case Stopped => ()
-      }
+      }).start
 
 
       val payloadLatch = new StandardLatch
       val consumerExchangeParameters = ExchangeParameters("text_exchange")
       val consumerChannelParameters = ChannelParameters(channelCallback = Some(consumerChannelCallback))
-      val consumer = AMQP.newConsumer(connection, ConsumerParameters("non.interesting.routing.key", actor {
-        case Delivery(payload, _, _, _, _) => payloadLatch.open
-      }, exchangeParameters = Some(consumerExchangeParameters), channelParameters = Some(consumerChannelParameters)))
+      val consumer = AMQP.newConsumer(connection, ConsumerParameters("non.interesting.routing.key", actorOf( new Actor {
+        def receive = { case Delivery(payload, _, _, _, _) => payloadLatch.open }
+      }).start,
+      exchangeParameters = Some(consumerExchangeParameters), channelParameters = Some(consumerChannelParameters)))
       consumerStartedLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
 
       val listenerLatch = new StandardLatch

@@ -29,8 +29,6 @@ trait ThreadPoolBuilder extends Logging {
   private lazy val threadFactory = new MonitorableThreadFactory(name)
 
   protected var executor: ExecutorService = _
-
-  def execute(task: Runnable) = executor execute task
   
   def isShutdown = executor.isShutdown
 

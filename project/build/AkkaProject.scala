@@ -29,11 +29,36 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Deploy/dist settings
   // -------------------------------------------------------------------------------------------------------------------
-
+  def distName = "%s_%s-%s".format(name, buildScalaVersion, version)
   lazy val deployPath = info.projectPath / "deploy"
   lazy val distPath = info.projectPath / "dist"
-  def distName = "%s_%s-%s.zip".format(name, buildScalaVersion, version)
-  lazy val dist = zipTask(allArtifacts, "dist", distName) dependsOn (`package`) describedAs("Zips up the distribution.")
+
+  //The distribution task, packages Akka into a zipfile and places it into the projectPath/dist directory
+  lazy val dist = task {
+
+    def transferFile(from: Path, to: Path) =
+      if ( from.asFile.renameTo(to.asFile) ) None
+      else Some("Couldn't transfer %s to %s".format(from,to))
+
+    //Creates a temporary directory where we can assemble the distribution
+    val genDistDir = Path.fromFile({
+      val d = File.createTempFile("akka","dist")
+      d.delete //delete the file
+      d.mkdir  //Recreate it as a dir
+      d
+    }).## //## is needed to make sure that the zipped archive has the correct root folder
+
+    //Temporary directory to hold the dist currently being generated
+    val currentDist = genDistDir / distName
+    //ArchiveName = name of the zip file distribution that will be generated
+    val archiveName = distName + ".zip"
+
+    FileUtilities.copy(allArtifacts.get, currentDist, log).left.toOption orElse //Copy all needed artifacts into the root archive
+    FileUtilities.zip(List(currentDist),distName + ".zip",true,log) orElse //Compress the root archive into a zipfile
+    transferFile(info.projectPath / archiveName,distPath / archiveName) orElse //Move the archive into the dist folder
+    FileUtilities.clean(genDistDir,log) //Cleanup the generated jars
+
+  } dependsOn (`package`) describedAs("Zips up the distribution.")
 
   // -------------------------------------------------------------------------------------------------------------------
   // All repositories *must* go here! See ModuleConigurations below.
@@ -114,6 +139,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   object Dependencies {
 
     // Compile
+		lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
 
     lazy val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
 
@@ -223,6 +249,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val hbase_core = "org.apache.hbase" % "hbase-core" % "0.20.6" % "compile"
 
+    //Riak PB Client
+    lazy val riak_pb_client = "com.trifork"   %  "riak-java-pb-client"      % "1.0-for-akka-by-ticktock"  % "compile"
+
     // Test
 
     lazy val camel_spring   = "org.apache.camel"       % "camel-spring"        % CAMEL_VERSION     % "test"
@@ -236,6 +265,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test"
     lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test"
     lazy val scalatest      = "org.scalatest"          % "scalatest"           % SCALATEST_VERSION % "test"
+    lazy val specs          = "org.scala-tools.testing" %% "specs"             % "1.6.5"           % "test"
 
     //HBase testing
     lazy val hadoop_test    = "org.apache.hadoop"      % "hadoop-test"         % "0.20.2"          % "test"
@@ -248,9 +278,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val vold_jetty = "org.mortbay.jetty" % "jetty" % "6.1.18" % "test"
     lazy val velocity = "org.apache.velocity" % "velocity" % "1.6.2" % "test"
     lazy val dbcp = "commons-dbcp" % "commons-dbcp" % "1.2.2" % "test"
-
-    //Riak PB Client
-    lazy val riak_pb_client = "com.trifork"   %  "riak-java-pb-client"      % "1.0-for-akka-by-ticktock"  % "compile"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -510,6 +537,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaVoldemortProject(_), akka_persistence_common)
     lazy val akka_persistence_riak = project("akka-persistence-riak", "akka-persistence-riak",
       new AkkaRiakProject(_), akka_persistence_common)
+    lazy val akka_persistence_couchdb = project("akka-persistence-couchdb", "akka-persistence-couchdb",
+      new AkkaCouchDBProject(_), akka_persistence_common)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -542,6 +571,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     override def testOptions = createTestFilter( _.endsWith("Test"))
   }
+
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-persistence-cassandra subproject
@@ -622,6 +652,12 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def testOptions = createTestFilter(_.endsWith("Test"))
   }
 
+  class AkkaCouchDBProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  	val couch = Dependencies.commonsHttpClient
+		val spec = Dependencies.specs
+
+    override def testOptions = createTestFilter( _.endsWith("Test"))
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-kernel subproject
@@ -653,6 +689,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val atomikos_transactions_jta = Dependencies.atomikos_transactions_jta
     //val jta_1_1                   = Dependencies.jta_1_1
     //val atomikos_transactions_util = "com.atomikos" % "transactions-util" % "3.2.3" % "compile"
+    
+    //Testing
+    val junit        = Dependencies.junit
+    val scalatest    = Dependencies.scalatest
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -726,7 +766,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val commons_fileupload = "commons-fileupload"        % "commons-fileupload" % "1.2.1" % "compile" intransitive
     val jms_1_1            = "org.apache.geronimo.specs" % "geronimo-jms_1.1_spec" % "1.1.1" % "compile" intransitive
     val joda               = "joda-time"                 % "joda-time" % "1.6" intransitive
-
+    
     override def packageAction =
       task {
         val libs: Seq[Path] = managedClasspath(config("compile")).get.toSeq

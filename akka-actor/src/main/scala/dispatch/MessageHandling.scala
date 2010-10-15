@@ -64,8 +64,6 @@ trait MessageDispatcher extends MailboxFactory with Logging {
   
   def dispatch(invocation: MessageInvocation): Unit
 
-  def execute(task: Runnable): Unit
-
   def start: Unit
 
   def shutdown: Unit
@@ -80,6 +78,9 @@ trait MessageDispatcher extends MailboxFactory with Logging {
     actorRef.mailbox = null
     if (canBeShutDown) shutdown // shut down in the dispatcher's references is zero
   }
+  
+  def suspend(actorRef: ActorRef): Unit
+  def resume(actorRef: ActorRef): Unit
   
   def canBeShutDown: Boolean = uuids.isEmpty
 

@@ -26,17 +26,19 @@ class AMQPProducerChannelRecoveryTestIntegration extends JUnitSuite with MustMat
       val restartingLatch = new StandardLatch
       val restartedLatch = new StandardLatch
 
-      val producerCallback: ActorRef = Actor.actor({
-        case Started => {
-          if (!startedLatch.isOpen) {
-            startedLatch.open
-          } else {
-            restartedLatch.open
+      val producerCallback: ActorRef = Actor.actorOf( new Actor {
+        def receive = {
+          case Started => {
+            if (!startedLatch.isOpen) {
+              startedLatch.open
+            } else {
+              restartedLatch.open
+            }
           }
+          case Restarting => restartingLatch.open
+          case Stopped => ()
         }
-        case Restarting => restartingLatch.open
-        case Stopped => ()
-      })
+      }).start
 
       val channelParameters = ChannelParameters(channelCallback = Some(producerCallback))
       val producerParameters = ProducerParameters(
