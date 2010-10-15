@@ -4,6 +4,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import se.scalablesolutions.akka.dispatch.Futures
 import Actor._
+import org.multiverse.api.latches.StandardLatch
 
 object FutureSpec {
   class TestActor extends Actor {
@@ -12,6 +13,18 @@ object FutureSpec {
         self.reply("World")
       case "NoReply" => {}
       case "Failure" =>
+        throw new RuntimeException("Expected exception; to test fault-tolerance")
+    }
+  }
+
+  class TestDelayActor(await: StandardLatch) extends Actor {
+    def receive = {
+      case "Hello" =>
+        await.await
+        self.reply("World")
+      case "NoReply" => { await.await }
+      case "Failure" =>
+        await.await
         throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
@@ -102,5 +115,32 @@ class FutureSpec extends JUnitSuite {
     assert("World" === future2.result.get)
     actor1.stop
     actor2.stop
+  }
+
+  @Test def shouldFutureMapBeDeferred {
+    val latch = new StandardLatch
+    val actor1 = actorOf(new TestDelayActor(latch)).start
+
+    val mappedFuture = (actor1.!!![String]("Hello")).map(x => 5)
+    assert(mappedFuture.isCompleted === false)
+    assert(mappedFuture.isExpired === false)
+    latch.open
+    mappedFuture.await
+    assert(mappedFuture.isCompleted === true)
+    assert(mappedFuture.isExpired === false)
+    assert(mappedFuture.result === Some(5))
+  }
+
+  @Test def shouldFuturesAwaitMapHandleEmptySequence {
+    assert(Futures.awaitMap[Nothing,Unit](Nil)(x => ()) === Nil)
+  }
+
+  @Test def shouldFuturesAwaitMapHandleNonEmptySequence {
+    val latches = (1 to 3) map (_ => new StandardLatch)
+    val actors = latches map (latch => actorOf(new TestDelayActor(latch)).start)
+    val futures = actors map (actor => (actor.!!![String]("Hello")))
+    latches foreach { _.open }
+
+    assert(Futures.awaitMap(futures)(_.result.map(_.length).getOrElse(0)).sum === (latches.size * "World".length))
   }
 }
