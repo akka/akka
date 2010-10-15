@@ -20,7 +20,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @After def tearDown = ActorRegistry.shutdownAll
 
-  @Test def shouldSendMessageToActorWithProcessor = {
+  @Test def shouldSendMessageToActorWithSyncProcessor = {
     val actor = actorOf[Tester1].start
     val latch = (actor !! SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:uuid:%s" format actor.uuid)
@@ -48,7 +48,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
     assert(reply.headers === Map(Message.MessageExchangeId -> exchange.getExchangeId, "k1" -> "v1"))
   }
 
-  @Test def shouldSendMessageToActorAndReceiveResponseWithProcessor = {
+  @Test def shouldSendMessageToActorAndReceiveResponseWithSyncProcessor = {
     val actor = actorOf(new Tester2 {
       override def response(msg: Message) = Message(super.response(msg), Map("k2" -> "v2"))
     }).start
@@ -92,6 +92,118 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
     assert(exchange.getOut.getHeader("k3") === null) // headers from failure message are currently ignored
   }
 
+  @Test def shouldDynamicallyRouteMessageToActorWithDefaultId = {
+    val actor1 = actorOf[Tester1]
+    val actor2 = actorOf[Tester1]
+    actor1.id = "x"
+    actor2.id = "y"
+    actor1.start
+    actor2.start
+    val latch1 = (actor1 !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+    val latch2 = (actor2 !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+    val endpoint = actorEndpoint("actor:id:%s" format actor1.id)
+    val exchange1 = endpoint.createExchange(ExchangePattern.InOnly)
+    val exchange2 = endpoint.createExchange(ExchangePattern.InOnly)
+    exchange1.getIn.setBody("Test1")
+    exchange2.getIn.setBody("Test2")
+    exchange2.getIn.setHeader(ActorComponent.ActorIdentifier, actor2.id)
+    actorProducer(endpoint).process(exchange1)
+    actorProducer(endpoint).process(exchange2)
+    assert(latch1.await(5, TimeUnit.SECONDS))
+    assert(latch2.await(5, TimeUnit.SECONDS))
+    val reply1 = (actor1 !! GetRetainedMessage).get.asInstanceOf[Message]
+    val reply2 = (actor2 !! GetRetainedMessage).get.asInstanceOf[Message]
+    assert(reply1.body === "Test1")
+    assert(reply2.body === "Test2")
+  }
+
+  @Test def shouldDynamicallyRouteMessageToActorWithoutDefaultId = {
+    val actor1 = actorOf[Tester1]
+    val actor2 = actorOf[Tester1]
+    actor1.id = "x"
+    actor2.id = "y"
+    actor1.start
+    actor2.start
+    val latch1 = (actor1 !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+    val latch2 = (actor2 !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+    val endpoint = actorEndpoint("actor:id:")
+    val exchange1 = endpoint.createExchange(ExchangePattern.InOnly)
+    val exchange2 = endpoint.createExchange(ExchangePattern.InOnly)
+    exchange1.getIn.setBody("Test1")
+    exchange2.getIn.setBody("Test2")
+    exchange1.getIn.setHeader(ActorComponent.ActorIdentifier, actor1.id)
+    exchange2.getIn.setHeader(ActorComponent.ActorIdentifier, actor2.id)
+    actorProducer(endpoint).process(exchange1)
+    actorProducer(endpoint).process(exchange2)
+    assert(latch1.await(5, TimeUnit.SECONDS))
+    assert(latch2.await(5, TimeUnit.SECONDS))
+    val reply1 = (actor1 !! GetRetainedMessage).get.asInstanceOf[Message]
+    val reply2 = (actor2 !! GetRetainedMessage).get.asInstanceOf[Message]
+    assert(reply1.body === "Test1")
+    assert(reply2.body === "Test2")
+  }
+
+  @Test def shouldDynamicallyRouteMessageToActorWithDefaultUuid = {
+    val actor1 = actorOf[Tester1].start
+    val actor2 = actorOf[Tester1].start
+    val latch1 = (actor1 !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+    val latch2 = (actor2 !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+    val endpoint = actorEndpoint("actor:uuid:%s" format actor1.uuid)
+    val exchange1 = endpoint.createExchange(ExchangePattern.InOnly)
+    val exchange2 = endpoint.createExchange(ExchangePattern.InOnly)
+    exchange1.getIn.setBody("Test1")
+    exchange2.getIn.setBody("Test2")
+    exchange2.getIn.setHeader(ActorComponent.ActorIdentifier, actor2.uuid.toString)
+    actorProducer(endpoint).process(exchange1)
+    actorProducer(endpoint).process(exchange2)
+    assert(latch1.await(5, TimeUnit.SECONDS))
+    assert(latch2.await(5, TimeUnit.SECONDS))
+    val reply1 = (actor1 !! GetRetainedMessage).get.asInstanceOf[Message]
+    val reply2 = (actor2 !! GetRetainedMessage).get.asInstanceOf[Message]
+    assert(reply1.body === "Test1")
+    assert(reply2.body === "Test2")
+  }
+
+  @Test def shouldDynamicallyRouteMessageToActorWithoutDefaultUuid = {
+    val actor1 = actorOf[Tester1].start
+    val actor2 = actorOf[Tester1].start
+    val latch1 = (actor1 !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+    val latch2 = (actor2 !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+    val endpoint = actorEndpoint("actor:uuid:")
+    val exchange1 = endpoint.createExchange(ExchangePattern.InOnly)
+    val exchange2 = endpoint.createExchange(ExchangePattern.InOnly)
+    exchange1.getIn.setBody("Test1")
+    exchange2.getIn.setBody("Test2")
+    exchange1.getIn.setHeader(ActorComponent.ActorIdentifier, actor1.uuid)
+    exchange2.getIn.setHeader(ActorComponent.ActorIdentifier, actor2.uuid.toString)
+    actorProducer(endpoint).process(exchange1)
+    actorProducer(endpoint).process(exchange2)
+    assert(latch1.await(5, TimeUnit.SECONDS))
+    assert(latch2.await(5, TimeUnit.SECONDS))
+    val reply1 = (actor1 !! GetRetainedMessage).get.asInstanceOf[Message]
+    val reply2 = (actor2 !! GetRetainedMessage).get.asInstanceOf[Message]
+    assert(reply1.body === "Test1")
+    assert(reply2.body === "Test2")
+  }
+
+  @Test def shouldThrowExceptionWhenIdNotSet: Unit = {
+    val actor = actorOf[Tester1].start
+    val latch = (actor !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+    val endpoint = actorEndpoint("actor:id:")
+    intercept[ActorIdentifierNotSetException] {
+      actorProducer(endpoint).process(endpoint.createExchange(ExchangePattern.InOnly))
+    }
+  }
+
+  @Test def shouldThrowExceptionWhenUuidNotSet: Unit = {
+    val actor = actorOf[Tester1].start
+    val latch = (actor !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+    val endpoint = actorEndpoint("actor:uuid:")
+    intercept[ActorIdentifierNotSetException] {
+      actorProducer(endpoint).process(endpoint.createExchange(ExchangePattern.InOnly))
+    }
+  }
+
   @Test def shouldSendMessageToActorAndTimeout(): Unit = {
     val actor = actorOf[Tester3].start
     val endpoint = actorEndpoint("actor:uuid:%s" format actor.uuid)
@@ -115,5 +227,4 @@ object ActorProducerTest {
       latch.countDown
     }
   }
-
 }

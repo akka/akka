@@ -341,9 +341,9 @@ object AMQP {
       throw new IllegalArgumentException("Either exchange name or routing key is mandatory")
     }
 
-    val deliveryHandler = actor {
-      case Delivery(payload, _, _, _, _) => handler.apply(new String(payload))
-    }
+    val deliveryHandler = actorOf( new Actor {
+      def receive = { case Delivery(payload, _, _, _, _) => handler.apply(new String(payload)) }
+    } ).start
 
     val exchangeParameters = exchangeName.flatMap(name => Some(ExchangeParameters(name)))
     val rKey = routingKey.getOrElse("%s.request".format(exchangeName.get))
@@ -431,11 +431,9 @@ object AMQP {
       throw new IllegalArgumentException("Either exchange name or routing key is mandatory")
     }
 
-    val deliveryHandler = actor {
-      case Delivery(payload, _, _, _, _) => {
-        handler.apply(createProtobufFromBytes[I](payload))
-      }
-    }
+    val deliveryHandler = actorOf(new Actor {
+      def receive = { case Delivery(payload, _, _, _, _) => handler.apply(createProtobufFromBytes[I](payload)) }
+    }).start
 
     val exchangeParameters = exchangeName.flatMap(name => Some(ExchangeParameters(name)))
     val rKey = routingKey.getOrElse("%s.request".format(exchangeName.get))

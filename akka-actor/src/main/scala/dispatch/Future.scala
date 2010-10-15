@@ -5,9 +5,10 @@
 package se.scalablesolutions.akka.dispatch
 
 import se.scalablesolutions.akka.AkkaException
-
+import se.scalablesolutions.akka.actor.Actor.spawn
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit
+import se.scalablesolutions.akka.routing.Dispatcher
 
 class FutureTimeoutException(message: String) extends AkkaException(message)
 
@@ -21,15 +22,17 @@ object Futures {
    * }
    * </pre>
    */
-  def future[T](timeout: Long)(body: => T): Future[T] = {
-    val promise = new DefaultCompletableFuture[T](timeout)
+   def future[T](timeout: Long,
+                 dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher)
+                (body: => T): Future[T] = {
+    val f = new DefaultCompletableFuture[T](timeout)
 
-    try {
-      promise completeWithResult body
-    } catch {
-      case e => promise completeWithException e
-    }
-    promise
+    spawn({
+      try { f completeWithResult body }
+      catch { case e => f completeWithException e}
+    })(dispatcher)
+
+    f
   }
 
   def awaitAll(futures: List[Future[_]]): Unit = futures.foreach(_.await)

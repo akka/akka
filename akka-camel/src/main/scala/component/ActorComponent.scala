@@ -5,11 +5,9 @@
 package se.scalablesolutions.akka.camel.component
 
 import java.net.InetSocketAddress
-import java.util.{Map => JavaMap}
+import java.util.{Map => JMap}
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
-
-import jsr166x.Deque
 
 import org.apache.camel._
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
@@ -23,6 +21,16 @@ import se.scalablesolutions.akka.stm.TransactionConfig
 import scala.reflect.BeanProperty
 
 /**
+ * @author Martin Krasser
+ */
+object ActorComponent {
+  /**
+   * Name of the message header containing the actor id or uuid.
+   */
+  val ActorIdentifier = "CamelActorIdentifier"
+}
+
+/**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
  *
  * @see se.scalablesolutions.akka.camel.component.ActorEndpoint
@@ -31,27 +39,35 @@ import scala.reflect.BeanProperty
  * @author Martin Krasser
  */
 class ActorComponent extends DefaultComponent {
-  def createEndpoint(uri: String, remaining: String, parameters: JavaMap[String, Object]): ActorEndpoint = {
-    val (id,uuid) = idAndUuidPair(remaining)
-    new ActorEndpoint(uri, this, id, uuid)
+  def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint = {
+    val (idType, idValue) = parsePath(remaining)
+    new ActorEndpoint(uri, this, idType, idValue)
   }
 
-  private def idAndUuidPair(remaining: String): Tuple2[Option[String],Option[Uuid]] = remaining match {
-    case null | "" => throw new IllegalArgumentException("invalid path format: [%s] - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format remaining)
-    case   id if id startsWith "id:"     => (Some(id substring 3),None)
-    case uuid if uuid startsWith "uuid:" => (None,Some(uuidFrom(uuid substring 5)))
-    case   id => (Some(id),None)
+  private def parsePath(remaining: String): Tuple2[String, Option[String]] = remaining match {
+    case null | "" => throw new IllegalArgumentException("invalid path: [%s] - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format remaining)
+    case   id if id   startsWith "id:"   => ("id",   parseIdentifier(id substring 3))
+    case uuid if uuid startsWith "uuid:" => ("uuid", parseIdentifier(uuid substring 5))
+    case   id                            => ("id",   parseIdentifier(id))
   }
+
+  private def parseIdentifier(identifier: String): Option[String] =
+    if (identifier.length > 0) Some(identifier) else None
 }
 
 /**
  * Camel endpoint for sending messages to and receiving replies from (untyped) actors. Actors
  * are referenced using <code>actor</code> endpoint URIs of the following format:
  * <code>actor:<actor-id></code>,
- * <code>actor:id:<actor-id></code> and
- * <code>actor:uuid:<actor-uuid></code>,
- * where <code>actor-id</code> refers to <code>ActorRef.id</code> and  <code>actor-uuid</code>
- * refers to the String-representation od <code>ActorRef.uuid</code>. 
+ * <code>actor:id:[<actor-id>]</code> and
+ * <code>actor:uuid:[<actor-uuid>]</code>,
+ * where <code><actor-id></code> refers to <code>ActorRef.id</code> and <code><actor-uuid></code>
+ * refers to the String-representation od <code>ActorRef.uuid</code>. In URIs that contain
+ * <code>id:</code> or <code>uuid:</code>, an actor identifier (id or uuid) is optional. In this
+ * case, the in-message of an exchange produced to this endpoint must contain a message header
+ * with name <code>CamelActorIdentifier</code> and a value that is the target actor's identifier.
+ * If the URI contains an actor identifier, a message with a <code>CamelActorIdentifier</code>
+ * header overrides the identifier in the endpoint URI.
  *
  * @see se.scalablesolutions.akka.camel.component.ActorComponent
  * @see se.scalablesolutions.akka.camel.component.ActorProducer
@@ -60,8 +76,8 @@ class ActorComponent extends DefaultComponent {
  */
 class ActorEndpoint(uri: String,
                     comp: ActorComponent,
-                    val id: Option[String],
-                    val uuid: Option[Uuid]) extends DefaultEndpoint(uri, comp) {
+                    val idType: String,
+                    val idValue: Option[String]) extends DefaultEndpoint(uri, comp) {
 
   /**
    * Whether to block caller thread during two-way message exchanges with (untyped) actors. This is
@@ -88,7 +104,8 @@ class ActorEndpoint(uri: String,
 }
 
 /**
- * Sends the in-message of an exchange to an (untyped) actor.
+ * Sends the in-message of an exchange to an (untyped) actor, identified by an
+ * actor endpoint URI or by a <code>CamelActorIdentifier</code> message header.
  * <ul>
  * <li>If the exchange pattern is out-capable and <code>blocking</code> is set to
  * <code>true</code> then the producer waits for a reply, using the !! operator.</li>
@@ -108,6 +125,8 @@ class ActorEndpoint(uri: String,
  */
 class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with AsyncProcessor {
   import ActorProducer._
+
+  private lazy val uuid = uuidFrom(ep.idValue.getOrElse(throw new ActorIdentifierNotSetException))
 
   def process(exchange: Exchange) =
     if (exchange.getPattern.isOutCapable) sendSync(exchange) else sendAsync(exchange)
@@ -132,7 +151,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
   }
 
   private def sendSync(exchange: Exchange) = {
-    val actor = target
+    val actor = target(exchange)
     val result: Any = actor !! requestFor(exchange)
 
     result match {
@@ -144,14 +163,26 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
   }
 
   private def sendAsync(exchange: Exchange, sender: Option[ActorRef] = None) =
-    target.!(requestFor(exchange))(sender)
+    target(exchange).!(requestFor(exchange))(sender)
 
-  private def target =
-    targetOption getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
+  private def target(exchange: Exchange) =
+    targetOption(exchange) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
 
-  private def targetOption: Option[ActorRef] =
-    if (ep.id.isDefined) targetById(ep.id.get)
-    else targetByUuid(ep.uuid.get)
+  private def targetOption(exchange: Exchange): Option[ActorRef] = ep.idType match {
+    case "id"   => targetById(targetId(exchange))
+    case "uuid" => targetByUuid(targetUuid(exchange))
+  }
+
+  private def targetId(exchange: Exchange) = exchange.getIn.getHeader(ActorComponent.ActorIdentifier) match {
+    case id: String  => id
+    case null        => ep.idValue.getOrElse(throw new ActorIdentifierNotSetException)
+  }
+
+  private def targetUuid(exchange: Exchange) = exchange.getIn.getHeader(ActorComponent.ActorIdentifier) match {
+    case uuid: Uuid   => uuid
+    case uuid: String => uuidFrom(uuid)
+    case null         => uuid
+  }
 
   private def targetById(id: String) = ActorRegistry.actorsFor(id) match {
     case actors if actors.length == 0 => None
@@ -177,6 +208,15 @@ private[camel] object ActorProducer {
  */
 class ActorNotRegisteredException(uri: String) extends RuntimeException {
   override def getMessage = "%s not registered" format uri
+}
+
+/**
+ * Thrown to indicate that no actor identifier has been set.
+ *
+ * @author Martin Krasser
+ */
+class ActorIdentifierNotSetException extends RuntimeException {
+  override def getMessage = "actor identifier not set"
 }
 
 /**
@@ -257,7 +297,7 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
-  protected[akka] def linkedActors: JavaMap[Uuid, ActorRef] = unsupported
+  protected[akka] def linkedActors: JMap[Uuid, ActorRef] = unsupported
   protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported
   protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = unsupported

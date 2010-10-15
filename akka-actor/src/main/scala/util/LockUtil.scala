@@ -135,6 +135,9 @@ class Switch(startAsOn: Boolean = false) {
   def switchOff(action: => Unit): Boolean = transcend(from = true, action)
   def switchOn(action: => Unit): Boolean  = transcend(from = false,action)
 
+  def switchOff: Boolean = switch.compareAndSet(true,false)
+  def switchOn: Boolean  = switch.compareAndSet(false,true)
+
   def ifOnYield[T](action: => T): Option[T] = {
     if (switch.get)
       Some(action)

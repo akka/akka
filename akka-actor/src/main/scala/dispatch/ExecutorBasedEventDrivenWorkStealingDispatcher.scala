@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import jsr166x.{Deque, ConcurrentLinkedDeque, LinkedBlockingDeque}
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef, IllegalActorStateException}
+import se.scalablesolutions.akka.util.Switch
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -40,7 +41,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   
   val mailboxType = Some(_mailboxType)
   
-  @volatile private var active: Boolean = false
+  private val active = new Switch(false)
 
   implicit def actorRef2actor(actorRef: ActorRef): Actor = actorRef.actor
 
@@ -62,7 +63,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
-  def dispatch(invocation: MessageInvocation) = if (active) {
+  def dispatch(invocation: MessageInvocation) = if (active.isOn) {
     val mbox = getMailbox(invocation.receiver)
     mbox enqueue invocation
     executor execute mbox
@@ -97,10 +98,13 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
    * @return
    */
   private def processMailbox(mailbox: MessageQueue): Boolean = {
+    if (mailbox.suspended.isOn)
+        return false
+
     var messageInvocation = mailbox.dequeue
     while (messageInvocation ne null) {
       messageInvocation.invoke
-      if (messageInvocation.receiver.isBeingRestarted)
+      if (mailbox.suspended.isOn)
         return false
       messageInvocation = mailbox.dequeue
     }
@@ -165,21 +169,31 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     } else false
   }
 
-  def start = if (!active) {
-    active = true
+  def start = active switchOn {
+    log.debug("Starting up %s",toString)
   }
 
-  def shutdown = if (active) {
+  def shutdown = active switchOff {
     log.debug("Shutting down %s", toString)
     executor.shutdownNow
-    active = false
     uuids.clear
   }
 
-  def ensureNotActive(): Unit = if (active) throw new IllegalActorStateException(
+
+  def suspend(actorRef: ActorRef) {
+    getMailbox(actorRef).suspended.switchOn
+  }
+
+  def resume(actorRef: ActorRef) {
+    val mbox = getMailbox(actorRef)
+    mbox.suspended.switchOff
+    executor execute mbox
+  }
+
+  def ensureNotActive(): Unit = if (active.isOn) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
 
-  override def toString = "ExecutorBasedEventDrivenWorkStealingDispatcher[" + name + "]"
+  override val toString = "ExecutorBasedEventDrivenWorkStealingDispatcher[" + name + "]"
 
   private[akka] def init = {
     withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity

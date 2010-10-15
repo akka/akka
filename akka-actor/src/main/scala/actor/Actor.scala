@@ -144,99 +144,6 @@ object Actor extends Logging {
   def actorOf(factory: => Actor): ActorRef = new LocalActorRef(() => factory)
 
   /**
-   * Use to create an anonymous event-driven actor.
-   * <p/>
-   * The actor is created with a 'permanent' life-cycle configuration, which means that
-   * if the actor is supervised and dies it will be restarted.
-   * <p/>
-   * The actor is started when created.
-   * Example:
-   * <pre>
-   * import Actor._
-   *
-   * val a = actor  {
-   *   case msg => ... // handle message
-   * }
-   * </pre>
-   */
-  def actor(body: Receive): ActorRef =
-    actorOf(new Actor() {
-        self.lifeCycle = Permanent
-      def receive: Receive = body
-    }).start
-
-  /**
-   * Use to create an anonymous transactional event-driven actor.
-   * <p/>
-   * The actor is created with a 'permanent' life-cycle configuration, which means that
-   * if the actor is supervised and dies it will be restarted.
-   * <p/>
-   * The actor is started when created.
-   * Example:
-   * <pre>
-   * import Actor._
-   *
-   * val a = transactor  {
-   *   case msg => ... // handle message
-   * }
-   * </pre>
-   */
-  def transactor(body: Receive): ActorRef =
-    actorOf(new Transactor() {
-      self.lifeCycle = Permanent
-      def receive: Receive = body
-    }).start
-
-  /**
-   * Use to create an anonymous event-driven actor with a 'temporary' life-cycle configuration,
-   * which means that if the actor is supervised and dies it will *not* be restarted.
-   * <p/>
-   * The actor is started when created.
-   * Example:
-   * <pre>
-   * import Actor._
-   *
-   * val a = temporaryActor  {
-   *   case msg => ... // handle message
-   * }
-   * </pre>
-   */
-  def temporaryActor(body: Receive): ActorRef =
-    actorOf(new Actor() {
-      self.lifeCycle = Temporary
-      def receive = body
-    }).start
-
-  /**
-   * Use to create an anonymous event-driven actor with both an init block and a message loop block.
-   * <p/>
-   * The actor is created with a 'permanent' life-cycle configuration, which means that
-   * if the actor is supervised and dies it will be restarted.
-   * <p/>
-   * The actor is started when created.
-   * Example:
-   * <pre>
-   * val a = Actor.init  {
-   *   ... // init stuff
-   * } receive   {
-   *   case msg => ... // handle message
-   * }
-   * </pre>
-   *
-   */
-  def init[A](body: => Unit) = {
-    def handler[A](body: => Unit) = new {
-      def receive(handler: Receive) =
-        actorOf(new Actor() {
-          self.lifeCycle = Permanent
-          body
-          def receive = handler
-        }).start
-    }
-    handler(body)
-  }
-
-  /**
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
    * the block has been executed.
    * <p/>
@@ -251,9 +158,10 @@ object Actor extends Logging {
    * }
    * </pre>
    */
-  def spawn(body: => Unit): Unit = {
+  def spawn(body: => Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit = {
     case object Spawn
     actorOf(new Actor() {
+      self.dispatcher = dispatcher
       def receive = {
         case Spawn => try { body } finally { self.stop }
       }

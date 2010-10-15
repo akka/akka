@@ -9,6 +9,7 @@ import se.scalablesolutions.akka.util.ReflectiveAccess.EnterpriseModule
 
 import java.util.Queue
 import java.util.concurrent.{RejectedExecutionException, ConcurrentLinkedQueue, LinkedBlockingQueue}
+import se.scalablesolutions.akka.util.Switch
 
 /**
  * Default settings are:
@@ -85,34 +86,36 @@ class ExecutorBasedEventDrivenDispatcher(
 
   val mailboxType = Some(_mailboxType)
 
-  @volatile private[akka] var active = false
+  private[akka] val active = new Switch(false)
 
   val name = "akka:event-driven:dispatcher:" + _name
+
+  //Initialize
   init
 
   def dispatch(invocation: MessageInvocation) = {
     val mbox = getMailbox(invocation.receiver)
     mbox enqueue invocation
-    mbox.registerForExecution
+    registerForExecution(mbox)
   }
 
   /**
    * @return the mailbox associated with the actor
    */
-  private def getMailbox(receiver: ActorRef) = {
-    val mb = receiver.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
-    mb.register(this)
-    mb
-  }
+  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
   def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = mailboxType match {
-    case UnboundedMailbox(blocking) => 
-      new DefaultUnboundedMessageQueue(blocking) with ExecutableMailbox
+    case UnboundedMailbox(blocking) => new DefaultUnboundedMessageQueue(blocking) with ExecutableMailbox {
+      def dispatcher = ExecutorBasedEventDrivenDispatcher.this
+    }
+    
     case BoundedMailbox(blocking, capacity, pushTimeOut) =>
       val cap = if (mailboxCapacity == -1) capacity else mailboxCapacity
-      new DefaultBoundedMessageQueue(cap, pushTimeOut, blocking) with ExecutableMailbox
+      new DefaultBoundedMessageQueue(cap, pushTimeOut, blocking) with ExecutableMailbox {
+        def dispatcher = ExecutorBasedEventDrivenDispatcher.this
+      }
   }
 
   /**
@@ -128,27 +131,49 @@ class ExecutorBasedEventDrivenDispatcher(
     case JMSBasedDurableMailbox(serializer)       => throw new UnsupportedOperationException("JMSBasedDurableMailbox is not yet supported")
   }
 
-  def start = if (!active) {
+  def start = active switchOn {
     log.debug("Starting up %s\n\twith throughput [%d]", toString, throughput)
-    active = true
   }
 
-  def shutdown = if (active) {
+  def shutdown = active switchOff {
     log.debug("Shutting down %s", toString)
     executor.shutdownNow
-    active = false
     uuids.clear
   }
 
-  def ensureNotActive(): Unit = if (active) {
+  def ensureNotActive(): Unit = if (active.isOn) {
     throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
   }
 
-  override def toString = "ExecutorBasedEventDrivenDispatcher[" + name + "]"
+  private[akka] def registerForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = if (active.isOn) {
+    if (mbox.suspended.isOff && mbox.dispatcherLock.tryLock()) {
+      try {
+        executor execute mbox
+      } catch {
+        case e: RejectedExecutionException =>
+          mbox.dispatcherLock.unlock()
+          throw e
+      }
+    }
+  } else log.warning("%s is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t%s", this, mbox)
+
+  override val toString = getClass.getSimpleName + "[" + name + "]"
+
+  def suspend(actorRef: ActorRef) {
+    log.debug("Suspending %s",actorRef.uuid)
+    getMailbox(actorRef).suspended.switchOn
+  }
+
+  def resume(actorRef: ActorRef) {
+    log.debug("Resuming %s",actorRef.uuid)
+    val mbox = getMailbox(actorRef)
+    mbox.suspended.switchOff
+    registerForExecution(mbox)
+  }
 
   // FIXME: should we have an unbounded queue and not bounded as default ????
-  private[akka] def init = {
+  private[akka] def init {
     withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
     config(this)
     buildThreadPool
@@ -159,12 +184,8 @@ class ExecutorBasedEventDrivenDispatcher(
  * This is the behavior of an ExecutorBasedEventDrivenDispatchers mailbox.
  */
 trait ExecutableMailbox extends Runnable { self: MessageQueue =>
-  
-  private var _dispatcher: Option[ExecutorBasedEventDrivenDispatcher] = None
 
-  def register(md: ExecutorBasedEventDrivenDispatcher) = _dispatcher = Some(md)
-  def dispatcher: ExecutorBasedEventDrivenDispatcher = _dispatcher.getOrElse(
-    throw new IllegalActorStateException("mailbox.register(dispatcher) has not been invoked"))
+  def dispatcher: ExecutorBasedEventDrivenDispatcher
   
   final def run = {
     val reschedule = try {
@@ -172,7 +193,8 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
     } finally {
       dispatcherLock.unlock()
     }
-    if (reschedule || !self.isEmpty) registerForExecution
+    if (reschedule || !self.isEmpty)
+      dispatcher.registerForExecution(this)
   }
 
   /**
@@ -181,41 +203,33 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
    * @return true if the processing finished before the mailbox was empty, due to the throughput constraint
    */
   final def processMailbox(): Boolean = {
-    var nextMessage = self.dequeue
-    if (nextMessage ne null) {
-      val throttle          = dispatcher.throughput > 0
-      var processedMessages = 0
-      val isDeadlineEnabled = throttle && dispatcher.throughputDeadlineTime > 0
-      val started = if (isDeadlineEnabled) System.currentTimeMillis else 0
-      do {
-        nextMessage.invoke
+    if (self.suspended.isOn)
+      true
+    else {
+      var nextMessage = self.dequeue
+      if (nextMessage ne null) {
+        val throttle          = dispatcher.throughput > 0
+        var processedMessages = 0
+        val isDeadlineEnabled = throttle && dispatcher.throughputDeadlineTime > 0
+        val started = if (isDeadlineEnabled) System.currentTimeMillis else 0
+        do {
+          nextMessage.invoke
 
-        if (nextMessage.receiver.isBeingRestarted)
-          return !self.isEmpty
+          if (throttle) { // Will be elided when false
+            processedMessages += 1
+            if ((processedMessages >= dispatcher.throughput) ||
+                    (isDeadlineEnabled && (System.currentTimeMillis - started) >= dispatcher.throughputDeadlineTime)) // If we're throttled, break out
+              return !self.isEmpty
+          }
 
-        if (throttle) { // Will be elided when false
-          processedMessages += 1
-          if ((processedMessages >= dispatcher.throughput) || 
-              (isDeadlineEnabled && (System.currentTimeMillis - started) >= dispatcher.throughputDeadlineTime)) // If we're throttled, break out
-            return !self.isEmpty
-        }
-        nextMessage = self.dequeue
-      } while (nextMessage ne null)
-    }
-    false
-  }
+          if (self.suspended.isOn)
+            return true
 
-
-  def registerForExecution: Unit = if (dispatcher.active) {
-    if (dispatcherLock.tryLock()) {
-      try {
-        dispatcher.execute(this)
-      } catch {
-        case e: RejectedExecutionException =>
-          dispatcherLock.unlock()
-          throw e
+          nextMessage = self.dequeue
+        } while (nextMessage ne null)
       }
+      false
     }
-  } else dispatcher.log.warning("%s is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t%s", toString, this)
+  }
 }
 

@@ -143,7 +143,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
       var found = RemoteServer.serverFor("localhost", 9990)
       assert(found.isDefined, "sever not found")
 
-      val a = actor { case _ => }
+      val a = actorOf( new Actor { def receive = { case _ => } } ).start
 
       found = RemoteServer.serverFor("localhost", 9990)
       assert(found.isDefined, "sever not found after creating an actor")
