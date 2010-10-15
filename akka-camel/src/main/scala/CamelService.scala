@@ -4,6 +4,7 @@
 package se.scalablesolutions.akka.camel
 
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 import org.apache.camel.CamelContext
 
@@ -95,11 +96,33 @@ trait CamelService extends Bootable with Logging {
   }
 
   /**
+   * Waits for an expected number (<code>count</code>) of endpoints to be activated
+   * during execution of <code>f</code>. The wait-timeout is by default 10 seconds.
+   * Other timeout values can be set via the <code>timeout</code> and <code>timeUnit</code>
+   * parameters.
+   */
+  def awaitEndpointActivation(count: Int, timeout: Long = 10, timeUnit: TimeUnit = TimeUnit.SECONDS)(f: => Unit) = {
+    val activation = expectEndpointActivationCount(count)
+    f;  activation.await(timeout, timeUnit)
+  }
+
+  /**
+   * Waits for an expected number (<code>count</code>) of endpoints to be de-activated
+   * during execution of <code>f</code>. The wait-timeout is by default 10 seconds.
+   * Other timeout values can be set via the <code>timeout</code> and <code>timeUnit</code>
+   * parameters.
+   */
+  def awaitEndpointDeactivation(count: Int, timeout: Long = 10, timeUnit: TimeUnit = TimeUnit.SECONDS)(f: => Unit) = {
+    val activation = expectEndpointDeactivationCount(count)
+    f;  activation.await(timeout, timeUnit)
+  }
+
+  /**
    * Sets an expectation on the number of upcoming endpoint activations and returns
-   * a CountDownLatch that can be used to wait for the activations to occur. Endpoint 
+   * a CountDownLatch that can be used to wait for the activations to occur. Endpoint
    * activations that occurred in the past are not considered.
    */
-  def expectEndpointActivationCount(count: Int): CountDownLatch =
+  private def expectEndpointActivationCount(count: Int): CountDownLatch =
     (consumerPublisher !! SetExpectedRegistrationCount(count)).as[CountDownLatch].get
 
   /**
@@ -107,7 +130,7 @@ trait CamelService extends Bootable with Logging {
    * a CountDownLatch that can be used to wait for the de-activations to occur. Endpoint
    * de-activations that occurred in the past are not considered.
    */
-  def expectEndpointDeactivationCount(count: Int): CountDownLatch =
+  private def expectEndpointDeactivationCount(count: Int): CountDownLatch =
     (consumerPublisher !! SetExpectedUnregistrationCount(count)).as[CountDownLatch].get
 }
 

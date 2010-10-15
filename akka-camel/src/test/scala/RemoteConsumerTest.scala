@@ -45,9 +45,9 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
       val consumer = actorOf[RemoteConsumer].start
 
       when("remote consumer publication is triggered")
-      var latch = mandatoryService.expectEndpointActivationCount(1)
-      consumer !! "init"
-      assert(latch.await(5000, TimeUnit.MILLISECONDS))
+      assert(mandatoryService.awaitEndpointActivation(1) {
+        consumer !! "init"
+      })
 
       then("the published consumer is accessible via its endpoint URI")
       val response = CamelContextManager.mandatoryTemplate.requestBody("direct:remote-consumer", "test")
@@ -61,10 +61,9 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
       val consumer = TypedActor.newRemoteInstance(classOf[SampleRemoteTypedConsumer], classOf[SampleRemoteTypedConsumerImpl], host, port)
 
       when("remote typed consumer publication is triggered")
-      var latch = mandatoryService.expectEndpointActivationCount(1)
-      consumer.foo("init")
-      assert(latch.await(5000, TimeUnit.MILLISECONDS))
-
+      assert(mandatoryService.awaitEndpointActivation(1) {
+        consumer.foo("init")
+      })
       then("the published method is accessible via its endpoint URI")
       val response = CamelContextManager.mandatoryTemplate.requestBody("direct:remote-typed-consumer", "test")
       assert(response === "remote typed actor: test")
@@ -77,10 +76,9 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
       val consumer = UntypedActor.actorOf(classOf[SampleRemoteUntypedConsumer]).start
 
       when("remote untyped consumer publication is triggered")
-      var latch = mandatoryService.expectEndpointActivationCount(1)
-      consumer.sendRequestReply(Message("init", Map("test" -> "init")))
-      assert(latch.await(5000, TimeUnit.MILLISECONDS))
-
+      assert(mandatoryService.awaitEndpointActivation(1) {
+        consumer.sendRequestReply(Message("init", Map("test" -> "init")))
+      })
       then("the published untyped consumer is accessible via its endpoint URI")
       val response = CamelContextManager.mandatoryTemplate.requestBodyAndHeader("direct:remote-untyped-consumer", "a", "test", "b")
       assert(response === "a b")
