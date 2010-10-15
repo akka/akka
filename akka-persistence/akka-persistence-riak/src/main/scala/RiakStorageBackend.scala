@@ -35,7 +35,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   val queueBucket = config.getString("akka.storage.riak.bucket.queue", "Queues")
   val clientHost = config.getString("akka.storage.riak.client.host", "localhost")
   val clientPort = config.getInt("akka.storage.riak.client.port", 8087)
-  var riakClient: RiakClient = new RiakClient(clientHost, clientPort);
+  val riakClient: RiakClient = new RiakClient(clientHost, clientPort);
 
   val nullMapValueHeader = 0x00.byteValue
   val nullMapValue: Array[Byte] = Array(nullMapValueHeader)
