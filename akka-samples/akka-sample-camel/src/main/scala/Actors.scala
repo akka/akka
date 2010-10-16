@@ -41,7 +41,7 @@ class Consumer1 extends Actor with Consumer with Logging {
   }
 }
 
-class Consumer2 extends Actor {
+class Consumer2 extends Actor with Consumer {
   def endpointUri = "jetty:http://0.0.0.0:8877/camel/default"
 
   def receive = {
