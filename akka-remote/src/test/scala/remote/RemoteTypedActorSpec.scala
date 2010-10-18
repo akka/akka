@@ -8,15 +8,13 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.config.Config
-import se.scalablesolutions.akka.config._
-import se.scalablesolutions.akka.config.TypedActorConfigurator
-import se.scalablesolutions.akka.config.JavaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
 import org.scalatest.{BeforeAndAfterEach, Spec, Assertions, BeforeAndAfterAll}
+import se.scalablesolutions.akka.config. {Permanent, Config, TypedActorConfigurator, RemoteAddress}
 
 object RemoteTypedActorSpec {
   val HOSTNAME = "localhost"
@@ -50,18 +48,18 @@ class RemoteTypedActorSpec extends
     server.start("localhost", 9995)
     Config.config
     conf.configure(
-      new RestartStrategy(new AllForOne, 3, 5000, List(classOf[Exception]).toArray),
+      new RestartStrategy(AllForOne(), 3, 5000, List(classOf[Exception]).toArray),
       List(
-        new Component(
+        new SuperviseTypedActor(
           classOf[RemoteTypedActorOne],
           classOf[RemoteTypedActorOneImpl],
-          new Permanent,
+          Permanent,
           10000,
           new RemoteAddress("localhost", 9995)),
-        new Component(
+        new SuperviseTypedActor(
           classOf[RemoteTypedActorTwo],
           classOf[RemoteTypedActorTwoImpl],
-          new Permanent,
+          Permanent,
           10000,
           new RemoteAddress("localhost", 9995))
       ).toArray).supervise

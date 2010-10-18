@@ -6,11 +6,12 @@ package sample.security
 
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Transactor, Actor}
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.security.{BasicAuthenticationActor,BasicCredentials,SpnegoAuthenticationActor,DigestAuthenticationActor, UserInfo}
 import se.scalablesolutions.akka.stm.TransactionalMap
 import se.scalablesolutions.akka.actor.ActorRegistry.actorFor
+import se.scalablesolutions.akka.config.Permanent
 
 class Boot {
   val factory = SupervisorFactory(

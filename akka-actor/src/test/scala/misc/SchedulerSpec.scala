@@ -3,9 +3,10 @@ package se.scalablesolutions.akka.actor
 import org.scalatest.junit.JUnitSuite
 import Actor._
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import org.multiverse.api.latches.StandardLatch
 import org.junit.Test
+import se.scalablesolutions.akka.config.Permanent
 
 class SchedulerSpec extends JUnitSuite {
 
@@ -98,7 +99,7 @@ class SchedulerSpec extends JUnitSuite {
     val pingLatch = new CountDownLatch(6)
 
     val actor = actorOf(new Actor {
-      self.lifeCycle = Permanent
+      self.lifeCycle = se.scalablesolutions.akka.config.Permanent
 
       def receive = {
         case Ping => pingLatch.countDown
@@ -107,6 +108,7 @@ class SchedulerSpec extends JUnitSuite {
 
       override def postRestart(reason: Throwable) = restartLatch.open
     })
+
     Supervisor(
       SupervisorConfig(
         RestartStrategy(AllForOne, 3, 1000,

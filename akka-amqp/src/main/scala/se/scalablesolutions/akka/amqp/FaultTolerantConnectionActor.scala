@@ -8,8 +8,7 @@ import java.util.{TimerTask, Timer}
 import java.io.IOException
 import com.rabbitmq.client._
 import se.scalablesolutions.akka.amqp.AMQP.ConnectionParameters
-import se.scalablesolutions.akka.config.ScalaConfig.{Permanent}
-import se.scalablesolutions.akka.config.OneForOneStrategy
+import se.scalablesolutions.akka.config.{ Permanent, OneForOneStrategy }
 import se.scalablesolutions.akka.actor.{Exit, Actor}
 
 private[amqp] class FaultTolerantConnectionActor(connectionParameters: ConnectionParameters) extends Actor {

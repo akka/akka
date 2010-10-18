@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.spring
 import se.scalablesolutions.akka.util.Logging
 import org.springframework.beans.factory.support.BeanDefinitionBuilder
 import org.springframework.beans.factory.xml.{ParserContext, AbstractSingleBeanDefinitionParser}
-import se.scalablesolutions.akka.config.JavaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import AkkaSpringConfigurationTags._
 
 
@@ -47,7 +47,7 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
   }
 
   private[akka] def parseRestartStrategy(element: Element, builder: BeanDefinitionBuilder) {
-    val failover = if (mandatory(element, FAILOVER) == "AllForOne") new AllForOne() else new OneForOne()
+    val failover = if (mandatory(element, FAILOVER) == "AllForOne") AllForOne else OneForOne
     val timeRange = mandatory(element, TIME_RANGE).toInt
     val retries = mandatory(element, RETRIES).toInt
     val trapExitsElement = mandatoryElement(element, TRAP_EXISTS_TAG)
@@ -71,7 +71,7 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
   private def parseTrapExits(element: Element): Array[Class[_ <: Throwable]] = {
     import StringReflect._
     val trapExits = DomUtils.getChildElementsByTagName(element, TRAP_EXIT_TAG).toArray.toList.asInstanceOf[List[Element]]
-    trapExits.map(DomUtils.getTextValue(_).toClass).toArray
+    trapExits.map(DomUtils.getTextValue(_).toClass.asInstanceOf[Class[_ <: Throwable]]).toArray
   }
 
   /*

@@ -4,7 +4,7 @@
 package se.scalablesolutions.akka.spring
 
 import org.springframework.beans.factory.config.AbstractFactoryBean
-import se.scalablesolutions.akka.config.JavaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import AkkaSpringConfigurationTags._
 import reflect.BeanProperty
 import se.scalablesolutions.akka.actor.ActorRef

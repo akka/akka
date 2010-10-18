@@ -9,10 +9,9 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import ScalaDom._
 
-import se.scalablesolutions.akka.config.JavaConfig._
-
 import org.w3c.dom.Element
 import org.springframework.beans.factory.support.BeanDefinitionBuilder
+import se.scalablesolutions.akka.config.Supervision. {RestartStrategy, AllForOne}
 
 /**
  * Test for SupervisionBeanDefinitionParser
@@ -39,7 +38,7 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
       val strategy = builder.getBeanDefinition.getPropertyValues.getPropertyValue("restartStrategy").getValue.asInstanceOf[RestartStrategy]
       assert(strategy ne null)
       assert(strategy.scheme match {
-        case x:AllForOne => true
+        case AllForOne => true
         case _ => false })
       expect(3) { strategy.maxNrOfRetries }
       expect(1000) { strategy.withinTimeRange }

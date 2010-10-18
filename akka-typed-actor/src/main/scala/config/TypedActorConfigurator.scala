@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.config
 
-import JavaConfig._
+import Supervision._
 
 import java.util.{List => JList}
 import java.util.{ArrayList}
@@ -43,10 +43,10 @@ class TypedActorConfigurator {
    */
   def getInstance[T](clazz: Class[T]): T = INSTANCE.getInstance(clazz).head
 
-  def configure(restartStrategy: RestartStrategy, components: Array[Component]): TypedActorConfigurator = {
+  def configure(restartStrategy: RestartStrategy, components: Array[SuperviseTypedActor]): TypedActorConfigurator = {
     INSTANCE.configure(
-      restartStrategy.transform,
-      components.toList.asInstanceOf[scala.List[Component]].map(_.transform))
+      restartStrategy,
+      components.toList.asInstanceOf[scala.List[SuperviseTypedActor]])
     this
   }
 
