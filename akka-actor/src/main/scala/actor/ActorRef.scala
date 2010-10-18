@@ -28,6 +28,7 @@ import java.lang.reflect.Field
 import scala.reflect.BeanProperty
 import scala.collection.immutable.Stack
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
+import annotation.tailrec
 
 private[akka] object ActorRefInternals {
 
@@ -653,10 +654,6 @@ class LocalActorRef private[akka] (
 
   protected[akka] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
 
-  // Needed to be able to null out the 'val self: ActorRef' member variables to make the Actor
-  // instance elegible for garbage collection
-  private val actorSelfFields = findActorSelfField(actor.getClass)
-
   //If it was started inside "newActor", initialize it
   if (isRunning) initializeActorInstance
 
@@ -685,8 +682,7 @@ class LocalActorRef private[akka] (
     lifeCycle = __lifeCycle
     _supervisor = __supervisor
     hotswap = __hotswap
-    actorSelfFields._1.set(actor, this)
-    actorSelfFields._2.set(actor, Some(this))
+    setActorSelfFields(actor,this)
     start
     ActorRegistry.register(this)
   }
@@ -821,7 +817,7 @@ class LocalActorRef private[akka] (
           RemoteClientModule.unregister(remoteAddress.get, uuid)
         RemoteServerModule.unregister(this)
       }
-      nullOutActorRefReferencesFor(actorInstance.get)
+      setActorSelfFields(actorInstance.get,null)
     } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
   }
 
@@ -1142,7 +1138,7 @@ class LocalActorRef private[akka] (
 
   private def restartActor(failedActor: Actor, reason: Throwable) = {
     failedActor.preRestart(reason)
-    nullOutActorRefReferencesFor(failedActor)
+    setActorSelfFields(failedActor,null)
     val freshActor = newActor
     freshActor.preStart
     actorInstance.set(freshActor)
@@ -1289,25 +1285,33 @@ class LocalActorRef private[akka] (
     }
   }
 
-  private def nullOutActorRefReferencesFor(actor: Actor) = {
-    actorSelfFields._1.set(actor, null)
-    actorSelfFields._2.set(actor, null)
-  }
+  private def setActorSelfFields(actor: Actor, value: ActorRef) {
 
-  private def findActorSelfField(clazz: Class[_]): Tuple2[Field, Field] = {
-    try {
-      val selfField = clazz.getDeclaredField("self")
-      val someSelfField = clazz.getDeclaredField("someSelf")
-      selfField.setAccessible(true)
-      someSelfField.setAccessible(true)
-      (selfField, someSelfField)
-    } catch {
-      case e: NoSuchFieldException =>
+    @tailrec def lookupAndSetSelfFields(clazz: Class[_],actor: Actor, value: ActorRef): Boolean = {
+      val success = try {
+        val selfField = clazz.getDeclaredField("self")
+        val someSelfField = clazz.getDeclaredField("someSelf")
+        selfField.setAccessible(true)
+        someSelfField.setAccessible(true)
+        selfField.set(actor,value)
+        someSelfField.set(actor, if (value ne null) Some(value) else null)
+        true
+      } catch {
+        case e: NoSuchFieldException => false
+      }
+
+      if (success) {
+        true
+      }
+      else {
         val parent = clazz.getSuperclass
-        if (parent ne null) findActorSelfField(parent)
-        else throw new IllegalActorStateException(
-          toString + " is not an Actor since it have not mixed in the 'Actor' trait")
+        if (parent eq null)
+          throw new IllegalActorStateException(toString + " is not an Actor since it have not mixed in the 'Actor' trait")
+        lookupAndSetSelfFields(parent,actor,value)
+      }
     }
+
+    lookupAndSetSelfFields(actor.getClass,actor,value)
   }
 
   private def initializeActorInstance = {
