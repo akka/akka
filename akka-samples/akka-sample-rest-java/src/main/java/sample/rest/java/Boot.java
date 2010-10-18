@@ -5,23 +5,23 @@
 package sample.rest.java;
 
 import se.scalablesolutions.akka.config.TypedActorConfigurator;
-import static se.scalablesolutions.akka.config.JavaConfig.*;
+import static se.scalablesolutions.akka.config.Supervision.*;
 
 public class Boot {
   public final static TypedActorConfigurator configurator = new TypedActorConfigurator();
   static {
     configurator.configure(
       new RestartStrategy(new OneForOne(), 3, 5000, new Class[]{Exception.class}),
-        new Component[] {
-          new Component(
+        new SuperviseTypedActor[] {
+          new SuperviseTypedActor(
             SimpleService.class,
             SimpleServiceImpl.class,
-            new Permanent(),
+            permanent(),
             1000),
-          new Component(
+          new SuperviseTypedActor(
             PersistentSimpleService.class,
             PersistentSimpleServiceImpl.class,
-            new Permanent(),
+            permanent(),
             1000)
         }).supervise();
   }

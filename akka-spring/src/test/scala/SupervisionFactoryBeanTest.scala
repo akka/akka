@@ -7,7 +7,7 @@ import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
-import se.scalablesolutions.akka.config.JavaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.config.TypedActorConfigurator
 
 private[akka] class Foo
@@ -15,7 +15,7 @@ private[akka] class Foo
 @RunWith(classOf[JUnitRunner])
 class SupervisionFactoryBeanTest extends Spec with ShouldMatchers {
 
-  val restartStrategy = new RestartStrategy(new AllForOne(), 3, 1000, Array(classOf[Throwable]))
+  val restartStrategy = new RestartStrategy(AllForOne(), 3, 1000, Array(classOf[Throwable]))
   val typedActors = List(createTypedActorProperties("se.scalablesolutions.akka.spring.Foo", "1000"))
 
   private def createTypedActorProperties(target: String, timeout: String) : ActorProperties = {

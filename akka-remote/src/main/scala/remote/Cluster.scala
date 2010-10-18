@@ -5,11 +5,12 @@
 package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.config.Config.config
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.actor.{Supervisor, SupervisorFactory, Actor, ActorRef, ActorRegistry}
 import se.scalablesolutions.akka.util.Logging
 import scala.collection.immutable.{Map, HashMap}
+import se.scalablesolutions.akka.config. {Permanent, RemoteAddress}
 
 /**
  * Interface for interacting with the Cluster Membership API.

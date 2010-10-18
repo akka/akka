@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.actor
 import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.stm.global._
 import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 
 import java.net.InetSocketAddress
 

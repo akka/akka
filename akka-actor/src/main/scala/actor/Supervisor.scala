@@ -4,8 +4,7 @@
 
 package se.scalablesolutions.akka.actor
 
-import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.AkkaException
 import se.scalablesolutions.akka.util._
 import ReflectiveAccess._
@@ -13,6 +12,7 @@ import Actor._
 
 import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
 import java.net.InetSocketAddress
+import se.scalablesolutions.akka.config. {Supervision, AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 
 class SupervisorException private[akka](message: String) extends AkkaException(message)
 
@@ -83,8 +83,8 @@ object SupervisorFactory {
     config match {
       case SupervisorConfig(RestartStrategy(scheme, maxNrOfRetries, timeRange, trapExceptions), _) =>
         scheme match {
-          case AllForOne => AllForOneStrategy(trapExceptions,maxNrOfRetries, timeRange)
-          case OneForOne => OneForOneStrategy(trapExceptions,maxNrOfRetries, timeRange)
+          case a:AllForOne => AllForOneStrategy(trapExceptions.toList,maxNrOfRetries, timeRange)
+          case o:OneForOne => OneForOneStrategy(trapExceptions.toList,maxNrOfRetries, timeRange)
         }
      }
 }

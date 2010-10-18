@@ -6,13 +6,14 @@ package se.scalablesolutions.akka.actor.remote
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
 import se.scalablesolutions.akka.serialization.BinaryString
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 import se.scalablesolutions.akka.OneWay
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Supervisor, ActorRef, Actor}
 import Actor._
+import se.scalablesolutions.akka.config.Permanent
 
 object Log {
   val messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]

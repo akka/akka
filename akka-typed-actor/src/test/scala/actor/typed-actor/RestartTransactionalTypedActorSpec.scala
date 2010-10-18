@@ -11,11 +11,9 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.config.Config
-import se.scalablesolutions.akka.config._
-import se.scalablesolutions.akka.config.TypedActorConfigurator
-import se.scalablesolutions.akka.config.JavaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.actor._
+import se.scalablesolutions.akka.config. {Temporary, Config, TypedActorConfigurator}
 
 @RunWith(classOf[JUnitRunner])
 class RestartTransactionalTypedActorSpec extends
@@ -29,15 +27,15 @@ class RestartTransactionalTypedActorSpec extends
   def before {
     Config.config
     conf.configure(
-      new RestartStrategy(new AllForOne, 3, 5000, List(classOf[Exception]).toArray),
+      new RestartStrategy(AllForOne, 3, 5000, Array(classOf[Exception])),
       List(
-        new Component(
+        new SuperviseTypedActor(
           classOf[TransactionalTypedActor],
-          new Temporary,
+          Temporary,
           10000),
-        new Component(
+        new SuperviseTypedActor(
           classOf[TypedActorFailer],
-          new Temporary,
+          Temporary,
           10000)
       ).toArray).supervise
   }

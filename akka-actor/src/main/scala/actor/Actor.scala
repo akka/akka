@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.util.Helpers.{narrow, narrowSilently}
 import se.scalablesolutions.akka.util.{Logging, Duration}
 import se.scalablesolutions.akka.AkkaException

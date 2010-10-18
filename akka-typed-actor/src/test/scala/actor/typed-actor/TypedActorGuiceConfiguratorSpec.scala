@@ -14,11 +14,10 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.config.Config
-import se.scalablesolutions.akka.config.TypedActorConfigurator
-import se.scalablesolutions.akka.config.JavaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.dispatch.FutureTimeoutException
+import se.scalablesolutions.akka.config. {Permanent, Config, TypedActorConfigurator}
 
 @RunWith(classOf[JUnitRunner])
 class TypedActorGuiceConfiguratorSpec extends
@@ -36,18 +35,18 @@ class TypedActorGuiceConfiguratorSpec extends
     conf.addExternalGuiceModule(new AbstractModule {
       def configure = bind(classOf[Ext]).to(classOf[ExtImpl]).in(Scopes.SINGLETON)
     }).configure(
-      new RestartStrategy(new AllForOne, 3, 5000, List(classOf[Exception]).toArray),
+      new RestartStrategy(AllForOne(), 3, 5000, Array(classOf[Exception])),
           List(
-             new Component(
+             new SuperviseTypedActor(
                 classOf[Foo],
                 classOf[FooImpl],
-                new Permanent,
+                Permanent,
                 1000,
                 dispatcher),
-            new Component(
+            new SuperviseTypedActor(
                 classOf[Bar],
                 classOf[BarImpl],
-                new Permanent,
+                Permanent,
                 1000,
                 dispatcher)
         ).toArray).inject.supervise

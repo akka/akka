@@ -1,7 +1,7 @@
 package se.scalablesolutions.akka.actor
 
 import java.util.concurrent.{TimeUnit, CyclicBarrier, TimeoutException}
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config._
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
