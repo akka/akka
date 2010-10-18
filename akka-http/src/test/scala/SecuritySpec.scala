@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.security
 
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.actor.Actor._
 
 import org.scalatest.Suite
