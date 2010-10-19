@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.dispatch.MessageInvocation
 import se.scalablesolutions.akka.remote.{RemoteServer, MessageSerializer}
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
 import ActorTypeProtocol._
-import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy, Permanent, Temporary, UndefinedLifeCycle}
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.actor.{uuidFrom,newUuid}
 import se.scalablesolutions.akka.actor._
 

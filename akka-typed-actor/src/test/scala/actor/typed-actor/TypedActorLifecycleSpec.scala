@@ -10,7 +10,7 @@ import se.scalablesolutions.akka.actor.TypedActor._
 import se.scalablesolutions.akka.config.Supervision._
 
 import java.util.concurrent.CountDownLatch
-import se.scalablesolutions.akka.config. {OneForOneStrategy, TypedActorConfigurator}
+import se.scalablesolutions.akka.config.TypedActorConfigurator
 
 /**
  * @author Martin Krasser

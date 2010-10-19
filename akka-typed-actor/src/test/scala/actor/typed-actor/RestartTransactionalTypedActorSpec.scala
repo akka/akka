@@ -13,7 +13,7 @@ import org.junit.runner.RunWith
 
 import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.actor._
-import se.scalablesolutions.akka.config. {Temporary, Config, TypedActorConfigurator}
+import se.scalablesolutions.akka.config.{Config, TypedActorConfigurator}
 
 @RunWith(classOf[JUnitRunner])
 class RestartTransactionalTypedActorSpec extends

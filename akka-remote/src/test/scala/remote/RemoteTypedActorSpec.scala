@@ -14,7 +14,7 @@ import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
 import org.scalatest.{BeforeAndAfterEach, Spec, Assertions, BeforeAndAfterAll}
-import se.scalablesolutions.akka.config. {Permanent, Config, TypedActorConfigurator, RemoteAddress}
+import se.scalablesolutions.akka.config.{Config, TypedActorConfigurator, RemoteAddress}
 
 object RemoteTypedActorSpec {
   val HOSTNAME = "localhost"

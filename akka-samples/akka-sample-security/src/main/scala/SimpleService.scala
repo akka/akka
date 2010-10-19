@@ -11,7 +11,6 @@ import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.security.{BasicAuthenticationActor,BasicCredentials,SpnegoAuthenticationActor,DigestAuthenticationActor, UserInfo}
 import se.scalablesolutions.akka.stm.TransactionalMap
 import se.scalablesolutions.akka.actor.ActorRegistry.actorFor
-import se.scalablesolutions.akka.config.Permanent
 
 class Boot {
   val factory = SupervisorFactory(

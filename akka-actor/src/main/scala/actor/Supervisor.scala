@@ -12,7 +12,7 @@ import Actor._
 
 import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
 import java.net.InetSocketAddress
-import se.scalablesolutions.akka.config. {Supervision, AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
+import se.scalablesolutions.akka.config.Supervision._
 
 class SupervisorException private[akka](message: String) extends AkkaException(message)
 

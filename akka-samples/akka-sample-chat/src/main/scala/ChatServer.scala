@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.remote.{RemoteNode, RemoteClient}
 import se.scalablesolutions.akka.persistence.common.PersistentVector
 import se.scalablesolutions.akka.persistence.redis.RedisStorage
 import se.scalablesolutions.akka.stm.global._
-import se.scalablesolutions.akka.config.{OneForOneStrategy,Permanent}
+import se.scalablesolutions.akka.config.Supervision.{OneForOneStrategy,Permanent}
 import se.scalablesolutions.akka.util.Logging
 import Actor._
 

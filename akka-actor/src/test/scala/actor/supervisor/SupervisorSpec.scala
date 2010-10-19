@@ -11,7 +11,6 @@ import Actor._
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
-import se.scalablesolutions.akka.config.{Temporary, Permanent, OneForOneStrategy}
 
 object SupervisorSpec {
   var messageLog = new LinkedBlockingQueue[String]
@@ -78,7 +77,7 @@ object SupervisorSpec {
 
   class TemporaryActor extends Actor {
     import self._
-    lifeCycle = se.scalablesolutions.akka.config.Temporary
+    lifeCycle = Temporary
     def receive = {
       case Ping =>
         messageLog.put("ping")
