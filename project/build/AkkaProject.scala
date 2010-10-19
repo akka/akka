@@ -91,14 +91,14 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------
   //  TEMPORARY
   // -------------------------------------
-  lazy val apacheSnapshots = MavenRepository("apache-snapshots", "https://repository.apache.org/content/repositories/snapshots/")
+  val camelStaging = MavenRepository("camel-staging", "https://repository.apache.org/content/repositories/orgapachecamel-001/")
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val ATMO_VERSION          = "0.6.2"
-  lazy val CAMEL_VERSION         = "2.5-SNAPSHOT"
+  lazy val CAMEL_VERSION         = "2.5.0"
   lazy val CASSANDRA_VERSION     = "0.6.1"
   lazy val DISPATCH_VERSION      = "0.7.4"
   lazy val HAWT_DISPATCH_VERSION = "1.0"
@@ -783,7 +783,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         </dependency>
         <dependency org="org.apache.camel" name="camel-jms" rev={CAMEL_VERSION}>
         </dependency>
-        <dependency org="org.apache.activemq" name="activemq-core" rev="5.4.1">
+        <dependency org="org.apache.activemq" name="activemq-core" rev="5.3.2">
         </dependency>
       </dependencies>
 
