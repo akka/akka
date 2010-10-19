@@ -47,12 +47,17 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
   }
 
   private[akka] def parseRestartStrategy(element: Element, builder: BeanDefinitionBuilder) {
-    val failover = if (mandatory(element, FAILOVER) == "AllForOne") AllForOne else OneForOne
+    val failover = mandatory(element, FAILOVER)
     val timeRange = mandatory(element, TIME_RANGE).toInt
     val retries = mandatory(element, RETRIES).toInt
     val trapExitsElement = mandatoryElement(element, TRAP_EXISTS_TAG)
     val trapExceptions = parseTrapExits(trapExitsElement)
-    val restartStrategy = new RestartStrategy(failover, retries, timeRange, trapExceptions)
+
+    val restartStrategy = failover match {
+      case "AllForOne" => new AllForOneStrategy(trapExceptions, retries, timeRange)
+      case "OneForOne" => new OneForOneStrategy(trapExceptions, retries, timeRange)
+      case _           => new OneForOneStrategy(trapExceptions, retries, timeRange) //Default to OneForOne
+    }
     builder.addPropertyValue("restartStrategy", restartStrategy)
   }
 

@@ -3,6 +3,7 @@ package se.scalablesolutions.akka.config;
 import se.scalablesolutions.akka.actor.ActorRef;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static se.scalablesolutions.akka.config.Supervision.*;
@@ -15,6 +16,6 @@ public class SupervisionConfig {
      targets.add(new Supervise(ref, permanent(), new RemoteAddress("localhost",9999)));
    }
 
-   return new SupervisorConfig(new RestartStrategy(new OneForOne(),50,1000,new Class[]{ Exception.class}), targets.toArray(new Server[0]));
+   return new SupervisorConfig(new OneForOneStrategy(new Class[] { Exception.class },50,1000), targets.toArray(new Server[0]));
  }
 }

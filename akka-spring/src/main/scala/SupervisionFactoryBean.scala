@@ -15,7 +15,7 @@ import se.scalablesolutions.akka.config.{TypedActorConfigurator, RemoteAddress}
  * @author michaelkober
  */
 class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
-  @BeanProperty var restartStrategy: RestartStrategy = _
+  @BeanProperty var restartStrategy: FaultHandlingStrategy = _
   @BeanProperty var supervised: List[ActorProperties] = _
   @BeanProperty var typed: String = ""
 

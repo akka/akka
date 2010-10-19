@@ -48,7 +48,7 @@ class RemoteTypedActorSpec extends
     server.start("localhost", 9995)
     Config.config
     conf.configure(
-      new RestartStrategy(AllForOne(), 3, 5000, List(classOf[Exception]).toArray),
+      new AllForOneStrategy(List(classOf[Exception]), 3, 5000),
       List(
         new SuperviseTypedActor(
           classOf[RemoteTypedActorOne],

@@ -241,8 +241,7 @@ object Cluster extends Cluster with Logging {
 
   private[akka] def createSupervisor(actor: ActorRef): Option[Supervisor] =
     Some(Supervisor(
-      SupervisorConfig(
-        RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),
+      SupervisorConfig(OneForOneStrategy(List(classOf[Exception]), 5, 1000),
         Supervise(actor, Permanent) :: Nil)))
 
   private[this] def clusterActor = if (clusterActorRef.isEmpty) None else Some(clusterActorRef.get.actor.asInstanceOf[ClusterActor])

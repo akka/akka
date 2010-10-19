@@ -110,8 +110,7 @@ class SchedulerSpec extends JUnitSuite {
 
     Supervisor(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 1000,
-          List(classOf[Exception])),
+        AllForOneStrategy(List(classOf[Exception]), 3, 1000),
         Supervise(
           actor,
           Permanent)
