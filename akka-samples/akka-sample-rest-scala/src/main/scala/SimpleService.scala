@@ -21,7 +21,6 @@ import org.atmosphere.annotation.{Broadcast, Suspend,Cluster}
 import org.atmosphere.util.XSSHtmlFilter
 import org.atmosphere.cpr.{Broadcaster, BroadcastFilter}
 import org.atmosphere.jersey.Broadcastable
-import se.scalablesolutions.akka.config.Permanent
 
 class Boot {
   val factory = SupervisorFactory(

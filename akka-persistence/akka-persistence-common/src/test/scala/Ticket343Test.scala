@@ -11,7 +11,7 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
-import se.scalablesolutions.akka.config.{OneForOneStrategy, Permanent}
+import se.scalablesolutions.akka.config.Supervision.{OneForOneStrategy, Permanent}
 import Actor._
 import se.scalablesolutions.akka.stm.global._
 import se.scalablesolutions.akka.util.Logging

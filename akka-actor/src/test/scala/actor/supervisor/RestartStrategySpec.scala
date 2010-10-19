@@ -10,9 +10,8 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 import Actor._
-import se.scalablesolutions.akka.config.OneForOneStrategy
 import java.util.concurrent.{TimeUnit, CountDownLatch}
-import se.scalablesolutions.akka.config.{Permanent, LifeCycle}
+import se.scalablesolutions.akka.config.Supervision.{Permanent, LifeCycle, OneForOneStrategy}
 import org.multiverse.api.latches.StandardLatch
 
 class RestartStrategySpec extends JUnitSuite {

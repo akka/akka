@@ -7,7 +7,7 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 import se.scalablesolutions.akka.actor.{Actor}
-import se.scalablesolutions.akka.config.{OneForOneStrategy,Permanent}
+import se.scalablesolutions.akka.config.Supervision.{OneForOneStrategy,Permanent}
 import Actor._
 import se.scalablesolutions.akka.persistence.common.PersistentVector
 import se.scalablesolutions.akka.stm.global._

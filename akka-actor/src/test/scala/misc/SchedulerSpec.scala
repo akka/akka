@@ -6,7 +6,6 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import se.scalablesolutions.akka.config.Supervision._
 import org.multiverse.api.latches.StandardLatch
 import org.junit.Test
-import se.scalablesolutions.akka.config.Permanent
 
 class SchedulerSpec extends JUnitSuite {
 
@@ -99,7 +98,7 @@ class SchedulerSpec extends JUnitSuite {
     val pingLatch = new CountDownLatch(6)
 
     val actor = actorOf(new Actor {
-      self.lifeCycle = se.scalablesolutions.akka.config.Permanent
+      self.lifeCycle = Permanent
 
       def receive = {
         case Ping => pingLatch.countDown

@@ -13,7 +13,6 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Supervisor, ActorRef, Actor}
 import Actor._
-import se.scalablesolutions.akka.config.Permanent
 
 object Log {
   val messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]

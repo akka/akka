@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.actor.{Supervisor, SupervisorFactory, Actor}
 import AkkaSpringConfigurationTags._
 import reflect.BeanProperty
-import se.scalablesolutions.akka.config.{Temporary, Permanent, TypedActorConfigurator, RemoteAddress}
+import se.scalablesolutions.akka.config.{TypedActorConfigurator, RemoteAddress}
 
 /**
  * Factory bean for supervisor configuration.

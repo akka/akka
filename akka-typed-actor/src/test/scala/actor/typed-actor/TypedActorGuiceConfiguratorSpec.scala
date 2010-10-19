@@ -17,7 +17,7 @@ import org.junit.runner.RunWith
 import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.dispatch.FutureTimeoutException
-import se.scalablesolutions.akka.config. {Permanent, Config, TypedActorConfigurator}
+import se.scalablesolutions.akka.config.{Config, TypedActorConfigurator}
 
 @RunWith(classOf[JUnitRunner])
 class TypedActorGuiceConfiguratorSpec extends

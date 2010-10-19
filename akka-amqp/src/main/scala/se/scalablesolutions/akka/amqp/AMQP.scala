@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.amqp
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.config.OneForOneStrategy
+import se.scalablesolutions.akka.config.Supervision.OneForOneStrategy
 import com.rabbitmq.client.{ReturnListener, ShutdownListener, ConnectionFactory}
 import ConnectionFactory._
 import com.rabbitmq.client.AMQP.BasicProperties
