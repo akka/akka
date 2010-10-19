@@ -30,6 +30,10 @@ object Supervision {
     //Java API
     def this(actorRef: ActorRef, lifeCycle: LifeCycle, remoteAddress: RemoteAddress) =
       this(actorRef, lifeCycle, Option(remoteAddress))
+
+    //Java API
+    def this(actorRef: ActorRef, lifeCycle: LifeCycle) =
+      this(actorRef, lifeCycle, None)
   }
   
   object Supervise {
