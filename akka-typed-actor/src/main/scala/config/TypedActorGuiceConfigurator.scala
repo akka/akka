@@ -27,7 +27,7 @@ import com.google.inject._
 private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBase with Logging {
   private var injector: Injector = _
   private var supervisor: Option[Supervisor]  = None
-  private var restartStrategy: RestartStrategy  = _
+  private var faultHandlingStrategy: FaultHandlingStrategy = NoFaultHandlingStrategy
   private var components: List[SuperviseTypedActor] = _
   private var supervised: List[Supervise] = Nil
   private var bindings: List[DependencyBinding] = Nil
@@ -68,9 +68,9 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
       else c.target
     }
 
-  override def configure(restartStrategy: RestartStrategy, components: List[SuperviseTypedActor]):
+  override def configure(faultHandlingStrategy: FaultHandlingStrategy, components: List[SuperviseTypedActor]):
     TypedActorConfiguratorBase = synchronized {
-    this.restartStrategy = restartStrategy
+    this.faultHandlingStrategy = faultHandlingStrategy
     this.components = components.toArray.toList.asInstanceOf[List[SuperviseTypedActor]]
     bindings = for (component <- this.components) yield {
       newDelegatingProxy(component)
@@ -144,7 +144,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
 
   override def supervise: TypedActorConfiguratorBase = synchronized {
     if (injector eq null) inject
-    supervisor = Some(TypedActor.supervise(restartStrategy, supervised))
+    supervisor = Some(TypedActor.supervise(faultHandlingStrategy, supervised))
     this
   }
 
@@ -173,7 +173,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     typedActorRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, SuperviseTypedActor]]
     methodToUriRegistry = new HashMap[Method, String]
     injector = null
-    restartStrategy = null
+    faultHandlingStrategy = NoFaultHandlingStrategy
   }
 
   def stop = synchronized {

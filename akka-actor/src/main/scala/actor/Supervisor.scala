@@ -81,11 +81,7 @@ object SupervisorFactory {
 
   private[akka] def retrieveFaultHandlerAndTrapExitsFrom(config: SupervisorConfig): FaultHandlingStrategy =
     config match {
-      case SupervisorConfig(RestartStrategy(scheme, maxNrOfRetries, timeRange, trapExceptions), _) =>
-        scheme match {
-          case a:AllForOne => AllForOneStrategy(trapExceptions.toList,maxNrOfRetries, timeRange)
-          case o:OneForOne => OneForOneStrategy(trapExceptions.toList,maxNrOfRetries, timeRange)
-        }
+      case SupervisorConfig(faultHandler, _) => faultHandler
      }
 }
 

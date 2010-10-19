@@ -35,21 +35,21 @@ class TypedActorGuiceConfiguratorSpec extends
     conf.addExternalGuiceModule(new AbstractModule {
       def configure = bind(classOf[Ext]).to(classOf[ExtImpl]).in(Scopes.SINGLETON)
     }).configure(
-      new RestartStrategy(AllForOne(), 3, 5000, Array(classOf[Exception])),
-          List(
-             new SuperviseTypedActor(
-                classOf[Foo],
-                classOf[FooImpl],
-                Permanent,
-                1000,
-                dispatcher),
-            new SuperviseTypedActor(
-                classOf[Bar],
-                classOf[BarImpl],
-                Permanent,
-                1000,
-                dispatcher)
-        ).toArray).inject.supervise
+      AllForOneStrategy(classOf[Exception] :: Nil, 3, 5000),
+        List(
+           new SuperviseTypedActor(
+              classOf[Foo],
+              classOf[FooImpl],
+              Permanent,
+              1000,
+              dispatcher),
+          new SuperviseTypedActor(
+              classOf[Bar],
+              classOf[BarImpl],
+              Permanent,
+              1000,
+              dispatcher)
+      ).toArray).inject.supervise
 
   }
 

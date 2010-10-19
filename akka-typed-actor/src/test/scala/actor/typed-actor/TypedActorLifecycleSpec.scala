@@ -21,7 +21,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
   var conf2: TypedActorConfigurator = _
 
   override protected def beforeAll() = {
-    val strategy = new RestartStrategy(AllForOne(), 3, 1000, Array(classOf[Exception]))
+    val strategy = AllForOneStrategy(classOf[Exception] :: Nil, 3, 1000)
     val comp3 = new SuperviseTypedActor(classOf[SamplePojo], classOf[SamplePojoImpl], permanent(), 1000)
     val comp4 = new SuperviseTypedActor(classOf[SamplePojo], classOf[SamplePojoImpl], temporary(), 1000)
     conf1 = new TypedActorConfigurator().configure(strategy, Array(comp3)).supervise
@@ -87,7 +87,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
       SamplePojoImpl.reset
       val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
       val supervisor = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
-      link(supervisor, pojo, OneForOneStrategy(Array(classOf[Throwable]), 3, 2000))
+      link(supervisor, pojo, OneForOneStrategy(classOf[Throwable] :: Nil, 3, 2000))
       pojo.throwException
       Thread.sleep(500)
       SimpleJavaPojoImpl._pre should be(true)

@@ -27,7 +27,7 @@ class RestartTransactionalTypedActorSpec extends
   def before {
     Config.config
     conf.configure(
-      new RestartStrategy(AllForOne, 3, 5000, Array(classOf[Exception])),
+      AllForOneStrategy(List(classOf[Exception]), 3, 5000),
       List(
         new SuperviseTypedActor(
           classOf[TransactionalTypedActor],

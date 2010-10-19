@@ -15,7 +15,7 @@ import se.scalablesolutions.akka.actor.ActorRegistry.actorFor
 class Boot {
   val factory = SupervisorFactory(
     SupervisorConfig(
-      RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
+      OneForOneStrategy(List(classOf[Exception]), 3, 100),
       // Dummy implementations of all authentication actors
       // see akka.conf to enable one of these for the AkkaSecurityFilterFactory
       Supervise(

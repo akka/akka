@@ -25,7 +25,7 @@ import org.atmosphere.jersey.Broadcastable
 class Boot {
   val factory = SupervisorFactory(
     SupervisorConfig(
-      RestartStrategy(OneForOne, 3, 100,List(classOf[Exception])),
+      OneForOneStrategy(List(classOf[Exception]), 3, 100),
       Supervise(
         actorOf[SimpleServiceActor],
         Permanent) ::

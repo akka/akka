@@ -15,7 +15,7 @@ private[akka] class Foo
 @RunWith(classOf[JUnitRunner])
 class SupervisionFactoryBeanTest extends Spec with ShouldMatchers {
 
-  val restartStrategy = new RestartStrategy(AllForOne(), 3, 1000, Array(classOf[Throwable]))
+  val faultHandlingStrategy = new AllForOneStrategy(List(classOf[Exception]), 3, 1000)
   val typedActors = List(createTypedActorProperties("se.scalablesolutions.akka.spring.Foo", "1000"))
 
   private def createTypedActorProperties(target: String, timeout: String) : ActorProperties = {
@@ -28,8 +28,8 @@ class SupervisionFactoryBeanTest extends Spec with ShouldMatchers {
   describe("A SupervisionFactoryBean") {
     val bean = new SupervisionFactoryBean
     it("should have java getters and setters for all properties") {
-      bean.setRestartStrategy(restartStrategy)
-      assert(bean.getRestartStrategy == restartStrategy)
+      bean.setRestartStrategy(faultHandlingStrategy)
+      assert(bean.getRestartStrategy == faultHandlingStrategy)
       bean.setSupervised(typedActors)
       assert(bean.getSupervised == typedActors)
     }

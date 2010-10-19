@@ -731,8 +731,8 @@ object TypedActor extends Logging {
   private[akka] def returnsFuture_?(methodRtti: MethodRtti): Boolean =
     classOf[Future[_]].isAssignableFrom(methodRtti.getMethod.getReturnType)
 
-  private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =
-    Supervisor(SupervisorConfig(restartStrategy, components))
+  private[akka] def supervise(faultHandlingStrategy: FaultHandlingStrategy, components: List[Supervise]): Supervisor =
+    Supervisor(SupervisorConfig(faultHandlingStrategy, components))
 
   def isJoinPointAndOneWay(message: Any): Boolean = if (isJoinPoint(message))
     isOneWay(message.asInstanceOf[JoinPoint].getRtti.asInstanceOf[MethodRtti])

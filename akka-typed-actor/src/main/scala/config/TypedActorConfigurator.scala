@@ -43,9 +43,9 @@ class TypedActorConfigurator {
    */
   def getInstance[T](clazz: Class[T]): T = INSTANCE.getInstance(clazz).head
 
-  def configure(restartStrategy: RestartStrategy, components: Array[SuperviseTypedActor]): TypedActorConfigurator = {
+  def configure(faultHandlingStrategy: FaultHandlingStrategy, components: Array[SuperviseTypedActor]): TypedActorConfigurator = {
     INSTANCE.configure(
-      restartStrategy,
+      faultHandlingStrategy,
       components.toList.asInstanceOf[scala.List[SuperviseTypedActor]])
     this
   }

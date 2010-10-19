@@ -18,34 +18,71 @@ object Supervision {
   sealed abstract class ConfigElement
 
   abstract class Server extends ConfigElement
-  abstract class FailOverScheme extends ConfigElement
   sealed abstract class LifeCycle extends ConfigElement
+  sealed abstract class FaultHandlingStrategy(val trapExit: List[Class[_ <: Throwable]]) extends ConfigElement
 
-  case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server {
-  //Java API
-    def this(restartStrategy: RestartStrategy, worker: Array[Server]) = this(restartStrategy,worker.toList)
+  case class SupervisorConfig(restartStrategy: FaultHandlingStrategy, worker: List[Server]) extends Server {
+    //Java API
+    def this(restartStrategy: FaultHandlingStrategy, worker: Array[Server]) = this(restartStrategy,worker.toList)
   }
 
-  class Supervise(val actorRef: ActorRef, val lifeCycle: LifeCycle, _remoteAddress: RemoteAddress) extends Server {
-    val remoteAddress: Option[RemoteAddress] = Option(_remoteAddress)
+  class Supervise(val actorRef: ActorRef, val lifeCycle: LifeCycle, val remoteAddress: Option[RemoteAddress]) extends Server {
+    //Java API
+    def this(actorRef: ActorRef, lifeCycle: LifeCycle, remoteAddress: RemoteAddress) =
+      this(actorRef, lifeCycle, Option(remoteAddress))
   }
   
   object Supervise {
     def apply(actorRef: ActorRef, lifeCycle: LifeCycle, remoteAddress: RemoteAddress) = new Supervise(actorRef, lifeCycle, remoteAddress)
-    def apply(actorRef: ActorRef, lifeCycle: LifeCycle) = new Supervise(actorRef, lifeCycle, null)
+    def apply(actorRef: ActorRef, lifeCycle: LifeCycle) = new Supervise(actorRef, lifeCycle, None)
     def unapply(supervise: Supervise) = Some((supervise.actorRef, supervise.lifeCycle, supervise.remoteAddress))
   }
 
-  case class RestartStrategy(scheme: FailOverScheme, maxNrOfRetries: Int, withinTimeRange: Int, trapExceptions: Array[Class[_ <: Throwable]]) extends ConfigElement
-
-  object RestartStrategy {
-     def apply(scheme: FailOverScheme, maxNrOfRetries: Int, withinTimeRange: Int, trapExceptions: List[Class[_ <: Throwable]]) =
-       new RestartStrategy(scheme,maxNrOfRetries,withinTimeRange,trapExceptions.toArray)
+  object AllForOneStrategy {
+    def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int): AllForOneStrategy =
+      new AllForOneStrategy(trapExit,
+        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
   }
 
-  //Java API
-  class AllForOne extends FailOverScheme
-  class OneForOne extends FailOverScheme
+  case class AllForOneStrategy(override val trapExit: List[Class[_ <: Throwable]],
+                               maxNrOfRetries: Option[Int] = None,
+                               withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy(trapExit) {
+    def this(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+      this(trapExit,
+        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+
+    def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+      this(trapExit.toList,
+        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+
+    def this(trapExit: java.util.List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+      this(trapExit.toArray.toList.asInstanceOf[List[Class[_ <: Throwable]]],
+        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+  }
+
+  object OneForOneStrategy {
+    def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int): OneForOneStrategy =
+      new OneForOneStrategy(trapExit,
+        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+  }
+
+  case class OneForOneStrategy(override val trapExit: List[Class[_ <: Throwable]],
+                               maxNrOfRetries: Option[Int] = None,
+                               withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy(trapExit) {
+    def this(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+      this(trapExit,
+        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+
+    def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+      this(trapExit.toList,
+        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+
+    def this(trapExit: java.util.List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+      this(trapExit.toArray.toList.asInstanceOf[List[Class[_ <: Throwable]]],
+        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+  }
+
+  case object NoFaultHandlingStrategy extends FaultHandlingStrategy(Nil)
 
   //Scala API
   case object Permanent extends LifeCycle
@@ -57,9 +94,8 @@ object Supervision {
   def temporary() = Temporary
   def undefinedLifeCycle = UndefinedLifeCycle
 
-  //Scala API
-  object AllForOne extends AllForOne { def apply() = this }
-  object OneForOne extends OneForOne { def apply() = this }
+  //Java API
+  def noFaultHandlingStrategy = NoFaultHandlingStrategy
 
   case class SuperviseTypedActor(_intf: Class[_],
                   val target: Class[_],
@@ -117,45 +153,5 @@ object Supervision {
 
     def this(target: Class[_], lifeCycle: LifeCycle, timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
       this(null: Class[_], target, lifeCycle, timeout, transactionRequired, dispatcher, remoteAddress)
-  }
-
-  sealed abstract class FaultHandlingStrategy {
-    def trapExit: List[Class[_ <: Throwable]]
-  }
-
-  object AllForOneStrategy {
-    def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-      new AllForOneStrategy(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-    def apply(trapExit: Array[Class[Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-      new AllForOneStrategy(trapExit.toList,maxNrOfRetries,withinTimeRange)
-  }
-
-  case class AllForOneStrategy(trapExit: List[Class[_ <: Throwable]],
-                               maxNrOfRetries: Option[Int] = None,
-                               withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
-    def this(trapExit: List[Class[_ <: Throwable]],maxNrOfRetries: Int, withinTimeRange: Int) =
-      this(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-    def this(trapExit: Array[Class[Throwable]],maxNrOfRetries: Int, withinTimeRange: Int) =
-      this(trapExit.toList,maxNrOfRetries,withinTimeRange)
-  }
-
-  object OneForOneStrategy {
-    def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-      new OneForOneStrategy(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-    def apply(trapExit: Array[Class[Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-      new OneForOneStrategy(trapExit.toList,maxNrOfRetries,withinTimeRange)
-  }
-
-  case class OneForOneStrategy(trapExit: List[Class[_ <: Throwable]],
-                               maxNrOfRetries: Option[Int] = None,
-                               withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
-    def this(trapExit: List[Class[_ <: Throwable]],maxNrOfRetries: Int, withinTimeRange: Int) =
-      this(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-    def this(trapExit: Array[Class[Throwable]],maxNrOfRetries: Int, withinTimeRange: Int) =
-      this(trapExit.toList,maxNrOfRetries,withinTimeRange)
-  }
-
-  case object NoFaultHandlingStrategy extends FaultHandlingStrategy {
-    def trapExit: List[Class[_ <: Throwable]] = Nil
   }
 }

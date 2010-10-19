@@ -11,7 +11,7 @@ public class Boot {
   public final static TypedActorConfigurator configurator = new TypedActorConfigurator();
   static {
     configurator.configure(
-      new RestartStrategy(new OneForOne(), 3, 5000, new Class[]{Exception.class}),
+      new OneForOneStrategy(new Class[]{Exception.class}, 3, 5000),
         new SuperviseTypedActor[] {
           new SuperviseTypedActor(
             SimpleService.class,
