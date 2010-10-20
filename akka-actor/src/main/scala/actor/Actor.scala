@@ -8,13 +8,13 @@ import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.util.Helpers.{narrow, narrowSilently}
-import se.scalablesolutions.akka.util.{Logging, Duration}
 import se.scalablesolutions.akka.AkkaException
 
 import java.util.concurrent.TimeUnit
 import java.net.InetSocketAddress
 
 import scala.reflect.BeanProperty
+import se.scalablesolutions.akka.util. {ReflectiveAccess, Logging, Duration}
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
@@ -120,7 +120,15 @@ object Actor extends Logging {
      *   val actor = actorOf[MyActor].start
      * </pre>
      */
-    def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(clazz)
+    def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(() => {
+      import ReflectiveAccess.{ createInstance, noParams, noArgs }
+      createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
+        throw new ActorInitializationException(
+          "Could not instantiate Actor" +
+          "\nMake sure Actor is NOT defined inside a class/trait," +
+          "\nif so put it outside the class/trait, f.e. in a companion object," +
+          "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
+    })
 
 
   /**
