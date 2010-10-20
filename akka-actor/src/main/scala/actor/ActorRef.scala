@@ -635,7 +635,7 @@ trait ActorRef extends ActorRefShared with TransactionManagement with Logging wi
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
-  private[this] var actorFactory: Either[Option[Class[_ <: Actor]], Option[() => Actor]] = Left(None))
+  private[this] val actorFactory: () => Actor)
   extends ActorRef with ScalaActorRef {
 
   @volatile
@@ -655,9 +655,6 @@ class LocalActorRef private[akka] (
 
   //If it was started inside "newActor", initialize it
   if (isRunning) initializeActorInstance
-
-  private[akka] def this(clazz: Class[_ <: Actor]) = this(Left(Some(clazz)))
-  private[akka] def this(factory: () => Actor) = this(Right(Some(factory)))
 
   // used only for deserialization
   private[akka] def this(__uuid: Uuid,
@@ -885,7 +882,7 @@ class LocalActorRef private[akka] (
    * To be invoked from within the actor itself.
    */
   def spawn(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
-    spawnButDoNotStart(clazz).start
+    Actor.actorOf(clazz).start
   }
 
   /**
@@ -895,7 +892,7 @@ class LocalActorRef private[akka] (
    */
   def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef = guard.withGuard {
     ensureRemotingEnabled
-    val actor = spawnButDoNotStart(clazz)
+    val actor = Actor.actorOf(clazz)
     actor.makeRemote(hostname, port)
     actor.start
     actor
@@ -907,7 +904,7 @@ class LocalActorRef private[akka] (
    * To be invoked from within the actor itself.
    */
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
-    val actor = spawnButDoNotStart(clazz)
+    val actor = Actor.actorOf(clazz)
     try {
       link(actor)
     } finally {
@@ -923,7 +920,7 @@ class LocalActorRef private[akka] (
    */
   def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef = guard.withGuard {
     ensureRemotingEnabled
-    val actor = spawnButDoNotStart(clazz)
+    val actor = Actor.actorOf(clazz)
     try {
       actor.makeRemote(hostname, port)
       link(actor)
@@ -1147,25 +1144,9 @@ class LocalActorRef private[akka] (
     freshActor.postRestart(reason)
   }
 
-  private def spawnButDoNotStart(clazz: Class[_ <: Actor]): ActorRef = Actor.actorOf(clazz.newInstance)
-
   private[this] def newActor: Actor = {
     Actor.actorRefInCreation.withValue(Some(this)) {
-      val actor = actorFactory match {
-        case Left(Some(clazz)) =>
-          import ReflectiveAccess.{ createInstance, noParams, noArgs }
-          createInstance(clazz.asInstanceOf[Class[_]], noParams, noArgs).
-            getOrElse(throw new ActorInitializationException(
-              "Could not instantiate Actor" +
-              "\nMake sure Actor is NOT defined inside a class/trait," +
-              "\nif so put it outside the class/trait, f.e. in a companion object," +
-              "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
-        case Right(Some(factory)) =>
-          factory()
-        case _ =>
-          throw new ActorInitializationException(
-            "Can't create Actor, no Actor class or factory function in scope")
-      }
+      val actor = actorFactory()
       if (actor eq null) throw new ActorInitializationException(
         "Actor instance passed to ActorRef can not be 'null'")
       actor
