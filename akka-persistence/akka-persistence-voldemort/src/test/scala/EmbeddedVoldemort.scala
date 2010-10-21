@@ -27,7 +27,7 @@ trait EmbeddedVoldemort extends BeforeAndAfterAll with Logging {
       log.info("Starting Voldemort")
       server = new VoldemortServer(config)
       server.start
-      VoldemortStorageBackend.initStoreClients
+      VoldemortStorageBackend.initStoreClientFactory
       admin = new AdminClient(VoldemortStorageBackend.clientConfig.getProperty(VoldemortStorageBackend.bootstrapUrlsProp), new AdminClientConfig)
       log.info("Started")
     } catch {

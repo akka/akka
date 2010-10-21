@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.persistence.common.{QueueStorageBackendTest, Ve
 @RunWith(classOf[JUnitRunner])
 class RiakRefStorageBackendTestIntegration extends RefStorageBackendTest   {
   def dropRefs = {
-    RiakStorageBackend.RefClient.drop
+    RiakStorageBackend.refAccess.drop
   }
 
 
@@ -18,7 +18,7 @@ class RiakRefStorageBackendTestIntegration extends RefStorageBackendTest   {
 @RunWith(classOf[JUnitRunner])
 class RiakMapStorageBackendTestIntegration extends MapStorageBackendTest   {
   def dropMaps = {
-    RiakStorageBackend.MapClient.drop
+    RiakStorageBackend.mapAccess.drop
   }
 
 
@@ -28,7 +28,7 @@ class RiakMapStorageBackendTestIntegration extends MapStorageBackendTest   {
 @RunWith(classOf[JUnitRunner])
 class RiakVectorStorageBackendTestIntegration extends VectorStorageBackendTest   {
   def dropVectors = {
-    RiakStorageBackend.VectorClient.drop
+    RiakStorageBackend.vectorAccess.drop
   }
 
 
@@ -39,7 +39,7 @@ class RiakVectorStorageBackendTestIntegration extends VectorStorageBackendTest  
 @RunWith(classOf[JUnitRunner])
 class RiakQueueStorageBackendTestIntegration extends QueueStorageBackendTest  {
   def dropQueues = {
-    RiakStorageBackend.QueueClient.drop
+    RiakStorageBackend.queueAccess.drop
   }
 
 

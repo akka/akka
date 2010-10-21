@@ -16,17 +16,17 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     val key = "testRef"
     val value = "testRefValue"
     val valueBytes = bytes(value)
-    refClient.delete(key)
-    refClient.getValue(key, empty) should be(empty)
-    refClient.put(key, valueBytes)
-    refClient.getValue(key) should be(valueBytes)
+    refAccess.delete(key.getBytes)
+    refAccess.getValue(key.getBytes, empty) should be(empty)
+    refAccess.put(key.getBytes, valueBytes)
+    refAccess.getValue(key.getBytes) should be(valueBytes)
   }
 
   test("PersistentRef apis function as expected") {
     val key = "apiTestRef"
     val value = "apiTestRefValue"
     val valueBytes = bytes(value)
-    refClient.delete(key)
+    refAccess.delete(key.getBytes)
     getRefStorageFor(key) should be(None)
     insertRefStorageFor(key, valueBytes)
     getRefStorageFor(key).get should equal(valueBytes)
@@ -35,8 +35,8 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
   test("that map key storage and retrieval works") {
     val key = "testmapKey"
     val mapKeys = new TreeSet[Array[Byte]] + bytes("key1")
-    mapClient.delete(getKey(key, mapKeysIndex))
-    mapClient.getValue(getKey(key, mapKeysIndex), SortedSetSerializer.toBytes(emptySet)) should equal(SortedSetSerializer.toBytes(emptySet))
+    mapAccess.delete(getKey(key, mapKeysIndex))
+    mapAccess.getValue(getKey(key, mapKeysIndex), SortedSetSerializer.toBytes(emptySet)) should equal(SortedSetSerializer.toBytes(emptySet))
     putMapKeys(key, mapKeys)
     getMapKeys(key) should equal(mapKeys)
   }
@@ -44,8 +44,8 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
   test("that map value storage and retrieval works") {
     val key = bytes("keyForTestingMapValueClient")
     val value = bytes("value for testing map value client")
-    mapClient.put(key, value)
-    mapClient.getValue(key, empty) should equal(value)
+    mapAccess.put(key, value)
+    mapAccess.getValue(key, empty) should equal(value)
   }
 
 
@@ -90,19 +90,19 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     val value = bytes("some bytes")
     val vecKey = getIndexedKey(key, index)
     getIndexFromVectorValueKey(key, vecKey) should be(index)
-    vectorClient.delete(vecKey)
-    vectorClient.getValue(vecKey, empty) should equal(empty)
-    vectorClient.put(vecKey, value)
-    vectorClient.getValue(vecKey) should equal(value)
+    vectorAccess.delete(vecKey)
+    vectorAccess.getValue(vecKey, empty) should equal(empty)
+    vectorAccess.put(vecKey, value)
+    vectorAccess.getValue(vecKey) should equal(value)
   }
 
   test("PersistentVector apis function as expected") {
     val key = "vectorApiKey"
     val value = bytes("Some bytes we want to store in a vector")
     val updatedValue = bytes("Some updated bytes we want to store in a vector")
-    vectorClient.delete(getKey(key, vectorSizeIndex))
-    vectorClient.delete(getIndexedKey(key, 0))
-    vectorClient.delete(getIndexedKey(key, 1))
+    vectorAccess.delete(getKey(key, vectorSizeIndex))
+    vectorAccess.delete(getIndexedKey(key, 0))
+    vectorAccess.delete(getIndexedKey(key, 1))
     
     insertVectorStorageEntryFor(key, value)
     //again
@@ -142,8 +142,8 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     dequeue(key).get should be(valueOdd)
     VoldemortStorageBackend.size(key) should be(0)
     dequeue(key) should be(None)
-    queueClient.put(getKey(key, queueHeadIndex), IntSerializer.toBytes(Integer.MAX_VALUE))
-    queueClient.put(getKey(key, queueTailIndex), IntSerializer.toBytes(Integer.MAX_VALUE))
+    queueAccess.put(getKey(key, queueHeadIndex), IntSerializer.toBytes(Integer.MAX_VALUE))
+    queueAccess.put(getKey(key, queueTailIndex), IntSerializer.toBytes(Integer.MAX_VALUE))
     VoldemortStorageBackend.size(key) should be(0)
     enqueue(key, value) should be(Some(1))
     VoldemortStorageBackend.size(key) should be(1)
