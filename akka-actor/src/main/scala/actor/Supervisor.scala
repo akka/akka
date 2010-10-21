@@ -76,27 +76,12 @@ object Supervisor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object SupervisorFactory {
-  def apply(config: SupervisorConfig) = new SupervisorFactory(config)
-
-  private[akka] def retrieveFaultHandlerAndTrapExitsFrom(config: SupervisorConfig): FaultHandlingStrategy =
-    config match {
-      case SupervisorConfig(faultHandler, _) => faultHandler
-     }
-}
-
-/**
- * For internal use only.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class SupervisorFactory private[akka] (val config: SupervisorConfig) extends Logging {
-  type ExceptionList = List[Class[_ <: Throwable]]
+case class SupervisorFactory(val config: SupervisorConfig) extends Logging {
 
   def newInstance: Supervisor = newInstanceFor(config)
 
   def newInstanceFor(config: SupervisorConfig): Supervisor = { 
-    val supervisor = new Supervisor(SupervisorFactory.retrieveFaultHandlerAndTrapExitsFrom(config))
+    val supervisor = new Supervisor(config.restartStrategy)
     supervisor.configure(config)
     supervisor.start
     supervisor
@@ -115,8 +100,7 @@ class SupervisorFactory private[akka] (val config: SupervisorConfig) extends Log
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-sealed class Supervisor private[akka] (
-  handler: FaultHandlingStrategy) {
+sealed class Supervisor(handler: FaultHandlingStrategy) {
   import Supervisor._
 
   private val _childActors = new ConcurrentHashMap[String, List[ActorRef]]

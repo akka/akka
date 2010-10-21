@@ -94,9 +94,9 @@ object Supervision {
   case object UndefinedLifeCycle extends LifeCycle
 
   //Java API (& Scala if you fancy)
-  def permanent() = Permanent
-  def temporary() = Temporary
-  def undefinedLifeCycle = UndefinedLifeCycle
+  def permanent():          LifeCycle = Permanent
+  def temporary():          LifeCycle = Temporary
+  def undefinedLifeCycle(): LifeCycle = UndefinedLifeCycle
 
   //Java API
   def noFaultHandlingStrategy = NoFaultHandlingStrategy
