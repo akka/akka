@@ -7,10 +7,10 @@ import org.scalatest.matchers.ShouldMatchers
 
 import se.scalablesolutions.akka.actor.TypedActor._
 
-import se.scalablesolutions.akka.config.{OneForOneStrategy, TypedActorConfigurator}
-import se.scalablesolutions.akka.config.JavaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 
 import java.util.concurrent.CountDownLatch
+import se.scalablesolutions.akka.config.TypedActorConfigurator
 
 /**
  * @author Martin Krasser
@@ -21,9 +21,9 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
   var conf2: TypedActorConfigurator = _
 
   override protected def beforeAll() = {
-    val strategy = new RestartStrategy(new AllForOne(), 3, 1000, Array(classOf[Exception]))
-    val comp3 = new Component(classOf[SamplePojo], classOf[SamplePojoImpl], new Permanent(), 1000)
-    val comp4 = new Component(classOf[SamplePojo], classOf[SamplePojoImpl], new Temporary(), 1000)
+    val strategy = AllForOneStrategy(classOf[Exception] :: Nil, 3, 1000)
+    val comp3 = new SuperviseTypedActor(classOf[SamplePojo], classOf[SamplePojoImpl], permanent(), 1000)
+    val comp4 = new SuperviseTypedActor(classOf[SamplePojo], classOf[SamplePojoImpl], temporary(), 1000)
     conf1 = new TypedActorConfigurator().configure(strategy, Array(comp3)).supervise
     conf2 = new TypedActorConfigurator().configure(strategy, Array(comp4)).supervise
   }
@@ -87,7 +87,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
       SamplePojoImpl.reset
       val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
       val supervisor = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
-      link(supervisor, pojo, OneForOneStrategy(Array(classOf[Throwable]), 3, 2000))
+      link(supervisor, pojo, OneForOneStrategy(classOf[Throwable] :: Nil, 3, 2000))
       pojo.throwException
       Thread.sleep(500)
       SimpleJavaPojoImpl._pre should be(true)

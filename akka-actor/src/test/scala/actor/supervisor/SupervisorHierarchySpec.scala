@@ -8,7 +8,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 import Actor._
-import se.scalablesolutions.akka.config.OneForOneStrategy
+import se.scalablesolutions.akka.config.Supervision.OneForOneStrategy
 
 import java.util.concurrent.{TimeUnit, CountDownLatch}
 

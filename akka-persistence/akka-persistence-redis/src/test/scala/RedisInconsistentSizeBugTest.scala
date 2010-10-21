@@ -5,11 +5,10 @@ import sbinary.Operations._
 import sbinary.DefaultProtocol._
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
-import se.scalablesolutions.akka.config.OneForOneStrategy
+import se.scalablesolutions.akka.config.Supervision.{OneForOneStrategy, Permanent}
 import Actor._
 import se.scalablesolutions.akka.persistence.common.PersistentVector
 import se.scalablesolutions.akka.stm.global._
-import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
 
 import java.util.{Calendar, Date}

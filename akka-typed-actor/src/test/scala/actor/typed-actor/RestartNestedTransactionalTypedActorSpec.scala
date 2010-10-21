@@ -14,7 +14,7 @@ import org.junit.runner.RunWith
 import se.scalablesolutions.akka.config.Config
 import se.scalablesolutions.akka.config._
 import se.scalablesolutions.akka.config.TypedActorConfigurator
-import se.scalablesolutions.akka.config.JavaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.actor._
 
 @RunWith(classOf[JUnitRunner])

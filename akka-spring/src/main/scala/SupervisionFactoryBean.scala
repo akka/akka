@@ -4,20 +4,18 @@
 package se.scalablesolutions.akka.spring
 
 import org.springframework.beans.factory.config.AbstractFactoryBean
-import se.scalablesolutions.akka.config.TypedActorConfigurator
-import se.scalablesolutions.akka.config.JavaConfig._
-import se.scalablesolutions.akka.config.ScalaConfig.{Supervise, Server, SupervisorConfig, RemoteAddress => SRemoteAddress}
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.actor.{Supervisor, SupervisorFactory, Actor}
 import AkkaSpringConfigurationTags._
 import reflect.BeanProperty
-
+import se.scalablesolutions.akka.config.{TypedActorConfigurator, RemoteAddress}
 
 /**
  * Factory bean for supervisor configuration.
  * @author michaelkober
  */
 class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
-  @BeanProperty var restartStrategy: RestartStrategy = _
+  @BeanProperty var restartStrategy: FaultHandlingStrategy = _
   @BeanProperty var supervised: List[ActorProperties] = _
   @BeanProperty var typed: String = ""
 
@@ -46,7 +44,7 @@ class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
   private def createInstanceForUntypedActors() : Supervisor = {
     val factory = new SupervisorFactory(
       new SupervisorConfig(
-        restartStrategy.transform,
+        restartStrategy,
         supervised.map(createSupervise(_))))
     factory.newInstance
   }
@@ -54,24 +52,24 @@ class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
   /**
    * Create configuration for TypedActor
    */
-  private[akka] def createComponent(props: ActorProperties): Component = {
+  private[akka] def createComponent(props: ActorProperties): SuperviseTypedActor = {
     import StringReflect._
-    val lifeCycle = if (!props.lifecycle.isEmpty && props.lifecycle.equalsIgnoreCase(VAL_LIFECYCYLE_TEMPORARY)) new Temporary() else new Permanent()
+    val lifeCycle = if (!props.lifecycle.isEmpty && props.lifecycle.equalsIgnoreCase(VAL_LIFECYCYLE_TEMPORARY)) Temporary else Permanent
     val isRemote = (props.host ne null) && (!props.host.isEmpty)
     val withInterface = (props.interface ne null) && (!props.interface.isEmpty)
     if (isRemote) {
       //val remote = new RemoteAddress(props.host, props.port)
       val remote = new RemoteAddress(props.host, props.port.toInt)
       if (withInterface) {
-        new Component(props.interface.toClass, props.target.toClass, lifeCycle, props.timeout, props.transactional, remote)
+        new SuperviseTypedActor(props.interface.toClass, props.target.toClass, lifeCycle, props.timeout, props.transactional, remote)
       } else {
-        new Component(props.target.toClass, lifeCycle, props.timeout, props.transactional, remote)
+        new SuperviseTypedActor(props.target.toClass, lifeCycle, props.timeout, props.transactional, remote)
       }
     } else {
       if (withInterface) {
-        new Component(props.interface.toClass, props.target.toClass, lifeCycle, props.timeout, props.transactional)
+        new SuperviseTypedActor(props.interface.toClass, props.target.toClass, lifeCycle, props.timeout, props.transactional)
       } else {
-        new Component(props.target.toClass, lifeCycle, props.timeout, props.transactional)
+        new SuperviseTypedActor(props.target.toClass, lifeCycle, props.timeout, props.transactional)
       }
     }
   }
@@ -81,7 +79,7 @@ class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
    */
   private[akka] def createSupervise(props: ActorProperties): Server = {
     import StringReflect._
-    val lifeCycle = if (!props.lifecycle.isEmpty && props.lifecycle.equalsIgnoreCase(VAL_LIFECYCYLE_TEMPORARY)) new Temporary() else new Permanent()
+    val lifeCycle = if (!props.lifecycle.isEmpty && props.lifecycle.equalsIgnoreCase(VAL_LIFECYCYLE_TEMPORARY)) Temporary else Permanent
     val isRemote = (props.host ne null) && (!props.host.isEmpty)
     val actorRef = Actor.actorOf(props.target.toClass)
     if (props.timeout > 0) {
@@ -92,10 +90,10 @@ class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
     }
 
     val supervise = if (isRemote) {
-      val remote = new SRemoteAddress(props.host, props.port.toInt)
-      Supervise(actorRef, lifeCycle.transform, remote)
+      val remote = new RemoteAddress(props.host, props.port.toInt)
+      Supervise(actorRef, lifeCycle, remote)
     } else {
-      Supervise(actorRef, lifeCycle.transform)
+      Supervise(actorRef, lifeCycle)
     }
     supervise
   }
