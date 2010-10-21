@@ -45,7 +45,7 @@ trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
  * }
  * </pre>
  */
-trait StatelessActorFormat[T <: Actor] extends Format[T] {
+@serializable trait StatelessActorFormat[T <: Actor] extends Format[T] {
   def fromBinary(bytes: Array[Byte], act: T) = act
 
   def toBinary(ac: T) = Array.empty[Byte]
@@ -65,7 +65,7 @@ trait StatelessActorFormat[T <: Actor] extends Format[T] {
  * }
  * </pre>
  */
-trait SerializerBasedActorFormat[T <: Actor] extends Format[T] {
+@serializable trait SerializerBasedActorFormat[T <: Actor] extends Format[T] {
   val serializer: Serializer
 
   def fromBinary(bytes: Array[Byte], act: T) = serializer.fromBinary(bytes, Some(act.self.actorClass)).asInstanceOf[T]
