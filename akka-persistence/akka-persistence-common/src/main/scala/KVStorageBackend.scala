@@ -19,6 +19,22 @@ import java.util.{ Properties, Map => JMap }
 import se.scalablesolutions.akka.persistence.common.PersistentMapBinary.COrdering._
 import collection.immutable._
 
+
+private [akka] trait KVAccess {
+    def put(key: Array[Byte], value: Array[Byte])
+    def getValue(key: Array[Byte]): Array[Byte]
+    def getValue(key: Array[Byte], default: Array[Byte]): Array[Byte]
+    def getAll(keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]]
+    def delete(key: Array[Byte])
+    def drop()
+  }
+
+private [akka] object KVAccess {
+    implicit def stringToByteArray(st: String): Array[Byte] = {
+      st.getBytes("UTF-8")
+    }
+}
+
 private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Array[Byte]] with VectorStorageBackend[Array[Byte]] with RefStorageBackend[Array[Byte]] with QueueStorageBackend[Array[Byte]] with Logging {
 
   val nullMapValueHeader = 0x00.byteValue
@@ -32,25 +48,12 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   //explicit implicit :)
   implicit val ordering = ArrayOrdering
   import KVAccess._
-  trait KVAccess {
-    def put(key: Array[Byte], value: Array[Byte])
-    def getValue(key: Array[Byte]): Array[Byte]
-    def getValue(key: Array[Byte], default: Array[Byte]): Array[Byte]
-    def getAll(keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]]
-    def delete(key: Array[Byte])
-    def drop()
-  }
 
-  object KVAccess {
-    implicit def stringToByteArray(st: String): Array[Byte] = {
-      st.getBytes("UTF-8")
-    }
-  }
   
-  val refAccess: KVAccess
-  val vectorAccess: KVAccess
-  val mapAccess: KVAccess
-  val queueAccess: KVAccess
+  def refAccess: KVAccess
+  def vectorAccess: KVAccess
+  def mapAccess: KVAccess
+  def queueAccess: KVAccess
 
   def getRefStorageFor(name: String): Option[Array[Byte]] = {
     val result: Array[Byte] = refAccess.getValue(name)
