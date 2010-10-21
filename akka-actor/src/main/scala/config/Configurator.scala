@@ -4,12 +4,12 @@
 
 package se.scalablesolutions.akka.config
 
-import ScalaConfig.{RestartStrategy, Component}
+import se.scalablesolutions.akka.config.Supervision. {SuperviseTypedActor, FaultHandlingStrategy}
 
 private[akka] trait TypedActorConfiguratorBase {
   def getExternalDependency[T](clazz: Class[T]): T
 
-  def configure(restartStrategy: RestartStrategy, components: List[Component]): TypedActorConfiguratorBase
+  def configure(restartStrategy: FaultHandlingStrategy, components: List[SuperviseTypedActor]): TypedActorConfiguratorBase
 
   def inject: TypedActorConfiguratorBase
 

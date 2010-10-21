@@ -5,9 +5,8 @@
 package se.scalablesolutions.akka.actor
 
 import Actor._
-import se.scalablesolutions.akka.config.FaultHandlingStrategy
 import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future, CompletableFuture, Dispatchers}
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.util._
 import ReflectiveAccess._
 
@@ -732,8 +731,8 @@ object TypedActor extends Logging {
   private[akka] def returnsFuture_?(methodRtti: MethodRtti): Boolean =
     classOf[Future[_]].isAssignableFrom(methodRtti.getMethod.getReturnType)
 
-  private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =
-    Supervisor(SupervisorConfig(restartStrategy, components))
+  private[akka] def supervise(faultHandlingStrategy: FaultHandlingStrategy, components: List[Supervise]): Supervisor =
+    Supervisor(SupervisorConfig(faultHandlingStrategy, components))
 
   def isJoinPointAndOneWay(message: Any): Boolean = if (isJoinPoint(message))
     isOneWay(message.asInstanceOf[JoinPoint].getRtti.asInstanceOf[MethodRtti])

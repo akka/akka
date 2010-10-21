@@ -5,11 +5,13 @@
 package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.config.Config.config
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.actor.{Supervisor, SupervisorFactory, Actor, ActorRef, ActorRegistry}
 import se.scalablesolutions.akka.util.Logging
 import scala.collection.immutable.{Map, HashMap}
+import se.scalablesolutions.akka.config.Supervision.{Permanent}
+import se.scalablesolutions.akka.config.{RemoteAddress}
 
 /**
  * Interface for interacting with the Cluster Membership API.
@@ -239,8 +241,7 @@ object Cluster extends Cluster with Logging {
 
   private[akka] def createSupervisor(actor: ActorRef): Option[Supervisor] =
     Some(Supervisor(
-      SupervisorConfig(
-        RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),
+      SupervisorConfig(OneForOneStrategy(List(classOf[Exception]), 5, 1000),
         Supervise(actor, Permanent) :: Nil)))
 
   private[this] def clusterActor = if (clusterActorRef.isEmpty) None else Some(clusterActorRef.get.actor.asInstanceOf[ClusterActor])
