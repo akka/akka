@@ -14,7 +14,6 @@ import voldemort.client.protocol.admin.{AdminClientConfig, AdminClient}
 trait EmbeddedVoldemort extends BeforeAndAfterAll with Logging {
   this: Suite =>
   var server: VoldemortServer = null
-  var admin: AdminClient = null
 
   override protected def beforeAll(): Unit = {
 
@@ -27,8 +26,7 @@ trait EmbeddedVoldemort extends BeforeAndAfterAll with Logging {
       log.info("Starting Voldemort")
       server = new VoldemortServer(config)
       server.start
-      VoldemortStorageBackend.initStoreClientFactory
-      admin = new AdminClient(VoldemortStorageBackend.clientConfig.getProperty(VoldemortStorageBackend.bootstrapUrlsProp), new AdminClientConfig)
+      VoldemortStorageBackend.resetAccess
       log.info("Started")
     } catch {
       case e => log.error(e, "Error Starting Voldemort")
@@ -37,7 +35,6 @@ trait EmbeddedVoldemort extends BeforeAndAfterAll with Logging {
   }
 
   override protected def afterAll(): Unit = {
-    admin.stop
     server.stop
   }
 }

@@ -4,27 +4,20 @@
 
 package se.scalablesolutions.akka.persistence.riak
 
-import se.scalablesolutions.akka.stm._
 import se.scalablesolutions.akka.persistence.common._
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.util.Helpers._
 import se.scalablesolutions.akka.config.Config.config
 
 import java.lang.String
 import collection.JavaConversions
-import java.nio.ByteBuffer
 import collection.Map
-import collection.mutable.ArrayBuffer
-import java.util.{Properties, Map => JMap}
+import java.util.{Map => JMap}
 import se.scalablesolutions.akka.persistence.common.PersistentMapBinary.COrdering._
 import collection.immutable._
 import com.google.protobuf.ByteString
-import com.google.protobuf.ByteString._
 import com.trifork.riak.{RequestMeta, RiakObject, RiakClient}
 
 
 private[akka] object RiakStorageBackend extends KVStorageBackend {
-	
   val refBucket = config.getString("akka.storage.riak.bucket.ref", "Refs")
   val mapBucket = config.getString("akka.storage.riak.bucket.map", "Maps")
   val vectorBucket = config.getString("akka.storage.riak.bucket.vector", "Vectors")
@@ -33,7 +26,7 @@ private[akka] object RiakStorageBackend extends KVStorageBackend {
   val clientPort = config.getInt("akka.storage.riak.client.port", 8087)
   val riakClient: RiakClient = new RiakClient(clientHost, clientPort);
   import KVAccess._
-  import RiakAccess._ 
+  import RiakAccess._
 
   object RiakAccess {
     implicit def byteArrayToByteString(ary: Array[Byte]): ByteString = {
@@ -47,10 +40,11 @@ private[akka] object RiakStorageBackend extends KVStorageBackend {
     implicit def stringToByteString(bucket: String): ByteString = {
       ByteString.copyFromUtf8(bucket)
     }
-    
+
   }
 
-  class RiakAccess(val bucket:String) extends KVAccess {
+
+  class RiakAccess(val bucket: String) extends KVAccess {
     //http://www.mail-archive.com/riak-users@lists.basho.com/msg01013.html
     val quorum: Int = 0xfffffffd
     val one: Int = 0xfffffffe
@@ -61,7 +55,7 @@ private[akka] object RiakStorageBackend extends KVStorageBackend {
       val objs: Array[RiakObject] = riakClient.fetch(bucket, key, quorum)
       objs.size match {
         case 0 => riakClient.store(new RiakObject(bucket, key, value), new RequestMeta().w(quorum).dw(quorum))
-        case _ => riakClient.store(new RiakObject(objs(0).getVclock, bucket, key, value),new RequestMeta().w(quorum).dw(quorum))
+        case _ => riakClient.store(new RiakObject(objs(0).getVclock, bucket, key, value), new RequestMeta().w(quorum).dw(quorum))
       }
     }
 
@@ -109,13 +103,18 @@ private[akka] object RiakStorageBackend extends KVStorageBackend {
     }
   }
 
-  override val refAccess = new RiakAccess(refBucket)
-  override val mapAccess = new RiakAccess(mapBucket)
-  override val vectorAccess = new RiakAccess(vectorBucket)
-  override val queueAccess = new RiakAccess(queueBucket)
+  val refs = new RiakAccess(refBucket)
+  val maps = new RiakAccess(mapBucket)
+  val vectors = new RiakAccess(vectorBucket)
+  val queues = new RiakAccess(queueBucket)
 
+  def refAccess = refs
 
+  def mapAccess = maps
 
- 
+  def vectorAccess = vectors
+
+  def queueAccess = queues
+
 
 }
