@@ -9,8 +9,7 @@
         <persistence>memory</persistence>
         <routing>client</routing>
         <key-serializer>
-            <type>string</type>
-            <schema-info>utf8</schema-info>
+            <type>identity</type>
         </key-serializer>
         <value-serializer>
             <type>identity</type>

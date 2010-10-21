@@ -12,8 +12,8 @@ import se.scalablesolutions.akka.persistence.common._
 @RunWith(classOf[JUnitRunner])
 class VoldemortTicket343Test extends Ticket343Test with EmbeddedVoldemort {
   def dropMapsAndVectors: Unit = {
-    admin.truncate(0, VoldemortStorageBackend.mapStore)
-    admin.truncate(0, VoldemortStorageBackend.vectorStore)
+    VoldemortStorageBackend.mapAccess.drop
+    VoldemortStorageBackend.vectorAccess.drop
   }
 
   def getVector: (String) => PersistentVector[Array[Byte]] = VoldemortStorage.getVector

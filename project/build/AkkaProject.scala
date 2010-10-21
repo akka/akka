@@ -258,6 +258,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val cassandra_clhm = "org.apache.cassandra"   % "clhm-production"     % CASSANDRA_VERSION % "test"
     lazy val commons_coll   = "commons-collections"    % "commons-collections" % "3.2.1"           % "test"
     lazy val google_coll    = "com.google.collections" % "google-collections"  % "1.0"             % "test"
+    lazy val google_coll_compile    = "com.google.collections" % "google-collections"  % "1.0"             % "compile"
+
     lazy val high_scale     = "org.apache.cassandra"   % "high-scale-lib"      % CASSANDRA_VERSION % "test"
     lazy val testJetty      = "org.eclipse.jetty"      % "jetty-server"        % JETTY_VERSION     % "test"
     lazy val testJettyWebApp= "org.eclipse.jetty"      % "jetty-webapp"        % JETTY_VERSION     % "test"
@@ -629,7 +631,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     //testing
     val scalatest = Dependencies.scalatest
-    val google_coll = Dependencies.google_coll
+    val google_coll_compile = Dependencies.google_coll_compile
     val jdom = Dependencies.jdom
     val jetty = Dependencies.vold_jetty
     val velocity = Dependencies.velocity
