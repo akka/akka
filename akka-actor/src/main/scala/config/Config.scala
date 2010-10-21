@@ -25,7 +25,7 @@ object ConfigLogger extends Logging
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Config {
-  val VERSION = "1.0-SNAPSHOT"
+  val VERSION = "1.0-M1"
 
   // Set Multiverse options for max speed
   System.setProperty("org.multiverse.MuliverseConstants.sanityChecks", "false")
