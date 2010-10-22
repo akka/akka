@@ -3,7 +3,7 @@ package se.scalablesolutions.akka.actor
 import org.scalatest.junit.JUnitSuite
 import Actor._
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import org.multiverse.api.latches.StandardLatch
 import org.junit.Test
 
@@ -107,10 +107,10 @@ class SchedulerSpec extends JUnitSuite {
 
       override def postRestart(reason: Throwable) = restartLatch.open
     })
+
     Supervisor(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 1000,
-          List(classOf[Exception])),
+        AllForOneStrategy(List(classOf[Exception]), 3, 1000),
         Supervise(
           actor,
           Permanent)

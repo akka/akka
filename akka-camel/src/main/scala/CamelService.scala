@@ -26,25 +26,22 @@ trait CamelService extends Bootable with Logging {
   private[camel] val consumerPublisher = actorOf[ConsumerPublisher]
   private[camel] val publishRequestor =  actorOf[PublishRequestor]
 
-  // add listener for actor registration events
-  ActorRegistry.addListener(publishRequestor)
-
-  // add listener for AspectInit registration events
-  AspectInitRegistry.addListener(publishRequestor)
+  private val serviceEnabled = config.getBool("akka.camel.service", true)
 
   /**
    * Starts this CamelService unless <code>akka.camel.service</code> is set to <code>false</code>.
    */
   abstract override def onLoad = {
+    if (serviceEnabled) registerPublishRequestor
     super.onLoad
-    if (config.getBool("akka.camel.service", true)) start
+    if (serviceEnabled) start
   }
 
   /**
    * Stops this CamelService unless <code>akka.camel.service</code> is set to <code>false</code>.
    */
   abstract override def onUnload = {
-    if (config.getBool("akka.camel.service", true)) stop
+    if (serviceEnabled) stop
     super.onUnload
   }
 
@@ -63,6 +60,8 @@ trait CamelService extends Bootable with Logging {
    * on a remote node).
    */
   def start: CamelService = {
+    if (!publishRequestorRegistered) registerPublishRequestor
+
     // Only init and start if not already done by application
     if (!CamelContextManager.initialized) CamelContextManager.init
     if (!CamelContextManager.started) CamelContextManager.start
@@ -87,8 +86,7 @@ trait CamelService extends Bootable with Logging {
     CamelServiceManager.unregister(this)
 
     // Remove related listeners from registry
-    ActorRegistry.removeListener(publishRequestor)
-    AspectInitRegistry.removeListener(publishRequestor)
+    unregisterPublishRequestor
 
     // Stop related services
     consumerPublisher.stop
@@ -174,6 +172,21 @@ trait CamelService extends Bootable with Logging {
    */
   private def expectEndpointDeactivationCount(count: Int): CountDownLatch =
     (consumerPublisher !! SetExpectedUnregistrationCount(count)).as[CountDownLatch].get
+
+  private[camel] def publishRequestorRegistered: Boolean = {
+    ActorRegistry.hasListener(publishRequestor) ||
+    AspectInitRegistry.hasListener(publishRequestor)
+  }
+
+  private[camel] def registerPublishRequestor: Unit = {
+    ActorRegistry.addListener(publishRequestor)
+    AspectInitRegistry.addListener(publishRequestor)
+  }
+
+  private[camel] def unregisterPublishRequestor: Unit = {
+    ActorRegistry.removeListener(publishRequestor)
+    AspectInitRegistry.removeListener(publishRequestor)
+  }
 }
 
 /**

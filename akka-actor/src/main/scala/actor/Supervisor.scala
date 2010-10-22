@@ -4,8 +4,7 @@
 
 package se.scalablesolutions.akka.actor
 
-import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.AkkaException
 import se.scalablesolutions.akka.util._
 import ReflectiveAccess._
@@ -13,6 +12,7 @@ import Actor._
 
 import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
 import java.net.InetSocketAddress
+import se.scalablesolutions.akka.config.Supervision._
 
 class SupervisorException private[akka](message: String) extends AkkaException(message)
 
@@ -76,31 +76,12 @@ object Supervisor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object SupervisorFactory {
-  def apply(config: SupervisorConfig) = new SupervisorFactory(config)
-
-  private[akka] def retrieveFaultHandlerAndTrapExitsFrom(config: SupervisorConfig): FaultHandlingStrategy =
-    config match {
-      case SupervisorConfig(RestartStrategy(scheme, maxNrOfRetries, timeRange, trapExceptions), _) =>
-        scheme match {
-          case AllForOne => AllForOneStrategy(trapExceptions,maxNrOfRetries, timeRange)
-          case OneForOne => OneForOneStrategy(trapExceptions,maxNrOfRetries, timeRange)
-        }
-     }
-}
-
-/**
- * For internal use only.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class SupervisorFactory private[akka] (val config: SupervisorConfig) extends Logging {
-  type ExceptionList = List[Class[_ <: Throwable]]
+case class SupervisorFactory(val config: SupervisorConfig) extends Logging {
 
   def newInstance: Supervisor = newInstanceFor(config)
 
   def newInstanceFor(config: SupervisorConfig): Supervisor = { 
-    val supervisor = new Supervisor(SupervisorFactory.retrieveFaultHandlerAndTrapExitsFrom(config))
+    val supervisor = new Supervisor(config.restartStrategy)
     supervisor.configure(config)
     supervisor.start
     supervisor
@@ -119,8 +100,7 @@ class SupervisorFactory private[akka] (val config: SupervisorConfig) extends Log
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-sealed class Supervisor private[akka] (
-  handler: FaultHandlingStrategy) {
+sealed class Supervisor(handler: FaultHandlingStrategy) {
   import Supervisor._
 
   private val _childActors = new ConcurrentHashMap[String, List[ActorRef]]

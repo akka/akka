@@ -45,6 +45,12 @@ object Futures {
     future.get
   }
 
+  /**
+   * Applies the supplied function to the specified collection of Futures after awaiting each future to be completed
+   */
+  def awaitMap[A,B](in: Traversable[Future[A]])(fun: (Future[A]) => B): Traversable[B] =
+    in map { f => fun(f.await) }
+
   /*
   def awaitEither[T](f1: Future[T], f2: Future[T]): Option[T] = {
     import Actor.Sender.Self
@@ -83,6 +89,18 @@ sealed trait Future[T] {
   def timeoutInNanos: Long
   def result: Option[T]
   def exception: Option[Throwable]
+  def map[O](f: (T) => O): Future[O] = {
+    val wrapped = this
+    new Future[O] {
+      def await = { wrapped.await; this }
+      def awaitBlocking = { wrapped.awaitBlocking; this }
+      def isCompleted = wrapped.isCompleted
+      def isExpired = wrapped.isExpired
+      def timeoutInNanos = wrapped.timeoutInNanos
+      def result: Option[O] = { wrapped.result map f }
+      def exception: Option[Throwable] = wrapped.exception
+    }
+  }
 }
 
 trait CompletableFuture[T] extends Future[T] {

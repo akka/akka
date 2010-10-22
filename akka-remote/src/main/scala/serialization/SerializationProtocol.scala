@@ -11,8 +11,7 @@ import se.scalablesolutions.akka.dispatch.MessageInvocation
 import se.scalablesolutions.akka.remote.{RemoteServer, MessageSerializer}
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
 import ActorTypeProtocol._
-import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.actor.{uuidFrom,newUuid}
 import se.scalablesolutions.akka.actor._
 
@@ -45,7 +44,7 @@ trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
  * }
  * </pre>
  */
-trait StatelessActorFormat[T <: Actor] extends Format[T] {
+@serializable trait StatelessActorFormat[T <: Actor] extends Format[T] {
   def fromBinary(bytes: Array[Byte], act: T) = act
 
   def toBinary(ac: T) = Array.empty[Byte]
@@ -65,7 +64,7 @@ trait StatelessActorFormat[T <: Actor] extends Format[T] {
  * }
  * </pre>
  */
-trait SerializerBasedActorFormat[T <: Actor] extends Format[T] {
+@serializable trait SerializerBasedActorFormat[T <: Actor] extends Format[T] {
   val serializer: Serializer
 
   def fromBinary(bytes: Array[Byte], act: T) = serializer.fromBinary(bytes, Some(act.self.actorClass)).asInstanceOf[T]

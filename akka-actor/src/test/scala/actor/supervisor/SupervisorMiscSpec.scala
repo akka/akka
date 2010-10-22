@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.actor
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import se.scalablesolutions.akka.dispatch.Dispatchers
-import se.scalablesolutions.akka.config.ScalaConfig.{RestartStrategy, SupervisorConfig, LifeCycle, Permanent, OneForOne, Supervise}
+import se.scalablesolutions.akka.config.Supervision.{SupervisorConfig, OneForOneStrategy, Supervise, Permanent}
 import java.util.concurrent.CountDownLatch
 
 class SupervisorMiscSpec extends WordSpec with MustMatchers {
@@ -57,7 +57,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
 
       val sup = Supervisor(
         SupervisorConfig(
-          RestartStrategy(OneForOne, 3, 5000, List(classOf[Exception])),
+          OneForOneStrategy(List(classOf[Exception]),3, 5000),
           Supervise(actor1, Permanent) ::
               Supervise(actor2, Permanent) ::
               Supervise(actor3, Permanent) ::
