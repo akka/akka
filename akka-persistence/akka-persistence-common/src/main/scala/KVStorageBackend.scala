@@ -45,7 +45,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   val vectorSizeIndex = getIndexedBytes(-1)
   val queueHeadIndex = getIndexedBytes(-1)
   val queueTailIndex = getIndexedBytes(-2)
-  //explicit implicit :)
+
   implicit val ordering = ArrayOrdering
   import KVAccess._
 

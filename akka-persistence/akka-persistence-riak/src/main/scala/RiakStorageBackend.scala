@@ -25,8 +25,23 @@ private[akka] object RiakStorageBackend extends KVStorageBackend {
   val clientHost = config.getString("akka.storage.riak.client.host", "localhost")
   val clientPort = config.getInt("akka.storage.riak.client.port", 8087)
   val riakClient: RiakClient = new RiakClient(clientHost, clientPort);
+
   import KVAccess._
   import RiakAccess._
+
+
+  val refs = new RiakAccess(refBucket)
+  val maps = new RiakAccess(mapBucket)
+  val vectors = new RiakAccess(vectorBucket)
+  val queues = new RiakAccess(queueBucket)
+
+  def refAccess = refs
+
+  def mapAccess = maps
+
+  def vectorAccess = vectors
+
+  def queueAccess = queues
 
   object RiakAccess {
     implicit def byteArrayToByteString(ary: Array[Byte]): ByteString = {
@@ -79,7 +94,7 @@ private[akka] object RiakStorageBackend extends KVStorageBackend {
 
     def getAll(keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
       var result = new HashMap[Array[Byte], Array[Byte]]
-      keys.foreach {
+      keys.foreach{
         key =>
           val value = getValue(key)
           Option(value) match {
@@ -102,19 +117,6 @@ private[akka] object RiakStorageBackend extends KVStorageBackend {
       keys.close
     }
   }
-
-  val refs = new RiakAccess(refBucket)
-  val maps = new RiakAccess(mapBucket)
-  val vectors = new RiakAccess(vectorBucket)
-  val queues = new RiakAccess(queueBucket)
-
-  def refAccess = refs
-
-  def mapAccess = maps
-
-  def vectorAccess = vectors
-
-  def queueAccess = queues
 
 
 }
