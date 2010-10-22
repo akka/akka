@@ -37,10 +37,6 @@ class ThreadBasedDispatcher(private val actor: ActorRef, _mailboxType: MailboxTy
 }
 
 object ThreadBasedDispatcher {
-  val oneThread: (ThreadPoolBuilder) => Unit = b => {
-    b setCorePoolSize 1
-    b setMaxPoolSize 1
-    b setAllowCoreThreadTimeout true
-  }
+  val oneThread: ThreadPoolConfig = ThreadPoolConfig(allowCorePoolTimeout = true, corePoolSize = 1, maxPoolSize = 1)
 }
 

@@ -33,11 +33,11 @@ import se.scalablesolutions.akka.util.Switch
 class ExecutorBasedEventDrivenWorkStealingDispatcher(
   _name: String,
   _mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
-  config: (ThreadPoolBuilder) => Unit = _ => ()) extends MessageDispatcher with ThreadPoolBuilder {
+  config: ThreadPoolConfig = ThreadPoolConfig()) extends MessageDispatcher with ThreadPoolBuilder {
 
-  def this(_name: String, mailboxType: MailboxType) = this(_name, mailboxType, _ => ())
+  def this(_name: String, mailboxType: MailboxType) = this(_name, mailboxType,ThreadPoolConfig())
 
-  def this(_name: String) = this(_name, Dispatchers.MAILBOX_TYPE, _ => ())
+  def this(_name: String) = this(_name, Dispatchers.MAILBOX_TYPE,ThreadPoolConfig())
   
   val mailboxType = Some(_mailboxType)
   
@@ -54,7 +54,6 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   @volatile private var lastThiefIndex = 0
 
   val name = "akka:event-driven-work-stealing:dispatcher:" + _name
-  init
 
   /**
    * @return the mailbox associated with the actor
@@ -194,12 +193,6 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     "Can't build a new thread pool for a dispatcher that is already up and running")
 
   override val toString = "ExecutorBasedEventDrivenWorkStealingDispatcher[" + name + "]"
-
-  private[akka] def init = {
-    withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
-    config(this)
-    buildThreadPool
-  }
 
   def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = mailboxType match {
     case UnboundedMailbox(blocking) => // FIXME make use of 'blocking' in work stealer ConcurrentLinkedDeque
