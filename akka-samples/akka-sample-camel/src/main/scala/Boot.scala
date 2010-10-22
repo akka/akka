@@ -9,7 +9,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.{TypedActor, Supervisor}
 import se.scalablesolutions.akka.camel.CamelContextManager
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 
 /**
  * @author Martin Krasser

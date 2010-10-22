@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.actor.remote
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
 import se.scalablesolutions.akka.serialization.BinaryString
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 import se.scalablesolutions.akka.OneWay
 import org.scalatest.junit.JUnitSuite
@@ -480,7 +480,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
 
     val factory = SupervisorFactory(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
+        AllForOneStrategy(List(classOf[Exception]), 3, 100),
         Supervise(
           pingpong1,
           Permanent)
@@ -496,7 +496,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
 
     val factory = SupervisorFactory(
       SupervisorConfig(
-        RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
+        OneForOneStrategy(List(classOf[Exception]), 3, 100),
         Supervise(
           pingpong1,
           Permanent)
@@ -517,7 +517,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
 
     val factory = SupervisorFactory(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
+        AllForOneStrategy(List(classOf[Exception]), 3, 100),
         Supervise(
           pingpong1,
           Permanent)
@@ -548,7 +548,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
 
     val factory = SupervisorFactory(
       SupervisorConfig(
-        RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
+        OneForOneStrategy(List(classOf[Exception]), 3, 100),
         Supervise(
           pingpong1,
           Permanent)
@@ -577,13 +577,13 @@ class RemoteSupervisorSpec extends JUnitSuite {
 
     val factory = SupervisorFactory(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
+        AllForOneStrategy(List(classOf[Exception]), 3, 100),
         Supervise(
           pingpong1,
           Permanent)
             ::
             SupervisorConfig(
-              RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
+              AllForOneStrategy(List(classOf[Exception]), 3, 100),
               Supervise(
                 pingpong2,
                Permanent)

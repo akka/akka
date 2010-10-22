@@ -6,15 +6,15 @@ package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.util.Helpers.{narrow, narrowSilently}
-import se.scalablesolutions.akka.util.{Logging, Duration}
 import se.scalablesolutions.akka.AkkaException
 
 import java.util.concurrent.TimeUnit
 import java.net.InetSocketAddress
 
 import scala.reflect.BeanProperty
+import se.scalablesolutions.akka.util. {ReflectiveAccess, Logging, Duration}
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
@@ -107,21 +107,29 @@ object Actor extends Logging {
   def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
-     * Creates an ActorRef out of the Actor with type T.
-     * <pre>
-     *   import Actor._
-     *   val actor = actorOf[MyActor]
-     *   actor.start
-     *   actor ! message
-     *   actor.stop
-     * </pre>
-     * You can create and start the actor in one statement like this:
-     * <pre>
-     *   val actor = actorOf[MyActor].start
-     * </pre>
-     */
-    def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(clazz)
-
+<<<<<<< HEAD:akka-actor/src/main/scala/actor/Actor.scala
+   * Creates an ActorRef out of the Actor with type T.
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf[MyActor]
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf[MyActor].start
+   * </pre>
+   */
+  def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(() => {
+    import ReflectiveAccess.{ createInstance, noParams, noArgs }
+    createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
+      throw new ActorInitializationException(
+        "Could not instantiate Actor" +
+        "\nMake sure Actor is NOT defined inside a class/trait," +
+        "\nif so put it outside the class/trait, f.e. in a companion object," +
+        "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
+  })
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -249,7 +257,6 @@ trait Actor extends Logging {
       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))', or" +
       "\n\t\t'val actor = Actor.actor { case msg => .. } }'")
-
      val ref = optRef.asInstanceOf[Some[ActorRef]].get
      ref.id = getClass.getName //FIXME: Is this needed?
      optRef.asInstanceOf[Some[ActorRef]]
@@ -368,17 +375,17 @@ trait Actor extends Logging {
   private lazy val processingBehavior: Receive = {
     lazy val defaultBehavior = receive
     val actorBehavior: Receive = {
-      case HotSwap(code)                 => become(code)
-      case RevertHotSwap                 => unbecome
-      case Exit(dead, reason)            => self.handleTrapExit(dead, reason)
-      case Link(child)                   => self.link(child)
-      case Unlink(child)                 => self.unlink(child)
-      case UnlinkAndStop(child)          => self.unlink(child); child.stop
-      case Restart(reason)               => throw reason
+      case HotSwap(code)                             => become(code)
+      case RevertHotSwap                             => unbecome
+      case Exit(dead, reason)                        => self.handleTrapExit(dead, reason)
+      case Link(child)                               => self.link(child)
+      case Unlink(child)                             => self.unlink(child)
+      case UnlinkAndStop(child)                      => self.unlink(child); child.stop
+      case Restart(reason)                           => throw reason
       case msg if !self.hotswap.isEmpty &&
                   self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
       case msg if self.hotswap.isEmpty   &&
-                  defaultBehavior.isDefinedAt(msg)  => defaultBehavior.apply(msg)
+                  defaultBehavior.isDefinedAt(msg)   => defaultBehavior.apply(msg)
     }
     actorBehavior
   }

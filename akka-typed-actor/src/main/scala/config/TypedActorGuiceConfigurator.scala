@@ -5,7 +5,7 @@
 package se.scalablesolutions.akka.config
 
 import se.scalablesolutions.akka.actor._
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.util._
 import ReflectiveAccess._
 
@@ -27,12 +27,12 @@ import com.google.inject._
 private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBase with Logging {
   private var injector: Injector = _
   private var supervisor: Option[Supervisor]  = None
-  private var restartStrategy: RestartStrategy  = _
-  private var components: List[Component] = _
+  private var faultHandlingStrategy: FaultHandlingStrategy = NoFaultHandlingStrategy
+  private var components: List[SuperviseTypedActor] = _
   private var supervised: List[Supervise] = Nil
   private var bindings: List[DependencyBinding] = Nil
-  private var configRegistry = new HashMap[Class[_], Component] // TODO is configRegistry needed?
-  private var typedActorRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, Component]]
+  private var configRegistry = new HashMap[Class[_], SuperviseTypedActor] // TODO is configRegistry needed?
+  private var typedActorRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, SuperviseTypedActor]]
   private var modules = new java.util.ArrayList[Module]
   private var methodToUriRegistry = new HashMap[Method, String]
 
@@ -68,10 +68,10 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
       else c.target
     }
 
-  override def configure(restartStrategy: RestartStrategy, components: List[Component]):
+  override def configure(faultHandlingStrategy: FaultHandlingStrategy, components: List[SuperviseTypedActor]):
     TypedActorConfiguratorBase = synchronized {
-    this.restartStrategy = restartStrategy
-    this.components = components.toArray.toList.asInstanceOf[List[Component]]
+    this.faultHandlingStrategy = faultHandlingStrategy
+    this.components = components.toArray.toList.asInstanceOf[List[SuperviseTypedActor]]
     bindings = for (component <- this.components) yield {
       newDelegatingProxy(component)
 //      if (component.intf.isDefined) newDelegatingProxy(component)
@@ -84,7 +84,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
   }
 
 /*
-  private def newSubclassingProxy(component: Component): DependencyBinding = {
+  private def newSubclassingProxy(component: SuperviseTypedActor): DependencyBinding = {
     val targetClass =
       if (component.target.isInstanceOf[Class[_ <: TypedActor]]) component.target.asInstanceOf[Class[_ <: TypedActor]]
       else throw new IllegalArgumentException("TypedActor [" + component.target.getName + "] must be a subclass of TypedActor")
@@ -101,7 +101,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     new DependencyBinding(targetClass, proxy)
   }
 */
-  private def newDelegatingProxy(component: Component): DependencyBinding = {
+  private def newDelegatingProxy(component: SuperviseTypedActor): DependencyBinding = {
     component.target.getConstructor(Array[Class[_]](): _*).setAccessible(true)
     val interfaceClass = if (component.intf.isDefined) component.intf.get
                          else throw new IllegalActorStateException("No interface for TypedActor specified")
@@ -144,7 +144,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
 
   override def supervise: TypedActorConfiguratorBase = synchronized {
     if (injector eq null) inject
-    supervisor = Some(TypedActor.supervise(restartStrategy, supervised))
+    supervisor = Some(TypedActor.supervise(faultHandlingStrategy, supervised))
     this
   }
 
@@ -169,11 +169,11 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
 
   def reset = synchronized {
     modules = new java.util.ArrayList[Module]
-    configRegistry = new HashMap[Class[_], Component]
-    typedActorRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, Component]]
+    configRegistry = new HashMap[Class[_], SuperviseTypedActor]
+    typedActorRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, SuperviseTypedActor]]
     methodToUriRegistry = new HashMap[Method, String]
     injector = null
-    restartStrategy = null
+    faultHandlingStrategy = NoFaultHandlingStrategy
   }
 
   def stop = synchronized {

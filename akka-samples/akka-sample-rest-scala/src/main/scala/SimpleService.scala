@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.actor.{Transactor, SupervisorFactory, Actor}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.stm.TransactionalMap
 import se.scalablesolutions.akka.persistence.cassandra.CassandraStorage
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.Supervision._
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.comet.AkkaClusterBroadcastFilter
 import scala.xml.NodeSeq
@@ -25,7 +25,7 @@ import org.atmosphere.jersey.Broadcastable
 class Boot {
   val factory = SupervisorFactory(
     SupervisorConfig(
-      RestartStrategy(OneForOne, 3, 100,List(classOf[Exception])),
+      OneForOneStrategy(List(classOf[Exception]), 3, 100),
       Supervise(
         actorOf[SimpleServiceActor],
         Permanent) ::

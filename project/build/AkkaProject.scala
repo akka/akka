@@ -29,11 +29,36 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Deploy/dist settings
   // -------------------------------------------------------------------------------------------------------------------
-
+  def distName = "%s_%s-%s".format(name, buildScalaVersion, version)
   lazy val deployPath = info.projectPath / "deploy"
   lazy val distPath = info.projectPath / "dist"
-  def distName = "%s_%s-%s.zip".format(name, buildScalaVersion, version)
-  lazy val dist = zipTask(allArtifacts, "dist", distName) dependsOn (`package`) describedAs("Zips up the distribution.")
+
+  //The distribution task, packages Akka into a zipfile and places it into the projectPath/dist directory
+  lazy val dist = task {
+
+    def transferFile(from: Path, to: Path) =
+      if ( from.asFile.renameTo(to.asFile) ) None
+      else Some("Couldn't transfer %s to %s".format(from,to))
+
+    //Creates a temporary directory where we can assemble the distribution
+    val genDistDir = Path.fromFile({
+      val d = File.createTempFile("akka","dist")
+      d.delete //delete the file
+      d.mkdir  //Recreate it as a dir
+      d
+    }).## //## is needed to make sure that the zipped archive has the correct root folder
+
+    //Temporary directory to hold the dist currently being generated
+    val currentDist = genDistDir / distName
+    //ArchiveName = name of the zip file distribution that will be generated
+    val archiveName = distName + ".zip"
+
+    FileUtilities.copy(allArtifacts.get, currentDist, log).left.toOption orElse //Copy all needed artifacts into the root archive
+    FileUtilities.zip(List(currentDist),distName + ".zip",true,log) orElse //Compress the root archive into a zipfile
+    transferFile(info.projectPath / archiveName,distPath / archiveName) orElse //Move the archive into the dist folder
+    FileUtilities.clean(genDistDir,log) //Cleanup the generated jars
+
+  } dependsOn (`package`) describedAs("Zips up the distribution.")
 
   // -------------------------------------------------------------------------------------------------------------------
   // All repositories *must* go here! See ModuleConigurations below.
@@ -197,7 +222,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val rabbit = "com.rabbitmq" % "amqp-client" % "1.8.1" % "compile"
 
-    lazy val redis = "com.redis" % "redisclient" % "2.8.0-2.0.1" % "compile"
+    lazy val redis = "com.redis" % "redisclient" % "2.8.0-2.0.3" % "compile"
 
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile"
 
@@ -229,12 +254,17 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val hbase_core = "org.apache.hbase" % "hbase-core" % "0.20.6" % "compile"
 
+    //Riak PB Client
+    lazy val riak_pb_client = "com.trifork"   %  "riak-java-pb-client"      % "1.0-for-akka-by-ticktock"  % "compile"
+
     // Test
 
     lazy val camel_spring   = "org.apache.camel"       % "camel-spring"        % CAMEL_VERSION     % "test"
     lazy val cassandra_clhm = "org.apache.cassandra"   % "clhm-production"     % CASSANDRA_VERSION % "test"
     lazy val commons_coll   = "commons-collections"    % "commons-collections" % "3.2.1"           % "test"
     lazy val google_coll    = "com.google.collections" % "google-collections"  % "1.0"             % "test"
+    lazy val google_coll_compile    = "com.google.collections" % "google-collections"  % "1.0"             % "compile"
+
     lazy val high_scale     = "org.apache.cassandra"   % "high-scale-lib"      % CASSANDRA_VERSION % "test"
     lazy val testJetty      = "org.eclipse.jetty"      % "jetty-server"        % JETTY_VERSION     % "test"
     lazy val testJettyWebApp= "org.eclipse.jetty"      % "jetty-webapp"        % JETTY_VERSION     % "test"
@@ -309,6 +339,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-persistence-redis_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-persistence-mongo_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-persistence-cassandra_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-voldemort_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-riak_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-hbase_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-kernel_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-spring_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-jta_%s-%s.jar".format(buildScalaVersion, version)
@@ -331,8 +364,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   //override def defaultPublishRepository = Some(Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile))
   val publishTo = Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile)
 
-  val sourceArtifact = Artifact(artifactID, "sources", "jar", Some("sources"), Nil, None)
-  val docsArtifact = Artifact(artifactID, "docs", "jar", Some("docs"), Nil, None)
+  val sourceArtifact = Artifact(artifactID, "source", "jar", Some("sources"), Nil, None)
+  val docsArtifact = Artifact(artifactID, "doc", "jar", Some("docs"), Nil, None)
 
   // Credentials(Path.userHome / ".akka_publish_credentials", log)
 
@@ -509,6 +542,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaHbaseProject(_), akka_persistence_common)
     lazy val akka_persistence_voldemort = project("akka-persistence-voldemort", "akka-persistence-voldemort",
       new AkkaVoldemortProject(_), akka_persistence_common)
+    lazy val akka_persistence_riak = project("akka-persistence-riak", "akka-persistence-riak",
+      new AkkaRiakProject(_), akka_persistence_common)
     lazy val akka_persistence_couchdb = project("akka-persistence-couchdb", "akka-persistence-couchdb",
       new AkkaCouchDBProject(_), akka_persistence_common)
   }
@@ -601,7 +636,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     //testing
     val scalatest = Dependencies.scalatest
-    val google_coll = Dependencies.google_coll
+    val google_coll_compile = Dependencies.google_coll_compile
     val jdom = Dependencies.jdom
     val jetty = Dependencies.vold_jetty
     val velocity = Dependencies.velocity
@@ -609,6 +644,19 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val sjson = Dependencies.sjson_test
 
     override def testOptions = createTestFilter({ s:String=> s.endsWith("Suite") || s.endsWith("Test")})
+  }
+
+// akka-persistence-riak subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaRiakProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val riak_pb = Dependencies.riak_pb_client
+    val protobuf = Dependencies.protobuf
+    //testing
+    val scalatest = Dependencies.scalatest
+
+
+    override def testOptions = createTestFilter(_.endsWith("Test"))
   }
 
   class AkkaCouchDBProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
@@ -859,8 +907,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject {
-    lazy val sourceArtifact = Artifact(this.artifactID, "sources", "jar", Some("sources"), Nil, None)
-    lazy val docsArtifact = Artifact(this.artifactID, "docs", "jar", Some("docs"), Nil, None)
+    lazy val sourceArtifact = Artifact(this.artifactID, "source", "jar", Some("sources"), Nil, None)
+    lazy val docsArtifact = Artifact(this.artifactID, "doc", "jar", Some("docs"), Nil, None)
     override def runClasspath = super.runClasspath +++ (AkkaParentProject.this.info.projectPath / "config")
     override def testClasspath = super.testClasspath +++ (AkkaParentProject.this.info.projectPath / "config")
     override def packageDocsJar = this.defaultJarPath("-docs.jar")
