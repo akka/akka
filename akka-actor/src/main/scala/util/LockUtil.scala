@@ -5,7 +5,7 @@
 package se.scalablesolutions.akka.util
 
 import java.util.concurrent.locks.{ReentrantReadWriteLock, ReentrantLock}
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic. {AtomicBoolean}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -119,7 +119,7 @@ class SimpleLock {
 class Switch(startAsOn: Boolean = false) {
   private val switch = new AtomicBoolean(startAsOn)
 
-  protected def transcend(from: Boolean,action: => Unit): Boolean = {
+  protected def transcend(from: Boolean,action: => Unit): Boolean = synchronized {
     if (switch.compareAndSet(from,!from)) {
       try {
         action
@@ -135,8 +135,8 @@ class Switch(startAsOn: Boolean = false) {
   def switchOff(action: => Unit): Boolean = transcend(from = true, action)
   def switchOn(action: => Unit): Boolean  = transcend(from = false,action)
 
-  def switchOff: Boolean = switch.compareAndSet(true,false)
-  def switchOn: Boolean  = switch.compareAndSet(false,true)
+  def switchOff: Boolean = synchronized { switch.compareAndSet(true,false) }
+  def switchOn: Boolean  = synchronized { switch.compareAndSet(false,true) }
 
   def ifOnYield[T](action: => T): Option[T] = {
     if (switch.get)

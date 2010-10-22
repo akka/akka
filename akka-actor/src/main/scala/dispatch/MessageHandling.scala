@@ -69,6 +69,7 @@ trait MessageDispatcher extends MailboxFactory with Logging {
   def shutdown: Unit
 
   def register(actorRef: ActorRef) {
+    start
     if (actorRef.mailbox eq null) actorRef.mailbox = createMailbox(actorRef)
     uuids add actorRef.uuid
   }

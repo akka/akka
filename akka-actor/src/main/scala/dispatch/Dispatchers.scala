@@ -52,7 +52,7 @@ object Dispatchers extends Logging {
   val MAILBOX_PUSH_TIME_OUT           = Duration(config.getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time", 10), TIME_UNIT)
   val THROUGHPUT_DEADLINE_TIME        = Duration(config.getInt("akka.actor.throughput-deadline-time",-1), TIME_UNIT)
   val THROUGHPUT_DEADLINE_TIME_MILLIS = THROUGHPUT_DEADLINE_TIME.toMillis.toInt
-  val MAILBOX_TYPE                    = if (MAILBOX_CAPACITY < 0) UnboundedMailbox() else BoundedMailbox()
+  val MAILBOX_TYPE: MailboxType       = if (MAILBOX_CAPACITY < 0) UnboundedMailbox() else BoundedMailbox()
 
   lazy val defaultGlobalDispatcher = {
     config.getConfigMap("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalExecutorBasedEventDrivenDispatcher)
@@ -60,13 +60,7 @@ object Dispatchers extends Logging {
 
   object globalHawtDispatcher extends HawtDispatcher
 
-  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher(
-    "global", THROUGHPUT, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE) {
-    override def register(actor: ActorRef) = {
-      if (isShutdown) init
-      super.register(actor)
-    }
-  }
+  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global", THROUGHPUT, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE)
 
   /**
    * Creates an event-driven dispatcher based on the excellent HawtDispatch library.
@@ -172,23 +166,27 @@ object Dispatchers extends Logging {
   def from(cfg: ConfigMap): Option[MessageDispatcher] = {
     lazy val name = cfg.getString("name", newUuid.toString)
 
-    def threadPoolConfig(b: ThreadPoolBuilder) {
-      b.configureIfPossible( builder => {
-        cfg.getInt("keep-alive-time").foreach(time => builder.setKeepAliveTimeInMillis(Duration(time, TIME_UNIT).toMillis.toInt))
-        cfg.getDouble("core-pool-size-factor").foreach(builder.setCorePoolSizeFromFactor(_))
-        cfg.getDouble("max-pool-size-factor").foreach(builder.setMaxPoolSizeFromFactor(_))
-        cfg.getInt("executor-bounds").foreach(builder.setExecutorBounds(_))
-        cfg.getBool("allow-core-timeout").foreach(builder.setAllowCoreThreadTimeout(_))
-        cfg.getInt("mailbox-capacity").foreach(builder.setMailboxCapacity(_))
+    def configureThreadPool(createDispatcher: => (ThreadPoolConfig) => MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
+      val builder = ThreadPoolConfigDispatcherBuilder(createDispatcher,ThreadPoolConfig()) //Create a new builder
+      //Creates a transformation from builder to builder, if the option isDefined
+      def conf_?[T](opt: Option[T])(fun: (T) => ThreadPoolConfigDispatcherBuilder => ThreadPoolConfigDispatcherBuilder):
+        Option[(ThreadPoolConfigDispatcherBuilder) => ThreadPoolConfigDispatcherBuilder] = opt map fun
 
-        cfg.getString("rejection-policy").map({
+      //Apply the following options to the config if they are present in the cfg
+      List(
+        conf_?(cfg getInt    "keep-alive-time"      )(time   => _.setKeepAliveTime(Duration(time, TIME_UNIT))),
+        conf_?(cfg getDouble "core-pool-size-factor")(factor => _.setCorePoolSizeFromFactor(factor)),
+        conf_?(cfg getDouble "max-pool-size-factor" )(factor => _.setMaxPoolSizeFromFactor(factor)),
+        conf_?(cfg getInt    "executor-bounds"      )(bounds => _.setExecutorBounds(bounds)),
+        conf_?(cfg getBool   "allow-core-timeout"   )(allow  => _.setAllowCoreThreadTimeout(allow)),
+        conf_?(cfg getString "rejection-policy" map {
           case "abort"          => new AbortPolicy()
           case "caller-runs"    => new CallerRunsPolicy()
           case "discard-oldest" => new DiscardOldestPolicy()
           case "discard"        => new DiscardPolicy()
-          case x => throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy!" format x)
-        }).foreach(builder.setRejectionPolicy(_))
-      })
+          case x                => throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy!" format x)
+        })(policy => _.setRejectionPolicy(policy))
+      ).foldLeft(builder)( (c,f) => f.map( _(c) ).getOrElse(c)) //Returns the builder with all the specified options set
     }
 
     lazy val mailboxType: MailboxType = {
@@ -200,15 +198,17 @@ object Dispatchers extends Logging {
 
     cfg.getString("type") map {
       case "ExecutorBasedEventDriven" =>
-        new ExecutorBasedEventDrivenDispatcher(
+        configureThreadPool(threadPoolConfig => new ExecutorBasedEventDrivenDispatcher(
           name,
           cfg.getInt("throughput", THROUGHPUT),
           cfg.getInt("throughput-deadline", THROUGHPUT_DEADLINE_TIME_MILLIS),
           mailboxType,
-          threadPoolConfig)
+          threadPoolConfig)).build
 
-      case "ExecutorBasedEventDrivenWorkStealing" => new ExecutorBasedEventDrivenWorkStealingDispatcher(name, mailboxType, threadPoolConfig)
-      case "Hawt"                                 => new HawtDispatcher(cfg.getBool("aggregate").getOrElse(true))
+      case "ExecutorBasedEventDrivenWorkStealing" =>
+        configureThreadPool(poolCfg => new ExecutorBasedEventDrivenWorkStealingDispatcher(name, mailboxType,poolCfg)).build
+
+      case "Hawt"                                 => new HawtDispatcher(cfg.getBool("aggregate",true))
       case "GlobalExecutorBasedEventDriven"       => globalExecutorBasedEventDrivenDispatcher
       case "GlobalHawt"                           => globalHawtDispatcher
       case unknown                                => throw new IllegalArgumentException("Unknown dispatcher type [%s]" format unknown)
