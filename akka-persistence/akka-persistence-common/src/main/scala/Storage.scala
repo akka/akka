@@ -455,7 +455,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
       (entry: @unchecked) match {
         case LogEntry(_, Some(v), ADD) => storage.insertVectorStorageEntryFor(uuid, v)
         case LogEntry(Some(i), Some(v), UPD) => storage.updateVectorStorageEntryFor(uuid, i, v)
-        case LogEntry(_, _, POP) => //..
+        case LogEntry(_, _, POP) => storage.removeVectorStorageEntryFor(uuid)
       }
     }
     appendOnlyTxLog.clear
@@ -517,8 +517,9 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
    */
   def pop: T = {
     register
+    val curr = replay
     appendOnlyTxLog + LogEntry(None, None, POP)
-    throw new UnsupportedOperationException("PersistentVector::pop is not implemented")
+    curr.last
   }
 
   def update(index: Int, newElem: T) = {
