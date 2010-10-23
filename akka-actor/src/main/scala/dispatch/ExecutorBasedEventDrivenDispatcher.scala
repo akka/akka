@@ -82,6 +82,9 @@ class ExecutorBasedEventDrivenDispatcher(
   def this(_name: String, throughput: Int) = 
     this(_name, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 
+  def this(_name: String, _config: ThreadPoolConfig) =
+    this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE, _config)
+
   def this(_name: String) = 
     this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 
@@ -90,7 +93,7 @@ class ExecutorBasedEventDrivenDispatcher(
 
   private[akka] val active = new Switch(false)
   private[akka] val threadFactory = new MonitorableThreadFactory(name)
-  private[akka] val executorService = new AtomicReference[ExecutorService](null)
+  private[akka] val executorService = new AtomicReference[ExecutorService](config.createLazyExecutorService(threadFactory))
 
   def dispatch(invocation: MessageInvocation) = {
     val mbox = getMailbox(invocation.receiver)
@@ -133,15 +136,10 @@ class ExecutorBasedEventDrivenDispatcher(
 
   def start: Unit = if (active.isOff) active switchOn {
     log.debug("Starting up %s\n\twith throughput [%d]", toString, throughput)
-    if (executorService.get() eq null) {
-      val newExecutor = config.createExecutorService(threadFactory)
-      if (!executorService.compareAndSet(null,newExecutor))
-        log.error("Thought the ExecutorService was missing but appeared out of nowhere!")
-    }
   }
 
   def shutdown: Unit = if (active.isOn) active switchOff {
-    val old = executorService.getAndSet(null)
+    val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
     if (old ne null) {
       log.debug("Shutting down %s", toString)
       old.shutdownNow()

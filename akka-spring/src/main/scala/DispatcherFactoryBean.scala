@@ -11,6 +11,7 @@ import se.scalablesolutions.akka.actor.ActorRef
 import java.util.concurrent.RejectedExecutionHandler
 import java.util.concurrent.ThreadPoolExecutor.{DiscardPolicy, DiscardOldestPolicy, CallerRunsPolicy, AbortPolicy}
 import se.scalablesolutions.akka.dispatch._
+import se.scalablesolutions.akka.util.Duration
 
 /**
  * Reusable factory method for dispatchers.
@@ -24,53 +25,66 @@ object DispatcherFactoryBean {
    */
   def createNewInstance(properties: DispatcherProperties, actorRef: Option[ActorRef] = None): MessageDispatcher = {
 
-    def configThreadPool(): ThreadPoolConfig = {
-      val poolCfg = ThreadPoolConfig()
+    //Creates a ThreadPoolConfigDispatcherBuilder and applies the configuration to it
+    def configureThreadPool(createDispatcher: => (ThreadPoolConfig) => MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
       if ((properties.threadPool ne null) && (properties.threadPool.queue ne null)) {
-        properties.threadPool.queue match {
-          case VAL_BOUNDED_ARRAY_BLOCKING_QUEUE => threadPoolBuilder.withNewThreadPoolWithArrayBlockingQueueWithCapacityAndFairness(properties.threadPool.capacity, properties.threadPool.fairness)
-          case VAL_UNBOUNDED_LINKED_BLOCKING_QUEUE if properties.threadPool.capacity > -1 => threadPoolBuilder.withNewThreadPoolWithLinkedBlockingQueueWithCapacity(properties.threadPool.capacity)
-          case VAL_UNBOUNDED_LINKED_BLOCKING_QUEUE if properties.threadPool.capacity <= 0 => threadPoolBuilder.withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
-          case VAL_BOUNDED_LINKED_BLOCKING_QUEUE => threadPoolBuilder.withNewBoundedThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity(properties.threadPool.bound)
-          case VAL_SYNCHRONOUS_QUEUE => threadPoolBuilder.withNewThreadPoolWithSynchronousQueueWithFairness(properties.threadPool.fairness)
-          case _ => throw new IllegalArgumentException("unknown queue type")
-        }
+        import ThreadPoolConfigDispatcherBuilder.conf_?
+        import properties._
+        val queueDef       = Some(threadPool.queue)
+        val corePoolSize   = if (threadPool.corePoolSize > -1) Some(threadPool.corePoolSize) else None
+        val maxPoolSize    = if (threadPool.maxPoolSize > -1)  Some(threadPool.maxPoolSize)  else None
+        val keepAlive      = if (threadPool.keepAlive > -1)    Some(threadPool.keepAlive)    else None
+        val executorBounds = if (threadPool.bound > -1)        Some(threadPool.bound)        else None
+        val flowHandler    = threadPool.rejectionPolicy match {
+                               case null | ""               => None
+                               case "abort-policy"          => Some(new AbortPolicy())
+                               case "caller-runs-policy"    => Some(new CallerRunsPolicy())
+                               case "discard-oldest-policy" => Some(new DiscardOldestPolicy())
+                               case "discard-policy"        => Some(new DiscardPolicy())
+                               case x => throw new IllegalArgumentException("Unknown rejection-policy '" + x + "'")
+                             }
 
-        if (properties.threadPool.corePoolSize > -1)
-          threadPoolBuilder.setCorePoolSize(properties.threadPool.corePoolSize)
-
-        if (properties.threadPool.maxPoolSize > -1)
-          threadPoolBuilder.setMaxPoolSize(properties.threadPool.maxPoolSize)
-
-        if (properties.threadPool.keepAlive > -1)
-          threadPoolBuilder.setKeepAliveTimeInMillis(properties.threadPool.keepAlive)
-
-        if (properties.threadPool.mailboxCapacity > -1)
-          threadPoolBuilder.setMailboxCapacity(properties.threadPool.mailboxCapacity)
-
-        if ((properties.threadPool.rejectionPolicy ne null) && (!properties.threadPool.rejectionPolicy.isEmpty)) {
-          val policy: RejectedExecutionHandler = properties.threadPool.rejectionPolicy match {
-            case "abort-policy"          => new AbortPolicy()
-            case "caller-runs-policy"    => new CallerRunsPolicy()
-            case "discard-oldest-policy" => new DiscardOldestPolicy()
-            case "discard-policy"        => new DiscardPolicy()
-            case _ => throw new IllegalArgumentException("Unknown rejection-policy '" + properties.threadPool.rejectionPolicy + "'")
-          }
-          threadPoolBuilder.setRejectionPolicy(policy)
-        }
-      } else poolCfg
+        //Apply the following options to the config if they are present in the cfg
+        ThreadPoolConfigDispatcherBuilder(createDispatcher,ThreadPoolConfig()).configure(
+          conf_?(queueDef      )(definition => definition match {
+                                  case VAL_BOUNDED_ARRAY_BLOCKING_QUEUE =>
+                                    _.withNewThreadPoolWithArrayBlockingQueueWithCapacityAndFairness(threadPool.capacity,threadPool.fairness)
+                                  case VAL_UNBOUNDED_LINKED_BLOCKING_QUEUE if threadPool.capacity > -1 =>
+                                    _.withNewThreadPoolWithLinkedBlockingQueueWithCapacity(threadPool.capacity)
+                                  case VAL_UNBOUNDED_LINKED_BLOCKING_QUEUE if threadPool.capacity <= 0 =>
+                                    _.withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
+                                  case VAL_BOUNDED_LINKED_BLOCKING_QUEUE =>
+                                    _.withNewBoundedThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity(threadPool.bound)
+                                  case VAL_SYNCHRONOUS_QUEUE =>
+                                    _.withNewThreadPoolWithSynchronousQueueWithFairness(threadPool.fairness)
+                                  case unknown =>
+                                    throw new IllegalArgumentException("Unknown queue type " + unknown)
+                                }),
+          conf_?(keepAlive     )(time   => _.setKeepAliveTimeInMillis(time)),
+          conf_?(corePoolSize  )(count  => _.setCorePoolSize(count)),
+          conf_?(maxPoolSize   )(count  => _.setMaxPoolSize(count)),
+          conf_?(executorBounds)(bounds => _.setExecutorBounds(bounds)),
+          conf_?(flowHandler   )(policy => _.setRejectionPolicy(policy)))
+      }
+      else
+        ThreadPoolConfigDispatcherBuilder(createDispatcher,ThreadPoolConfig())
     }
 
-    var dispatcher = properties.dispatcherType match {
-      case EXECUTOR_BASED_EVENT_DRIVEN => new ExecutorBasedEventDrivenDispatcher(properties.name, config = configThreadPool)
-      case EXECUTOR_BASED_EVENT_DRIVEN_WORK_STEALING => Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher(properties.name)
-      case THREAD_BASED if actorRef.isEmpty => throw new IllegalArgumentException("Need an ActorRef to create a thread based dispatcher.")
-      case THREAD_BASED if actorRef.isDefined => Dispatchers.newThreadBasedDispatcher(actorRef.get)
-      case HAWT => Dispatchers.newHawtDispatcher(properties.aggregate)
-      case _ => throw new IllegalArgumentException("unknown dispatcher type")
+    //Create the dispatcher
+    properties.dispatcherType match {
+      case EXECUTOR_BASED_EVENT_DRIVEN =>
+        configureThreadPool(poolConfig => new ExecutorBasedEventDrivenDispatcher(properties.name, poolConfig)).build
+      case EXECUTOR_BASED_EVENT_DRIVEN_WORK_STEALING =>
+        configureThreadPool(poolConfig => new ExecutorBasedEventDrivenWorkStealingDispatcher(properties.name,Dispatchers.MAILBOX_TYPE,poolConfig)).build
+      case THREAD_BASED if actorRef.isEmpty =>
+        throw new IllegalArgumentException("Need an ActorRef to create a thread based dispatcher.")
+      case THREAD_BASED if actorRef.isDefined =>
+        Dispatchers.newThreadBasedDispatcher(actorRef.get)
+      case HAWT =>
+        Dispatchers.newHawtDispatcher(properties.aggregate)
+      case unknown =>
+        throw new IllegalArgumentException("Unknown dispatcher type " + unknown)
     }
-
-    dispatcher
   }
 }
 
