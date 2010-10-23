@@ -98,7 +98,6 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
    val result = latch.await(3,TimeUnit.SECONDS)
    fastOne.stop
    slowOne.stop
-   throughputDispatcher.shutdown
    assert(result === true)
  }
 

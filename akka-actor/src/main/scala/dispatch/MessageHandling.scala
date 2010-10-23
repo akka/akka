@@ -4,15 +4,12 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef, Uuid, ActorInitializationException}
-import se.scalablesolutions.akka.util.{SimpleLock, Duration, HashCode, Logging}
-import se.scalablesolutions.akka.util.ReflectiveAccess.EnterpriseModule
-import se.scalablesolutions.akka.AkkaException
+import se.scalablesolutions.akka.actor.{ActorRegistry, ActorRef, Uuid, ActorInitializationException}
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 
-import java.util.{Queue, List}
 import java.util.concurrent._
+import se.scalablesolutions.akka.util. {Logging, HashCode}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -61,12 +58,6 @@ final class MessageInvocation(val receiver: ActorRef,
 trait MessageDispatcher extends MailboxFactory with Logging {
   
   protected val uuids = new ConcurrentSkipListSet[Uuid]
-  
-  def dispatch(invocation: MessageInvocation): Unit
-
-  def start: Unit
-
-  def shutdown: Unit
 
   def register(actorRef: ActorRef) {
     start
@@ -77,15 +68,29 @@ trait MessageDispatcher extends MailboxFactory with Logging {
   def unregister(actorRef: ActorRef) = {
     uuids remove actorRef.uuid
     actorRef.mailbox = null
-    if (canBeShutDown) shutdown // shut down in the dispatcher's references is zero
+    if (uuids.isEmpty) shutdown // shut down in the dispatcher's references is zero
+  }
+
+  def stopAllLinkedActors {
+    val i = uuids.iterator
+    while(i.hasNext()) {
+      val uuid = i.next()
+      i.remove()
+      ActorRegistry.actorFor(uuid) match {
+        case Some(actor) => actor.stop
+        case None => log.warn("stopAllLinkedActors couldn't find linked actor: " + uuid)
+      }
+    }
+    if(uuids.isEmpty) shutdown
   }
   
   def suspend(actorRef: ActorRef): Unit
   def resume(actorRef: ActorRef): Unit
-  
-  def canBeShutDown: Boolean = uuids.isEmpty
 
-  def isShutdown: Boolean
+  def dispatch(invocation: MessageInvocation): Unit
+
+  protected def start: Unit
+  protected def shutdown: Unit
 
   /**
    * Returns the size of the mailbox for the specified actor

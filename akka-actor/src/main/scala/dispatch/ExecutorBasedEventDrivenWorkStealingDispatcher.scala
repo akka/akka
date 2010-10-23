@@ -94,8 +94,6 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     mailboxWasProcessed
   }
 
-  def isShutdown = active.isOff
-
   /**
    * Process the messages in the mailbox of the given actor.
    * @return
