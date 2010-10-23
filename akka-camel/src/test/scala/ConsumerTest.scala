@@ -23,6 +23,8 @@ class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
     ActorRegistry.shutdownAll
     // create new CamelService instance
     service = CamelServiceFactory.createCamelService
+    // Register publish requestor as listener
+    service.registerPublishRequestor
     // register test consumer before starting the CamelService
     actorOf(new TestConsumer("direct:publish-test-1")).start
     // start consumer publisher, otherwise we cannot set message
