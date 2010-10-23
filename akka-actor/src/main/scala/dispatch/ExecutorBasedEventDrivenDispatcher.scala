@@ -101,8 +101,6 @@ class ExecutorBasedEventDrivenDispatcher(
     registerForExecution(mbox)
   }
 
-  def isShutdown = active.isOff
-
   /**
    * @return the mailbox associated with the actor
    */

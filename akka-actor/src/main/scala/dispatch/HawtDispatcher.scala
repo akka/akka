@@ -150,8 +150,6 @@ class HawtDispatcher(val aggregate: Boolean = true, val parent: DispatchQueue = 
 
   def shutdown = active switchOff { releaseNonDaemon }
 
-  def isShutdown = active.isOff
-
   def dispatch(invocation: MessageInvocation) = if (active.isOn) {
     mailbox(invocation.receiver).dispatch(invocation)
   } else {

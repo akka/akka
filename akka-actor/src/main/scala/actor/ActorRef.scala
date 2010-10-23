@@ -781,7 +781,6 @@ class LocalActorRef private[akka] (
       "Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
       dispatcher.register(this)
-      dispatcher.start
       if (isTransactor)
         transactorConfig = transactorConfig.copy(factory = Some(TransactionFactory(transactorConfig.config, id)))
 

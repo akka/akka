@@ -70,10 +70,10 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
       actor4 ! "kill"
 
       countDownLatch.await()
-      assert(!actor1.dispatcher.isShutdown, "dispatcher1 is shutdown")
-      assert(!actor2.dispatcher.isShutdown, "dispatcher2 is shutdown")
-      assert(!actor3.dispatcher.isShutdown, "dispatcher3 is shutdown")
-      assert(!actor4.dispatcher.isShutdown, "dispatcher4 is shutdown")
+      assert(!actor1.isShutdown, "actor1 is shutdown")
+      assert(!actor2.isShutdown, "actor2 is shutdown")
+      assert(!actor3.isShutdown, "actor3 is shutdown")
+      assert(!actor4.isShutdown, "actor4 is shutdown")
     }
   }
 }
