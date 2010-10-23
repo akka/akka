@@ -30,7 +30,7 @@ class TypedActorGuiceConfiguratorSpec extends
 
   override def beforeAll {
     Config.config
-    val dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("test")
+    val dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("test").build
 
     conf.addExternalGuiceModule(new AbstractModule {
       def configure = bind(classOf[Ext]).to(classOf[ExtImpl]).in(Scopes.SINGLETON)

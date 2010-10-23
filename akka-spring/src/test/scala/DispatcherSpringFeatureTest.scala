@@ -130,13 +130,18 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
    * get ThreadPoolExecutor via reflection and assert that dispatcher is correct type
    */
   private def getThreadPoolExecutorAndAssert(dispatcher: MessageDispatcher): ThreadPoolExecutor = {
-    assert(dispatcher.isInstanceOf[ThreadPoolBuilder])
-    val pool = dispatcher.asInstanceOf[ThreadPoolBuilder]
-    val field = pool.getClass.getDeclaredField("se$scalablesolutions$akka$dispatch$ThreadPoolBuilder$$threadPoolBuilder")
-    field.setAccessible(true)
-    val executor = field.get(pool).asInstanceOf[ThreadPoolExecutor]
-    assert(executor ne null)
-    executor;
+
+    def unpackExecutorService(e: ExecutorService): ExecutorService = e match {
+      case b: ExecutorServiceDelegate => unpackExecutorService(b.executor)
+      case t: ThreadPoolExecutor => t
+      case e => throw new IllegalStateException("Illegal executor type: " + e)
+    }
+
+    unpackExecutorService(dispatcher match {
+      case e: ExecutorBasedEventDrivenDispatcher => e.start; e.executorService.get()
+      case e: ExecutorBasedEventDrivenWorkStealingDispatcher => e.start; e.executorService.get()
+      case x => throw new IllegalStateException("Illegal dispatcher type: " + x)
+    }).asInstanceOf[ThreadPoolExecutor]
   }
 
 }

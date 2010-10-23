@@ -4,11 +4,12 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import java.util.concurrent.CopyOnWriteArrayList
 import jsr166x.{Deque, ConcurrentLinkedDeque, LinkedBlockingDeque}
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef, IllegalActorStateException}
 import se.scalablesolutions.akka.util.Switch
+import java.util.concurrent. {ExecutorService, CopyOnWriteArrayList}
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -33,27 +34,28 @@ import se.scalablesolutions.akka.util.Switch
 class ExecutorBasedEventDrivenWorkStealingDispatcher(
   _name: String,
   _mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
-  config: ThreadPoolConfig = ThreadPoolConfig()) extends MessageDispatcher with ThreadPoolBuilder {
+  config: ThreadPoolConfig = ThreadPoolConfig()) extends MessageDispatcher {
 
   def this(_name: String, mailboxType: MailboxType) = this(_name, mailboxType,ThreadPoolConfig())
 
   def this(_name: String) = this(_name, Dispatchers.MAILBOX_TYPE,ThreadPoolConfig())
+
+  //implicit def actorRef2actor(actorRef: ActorRef): Actor = actorRef.actor
   
   val mailboxType = Some(_mailboxType)
-  
+  val name = "akka:event-driven-work-stealing:dispatcher:" + _name
   private val active = new Switch(false)
 
-  implicit def actorRef2actor(actorRef: ActorRef): Actor = actorRef.actor
-
   /** Type of the actors registered in this dispatcher. */
-  private var actorType: Option[Class[_]] = None
-
+  @volatile private var actorType: Option[Class[_]] = None
   private val pooledActors = new CopyOnWriteArrayList[ActorRef]
+  private[akka] val threadFactory = new MonitorableThreadFactory(name)
+  private[akka] val executorService = new AtomicReference[ExecutorService](config.createLazyExecutorService(threadFactory))
 
   /** The index in the pooled actors list which was last used to steal work */
   @volatile private var lastThiefIndex = 0
 
-  val name = "akka:event-driven-work-stealing:dispatcher:" + _name
+
 
   /**
    * @return the mailbox associated with the actor
@@ -65,7 +67,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   def dispatch(invocation: MessageInvocation) = if (active.isOn) {
     val mbox = getMailbox(invocation.receiver)
     mbox enqueue invocation
-    executor execute mbox
+    executorService.get() execute mbox
   } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
 
   /**
@@ -91,6 +93,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
 
     mailboxWasProcessed
   }
+
+  def isShutdown = active.isOff
 
   /**
    * Process the messages in the mailbox of the given actor.
@@ -160,10 +164,10 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   private def donateMessage(receiver: ActorRef, thief: ActorRef): Boolean = {
     val donated = getMailbox(receiver).pollLast
     if (donated ne null) {
-      if (donated.senderFuture.isDefined) thief.self.postMessageToMailboxAndCreateFutureResultWithTimeout[Any](
+      if (donated.senderFuture.isDefined) thief.postMessageToMailboxAndCreateFutureResultWithTimeout[Any](
         donated.message, receiver.timeout, donated.sender, donated.senderFuture)
-      else if (donated.sender.isDefined) thief.self.postMessageToMailbox(donated.message, donated.sender)
-      else thief.self.postMessageToMailbox(donated.message, None)
+      else if (donated.sender.isDefined) thief.postMessageToMailbox(donated.message, donated.sender)
+      else thief.postMessageToMailbox(donated.message, None)
       true
     } else false
   }
@@ -172,10 +176,13 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     log.debug("Starting up %s",toString)
   }
 
-  def shutdown = active switchOff {
-    log.debug("Shutting down %s", toString)
-    executor.shutdownNow
-    uuids.clear
+  def shutdown: Unit = if (active.isOn) active switchOff {
+    val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
+    if (old ne null) {
+      log.debug("Shutting down %s", toString)
+      old.shutdownNow()
+      uuids.clear
+    }
   }
 
 
@@ -186,7 +193,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   def resume(actorRef: ActorRef) {
     val mbox = getMailbox(actorRef)
     mbox.suspended.switchOff
-    executor execute mbox
+    executorService.get() execute mbox
   }
 
   def ensureNotActive(): Unit = if (active.isOn) throw new IllegalActorStateException(
@@ -207,9 +214,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
           findThief(actorRef).foreach( tryDonateAndProcessMessages(actorRef,_) )
         }
       }
-    case BoundedMailbox(blocking, capacity, pushTimeOut) => 
-      val cap = if (mailboxCapacity == -1) capacity else mailboxCapacity
-      new LinkedBlockingDeque[MessageInvocation](cap) with MessageQueue with Runnable {
+    case BoundedMailbox(blocking, capacity, pushTimeOut) =>
+      new LinkedBlockingDeque[MessageInvocation](capacity) with MessageQueue with Runnable {
         def enqueue(handle: MessageInvocation): Unit = this.add(handle)
 
         def dequeue: MessageInvocation = this.poll()

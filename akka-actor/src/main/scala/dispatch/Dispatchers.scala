@@ -100,7 +100,8 @@ object Dispatchers extends Logging {
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String) = new ExecutorBasedEventDrivenDispatcher(name)
+  def newExecutorBasedEventDrivenDispatcher(name: String) =
+    ThreadPoolConfigDispatcherBuilder(config => new ExecutorBasedEventDrivenDispatcher(name,config),ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
@@ -108,7 +109,8 @@ object Dispatchers extends Logging {
    * Has a fluent builder interface for configuring its semantics.
    */
   def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, mailboxType: MailboxType) =
-    new ExecutorBasedEventDrivenDispatcher(name, throughput, mailboxType)
+    ThreadPoolConfigDispatcherBuilder(config =>
+      new ExecutorBasedEventDrivenDispatcher(name, throughput, THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType, config),ThreadPoolConfig())
 
 
   /**
@@ -116,30 +118,32 @@ object Dispatchers extends Logging {
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) = 
-    new ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineMs, mailboxType)
+  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) =
+    ThreadPoolConfigDispatcherBuilder(config =>
+      new ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineMs, mailboxType, config),ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher with work stealing (TODO: better doc) serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String) = new ExecutorBasedEventDrivenWorkStealingDispatcher(name)
+  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String): ThreadPoolConfigDispatcherBuilder =
+    newExecutorBasedEventDrivenWorkStealingDispatcher(name,MAILBOX_TYPE)
 
   /**
    * Creates a executor-based event-driven dispatcher with work stealing (TODO: better doc) serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, mailboxType: MailboxType) = 
-    new ExecutorBasedEventDrivenWorkStealingDispatcher(name, mailboxType = mailboxType)
+  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, mailboxType: MailboxType) =
+    ThreadPoolConfigDispatcherBuilder(config => new ExecutorBasedEventDrivenWorkStealingDispatcher(name,mailboxType,config),ThreadPoolConfig())
 
   /**
    * Utility function that tries to load the specified dispatcher config from the akka.conf
    * or else use the supplied default dispatcher
    */
   def fromConfig(key: String, default: => MessageDispatcher = defaultGlobalDispatcher): MessageDispatcher =
-    config.getConfigMap(key).flatMap(from).getOrElse(default)
+    config getConfigMap key flatMap from getOrElse default
 
   /*
    * Creates of obtains a dispatcher from a ConfigMap according to the format below
@@ -167,13 +171,10 @@ object Dispatchers extends Logging {
     lazy val name = cfg.getString("name", newUuid.toString)
 
     def configureThreadPool(createDispatcher: => (ThreadPoolConfig) => MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
-      val builder = ThreadPoolConfigDispatcherBuilder(createDispatcher,ThreadPoolConfig()) //Create a new builder
-      //Creates a transformation from builder to builder, if the option isDefined
-      def conf_?[T](opt: Option[T])(fun: (T) => ThreadPoolConfigDispatcherBuilder => ThreadPoolConfigDispatcherBuilder):
-        Option[(ThreadPoolConfigDispatcherBuilder) => ThreadPoolConfigDispatcherBuilder] = opt map fun
+      import ThreadPoolConfigDispatcherBuilder.conf_?
 
       //Apply the following options to the config if they are present in the cfg
-      List(
+      ThreadPoolConfigDispatcherBuilder(createDispatcher,ThreadPoolConfig()).configure(
         conf_?(cfg getInt    "keep-alive-time"      )(time   => _.setKeepAliveTime(Duration(time, TIME_UNIT))),
         conf_?(cfg getDouble "core-pool-size-factor")(factor => _.setCorePoolSizeFromFactor(factor)),
         conf_?(cfg getDouble "max-pool-size-factor" )(factor => _.setMaxPoolSizeFromFactor(factor)),
@@ -185,8 +186,7 @@ object Dispatchers extends Logging {
           case "discard-oldest" => new DiscardOldestPolicy()
           case "discard"        => new DiscardPolicy()
           case x                => throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy!" format x)
-        })(policy => _.setRejectionPolicy(policy))
-      ).foldLeft(builder)( (c,f) => f.map( _(c) ).getOrElse(c)) //Returns the builder with all the specified options set
+        })(policy => _.setRejectionPolicy(policy)))
     }
 
     lazy val mailboxType: MailboxType = {
