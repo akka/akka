@@ -964,7 +964,7 @@ class LocalActorRef private[akka] (
         message, senderOption, None, remoteAddress.get, timeout, true, this, None, ActorType.ScalaActor)
     } else {
       val invocation = new MessageInvocation(this, message, senderOption, None, transactionSet.get)
-      dispatcher dispatch invocation
+      dispatcher dispatchMessage invocation
     }
   }
 
@@ -985,7 +985,7 @@ class LocalActorRef private[akka] (
       else new DefaultCompletableFuture[T](timeout)
       val invocation = new MessageInvocation(
         this, message, senderOption, Some(future.asInstanceOf[CompletableFuture[Any]]), transactionSet.get)
-      dispatcher dispatch invocation
+      dispatcher dispatchMessage invocation
       future
     }
   }

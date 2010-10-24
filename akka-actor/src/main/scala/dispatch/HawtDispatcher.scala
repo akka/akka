@@ -142,18 +142,14 @@ object HawtDispatcher {
 class HawtDispatcher(val aggregate: Boolean = true, val parent: DispatchQueue = globalQueue) extends MessageDispatcher  {
   import HawtDispatcher._
 
-  private val active = new Switch(false)
-
   val mailboxType: Option[MailboxType] = None
  
-  def start = active switchOn { retainNonDaemon }
+  protected def start { retainNonDaemon }
 
-  def shutdown = active switchOff { releaseNonDaemon }
+  protected def shutdown { releaseNonDaemon }
 
-  def dispatch(invocation: MessageInvocation) = if (active.isOn) {
+  protected def dispatch(invocation: MessageInvocation){
     mailbox(invocation.receiver).dispatch(invocation)
-  } else {
-    log.warning("%s is shut down,\n\tignoring the the messages sent to\n\t%s", toString, invocation.receiver)
   }
 
   // hawtdispatch does not have a way to get queue sizes, getting an accurate
