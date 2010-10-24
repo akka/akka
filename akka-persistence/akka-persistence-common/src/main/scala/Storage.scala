@@ -516,10 +516,14 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
    * Removes the <i>tail</i> element of this vector.
    */
   def pop: T = {
-    register
-    val curr = replay
-    appendOnlyTxLog + LogEntry(None, None, POP)
-    curr.last
+    if(storage.supportsRemoveVectorStorageEntry){
+      register
+      val curr = replay
+      appendOnlyTxLog + LogEntry(None, None, POP)
+      curr.last
+    } else {
+      throw new UnsupportedOperationException("Vector pop is not supported by the current backend")
+    }
   }
 
   def update(index: Int, newElem: T) = {
