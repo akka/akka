@@ -15,6 +15,7 @@ import java.net.InetSocketAddress
 
 import scala.reflect.BeanProperty
 import se.scalablesolutions.akka.util. {ReflectiveAccess, Logging, Duration}
+import se.scalablesolutions.akka.japi.Procedure
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
@@ -44,7 +45,9 @@ abstract class RemoteActor(address: InetSocketAddress) extends Actor {
  */
 @serializable sealed trait LifeCycleMessage
 
-case class HotSwap(code: Actor.Receive) extends LifeCycleMessage
+case class HotSwap(code: Actor.Receive) extends LifeCycleMessage {
+  def this(behavior: Procedure[Any]) = this({ case msg => behavior.apply(msg) }: Actor.Receive)
+}
 
 case object RevertHotSwap extends LifeCycleMessage
 
