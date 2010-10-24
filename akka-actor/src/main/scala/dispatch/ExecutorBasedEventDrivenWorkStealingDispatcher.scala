@@ -170,16 +170,15 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     } else false
   }
 
-  def start = active switchOn {
+  protected def start = active switchOn {
     log.debug("Starting up %s",toString)
   }
 
-  def shutdown: Unit = if (active.isOn) active switchOff {
+  protected def shutdown: Unit = active switchOff {
     val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
     if (old ne null) {
       log.debug("Shutting down %s", toString)
       old.shutdownNow()
-      uuids.clear
     }
   }
 
@@ -193,9 +192,6 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     mbox.suspended.switchOff
     executorService.get() execute mbox
   }
-
-  def ensureNotActive(): Unit = if (active.isOn) throw new IllegalActorStateException(
-    "Can't build a new thread pool for a dispatcher that is already up and running")
 
   override val toString = "ExecutorBasedEventDrivenWorkStealingDispatcher[" + name + "]"
 

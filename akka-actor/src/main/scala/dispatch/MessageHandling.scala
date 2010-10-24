@@ -9,7 +9,7 @@ import se.scalablesolutions.akka.actor.{ActorRegistry, ActorRef, Uuid, ActorInit
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 
 import java.util.concurrent._
-import se.scalablesolutions.akka.util. {Logging, HashCode}
+import se.scalablesolutions.akka.util. {ReentrantGuard, Logging, HashCode}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -58,24 +58,33 @@ final class MessageInvocation(val receiver: ActorRef,
 trait MessageDispatcher extends MailboxFactory with Logging {
   
   protected val uuids = new ConcurrentSkipListSet[Uuid]
+  protected val guard = new ReentrantGuard
 
-  def register(actorRef: ActorRef) {
-    start
+  final def attach(actorRef: ActorRef): Unit = guard withGuard {
+    register(actorRef)
+  }
+
+  final def detach(actorRef: ActorRef): Unit = guard withGuard {
+    unregister(actorRef)
+  }
+
+  protected def register(actorRef: ActorRef) {
+    if (uuids.isEmpty()) start
     if (actorRef.mailbox eq null) actorRef.mailbox = createMailbox(actorRef)
     uuids add actorRef.uuid
   }
   
-  def unregister(actorRef: ActorRef) = {
-    uuids remove actorRef.uuid
-    actorRef.mailbox = null
-    if (uuids.isEmpty) shutdown // shut down in the dispatcher's references is zero
+  protected def unregister(actorRef: ActorRef) = {
+    if (uuids remove actorRef.uuid) {
+      actorRef.mailbox = null
+      if (uuids.isEmpty) shutdown // shut down in the dispatcher's references is zero
+    }
   }
 
   def stopAllLinkedActors {
     val i = uuids.iterator
     while(i.hasNext()) {
       val uuid = i.next()
-      i.remove()
       ActorRegistry.actorFor(uuid) match {
         case Some(actor) => actor.stop
         case None => log.warn("stopAllLinkedActors couldn't find linked actor: " + uuid)
