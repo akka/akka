@@ -245,13 +245,16 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
       try{
           vectorAccess.delete(key)
       } catch {
-        case e:Exception => log.warn("Exception while trying to clean up a poped element from the vector, this is acceptable")
+        case e:Exception => log.warn("Exception while trying to clean up a popped element from the vector, this is acceptable")
       }
 
     } else {
       //blow up or not?
     }
   }
+
+
+  override def supportsRemoveVectorStorageEntry = true
 
   def getVectorMetadata(name: String): VectorMetadata = {
     val keys = List(getKey(name, vectorHeadIndex), getKey(name, vectorTailIndex))

@@ -29,16 +29,19 @@ trait VectorStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAf
   }
 
 
-
   describe("A Properly functioning VectorStorageBackend") {
     it("should insertVectorStorageEntry as a logical prepend operation to the existing list") {
       val vector = "insertSingleTest"
       val rand = new Random(3).nextInt(100)
-      val values = (0 to rand).toList.map {i: Int => vector + "value" + i}
+      val values = (0 to rand).toList.map{
+        i: Int => vector + "value" + i
+      }
       storage.getVectorStorageSizeFor(vector) should be(0)
-      values.foreach {s: String => storage.insertVectorStorageEntryFor(vector, s.getBytes)}
+      values.foreach{
+        s: String => storage.insertVectorStorageEntryFor(vector, s.getBytes)
+      }
       val shouldRetrieve = values.reverse
-      (0 to rand).foreach {
+      (0 to rand).foreach{
         i: Int => {
           shouldRetrieve(i) should be(new String(storage.getVectorStorageEntryFor(vector, i)))
         }
@@ -48,11 +51,15 @@ trait VectorStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAf
     it("should insertVectorStorageEntries as a logical prepend operation to the existing list") {
       val vector = "insertMultiTest"
       val rand = new Random(3).nextInt(100)
-      val values = (0 to rand).toList.map {i: Int => vector + "value" + i}
+      val values = (0 to rand).toList.map{
+        i: Int => vector + "value" + i
+      }
       storage.getVectorStorageSizeFor(vector) should be(0)
-      storage.insertVectorStorageEntriesFor(vector, values.map {s: String => s.getBytes})
+      storage.insertVectorStorageEntriesFor(vector, values.map{
+        s: String => s.getBytes
+      })
       val shouldRetrieve = values.reverse
-      (0 to rand).foreach {
+      (0 to rand).foreach{
         i: Int => {
           shouldRetrieve(i) should be(new String(storage.getVectorStorageEntryFor(vector, i)))
         }
@@ -62,9 +69,13 @@ trait VectorStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAf
     it("should successfully update entries") {
       val vector = "updateTest"
       val rand = new Random(3).nextInt(100)
-      val values = (0 to rand).toList.map {i: Int => vector + "value" + i}
+      val values = (0 to rand).toList.map{
+        i: Int => vector + "value" + i
+      }
       val urand = new Random(3).nextInt(rand)
-      storage.insertVectorStorageEntriesFor(vector, values.map {s: String => s.getBytes})
+      storage.insertVectorStorageEntriesFor(vector, values.map{
+        s: String => s.getBytes
+      })
       val toUpdate = "updated" + values.reverse(urand)
       storage.updateVectorStorageEntryFor(vector, urand, toUpdate.getBytes)
       toUpdate should be(new String(storage.getVectorStorageEntryFor(vector, urand)))
@@ -73,9 +84,13 @@ trait VectorStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAf
     it("should return the correct value from getVectorStorageFor") {
       val vector = "getTest"
       val rand = new Random(3).nextInt(100)
-      val values = (0 to rand).toList.map {i: Int => vector + "value" + i}
+      val values = (0 to rand).toList.map{
+        i: Int => vector + "value" + i
+      }
       val urand = new Random(3).nextInt(rand)
-      storage.insertVectorStorageEntriesFor(vector, values.map {s: String => s.getBytes})
+      storage.insertVectorStorageEntriesFor(vector, values.map{
+        s: String => s.getBytes
+      })
       values.reverse(urand) should be(new String(storage.getVectorStorageEntryFor(vector, urand)))
     }
 
@@ -83,35 +98,60 @@ trait VectorStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAf
       val vector = "getTest"
       val rand = new Random(3).nextInt(100)
       val drand = new Random(3).nextInt(rand)
-      val values = (0 to rand).toList.map {i: Int => vector + "value" + i}
-      storage.insertVectorStorageEntriesFor(vector, values.map {s: String => s.getBytes})
-      values.reverse should be(storage.getVectorStorageRangeFor(vector, None, None, rand + 1).map {b: Array[Byte] => new String(b)})
-      (0 to drand).foreach {
+      val values = (0 to rand).toList.map{
+        i: Int => vector + "value" + i
+      }
+      storage.insertVectorStorageEntriesFor(vector, values.map{
+        s: String => s.getBytes
+      })
+      values.reverse should be(storage.getVectorStorageRangeFor(vector, None, None, rand + 1).map{
+        b: Array[Byte] => new String(b)
+      })
+      (0 to drand).foreach{
         i: Int => {
           val value: String = vector + "value" + (rand - i)
           log.debug(value)
-          List(value) should be(storage.getVectorStorageRangeFor(vector, Some(i), None, 1).map {b: Array[Byte] => new String(b)})
+          List(value) should be(storage.getVectorStorageRangeFor(vector, Some(i), None, 1).map{
+            b: Array[Byte] => new String(b)
+          })
         }
       }
     }
 
 
-    it("should support remove properly"){
-      val vector = "removeTest"
-      val rand = new Random(3).nextInt(100)
-      val values = (0 to rand).toList.map {i: Int => vector + "value" + i}
-      storage.insertVectorStorageEntriesFor(vector, values.map {s: String => s.getBytes})
-      storage.getVectorStorageSizeFor(vector) should be (values.size)
-      values.foreach{
-        s => storage.removeVectorStorageEntryFor(vector)
+    it("should support remove properly") {
+      if (storage.supportsRemoveVectorStorageEntry) {
+        val vector = "removeTest"
+        val rand = new Random(3).nextInt(100)
+        val values = (0 to rand).toList.map{
+          i: Int => vector + "value" + i
+        }
+        storage.insertVectorStorageEntriesFor(vector, values.map{
+          s: String => s.getBytes
+        })
+        storage.getVectorStorageSizeFor(vector) should be(values.size)
+        (1 to rand).foreach{
+          i: Int => {
+            storage.removeVectorStorageEntryFor(vector)
+            values.reverse.dropRight(i) should be(storage.getVectorStorageRangeFor(vector, None, None, rand + 1 - i).map{
+              b: Array[Byte] => new String(b)
+            })
+          }
+
+        }
+        storage.removeVectorStorageEntryFor(vector)
+        storage.getVectorStorageSizeFor(vector) should be(0)
+        storage.insertVectorStorageEntriesFor(vector, values.map{
+          s: String => s.getBytes
+        })
+        storage.getVectorStorageSizeFor(vector) should be(values.size)
+        values.foreach{
+          s => storage.removeVectorStorageEntryFor(vector)
+        }
+        storage.getVectorStorageSizeFor(vector) should be(0)
+      } else {
+        log.warn("The current backend being tested does not support removeVectorStorageEntryFor")
       }
-      storage.getVectorStorageSizeFor(vector) should be(0)
-      storage.insertVectorStorageEntriesFor(vector, values.map {s: String => s.getBytes})
-      storage.getVectorStorageSizeFor(vector) should be (values.size)
-      values.foreach{
-        s=> storage.removeVectorStorageEntryFor(vector)
-      }
-      storage.getVectorStorageSizeFor(vector) should be(0)
 
     }
 
@@ -129,13 +169,17 @@ trait VectorStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAf
     it("shoud throw a Storage exception when there is an attempt to retrieve an index larger than the Vector") {
       val vector = "tooLargeRetrieve"
       storage.insertVectorStorageEntryFor(vector, null)
-      evaluating {storage.getVectorStorageEntryFor(vector, 9)} should produce[StorageException]
+      evaluating{
+        storage.getVectorStorageEntryFor(vector, 9)
+      } should produce[StorageException]
     }
 
     it("shoud throw a Storage exception when there is an attempt to update an index larger than the Vector") {
       val vector = "tooLargeUpdate"
       storage.insertVectorStorageEntryFor(vector, null)
-      evaluating {storage.updateVectorStorageEntryFor(vector, 9, null)} should produce[StorageException]
+      evaluating{
+        storage.updateVectorStorageEntryFor(vector, 9, null)
+      } should produce[StorageException]
     }
 
   }

@@ -28,10 +28,10 @@ trait VectorStorageBackend[T] extends StorageBackend {
   def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[T]
   def getVectorStorageSizeFor(name: String): Int
   def removeVectorStorageEntryFor(name:String):Unit = {
-    //Unfortunately this is thrown on commit, not at the time of the call to VectorStorage.pop
-    //Should we add a supportsRemove method that allows an early throw of the exception?
+    //should remove the "tail" if supported
     throw new UnsupportedOperationException("VectorStorageBackend.removeVectorStorageEntry is not supported")
   }
+  def supportsRemoveVectorStorageEntry:Boolean = false //Allows the Vector frontend to fail on calls to pop, instead of at commit time
 }
 
 // for Ref
