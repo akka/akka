@@ -101,7 +101,7 @@ trait MessageDispatcher extends MailboxFactory with Logging {
   /**
    * Traverses the list of actors (uuids) currently being attached to this dispatcher and stops those actors
    */
-  def stopAllLinkedActors {
+  def stopAllAttachedActors {
     val i = uuids.iterator
     while(i.hasNext()) {
       val uuid = i.next()
