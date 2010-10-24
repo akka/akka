@@ -62,9 +62,10 @@ object MessageDispatcher {
  *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait MessageDispatcher extends MailboxFactory with Logging {
+  import MessageDispatcher._
   protected val uuids = new ConcurrentSkipListSet[Uuid]
   protected val guard = new ReentrantGuard
-  private val shutdownSchedule = new AtomicInteger(MessageDispatcher.UNSCHEDULED)
+  private var shutdownSchedule = UNSCHEDULED //This can be non-volatile since it is protected by guard withGuard
   protected val active = new Switch(false)
 
   /**
@@ -99,13 +100,13 @@ trait MessageDispatcher extends MailboxFactory with Logging {
     if (uuids remove actorRef.uuid) {
       actorRef.mailbox = null
       if (uuids.isEmpty){
-        shutdownSchedule.get() match {
-          case MessageDispatcher.UNSCHEDULED =>
-            shutdownSchedule.set(MessageDispatcher.SCHEDULED)
+        shutdownSchedule match {
+          case UNSCHEDULED =>
+            shutdownSchedule = SCHEDULED
             Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
-          case MessageDispatcher.SCHEDULED =>
-            shutdownSchedule.set(MessageDispatcher.RESCHEDULED)
-          case MessageDispatcher.RESCHEDULED => //Already marked for reschedule
+          case SCHEDULED =>
+            shutdownSchedule = RESCHEDULED
+          case RESCHEDULED => //Already marked for reschedule
         }
       }
     }
@@ -128,18 +129,18 @@ trait MessageDispatcher extends MailboxFactory with Logging {
 
   private val shutdownAction = new Runnable {
     def run = guard withGuard {
-      shutdownSchedule.get() match {
-        case MessageDispatcher.RESCHEDULED =>
-          shutdownSchedule.set(MessageDispatcher.SCHEDULED)
+      shutdownSchedule match {
+        case RESCHEDULED =>
+          shutdownSchedule = SCHEDULED
           Scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
-        case MessageDispatcher.SCHEDULED =>
+        case SCHEDULED =>
           if (uuids.isEmpty()) {
             active switchOff {
               shutdown // shut down in the dispatcher's references is zero
             }
           }
-          shutdownSchedule.set(MessageDispatcher.UNSCHEDULED)
-        case MessageDispatcher.UNSCHEDULED => //Do nothing
+          shutdownSchedule = UNSCHEDULED
+        case UNSCHEDULED => //Do nothing
       }
     }
   }
