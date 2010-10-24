@@ -141,6 +141,7 @@ class ExecutorBasedEventDrivenDispatcher(
     }
   }
 
+
   private[akka] def registerForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = if (active.isOn) {
     if (mbox.suspended.isOff && mbox.dispatcherLock.tryLock()) {
       try {
