@@ -9,8 +9,7 @@ import java.util.concurrent._
 import atomic.{AtomicLong, AtomicInteger}
 import ThreadPoolExecutor.CallerRunsPolicy
 
-import se.scalablesolutions.akka.actor.IllegalActorStateException
-import se.scalablesolutions.akka.util. {Duration, Logger, Logging}
+import se.scalablesolutions.akka.util. {Duration, Logging}
 
 object ThreadPoolConfig {
   type Bounds = Int
@@ -194,7 +193,7 @@ class MonitorableThread(runnable: Runnable, name: String)
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extends ExecutorServiceDelegate with Logging {
+class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extends ExecutorServiceDelegate {
   protected val semaphore = new Semaphore(bound)
 
   override def execute(command: Runnable) = {
@@ -219,7 +218,7 @@ class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extend
   }
 }
 
-trait ExecutorServiceDelegate extends ExecutorService {
+trait ExecutorServiceDelegate extends ExecutorService with Logging {
 
   def executor: ExecutorService
 
@@ -254,7 +253,10 @@ trait LazyExecutorService extends ExecutorServiceDelegate {
 
   def createExecutor: ExecutorService
 
-  lazy val executor = createExecutor
+  lazy val executor = {
+    log.info("Lazily initializing ExecutorService for ",this)
+    createExecutor
+  }
 }
 
 class LazyExecutorServiceWrapper(executorFactory: => ExecutorService) extends LazyExecutorService {

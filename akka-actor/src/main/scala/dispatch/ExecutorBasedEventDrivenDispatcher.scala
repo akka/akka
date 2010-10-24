@@ -132,16 +132,15 @@ class ExecutorBasedEventDrivenDispatcher(
     case JMSBasedDurableMailbox(serializer)       => throw new UnsupportedOperationException("JMSBasedDurableMailbox is not yet supported")
   }
 
-  def start: Unit = if (active.isOff) active switchOn {
+  protected def start: Unit = active switchOn {
     log.debug("Starting up %s\n\twith throughput [%d]", toString, throughput)
   }
 
-  def shutdown: Unit = if (active.isOn) active switchOff {
+  protected def shutdown: Unit = active switchOff {
     val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
     if (old ne null) {
       log.debug("Shutting down %s", toString)
       old.shutdownNow()
-      uuids.clear
     }
   }
 

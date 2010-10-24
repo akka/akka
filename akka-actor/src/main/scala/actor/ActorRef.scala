@@ -780,7 +780,7 @@ class LocalActorRef private[akka] (
     if (isShutdown) throw new ActorStartException(
       "Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
-      dispatcher.register(this)
+      dispatcher.attach(this)
       if (isTransactor)
         transactorConfig = transactorConfig.copy(factory = Some(TransactionFactory(transactorConfig.config, id)))
 
@@ -802,7 +802,7 @@ class LocalActorRef private[akka] (
     if (isRunning) {
       receiveTimeout = None
       cancelReceiveTimeout
-      dispatcher.unregister(this)
+      dispatcher.detach(this)
       transactorConfig = transactorConfig.copy(factory = None) 
       _status = ActorRefInternals.SHUTDOWN
       actor.postStop

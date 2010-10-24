@@ -138,8 +138,8 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
     }
 
     unpackExecutorService(dispatcher match {
-      case e: ExecutorBasedEventDrivenDispatcher => e.start; e.executorService.get()
-      case e: ExecutorBasedEventDrivenWorkStealingDispatcher => e.start; e.executorService.get()
+      case e: ExecutorBasedEventDrivenDispatcher => e.executorService.get()
+      case e: ExecutorBasedEventDrivenWorkStealingDispatcher => e.executorService.get()
       case x => throw new IllegalStateException("Illegal dispatcher type: " + x)
     }).asInstanceOf[ThreadPoolExecutor]
   }
