@@ -99,6 +99,9 @@ object StandaloneJmsApplication extends Application {
     CamelContextManager.mandatoryTemplate.sendBody(jmsUri, "Camel rocks (%d)" format i)
   }
 
+  // Wait a bit for subscribes to receive messages
+  Thread.sleep(1000)
+
   stopCamelService
   ActorRegistry.shutdownAll
 }
