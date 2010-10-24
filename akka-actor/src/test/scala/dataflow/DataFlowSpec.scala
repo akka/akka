@@ -28,8 +28,8 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
         val x, y, z = new DataFlowVariable[Int]
         thread {
           z << x() + y()
-          latch.countDown
           result.set(z())
+          latch.countDown
         }
         thread { x << 40 }
         thread { y << 2 }

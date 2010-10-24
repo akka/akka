@@ -44,7 +44,6 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   
   val mailboxType = Some(_mailboxType)
   val name = "akka:event-driven-work-stealing:dispatcher:" + _name
-  private val active = new Switch(false)
 
   /** Type of the actors registered in this dispatcher. */
   @volatile private var actorType: Option[Class[_]] = None
@@ -55,8 +54,6 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   /** The index in the pooled actors list which was last used to steal work */
   @volatile private var lastThiefIndex = 0
 
-
-
   /**
    * @return the mailbox associated with the actor
    */
@@ -64,11 +61,11 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
-  def dispatch(invocation: MessageInvocation) = if (active.isOn) {
+  protected def dispatch(invocation: MessageInvocation) {
     val mbox = getMailbox(invocation.receiver)
     mbox enqueue invocation
     executorService.get() execute mbox
-  } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
+  }
 
   /**
    * Try processing the mailbox of the given actor. Fails if the dispatching lock on the actor is already held by
@@ -170,11 +167,9 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     } else false
   }
 
-  protected def start = active switchOn {
-    log.debug("Starting up %s",toString)
-  }
+  protected def start = log.debug("Starting up %s",toString)
 
-  protected def shutdown: Unit = active switchOff {
+  protected def shutdown {
     val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
     if (old ne null) {
       log.debug("Shutting down %s", toString)
