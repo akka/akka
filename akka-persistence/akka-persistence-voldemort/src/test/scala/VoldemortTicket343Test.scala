@@ -19,4 +19,7 @@ class VoldemortTicket343Test extends Ticket343Test with EmbeddedVoldemort {
   def getVector: (String) => PersistentVector[Array[Byte]] = VoldemortStorage.getVector
 
   def getMap: (String) => PersistentMap[Array[Byte], Array[Byte]] = VoldemortStorage.getMap
+
+  def supportsVectorRemove = true
+
 }
