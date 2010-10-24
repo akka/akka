@@ -34,6 +34,7 @@ case class VUPD(i: Int, v: String)
 case class VUPD_AND_ABORT(i: Int, v: String)
 case class VGET(i: Int)
 case object VSIZE
+case object VPOP
 case class VGET_AFTER_VADD(vsToAdd: List[String], isToFetch: List[Int])
 case class VADD_WITH_SLICE(vsToAdd: List[String], start: Int, cnt: Int)
 
@@ -178,6 +179,10 @@ object StorageObj {
           fooVector.slice(Some(s), None, c)
         }
         self.reply(l.map(new String(_)))
+
+      case VPOP =>
+        val p = atomic{fooVector.pop}
+        self.reply(p)
     }
   }
 }

@@ -95,6 +95,26 @@ trait VectorStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAf
       }
     }
 
+
+    it("should support remove properly"){
+      val vector = "removeTest"
+      val rand = new Random(3).nextInt(100)
+      val values = (0 to rand).toList.map {i: Int => vector + "value" + i}
+      storage.insertVectorStorageEntriesFor(vector, values.map {s: String => s.getBytes})
+      storage.getVectorStorageSizeFor(vector) should be (values.size)
+      values.foreach{
+        s => storage.removeVectorStorageEntryFor(vector)
+      }
+      storage.getVectorStorageSizeFor(vector) should be(0)
+      storage.insertVectorStorageEntriesFor(vector, values.map {s: String => s.getBytes})
+      storage.getVectorStorageSizeFor(vector) should be (values.size)
+      values.foreach{
+        s=> storage.removeVectorStorageEntryFor(vector)
+      }
+      storage.getVectorStorageSizeFor(vector) should be(0)
+
+    }
+
     it("should behave properly when the range used in getVectorStorageRangeFor has indexes outside the current size of the vector") {
       //what is proper?
     }
