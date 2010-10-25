@@ -165,7 +165,7 @@ object ActorModelSpec {
   def newTestActor(implicit d: MessageDispatcherInterceptor) = actorOf(new DispatcherActor(d))
 }
 
-abstract class ActorModelSpec extends JUnitSuite {
+abstract class ActorModelSpec(val supportsMoreThanOneActor: Boolean) extends JUnitSuite {
   import ActorModelSpec._
 
   protected def newInterceptedDispatcher: MessageDispatcherInterceptor
@@ -194,7 +194,6 @@ abstract class ActorModelSpec extends JUnitSuite {
     implicit val dispatcher = newInterceptedDispatcher
     val a = newTestActor
     val start,step1,step2,oneAtATime = new CountDownLatch(1)
-    val counter = new AtomicLong(0)
     a.start
 
     a ! CountDown(start)
@@ -207,6 +206,8 @@ abstract class ActorModelSpec extends JUnitSuite {
 
     a ! CountDown(oneAtATime)
     assertNoCountDown(oneAtATime,500,"Processed message when not allowed to")
+    assertRefDefaultZero(a)(registers = 1, msgsReceived = 3, msgsProcessed = 2)
+
     step2.countDown()
     assertCountDown(oneAtATime,500,"Processed message when allowed")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 3, msgsProcessed = 3)
@@ -214,9 +215,27 @@ abstract class ActorModelSpec extends JUnitSuite {
     a.stop
     assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 3, msgsProcessed = 3)
   }
+
+  @Test def dispatcherShouldProcessMessagesInParallel: Unit = if (supportsMoreThanOneActor) {
+    implicit val dispatcher = newInterceptedDispatcher
+    val a, b = newTestActor.start
+    val aStart,aStop,bParallel = new CountDownLatch(1)
+
+    a ! Meet(aStart,aStop)
+    assertCountDown(aStart,3000, "Should process first message within 3 seconds")
+
+    b ! CountDown(bParallel)
+    assertCountDown(bParallel, 3000, "Should process other actors in parallel")
+
+    aStop.countDown()
+    a.stop()
+    b.stop()
+    assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
+    assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
+  }
 }
 
-class ExecutorBasedEventDrivenDispatcherModelTest extends ActorModelSpec {
+class ExecutorBasedEventDrivenDispatcherModelTest extends ActorModelSpec(supportsMoreThanOneActor = true) {
   def newInterceptedDispatcher =
     new ExecutorBasedEventDrivenDispatcher("foo") with MessageDispatcherInterceptor
 }
