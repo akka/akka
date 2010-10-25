@@ -11,6 +11,7 @@ import se.scalablesolutions.akka.config.Supervision._
 import java.net.InetSocketAddress
 
 import scala.reflect.BeanProperty
+import se.scalablesolutions.akka.japi.Procedure
 
 /**
  * Subclass this abstract class to create a MDB-style untyped actor.
@@ -66,6 +67,11 @@ abstract class UntypedActor extends Actor {
   final protected def receive = {
     case msg => onReceive(msg)
   }
+
+  /**
+   * Java API for become
+   */
+  def become(behavior: Procedure[Any]): Unit = super.become { case msg => behavior.apply(msg) }
 
   @throws(classOf[Exception])
   def onReceive(message: Any): Unit
