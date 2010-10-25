@@ -86,7 +86,7 @@ trait MessageDispatcher extends MailboxFactory with Logging {
     dispatch(invocation)
   } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
 
-  protected def register(actorRef: ActorRef) {
+  private[akka] def register(actorRef: ActorRef) {
     if (actorRef.mailbox eq null) actorRef.mailbox = createMailbox(actorRef)
     uuids add actorRef.uuid
     if (active.isOff) {
@@ -96,7 +96,7 @@ trait MessageDispatcher extends MailboxFactory with Logging {
     }
   }
   
-  protected def unregister(actorRef: ActorRef) = {
+  private[akka] def unregister(actorRef: ActorRef) = {
     if (uuids remove actorRef.uuid) {
       actorRef.mailbox = null
       if (uuids.isEmpty){
@@ -145,7 +145,7 @@ trait MessageDispatcher extends MailboxFactory with Logging {
     }
   }
 
-  protected def timeoutMs: Long = 1000
+  private[akka] def timeoutMs: Long = 1000
 
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
@@ -160,17 +160,17 @@ trait MessageDispatcher extends MailboxFactory with Logging {
   /**
    *   Will be called when the dispatcher is to queue an invocation for execution
    */
-  protected def dispatch(invocation: MessageInvocation): Unit
+  private[akka] def dispatch(invocation: MessageInvocation): Unit
 
   /**
    * Called one time every time an actor is attached to this dispatcher and this dispatcher was previously shutdown
    */
-  protected def start: Unit
+  private[akka] def start: Unit
 
   /**
    * Called one time every time an actor is detached from this dispatcher and this dispatcher has no actors left attached
    */
-  protected def shutdown: Unit
+  private[akka] def shutdown: Unit
 
   /**
    * Returns the size of the mailbox for the specified actor
