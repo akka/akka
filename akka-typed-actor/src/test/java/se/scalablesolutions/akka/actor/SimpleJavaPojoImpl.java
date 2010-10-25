@@ -3,6 +3,7 @@ package se.scalablesolutions.akka.actor;
 import se.scalablesolutions.akka.actor.*;
 import se.scalablesolutions.akka.dispatch.Future;
 import se.scalablesolutions.akka.dispatch.CompletableFuture;
+import se.scalablesolutions.akka.japi.Option;
 
 public class SimpleJavaPojoImpl extends TypedActor implements SimpleJavaPojo {
 
@@ -27,6 +28,10 @@ public class SimpleJavaPojoImpl extends TypedActor implements SimpleJavaPojo {
 
   public CompletableFuture<Object> getSenderFuture() {
     return getContext().getSenderFuture().get();
+  }
+
+  public Option<String> middleName() {
+      return Option.some("foo");
   }
 
   public void setName(String name) {

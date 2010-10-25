@@ -24,6 +24,9 @@ import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
  * Non-void methods are turned into request-reply messages with the exception of methods returning
  * a 'Future' which will be sent using request-reply-with-future semantics and need to return the
  * result using the 'future(..)' method: 'return future(... future result ...);'.
+ * Methods returning se.scalablesolutions.akka.japi.Option will block until a timeout expires,
+ * if the implementation of the method returns "none", some(null) will be returned, "none" will only be
+ * returned when the method didn't respond within the timeout.
  *
  * Here is an example of usage (in Java):
  * <pre>
@@ -731,6 +734,9 @@ object TypedActor extends Logging {
   private[akka] def returnsFuture_?(methodRtti: MethodRtti): Boolean =
     classOf[Future[_]].isAssignableFrom(methodRtti.getMethod.getReturnType)
 
+  private[akka] def returnsOption_?(methodRtti: MethodRtti): Boolean =
+    classOf[se.scalablesolutions.akka.japi.Option[_]].isAssignableFrom(methodRtti.getMethod.getReturnType)
+
   private[akka] def supervise(faultHandlingStrategy: FaultHandlingStrategy, components: List[Supervise]): Supervisor =
     Supervisor(SupervisorConfig(faultHandlingStrategy, components))
 
@@ -818,7 +824,12 @@ private[akka] abstract class ActorAspect {
 
     } else if (TypedActor.returnsFuture_?(methodRtti)) {
       actorRef.!!!(joinPoint, timeout)(senderActorRef)
-
+    } else if (TypedActor.returnsOption_?(methodRtti)) {
+        import se.scalablesolutions.akka.japi.{Option => JOption}
+      (actorRef.!!(joinPoint, timeout)(senderActorRef)).as[JOption[AnyRef]] match {
+        case None => JOption.none[AnyRef]
+        case Some(x) => if(x.isDefined) x else JOption.some[AnyRef](null)
+      }
     } else {
       val result = (actorRef.!!(joinPoint, timeout)(senderActorRef)).as[AnyRef]
       if (result.isDefined) result.get
