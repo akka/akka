@@ -10,6 +10,7 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
+import se.scalablesolutions.akka.japi.Option;
 
 import se.scalablesolutions.akka.dispatch.DefaultCompletableFuture
 import TypedActorSpec._
@@ -77,6 +78,11 @@ class TypedActorSpec extends
       future.await
       future.result.isDefined should equal (true)
       future.result.get should equal (100)
+    }
+
+    it("should return none instead of exception") {
+      val middleName = simplePojo.middleName();
+      assert(middleName === Option.some("foo"))
     }
 
     it("should accept constructor arguments") {
