@@ -228,10 +228,41 @@ abstract class ActorModelSpec(val supportsMoreThanOneActor: Boolean) extends JUn
     assertCountDown(bParallel, 3000, "Should process other actors in parallel")
 
     aStop.countDown()
-    a.stop()
-    b.stop()
+    a.stop
+    b.stop
     assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
     assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
+  }
+
+  @Test def dispatcherShouldSuspendAndResumeAFailingNonSupervisedPermanentActor {
+    implicit val dispatcher = newInterceptedDispatcher
+    val a = newTestActor.start
+    val done = new CountDownLatch(1)
+    a ! Restart
+    a ! CountDown(done)
+    assertCountDown(done, 3000, "Should be suspended+resumed and done with next message within 3 seconds")
+    a.stop
+    assertRefDefaultZero(a)(registers = 1,unregisters = 1, msgsReceived = 2,
+      msgsProcessed = 2, suspensions = 1, resumes = 1)
+  }
+
+  @Test def dispatcherShouldNotProcessMessagesForASuspendedActor {
+    implicit val dispatcher = newInterceptedDispatcher
+    val a = newTestActor.start
+    val done = new CountDownLatch(1)
+    dispatcher.suspend(a)
+    a ! CountDown(done)
+    assertNoCountDown(done, 1000, "Should not process messages while suspended")
+    assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, suspensions = 1)
+
+    dispatcher.resume(a)
+    assertCountDown(done, 3000, "Should resume processing of messages when resumed")
+    assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, msgsProcessed = 1,
+      suspensions = 1, resumes = 1)
+
+    a.stop
+    assertRefDefaultZero(a)(registers = 1,unregisters = 1, msgsReceived = 1, msgsProcessed = 1,
+      suspensions = 1, resumes = 1)
   }
 }
 
