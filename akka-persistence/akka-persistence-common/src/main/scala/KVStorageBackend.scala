@@ -253,9 +253,6 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
     }
   }
 
-
-  override def supportsRemoveVectorStorageEntry = true
-
   def getVectorMetadata(name: String): VectorMetadata = {
     val keys = List(getKey(name, vectorHeadIndex), getKey(name, vectorTailIndex))
     val vdata = vectorAccess.getAll(keys)

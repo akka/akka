@@ -42,7 +42,6 @@ case class VADD_WITH_SLICE(vsToAdd: List[String], start: Int, cnt: Int)
 object StorageObj {
   var getMap: String => PersistentMap[Array[Byte], Array[Byte]] = _
   var getVector: String => PersistentVector[Array[Byte]] = _
-  var supportsRemove:Boolean = false
 
   class SampleMapStorage extends Actor {
     self.lifeCycle = Permanent
@@ -198,14 +197,11 @@ Spec with
 
   def getVector: String => PersistentVector[Array[Byte]]
 
-  def supportsVectorRemove: Boolean
-
   def dropMapsAndVectors: Unit
 
   override def beforeEach {
     StorageObj.getMap = getMap
     StorageObj.getVector = getVector
-    StorageObj.supportsRemove = supportsVectorRemove
     dropMapsAndVectors
     println("** dropMapsAndVectors")
   }
@@ -310,19 +306,13 @@ Spec with
       proc.start
 
       // add 4 elements in separate transactions  //also test add + pop of a 5th element
-      if(StorageObj.supportsRemove){
-        (proc !! VADD("ticktock")).getOrElse("VADD failed") should equal(1)
-        (proc !! VADD("debasish")).getOrElse("VADD failed") should equal(2)
-        (proc !! VADD("maulindu")).getOrElse("VADD failed") should equal(3)
-        (proc !! VADD("ramanendu")).getOrElse("VADD failed") should equal(4)
-        (proc !! VADD("nilanjan")).getOrElse("VADD failed") should equal(5)
-        (proc !! VPOP).getOrElse("VPOP failed") should equal("ticktock".getBytes)
-      } else {
-          (proc !! VADD("debasish")).getOrElse("VADD failed") should equal(1)
-          (proc !! VADD("maulindu")).getOrElse("VADD failed") should equal(2)
-          (proc !! VADD("ramanendu")).getOrElse("VADD failed") should equal(3)
-          (proc !! VADD("nilanjan")).getOrElse("VADD failed") should equal(4)
-      }
+
+      (proc !! VADD("ticktock")).getOrElse("VADD failed") should equal(1)
+      (proc !! VADD("debasish")).getOrElse("VADD failed") should equal(2)
+      (proc !! VADD("maulindu")).getOrElse("VADD failed") should equal(3)
+      (proc !! VADD("ramanendu")).getOrElse("VADD failed") should equal(4)
+      (proc !! VADD("nilanjan")).getOrElse("VADD failed") should equal(5)
+      (proc !! VPOP).getOrElse("VPOP failed") should equal("ticktock".getBytes)
 
       new String((proc !! VGET(0)).get.asInstanceOf[Array[Byte]]) should equal("nilanjan")
       new String((proc !! VGET(1)).get.asInstanceOf[Array[Byte]]) should equal("ramanendu")

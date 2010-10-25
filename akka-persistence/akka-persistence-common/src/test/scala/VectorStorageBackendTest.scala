@@ -120,38 +120,34 @@ trait VectorStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAf
 
 
     it("should support remove properly") {
-      if (storage.supportsRemoveVectorStorageEntry) {
-        val vector = "removeTest"
-        val rand = new Random(3).nextInt(100)
-        val values = (0 to rand).toList.map{
-          i: Int => vector + "value" + i
-        }
-        storage.insertVectorStorageEntriesFor(vector, values.map{
-          s: String => s.getBytes
-        })
-        storage.getVectorStorageSizeFor(vector) should be(values.size)
-        (1 to rand).foreach{
-          i: Int => {
-            storage.removeVectorStorageEntryFor(vector)
-            values.reverse.dropRight(i) should be(storage.getVectorStorageRangeFor(vector, None, None, rand + 1 - i).map{
-              b: Array[Byte] => new String(b)
-            })
-          }
-
-        }
-        storage.removeVectorStorageEntryFor(vector)
-        storage.getVectorStorageSizeFor(vector) should be(0)
-        storage.insertVectorStorageEntriesFor(vector, values.map{
-          s: String => s.getBytes
-        })
-        storage.getVectorStorageSizeFor(vector) should be(values.size)
-        values.foreach{
-          s => storage.removeVectorStorageEntryFor(vector)
-        }
-        storage.getVectorStorageSizeFor(vector) should be(0)
-      } else {
-        log.warn("The current backend being tested does not support removeVectorStorageEntryFor")
+      val vector = "removeTest"
+      val rand = new Random(3).nextInt(100)
+      val values = (0 to rand).toList.map{
+        i: Int => vector + "value" + i
       }
+      storage.insertVectorStorageEntriesFor(vector, values.map{
+        s: String => s.getBytes
+      })
+      storage.getVectorStorageSizeFor(vector) should be(values.size)
+      (1 to rand).foreach{
+        i: Int => {
+          storage.removeVectorStorageEntryFor(vector)
+          values.reverse.dropRight(i) should be(storage.getVectorStorageRangeFor(vector, None, None, rand + 1 - i).map{
+            b: Array[Byte] => new String(b)
+          })
+        }
+
+      }
+      storage.removeVectorStorageEntryFor(vector)
+      storage.getVectorStorageSizeFor(vector) should be(0)
+      storage.insertVectorStorageEntriesFor(vector, values.map{
+        s: String => s.getBytes
+      })
+      storage.getVectorStorageSizeFor(vector) should be(values.size)
+      values.foreach{
+        s => storage.removeVectorStorageEntryFor(vector)
+      }
+      storage.getVectorStorageSizeFor(vector) should be(0)
 
     }
 

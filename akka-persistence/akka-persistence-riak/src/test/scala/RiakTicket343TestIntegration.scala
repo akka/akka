@@ -20,5 +20,4 @@ class RiakTicket343TestIntegration extends Ticket343Test  {
 
   def getMap: (String) => PersistentMap[Array[Byte], Array[Byte]] = RiakStorage.getMap
 
-  def supportsVectorRemove = true
 }

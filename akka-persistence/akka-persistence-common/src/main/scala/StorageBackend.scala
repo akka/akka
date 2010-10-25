@@ -31,7 +31,6 @@ trait VectorStorageBackend[T] extends StorageBackend {
     //should remove the "tail" if supported
     throw new UnsupportedOperationException("VectorStorageBackend.removeVectorStorageEntry is not supported")
   }
-  def supportsRemoveVectorStorageEntry:Boolean = false //Allows the Vector frontend to fail on calls to pop, instead of at commit time
 }
 
 // for Ref
