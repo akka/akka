@@ -165,7 +165,7 @@ object ActorModelSpec {
   def newTestActor(implicit d: MessageDispatcherInterceptor) = actorOf(new DispatcherActor(d))
 }
 
-abstract class ActorModelSpec(val supportsMoreThanOneActor: Boolean) extends JUnitSuite {
+abstract class ActorModelSpec extends JUnitSuite {
   import ActorModelSpec._
 
   protected def newInterceptedDispatcher: MessageDispatcherInterceptor
@@ -216,7 +216,7 @@ abstract class ActorModelSpec(val supportsMoreThanOneActor: Boolean) extends JUn
     assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 3, msgsProcessed = 3)
   }
 
-  @Test def dispatcherShouldProcessMessagesInParallel: Unit = if (supportsMoreThanOneActor) {
+  @Test def dispatcherShouldProcessMessagesInParallel: Unit = {
     implicit val dispatcher = newInterceptedDispatcher
     val a, b = newTestActor.start
     val aStart,aStop,bParallel = new CountDownLatch(1)
@@ -266,7 +266,15 @@ abstract class ActorModelSpec(val supportsMoreThanOneActor: Boolean) extends JUn
   }
 }
 
-class ExecutorBasedEventDrivenDispatcherModelTest extends ActorModelSpec(supportsMoreThanOneActor = true) {
+class ExecutorBasedEventDrivenDispatcherModelTest extends ActorModelSpec {
   def newInterceptedDispatcher =
     new ExecutorBasedEventDrivenDispatcher("foo") with MessageDispatcherInterceptor
+}
+
+class HawtDispatcherModelTest extends ActorModelSpec {
+  def newInterceptedDispatcher = new HawtDispatcher(false) with MessageDispatcherInterceptor
+}
+
+class ExecutorBasedEventDrivenWorkStealingDispatcherModelTest extends ActorModelSpec {
+  def newInterceptedDispatcher = new ExecutorBasedEventDrivenWorkStealingDispatcher("foo") with MessageDispatcherInterceptor
 }

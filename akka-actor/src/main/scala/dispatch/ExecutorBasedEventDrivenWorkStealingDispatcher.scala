@@ -230,13 +230,13 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     case JMSBasedDurableMailbox(serializer)       => throw new UnsupportedOperationException("JMSBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
   }
 
-  override def register(actorRef: ActorRef) = {
+  private[akka] override def register(actorRef: ActorRef) = {
     verifyActorsAreOfSameType(actorRef)
     pooledActors add actorRef
     super.register(actorRef)
   }
 
-  override def unregister(actorRef: ActorRef) = {
+  private[akka] override def unregister(actorRef: ActorRef) = {
     pooledActors remove actorRef
     super.unregister(actorRef)
   }
