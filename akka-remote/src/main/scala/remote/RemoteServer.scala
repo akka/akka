@@ -618,7 +618,7 @@ class RemoteServerHandler(
         log.info("Creating a new remote actor [%s:%s]", name, uuid)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
                     else Class.forName(name)
-        val actorRef = Actor.actorOf(clazz.newInstance.asInstanceOf[Actor])
+        val actorRef = Actor.actorOf(clazz.asInstanceOf[Class[_ <: Actor]])
         actorRef.uuid = uuidFrom(uuid.getHigh,uuid.getLow)
         actorRef.id = id
         actorRef.timeout = timeout
