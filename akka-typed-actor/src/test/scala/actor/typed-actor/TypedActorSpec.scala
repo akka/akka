@@ -81,8 +81,13 @@ class TypedActorSpec extends
     }
 
     it("should return none instead of exception") {
-      val middleName = simplePojo.middleName();
-      assert(middleName === Option.some("foo"))
+      val someVal = Option.some("foo")
+      val noneVal = Option.none[String]
+      val nullVal = null:Option[String]
+
+      assert(simplePojo.passThru(someVal) === someVal)
+      assert(simplePojo.passThru(noneVal) === Option.some(null))
+      assert(simplePojo.passThru(nullVal) === Option.some(null))
     }
 
     it("should accept constructor arguments") {
