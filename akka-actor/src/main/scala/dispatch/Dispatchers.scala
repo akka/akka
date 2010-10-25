@@ -77,11 +77,12 @@ object Dispatchers extends Logging {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(actor: ActorRef) = new ThreadBasedDispatcher(actor, BoundedMailbox(true))
+  def newThreadBasedDispatcher(actor: ActorRef) = new ThreadBasedDispatcher(actor)
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
    * Uses the default timeout
+   * If capacity is negative, it's Integer.MAX_VALUE
    * <p/>
    * E.g. each actor consumes its own thread.
    */
@@ -89,6 +90,7 @@ object Dispatchers extends Logging {
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
+   * If capacity is negative, it's Integer.MAX_VALUE
    * <p/>
    * E.g. each actor consumes its own thread.
    */

@@ -10,29 +10,39 @@ import se.scalablesolutions.akka.util.Duration
 
 import java.util.Queue
 import java.util.concurrent.{ConcurrentLinkedQueue, BlockingQueue, TimeUnit, LinkedBlockingQueue}
+import se.scalablesolutions.akka.actor
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ThreadBasedDispatcher(private val actor: ActorRef, _mailboxType: MailboxType) 
+class ThreadBasedDispatcher(_actor: ActorRef, _mailboxType: MailboxType)
   extends ExecutorBasedEventDrivenDispatcher(
-    actor.getClass.getName + ":" + actor.uuid,
-    Dispatchers.THROUGHPUT,
-    -1,
-    _mailboxType,
-    ThreadBasedDispatcher.oneThread) {
+    _actor.uuid.toString,Dispatchers.THROUGHPUT,-1,_mailboxType,ThreadBasedDispatcher.oneThread) {
 
-  def this(actor: ActorRef) = this(actor, BoundedMailbox(true)) // For Java API
+  private[akka] val owner = new AtomicReference[ActorRef](_actor)
 
-  def this(actor: ActorRef, capacity: Int) = this(actor, BoundedMailbox(true, capacity))
+  def this(actor: ActorRef) =
+    this(actor, UnboundedMailbox(true)) // For Java API
 
-  def this(actor: ActorRef, capacity: Int, pushTimeOut: Duration) = this(actor, BoundedMailbox(true, capacity, pushTimeOut))
+  def this(actor: ActorRef, capacity: Int) =
+    this(actor, BoundedMailbox(true, capacity)) //For Java API
+
+  def this(actor: ActorRef, capacity: Int, pushTimeOut: Duration) = //For Java API
+    this(actor, BoundedMailbox(true, capacity, pushTimeOut))
 
   override def register(actorRef: ActorRef) = {
-    if (actorRef != actor) throw new IllegalArgumentException("Cannot register to anyone but " + actor)
+    val actor = owner.get()
+    if ((actor ne null) && actorRef != actor) throw new IllegalArgumentException("Cannot register to anyone but " + actor)
+    owner.compareAndSet(null,actorRef) //Register if unregistered
     super.register(actorRef)
+  }
+
+  override def unregister(actorRef: ActorRef) = {
+    super.unregister(actorRef)
+    owner.compareAndSet(actorRef,null) //Unregister (prevent memory leak)
   }
 }
 
