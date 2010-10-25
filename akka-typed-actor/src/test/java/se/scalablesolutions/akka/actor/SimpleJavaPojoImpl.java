@@ -30,8 +30,8 @@ public class SimpleJavaPojoImpl extends TypedActor implements SimpleJavaPojo {
     return getContext().getSenderFuture().get();
   }
 
-  public Option<String> middleName() {
-      return Option.some("foo");
+  public Option<String> passThru(Option<String> returnValue) {
+      return returnValue;
   }
 
   public void setName(String name) {
