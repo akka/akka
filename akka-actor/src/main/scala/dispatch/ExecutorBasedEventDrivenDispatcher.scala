@@ -94,7 +94,7 @@ class ExecutorBasedEventDrivenDispatcher(
   private[akka] val threadFactory = new MonitorableThreadFactory(name)
   private[akka] val executorService = new AtomicReference[ExecutorService](config.createLazyExecutorService(threadFactory))
 
-  protected def dispatch(invocation: MessageInvocation) = {
+  private[akka] def dispatch(invocation: MessageInvocation) = {
     val mbox = getMailbox(invocation.receiver)
     mbox enqueue invocation
     registerForExecution(mbox)
@@ -131,9 +131,9 @@ class ExecutorBasedEventDrivenDispatcher(
     case JMSBasedDurableMailbox(serializer)       => throw new UnsupportedOperationException("JMSBasedDurableMailbox is not yet supported")
   }
 
-  protected def start= log.debug("Starting up %s\n\twith throughput [%d]", toString, throughput)
+  private[akka] def start = log.debug("Starting up %s\n\twith throughput [%d]", toString, throughput)
 
-  protected def shutdown {
+  private[akka] def shutdown {
     val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
     if (old ne null) {
       log.debug("Shutting down %s", toString)

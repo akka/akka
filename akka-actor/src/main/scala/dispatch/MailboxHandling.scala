@@ -90,7 +90,7 @@ trait MailboxFactory {
   /**
    * Creates a MessageQueue (Mailbox) with the specified properties.
    */
-  protected def createMailbox(actorRef: ActorRef): AnyRef = 
+  private[akka] def createMailbox(actorRef: ActorRef): AnyRef =
     mailboxType.getOrElse(throw new IllegalStateException("No mailbox type defined")) match {
       case mb: TransientMailboxType => createTransientMailbox(actorRef, mb)
       case mb: DurableMailboxType   => createDurableMailbox(actorRef, mb)
@@ -99,10 +99,10 @@ trait MailboxFactory {
   /**
    *  Creates and returns a transient mailbox for the given actor.
    */
-  protected def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef
+  private[akka] def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef
 
   /**
    *  Creates and returns a durable mailbox for the given actor.
    */
-  protected def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef
+  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef
 }

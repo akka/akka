@@ -61,7 +61,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
-  protected def dispatch(invocation: MessageInvocation) {
+  private[akka] def dispatch(invocation: MessageInvocation) {
     val mbox = getMailbox(invocation.receiver)
     mbox enqueue invocation
     executorService.get() execute mbox
@@ -167,9 +167,9 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     } else false
   }
 
-  protected def start = log.debug("Starting up %s",toString)
+  private[akka] def start = log.debug("Starting up %s",toString)
 
-  protected def shutdown {
+  private[akka] def shutdown {
     val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
     if (old ne null) {
       log.debug("Shutting down %s", toString)
@@ -190,7 +190,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
 
   override val toString = "ExecutorBasedEventDrivenWorkStealingDispatcher[" + name + "]"
 
-  def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = mailboxType match {
+  private[akka] def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = mailboxType match {
     case UnboundedMailbox(blocking) => // FIXME make use of 'blocking' in work stealer ConcurrentLinkedDeque
       new ConcurrentLinkedDeque[MessageInvocation] with MessageQueue with Runnable {
         def enqueue(handle: MessageInvocation): Unit = this.add(handle)
@@ -220,7 +220,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   /**
    * Creates and returns a durable mailbox for the given actor.
    */
-  protected def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = mailboxType match {
+  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = mailboxType match {
     // FIXME make generic (work for TypedActor as well)
     case FileBasedDurableMailbox(serializer)      => throw new UnsupportedOperationException("FileBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
     case ZooKeeperBasedDurableMailbox(serializer) => throw new UnsupportedOperationException("ZooKeeperBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
