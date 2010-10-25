@@ -829,7 +829,7 @@ private[akka] abstract class ActorAspect {
       (actorRef.!!(joinPoint, timeout)(senderActorRef)).as[JOption[AnyRef]] match {
         case None => JOption.none[AnyRef]
         case Some(x) if ((x eq null) || x.isEmpty) => JOption.some[AnyRef](null)
-        case Some(x) if(x.isDefined) => x
+        case Some(x) => x
       }
     } else {
       val result = (actorRef.!!(joinPoint, timeout)(senderActorRef)).as[AnyRef]
