@@ -178,7 +178,7 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
   
   final def run = {
     val reschedule = try {
-      processMailbox()
+      try { processMailbox() } catch { case ie: InterruptedException => true }
     } finally {
       dispatcherLock.unlock()
     }

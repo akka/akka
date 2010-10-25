@@ -95,7 +95,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
    * Process the messages in the mailbox of the given actor.
    * @return
    */
-  private def processMailbox(mailbox: MessageQueue): Boolean = {
+  private def processMailbox(mailbox: MessageQueue): Boolean = try {
     if (mailbox.suspended.isOn)
         return false
 
@@ -107,6 +107,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
       messageInvocation = mailbox.dequeue
     }
     true
+  } catch {
+    case ie: InterruptedException => false
   }
 
   private def findThief(receiver: ActorRef): Option[ActorRef] = {
