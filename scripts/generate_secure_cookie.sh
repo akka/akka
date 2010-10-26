@@ -9,10 +9,10 @@ import java.security.{MessageDigest, SecureRandom}
 
 lazy val random = SecureRandom.getInstance("SHA1PRNG")
 
-val buffer = Array.make(32, 0.byteValue)
+val buffer = Array.fill(32)(0.byteValue)
 random.nextBytes(buffer)                
 
-val digest = MessageDigest.getInstance("MD5")
+val digest = MessageDigest.getInstance("SHA1")
 digest.update(buffer)
 val bytes = digest.digest
 
