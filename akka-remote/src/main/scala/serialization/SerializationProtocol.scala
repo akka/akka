@@ -249,11 +249,11 @@ object RemoteActorSerialization {
     ActorRegistry.registerActorByUuid(homeAddress, uuid.toString, ar)
 
     RemoteActorRefProtocol.newBuilder
-      .setClassOrServiceName(uuid.toString)
-      .setActorClassname(actorClassName)
-      .setHomeAddress(AddressProtocol.newBuilder.setHostname(host).setPort(port).build)
-      .setTimeout(timeout)
-      .build
+        .setClassOrServiceName(uuid.toString)
+        .setActorClassname(actorClassName)
+        .setHomeAddress(AddressProtocol.newBuilder.setHostname(host).setPort(port).build)
+        .setTimeout(timeout)
+        .build
   }
 
   def createRemoteRequestProtocolBuilder(
@@ -263,8 +263,7 @@ object RemoteActorSerialization {
       senderOption: Option[ActorRef],
       typedActorInfo: Option[Tuple2[String, String]],
       actorType: ActorType,
-      secureCookie: Option[String]):
-  RemoteRequestProtocol.Builder = {
+      secureCookie: Option[String]): RemoteRequestProtocol.Builder = {
     import actorRef._
 
     val actorInfoBuilder = ActorInfoProtocol.newBuilder
@@ -273,13 +272,12 @@ object RemoteActorSerialization {
         .setTarget(actorClassName)
         .setTimeout(timeout)
 
-    typedActorInfo.foreach {
-      typedActor =>
-        actorInfoBuilder.setTypedActorInfo(
-          TypedActorInfoProtocol.newBuilder
-              .setInterface(typedActor._1)
-              .setMethod(typedActor._2)
-              .build)
+    typedActorInfo.foreach { typedActor =>
+      actorInfoBuilder.setTypedActorInfo(
+        TypedActorInfoProtocol.newBuilder
+            .setInterface(typedActor._1)
+            .setMethod(typedActor._2)
+            .build)
     }
 
     actorType match {
@@ -310,8 +308,6 @@ object RemoteActorSerialization {
     }
     requestBuilder
   }
-
-
 }
 
 
@@ -408,5 +404,4 @@ object RemoteTypedActorSerialization {
         .setInterfaceName(init.interfaceClass.getName)
         .build
   }
-
 }

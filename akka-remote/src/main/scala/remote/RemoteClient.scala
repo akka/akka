@@ -4,33 +4,33 @@
 
 package se.scalablesolutions.akka.remote
 
-import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
-import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef, ActorType, RemoteActorRef, IllegalActorStateException}
-import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
-import se.scalablesolutions.akka.actor.{Uuid,newUuid,uuidFrom}
+import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.{ ActorType => ActorTypeProtocol, _ }
+import se.scalablesolutions.akka.actor._
+//import se.scalablesolutions.akka.actor.Uuid.{newUuid, uuidFrom}
+import se.scalablesolutions.akka.dispatch.{ DefaultCompletableFuture, CompletableFuture }
+import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.serialization.RemoteActorSerialization._
 import se.scalablesolutions.akka.AkkaException
 import Actor._
+
 import org.jboss.netty.channel._
 import group.DefaultChannelGroup
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.bootstrap.ClientBootstrap
-import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
-import org.jboss.netty.handler.codec.compression.{ZlibDecoder, ZlibEncoder}
-import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
+import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, LengthFieldPrepender }
+import org.jboss.netty.handler.codec.compression.{ ZlibDecoder, ZlibEncoder }
+import org.jboss.netty.handler.codec.protobuf.{ ProtobufDecoder, ProtobufEncoder }
 import org.jboss.netty.handler.timeout.ReadTimeoutHandler
-import org.jboss.netty.util.{TimerTask, Timeout, HashedWheelTimer}
+import org.jboss.netty.util.{ TimerTask, Timeout, HashedWheelTimer }
 import org.jboss.netty.handler.ssl.SslHandler
 
-import java.net.{SocketAddress, InetSocketAddress}
-import java.util.concurrent.{TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap, ConcurrentSkipListSet}
-import java.util.concurrent.atomic.AtomicLong
+import java.net.{ SocketAddress, InetSocketAddress }
+import java.util.concurrent.{ TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap, ConcurrentSkipListSet }
+import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 
-import scala.collection.mutable.{HashSet, HashMap}
+import scala.collection.mutable.{ HashSet, HashMap }
 import scala.reflect.BeanProperty
-import se.scalablesolutions.akka.actor._
-import se.scalablesolutions.akka.util._
 
 /**
  * Life-cycle events for RemoteClient.
@@ -51,7 +51,7 @@ case class RemoteClientShutdown(
 /**
  * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down.
  */
-class RemoteClientException private[akka](message: String, @BeanProperty val client: RemoteClient) extends AkkaException(message)
+class RemoteClientException private[akka] (message: String, @BeanProperty val client: RemoteClient) extends AkkaException(message)
 
 /**
  * The RemoteClient object manages RemoteClient instances and gives you an API to lookup remote actor handles.
@@ -59,17 +59,18 @@ class RemoteClientException private[akka](message: String, @BeanProperty val cli
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteClient extends Logging {
-  val SECURE_COOKIE: Option[String] = { 
+
+  val SECURE_COOKIE: Option[String] = {
     val cookie = config.getString("akka.remote.secure-cookie", "")
     if (cookie == "") None
     else Some(cookie)
   }
- 
-  val READ_TIMEOUT    = Duration(config.getInt("akka.remote.client.read-timeout", 1), TIME_UNIT)
+
+  val READ_TIMEOUT = Duration(config.getInt("akka.remote.client.read-timeout", 1), TIME_UNIT)
   val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
 
   private val remoteClients = new HashMap[String, RemoteClient]
-  private val remoteActors =  new HashMap[Address, HashSet[Uuid]]
+  private val remoteActors = new HashMap[Address, HashSet[Uuid]]
 
   def actorFor(classNameOrServiceId: String, hostname: String, port: Int): ActorRef =
     actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, None)
@@ -92,23 +93,23 @@ object RemoteClient extends Logging {
   def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef =
     RemoteActorRef(serviceId, className, hostname, port, timeout, None)
 
-  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, hostname: String, port: Int) : T = {
+  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, hostname: String, port: Int): T = {
     typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, 5000L, hostname, port, None)
   }
 
-  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int) : T = {
+  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int): T = {
     typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, timeout, hostname, port, None)
   }
 
-  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader) : T = {
+  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): T = {
     typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, timeout, hostname, port, Some(loader))
   }
 
-  def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader) : T = {
+  def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): T = {
     typedActorFor(intfClass, serviceId, implClassName, timeout, hostname, port, Some(loader))
   }
 
-  private[akka] def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]) : T = {
+  private[akka] def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): T = {
     val actorRef = RemoteActorRef(serviceId, implClassName, hostname, port, timeout, loader, ActorType.TypedActor)
     TypedActor.createProxyForRemoteActorRef(intfClass, actorRef)
   }
@@ -164,7 +165,7 @@ object RemoteClient extends Logging {
    * Clean-up all open connections.
    */
   def shutdownAll = synchronized {
-    remoteClients.foreach({case (addr, client) => client.shutdown})
+    remoteClients.foreach({ case (addr, client) => client.shutdown })
     remoteClients.clear
   }
 
@@ -206,34 +207,40 @@ class RemoteClient private[akka] (
   private val remoteAddress = new InetSocketAddress(hostname, port)
 
   //FIXME rewrite to a wrapper object (minimize volatile access and maximize encapsulation)
-  @volatile private var bootstrap: ClientBootstrap = _
-  @volatile private[remote] var connection: ChannelFuture = _
-  @volatile private[remote] var openChannels: DefaultChannelGroup = _
-  @volatile private var timer: HashedWheelTimer = _
+  @volatile
+  private var bootstrap: ClientBootstrap = _
+  @volatile
+  private[remote] var connection: ChannelFuture = _
+  @volatile
+  private[remote] var openChannels: DefaultChannelGroup = _
+  @volatile
+  private var timer: HashedWheelTimer = _
   private[remote] val runSwitch = new Switch()
-  
+  private[remote] val isAuthenticated = new AtomicBoolean(false)
+
   private[remote] def isRunning = runSwitch.isOn
 
   private val reconnectionTimeWindow = Duration(config.getInt(
     "akka.remote.client.reconnection-time-window", 600), TIME_UNIT).toMillis
-  @volatile private var reconnectionTimeWindowStart = 0L
+  @volatile
+  private var reconnectionTimeWindowStart = 0L
 
   def connect = runSwitch switchOn {
     openChannels = new DefaultChannelGroup(classOf[RemoteClient].getName)
     timer = new HashedWheelTimer
-    bootstrap = new ClientBootstrap(
-      new NioClientSocketChannelFactory(
-        Executors.newCachedThreadPool,Executors.newCachedThreadPool
-      )
-    )
+
+    bootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool))
     bootstrap.setPipelineFactory(new RemoteClientPipelineFactory(name, futures, supervisors, bootstrap, remoteAddress, timer, this))
     bootstrap.setOption("tcpNoDelay", true)
     bootstrap.setOption("keepAlive", true)
-    connection = bootstrap.connect(remoteAddress)
+
     log.info("Starting remote client connection to [%s:%s]", hostname, port)
+
     // Wait until the connection attempt succeeds or fails.
+    connection = bootstrap.connect(remoteAddress)
     val channel = connection.awaitUninterruptibly.getChannel
     openChannels.add(channel)
+
     if (!connection.isSuccess) {
       notifyListeners(RemoteClientError(connection.getCause, this))
       log.error(connection.getCause, "Remote client connection to [%s:%s] has failed", hostname, port)
@@ -274,31 +281,34 @@ class RemoteClient private[akka] (
     actorRef: ActorRef,
     typedActorInfo: Option[Tuple2[String, String]],
     actorType: ActorType): Option[CompletableFuture[T]] = {
+    val cookie = if (isAuthenticated.compareAndSet(false, true)) RemoteClient.SECURE_COOKIE
+    else None
     send(createRemoteRequestProtocolBuilder(
-      actorRef, message, isOneWay, senderOption, typedActorInfo, actorType, RemoteClient.SECURE_COOKIE).build, senderFuture)
- }
+      actorRef, message, isOneWay, senderOption, typedActorInfo, actorType, cookie).build, senderFuture)
+  }
 
   def send[T](
     request: RemoteRequestProtocol,
-    senderFuture: Option[CompletableFuture[T]]):
-    Option[CompletableFuture[T]] = if (isRunning) {
-    if (request.getIsOneWay) {
-      connection.getChannel.write(request)
-      None
-    } else {
-      futures.synchronized {
-        val futureResult = if (senderFuture.isDefined) senderFuture.get
-        else new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
-        futures.put(uuidFrom(request.getUuid.getHigh,request.getUuid.getLow), futureResult)
+    senderFuture: Option[CompletableFuture[T]]): Option[CompletableFuture[T]] = {
+    if (isRunning) {
+      if (request.getIsOneWay) {
         connection.getChannel.write(request)
-        Some(futureResult)
+        None
+      } else {
+        futures.synchronized {
+          val futureResult = if (senderFuture.isDefined) senderFuture.get
+          else new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
+          futures.put(uuidFrom(request.getUuid.getHigh, request.getUuid.getLow), futureResult)
+          connection.getChannel.write(request)
+          Some(futureResult)
+        }
       }
+    } else {
+      val exception = new RemoteClientException(
+        "Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.", this)
+      notifyListeners(RemoteClientError(exception, this))
+      throw exception
     }
-  } else {
-    val exception = new RemoteClientException(
-      "Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.", this)
-    notifyListeners(RemoteClientError(exception, this))
-    throw exception
   }
 
   private[akka] def registerSupervisorForActor(actorRef: ActorRef) =
@@ -331,13 +341,13 @@ class RemoteClient private[akka] (
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteClientPipelineFactory(
-    name: String,
-    futures: ConcurrentMap[Uuid, CompletableFuture[_]],
-    supervisors: ConcurrentMap[Uuid, ActorRef],
-    bootstrap: ClientBootstrap,
-    remoteAddress: SocketAddress,
-    timer: HashedWheelTimer,
-    client: RemoteClient) extends ChannelPipelineFactory {
+  name: String,
+  futures: ConcurrentMap[Uuid, CompletableFuture[_]],
+  supervisors: ConcurrentMap[Uuid, ActorRef],
+  bootstrap: ClientBootstrap,
+  remoteAddress: SocketAddress,
+  timer: HashedWheelTimer,
+  client: RemoteClient) extends ChannelPipelineFactory {
 
   def getPipeline: ChannelPipeline = {
     def join(ch: ChannelHandler*) = Array[ChannelHandler](ch: _*)
@@ -349,15 +359,15 @@ class RemoteClientPipelineFactory(
       e
     }
 
-    val ssl         = if (RemoteServer.SECURE) join(new SslHandler(engine)) else join()
-    val timeout     = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT.toMillis.toInt)
-    val lenDec      = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
-    val lenPrep     = new LengthFieldPrepender(4)
+    val ssl = if (RemoteServer.SECURE) join(new SslHandler(engine)) else join()
+    val timeout = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT.toMillis.toInt)
+    val lenDec = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
+    val lenPrep = new LengthFieldPrepender(4)
     val protobufDec = new ProtobufDecoder(RemoteReplyProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
-    val (enc, dec)  = RemoteServer.COMPRESSION_SCHEME match {
+    val (enc, dec) = RemoteServer.COMPRESSION_SCHEME match {
       case "zlib" => (join(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL)), join(new ZlibDecoder))
-      case _      => (join(), join())
+      case _ => (join(), join())
     }
 
     val remoteClient = new RemoteClientHandler(name, futures, supervisors, bootstrap, remoteAddress, timer, client)
@@ -371,18 +381,18 @@ class RemoteClientPipelineFactory(
  */
 @ChannelHandler.Sharable
 class RemoteClientHandler(
-    val name: String,
-    val futures: ConcurrentMap[Uuid, CompletableFuture[_]],
-    val supervisors: ConcurrentMap[Uuid, ActorRef],
-    val bootstrap: ClientBootstrap,
-    val remoteAddress: SocketAddress,
-    val timer: HashedWheelTimer,
-    val client: RemoteClient)
-    extends SimpleChannelUpstreamHandler with Logging {
+  val name: String,
+  val futures: ConcurrentMap[Uuid, CompletableFuture[_]],
+  val supervisors: ConcurrentMap[Uuid, ActorRef],
+  val bootstrap: ClientBootstrap,
+  val remoteAddress: SocketAddress,
+  val timer: HashedWheelTimer,
+  val client: RemoteClient)
+  extends SimpleChannelUpstreamHandler with Logging {
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
     if (event.isInstanceOf[ChannelStateEvent] &&
-        event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
+      event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
       log.debug(event.toString)
     }
     super.handleUpstream(ctx, event)
@@ -393,7 +403,7 @@ class RemoteClientHandler(
       val result = event.getMessage
       if (result.isInstanceOf[RemoteReplyProtocol]) {
         val reply = result.asInstanceOf[RemoteReplyProtocol]
-        val replyUuid = uuidFrom(reply.getUuid.getHigh,reply.getUuid.getLow)
+        val replyUuid = uuidFrom(reply.getUuid.getHigh, reply.getUuid.getLow)
         log.debug("Remote client received RemoteReplyProtocol[\n%s]", reply.toString)
         val future = futures.get(replyUuid).asInstanceOf[CompletableFuture[Any]]
         if (reply.getIsSuccessful) {
@@ -401,7 +411,7 @@ class RemoteClientHandler(
           future.completeWithResult(message)
         } else {
           if (reply.hasSupervisorUuid()) {
-            val supervisorUuid = uuidFrom(reply.getSupervisorUuid.getHigh,reply.getSupervisorUuid.getLow)
+            val supervisorUuid = uuidFrom(reply.getSupervisorUuid.getHigh, reply.getSupervisorUuid.getLow)
             if (!supervisors.containsKey(supervisorUuid)) throw new IllegalActorStateException(
               "Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
             val supervisedActor = supervisors.get(supervisorUuid)
@@ -430,6 +440,7 @@ class RemoteClientHandler(
       timer.newTimeout(new TimerTask() {
         def run(timeout: Timeout) = {
           client.openChannels.remove(event.getChannel)
+          client.isAuthenticated.set(false)
           log.debug("Remote client reconnecting to [%s]", remoteAddress)
           client.connection = bootstrap.connect(remoteAddress)
           client.connection.awaitUninterruptibly // Wait until the connection attempt succeeds or fails.
@@ -475,9 +486,9 @@ class RemoteClientHandler(
     val exception = reply.getException
     val classname = exception.getClassname
     val exceptionClass = if (loader.isDefined) loader.get.loadClass(classname)
-                         else Class.forName(classname)
+    else Class.forName(classname)
     exceptionClass
-        .getConstructor(Array[Class[_]](classOf[String]): _*)
-        .newInstance(exception.getMessage).asInstanceOf[Throwable]
+      .getConstructor(Array[Class[_]](classOf[String]): _*)
+      .newInstance(exception.getMessage).asInstanceOf[Throwable]
   }
 }
