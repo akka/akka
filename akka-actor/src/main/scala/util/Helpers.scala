@@ -4,8 +4,6 @@
 
 package se.scalablesolutions.akka.util
 
-import java.security.MessageDigest
-
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -20,20 +18,6 @@ object Helpers extends Logging {
     bytes(2) = (value >>> 8).asInstanceOf[Byte]
     bytes(3) = value.asInstanceOf[Byte]
     bytes
-  }
-
-  def getMD5For(s: String) = {
-    val digest = MessageDigest.getInstance("MD5")
-    digest.update(s.getBytes("ASCII"))
-    val bytes = digest.digest
-
-    val sb = new StringBuilder
-    val hex = "0123456789ABCDEF"
-    bytes.foreach(b => {
-      val n = b.asInstanceOf[Int]
-      sb.append(hex.charAt((n & 0xF) >> 4)).append(hex.charAt(n & 0xF))
-    })
-    sb.toString
   }
 
   /**

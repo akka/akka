@@ -787,7 +787,7 @@ class LocalActorRef private[akka] (
 
       _status = ActorRefInternals.RUNNING
 
-      //If we are not currently creating this ActorRef instance
+      // If we are not currently creating this ActorRef instance
       if ((actorInstance ne null) && (actorInstance.get ne null))
         initializeActorInstance
 
@@ -854,11 +854,8 @@ class LocalActorRef private[akka] (
    * To be invoked from within the actor itself.
    */
   def startLink(actorRef: ActorRef): Unit = guard.withGuard {
-    try {
-      link(actorRef)
-    } finally {
-      actorRef.start
-    }
+    link(actorRef)
+    actorRef.start
   }
 
   /**
@@ -868,12 +865,9 @@ class LocalActorRef private[akka] (
    */
   def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = guard.withGuard {
     ensureRemotingEnabled
-    try {
-      actorRef.makeRemote(hostname, port)
-      link(actorRef)
-    } finally {
-      actorRef.start
-    }
+    actorRef.makeRemote(hostname, port)
+    link(actorRef)
+    actorRef.start
   }
 
   /**
@@ -905,11 +899,8 @@ class LocalActorRef private[akka] (
    */
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
     val actor = Actor.actorOf(clazz)
-    try {
-      link(actor)
-    } finally {
-      actor.start
-    }
+    link(actor)
+    actor.start
     actor
   }
 
@@ -921,12 +912,9 @@ class LocalActorRef private[akka] (
   def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef = guard.withGuard {
     ensureRemotingEnabled
     val actor = Actor.actorOf(clazz)
-    try {
-      actor.makeRemote(hostname, port)
-      link(actor)
-    } finally {
-      actor.start
-    }
+    actor.makeRemote(hostname, port)
+    link(actor)
+    actor.start
     actor
   }
 
@@ -995,8 +983,7 @@ class LocalActorRef private[akka] (
    * Callback for the dispatcher. This is the single entry point to the user Actor implementation.
    */
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = guard.withGuard {
-    if (isShutdown)
-      Actor.log.warning("Actor [%s] is shut down,\n\tignoring message [%s]", toString, messageHandle)
+    if (isShutdown) Actor.log.warning("Actor [%s] is shut down,\n\tignoring message [%s]", toString, messageHandle)
     else {
       currentMessage = messageHandle
       try {
@@ -1005,8 +992,7 @@ class LocalActorRef private[akka] (
         case e =>
           Actor.log.error(e, "Could not invoke actor [%s]", this)
           throw e
-      }
-      finally {
+      } finally {
         currentMessage = null //TODO: Don't reset this, we might want to resend the message
       }
     }
@@ -1032,8 +1018,7 @@ class LocalActorRef private[akka] (
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = {
     val isUnrestartable = if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty) {  //Immortal
                             false
-                          }
-                          else if (withinTimeRange.isEmpty) { // restrict number of restarts
+                          } else if (withinTimeRange.isEmpty) { // restrict number of restarts
                             maxNrOfRetriesCount += 1 //Increment number of retries
                             maxNrOfRetriesCount > maxNrOfRetries.get
                           } else {  // cannot restart more than N within M timerange
@@ -1042,10 +1027,8 @@ class LocalActorRef private[akka] (
                             val now         = System.currentTimeMillis
                             val retries     = maxNrOfRetriesCount
                             //We are within the time window if it isn't the first restart, or if the window hasn't closed
-                            val insideWindow   = if (windowStart == 0)
-                                                  false
-                                                else
-                                                  (now - windowStart) <= withinTimeRange.get
+                            val insideWindow   = if (windowStart == 0) false
+                                                else (now - windowStart) <= withinTimeRange.get
 
                             //The actor is dead if it dies X times within the window of restart
                             val unrestartable = insideWindow && retries > maxNrOfRetries.getOrElse(1)
