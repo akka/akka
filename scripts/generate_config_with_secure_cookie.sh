@@ -23,5 +23,19 @@ bytes.foreach { b =>
   sb.append(hex.charAt((n & 0xF) >> 4)).append(hex.charAt(n & 0xF))
 }
 
-println("Cryptographically secure cookie:")
-println(sb.toString)
+print("""
+# This config imports the Akka reference configuration.
+include "akka-reference.conf"
+
+# In this file you can override any option defined in the 'akka-reference.conf' file.
+# Copy in all or parts of the 'akka-reference.conf' file and modify as you please.
+
+akka {
+  remote {
+    secure-cookie = """")
+print(sb.toString)
+print(""""
+  }
+}
+""")
+
