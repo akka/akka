@@ -2,10 +2,10 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
-import se.scalablesolutions.akka.stm.Ref
-import se.scalablesolutions.akka.stm.local._
+import akka.stm.Ref
+import akka.stm.local._
 
 import java.util.concurrent.{ScheduledFuture, TimeUnit}
 

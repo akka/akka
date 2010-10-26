@@ -2,14 +2,14 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dispatch
+package akka.dispatch
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 
 import java.util.concurrent._
 import atomic. {AtomicInteger, AtomicBoolean, AtomicReference, AtomicLong}
-import se.scalablesolutions.akka.util. {Switch, ReentrantGuard, Logging, HashCode}
-import se.scalablesolutions.akka.actor._
+import akka.util. {Switch, ReentrantGuard, Logging, HashCode}
+import akka.actor._
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

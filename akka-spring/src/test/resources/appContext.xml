@@ -8,22 +8,22 @@
        http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
 
     <akka:typed-actor id="sample"
-                        interface="se.scalablesolutions.akka.spring.SampleBeanIntf"
-                        implementation="se.scalablesolutions.akka.spring.SampleBean"
+                        interface="akka.spring.SampleBeanIntf"
+                        implementation="akka.spring.SampleBean"
                         timeout="1000" />
     <akka:typed-actor id="bean-singleton"
-                        interface="se.scalablesolutions.akka.spring.SampleBeanIntf"
-                        implementation="se.scalablesolutions.akka.spring.SampleBean"
+                        interface="akka.spring.SampleBeanIntf"
+                        implementation="akka.spring.SampleBean"
                         timeout="1000"/>
     <akka:typed-actor id="bean-prototype"
-                        interface="se.scalablesolutions.akka.spring.SampleBeanIntf"
-                        implementation="se.scalablesolutions.akka.spring.SampleBean"
+                        interface="akka.spring.SampleBeanIntf"
+                        implementation="akka.spring.SampleBean"
                         timeout="1000"
                         scope="prototype"/>
 
     <akka:typed-actor id="typedActor"
-                        interface="se.scalablesolutions.akka.spring.PojoInf"
-                        implementation="se.scalablesolutions.akka.spring.Pojo"
+                        interface="akka.spring.PojoInf"
+                        implementation="akka.spring.Pojo"
                         scope="singleton"
                         timeout="1000">
         <property name="stringFromVal" value="akka rocks"/>
@@ -31,7 +31,7 @@
     </akka:typed-actor>
 
     <akka:untyped-actor id="untypedActor"
-                        implementation="se.scalablesolutions.akka.spring.foo.PingActor"
+                        implementation="akka.spring.foo.PingActor"
                         scope="singleton">
         <property name="stringFromVal" value="akka rocks"/>
         <property name="stringFromRef" ref="string"/>

@@ -1,7 +1,7 @@
-package se.scalablesolutions.akka.actor;
+package akka.actor;
 
-import se.scalablesolutions.akka.actor.*;
-import se.scalablesolutions.akka.dispatch.Future;
+import akka.actor.*;
+import akka.dispatch.Future;
 
 public class SimpleJavaPojoCallerImpl extends TypedActor implements SimpleJavaPojoCaller {
 

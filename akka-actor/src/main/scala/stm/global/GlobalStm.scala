@@ -2,9 +2,9 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.stm
+package akka.stm
 
-import se.scalablesolutions.akka.util.Logging
+import akka.util.Logging
 
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.templates.TransactionalCallable
@@ -18,7 +18,7 @@ object GlobalStm extends Logging
  * Example of atomic transaction management using the atomic block:
  * <p/>
  * <pre>
- * import se.scalablesolutions.akka.stm.global._
+ * import akka.stm.global._
  *
  * atomic  {
  *   // do something within a transaction

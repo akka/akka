@@ -2,13 +2,13 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dispatch
+package akka.dispatch
 
-import se.scalablesolutions.akka.AkkaException
-import se.scalablesolutions.akka.actor.Actor.spawn
+import akka.AkkaException
+import akka.actor.Actor.spawn
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit
-import se.scalablesolutions.akka.routing.Dispatcher
+import akka.routing.Dispatcher
 
 class FutureTimeoutException(message: String) extends AkkaException(message)
 

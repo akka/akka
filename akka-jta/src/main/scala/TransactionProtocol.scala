@@ -2,9 +2,9 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.jta
+package akka.jta
 
-import se.scalablesolutions.akka.util.Logging
+import akka.util.Logging
 
 import java.util.{List => JList}
 import java.util.concurrent.CopyOnWriteArrayList

@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.camel
+package akka.camel
 
 import org.apache.camel.impl.DefaultMessage
 import org.junit.Test

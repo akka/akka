@@ -2,22 +2,22 @@
  *  Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.amqp
+package akka.amqp
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.config.Supervision.OneForOneStrategy
+import akka.actor.{Actor, ActorRef}
+import akka.actor.Actor._
+import akka.config.Supervision.OneForOneStrategy
 import com.rabbitmq.client.{ReturnListener, ShutdownListener, ConnectionFactory}
 import ConnectionFactory._
 import com.rabbitmq.client.AMQP.BasicProperties
 import java.lang.{String, IllegalArgumentException}
 import reflect.Manifest
-import se.scalablesolutions.akka.japi.Procedure
+import akka.japi.Procedure
 
 /**
  * AMQP Actor API. Implements Connection, Producer and Consumer materialized as Actors.
  *
- * @see se.scalablesolutions.akka.amqp.ExampleSession
+ * @see akka.amqp.ExampleSession
  *
  * @author Irmo Manie
  */

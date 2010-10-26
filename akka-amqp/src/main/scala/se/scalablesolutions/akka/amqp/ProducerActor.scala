@@ -2,11 +2,11 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.amqp
+package akka.amqp
 
 import com.rabbitmq.client._
 
-import se.scalablesolutions.akka.amqp.AMQP.ProducerParameters
+import akka.amqp.AMQP.ProducerParameters
 
 private[amqp] class ProducerActor(producerParameters: ProducerParameters)
     extends FaultTolerantChannelActor(

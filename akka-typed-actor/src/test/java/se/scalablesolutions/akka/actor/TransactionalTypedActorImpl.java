@@ -1,9 +1,9 @@
-package se.scalablesolutions.akka.actor;
+package akka.actor;
 
-import se.scalablesolutions.akka.actor.*;
-import se.scalablesolutions.akka.stm.*;
-import se.scalablesolutions.akka.stm.local.*;
-import se.scalablesolutions.akka.stm.local.Atomic;
+import akka.actor.*;
+import akka.stm.*;
+import akka.stm.local.*;
+import akka.stm.local.Atomic;
 
 public class TransactionalTypedActorImpl extends TypedTransactor implements TransactionalTypedActor {
   private TransactionalMap<String, String> mapState;

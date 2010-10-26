@@ -1,12 +1,12 @@
-package se.scalablesolutions.akka.amqp.rpc
+package akka.amqp.rpc
 
-import se.scalablesolutions.akka.amqp.AMQP._
+import akka.amqp.AMQP._
 import com.google.protobuf.Message
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import akka.actor.{Actor, ActorRef}
 import Actor._
-import se.scalablesolutions.akka.amqp._
+import akka.amqp._
 import reflect.Manifest
-import se.scalablesolutions.akka.japi
+import akka.japi
 
 object RPC {
 

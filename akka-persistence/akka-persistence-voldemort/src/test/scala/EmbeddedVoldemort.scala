@@ -1,11 +1,11 @@
-package se.scalablesolutions.akka.persistence.voldemort
+package akka.persistence.voldemort
 
 import voldemort.server.{VoldemortServer, VoldemortConfig}
 import org.scalatest.{Suite, BeforeAndAfterAll}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import java.io.File
-import se.scalablesolutions.akka.util.{Logging}
+import akka.util.{Logging}
 import collection.JavaConversions
 import voldemort.store.memory.InMemoryStorageConfiguration
 import voldemort.client.protocol.admin.{AdminClientConfig, AdminClient}

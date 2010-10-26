@@ -304,7 +304,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Miscellaneous
   // -------------------------------------------------------------------------------------------------------------------
 
-  override def mainClass = Some("se.scalablesolutions.akka.kernel.Main")
+  override def mainClass = Some("akka.kernel.Main")
 
   override def packageOptions =
     manifestClassPath.map(cp => ManifestAttributes(
@@ -393,7 +393,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       val artifactRE(path, artifactId, artifactVersion) = absPath
       val command = "mvn install:install-file" +
                     " -Dfile=" + absPath +
-                    " -DgroupId=se.scalablesolutions.akka" +
+                    " -DgroupId=akka" +
                     " -DartifactId=" + artifactId +
                     " -Dversion=" + version +
                     " -Dpackaging=jar -DgeneratePom=true"
@@ -720,7 +720,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       "org.aopalliance.*;version=1.0.0",
 
       // Provided by other bundles
-      "!se.scalablesolutions.akka.*",
+      "!akka.*",
       "!com.google.inject.*",
       "!javax.transaction.*",
       "!javax.ws.rs.*",
@@ -841,7 +841,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaSampleOSGiProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
     val osgi_core = Dependencies.osgi_core
-    override lazy val bndBundleActivator = Some("se.scalablesolutions.akka.sample.osgi.Activator")
+    override lazy val bndBundleActivator = Some("akka.sample.osgi.Activator")
     override lazy val bndExportPackage = Nil // Necessary because of mixing-in AkkaDefaultProject which exports all ...akka.* packages!
   }
 
@@ -948,5 +948,5 @@ trait DeployProject { self: BasicScalaProject =>
 }
 
 trait OSGiProject extends BNDPlugin { self: DefaultProject =>
-  override def bndExportPackage = Seq("se.scalablesolutions.akka.*;version=%s".format(projectVersion.value))
+  override def bndExportPackage = Seq("akka.*;version=%s".format(projectVersion.value))
 }

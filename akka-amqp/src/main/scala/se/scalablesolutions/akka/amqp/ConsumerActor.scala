@@ -2,15 +2,15 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.amqp
+package akka.amqp
 
 import collection.JavaConversions
 
-import se.scalablesolutions.akka.util.Logging
+import akka.util.Logging
 
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.{Channel, Envelope, DefaultConsumer}
-import se.scalablesolutions.akka.amqp.AMQP.{NoActionDeclaration, ActiveDeclaration, PassiveDeclaration, ConsumerParameters}
+import akka.amqp.AMQP.{NoActionDeclaration, ActiveDeclaration, PassiveDeclaration, ConsumerParameters}
 
 private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
         extends FaultTolerantChannelActor(

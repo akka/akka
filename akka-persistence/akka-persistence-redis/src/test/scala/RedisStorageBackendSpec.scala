@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.persistence.redis
+package akka.persistence.redis
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -6,8 +6,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.serialization.Serializable
-import se.scalablesolutions.akka.serialization.Serializer._
+import akka.serialization.Serializable
+import akka.serialization.Serializer._
 
 import sbinary._
 import sbinary.Operations._

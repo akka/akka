@@ -2,16 +2,16 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
-import se.scalablesolutions.akka.dispatch._
-import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.stm.global._
-import se.scalablesolutions.akka.stm.TransactionManagement._
-import se.scalablesolutions.akka.stm.{ TransactionManagement, TransactionSetAbortedException }
-import se.scalablesolutions.akka.AkkaException
-import se.scalablesolutions.akka.util._
+import akka.dispatch._
+import akka.config.Config._
+import akka.config.Supervision._
+import akka.stm.global._
+import akka.stm.TransactionManagement._
+import akka.stm.{ TransactionManagement, TransactionSetAbortedException }
+import akka.AkkaException
+import akka.util._
 import ReflectiveAccess._
 
 import org.multiverse.api.ThreadLocalTransaction._
@@ -156,7 +156,7 @@ trait ActorRef extends ActorRefShared with TransactionManagement with Logging wi
    * This means that all actors will share the same event-driven executor based dispatcher.
    * <p/>
    * You can override it so it fits the specific use-case that the actor is used for.
-   * See the <tt>se.scalablesolutions.akka.dispatch.Dispatchers</tt> class for the different
+   * See the <tt>akka.dispatch.Dispatchers</tt> class for the different
    * dispatchers available.
    * <p/>
    * The default is also that all actors that are created and spawned from within this actor

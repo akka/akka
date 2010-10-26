@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.persistence.hbase
+package akka.persistence.hbase
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -43,7 +43,7 @@ class SimpleHbaseSpecTestIntegration extends Spec with BeforeAndAfterAll with Sh
     }
 
     it("should use the quorum read from the akka configuration and access the table") {
-      import se.scalablesolutions.akka.config.Config.config
+      import akka.config.Config.config
       import org.apache.hadoop.hbase.HBaseConfiguration
       import org.apache.hadoop.hbase.client.HBaseAdmin
       import org.apache.hadoop.hbase.client.HTable

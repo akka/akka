@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.camel.component
+package akka.camel.component
 
 import java.util.Map
 import java.util.concurrent.ConcurrentHashMap
@@ -36,7 +36,7 @@ class TypedActorComponent extends BeanComponent {
    * bean holder that uses <code>typedActorRegistry</code> for getting access to typed
    * actors (beans).
    *
-   * @see se.scalablesolutions.akka.camel.component.TypedActorHolder
+   * @see akka.camel.component.TypedActorHolder
    */
   override def createEndpoint(uri: String, remaining: String, parameters: Map[String, AnyRef]) = {
     val endpoint = new BeanEndpoint(uri, this)
@@ -60,7 +60,7 @@ class TypedActorHolder(typedActorRegistry: Map[String, AnyRef], context: CamelCo
     extends RegistryBean(context, name) {
 
   /**
-   * Returns an <code>se.scalablesolutions.akka.camel.component.TypedActorInfo</code> instance.
+   * Returns an <code>akka.camel.component.TypedActorInfo</code> instance.
    */
   override def getBeanInfo: BeanInfo =
     new TypedActorInfo(getContext, getBean.getClass, getParameterMappingStrategy)

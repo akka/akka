@@ -2,13 +2,13 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.util
+package akka.util
 
-import se.scalablesolutions.akka.actor.{ActorRef, IllegalActorStateException, ActorType, Uuid}
-import se.scalablesolutions.akka.dispatch.{Future, CompletableFuture, MessageInvocation}
-import se.scalablesolutions.akka.config.{Config, ModuleNotAvailableException}
-import se.scalablesolutions.akka.stm.Transaction
-import se.scalablesolutions.akka.AkkaException
+import akka.actor.{ActorRef, IllegalActorStateException, ActorType, Uuid}
+import akka.dispatch.{Future, CompletableFuture, MessageInvocation}
+import akka.config.{Config, ModuleNotAvailableException}
+import akka.stm.Transaction
+import akka.AkkaException
 
 import java.net.InetSocketAddress
 
@@ -65,7 +65,7 @@ object ReflectiveAccess extends Logging {
       "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
 
     val remoteClientObjectInstance: Option[RemoteClientObject] =
-      getObjectFor("se.scalablesolutions.akka.remote.RemoteClient$")
+      getObjectFor("akka.remote.RemoteClient$")
 
     def register(address: InetSocketAddress, uuid: Uuid) = {
       ensureRemotingEnabled
@@ -123,10 +123,10 @@ object ReflectiveAccess extends Logging {
     }
 
     val remoteServerObjectInstance: Option[RemoteServerObject] =
-      getObjectFor("se.scalablesolutions.akka.remote.RemoteServer$")
+      getObjectFor("akka.remote.RemoteServer$")
 
     val remoteNodeObjectInstance: Option[RemoteNodeObject] =
-      getObjectFor("se.scalablesolutions.akka.remote.RemoteNode$")
+      getObjectFor("akka.remote.RemoteNode$")
 
     def registerActor(address: InetSocketAddress, uuid: Uuid, actorRef: ActorRef) = {
       ensureRemotingEnabled
@@ -165,7 +165,7 @@ object ReflectiveAccess extends Logging {
       "Can't load the typed actor module, make sure that akka-typed-actor.jar is on the classpath")
 
     val typedActorObjectInstance: Option[TypedActorObject] =
-      getObjectFor("se.scalablesolutions.akka.actor.TypedActor$")
+      getObjectFor("akka.actor.TypedActor$")
 
     def resolveFutureIfMessageIsJoinPoint(message: Any, future: Future[_]): Boolean = {
       ensureTypedActorEnabled
@@ -194,7 +194,7 @@ object ReflectiveAccess extends Logging {
       "Can't load the typed actor module, make sure that akka-jta.jar is on the classpath")
 
     val transactionContainerObjectInstance: Option[TransactionContainerObject] =
-      getObjectFor("se.scalablesolutions.akka.jta.TransactionContainer$")
+      getObjectFor("akka.jta.TransactionContainer$")
 
     def createTransactionContainer: TransactionContainer = {
       ensureJtaEnabled
@@ -217,21 +217,21 @@ object ReflectiveAccess extends Logging {
     lazy val isEnterpriseEnabled = clusterObjectInstance.isDefined
 
     val clusterObjectInstance: Option[AnyRef] =
-      getObjectFor("se.scalablesolutions.akka.cluster.Cluster$")
+      getObjectFor("akka.cluster.Cluster$")
 
     val serializerClass: Option[Class[_]] = 
-      getClassFor("se.scalablesolutions.akka.serialization.Serializer")
+      getClassFor("akka.serialization.Serializer")
 
     def ensureEnterpriseEnabled = if (!isEnterpriseEnabled) throw new ModuleNotAvailableException(
       "Feature is only available in Akka Enterprise edition")
 
-    def createFileBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.actor.mailbox.FileBasedMailbox", actorRef)
+    def createFileBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.actor.mailbox.FileBasedMailbox", actorRef)
 
-    def createZooKeeperBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.actor.mailbox.ZooKeeperBasedMailbox", actorRef)
+    def createZooKeeperBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.actor.mailbox.ZooKeeperBasedMailbox", actorRef)
 
-    def createBeanstalkBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.actor.mailbox.BeanstalkBasedMailbox", actorRef)
+    def createBeanstalkBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.actor.mailbox.BeanstalkBasedMailbox", actorRef)
 
-    def createRedisBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.actor.mailbox.RedisBasedMailbox", actorRef)
+    def createRedisBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.actor.mailbox.RedisBasedMailbox", actorRef)
 
     private def createMailbox(mailboxClassname: String, actorRef: ActorRef): Mailbox = {
       ensureEnterpriseEnabled

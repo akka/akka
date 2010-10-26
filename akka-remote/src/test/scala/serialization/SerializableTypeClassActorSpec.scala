@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.actor.serialization
+package akka.actor.serialization
 
 
 import org.scalatest.Spec
@@ -7,9 +7,9 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.serialization._
+import akka.serialization._
 // import dispatch.json._
-import se.scalablesolutions.akka.actor._
+import akka.actor._
 import ActorSerialization._
 import Actor._
 

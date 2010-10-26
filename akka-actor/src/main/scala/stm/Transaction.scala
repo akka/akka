@@ -2,18 +2,18 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.stm
+package akka.stm
 
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable.HashMap
 
-import se.scalablesolutions.akka.util.ReflectiveAccess.JtaModule
+import akka.util.ReflectiveAccess.JtaModule
 
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.AkkaException
+import akka.util.Logging
+import akka.config.Config._
+import akka.AkkaException
 
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.api.lifecycle.{TransactionLifecycleListener, TransactionLifecycleEvent}
@@ -28,10 +28,10 @@ class StmConfigurationException(message: String) extends AkkaException(message)
 object Transaction {
   val idFactory = new AtomicLong(-1L)
 
-  @deprecated("Use the se.scalablesolutions.akka.stm.local package object instead.")
+  @deprecated("Use the akka.stm.local package object instead.")
   object Local extends LocalStm
 
-  @deprecated("Use the se.scalablesolutions.akka.stm.global package object instead.")
+  @deprecated("Use the akka.stm.global package object instead.")
   object Global extends GlobalStm
 
   object Util extends StmUtil

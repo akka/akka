@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import se.scalablesolutions.akka.dispatch.Dispatchers
-import se.scalablesolutions.akka.config.Supervision.{SupervisorConfig, OneForOneStrategy, Supervise, Permanent}
+import akka.dispatch.Dispatchers
+import akka.config.Supervision.{SupervisorConfig, OneForOneStrategy, Supervise, Permanent}
 import java.util.concurrent.CountDownLatch
 
 class SupervisorMiscSpec extends WordSpec with MustMatchers {

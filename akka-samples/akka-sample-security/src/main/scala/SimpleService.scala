@@ -4,13 +4,13 @@
 
 package sample.security
 
-import se.scalablesolutions.akka.actor.{SupervisorFactory, Transactor, Actor}
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.security.{BasicAuthenticationActor,BasicCredentials,SpnegoAuthenticationActor,DigestAuthenticationActor, UserInfo}
-import se.scalablesolutions.akka.stm.TransactionalMap
-import se.scalablesolutions.akka.actor.ActorRegistry.actorFor
+import akka.actor.{SupervisorFactory, Transactor, Actor}
+import akka.actor.Actor._
+import akka.config.Supervision._
+import akka.util.Logging
+import akka.security.{BasicAuthenticationActor,BasicCredentials,SpnegoAuthenticationActor,DigestAuthenticationActor, UserInfo}
+import akka.stm.TransactionalMap
+import akka.actor.ActorRegistry.actorFor
 
 class Boot {
   val factory = SupervisorFactory(

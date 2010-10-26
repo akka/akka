@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.config
+package akka.config
 
-import se.scalablesolutions.akka.AkkaException
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.actor.{ActorRef, IllegalActorStateException}
-import se.scalablesolutions.akka.dispatch.CompletableFuture
+import akka.AkkaException
+import akka.util.Logging
+import akka.actor.{ActorRef, IllegalActorStateException}
+import akka.dispatch.CompletableFuture
 
 import net.lag.configgy.{Config => CConfig, Configgy, ParseException}
 

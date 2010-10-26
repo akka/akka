@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.camel
+package akka.camel
 
 import collection.mutable.ListBuffer
 
@@ -11,9 +11,9 @@ import java.util.concurrent.CountDownLatch
 
 import org.apache.camel.builder.RouteBuilder
 
-import se.scalablesolutions.akka.actor._
-import se.scalablesolutions.akka.camel.component.TypedActorComponent
-import se.scalablesolutions.akka.util.Logging
+import akka.actor._
+import akka.camel.component.TypedActorComponent
+import akka.util.Logging
 
 /**
  * @author Martin Krasser
@@ -64,10 +64,10 @@ private[camel] object ConsumerPublisher extends Logging {
  * Actor that publishes consumer actors and typed actor methods at Camel endpoints.
  * The Camel context used for publishing is obtained via CamelContextManager.context.
  * This actor accepts messages of type
- * se.scalablesolutions.akka.camel.ConsumerRegistered,
- * se.scalablesolutions.akka.camel.ConsumerUnregistered,
- * se.scalablesolutions.akka.camel.ConsumerMethodRegistered and
- * se.scalablesolutions.akka.camel.ConsumerMethodUnregistered.
+ * akka.camel.ConsumerRegistered,
+ * akka.camel.ConsumerUnregistered,
+ * akka.camel.ConsumerMethodRegistered and
+ * akka.camel.ConsumerMethodUnregistered.
  *
  * @author Martin Krasser
  */

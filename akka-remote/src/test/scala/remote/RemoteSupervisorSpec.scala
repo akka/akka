@@ -2,16 +2,16 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor.remote
+package akka.actor.remote
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
-import se.scalablesolutions.akka.serialization.BinaryString
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
-import se.scalablesolutions.akka.OneWay
+import akka.serialization.BinaryString
+import akka.config.Supervision._
+import akka.remote.{RemoteServer, RemoteClient}
+import akka.OneWay
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
-import se.scalablesolutions.akka.actor.{SupervisorFactory, Supervisor, ActorRef, Actor}
+import akka.actor.{SupervisorFactory, Supervisor, ActorRef, Actor}
 import Actor._
 
 object Log {
