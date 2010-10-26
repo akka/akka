@@ -5,6 +5,7 @@ import org.scalatest.matchers.ShouldMatchers
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import se.scalablesolutions.akka.persistence.voldemort.VoldemortStorageBackend._
+import se.scalablesolutions.akka.persistence.common.KVStorageBackend._
 import se.scalablesolutions.akka.util.{Logging}
 import collection.immutable.TreeSet
 import VoldemortStorageBackendSuite._
