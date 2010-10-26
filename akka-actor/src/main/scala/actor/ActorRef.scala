@@ -780,8 +780,7 @@ class LocalActorRef private[akka] (
     if (isShutdown) throw new ActorStartException(
       "Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
-      dispatcher.register(this)
-      dispatcher.start
+      dispatcher.attach(this)
       if (isTransactor)
         transactorConfig = transactorConfig.copy(factory = Some(TransactionFactory(transactorConfig.config, id)))
 
@@ -803,7 +802,7 @@ class LocalActorRef private[akka] (
     if (isRunning) {
       receiveTimeout = None
       cancelReceiveTimeout
-      dispatcher.unregister(this)
+      dispatcher.detach(this)
       transactorConfig = transactorConfig.copy(factory = None) 
       _status = ActorRefInternals.SHUTDOWN
       actor.postStop
@@ -953,7 +952,7 @@ class LocalActorRef private[akka] (
         message, senderOption, None, remoteAddress.get, timeout, true, this, None, ActorType.ScalaActor)
     } else {
       val invocation = new MessageInvocation(this, message, senderOption, None, transactionSet.get)
-      dispatcher dispatch invocation
+      dispatcher dispatchMessage invocation
     }
   }
 
@@ -974,7 +973,7 @@ class LocalActorRef private[akka] (
       else new DefaultCompletableFuture[T](timeout)
       val invocation = new MessageInvocation(
         this, message, senderOption, Some(future.asInstanceOf[CompletableFuture[Any]]), transactionSet.get)
-      dispatcher dispatch invocation
+      dispatcher dispatchMessage invocation
       future
     }
   }

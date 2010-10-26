@@ -27,7 +27,7 @@ object Scheduler extends Logging {
 
   case class SchedulerException(msg: String, e: Throwable) extends RuntimeException(msg, e)
 
-  private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
+  @volatile private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
 
   log.info("Starting up Scheduler")
 
@@ -108,12 +108,12 @@ object Scheduler extends Logging {
     }
   }
 
-  def shutdown = {
+  def shutdown: Unit = synchronized {
     log.info("Shutting down Scheduler")
     service.shutdown
   }
 
-  def restart = {
+  def restart: Unit = synchronized {
     log.info("Restarting Scheduler")
     shutdown
     service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
