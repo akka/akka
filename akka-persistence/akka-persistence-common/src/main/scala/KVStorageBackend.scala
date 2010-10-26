@@ -21,17 +21,54 @@ import collection.immutable._
 
 
 private[akka] trait KVAccess {
-  def put(key: Array[Byte], value: Array[Byte])
+
+  import KVStorageBackend._
+
+  def put(owner: String, key: Array[Byte], value: Array[Byte]): Unit = {
+    put(getKey(owner, key), value)
+  }
+
+  def put(owner: String, index: Int, value: Array[Byte]): Unit = {
+    put(getIndexedKey(owner, index), value)
+  }
+
+  def put(key: Array[Byte], value: Array[Byte]): Unit
+
+  def getValue(owner: String, key: Array[Byte]): Array[Byte] = {
+    getValue(getKey(owner, key))
+  }
+
+  def getValue(owner: String, index: Int): Array[Byte] = {
+    getValue(getIndexedKey(owner, index))
+  }
 
   def getValue(key: Array[Byte]): Array[Byte]
 
+  def getValue(owner: String, key: Array[Byte], default: Array[Byte]): Array[Byte] = {
+    getValue(getKey(owner, key), default)
+  }
+
   def getValue(key: Array[Byte], default: Array[Byte]): Array[Byte]
+
+  def getAll(owner: String, keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
+    getAll(keys.map{
+      getKey(owner, _)
+    })
+  }
 
   def getAll(keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]]
 
-  def delete(key: Array[Byte])
+  def delete(owner: String, index: Int): Unit = {
+    delete(getIndexedKey(owner, index))
+  }
 
-  def drop()
+  def delete(owner: String, key: Array[Byte]): Unit = {
+    delete(getKey(owner, key))
+  }
+
+  def delete(key: Array[Byte]): Unit
+
+  def drop(): Unit
 }
 
 private[akka] object KVAccess {
@@ -44,6 +81,44 @@ private[akka] object KVStorageBackend {
   val nullMapValueHeader = 0x00.byteValue
   val nullMapValue: Array[Byte] = Array(nullMapValueHeader)
   val notNullMapValueHeader: Byte = 0xff.byteValue
+
+  /**
+   * Concat the ownerlenght+owner+key+ of owner so owned data will be colocated
+   * Store the length of owner as first byte to work around the rare case
+   * where ownerbytes1 + keybytes1 == ownerbytes2 + keybytes2 but ownerbytes1 != ownerbytes2
+   */
+
+  def getKey(owner: String, key: Array[Byte]): Array[Byte] = {
+    val ownerBytes: Array[Byte] = owner.getBytes("UTF-8")
+    val ownerLenghtBytes: Array[Byte] = IntSerializer.toBytes(owner.length)
+    val theKey = new Array[Byte](ownerLenghtBytes.length + ownerBytes.length + key.length)
+    System.arraycopy(ownerLenghtBytes, 0, theKey, 0, ownerLenghtBytes.length)
+    System.arraycopy(ownerBytes, 0, theKey, ownerLenghtBytes.length, ownerBytes.length)
+    System.arraycopy(key, 0, theKey, ownerLenghtBytes.length + ownerBytes.length, key.length)
+    theKey
+  }
+
+  def getIndexedBytes(index: Int): Array[Byte] = {
+    val indexbytes = IntSerializer.toBytes(index)
+    indexbytes
+  }
+
+  def getIndexedKey(owner: String, index: Int): Array[Byte] = {
+    getKey(owner, getIndexedBytes(index))
+  }
+
+  def getIndexFromVectorValueKey(owner: String, key: Array[Byte]): Int = {
+    val indexBytes = new Array[Byte](IntSerializer.bytesPerInt)
+    System.arraycopy(key, key.length - IntSerializer.bytesPerInt, indexBytes, 0, IntSerializer.bytesPerInt)
+    IntSerializer.fromBytes(indexBytes)
+  }
+
+  def getMapKeyFromKey(owner: String, key: Array[Byte]): Array[Byte] = {
+    val mapKeyLength = key.length - IntSerializer.bytesPerInt - owner.getBytes("UTF-8").length
+    val mapkey = new Array[Byte](mapKeyLength)
+    System.arraycopy(key, key.length - mapKeyLength, mapkey, 0, mapKeyLength)
+    mapkey
+  }
 
   def getStoredMapValue(value: Array[Byte]): Array[Byte] = {
     value match {
@@ -128,18 +203,17 @@ private[akka] object KVStorageBackend {
 
 private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Array[Byte]] with VectorStorageBackend[Array[Byte]] with RefStorageBackend[Array[Byte]] with QueueStorageBackend[Array[Byte]] with Logging {
 
+  import KVStorageBackend._
+  import KVAccess._
 
-  val underscoreBytesUTF8 = "_".getBytes("UTF-8")
   val mapKeysIndex = getIndexedBytes(-1)
   val vectorHeadIndex = getIndexedBytes(-1)
   val vectorTailIndex = getIndexedBytes(-2)
   val queueHeadIndex = getIndexedBytes(-1)
   val queueTailIndex = getIndexedBytes(-2)
+  val zero = IntSerializer.toBytes(0)
 
   implicit val ordering = ArrayOrdering
-
-  import KVStorageBackend._
-  import KVAccess._
 
 
   def refAccess: KVAccess
@@ -175,10 +249,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
 
   private def getKeyValues(name: String, keys: SortedSet[Array[Byte]]): List[(Array[Byte], Array[Byte])] = {
     val all: Map[Array[Byte], Array[Byte]] =
-      mapAccess.getAll(keys.map{
-        mapKey =>
-          getKey(name, mapKey)
-      })
+      mapAccess.getAll(name, keys)
 
     var returned = new TreeMap[Array[Byte], Array[Byte]]()(ordering)
     all.foreach{
@@ -199,7 +270,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   }
 
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = {
-    val result: Array[Byte] = mapAccess.getValue(getKey(name, key))
+    val result: Array[Byte] = mapAccess.getValue(name, key)
     result match {
       case null => None
       case _ => Some(getMapValueFromStored(result))
@@ -210,21 +281,21 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
     var keys = getMapKeys(name)
     keys -= key
     putMapKeys(name, keys)
-    mapAccess.delete(getKey(name, key))
+    mapAccess.delete(name, key)
   }
 
   def removeMapStorageFor(name: String) = {
     val keys = getMapKeys(name)
     keys.foreach{
       key =>
-        mapAccess.delete(getKey(name, key))
+        mapAccess.delete(name, key)
         log.debug("deleted key %s for %s", key, name)
     }
-    mapAccess.delete(getKey(name, mapKeysIndex))
+    mapAccess.delete(name, mapKeysIndex)
   }
 
   def insertMapStorageEntryFor(name: String, key: Array[Byte], value: Array[Byte]) = {
-    mapAccess.put(getKey(name, key), getStoredMapValue(value))
+    mapAccess.put(name, key, getStoredMapValue(value))
     var keys = getMapKeys(name)
     keys += key
     putMapKeys(name, keys)
@@ -233,7 +304,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   def insertMapStorageEntriesFor(name: String, entries: List[(Array[Byte], Array[Byte])]) = {
     val newKeys = entries.map{
       case (key, value) => {
-        mapAccess.put(getKey(name, key), getStoredMapValue(value))
+        mapAccess.put(name, key, getStoredMapValue(value))
         key
       }
     }
@@ -243,11 +314,11 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   }
 
   def putMapKeys(name: String, keys: SortedSet[Array[Byte]]) = {
-    mapAccess.put(getKey(name, mapKeysIndex), SortedSetSerializer.toBytes(keys))
+    mapAccess.put(name, mapKeysIndex, SortedSetSerializer.toBytes(keys))
   }
 
   def getMapKeys(name: String): SortedSet[Array[Byte]] = {
-    SortedSetSerializer.fromBytes(mapAccess.getValue(getKey(name, mapKeysIndex), Array.empty[Byte]))
+    SortedSetSerializer.fromBytes(mapAccess.getValue(name, mapKeysIndex, Array.empty[Byte]))
   }
 
   def getVectorStorageSizeFor(name: String): Int = {
@@ -272,7 +343,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
     val ret = mdata.getRangeIndexes(st, count).toList map {
       index: Int => {
         log.debug("getting:" + index)
-        vectorAccess.getValue(getIndexedKey(name, index))
+        vectorAccess.getValue(name, index)
       }
     }
     ret
@@ -281,7 +352,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] = {
     val mdata = getVectorMetadata(name)
     if (mdata.size > 0 && index < mdata.size) {
-      vectorAccess.getValue(getIndexedKey(name, mdata.getRangeIndexes(index, 1)(0)))
+      vectorAccess.getValue(name, mdata.getRangeIndexes(index, 1)(0))
     } else {
       throw new StorageException("In Vector:" + name + " No such Index:" + index)
     }
@@ -291,7 +362,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
     val mdata = getVectorMetadata(name)
     if (mdata.size > 0 && index < mdata.size) {
       elem match {
-        case null => vectorAccess.delete(getIndexedKey(name, mdata.getRangeIndexes(index, 1)(0)))
+        case null => vectorAccess.delete(name, mdata.getRangeIndexes(index, 1)(0))
         case _ => vectorAccess.put(getIndexedKey(name, mdata.getRangeIndexes(index, 1)(0)), elem)
       }
     } else {
@@ -309,12 +380,11 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   def insertVectorStorageEntryFor(name: String, element: Array[Byte]) = {
     val mdata = getVectorMetadata(name)
     if (mdata.canInsert) {
-      val key = getIndexedKey(name, mdata.head)
       element match {
-        case null => vectorAccess.delete(key)
-        case _ => vectorAccess.put(key, element)
+        case null => vectorAccess.delete(name, mdata.head)
+        case _ => vectorAccess.put(name, mdata.head, element)
       }
-      vectorAccess.put(getKey(name, vectorHeadIndex), IntSerializer.toBytes(mdata.nextInsert))
+      vectorAccess.put(name, vectorHeadIndex, IntSerializer.toBytes(mdata.nextInsert))
     } else {
       throw new IllegalStateException("The vector %s is full".format(name))
     }
@@ -325,11 +395,10 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   override def removeVectorStorageEntryFor(name: String) = {
     val mdata = getVectorMetadata(name)
     if (mdata.canRemove) {
-      val key = getIndexedKey(name, mdata.tail)
-      vectorAccess.put(getKey(name, vectorTailIndex), IntSerializer.toBytes(mdata.nextRemove))
+      vectorAccess.put(name, vectorTailIndex, IntSerializer.toBytes(mdata.nextRemove))
       try
       {
-        vectorAccess.delete(key)
+        vectorAccess.delete(name, mdata.tail)
       } catch {
         case e: Exception => log.warn("Exception while trying to clean up a popped element from the vector, this is acceptable")
       }
@@ -340,15 +409,16 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   }
 
   def getVectorMetadata(name: String): VectorMetadata = {
-    val keys = List(getKey(name, vectorHeadIndex), getKey(name, vectorTailIndex))
-    val vdata = vectorAccess.getAll(keys)
-    val values = keys.map{
-      vdata.get(_) match {
-        case Some(value) => IntSerializer.fromBytes(value)
-        case None => 0
-      }
+    val head = vectorAccess.getValue(name,vectorHeadIndex,zero)
+    val tail = vectorAccess.getValue(name,vectorTailIndex,zero)
+    VectorMetadata(IntSerializer.fromBytes(head),IntSerializer.fromBytes(tail))
+  }
+
+  def getOrDefaultToZero(map: Map[Array[Byte], Array[Byte]], key: Array[Byte]): Int = {
+    map.get(key) match {
+      case Some(value) => IntSerializer.fromBytes(value)
+      case None => 0
     }
-    VectorMetadata(values.head, values.tail.head)
   }
 
 
@@ -356,10 +426,10 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
     val mdata = getQueueMetadata(name)
     mdata.getActiveIndexes foreach {
       index =>
-        queueAccess.delete(getIndexedKey(name, index))
+        queueAccess.delete(name, index)
     }
-    queueAccess.delete(getKey(name, queueHeadIndex))
-    queueAccess.delete(getKey(name, queueTailIndex))
+    queueAccess.delete(name, queueHeadIndex)
+    queueAccess.delete(name, queueTailIndex)
     true
   }
 
@@ -368,7 +438,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
     val ret = mdata.getPeekIndexes(start, count).toList map {
       index: Int => {
         log.debug("peeking:" + index)
-        queueAccess.getValue(getIndexedKey(name, index))
+        queueAccess.getValue(name, index)
       }
     }
     ret
@@ -381,16 +451,15 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   def dequeue(name: String): Option[Array[Byte]] = {
     val mdata = getQueueMetadata(name)
     if (mdata.canDequeue) {
-      val key = getIndexedKey(name, mdata.head)
       try
       {
-        val dequeued = queueAccess.getValue(key)
-        queueAccess.put(getKey(name, queueHeadIndex), IntSerializer.toBytes(mdata.nextDequeue))
+        val dequeued = queueAccess.getValue(name, mdata.head)
+        queueAccess.put(name, queueHeadIndex, IntSerializer.toBytes(mdata.nextDequeue))
         Some(dequeued)
       } finally {
         try
         {
-          queueAccess.delete(key)
+          queueAccess.delete(name, mdata.head)
         } catch {
           //a failure to delete is ok, just leaves a K-V in Voldemort that will be overwritten if the queue ever wraps around
           case e: Exception => log.warn(e, "caught an exception while deleting a dequeued element, however this will not cause any inconsistency in the queue")
@@ -404,12 +473,11 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   def enqueue(name: String, item: Array[Byte]): Option[Int] = {
     val mdata = getQueueMetadata(name)
     if (mdata.canEnqueue) {
-      val key = getIndexedKey(name, mdata.tail)
       item match {
-        case null => queueAccess.delete(key)
-        case _ => queueAccess.put(key, item)
+        case null => queueAccess.delete(name, mdata.tail)
+        case _ => queueAccess.put(name, mdata.tail, item)
       }
-      queueAccess.put(getKey(name, queueTailIndex), IntSerializer.toBytes(mdata.nextEnqueue))
+      queueAccess.put(name, queueTailIndex, IntSerializer.toBytes(mdata.nextEnqueue))
       Some(mdata.size + 1)
     } else {
       None
@@ -417,57 +485,11 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   }
 
   def getQueueMetadata(name: String): QueueMetadata = {
-    val keys = List(getKey(name, queueHeadIndex), getKey(name, queueTailIndex))
-    val qdata = queueAccess.getAll(keys)
-    val values = keys.map{
-      qdata.get(_) match {
-        case Some(value) => IntSerializer.fromBytes(value)
-        case None => 0
-      }
-    }
-    QueueMetadata(values.head, values.tail.head)
+    val head = queueAccess.getValue(name,vectorHeadIndex,zero)
+    val tail = queueAccess.getValue(name,vectorTailIndex,zero)
+    QueueMetadata(IntSerializer.fromBytes(head),IntSerializer.fromBytes(tail))
   }
 
-  /**
-   * Concat the ownerlenght+owner+key+ of owner so owned data will be colocated
-   * Store the length of owner as first byte to work around the rare case
-   * where ownerbytes1 + keybytes1 == ownerbytes2 + keybytes2 but ownerbytes1 != ownerbytes2
-   */
-
-  def getKey(owner: String, key: Array[Byte]): Array[Byte] = {
-    val ownerBytes: Array[Byte] = owner.getBytes("UTF-8")
-    val ownerLenghtBytes: Array[Byte] = IntSerializer.toBytes(owner.length)
-    val theKey = new Array[Byte](ownerLenghtBytes.length + ownerBytes.length + key.length)
-    System.arraycopy(ownerLenghtBytes, 0, theKey, 0, ownerLenghtBytes.length)
-    System.arraycopy(ownerBytes, 0, theKey, ownerLenghtBytes.length, ownerBytes.length)
-    System.arraycopy(key, 0, theKey, ownerLenghtBytes.length + ownerBytes.length, key.length)
-    theKey
-  }
-
-  def getIndexedBytes(index: Int): Array[Byte] = {
-    val indexbytes = IntSerializer.toBytes(index)
-    val theIndexKey = new Array[Byte](underscoreBytesUTF8.length + indexbytes.length)
-    System.arraycopy(underscoreBytesUTF8, 0, theIndexKey, 0, underscoreBytesUTF8.length)
-    System.arraycopy(indexbytes, 0, theIndexKey, underscoreBytesUTF8.length, indexbytes.length)
-    theIndexKey
-  }
-
-  def getIndexedKey(owner: String, index: Int): Array[Byte] = {
-    getKey(owner, getIndexedBytes(index))
-  }
-
-  def getIndexFromVectorValueKey(owner: String, key: Array[Byte]): Int = {
-    val indexBytes = new Array[Byte](IntSerializer.bytesPerInt)
-    System.arraycopy(key, key.length - IntSerializer.bytesPerInt, indexBytes, 0, IntSerializer.bytesPerInt)
-    IntSerializer.fromBytes(indexBytes)
-  }
-
-  def getMapKeyFromKey(owner: String, key: Array[Byte]): Array[Byte] = {
-    val mapKeyLength = key.length - IntSerializer.bytesPerInt - owner.getBytes("UTF-8").length
-    val mapkey = new Array[Byte](mapKeyLength)
-    System.arraycopy(key, key.length - mapKeyLength, mapkey, 0, mapKeyLength)
-    mapkey
-  }
 
   //wrapper for null
 
