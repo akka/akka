@@ -2,15 +2,15 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.http
+package akka.http
 
 import javax.ws.rs.core.UriBuilder
 import javax.servlet.ServletConfig
 import java.io.File
 
-import se.scalablesolutions.akka.actor.BootableActorLoaderService
-import se.scalablesolutions.akka.util.{Bootable, Logging}
-import se.scalablesolutions.akka.comet.AkkaServlet
+import akka.actor.BootableActorLoaderService
+import akka.util.{Bootable, Logging}
+import akka.comet.AkkaServlet
 
 import org.eclipse.jetty.xml.XmlConfiguration
 import org.eclipse.jetty.server.{Handler, Server}
@@ -22,7 +22,7 @@ import org.eclipse.jetty.server.handler.{HandlerList, HandlerCollection, Context
 trait EmbeddedAppServer extends Bootable with Logging {
   self : BootableActorLoaderService =>
 
-  import se.scalablesolutions.akka.config.Config._
+  import akka.config.Config._
 
   val REST_HOSTNAME = config.getString("akka.rest.hostname", "localhost")
   val REST_PORT = config.getInt("akka.rest.port", 9998)

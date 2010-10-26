@@ -1,10 +1,10 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.rest
+package akka.rest
 
 import java.io.OutputStream
-import se.scalablesolutions.akka.serialization.Serializer
+import akka.serialization.Serializer
 import javax.ws.rs.core.{MultivaluedMap, MediaType}
 import javax.ws.rs.ext.{MessageBodyWriter, Provider}
 import javax.ws.rs.Produces
