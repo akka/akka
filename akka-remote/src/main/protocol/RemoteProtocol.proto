@@ -92,6 +92,13 @@ message TypedActorInfoProtocol {
 }
 
 /**
+ * Defines a remote connection handshake.
+ */
+//message HandshakeProtocol {
+//  required string cookie = 1;
+//}
+
+/**
  * Defines a remote message request.
  */
 message RemoteRequestProtocol {
