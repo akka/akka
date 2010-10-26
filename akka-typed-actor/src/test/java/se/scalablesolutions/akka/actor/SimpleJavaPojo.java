@@ -1,9 +1,9 @@
-package se.scalablesolutions.akka.actor;
+package akka.actor;
 
-import se.scalablesolutions.akka.dispatch.Future;
-import se.scalablesolutions.akka.dispatch.CompletableFuture;
-import se.scalablesolutions.akka.dispatch.Future;
-import se.scalablesolutions.akka.japi.Option;
+import akka.dispatch.Future;
+import akka.dispatch.CompletableFuture;
+import akka.dispatch.Future;
+import akka.japi.Option;
 
 public interface SimpleJavaPojo {
   public Object getSender();

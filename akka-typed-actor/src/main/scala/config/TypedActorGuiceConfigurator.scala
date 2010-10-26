@@ -2,11 +2,11 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.config
+package akka.config
 
-import se.scalablesolutions.akka.actor._
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.util._
+import akka.actor._
+import akka.config.Supervision._
+import akka.util._
 import ReflectiveAccess._
 
 import org.codehaus.aspectwerkz.proxy.Proxy
@@ -19,7 +19,7 @@ import java.lang.reflect.Method
 import com.google.inject._
 
 /**
- * This is an class for internal usage. Instead use the <code>se.scalablesolutions.akka.config.TypedActorConfigurator</code>
+ * This is an class for internal usage. Instead use the <code>akka.config.TypedActorConfigurator</code>
  * class for creating TypedActors.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

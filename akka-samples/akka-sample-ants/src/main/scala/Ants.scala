@@ -6,7 +6,6 @@ package sample.ants
 
 import java.util.concurrent.TimeUnit
 import scala.util.Random.{nextInt => randomInt}
-import se.scalablesolutions.akka
 import akka.actor.{Actor, ActorRef, Scheduler}
 import akka.actor.Actor.actorOf
 import akka.stm.local._

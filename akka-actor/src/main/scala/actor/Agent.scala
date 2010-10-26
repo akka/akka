@@ -2,11 +2,11 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
-import se.scalablesolutions.akka.stm.Ref
-import se.scalablesolutions.akka.AkkaException
-import se.scalablesolutions.akka.japi.{ Function => JFunc, Procedure => JProc }
+import akka.stm.Ref
+import akka.AkkaException
+import akka.japi.{ Function => JFunc, Procedure => JProc }
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.CountDownLatch
 

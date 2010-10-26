@@ -2,14 +2,14 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.hbase
+package akka.persistence.hbase
 
 import scala.collection.mutable.ListBuffer
-import se.scalablesolutions.akka.stm._
-import se.scalablesolutions.akka.persistence.common._
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.util.Helpers._
-import se.scalablesolutions.akka.config.Config.config
+import akka.stm._
+import akka.persistence.common._
+import akka.util.Logging
+import akka.util.Helpers._
+import akka.config.Config.config
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.HColumnDescriptor
 import org.apache.hadoop.hbase.HTableDescriptor

@@ -2,15 +2,15 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.amqp
+package akka.amqp
 
 import collection.JavaConversions
 import java.lang.Throwable
-import se.scalablesolutions.akka.actor.Actor
+import akka.actor.Actor
 import Actor._
 import com.rabbitmq.client.{ShutdownSignalException, Channel, ShutdownListener}
 import scala.PartialFunction
-import se.scalablesolutions.akka.amqp.AMQP._
+import akka.amqp.AMQP._
 
 abstract private[amqp] class FaultTolerantChannelActor(
         exchangeParameters: Option[ExchangeParameters], channelParameters: Option[ChannelParameters]) extends Actor {

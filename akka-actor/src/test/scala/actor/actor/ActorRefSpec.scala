@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -10,7 +10,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.actor._
+import akka.actor._
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 object ActorRefSpec {

@@ -1,17 +1,17 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.actor.dispatch
+package akka.actor.dispatch
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import org.scalatest.Assertions._
-import se.scalablesolutions.akka.dispatch._
-import se.scalablesolutions.akka.actor.{ActorRef, Actor}
-import se.scalablesolutions.akka.actor.Actor._
+import akka.dispatch._
+import akka.actor.{ActorRef, Actor}
+import akka.actor.Actor._
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent. {ConcurrentHashMap, CountDownLatch, TimeUnit}
-import se.scalablesolutions.akka.actor.dispatch.ActorModelSpec.MessageDispatcherInterceptor
+import akka.actor.dispatch.ActorModelSpec.MessageDispatcherInterceptor
 
 object ActorModelSpec {
 

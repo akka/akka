@@ -2,16 +2,16 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.amqp
+package akka.amqp
 
 import rpc.RPC
 import rpc.RPC.{RpcClientSerializer, RpcServerSerializer}
-import se.scalablesolutions.akka.actor.{Actor, ActorRegistry}
+import akka.actor.{Actor, ActorRegistry}
 import Actor._
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.lang.String
-import se.scalablesolutions.akka.amqp.AMQP._
-import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol
+import akka.amqp.AMQP._
+import akka.remote.protocol.RemoteProtocol.AddressProtocol
 
 object ExampleSession {
 

@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import Actor._
-import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future, CompletableFuture, Dispatchers}
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.util._
+import akka.dispatch.{MessageDispatcher, Future, CompletableFuture, Dispatchers}
+import akka.config.Supervision._
+import akka.util._
 import ReflectiveAccess._
 
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
@@ -24,7 +24,7 @@ import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
  * Non-void methods are turned into request-reply messages with the exception of methods returning
  * a 'Future' which will be sent using request-reply-with-future semantics and need to return the
  * result using the 'future(..)' method: 'return future(... future result ...);'.
- * Methods returning se.scalablesolutions.akka.japi.Option will block until a timeout expires,
+ * Methods returning akka.japi.Option will block until a timeout expires,
  * if the implementation of the method returns "none", some(null) will be returned, "none" will only be
  * returned when the method didn't respond within the timeout.
  *
@@ -149,7 +149,7 @@ abstract class TypedActor extends Actor with Proxyable {
 
   /**
    * This method is used to resolve the Future for TypedActor methods that are defined to return a
-   * {@link se.scalablesolutions.akka.actor.dispatch.Future }.
+   * {@link akka.actor.dispatch.Future }.
    * <p/>
    * Here is an example:
    * <pre>
@@ -735,7 +735,7 @@ object TypedActor extends Logging {
     classOf[Future[_]].isAssignableFrom(methodRtti.getMethod.getReturnType)
 
   private[akka] def returnsOption_?(methodRtti: MethodRtti): Boolean =
-    classOf[se.scalablesolutions.akka.japi.Option[_]].isAssignableFrom(methodRtti.getMethod.getReturnType)
+    classOf[akka.japi.Option[_]].isAssignableFrom(methodRtti.getMethod.getReturnType)
 
   private[akka] def supervise(faultHandlingStrategy: FaultHandlingStrategy, components: List[Supervise]): Supervisor =
     Supervisor(SupervisorConfig(faultHandlingStrategy, components))
@@ -759,7 +759,7 @@ object TypedActor extends Logging {
 @Aspect("perInstance")
 private[akka] sealed class ServerManagedTypedActorAspect extends ActorAspect {
   
-  @Around("execution(* *.*(..)) && this(se.scalablesolutions.akka.actor.ServerManagedTypedActor)")
+  @Around("execution(* *.*(..)) && this(akka.actor.ServerManagedTypedActor)")
   def invoke(joinPoint: JoinPoint): AnyRef = {
     if (!isInitialized) initialize(joinPoint)
     remoteDispatch(joinPoint)
@@ -782,7 +782,7 @@ private[akka] sealed class ServerManagedTypedActorAspect extends ActorAspect {
 @Aspect("perInstance")
 private[akka] sealed class TypedActorAspect extends ActorAspect {
 
-  @Around("execution(* *.*(..)) && !this(se.scalablesolutions.akka.actor.ServerManagedTypedActor)")
+  @Around("execution(* *.*(..)) && !this(akka.actor.ServerManagedTypedActor)")
   def invoke(joinPoint: JoinPoint): AnyRef = {
     if (!isInitialized) initialize(joinPoint)
     dispatch(joinPoint)
@@ -825,7 +825,7 @@ private[akka] abstract class ActorAspect {
     } else if (TypedActor.returnsFuture_?(methodRtti)) {
       actorRef.!!!(joinPoint, timeout)(senderActorRef)
     } else if (TypedActor.returnsOption_?(methodRtti)) {
-        import se.scalablesolutions.akka.japi.{Option => JOption}
+        import akka.japi.{Option => JOption}
       (actorRef.!!(joinPoint, timeout)(senderActorRef)).as[JOption[AnyRef]] match {
         case None => JOption.none[AnyRef]
         case Some(x) if ((x eq null) || x.isEmpty) => JOption.some[AnyRef](null)

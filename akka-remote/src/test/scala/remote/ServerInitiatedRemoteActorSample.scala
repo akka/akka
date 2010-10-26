@@ -1,8 +1,8 @@
-package se.scalablesolutions.akka.actor.remote
+package akka.actor.remote
 
-import se.scalablesolutions.akka.actor.Actor
-import se.scalablesolutions.akka.remote.{RemoteClient, RemoteNode}
-import se.scalablesolutions.akka.util.Logging
+import akka.actor.Actor
+import akka.remote.{RemoteClient, RemoteNode}
+import akka.util.Logging
 
 import Actor._
 

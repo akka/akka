@@ -2,18 +2,18 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.stm
+package akka.stm
 
 /**
  * For importing the transactional datastructures, including the primitive refs
  * and transactional data structures from Multiverse.
  */
 package object transactional {
-  type TransactionalMap[K,V] = se.scalablesolutions.akka.stm.TransactionalMap[K,V]
-  val TransactionalMap =  se.scalablesolutions.akka.stm.TransactionalMap
+  type TransactionalMap[K,V] = akka.stm.TransactionalMap[K,V]
+  val TransactionalMap =  akka.stm.TransactionalMap
 
-  type TransactionalVector[T] = se.scalablesolutions.akka.stm.TransactionalVector[T]
-  val TransactionalVector = se.scalablesolutions.akka.stm.TransactionalVector
+  type TransactionalVector[T] = akka.stm.TransactionalVector[T]
+  val TransactionalVector = akka.stm.TransactionalVector
 
   type BooleanRef = org.multiverse.transactional.refs.BooleanRef
   type ByteRef    = org.multiverse.transactional.refs.ByteRef

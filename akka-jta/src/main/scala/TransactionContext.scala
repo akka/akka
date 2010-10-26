@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.jta
+package akka.jta
 
 import javax.transaction.{Transaction, Status, TransactionManager, Synchronization}
 
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.config.Config._
+import akka.util.Logging
+import akka.config.Config._
 
 /**
  * The TransactionContext object manages the transactions.

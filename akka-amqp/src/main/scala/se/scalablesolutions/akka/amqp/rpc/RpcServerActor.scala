@@ -2,10 +2,10 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.amqp
+package akka.amqp
 
 import rpc.RPC.RpcServerSerializer
-import se.scalablesolutions.akka.actor.{ActorRef, Actor}
+import akka.actor.{ActorRef, Actor}
 import com.rabbitmq.client.AMQP.BasicProperties
 
 class RpcServerActor[I,O](

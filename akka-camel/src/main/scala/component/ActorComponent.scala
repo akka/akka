@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.camel.component
+package akka.camel.component
 
 import java.net.InetSocketAddress
 import java.util.{Map => JMap}
@@ -12,11 +12,11 @@ import java.util.concurrent.atomic.AtomicReference
 import org.apache.camel._
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
 
-import se.scalablesolutions.akka.actor._
-import se.scalablesolutions.akka.camel.{Failure, Message}
-import se.scalablesolutions.akka.camel.CamelMessageConversion.toExchangeAdapter
-import se.scalablesolutions.akka.dispatch.{CompletableFuture, MessageInvocation, MessageDispatcher}
-import se.scalablesolutions.akka.stm.TransactionConfig
+import akka.actor._
+import akka.camel.{Failure, Message}
+import akka.camel.CamelMessageConversion.toExchangeAdapter
+import akka.dispatch.{CompletableFuture, MessageInvocation, MessageDispatcher}
+import akka.stm.TransactionConfig
 
 import scala.reflect.BeanProperty
 
@@ -33,8 +33,8 @@ object ActorComponent {
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
  *
- * @see se.scalablesolutions.akka.camel.component.ActorEndpoint
- * @see se.scalablesolutions.akka.camel.component.ActorProducer
+ * @see akka.camel.component.ActorEndpoint
+ * @see akka.camel.component.ActorProducer
  *
  * @author Martin Krasser
  */
@@ -69,8 +69,8 @@ class ActorComponent extends DefaultComponent {
  * If the URI contains an actor identifier, a message with a <code>CamelActorIdentifier</code>
  * header overrides the identifier in the endpoint URI.
  *
- * @see se.scalablesolutions.akka.camel.component.ActorComponent
- * @see se.scalablesolutions.akka.camel.component.ActorProducer
+ * @see akka.camel.component.ActorComponent
+ * @see akka.camel.component.ActorProducer
 
  * @author Martin Krasser
  */
@@ -118,8 +118,8 @@ class ActorEndpoint(uri: String,
  * ! operator.</li>
  * </ul>
  *
- * @see se.scalablesolutions.akka.camel.component.ActorComponent
- * @see se.scalablesolutions.akka.camel.component.ActorEndpoint
+ * @see akka.camel.component.ActorComponent
+ * @see akka.camel.component.ActorEndpoint
  *
  * @author Martin Krasser
  */

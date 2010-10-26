@@ -1,12 +1,12 @@
-package se.scalablesolutions.akka.camel;
+package akka.camel;
 
 import org.apache.camel.NoTypeConversionAvailableException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import se.scalablesolutions.akka.camel.CamelContextManager;
-import se.scalablesolutions.akka.camel.Message;
-import se.scalablesolutions.akka.japi.Function;
+import akka.camel.CamelContextManager;
+import akka.camel.Message;
+import akka.japi.Function;
 
 import java.io.InputStream;
 import java.util.*;

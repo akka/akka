@@ -2,11 +2,11 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.amqp
+package akka.amqp
 
 import com.rabbitmq.client.{Channel, RpcClient}
 import rpc.RPC.RpcClientSerializer
-import se.scalablesolutions.akka.amqp.AMQP.{ChannelParameters, ExchangeParameters}
+import akka.amqp.AMQP.{ChannelParameters, ExchangeParameters}
 
 class RpcClientActor[I,O](
     exchangeParameters: ExchangeParameters,

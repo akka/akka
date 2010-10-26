@@ -2,18 +2,18 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.serialization
+package akka.serialization
 
-import se.scalablesolutions.akka.stm.global._
-import se.scalablesolutions.akka.stm.TransactionManagement._
-import se.scalablesolutions.akka.stm.TransactionManagement
-import se.scalablesolutions.akka.dispatch.MessageInvocation
-import se.scalablesolutions.akka.remote.{RemoteServer, MessageSerializer}
-import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
+import akka.stm.global._
+import akka.stm.TransactionManagement._
+import akka.stm.TransactionManagement
+import akka.dispatch.MessageInvocation
+import akka.remote.{RemoteServer, MessageSerializer}
+import akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
 import ActorTypeProtocol._
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.actor.{uuidFrom,newUuid}
-import se.scalablesolutions.akka.actor._
+import akka.config.Supervision._
+import akka.actor.{uuidFrom,newUuid}
+import akka.actor._
 
 import scala.collection.immutable.Stack
 

@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.persistence.hbase
+package akka.persistence.hbase
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers

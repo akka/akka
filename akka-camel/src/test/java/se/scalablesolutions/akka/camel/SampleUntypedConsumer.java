@@ -1,6 +1,6 @@
-package se.scalablesolutions.akka.camel;
+package akka.camel;
 
-import se.scalablesolutions.akka.camel.UntypedConsumerActor;
+import akka.camel.UntypedConsumerActor;
 
 /**
  * @author Martin Krasser

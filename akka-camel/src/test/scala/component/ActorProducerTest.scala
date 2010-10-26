@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.camel.component
+package akka.camel.component
 
 import ActorComponentTest._
 
@@ -10,10 +10,10 @@ import org.junit.{After, Test}
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.BeforeAndAfterAll
 
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.ActorRegistry
-import se.scalablesolutions.akka.camel.{Failure, Message}
-import se.scalablesolutions.akka.camel.support._
+import akka.actor.Actor._
+import akka.actor.ActorRegistry
+import akka.camel.{Failure, Message}
+import akka.camel.support._
 
 class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   import ActorProducerTest._

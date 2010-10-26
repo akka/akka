@@ -5,8 +5,8 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRegistry, TypedActor}
-import se.scalablesolutions.akka.camel._
+import akka.actor.{Actor, ActorRegistry, TypedActor}
+import akka.camel._
 
 /**
  * @author Martin Krasser

@@ -2,14 +2,14 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.amqp
+package akka.amqp
 
 import java.util.{TimerTask, Timer}
 import java.io.IOException
 import com.rabbitmq.client._
-import se.scalablesolutions.akka.amqp.AMQP.ConnectionParameters
-import se.scalablesolutions.akka.config.Supervision.{ Permanent, OneForOneStrategy }
-import se.scalablesolutions.akka.actor.{Exit, Actor}
+import akka.amqp.AMQP.ConnectionParameters
+import akka.config.Supervision.{ Permanent, OneForOneStrategy }
+import akka.actor.{Exit, Actor}
 
 private[amqp] class FaultTolerantConnectionActor(connectionParameters: ConnectionParameters) extends Actor {
   import connectionParameters._

@@ -1,10 +1,10 @@
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import java.util.concurrent.{TimeUnit, CountDownLatch}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-import se.scalablesolutions.akka.stm.{Ref, TransactionalMap, TransactionalVector}
+import akka.stm.{Ref, TransactionalMap, TransactionalVector}
 import Actor._
 
 object TransactorSpec {

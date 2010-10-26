@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.actor.dispatch
+package akka.actor.dispatch
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
@@ -9,7 +9,7 @@ import org.junit.Test
 
 import net.lag.configgy.Config
 import scala.reflect.{Manifest}
-import se.scalablesolutions.akka.dispatch._
+import akka.dispatch._
 
 object DispatchersSpec {
   import Dispatchers._
