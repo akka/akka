@@ -116,7 +116,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------
   //  TEMPORARY
   // -------------------------------------
-  val camelStaging = MavenRepository("camel-staging", "https://repository.apache.org/content/repositories/orgapachecamel-001/")
+  val camelStaging = MavenRepository("camel-staging", "https://repository.apache.org/content/repositories/orgapachecamel-004/")
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
