@@ -72,10 +72,10 @@ object Helpers extends Logging {
    *
    * scala> res0()
    * java.lang.RuntimeException: Lets see what happens here...
-   * 	at ResultOrError.apply(Helper.scala:11)
-   * 	at .<init>(<console>:6)
-   * 	at .<clinit>(<console>)
-   * 	at Re...
+   *    at ResultOrError.apply(Helper.scala:11)
+   *    at .<init>(<console>:6)
+   *    at .<clinit>(<console>)
+   *    at Re...
    * </pre>
    */
   class ResultOrError[R](result: R){
