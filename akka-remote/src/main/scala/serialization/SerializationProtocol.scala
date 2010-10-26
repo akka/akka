@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.stm.global._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
 import se.scalablesolutions.akka.dispatch.MessageInvocation
-import se.scalablesolutions.akka.remote.{RemoteServer, MessageSerializer}
+import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient, MessageSerializer}
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
 import ActorTypeProtocol._
 import se.scalablesolutions.akka.config.Supervision._
@@ -132,7 +132,8 @@ object ActorSerialization {
             false,
             actorRef.getSender,
             None,
-            ActorType.ScalaActor).build)
+            ActorType.ScalaActor,
+            RemoteClient.SECURE_COOKIE).build)
 
       requestProtocols.foreach(rp => builder.addMessages(rp))
     }
@@ -261,7 +262,8 @@ object RemoteActorSerialization {
       isOneWay: Boolean,
       senderOption: Option[ActorRef],
       typedActorInfo: Option[Tuple2[String, String]],
-      actorType: ActorType):
+      actorType: ActorType,
+      secureCookie: Option[String]):
   RemoteRequestProtocol.Builder = {
     import actorRef._
 
@@ -291,6 +293,8 @@ object RemoteActorSerialization {
         .setMessage(MessageSerializer.serialize(message))
         .setActorInfo(actorInfo)
         .setIsOneWay(isOneWay)
+
+    secureCookie.foreach(requestBuilder.setCookie(_))
 
     val id = registerSupervisorAsRemoteActor
     if (id.isDefined) requestBuilder.setSupervisorUuid(

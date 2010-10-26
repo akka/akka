@@ -59,7 +59,13 @@ class RemoteClientException private[akka](message: String, @BeanProperty val cli
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteClient extends Logging {
-  val READ_TIMEOUT =    Duration(config.getInt("akka.remote.client.read-timeout", 1), TIME_UNIT)
+  val SECURE_COOKIE: Option[String] = { 
+    val cookie = config.getString("akka.remote.secure-cookie", "")
+    if (cookie == "") None
+    else Some(cookie)
+  }
+ 
+  val READ_TIMEOUT    = Duration(config.getInt("akka.remote.client.read-timeout", 1), TIME_UNIT)
   val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
 
   private val remoteClients = new HashMap[String, RemoteClient]
@@ -269,7 +275,7 @@ class RemoteClient private[akka] (
     typedActorInfo: Option[Tuple2[String, String]],
     actorType: ActorType): Option[CompletableFuture[T]] = {
     send(createRemoteRequestProtocolBuilder(
-      actorRef, message, isOneWay, senderOption, typedActorInfo, actorType).build, senderFuture)
+      actorRef, message, isOneWay, senderOption, typedActorInfo, actorType, RemoteClient.SECURE_COOKIE).build, senderFuture)
  }
 
   def send[T](
