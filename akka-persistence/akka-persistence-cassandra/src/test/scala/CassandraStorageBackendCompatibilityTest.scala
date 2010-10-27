@@ -3,12 +3,12 @@ package se.scalablesolutions.akka.persistence.cassandra
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import se.scalablesolutions.akka.persistence.common.{VectorStorageBackendTest, MapStorageBackendTest, RefStorageBackendTest}
+import se.scalablesolutions.akka.persistence.common.{QueueStorageBackendTest, VectorStorageBackendTest, MapStorageBackendTest, RefStorageBackendTest}
 
 @RunWith(classOf[JUnitRunner])
 class CassandraRefStorageBackendTestIntegration extends RefStorageBackendTest {
   def dropRefs = {
-    //
+    CassandraStorageBackend.refAccess.drop
   }
 
 
@@ -18,7 +18,7 @@ class CassandraRefStorageBackendTestIntegration extends RefStorageBackendTest {
 @RunWith(classOf[JUnitRunner])
 class CassandraMapStorageBackendTestIntegration extends MapStorageBackendTest {
   def dropMaps = {
-    //
+    CassandraStorageBackend.mapAccess.drop
   }
 
 
@@ -28,7 +28,17 @@ class CassandraMapStorageBackendTestIntegration extends MapStorageBackendTest {
 @RunWith(classOf[JUnitRunner])
 class CassandraVectorStorageBackendTestIntegration extends VectorStorageBackendTest {
   def dropVectors = {
-    //
+    CassandraStorageBackend.vectorAccess.drop
+  }
+
+
+  def storage = CassandraStorageBackend
+}
+
+@RunWith(classOf[JUnitRunner])
+class CassandraQueueStorageBackendTestIntegration extends QueueStorageBackendTest {
+  def dropQueues = {
+      CassandraStorageBackend.queueAccess.drop
   }
 
 
