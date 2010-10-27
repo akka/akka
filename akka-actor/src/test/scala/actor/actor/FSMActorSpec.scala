@@ -16,6 +16,7 @@ object FSMActorSpec {
   val unlockedLatch = new StandardLatch
   val lockedLatch = new StandardLatch
   val unhandledLatch = new StandardLatch
+  val terminatedLatch = new StandardLatch
 
   sealed trait LockState
   case object Locked extends LockState
@@ -39,6 +40,7 @@ object FSMActorSpec {
         }
       }
       case Event("hello", _) => stay replying "world"
+      case Event("bye", _) => stop(Shutdown)
     }
 
     inState(Open) {
@@ -56,6 +58,10 @@ object FSMActorSpec {
         unhandledLatch.open
         stay
       }
+    }
+
+    onTermination {
+      case reason => terminatedLatch.open
     }
 
     private def doLock() {
@@ -94,16 +100,20 @@ class FSMActorSpec extends JUnitSuite {
     assert(unhandledLatch.tryAwait(2, TimeUnit.SECONDS))
 
     val answerLatch = new StandardLatch
-    object Go
+    object Hello
+    object Bye
     val tester = Actor.actorOf(new Actor {
       protected def receive = {
-        case Go => lock ! "hello"
+        case Hello => lock ! "hello"
         case "world" => answerLatch.open
-
+        case Bye => lock ! "bye"
       }
     }).start
-    tester ! Go
+    tester ! Hello
     assert(answerLatch.tryAwait(2, TimeUnit.SECONDS))
+
+    tester ! Bye
+    assert(terminatedLatch.tryAwait(2, TimeUnit.SECONDS))
   }
 }
 
