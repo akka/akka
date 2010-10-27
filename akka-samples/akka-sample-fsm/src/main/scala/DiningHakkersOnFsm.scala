@@ -13,6 +13,13 @@ case class Taken(chopstick: ActorRef) extends ChopstickMessage
 case class Busy(chopstick: ActorRef) extends ChopstickMessage
 
 /**
+ * Some states the chopstick can be in
+ */
+sealed trait ChopstickState
+case object Available extends ChopstickState
+case object Taken extends ChopstickState
+
+/**
  * Some state container for the chopstick
  */
 case class TakenBy(hakker: Option[ActorRef])
@@ -20,27 +27,27 @@ case class TakenBy(hakker: Option[ActorRef])
 /*
  * A chopstick is an actor, it can be taken, and put back
  */
-class Chopstick(name: String) extends Actor with FSM[String, TakenBy] {
+class Chopstick(name: String) extends Actor with FSM[ChopstickState, TakenBy] {
   self.id = name
 
   // When a chopstick is available, it can be taken by a some hakker
-  inState("available") {
+  inState(Available) {
     case Event(Take, _) =>
-      goto("taken") using TakenBy(self.sender) replying Taken(self)
+      goto(Taken) using TakenBy(self.sender) replying Taken(self)
   }
 
   // When a chopstick is taken by a hakker
   // It will refuse to be taken by other hakkers
   // But the owning hakker can put it back
-  inState("taken") {
+  inState(Taken) {
     case Event(Take, currentState) =>
       stay replying Busy(self)
     case Event(Put, TakenBy(hakker)) if self.sender == hakker =>
-      goto("available") using TakenBy(None)
+      goto(Available) using TakenBy(None)
   }
 
   // A chopstick begins its existence as available and taken by no one
-  setInitialState("available", TakenBy(None))
+  setInitialState(Available, TakenBy(None))
 }
 
 /**
@@ -50,6 +57,17 @@ sealed trait FSMHakkerMessage
 object Think extends FSMHakkerMessage
 
 /**
+ * Some fsm hakker states
+ */
+sealed trait FSMHakkerState
+case object Waiting extends FSMHakkerState
+case object Thinking extends FSMHakkerState
+case object Hungry extends FSMHakkerState
+case object WaitForOtherChopstick extends FSMHakkerState
+case object FirstChopstickDenied extends FSMHakkerState
+case object Eating extends FSMHakkerState
+
+/**
  * Some state container to keep track of which chopsticks we have
  */
 case class TakenChopsticks(left: Option[ActorRef], right: Option[ActorRef])
@@ -57,10 +75,10 @@ case class TakenChopsticks(left: Option[ActorRef], right: Option[ActorRef])
 /*
  * A fsm hakker is an awesome dude or dudette who either thinks about hacking or has to eat ;-)
  */
-class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor with FSM[String, TakenChopsticks] {
+class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor with FSM[FSMHakkerState, TakenChopsticks] {
   self.id = name
 
-  inState("waiting") {
+  inState(Waiting) {
     case Event(Think, _) =>
       log.info("%s starts to think", name)
       startThinking(5000)
@@ -68,30 +86,30 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
 
   //When a hakker is thinking it can become hungry
   //and try to pick up its chopsticks and eat
-  inState("thinking") {
+  inState(Thinking) {
     case Event(StateTimeout, _) =>
       left ! Take
       right ! Take
-      goto("hungry")
+      goto(Hungry)
   }
 
   // When a hakker is hungry it tries to pick up its chopsticks and eat
   // When it picks one up, it goes into wait for the other
   // If the hakkers first attempt at grabbing a chopstick fails,
   // it starts to wait for the response of the other grab
-  inState("hungry") {
+  inState(Hungry) {
     case Event(Taken(`left`), _) =>
-      goto("waitForOtherChopstick") using TakenChopsticks(Some(left), None)
+      goto(WaitForOtherChopstick) using TakenChopsticks(Some(left), None)
     case Event(Taken(`right`), _) =>
-      goto("waitForOtherChopstick") using TakenChopsticks(None, Some(right))
+      goto(WaitForOtherChopstick) using TakenChopsticks(None, Some(right))
     case Event(Busy(_), _) =>
-      goto("firstChopstickDenied")
+      goto(FirstChopstickDenied)
   }
 
   // When a hakker is waiting for the last chopstick it can either obtain it
   // and start eating, or the other chopstick was busy, and the hakker goes
   // back to think about how he should obtain his chopsticks :-)
-  inState("waitForOtherChopstick") {
+  inState(WaitForOtherChopstick) {
     case Event(Taken(`left`), TakenChopsticks(None, Some(right))) => startEating(left, right)
     case Event(Taken(`right`), TakenChopsticks(Some(left), None)) => startEating(left, right)
     case Event(Busy(chopstick), TakenChopsticks(leftOption, rightOption)) =>
@@ -102,13 +120,13 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
 
   private def startEating(left: ActorRef, right: ActorRef): State = {
     log.info("%s has picked up %s and %s, and starts to eat", name, left.id, right.id)
-    goto("eating") using TakenChopsticks(Some(left), Some(right)) until 5000
+    goto(Eating) using TakenChopsticks(Some(left), Some(right)) until 5000
   }
 
   // When the results of the other grab comes back,
   // he needs to put it back if he got the other one.
   // Then go back and think and try to grab the chopsticks again
-  inState("firstChopstickDenied") {
+  inState(FirstChopstickDenied) {
     case Event(Taken(secondChopstick), _) =>
       secondChopstick ! Put
       startThinking(10)
@@ -118,7 +136,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
 
   // When a hakker is eating, he can decide to start to think,
   // then he puts down his chopsticks and starts to think
-  inState("eating") {
+  inState(Eating) {
     case Event(StateTimeout, _) =>
       log.info("%s puts down his chopsticks and starts to think", name)
       left ! Put
@@ -127,19 +145,19 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
   }
 
   private def startThinking(period: Int): State = {
-    goto("thinking") using TakenChopsticks(None, None) until period
+    goto(Thinking) using TakenChopsticks(None, None) until period
   }
 
   //All hakkers start waiting
-  setInitialState("waiting", TakenChopsticks(None, None))
+  setInitialState(Waiting, TakenChopsticks(None, None))
 }
 
 /*
  * Alright, here's our test-harness
  */
-object DiningHakkersOnFSM {
-  def main(args: Array[String]) {
+object DiningHakkersOnFsm {
 
+  def run = {
     // Create 5 chopsticks
     val chopsticks = for (i <- 1 to 5) yield actorOf(new Chopstick("Chopstick " + i)).start
     // Create 5 awesome fsm hakkers and assign them their left and right chopstick
