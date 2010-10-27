@@ -113,12 +113,6 @@ private[akka] object KVStorageBackend {
     IntSerializer.fromBytes(indexBytes)
   }
 
-  def getMapKeyFromKey(owner: String, key: Array[Byte]): Array[Byte] = {
-    val mapKeyLength = key.length - IntSerializer.bytesPerInt - owner.getBytes("UTF-8").length
-    val mapkey = new Array[Byte](mapKeyLength)
-    System.arraycopy(key, key.length - mapKeyLength, mapkey, 0, mapKeyLength)
-    mapkey
-  }
 
   def getStoredMapValue(value: Array[Byte]): Array[Byte] = {
     value match {
@@ -212,6 +206,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   val queueHeadIndex = getIndexedBytes(-1)
   val queueTailIndex = getIndexedBytes(-2)
   val zero = IntSerializer.toBytes(0)
+  val refItem = "refItem".getBytes("UTF-8")
 
   implicit val ordering = ArrayOrdering
 
@@ -225,15 +220,22 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   def queueAccess: KVAccess
 
   def getRefStorageFor(name: String): Option[Array[Byte]] = {
-    val result: Array[Byte] = refAccess.getValue(name)
+    val result: Array[Byte] = refAccess.getValue(name, refItem)
     Option(result)
   }
 
   def insertRefStorageFor(name: String, element: Array[Byte]) = {
     element match {
-      case null => refAccess.delete(name)
-      case _ => refAccess.put(name, element)
+      case null => refAccess.delete(name, refItem)
+      case _ => refAccess.put(name, refItem, element)
     }
+  }
+
+  def getMapKeyFromKey(owner: String, key: Array[Byte]): Array[Byte] = {
+    val mapKeyLength = key.length - IntSerializer.bytesPerInt - owner.getBytes("UTF-8").length
+    val mapkey = new Array[Byte](mapKeyLength)
+    System.arraycopy(key, key.length - mapKeyLength, mapkey, 0, mapKeyLength)
+    mapkey
   }
 
   def getMapStorageRangeFor(name: String, start: Option[Array[Byte]], finish: Option[Array[Byte]], count: Int): List[(Array[Byte], Array[Byte])] = {
@@ -256,6 +258,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
       (entry) => {
         entry match {
           case (namePlusKey: Array[Byte], value: Array[Byte]) => {
+            //need to fix here
             returned += getMapKeyFromKey(name, namePlusKey) -> getMapValueFromStored(value)
           }
         }
@@ -363,7 +366,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
     if (mdata.size > 0 && index < mdata.size) {
       elem match {
         case null => vectorAccess.delete(name, mdata.getRangeIndexes(index, 1)(0))
-        case _ => vectorAccess.put(getIndexedKey(name, mdata.getRangeIndexes(index, 1)(0)), elem)
+        case _ => vectorAccess.put(name, mdata.getRangeIndexes(index, 1)(0), elem)
       }
     } else {
       throw new StorageException("In Vector:" + name + " No such Index:" + index)
@@ -409,9 +412,9 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   }
 
   def getVectorMetadata(name: String): VectorMetadata = {
-    val head = vectorAccess.getValue(name,vectorHeadIndex,zero)
-    val tail = vectorAccess.getValue(name,vectorTailIndex,zero)
-    VectorMetadata(IntSerializer.fromBytes(head),IntSerializer.fromBytes(tail))
+    val head = vectorAccess.getValue(name, vectorHeadIndex, zero)
+    val tail = vectorAccess.getValue(name, vectorTailIndex, zero)
+    VectorMetadata(IntSerializer.fromBytes(head), IntSerializer.fromBytes(tail))
   }
 
   def getOrDefaultToZero(map: Map[Array[Byte], Array[Byte]], key: Array[Byte]): Int = {
@@ -485,9 +488,9 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   }
 
   def getQueueMetadata(name: String): QueueMetadata = {
-    val head = queueAccess.getValue(name,vectorHeadIndex,zero)
-    val tail = queueAccess.getValue(name,vectorTailIndex,zero)
-    QueueMetadata(IntSerializer.fromBytes(head),IntSerializer.fromBytes(tail))
+    val head = queueAccess.getValue(name, vectorHeadIndex, zero)
+    val tail = queueAccess.getValue(name, vectorTailIndex, zero)
+    QueueMetadata(IntSerializer.fromBytes(head), IntSerializer.fromBytes(tail))
   }
 
 

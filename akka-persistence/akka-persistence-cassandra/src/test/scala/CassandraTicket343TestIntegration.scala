@@ -12,7 +12,8 @@ import se.scalablesolutions.akka.persistence.common._
 @RunWith(classOf[JUnitRunner])
 class CassandraTicket343TestIntegration extends Ticket343Test  {
   def dropMapsAndVectors: Unit = {
-    //
+    CassandraStorageBackend.vectorAccess.drop
+    CassandraStorageBackend.mapAccess.drop
   }
 
   def getVector: (String) => PersistentVector[Array[Byte]] = CassandraStorage.getVector
