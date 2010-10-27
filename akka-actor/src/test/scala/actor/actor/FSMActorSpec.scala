@@ -17,16 +17,20 @@ object FSMActorSpec {
   val lockedLatch = new StandardLatch
   val unhandledLatch = new StandardLatch
 
-  class Lock(code: String, timeout: Int) extends Actor with FSM[String, CodeState] {
+  sealed trait LockState
+  case object Locked extends LockState
+  case object Open extends LockState
 
-    inState("locked") {
+  class Lock(code: String, timeout: Int) extends Actor with FSM[LockState, CodeState] {
+
+    inState(Locked) {
       case Event(digit: Char, CodeState(soFar, code)) => {
         soFar + digit match {
           case incomplete if incomplete.length < code.length =>
             stay using CodeState(incomplete, code)
           case codeTry if (codeTry == code) => {
             doUnlock
-            goto("open") using CodeState("", code) until timeout
+            goto(Open) using CodeState("", code) until timeout
           }
           case wrong => {
             log.error("Wrong code %s", wrong)
@@ -37,14 +41,14 @@ object FSMActorSpec {
       case Event("hello", _) => stay replying "world"
     }
 
-    inState("open") {
+    inState(Open) {
       case Event(StateTimeout, stateData) => {
         doLock
-        goto("locked")
+        goto(Locked)
       }
     }
 
-    setInitialState("locked", CodeState("", code))
+    setInitialState(Locked, CodeState("", code))
     
     whenUnhandled {
       case Event(_, stateData) => {
