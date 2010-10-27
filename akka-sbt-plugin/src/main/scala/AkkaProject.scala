@@ -4,7 +4,7 @@ object AkkaRepositories {
   val AkkaRepo               = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
   val CodehausRepo           = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
   val GuiceyFruitRepo        = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
-  val JBossRepo              = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
+  val JBossRepo              = MavenRepository("JBoss Repo", "http://repository.jboss.org/nexus/content/groups/public/")
   val JavaNetRepo            = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
   val SonatypeSnapshotRepo   = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
   val SunJDMKRepo            = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
