@@ -2,14 +2,14 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.http
+package akka.http
 
-import se.scalablesolutions.akka.config.Config
-import se.scalablesolutions.akka.util.{Logging, Bootable}
-import se.scalablesolutions.akka.camel.CamelService
-import se.scalablesolutions.akka.remote.BootableRemoteActorService
-import se.scalablesolutions.akka.actor.BootableActorLoaderService
-import se.scalablesolutions.akka.servlet.AkkaLoader
+import akka.config.Config
+import akka.util.{Logging, Bootable}
+import akka.camel.CamelService
+import akka.remote.BootableRemoteActorService
+import akka.actor.BootableActorLoaderService
+import akka.servlet.AkkaLoader
 
 class DefaultAkkaLoader extends AkkaLoader {
   def boot(): Unit = boot(true,
@@ -22,7 +22,7 @@ class DefaultAkkaLoader extends AkkaLoader {
 /**
  * Can be used to boot Akka
  *
- * java -cp ... se.scalablesolutions.akka.http.Main
+ * java -cp ... akka.http.Main
  */
 object Main extends DefaultAkkaLoader {
   def main(args: Array[String]) = boot
