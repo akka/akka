@@ -381,7 +381,7 @@ class RemoteServerPipelineFactory(
     val ssl         = if(RemoteServer.SECURE) join(new SslHandler(engine)) else join()
     val lenDec      = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
     val lenPrep     = new LengthFieldPrepender(4)
-    val protobufDec = new ProtobufDecoder(RemoteRequestProtocol.getDefaultInstance)
+    val protobufDec = new ProtobufDecoder(RemoteMessageProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
     val (enc, dec)  = RemoteServer.COMPRESSION_SCHEME match {
       case "zlib"  => (join(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL)), join(new ZlibDecoder))
@@ -449,10 +449,10 @@ class RemoteServerHandler(
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val message = event.getMessage
     if (message eq null) throw new IllegalActorStateException("Message in remote MessageEvent is null: " + event)
-    if (message.isInstanceOf[RemoteRequestProtocol]) {
-      val requestProtocol = message.asInstanceOf[RemoteRequestProtocol]
+    if (message.isInstanceOf[RemoteMessageProtocol]) {
+      val requestProtocol = message.asInstanceOf[RemoteMessageProtocol]
        if (RemoteServer.REQUIRE_COOKIE) authenticateRemoteClient(requestProtocol, ctx)
-      handleRemoteRequestProtocol(requestProtocol, event.getChannel)
+      handleRemoteMessageProtocol(requestProtocol, event.getChannel)
     }
   }
 
@@ -462,8 +462,8 @@ class RemoteServerHandler(
     server.notifyListeners(RemoteServerError(event.getCause, server))
   }
 
-  private def handleRemoteRequestProtocol(request: RemoteRequestProtocol, channel: Channel) = {
-    log.debug("Received RemoteRequestProtocol[\n%s]", request.toString)
+  private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = {
+    log.debug("Received RemoteMessageProtocol[\n%s]", request.toString)
     request.getActorInfo.getActorType match {
       case SCALA_ACTOR => dispatchToActor(request, channel)
       case TYPED_ACTOR => dispatchToTypedActor(request, channel)
@@ -472,7 +472,7 @@ class RemoteServerHandler(
     }
   }
 
-  private def dispatchToActor(request: RemoteRequestProtocol, channel: Channel) = {
+  private def dispatchToActor(request: RemoteMessageProtocol, channel: Channel) = {
     val actorInfo = request.getActorInfo
     log.debug("Dispatching to remote actor [%s:%s]", actorInfo.getTarget, actorInfo.getUuid)
 
@@ -486,7 +486,7 @@ class RemoteServerHandler(
     message match { // first match on system messages
       case RemoteActorSystemMessage.Stop => actorRef.stop
       case _ =>     // then match on user defined messages
-        if (request.getIsOneWay) actorRef.!(message)(sender)
+        if (request.getOneWay) actorRef.!(message)(sender)
         else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(
           message,
           request.getActorInfo.getTimeout,
@@ -494,12 +494,15 @@ class RemoteServerHandler(
           Some(new DefaultCompletableFuture[AnyRef](request.getActorInfo.getTimeout){
             override def onComplete(result: AnyRef) {
               log.debug("Returning result from actor invocation [%s]", result)
-              val replyBuilder = RemoteReplyProtocol.newBuilder
+              val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+                actorRef, Left(reply), isOneWay, senderOption, typedActorInfo, actorType, cookie)
+
+/*
+              val replyBuilder = RemoteMessageProtocol.newBuilder
                 .setUuid(request.getUuid)
                 .setMessage(MessageSerializer.serialize(result))
-                .setIsSuccessful(true)
                 .setIsActor(true)
-
+*/
               if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
 
               try {
@@ -521,7 +524,7 @@ class RemoteServerHandler(
     }
   }
 
-  private def dispatchToTypedActor(request: RemoteRequestProtocol, channel: Channel) = {
+  private def dispatchToTypedActor(request: RemoteMessageProtocol, channel: Channel) = {
     val actorInfo = request.getActorInfo
     val typedActorInfo = actorInfo.getTypedActorInfo
     log.debug("Dispatching to remote typed actor [%s :: %s]", typedActorInfo.getMethod, typedActorInfo.getInterface)
@@ -532,14 +535,13 @@ class RemoteServerHandler(
 
     try {
       val messageReceiver = typedActor.getClass.getDeclaredMethod(typedActorInfo.getMethod, argClasses: _*)
-      if (request.getIsOneWay) messageReceiver.invoke(typedActor, args: _*)
+      if (request.getOneWay) messageReceiver.invoke(typedActor, args: _*)
       else {
         val result = messageReceiver.invoke(typedActor, args: _*)
         log.debug("Returning result from remote typed actor invocation [%s]", result)
-        val replyBuilder = RemoteReplyProtocol.newBuilder
+        val replyBuilder = RemoteMessageProtocol.newBuilder
             .setUuid(request.getUuid)
             .setMessage(MessageSerializer.serialize(result))
-            .setIsSuccessful(true)
             .setIsActor(false)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         channel.write(replyBuilder.build)
@@ -653,19 +655,18 @@ class RemoteServerHandler(
     } else typedActorOrNull
   }
 
-  private def createErrorReplyMessage(e: Throwable, request: RemoteRequestProtocol, isActor: Boolean): RemoteReplyProtocol = {
+  private def createErrorReplyMessage(e: Throwable, request: RemoteMessageProtocol, isActor: Boolean): RemoteMessageProtocol = {
     val actorInfo = request.getActorInfo
     log.error(e, "Could not invoke remote typed actor [%s :: %s]", actorInfo.getTypedActorInfo.getMethod, actorInfo.getTarget)
-    val replyBuilder = RemoteReplyProtocol.newBuilder
+    val replyBuilder = RemoteMessageProtocol.newBuilder
         .setUuid(request.getUuid)
         .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
-        .setIsSuccessful(false)
         .setIsActor(isActor)
     if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
     replyBuilder.build
   }
 
-  private def authenticateRemoteClient(request: RemoteRequestProtocol, ctx: ChannelHandlerContext) = {
+  private def authenticateRemoteClient(request: RemoteMessageProtocol, ctx: ChannelHandlerContext) = {
     val attachment = ctx.getAttachment
     if ((attachment ne null) && 
         attachment.isInstanceOf[String] && 
