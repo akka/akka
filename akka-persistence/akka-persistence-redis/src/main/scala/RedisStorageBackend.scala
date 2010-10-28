@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.redis
+package akka.persistence.redis
 
-import se.scalablesolutions.akka.stm._
-import se.scalablesolutions.akka.persistence.common._
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.config.Config.config
+import akka.stm._
+import akka.persistence.common._
+import akka.util.Logging
+import akka.config.Config.config
 
 import com.redis._
 
@@ -32,7 +32,7 @@ object CommonsCodec {
 
 import CommonsCodec._
 import CommonsCodec.Base64StringEncoder._
-
+                                                                                                        
 /**
  * A module for supporting Redis based persistence.
  * <p/>

@@ -2,9 +2,9 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.stm
+package akka.stm
 
-import se.scalablesolutions.akka.AkkaException
+import akka.AkkaException
 
 import org.multiverse.api.{StmUtils => MultiverseStmUtils}
 import org.multiverse.api.ThreadLocalTransaction._
@@ -18,7 +18,7 @@ class TransactionSetAbortedException(msg: String) extends AkkaException(msg)
  * Internal helper methods and properties for transaction management.
  */
 object TransactionManagement extends TransactionManagement {
-  import se.scalablesolutions.akka.config.Config._
+  import akka.config.Config._
 
   // FIXME move to stm.global.fair?
   val FAIR_TRANSACTIONS = config.getBool("akka.stm.fair", true)
@@ -126,16 +126,16 @@ trait StmUtil {
 }
 
 trait StmCommon {
-  type TransactionConfig = se.scalablesolutions.akka.stm.TransactionConfig
-  val TransactionConfig = se.scalablesolutions.akka.stm.TransactionConfig
+  type TransactionConfig = akka.stm.TransactionConfig
+  val TransactionConfig = akka.stm.TransactionConfig
 
-  type TransactionFactory = se.scalablesolutions.akka.stm.TransactionFactory
-  val TransactionFactory = se.scalablesolutions.akka.stm.TransactionFactory
+  type TransactionFactory = akka.stm.TransactionFactory
+  val TransactionFactory = akka.stm.TransactionFactory
 
-  val Propagation = se.scalablesolutions.akka.stm.Transaction.Propagation
+  val Propagation = akka.stm.Transaction.Propagation
 
-  val TraceLevel = se.scalablesolutions.akka.stm.Transaction.TraceLevel
+  val TraceLevel = akka.stm.Transaction.TraceLevel
 
-  type Ref[T] = se.scalablesolutions.akka.stm.Ref[T]
-  val Ref = se.scalablesolutions.akka.stm.Ref
+  type Ref[T] = akka.stm.Ref[T]
+  val Ref = akka.stm.Ref
 }

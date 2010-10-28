@@ -5,8 +5,8 @@
 package sample.pubsub
 
 import com.redis.{RedisClient, PubSubMessage, S, U, M}
-import se.scalablesolutions.akka.persistence.redis._
-import se.scalablesolutions.akka.actor.Actor._
+import akka.persistence.redis._
+import akka.actor.Actor._
 
 /**
  * Sample Akka application for Redis PubSub

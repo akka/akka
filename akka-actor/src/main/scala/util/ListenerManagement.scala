@@ -2,11 +2,11 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.util
+package akka.util
 
 import java.util.concurrent.ConcurrentSkipListSet
 
-import se.scalablesolutions.akka.actor.ActorRef
+import akka.actor.ActorRef
 
 /**
  * A manager for listener actors. Intended for mixin by observables.

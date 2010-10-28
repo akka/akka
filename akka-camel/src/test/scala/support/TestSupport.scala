@@ -1,11 +1,11 @@
-package se.scalablesolutions.akka.camel.support
+package akka.camel.support
 
 import java.util.concurrent.{TimeUnit, CountDownLatch}
 
 import collection.mutable.Buffer
 
-import se.scalablesolutions.akka.camel.Message
-import se.scalablesolutions.akka.actor.Actor
+import akka.camel.Message
+import akka.actor.Actor
 
 import TestSupport._
 

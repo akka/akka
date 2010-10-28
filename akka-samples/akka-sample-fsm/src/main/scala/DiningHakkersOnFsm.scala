@@ -1,6 +1,6 @@
 package sample.fsm.dining.fsm
 
-import se.scalablesolutions.akka.actor.{ActorRef, Actor, FSM}
+import akka.actor.{ActorRef, Actor, FSM}
 import Actor._
 
 /*

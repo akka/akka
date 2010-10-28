@@ -1,9 +1,9 @@
-package se.scalablesolutions.akka.camel
+package akka.camel
 
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 
-import se.scalablesolutions.akka.actor.{Actor, UntypedActor}
+import akka.actor.{Actor, UntypedActor}
 
 class ConsumerRegisteredTest extends JUnitSuite {
   import ConsumerRegisteredTest._

@@ -1,6 +1,6 @@
-package se.scalablesolutions.akka.persistence.hbase
+package akka.persistence.hbase
 
-import se.scalablesolutions.akka.actor.{ Actor, ActorRef, Transactor }
+import akka.actor.{ Actor, ActorRef, Transactor }
 import Actor._
 
 import org.junit.Test

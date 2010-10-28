@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import org.scalatest.Spec
 import org.scalatest.Assertions
@@ -11,7 +11,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.dispatch.DefaultCompletableFuture;
+import akka.dispatch.DefaultCompletableFuture;
 
 @RunWith(classOf[JUnitRunner])
 class TypedActorContextSpec extends

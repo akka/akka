@@ -1,11 +1,11 @@
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import java.util.concurrent.{TimeUnit, CyclicBarrier, TimeoutException}
-import se.scalablesolutions.akka.config.Supervision._
+import akka.config.Supervision._
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-import se.scalablesolutions.akka.dispatch.Dispatchers
+import akka.dispatch.Dispatchers
 import Actor._
 
 object ActorFireForgetRequestReplySpec {

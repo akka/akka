@@ -1,9 +1,9 @@
-package se.scalablesolutions.akka.persistence.riak
+package akka.persistence.riak
 
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import se.scalablesolutions.akka.persistence.common.{QueueStorageBackendTest, VectorStorageBackendTest, MapStorageBackendTest, RefStorageBackendTest}
+import akka.persistence.common.{QueueStorageBackendTest, VectorStorageBackendTest, MapStorageBackendTest, RefStorageBackendTest}
 
 @RunWith(classOf[JUnitRunner])
 class RiakRefStorageBackendTestIntegration extends RefStorageBackendTest   {

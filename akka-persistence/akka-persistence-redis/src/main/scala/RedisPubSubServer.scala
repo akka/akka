@@ -1,6 +1,6 @@
-package se.scalablesolutions.akka.persistence.redis
+package akka.persistence.redis
 
-import se.scalablesolutions.akka.actor.Actor
+import akka.actor.Actor
 import com.redis._
 
 sealed trait Msg

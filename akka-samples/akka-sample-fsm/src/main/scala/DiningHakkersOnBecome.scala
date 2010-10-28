@@ -3,8 +3,8 @@ package sample.fsm.dining.become
 //Akka adaptation of
 //http://www.dalnefre.com/wp/2010/08/dining-philosophers-in-humus/
 
-import se.scalablesolutions.akka.actor.{Scheduler, ActorRef, Actor}
-import se.scalablesolutions.akka.actor.Actor._
+import akka.actor.{Scheduler, ActorRef, Actor}
+import akka.actor.Actor._
 import java.util.concurrent.TimeUnit
 
 /*

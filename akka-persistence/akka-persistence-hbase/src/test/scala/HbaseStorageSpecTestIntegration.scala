@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.persistence.hbase
+package akka.persistence.hbase
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -82,12 +82,12 @@ BeforeAndAfterEach {
         ("guido van rossum", "python"),
         ("james strachan", "groovy"))
       val rl = List(
-	("james gosling", "java"), 
-	("james strachan", "groovy"), 
-	("larry wall", "perl"), 
-	("martin odersky", "scala"), 
-	("ola bini", "ioke"), ("rich hickey", "clojure"), 
-	("slava pestov", "factor"))
+        ("james gosling", "java"), 
+        ("james strachan", "groovy"), 
+        ("larry wall", "perl"), 
+        ("martin odersky", "scala"), 
+        ("ola bini", "ioke"), ("rich hickey", "clojure"), 
+        ("slava pestov", "factor"))
       insertMapStorageEntriesFor("t1", l.map { case (k, v) => (k.getBytes, v.getBytes) })
       getMapStorageSizeFor("t1") should equal(l.size)
       getMapStorageRangeFor("t1", None, None, 100).map { case (k, v) => (new String(k), new String(v)) } should equal(l.sortWith(_._1 < _._1))

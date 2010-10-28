@@ -2,15 +2,15 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
 import java.util.Enumeration
 
-import se.scalablesolutions.akka.util.{Bootable, Logging}
-import se.scalablesolutions.akka.config.Config._
+import akka.util.{Bootable, Logging}
+import akka.config.Config._
 
 class AkkaDeployClassLoader(urls : List[URL], parent : ClassLoader) extends URLClassLoader(urls.toArray.asInstanceOf[Array[URL]],parent)
 {

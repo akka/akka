@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -48,7 +48,7 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
     }
 
     it("should parse TypedActors configuration with dispatcher") {
-      val xml = <akka:typed-actor id="typed-actor-with-dispatcher" implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+      val xml = <akka:typed-actor id="typed-actor-with-dispatcher" implementation="akka.spring.foo.MyPojo"
                   timeout="1000">
                   <akka:dispatcher type="thread-based" name="my-thread-based-dispatcher"/>
                 </akka:typed-actor>
@@ -58,7 +58,7 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
     }
 
     it("should parse remote TypedActors configuration") {
-      val xml = <akka:typed-actor id="remote typed-actor" implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+      val xml = <akka:typed-actor id="remote typed-actor" implementation="akka.spring.foo.MyPojo"
                   timeout="1000">
                   <akka:remote host="com.some.host" port="9999"/>
                 </akka:typed-actor>
@@ -70,7 +70,7 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
     }
 
     it("should parse remote server managed TypedActors configuration") {
-      val xml = <akka:typed-actor id="remote typed-actor" implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+      val xml = <akka:typed-actor id="remote typed-actor" implementation="akka.spring.foo.MyPojo"
                   timeout="1000">
                   <akka:remote host="com.some.host" port="9999" service-name="my-service"/>
                 </akka:typed-actor>

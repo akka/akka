@@ -2,11 +2,11 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.remote
+package akka.remote
 
-import se.scalablesolutions.akka.actor.BootableActorLoaderService
-import se.scalablesolutions.akka.util.{Bootable, Logging}
-import se.scalablesolutions.akka.config.Config.config
+import akka.actor.BootableActorLoaderService
+import akka.util.{Bootable, Logging}
+import akka.config.Config.config
 
 /**
  * This bundle/service is responsible for booting up and shutting down the remote actors facility

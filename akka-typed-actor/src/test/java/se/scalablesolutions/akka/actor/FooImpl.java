@@ -1,7 +1,7 @@
-package se.scalablesolutions.akka.actor;
+package akka.actor;
 
 import com.google.inject.Inject;
-import se.scalablesolutions.akka.actor.*;
+import akka.actor.*;
 
 public class FooImpl extends TypedActor implements Foo {
   @Inject

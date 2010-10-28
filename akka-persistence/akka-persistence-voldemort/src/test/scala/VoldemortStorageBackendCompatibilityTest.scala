@@ -1,9 +1,9 @@
-package se.scalablesolutions.akka.persistence.voldemort
+package akka.persistence.voldemort
 
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import se.scalablesolutions.akka.persistence.common.{QueueStorageBackendTest, VectorStorageBackendTest, MapStorageBackendTest, RefStorageBackendTest}
+import akka.persistence.common.{QueueStorageBackendTest, VectorStorageBackendTest, MapStorageBackendTest, RefStorageBackendTest}
 
 @RunWith(classOf[JUnitRunner])
 class VoldemortRefStorageBackendTest extends RefStorageBackendTest with EmbeddedVoldemort {

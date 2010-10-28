@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.remote
+package akka.remote
 
 import org.jgroups.{JChannel, View => JG_VIEW, Address, Message => JG_MSG, ExtendedMembershipListener, Receiver}
 import org.jgroups.util.Util
@@ -10,7 +10,7 @@ import org.jgroups.util.Util
  */
 class JGroupsClusterActor extends BasicClusterActor {
   import scala.collection.JavaConversions._
-  import se.scalablesolutions.akka.remote.ClusterActor._
+  import akka.remote.ClusterActor._
 
   type ADDR_T = Address
 

@@ -1,6 +1,6 @@
-package se.scalablesolutions.akka.actor;
+package akka.actor;
 
-import se.scalablesolutions.akka.dispatch.CompletableFuture;
+import akka.dispatch.CompletableFuture;
 
 public interface SimpleJavaPojoCaller {
   public void setPojo(SimpleJavaPojo pojo);

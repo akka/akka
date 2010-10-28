@@ -1,17 +1,17 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.camel
+package akka.camel
 
 import java.util.concurrent.CountDownLatch
 
 import org.apache.camel.CamelContext
 
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{AspectInitRegistry, ActorRegistry}
-import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.japi.{Option => JOption}
-import se.scalablesolutions.akka.util.{Logging, Bootable}
+import akka.actor.Actor._
+import akka.actor.{AspectInitRegistry, ActorRegistry}
+import akka.config.Config._
+import akka.japi.{Option => JOption}
+import akka.util.{Logging, Bootable}
 
 /**
  * Publishes (untyped) consumer actors and typed consumer actors via Camel endpoints. Actors

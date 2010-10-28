@@ -122,7 +122,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val CASSANDRA_VERSION     = "0.6.1"
   lazy val DISPATCH_VERSION      = "0.7.4"
   lazy val HAWT_DISPATCH_VERSION = "1.0"
-  lazy val JACKSON_VERSION       = "1.2.1"
+  lazy val JACKSON_VERSION       = "1.4.3"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.1"
   lazy val SCALATEST_VERSION     = "1.2"
@@ -139,7 +139,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   object Dependencies {
 
     // Compile
-		lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
+                lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
 
     lazy val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
 
@@ -186,7 +186,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val jackson          = "org.codehaus.jackson" % "jackson-mapper-asl" % JACKSON_VERSION % "compile"
     lazy val jackson_core     = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile"
-    lazy val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile"
 
     lazy val jersey         = "com.sun.jersey"          % "jersey-core"   % JERSEY_VERSION % "compile"
     lazy val jersey_json    = "com.sun.jersey"          % "jersey-json"   % JERSEY_VERSION % "compile"
@@ -304,7 +303,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Miscellaneous
   // -------------------------------------------------------------------------------------------------------------------
 
-  override def mainClass = Some("se.scalablesolutions.akka.kernel.Main")
+  override def mainClass = Some("akka.kernel.Main")
 
   override def packageOptions =
     manifestClassPath.map(cp => ManifestAttributes(
@@ -393,7 +392,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       val artifactRE(path, artifactId, artifactVersion) = absPath
       val command = "mvn install:install-file" +
                     " -Dfile=" + absPath +
-                    " -DgroupId=se.scalablesolutions.akka" +
+                    " -DgroupId=akka" +
                     " -DartifactId=" + artifactId +
                     " -Dversion=" + version +
                     " -Dpackaging=jar -DgeneratePom=true"
@@ -496,7 +495,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jetty_util       = Dependencies.jetty_util
     val jetty_xml        = Dependencies.jetty_xml
     val jetty_servlet    = Dependencies.jetty_servlet
-    val jackson_core_asl = Dependencies.jackson_core_asl
+    val jackson_core     = Dependencies.jackson_core
     val jersey           = Dependencies.jersey
     val jersey_contrib   = Dependencies.jersey_contrib
     val jersey_json      = Dependencies.jersey_json
@@ -606,7 +605,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         </dependency>
 
         <dependency org="org.apache.hadoop" name="hadoop-test" rev="0.20.2" conf="test">
-	        <exclude module="slf4j-api"/>
+                <exclude module="slf4j-api"/>
         </dependency>
         <dependency org="org.slf4j" name="slf4j-api" rev={SLF4J_VERSION} conf="test">
         </dependency>
@@ -655,8 +654,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaCouchDBProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-  	val couch = Dependencies.commonsHttpClient
-		val spec = Dependencies.specs
+        val couch = Dependencies.commonsHttpClient
+                val spec = Dependencies.specs
 
     override def testOptions = createTestFilter( _.endsWith("Test"))
   }
@@ -720,7 +719,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       "org.aopalliance.*;version=1.0.0",
 
       // Provided by other bundles
-      "!se.scalablesolutions.akka.*",
+      "!akka.*",
       "!com.google.inject.*",
       "!javax.transaction.*",
       "!javax.ws.rs.*",
@@ -841,7 +840,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaSampleOSGiProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
     val osgi_core = Dependencies.osgi_core
-    override lazy val bndBundleActivator = Some("se.scalablesolutions.akka.sample.osgi.Activator")
+    override lazy val bndBundleActivator = Some("akka.sample.osgi.Activator")
     override lazy val bndExportPackage = Nil // Necessary because of mixing-in AkkaDefaultProject which exports all ...akka.* packages!
   }
 
@@ -948,5 +947,5 @@ trait DeployProject { self: BasicScalaProject =>
 }
 
 trait OSGiProject extends BNDPlugin { self: DefaultProject =>
-  override def bndExportPackage = Seq("se.scalablesolutions.akka.*;version=%s".format(projectVersion.value))
+  override def bndExportPackage = Seq("akka.*;version=%s".format(projectVersion.value))
 }

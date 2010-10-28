@@ -2,19 +2,19 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor.remote
+package akka.actor.remote
 
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.actor._
-import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
+import akka.config.Supervision._
+import akka.actor._
+import akka.remote.{RemoteServer, RemoteClient}
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
 import org.scalatest.{BeforeAndAfterEach, Spec, Assertions, BeforeAndAfterAll}
-import se.scalablesolutions.akka.config.{Config, TypedActorConfigurator, RemoteAddress}
+import akka.config.{Config, TypedActorConfigurator, RemoteAddress}
 
 object RemoteTypedActorSpec {
   val HOSTNAME = "localhost"

@@ -4,10 +4,10 @@
 
 package sample.remote
 
-import se.scalablesolutions.akka.actor.Actor
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.remote.{RemoteClient, RemoteNode}
-import se.scalablesolutions.akka.util.Logging
+import akka.actor.Actor
+import akka.actor.Actor._
+import akka.remote.{RemoteClient, RemoteNode}
+import akka.util.Logging
 
 class HelloWorldActor extends Actor {
   def receive = {

@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-option java_package = "se.scalablesolutions.akka.remote.protocol";
+option java_package = "akka.remote.protocol";
 option optimize_for = SPEED;
 
 /******************************************
@@ -92,6 +92,13 @@ message TypedActorInfoProtocol {
 }
 
 /**
+ * Defines a remote connection handshake.
+ */
+//message HandshakeProtocol {
+//  required string cookie = 1;
+//}
+
+/**
  * Defines a remote message request.
  */
 message RemoteRequestProtocol {
@@ -102,6 +109,7 @@ message RemoteRequestProtocol {
   optional UuidProtocol supervisorUuid = 5;
   optional RemoteActorRefProtocol sender = 6;
   repeated MetadataEntryProtocol metadata = 7;
+  optional string cookie = 8;
 }
 
 /**
@@ -115,6 +123,7 @@ message RemoteReplyProtocol {
   required bool isActor = 5;
   required bool isSuccessful = 6;
   repeated MetadataEntryProtocol metadata = 7;
+  optional string cookie = 8;
 }
 
 /**

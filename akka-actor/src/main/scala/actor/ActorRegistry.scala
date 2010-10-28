@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import scala.collection.mutable.{ListBuffer, Map}
 import scala.reflect.Manifest
@@ -11,8 +11,8 @@ import java.util.concurrent.{ConcurrentSkipListSet, ConcurrentHashMap}
 import java.util.{Set => JSet}
 
 import annotation.tailrec
-import se.scalablesolutions.akka.util.ReflectiveAccess._
-import se.scalablesolutions.akka.util.{ReadWriteGuard, Address, ListenerManagement}
+import akka.util.ReflectiveAccess._
+import akka.util.{ReadWriteGuard, Address, ListenerManagement}
 import java.net.InetSocketAddress
 
 /**
