@@ -1,11 +1,11 @@
-package se.scalablesolutions.akka.persistence.couchdb
+package akka.persistence.couchdb
 
 import org.specs._
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.serialization.Serializable
-import se.scalablesolutions.akka.serialization.Serializer._
+import akka.serialization.Serializable
+import akka.serialization.Serializer._
 
 import CouchDBStorageBackend._
 import sbinary._

@@ -1,16 +1,16 @@
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfterAll, Spec}
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.ShouldMatchers
 
-import se.scalablesolutions.akka.actor.TypedActor._
+import akka.actor.TypedActor._
 
-import se.scalablesolutions.akka.config.Supervision._
+import akka.config.Supervision._
 
 import java.util.concurrent.CountDownLatch
-import se.scalablesolutions.akka.config.TypedActorConfigurator
+import akka.config.TypedActorConfigurator
 
 /**
  * @author Martin Krasser

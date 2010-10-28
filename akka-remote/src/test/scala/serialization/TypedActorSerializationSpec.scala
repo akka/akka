@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.actor.serialization
+package akka.actor.serialization
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -9,13 +9,13 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.serialization._
-import se.scalablesolutions.akka.actor._
+import akka.serialization._
+import akka.actor._
 
 import TypedActorSerialization._
 import Actor._
-import se.scalablesolutions.akka.remote.{RemoteClient, RemoteServer}
-import se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec.RemoteActorSpecActorUnidirectional
+import akka.remote.{RemoteClient, RemoteServer}
+import akka.actor.remote.ServerInitiatedRemoteActorSpec.RemoteActorSpecActorUnidirectional
 
 @RunWith(classOf[JUnitRunner])
 class TypedActorSerializationSpec extends

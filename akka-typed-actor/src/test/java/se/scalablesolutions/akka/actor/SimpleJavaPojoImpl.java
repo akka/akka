@@ -1,8 +1,9 @@
-package se.scalablesolutions.akka.actor;
+package akka.actor;
 
-import se.scalablesolutions.akka.actor.*;
-import se.scalablesolutions.akka.dispatch.Future;
-import se.scalablesolutions.akka.dispatch.CompletableFuture;
+import akka.actor.*;
+import akka.dispatch.Future;
+import akka.dispatch.CompletableFuture;
+import akka.japi.Option;
 
 public class SimpleJavaPojoImpl extends TypedActor implements SimpleJavaPojo {
 
@@ -27,6 +28,10 @@ public class SimpleJavaPojoImpl extends TypedActor implements SimpleJavaPojo {
 
   public CompletableFuture<Object> getSenderFuture() {
     return getContext().getSenderFuture().get();
+  }
+
+  public Option<String> passThru(Option<String> returnValue) {
+      return returnValue;
   }
 
   public void setName(String name) {

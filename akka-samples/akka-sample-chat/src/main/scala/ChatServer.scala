@@ -6,13 +6,13 @@ package sample.chat
 
 import scala.collection.mutable.HashMap
 
-import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, ActorRef, RemoteActor}
-import se.scalablesolutions.akka.remote.{RemoteNode, RemoteClient}
-import se.scalablesolutions.akka.persistence.common.PersistentVector
-import se.scalablesolutions.akka.persistence.redis.RedisStorage
-import se.scalablesolutions.akka.stm.global._
-import se.scalablesolutions.akka.config.Supervision.{OneForOneStrategy,Permanent}
-import se.scalablesolutions.akka.util.Logging
+import akka.actor.{SupervisorFactory, Actor, ActorRef, RemoteActor}
+import akka.remote.{RemoteNode, RemoteClient}
+import akka.persistence.common.PersistentVector
+import akka.persistence.redis.RedisStorage
+import akka.stm.global._
+import akka.config.Supervision.{OneForOneStrategy,Permanent}
+import akka.util.Logging
 import Actor._
 
 /******************************************************************************
@@ -34,7 +34,7 @@ Then to run the sample:
   - Run 'sbt console' to start up a REPL (interpreter).
 2. In the first REPL you get execute:
   - scala> import sample.chat._
-  - scala> import se.scalablesolutions.akka.actor.Actor._
+  - scala> import akka.actor.Actor._
   - scala> val chatService = actorOf[ChatService].start
 3. In the second REPL you get execute:
     - scala> import sample.chat._

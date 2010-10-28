@@ -1,6 +1,6 @@
-package se.scalablesolutions.akka.stm
+package akka.stm
 
-import se.scalablesolutions.akka.actor.{Actor, Transactor}
+import akka.actor.{Actor, Transactor}
 import Actor._
 
 import org.multiverse.api.exceptions.ReadonlyException
@@ -12,7 +12,7 @@ class StmSpec extends WordSpec with MustMatchers {
 
   "Local STM" should {
 
-    import se.scalablesolutions.akka.stm.local._
+    import akka.stm.local._
 
     "be able to do multiple consecutive atomic {..} statements" in {
       val ref = Ref(0)
@@ -178,7 +178,7 @@ object GlobalTransactionVectorTestActor {
 
 class GlobalTransactionVectorTestActor extends Actor {
   import GlobalTransactionVectorTestActor._
-  import se.scalablesolutions.akka.stm.global._
+  import akka.stm.global._
 
   private val vector: TransactionalVector[Int] = atomic { TransactionalVector(1) }
 

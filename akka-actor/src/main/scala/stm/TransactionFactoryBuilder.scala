@@ -2,11 +2,11 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.stm
+package akka.stm
 
 import java.lang.{Boolean => JBoolean}
 
-import se.scalablesolutions.akka.util.Duration
+import akka.util.Duration
 
 import org.multiverse.api.TraceLevel
 import org.multiverse.api.{PropagationLevel => Propagation}

@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.security
+package akka.security
 
 import junit.framework.Test
 import junit.framework.TestCase

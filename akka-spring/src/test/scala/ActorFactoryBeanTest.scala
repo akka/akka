@@ -1,10 +1,10 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
-import se.scalablesolutions.akka.actor.{ActorRegistry, ActorRef}
-import se.scalablesolutions.akka.spring.foo.PingActor
+import akka.actor.{ActorRegistry, ActorRef}
+import akka.spring.foo.PingActor
 
 import org.junit.runner.RunWith
 import org.springframework.context.support.ClassPathXmlApplicationContext
@@ -48,8 +48,8 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
 
     it("should create a proxy of type PojoInf") {
       val bean = new ActorFactoryBean()
-      bean.setInterface("se.scalablesolutions.akka.spring.PojoInf")
-      bean.setImplementation("se.scalablesolutions.akka.spring.Pojo")
+      bean.setInterface("akka.spring.PojoInf")
+      bean.setImplementation("akka.spring.Pojo")
       bean.timeoutStr = "1000"
       bean.typed = AkkaSpringConfigurationTags.TYPED_ACTOR_TAG
       val entries = new PropertyEntries()

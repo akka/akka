@@ -4,8 +4,8 @@
 
 package sample.rest.java;
 
-import se.scalablesolutions.akka.config.TypedActorConfigurator;
-import static se.scalablesolutions.akka.config.Supervision.*;
+import akka.config.TypedActorConfigurator;
+import static akka.config.Supervision.*;
 
 public class Boot {
   public final static TypedActorConfigurator configurator = new TypedActorConfigurator();

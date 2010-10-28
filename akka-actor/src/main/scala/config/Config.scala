@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.config
+package akka.config
 
-import se.scalablesolutions.akka.AkkaException
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.actor.{ActorRef, IllegalActorStateException}
-import se.scalablesolutions.akka.dispatch.CompletableFuture
+import akka.AkkaException
+import akka.util.Logging
+import akka.actor.{ActorRef, IllegalActorStateException}
+import akka.dispatch.CompletableFuture
 
 import net.lag.configgy.{Config => CConfig, Configgy, ParseException}
 
@@ -26,10 +26,6 @@ object ConfigLogger extends Logging
  */
 object Config {
   val VERSION = "1.0-SNAPSHOT"
-
-  // Set Multiverse options for max speed
-  System.setProperty("org.multiverse.MuliverseConstants.sanityChecks", "false")
-  System.setProperty("org.multiverse.api.GlobalStmInstance.factorymethod", "org.multiverse.stms.alpha.AlphaStm.createFast")
 
   val HOME = {
     val envHome = System.getenv("AKKA_HOME") match {

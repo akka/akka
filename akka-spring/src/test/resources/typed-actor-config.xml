@@ -10,39 +10,39 @@ http://www.akkasource.org/schema/akka
 http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
 
   <akka:typed-actor id="simple-typed-actor"
-                      interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
-                      implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                      interface="akka.spring.foo.IMyPojo"
+                      implementation="akka.spring.foo.MyPojo"
                       timeout="1000"/>
 
   <akka:typed-actor id="simple-typed-actor-long-timeout"
-                      interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
-                      implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                      interface="akka.spring.foo.IMyPojo"
+                      implementation="akka.spring.foo.MyPojo"
                       timeout="10000"/>
 
   <akka:typed-actor id="transactional-typed-actor"
-                      interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
-                      implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                      interface="akka.spring.foo.IMyPojo"
+                      implementation="akka.spring.foo.MyPojo"
                       timeout="2000"
                       transactional="true"/>
 
   <akka:typed-actor id="typed-actor-callbacks"
-                      interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
-                      implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                      interface="akka.spring.foo.IMyPojo"
+                      implementation="akka.spring.foo.MyPojo"
                       timeout="2000"
                       transactional="true">
   </akka:typed-actor>
 
   <akka:typed-actor id="remote-typed-actor"
-                      interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
-                      implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                      interface="akka.spring.foo.IMyPojo"
+                      implementation="akka.spring.foo.MyPojo"
                       timeout="2000"
                       transactional="true">
     <akka:remote host="localhost" port="9990"/>
   </akka:typed-actor>
 
   <akka:typed-actor id="remote-service1"
-                      interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
-                      implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                      interface="akka.spring.foo.IMyPojo"
+                      implementation="akka.spring.foo.MyPojo"
                       timeout="1000">
     <akka:remote host="localhost" port="9999"/>
   </akka:typed-actor>
@@ -64,16 +64,16 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
       </akka:trap-exits>
     </akka:restart-strategy>
     <akka:typed-actors>
-      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IFoo"
-                          implementation="se.scalablesolutions.akka.spring.foo.Foo"
+      <akka:typed-actor interface="akka.spring.foo.IFoo"
+                          implementation="akka.spring.foo.Foo"
                           lifecycle="permanent"
                           timeout="1000"/>
-      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IBar"
-                          implementation="se.scalablesolutions.akka.spring.foo.Bar"
+      <akka:typed-actor interface="akka.spring.foo.IBar"
+                          implementation="akka.spring.foo.Bar"
                           lifecycle="permanent"
                           timeout="1000"/>
-      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
-                          implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+      <akka:typed-actor interface="akka.spring.foo.IMyPojo"
+                          implementation="akka.spring.foo.MyPojo"
                           lifecycle="temporary"
                           timeout="1000">
       </akka:typed-actor>

@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.util
+package akka.util
 
 import java.util.concurrent.TimeUnit
 
@@ -24,7 +24,7 @@ object Duration {
  * <p/>
  * Examples of usage from Java:
  * <pre>
- * import se.scalablesolutions.akka.util.Duration;
+ * import akka.util.Duration;
  * import java.util.concurrent.TimeUnit;
  *
  * Duration duration = new Duration(100, TimeUnit.MILLISECONDS);
@@ -36,7 +36,7 @@ object Duration {
  * <p/>
  * Examples of usage from Scala:
  * <pre>
- * import se.scalablesolutions.akka.util.Duration
+ * import akka.util.Duration
  * import java.util.concurrent.TimeUnit
  *
  * val duration = Duration(100, TimeUnit.MILLISECONDS)
@@ -48,7 +48,7 @@ object Duration {
  * <p/>
  * Implicits are also provided for Int and Long. Example usage:
  * <pre>
- * import se.scalablesolutions.akka.util.duration._
+ * import akka.util.duration._
  *
  * val duration = 100.millis
  * </pre>

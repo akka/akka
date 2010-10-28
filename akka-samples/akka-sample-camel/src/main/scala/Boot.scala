@@ -6,10 +6,10 @@ import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{TypedActor, Supervisor}
-import se.scalablesolutions.akka.camel.CamelContextManager
-import se.scalablesolutions.akka.config.Supervision._
+import akka.actor.Actor._
+import akka.actor.{TypedActor, Supervisor}
+import akka.camel.CamelContextManager
+import akka.config.Supervision._
 
 /**
  * @author Martin Krasser

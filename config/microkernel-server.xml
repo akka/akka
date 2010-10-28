@@ -38,29 +38,29 @@
             <Set name="Acceptors">2</Set>
             <Set name="statsOn">false</Set>
             <Set name="confidentialPort">8443</Set>
-	        <Set name="lowResourcesConnections">20000</Set>
-	        <Set name="lowResourcesMaxIdleTime">5000</Set>
+                <Set name="lowResourcesConnections">20000</Set>
+                <Set name="lowResourcesMaxIdleTime">5000</Set>
           </New>
       </Arg>
     </Call>
 
     <!-- Uncomment this and enter your SSL config/credentials to enable https
     <Call name="addConnector">
-	  <Arg>
-	    <New class="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
+          <Arg>
+            <New class="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
           <Set name="Port">8443</Set>
-		  <Set name="maxIdleTime">30000</Set>
-	      <Set name="Acceptors">2</Set>
-	      <Set name="AcceptQueueSize">100</Set>
-		  <Set name="Keystore"><SystemProperty name="jetty.home" default="." />/etc/keystore</Set>
-		  <Set name="Password">PASSWORD</Set>
-		  <Set name="KeyPassword">KEYPASSWORD</Set>
-	      <Set name="truststore"><SystemProperty name="jetty.home" default="." />/etc/keystore</Set>
-	      <Set name="trustPassword">TRUSTPASSWORD</Set>
-	    </New>
-	  </Arg>
-	</Call>
-	-->
+                  <Set name="maxIdleTime">30000</Set>
+              <Set name="Acceptors">2</Set>
+              <Set name="AcceptQueueSize">100</Set>
+                  <Set name="Keystore"><SystemProperty name="jetty.home" default="." />/etc/keystore</Set>
+                  <Set name="Password">PASSWORD</Set>
+                  <Set name="KeyPassword">KEYPASSWORD</Set>
+              <Set name="truststore"><SystemProperty name="jetty.home" default="." />/etc/keystore</Set>
+              <Set name="trustPassword">TRUSTPASSWORD</Set>
+            </New>
+          </Arg>
+        </Call>
+        -->
 
     <!-- =========================================================== -->
     <!-- Set handler Collection Structure                            --> 
@@ -73,7 +73,7 @@
              <New id="AkkaRestHandler" class="org.eclipse.jetty.servlet.ServletContextHandler">
                <Set name="contextPath">/</Set>
                <Call name="addServlet">
-	             <Arg>se.scalablesolutions.akka.comet.AkkaServlet</Arg>
+	             <Arg>akka.comet.AkkaServlet</Arg>
 	             <Arg>/*</Arg>
 	           </Call>
 	         </New>
@@ -94,4 +94,4 @@
     <Set name="sendDateHeader">true</Set>
     <Set name="gracefulShutdown">1000</Set>
 
-</Configure>	 
+</Configure>     

@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.serialization
+package akka.serialization
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -6,7 +6,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.serialization.Serializer.ScalaJSON
+import akka.serialization.Serializer.ScalaJSON
 
 object Protocols {
   import sjson.json.DefaultProtocol._

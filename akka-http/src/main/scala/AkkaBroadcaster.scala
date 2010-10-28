@@ -2,13 +2,13 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.comet
+package akka.comet
 
 import org.atmosphere.cpr.{AtmosphereResourceEvent, AtmosphereResource}
 
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.Actor
-import se.scalablesolutions.akka.dispatch.Dispatchers
+import akka.actor.Actor._
+import akka.actor.Actor
+import akka.dispatch.Dispatchers
 import org.atmosphere.jersey.util.JerseyBroadcasterUtil
 
 object AkkaBroadcaster {

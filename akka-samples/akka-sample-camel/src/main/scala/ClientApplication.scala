@@ -1,9 +1,9 @@
 package sample.camel
 
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.TypedActor
-import se.scalablesolutions.akka.camel.Message
-import se.scalablesolutions.akka.remote.RemoteClient
+import akka.actor.Actor._
+import akka.actor.TypedActor
+import akka.camel.Message
+import akka.remote.RemoteClient
 
 /**
  * @author Martin Krasser

@@ -1,11 +1,11 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 
 import foo.{IMyPojo, MyPojo, PingActor}
-import se.scalablesolutions.akka.dispatch._
+import akka.dispatch._
 import org.scalatest.FeatureSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
@@ -16,7 +16,7 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.support.ClassPathXmlApplicationContext
 import org.springframework.core.io.{ClassPathResource, Resource}
 import java.util.concurrent._
-import se.scalablesolutions.akka.actor.{UntypedActor, Actor, ActorRef}
+import akka.actor.{UntypedActor, Actor, ActorRef}
 
 /**
  * Tests for spring configuration of typed actors.
@@ -119,7 +119,7 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
     scenario("get a thread-based-dispatcher for untyped from context") {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val actorRef = context.getBean("untyped-actor-with-thread-based-dispatcher").asInstanceOf[ActorRef]
-      assert(actorRef.getActorClassName() === "se.scalablesolutions.akka.spring.foo.PingActor")
+      assert(actorRef.getActorClassName() === "akka.spring.foo.PingActor")
       actorRef.start()
       actorRef.sendOneWay("Hello")
       assert(actorRef.getDispatcher.isInstanceOf[ThreadBasedDispatcher])
@@ -130,13 +130,18 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
    * get ThreadPoolExecutor via reflection and assert that dispatcher is correct type
    */
   private def getThreadPoolExecutorAndAssert(dispatcher: MessageDispatcher): ThreadPoolExecutor = {
-    assert(dispatcher.isInstanceOf[ThreadPoolBuilder])
-    val pool = dispatcher.asInstanceOf[ThreadPoolBuilder]
-    val field = pool.getClass.getDeclaredField("se$scalablesolutions$akka$dispatch$ThreadPoolBuilder$$threadPoolBuilder")
-    field.setAccessible(true)
-    val executor = field.get(pool).asInstanceOf[ThreadPoolExecutor]
-    assert(executor ne null)
-    executor;
+
+    def unpackExecutorService(e: ExecutorService): ExecutorService = e match {
+      case b: ExecutorServiceDelegate => unpackExecutorService(b.executor)
+      case t: ThreadPoolExecutor => t
+      case e => throw new IllegalStateException("Illegal executor type: " + e)
+    }
+
+    unpackExecutorService(dispatcher match {
+      case e: ExecutorBasedEventDrivenDispatcher => e.executorService.get()
+      case e: ExecutorBasedEventDrivenWorkStealingDispatcher => e.executorService.get()
+      case x => throw new IllegalStateException("Illegal dispatcher type: " + x)
+    }).asInstanceOf[ThreadPoolExecutor]
   }
 
 }

@@ -1,12 +1,12 @@
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 import org.apache.camel.impl.{SimpleRegistry, DefaultCamelContext}
 import org.apache.camel.spring.SpringCamelContext
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FeatureSpec}
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
-import se.scalablesolutions.akka.camel.CamelContextManager
-import se.scalablesolutions.akka.actor.{TypedActor, ActorRegistry}
+import akka.camel.CamelContextManager
+import akka.actor.{TypedActor, ActorRegistry}
 
 class CamelServiceSpringFeatureTest extends FeatureSpec with BeforeAndAfterEach with BeforeAndAfterAll {
   override protected def beforeAll = {

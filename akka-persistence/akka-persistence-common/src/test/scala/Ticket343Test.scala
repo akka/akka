@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.common
+package akka.persistence.common
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -10,11 +10,11 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
-import se.scalablesolutions.akka.config.Supervision.{OneForOneStrategy, Permanent}
+import akka.actor.{Actor, ActorRef}
+import akka.config.Supervision.{OneForOneStrategy, Permanent}
 import Actor._
-import se.scalablesolutions.akka.stm.global._
-import se.scalablesolutions.akka.util.Logging
+import akka.stm.global._
+import akka.util.Logging
 import StorageObj._
 
 

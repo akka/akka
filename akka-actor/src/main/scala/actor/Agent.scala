@@ -2,13 +2,14 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
-import se.scalablesolutions.akka.stm.Ref
-import se.scalablesolutions.akka.AkkaException
-import se.scalablesolutions.akka.japi.{ Function => JFunc, Procedure => JProc }
+import akka.stm.Ref
+import akka.AkkaException
+import akka.japi.{ Function => JFunc, Procedure => JProc }
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.CountDownLatch
+import akka.config.RemoteAddress
 
 class AgentException private[akka](message: String) extends AkkaException(message)
 
@@ -100,11 +101,20 @@ class AgentException private[akka](message: String) extends AkkaException(messag
 * @author Viktor Klang
 * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
 */
-sealed class Agent[T] private (initialValue: T) {
+sealed class Agent[T] private (initialValue: T, remote: Option[RemoteAddress] = None) {
+
   import Agent._
   import Actor._
-
-  private val dispatcher = actorOf(new AgentDispatcher[T](initialValue)).start
+  val dispatcher = remote match {
+    case Some(address) =>
+      val d = actorOf(new AgentDispatcher[T]())
+      d.makeRemote(remote.get.hostname,remote.get.port)
+      d.start
+      d ! Value(initialValue)
+      d
+    case None =>
+      actorOf(new AgentDispatcher(initialValue)).start
+  }
 
   /**
   * Submits a request to read the internal state.
@@ -117,11 +127,9 @@ sealed class Agent[T] private (initialValue: T) {
     if (dispatcher.isTransactionInScope) throw new AgentException(
       "Can't call Agent.get within an enclosing transaction."+
       "\n\tWould block indefinitely.\n\tPlease refactor your code.")
-    val ref = new AtomicReference[T]
-    val latch = new CountDownLatch(1)
-    sendProc((v: T) => {ref.set(v); latch.countDown})
-    latch.await
-    ref.get
+    val f = (dispatcher.!!![T](Read,java.lang.Long.MAX_VALUE)).await
+    if (f.exception.isDefined) throw f.exception.get
+    else f.result.getOrElse(throw new IllegalStateException("Agent remote request timed out"))
   }
 
   /**
@@ -185,13 +193,13 @@ sealed class Agent[T] private (initialValue: T) {
    * Applies function with type 'T => B' to the agent's internal state and then returns a new agent with the result.
    * Does not change the value of the agent (this).
    */
-  final def map[B](f: (T) => B): Agent[B] = Agent(f(get))
+  final def map[B](f: (T) => B): Agent[B] = Agent(f(get),remote)
 
   /**
    * Applies function with type 'T => B' to the agent's internal state and then returns a new agent with the result.
    * Does not change the value of the agent (this).
    */
-  final def flatMap[B](f: (T) => Agent[B]): Agent[B] = Agent(f(get)())
+  final def flatMap[B](f: (T) => Agent[B]): Agent[B] = Agent(f(get)(),remote)
 
   /**
    * Applies function with type 'T => B' to the agent's internal state.
@@ -204,14 +212,14 @@ sealed class Agent[T] private (initialValue: T) {
    * Does not change the value of the agent (this).
    * Java API
    */
-  final def map[B](f: JFunc[T,B]): Agent[B] = Agent(f(get))
+  final def map[B](f: JFunc[T,B]): Agent[B] = Agent(f(get),remote)
 
   /**
    * Applies function with type 'T => B' to the agent's internal state and then returns a new agent with the result.
    * Does not change the value of the agent (this).
    * Java API
    */
-  final def flatMap[B](f: JFunc[T,Agent[B]]): Agent[B] = Agent(f(get)())
+  final def flatMap[B](f: JFunc[T,Agent[B]]): Agent[B] = Agent(f(get)(),remote)
 
   /**
    * Applies procedure with type T to the agent's internal state.
@@ -235,18 +243,33 @@ sealed class Agent[T] private (initialValue: T) {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Agent {
-
+  import Actor._
   /*
    * The internal messages for passing around requests.
    */
   private[akka] case class Value[T](value: T)
   private[akka] case class Function[T](fun: ((T) => T))
   private[akka] case class Procedure[T](fun: ((T) => Unit))
+  private[akka] case object Read
 
   /**
    * Creates a new Agent of type T with the initial value of value.
    */
-  def apply[T](value: T): Agent[T] = new Agent(value)
+  def apply[T](value: T): Agent[T] =
+    apply(value,None)
+
+  /**
+   * Creates an Agent backed by a client managed Actor if Some(remoteAddress)
+   * or a local agent if None
+   */
+  def apply[T](value: T, remoteAddress: Option[RemoteAddress]): Agent[T] =
+    new Agent[T](value,remoteAddress)
+
+  /**
+   * Creates an Agent backed by a client managed Actor
+   */
+  def apply[T](value: T, remoteAddress: RemoteAddress): Agent[T] =
+    apply(value,Some(remoteAddress))
 }
 
 /**
@@ -254,12 +277,15 @@ object Agent {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final class AgentDispatcher[T] private[akka] (initialValue: T) extends Transactor {
+final class AgentDispatcher[T] private (ref: Ref[T]) extends Transactor {
   import Agent._
-  import Actor._
-  log.debug("Starting up Agent [%s]", self.uuid)
 
-  private val value = Ref[T](initialValue)
+  private[akka] def this(initialValue: T) = this(Ref(initialValue))
+  private[akka] def this() = this(Ref[T]())
+
+  private val value = ref
+
+  log.debug("Starting up Agent [%s]", self.uuid)
 
   /**
    * Periodically handles incoming messages.
@@ -267,6 +293,7 @@ final class AgentDispatcher[T] private[akka] (initialValue: T) extends Transacto
   def receive = {
     case Value(v: T) =>
       swap(v)
+    case Read => self.reply_?(value.get())
     case Function(fun: (T => T)) =>
       swap(fun(value.getOrWait))
     case Procedure(proc: (T => Unit)) =>

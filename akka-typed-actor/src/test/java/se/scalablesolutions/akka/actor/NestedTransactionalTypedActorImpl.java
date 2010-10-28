@@ -1,7 +1,7 @@
-package se.scalablesolutions.akka.actor;
+package akka.actor;
 
-import se.scalablesolutions.akka.actor.*;
-import se.scalablesolutions.akka.stm.*;
+import akka.actor.*;
+import akka.stm.*;
 
 public class NestedTransactionalTypedActorImpl extends TypedTransactor implements NestedTransactionalTypedActor {
   private TransactionalMap<String, String> mapState;
