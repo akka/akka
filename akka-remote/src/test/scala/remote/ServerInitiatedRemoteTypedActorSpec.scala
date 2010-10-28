@@ -103,9 +103,9 @@ class ServerInitiatedRemoteTypedActorSpec extends
     it("should register and unregister typed actors") {
       val typedActor = TypedActor.newInstance(classOf[RemoteTypedActorOne], classOf[RemoteTypedActorOneImpl], 1000)
       server.registerTypedActor("my-test-service", typedActor)
-      assert(server.typedActors().get("my-test-service") ne null, "typed actor registered")
+      assert(server.typedActors.get("my-test-service") ne null, "typed actor registered")
       server.unregisterTypedActor("my-test-service")
-      assert(server.typedActors().get("my-test-service") eq null, "typed actor unregistered")
+      assert(server.typedActors.get("my-test-service") eq null, "typed actor unregistered")
     }
 
     it("should register and unregister typed actors by uuid") {
@@ -113,9 +113,9 @@ class ServerInitiatedRemoteTypedActorSpec extends
       val init = AspectInitRegistry.initFor(typedActor)
       val uuid = "uuid:" + init.actorRef.uuid
       server.registerTypedActor(uuid, typedActor)
-      assert(server.typedActorsByUuid().get(init.actorRef.uuid.toString) ne null, "typed actor registered")
+      assert(server.typedActorsByUuid.get(init.actorRef.uuid.toString) ne null, "typed actor registered")
       server.unregisterTypedActor(uuid)
-      assert(server.typedActorsByUuid().get(init.actorRef.uuid.toString) eq null, "typed actor unregistered")
+      assert(server.typedActorsByUuid.get(init.actorRef.uuid.toString) eq null, "typed actor unregistered")
     }
 
     it("should find typed actors by uuid") {
@@ -123,7 +123,7 @@ class ServerInitiatedRemoteTypedActorSpec extends
       val init = AspectInitRegistry.initFor(typedActor)
       val uuid = "uuid:" + init.actorRef.uuid
       server.registerTypedActor(uuid, typedActor)
-      assert(server.typedActorsByUuid().get(init.actorRef.uuid.toString) ne null, "typed actor registered")
+      assert(server.typedActorsByUuid.get(init.actorRef.uuid.toString) ne null, "typed actor registered")
 
       val actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], uuid, HOSTNAME, PORT)
       expect("oneway") {

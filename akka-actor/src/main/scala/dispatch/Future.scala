@@ -37,10 +37,16 @@ object Futures {
 
   def awaitAll(futures: List[Future[_]]): Unit = futures.foreach(_.await)
 
-  def awaitOne(futures: List[Future[_]]): Future[_] = {
+  /**
+   * Returns the First Future that is completed
+   * if no Future is completed, awaitOne optionally sleeps "sleepMs" millis and then re-scans
+   */
+  def awaitOne(futures: List[Future[_]], sleepMs: Long = 0): Future[_] = {
     var future: Option[Future[_]] = None
     do {
       future = futures.find(_.isCompleted)
+      if (sleepMs > 0 && future.isEmpty)
+        Thread.sleep(sleepMs)
     } while (future.isEmpty)
     future.get
   }
@@ -110,7 +116,7 @@ trait CompletableFuture[T] extends Future[T] {
 
 // Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
 class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
-  private val TIME_UNIT = TimeUnit.MILLISECONDS
+  import TimeUnit.{MILLISECONDS => TIME_UNIT}
   def this() = this(0)
 
   val timeoutInNanos = TIME_UNIT.toNanos(timeout)

@@ -8,8 +8,9 @@ import akka.stm.global._
 import akka.stm.TransactionManagement._
 import akka.stm.TransactionManagement
 import akka.dispatch.MessageInvocation
-import akka.remote.{RemoteServer, MessageSerializer}
+import akka.remote.{RemoteServer, RemoteClient, MessageSerializer}
 import akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
+
 import ActorTypeProtocol._
 import akka.config.Supervision._
 import akka.actor.{uuidFrom,newUuid}
@@ -132,7 +133,8 @@ object ActorSerialization {
             false,
             actorRef.getSender,
             None,
-            ActorType.ScalaActor).build)
+            ActorType.ScalaActor,
+            RemoteClient.SECURE_COOKIE).build)
 
       requestProtocols.foreach(rp => builder.addMessages(rp))
     }
@@ -248,11 +250,11 @@ object RemoteActorSerialization {
     ActorRegistry.registerActorByUuid(homeAddress, uuid.toString, ar)
 
     RemoteActorRefProtocol.newBuilder
-      .setClassOrServiceName(uuid.toString)
-      .setActorClassname(actorClassName)
-      .setHomeAddress(AddressProtocol.newBuilder.setHostname(host).setPort(port).build)
-      .setTimeout(timeout)
-      .build
+        .setClassOrServiceName(uuid.toString)
+        .setActorClassname(actorClassName)
+        .setHomeAddress(AddressProtocol.newBuilder.setHostname(host).setPort(port).build)
+        .setTimeout(timeout)
+        .build
   }
 
   def createRemoteRequestProtocolBuilder(
@@ -261,8 +263,8 @@ object RemoteActorSerialization {
       isOneWay: Boolean,
       senderOption: Option[ActorRef],
       typedActorInfo: Option[Tuple2[String, String]],
-      actorType: ActorType):
-  RemoteRequestProtocol.Builder = {
+      actorType: ActorType,
+      secureCookie: Option[String]): RemoteRequestProtocol.Builder = {
     import actorRef._
 
     val actorInfoBuilder = ActorInfoProtocol.newBuilder
@@ -271,13 +273,12 @@ object RemoteActorSerialization {
         .setTarget(actorClassName)
         .setTimeout(timeout)
 
-    typedActorInfo.foreach {
-      typedActor =>
-        actorInfoBuilder.setTypedActorInfo(
-          TypedActorInfoProtocol.newBuilder
-              .setInterface(typedActor._1)
-              .setMethod(typedActor._2)
-              .build)
+    typedActorInfo.foreach { typedActor =>
+      actorInfoBuilder.setTypedActorInfo(
+        TypedActorInfoProtocol.newBuilder
+            .setInterface(typedActor._1)
+            .setMethod(typedActor._2)
+            .build)
     }
 
     actorType match {
@@ -291,6 +292,8 @@ object RemoteActorSerialization {
         .setMessage(MessageSerializer.serialize(message))
         .setActorInfo(actorInfo)
         .setIsOneWay(isOneWay)
+
+    secureCookie.foreach(requestBuilder.setCookie(_))
 
     val id = registerSupervisorAsRemoteActor
     if (id.isDefined) requestBuilder.setSupervisorUuid(
@@ -306,8 +309,6 @@ object RemoteActorSerialization {
     }
     requestBuilder
   }
-
-
 }
 
 
@@ -404,5 +405,4 @@ object RemoteTypedActorSerialization {
         .setInterfaceName(init.interfaceClass.getName)
         .build
   }
-
 }
