@@ -5,8 +5,9 @@ import org.scalatest.matchers.ShouldMatchers
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import akka.persistence.voldemort.VoldemortStorageBackend._
+import akka.persistence.common.CommonStorageBackend._
 import akka.persistence.common.KVStorageBackend._
-import akka.util.{Logging}
+import akka.util.Logging
 import collection.immutable.TreeSet
 import VoldemortStorageBackendSuite._
 import scala.None
@@ -105,7 +106,7 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     vectorAccess.delete(getKey(key, vectorTailIndex))
     vectorAccess.delete(getIndexedKey(key, 0))
     vectorAccess.delete(getIndexedKey(key, 1))
-    
+
     insertVectorStorageEntryFor(key, value)
     //again
     insertVectorStorageEntryFor(key, value)
@@ -130,7 +131,7 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     val key = "queueApiKey"
     val value = bytes("some bytes even")
     val valueOdd = bytes("some bytes odd")
-    
+
     remove(key)
     VoldemortStorageBackend.size(key) should be(0)
     enqueue(key, value) should be(Some(1))
@@ -162,6 +163,11 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
 
   }
 
+  def getIndexFromVectorValueKey(owner: String, key: Array[Byte]): Int = {
+    val indexBytes = new Array[Byte](IntSerializer.bytesPerInt)
+    System.arraycopy(key, key.length - IntSerializer.bytesPerInt, indexBytes, 0, IntSerializer.bytesPerInt)
+    IntSerializer.fromBytes(indexBytes)
+  }
 
 
 }

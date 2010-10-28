@@ -17,7 +17,7 @@ import com.google.protobuf.ByteString
 import com.trifork.riak.{RequestMeta, RiakObject, RiakClient}
 
 
-private[akka] object RiakStorageBackend extends KVStorageBackend {
+private[akka] object RiakStorageBackend extends CommonStorageBackend {
   val refBucket = config.getString("akka.storage.riak.bucket.ref", "Refs")
   val mapBucket = config.getString("akka.storage.riak.bucket.map", "Maps")
   val vectorBucket = config.getString("akka.storage.riak.bucket.vector", "Vectors")
@@ -26,7 +26,8 @@ private[akka] object RiakStorageBackend extends KVStorageBackend {
   val clientPort = config.getInt("akka.storage.riak.client.port", 8087)
   val riakClient: RiakClient = new RiakClient(clientHost, clientPort);
 
-  import KVAccess._
+  import CommonStorageBackendAccess._
+  import KVStorageBackend._
   import RiakAccess._
 
 
@@ -59,7 +60,7 @@ private[akka] object RiakStorageBackend extends KVStorageBackend {
   }
 
 
-  class RiakAccess(val bucket: String) extends KVAccess {
+  class RiakAccess(val bucket: String) extends KVStorageBackendAccess {
     //http://www.mail-archive.com/riak-users@lists.basho.com/msg01013.html
     val quorum: Int = 0xfffffffd
     val one: Int = 0xfffffffe
