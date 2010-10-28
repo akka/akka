@@ -122,7 +122,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val CASSANDRA_VERSION     = "0.6.1"
   lazy val DISPATCH_VERSION      = "0.7.4"
   lazy val HAWT_DISPATCH_VERSION = "1.0"
-  lazy val JACKSON_VERSION       = "1.2.1"
+  lazy val JACKSON_VERSION       = "1.4.3"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.1"
   lazy val SCALATEST_VERSION     = "1.2"
@@ -186,7 +186,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val jackson          = "org.codehaus.jackson" % "jackson-mapper-asl" % JACKSON_VERSION % "compile"
     lazy val jackson_core     = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile"
-    lazy val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile"
 
     lazy val jersey         = "com.sun.jersey"          % "jersey-core"   % JERSEY_VERSION % "compile"
     lazy val jersey_json    = "com.sun.jersey"          % "jersey-json"   % JERSEY_VERSION % "compile"
@@ -496,7 +495,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jetty_util       = Dependencies.jetty_util
     val jetty_xml        = Dependencies.jetty_xml
     val jetty_servlet    = Dependencies.jetty_servlet
-    val jackson_core_asl = Dependencies.jackson_core_asl
+    val jackson_core     = Dependencies.jackson_core
     val jersey           = Dependencies.jersey
     val jersey_contrib   = Dependencies.jersey_contrib
     val jersey_json      = Dependencies.jersey_json
