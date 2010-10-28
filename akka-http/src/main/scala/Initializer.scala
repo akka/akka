@@ -2,13 +2,13 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.servlet
+package akka.servlet
 
-import se.scalablesolutions.akka.remote.BootableRemoteActorService
-import se.scalablesolutions.akka.actor.BootableActorLoaderService
-import se.scalablesolutions.akka.camel.CamelService
-import se.scalablesolutions.akka.config.Config
-import se.scalablesolutions.akka.util.{Logging, Bootable}
+import akka.remote.BootableRemoteActorService
+import akka.actor.BootableActorLoaderService
+import akka.camel.CamelService
+import akka.config.Config
+import akka.util.{Logging, Bootable}
 
 import javax.servlet.{ServletContextListener, ServletContextEvent}
 
@@ -18,7 +18,7 @@ import javax.servlet.{ServletContextListener, ServletContextEvent}
   *<web-app>
   * ...
   *  <listener>
-  *    <listener-class>se.scalablesolutions.akka.servlet.Initializer</listener-class>
+  *    <listener-class>akka.servlet.Initializer</listener-class>
   *  </listener>
   * ...
   *</web-app>
