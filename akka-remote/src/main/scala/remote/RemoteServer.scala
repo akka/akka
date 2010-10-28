@@ -10,7 +10,7 @@ import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.{Map => JMap}
 
 import se.scalablesolutions.akka.actor.{
-  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage, uuidFrom, Uuid, ActorRegistry}
+  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage, uuidFrom, Uuid, ActorRegistry, LifeCycleMessage}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
@@ -81,6 +81,7 @@ object RemoteServer {
     requireCookie
   }
  
+  val UNTRUSTED_MODE            = config.getBool("akka.remote.server.untrusted-mode", false)
   val HOSTNAME                  = config.getString("akka.remote.server.hostname", "localhost")
   val PORT                      = config.getInt("akka.remote.server.port", 9999)
   val CONNECTION_TIMEOUT_MILLIS = Duration(config.getInt("akka.remote.server.connection-timeout", 1), TIME_UNIT)
@@ -472,11 +473,19 @@ class RemoteServerHandler(
     }
   }
 
-  private def dispatchToActor(request: RemoteRequestProtocol, channel: Channel) = {
+  private def dispatchToActor(request: RemoteRequestProtocol, channel: Channel): Unit = {
     val actorInfo = request.getActorInfo
     log.debug("Dispatching to remote actor [%s:%s]", actorInfo.getTarget, actorInfo.getUuid)
 
-    val actorRef = createActor(actorInfo).start
+    val actorRef = 
+      try {
+        createActor(actorInfo).start
+      } catch {
+        case e: SecurityException => 
+          channel.write(createErrorReplyMessage(e, request, true))
+          server.notifyListeners(RemoteServerError(e, server))
+          return
+      }
 
     val message = MessageSerializer.deserialize(request.getMessage)
     val sender =
@@ -484,7 +493,12 @@ class RemoteServerHandler(
       else None
 
     message match { // first match on system messages
-      case RemoteActorSystemMessage.Stop => actorRef.stop
+      case RemoteActorSystemMessage.Stop => 
+        if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException("Remote server is operating is untrusted mode, can not stop the actor")
+        else actorRef.stop
+      case _: LifeCycleMessage if (RemoteServer.UNTRUSTED_MODE) => 
+        throw new SecurityException("Remote server is operating is untrusted mode, can not pass on a LifeCycleMessage to the remote actor")
+
       case _ =>     // then match on user defined messages
         if (request.getIsOneWay) actorRef.!(message)(sender)
         else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(
@@ -602,6 +616,9 @@ class RemoteServerHandler(
     
     if (actorRefOrNull eq null) {
       try {
+        if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException(
+          "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
+
         log.info("Creating a new remote actor [%s:%s]", name, uuid)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
                     else Class.forName(name)
@@ -633,6 +650,9 @@ class RemoteServerHandler(
       val targetClassname = actorInfo.getTarget
 
       try {
+        if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException(
+          "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
+
         log.info("Creating a new remote typed actor:\n\t[%s :: %s]", interfaceClassname, targetClassname)
 
         val (interfaceClass, targetClass) =
