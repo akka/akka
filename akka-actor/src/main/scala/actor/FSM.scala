@@ -13,11 +13,15 @@ trait FSM[S, D] {
   type StateFunction = scala.PartialFunction[Event, State]
 
   /** DSL */
-  protected final def inState(stateName: S)(stateFunction: StateFunction) = {
+  protected final def notifying(transitionHandler: PartialFunction[Transition, Unit]) = {
+    transitionEvent = transitionHandler
+  }
+
+  protected final def when(stateName: S)(stateFunction: StateFunction) = {
     register(stateName, stateFunction)
   }
 
-  protected final def setInitialState(stateName: S, stateData: D, timeout: Option[Long] = None) = {
+  protected final def startWith(stateName: S, stateData: D, timeout: Option[Long] = None) = {
     setState(State(stateName, stateData, timeout))
   }
 
@@ -74,6 +78,10 @@ trait FSM[S, D] {
     case reason => log.info("Stopping because of reason: %s", reason)
   }
 
+  private var transitionEvent: PartialFunction[Transition, Unit] = {
+    case Transition(from, to) => log.debug("Transitioning from state %s to %s", from, to)
+  }
+
   override final protected def receive: Receive = {
     case Stop(reason, stateData) =>
       terminateEvent.apply(reason)
@@ -93,6 +101,9 @@ trait FSM[S, D] {
     if (!transitions.contains(nextState.stateName)) {
       stop(Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
+      if (currentState != null && currentState.stateName != nextState.stateName) {
+        transitionEvent.apply(Transition(currentState.stateName, nextState.stateName))
+      }
       currentState = nextState
       currentState.timeout.foreach {
         t =>
@@ -128,6 +139,8 @@ trait FSM[S, D] {
   case class Failure(cause: Any) extends Reason
 
   case object StateTimeout
-  
+
+  case class Transition(from: S, to: S)
+
   private case class Stop(reason: Reason, stateData: D)
 }
