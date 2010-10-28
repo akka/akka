@@ -1,12 +1,12 @@
-package se.scalablesolutions.akka.actor.dispatch
+package akka.actor.dispatch
 
 import org.scalatest.junit.JUnitSuite
 
 import org.junit.Test
 
-import se.scalablesolutions.akka.actor.Actor
-import se.scalablesolutions.akka.util.Duration
-import se.scalablesolutions.akka.dispatch._
+import akka.actor.Actor
+import akka.util.Duration
+import akka.dispatch._
 import Actor._
 
 import java.util.concurrent.{BlockingQueue, CountDownLatch, TimeUnit}

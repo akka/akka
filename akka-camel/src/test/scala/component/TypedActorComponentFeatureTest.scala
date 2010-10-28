@@ -1,12 +1,12 @@
-package se.scalablesolutions.akka.camel.component
+package akka.camel.component
 
 import org.apache.camel._
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.{DefaultCamelContext, SimpleRegistry}
 import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec}
 
-import se.scalablesolutions.akka.actor.{ActorRegistry, TypedActor}
-import se.scalablesolutions.akka.camel._
+import akka.actor.{ActorRegistry, TypedActor}
+import akka.camel._
 
 /**
  * @author Martin Krasser

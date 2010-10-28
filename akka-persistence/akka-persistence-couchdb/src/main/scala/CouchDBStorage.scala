@@ -1,8 +1,8 @@
-package se.scalablesolutions.akka.persistence.couchdb
+package akka.persistence.couchdb
 
-import se.scalablesolutions.akka.actor.{newUuid}
-import se.scalablesolutions.akka.stm._
-import se.scalablesolutions.akka.persistence.common._
+import akka.actor.{newUuid}
+import akka.stm._
+import akka.persistence.common._
 
 object CouchDBStorage extends Storage {
   type ElementType = Array[Byte]

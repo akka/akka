@@ -10,7 +10,7 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd
 http://camel.apache.org/schema/spring
 http://camel.apache.org/schema/spring/camel-spring.xsd">
 
-  <bean id="routeBuilder" class="se.scalablesolutions.akka.spring.SampleRoute" />
+  <bean id="routeBuilder" class="akka.spring.SampleRoute" />
 
   <camel:camelContext id="camelContext">
     <camel:routeBuilder ref="routeBuilder" />
@@ -21,7 +21,7 @@ http://camel.apache.org/schema/spring/camel-spring.xsd">
   </akka:camel-service>
 
   <akka:typed-actor id="sample"
-                      interface="se.scalablesolutions.akka.spring.SampleBeanIntf"
-                      implementation="se.scalablesolutions.akka.spring.SampleBean"
+                      interface="akka.spring.SampleBeanIntf"
+                      implementation="akka.spring.SampleBean"
                       timeout="1000" />
 </beans>

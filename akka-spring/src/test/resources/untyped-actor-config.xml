@@ -10,25 +10,25 @@ http://www.akkasource.org/schema/akka
 http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
 
   <akka:untyped-actor id="simple-untyped-actor"
-                      implementation="se.scalablesolutions.akka.spring.foo.PingActor"/>
+                      implementation="akka.spring.foo.PingActor"/>
 
   <akka:untyped-actor id="simple-untyped-actor-long-timeout"
-                      implementation="se.scalablesolutions.akka.spring.foo.PingActor"
+                      implementation="akka.spring.foo.PingActor"
                       timeout="10000"/>
 
   <akka:untyped-actor id="transactional-untyped-actor"
-                      implementation="se.scalablesolutions.akka.spring.foo.PingActor"
+                      implementation="akka.spring.foo.PingActor"
                       timeout="2000"
                       transactional="true"/>
 
   <akka:untyped-actor id="remote-untyped-actor"
-                      implementation="se.scalablesolutions.akka.spring.foo.PingActor"
+                      implementation="akka.spring.foo.PingActor"
                       timeout="2000">
     <akka:remote host="localhost" port="9992"/>
   </akka:untyped-actor>
 
    <akka:untyped-actor id="untyped-actor-with-dispatcher"
-                    implementation="se.scalablesolutions.akka.spring.foo.PingActor"
+                    implementation="akka.spring.foo.PingActor"
                     timeout="1000">
     <akka:dispatcher type="executor-based-event-driven-work-stealing" name="myWorkStealingDispatcher"/>
   </akka:untyped-actor>

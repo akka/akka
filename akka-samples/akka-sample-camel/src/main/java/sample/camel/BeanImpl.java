@@ -1,6 +1,6 @@
 package sample.camel;
 
-import se.scalablesolutions.akka.actor.TypedActor;
+import akka.actor.TypedActor;
 /**
  * @author Martin Krasser
  */

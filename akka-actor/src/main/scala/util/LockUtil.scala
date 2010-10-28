@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.util
+package akka.util
 
 import java.util.concurrent.locks.{ReentrantReadWriteLock, ReentrantLock}
 import java.util.concurrent.atomic. {AtomicBoolean}
@@ -120,7 +120,7 @@ class Switch(startAsOn: Boolean = false) {
   private val switch = new AtomicBoolean(startAsOn)
 
   protected def transcend(from: Boolean,action: => Unit): Boolean = synchronized {
-    if (switch.compareAndSet(from,!from)) {
+    if (switch.compareAndSet(from, !from)) {
       try {
         action
       } catch {
@@ -133,41 +133,33 @@ class Switch(startAsOn: Boolean = false) {
   }
 
   def switchOff(action: => Unit): Boolean = transcend(from = true, action)
-  def switchOn(action: => Unit): Boolean  = transcend(from = false,action)
+  def switchOn(action: => Unit): Boolean  = transcend(from = false, action)
 
-  def switchOff: Boolean = synchronized { switch.compareAndSet(true,false) }
-  def switchOn: Boolean  = synchronized { switch.compareAndSet(false,true) }
+  def switchOff: Boolean = synchronized { switch.compareAndSet(true, false) }
+  def switchOn: Boolean  = synchronized { switch.compareAndSet(false, true) }
 
   def ifOnYield[T](action: => T): Option[T] = {
-    if (switch.get)
-      Some(action)
-    else
-      None
+    if (switch.get) Some(action)
+    else None
   }
 
   def ifOffYield[T](action: => T): Option[T] = {
-    if (switch.get)
-      Some(action)
-    else
-      None
+    if (switch.get) Some(action)
+    else None
   }
 
   def ifOn(action: => Unit): Boolean = {
     if (switch.get) {
       action
       true
-    }
-    else
-      false
+    } else false
   }
 
    def ifOff(action: => Unit): Boolean = {
     if (!switch.get) {
       action
       true
-    }
-    else
-      false
+    } else false
   }
 
   def isOn = switch.get

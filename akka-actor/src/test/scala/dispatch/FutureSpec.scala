@@ -1,8 +1,8 @@
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import se.scalablesolutions.akka.dispatch.Futures
+import akka.dispatch.Futures
 import Actor._
 import org.multiverse.api.latches.StandardLatch
 

@@ -2,16 +2,16 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dispatch
+package akka.dispatch
 
-import se.scalablesolutions.akka.actor.{Actor, ActorType, ActorRef, ActorInitializationException}
-import se.scalablesolutions.akka.util.ReflectiveAccess.EnterpriseModule
-import se.scalablesolutions.akka.AkkaException
+import akka.actor.{Actor, ActorType, ActorRef, ActorInitializationException}
+import akka.util.ReflectiveAccess.EnterpriseModule
+import akka.AkkaException
 
 import java.util.{Queue, List}
 import java.util.concurrent._
 import concurrent.forkjoin.LinkedTransferQueue
-import se.scalablesolutions.akka.util._
+import akka.util._
 
 class MessageQueueAppendFailedException(message: String) extends AkkaException(message)
 

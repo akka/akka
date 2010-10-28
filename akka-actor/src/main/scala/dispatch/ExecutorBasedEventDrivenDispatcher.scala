@@ -2,13 +2,13 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dispatch
+package akka.dispatch
 
-import se.scalablesolutions.akka.actor.{ActorRef, IllegalActorStateException}
-import se.scalablesolutions.akka.util.ReflectiveAccess.EnterpriseModule
+import akka.actor.{ActorRef, IllegalActorStateException}
+import akka.util.ReflectiveAccess.EnterpriseModule
 
 import java.util.Queue
-import se.scalablesolutions.akka.util.Switch
+import akka.util.Switch
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent. {ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue, LinkedBlockingQueue}
 
@@ -57,7 +57,7 @@ import java.util.concurrent. {ExecutorService, RejectedExecutionException, Concu
  * <p/>
  *
  * But the preferred way of creating dispatchers is to use
- * the {@link se.scalablesolutions.akka.dispatch.Dispatchers} factory object.
+ * the {@link akka.dispatch.Dispatchers} factory object.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  * @param throughput positive integer indicates the dispatcher will only process so much messages at a time from the

@@ -2,9 +2,9 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dispatch
+package akka.dispatch
 
-import se.scalablesolutions.akka.actor.ActorRef
+import akka.actor.ActorRef
 
 import org.fusesource.hawtdispatch.DispatchQueue
 import org.fusesource.hawtdispatch.ScalaDispatch._
@@ -13,7 +13,7 @@ import org.fusesource.hawtdispatch.ListEventAggregator
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicBoolean}
 import java.util.concurrent.CountDownLatch
-import se.scalablesolutions.akka.util.Switch
+import akka.util.Switch
 
 /**
  * Holds helper methods for working with actors that are using a HawtDispatcher as it's dispatcher.

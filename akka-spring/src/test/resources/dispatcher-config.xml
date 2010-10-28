@@ -11,15 +11,15 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
 
 
   <akka:typed-actor id="typed-actor-with-dispatcher"
-                    interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
-                    implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                    interface="akka.spring.foo.IMyPojo"
+                    implementation="akka.spring.foo.MyPojo"
                     timeout="1000">
     <akka:dispatcher type="executor-based-event-driven" name="test"/>
   </akka:typed-actor>
 
   <akka:typed-actor id="typed-actor-with-dispatcher-ref"
-                    interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
-                    implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                    interface="akka.spring.foo.IMyPojo"
+                    implementation="akka.spring.foo.MyPojo"
                     timeout="1000">
       <akka:dispatcher ref="executor-event-driven-dispatcher-1"/>
   </akka:typed-actor>
@@ -74,15 +74,15 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
 
   <!-- thread-based-dispatcher -->
    <akka:typed-actor id="typed-actor-with-thread-based-dispatcher"
-                    interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
-                    implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                    interface="akka.spring.foo.IMyPojo"
+                    implementation="akka.spring.foo.MyPojo"
                     timeout="1000">
       <akka:dispatcher type="thread-based" name="threadBasedDispatcher"/>
   </akka:typed-actor>
 
   <!-- thread-based-dispatcher for untyped actor -->
    <akka:untyped-actor id="untyped-actor-with-thread-based-dispatcher"
-                    implementation="se.scalablesolutions.akka.spring.foo.PingActor"
+                    implementation="akka.spring.foo.PingActor"
                     timeout="1000">
       <akka:dispatcher type="thread-based" name="threadBasedDispatcher"/>
   </akka:untyped-actor>
@@ -96,16 +96,16 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
       </akka:trap-exits>
     </akka:restart-strategy>
     <akka:typed-actors>
-      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IFoo"
-                        implementation="se.scalablesolutions.akka.spring.foo.Foo"
+      <akka:typed-actor interface="akka.spring.foo.IFoo"
+                        implementation="akka.spring.foo.Foo"
                         lifecycle="permanent"
                         timeout="1000"/>
-      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IBar"
-                        implementation="se.scalablesolutions.akka.spring.foo.Bar"
+      <akka:typed-actor interface="akka.spring.foo.IBar"
+                        implementation="akka.spring.foo.Bar"
                         lifecycle="permanent"
                         timeout="1000"/>
-      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
-                        implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+      <akka:typed-actor interface="akka.spring.foo.IMyPojo"
+                        implementation="akka.spring.foo.MyPojo"
                         lifecycle="temporary"
                         timeout="1000">
       </akka:typed-actor>

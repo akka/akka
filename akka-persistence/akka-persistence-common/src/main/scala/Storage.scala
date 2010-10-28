@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.common
+package akka.persistence.common
 
-import se.scalablesolutions.akka.stm._
-import se.scalablesolutions.akka.stm.TransactionManagement.transaction
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.japi.{Option => JOption}
+import akka.stm._
+import akka.stm.TransactionManagement.transaction
+import akka.util.Logging
+import akka.japi.{Option => JOption}
 import collection.mutable.ArraySeq
 
 // FIXME move to 'stm' package + add message with more info

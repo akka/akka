@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
-import se.scalablesolutions.akka.util.Logging
+import akka.util.Logging
 import org.springframework.beans.factory.support.BeanDefinitionBuilder
 import org.springframework.beans.factory.xml.{ParserContext, AbstractSingleBeanDefinitionParser}
-import se.scalablesolutions.akka.config.Supervision._
+import akka.config.Supervision._
 import AkkaSpringConfigurationTags._
 
 

@@ -1,17 +1,17 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 import org.springframework.beans.factory.config.AbstractFactoryBean
-import se.scalablesolutions.akka.config.Supervision._
+import akka.config.Supervision._
 import AkkaSpringConfigurationTags._
 import reflect.BeanProperty
-import se.scalablesolutions.akka.actor.ActorRef
+import akka.actor.ActorRef
 import java.util.concurrent.RejectedExecutionHandler
 import java.util.concurrent.ThreadPoolExecutor.{DiscardPolicy, DiscardOldestPolicy, CallerRunsPolicy, AbortPolicy}
-import se.scalablesolutions.akka.dispatch._
-import se.scalablesolutions.akka.util.Duration
+import akka.dispatch._
+import akka.util.Duration
 
 /**
  * Reusable factory method for dispatchers.

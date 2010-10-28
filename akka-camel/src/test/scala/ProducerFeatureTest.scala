@@ -1,12 +1,12 @@
-package se.scalablesolutions.akka.camel
+package akka.camel
 
 import org.apache.camel.{Exchange, Processor}
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.component.mock.MockEndpoint
 import org.scalatest.{GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec}
 
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{ActorRef, Actor, ActorRegistry}
+import akka.actor.Actor._
+import akka.actor.{ActorRef, Actor, ActorRegistry}
 
 class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
   import ProducerFeatureTest._

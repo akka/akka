@@ -4,9 +4,9 @@
 
 package sample.rest.java;
 
-import se.scalablesolutions.akka.actor.TypedTransactor;
-import se.scalablesolutions.akka.persistence.common.PersistentMap;
-import se.scalablesolutions.akka.persistence.cassandra.CassandraStorage;
+import akka.actor.TypedTransactor;
+import akka.persistence.common.PersistentMap;
+import akka.persistence.cassandra.CassandraStorage;
 
 import java.nio.ByteBuffer;
 

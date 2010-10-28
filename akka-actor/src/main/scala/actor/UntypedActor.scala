@@ -2,16 +2,16 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
-import se.scalablesolutions.akka.dispatch._
-import se.scalablesolutions.akka.stm.global._
-import se.scalablesolutions.akka.config.Supervision._
+import akka.dispatch._
+import akka.stm.global._
+import akka.config.Supervision._
 
 import java.net.InetSocketAddress
 
 import scala.reflect.BeanProperty
-import se.scalablesolutions.akka.japi.Procedure
+import akka.japi.Procedure
 
 /**
  * Subclass this abstract class to create a MDB-style untyped actor.
