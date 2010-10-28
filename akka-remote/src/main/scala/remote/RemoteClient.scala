@@ -283,15 +283,15 @@ class RemoteClient private[akka] (
     actorType: ActorType): Option[CompletableFuture[T]] = {
     val cookie = if (isAuthenticated.compareAndSet(false, true)) RemoteClient.SECURE_COOKIE
     else None
-    send(createRemoteRequestProtocolBuilder(
+    send(createRemoteMessageProtocolBuilder(
       actorRef, message, isOneWay, senderOption, typedActorInfo, actorType, cookie).build, senderFuture)
   }
 
   def send[T](
-    request: RemoteRequestProtocol,
+    request: RemoteMessageProtocol,
     senderFuture: Option[CompletableFuture[T]]): Option[CompletableFuture[T]] = {
     if (isRunning) {
-      if (request.getIsOneWay) {
+      if (request.getOneWay) {
         connection.getChannel.write(request)
         None
       } else {
@@ -363,7 +363,7 @@ class RemoteClientPipelineFactory(
     val timeout = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT.toMillis.toInt)
     val lenDec = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
     val lenPrep = new LengthFieldPrepender(4)
-    val protobufDec = new ProtobufDecoder(RemoteReplyProtocol.getDefaultInstance)
+    val protobufDec = new ProtobufDecoder(RemoteMessageProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
     val (enc, dec) = RemoteServer.COMPRESSION_SCHEME match {
       case "zlib" => (join(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL)), join(new ZlibDecoder))
@@ -401,12 +401,12 @@ class RemoteClientHandler(
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) {
     try {
       val result = event.getMessage
-      if (result.isInstanceOf[RemoteReplyProtocol]) {
-        val reply = result.asInstanceOf[RemoteReplyProtocol]
+      if (result.isInstanceOf[RemoteMessageProtocol]) {
+        val reply = result.asInstanceOf[RemoteMessageProtocol]
         val replyUuid = uuidFrom(reply.getUuid.getHigh, reply.getUuid.getLow)
-        log.debug("Remote client received RemoteReplyProtocol[\n%s]", reply.toString)
+        log.debug("Remote client received RemoteMessageProtocol[\n%s]", reply.toString)
         val future = futures.get(replyUuid).asInstanceOf[CompletableFuture[Any]]
-        if (reply.getIsSuccessful) {
+        if (reply.hasMessage) {
           val message = MessageSerializer.deserialize(reply.getMessage)
           future.completeWithResult(message)
         } else {
@@ -482,7 +482,7 @@ class RemoteClientHandler(
     event.getChannel.close
   }
 
-  private def parseException(reply: RemoteReplyProtocol, loader: Option[ClassLoader]): Throwable = {
+  private def parseException(reply: RemoteMessageProtocol, loader: Option[ClassLoader]): Throwable = {
     val exception = reply.getException
     val classname = exception.getClassname
     val exceptionClass = if (loader.isDefined) loader.get.loadClass(classname)
