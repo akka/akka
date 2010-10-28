@@ -4,58 +4,130 @@
 
 package akka.actor
 
-import akka.stm.Ref
-import akka.stm.local._
-
+import scala.collection.mutable
 import java.util.concurrent.{ScheduledFuture, TimeUnit}
 
-trait FSM[S] { this: Actor =>
+trait FSM[S, D] {
+  this: Actor =>
 
   type StateFunction = scala.PartialFunction[Event, State]
 
-  var currentState: State = initialState
-  var timeoutFuture: Option[ScheduledFuture[AnyRef]] = None
+  /** DSL */
+  protected final def inState(stateName: S)(stateFunction: StateFunction) = {
+    register(stateName, stateFunction)
+  }
 
-  def initialState: State
+  protected final def setInitialState(stateName: S, stateData: D, timeout: Option[Long] = None) = {
+    setState(State(stateName, stateData, timeout))
+  }
 
-  def handleEvent: StateFunction = {
-    case event@Event(value, stateData) =>
-      log.warning("No state for event with value %s - keeping current state %s at %s", value, stateData, self.id)
-      State(NextState, currentState.stateFunction, stateData, currentState.timeout)
+  protected final def goto(nextStateName: S): State = {
+    State(nextStateName, currentState.stateData)
+  }
+
+  protected final def stay(): State = {
+    goto(currentState.stateName)
+  }
+
+  protected final def stop(): State = {
+    stop(Normal)
+  }
+
+  protected final def stop(reason: Reason): State = {
+    stop(reason, currentState.stateData)
+  }
+
+  protected final def stop(reason: Reason, stateData: D): State = {
+    self ! Stop(reason, stateData)
+    stay
+  }
+
+  def whenUnhandled(stateFunction: StateFunction) = {
+    handleEvent = stateFunction
+  }
+
+  def onTermination(terminationHandler: PartialFunction[Reason, Unit]) = {
+    terminateEvent = terminationHandler
+  }
+
+  /** FSM State data and default handlers */
+  private var currentState: State = _
+  private var timeoutFuture: Option[ScheduledFuture[AnyRef]] = None
+
+  private val transitions = mutable.Map[S, StateFunction]()
+  private def register(name: S, function: StateFunction) {
+    if (transitions contains name) {
+      transitions(name) = transitions(name) orElse function
+    } else {
+      transitions(name) = function
+    }
+  }
+
+  private var handleEvent: StateFunction = {
+    case Event(value, stateData) =>
+      log.warning("Event %s not handled in state %s, staying at current state", value, currentState.stateName)
+      stay
+  }
+
+  private var terminateEvent: PartialFunction[Reason, Unit] = {
+    case failure@Failure(_) => log.error("Stopping because of a %s", failure)
+    case reason => log.info("Stopping because of reason: %s", reason)
   }
 
   override final protected def receive: Receive = {
+    case Stop(reason, stateData) =>
+      terminateEvent.apply(reason)
+      self.stop
+    case StateTimeout if (self.dispatcher.mailboxSize(self) > 0) =>
+    log.trace("Ignoring StateTimeout - ")
+    // state timeout when new message in queue, skip this timeout
     case value => {
       timeoutFuture = timeoutFuture.flatMap {ref => ref.cancel(true); None}
-
       val event = Event(value, currentState.stateData)
-      val newState = (currentState.stateFunction orElse handleEvent).apply(event)
+      val nextState = (transitions(currentState.stateName) orElse handleEvent).apply(event)
+      setState(nextState)
+    }
+  }
 
-      currentState = newState
-
-      newState match {
-        case State(Reply, _, _, _, Some(replyValue)) => self.sender.foreach(_ ! replyValue)
-        case _ => () // ignore for now
-      }
-
-      newState.timeout.foreach {
-        timeout =>
-          timeoutFuture = Some(Scheduler.scheduleOnce(self, StateTimeout, timeout, TimeUnit.MILLISECONDS))
+  private def setState(nextState: State) = {
+    if (!transitions.contains(nextState.stateName)) {
+      stop(Failure("Next state %s does not exist".format(nextState.stateName)))
+    } else {
+      currentState = nextState
+      currentState.timeout.foreach {
+        t =>
+          timeoutFuture = Some(Scheduler.scheduleOnce(self, StateTimeout, t, TimeUnit.MILLISECONDS))
       }
     }
   }
 
-  case class State(stateEvent: StateEvent,
-                   stateFunction: StateFunction,
-                   stateData: S,
-                   timeout: Option[Int] = None,
-                   replyValue: Option[Any] = None)
+  case class Event(event: Any, stateData: D)
 
-  case class Event(event: Any, stateData: S)
+  case class State(stateName: S, stateData: D, timeout: Option[Long] = None) {
 
-  sealed trait StateEvent
-  object NextState extends StateEvent
-  object Reply extends StateEvent
+    def until(timeout: Long): State = {
+      copy(timeout = Some(timeout))
+    }
 
-  object StateTimeout
+    def replying(replyValue:Any): State = {
+      self.sender match {
+        case Some(sender) => sender ! replyValue
+        case None => log.error("Unable to send reply value %s, no sender reference to reply to", replyValue)
+      }
+      this
+    }
+
+    def using(nextStateDate: D): State = {
+      copy(stateData = nextStateDate)
+    }
+  }
+
+  sealed trait Reason
+  case object Normal extends Reason
+  case object Shutdown extends Reason
+  case class Failure(cause: Any) extends Reason
+
+  case object StateTimeout
+  
+  private case class Stop(reason: Reason, stateData: D)
 }

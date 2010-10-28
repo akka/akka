@@ -32,7 +32,7 @@ object CommonsCodec {
 
 import CommonsCodec._
 import CommonsCodec.Base64StringEncoder._
-
+                                                                                                        
 /**
  * A module for supporting Redis based persistence.
  * <p/>

@@ -4,8 +4,6 @@
 
 package akka.util
 
-import java.security.MessageDigest
-
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -22,18 +20,8 @@ object Helpers extends Logging {
     bytes
   }
 
-  def getMD5For(s: String) = {
-    val digest = MessageDigest.getInstance("MD5")
-    digest.update(s.getBytes("ASCII"))
-    val bytes = digest.digest
-
-    val sb = new StringBuilder
-    val hex = "0123456789ABCDEF"
-    bytes.foreach(b => {
-      val n = b.asInstanceOf[Int]
-      sb.append(hex.charAt((n & 0xF) >> 4)).append(hex.charAt(n & 0xF))
-    })
-    sb.toString
+  def bytesToInt(bytes: Array[Byte], offset: Int): Int = {
+    (0 until 4).foldLeft(0)((value, index) => value + ((bytes(index + offset) & 0x000000FF) << ((4 - 1 - index) * 8)))
   }
 
   /**
@@ -57,4 +45,56 @@ object Helpers extends Logging {
         log.warning(e, "Cannot narrow %s to expected type %s!", o, implicitly[Manifest[T]].erasure.getName)
         None
     }
+  
+  /**
+   * Reference that can hold either a typed value or an exception.
+   *
+   * Usage:
+   * <pre>
+   * scala> ResultOrError(1)
+   * res0: ResultOrError[Int] = ResultOrError@a96606
+   *
+   * scala> res0()
+    res1: Int = 1
+   *
+   * scala> res0() = 3
+   *
+   * scala> res0()
+   * res3: Int = 3
+   * 
+   * scala> res0() = { println("Hello world"); 3}
+   * Hello world
+   *
+   * scala> res0()
+   * res5: Int = 3
+   *  
+   * scala> res0() = error("Lets see what happens here...")
+   *
+   * scala> res0()
+   * java.lang.RuntimeException: Lets see what happens here...
+   *    at ResultOrError.apply(Helper.scala:11)
+   *    at .<init>(<console>:6)
+   *    at .<clinit>(<console>)
+   *    at Re...
+   * </pre>
+   */
+  class ResultOrError[R](result: R){
+    private[this] var contents: Either[R, Throwable] = Left(result)
+    
+    def update(value: => R) = {
+      contents = try { 
+        Left(value) 
+      } catch { 
+        case (error : Throwable) => Right(error) 
+      }                        
+    }
+    
+    def apply() = contents match {
+      case Left(result) => result
+      case Right(error) => throw error.fillInStackTrace
+    }
+  }
+  object ResultOrError {
+    def apply[R](result: R) = new ResultOrError(result)
+  }
 }

@@ -27,10 +27,6 @@ object ConfigLogger extends Logging
 object Config {
   val VERSION = "1.0-SNAPSHOT"
 
-  // Set Multiverse options for max speed
-  System.setProperty("org.multiverse.MuliverseConstants.sanityChecks", "false")
-  System.setProperty("org.multiverse.api.GlobalStmInstance.factorymethod", "org.multiverse.stms.alpha.AlphaStm.createFast")
-
   val HOME = {
     val envHome = System.getenv("AKKA_HOME") match {
       case null | "" | "." => None

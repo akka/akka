@@ -72,7 +72,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val EmbeddedRepo         = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
     lazy val FusesourceSnapshotRepo = MavenRepository("Fusesource Snapshots", "http://repo.fusesource.com/nexus/content/repositories/snapshots")
     lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
-    lazy val JBossRepo            = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
+    lazy val JBossRepo            = MavenRepository("JBoss Repo", "http://repository.jboss.org/nexus/content/groups/public/")
     lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
     lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
     lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
@@ -139,7 +139,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   object Dependencies {
 
     // Compile
-		lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
+                lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
 
     lazy val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
 
@@ -606,7 +606,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         </dependency>
 
         <dependency org="org.apache.hadoop" name="hadoop-test" rev="0.20.2" conf="test">
-	        <exclude module="slf4j-api"/>
+                <exclude module="slf4j-api"/>
         </dependency>
         <dependency org="org.slf4j" name="slf4j-api" rev={SLF4J_VERSION} conf="test">
         </dependency>
@@ -655,8 +655,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaCouchDBProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-  	val couch = Dependencies.commonsHttpClient
-		val spec = Dependencies.specs
+        val couch = Dependencies.commonsHttpClient
+                val spec = Dependencies.specs
 
     override def testOptions = createTestFilter( _.endsWith("Test"))
   }
