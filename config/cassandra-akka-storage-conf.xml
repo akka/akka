@@ -101,15 +101,18 @@
        ~ your data set!
       -->
       <ColumnFamily Name="map"
-                    CompareWith="UTF8Type"
+                    CompareWith="BytesType"
                     KeysCached="100%" />
-      <!-- FIXME: change vector to a super column -->
       <ColumnFamily Name="vector"
-                    CompareWith="UTF8Type"
+                    CompareWith="BytesType"
                     KeysCached="100%" />
-      <ColumnFamily Name="ref"
-                    CompareWith="UTF8Type"
+      <ColumnFamily Name="queue"
+                    CompareWith="BytesType"
                     KeysCached="100%" />
+        <ColumnFamily Name="ref"
+                            CompareWith="BytesType"
+                            KeysCached="100%" />
+
 
       <!--ColumnFamily Name="Standard1" CompareWith="BytesType"/>
       <ColumnFamily Name="Standard2"

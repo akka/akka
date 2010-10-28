@@ -20,9 +20,9 @@ import java.util.{Map => JMap, HashMap => JHMap, List => JList, ArrayList => JAL
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 
-private[akka] object CassandraStorageBackend extends KVStorageBackend {
+private[akka] object CassandraStorageBackend extends CommonStorageBackend {
 
-  import KVStorageBackend._
+  import CommonStorageBackend._
 
   type ElementType = Array[Byte]
 
@@ -62,25 +62,22 @@ private[akka] object CassandraStorageBackend extends KVStorageBackend {
     CONSISTENCY_LEVEL)
 
 
-  override def getMapKeyFromKey(owner: String, key: Array[Byte]) = key
 
-  class CassandraAccess(parent: ColumnParent) extends KVAccess {
+
+  class CassandraAccess(parent: ColumnParent) extends CommonStorageBackendAccess {
 
     def path(key: Array[Byte]): ColumnPath = {
       new ColumnPath(parent.getColumn_family).setColumn(key)
     }
 
-    override def delete(owner: String, key: Array[Byte]) = {
+    def delete(owner: String, key: Array[Byte]) = {
       sessions.withSession{
         session => {
           session -- (owner, path(key), System.currentTimeMillis, CONSISTENCY_LEVEL)
         }
       }
     }
-
-    override def delete(owner: String, index: Int) = delete(owner, IntSerializer.toBytes(index))
-
-    override def getAll(owner: String, keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
+    def getAll(owner: String, keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
       sessions.withSession{
         session => {
           var predicate = new SlicePredicate().setColumn_names(JavaConversions.asList(keys.toList))
@@ -94,7 +91,7 @@ private[akka] object CassandraStorageBackend extends KVStorageBackend {
       }
     }
 
-    override def getValue(owner: String, key: Array[Byte], default: Array[Byte]) = {
+    def getValue(owner: String, key: Array[Byte], default: Array[Byte]) = {
       sessions.withSession{
         session => {
           try
@@ -110,14 +107,7 @@ private[akka] object CassandraStorageBackend extends KVStorageBackend {
       }
     }
 
-
-    override def getValue(owner: String, index: Int) = getValue(owner, IntSerializer.toBytes(index))
-
-    override def getValue(owner: String, key: Array[Byte]) = getValue(owner, key, null)
-
-    override def put(owner: String, index: Int, value: Array[Byte]) = put(owner, IntSerializer.toBytes(index), value)
-
-    override def put(owner: String, key: Array[Byte], value: Array[Byte]) = {
+    def put(owner: String, key: Array[Byte], value: Array[Byte]) = {
       sessions.withSession{
         session => {
           session ++| (owner, path(key), value, System.currentTimeMillis, CONSISTENCY_LEVEL)
@@ -158,15 +148,6 @@ private[akka] object CassandraStorageBackend extends KVStorageBackend {
       }
     }
 
-    def delete(key: Array[Byte]) = throw new UnsupportedOperationException("this flavor of delete is not supported")
-
-    def getAll(keys: Iterable[Array[Byte]]) = throw new UnsupportedOperationException("this flavor of getAll is not supported")
-
-    def getValue(key: Array[Byte], default: Array[Byte]) = throw new UnsupportedOperationException("this flavor of getValue is not supported")
-
-    def getValue(key: Array[Byte]) = throw new UnsupportedOperationException("this flavor of getValue is not supported")
-
-    def put(key: Array[Byte], value: Array[Byte]) = throw new UnsupportedOperationException("this flavor of put is not supported")
   }
 
   def queueAccess = new CassandraAccess(QUEUE_COLUMN_PARENT)

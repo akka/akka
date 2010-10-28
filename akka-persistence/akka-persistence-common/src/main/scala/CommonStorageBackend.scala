@@ -4,117 +4,113 @@
 
 package akka.persistence.common
 
-import akka.stm._
-import akka.persistence.common._
 import akka.util.Logging
-import akka.util.Helpers._
-import akka.config.Config.config
-
 import java.lang.String
-import collection.JavaConversions
 import java.nio.ByteBuffer
 import collection.Map
-import collection.mutable.ArrayBuffer
-import java.util.{ Properties, Map => JMap }
+import java.util.{Map => JMap}
 import akka.persistence.common.PersistentMapBinary.COrdering._
 import collection.immutable._
 
 
-private[akka] trait KVAccess {
+private[akka] trait CommonStorageBackendAccess {
+  import CommonStorageBackend._
 
+  /*abstract*/
+  def getValue(owner: String, key: Array[Byte], default: Array[Byte]): Array[Byte]
+
+  def put(owner: String, key: Array[Byte], value: Array[Byte]): Unit
+
+  def delete(owner: String, key: Array[Byte]): Unit
+
+  def getAll(owner: String, keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]]
+
+  def drop(): Unit
+
+  /*concrete*/
+  def decodeKey(owner: String, key: Array[Byte]) = key
+
+  def delete(owner: String, index: Int): Unit = delete(owner, IntSerializer.toBytes(index))
+
+  def getValue(owner: String, index: Int): Array[Byte] = getValue(owner, IntSerializer.toBytes(index))
+
+  def getValue(owner: String, key: Array[Byte]): Array[Byte] = getValue(owner, key, null)
+
+  def put(owner: String, index: Int, value: Array[Byte]): Unit = put(owner, IntSerializer.toBytes(index), value)
+}
+
+private[akka] trait KVStorageBackendAccess extends CommonStorageBackendAccess {
+  import CommonStorageBackend._
   import KVStorageBackend._
-
-  def put(owner: String, key: Array[Byte], value: Array[Byte]): Unit = {
-    put(getKey(owner, key), value)
-  }
-
-  def put(owner: String, index: Int, value: Array[Byte]): Unit = {
-    put(getIndexedKey(owner, index), value)
-  }
 
   def put(key: Array[Byte], value: Array[Byte]): Unit
 
-  def getValue(owner: String, key: Array[Byte]): Array[Byte] = {
-    getValue(getKey(owner, key))
-  }
-
-  def getValue(owner: String, index: Int): Array[Byte] = {
-    getValue(getIndexedKey(owner, index))
-  }
-
   def getValue(key: Array[Byte]): Array[Byte]
-
-  def getValue(owner: String, key: Array[Byte], default: Array[Byte]): Array[Byte] = {
-    getValue(getKey(owner, key), default)
-  }
 
   def getValue(key: Array[Byte], default: Array[Byte]): Array[Byte]
 
-  def getAll(owner: String, keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
-    getAll(keys.map{
+  def getAll(keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]]
+
+  def delete(key: Array[Byte]): Unit
+
+  override def decodeKey(owner: String, key: Array[Byte]): Array[Byte] = {
+    val mapKeyLength = key.length - IntSerializer.bytesPerInt - owner.getBytes("UTF-8").length
+    val mapkey = new Array[Byte](mapKeyLength)
+    System.arraycopy(key, key.length - mapKeyLength, mapkey, 0, mapKeyLength)
+    mapkey
+  }
+
+
+  override def put(owner: String, key: Array[Byte], value: Array[Byte]): Unit = {
+    put(getKey(owner, key), value)
+  }
+
+  override def put(owner: String, index: Int, value: Array[Byte]): Unit = {
+    put(getIndexedKey(owner, index), value)
+  }
+
+
+  override def getValue(owner: String, key: Array[Byte]): Array[Byte] = {
+    getValue(getKey(owner, key))
+  }
+
+  override def getValue(owner: String, index: Int): Array[Byte] = {
+    getValue(getIndexedKey(owner, index))
+  }
+
+
+  override def getValue(owner: String, key: Array[Byte], default: Array[Byte]): Array[Byte] = {
+    getValue(getKey(owner, key), default)
+  }
+
+
+  override def getAll(owner: String, keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
+    getAll(keys.map {
       getKey(owner, _)
     })
   }
 
-  def getAll(keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]]
-
-  def delete(owner: String, index: Int): Unit = {
+  override def delete(owner: String, index: Int): Unit = {
     delete(getIndexedKey(owner, index))
   }
 
-  def delete(owner: String, key: Array[Byte]): Unit = {
+  override def delete(owner: String, key: Array[Byte]): Unit = {
     delete(getKey(owner, key))
   }
-
-  def delete(key: Array[Byte]): Unit
-
-  def drop(): Unit
 }
 
-private[akka] object KVAccess {
+private[akka] object CommonStorageBackendAccess {
   implicit def stringToByteArray(st: String): Array[Byte] = {
     st.getBytes("UTF-8")
   }
 }
 
-private[akka] object KVStorageBackend {
+private[akka] object CommonStorageBackend {
   val nullMapValueHeader = 0x00.byteValue
   val nullMapValue: Array[Byte] = Array(nullMapValueHeader)
   val notNullMapValueHeader: Byte = 0xff.byteValue
 
-  /**
-   * Concat the ownerlenght+owner+key+ of owner so owned data will be colocated
-   * Store the length of owner as first byte to work around the rare case
-   * where ownerbytes1 + keybytes1 == ownerbytes2 + keybytes2 but ownerbytes1 != ownerbytes2
-   */
-
-  def getKey(owner: String, key: Array[Byte]): Array[Byte] = {
-    val ownerBytes: Array[Byte] = owner.getBytes("UTF-8")
-    val ownerLenghtBytes: Array[Byte] = IntSerializer.toBytes(owner.length)
-    val theKey = new Array[Byte](ownerLenghtBytes.length + ownerBytes.length + key.length)
-    System.arraycopy(ownerLenghtBytes, 0, theKey, 0, ownerLenghtBytes.length)
-    System.arraycopy(ownerBytes, 0, theKey, ownerLenghtBytes.length, ownerBytes.length)
-    System.arraycopy(key, 0, theKey, ownerLenghtBytes.length + ownerBytes.length, key.length)
-    theKey
-  }
-
-  def getIndexedBytes(index: Int): Array[Byte] = {
-    val indexbytes = IntSerializer.toBytes(index)
-    indexbytes
-  }
-
-  def getIndexedKey(owner: String, index: Int): Array[Byte] = {
-    getKey(owner, getIndexedBytes(index))
-  }
-
-  def getIndexFromVectorValueKey(owner: String, key: Array[Byte]): Int = {
-    val indexBytes = new Array[Byte](IntSerializer.bytesPerInt)
-    System.arraycopy(key, key.length - IntSerializer.bytesPerInt, indexBytes, 0, IntSerializer.bytesPerInt)
-    IntSerializer.fromBytes(indexBytes)
-  }
-
-
-  def getStoredMapValue(value: Array[Byte]): Array[Byte] = {
+   def getStoredMapValue(value: Array[Byte]): Array[Byte] = {
     value match {
       case null => nullMapValue
       case value => {
@@ -172,8 +168,6 @@ private[akka] object KVStorageBackend {
     }
 
     def fromBytes(bytes: Array[Byte]): SortedSet[Array[Byte]] = {
-      import akka.persistence.common.PersistentMapBinary.COrdering._
-
       var set = new TreeSet[Array[Byte]]
       if (bytes.length > IntSerializer.bytesPerInt) {
         var pos = 0
@@ -195,29 +189,51 @@ private[akka] object KVStorageBackend {
 
 }
 
-private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Array[Byte]] with VectorStorageBackend[Array[Byte]] with RefStorageBackend[Array[Byte]] with QueueStorageBackend[Array[Byte]] with Logging {
+private[akka] object KVStorageBackend {
+   import CommonStorageBackend._
+  /**
+   * Concat the ownerlenght+owner+key+ of owner so owned data will be colocated
+   * Store the length of owner as first byte to work around the rare case
+   * where ownerbytes1 + keybytes1 == ownerbytes2 + keybytes2 but ownerbytes1 != ownerbytes2
+   */
 
-  import KVStorageBackend._
-  import KVAccess._
+  def getKey(owner: String, key: Array[Byte]): Array[Byte] = {
+    val ownerBytes: Array[Byte] = owner.getBytes("UTF-8")
+    val ownerLenghtBytes: Array[Byte] = IntSerializer.toBytes(owner.length)
+    val theKey = new Array[Byte](ownerLenghtBytes.length + ownerBytes.length + key.length)
+    System.arraycopy(ownerLenghtBytes, 0, theKey, 0, ownerLenghtBytes.length)
+    System.arraycopy(ownerBytes, 0, theKey, ownerLenghtBytes.length, ownerBytes.length)
+    System.arraycopy(key, 0, theKey, ownerLenghtBytes.length + ownerBytes.length, key.length)
+    theKey
+  }
 
-  val mapKeysIndex = getIndexedBytes(-1)
-  val vectorHeadIndex = getIndexedBytes(-1)
-  val vectorTailIndex = getIndexedBytes(-2)
-  val queueHeadIndex = getIndexedBytes(-1)
-  val queueTailIndex = getIndexedBytes(-2)
+  def getIndexedKey(owner: String, index: Int): Array[Byte] = {
+    getKey(owner, IntSerializer.toBytes(index))
+  }
+
+}
+
+private[akka] trait CommonStorageBackend extends MapStorageBackend[Array[Byte], Array[Byte]] with VectorStorageBackend[Array[Byte]] with RefStorageBackend[Array[Byte]] with QueueStorageBackend[Array[Byte]] with Logging {
+  import CommonStorageBackend._
+  val mapKeysIndex = IntSerializer.toBytes(-1)
+  val vectorHeadIndex = IntSerializer.toBytes(-1)
+  val vectorTailIndex = IntSerializer.toBytes(-2)
+  val queueHeadIndex = IntSerializer.toBytes(-1)
+  val queueTailIndex = IntSerializer.toBytes(-2)
   val zero = IntSerializer.toBytes(0)
   val refItem = "refItem".getBytes("UTF-8")
 
   implicit val ordering = ArrayOrdering
 
 
-  def refAccess: KVAccess
+  def refAccess: CommonStorageBackendAccess
 
-  def vectorAccess: KVAccess
+  def vectorAccess: CommonStorageBackendAccess
 
-  def mapAccess: KVAccess
+  def mapAccess: CommonStorageBackendAccess
 
-  def queueAccess: KVAccess
+  def queueAccess: CommonStorageBackendAccess
+
 
   def getRefStorageFor(name: String): Option[Array[Byte]] = {
     val result: Array[Byte] = refAccess.getValue(name, refItem)
@@ -231,12 +247,6 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
     }
   }
 
-  def getMapKeyFromKey(owner: String, key: Array[Byte]): Array[Byte] = {
-    val mapKeyLength = key.length - IntSerializer.bytesPerInt - owner.getBytes("UTF-8").length
-    val mapkey = new Array[Byte](mapKeyLength)
-    System.arraycopy(key, key.length - mapKeyLength, mapkey, 0, mapKeyLength)
-    mapkey
-  }
 
   def getMapStorageRangeFor(name: String, start: Option[Array[Byte]], finish: Option[Array[Byte]], count: Int): List[(Array[Byte], Array[Byte])] = {
     val allkeys: SortedSet[Array[Byte]] = getMapKeys(name)
@@ -251,15 +261,15 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
 
   private def getKeyValues(name: String, keys: SortedSet[Array[Byte]]): List[(Array[Byte], Array[Byte])] = {
     val all: Map[Array[Byte], Array[Byte]] =
-      mapAccess.getAll(name, keys)
+    mapAccess.getAll(name, keys)
 
     var returned = new TreeMap[Array[Byte], Array[Byte]]()(ordering)
-    all.foreach{
+    all.foreach {
       (entry) => {
         entry match {
           case (namePlusKey: Array[Byte], value: Array[Byte]) => {
             //need to fix here
-            returned += getMapKeyFromKey(name, namePlusKey) -> getMapValueFromStored(value)
+            returned += mapAccess.decodeKey(name, namePlusKey) -> getMapValueFromStored(value)
           }
         }
       }
@@ -289,7 +299,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
 
   def removeMapStorageFor(name: String) = {
     val keys = getMapKeys(name)
-    keys.foreach{
+    keys.foreach {
       key =>
         mapAccess.delete(name, key)
         log.debug("deleted key %s for %s", key, name)
@@ -305,7 +315,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   }
 
   def insertMapStorageEntriesFor(name: String, entries: List[(Array[Byte], Array[Byte])]) = {
-    val newKeys = entries.map{
+    val newKeys = entries.map {
       case (key, value) => {
         mapAccess.put(name, key, getStoredMapValue(value))
         key
@@ -333,12 +343,12 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
 
     val st = start.getOrElse(0)
     var cnt =
-      if (finish.isDefined) {
-        val f = finish.get
-        if (f >= st) (f - st) else count
-      } else {
-        count
-      }
+    if (finish.isDefined) {
+      val f = finish.get
+      if (f >= st) (f - st) else count
+    } else {
+      count
+    }
     if (cnt > (mdata.size - st)) {
       cnt = mdata.size - st
     }
@@ -374,7 +384,7 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   }
 
   def insertVectorStorageEntriesFor(name: String, elements: List[Array[Byte]]) = {
-    elements.foreach{
+    elements.foreach {
       insertVectorStorageEntryFor(name, _)
     }
 
@@ -560,7 +570,6 @@ private[akka] trait KVStorageBackend extends MapStorageBackend[Array[Byte], Arra
   }
 
   case class VectorMetadata(head: Int, tail: Int) {
-
     def size = {
       if (head >= tail) {
         head - tail
