@@ -29,7 +29,7 @@ import scala.collection.immutable.Stack
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import annotation.tailrec
 
-private[akka] object ActorRefInternals {
+private[akka] object ActorRefInternals extends Logging {
 
   /** LifeCycles for ActorRefs
    */
@@ -77,7 +77,9 @@ private[akka] object ActorRefInternals {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ActorRef extends ActorRefShared with TransactionManagement with Logging with java.lang.Comparable[ActorRef] { scalaRef: ScalaActorRef =>
+trait ActorRef extends ActorRefShared with TransactionManagement with java.lang.Comparable[ActorRef] { scalaRef: ScalaActorRef =>
+  //Reuse same logger
+  import Actor.log
 
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile
