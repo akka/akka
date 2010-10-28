@@ -17,6 +17,7 @@ object FSMActorSpec {
   val lockedLatch = new StandardLatch
   val unhandledLatch = new StandardLatch
   val terminatedLatch = new StandardLatch
+  val transitionLatch = new StandardLatch
 
   sealed trait LockState
   case object Locked extends LockState
@@ -24,7 +25,12 @@ object FSMActorSpec {
 
   class Lock(code: String, timeout: Int) extends Actor with FSM[LockState, CodeState] {
 
-    inState(Locked) {
+    notifying {
+      case Transition(Locked, Open) => transitionLatch.open
+      case Transition(_, _) => ()
+    }
+
+    when(Locked) {
       case Event(digit: Char, CodeState(soFar, code)) => {
         soFar + digit match {
           case incomplete if incomplete.length < code.length =>
@@ -43,14 +49,14 @@ object FSMActorSpec {
       case Event("bye", _) => stop(Shutdown)
     }
 
-    inState(Open) {
+    when(Open) {
       case Event(StateTimeout, stateData) => {
         doLock
         goto(Locked)
       }
     }
 
-    setInitialState(Locked, CodeState("", code))
+    startWith(Locked, CodeState("", code))
     
     whenUnhandled {
       case Event(_, stateData) => {
@@ -94,6 +100,7 @@ class FSMActorSpec extends JUnitSuite {
     lock ! '1'
 
     assert(unlockedLatch.tryAwait(1, TimeUnit.SECONDS))
+    assert(transitionLatch.tryAwait(1, TimeUnit.SECONDS))
     assert(lockedLatch.tryAwait(2, TimeUnit.SECONDS))
 
     lock ! "not_handled"
