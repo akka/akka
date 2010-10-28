@@ -1,12 +1,12 @@
-package se.scalablesolutions.akka.actor.remote
+package akka.actor.remote
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
 
-import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{ActorRegistry, ActorRef, Actor}
+import akka.remote.{RemoteServer, RemoteClient}
+import akka.actor.Actor._
+import akka.actor.{ActorRegistry, ActorRef, Actor}
 
 object ServerInitiatedRemoteActorSpec {
   val HOSTNAME = "localhost"
@@ -84,7 +84,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   @Test
   def shouldSendWithBang  {
     val actor = RemoteClient.actorFor(
-      "se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional",
+      "akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional",
       5000L,
       HOSTNAME, PORT)
     val result = actor ! "OneWay"
@@ -95,7 +95,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   @Test
   def shouldSendWithBangBangAndGetReply {
     val actor = RemoteClient.actorFor(
-      "se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
+      "akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
       5000L,
       HOSTNAME, PORT)
     val result = actor !! "Hello"
@@ -107,7 +107,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   def shouldSendWithBangAndGetReplyThroughSenderRef  {
     implicit val timeout = 500000000L
     val actor = RemoteClient.actorFor(
-      "se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
+      "akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
       timeout,
       HOSTNAME, PORT)
     val sender = actorOf[RemoteActorSpecActorAsyncSender]
@@ -122,7 +122,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   def shouldSendWithBangBangAndReplyWithException  {
     implicit val timeout = 500000000L
     val actor = RemoteClient.actorFor(
-      "se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
+      "akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
       timeout,
       HOSTNAME, PORT)
     try {
@@ -153,7 +153,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   @Test
   def shouldNotRecreateRegisteredActor {
     server.register(actorOf[RemoteActorSpecActorUnidirectional])
-    val actor = RemoteClient.actorFor("se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional", HOSTNAME, PORT)
+    val actor = RemoteClient.actorFor("akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional", HOSTNAME, PORT)
     val numberOfActorsInRegistry = ActorRegistry.actors.length
     actor ! "OneWay"
     assert(RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS))
@@ -165,7 +165,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   def shouldUseServiceNameAsIdForRemoteActorRef {
     server.register(actorOf[RemoteActorSpecActorUnidirectional])
     server.register("my-service", actorOf[RemoteActorSpecActorUnidirectional])
-    val actor1 = RemoteClient.actorFor("se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional", HOSTNAME, PORT)
+    val actor1 = RemoteClient.actorFor("akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional", HOSTNAME, PORT)
     val actor2 = RemoteClient.actorFor("my-service", HOSTNAME, PORT)
     val actor3 = RemoteClient.actorFor("my-service", HOSTNAME, PORT)
 
@@ -201,18 +201,18 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   def shouldRegisterAndUnregister {
     val actor1 = actorOf[RemoteActorSpecActorUnidirectional]
     server.register("my-service-1", actor1)
-    assert(server.actors().get("my-service-1") ne null, "actor registered")
+    assert(server.actors.get("my-service-1") ne null, "actor registered")
     server.unregister("my-service-1")
-    assert(server.actors().get("my-service-1") eq null, "actor unregistered")
+    assert(server.actors.get("my-service-1") eq null, "actor unregistered")
   }
 
   @Test
   def shouldRegisterAndUnregisterByUuid {
     val actor1 = actorOf[RemoteActorSpecActorUnidirectional]
     server.register("uuid:" + actor1.uuid, actor1)
-    assert(server.actorsByUuid().get(actor1.uuid.toString) ne null, "actor registered")
+    assert(server.actorsByUuid.get(actor1.uuid.toString) ne null, "actor registered")
     server.unregister("uuid:" + actor1.uuid)
-    assert(server.actorsByUuid().get(actor1.uuid) eq null, "actor unregistered")
+    assert(server.actorsByUuid.get(actor1.uuid) eq null, "actor unregistered")
   }
 
 }

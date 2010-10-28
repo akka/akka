@@ -3,7 +3,7 @@ package sample.camel;
 import org.apache.camel.Body;
 import org.apache.camel.Header;
 
-import se.scalablesolutions.akka.camel.consume;
+import akka.camel.consume;
 
 /**
  * @author Martin Krasser

@@ -2,19 +2,20 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
-import se.scalablesolutions.akka.dispatch._
-import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.util.Helpers.{narrow, narrowSilently}
-import se.scalablesolutions.akka.AkkaException
+import akka.dispatch._
+import akka.config.Config._
+import akka.config.Supervision._
+import akka.util.Helpers.{narrow, narrowSilently}
+import akka.AkkaException
 
 import java.util.concurrent.TimeUnit
 import java.net.InetSocketAddress
 
 import scala.reflect.BeanProperty
-import se.scalablesolutions.akka.util. {ReflectiveAccess, Logging, Duration}
+import akka.util. {ReflectiveAccess, Logging, Duration}
+import akka.japi.Procedure
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
@@ -44,7 +45,9 @@ abstract class RemoteActor(address: InetSocketAddress) extends Actor {
  */
 @serializable sealed trait LifeCycleMessage
 
-case class HotSwap(code: Actor.Receive) extends LifeCycleMessage
+case class HotSwap(code: Actor.Receive) extends LifeCycleMessage {
+  def this(behavior: Procedure[Any]) = this({ case msg => behavior.apply(msg) }: Actor.Receive)
+}
 
 case object RevertHotSwap extends LifeCycleMessage
 

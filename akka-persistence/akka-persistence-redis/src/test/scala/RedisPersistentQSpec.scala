@@ -1,9 +1,9 @@
-package se.scalablesolutions.akka.persistence.redis
+package akka.persistence.redis
 
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef, Transactor}
+import akka.actor.{Actor, ActorRef, Transactor}
 import Actor._
 
 /**

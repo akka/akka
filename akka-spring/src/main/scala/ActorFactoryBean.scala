@@ -2,17 +2,17 @@
  *  Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 import org.springframework.beans.{BeanUtils,BeansException,BeanWrapper,BeanWrapperImpl}
-import se.scalablesolutions.akka.remote.{RemoteClient, RemoteServer}
+import akka.remote.{RemoteClient, RemoteServer}
 import org.springframework.beans.factory.config.AbstractFactoryBean
 import org.springframework.context.{ApplicationContext,ApplicationContextAware}
 import org.springframework.util.StringUtils
 
-import se.scalablesolutions.akka.actor.{ActorRef, AspectInitRegistry, TypedActorConfiguration, TypedActor,Actor}
-import se.scalablesolutions.akka.dispatch.MessageDispatcher
-import se.scalablesolutions.akka.util.{Logging, Duration}
+import akka.actor.{ActorRef, AspectInitRegistry, TypedActorConfiguration, TypedActor,Actor}
+import akka.dispatch.MessageDispatcher
+import akka.util.{Logging, Duration}
 import scala.reflect.BeanProperty
 import java.net.InetSocketAddress
 

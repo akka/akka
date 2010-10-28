@@ -1,1 +1,1 @@
-http\://www.akkasource.org/schema/akka=se.scalablesolutions.akka.spring.AkkaNamespaceHandler
+http\://www.akkasource.org/schema/akka=akka.spring.AkkaNamespaceHandler

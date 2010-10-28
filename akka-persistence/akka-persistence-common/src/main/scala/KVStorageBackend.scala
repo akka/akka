@@ -2,21 +2,21 @@
  *  Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.common
+package akka.persistence.common
 
-import se.scalablesolutions.akka.stm._
-import se.scalablesolutions.akka.persistence.common._
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.util.Helpers._
-import se.scalablesolutions.akka.config.Config.config
+import akka.stm._
+import akka.persistence.common._
+import akka.util.Logging
+import akka.util.Helpers._
+import akka.config.Config.config
 
 import java.lang.String
 import collection.JavaConversions
 import java.nio.ByteBuffer
 import collection.Map
 import collection.mutable.ArrayBuffer
-import java.util.{Properties, Map => JMap}
-import se.scalablesolutions.akka.persistence.common.PersistentMapBinary.COrdering._
+import java.util.{ Properties, Map => JMap }
+import akka.persistence.common.PersistentMapBinary.COrdering._
 import collection.immutable._
 
 
@@ -172,7 +172,7 @@ private[akka] object KVStorageBackend {
     }
 
     def fromBytes(bytes: Array[Byte]): SortedSet[Array[Byte]] = {
-      import se.scalablesolutions.akka.persistence.common.PersistentMapBinary.COrdering._
+      import akka.persistence.common.PersistentMapBinary.COrdering._
 
       var set = new TreeSet[Array[Byte]]
       if (bytes.length > IntSerializer.bytesPerInt) {

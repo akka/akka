@@ -15,7 +15,7 @@
       <pattern>[%4p] [%d{ISO8601}] [%t] %c{1}: %m%n</pattern>
     </encoder>
   </appender>
-  <logger name="se.scalablesolutions" level="DEBUG"/>
+  <logger name="akka" level="DEBUG"/>
   
   <logger name="org.mortbay.log" level="ERROR"/>
   <logger name="org.apache.jasper" level="ERROR"/>

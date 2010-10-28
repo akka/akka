@@ -4,9 +4,9 @@
 
 package sample.rest.java;
 
-import se.scalablesolutions.akka.actor.TypedActor;
-import se.scalablesolutions.akka.actor.TypedTransactor;
-import se.scalablesolutions.akka.stm.TransactionalMap;
+import akka.actor.TypedActor;
+import akka.actor.TypedTransactor;
+import akka.stm.TransactionalMap;
 
 public class SimpleServiceImpl extends TypedTransactor implements SimpleService {
   private String KEY = "COUNTER";

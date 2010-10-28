@@ -1,12 +1,12 @@
-package se.scalablesolutions.akka.camel
+package akka.camel
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.scalatest.{GivenWhenThen, BeforeAndAfterAll, FeatureSpec}
 
-import se.scalablesolutions.akka.actor._
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.remote.{RemoteClient, RemoteServer}
+import akka.actor._
+import akka.actor.Actor._
+import akka.remote.{RemoteClient, RemoteServer}
 
 /**
  * @author Martin Krasser

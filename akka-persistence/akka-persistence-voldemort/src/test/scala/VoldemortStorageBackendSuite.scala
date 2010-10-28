@@ -1,12 +1,12 @@
-package se.scalablesolutions.akka.persistence.voldemort
+package akka.persistence.voldemort
 
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import se.scalablesolutions.akka.persistence.voldemort.VoldemortStorageBackend._
-import se.scalablesolutions.akka.persistence.common.KVStorageBackend._
-import se.scalablesolutions.akka.util.{Logging}
+import akka.persistence.voldemort.VoldemortStorageBackend._
+import akka.persistence.common.KVStorageBackend._
+import akka.util.{Logging}
 import collection.immutable.TreeSet
 import VoldemortStorageBackendSuite._
 import scala.None

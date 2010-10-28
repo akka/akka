@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.actor.dispatch
+package akka.actor.dispatch
 
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.junit.JUnitSuite
@@ -6,14 +6,14 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 import java.util.concurrent.{TimeUnit, CountDownLatch}
-import se.scalablesolutions.akka.actor.{IllegalActorStateException, Actor}
+import akka.actor.{IllegalActorStateException, Actor}
 import Actor._
-import se.scalablesolutions.akka.dispatch.{MessageQueue, Dispatchers}
+import akka.dispatch.{MessageQueue, Dispatchers}
 
 object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
-  val delayableActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
-  val sharedActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
-  val parentActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
+  val delayableActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher").build
+  val sharedActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher").build
+  val parentActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher").build
 
   class DelayableActor(name: String, delay: Int, finishedCounter: CountDownLatch) extends Actor {
     self.dispatcher = delayableActorDispatcher

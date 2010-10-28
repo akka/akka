@@ -2,14 +2,14 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.common
+package akka.persistence.common
 
 import org.scalatest.matchers.ShouldMatchers
-import se.scalablesolutions.akka.util.Logging
+import akka.util.Logging
 import org.scalatest.{BeforeAndAfterEach, Spec}
 import scala.util.Random
 import collection.immutable.{TreeMap, HashMap, HashSet}
-import se.scalablesolutions.akka.persistence.common.PersistentMapBinary.COrdering._
+import akka.persistence.common.PersistentMapBinary.COrdering._
 
 
 /**

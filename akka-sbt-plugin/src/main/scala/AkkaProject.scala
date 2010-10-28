@@ -4,7 +4,7 @@ object AkkaRepositories {
   val AkkaRepo               = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
   val CodehausRepo           = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
   val GuiceyFruitRepo        = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
-  val JBossRepo              = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
+  val JBossRepo              = MavenRepository("JBoss Repo", "http://repository.jboss.org/nexus/content/groups/public/")
   val JavaNetRepo            = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
   val SonatypeSnapshotRepo   = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
   val SunJDMKRepo            = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
@@ -17,7 +17,7 @@ trait AkkaBaseProject extends BasicScalaProject {
   // is resolved from a ModuleConfiguration. This will result in a significant acceleration of the update action.
 
   // for development version resolve to .ivy2/local
-  // val akkaModuleConfig        = ModuleConfiguration("se.scalablesolutions.akka", AkkaRepo)
+  // val akkaModuleConfig        = ModuleConfiguration("akka", AkkaRepo)
 
   val aspectwerkzModuleConfig = ModuleConfiguration("org.codehaus.aspectwerkz", AkkaRepo)
   val cassandraModuleConfig   = ModuleConfiguration("org.apache.cassandra", AkkaRepo)
@@ -48,7 +48,7 @@ trait AkkaProject extends AkkaBaseProject {
   val akkaVersion = "1.0-SNAPSHOT"
 
   // convenience method
-  def akkaModule(module: String) = "se.scalablesolutions.akka" %% ("akka-" + module) % akkaVersion
+  def akkaModule(module: String) = "akka" %% ("akka-" + module) % akkaVersion
 
   // akka remote dependency by default
   val akkaRemote = akkaModule("remote")

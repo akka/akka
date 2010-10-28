@@ -2,9 +2,9 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.routing
+package akka.routing
 
-import se.scalablesolutions.akka.actor.{UntypedActor, Actor, ActorRef}
+import akka.actor.{UntypedActor, Actor, ActorRef}
 
 /**
  * A Dispatcher is a trait whose purpose is to route incoming messages to actors.

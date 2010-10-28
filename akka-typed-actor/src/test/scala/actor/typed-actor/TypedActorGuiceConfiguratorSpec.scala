@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import com.google.inject.AbstractModule
 import com.google.inject.Scopes
@@ -14,10 +14,10 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.dispatch._
-import se.scalablesolutions.akka.dispatch.FutureTimeoutException
-import se.scalablesolutions.akka.config.{Config, TypedActorConfigurator}
+import akka.config.Supervision._
+import akka.dispatch._
+import akka.dispatch.FutureTimeoutException
+import akka.config.{Config, TypedActorConfigurator}
 
 @RunWith(classOf[JUnitRunner])
 class TypedActorGuiceConfiguratorSpec extends
@@ -30,7 +30,7 @@ class TypedActorGuiceConfiguratorSpec extends
 
   override def beforeAll {
     Config.config
-    val dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("test")
+    val dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("test").build
 
     conf.addExternalGuiceModule(new AbstractModule {
       def configure = bind(classOf[Ext]).to(classOf[ExtImpl]).in(Scopes.SINGLETON)

@@ -1,6 +1,6 @@
-package se.scalablesolutions.akka.actor;
+package akka.actor;
 
-import se.scalablesolutions.akka.actor.*;
+import akka.actor.*;
 
 import java.util.concurrent.CountDownLatch;
 

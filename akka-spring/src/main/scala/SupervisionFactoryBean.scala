@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 import org.springframework.beans.factory.config.AbstractFactoryBean
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.actor.{Supervisor, SupervisorFactory, Actor}
+import akka.config.Supervision._
+import akka.actor.{Supervisor, SupervisorFactory, Actor}
 import AkkaSpringConfigurationTags._
 import reflect.BeanProperty
-import se.scalablesolutions.akka.config.{TypedActorConfigurator, RemoteAddress}
+import akka.config.{TypedActorConfigurator, RemoteAddress}
 
 /**
  * Factory bean for supervisor configuration.

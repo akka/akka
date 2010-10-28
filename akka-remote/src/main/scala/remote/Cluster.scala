@@ -2,16 +2,16 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.remote
+package akka.remote
 
-import se.scalablesolutions.akka.config.Config.config
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.serialization.Serializer
-import se.scalablesolutions.akka.actor.{Supervisor, SupervisorFactory, Actor, ActorRef, ActorRegistry}
-import se.scalablesolutions.akka.util.Logging
+import akka.config.Config.config
+import akka.config.Supervision._
+import akka.serialization.Serializer
+import akka.actor.{Supervisor, SupervisorFactory, Actor, ActorRef, ActorRegistry}
+import akka.util.Logging
 import scala.collection.immutable.{Map, HashMap}
-import se.scalablesolutions.akka.config.Supervision.{Permanent}
-import se.scalablesolutions.akka.config.{RemoteAddress}
+import akka.config.Supervision.{Permanent}
+import akka.config.{RemoteAddress}
 
 /**
  * Interface for interacting with the Cluster Membership API.

@@ -1,11 +1,11 @@
-package se.scalablesolutions.akka.stm
+package akka.stm
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
 class RefSpec extends WordSpec with MustMatchers {
 
-  import se.scalablesolutions.akka.stm.local._
+  import akka.stm.local._
 
   "A Ref" should {
 
