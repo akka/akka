@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.serialization
+package akka.serialization
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test

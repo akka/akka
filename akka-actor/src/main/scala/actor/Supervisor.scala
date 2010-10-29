@@ -2,17 +2,17 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.AkkaException
-import se.scalablesolutions.akka.util._
+import akka.config.Supervision._
+import akka.AkkaException
+import akka.util._
 import ReflectiveAccess._
 import Actor._
 
 import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
 import java.net.InetSocketAddress
-import se.scalablesolutions.akka.config.Supervision._
+import akka.config.Supervision._
 
 class SupervisorException private[akka](message: String) extends AkkaException(message)
 

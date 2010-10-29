@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.persistence.redis
+package akka.persistence.redis
 
 import org.scalatest.Spec
 import org.scalatest.Assertions
@@ -7,7 +7,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef, Transactor}
+import akka.actor.{Actor, ActorRef, Transactor}
 import Actor._
 
 /**

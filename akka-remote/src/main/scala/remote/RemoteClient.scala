@@ -2,16 +2,15 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.remote
+package akka.remote
 
-import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.{ ActorType => ActorTypeProtocol, _ }
-import se.scalablesolutions.akka.actor._
-//import se.scalablesolutions.akka.actor.Uuid.{newUuid, uuidFrom}
-import se.scalablesolutions.akka.dispatch.{ DefaultCompletableFuture, CompletableFuture }
-import se.scalablesolutions.akka.util._
-import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.serialization.RemoteActorSerialization._
-import se.scalablesolutions.akka.AkkaException
+import akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
+import akka.actor.{Exit, Actor, ActorRef, ActorType, RemoteActorRef, IllegalActorStateException}
+import akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
+import akka.actor.{Uuid,newUuid,uuidFrom}
+import akka.config.Config._
+import akka.serialization.RemoteActorSerialization._
+import akka.AkkaException
 import Actor._
 
 import org.jboss.netty.channel._
@@ -31,6 +30,10 @@ import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 
 import scala.collection.mutable.{ HashSet, HashMap }
 import scala.reflect.BeanProperty
+
+import akka.actor._
+import akka.util._
+
 
 /**
  * Life-cycle events for RemoteClient.

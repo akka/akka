@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.dispatch
+package akka.dispatch
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -9,7 +9,7 @@ import java.util.concurrent.locks.ReentrantLock
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before}
 
-import se.scalablesolutions.akka.actor.Actor
+import akka.actor.Actor
 import Actor._
 
 // FIXME use this test when we have removed the MessageInvoker classes

@@ -2,15 +2,15 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.jta
+package akka.jta
 
 import javax.transaction.{TransactionManager, SystemException}
 
 import com.atomikos.icatch.jta.{J2eeTransactionManager, J2eeUserTransaction}
 import com.atomikos.icatch.config.{TSInitInfo, UserTransactionService, UserTransactionServiceImp}
 
-import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.util.Duration
+import akka.config.Config._
+import akka.util.Duration
 
 object AtomikosTransactionService extends AtomikosTransactionService
 

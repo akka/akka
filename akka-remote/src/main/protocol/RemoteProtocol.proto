@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-option java_package = "se.scalablesolutions.akka.remote.protocol";
+option java_package = "akka.remote.protocol";
 option optimize_for = SPEED;
 
 /******************************************

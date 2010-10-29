@@ -3,7 +3,7 @@ package sample.camel;
 import org.apache.camel.Body;
 import org.apache.camel.Header;
 
-import se.scalablesolutions.akka.actor.TypedActor;
+import akka.actor.TypedActor;
 
 /**
  * @author Martin Krasser

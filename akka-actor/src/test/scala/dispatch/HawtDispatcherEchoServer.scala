@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor.dispatch
+package akka.actor.dispatch
 
 import scala.collection.mutable.ListBuffer
 
@@ -12,9 +12,9 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.channels.{SocketChannel, SelectionKey, ServerSocketChannel}
 
-import se.scalablesolutions.akka.actor._
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.dispatch.HawtDispatcher
+import akka.actor._
+import akka.actor.Actor._
+import akka.dispatch.HawtDispatcher
 
 import org.fusesource.hawtdispatch.DispatchSource
 import org.fusesource.hawtdispatch.ScalaDispatch._

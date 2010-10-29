@@ -1,15 +1,15 @@
-package se.scalablesolutions.akka.persistence.redis
+package akka.persistence.redis
 
 import sbinary._
 import sbinary.Operations._
 import sbinary.DefaultProtocol._
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
-import se.scalablesolutions.akka.config.Supervision.{OneForOneStrategy, Permanent}
+import akka.actor.{Actor, ActorRef}
+import akka.config.Supervision.{OneForOneStrategy, Permanent}
 import Actor._
-import se.scalablesolutions.akka.persistence.common.PersistentVector
-import se.scalablesolutions.akka.stm.global._
-import se.scalablesolutions.akka.util.Logging
+import akka.persistence.common.PersistentVector
+import akka.stm.global._
+import akka.util.Logging
 
 import java.util.{Calendar, Date}
 

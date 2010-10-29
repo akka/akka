@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dispatch
+package akka.dispatch
 
 import jsr166x.{Deque, ConcurrentLinkedDeque, LinkedBlockingDeque}
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef, IllegalActorStateException}
-import se.scalablesolutions.akka.util.Switch
+import akka.actor.{Actor, ActorRef, IllegalActorStateException}
+import akka.util.Switch
 import java.util.concurrent. {ExecutorService, CopyOnWriteArrayList}
 import java.util.concurrent.atomic.AtomicReference
 
@@ -24,10 +24,10 @@ import java.util.concurrent.atomic.AtomicReference
  * TODO: it would be nice to be able to redistribute work even when no new messages are being dispatched, without impacting dispatching performance ?!
  * <p/>
  * The preferred way of creating dispatchers is to use
- * the {@link se.scalablesolutions.akka.dispatch.Dispatchers} factory object.
+ * the {@link akka.dispatch.Dispatchers} factory object.
  *
- * @see se.scalablesolutions.akka.dispatch.ExecutorBasedEventDrivenWorkStealingDispatcher
- * @see se.scalablesolutions.akka.dispatch.Dispatchers
+ * @see akka.dispatch.ExecutorBasedEventDrivenWorkStealingDispatcher
+ * @see akka.dispatch.Dispatchers
  *
  * @author Jan Van Besien
  */

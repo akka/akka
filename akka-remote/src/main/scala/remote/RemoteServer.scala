@@ -2,24 +2,23 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.remote
+package akka.remote
 
 import java.lang.reflect.InvocationTargetException
 import java.net.InetSocketAddress
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.{Map => JMap}
 
-import se.scalablesolutions.akka.actor.{
+import akka.actor.{
   Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage, uuidFrom, Uuid, ActorRegistry, LifeCycleMessage}
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.util._
-import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
-import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorType._
-import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.config.ConfigurationException
-import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
-import se.scalablesolutions.akka.serialization.RemoteActorSerialization
-import se.scalablesolutions.akka.serialization.RemoteActorSerialization._
+import akka.actor.Actor._
+import akka.util._
+import akka.remote.protocol.RemoteProtocol._
+import akka.remote.protocol.RemoteProtocol.ActorType._
+import akka.config.Config._
+import akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
+import akka.serialization.RemoteActorSerialization
+import akka.serialization.RemoteActorSerialization._
 
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
@@ -32,6 +31,7 @@ import org.jboss.netty.handler.ssl.SslHandler
 
 import scala.collection.mutable.Map
 import scala.reflect.BeanProperty
+import akka.config.ConfigurationException
 
 /**
  * Use this object if you need a single remote server on a specific node.

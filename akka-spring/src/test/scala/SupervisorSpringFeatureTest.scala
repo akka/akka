@@ -1,13 +1,13 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 
-import se.scalablesolutions.akka.spring.foo.{IMyPojo, MyPojo, IFoo, IBar}
-import se.scalablesolutions.akka.dispatch._
-import se.scalablesolutions.akka.config.TypedActorConfigurator
-import se.scalablesolutions.akka.actor.Supervisor
+import akka.spring.foo.{IMyPojo, MyPojo, IFoo, IBar}
+import akka.dispatch._
+import akka.config.TypedActorConfigurator
+import akka.actor.Supervisor
 
 import org.scalatest.FeatureSpec
 import org.scalatest.matchers.ShouldMatchers

@@ -2,15 +2,15 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dispatch
+package akka.dispatch
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
-import se.scalablesolutions.akka.config.Config.config
-import se.scalablesolutions.akka.util.Duration
+import akka.actor.{Actor, ActorRef}
+import akka.config.Config.config
+import akka.util.Duration
 
 import java.util.Queue
 import java.util.concurrent.{ConcurrentLinkedQueue, BlockingQueue, TimeUnit, LinkedBlockingQueue}
-import se.scalablesolutions.akka.actor
+import akka.actor
 import java.util.concurrent.atomic.AtomicReference
 
 /**
