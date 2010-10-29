@@ -44,7 +44,7 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
                       interface="akka.spring.foo.IMyPojo"
                       implementation="akka.spring.foo.MyPojo"
                       timeout="1000">
-    <akka:remote host="localhost" port="9999"/>
+    <akka:remote host="localhost" port="2552"/>
   </akka:typed-actor>
 
   <akka:dispatcher id="dispatcher1" type="executor-based-event-driven" name="myDispatcher">

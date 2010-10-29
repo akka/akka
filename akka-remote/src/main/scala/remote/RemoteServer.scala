@@ -83,7 +83,7 @@ object RemoteServer {
  
   val UNTRUSTED_MODE            = config.getBool("akka.remote.server.untrusted-mode", false)
   val HOSTNAME                  = config.getString("akka.remote.server.hostname", "localhost")
-  val PORT                      = config.getInt("akka.remote.server.port", 9999)
+  val PORT                      = config.getInt("akka.remote.server.port", 2552)
   val CONNECTION_TIMEOUT_MILLIS = Duration(config.getInt("akka.remote.server.connection-timeout", 1), TIME_UNIT)
   val COMPRESSION_SCHEME        = config.getString("akka.remote.compression-scheme", "zlib")
   val ZLIB_COMPRESSION_LEVEL    = {
