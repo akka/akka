@@ -919,7 +919,7 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
    * Unregisters initialization and stops its ActorRef.
    */
   def unregister(proxy: AnyRef): AspectInit = {
-    val init = initializations.remove(proxy)
+    val init = if (proxy ne null) initializations.remove(proxy) else null
     if (init ne null) {
       notifyListeners(AspectInitUnregistered(proxy, init))
       init.actorRef.stop
