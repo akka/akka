@@ -2,10 +2,10 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.comet
+package akka.comet
 
-import se.scalablesolutions.akka.actor.Actor
-import se.scalablesolutions.akka.remote.Cluster
+import akka.actor.Actor
+import akka.remote.Cluster
 import scala.reflect.BeanProperty
 import org.atmosphere.cpr.{BroadcastFilter, ClusterBroadcastFilter, Broadcaster}
 

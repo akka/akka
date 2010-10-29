@@ -2,10 +2,10 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.security
+package akka.security
 
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.actor.Actor._
+import akka.config.Supervision._
+import akka.actor.Actor._
 
 import org.scalatest.Suite
 import org.scalatest.junit.JUnitSuite
