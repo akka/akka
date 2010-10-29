@@ -11,7 +11,7 @@ import org.apache.camel.CamelContext
 import akka.actor.Actor._
 import akka.actor.{AspectInitRegistry, ActorRegistry}
 import akka.config.Config._
-import akka.japi.{Option => JOption}
+import akka.japi.{SideEffect, Option => JOption}
 import akka.util.{Logging, Bootable}
 
 /**
