@@ -118,7 +118,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val ATMO_VERSION          = "0.6.2"
-  lazy val CAMEL_VERSION         = "2.4.0"
+  lazy val CAMEL_VERSION         = "2.5.0"
   lazy val CASSANDRA_VERSION     = "0.6.1"
   lazy val DISPATCH_VERSION      = "0.7.4"
   lazy val HAWT_DISPATCH_VERSION = "1.0"
@@ -128,9 +128,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val SCALATEST_VERSION     = "1.2"
   lazy val LOGBACK_VERSION       = "0.9.24"
   lazy val SLF4J_VERSION         = "1.6.0"
-  lazy val SPRING_VERSION        = "3.0.3.RELEASE"
+  lazy val SPRING_VERSION        = "3.0.4.RELEASE"
   lazy val ASPECTWERKZ_VERSION   = "2.2.2"
-  lazy val JETTY_VERSION         = "7.1.4.v20100610"
+  lazy val JETTY_VERSION         = "7.1.6.v20100715"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
@@ -820,7 +820,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         </dependency>
         <dependency org="org.apache.geronimo.specs" name="geronimo-servlet_2.5_spec" rev="1.1.1">
         </dependency>
-        <dependency org="org.apache.camel" name="camel-jetty" rev="2.4.0.1">
+        <dependency org="org.apache.camel" name="camel-jetty" rev={CAMEL_VERSION}>
           <exclude module="geronimo-servlet_2.4_spec"/>
         </dependency>
         <dependency org="org.apache.camel" name="camel-jms" rev={CAMEL_VERSION}>
