@@ -113,11 +113,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val voldemortModuleConfig   = ModuleConfiguration("voldemort", ClojarsRepo)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
 
-  // -------------------------------------
-  //  TEMPORARY
-  // -------------------------------------
-  val camelStaging = MavenRepository("camel-staging", "https://repository.apache.org/content/repositories/orgapachecamel-004/")
-
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
