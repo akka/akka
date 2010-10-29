@@ -82,6 +82,45 @@ class ActorTimeoutException private[akka](message: String) extends AkkaException
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor extends Logging {
+
+  /**
+   * Add shutdown cleanups
+   */
+  private[akka] lazy val shutdownHook = {
+    val hook = new Runnable {
+      override def run {
+        log.info("Running shutdown hook to do a cleanup of registered components.")
+        // Shutdown HawtDispatch GlobalQueue
+        org.fusesource.hawtdispatch.ScalaDispatch.globalQueue.asInstanceOf[org.fusesource.hawtdispatch.internal.GlobalDispatchQueue].shutdown
+
+      // Clear Thread.subclassAudits
+        val tf = classOf[java.lang.Thread].getDeclaredField("subclassAudits")
+        tf.setAccessible(true)
+        val subclassAudits = tf.get(null).asInstanceOf[java.util.Map[_,_]]
+        subclassAudits.synchronized {subclassAudits.clear}
+
+        // Clear and reset j.u.l.Level.known (due to Configgy)
+        val lf = classOf[java.util.logging.Level].getDeclaredField("known")
+        lf.setAccessible(true)
+        val known = lf.get(null).asInstanceOf[java.util.ArrayList[java.util.logging.Level]]
+        known.synchronized {
+          known.clear
+          known.add(java.util.logging.Level.OFF)
+          known.add(java.util.logging.Level.SEVERE)
+          known.add(java.util.logging.Level.WARNING)
+          known.add(java.util.logging.Level.INFO)
+          known.add(java.util.logging.Level.CONFIG)
+          known.add(java.util.logging.Level.FINE)
+          known.add(java.util.logging.Level.FINER)
+          known.add(java.util.logging.Level.FINEST)
+          known.add(java.util.logging.Level.ALL)
+        }
+      }
+    }
+    Runtime.getRuntime.addShutdownHook(new Thread(hook))
+    hook
+  }
+
   val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
@@ -110,7 +149,6 @@ object Actor extends Logging {
   def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
-<<<<<<< HEAD:akka-actor/src/main/scala/actor/Actor.scala
    * Creates an ActorRef out of the Actor with type T.
    * <pre>
    *   import Actor._
