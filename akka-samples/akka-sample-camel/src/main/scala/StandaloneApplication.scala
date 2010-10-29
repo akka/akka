@@ -28,14 +28,10 @@ object StandaloneApplication extends Application {
   // access 'externally' registered typed actors
   assert("hello msg1" == mandatoryContext.createProducerTemplate.requestBody("direct:test", "msg1"))
 
-  // set expectations on upcoming endpoint activation
-  val activation = mandatoryService.expectEndpointActivationCount(1)
-
-  // 'internally' register typed actor (requires CamelService)
-  TypedActor.newInstance(classOf[TypedConsumer2], classOf[TypedConsumer2Impl])
-
-  // internal registration is done in background. Wait a bit ...
-  activation.await
+  mandatoryService.awaitEndpointActivation(1) {
+    // 'internally' register typed actor (requires CamelService)
+    TypedActor.newInstance(classOf[TypedConsumer2], classOf[TypedConsumer2Impl])
+  }
 
   // access 'internally' (automatically) registered typed-actors
   // (see @consume annotation value at TypedConsumer2.foo method)
@@ -85,17 +81,13 @@ object StandaloneJmsApplication extends Application {
 
   startCamelService
 
-  // Expect two consumer endpoints to be activated
-  val completion = mandatoryService.expectEndpointActivationCount(2)
-
   val jmsUri = "jms:topic:test"
-  // Wire publisher and consumer using a JMS topic
-  val jmsSubscriber1 = Actor.actorOf(new Subscriber("jms-subscriber-1", jmsUri)).start
-  val jmsSubscriber2 = Actor.actorOf(new Subscriber("jms-subscriber-2", jmsUri)).start
   val jmsPublisher =   Actor.actorOf(new Publisher("jms-publisher", jmsUri)).start
 
-  // wait for the consumer (subscriber) endpoint being activated
-  completion.await
+  mandatoryService.awaitEndpointActivation(2) {
+    Actor.actorOf(new Subscriber("jms-subscriber-1", jmsUri)).start
+    Actor.actorOf(new Subscriber("jms-subscriber-2", jmsUri)).start
+  }
 
   // Send 10 messages to via publisher actor
   for(i <- 1 to 10) {
@@ -107,7 +99,9 @@ object StandaloneJmsApplication extends Application {
     CamelContextManager.mandatoryTemplate.sendBody(jmsUri, "Camel rocks (%d)" format i)
   }
 
-  stopCamelService
+  // Wait a bit for subscribes to receive messages
+  Thread.sleep(1000)
 
+  stopCamelService
   ActorRegistry.shutdownAll
 }

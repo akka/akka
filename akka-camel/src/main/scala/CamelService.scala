@@ -4,13 +4,14 @@
 package akka.camel
 
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 import org.apache.camel.CamelContext
 
 import akka.actor.Actor._
 import akka.actor.{AspectInitRegistry, ActorRegistry}
 import akka.config.Config._
-import akka.japi.{Option => JOption}
+import akka.japi.{SideEffect, Option => JOption}
 import akka.util.{Logging, Bootable}
 
 /**
@@ -93,11 +94,75 @@ trait CamelService extends Bootable with Logging {
   }
 
   /**
+   * Waits for an expected number (<code>count</code>) of endpoints to be activated
+   * during execution of <code>f</code>. The wait-timeout is by default 10 seconds.
+   * Other timeout values can be set via the <code>timeout</code> and <code>timeUnit</code>
+   * parameters.
+   */
+  def awaitEndpointActivation(count: Int, timeout: Long = 10, timeUnit: TimeUnit = TimeUnit.SECONDS)(f: => Unit): Boolean = {
+    val activation = expectEndpointActivationCount(count)
+    f;  activation.await(timeout, timeUnit)
+  }
+
+  /**
+   * Waits for an expected number (<code>count</code>) of endpoints to be de-activated
+   * during execution of <code>f</code>. The wait-timeout is by default 10 seconds.
+   * Other timeout values can be set via the <code>timeout</code> and <code>timeUnit</code>
+   * parameters.
+   */
+  def awaitEndpointDeactivation(count: Int, timeout: Long = 10, timeUnit: TimeUnit = TimeUnit.SECONDS)(f: => Unit): Boolean = {
+    val activation = expectEndpointDeactivationCount(count)
+    f;  activation.await(timeout, timeUnit)
+  }
+
+  /**
+   * Waits for an expected number (<code>count</code>) of endpoints to be activated
+   * during execution of <code>p</code>. The wait timeout is 10 seconds.
+   * <p>
+   * Java API
+   */
+  def awaitEndpointActivation(count: Int, p: SideEffect): Boolean = {
+    awaitEndpointActivation(count, 10, TimeUnit.SECONDS, p)
+  }
+
+  /**
+   * Waits for an expected number (<code>count</code>) of endpoints to be activated
+   * during execution of <code>p</code>. Timeout values can be set via the
+   * <code>timeout</code> and <code>timeUnit</code> parameters.
+   * <p>
+   * Java API
+   */
+  def awaitEndpointActivation(count: Int, timeout: Long, timeUnit: TimeUnit, p: SideEffect): Boolean = {
+    awaitEndpointActivation(count, timeout, timeUnit) { p.apply }
+  }
+
+  /**
+   * Waits for an expected number (<code>count</code>) of endpoints to be de-activated
+   * during execution of <code>p</code>. The wait timeout is 10 seconds.
+   * <p>
+   * Java API
+   */
+  def awaitEndpointDeactivation(count: Int, p: SideEffect): Boolean = {
+    awaitEndpointDeactivation(count, 10, TimeUnit.SECONDS, p)
+  }
+
+  /**
+   * Waits for an expected number (<code>count</code>) of endpoints to be de-activated
+   * during execution of <code>p</code>. Timeout values can be set via the
+   * <code>timeout</code> and <code>timeUnit</code> parameters.
+   * <p>
+   * Java API
+   */
+  def awaitEndpointDeactivation(count: Int, timeout: Long, timeUnit: TimeUnit, p: SideEffect): Boolean = {
+    awaitEndpointDeactivation(count, timeout, timeUnit) { p.apply }
+  }
+
+  /**
    * Sets an expectation on the number of upcoming endpoint activations and returns
-   * a CountDownLatch that can be used to wait for the activations to occur. Endpoint 
+   * a CountDownLatch that can be used to wait for the activations to occur. Endpoint
    * activations that occurred in the past are not considered.
    */
-  def expectEndpointActivationCount(count: Int): CountDownLatch =
+  private def expectEndpointActivationCount(count: Int): CountDownLatch =
     (consumerPublisher !! SetExpectedRegistrationCount(count)).as[CountDownLatch].get
 
   /**
@@ -105,7 +170,7 @@ trait CamelService extends Bootable with Logging {
    * a CountDownLatch that can be used to wait for the de-activations to occur. Endpoint
    * de-activations that occurred in the past are not considered.
    */
-  def expectEndpointDeactivationCount(count: Int): CountDownLatch =
+  private def expectEndpointDeactivationCount(count: Int): CountDownLatch =
     (consumerPublisher !! SetExpectedUnregistrationCount(count)).as[CountDownLatch].get
 
   private[camel] def publishRequestorRegistered: Boolean = {

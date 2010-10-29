@@ -82,6 +82,41 @@ class ActorTimeoutException private[akka](message: String) extends AkkaException
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor extends Logging {
+
+  /**
+   * Add shutdown cleanups
+   */
+  private[akka] lazy val shutdownHook = {
+    val hook = new Runnable {
+      override def run {
+        // Shutdown HawtDispatch GlobalQueue
+        log.info("Shutting down Hawt Dispatch global queue")
+        org.fusesource.hawtdispatch.ScalaDispatch.globalQueue.asInstanceOf[org.fusesource.hawtdispatch.internal.GlobalDispatchQueue].shutdown
+
+        // Clear Thread.subclassAudits
+        log.info("Clearing subclass audits")
+        val tf = classOf[java.lang.Thread].getDeclaredField("subclassAudits")
+        tf.setAccessible(true)
+        val subclassAudits = tf.get(null).asInstanceOf[java.util.Map[_,_]]
+        subclassAudits.synchronized {subclassAudits.clear}
+
+        // Clear and reset j.u.l.Level.known (due to Configgy)
+        log.info("Removing Configgy-installed log levels")
+        import java.util.logging.Level
+        val lf = classOf[Level].getDeclaredField("known")
+        lf.setAccessible(true)
+        val known = lf.get(null).asInstanceOf[java.util.ArrayList[Level]]
+        known.synchronized {
+          known.clear
+          List(Level.OFF,Level.SEVERE,Level.WARNING,Level.INFO,Level.CONFIG,
+               Level.FINE,Level.FINER,Level.FINEST,Level.ALL) foreach known.add
+        }
+      }
+    }
+    Runtime.getRuntime.addShutdownHook(new Thread(hook))
+    hook
+  }
+
   val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
@@ -110,7 +145,6 @@ object Actor extends Logging {
   def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
-<<<<<<< HEAD:akka-actor/src/main/scala/actor/Actor.scala
    * Creates an ActorRef out of the Actor with type T.
    * <pre>
    *   import Actor._
