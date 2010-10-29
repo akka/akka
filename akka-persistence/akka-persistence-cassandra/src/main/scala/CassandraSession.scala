@@ -2,15 +2,15 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.cassandra
+package akka.persistence.cassandra
 
 import java.io.{Flushable, Closeable}
 
-import se.scalablesolutions.akka.persistence.common._
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.util.Helpers._
-import se.scalablesolutions.akka.serialization.Serializer
-import se.scalablesolutions.akka.config.Config.config
+import akka.persistence.common._
+import akka.util.Logging
+import akka.util.Helpers._
+import akka.serialization.Serializer
+import akka.config.Config.config
 
 import scala.collection.mutable.Map
 
@@ -27,8 +27,8 @@ trait CassandraSession extends Closeable with Flushable {
   import scala.collection.JavaConversions._
   import java.util.{Map => JMap, List => JList}
 
-  protected val client: Cassandra.Client
-  protected val keyspace: String
+  val client: Cassandra.Client
+  val keyspace: String
 
   val obtainedAt: Long
   val consistencyLevel: ConsistencyLevel

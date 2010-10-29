@@ -2,10 +2,10 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.servlet
+package akka.servlet
 
-import se.scalablesolutions.akka.config.Config
-import se.scalablesolutions.akka.util.{Logging, Bootable}
+import akka.config.Config
+import akka.util.{Logging, Bootable}
 
 /*
  * This class is responsible for booting up a stack of bundles and then shutting them down

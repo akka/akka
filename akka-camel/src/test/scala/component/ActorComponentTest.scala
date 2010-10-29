@@ -1,11 +1,11 @@
-package se.scalablesolutions.akka.camel.component
+package akka.camel.component
 
 import org.apache.camel.{Endpoint, AsyncProcessor}
 import org.apache.camel.impl.DefaultCamelContext
 import org.junit._
 import org.scalatest.junit.JUnitSuite
 
-import se.scalablesolutions.akka.actor.uuidFrom
+import akka.actor.uuidFrom
 
 class ActorComponentTest extends JUnitSuite {
   val component: ActorComponent = ActorComponentTest.actorComponent

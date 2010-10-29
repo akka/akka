@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.spring
+package akka.spring
 /**
  * from http://stackoverflow.com/questions/2002685/any-conversion-from-scalas-xml-to-w3c-dom
  */

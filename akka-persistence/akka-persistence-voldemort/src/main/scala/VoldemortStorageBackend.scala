@@ -2,10 +2,10 @@
  *  Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.voldemort
+package akka.persistence.voldemort
 
-import se.scalablesolutions.akka.persistence.common._
-import se.scalablesolutions.akka.config.Config.config
+import akka.persistence.common._
+import akka.config.Config.config
 
 import voldemort.client._
 import java.lang.String
@@ -21,9 +21,10 @@ import voldemort.client.protocol.admin.{AdminClientConfig, AdminClient}
   In this case all VoldemortBackend operations can be retried until successful, and data should remain consistent
  */
 
-private[akka] object VoldemortStorageBackend extends KVStorageBackend {
+private[akka] object VoldemortStorageBackend extends CommonStorageBackend {
 
-  import KVAccess._
+  import CommonStorageBackendAccess._
+  import KVStorageBackend._
   import VoldemortAccess._
 
   val bootstrapUrlsProp = "bootstrap_urls"
@@ -38,10 +39,10 @@ private[akka] object VoldemortStorageBackend extends KVStorageBackend {
 
 
   var storeClientFactory: StoreClientFactory = null
-  var refs: KVAccess = null
-  var maps: KVAccess = null
-  var vectors: KVAccess = null
-  var queues: KVAccess = null
+  var refs: KVStorageBackendAccess = null
+  var maps: KVStorageBackendAccess = null
+  var vectors: KVStorageBackendAccess = null
+  var queues: KVStorageBackendAccess = null
   resetAccess
 
   def refAccess = refs
@@ -57,8 +58,8 @@ private[akka] object VoldemortStorageBackend extends KVStorageBackend {
     var admin: AdminClient = null
   }
 
-  class VoldemortAccess(val store: String) extends KVAccess {
-
+  class VoldemortAccess(val store: String) extends KVStorageBackendAccess {
+    import KVStorageBackend._
     import VoldemortAccess._
 
     val client: StoreClient[Array[Byte], Array[Byte]] = VoldemortStorageBackend.storeClientFactory.getStoreClient(store)

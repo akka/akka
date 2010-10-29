@@ -13,7 +13,7 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
   <akka:property-placeholder location="akka-test.conf"/>
 
   <akka:untyped-actor id="actor-1"
-                      implementation="se.scalablesolutions.akka.spring.foo.PingActor"
+                      implementation="akka.spring.foo.PingActor"
                       timeout="${akka.actor.timeout}">
     <akka:remote host="${akka.remote.server.hostname}" port="${akka.remote.server.port}"/>
   </akka:untyped-actor>

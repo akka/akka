@@ -1,10 +1,10 @@
-package se.scalablesolutions.akka.actor.dispatch
+package akka.actor.dispatch
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import org.scalatest.matchers.MustMatchers
 import java.util.concurrent.CountDownLatch
-import se.scalablesolutions.akka.actor.Actor
+import akka.actor.Actor
 import Actor._
 
 /**

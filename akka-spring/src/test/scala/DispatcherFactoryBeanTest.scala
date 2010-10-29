@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.dispatch.MessageDispatcher
+import akka.config.Supervision._
+import akka.dispatch.MessageDispatcher
 
 @RunWith(classOf[JUnitRunner])
 class DispatcherFactoryBeanTest extends Spec with ShouldMatchers {

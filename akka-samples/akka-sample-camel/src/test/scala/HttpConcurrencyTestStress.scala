@@ -7,12 +7,12 @@ import java.util.concurrent.CountDownLatch
 import org.junit._
 import org.scalatest.junit.JUnitSuite
 
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{ActorRegistry, ActorRef, Actor}
-import se.scalablesolutions.akka.camel._
-import se.scalablesolutions.akka.camel.CamelServiceManager._
-import se.scalablesolutions.akka.routing.CyclicIterator
-import se.scalablesolutions.akka.routing.Routing._
+import akka.actor.Actor._
+import akka.actor.{ActorRegistry, ActorRef, Actor}
+import akka.camel._
+import akka.camel.CamelServiceManager._
+import akka.routing.CyclicIterator
+import akka.routing.Routing._
 
 /**
  * @author Martin Krasser

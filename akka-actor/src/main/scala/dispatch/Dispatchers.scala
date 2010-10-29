@@ -2,12 +2,12 @@
  *   Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dispatch
+package akka.dispatch
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
-import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.util.{Duration, Logging}
-import se.scalablesolutions.akka.actor.newUuid
+import akka.actor.{Actor, ActorRef}
+import akka.config.Config._
+import akka.util.{Duration, Logging}
+import akka.actor.newUuid
 
 import net.lag.configgy.ConfigMap
 
@@ -67,7 +67,7 @@ object Dispatchers extends Logging {
    * <p/>
    * Can be beneficial to use the <code>HawtDispatcher.pin(self)</code> to "pin" an actor to a specific thread.
    * <p/>
-   * See the ScalaDoc for the {@link se.scalablesolutions.akka.dispatch.HawtDispatcher} for details.
+   * See the ScalaDoc for the {@link akka.dispatch.HawtDispatcher} for details.
    */
   def newHawtDispatcher(aggregate: Boolean) = new HawtDispatcher(aggregate)
 

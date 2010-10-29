@@ -1,11 +1,11 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 
 import foo.{IMyPojo, MyPojo, PingActor}
-import se.scalablesolutions.akka.dispatch._
+import akka.dispatch._
 import org.scalatest.FeatureSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
@@ -16,7 +16,7 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.support.ClassPathXmlApplicationContext
 import org.springframework.core.io.{ClassPathResource, Resource}
 import java.util.concurrent._
-import se.scalablesolutions.akka.actor.{UntypedActor, Actor, ActorRef}
+import akka.actor.{UntypedActor, Actor, ActorRef}
 
 
 

@@ -2,14 +2,14 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dispatch
+package akka.dispatch
 
 import java.util.Collection
 import java.util.concurrent._
 import atomic.{AtomicLong, AtomicInteger}
 import ThreadPoolExecutor.CallerRunsPolicy
 
-import se.scalablesolutions.akka.util. {Duration, Logging}
+import akka.util. {Duration, Logging}
 
 object ThreadPoolConfig {
   type Bounds = Int

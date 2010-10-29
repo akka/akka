@@ -1,6 +1,6 @@
 <aspectwerkz>
   <system id="akka">
-    <package name="se.scalablesolutions.akka.actor">
+    <package name="akka.actor">
       <aspect class="TypedActorAspect" />
       <aspect class="ServerManagedTypedActorAspect" />
     </package>

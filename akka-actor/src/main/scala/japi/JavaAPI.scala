@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.japi
+package akka.japi
 
 /**
  * A Function interface. Used to create first-class-functions is Java (sort of).

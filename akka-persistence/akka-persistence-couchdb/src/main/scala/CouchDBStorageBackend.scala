@@ -1,9 +1,9 @@
-package se.scalablesolutions.akka.persistence.couchdb
+package akka.persistence.couchdb
 
-import se.scalablesolutions.akka.stm._
-import se.scalablesolutions.akka.persistence.common._
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.config.Config.config
+import akka.stm._
+import akka.persistence.common._
+import akka.util.Logging
+import akka.config.Config.config
 
 
 import org.apache.commons.httpclient.methods.{GetMethod, PostMethod, PutMethod, DeleteMethod}

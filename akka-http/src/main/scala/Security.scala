@@ -20,12 +20,12 @@
  * All cred to the Lift team (www.liftweb.com), especially David Pollak and Tim Perrett
  */
 
-package se.scalablesolutions.akka.security
+package akka.security
 
-import se.scalablesolutions.akka.actor.{Scheduler, Actor, ActorRef, ActorRegistry, IllegalActorStateException}
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.config.Config
-import se.scalablesolutions.akka.util.Logging
+import akka.actor.{Scheduler, Actor, ActorRef, ActorRegistry, IllegalActorStateException}
+import akka.actor.Actor._
+import akka.config.Config
+import akka.util.Logging
 
 import com.sun.jersey.api.model.AbstractMethod
 import com.sun.jersey.spi.container.{ResourceFilterFactory, ContainerRequest, ContainerRequestFilter, ContainerResponse, ContainerResponseFilter, ResourceFilter}

@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -11,7 +11,7 @@ import ScalaDom._
 
 import org.w3c.dom.Element
 import org.springframework.beans.factory.support.BeanDefinitionBuilder
-import se.scalablesolutions.akka.config.Supervision. {FaultHandlingStrategy, AllForOneStrategy}
+import akka.config.Supervision. {FaultHandlingStrategy, AllForOneStrategy}
 
 /**
  * Test for SupervisionBeanDefinitionParser

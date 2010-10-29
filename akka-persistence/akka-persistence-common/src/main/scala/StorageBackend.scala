@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.common
+package akka.persistence.common
 
 // abstracts persistence storage
 trait StorageBackend
@@ -27,6 +27,10 @@ trait VectorStorageBackend[T] extends StorageBackend {
   def getVectorStorageEntryFor(name: String, index: Int): T
   def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[T]
   def getVectorStorageSizeFor(name: String): Int
+  def removeVectorStorageEntryFor(name:String):Unit = {
+    //should remove the "tail" if supported
+    throw new UnsupportedOperationException("VectorStorageBackend.removeVectorStorageEntry is not supported")
+  }
 }
 
 // for Ref

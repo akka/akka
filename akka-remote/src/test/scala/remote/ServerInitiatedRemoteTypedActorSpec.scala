@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor.remote
+package akka.actor.remote
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -12,8 +12,8 @@ import org.junit.runner.RunWith
 
 import java.util.concurrent.TimeUnit
 
-import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
-import se.scalablesolutions.akka.actor._
+import akka.remote.{RemoteServer, RemoteClient}
+import akka.actor._
 import RemoteTypedActorLog._
 
 object ServerInitiatedRemoteTypedActorSpec {

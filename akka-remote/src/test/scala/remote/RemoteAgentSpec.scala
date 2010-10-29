@@ -1,10 +1,10 @@
-package se.scalablesolutions.akka.actor.remote
+package akka.actor.remote
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
-import se.scalablesolutions.akka.config.RemoteAddress
-import se.scalablesolutions.akka.actor.Agent
-import se.scalablesolutions.akka.remote. {RemoteClient, RemoteServer}
+import akka.config.RemoteAddress
+import akka.actor.Agent
+import akka.remote. {RemoteClient, RemoteServer}
 
 
 class RemoteAgentSpec extends JUnitSuite {

@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.common
+package akka.persistence.common
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -10,11 +10,11 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
-import se.scalablesolutions.akka.config.Supervision.{OneForOneStrategy, Permanent}
+import akka.actor.{Actor, ActorRef}
+import akka.config.Supervision.{OneForOneStrategy, Permanent}
 import Actor._
-import se.scalablesolutions.akka.stm.global._
-import se.scalablesolutions.akka.util.Logging
+import akka.stm.global._
+import akka.util.Logging
 import StorageObj._
 
 
@@ -34,6 +34,7 @@ case class VUPD(i: Int, v: String)
 case class VUPD_AND_ABORT(i: Int, v: String)
 case class VGET(i: Int)
 case object VSIZE
+case object VPOP
 case class VGET_AFTER_VADD(vsToAdd: List[String], isToFetch: List[Int])
 case class VADD_WITH_SLICE(vsToAdd: List[String], start: Int, cnt: Int)
 
@@ -178,6 +179,10 @@ object StorageObj {
           fooVector.slice(Some(s), None, c)
         }
         self.reply(l.map(new String(_)))
+
+      case VPOP =>
+        val p = atomic{fooVector.pop}
+        self.reply(p)
     }
   }
 }
@@ -191,7 +196,6 @@ Spec with
   def getMap: String => PersistentMap[Array[Byte], Array[Byte]]
 
   def getVector: String => PersistentVector[Array[Byte]]
-
 
   def dropMapsAndVectors: Unit
 
@@ -301,11 +305,14 @@ Spec with
       val proc = actorOf[SampleVectorStorage]
       proc.start
 
-      // add 4 elements in separate transactions
-      (proc !! VADD("debasish")).getOrElse("VADD failed") should equal(1)
-      (proc !! VADD("maulindu")).getOrElse("VADD failed") should equal(2)
-      (proc !! VADD("ramanendu")).getOrElse("VADD failed") should equal(3)
-      (proc !! VADD("nilanjan")).getOrElse("VADD failed") should equal(4)
+      // add 4 elements in separate transactions  //also test add + pop of a 5th element
+
+      (proc !! VADD("ticktock")).getOrElse("VADD failed") should equal(1)
+      (proc !! VADD("debasish")).getOrElse("VADD failed") should equal(2)
+      (proc !! VADD("maulindu")).getOrElse("VADD failed") should equal(3)
+      (proc !! VADD("ramanendu")).getOrElse("VADD failed") should equal(4)
+      (proc !! VADD("nilanjan")).getOrElse("VADD failed") should equal(5)
+      (proc !! VPOP).getOrElse("VPOP failed") should equal("ticktock".getBytes)
 
       new String((proc !! VGET(0)).get.asInstanceOf[Array[Byte]]) should equal("nilanjan")
       new String((proc !! VGET(1)).get.asInstanceOf[Array[Byte]]) should equal("ramanendu")

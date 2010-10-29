@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 import org.apache.camel.CamelContext
 import org.springframework.beans.factory.{DisposableBean, InitializingBean, FactoryBean}
 
-import se.scalablesolutions.akka.camel.{CamelContextManager, CamelService, CamelServiceFactory}
+import akka.camel.{CamelContextManager, CamelService, CamelServiceFactory}
 
 /**
  * Factory bean for a {@link CamelService}.

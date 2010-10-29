@@ -2,17 +2,17 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.jta
+package akka.jta
 
 import javax.transaction.{TransactionManager, UserTransaction,
                           Transaction => JtaTransaction, SystemException,
                           Status, Synchronization, TransactionSynchronizationRegistry}
 import javax.naming.{InitialContext, Context, NamingException}
 
-import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.stm.Transaction
-import se.scalablesolutions.akka.AkkaException
+import akka.config.Config._
+import akka.util.Logging
+import akka.stm.Transaction
+import akka.AkkaException
 
 class JtaConfigurationException(message: String) extends AkkaException(message)
 
@@ -22,7 +22,7 @@ class JtaConfigurationException(message: String) extends AkkaException(message)
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object TransactionContainer extends Logging {
-  val AKKA_JTA_TRANSACTION_SERVICE_CLASS =                "se.scalablesolutions.akka.jta.AtomikosTransactionService"
+  val AKKA_JTA_TRANSACTION_SERVICE_CLASS =                "akka.jta.AtomikosTransactionService"
   val DEFAULT_USER_TRANSACTION_NAME =                     "java:comp/UserTransaction"
   val FALLBACK_TRANSACTION_MANAGER_NAMES =                "java:comp/TransactionManager" ::
                                                           "java:appserver/TransactionManager" ::

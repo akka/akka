@@ -2,11 +2,11 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.stm
+package akka.stm
 
 import scala.collection.immutable.Vector
 
-import se.scalablesolutions.akka.actor.newUuid
+import akka.actor.newUuid
 
 import org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction
 

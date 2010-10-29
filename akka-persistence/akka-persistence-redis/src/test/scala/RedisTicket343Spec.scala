@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.persistence.redis
+package akka.persistence.redis
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -6,12 +6,12 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.actor.{Actor}
-import se.scalablesolutions.akka.config.Supervision.{OneForOneStrategy,Permanent}
+import akka.actor.{Actor}
+import akka.config.Supervision.{OneForOneStrategy,Permanent}
 import Actor._
-import se.scalablesolutions.akka.persistence.common.PersistentVector
-import se.scalablesolutions.akka.stm.global._
-import se.scalablesolutions.akka.util.Logging
+import akka.persistence.common.PersistentVector
+import akka.stm.global._
+import akka.util.Logging
 
 import RedisStorageBackend._
 

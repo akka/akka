@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.mongo
+package akka.persistence.mongo
 
-import se.scalablesolutions.akka.stm._
-import se.scalablesolutions.akka.persistence.common._
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.config.Config.config
+import akka.stm._
+import akka.persistence.common._
+import akka.util.Logging
+import akka.config.Config.config
 
 import com.novus.casbah.mongodb.Imports._
 

@@ -2,9 +2,9 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.comet
+package akka.comet
 
-import se.scalablesolutions.akka.util.Logging
+import akka.util.Logging
 
 import java.util.{List => JList}
 import javax.servlet.{ServletConfig,ServletContext}
@@ -43,7 +43,7 @@ class AtmosphereRestServlet extends ServletContainer with AtmosphereServletProce
  * Used by the Akka Kernel to bootstrap REST and Comet.
  */
 class AkkaServlet extends AtmosphereServlet {
-  import se.scalablesolutions.akka.config.Config.{config => c}
+  import akka.config.Config.{config => c}
 
   /*
    * Configure Atmosphere and Jersey (default, fall-back values)
