@@ -105,7 +105,7 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
     if ((implementation eq null) || implementation == "") throw new AkkaBeansException(
         "The 'implementation' part of the 'akka:typed-actor' element in the Spring config file can't be null or empty string")
 
-    val typedActor: AnyRef = TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig) 
+    val typedActor: AnyRef = TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
     if (isRemote && serverManaged) {
       val server = RemoteServer.getOrCreateServer(new InetSocketAddress(host, port.toInt))
       if (serviceName.isEmpty) {

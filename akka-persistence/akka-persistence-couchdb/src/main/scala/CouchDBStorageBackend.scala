@@ -23,9 +23,9 @@ private [akka] object CouchDBStorageBackend extends
   RefStorageBackend[Array[Byte]] with
   Logging {
 
-        
+
         import dispatch.json._
-        
+
         implicit object widgetWrites extends Writes[Map[String,Any]] {
                 def writes(o: Map[String,Any]): JsValue = JsValue(o)
         }
@@ -39,7 +39,7 @@ private [akka] object CouchDBStorageBackend extends
                 val delete = new DeleteMethod(URL)
                 client.executeMethod(delete)
   }
-  
+
   def create() = {
     val client = new HttpClient()
     val put = new PutMethod(URL)
@@ -48,16 +48,16 @@ private [akka] object CouchDBStorageBackend extends
           client.executeMethod(put)
     put.getResponseBodyAsString
   }
-  
+
         private def storeMap(name: String, postfix: String, entries: List[(Array[Byte], Array[Byte])]) ={
                 var m = entries.map(e=>(new String(e._1) -> new String(e._2))).toMap + ("_id" -> (name + postfix))
                 val dataJson = JsonSerialization.tojson(m)
                 postData(URL, dataJson.toString)
         }
-        
+
         private def storeMap(name: String, postfix: String, entries: Map[String, Any]) ={
     postData(URL, JsonSerialization.tojson(entries + ("_id" -> (name + postfix))).toString)
-  }     
+  }
 
   private def getResponseForNameAsMap(name: String, postfix: String): Option[Map[String, Any]] = {
     getResponse(URL + name + postfix).flatMap(JSON.parseFull(_)).asInstanceOf[Option[Map[String, Any]]]
@@ -65,43 +65,43 @@ private [akka] object CouchDBStorageBackend extends
 
 
         def insertMapStorageEntriesFor(name: String, entries: List[(Array[Byte], Array[Byte])]) ={
-                val newDoc = getResponseForNameAsMap(name, "_map").getOrElse(Map[String, Any]()) ++ 
+                val newDoc = getResponseForNameAsMap(name, "_map").getOrElse(Map[String, Any]()) ++
                   entries.map(e => (new String(e._1) -> new String(e._2))).toMap
     storeMap(name, "_map", newDoc)
         }
-        
+
   def insertMapStorageEntryFor(name: String, key: Array[Byte], value: Array[Byte])={
                 insertMapStorageEntriesFor(name, List((key, value)))
         }
-        
-        
+
+
   def removeMapStorageFor(name: String) {
     lazy val url = URL + name + "_map"
                 findDocRev(name + "_map").foreach(deleteData(url, _))
         }
-        
+
   def removeMapStorageFor(name: String, key: Array[Byte]): Unit = {
     lazy val sKey = new String(key)
     // if we can't find the map for name, then we don't need to delete it.
                 getResponseForNameAsMap(name, "_map").foreach(doc => storeMap(name, "_map", doc - sKey))
         }
-        
+
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = {
     lazy val sKey = new String(key)
     getResponseForNameAsMap(name, "_map").flatMap(_.get(sKey)).asInstanceOf[Option[String]].map(_.getBytes)
         }
-  
+
         def getMapStorageSizeFor(name: String): Int = getMapStorageFor(name).size
-        
+
   def getMapStorageFor(name: String): List[(Array[Byte], Array[Byte])] = {
                 val m = getResponseForNameAsMap(name, "_map").map(_ - ("_id", "_rev")).getOrElse(Map[String, Any]())
                 m.toList.map(e => (e._1.getBytes, e._2.asInstanceOf[String].getBytes))
         }
-  
+
         def getMapStorageRangeFor(name: String, start: Option[Array[Byte]], finish: Option[Array[Byte]], count: Int): List[(Array[Byte], Array[Byte])] = {
     val m = getResponseForNameAsMap(name, "_map").map(_ - ("_id", "_rev")).getOrElse(Map[String, Any]())
     val keys = m.keys.toList.sortWith(_ < _)
-    
+
     // if the supplied start is not defined, get the head of keys
     val s = start.map(new String(_)).getOrElse(keys.head)
 
@@ -131,7 +131,7 @@ private [akka] object CouchDBStorageBackend extends
       storeMap(name, "_vector", m + ("vector" -> v.updated(index, new String(elem))))
     }
   }
-  
+
   def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] ={
                 val v = getResponseForNameAsMap(name, "_vector").flatMap(_.get("vector")).getOrElse(List[String]()).asInstanceOf[List[String]]
                 if (v.indices.contains(index))
@@ -139,7 +139,7 @@ private [akka] object CouchDBStorageBackend extends
                 else
                   Array[Byte]()
         }
-        
+
   def getVectorStorageSizeFor(name: String): Int ={
                 getResponseForNameAsMap(name, "_vector").flatMap(_.get("vector")).map(_.asInstanceOf[List[String]].size).getOrElse(0)
         }
@@ -151,12 +151,12 @@ private [akka] object CouchDBStorageBackend extends
     val c = if (count == 0) v.length else count
     v.slice(s, scala.math.min(s + c, f)).map(_.getBytes)
   }
-        
+
   def insertRefStorageFor(name: String, element: Array[Byte]) ={
                 val newDoc = getResponseForNameAsMap(name, "_ref").getOrElse(Map[String, Any]()) + ("ref" -> new String(element))
                 storeMap(name, "_ref", newDoc)
         }
-        
+
         def getRefStorageFor(name: String): Option[Array[Byte]] ={
                 getResponseForNameAsMap(name, "_ref").flatMap(_.get("ref")).map(_.asInstanceOf[String].getBytes)
         }
@@ -171,7 +171,7 @@ private [akka] object CouchDBStorageBackend extends
                 val delete = new DeleteMethod(url)
                 delete.setRequestHeader("If-Match", rev)
                 client.executeMethod(delete)
-                
+
                 val response = delete.getResponseBodyAsString()
                 if (response != null)
                   Some(response)
@@ -191,7 +191,7 @@ private [akka] object CouchDBStorageBackend extends
         else
           None
         }
-        
+
         private def getResponse(url: String): Option[String] = {
         val client = new HttpClient()
         val method = new GetMethod(url)

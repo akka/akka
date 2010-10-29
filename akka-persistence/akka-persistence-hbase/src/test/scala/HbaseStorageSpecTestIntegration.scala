@@ -8,17 +8,17 @@ import org.scalatest.BeforeAndAfterEach
 class HbaseStorageSpecTestIntegration extends
 Spec with
 ShouldMatchers with
-BeforeAndAfterAll with 
+BeforeAndAfterAll with
 BeforeAndAfterEach {
-  
+
   import org.apache.hadoop.hbase.HBaseTestingUtility
-  
+
   val testUtil = new HBaseTestingUtility
-  
+
   override def beforeAll {
     testUtil.startMiniCluster
   }
-  
+
   override def afterAll {
     testUtil.shutdownMiniCluster
   }
@@ -26,11 +26,11 @@ BeforeAndAfterEach {
   override def beforeEach {
     HbaseStorageBackend.drop
   }
-  
+
   override def afterEach {
     HbaseStorageBackend.drop
   }
- 
+
   describe("persistent maps") {
     it("should insert with single key and value") {
       import HbaseStorageBackend._
@@ -70,8 +70,8 @@ BeforeAndAfterEach {
     it("should do proper range queries") {
       import HbaseStorageBackend._
       val l = List(
-        ("bjarne stroustrup", "c++"), 
-        ("martin odersky", "scala"), 
+        ("bjarne stroustrup", "c++"),
+        ("martin odersky", "scala"),
         ("james gosling", "java"),
         ("yukihiro matsumoto", "ruby"),
         ("slava pestov", "factor"),
@@ -82,11 +82,11 @@ BeforeAndAfterEach {
         ("guido van rossum", "python"),
         ("james strachan", "groovy"))
       val rl = List(
-        ("james gosling", "java"), 
-        ("james strachan", "groovy"), 
-        ("larry wall", "perl"), 
-        ("martin odersky", "scala"), 
-        ("ola bini", "ioke"), ("rich hickey", "clojure"), 
+        ("james gosling", "java"),
+        ("james strachan", "groovy"),
+        ("larry wall", "perl"),
+        ("martin odersky", "scala"),
+        ("ola bini", "ioke"), ("rich hickey", "clojure"),
         ("slava pestov", "factor"))
       insertMapStorageEntriesFor("t1", l.map { case (k, v) => (k.getBytes, v.getBytes) })
       getMapStorageSizeFor("t1") should equal(l.size)
@@ -166,7 +166,7 @@ BeforeAndAfterEach {
   describe("persistent refs") {
     it("should insert a ref") {
       import HbaseStorageBackend._
-      
+
       insertRefStorageFor("t1", "martin odersky".getBytes)
       new String(getRefStorageFor("t1").get) should equal("martin odersky")
       insertRefStorageFor("t1", "james gosling".getBytes)

@@ -143,7 +143,7 @@ class HawtDispatcher(val aggregate: Boolean = true, val parent: DispatchQueue = 
   import HawtDispatcher._
 
   val mailboxType: Option[MailboxType] = None
- 
+
   private[akka] def start { retainNonDaemon }
 
   private[akka] def shutdown { releaseNonDaemon }

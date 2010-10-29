@@ -9,7 +9,7 @@ import java.util.concurrent.CyclicBarrier
 class HotSwapSpec extends WordSpec with MustMatchers {
 
   "An Actor" should {
-    
+
     "be able to hotswap its behavior with HotSwap(..)" in {
       val barrier = new CyclicBarrier(2)
       @volatile var _log = ""
@@ -17,7 +17,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
         def receive = { case _ => _log += "default" }
       }).start
       a ! HotSwap {
-        case _ => 
+        case _ =>
           _log += "swapped"
           barrier.await
       }
@@ -31,17 +31,17 @@ class HotSwapSpec extends WordSpec with MustMatchers {
       @volatile var _log = ""
       val a = actorOf(new Actor {
         def receive = {
-          case "init" => 
+          case "init" =>
             _log += "init"
             barrier.await
           case "swap" => become({
-            case _ => 
+            case _ =>
               _log += "swapped"
               barrier.await
           })
         }
       }).start
-      
+
       a ! "init"
       barrier.await
       _log must be ("init")
@@ -72,7 +72,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
       barrier.reset
       _log = ""
       a ! HotSwap {
-        case "swapped" => 
+        case "swapped" =>
           _log += "swapped"
           barrier.await
       }
@@ -104,21 +104,21 @@ class HotSwapSpec extends WordSpec with MustMatchers {
       @volatile var _log = ""
       val a = actorOf(new Actor {
         def receive = {
-          case "init" => 
+          case "init" =>
             _log += "init"
             barrier.await
-          case "swap" => 
+          case "swap" =>
             become({
-              case "swapped" => 
+              case "swapped" =>
                 _log += "swapped"
                 barrier.await
-              case "revert" => 
+              case "revert" =>
                 unbecome
             })
             barrier.await
         }
       }).start
-      
+
       a ! "init"
       barrier.await
       _log must be ("init")

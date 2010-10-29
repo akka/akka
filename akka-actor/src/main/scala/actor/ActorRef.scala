@@ -805,7 +805,7 @@ class LocalActorRef private[akka] (
       receiveTimeout = None
       cancelReceiveTimeout
       dispatcher.detach(this)
-      transactorConfig = transactorConfig.copy(factory = None) 
+      transactorConfig = transactorConfig.copy(factory = None)
       _status = ActorRefInternals.SHUTDOWN
       actor.postStop
       ActorRegistry.unregister(this)
@@ -1067,7 +1067,7 @@ class LocalActorRef private[akka] (
           case Temporary => shutDownTemporaryActor(this)
           case _ =>
             val failedActor = actorInstance.get
-            
+
             // either permanent or none where default is permanent
             Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
             Actor.log.debug("Restarting linked actors for actor [%s].", id)

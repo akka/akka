@@ -147,7 +147,7 @@ class RestartStrategySpec extends JUnitSuite {
 
     slave ! Ping
     slave ! Crash
-  
+
     assert(secondRestartLatch.tryAwait(1, TimeUnit.SECONDS))
     assert(secondPingLatch.tryAwait(1, TimeUnit.SECONDS))
 
@@ -224,7 +224,7 @@ class RestartStrategySpec extends JUnitSuite {
 
     val restartLatch,stopLatch,maxNoOfRestartsLatch = new StandardLatch
     val countDownLatch = new CountDownLatch(2)
-      
+
     val boss = actorOf(new Actor{
       self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), None, Some(1000))
       protected def receive = {
@@ -238,7 +238,7 @@ class RestartStrategySpec extends JUnitSuite {
         case Ping => countDownLatch.countDown
         case Crash => throw new Exception("Crashing...")
       }
-      
+
       override def postRestart(reason: Throwable) = {
         restartLatch.open
       }
