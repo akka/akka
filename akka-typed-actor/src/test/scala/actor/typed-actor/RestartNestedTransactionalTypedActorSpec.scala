@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import org.scalatest.Spec
 import org.scalatest.Assertions
@@ -11,11 +11,11 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.config.Config
-import se.scalablesolutions.akka.config._
-import se.scalablesolutions.akka.config.TypedActorConfigurator
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.actor._
+import akka.config.Config
+import akka.config._
+import akka.config.TypedActorConfigurator
+import akka.config.Supervision._
+import akka.actor._
 
 @RunWith(classOf[JUnitRunner])
 class RestartNestedTransactionalTypedActorSpec extends

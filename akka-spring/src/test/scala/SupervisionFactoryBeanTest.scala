@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.config.TypedActorConfigurator
+import akka.config.Supervision._
+import akka.config.TypedActorConfigurator
 
 private[akka] class Foo
 
@@ -16,7 +16,7 @@ private[akka] class Foo
 class SupervisionFactoryBeanTest extends Spec with ShouldMatchers {
 
   val faultHandlingStrategy = new AllForOneStrategy(List(classOf[Exception]), 3, 1000)
-  val typedActors = List(createTypedActorProperties("se.scalablesolutions.akka.spring.Foo", "1000"))
+  val typedActors = List(createTypedActorProperties("akka.spring.Foo", "1000"))
 
   private def createTypedActorProperties(target: String, timeout: String) : ActorProperties = {
     val properties = new ActorProperties()

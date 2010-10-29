@@ -1,11 +1,11 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 
 import foo.{PingActor, IMyPojo, MyPojo}
-import se.scalablesolutions.akka.dispatch.FutureTimeoutException
+import akka.dispatch.FutureTimeoutException
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
@@ -15,10 +15,10 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.support.ClassPathXmlApplicationContext
 import org.springframework.core.io.{ClassPathResource, Resource}
 import org.scalatest.{BeforeAndAfterAll, FeatureSpec}
-import se.scalablesolutions.akka.remote.{RemoteClient, RemoteServer, RemoteNode}
+import akka.remote.{RemoteClient, RemoteServer, RemoteNode}
 import java.util.concurrent.CountDownLatch
-import se.scalablesolutions.akka.actor.{TypedActor, RemoteTypedActorOne, Actor}
-import se.scalablesolutions.akka.actor.remote.RemoteTypedActorOneImpl
+import akka.actor.{TypedActor, RemoteTypedActorOne, Actor}
+import akka.actor.remote.RemoteTypedActorOneImpl
 
 /**
  * Tests for spring configuration of typed actors.

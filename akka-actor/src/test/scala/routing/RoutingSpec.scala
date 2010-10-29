@@ -1,8 +1,8 @@
-package se.scalablesolutions.akka.actor.routing
+package akka.actor.routing
 
-import se.scalablesolutions.akka.actor.Actor
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.util.Logging
+import akka.actor.Actor
+import akka.actor.Actor._
+import akka.util.Logging
 
 import org.scalatest.Suite
 import org.junit.runner.RunWith
@@ -12,7 +12,7 @@ import org.junit.Test
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import se.scalablesolutions.akka.routing._
+import akka.routing._
 
 @RunWith(classOf[JUnitRunner])
 class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers with Logging {
@@ -134,7 +134,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
   }
 
   @Test def testIsDefinedAt = {
-        import se.scalablesolutions.akka.actor.ActorRef
+        import akka.actor.ActorRef
 
         val (testMsg1,testMsg2,testMsg3,testMsg4) = ("test1","test2","test3","test4")
 

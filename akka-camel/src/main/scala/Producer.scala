@@ -2,14 +2,14 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.camel
+package akka.camel
 
 import CamelMessageConversion.toExchangeAdapter
 
 import org.apache.camel._
 import org.apache.camel.processor.SendProcessor
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef, UntypedActor}
+import akka.actor.{Actor, ActorRef, UntypedActor}
 
 /**
  * Support trait for producing messages to Camel endpoints.

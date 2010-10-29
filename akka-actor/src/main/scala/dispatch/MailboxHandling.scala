@@ -2,16 +2,16 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dispatch
+package akka.dispatch
 
-import se.scalablesolutions.akka.actor.{Actor, ActorType, ActorRef, ActorInitializationException}
-import se.scalablesolutions.akka.util.ReflectiveAccess.EnterpriseModule
-import se.scalablesolutions.akka.AkkaException
+import akka.actor.{Actor, ActorType, ActorRef, ActorInitializationException}
+import akka.util.ReflectiveAccess.EnterpriseModule
+import akka.AkkaException
 
 import java.util.{Queue, List}
 import java.util.concurrent._
 import concurrent.forkjoin.LinkedTransferQueue
-import se.scalablesolutions.akka.util._
+import akka.util._
 
 class MessageQueueAppendFailedException(message: String) extends AkkaException(message)
 
@@ -90,7 +90,7 @@ trait MailboxFactory {
   /**
    * Creates a MessageQueue (Mailbox) with the specified properties.
    */
-  protected def createMailbox(actorRef: ActorRef): AnyRef = 
+  private[akka] def createMailbox(actorRef: ActorRef): AnyRef =
     mailboxType.getOrElse(throw new IllegalStateException("No mailbox type defined")) match {
       case mb: TransientMailboxType => createTransientMailbox(actorRef, mb)
       case mb: DurableMailboxType   => createDurableMailbox(actorRef, mb)
@@ -99,10 +99,10 @@ trait MailboxFactory {
   /**
    *  Creates and returns a transient mailbox for the given actor.
    */
-  protected def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef
+  private[akka] def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef
 
   /**
    *  Creates and returns a durable mailbox for the given actor.
    */
-  protected def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef
+  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef
 }

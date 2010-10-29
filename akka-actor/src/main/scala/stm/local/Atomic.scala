@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.stm.local
+package akka.stm.local
 
 /**
  * Java-friendly atomic blocks.
@@ -10,8 +10,8 @@ package se.scalablesolutions.akka.stm.local
  * Example usage (in Java):
  * <p/>
  * <pre>
- * import se.scalablesolutions.akka.stm.*;
- * import se.scalablesolutions.akka.stm.local.Atomic;
+ * import akka.stm.*;
+ * import akka.stm.local.Atomic;
  *
  * final Ref<Integer> ref = new Ref<Integer>(0);
  *

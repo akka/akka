@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.japi
+package akka.japi
 
 import org.scalatest.junit.JUnitSuite
 

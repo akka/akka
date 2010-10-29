@@ -1,6 +1,6 @@
-package se.scalablesolutions.akka.remote
+package akka.remote
 
-import se.scalablesolutions.akka.actor.Actor
+import akka.actor.Actor
 
 import Actor._
 

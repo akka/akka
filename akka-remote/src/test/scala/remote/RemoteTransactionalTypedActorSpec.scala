@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import org.scalatest.Spec
 import org.scalatest.Assertions
@@ -12,9 +12,9 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import org.junit.{Test, Before, After}
 
-import se.scalablesolutions.akka.config.Config
-import se.scalablesolutions.akka.config.TypedActorConfigurator
-import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient}
+import akka.config.Config
+import akka.config.TypedActorConfigurator
+import akka.remote.{RemoteNode, RemoteServer, RemoteClient}
 
 object RemoteTransactionalTypedActorSpec {
   val HOSTNAME = "localhost"

@@ -4,19 +4,19 @@
 
 package sample.rest.scala
 
-import se.scalablesolutions.akka.actor.{Transactor, SupervisorFactory, Actor}
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.stm.TransactionalMap
-import se.scalablesolutions.akka.persistence.cassandra.CassandraStorage
-import se.scalablesolutions.akka.config.Supervision._
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.comet.AkkaClusterBroadcastFilter
+import akka.actor.{Transactor, SupervisorFactory, Actor}
+import akka.actor.Actor._
+import akka.stm.TransactionalMap
+import akka.persistence.cassandra.CassandraStorage
+import akka.config.Supervision._
+import akka.util.Logging
+import akka.comet.AkkaClusterBroadcastFilter
 import scala.xml.NodeSeq
 import java.lang.Integer
 import java.nio.ByteBuffer
 import javax.ws.rs.core.MultivaluedMap
 import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes,PathParam}
-import se.scalablesolutions.akka.actor.ActorRegistry.actorFor
+import akka.actor.ActorRegistry.actorFor
 import org.atmosphere.annotation.{Broadcast, Suspend,Cluster}
 import org.atmosphere.util.XSSHtmlFilter
 import org.atmosphere.cpr.{Broadcaster, BroadcastFilter}

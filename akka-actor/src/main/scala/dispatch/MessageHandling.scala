@@ -2,17 +2,14 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dispatch
-
-import se.scalablesolutions.akka.actor.{Actor, ActorRef, Uuid, ActorInitializationException}
-import se.scalablesolutions.akka.util.{SimpleLock, Duration, HashCode, Logging}
-import se.scalablesolutions.akka.util.ReflectiveAccess.EnterpriseModule
-import se.scalablesolutions.akka.AkkaException
+package akka.dispatch
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 
-import java.util.{Queue, List}
 import java.util.concurrent._
+import atomic. {AtomicInteger, AtomicBoolean, AtomicReference, AtomicLong}
+import akka.util. {Switch, ReentrantGuard, Logging, HashCode}
+import akka.actor._
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -55,36 +52,125 @@ final class MessageInvocation(val receiver: ActorRef,
   }
 }
 
+object MessageDispatcher {
+  val UNSCHEDULED = 0
+  val SCHEDULED = 1
+  val RESCHEDULED = 2
+}
+
 /**
  *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait MessageDispatcher extends MailboxFactory with Logging {
-  
+  import MessageDispatcher._
   protected val uuids = new ConcurrentSkipListSet[Uuid]
-  
-  def dispatch(invocation: MessageInvocation): Unit
+  protected val guard = new ReentrantGuard
+  private var shutdownSchedule = UNSCHEDULED //This can be non-volatile since it is protected by guard withGuard
+  protected val active = new Switch(false)
 
-  def start: Unit
+  /**
+   * Attaches the specified actorRef to this dispatcher
+   */
+  final def attach(actorRef: ActorRef): Unit = guard withGuard {
+    register(actorRef)
+  }
 
-  def shutdown: Unit
+  /**
+   * Detaches the specified actorRef from this dispatcher
+   */
+  final def detach(actorRef: ActorRef): Unit = guard withGuard {
+    unregister(actorRef)
+  }
 
-  def register(actorRef: ActorRef) {
+  private[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = if (active.isOn) {
+    dispatch(invocation)
+  } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
+
+  private[akka] def register(actorRef: ActorRef) {
     if (actorRef.mailbox eq null) actorRef.mailbox = createMailbox(actorRef)
     uuids add actorRef.uuid
+    if (active.isOff) {
+      active.switchOn {
+        start
+      }
+    }
   }
   
-  def unregister(actorRef: ActorRef) = {
-    uuids remove actorRef.uuid
-    actorRef.mailbox = null
-    if (canBeShutDown) shutdown // shut down in the dispatcher's references is zero
+  private[akka] def unregister(actorRef: ActorRef) = {
+    if (uuids remove actorRef.uuid) {
+      actorRef.mailbox = null
+      if (uuids.isEmpty){
+        shutdownSchedule match {
+          case UNSCHEDULED =>
+            shutdownSchedule = SCHEDULED
+            Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
+          case SCHEDULED =>
+            shutdownSchedule = RESCHEDULED
+          case RESCHEDULED => //Already marked for reschedule
+        }
+      }
+    }
   }
-  
-  def suspend(actorRef: ActorRef): Unit
-  def resume(actorRef: ActorRef): Unit
-  
-  def canBeShutDown: Boolean = uuids.isEmpty
 
-  def isShutdown: Boolean
+  /**
+   * Traverses the list of actors (uuids) currently being attached to this dispatcher and stops those actors
+   */
+  def stopAllAttachedActors {
+    val i = uuids.iterator
+    while(i.hasNext()) {
+      val uuid = i.next()
+      ActorRegistry.actorFor(uuid) match {
+        case Some(actor) => actor.stop
+        case None =>
+          log.error("stopAllLinkedActors couldn't find linked actor: " + uuid)
+      }
+    }
+  }
+
+  private val shutdownAction = new Runnable {
+    def run = guard withGuard {
+      shutdownSchedule match {
+        case RESCHEDULED =>
+          shutdownSchedule = SCHEDULED
+          Scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
+        case SCHEDULED =>
+          if (uuids.isEmpty()) {
+            active switchOff {
+              shutdown // shut down in the dispatcher's references is zero
+            }
+          }
+          shutdownSchedule = UNSCHEDULED
+        case UNSCHEDULED => //Do nothing
+      }
+    }
+  }
+
+  private[akka] def timeoutMs: Long = 1000
+
+  /**
+   * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
+   */
+  def suspend(actorRef: ActorRef): Unit
+
+  /*
+   * After the call to this method, the dispatcher must begin any new message processing for the specified reference
+   */
+  def resume(actorRef: ActorRef): Unit
+
+  /**
+   *   Will be called when the dispatcher is to queue an invocation for execution
+   */
+  private[akka] def dispatch(invocation: MessageInvocation): Unit
+
+  /**
+   * Called one time every time an actor is attached to this dispatcher and this dispatcher was previously shutdown
+   */
+  private[akka] def start: Unit
+
+  /**
+   * Called one time every time an actor is detached from this dispatcher and this dispatcher has no actors left attached
+   */
+  private[akka] def shutdown: Unit
 
   /**
    * Returns the size of the mailbox for the specified actor

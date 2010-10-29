@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test

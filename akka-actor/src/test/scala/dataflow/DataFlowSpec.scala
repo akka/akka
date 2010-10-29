@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dataflow
+package akka.dataflow
 
 import org.scalatest.Spec
 import org.scalatest.Assertions
@@ -11,11 +11,11 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.dispatch.DefaultCompletableFuture
+import akka.dispatch.DefaultCompletableFuture
 import java.util.concurrent.{TimeUnit, CountDownLatch}
 import annotation.tailrec
 import java.util.concurrent.atomic.{AtomicLong, AtomicReference, AtomicInteger}
-import se.scalablesolutions.akka.actor.ActorRegistry
+import akka.actor.ActorRegistry
 
 @RunWith(classOf[JUnitRunner])
 class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
@@ -28,8 +28,8 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
         val x, y, z = new DataFlowVariable[Int]
         thread {
           z << x() + y()
-          latch.countDown
           result.set(z())
+          latch.countDown
         }
         thread { x << 40 }
         thread { y << 2 }

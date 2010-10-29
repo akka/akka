@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.stm
+package akka.stm
 
 import java.lang.{Boolean => JBoolean}
 
-import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.util.Duration
+import akka.config.Config._
+import akka.util.Duration
 
 import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
 import org.multiverse.stms.alpha.AlphaStm

@@ -13,21 +13,21 @@
  * Rework of David Pollak's ActorPing class in the Lift Project
  * which is licensed under the Apache 2 License.
  */
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import scala.collection.JavaConversions
 
 import java.util.concurrent._
 
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.AkkaException
+import akka.util.Logging
+import akka.AkkaException
 
 object Scheduler extends Logging {
   import Actor._
 
   case class SchedulerException(msg: String, e: Throwable) extends RuntimeException(msg, e)
 
-  private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
+  @volatile private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
 
   log.info("Starting up Scheduler")
 
@@ -108,12 +108,12 @@ object Scheduler extends Logging {
     }
   }
 
-  def shutdown = {
+  def shutdown: Unit = synchronized {
     log.info("Shutting down Scheduler")
     service.shutdown
   }
 
-  def restart = {
+  def restart: Unit = synchronized {
     log.info("Restarting Scheduler")
     shutdown
     service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)

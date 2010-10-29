@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.persistence.mongo
+package akka.persistence.mongo
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers

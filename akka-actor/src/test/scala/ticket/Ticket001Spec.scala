@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.actor.ticket
+package akka.actor.ticket
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers

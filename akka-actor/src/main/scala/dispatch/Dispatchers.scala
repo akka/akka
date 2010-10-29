@@ -2,12 +2,12 @@
  *   Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dispatch
+package akka.dispatch
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
-import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.util.{Duration, Logging}
-import se.scalablesolutions.akka.actor.newUuid
+import akka.actor.{Actor, ActorRef}
+import akka.config.Config._
+import akka.util.{Duration, Logging}
+import akka.actor.newUuid
 
 import net.lag.configgy.ConfigMap
 
@@ -52,7 +52,7 @@ object Dispatchers extends Logging {
   val MAILBOX_PUSH_TIME_OUT           = Duration(config.getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time", 10), TIME_UNIT)
   val THROUGHPUT_DEADLINE_TIME        = Duration(config.getInt("akka.actor.throughput-deadline-time",-1), TIME_UNIT)
   val THROUGHPUT_DEADLINE_TIME_MILLIS = THROUGHPUT_DEADLINE_TIME.toMillis.toInt
-  val MAILBOX_TYPE                    = if (MAILBOX_CAPACITY < 0) UnboundedMailbox() else BoundedMailbox()
+  val MAILBOX_TYPE: MailboxType       = if (MAILBOX_CAPACITY < 0) UnboundedMailbox() else BoundedMailbox()
 
   lazy val defaultGlobalDispatcher = {
     config.getConfigMap("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalExecutorBasedEventDrivenDispatcher)
@@ -60,20 +60,14 @@ object Dispatchers extends Logging {
 
   object globalHawtDispatcher extends HawtDispatcher
 
-  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher(
-    "global", THROUGHPUT, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE) {
-    override def register(actor: ActorRef) = {
-      if (isShutdown) init
-      super.register(actor)
-    }
-  }
+  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global", THROUGHPUT, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE)
 
   /**
    * Creates an event-driven dispatcher based on the excellent HawtDispatch library.
    * <p/>
    * Can be beneficial to use the <code>HawtDispatcher.pin(self)</code> to "pin" an actor to a specific thread.
    * <p/>
-   * See the ScalaDoc for the {@link se.scalablesolutions.akka.dispatch.HawtDispatcher} for details.
+   * See the ScalaDoc for the {@link akka.dispatch.HawtDispatcher} for details.
    */
   def newHawtDispatcher(aggregate: Boolean) = new HawtDispatcher(aggregate)
 
@@ -83,11 +77,12 @@ object Dispatchers extends Logging {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(actor: ActorRef) = new ThreadBasedDispatcher(actor, BoundedMailbox(true))
+  def newThreadBasedDispatcher(actor: ActorRef) = new ThreadBasedDispatcher(actor)
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
    * Uses the default timeout
+   * If capacity is negative, it's Integer.MAX_VALUE
    * <p/>
    * E.g. each actor consumes its own thread.
    */
@@ -95,6 +90,7 @@ object Dispatchers extends Logging {
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
+   * If capacity is negative, it's Integer.MAX_VALUE
    * <p/>
    * E.g. each actor consumes its own thread.
    */
@@ -106,7 +102,8 @@ object Dispatchers extends Logging {
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String) = new ExecutorBasedEventDrivenDispatcher(name)
+  def newExecutorBasedEventDrivenDispatcher(name: String) =
+    ThreadPoolConfigDispatcherBuilder(config => new ExecutorBasedEventDrivenDispatcher(name,config),ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
@@ -114,7 +111,8 @@ object Dispatchers extends Logging {
    * Has a fluent builder interface for configuring its semantics.
    */
   def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, mailboxType: MailboxType) =
-    new ExecutorBasedEventDrivenDispatcher(name, throughput, mailboxType)
+    ThreadPoolConfigDispatcherBuilder(config =>
+      new ExecutorBasedEventDrivenDispatcher(name, throughput, THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType, config),ThreadPoolConfig())
 
 
   /**
@@ -122,30 +120,32 @@ object Dispatchers extends Logging {
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) = 
-    new ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineMs, mailboxType)
+  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) =
+    ThreadPoolConfigDispatcherBuilder(config =>
+      new ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineMs, mailboxType, config),ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher with work stealing (TODO: better doc) serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String) = new ExecutorBasedEventDrivenWorkStealingDispatcher(name)
+  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String): ThreadPoolConfigDispatcherBuilder =
+    newExecutorBasedEventDrivenWorkStealingDispatcher(name,MAILBOX_TYPE)
 
   /**
    * Creates a executor-based event-driven dispatcher with work stealing (TODO: better doc) serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, mailboxType: MailboxType) = 
-    new ExecutorBasedEventDrivenWorkStealingDispatcher(name, mailboxType = mailboxType)
+  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, mailboxType: MailboxType) =
+    ThreadPoolConfigDispatcherBuilder(config => new ExecutorBasedEventDrivenWorkStealingDispatcher(name,mailboxType,config),ThreadPoolConfig())
 
   /**
    * Utility function that tries to load the specified dispatcher config from the akka.conf
    * or else use the supplied default dispatcher
    */
   def fromConfig(key: String, default: => MessageDispatcher = defaultGlobalDispatcher): MessageDispatcher =
-    config.getConfigMap(key).flatMap(from).getOrElse(default)
+    config getConfigMap key flatMap from getOrElse default
 
   /*
    * Creates of obtains a dispatcher from a ConfigMap according to the format below
@@ -172,23 +172,23 @@ object Dispatchers extends Logging {
   def from(cfg: ConfigMap): Option[MessageDispatcher] = {
     lazy val name = cfg.getString("name", newUuid.toString)
 
-    def threadPoolConfig(b: ThreadPoolBuilder) {
-      b.configureIfPossible( builder => {
-        cfg.getInt("keep-alive-time").foreach(time => builder.setKeepAliveTimeInMillis(Duration(time, TIME_UNIT).toMillis.toInt))
-        cfg.getDouble("core-pool-size-factor").foreach(builder.setCorePoolSizeFromFactor(_))
-        cfg.getDouble("max-pool-size-factor").foreach(builder.setMaxPoolSizeFromFactor(_))
-        cfg.getInt("executor-bounds").foreach(builder.setExecutorBounds(_))
-        cfg.getBool("allow-core-timeout").foreach(builder.setAllowCoreThreadTimeout(_))
-        cfg.getInt("mailbox-capacity").foreach(builder.setMailboxCapacity(_))
+    def configureThreadPool(createDispatcher: => (ThreadPoolConfig) => MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
+      import ThreadPoolConfigDispatcherBuilder.conf_?
 
-        cfg.getString("rejection-policy").map({
+      //Apply the following options to the config if they are present in the cfg
+      ThreadPoolConfigDispatcherBuilder(createDispatcher,ThreadPoolConfig()).configure(
+        conf_?(cfg getInt    "keep-alive-time"      )(time   => _.setKeepAliveTime(Duration(time, TIME_UNIT))),
+        conf_?(cfg getDouble "core-pool-size-factor")(factor => _.setCorePoolSizeFromFactor(factor)),
+        conf_?(cfg getDouble "max-pool-size-factor" )(factor => _.setMaxPoolSizeFromFactor(factor)),
+        conf_?(cfg getInt    "executor-bounds"      )(bounds => _.setExecutorBounds(bounds)),
+        conf_?(cfg getBool   "allow-core-timeout"   )(allow  => _.setAllowCoreThreadTimeout(allow)),
+        conf_?(cfg getString "rejection-policy" map {
           case "abort"          => new AbortPolicy()
           case "caller-runs"    => new CallerRunsPolicy()
           case "discard-oldest" => new DiscardOldestPolicy()
           case "discard"        => new DiscardPolicy()
-          case x => throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy!" format x)
-        }).foreach(builder.setRejectionPolicy(_))
-      })
+          case x                => throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy!" format x)
+        })(policy => _.setRejectionPolicy(policy)))
     }
 
     lazy val mailboxType: MailboxType = {
@@ -200,15 +200,17 @@ object Dispatchers extends Logging {
 
     cfg.getString("type") map {
       case "ExecutorBasedEventDriven" =>
-        new ExecutorBasedEventDrivenDispatcher(
+        configureThreadPool(threadPoolConfig => new ExecutorBasedEventDrivenDispatcher(
           name,
           cfg.getInt("throughput", THROUGHPUT),
           cfg.getInt("throughput-deadline", THROUGHPUT_DEADLINE_TIME_MILLIS),
           mailboxType,
-          threadPoolConfig)
+          threadPoolConfig)).build
 
-      case "ExecutorBasedEventDrivenWorkStealing" => new ExecutorBasedEventDrivenWorkStealingDispatcher(name, mailboxType, threadPoolConfig)
-      case "Hawt"                                 => new HawtDispatcher(cfg.getBool("aggregate").getOrElse(true))
+      case "ExecutorBasedEventDrivenWorkStealing" =>
+        configureThreadPool(poolCfg => new ExecutorBasedEventDrivenWorkStealingDispatcher(name, mailboxType,poolCfg)).build
+
+      case "Hawt"                                 => new HawtDispatcher(cfg.getBool("aggregate",true))
       case "GlobalExecutorBasedEventDriven"       => globalExecutorBasedEventDrivenDispatcher
       case "GlobalHawt"                           => globalHawtDispatcher
       case unknown                                => throw new IllegalArgumentException("Unknown dispatcher type [%s]" format unknown)

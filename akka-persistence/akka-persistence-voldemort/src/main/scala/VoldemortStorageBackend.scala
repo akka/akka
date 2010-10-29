@@ -2,10 +2,10 @@
  *  Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.voldemort
+package akka.persistence.voldemort
 
-import se.scalablesolutions.akka.persistence.common._
-import se.scalablesolutions.akka.config.Config.config
+import akka.persistence.common._
+import akka.config.Config.config
 
 import voldemort.client._
 import java.lang.String

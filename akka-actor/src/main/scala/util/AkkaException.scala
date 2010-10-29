@@ -2,10 +2,10 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka
+package akka
 
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.actor.newUuid
+import akka.util.Logging
+import akka.actor.newUuid
 
 import java.io.{StringWriter, PrintWriter}
 import java.net.{InetAddress, UnknownHostException}

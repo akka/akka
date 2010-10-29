@@ -1,9 +1,9 @@
 package sample.camel
 
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.remote.RemoteNode
-import se.scalablesolutions.akka.camel.CamelServiceManager
-import se.scalablesolutions.akka.actor.TypedActor
+import akka.actor.Actor._
+import akka.remote.RemoteNode
+import akka.camel.CamelServiceManager
+import akka.actor.TypedActor
 
 /**
  * @author Martin Krasser

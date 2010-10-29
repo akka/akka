@@ -2,11 +2,11 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.cassandra
+package akka.persistence.cassandra
 
-import se.scalablesolutions.akka.stm._
-import se.scalablesolutions.akka.persistence.common._
-import se.scalablesolutions.akka.actor.{newUuid}
+import akka.stm._
+import akka.persistence.common._
+import akka.actor.{newUuid}
 
 object CassandraStorage extends Storage {
   type ElementType = Array[Byte]

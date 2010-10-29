@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.actor;
+package akka.actor;
 
 public interface TransactionalTypedActor {
   public String getMapState(String key);
