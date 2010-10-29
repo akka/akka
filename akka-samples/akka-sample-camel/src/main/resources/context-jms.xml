@@ -13,7 +13,11 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
   </bean>
 
   <bean id="jmsConfig" class="org.apache.camel.component.jms.JmsConfiguration">
-      <property name="connectionFactory" ref="jmsConnectionFactory"/>
+      <property name="connectionFactory" ref="singleConnectionFactory"/>
+  </bean>
+
+  <bean id="singleConnectionFactory" class="org.springframework.jms.connection.SingleConnectionFactory">
+      <property name="targetConnectionFactory" ref="jmsConnectionFactory"/>
   </bean>
 
   <bean id="jmsConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
