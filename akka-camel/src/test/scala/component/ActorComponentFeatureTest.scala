@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.camel.component
+package akka.camel.component
 
 import java.util.concurrent.{TimeUnit, CountDownLatch}
 
@@ -7,10 +7,10 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.component.mock.MockEndpoint
 import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec}
 
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{ActorRegistry, Actor}
-import se.scalablesolutions.akka.camel.{Failure, Message, CamelContextManager}
-import se.scalablesolutions.akka.camel.support._
+import akka.actor.Actor._
+import akka.actor.{ActorRegistry, Actor}
+import akka.camel.{Failure, Message, CamelContextManager}
+import akka.camel.support._
 
 class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   import ActorComponentFeatureTest._

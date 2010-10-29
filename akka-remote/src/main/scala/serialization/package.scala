@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka
+package akka
 
 package object serialization {
   type JsValue = _root_.dispatch.json.JsValue

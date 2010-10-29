@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import se.scalablesolutions.akka.dispatch.Dispatchers
-import se.scalablesolutions.akka.config.Supervision.{SupervisorConfig, OneForOneStrategy, Supervise, Permanent}
+import akka.dispatch.Dispatchers
+import akka.config.Supervision.{SupervisorConfig, OneForOneStrategy, Supervise, Permanent}
 import java.util.concurrent.CountDownLatch
 
 class SupervisorMiscSpec extends WordSpec with MustMatchers {
@@ -36,7 +36,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
       }).start
 
       val actor3 = Actor.actorOf(new Actor {
-        self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("test")
+        self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("test").build
         override def postRestart(cause: Throwable) {countDownLatch.countDown}
 
         protected def receive = {
@@ -70,10 +70,10 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
       actor4 ! "kill"
 
       countDownLatch.await()
-      assert(!actor1.dispatcher.isShutdown, "dispatcher1 is shutdown")
-      assert(!actor2.dispatcher.isShutdown, "dispatcher2 is shutdown")
-      assert(!actor3.dispatcher.isShutdown, "dispatcher3 is shutdown")
-      assert(!actor4.dispatcher.isShutdown, "dispatcher4 is shutdown")
+      assert(!actor1.isShutdown, "actor1 is shutdown")
+      assert(!actor2.isShutdown, "actor2 is shutdown")
+      assert(!actor3.isShutdown, "actor3 is shutdown")
+      assert(!actor4.isShutdown, "actor4 is shutdown")
     }
   }
 }

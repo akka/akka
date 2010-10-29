@@ -2,10 +2,10 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.config
+package akka.config
 
-import se.scalablesolutions.akka.actor.{ActorRef}
-import se.scalablesolutions.akka.dispatch.MessageDispatcher
+import akka.actor.{ActorRef}
+import akka.dispatch.MessageDispatcher
 
 case class RemoteAddress(val hostname: String, val port: Int)
 

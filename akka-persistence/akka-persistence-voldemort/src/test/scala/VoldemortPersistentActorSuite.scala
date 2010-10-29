@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.persistence.voldemort
+package akka.persistence.voldemort
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -6,7 +6,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.actor.{Transactor, Actor, ActorRef}
+import akka.actor.{Transactor, Actor, ActorRef}
 import Actor._
 import BankAccountActor._
 

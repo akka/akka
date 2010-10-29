@@ -2,16 +2,16 @@
  *  Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.persistence.riak
+package akka.persistence.riak
 
-import se.scalablesolutions.akka.persistence.common._
-import se.scalablesolutions.akka.config.Config.config
+import akka.persistence.common._
+import akka.config.Config.config
 
 import java.lang.String
 import collection.JavaConversions
 import collection.Map
 import java.util.{Map => JMap}
-import se.scalablesolutions.akka.persistence.common.PersistentMapBinary.COrdering._
+import akka.persistence.common.PersistentMapBinary.COrdering._
 import collection.immutable._
 import com.google.protobuf.ByteString
 import com.trifork.riak.{RequestMeta, RiakObject, RiakClient}

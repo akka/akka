@@ -1,9 +1,9 @@
-package se.scalablesolutions.akka.camel
+package akka.camel
 
 import org.scalatest.{BeforeAndAfterAll, WordSpec}
 import org.scalatest.matchers.MustMatchers
 
-import se.scalablesolutions.akka.actor.ActorRegistry
+import akka.actor.ActorRegistry
 
 /**
  * @author Martin Krasser

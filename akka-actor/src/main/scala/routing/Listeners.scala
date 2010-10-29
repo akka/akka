@@ -2,9 +2,9 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.routing
+package akka.routing
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import akka.actor.{Actor, ActorRef}
 import java.util.concurrent.ConcurrentSkipListSet
 import scala.collection.JavaConversions._
 

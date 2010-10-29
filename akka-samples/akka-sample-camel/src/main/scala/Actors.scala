@@ -2,9 +2,9 @@ package sample.camel
 
 import org.apache.camel.Exchange
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef, RemoteActor}
-import se.scalablesolutions.akka.camel.{Failure, Producer, Message, Consumer}
-import se.scalablesolutions.akka.util.Logging
+import akka.actor.{Actor, ActorRef, RemoteActor}
+import akka.camel.{Failure, Producer, Message, Consumer}
+import akka.util.Logging
 
 /**
  * Client-initiated remote actor.

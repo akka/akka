@@ -1,20 +1,20 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.spring
+package akka.spring
 
 
 import foo.PingActor
-import se.scalablesolutions.akka.dispatch.ExecutorBasedEventDrivenWorkStealingDispatcher
+import akka.dispatch.ExecutorBasedEventDrivenWorkStealingDispatcher
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import org.springframework.context.support.ClassPathXmlApplicationContext
-import se.scalablesolutions.akka.remote.{RemoteClient, RemoteServer}
+import akka.remote.{RemoteClient, RemoteServer}
 import org.scalatest.{BeforeAndAfterAll, FeatureSpec}
 
 import java.util.concurrent.CountDownLatch
-import se.scalablesolutions.akka.actor.{RemoteActorRef, ActorRegistry, Actor, ActorRef}
+import akka.actor.{RemoteActorRef, ActorRegistry, Actor, ActorRef}
 
 /**
  * Tests for spring configuration of typed actors.
@@ -52,7 +52,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
     PingActor.latch = new CountDownLatch(1)
     val context = new ClassPathXmlApplicationContext(config)
     val pingActor = context.getBean(id).asInstanceOf[ActorRef]
-    assert(pingActor.getActorClassName() === "se.scalablesolutions.akka.spring.foo.PingActor")
+    assert(pingActor.getActorClassName() === "akka.spring.foo.PingActor")
     pingActor.start()
   }
 
@@ -114,7 +114,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
     scenario("create server managed remote untyped-actor") {
       val myactor = getPingActorFromContext("/server-managed-config.xml", "server-managed-remote-untyped-actor")
       val nrOfActors = ActorRegistry.actors.length
-      val actorRef = RemoteClient.actorFor("se.scalablesolutions.akka.spring.foo.PingActor", "localhost", 9990)
+      val actorRef = RemoteClient.actorFor("akka.spring.foo.PingActor", "localhost", 9990)
       actorRef.sendOneWay("Hello server managed remote untyped-actor")
       PingActor.latch.await
       assert(PingActor.lastMessage === "Hello server managed remote untyped-actor")
@@ -135,7 +135,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
       PingActor.latch = new CountDownLatch(1)
       val context = new ClassPathXmlApplicationContext("/server-managed-config.xml")
       val pingActor = context.getBean("server-managed-remote-untyped-actor-custom-id").asInstanceOf[ActorRef]
-      assert(pingActor.getActorClassName() === "se.scalablesolutions.akka.spring.foo.PingActor")
+      assert(pingActor.getActorClassName() === "akka.spring.foo.PingActor")
       pingActor.start()
       val nrOfActors = ActorRegistry.actors.length
       // get client actor ref from spring context

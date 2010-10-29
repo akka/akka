@@ -1,9 +1,9 @@
-package se.scalablesolutions.akka.actor
+package akka.actor
 
 import org.scalatest.junit.JUnitSuite
 import Actor._
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import se.scalablesolutions.akka.config.Supervision._
+import akka.config.Supervision._
 import org.multiverse.api.latches.StandardLatch
 import org.junit.Test
 

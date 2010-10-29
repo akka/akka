@@ -3,9 +3,9 @@
    contributed by Julien Gaugaz
    inspired by the version contributed by Yura Taras and modified by Isaac Gouy
 */
-package se.scalablesolutions.akka.actor
+package akka.actor
 
-import se.scalablesolutions.akka.actor.Actor._
+import akka.actor.Actor._
 
 object Chameneos {
 

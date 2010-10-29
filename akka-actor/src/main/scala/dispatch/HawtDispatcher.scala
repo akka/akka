@@ -2,9 +2,9 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.dispatch
+package akka.dispatch
 
-import se.scalablesolutions.akka.actor.ActorRef
+import akka.actor.ActorRef
 
 import org.fusesource.hawtdispatch.DispatchQueue
 import org.fusesource.hawtdispatch.ScalaDispatch._
@@ -13,7 +13,7 @@ import org.fusesource.hawtdispatch.ListEventAggregator
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicBoolean}
 import java.util.concurrent.CountDownLatch
-import se.scalablesolutions.akka.util.Switch
+import akka.util.Switch
 
 /**
  * Holds helper methods for working with actors that are using a HawtDispatcher as it's dispatcher.
@@ -142,20 +142,14 @@ object HawtDispatcher {
 class HawtDispatcher(val aggregate: Boolean = true, val parent: DispatchQueue = globalQueue) extends MessageDispatcher  {
   import HawtDispatcher._
 
-  private val active = new Switch(false)
-
   val mailboxType: Option[MailboxType] = None
  
-  def start = active switchOn { retainNonDaemon }
+  private[akka] def start { retainNonDaemon }
 
-  def shutdown = active switchOff { releaseNonDaemon }
+  private[akka] def shutdown { releaseNonDaemon }
 
-  def isShutdown = active.isOff
-
-  def dispatch(invocation: MessageInvocation) = if (active.isOn) {
+  private[akka] def dispatch(invocation: MessageInvocation){
     mailbox(invocation.receiver).dispatch(invocation)
-  } else {
-    log.warning("%s is shut down,\n\tignoring the the messages sent to\n\t%s", toString, invocation.receiver)
   }
 
   // hawtdispatch does not have a way to get queue sizes, getting an accurate
@@ -172,12 +166,12 @@ class HawtDispatcher(val aggregate: Boolean = true, val parent: DispatchQueue = 
   def suspend(actorRef: ActorRef) = mailbox(actorRef).suspend
   def resume(actorRef:ActorRef)   = mailbox(actorRef).resume
 
-  def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = null.asInstanceOf[AnyRef]
+  private[akka] def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = null.asInstanceOf[AnyRef]
 
   /**
    * Creates and returns a durable mailbox for the given actor.
    */
-  protected def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = null.asInstanceOf[AnyRef]
+  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = null.asInstanceOf[AnyRef]
 
   override def toString = "HawtDispatcher"
 }

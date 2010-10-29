@@ -4,7 +4,7 @@
 
 package sample.rest.java;
 
-import se.scalablesolutions.akka.actor.TypedActor;
+import akka.actor.TypedActor;
 
 public class ReceiverImpl extends TypedActor implements Receiver {
   public SimpleService get() {

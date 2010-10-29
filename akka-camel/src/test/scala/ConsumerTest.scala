@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.camel
+package akka.camel
 
 import java.util.concurrent.{TimeoutException, CountDownLatch, TimeUnit}
 
@@ -7,8 +7,8 @@ import org.apache.camel.builder.RouteBuilder
 import org.scalatest.{BeforeAndAfterAll, WordSpec}
 import org.scalatest.matchers.MustMatchers
 
-import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor._
+import akka.actor.Actor._
+import akka.actor._
 
 /**
  * @author Martin Krasser

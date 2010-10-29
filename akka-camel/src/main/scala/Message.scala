@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.camel
+package akka.camel
 
 import java.util.{Map => JMap, Set => JSet}
 
@@ -10,7 +10,7 @@ import scala.collection.JavaConversions._
 import org.apache.camel.{Exchange, Message => CamelMessage}
 import org.apache.camel.util.ExchangeHelper
 
-import se.scalablesolutions.akka.japi.{Function => JFunction}
+import akka.japi.{Function => JFunction}
 
 /**
  * An immutable representation of a Camel message.

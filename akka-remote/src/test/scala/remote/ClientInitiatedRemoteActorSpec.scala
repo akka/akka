@@ -1,12 +1,12 @@
-package se.scalablesolutions.akka.actor.remote
+package akka.actor.remote
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
 
-import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
-import se.scalablesolutions.akka.dispatch.Dispatchers
-import se.scalablesolutions.akka.actor.{ActorRef, Actor}
+import akka.remote.{RemoteServer, RemoteClient}
+import akka.dispatch.Dispatchers
+import akka.actor.{ActorRef, Actor}
 import Actor._
 
 object ClientInitiatedRemoteActorSpec {
@@ -69,7 +69,7 @@ object ClientInitiatedRemoteActorSpec {
 
 class ClientInitiatedRemoteActorSpec extends JUnitSuite {
   import ClientInitiatedRemoteActorSpec._
-  se.scalablesolutions.akka.config.Config.config
+  akka.config.Config.config
 
   val HOSTNAME = "localhost"
   val PORT1 = 9990

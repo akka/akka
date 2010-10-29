@@ -2,16 +2,16 @@
  *  Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.camel
+package akka.camel
 
 import java.util.Map
 
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import org.apache.camel.impl.DefaultCamelContext
 
-import se.scalablesolutions.akka.camel.component.TypedActorComponent
-import se.scalablesolutions.akka.japi.{Option => JOption}
-import se.scalablesolutions.akka.util.Logging
+import akka.camel.component.TypedActorComponent
+import akka.japi.{Option => JOption}
+import akka.util.Logging
 
 /**
  * Manages the lifecycle of a CamelContext. Allowed transitions are

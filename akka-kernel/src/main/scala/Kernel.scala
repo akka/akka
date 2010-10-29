@@ -2,10 +2,10 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.kernel
+package akka.kernel
 
-import se.scalablesolutions.akka.http.{ EmbeddedAppServer, DefaultAkkaLoader }
-import se.scalablesolutions.akka.remote.BootableRemoteActorService
+import akka.http.{ EmbeddedAppServer, DefaultAkkaLoader }
+import akka.remote.BootableRemoteActorService
 
 object Main {
   def main(args: Array[String]) = Kernel.boot
