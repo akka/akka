@@ -394,7 +394,7 @@ trait Actor extends Logging {
 
   /**
    * Changes tha Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
-   * Puts the behavior on top of the hotswap stack. 
+   * Puts the behavior on top of the hotswap stack.
    */
   def become(behavior: Receive): Unit = self.hotswap = self.hotswap.push(behavior)
 

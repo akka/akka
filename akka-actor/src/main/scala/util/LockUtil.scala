@@ -86,7 +86,7 @@ class SimpleLock {
       }
     } else None
   }
-  
+
   def ifPossibleApply[T,R](value: T)(function: (T) => R): Option[R] = {
     if (tryLock()) {
       try {

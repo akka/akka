@@ -57,7 +57,7 @@ object FSMActorSpec {
     }
 
     startWith(Locked, CodeState("", code))
-    
+
     whenUnhandled {
       case Event(_, stateData) => {
         log.info("Unhandled")

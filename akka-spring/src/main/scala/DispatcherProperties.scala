@@ -55,7 +55,7 @@ class ThreadPoolProperties {
           ", corePoolSize=" + corePoolSize +
           ", maxPoolSize=" + maxPoolSize +
           ", keepAlive=" + keepAlive +
-          ", policy=" + rejectionPolicy + 
+          ", policy=" + rejectionPolicy +
           ", mailboxCapacity=" + mailboxCapacity + "]"
   }
 }

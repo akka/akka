@@ -805,7 +805,7 @@ class LocalActorRef private[akka] (
       receiveTimeout = None
       cancelReceiveTimeout
       dispatcher.detach(this)
-      transactorConfig = transactorConfig.copy(factory = None) 
+      transactorConfig = transactorConfig.copy(factory = None)
       _status = ActorRefInternals.SHUTDOWN
       actor.postStop
       ActorRegistry.unregister(this)

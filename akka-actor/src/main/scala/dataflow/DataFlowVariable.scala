@@ -143,7 +143,7 @@ object DataFlow {
             out ! Exit
             throw e
         }
-        
+
         result.getOrElse(throw new DataFlowVariableException("Timed out (after " + timeoutMs + " milliseconds) while waiting for result"))
       }
     }

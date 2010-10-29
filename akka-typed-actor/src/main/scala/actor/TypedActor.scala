@@ -332,7 +332,7 @@ object TypedActorConfiguration {
   def apply(transactionRequired: Boolean) : TypedActorConfiguration = {
     if (transactionRequired) {
       new TypedActorConfiguration().makeTransactionRequired
-    } else new TypedActorConfiguration() 
+    } else new TypedActorConfiguration()
   }
 }
 
@@ -558,7 +558,7 @@ object TypedActor extends Logging {
 
   /**
    * Java API.
-   */ 
+   */
   def newRemoteInstance[T](intfClass: Class[T], factory: TypedActorFactory, hostname: String, port: Int) : T =
     newRemoteInstance(intfClass, factory.create, hostname, port)
 
@@ -582,7 +582,7 @@ object TypedActor extends Logging {
 
   /**
    * Create a proxy for a RemoteActorRef representing a server managed remote typed actor.
-   * 
+   *
    */
   private[akka] def createProxyForRemoteActorRef[T](intfClass: Class[T], actorRef: ActorRef): T = {
 
@@ -758,7 +758,7 @@ object TypedActor extends Logging {
  */
 @Aspect("perInstance")
 private[akka] sealed class ServerManagedTypedActorAspect extends ActorAspect {
-  
+
   @Around("execution(* *.*(..)) && this(akka.actor.ServerManagedTypedActor)")
   def invoke(joinPoint: JoinPoint): AnyRef = {
     if (!isInitialized) initialize(joinPoint)

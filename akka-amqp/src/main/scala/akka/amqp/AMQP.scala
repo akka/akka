@@ -256,7 +256,7 @@ object AMQP {
     }
     // Needed for Java API usage
     def send(request: O, replyTo: String): Unit = {
-      send(request, Some(replyTo))  
+      send(request, Some(replyTo))
     }
 
     def send(request: O, replyTo: Option[String] = None) = {
@@ -311,7 +311,7 @@ object AMQP {
   def newStringConsumer(connection: ActorRef,
                         handler: Procedure[String],
                         exchangeName: String): ActorRef = {
-    newStringConsumer(connection, handler.apply _, Some(exchangeName))    
+    newStringConsumer(connection, handler.apply _, Some(exchangeName))
   }
 
   // Needed for Java API usage
@@ -328,7 +328,7 @@ object AMQP {
                         exchangeName: String,
                         routingKey: String,
                         queueName: String): ActorRef = {
-    newStringConsumer(connection, handler.apply _, Some(exchangeName), Some(routingKey), Some(queueName))    
+    newStringConsumer(connection, handler.apply _, Some(exchangeName), Some(routingKey), Some(queueName))
   }
 
   def newStringConsumer(connection: ActorRef,

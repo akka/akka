@@ -94,7 +94,7 @@ object Dispatchers extends Logging {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(actor: ActorRef, mailboxCapacity: Int, pushTimeOut: Duration) = 
+  def newThreadBasedDispatcher(actor: ActorRef, mailboxCapacity: Int, pushTimeOut: Duration) =
     new ThreadBasedDispatcher(actor, mailboxCapacity, pushTimeOut)
 
   /**

@@ -45,7 +45,7 @@ object Helpers extends Logging {
         log.warning(e, "Cannot narrow %s to expected type %s!", o, implicitly[Manifest[T]].erasure.getName)
         None
     }
-  
+
   /**
    * Reference that can hold either a typed value or an exception.
    *
@@ -61,13 +61,13 @@ object Helpers extends Logging {
    *
    * scala> res0()
    * res3: Int = 3
-   * 
+   *
    * scala> res0() = { println("Hello world"); 3}
    * Hello world
    *
    * scala> res0()
    * res5: Int = 3
-   *  
+   *
    * scala> res0() = error("Lets see what happens here...")
    *
    * scala> res0()
@@ -80,15 +80,15 @@ object Helpers extends Logging {
    */
   class ResultOrError[R](result: R){
     private[this] var contents: Either[R, Throwable] = Left(result)
-    
+
     def update(value: => R) = {
-      contents = try { 
-        Left(value) 
-      } catch { 
-        case (error : Throwable) => Right(error) 
-      }                        
+      contents = try {
+        Left(value)
+      } catch {
+        case (error : Throwable) => Right(error)
+      }
     }
-    
+
     def apply() = contents match {
       case Left(result) => result
       case Right(error) => throw error.fillInStackTrace

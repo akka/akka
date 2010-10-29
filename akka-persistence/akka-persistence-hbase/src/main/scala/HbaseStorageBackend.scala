@@ -39,7 +39,7 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   CONFIGURATION.set("hbase.zookeeper.quorum", HBASE_ZOOKEEPER_QUORUM)
 
   init
-  
+
   def init {
     val ADMIN = new HBaseAdmin(CONFIGURATION)
 
@@ -50,14 +50,14 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
       ADMIN.enableTable(REF_TABLE_NAME)
     }
     REF_TABLE = new HTable(CONFIGURATION, REF_TABLE_NAME);
-    
+
     if (!ADMIN.tableExists(VECTOR_TABLE_NAME)) {
       ADMIN.createTable(new HTableDescriptor(VECTOR_TABLE_NAME))
       ADMIN.disableTable(VECTOR_TABLE_NAME)
       ADMIN.addColumn(VECTOR_TABLE_NAME, new HColumnDescriptor(VECTOR_ELEMENT_COLUMN_FAMILY_NAME))
       ADMIN.enableTable(VECTOR_TABLE_NAME);
     }
-    VECTOR_TABLE = new HTable(CONFIGURATION, VECTOR_TABLE_NAME) 
+    VECTOR_TABLE = new HTable(CONFIGURATION, VECTOR_TABLE_NAME)
 
     if (!ADMIN.tableExists(MAP_TABLE_NAME)) {
       ADMIN.createTable(new HTableDescriptor(MAP_TABLE_NAME))
@@ -65,9 +65,9 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
       ADMIN.addColumn(MAP_TABLE_NAME, new HColumnDescriptor(MAP_ELEMENT_COLUMN_FAMILY_NAME))
       ADMIN.enableTable(MAP_TABLE_NAME);
     }
-    MAP_TABLE = new HTable(CONFIGURATION, MAP_TABLE_NAME) 
+    MAP_TABLE = new HTable(CONFIGURATION, MAP_TABLE_NAME)
   }
-  
+
   def drop {
     val ADMIN = new HBaseAdmin(CONFIGURATION)
 
@@ -82,10 +82,10 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
     if (ADMIN.tableExists(MAP_TABLE_NAME)) {
       ADMIN.disableTable(MAP_TABLE_NAME)
       ADMIN.deleteTable(MAP_TABLE_NAME)
-    }    
+    }
     init
   }
-  
+
   // ===============================================================
   // For Ref
   // ===============================================================
@@ -143,7 +143,7 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[Array[Byte]] = {
 
     import scala.math._
-    
+
     val row = new Get(Bytes.toBytes(name))
     val result = VECTOR_TABLE.get(row)
     val size = result.size
@@ -156,7 +156,7 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
       e = finish.get - 1
     } else {
       b = start.getOrElse(0)
-      e = finish.getOrElse(min(b + count - 1, size - 1)) 
+      e = finish.getOrElse(min(b + count - 1, size - 1))
     }
     for(i <- b to e) {
       val colnum = size - i - 1
@@ -168,7 +168,7 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   def getVectorStorageSizeFor(name: String): Int = {
     val row = new Get(Bytes.toBytes(name))
     val result = VECTOR_TABLE.get(row)
-    
+
     if (result.isEmpty)
       0
     else
@@ -190,7 +190,7 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = {
     val row = new Get(Bytes.toBytes(name))
     val result = MAP_TABLE.get(row)
-    
+
     Option(result.getValue(Bytes.toBytes(MAP_ELEMENT_COLUMN_FAMILY_NAME), key))
   }
 

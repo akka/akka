@@ -9,13 +9,13 @@ import net.lag.configgy.Configgy
 import java.util.Properties
 
 /**
- * ConfiggyPropertyPlaceholderConfigurer. Property resource configurer for configgy files. 
+ * ConfiggyPropertyPlaceholderConfigurer. Property resource configurer for configgy files.
  */
 class ConfiggyPropertyPlaceholderConfigurer extends PropertyPlaceholderConfigurer {
 
   /**
    * Sets the akka properties as local properties, leaves the location empty.
-   * @param configgyResource akka.conf  
+   * @param configgyResource akka.conf
    */
   override def setLocation(configgyResource: Resource) {
     if (configgyResource eq null) throw new IllegalArgumentException("Property 'config' must be set")

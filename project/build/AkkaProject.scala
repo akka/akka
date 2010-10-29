@@ -515,7 +515,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val camel_core = Dependencies.camel_core
-    
+
     override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
@@ -690,7 +690,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val atomikos_transactions_jta = Dependencies.atomikos_transactions_jta
     //val jta_1_1                   = Dependencies.jta_1_1
     //val atomikos_transactions_util = "com.atomikos" % "transactions-util" % "3.2.3" % "compile"
-    
+
     //Testing
     val junit        = Dependencies.junit
     val scalatest    = Dependencies.scalatest
@@ -767,7 +767,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val commons_fileupload = "commons-fileupload"        % "commons-fileupload" % "1.2.1" % "compile" intransitive
     val jms_1_1            = "org.apache.geronimo.specs" % "geronimo-jms_1.1_spec" % "1.1.1" % "compile" intransitive
     val joda               = "joda-time"                 % "joda-time" % "1.6" intransitive
-    
+
     override def packageAction =
       task {
         val libs: Seq[Path] = managedClasspath(config("compile")).get.toSeq
