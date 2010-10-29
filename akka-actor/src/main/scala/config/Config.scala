@@ -55,7 +55,7 @@ object Config {
         case value     => Some(value)
       }
 
-      (envConf orElse systemConf).map("akka." + _ + ".conf").getOrElse("akka.conf") 
+      (envConf orElse systemConf).map("akka." + _ + ".conf").getOrElse("akka.conf")
     }
 
     if (System.getProperty("akka.config", "") != "") {
@@ -74,8 +74,8 @@ object Config {
         val configFile = HOME.getOrElse(throwNoAkkaHomeException) + "/config/" + confName
         Configgy.configure(configFile)
         ConfigLogger.log.info(
-          "AKKA_HOME is defined as [%s], config loaded from [%s].", 
-          HOME.getOrElse(throwNoAkkaHomeException), 
+          "AKKA_HOME is defined as [%s], config loaded from [%s].",
+          HOME.getOrElse(throwNoAkkaHomeException),
           configFile)
       } catch {
         case e: ParseException => throw new ConfigurationException(
@@ -106,7 +106,7 @@ object Config {
       CConfig.fromString("<akka></akka>") // default empty config
     }
   }
-  
+
   val CONFIG_VERSION = config.getString("akka.version", VERSION)
   if (VERSION != CONFIG_VERSION) throw new ConfigurationException(
     "Akka JAR version [" + VERSION + "] is different than the provided config version [" + CONFIG_VERSION + "]")
@@ -115,9 +115,9 @@ object Config {
 
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
-  
+
   def throwNoAkkaHomeException = throw new ConfigurationException(
-    "Akka home is not defined. Either:" + 
+    "Akka home is not defined. Either:" +
     "\n\t1. Define 'AKKA_HOME' environment variable pointing to the root of the Akka distribution." +
     "\n\t2. Add the '-Dakka.home=...' option pointing to the root of the Akka distribution.")
 }

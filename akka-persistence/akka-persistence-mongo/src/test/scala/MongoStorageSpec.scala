@@ -60,8 +60,8 @@ class MongoStorageSpec extends
     it("should do proper range queries") {
       import MongoStorageBackend._
       val l = List(
-        ("bjarne stroustrup", "c++"), 
-        ("martin odersky", "scala"), 
+        ("bjarne stroustrup", "c++"),
+        ("martin odersky", "scala"),
         ("james gosling", "java"),
         ("yukihiro matsumoto", "ruby"),
         ("slava pestov", "factor"),

@@ -14,7 +14,7 @@ object Serializables {
 
   case class Shop(store: String, item: String, price: Int) extends
     ScalaJSON[Shop] {
-    implicit val ShopFormat: sjson.json.Format[Shop] = 
+    implicit val ShopFormat: sjson.json.Format[Shop] =
       asProduct3("store", "item", "price")(Shop)(Shop.unapply(_).get)
 
     def toJSON: String = JsValue.toJson(tojson(this))
@@ -27,7 +27,7 @@ object Serializables {
   implicit val MyMessageFormat: sjson.json.Format[MyMessage] =
     asProduct2("id", "value")(MyMessage)(MyMessage.unapply(_).get)
 
-  case class MyJsonObject(val key: String, val map: Map[String, Int], 
+  case class MyJsonObject(val key: String, val map: Map[String, Int],
     val standAloneInt: Int) extends ScalaJSON[MyJsonObject] {
     implicit val MyJsonObjectFormat: sjson.json.Format[MyJsonObject] =
       asProduct3("key", "map", "standAloneInt")(MyJsonObject)(MyJsonObject.unapply(_).get)

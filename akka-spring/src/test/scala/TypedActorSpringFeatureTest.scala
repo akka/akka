@@ -133,7 +133,7 @@ class TypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with B
       myPojoProxy.oneWay("hello server-managed-remote-typed-actor 2")
       MyPojo.latch.await
       assert(MyPojo.lastOneWayMessage === "hello server-managed-remote-typed-actor 2")
-    } 
+    }
 
     scenario("get a client proxy for server-managed-remote-typed-actor") {
       MyPojo.latch = new CountDownLatch(1)
@@ -144,7 +144,7 @@ class TypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with B
       assert(myPojoProxy.getFoo() === "foo")
       myPojoProxy.oneWay("hello")
       MyPojo.latch.await
-    } 
+    }
 
 
   }

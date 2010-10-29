@@ -283,7 +283,7 @@ object RPC {
   def newStringRpcClient(connection: ActorRef,
                         exchange: String): RpcClient[String, String] = {
     newStringRpcClient(connection, exchange, None)
-  }  
+  }
 
   // Needed for Java API usage
   def newStringRpcClient(connection: ActorRef,

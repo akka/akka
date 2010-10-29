@@ -23,7 +23,7 @@ object CouchDBStorage extends Storage {
 /**
  * Implements a persistent transactional map based on the CouchDB storage.
  *
- * @author 
+ * @author
  */
 class CouchDBPersistentMap(id: String) extends PersistentMapBinary {
   val uuid = id
@@ -34,7 +34,7 @@ class CouchDBPersistentMap(id: String) extends PersistentMapBinary {
  * Implements a persistent transactional vector based on the CouchDB
  * storage.
  *
- * @author 
+ * @author
  */
 class CouchDBPersistentVector(id: String) extends PersistentVector[Array[Byte]] {
   val uuid = id

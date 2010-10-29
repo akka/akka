@@ -116,7 +116,7 @@ object ActorSerialization {
 
 
     if (serializeMailBox == true) {
-      val messages = 
+      val messages =
         actorRef.mailbox match {
           case q: java.util.Queue[MessageInvocation] =>
             val l = new scala.collection.mutable.ListBuffer[MessageInvocation]
@@ -125,7 +125,7 @@ object ActorSerialization {
             l
         }
 
-      val requestProtocols = 
+      val requestProtocols =
         messages.map(m =>
           RemoteActorSerialization.createRemoteRequestProtocolBuilder(
             actorRef,
@@ -172,7 +172,7 @@ object ActorSerialization {
       if (protocol.hasSupervisor) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
       else None
 
-    val hotswap = 
+    val hotswap =
       if (serializer.isDefined && protocol.hasHotswapStack) serializer.get
         .fromBinary(protocol.getHotswapStack.toByteArray, Some(classOf[Stack[PartialFunction[Any, Unit]]]))
         .asInstanceOf[Stack[PartialFunction[Any, Unit]]]

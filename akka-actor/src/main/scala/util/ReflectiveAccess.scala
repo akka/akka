@@ -208,10 +208,10 @@ object ReflectiveAccess extends Logging {
       def enqueue(message: MessageInvocation)
       def dequeue: MessageInvocation
     }
-    
+
     type Serializer = {
       def toBinary(obj: AnyRef): Array[Byte]
-      def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef      
+      def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
     }
 
     lazy val isEnterpriseEnabled = clusterObjectInstance.isDefined
@@ -219,7 +219,7 @@ object ReflectiveAccess extends Logging {
     val clusterObjectInstance: Option[AnyRef] =
       getObjectFor("akka.cluster.Cluster$")
 
-    val serializerClass: Option[Class[_]] = 
+    val serializerClass: Option[Class[_]] =
       getClassFor("akka.serialization.Serializer")
 
     def ensureEnterpriseEnabled = if (!isEnterpriseEnabled) throw new ModuleNotAvailableException(

@@ -73,19 +73,19 @@ class ExecutorBasedEventDrivenDispatcher(
   val config: ThreadPoolConfig = ThreadPoolConfig())
   extends MessageDispatcher {
 
-  def this(_name: String, throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) = 
+  def this(_name: String, throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
     this(_name, throughput, throughputDeadlineTime, mailboxType,ThreadPoolConfig())  // Needed for Java API usage
 
-  def this(_name: String, throughput: Int, mailboxType: MailboxType) = 
+  def this(_name: String, throughput: Int, mailboxType: MailboxType) =
     this(_name, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
 
-  def this(_name: String, throughput: Int) = 
+  def this(_name: String, throughput: Int) =
     this(_name, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 
   def this(_name: String, _config: ThreadPoolConfig) =
     this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE, _config)
 
-  def this(_name: String) = 
+  def this(_name: String) =
     this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 
   val name        = "akka:event-driven:dispatcher:" + _name
@@ -111,7 +111,7 @@ class ExecutorBasedEventDrivenDispatcher(
     case UnboundedMailbox(blocking) => new DefaultUnboundedMessageQueue(blocking) with ExecutableMailbox {
       def dispatcher = ExecutorBasedEventDrivenDispatcher.this
     }
-    
+
     case BoundedMailbox(blocking, capacity, pushTimeOut) =>
       new DefaultBoundedMessageQueue(capacity, pushTimeOut, blocking) with ExecutableMailbox {
         def dispatcher = ExecutorBasedEventDrivenDispatcher.this
@@ -175,7 +175,7 @@ class ExecutorBasedEventDrivenDispatcher(
 trait ExecutableMailbox extends Runnable { self: MessageQueue =>
 
   def dispatcher: ExecutorBasedEventDrivenDispatcher
-  
+
   final def run = {
     val reschedule = try {
       try { processMailbox() } catch { case ie: InterruptedException => true }

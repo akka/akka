@@ -49,7 +49,7 @@ object TypedActorSpec {
         case msg: String => println("got " + msg)
     }
   }
-  
+
 }
 
 

@@ -45,7 +45,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
     } catch {
       case e => ()
     }
-  } 
+  }
 
 
   def getPingActorFromContext(config: String, id: String) : ActorRef = {

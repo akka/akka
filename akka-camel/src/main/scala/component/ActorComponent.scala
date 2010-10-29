@@ -112,7 +112,7 @@ class ActorEndpoint(uri: String,
  * <li>If the exchange pattern is out-capable and <code>blocking</code> is set to
  * <code>false</code> then the producer sends the message using the ! operator, together
  * with a callback handler. The callback handler is an <code>ActorRef</code> that can be
- * used by the receiving actor to asynchronously reply to the route that is sending the 
+ * used by the receiving actor to asynchronously reply to the route that is sending the
  * message.</li>
  * <li>If the exchange pattern is in-only then the producer sends the message using the
  * ! operator.</li>

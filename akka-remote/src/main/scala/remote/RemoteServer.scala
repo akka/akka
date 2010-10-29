@@ -69,7 +69,7 @@ object RemoteNode extends RemoteServer
 object RemoteServer {
   val UUID_PREFIX = "uuid:"
 
-  val SECURE_COOKIE: Option[String] = { 
+  val SECURE_COOKIE: Option[String] = {
     val cookie = config.getString("akka.remote.secure-cookie", "")
     if (cookie == "") None
     else Some(cookie)
@@ -80,7 +80,7 @@ object RemoteServer {
       "Configuration option 'akka.remote.server.require-cookie' is turned on but no secure cookie is defined in 'akka.remote.secure-cookie'.")
     requireCookie
   }
- 
+
   val UNTRUSTED_MODE            = config.getBool("akka.remote.server.untrusted-mode", false)
   val HOSTNAME                  = config.getString("akka.remote.server.hostname", "localhost")
   val PORT                      = config.getInt("akka.remote.server.port", 2552)
@@ -312,7 +312,7 @@ class RemoteServer extends Logging with ListenerManagement {
   def unregister(id: String):Unit = synchronized {
     if (_isRunning) {
       log.info("Unregistering server side remote actor with id [%s]", id)
-      if (id.startsWith(UUID_PREFIX)) actorsByUuid.remove(id.substring(UUID_PREFIX.length)) 
+      if (id.startsWith(UUID_PREFIX)) actorsByUuid.remove(id.substring(UUID_PREFIX.length))
       else {
         val actorRef = actors get id
         actorsByUuid.remove(actorRef.uuid, actorRef)
@@ -477,11 +477,11 @@ class RemoteServerHandler(
     val actorInfo = request.getActorInfo
     log.debug("Dispatching to remote actor [%s:%s]", actorInfo.getTarget, actorInfo.getUuid)
 
-    val actorRef = 
+    val actorRef =
       try {
         createActor(actorInfo).start
       } catch {
-        case e: SecurityException => 
+        case e: SecurityException =>
           channel.write(createErrorReplyMessage(e, request, true))
           server.notifyListeners(RemoteServerError(e, server))
           return
@@ -493,10 +493,10 @@ class RemoteServerHandler(
       else None
 
     message match { // first match on system messages
-      case RemoteActorSystemMessage.Stop => 
+      case RemoteActorSystemMessage.Stop =>
         if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException("Remote server is operating is untrusted mode, can not stop the actor")
         else actorRef.stop
-      case _: LifeCycleMessage if (RemoteServer.UNTRUSTED_MODE) => 
+      case _: LifeCycleMessage if (RemoteServer.UNTRUSTED_MODE) =>
         throw new SecurityException("Remote server is operating is untrusted mode, can not pass on a LifeCycleMessage to the remote actor")
 
       case _ =>     // then match on user defined messages
@@ -613,7 +613,7 @@ class RemoteServerHandler(
     val timeout = actorInfo.getTimeout
 
     val actorRefOrNull = findActorByIdOrUuid(id, uuidFrom(uuid.getHigh,uuid.getLow).toString)
-    
+
     if (actorRefOrNull eq null) {
       try {
         if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException(
@@ -687,10 +687,10 @@ class RemoteServerHandler(
 
   private def authenticateRemoteClient(request: RemoteRequestProtocol, ctx: ChannelHandlerContext) = {
     val attachment = ctx.getAttachment
-    if ((attachment ne null) && 
-        attachment.isInstanceOf[String] && 
+    if ((attachment ne null) &&
+        attachment.isInstanceOf[String] &&
         attachment.asInstanceOf[String] == CHANNEL_INIT) { // is first time around, channel initialization
-      ctx.setAttachment(null) 
+      ctx.setAttachment(null)
       val clientAddress = ctx.getChannel.getRemoteAddress.toString
       if (!request.hasCookie) throw new SecurityException(
         "The remote client [" + clientAddress + "] does not have a secure cookie.")

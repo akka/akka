@@ -32,7 +32,7 @@ object CommonsCodec {
 
 import CommonsCodec._
 import CommonsCodec.Base64StringEncoder._
-                                                                                                        
+
 /**
  * A module for supporting Redis based persistence.
  * <p/>
@@ -76,7 +76,7 @@ private [akka] object RedisStorageBackend extends
   /**
    * Map storage in Redis.
    * <p/>
-   * Maps are stored as key/value pairs in redis. 
+   * Maps are stored as key/value pairs in redis.
    */
   def insertMapStorageEntryFor(name: String, key: Array[Byte], value: Array[Byte]): Unit = withErrorHandling {
     insertMapStorageEntriesFor(name, List((key, value)))
@@ -135,7 +135,7 @@ private [akka] object RedisStorageBackend extends
 
   def getMapStorageFor(name: String): List[(Array[Byte], Array[Byte])] = withErrorHandling {
     db.keys("%s:*".format(name))
-      .map { keys => 
+      .map { keys =>
         keys.map(key => (makeKeyFromRedisKey(key.get)._2, stringToByteArray(db.get(key.get).get))).toList
       }.getOrElse {
         throw new NoSuchElementException(name + " not present")
@@ -302,10 +302,10 @@ private [akka] object RedisStorageBackend extends
   // add item to sorted set identified by name
   def zadd(name: String, zscore: String, item: Array[Byte]): Boolean = withErrorHandling {
     db.zadd(name, zscore, byteArrayToString(item))
-      .map { e => 
+      .map { e =>
         e match {
           case 1 => true
-          case _ => false 
+          case _ => false
         }
       }.getOrElse(false)
   }
@@ -313,10 +313,10 @@ private [akka] object RedisStorageBackend extends
   // remove item from sorted set identified by name
   def zrem(name: String, item: Array[Byte]): Boolean = withErrorHandling {
     db.zrem(name, byteArrayToString(item))
-      .map { e => 
+      .map { e =>
         e match {
           case 1 => true
-          case _ => false 
+          case _ => false
         }
       }.getOrElse(false)
   }
@@ -331,7 +331,7 @@ private [akka] object RedisStorageBackend extends
   }
 
   def zrange(name: String, start: Int, end: Int): List[Array[Byte]] = withErrorHandling {
-    db.zrange(name, start.toString, end.toString, RedisClient.ASC, false) 
+    db.zrange(name, start.toString, end.toString, RedisClient.ASC, false)
       .map(_.map(e => stringToByteArray(e.get)))
       .getOrElse {
         throw new NoSuchElementException(name + " not present")

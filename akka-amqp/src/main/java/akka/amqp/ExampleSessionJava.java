@@ -214,7 +214,7 @@ public class ExampleSessionJava {
 
         scala.Option<RemoteProtocol.AddressProtocol> response =
                 protobufRpcClient.call(RemoteProtocol.AddressProtocol.newBuilder().setHostname("localhost").setPort(4321).build());
-        
+
         System.out.println("### >> Got response: " + response);
     }
 }
