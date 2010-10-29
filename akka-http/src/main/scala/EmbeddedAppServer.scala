@@ -33,14 +33,14 @@ trait EmbeddedAppServer extends Bootable with Logging {
     super.onLoad
     if (config.getBool("akka.rest.service", true)) {
       log.info("Attempting to start Akka REST service (Jersey)")
-      
+
       System.setProperty("jetty.port",REST_PORT.toString)
       System.setProperty("jetty.host",REST_HOSTNAME)
       System.setProperty("jetty.home",HOME.getOrElse(throwNoAkkaHomeException) + "/deploy/root")
 
       val configuration = new XmlConfiguration(
         new File(HOME.getOrElse(throwNoAkkaHomeException) + "/config/microkernel-server.xml").toURI.toURL)
-      
+
       server = Option(configuration.configure.asInstanceOf[Server]) map { s => //Set the correct classloader to our contexts
          applicationLoader foreach { loader =>
            //We need to provide the correct classloader to the servlets

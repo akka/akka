@@ -194,7 +194,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     ref1.stop
     ref2 ! "OneWay"
     ref2.stop
-    
+
   }
 
   @Test

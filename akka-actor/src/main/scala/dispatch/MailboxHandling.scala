@@ -35,7 +35,7 @@ sealed trait MailboxType
 abstract class TransientMailboxType(val blocking: Boolean = false) extends MailboxType
 case class UnboundedMailbox(block: Boolean = false) extends TransientMailboxType(block)
 case class BoundedMailbox(
-  block: Boolean            = false, 
+  block: Boolean            = false,
   val capacity: Int         = { if (Dispatchers.MAILBOX_CAPACITY < 0) Int.MaxValue else Dispatchers.MAILBOX_CAPACITY },
   val pushTimeOut: Duration = Dispatchers.MAILBOX_PUSH_TIME_OUT) extends TransientMailboxType(block) {
   if (capacity < 0)        throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
@@ -52,9 +52,9 @@ case class ZooKeeperBasedDurableMailbox(ser: EnterpriseModule.Serializer) extend
 case class AMQPBasedDurableMailbox(ser: EnterpriseModule.Serializer) extends DurableMailboxType(ser)
 case class JMSBasedDurableMailbox(ser: EnterpriseModule.Serializer) extends DurableMailboxType(ser)
 
-class DefaultUnboundedMessageQueue(blockDequeue: Boolean) 
+class DefaultUnboundedMessageQueue(blockDequeue: Boolean)
   extends LinkedBlockingQueue[MessageInvocation] with MessageQueue {
-  
+
   final def enqueue(handle: MessageInvocation) {
     this add handle
   }
@@ -65,7 +65,7 @@ class DefaultUnboundedMessageQueue(blockDequeue: Boolean)
   }
 }
 
-class DefaultBoundedMessageQueue(capacity: Int, pushTimeOut: Duration, blockDequeue: Boolean) 
+class DefaultBoundedMessageQueue(capacity: Int, pushTimeOut: Duration, blockDequeue: Boolean)
   extends LinkedBlockingQueue[MessageInvocation](capacity) with MessageQueue {
 
   final def enqueue(handle: MessageInvocation) {
@@ -84,7 +84,7 @@ class DefaultBoundedMessageQueue(capacity: Int, pushTimeOut: Duration, blockDequ
  *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait MailboxFactory {
-  
+
   val mailboxType: Option[MailboxType]
 
   /**

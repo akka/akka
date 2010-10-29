@@ -41,7 +41,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   def this(_name: String) = this(_name, Dispatchers.MAILBOX_TYPE,ThreadPoolConfig())
 
   //implicit def actorRef2actor(actorRef: ActorRef): Actor = actorRef.actor
-  
+
   val mailboxType = Some(_mailboxType)
   val name = "akka:event-driven-work-stealing:dispatcher:" + _name
 

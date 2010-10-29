@@ -80,7 +80,7 @@ object Storage {
         kvs2add.foreach {kv =>
           fooMap += (kv._1.getBytes, kv._2.getBytes)
         }
- 
+
         ks2rem.foreach {k =>
           fooMap -= k.getBytes
         }}
@@ -94,7 +94,7 @@ object Storage {
         }
         self.reply(true)
 
-      case PUT_WITH_SLICE(kvs2add, from, cnt) => 
+      case PUT_WITH_SLICE(kvs2add, from, cnt) =>
         val v = atomic {
           kvs2add.foreach {kv =>
             fooMap += (kv._1.getBytes, kv._2.getBytes)
@@ -103,7 +103,7 @@ object Storage {
         }
         self.reply(v: List[(Array[Byte], Array[Byte])])
 
-      case PUT_REM_WITH_SLICE(kvs2add, ks2rem, from, cnt) => 
+      case PUT_REM_WITH_SLICE(kvs2add, ks2rem, from, cnt) =>
         val v = atomic {
           kvs2add.foreach {kv =>
             fooMap += (kv._1.getBytes, kv._2.getBytes)
@@ -125,7 +125,7 @@ object Storage {
 
     def receive = {
       case VADD(v) =>
-        val size = 
+        val size =
           atomic {
             fooVector + v.getBytes
             fooVector length
@@ -148,7 +148,7 @@ object Storage {
         self.reply(els)
 
       case VUPD_AND_ABORT(index, value) =>
-        val l = 
+        val l =
           atomic {
             fooVector.update(index, value.getBytes)
             // force fail
@@ -315,7 +315,7 @@ class MongoTicket343Spec extends
       (proc !! VADD("nilanjan")).getOrElse("VADD failed") should equal(4)
 
       evaluating {
-        (proc !! VUPD_AND_ABORT(0, "virat")).getOrElse("VUPD_AND_ABORT failed") 
+        (proc !! VUPD_AND_ABORT(0, "virat")).getOrElse("VUPD_AND_ABORT failed")
       } should produce [Exception]
 
       // update aborts and hence values will remain unchanged

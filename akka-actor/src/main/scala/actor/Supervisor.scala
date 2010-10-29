@@ -80,7 +80,7 @@ case class SupervisorFactory(val config: SupervisorConfig) extends Logging {
 
   def newInstance: Supervisor = newInstanceFor(config)
 
-  def newInstanceFor(config: SupervisorConfig): Supervisor = { 
+  def newInstanceFor(config: SupervisorConfig): Supervisor = {
     val supervisor = new Supervisor(config.restartStrategy)
     supervisor.configure(config)
     supervisor.start

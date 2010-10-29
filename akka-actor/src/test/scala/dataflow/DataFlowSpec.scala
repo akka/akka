@@ -69,7 +69,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
         result.get should equal (sum(0,ints(0,1000)))
         List(x,y,z).foreach(_.shutdown)
       }
-      
+
      /*it("should be able to join streams") {
       import DataFlow._
       ActorRegistry.shutdownAll
@@ -95,7 +95,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
         result.set(producer.map(x => x * x).foldLeft(0)(_ + _))
         latch.countDown
       }
-      
+
       latch.await(3,TimeUnit.SECONDS) should equal (true)
       result.get should equal (332833500)
     }
@@ -131,7 +131,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
       thread { ints(0, 1000, producer) }
       thread { sum(0, producer, consumer) }
       thread { recurseSum(consumer) }
-      
+
       latch.await(15,TimeUnit.SECONDS) should equal (true)
     }*/
 

@@ -32,7 +32,7 @@ object ActorFireForgetRequestReplySpec {
   class SenderActor(replyActor: ActorRef) extends Actor {
 
     def receive = {
-      case "Init" => 
+      case "Init" =>
         replyActor ! "Send"
       case "Reply" => {
         state.s = "Reply"

@@ -61,7 +61,7 @@ object ClientInitiatedRemoteActorSpec {
     var prefix = "default-"
     var count = 0
     def receive = {
-      case "incrPrefix" => count += 1; prefix = "" + count + "-" 
+      case "incrPrefix" => count += 1; prefix = "" + count + "-"
       case msg: String => self.reply(prefix + msg)
     }
   }

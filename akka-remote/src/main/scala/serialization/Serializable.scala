@@ -93,7 +93,7 @@ object Serializable {
    * case class Address(street: String, city: String, zip: String)
    *   extends ScalaJSON[Address] {
    *
-   *   implicit val AddressFormat: Format[Address] = 
+   *   implicit val AddressFormat: Format[Address] =
    *     asProduct3("street", "city", "zip")(Address)(Address.unapply(_).get)
    *
    *   import dispatch.json._
@@ -113,9 +113,9 @@ object Serializable {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   trait ScalaJSON[T] extends JSON {
-    def toJSON: String 
+    def toJSON: String
     def fromJSON(js: String): T
-    def toBytes: Array[Byte] 
+    def toBytes: Array[Byte]
     def fromBytes(bytes: Array[Byte]): T
   }
 }

@@ -143,7 +143,7 @@ trait CamelContextLifecycle extends Logging {
    * Initializes this lifecycle object with the given CamelContext. For the passed
    * CamelContext, stream-caching is enabled. If applications want to disable stream-
    * caching they can do so after this method returned and prior to calling start.
-   * This method also registers a new TypedActorComponent at the passes CamelContext 
+   * This method also registers a new TypedActorComponent at the passes CamelContext
    * under a name defined by TypedActorComponent.InternalSchema.
    */
   def init(context: CamelContext) {

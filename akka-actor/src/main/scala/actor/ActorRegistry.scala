@@ -41,12 +41,12 @@ object ActorRegistry extends ListenerManagement {
   private val actorsById =            new Index[String,ActorRef]
   private val remoteActorSets =       Map[Address, RemoteActorSet]()
   private val guard = new ReadWriteGuard
-  
+
   /**
    * Returns all actors in the system.
    */
   def actors: Array[ActorRef] = filter(_ => true)
-  
+
   /**
    * Returns the number of actors in the system.
    */

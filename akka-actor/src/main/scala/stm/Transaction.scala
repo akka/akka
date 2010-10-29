@@ -92,7 +92,7 @@ object Transaction {
   private[this] val persistentStateMap = new HashMap[String, Committable with Abortable]
   private[akka] val depth = new AtomicInteger(0)
 
-  val jta: Option[JtaModule.TransactionContainer] = 
+  val jta: Option[JtaModule.TransactionContainer] =
     if (JTA_AWARE) Some(JtaModule.createTransactionContainer)
     else None
 
