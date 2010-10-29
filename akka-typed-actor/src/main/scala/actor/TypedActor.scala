@@ -920,8 +920,10 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
    */
   def unregister(proxy: AnyRef): AspectInit = {
     val init = initializations.remove(proxy)
-    notifyListeners(AspectInitUnregistered(proxy, init))
-    init.actorRef.stop
+    if (init ne null) {
+      notifyListeners(AspectInitUnregistered(proxy, init))
+      init.actorRef.stop
+    }
     init
   }
 }
