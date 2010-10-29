@@ -28,7 +28,7 @@ object RemoteServerAndClusterShutdownRunner {
     val s1 = new RemoteServer
     val s2 = new RemoteServer
     val s3 = new RemoteServer
-    s1.start("localhost", 9999)
+    s1.start("localhost", 2552)
     s2.start("localhost", 9998)
     s3.start("localhost", 9997)
     Thread.sleep(5000)

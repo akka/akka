@@ -60,7 +60,7 @@ case class ChatMessage(from: String, message: String) extends Event
  * Chat client.
  */
 class ChatClient(val name: String) {
-  val chat = RemoteClient.actorFor("chat:service", "localhost", 9999)
+  val chat = RemoteClient.actorFor("chat:service", "localhost", 2552)
 
   def login                 = chat ! Login(name)
   def logout                = chat ! Logout(name)
@@ -203,7 +203,7 @@ class ChatService extends
   ChatManagement with
   RedisChatStorageFactory {
   override def preStart = {
-    RemoteNode.start("localhost", 9999)
+    RemoteNode.start("localhost", 2552)
     RemoteNode.register("chat:service", self)
   }
 }
