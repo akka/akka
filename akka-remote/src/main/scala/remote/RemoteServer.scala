@@ -139,10 +139,24 @@ object RemoteServer {
   private[akka] def unregister(hostname: String, port: Int) = guard.withWriteGuard {
     remoteServers.remove(Address(hostname, port))
   }
+
+  /**
+   * Used in REflectiveAccess
+   */
+  private[akka] def registerActor(address: InetSocketAddress, actorRef: ActorRef) {
+    serverFor(address) foreach { _.register(actorRef) }
+  }
+
+  /**
+   * Used in Reflective
+   */
+  private[akka] def registerTypedActor(address: InetSocketAddress, implementationClassName: String, proxy: AnyRef) {
+    serverFor(address) foreach { _.registerTypedActor(implementationClassName,proxy)}
+  }
 }
 
 /**
- * Life-cycle events for RemoteServer.
+ *  Life-cycle events for RemoteServer.
  */
 sealed trait RemoteServerLifeCycleEvent
 case class RemoteServerStarted(
