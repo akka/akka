@@ -9,13 +9,13 @@ import java.net.InetSocketAddress
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.{Map => JMap}
 
-import akka.actor.{
-  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage, uuidFrom, Uuid, ActorRegistry, LifeCycleMessage}
 import akka.actor.Actor._
+import akka.actor.{Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage, uuidFrom, Uuid, ActorRegistry, LifeCycleMessage}
 import akka.util._
 import akka.remote.protocol.RemoteProtocol._
 import akka.remote.protocol.RemoteProtocol.ActorType._
 import akka.config.Config._
+import akka.config.ConfigurationException
 import akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 import akka.serialization.RemoteActorSerialization
 import akka.serialization.RemoteActorSerialization._
@@ -31,7 +31,6 @@ import org.jboss.netty.handler.ssl.SslHandler
 
 import scala.collection.mutable.Map
 import scala.reflect.BeanProperty
-import akka.config.ConfigurationException
 
 /**
  * Use this object if you need a single remote server on a specific node.
