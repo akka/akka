@@ -6,9 +6,10 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.actor.Actor.spawn
+import akka.routing.Dispatcher
+
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit
-import akka.routing.Dispatcher
 
 class FutureTimeoutException(message: String) extends AkkaException(message)
 
@@ -26,12 +27,10 @@ object Futures {
                  dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher)
                 (body: => T): Future[T] = {
     val f = new DefaultCompletableFuture[T](timeout)
-
     spawn({
       try { f completeWithResult body }
       catch { case e => f completeWithException e}
     })(dispatcher)
-
     f
   }
 
@@ -45,8 +44,7 @@ object Futures {
     var future: Option[Future[_]] = None
     do {
       future = futures.find(_.isCompleted)
-      if (sleepMs > 0 && future.isEmpty)
-        Thread.sleep(sleepMs)
+      if (sleepMs > 0 && future.isEmpty) Thread.sleep(sleepMs)
     } while (future.isEmpty)
     future.get
   }
@@ -89,12 +87,19 @@ object Futures {
 
 sealed trait Future[T] {
   def await : Future[T]
+
   def awaitBlocking : Future[T]
+
   def isCompleted: Boolean
+
   def isExpired: Boolean
+
   def timeoutInNanos: Long
+
   def result: Option[T]
+
   def exception: Option[Throwable]
+
   def map[O](f: (T) => O): Future[O] = {
     val wrapped = this
     new Future[O] {
@@ -111,12 +116,14 @@ sealed trait Future[T] {
 
 trait CompletableFuture[T] extends Future[T] {
   def completeWithResult(result: T)
+
   def completeWithException(exception: Throwable)
 }
 
 // Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
 class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
   import TimeUnit.{MILLISECONDS => TIME_UNIT}
+
   def this() = this(0)
 
   val timeoutInNanos = TIME_UNIT.toNanos(timeout)
@@ -207,7 +214,9 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
     _lock.unlock
   }
 
-  private def currentTimeInNanos: Long = TIME_UNIT.toNanos(System.currentTimeMillis)
   protected def onComplete(result: T) {}
+
   protected def onCompleteException(exception: Throwable) {}
+
+  private def currentTimeInNanos: Long = TIME_UNIT.toNanos(System.currentTimeMillis)
 }
