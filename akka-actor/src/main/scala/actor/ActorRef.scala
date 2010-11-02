@@ -19,6 +19,7 @@ import org.multiverse.commitbarriers.CountDownCommitBarrier
 import org.multiverse.api.exceptions.DeadTransactionException
 
 import java.net.InetSocketAddress
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.{ ScheduledFuture, ConcurrentHashMap, TimeUnit }
 import java.util.{ Map => JMap }
@@ -26,12 +27,12 @@ import java.lang.reflect.Field
 
 import scala.reflect.BeanProperty
 import scala.collection.immutable.Stack
-import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
-import annotation.tailrec
+import scala.annotation.tailrec
 
 private[akka] object ActorRefInternals extends Logging {
 
-  /** LifeCycles for ActorRefs
+  /**
+   * LifeCycles for ActorRefs.
    */
   private[akka] sealed trait StatusType
   object UNSTARTED extends StatusType
