@@ -21,9 +21,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         "-Xmigration",
         "-Xcheckinit",
         "-Xstrict-warnings",
+       // "-optimise", //Uncomment this for release compile
         "-Xwarninit",
         "-encoding", "utf8")
-        .map(x => CompileOption(x))
+        .map(CompileOption(_))
   override def javaCompileOptions = JavaCompileOption("-Xlint:unchecked") :: super.javaCompileOptions.toList
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -248,6 +249,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val hbase_core = "org.apache.hbase" % "hbase-core" % "0.20.6" % "compile"
 
+    lazy val google_coll    = "com.google.collections" % "google-collections"  % "1.0"             % "compile"
+
     //Riak PB Client
     lazy val riak_pb_client = "com.trifork"   %  "riak-java-pb-client"      % "1.0-for-akka-by-ticktock"  % "compile"
 
@@ -256,8 +259,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val camel_spring   = "org.apache.camel"       % "camel-spring"        % CAMEL_VERSION     % "test"
     lazy val cassandra_clhm = "org.apache.cassandra"   % "clhm-production"     % CASSANDRA_VERSION % "test"
     lazy val commons_coll   = "commons-collections"    % "commons-collections" % "3.2.1"           % "test"
-    lazy val google_coll    = "com.google.collections" % "google-collections"  % "1.0"             % "test"
-    lazy val google_coll_compile    = "com.google.collections" % "google-collections"  % "1.0"             % "compile"
 
     lazy val high_scale     = "org.apache.cassandra"   % "high-scale-lib"      % CASSANDRA_VERSION % "test"
     lazy val testJetty      = "org.eclipse.jetty"      % "jetty-server"        % JETTY_VERSION     % "test"
@@ -275,10 +276,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val jetty_mortbay  = "org.mortbay.jetty"      % "jetty"               % "6.1.14"          % "test"
 
     //voldemort testing
-    lazy val jdom = "org.jdom" % "jdom" % "1.1" % "test"
-    lazy val vold_jetty = "org.mortbay.jetty" % "jetty" % "6.1.18" % "test"
-    lazy val velocity = "org.apache.velocity" % "velocity" % "1.6.2" % "test"
-    lazy val dbcp = "commons-dbcp" % "commons-dbcp" % "1.2.2" % "test"
+    lazy val jdom           = "org.jdom"               % "jdom"                % "1.1"             % "test"
+    lazy val vold_jetty     = "org.mortbay.jetty"      % "jetty"               % "6.1.18"          % "test"
+    lazy val velocity       = "org.apache.velocity"    % "velocity"            % "1.6.2"           % "test"
+    lazy val dbcp           = "commons-dbcp"           % "commons-dbcp"        % "1.2.2"          % "test"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -630,7 +631,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     //testing
     val scalatest = Dependencies.scalatest
-    val google_coll_compile = Dependencies.google_coll_compile
+    val google_coll  = Dependencies.google_coll
     val jdom = Dependencies.jdom
     val jetty = Dependencies.vold_jetty
     val velocity = Dependencies.velocity
