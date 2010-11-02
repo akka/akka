@@ -284,7 +284,18 @@ class RemoteClient private[akka] (
     val cookie = if (isAuthenticated.compareAndSet(false, true)) RemoteClient.SECURE_COOKIE
     else None
     send(createRemoteMessageProtocolBuilder(
-      actorRef, message, isOneWay, senderOption, typedActorInfo, actorType, cookie).build, senderFuture)
+        Some(actorRef),
+        Left(actorRef.uuid), 
+        actorRef.id, 
+        actorRef.actorClassName, 
+        actorRef.timeout, 
+        Left(message), 
+        isOneWay, 
+        senderOption, 
+        typedActorInfo, 
+        actorType, 
+        cookie
+      ).build, senderFuture)
   }
 
   def send[T](
@@ -407,6 +418,7 @@ class RemoteClientHandler(
         log.debug("Remote client received RemoteMessageProtocol[\n%s]", reply.toString)
         val future = futures.get(replyUuid).asInstanceOf[CompletableFuture[Any]]
         if (reply.hasMessage) {
+          if (future eq null) throw new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist")
           val message = MessageSerializer.deserialize(reply.getMessage)
           future.completeWithResult(message)
         } else {
@@ -419,7 +431,8 @@ class RemoteClientHandler(
               "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
             else supervisedActor.supervisor.get ! Exit(supervisedActor, parseException(reply, client.loader))
           }
-          future.completeWithException(parseException(reply, client.loader))
+          val exception = parseException(reply, client.loader)
+          future.completeWithException(exception)
         }
         futures remove replyUuid
       } else {
@@ -486,7 +499,7 @@ class RemoteClientHandler(
     val exception = reply.getException
     val classname = exception.getClassname
     val exceptionClass = if (loader.isDefined) loader.get.loadClass(classname)
-    else Class.forName(classname)
+                         else Class.forName(classname)
     exceptionClass
       .getConstructor(Array[Class[_]](classOf[String]): _*)
       .newInstance(exception.getMessage).asInstanceOf[Throwable]

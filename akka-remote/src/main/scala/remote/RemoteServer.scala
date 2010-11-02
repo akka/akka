@@ -10,7 +10,8 @@ import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.{Map => JMap}
 
 import se.scalablesolutions.akka.actor.{
-  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage, uuidFrom, Uuid, ActorRegistry}
+  Actor, TypedActor, ActorRef, IllegalActorStateException, 
+  RemoteActorSystemMessage, uuidFrom, Uuid, ActorRegistry, ActorType => AkkaActorType}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
@@ -495,18 +496,23 @@ class RemoteServerHandler(
             override def onComplete(result: AnyRef) {
               log.debug("Returning result from actor invocation [%s]", result)
               val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
-                actorRef, Left(reply), isOneWay, senderOption, typedActorInfo, actorType, cookie)
+                Some(actorRef),
+                Right(request.getUuid), 
+                actorInfo.getId, 
+                actorInfo.getTarget, 
+                actorInfo.getTimeout, 
+                Left(result), 
+                true, 
+                Some(actorRef), 
+                None, 
+                AkkaActorType.ScalaActor, 
+                None)
 
-/*
-              val replyBuilder = RemoteMessageProtocol.newBuilder
-                .setUuid(request.getUuid)
-                .setMessage(MessageSerializer.serialize(result))
-                .setIsActor(true)
-*/
-              if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
+              // FIXME lift in the supervisor uuid management into toh createRemoteMessageProtocolBuilder method
+              if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
 
               try {
-                channel.write(replyBuilder.build)
+                channel.write(messageBuilder.build)
               } catch {
                 case e: Throwable => server.notifyListeners(RemoteServerError(e, server))
               }
@@ -514,7 +520,7 @@ class RemoteServerHandler(
 
             override def onCompleteException(exception: Throwable) {
               try {
-                channel.write(createErrorReplyMessage(exception, request, true))
+                channel.write(createErrorReplyMessage(exception, request, AkkaActorType.ScalaActor))
               } catch {
                 case e: Throwable => server.notifyListeners(RemoteServerError(e, server))
               }
@@ -539,19 +545,28 @@ class RemoteServerHandler(
       else {
         val result = messageReceiver.invoke(typedActor, args: _*)
         log.debug("Returning result from remote typed actor invocation [%s]", result)
-        val replyBuilder = RemoteMessageProtocol.newBuilder
-            .setUuid(request.getUuid)
-            .setMessage(MessageSerializer.serialize(result))
-            .setIsActor(false)
-        if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-        channel.write(replyBuilder.build)
+
+        val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+          None,
+          Right(request.getUuid), 
+          actorInfo.getId, 
+          actorInfo.getTarget, 
+          actorInfo.getTimeout, 
+          Left(result),
+          true, 
+          None,
+          None, 
+          AkkaActorType.TypedActor, 
+          None)
+        if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
+        channel.write(messageBuilder.build)
       }
     } catch {
       case e: InvocationTargetException =>
-        channel.write(createErrorReplyMessage(e.getCause, request, false))
+        channel.write(createErrorReplyMessage(e.getCause, request, AkkaActorType.TypedActor))
         server.notifyListeners(RemoteServerError(e, server))
       case e: Throwable =>
-        channel.write(createErrorReplyMessage(e, request, false))
+        channel.write(createErrorReplyMessage(e, request, AkkaActorType.TypedActor))
         server.notifyListeners(RemoteServerError(e, server))
     }
   }
@@ -655,15 +670,23 @@ class RemoteServerHandler(
     } else typedActorOrNull
   }
 
-  private def createErrorReplyMessage(e: Throwable, request: RemoteMessageProtocol, isActor: Boolean): RemoteMessageProtocol = {
+  private def createErrorReplyMessage(exception: Throwable, request: RemoteMessageProtocol, actorType: AkkaActorType): RemoteMessageProtocol = {
     val actorInfo = request.getActorInfo
-    log.error(e, "Could not invoke remote typed actor [%s :: %s]", actorInfo.getTypedActorInfo.getMethod, actorInfo.getTarget)
-    val replyBuilder = RemoteMessageProtocol.newBuilder
-        .setUuid(request.getUuid)
-        .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
-        .setIsActor(isActor)
-    if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-    replyBuilder.build
+    log.error(exception, "Could not invoke remote actor [%s]", actorInfo.getTarget)
+    val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+      None,
+      Right(request.getUuid), 
+      actorInfo.getId, 
+      actorInfo.getTarget, 
+      actorInfo.getTimeout, 
+      Right(exception), 
+      true, 
+      None, 
+      None, 
+      actorType, 
+      None)
+    if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
+    messageBuilder.build
   }
 
   private def authenticateRemoteClient(request: RemoteMessageProtocol, ctx: ChannelHandlerContext) = {

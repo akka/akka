@@ -107,35 +107,6 @@ message RemoteMessageProtocol {
 }
 
 /**
- * Defines a remote message request.
- *
-message RemoteRequestProtocol {
-  required UuidProtocol uuid = 1;
-  required MessageProtocol message = 2;
-  required ActorInfoProtocol actorInfo = 3;
-  required bool isOneWay = 4;
-  optional UuidProtocol supervisorUuid = 5;
-  optional RemoteActorRefProtocol sender = 6;
-  repeated MetadataEntryProtocol metadata = 7;
-  optional string cookie = 8;
-}
-*/
-/**
- * Defines a remote message reply.
- *
-message RemoteReplyProtocol {
-  required UuidProtocol uuid = 1;
-  optional MessageProtocol message = 2;
-  optional ExceptionProtocol exception = 3;
-  optional UuidProtocol supervisorUuid = 4;
-  required bool isActor = 5;
-  required bool isSuccessful = 6;
-  repeated MetadataEntryProtocol metadata = 7;
-  optional string cookie = 8;
-}
-*/
-
-/**
  * Defines a UUID.
  */
 message UuidProtocol {
