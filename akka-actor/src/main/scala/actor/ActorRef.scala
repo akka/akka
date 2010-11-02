@@ -972,12 +972,11 @@ class LocalActorRef private[akka] (
       if (future.isDefined) future.get
       else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
     } else {
-      val future = if (senderFuture.isDefined) senderFuture.get
-      else new DefaultCompletableFuture[T](timeout)
+      val future = if (senderFuture.isDefined) senderFuture else Some(new DefaultCompletableFuture[T](timeout))
       val invocation = new MessageInvocation(
-        this, message, senderOption, Some(future.asInstanceOf[CompletableFuture[Any]]), transactionSet.get)
+        this, message, senderOption, future.asInstanceOf[Some[CompletableFuture[Any]]], transactionSet.get)
       dispatcher dispatchMessage invocation
-      future
+      future.get
     }
   }
 
@@ -1114,10 +1113,10 @@ class LocalActorRef private[akka] (
         true //Done
       }
 
-      if (!success)
-        attemptRestart
+      if (success)
+        () //Alles gut
       else
-        () //Yay!
+        attemptRestart
     }
 
     attemptRestart() //Tailrecursion
@@ -1147,12 +1146,9 @@ class LocalActorRef private[akka] (
   // ========= PRIVATE FUNCTIONS =========
 
   private[this] def newActor: Actor = {
-    Actor.actorRefInCreation.withValue(Some(this)) {
-      val actor = actorFactory()
-      if (actor eq null) throw new ActorInitializationException(
-        "Actor instance passed to ActorRef can not be 'null'")
-      actor
-    }
+    val a = Actor.actorRefInCreation.withValue(Some(this)) { actorFactory() }
+    if (a eq null) throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
+    a
   }
 
   private def joinTransaction(message: Any) = if (isTransactionSetInScope) {
@@ -1590,7 +1586,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
     if (isRunning) {
       if (sender.get.senderFuture.isDefined) postMessageToMailboxAndCreateFutureResultWithTimeout(
         message, timeout, sender.get.sender, sender.get.senderFuture)
-      else if (sender.get.sender.isDefined) postMessageToMailbox(message, Some(sender.get.sender.get))
+      else if (sender.get.sender.isDefined) postMessageToMailbox(message, sender.get.sender)
       else throw new IllegalActorStateException("Can't forward message when initial sender is not an actor")
     } else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
@@ -1619,7 +1615,8 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
       senderFuture.get completeWithResult message
       true
     } else if (sender.isDefined) {
-      sender.get ! message
+      //TODO: optimize away this allocation, perhaps by having implicit self: Option[ActorRef] in signature
+      sender.get.!(message)(Some(this))
       true
     } else false
   }
@@ -1634,9 +1631,10 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
         def !(msg: Any) = future completeWithResult msg
       }
     } else if (sender.isDefined) {
+      val someSelf = Some(this)
       new Channel[Any] {
         val client = sender.get
-        def !(msg: Any) = client ! msg
+        def !(msg: Any) = client.!(msg)(someSelf)
       }
     } else throw new IllegalActorStateException("No channel available")
   }
