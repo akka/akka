@@ -69,11 +69,12 @@ object RemoteClient extends Logging {
     else Some(cookie)
   }
 
-  val READ_TIMEOUT = Duration(config.getInt("akka.remote.client.read-timeout", 1), TIME_UNIT)
-  val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
+  val READ_TIMEOUT       = Duration(config.getInt("akka.remote.client.read-timeout", 1), TIME_UNIT)
+  val RECONNECT_DELAY    = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
+  val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.client.message-frame-size", 1048576)
 
   private val remoteClients = new HashMap[String, RemoteClient]
-  private val remoteActors = new HashMap[Address, HashSet[Uuid]]
+  private val remoteActors  = new HashMap[Address, HashSet[Uuid]]
 
   def actorFor(classNameOrServiceId: String, hostname: String, port: Int): ActorRef =
     actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, None)
@@ -375,7 +376,7 @@ class RemoteClientPipelineFactory(
 
     val ssl = if (RemoteServer.SECURE) join(new SslHandler(engine)) else join()
     val timeout = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT.toMillis.toInt)
-    val lenDec = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
+    val lenDec = new LengthFieldBasedFrameDecoder(RemoteClient.MESSAGE_FRAME_SIZE, 0, 4, 0, 4)
     val lenPrep = new LengthFieldPrepender(4)
     val protobufDec = new ProtobufDecoder(RemoteMessageProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
