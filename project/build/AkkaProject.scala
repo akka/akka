@@ -544,6 +544,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaRiakProject(_), akka_persistence_common)
     lazy val akka_persistence_couchdb = project("akka-persistence-couchdb", "akka-persistence-couchdb",
       new AkkaCouchDBProject(_), akka_persistence_common)
+     lazy val akka_persistence_memcached= project("akka-persistence-memcached", "akka-persistence-memcached",
+      new AkkaMemcachedProject(_), akka_persistence_common)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
