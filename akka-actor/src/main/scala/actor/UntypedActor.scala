@@ -7,11 +7,11 @@ package akka.actor
 import akka.dispatch._
 import akka.stm.global._
 import akka.config.Supervision._
+import akka.japi.Procedure
 
 import java.net.InetSocketAddress
 
 import scala.reflect.BeanProperty
-import akka.japi.Procedure
 
 /**
  * Subclass this abstract class to create a MDB-style untyped actor.
@@ -62,6 +62,7 @@ import akka.japi.Procedure
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class UntypedActor extends Actor {
+
   def getContext(): ActorRef = self
 
   final protected def receive = {
@@ -123,6 +124,7 @@ abstract class RemoteUntypedActor(address: InetSocketAddress) extends UntypedAct
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object UntypedActor {
+
   /**
    * Creates an ActorRef out of the Actor type represented by the class provided.
    *  Example in Java:

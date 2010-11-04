@@ -127,9 +127,13 @@ object ActorSerialization {
 
       val requestProtocols =
         messages.map(m =>
-          RemoteActorSerialization.createRemoteRequestProtocolBuilder(
-            actorRef,
-            m.message,
+          RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+            Some(actorRef),
+            Left(actorRef.uuid),
+            actorRef.id,
+            actorRef.actorClassName,
+            actorRef.timeout,
+            Left(m.message),
             false,
             actorRef.getSender,
             None,
@@ -201,7 +205,7 @@ object ActorSerialization {
       hotswap,
       factory)
 
-    val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteRequestProtocol]]
+    val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
     messages.foreach(message => ar ! MessageSerializer.deserialize(message.getMessage))
 
     if (format.isInstanceOf[SerializerBasedActorFormat[_]] == false)
@@ -257,19 +261,27 @@ object RemoteActorSerialization {
         .build
   }
 
-  def createRemoteRequestProtocolBuilder(
-      actorRef: ActorRef,
-      message: Any,
+  def createRemoteMessageProtocolBuilder(
+      actorRef: Option[ActorRef],
+      uuid: Either[Uuid, UuidProtocol],
+      actorId: String,
+      actorClassName: String,
+      timeout: Long,
+      message: Either[Any, Throwable],
       isOneWay: Boolean,
       senderOption: Option[ActorRef],
       typedActorInfo: Option[Tuple2[String, String]],
       actorType: ActorType,
-      secureCookie: Option[String]): RemoteRequestProtocol.Builder = {
-    import actorRef._
+      secureCookie: Option[String]): RemoteMessageProtocol.Builder = {
+
+    val uuidProtocol = uuid match {
+      case Left(uid)       => UuidProtocol.newBuilder.setHigh(uid.getTime).setLow(uid.getClockSeqAndNode).build
+      case Right(protocol) => protocol
+    }
 
     val actorInfoBuilder = ActorInfoProtocol.newBuilder
-        .setUuid(UuidProtocol.newBuilder.setHigh(uuid.getTime).setLow(uuid.getClockSeqAndNode).build)
-        .setId(actorRef.id)
+        .setUuid(uuidProtocol)
+        .setId(actorId)
         .setTarget(actorClassName)
         .setTimeout(timeout)
 
@@ -286,28 +298,39 @@ object RemoteActorSerialization {
       case ActorType.TypedActor => actorInfoBuilder.setActorType(TYPED_ACTOR)
     }
     val actorInfo = actorInfoBuilder.build
-    val requestUuid = newUuid
-    val requestBuilder = RemoteRequestProtocol.newBuilder
-        .setUuid(UuidProtocol.newBuilder.setHigh(requestUuid.getTime).setLow(requestUuid.getClockSeqAndNode).build)
-        .setMessage(MessageSerializer.serialize(message))
+    val messageBuilder = RemoteMessageProtocol.newBuilder
+        .setUuid(uuidProtocol)
         .setActorInfo(actorInfo)
-        .setIsOneWay(isOneWay)
+        .setOneWay(isOneWay)
 
-    secureCookie.foreach(requestBuilder.setCookie(_))
+    message match {
+      case Left(message) => 
+        messageBuilder.setMessage(MessageSerializer.serialize(message))
+      case Right(exception) => 
+        messageBuilder.setException(ExceptionProtocol.newBuilder
+            .setClassname(exception.getClass.getName)
+            .setMessage(exception.getMessage)
+            .build)
+    }
 
-    val id = registerSupervisorAsRemoteActor
-    if (id.isDefined) requestBuilder.setSupervisorUuid(
-      UuidProtocol.newBuilder
-      .setHigh(id.get.getTime)
-      .setLow(id.get.getClockSeqAndNode)
-      .build)
+    secureCookie.foreach(messageBuilder.setCookie(_))
+
+    actorRef.foreach { ref => 
+      ref.registerSupervisorAsRemoteActor.foreach { id =>
+        messageBuilder.setSupervisorUuid(
+          UuidProtocol.newBuilder
+              .setHigh(id.getTime)
+              .setLow(id.getClockSeqAndNode)
+              .build)
+      }
+    }
 
     senderOption.foreach { sender =>
       RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid.toString, sender)
-      requestBuilder.setSender(toRemoteActorRefProtocol(sender))
+      messageBuilder.setSender(toRemoteActorRefProtocol(sender))
 
     }
-    requestBuilder
+    messageBuilder
   }
 }
 
