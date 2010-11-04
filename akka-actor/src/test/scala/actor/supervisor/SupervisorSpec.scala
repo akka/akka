@@ -10,7 +10,8 @@ import Actor._
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent. {CountDownLatch, TimeUnit, LinkedBlockingQueue}
 
 object SupervisorSpec {
   var messageLog = new LinkedBlockingQueue[String]
@@ -491,6 +492,40 @@ class SupervisorSpec extends JUnitSuite {
     expect("ping") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
+  }
+
+  @Test def shouldAttemptRestartWhenExceptionDuringRestart {
+    val inits = new AtomicInteger(0)
+    val dyingActor = actorOf(new Actor {
+      self.lifeCycle = Permanent
+      log.debug("Creating dying actor, attempt: " + inits.incrementAndGet)
+
+      if (!(inits.get % 2 != 0))
+        throw new IllegalStateException("Don't wanna!")
+
+
+      def receive = {
+        case Ping => self.reply_?("pong")
+        case Die => throw new Exception("expected")
+      }
+    })
+
+    val supervisor =
+      Supervisor(
+        SupervisorConfig(
+          OneForOneStrategy(classOf[Exception] :: Nil,3,10000),
+          Supervise(dyingActor,Permanent) :: Nil))
+
+    intercept[Exception] {
+      dyingActor !! (Die, 5000)
+    }
+
+    expect("pong") {
+      (dyingActor !! (Ping, 5000)).getOrElse("nil")
+    }
+
+    expect(3) { inits.get }
+    supervisor.shutdown
   }
 
   // =============================================

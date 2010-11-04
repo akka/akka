@@ -141,9 +141,9 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
             _childActors.put(className, actorRef :: currentActors)
             actorRef.lifeCycle = lifeCycle
             supervisor.link(actorRef)
-            remoteAddress.foreach { address =>
-              RemoteServerModule.registerActor(
-                new InetSocketAddress(address.hostname, address.port), actorRef.uuid, actorRef)
+            if (remoteAddress.isDefined) {
+              val address = remoteAddress.get
+              RemoteServerModule.registerActor(new InetSocketAddress(address.hostname, address.port), actorRef)
             }
           case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)

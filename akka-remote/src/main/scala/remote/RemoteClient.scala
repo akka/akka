@@ -69,11 +69,12 @@ object RemoteClient extends Logging {
     else Some(cookie)
   }
 
-  val READ_TIMEOUT = Duration(config.getInt("akka.remote.client.read-timeout", 1), TIME_UNIT)
-  val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
+  val READ_TIMEOUT       = Duration(config.getInt("akka.remote.client.read-timeout", 1), TIME_UNIT)
+  val RECONNECT_DELAY    = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
+  val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.client.message-frame-size", 1048576)
 
   private val remoteClients = new HashMap[String, RemoteClient]
-  private val remoteActors = new HashMap[Address, HashSet[Uuid]]
+  private val remoteActors  = new HashMap[Address, HashSet[Uuid]]
 
   def actorFor(classNameOrServiceId: String, hostname: String, port: Int): ActorRef =
     actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, None)
@@ -286,15 +287,26 @@ class RemoteClient private[akka] (
     actorType: ActorType): Option[CompletableFuture[T]] = {
     val cookie = if (isAuthenticated.compareAndSet(false, true)) RemoteClient.SECURE_COOKIE
     else None
-    send(createRemoteRequestProtocolBuilder(
-      actorRef, message, isOneWay, senderOption, typedActorInfo, actorType, cookie).build, senderFuture)
+    send(createRemoteMessageProtocolBuilder(
+        Some(actorRef),
+        Left(actorRef.uuid), 
+        actorRef.id, 
+        actorRef.actorClassName, 
+        actorRef.timeout, 
+        Left(message), 
+        isOneWay, 
+        senderOption, 
+        typedActorInfo, 
+        actorType, 
+        cookie
+      ).build, senderFuture)
   }
 
   def send[T](
-    request: RemoteRequestProtocol,
+    request: RemoteMessageProtocol,
     senderFuture: Option[CompletableFuture[T]]): Option[CompletableFuture[T]] = {
     if (isRunning) {
-      if (request.getIsOneWay) {
+      if (request.getOneWay) {
         connection.getChannel.write(request)
         None
       } else {
@@ -364,9 +376,9 @@ class RemoteClientPipelineFactory(
 
     val ssl = if (RemoteServer.SECURE) join(new SslHandler(engine)) else join()
     val timeout = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT.toMillis.toInt)
-    val lenDec = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
+    val lenDec = new LengthFieldBasedFrameDecoder(RemoteClient.MESSAGE_FRAME_SIZE, 0, 4, 0, 4)
     val lenPrep = new LengthFieldPrepender(4)
-    val protobufDec = new ProtobufDecoder(RemoteReplyProtocol.getDefaultInstance)
+    val protobufDec = new ProtobufDecoder(RemoteMessageProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
     val (enc, dec) = RemoteServer.COMPRESSION_SCHEME match {
       case "zlib" => (join(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL)), join(new ZlibDecoder))
@@ -404,12 +416,13 @@ class RemoteClientHandler(
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) {
     try {
       val result = event.getMessage
-      if (result.isInstanceOf[RemoteReplyProtocol]) {
-        val reply = result.asInstanceOf[RemoteReplyProtocol]
+      if (result.isInstanceOf[RemoteMessageProtocol]) {
+        val reply = result.asInstanceOf[RemoteMessageProtocol]
         val replyUuid = uuidFrom(reply.getUuid.getHigh, reply.getUuid.getLow)
-        log.debug("Remote client received RemoteReplyProtocol[\n%s]", reply.toString)
+        log.debug("Remote client received RemoteMessageProtocol[\n%s]", reply.toString)
         val future = futures.get(replyUuid).asInstanceOf[CompletableFuture[Any]]
-        if (reply.getIsSuccessful) {
+        if (reply.hasMessage) {
+          if (future eq null) throw new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist")
           val message = MessageSerializer.deserialize(reply.getMessage)
           future.completeWithResult(message)
         } else {
@@ -422,7 +435,8 @@ class RemoteClientHandler(
               "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
             else supervisedActor.supervisor.get ! Exit(supervisedActor, parseException(reply, client.loader))
           }
-          future.completeWithException(parseException(reply, client.loader))
+          val exception = parseException(reply, client.loader)
+          future.completeWithException(exception)
         }
         futures remove replyUuid
       } else {
@@ -485,11 +499,11 @@ class RemoteClientHandler(
     event.getChannel.close
   }
 
-  private def parseException(reply: RemoteReplyProtocol, loader: Option[ClassLoader]): Throwable = {
+  private def parseException(reply: RemoteMessageProtocol, loader: Option[ClassLoader]): Throwable = {
     val exception = reply.getException
     val classname = exception.getClassname
     val exceptionClass = if (loader.isDefined) loader.get.loadClass(classname)
-    else Class.forName(classname)
+                         else Class.forName(classname)
     exceptionClass
       .getConstructor(Array[Class[_]](classOf[String]): _*)
       .newInstance(exception.getMessage).asInstanceOf[Throwable]
