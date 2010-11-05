@@ -4,9 +4,12 @@
 
 package akka.camel
 
-import akka.actor._
-
 import java.net.InetSocketAddress
+
+import org.apache.camel.{Exchange, Processor}
+import org.apache.camel.model.{RouteDefinition, ProcessorDefinition}
+
+import akka.actor._
 
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
@@ -14,6 +17,13 @@ import java.net.InetSocketAddress
  * @author Martin Krasser
  */
 trait Consumer { self: Actor =>
+  import Consumer.Handler
+
+  /**
+   * The default route definition handler is the identity function
+   */
+  private[camel] var routeDefinitionHandler: Handler = { rd: RouteDefinition => rd }
+
   /**
    * Returns the Camel endpoint URI to consume messages from.
    */
@@ -25,6 +35,11 @@ trait Consumer { self: Actor =>
    * doesn't have any effect on one-way communications (they'll never block).
    */
   def blocking = false
+
+  /**
+   * Sets the route definition handler for creating a custom route to this consumer instance.
+   */
+  def onRouteDefinition(h: Handler): Unit = routeDefinitionHandler = h
 }
 
 /**
@@ -77,6 +92,13 @@ abstract class RemoteUntypedConsumerActor(address: InetSocketAddress) extends Re
  * @author Martin Krasser
  */
 private[camel] object Consumer {
+  /**
+   * Type of a route definition handler. A route definition handler is a function
+   * that modifies a route definition which is passed as argument and returns the
+   * modified definition.
+   */
+  type Handler = RouteDefinition => ProcessorDefinition[_]
+
   /**
    * Applies a function <code>f</code> to <code>actorRef</code> if <code>actorRef</code>
    * references a consumer actor. A valid reference to a consumer actor is a local actor

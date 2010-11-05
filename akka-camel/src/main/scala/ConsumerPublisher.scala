@@ -10,6 +10,7 @@ import java.lang.reflect.Method
 import java.util.concurrent.CountDownLatch
 
 import org.apache.camel.builder.RouteBuilder
+import org.apache.camel.model.{ProcessorDefinition, RouteDefinition}
 
 import akka.actor._
 import akka.camel.component.TypedActorComponent
@@ -23,16 +24,16 @@ private[camel] object ConsumerPublisher extends Logging {
    * Creates a route to the registered consumer actor.
    */
   def handleConsumerRegistered(event: ConsumerRegistered) {
-    CamelContextManager.mandatoryContext.addRoutes(new ConsumerActorRoute(event.uri, event.uuid, event.blocking))
-    log.info("published actor %s at endpoint %s" format (event.actorRef, event.uri))
+    CamelContextManager.mandatoryContext.addRoutes(new ConsumerActorRouteBuilder(event))
+    log.info("published actor %s at endpoint %s" format (event.actorRef, event.endpointUri))
   }
 
   /**
    * Stops the route to the already un-registered consumer actor.
    */
   def handleConsumerUnregistered(event: ConsumerUnregistered) {
-    CamelContextManager.mandatoryContext.stopRoute(event.uuid.toString)
-    log.info("unpublished actor %s from endpoint %s" format (event.actorRef, event.uri))
+    CamelContextManager.mandatoryContext.stopRoute(event.uuid)
+    log.info("unpublished actor %s from endpoint %s" format (event.actorRef, event.endpointUri))
   }
 
   /**
@@ -43,7 +44,7 @@ private[camel] object ConsumerPublisher extends Logging {
     val objectId = "%s_%s" format (event.init.actorRef.uuid, targetMethod)
 
     CamelContextManager.typedActorRegistry.put(objectId, event.typedActor)
-    CamelContextManager.mandatoryContext.addRoutes(new ConsumerMethodRoute(event.uri, objectId, targetMethod))
+    CamelContextManager.mandatoryContext.addRoutes(new ConsumerMethodRouteBuilder(event.uri, objectId, targetMethod))
     log.info("published method %s of %s at endpoint %s" format (targetMethod, event.typedActor, event.uri))
   }
 
@@ -117,7 +118,7 @@ private[camel] case class SetExpectedUnregistrationCount(num: Int)
  *
  * @author Martin Krasser
  */
-private[camel] abstract class ConsumerRoute(endpointUri: String, id: String) extends RouteBuilder {
+private[camel] abstract class ConsumerRouteBuilder(endpointUri: String, id: String) extends RouteBuilder {
   // TODO: make conversions configurable
   private val bodyConversions = Map(
     "file" -> classOf[InputStream]
@@ -125,39 +126,38 @@ private[camel] abstract class ConsumerRoute(endpointUri: String, id: String) ext
 
   def configure = {
     val schema = endpointUri take endpointUri.indexOf(":") // e.g. "http" from "http://whatever/..."
-    bodyConversions.get(schema) match {
-      case Some(clazz) => from(endpointUri).routeId(id).convertBodyTo(clazz).to(targetUri)
-      case None        => from(endpointUri).routeId(id).to(targetUri)
-    }
+    val cnvopt = bodyConversions.get(schema)
+
+    onRouteDefinition(startRouteDefinition(cnvopt)).to(targetUri)
   }
 
+  protected def onRouteDefinition(rd: RouteDefinition): ProcessorDefinition[_]
   protected def targetUri: String
+
+  private def startRouteDefinition(bodyConversion: Option[Class[_]]): RouteDefinition = bodyConversion match {
+    case Some(clazz) => from(endpointUri).routeId(id).convertBodyTo(clazz)
+    case None        => from(endpointUri).routeId(id)
+  }
 }
 
 /**
  * Defines the route to a (untyped) consumer actor.
  *
- * @param endpointUri endpoint URI of the (untyped) consumer actor
- * @param uuid actor uuid
- * @param blocking true for blocking in-out exchanges, false otherwise
- *
  * @author Martin Krasser
  */
-private[camel] class ConsumerActorRoute(endpointUri: String, uuid: Uuid, blocking: Boolean) extends ConsumerRoute(endpointUri, uuid.toString) {
-  protected override def targetUri = "actor:uuid:%s?blocking=%s" format (uuid, blocking)
+private[camel] class ConsumerActorRouteBuilder(event: ConsumerRegistered) extends ConsumerRouteBuilder(event.endpointUri, event.uuid) {
+  protected def onRouteDefinition(rd: RouteDefinition) = event.routeDefinitionHandler(rd)
+  protected def targetUri = "actor:uuid:%s?blocking=%s" format (event.uuid, event.blocking)
 }
 
 /**
  * Defines the route to a typed actor method.
  *
- * @param endpointUri endpoint URI of the consumer actor method
- * @param id typed actor identifier
- * @param method name of the method to invoke.
- *
  * @author Martin Krasser
  */
-private[camel] class ConsumerMethodRoute(val endpointUri: String, id: String, method: String) extends ConsumerRoute(endpointUri, id) {
-  protected override def targetUri = "%s:%s?method=%s" format (TypedActorComponent.InternalSchema, id, method)
+private[camel] class ConsumerMethodRouteBuilder(val endpointUri: String, id: String, method: String) extends ConsumerRouteBuilder(endpointUri, id) {
+  protected def onRouteDefinition(rd: RouteDefinition) = rd // TODO: use provided route definition handler
+  protected def targetUri = "%s:%s?method=%s" format (TypedActorComponent.InternalSchema, id, method)
 }
 
 /**
@@ -223,24 +223,29 @@ private[camel] sealed trait ConsumerEvent
  * Event indicating that a consumer actor has been registered at the actor registry.
  *
  * @param actorRef actor reference
- * @param uri endpoint URI of the consumer actor
- * @param uuid actor uuid
- * @param blocking true for blocking in-out exchanges, false otherwise
+ * @param actor actor implementation
  *
  * @author Martin Krasser
  */
-private[camel] case class ConsumerRegistered(actorRef: ActorRef, uri: String, uuid: Uuid, blocking: Boolean) extends ConsumerEvent
+private[camel] case class ConsumerRegistered(actorRef: ActorRef, actor: Consumer) extends ConsumerEvent {
+  def uuid                   = actorRef.uuid.toString
+  def endpointUri            = actor.endpointUri
+  def blocking               = actor.blocking
+  def routeDefinitionHandler = actor.routeDefinitionHandler
+}
 
 /**
  * Event indicating that a consumer actor has been unregistered from the actor registry.
  *
  * @param actorRef actor reference
- * @param uri endpoint URI of the consumer actor
- * @param uuid actor uuid
+ * @param actor actor implementation
  *
  * @author Martin Krasser
  */
-private[camel] case class ConsumerUnregistered(actorRef: ActorRef, uri: String, uuid: Uuid) extends ConsumerEvent
+private[camel] case class ConsumerUnregistered(actorRef: ActorRef, actor: Consumer) extends ConsumerEvent {
+  def uuid        = actorRef.uuid.toString
+  def endpointUri = actor.endpointUri
+}
 
 /**
  * Event indicating that an typed actor proxy has been created for a typed actor. For each <code>@consume</code>
@@ -278,7 +283,7 @@ private[camel] object ConsumerRegistered {
    */
   def forConsumer(actorRef: ActorRef): Option[ConsumerRegistered] = {
     Consumer.forConsumer[ConsumerRegistered](actorRef) {
-      target => ConsumerRegistered(actorRef, target.endpointUri, actorRef.uuid, target.blocking)
+      actor => ConsumerRegistered(actorRef, actor)
     }
   }
 }
@@ -293,7 +298,7 @@ private[camel] object ConsumerUnregistered {
    */
   def forConsumer(actorRef: ActorRef): Option[ConsumerUnregistered] = {
     Consumer.forConsumer[ConsumerUnregistered](actorRef) {
-      target => ConsumerUnregistered(actorRef, target.endpointUri, actorRef.uuid)
+      actor => ConsumerUnregistered(actorRef, actor)
     }
   }
 }

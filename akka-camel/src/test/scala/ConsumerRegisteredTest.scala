@@ -2,8 +2,7 @@ package akka.camel
 
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
-
-import akka.actor.{Actor, UntypedActor}
+import akka.actor.{ActorRef, Actor, UntypedActor}
 
 class ConsumerRegisteredTest extends JUnitSuite {
   import ConsumerRegisteredTest._
@@ -11,13 +10,13 @@ class ConsumerRegisteredTest extends JUnitSuite {
   @Test def shouldCreateSomeNonBlockingPublishRequestFromConsumer = {
     val c = Actor.actorOf[ConsumerActor1]
     val event = ConsumerRegistered.forConsumer(c)
-    assert(event === Some(ConsumerRegistered(c, "mock:test1", c.uuid, false)))
+    assert(event === Some(ConsumerRegistered(c, consumerOf(c))))
   }
 
   @Test def shouldCreateSomeBlockingPublishRequestFromConsumer = {
     val c = Actor.actorOf[ConsumerActor2]
     val event = ConsumerRegistered.forConsumer(c)
-    assert(event === Some(ConsumerRegistered(c, "mock:test2", c.uuid, true)))
+    assert(event === Some(ConsumerRegistered(c, consumerOf(c))))
   }
 
   @Test def shouldCreateNoneFromConsumer = {
@@ -28,13 +27,13 @@ class ConsumerRegisteredTest extends JUnitSuite {
   @Test def shouldCreateSomeNonBlockingPublishRequestFromUntypedConsumer = {
     val uc = UntypedActor.actorOf(classOf[SampleUntypedConsumer])
     val event = ConsumerRegistered.forConsumer(uc)
-    assert(event === Some(ConsumerRegistered(uc, "direct:test-untyped-consumer", uc.uuid, false)))
+    assert(event === Some(ConsumerRegistered(uc, consumerOf(uc))))
   }
 
   @Test def shouldCreateSomeBlockingPublishRequestFromUntypedConsumer = {
     val uc = UntypedActor.actorOf(classOf[SampleUntypedConsumerBlocking])
     val event = ConsumerRegistered.forConsumer(uc)
-    assert(event === Some(ConsumerRegistered(uc, "direct:test-untyped-consumer-blocking", uc.uuid, true)))
+    assert(event === Some(ConsumerRegistered(uc, consumerOf(uc))))
   }
 
   @Test def shouldCreateNoneFromUntypedConsumer = {
@@ -42,6 +41,8 @@ class ConsumerRegisteredTest extends JUnitSuite {
     val event = ConsumerRegistered.forConsumer(a)
     assert(event === None)
   }
+
+  private def consumerOf(ref: ActorRef) = ref.actor.asInstanceOf[Consumer]
 }
 
 object ConsumerRegisteredTest {
