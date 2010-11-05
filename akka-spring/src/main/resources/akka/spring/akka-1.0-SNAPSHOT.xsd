@@ -166,13 +166,6 @@
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
-    <xsd:attribute name="transactional" type="xsd:boolean">
-      <xsd:annotation>
-        <xsd:documentation>
-          Set this to true if messages should have REQUIRES_NEW semantics.
-        </xsd:documentation>
-      </xsd:annotation>
-    </xsd:attribute>
     <xsd:attribute name="lifecycle" type="lifecycle-type">
       <xsd:annotation>
         <xsd:documentation>
@@ -216,13 +209,6 @@
       <xsd:annotation>
         <xsd:documentation>
           The default timeout for '!!' invocations in milliseconds.
-        </xsd:documentation>
-      </xsd:annotation>
-    </xsd:attribute>
-    <xsd:attribute name="transactional" type="xsd:boolean">
-      <xsd:annotation>
-        <xsd:documentation>
-          Set this to true if messages should have REQUIRES_NEW semantics.
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>

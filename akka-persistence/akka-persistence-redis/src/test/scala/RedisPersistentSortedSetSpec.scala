@@ -7,8 +7,9 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import akka.actor.{Actor, ActorRef, Transactor}
+import akka.actor.{Actor, ActorRef}
 import Actor._
+import akka.stm.local._
 
 /**
  * A persistent actor based on Redis sortedset storage.
@@ -43,15 +44,17 @@ case class SCORE(h: Hacker)
 case class RANGE(start: Int, end: Int)
 
 // add and remove subject to the condition that there will be at least 3 hackers
-case class MULTI(add: List[Hacker], rem: List[Hacker], failer: ActorRef)
+case class MULTI(add: List[Hacker], rem: List[Hacker])
 
 case class MULTIRANGE(add: List[Hacker])
 
-class SortedSetActor extends Transactor {
+class SortedSetActor extends Actor {
   self.timeout = 100000
-  private lazy val hackers = RedisStorage.newSortedSet
+  private val hackers = RedisStorage.newSortedSet
 
-  def receive = {
+  def receive = { case message => atomic { atomicReceive(message) } }
+
+  def atomicReceive: Receive = {
     case ADD(h) =>
       hackers.+(h.name.getBytes, h.zscore)
       self.reply(true)
@@ -69,7 +72,7 @@ class SortedSetActor extends Transactor {
     case RANGE(s, e) =>
       self.reply(hackers.zrange(s, e))
 
-    case MULTI(a, r, failer) =>
+    case MULTI(a, r) =>
       a.foreach{ h: Hacker =>
         hackers.+(h.name.getBytes, h.zscore)
       }
@@ -80,8 +83,7 @@ class SortedSetActor extends Transactor {
           hackers.-(h.name.getBytes)
         }
       } catch {
-        case e: Exception =>
-          failer !! "Failure"
+        case e: Exception => fail
       }
       self.reply((a.size, r.size))
 
@@ -91,6 +93,8 @@ class SortedSetActor extends Transactor {
       }
       self.reply(hackers.zrange(0, -1))
   }
+
+  def fail = throw new RuntimeException("Expected exception; to test fault-tolerance")
 }
 
 import RedisStorageBackend._
@@ -178,13 +182,10 @@ class RedisPersistentSortedSetSpec extends
       val qa = actorOf[SortedSetActor]
       qa.start
 
-      val failer = actorOf[PersistentFailerActor]
-      failer.start
-
       (qa !! SIZE).get.asInstanceOf[Int] should equal(0)
       val add = List(h1, h2, h3, h4)
       val rem = List(h2)
-      (qa !! MULTI(add, rem, failer)).get.asInstanceOf[Tuple2[Int, Int]] should equal((4,1))
+      (qa !! MULTI(add, rem)).get.asInstanceOf[Tuple2[Int, Int]] should equal((4,1))
       (qa !! SIZE).get.asInstanceOf[Int] should equal(3)
       // size == 3
 
@@ -194,7 +195,7 @@ class RedisPersistentSortedSetSpec extends
       // remove 3
       val rem1 = List(h1, h3, h4, h5)
       try {
-        qa !! MULTI(add1, rem1, failer)
+        qa !! MULTI(add1, rem1)
       } catch { case e: RuntimeException => {} }
       (qa !! SIZE).get.asInstanceOf[Int] should equal(3)
     }

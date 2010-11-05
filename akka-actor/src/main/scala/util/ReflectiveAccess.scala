@@ -7,7 +7,6 @@ package akka.util
 import akka.actor.{ActorRef, IllegalActorStateException, ActorType, Uuid}
 import akka.dispatch.{Future, CompletableFuture, MessageInvocation}
 import akka.config.{Config, ModuleNotAvailableException}
-import akka.stm.Transaction
 import akka.AkkaException
 
 import java.net.InetSocketAddress
@@ -23,12 +22,10 @@ object ReflectiveAccess extends Logging {
 
   lazy val isRemotingEnabled   = RemoteClientModule.isRemotingEnabled
   lazy val isTypedActorEnabled = TypedActorModule.isTypedActorEnabled
-  lazy val isJtaEnabled        = JtaModule.isJtaEnabled
   lazy val isEnterpriseEnabled = EnterpriseModule.isEnterpriseEnabled
 
   def ensureRemotingEnabled   = RemoteClientModule.ensureRemotingEnabled
   def ensureTypedActorEnabled = TypedActorModule.ensureTypedActorEnabled
-  def ensureJtaEnabled        = JtaModule.ensureJtaEnabled
   def ensureEnterpriseEnabled = EnterpriseModule.ensureEnterpriseEnabled
 
   /**
@@ -173,32 +170,6 @@ object ReflectiveAccess extends Logging {
         future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
       }
       typedActorObjectInstance.get.isJoinPoint(message)
-    }
-  }
-
-  object JtaModule {
-
-    type TransactionContainerObject = {
-      def apply(): TransactionContainer
-    }
-
-    type TransactionContainer = {
-      def beginWithStmSynchronization(transaction: Transaction): Unit
-      def commit: Unit
-      def rollback: Unit
-    }
-
-    lazy val isJtaEnabled = transactionContainerObjectInstance.isDefined
-
-    def ensureJtaEnabled = if (!isJtaEnabled) throw new ModuleNotAvailableException(
-      "Can't load the typed actor module, make sure that akka-jta.jar is on the classpath")
-
-    val transactionContainerObjectInstance: Option[TransactionContainerObject] =
-      getObjectFor("akka.jta.TransactionContainer$")
-
-    def createTransactionContainer: TransactionContainer = {
-      ensureJtaEnabled
-      transactionContainerObjectInstance.get.apply.asInstanceOf[TransactionContainer]
     }
   }
 

@@ -234,16 +234,6 @@ abstract class TypedActor extends Actor with Proxyable {
 }
 
 /**
- * Transactional TypedActor. All messages send to this actor as sent in a transaction. If an enclosing transaction
- * exists it will be joined, if not then a new transaction will be created.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-abstract class TypedTransactor extends TypedActor {
-  self.makeTransactionRequired
-}
-
-/**
  * Holds RTTI (runtime type information) for the TypedActor, f.e. current 'sender'
  * reference, the 'senderFuture' reference etc.
  * <p/>
@@ -327,12 +317,6 @@ object TypedActorConfiguration {
   def apply(host: String, port: Int, timeout: Long) : TypedActorConfiguration = {
     new TypedActorConfiguration().makeRemote(host, port).timeout(Duration(timeout, "millis"))
   }
-
-  def apply(transactionRequired: Boolean) : TypedActorConfiguration = {
-    if (transactionRequired) {
-      new TypedActorConfiguration().makeTransactionRequired
-    } else new TypedActorConfiguration()
-  }
 }
 
 /**
@@ -342,7 +326,6 @@ object TypedActorConfiguration {
  */
 final class TypedActorConfiguration {
   private[akka] var _timeout: Long = Actor.TIMEOUT
-  private[akka] var _transactionRequired = false
   private[akka] var _host: Option[InetSocketAddress] = None
   private[akka] var _messageDispatcher: Option[MessageDispatcher] = None
   private[akka] var _threadBasedDispatcher: Option[Boolean] = None
@@ -350,11 +333,6 @@ final class TypedActorConfiguration {
   def timeout = _timeout
   def timeout(timeout: Duration) : TypedActorConfiguration = {
     _timeout = timeout.toMillis
-    this
-  }
-
-  def makeTransactionRequired() : TypedActorConfiguration = {
-    _transactionRequired = true;
     this
   }
 
@@ -698,12 +676,6 @@ object TypedActor extends Logging {
       throw new IllegalActorStateException("Can't set fault handler when the supervisor is not an Typed Actor"))
     supervisorActor.faultHandler = handler
     this
-  }
-
-  def isTransactional(clazz: Class[_]): Boolean = {
-    if (clazz eq null) false
-    else if (clazz.isAssignableFrom(classOf[TypedTransactor])) true
-    else isTransactional(clazz.getSuperclass)
   }
 
   private[akka] def newTypedActor(targetClass: Class[_]): TypedActor = {

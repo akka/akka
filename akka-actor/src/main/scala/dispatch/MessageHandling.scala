@@ -4,8 +4,6 @@
 
 package akka.dispatch
 
-import org.multiverse.commitbarriers.CountDownCommitBarrier
-
 import java.util.concurrent._
 import atomic. {AtomicInteger, AtomicBoolean, AtomicReference, AtomicLong}
 import akka.util. {Switch, ReentrantGuard, Logging, HashCode}
@@ -17,8 +15,7 @@ import akka.actor._
 final class MessageInvocation(val receiver: ActorRef,
                               val message: Any,
                               val sender: Option[ActorRef],
-                              val senderFuture: Option[CompletableFuture[Any]],
-                              val transactionSet: Option[CountDownCommitBarrier]) {
+                              val senderFuture: Option[CompletableFuture[Any]]) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
 
   def invoke = try {
@@ -47,7 +44,6 @@ final class MessageInvocation(val receiver: ActorRef,
      "\n\treceiver = " + receiver +
      "\n\tsender = " + sender +
      "\n\tsenderFuture = " + senderFuture +
-     "\n\ttransactionSet = " + transactionSet +
      "]"
   }
 }

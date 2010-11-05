@@ -5,8 +5,9 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
-import akka.actor.{ActorRef, Transactor}
+import akka.actor.{Actor, ActorRef}
 import akka.actor.Actor._
+import akka.stm.local._
 
 /**
  * A persistent actor based on Redis storage.
@@ -22,44 +23,47 @@ import akka.actor.Actor._
  */
 
 case class Balance(accountNo: String)
-case class Debit(accountNo: String, amount: Int, failer: ActorRef)
-case class MultiDebit(accountNo: String, amounts: List[Int], failer: ActorRef)
+case class Debit(accountNo: String, amount: Int)
+case class MultiDebit(accountNo: String, amounts: List[Int])
 case class Credit(accountNo: String, amount: Int)
 case object LogSize
 
-class AccountActor extends Transactor {
-  private lazy val accountState = RedisStorage.newMap
+class AccountActor extends Actor {
+  private val accountState = RedisStorage.newMap
   private val txnLog = RedisStorage.newVector
   self.timeout = 100000
 
-  def receive = {
+  def receive = { case message => atomic { atomicReceive(message) } }
+
+  def atomicReceive: Receive = {
     // check balance
     case Balance(accountNo) =>
       txnLog.add("Balance:%s".format(accountNo).getBytes)
       self.reply(new String(accountState.get(accountNo.getBytes).get).toInt)
 
     // debit amount: can fail
-    case Debit(accountNo, amount, failer) =>
+    case Debit(accountNo, amount) =>
       txnLog.add("Debit:%s %s".format(accountNo, amount.toString).getBytes)
 
-      val Some(m) = accountState.get(accountNo.getBytes).map(x => (new String(x)).toInt) orElse Some(0) 
+      val Some(m) = accountState.get(accountNo.getBytes).map(x => (new String(x)).toInt) orElse Some(0)
       accountState.put(accountNo.getBytes, (m - amount).toString.getBytes)
-      if (amount > m)
-        failer !! "Failure"
+      if (amount > m) fail
+
       self.reply(m - amount)
 
     // many debits: can fail
     // demonstrates true rollback even if multiple puts have been done
-    case MultiDebit(accountNo, amounts, failer) =>
+    case MultiDebit(accountNo, amounts) =>
       txnLog.add("MultiDebit:%s %s".format(accountNo, amounts.map(_.intValue).foldLeft(0)(_ + _).toString).getBytes)
 
-      val Some(m) = accountState.get(accountNo.getBytes).map(x => (new String(x)).toInt) orElse Some(0) 
+      val Some(m) = accountState.get(accountNo.getBytes).map(x => (new String(x)).toInt) orElse Some(0)
       var bal = 0
       amounts.foreach {amount =>
         bal = bal + amount
         accountState.put(accountNo.getBytes, (m - bal).toString.getBytes)
       }
-      if (bal > m) failer !! "Failure"
+      if (bal > m) fail
+
       self.reply(m - bal)
 
     // credit amount
@@ -73,14 +77,8 @@ class AccountActor extends Transactor {
     case LogSize =>
       self.reply(txnLog.length.asInstanceOf[AnyRef])
   }
-}
 
-@serializable class PersistentFailerActor extends Transactor {
-  self.timeout = 5000
-  def receive = {
-    case "Failure" =>
-      throw new RuntimeException("Expected exception; to test fault-tolerance")
-  }
+  def fail = throw new RuntimeException("Expected exception; to test fault-tolerance")
 }
 
 class RedisPersistentActorSpec extends JUnitSuite {
@@ -88,16 +86,14 @@ class RedisPersistentActorSpec extends JUnitSuite {
   def testSuccessfulDebit = {
     val bactor = actorOf(new AccountActor)
     bactor.start
-    val failer = actorOf(new PersistentFailerActor)
-    failer.start
     bactor !! Credit("a-123", 5000)
-    bactor !! Debit("a-123", 3000, failer)
+    bactor !! Debit("a-123", 3000)
     assertEquals(2000, (bactor !! Balance("a-123")).get)
 
     bactor !! Credit("a-123", 7000)
     assertEquals(9000, (bactor !! Balance("a-123")).get)
 
-    bactor !! Debit("a-123", 8000, failer)
+    bactor !! Debit("a-123", 8000)
     assertEquals(1000, (bactor !! Balance("a-123")).get)
 
     val c = (bactor !! LogSize).as[Int].get
@@ -111,10 +107,8 @@ class RedisPersistentActorSpec extends JUnitSuite {
     bactor !! Credit("a-123", 5000)
     assertEquals(5000, (bactor !! Balance("a-123")).get)
 
-    val failer = actorOf[PersistentFailerActor]
-    failer.start
     try {
-      bactor !! Debit("a-123", 7000, failer)
+      bactor !! Debit("a-123", 7000)
       fail("should throw exception")
     } catch { case e: RuntimeException => {}}
 
@@ -133,10 +127,8 @@ class RedisPersistentActorSpec extends JUnitSuite {
 
     assertEquals(5000, (bactor !! (Balance("a-123"), 5000)).get)
 
-    val failer = actorOf[PersistentFailerActor]
-    failer.start
     try {
-      bactor !! MultiDebit("a-123", List(500, 2000, 1000, 3000), failer)
+      bactor !! MultiDebit("a-123", List(500, 2000, 1000, 3000))
       fail("should throw exception")
     } catch { case e: RuntimeException => {}}
 

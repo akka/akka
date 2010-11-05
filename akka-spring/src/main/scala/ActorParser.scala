@@ -60,9 +60,6 @@ trait ActorParser extends BeanParser with DispatcherParser {
       throw new IllegalArgumentException("Mandatory attribute missing, you need to provide either implementation or ref  ")
     }
 
-
-    objectProperties.transactional = if (element.getAttribute(TRANSACTIONAL).isEmpty) false else element.getAttribute(TRANSACTIONAL).toBoolean
-
     if (element.hasAttribute(INTERFACE)) {
       objectProperties.interface = element.getAttribute(INTERFACE)
     }
