@@ -1,7 +1,8 @@
 package akka.persistence.cassandra
 
-import akka.actor.{Actor, ActorRef, Transactor}
+import akka.actor.{Actor, ActorRef}
 import Actor._
+import akka.stm.local._
 
 import org.junit.Test
 import org.junit.Assert._
@@ -17,22 +18,24 @@ case class SetMapState(key: String, value: String)
 case class SetVectorState(key: String)
 case class SetRefState(key: String)
 case class Success(key: String, value: String)
-case class Failure(key: String, value: String, failer: ActorRef)
+case class Failure(key: String, value: String)
 
 case class SetMapStateOneWay(key: String, value: String)
 case class SetVectorStateOneWay(key: String)
 case class SetRefStateOneWay(key: String)
 case class SuccessOneWay(key: String, value: String)
-case class FailureOneWay(key: String, value: String, failer: ActorRef)
+case class FailureOneWay(key: String, value: String)
 
-class CassandraPersistentActor extends Transactor {
+class CassandraPersistentActor extends Actor {
   self.timeout = 100000
 
-  private lazy val mapState = CassandraStorage.newMap
-  private lazy val vectorState = CassandraStorage.newVector
-  private lazy val refState = CassandraStorage.newRef
+  private val mapState = CassandraStorage.newMap
+  private val vectorState = CassandraStorage.newVector
+  private val refState = CassandraStorage.newRef
 
-  def receive = {
+  def receive = { case message => atomic { atomicReceive(message) } }
+
+  def atomicReceive: Receive = {
     case GetMapState(key) =>
       self.reply(mapState.get(key.getBytes("UTF-8")).get)
     case GetVectorSize =>
@@ -53,26 +56,21 @@ class CassandraPersistentActor extends Transactor {
       vectorState.add(msg.getBytes("UTF-8"))
       refState.swap(msg.getBytes("UTF-8"))
       self.reply(msg)
-    case Failure(key, msg, failer) =>
+    case Failure(key, msg) =>
       mapState.put(key.getBytes("UTF-8"), msg.getBytes("UTF-8"))
       vectorState.add(msg.getBytes("UTF-8"))
       refState.swap(msg.getBytes("UTF-8"))
-      failer !! "Failure"
+      fail
       self.reply(msg)
   }
-}
 
-@serializable class PersistentFailerActor extends Transactor {
-  def receive = {
-    case "Failure" =>
-      throw new RuntimeException("Expected exception; to test fault-tolerance")
-  }
+  def fail = throw new RuntimeException("Expected exception; to test fault-tolerance")
 }
 
 class CassandraPersistentActorSpec extends JUnitSuite {
 
-  //@Before
-  //def startCassandra = EmbeddedCassandraService.start
+  // @Before
+  // def startCassandra = EmbeddedCassandraService.start
 
   @Test
   def testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
@@ -89,10 +87,8 @@ class CassandraPersistentActorSpec extends JUnitSuite {
     val stateful = actorOf[CassandraPersistentActor]
     stateful.start
     stateful !! SetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
-    val failer = actorOf[PersistentFailerActor]
-    failer.start
     try {
-      stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
+      stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state") // call failing transactionrequired method
       fail("should have thrown an exception")
     } catch {case e: RuntimeException => {}}
     val result = (stateful !! GetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")).as[Array[Byte]].get
@@ -113,10 +109,8 @@ class CassandraPersistentActorSpec extends JUnitSuite {
     val stateful = actorOf[CassandraPersistentActor]
     stateful.start
     stateful !! SetVectorState("init") // set init state
-    val failer = actorOf[PersistentFailerActor]
-    failer.start
     try {
-      stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
+      stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state") // call failing transactionrequired method
       fail("should have thrown an exception")
     } catch {case e: RuntimeException => {}}
     assertEquals(1, (stateful !! GetVectorSize).get.asInstanceOf[java.lang.Integer].intValue)
@@ -137,10 +131,8 @@ class CassandraPersistentActorSpec extends JUnitSuite {
     val stateful = actorOf[CassandraPersistentActor]
     stateful.start
     stateful !! SetRefState("init") // set init state
-    val failer = actorOf[PersistentFailerActor]
-    failer.start
     try {
-      stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
+      stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state") // call failing transactionrequired method
       fail("should have thrown an exception")
     } catch {case e: RuntimeException => {}}
     val result = (stateful !! GetRefState).as[Array[Byte]].get
@@ -148,9 +140,10 @@ class CassandraPersistentActorSpec extends JUnitSuite {
   }
 
 }
+
 /*
-import org.apache.cassandra.service.CassandraDaemon
-object // EmbeddedCassandraService {
+object EmbeddedCassandraService {
+  import org.apache.cassandra.thrift.CassandraDaemon
 
   System.setProperty("storage-config", "src/test/resources");
 

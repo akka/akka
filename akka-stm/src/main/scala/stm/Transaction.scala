@@ -9,10 +9,9 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable.HashMap
 
-import akka.util.ReflectiveAccess.JtaModule
-
-import akka.util.Logging
+import akka.util.{Logging, ReflectiveAccess}
 import akka.config.Config._
+import akka.config.ModuleNotAvailableException
 import akka.AkkaException
 
 import org.multiverse.api.{Transaction => MultiverseTransaction}
@@ -211,3 +210,27 @@ trait Abortable {
   def abort(): Unit
 }
 
+object JtaModule {
+  type TransactionContainerObject = {
+    def apply(): TransactionContainer
+  }
+
+  type TransactionContainer = {
+    def beginWithStmSynchronization(transaction: Transaction): Unit
+    def commit: Unit
+    def rollback: Unit
+  }
+
+  lazy val isJtaEnabled = transactionContainerObjectInstance.isDefined
+
+  def ensureJtaEnabled = if (!isJtaEnabled) throw new ModuleNotAvailableException(
+    "Can't load the typed actor module, make sure that akka-jta.jar is on the classpath")
+
+  val transactionContainerObjectInstance: Option[TransactionContainerObject] =
+    ReflectiveAccess.getObjectFor("akka.jta.TransactionContainer$")
+
+  def createTransactionContainer: TransactionContainer = {
+    ensureJtaEnabled
+    transactionContainerObjectInstance.get.apply.asInstanceOf[TransactionContainer]
+  }
+}

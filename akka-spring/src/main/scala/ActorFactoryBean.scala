@@ -42,7 +42,6 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   @BeanProperty var implementation: String = ""
   @BeanProperty var beanRef: String = null
   @BeanProperty var timeoutStr: String = ""
-  @BeanProperty var transactional: Boolean = false
   @BeanProperty var host: String = ""
   @BeanProperty var port: String = ""
   @BeanProperty var serverManaged: Boolean = false
@@ -140,9 +139,6 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
     if (timeout > 0) {
       actorRef.setTimeout(timeout)
     }
-    if (transactional) {
-      actorRef.makeTransactionRequired
-    }
     if (isRemote) {
       if (serverManaged) {
         val server = RemoteServer.getOrCreateServer(new InetSocketAddress(host, port.toInt))
@@ -200,7 +196,6 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
 
   private[akka] def createConfig: TypedActorConfiguration = {
     val config = new TypedActorConfiguration().timeout(Duration(timeout, "millis"))
-    if (transactional) config.makeTransactionRequired
     if (isRemote && !serverManaged) config.makeRemote(host, port.toInt)
     if (hasDispatcher) {
       if (dispatcher.dispatcherType != THREAD_BASED) {

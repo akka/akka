@@ -18,7 +18,6 @@ class ActorProperties {
   var beanRef: String = ""
   var timeoutStr: String = ""
   var interface: String = ""
-  var transactional: Boolean = false
   var host: String = ""
   var port: String = ""
   var serverManaged: Boolean = false
@@ -43,7 +42,6 @@ class ActorProperties {
     builder.addPropertyValue(IMPLEMENTATION, target)
     builder.addPropertyValue("beanRef", beanRef)
     builder.addPropertyValue(INTERFACE, interface)
-    builder.addPropertyValue(TRANSACTIONAL, transactional)
     builder.addPropertyValue(LIFECYCLE, lifecycle)
     builder.addPropertyValue(SCOPE, scope)
     builder.addPropertyValue(DISPATCHER_TAG, dispatcher)

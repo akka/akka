@@ -1,6 +1,6 @@
 package akka.stm
 
-import akka.actor.{Actor, Transactor}
+import akka.actor.Actor
 import Actor._
 
 import org.multiverse.api.exceptions.ReadonlyException
@@ -126,7 +126,9 @@ class StmSpec extends WordSpec with MustMatchers {
       readonlyOuter must be (2)
     }
   }
+}
 
+/*
   "Global STM" should {
     "be able to initialize with atomic {..} block inside actor constructor" in {
       import GlobalTransactionVectorTestActor._
@@ -146,7 +148,6 @@ class StmSpec extends WordSpec with MustMatchers {
     }
   }
 
-/*
   "Transactor" should {
     "be able receive message sent with !! and pass it along to nested transactor with !! and receive reply; multiple times in a row" in {
       import GlobalTransactionVectorTestActor._
@@ -167,7 +168,6 @@ class StmSpec extends WordSpec with MustMatchers {
       size4 must be (3)
     }
   }
-  */
 }
 
 object GlobalTransactionVectorTestActor {
@@ -228,3 +228,4 @@ class NestedTransactorLevelTwoActor extends Transactor {
     case "HiLevelTwo" => println("HiLevelTwo")
   }
 }
+*/

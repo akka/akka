@@ -4,11 +4,12 @@
 
 package sample.security
 
-import akka.actor.{SupervisorFactory, Transactor, Actor}
+import akka.actor.{SupervisorFactory, Actor}
 import akka.actor.Actor._
 import akka.config.Supervision._
 import akka.util.Logging
 import akka.security.{BasicAuthenticationActor,BasicCredentials,SpnegoAuthenticationActor,DigestAuthenticationActor, UserInfo}
+import akka.stm.local._
 import akka.stm.TransactionalMap
 import akka.actor.ActorRegistry.actorFor
 
@@ -21,14 +22,14 @@ class Boot {
       Supervise(
         actorOf[BasicAuthenticationService],
         Permanent) ::
-     /**
-      Supervise(
-        actorOf[DigestAuthenticationService],
-        Permanent) ::
-      Supervise(
-        actorOf[SpnegoAuthenticationService],
-        Permanent) ::
-      **/
+
+      // Supervise(
+      //   actorOf[DigestAuthenticationService],
+      //   Permanent) ::
+      // Supervise(
+      //   actorOf[SpnegoAuthenticationService],
+      //   Permanent) ::
+
       Supervise(
         actorOf[SecureTickActor],
         Permanent):: Nil))
@@ -132,17 +133,23 @@ class SecureTickService {
   }
 }
 
-class SecureTickActor extends Transactor with Logging {
+class SecureTickActor extends Actor with Logging {
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
-  private lazy val storage = TransactionalMap[String, Integer]()
+  private val storage = TransactionalMap[String, Integer]()
   def receive = {
     case "Tick" => if (hasStartedTicking) {
-      val counter = storage.get(KEY).get.intValue
-      storage.put(KEY, counter + 1)
-      self.reply(new Integer(counter + 1))
+      val count = atomic {
+        val current = storage.get(KEY).get.intValue
+        val updated = current + 1
+        storage.put(KEY, updated)
+        updated
+      }
+      self.reply(new Integer(count))
     } else {
-      storage.put(KEY, 0)
+      atomic {
+        storage.put(KEY, 0)
+      }
       hasStartedTicking = true
       self.reply(new Integer(0))
     }

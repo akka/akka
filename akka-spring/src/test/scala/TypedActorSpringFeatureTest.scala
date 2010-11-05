@@ -99,14 +99,6 @@ class TypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with B
       assert(myPojo.longRunning() === "this took long");
     }
 
-    scenario("transactional typed-actor") {
-      val myPojo = getTypedActorFromContext("/typed-actor-config.xml", "transactional-typed-actor")
-      assert(myPojo.getFoo() === "foo")
-      myPojo.oneWay("hello 2")
-      MyPojo.latch.await
-      assert(MyPojo.lastOneWayMessage === "hello 2")
-    }
-
     scenario("get a remote typed-actor") {
       val myPojo = getTypedActorFromContext("/typed-actor-config.xml", "remote-typed-actor")
       assert(myPojo.getFoo() === "foo")

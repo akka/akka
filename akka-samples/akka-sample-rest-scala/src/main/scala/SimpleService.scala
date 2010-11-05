@@ -4,8 +4,9 @@
 
 package sample.rest.scala
 
-import akka.actor.{Transactor, SupervisorFactory, Actor}
+import akka.actor.{SupervisorFactory, Actor}
 import akka.actor.Actor._
+import akka.stm.local._
 import akka.stm.TransactionalMap
 import akka.persistence.cassandra.CassandraStorage
 import akka.config.Supervision._
@@ -59,18 +60,24 @@ class SimpleService {
   }
 }
 
-class SimpleServiceActor extends Transactor {
+class SimpleServiceActor extends Actor {
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
-  private lazy val storage = TransactionalMap[String, Integer]()
+  private val storage = TransactionalMap[String, Integer]()
 
   def receive = {
     case "Tick" => if (hasStartedTicking) {
-      val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
-      storage.put(KEY, new Integer(counter + 1))
-      self.reply(<success>Tick:{counter + 1}</success>)
+      val count = atomic {
+        val current = storage.get(KEY).get.asInstanceOf[Integer].intValue
+        val updated = current + 1
+        storage.put(KEY, new Integer(updated))
+        updated
+      }
+      self.reply(<success>Tick:{count}</success>)
     } else {
-      storage.put(KEY, new Integer(0))
+      atomic {
+        storage.put(KEY, new Integer(0))
+      }
       hasStartedTicking = true
       self.reply(<success>Tick: 0</success>)
     }
@@ -113,22 +120,28 @@ class PersistentSimpleService {
   }
 }
 
-class PersistentSimpleServiceActor extends Transactor {
+class PersistentSimpleServiceActor extends Actor {
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
   private lazy val storage = CassandraStorage.newMap
 
   def receive = {
     case "Tick" => if (hasStartedTicking) {
-      val bytes = storage.get(KEY.getBytes).get
-      val counter = Integer.parseInt(new String(bytes, "UTF8"))
-      storage.put(KEY.getBytes, (counter + 1).toString.getBytes )
+      val count = atomic {
+        val bytes = storage.get(KEY.getBytes).get
+        val current = Integer.parseInt(new String(bytes, "UTF8"))
+        val updated = current + 1
+        storage.put(KEY.getBytes, (updated).toString.getBytes)
+        updated
+      }
 //      val bytes = storage.get(KEY.getBytes).get
 //      val counter = ByteBuffer.wrap(bytes).getInt
 //      storage.put(KEY.getBytes, ByteBuffer.allocate(4).putInt(counter + 1).array)
-      self.reply(<success>Tick:{counter + 1}</success>)
+      self.reply(<success>Tick:{count}</success>)
     } else {
-      storage.put(KEY.getBytes, "0".getBytes)
+      atomic {
+        storage.put(KEY.getBytes, "0".getBytes)
+      }
 //      storage.put(KEY.getBytes, Array(0.toByte))
       hasStartedTicking = true
       self.reply(<success>Tick: 0</success>)
