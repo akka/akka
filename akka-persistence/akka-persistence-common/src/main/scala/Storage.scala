@@ -446,7 +446,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
   case class LogEntry(index: Option[Int], value: Option[T], op: Op)
 
   // need to override in subclasses e.g. "sameElements" for Array[Byte]
-  def equal(v1: T, v2: T): Boolean = v1 == v2
+  // def equal(v1: T, v2: T): Boolean = v1 == v2
 
   val storage: VectorStorageBackend[T]
 
@@ -614,90 +614,67 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
 
   //Import Ops
   import PersistentQueue._
-  import scala.collection.immutable.Queue
+
+  case class LogEntry(value: Option[A], op: QueueOp)
 
   // current trail that will be played on commit to the underlying store
-  protected val enqueuedNDequeuedEntries = TransactionalVector[(Option[A], QueueOp)]()
-  protected val shouldClearOnCommit = Ref[Boolean]()
-
-  // local queue that will record all enqueues and dequeues in the current txn
-  protected val localQ = Ref[Queue[A]]()
-
-  // keeps a pointer to the underlying storage for the enxt candidate to be dequeued
-  protected val pickMeForDQ = Ref[Int]()
-
-  localQ.swap(Queue.empty)
-  pickMeForDQ.swap(0)
+  protected val appendOnlyTxLog = TransactionalVector[LogEntry]()
 
   // to be concretized in subclasses
   val storage: QueueStorageBackend[A]
 
-  def commit = {
-    enqueuedNDequeuedEntries.toList.foreach {
-      e =>
-        e._2 match {
-          case ENQ => storage.enqueue(uuid, e._1.get)
-          case DEQ => storage.dequeue(uuid)
-        }
+  def commit = synchronized {
+    for (entry <- appendOnlyTxLog) {
+      (entry: @unchecked) match {
+        case LogEntry(Some(v), ENQ) => storage.enqueue(uuid, v)
+        case LogEntry(_, DEQ) => storage.dequeue(uuid)
+      }
     }
-    if (shouldClearOnCommit.isDefined && shouldClearOnCommit.get) {
-      storage.remove(uuid)
+    appendOnlyTxLog.clear
+  }
+
+  def abort = synchronized {
+    appendOnlyTxLog.clear
+  }
+
+  override def toList = replay
+
+  override def enqueue(elems: A*) = synchronized {
+    register
+    elems.foreach(e => appendOnlyTxLog.add(LogEntry(Some(e), ENQ)))
+  }
+
+  private def replay: List[A] = synchronized {
+    import scala.collection.mutable.ListBuffer
+    var elemsStorage = ListBuffer(storage.peek(uuid, 0, storage.size(uuid)): _*)
+
+    for (entry <- appendOnlyTxLog) {
+      (entry: @unchecked) match {
+        case LogEntry(Some(v), ENQ) => elemsStorage += v
+        case LogEntry(_, DEQ) => elemsStorage = elemsStorage.drop(1)
+      }
     }
-    enqueuedNDequeuedEntries.clear
-    localQ.swap(Queue.empty)
-    pickMeForDQ.swap(0)
-    shouldClearOnCommit.swap(false)
+    elemsStorage.toList
   }
 
-  def abort = {
-    enqueuedNDequeuedEntries.clear
-    shouldClearOnCommit.swap(false)
-    localQ.swap(Queue.empty)
-    pickMeForDQ.swap(0)
-  }
-
-
-  override def enqueue(elems: A*) {
+  override def dequeue: A = synchronized {
     register
-    elems.foreach(e => {
-      enqueuedNDequeuedEntries.add((Some(e), ENQ))
-      localQ.get.enqueue(e)
-    })
+    val l = replay
+    if (l.isEmpty) throw new NoSuchElementException("trying to dequeue from empty queue")
+    appendOnlyTxLog.add(LogEntry(None, DEQ))
+    l.head
   }
 
-  override def dequeue: A = {
+  override def clear = synchronized {
     register
-    // record for later playback
-    enqueuedNDequeuedEntries.add((None, DEQ))
-
-    val i = pickMeForDQ.get
-    if (i < storage.size(uuid)) {
-      // still we can DQ from storage
-      pickMeForDQ.swap(i + 1)
-      storage.peek(uuid, i, 1)(0)
-    } else {
-      // check we have transient candidates in localQ for DQ
-      if (!localQ.get.isEmpty) {
-        val (a, q) = localQ.get.dequeue
-        localQ.swap(q)
-        a
-      } else throw new NoSuchElementException("trying to dequeue from empty queue")
-    }
-  }
-
-  override def clear = {
-    register
-    shouldClearOnCommit.swap(true)
-    localQ.swap(Queue.empty)
-    pickMeForDQ.swap(0)
+    appendOnlyTxLog.clear
   }
 
   override def size: Int = try {
-    storage.size(uuid) + localQ.get.length
+    replay.size
   } catch {case e: Exception => 0}
 
-  override def isEmpty: Boolean =
-    size == 0
+  override def isEmpty: Boolean = size == 0
 
   override def +=(elem: A) = {
     enqueue(elem)

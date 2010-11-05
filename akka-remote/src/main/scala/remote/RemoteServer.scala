@@ -68,14 +68,10 @@ object RemoteNode extends RemoteServer
 object RemoteServer {
   val UUID_PREFIX = "uuid:"
 
-  val SECURE_COOKIE: Option[String] = {
-    val cookie = config.getString("akka.remote.secure-cookie", "")
-    if (cookie == "") None
-    else Some(cookie)
-  }
-  val REQUIRE_COOKIE                       = {
+  val SECURE_COOKIE: Option[String] = config.getString("akka.remote.secure-cookie")
+  val REQUIRE_COOKIE = {
     val requireCookie = config.getBool("akka.remote.server.require-cookie", true)
-    if (RemoteServer.SECURE_COOKIE.isEmpty) throw new ConfigurationException(
+    if (requireCookie && RemoteServer.SECURE_COOKIE.isEmpty) throw new ConfigurationException(
       "Configuration option 'akka.remote.server.require-cookie' is turned on but no secure cookie is defined in 'akka.remote.secure-cookie'.")
     requireCookie
   }
