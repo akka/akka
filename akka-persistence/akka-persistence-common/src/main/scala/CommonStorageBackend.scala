@@ -215,7 +215,7 @@ private[akka] object KVStorageBackend {
 
 private[akka] trait CommonStorageBackend extends MapStorageBackend[Array[Byte], Array[Byte]] with VectorStorageBackend[Array[Byte]] with RefStorageBackend[Array[Byte]] with QueueStorageBackend[Array[Byte]] with Logging {
   import CommonStorageBackend._
-  val mapKeysIndex = IntSerializer.toBytes(-1)
+  val mapKeysIndex:Array[Byte] = new Array[Byte](1).padTo(1,1.asInstanceOf[Byte])
   val vectorHeadIndex = IntSerializer.toBytes(-1)
   val vectorTailIndex = IntSerializer.toBytes(-2)
   val queueHeadIndex = IntSerializer.toBytes(-1)
