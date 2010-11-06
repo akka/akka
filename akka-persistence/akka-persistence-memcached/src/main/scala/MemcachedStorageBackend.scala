@@ -25,13 +25,13 @@ private[akka] object MemcachedStorageBackend extends CommonStorageBackend {
   val client = new MemcachedClient(factory, AddrUtil.getAddresses(clientAddresses))
   val base64 = new Base64(76, Array.empty[Byte], true)
 
-  def queueAccess = new MemcachedAccess("que")
+  def queueAccess = new MemcachedAccess("Q")
 
-  def mapAccess = new MemcachedAccess("map")
+  def mapAccess = new MemcachedAccess("M")
 
-  def vectorAccess = new MemcachedAccess("vec")
+  def vectorAccess = new MemcachedAccess("V")
 
-  def refAccess = new MemcachedAccess("ref")
+  def refAccess = new MemcachedAccess("R")
 
   private[akka] class MemcachedAccess(val accessType: String) extends KVStorageBackendAccess {
 
