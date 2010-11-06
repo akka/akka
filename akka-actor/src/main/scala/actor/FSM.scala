@@ -57,6 +57,7 @@ trait FSM[S, D] {
   /** FSM State data and default handlers */
   private var currentState: State = _
   private var timeoutFuture: Option[ScheduledFuture[AnyRef]] = None
+  private var generation = 0
 
   private val transitions = mutable.Map[S, StateFunction]()
   private def register(name: S, function: StateFunction) {
@@ -86,11 +87,15 @@ trait FSM[S, D] {
     case Stop(reason, stateData) =>
       terminateEvent.apply(reason)
       self.stop
-    case StateTimeout if (self.dispatcher.mailboxSize(self) > 0) =>
-    log.trace("Ignoring StateTimeout - ")
-    // state timeout when new message in queue, skip this timeout
+    case TimeoutMarker(gen) =>
+      if (gen == generation) {
+        val event = Event(StateTimeout, currentState.stateData)
+        val nextState = (transitions(currentState.stateName) orElse handleEvent).apply(event)
+        setState(nextState)
+      }
     case value => {
       timeoutFuture = timeoutFuture.flatMap {ref => ref.cancel(true); None}
+      generation += 1
       val event = Event(value, currentState.stateData)
       val nextState = (transitions(currentState.stateName) orElse handleEvent).apply(event)
       setState(nextState)
@@ -107,7 +112,7 @@ trait FSM[S, D] {
       currentState = nextState
       currentState.timeout.foreach {
         t =>
-          timeoutFuture = Some(Scheduler.scheduleOnce(self, StateTimeout, t, TimeUnit.MILLISECONDS))
+          timeoutFuture = Some(Scheduler.scheduleOnce(self, TimeoutMarker(generation), t, TimeUnit.MILLISECONDS))
       }
     }
   }
@@ -139,6 +144,7 @@ trait FSM[S, D] {
   case class Failure(cause: Any) extends Reason
 
   case object StateTimeout
+  case class TimeoutMarker(generation : Int)
 
   case class Transition(from: S, to: S)
 
