@@ -10,7 +10,7 @@ import akka.actor.{SupervisorFactory, Actor, ActorRef, RemoteActor}
 import akka.remote.{RemoteNode, RemoteClient}
 import akka.persistence.common.PersistentVector
 import akka.persistence.redis.RedisStorage
-import akka.stm.global._
+import akka.stm._
 import akka.config.Supervision.{OneForOneStrategy,Permanent}
 import akka.util.Logging
 import Actor._
@@ -99,7 +99,7 @@ class RedisChatStorage extends ChatStorage {
   self.lifeCycle = Permanent
   val CHAT_LOG = "akka.chat.log"
 
-  private var chatLog = atomic { RedisStorage.getVector(CHAT_LOG) }
+  private var chatLog = RedisStorage.getVector(CHAT_LOG)
 
   log.info("Redis-based chat storage is starting up...")
 

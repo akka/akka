@@ -1,7 +1,6 @@
-package akka.stm;
+package akka.stm.test;
 
-import akka.stm.Ref;
-import akka.stm.local.Atomic;
+import akka.stm.*;
 
 public class CounterExample {
     final static Ref<Integer> ref = new Ref<Integer>(0);

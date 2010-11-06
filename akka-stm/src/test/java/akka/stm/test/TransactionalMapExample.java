@@ -1,7 +1,6 @@
-package akka.stm;
+package akka.stm.test;
 
 import akka.stm.*;
-import akka.stm.local.Atomic;
 
 public class TransactionalMapExample {
     public static void main(String[] args) {

@@ -1,7 +1,4 @@
-package akka.stm;
-
-import akka.stm.Ref;
-import akka.stm.local.Atomic;
+package akka.stm.test;
 
 public class StmExamples {
     public static void main(String[] args) {

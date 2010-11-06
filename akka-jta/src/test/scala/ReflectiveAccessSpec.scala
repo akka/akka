@@ -6,11 +6,11 @@ package akka.jta
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import akka.stm.JtaModule
+import akka.stm.ReflectiveJtaModule
 
 class ReflectiveAccessSpec extends JUnitSuite {
   @Test def ensureReflectiveAccessCanLoadTransactionContainer {
-    JtaModule.ensureJtaEnabled
-    assert(JtaModule.transactionContainerObjectInstance.isDefined)
+    ReflectiveJtaModule.ensureJtaEnabled
+    assert(ReflectiveJtaModule.transactionContainerObjectInstance.isDefined)
   }
 }

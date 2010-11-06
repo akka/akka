@@ -1,11 +1,11 @@
-package akka.stm
+package akka.stm.test
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
 class RefSpec extends WordSpec with MustMatchers {
 
-  import akka.stm.local._
+  import akka.stm._
 
   "A Ref" should {
 
@@ -25,7 +25,7 @@ class RefSpec extends WordSpec with MustMatchers {
       val ref = Ref(3)
 
       try {
-        atomic(DefaultLocalTransactionFactory) {
+        atomic(DefaultTransactionFactory) {
           ref.swap(5)
           throw new Exception
         }

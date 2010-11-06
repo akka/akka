@@ -1,7 +1,6 @@
-package akka.stm;
+package akka.stm.test;
 
 import akka.stm.*;
-import akka.stm.local.Atomic;
 
 import org.multiverse.api.ThreadLocalTransaction;
 import org.multiverse.api.TransactionConfiguration;

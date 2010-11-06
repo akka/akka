@@ -8,7 +8,7 @@ import org.junit.runner.RunWith
 
 import akka.actor.{Actor, ActorRef}
 import Actor._
-import akka.stm.local
+import akka.stm._
 
 
 case class Balance(accountNo: String)
@@ -26,7 +26,7 @@ class BankAccountActor extends Actor {
   import sjson.json.DefaultProtocol._
   import sjson.json.JsonSerialization._
 
-  def receive = { case message => local.atomic { atomicReceive(message) } }
+  def receive = { case message => atomic { atomicReceive(message) } }
 
   def atomicReceive: Receive = {
     // check balance

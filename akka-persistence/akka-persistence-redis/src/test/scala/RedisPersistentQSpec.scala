@@ -5,7 +5,7 @@ import org.junit.Assert._
 
 import akka.actor.{Actor, ActorRef}
 import Actor._
-import akka.stm.local._
+import akka.stm._
 
 /**
  * A persistent actor based on Redis queue storage.
