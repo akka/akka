@@ -1,11 +1,10 @@
-package akka.stm;
+package akka.stm.test;
 
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.Before;
 
 import akka.stm.*;
-import akka.stm.local.Atomic;
 
 import org.multiverse.api.ThreadLocalTransaction;
 import org.multiverse.api.TransactionConfiguration;

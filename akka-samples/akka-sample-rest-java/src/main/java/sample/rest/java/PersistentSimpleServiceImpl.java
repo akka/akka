@@ -5,7 +5,7 @@
 package sample.rest.java;
 
 import akka.actor.TypedActor;
-import akka.stm.local.Atomic;
+import akka.stm.Atomic;
 import akka.persistence.common.PersistentMap;
 import akka.persistence.cassandra.CassandraStorage;
 

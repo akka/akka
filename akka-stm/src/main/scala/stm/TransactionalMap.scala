@@ -10,6 +10,9 @@ import akka.actor.{newUuid}
 
 import org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction
 
+/**
+ * Transactional map that implements the mutable Map interface with an underlying Ref and HashMap.
+ */
 object TransactionalMap {
   def apply[K, V]() = new TransactionalMap[K, V]()
 
@@ -17,9 +20,15 @@ object TransactionalMap {
 }
 
 /**
- * Transactional map that implements the mutable map interface with an underlying ref and hash map.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * Transactional map that implements the mutable Map interface with an underlying Ref and HashMap.
+ * <p/>
+ * TransactionalMap and TransactionalVector look like regular mutable datastructures, they even
+ * implement the standard Scala 'Map' and 'IndexedSeq' interfaces, but they are implemented using
+ * persistent datastructures and managed references under the hood. Therefore they are safe to use
+ * in a concurrent environment through the STM. Underlying TransactionalMap is HashMap, an immutable
+ * Map but with near constant time access and modification operations.
+ * <p/>
+ * From Scala you can use TMap as a shorter alias for TransactionalMap.
  */
 class TransactionalMap[K, V](initialValue: HashMap[K, V]) extends Transactional with scala.collection.mutable.Map[K, V] {
   def this() = this(HashMap[K, V]())

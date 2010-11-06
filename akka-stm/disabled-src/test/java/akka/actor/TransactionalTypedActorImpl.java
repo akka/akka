@@ -2,8 +2,6 @@ package akka.actor;
 
 import akka.actor.*;
 import akka.stm.*;
-import akka.stm.local.*;
-import akka.stm.local.Atomic;
 
 public class TransactionalTypedActorImpl extends TypedTransactor implements TransactionalTypedActor {
   private TransactionalMap<String, String> mapState;

@@ -5,7 +5,7 @@ import akka.stm.TransactionalMap;
 import akka.stm.TransactionalVector;
 import akka.stm.Ref;
 import akka.actor.*;
-import akka.stm.local.Atomic;
+import akka.stm.Atomic;
 
 public class StatefulPojo extends TypedActor {
     private TransactionalMap<String, String> mapState;

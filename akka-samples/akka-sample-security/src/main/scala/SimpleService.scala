@@ -9,7 +9,7 @@ import akka.actor.Actor._
 import akka.config.Supervision._
 import akka.util.Logging
 import akka.security.{BasicAuthenticationActor,BasicCredentials,SpnegoAuthenticationActor,DigestAuthenticationActor, UserInfo}
-import akka.stm.local._
+import akka.stm._
 import akka.stm.TransactionalMap
 import akka.actor.ActorRegistry.actorFor
 

@@ -6,7 +6,7 @@ package sample.rest.scala
 
 import akka.actor.{SupervisorFactory, Actor}
 import akka.actor.Actor._
-import akka.stm.local._
+import akka.stm._
 import akka.stm.TransactionalMap
 import akka.persistence.cassandra.CassandraStorage
 import akka.config.Supervision._

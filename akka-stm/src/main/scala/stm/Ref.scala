@@ -9,9 +9,7 @@ import akka.actor.{newUuid, Uuid}
 import org.multiverse.transactional.refs.BasicRef
 
 /**
- * Ref
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * Transactional managed reference. See the companion class for more information.
  */
 object Ref {
   def apply[T]() = new Ref[T]()
@@ -25,9 +23,38 @@ object Ref {
 }
 
 /**
- * Transactional managed reference.
+ * Refs (transactional references) are mutable references to values and through
+ * the STM allow the safe sharing of mutable data. Refs separate identity from value.
+ * To ensure safety the value stored in a Ref should be immutable (they can also
+ * contain refs themselves). The value referenced by a Ref can only be accessed
+ * or swapped within a transaction. If a transaction is not available, the call will
+ * be executed in its own transaction (equivalent to using the Ref.atomic* methods).
  *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * <p/>
+ * Creating a Ref (in Scala):
+ * <p/>
+ * <pre>
+ * import akka.stm._
+ *
+ * // giving an initial value
+ * val ref = Ref(0)
+ *
+ * // specifying a type but no initial value
+ * val ref = Ref[Int]
+ * </pre>
+ *
+ * <p/>
+ * Creating a Ref (in Java):
+ * <p/>
+ * <pre>
+ * import akka.stm.*;
+ *
+ * // giving an initial value
+ * final Ref<Integer> ref = new Ref<Integer>(0);
+ *
+ * // specifying a type but no initial value
+ * final Ref<Integer> ref = new Ref<Integer>();
+ * </pre>
  */
 class Ref[T](initialValue: T) extends BasicRef[T](initialValue) with Transactional {
   self =>

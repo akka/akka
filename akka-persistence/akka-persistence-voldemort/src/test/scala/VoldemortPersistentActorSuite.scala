@@ -9,7 +9,7 @@ import org.junit.runner.RunWith
 import akka.actor.{Actor, ActorRef}
 import Actor._
 import BankAccountActor._
-import akka.stm.local._
+import akka.stm._
 
 
 case class Balance(accountNo: String)

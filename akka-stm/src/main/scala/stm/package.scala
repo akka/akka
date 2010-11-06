@@ -2,18 +2,22 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.stm
+package akka
 
 /**
- * For importing the transactional datastructures, including the primitive refs
- * and transactional data structures from Multiverse.
+ * For easily importing everthing needed for STM.
  */
-package object transactional {
-  type TransactionalMap[K,V] = akka.stm.TransactionalMap[K,V]
-  val TransactionalMap =  akka.stm.TransactionalMap
+package object stm extends akka.stm.Stm with akka.stm.StmUtil {
 
-  type TransactionalVector[T] = akka.stm.TransactionalVector[T]
-  val TransactionalVector = akka.stm.TransactionalVector
+  // Shorter aliases for transactional map and vector
+
+  type TMap[K, V] = akka.stm.TransactionalMap[K, V]
+  val TMap = akka.stm.TransactionalMap
+
+  type TVector[T] = akka.stm.TransactionalVector[T]
+  val TVector = akka.stm.TransactionalVector
+
+  // Multiverse primitive refs
 
   type BooleanRef = org.multiverse.transactional.refs.BooleanRef
   type ByteRef    = org.multiverse.transactional.refs.ByteRef
@@ -24,12 +28,14 @@ package object transactional {
   type LongRef    = org.multiverse.transactional.refs.LongRef
   type ShortRef   = org.multiverse.transactional.refs.ShortRef
 
-  type TransactionalReferenceArray[T] = org.multiverse.transactional.arrays.TransactionalReferenceArray[T]
+  // Multiverse transactional datastructures
 
-  // These won't compile - something to do with vararg constructors? Check for Scala bug.
+  type TransactionalReferenceArray[T] = org.multiverse.transactional.arrays.TransactionalReferenceArray[T]
+  type TransactionalThreadPoolExecutor = org.multiverse.transactional.executors.TransactionalThreadPoolExecutor
+
+  // These won't compile:
+  // Transaction arg is added after varargs with byte code rewriting but Scala compiler doesn't allow this
 
   // type TransactionalArrayList[T] = org.multiverse.transactional.collections.TransactionalArrayList[T]
   // type TransactionalLinkedList[T] = org.multiverse.transactional.collections.TransactionalLinkedList[T]
-
-  type TransactionalThreadPoolExecutor = org.multiverse.transactional.executors.TransactionalThreadPoolExecutor
 }

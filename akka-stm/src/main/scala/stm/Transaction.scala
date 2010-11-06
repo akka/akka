@@ -24,16 +24,44 @@ class NoTransactionInScopeException extends AkkaException("No transaction in sco
 class TransactionRetryException(message: String) extends AkkaException(message)
 class StmConfigurationException(message: String) extends AkkaException(message)
 
+
+/**
+ * Internal helper methods for managing Akka-specific transaction.
+ */
+object TransactionManagement extends TransactionManagement {
+  private[akka] val transaction = new ThreadLocal[Option[Transaction]]() {
+    override protected def initialValue: Option[Transaction] = None
+  }
+
+  private[akka] def getTransaction: Transaction = {
+    val option = transaction.get
+    if ((option eq null) || option.isEmpty) throw new StmConfigurationException("No Transaction in scope")
+    option.get
+  }
+}
+
+/**
+ * Internal helper methods for managing Akka-specific transaction.
+ */
+trait TransactionManagement {
+  private[akka] def setTransaction(tx: Option[Transaction]) =
+    if (tx.isDefined) TransactionManagement.transaction.set(tx)
+
+  private[akka] def clearTransaction = {
+    TransactionManagement.transaction.set(None)
+    setThreadLocalTransaction(null)
+  }
+
+  private[akka] def getTransactionInScope = TransactionManagement.getTransaction
+
+  private[akka] def isTransactionInScope = {
+    val option = TransactionManagement.transaction.get
+    (option ne null) && option.isDefined
+  }
+}
+
 object Transaction {
   val idFactory = new AtomicLong(-1L)
-
-  @deprecated("Use the akka.stm.local package object instead.")
-  object Local extends LocalStm
-
-  @deprecated("Use the akka.stm.global package object instead.")
-  object Global extends GlobalStm
-
-  object Util extends StmUtil
 
   /**
    * Attach an Akka-specific Transaction to the current Multiverse transaction.
@@ -53,34 +81,11 @@ object Transaction {
       }
     })
   }
-
-  /**
-   * Mapping to Multiverse PropagationLevel.
-   */
-  object Propagation {
-    val RequiresNew = MultiversePropagationLevel.RequiresNew
-    val Mandatory   = MultiversePropagationLevel.Mandatory
-    val Requires    = MultiversePropagationLevel.Requires
-    val Supports    = MultiversePropagationLevel.Supports
-    val Never       = MultiversePropagationLevel.Never
-  }
-
-  /**
-   * Mapping to Multiverse TraceLevel.
-   */
-  object TraceLevel {
-    val None   = MultiverseTraceLevel.none
-    val Coarse = MultiverseTraceLevel.course // mispelling?
-    val Course = MultiverseTraceLevel.course
-    val Fine   = MultiverseTraceLevel.fine
-  }
 }
 
 /**
- * The Akka specific Transaction class, keeping track of persistent data structures (as in on-disc)
- * and JTA support.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * The Akka-specific Transaction class.
+ * For integration with persistence modules and JTA support.
  */
 @serializable class Transaction extends Logging {
   val JTA_AWARE = config.getBool("akka.stm.jta-aware", false)
@@ -91,8 +96,8 @@ object Transaction {
   private[this] val persistentStateMap = new HashMap[String, Committable with Abortable]
   private[akka] val depth = new AtomicInteger(0)
 
-  val jta: Option[JtaModule.TransactionContainer] =
-    if (JTA_AWARE) Some(JtaModule.createTransactionContainer)
+  val jta: Option[ReflectiveJtaModule.TransactionContainer] =
+    if (JTA_AWARE) Some(ReflectiveJtaModule.createTransactionContainer)
     else None
 
   log.trace("Creating transaction " + toString)
@@ -154,15 +159,6 @@ object Transaction {
       throw new StmConfigurationException(
         "Expected ACTIVE or NEW transaction - current status [" + status + "]: " + toString)
 
-  // For reinitialize transaction after sending it over the wire
-/*  private[akka] def reinit = synchronized {
-    import net.lag.logging.{Logger, Level}
-    if (log eq null) {
-      log = Logger.get(this.getClass.getName)
-      log.setLevel(Level.ALL) // TODO: preserve logging level
-    }
-  }
-*/
   override def equals(that: Any): Boolean = synchronized {
     that.isInstanceOf[Transaction] &&
     that.asInstanceOf[Transaction].id == this.id
@@ -173,14 +169,8 @@ object Transaction {
   override def toString = synchronized { "Transaction[" + id + ", " + status + "]" }
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 @serializable sealed abstract class TransactionStatus
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object TransactionStatus {
   case object New extends TransactionStatus
   case object Active extends TransactionStatus
@@ -189,28 +179,33 @@ object TransactionStatus {
 }
 
 /**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * Common trait for all the transactional objects:
+ * Ref, TransactionalMap, TransactionalVector,
+ * PersistentRef, PersistentMap, PersistentVector, PersistentQueue, PersistentSortedSet
  */
-@serializable
-trait Transactional {
+@serializable trait Transactional {
   val uuid: String
 }
 
 /**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * Used for integration with the persistence modules.
  */
 trait Committable {
   def commit(): Unit
 }
 
 /**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * Used for integration with the persistence modules.
  */
 trait Abortable {
   def abort(): Unit
 }
 
-object JtaModule {
+/**
+ * For reflective access to the JTA module.
+ * Allows JTA integration to work when akka-jta.jar is on the classpath.
+ */
+object ReflectiveJtaModule {
   type TransactionContainerObject = {
     def apply(): TransactionContainer
   }
@@ -224,7 +219,7 @@ object JtaModule {
   lazy val isJtaEnabled = transactionContainerObjectInstance.isDefined
 
   def ensureJtaEnabled = if (!isJtaEnabled) throw new ModuleNotAvailableException(
-    "Can't load the typed actor module, make sure that akka-jta.jar is on the classpath")
+    "Can't load the JTA module, make sure that akka-jta.jar is on the classpath")
 
   val transactionContainerObjectInstance: Option[TransactionContainerObject] =
     ReflectiveAccess.getObjectFor("akka.jta.TransactionContainer$")

@@ -1,4 +1,4 @@
-package akka.stm;
+package akka.stm.test;
 
 public class Address {
     private String location;

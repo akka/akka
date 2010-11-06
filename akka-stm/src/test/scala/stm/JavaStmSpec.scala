@@ -1,5 +1,5 @@
-package akka.stm
+package akka.stm.test
 
 import org.scalatest.junit.JUnitWrapperSuite
 
-class JavaStmSpec extends JUnitWrapperSuite("akka.stm.JavaStmTests", Thread.currentThread.getContextClassLoader)
+class JavaStmSpec extends JUnitWrapperSuite("akka.stm.test.JavaStmTests", Thread.currentThread.getContextClassLoader)

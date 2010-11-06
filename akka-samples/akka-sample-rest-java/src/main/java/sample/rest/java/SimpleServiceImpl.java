@@ -5,7 +5,7 @@
 package sample.rest.java;
 
 import akka.actor.TypedActor;
-import akka.stm.local.Atomic;
+import akka.stm.Atomic;
 import akka.stm.TransactionalMap;
 
 public class SimpleServiceImpl extends TypedActor implements SimpleService {

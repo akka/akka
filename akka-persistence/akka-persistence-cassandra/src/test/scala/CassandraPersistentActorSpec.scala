@@ -2,7 +2,7 @@ package akka.persistence.cassandra
 
 import akka.actor.{Actor, ActorRef}
 import Actor._
-import akka.stm.local._
+import akka.stm._
 
 import org.junit.Test
 import org.junit.Assert._

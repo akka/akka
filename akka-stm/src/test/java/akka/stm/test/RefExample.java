@@ -1,7 +1,6 @@
-package akka.stm;
+package akka.stm.test;
 
-import akka.stm.Ref;
-import akka.stm.local.Atomic;
+import akka.stm.*;
 
 public class RefExample {
     public static void main(String[] args) {

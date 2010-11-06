@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.stm.global
+package akka.stm
 
 /**
  * Java-friendly atomic blocks.
@@ -11,7 +11,6 @@ package akka.stm.global
  * <p/>
  * <pre>
  * import akka.stm.*;
- * import akka.stm.global.Atomic;
  *
  * final Ref<Integer> ref = new Ref<Integer>(0);
  *
@@ -35,7 +34,7 @@ package akka.stm.global
  * </pre>
  */
 abstract class Atomic[T](factory: TransactionFactory) {
-  def this() = this(DefaultGlobalTransactionFactory)
+  def this() = this(DefaultTransactionFactory)
   def atomically: T
   def execute: T = atomic(factory)(atomically)
 }
