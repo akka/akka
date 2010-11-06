@@ -22,7 +22,10 @@ trait FSM[S, D] {
   }
 
   protected final def startWith(stateName: S, stateData: D, timeout: Option[Long] = None) = {
-    setState(State(stateName, stateData, timeout))
+    currentState = State(stateName, stateData, timeout)
+    timeout.foreach { t =>
+      timeoutFuture = Some(Scheduler.scheduleOnce(self, TimeoutMarker(generation), t, TimeUnit.MILLISECONDS))
+    }
   }
 
   protected final def goto(nextStateName: S): State = {
@@ -106,7 +109,7 @@ trait FSM[S, D] {
     if (!transitions.contains(nextState.stateName)) {
       stop(Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
-      if (currentState != null && currentState.stateName != nextState.stateName) {
+      if (currentState.stateName != nextState.stateName) {
         transitionEvent.apply(Transition(currentState.stateName, nextState.stateName))
       }
       currentState = nextState

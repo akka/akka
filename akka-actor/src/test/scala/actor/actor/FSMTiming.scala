@@ -40,7 +40,7 @@ class FSMTiming extends JUnitSuite {
   @Test
   def testCorrectStateTimeout = {
     val actor = Actor.actorOf[Flipper].start
-    (1 to 300) foreach { x => 
+    (1 to 50) foreach { x => 
       Sleep(50)
       actor ! Msg1
       Sleep(0, 4)
