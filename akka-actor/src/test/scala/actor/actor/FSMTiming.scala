@@ -15,6 +15,7 @@ object FSMTiming {
   case object Msg2
 
   class Flipper extends Actor with FSM[Int, Null] {
+    startWith(0, null)
     when(0) {
       case Event(StateTimeout, _) => stop(Failure("received StateTimeout unexpectedly"))
       case Event(Msg1, _) => goto(1) until 1
@@ -23,7 +24,16 @@ object FSMTiming {
       case Event(StateTimeout, _) => goto(0)
       case Event(Msg2, _) => goto(0)
     }
+  }
+
+  case class DoStop(delay : Long)
+
+  class Timer extends Actor with FSM[Int, Null] {
     startWith(0, null)
+    when(0) {
+      case Event(DoStop(delay), _) if delay > 0 => setTimer(delay, DoStop(0))
+      case Event(DoStop(_), _) => stop
+    }
   }
 
 }
@@ -47,6 +57,15 @@ class FSMTiming extends JUnitSuite {
       actor ! Msg2
     }
     assert(actor.isRunning)
+    actor.stop
+  }
+
+  @Test
+  def testSetTimer = {
+    val actor = Actor.actorOf[Timer].start
+    actor ! DoStop(100)
+    Sleep(150)
+    assert(actor.isShutdown)
   }
 }
 

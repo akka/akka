@@ -33,6 +33,7 @@ trait FSM[S, D] {
   }
 
   protected final def stay(): State = {
+    // cannot directly use currentState because of the timeout field
     goto(currentState.stateName)
   }
 
@@ -46,6 +47,11 @@ trait FSM[S, D] {
 
   protected final def stop(reason: Reason, stateData: D): State = {
     self ! Stop(reason, stateData)
+    stay
+  }
+
+  protected final def setTimer(delay : Long, msg : AnyRef):State = {
+    Scheduler.scheduleOnce(self, msg, delay, TimeUnit.MILLISECONDS)
     stay
   }
 
