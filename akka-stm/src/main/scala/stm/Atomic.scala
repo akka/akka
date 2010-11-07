@@ -6,10 +6,10 @@ package akka.stm
 
 /**
  * Java-friendly atomic blocks.
- * <p/>
- * Example usage (in Java):
- * <p/>
- * <pre>
+ *
+ * Example usage ''(Java)''
+ *
+ * {{{
  * import akka.stm.*;
  *
  * final Ref<Integer> ref = new Ref<Integer>(0);
@@ -31,7 +31,7 @@ package akka.stm
  *         return ref.get();
  *     }
  * }.execute();
- * </pre>
+ * }}}
  */
 abstract class Atomic[T](factory: TransactionFactory) {
   def this() = this(DefaultTransactionFactory)

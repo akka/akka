@@ -202,7 +202,7 @@ trait Abortable {
 }
 
 /**
- * For reflective access to the JTA module.
+ * Used internally for reflective access to the JTA module.
  * Allows JTA integration to work when akka-jta.jar is on the classpath.
  */
 object ReflectiveJtaModule {

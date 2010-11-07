@@ -14,18 +14,20 @@ object Transactor {
 }
 
 /**
- * Transactor - an actor with built-in support for coordinated transactions.
- * <p/>
- * Transactors implement the general pattern for using Coordinated where first
- * any coordination messages are sent to other transactors, then the coordinated
+ * An actor with built-in support for coordinated transactions.
+ *
+ * Transactors implement the general pattern for using [[akka.stm.Coordinated]] where
+ * first any coordination messages are sent to other transactors, then the coordinated
  * transaction is entered.
- * <p/>
- * Simple transactors will just implement the 'atomically' method, similar to
- * the actor 'receive' method, but which runs within a coordinated transaction.
- * <p/>
+ * Transactors can also accept explicitly sent `Coordinated` messages.
+ * <br/><br/>
+ *
+ * Simple transactors will just implement the `atomically` method which similar to
+ * the actor `receive` method but runs within a coordinated transaction.
+ *
  * Example of a simple transactor that will join a coordinated transaction:
- * <p/>
- * <pre>
+ *
+ * {{{
  * class Counter extends Transactor {
  *   val count = Ref(0)
  *
@@ -33,18 +35,19 @@ object Transactor {
  *     case Increment => count alter (_ + 1)
  *   }
  * }
- * </pre>
- * <p/>
- * To coordinate with other transactors override the 'coordinate' method.
- * The 'coordinate' method matches messages to a set of 'SendTo' objects,
- * a pair of ActorRef and Message. You can use the 'include' and 'sendTo' methods
- * to easily coordinate with other transactors. The 'include' method will send
- * on the same message that was received to other transactors. The 'sendTo' method
- * allows you to specify both the actor to send to, and message to send.
- * <p/>
- * Example of using coordinate:
- * <p/>
- * <pre>
+ * }}}
+ * <br/>
+ *
+ * To coordinate with other transactors override the `coordinate` method.
+ * The `coordinate` method maps a message to a set
+ * of [[akka.actor.Transactor.SendTo]] objects, pairs of `ActorRef` and a message.
+ * You can use the `include` and `sendTo` methods to easily coordinate with other transactors.
+ * The `include` method will send on the same message that was received to other transactors.
+ * The `sendTo` method allows you to specify both the actor to send to, and message to send.
+ *
+ * Example of using coordinating an increment:
+ *
+ * {{{
  * class FriendlyCounter(friend: ActorRef) extends Transactor {
  *   val count = Ref(0)
  *
@@ -56,37 +59,40 @@ object Transactor {
  *     case Increment => count alter (_ + 1)
  *   }
  * }
- * </pre>
- * <p/>
- * Using 'include' to include more than one transactor:
- * <p/>
- * <pre>
+ * }}}
+ * <br/>
+ *
+ * Using `include` to include more than one transactor:
+ *
+ * {{{
  * override def coordinate = {
  *   case Message => include(actor1, actor2, actor3)
  * }
- * </pre>
- * <p/>
- * Using 'sendTo' to coordinate transactions but send on a different message
+ * }}}
+ * <br/>
+ *
+ * Using `sendTo` to coordinate transactions but send on a different message
  * than the one that was received:
- * <p/>
- * <pre>
+ *
+ * {{{
  * override def coordinate = {
  *   case Message => sendTo(someActor -> SomeOtherMessage)
  *   case SomeMessage => sendTo(actor1 -> Message1, actor2 -> Message2)
  * }
- * </pre>
- * <p/>
+ * }}}
+ * <br/>
+ *
  * To exeucte directly before or after the coordinated transaction, override
- * the 'before' and 'after' methods. These methods also expect partial functions
+ * the `before` and `after` methods. These methods also expect partial functions
  * like the receive method. They do not execute within the transaction.
- * <p/>
- * To completely bypass coordinated transactions override the normally method.
- * Any message matched by 'normally' will not be matched by the other methods,
+ *
+ * To completely bypass coordinated transactions override the `normally` method.
+ * Any message matched by `normally` will not be matched by the other methods,
  * and will not be involved in coordinated transactions. In this method you
  * can implement normal actor behavior, or use the normal STM atomic for
  * local transactions.
- * <p/>
- * @see Coordinated for more information about the underlying mechanism.
+ *
+ * @see [[akka.stm.Coordinated]] for more information about the underlying mechanism
  */
 trait Transactor extends Actor {
   import Transactor.SendTo

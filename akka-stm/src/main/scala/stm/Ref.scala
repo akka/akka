@@ -28,12 +28,12 @@ object Ref {
  * To ensure safety the value stored in a Ref should be immutable (they can also
  * contain refs themselves). The value referenced by a Ref can only be accessed
  * or swapped within a transaction. If a transaction is not available, the call will
- * be executed in its own transaction (equivalent to using the Ref.atomic* methods).
+ * be executed in its own transaction.
+ * <br/><br/>
  *
- * <p/>
- * Creating a Ref (in Scala):
- * <p/>
- * <pre>
+ * Creating a Ref ''(Scala)''
+ *
+ * {{{
  * import akka.stm._
  *
  * // giving an initial value
@@ -41,12 +41,12 @@ object Ref {
  *
  * // specifying a type but no initial value
  * val ref = Ref[Int]
- * </pre>
+ * }}}
+ * <br/>
  *
- * <p/>
- * Creating a Ref (in Java):
- * <p/>
- * <pre>
+ * Creating a Ref ''(Java)''
+ *
+ * {{{
  * import akka.stm.*;
  *
  * // giving an initial value
@@ -54,7 +54,7 @@ object Ref {
  *
  * // specifying a type but no initial value
  * final Ref<Integer> ref = new Ref<Integer>();
- * </pre>
+ * }}}
  */
 class Ref[T](initialValue: T) extends BasicRef[T](initialValue) with Transactional {
   self =>
