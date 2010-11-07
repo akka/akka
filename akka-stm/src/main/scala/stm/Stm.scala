@@ -9,21 +9,26 @@ import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.templates.{TransactionalCallable, OrElseTemplate}
 
 /**
- * Stm trait that defines the atomic block for local transactions.
- * <p/>
- * If you need to coordinate transactions across actors @see Coordinated.
- * <p/>
- * Example of atomic transaction management using the atomic block (in Scala).
- * <p/>
- * <pre>
- * import akka.stm._
+ * Defines the atomic block for local transactions. Automatically imported with:
  *
+ * {{{
+ * import akka.stm._
+ * }}}
+ * <br/>
+ *
+ * If you need to coordinate transactions across actors see [[akka.stm.Coordinated]].
+ * <br/><br/>
+ *
+ * Example of using the atomic block ''(Scala)''
+ *
+ * {{{
  * atomic  {
  *   // do something within a transaction
  * }
- * </pre>
- * <p/>
- * @see Atomic for creating atomic blocks in Java.
+ * }}}
+ *
+ * @see [[akka.stm.Atomic]] for creating atomic blocks in Java.
+ * @see [[akka.stm.StmUtil]] for useful methods to combine with `atomic`
  */
 trait Stm {
   val DefaultTransactionFactory = TransactionFactory(DefaultTransactionConfig, "DefaultTransaction")
@@ -42,7 +47,61 @@ trait Stm {
 }
 
 /**
- * Stm utils for scheduling transaction lifecycle tasks and for blocking transactions.
+ * Stm utility methods for scheduling transaction lifecycle tasks and for blocking transactions.
+ * Automatically imported with:
+ *
+ * {{{
+ * import akka.stm._
+ * }}}
+ * <br/>
+ *
+ * Schedule a deferred task on the thread local transaction (use within an atomic).
+ * This is executed when the transaction commits.
+ *
+ * {{{
+ * atomic {
+ *   deferred {
+ *     // executes when transaction successfully commits
+ *   }
+ * }
+ * }}}
+ * <br/>
+ *
+ * Schedule a compensating task on the thread local transaction (use within an atomic).
+ * This is executed when the transaction aborts.
+ *
+ * {{{
+ * atomic {
+ *   compensating {
+ *     // executes when transaction aborts
+ *   }
+ * }
+ * }}}
+ * <br/>
+ *
+ * STM retry for blocking transactions (use within an atomic).
+ * Can be used to wait for a condition.
+ *
+ * {{{
+ * atomic {
+ *   if (!someCondition) retry
+ *   // ...
+ * }
+ * }}}
+ * <br/>
+ *
+ * Use either-orElse to combine two blocking transactions.
+ *
+ * {{{
+ * atomic {
+ *   either {
+ *     // ...
+ *   } orElse {
+ *     // ...
+ *   }
+ * }
+ * }}}
+ * <br/>
  */
 trait StmUtil {
   /**
@@ -67,14 +126,6 @@ trait StmUtil {
 
   /**
    * Use either-orElse to combine two blocking transactions.
-   * Usage:
-   * <pre>
-   * either {
-   *   ...
-   * } orElse {
-   *   ...
-   * }
-   * </pre>
    */
   def either[T](firstBody: => T) = new {
     def orElse(secondBody: => T) = new OrElseTemplate[T] {

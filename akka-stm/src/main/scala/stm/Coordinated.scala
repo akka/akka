@@ -21,52 +21,62 @@ object Coordinated {
 }
 
 /**
- * Coordinated transactions across actors.
- * <p/>
- * Coordinated is a wrapper for any message that adds a CountDownCommitBarrier to
- * coordinate transactions across actors or threads. To start a new coordinated transaction
- * that you will also participate in, use:
- * <p/>
- * <pre>
+ * `Coordinated` is a message wrapper that adds a `CountDownCommitBarrier` for explicitly
+ * coordinating transactions across actors or threads.
+ *
+ * Creating a `Coordinated` will create a count down barrier with initially one member.
+ * For each member in the coordination set a transaction is expected to be created using
+ * the coordinated atomic method. The number of included parties must match the number of
+ * transactions, otherwise a successful transaction cannot be coordinated.
+ * <br/><br/>
+ *
+ * To start a new coordinated transaction set that you will also participate in just create
+ * a `Coordinated` object:
+ *
+ * {{{
  * val coordinated = Coordinated()
- * </pre>
- * <p/>
- * Creating a Coordinated object will create a count down barrier with one member. For each
- * member in the coordination set a coordinated transaction is expected to be created.
- * <p/>
- * To start a coordinated transaction in another actor that you won't participate in yourself
- * can send the Coordinated message directly and the recipient is the first member of the
- * coordinating actors:
- * <p/>
- * <pre>
+ * }}}
+ * <br/>
+ *
+ * To start a coordinated transaction that you won't participate in yourself you can create a
+ * `Coordinated` object with a message and send it directly to an actor. The recipient of the message
+ * will be the first member of the coordination set:
+ *
+ * {{{
  * actor ! Coordinated(Message)
- * </pre>
- * <p/>
- * To receive a coordinated message in an actor:
- * <p/>
- * <pre>
+ * }}}
+ * <br/>
+ *
+ * To receive a coordinated message in an actor simply match it in a case statement:
+ *
+ * {{{
  * def receive = {
  *   case coordinated @ Coordinated(Message) => ...
  * }
- * </pre>
- * <p/>
+ * }}}
+ * <br/>
+ *
  * To include another actor in the same coordinated transaction set that you've created or
  * received, use the apply method on that object. This will increment the number of parties
- * involved by one.
- * <p/>
- * <pre>
+ * involved by one and create a new `Coordinated` object to be sent.
+ *
+ * {{{
  * actor ! coordinated(Message)
- * </pre>
- * <p/>
- * To enter a coordinated transaction use the atomic method of the Coordinated object:
- * <p/>
- * <pre>
+ * }}}
+ * <br/>
+ *
+ * To enter the coordinated transaction use the atomic method of the coordinated object:
+ *
+ * {{{
  * coordinated atomic {
- *   // Do something in transaction that will wait for the other transactions before committing.
- *   // If any of the coordinated transactions fail then they all fail.
+ *   // do something in transaction ...
  * }
- * </pre>
- * <p/>
+ * }}}
+ *
+ * The coordinated transaction will wait for the other transactions before committing.
+ * If any of the coordinated transactions fail then they all fail.
+ *
+ * @see [[akka.actor.Transactor]] for an actor that implements coordinated transactions
  */
 class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
   def apply(msg: Any) = {

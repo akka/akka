@@ -149,23 +149,23 @@ object TransactionFactory {
 /**
  * Wrapper for transaction config, factory, and boilerplate. Used by atomic.
  * Can be passed to atomic implicitly or explicitly.
- * <p/>
- * <pre>
+ *
+ * {{{
  * implicit val txFactory = TransactionFactory(readonly = true)
  * ...
  * atomic {
  *   // do something within a readonly transaction
  * }
- * </pre>
- * <p/>
+ * }}}
+ *
  * Can be created at different levels as needed. For example: as an implicit object
  * used throughout a package, as a static implicit val within a singleton object and
  * imported where needed, or as an implicit val within each instance of a class.
- * <p/>
+ *
  * If no explicit transaction factory is passed to atomic and there is no implicit
  * transaction factory in scope, then a default transaction factory is used.
  *
- * @see TransactionConfig for configuration options.
+ * @see [[akka.stm.TransactionConfig]] for configuration options.
  */
 class TransactionFactory(
   val config: TransactionConfig = DefaultTransactionConfig,
