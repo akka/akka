@@ -69,7 +69,7 @@ object FickleFriends {
     }
 
     def failIf(x: Int, y: Int) = {
-      if (x == y) throw new RuntimeException("Fail at " + x)
+      if (x == y) throw new RuntimeException("Random fail at position " + x)
     }
 
     def receive = {
@@ -104,7 +104,7 @@ class FickleFriendsSpec extends WordSpec with MustMatchers {
     (counters, coordinator)
   }
 
-  "coordinated fickle friends" should {
+  "Coordinated fickle friends" should {
     "eventually succeed to increment all counters by one" in {
       val (counters, coordinator) = createActors
       val latch = new CountDownLatch(1)
