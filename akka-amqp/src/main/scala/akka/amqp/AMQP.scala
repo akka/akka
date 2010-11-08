@@ -13,6 +13,7 @@ import com.rabbitmq.client.AMQP.BasicProperties
 import java.lang.{String, IllegalArgumentException}
 import reflect.Manifest
 import akka.japi.Procedure
+import akka.dispatch.Dispatchers
 
 /**
  * AMQP Actor API. Implements Connection, Producer and Consumer materialized as Actors.
@@ -23,6 +24,8 @@ import akka.japi.Procedure
  */
 object AMQP {
 
+  lazy val consumerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("amqp-consumers").build
+  lazy val producerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("amqp-producers").build
   /**
    * Parameters used to make the connection to the amqp broker. Uses the rabbitmq defaults.
    */
@@ -148,7 +151,7 @@ object AMQP {
           routingKey: String,
           deliveryHandler: ActorRef,
           queueName: Option[String] = None,
-          exchangeParameters: Option[ExchangeParameters],
+          exchangeParameters: Option[ExchangeParameters] = None,
           queueDeclaration: Declaration = ActiveDeclaration(),
           selfAcknowledging: Boolean = true,
           channelParameters: Option[ChannelParameters] = None) {
@@ -232,6 +235,7 @@ object AMQP {
 
   def newProducer(connection: ActorRef, producerParameters: ProducerParameters): ActorRef = {
     val producer: ActorRef = Actor.actorOf(new ProducerActor(producerParameters))
+    producer.dispatcher = producerDispatcher
     connection.startLink(producer)
     producer ! Start
     producer
@@ -239,7 +243,9 @@ object AMQP {
 
   def newConsumer(connection: ActorRef, consumerParameters: ConsumerParameters): ActorRef = {
     val consumer: ActorRef = actorOf(new ConsumerActor(consumerParameters))
+    consumer.dispatcher = consumerDispatcher
     val handler = consumerParameters.deliveryHandler
+    if (handler.isUnstarted) handler.dispatcher = consumerDispatcher
     if (handler.supervisor.isEmpty) consumer.startLink(handler)
     connection.startLink(consumer)
     consumer ! Start
@@ -342,7 +348,7 @@ object AMQP {
     }
 
     val deliveryHandler = actorOf( new Actor {
-      def receive = { case Delivery(payload, _, _, _, _) => handler.apply(new String(payload)) }
+      def receive = { case Delivery(payload, _, _, _, _, _) => handler.apply(new String(payload)) }
     } ).start
 
     val exchangeParameters = exchangeName.flatMap(name => Some(ExchangeParameters(name)))
@@ -432,7 +438,7 @@ object AMQP {
     }
 
     val deliveryHandler = actorOf(new Actor {
-      def receive = { case Delivery(payload, _, _, _, _) => handler.apply(createProtobufFromBytes[I](payload)) }
+      def receive = { case Delivery(payload, _, _, _, _, _) => handler.apply(createProtobufFromBytes[I](payload)) }
     }).start
 
     val exchangeParameters = exchangeName.flatMap(name => Some(ExchangeParameters(name)))
