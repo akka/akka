@@ -12,6 +12,7 @@ import akka.actor.Actor._
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent. {ConcurrentHashMap, CountDownLatch, TimeUnit}
 import akka.actor.dispatch.ActorModelSpec.MessageDispatcherInterceptor
+import akka.util.Duration
 
 object ActorModelSpec {
 
@@ -164,6 +165,18 @@ object ActorModelSpec {
     assert(stats.restarts.get()      === restarts,      "Restarts")
   }
 
+  def await(condition: => Boolean)(withinMs: Long, intervalMs: Long = 25): Boolean = try {
+    val until = System.currentTimeMillis() + withinMs
+    while(System.currentTimeMillis() <= until) {
+      try {
+        if (condition) return true
+
+        Thread.sleep(intervalMs)
+      } catch { case e: InterruptedException => }
+    }
+    false
+  }
+
   def newTestActor(implicit d: MessageDispatcherInterceptor) = actorOf(new DispatcherActor(d))
 }
 
@@ -179,7 +192,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     a.start
     assertDispatcher(dispatcher)(starts = 1, stops = 0)
     a.stop
-    Thread.sleep(dispatcher.timeoutMs + 100)
+    await(dispatcher.stops.get == 1)(withinMs = 10000)
     assertDispatcher(dispatcher)(starts = 1, stops = 1)
     assertRef(a,dispatcher)(
       suspensions = 0,
@@ -279,7 +292,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     }
     for(run <- 1 to 3) {
       flood(10000)
-      Thread.sleep(dispatcher.timeoutMs * 2)
+      await(dispatcher.stops.get == run)(withinMs = 10000)
       assertDispatcher(dispatcher)(starts = run, stops = run)
     }
   }
