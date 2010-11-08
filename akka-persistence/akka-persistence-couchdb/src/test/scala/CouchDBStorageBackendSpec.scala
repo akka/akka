@@ -15,14 +15,14 @@ import java.util.{Calendar, Date}
 
 @RunWith(classOf[JUnitRunner])
 class CouchDBStorageBackendSpec extends Specification {
-  doBeforeSpec { 
+  doBeforeSpec {
     CouchDBStorageBackend.create()
   }
-  
+
   doAfterSpec {
     CouchDBStorageBackend.drop()
   }
-  
+
   "CouchDBStorageBackend store and query in map" should {
     "enter 4 entries for transaction T-1" in {
       insertMapStorageEntryFor("T-1", "debasish.company".getBytes, "anshinsoft".getBytes)
@@ -34,13 +34,13 @@ class CouchDBStorageBackendSpec extends Specification {
       new String(getMapStorageEntryFor("T-1", "debasish.language".getBytes).get) mustEqual("java")
       getMapStorageSizeFor("T-1") mustEqual(4)
     }
-    
+
     "enter key/values for another transaction T-2" in {
       insertMapStorageEntryFor("T-2", "debasish.age".getBytes, "49".getBytes)
       insertMapStorageEntryFor("T-2", "debasish.spouse".getBytes, "paramita".getBytes)
       getMapStorageSizeFor("T-2") mustEqual(2)
     }
-    
+
     "remove map storage for T-99" in {
       insertMapStorageEntryFor("T-99", "provider".getBytes, "googleapp".getBytes)
       insertMapStorageEntryFor("T-99", "quota".getBytes, "100mb".getBytes)
@@ -67,7 +67,7 @@ class CouchDBStorageBackendSpec extends Specification {
         insertMapStorageEntryFor("T-11", "david".getBytes, toByteArray[Long](d / 2))
 
         getMapStorageSizeFor("T-11") mustEqual(4)
-        fromByteArray[Long](getMapStorageEntryFor("T-11", "steve".getBytes).get) mustEqual(d)      
+        fromByteArray[Long](getMapStorageEntryFor("T-11", "steve".getBytes).get) mustEqual(d)
     }
   }
 
@@ -98,7 +98,7 @@ class CouchDBStorageBackendSpec extends Specification {
       getMapStorageRangeFor("T-5",
         Some("trade.account".getBytes),
         None, 0).map(e => (new String(e._1), new String(e._2))).size mustEqual(7)
-        
+
       removeMapStorageFor("T-5")
     }
   }
@@ -113,7 +113,7 @@ class CouchDBStorageBackendSpec extends Specification {
       getMapStorageSizeFor("T-31") mustEqual(1)
       fromByteArray[Name](getMapStorageEntryFor("T-31", "debasish".getBytes).getOrElse(Array[Byte]())) mustEqual(n)
       removeMapStorageFor("T-31")
-    }    
+    }
   }
 
   "Store and query in vectors" should {
@@ -135,7 +135,7 @@ class CouchDBStorageBackendSpec extends Specification {
     "write a Name object and fetch it properly" in {
       val dtb = Calendar.getInstance.getTime
       val n = Name(100, "debasish ghosh", "kolkata", dtb, Some(dtb))
-  
+
       insertVectorStorageEntryFor("T-31", toByteArray[Name](n))
       getVectorStorageSizeFor("T-31") mustEqual(1)
       fromByteArray[Name](getVectorStorageEntryFor("T-31", 0)) mustEqual(n)
@@ -159,21 +159,21 @@ class CouchDBStorageBackendSpec extends Specification {
       fromByteArray[Name](getRefStorageFor("T-4").get) mustEqual(n)
     }
   }
-  
+
   "Mix the 3 different types storage with the same name" should {
     "work independently without inference each other" in {
       insertVectorStorageEntryFor("SameName", "v1".getBytes)
       insertMapStorageEntryFor("SameName", "vector".getBytes, "map_value_v".getBytes)
       insertVectorStorageEntryFor("SameName", "v2".getBytes)
-      insertMapStorageEntryFor("SameName", "ref".getBytes, "map_value_r".getBytes)      
+      insertMapStorageEntryFor("SameName", "ref".getBytes, "map_value_r".getBytes)
       insertVectorStorageEntryFor("SameName", "v3".getBytes)
       insertRefStorageFor("SameName", "I am a ref!".getBytes)
-      
+
       getMapStorageSizeFor("SameName") mustEqual(2)
       new String(getMapStorageEntryFor("SameName", "vector".getBytes).get) mustEqual("map_value_v")
       new String(getMapStorageEntryFor("SameName", "ref".getBytes).get) mustEqual("map_value_r")
       getVectorStorageSizeFor("SameName") mustEqual(3)
-      new String(getRefStorageFor("SameName").get) mustEqual("I am a ref!")      
+      new String(getRefStorageFor("SameName").get) mustEqual("I am a ref!")
     }
   }
 }

@@ -16,10 +16,10 @@
     </encoder>
   </appender>
   <logger name="akka" level="DEBUG"/>
-  
+
   <logger name="org.mortbay.log" level="ERROR"/>
   <logger name="org.apache.jasper" level="ERROR"/>
-  
+
   <root level="DEBUG">
     <appender-ref ref="stdout"/>
   </root>

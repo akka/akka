@@ -13,7 +13,7 @@ public class SupervisionConfig {
  public SupervisorConfig createSupervisorConfig(List<ActorRef> toSupervise) {
   ArrayList<Server> targets = new ArrayList<Server>(toSupervise.size());
    for(ActorRef ref : toSupervise) {
-     targets.add(new Supervise(ref, permanent(), new RemoteAddress("localhost",9999)));
+     targets.add(new Supervise(ref, permanent(), new RemoteAddress("localhost",2552)));
    }
 
    return new SupervisorConfig(new AllForOneStrategy(new Class[] { Exception.class },50,1000), targets.toArray(new Server[0]));

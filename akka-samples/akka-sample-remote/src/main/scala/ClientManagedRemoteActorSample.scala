@@ -9,7 +9,7 @@ import akka.actor.RemoteActor
 import akka.remote.RemoteNode
 import akka.util.Logging
 
-class RemoteHelloWorldActor extends RemoteActor("localhost", 9999) {
+class RemoteHelloWorldActor extends RemoteActor("localhost", 2552) {
   def receive = {
     case "Hello" =>
       log.info("Received 'Hello'")
@@ -19,7 +19,7 @@ class RemoteHelloWorldActor extends RemoteActor("localhost", 9999) {
 
 object ClientManagedRemoteActorServer extends Logging {
   def run = {
-    RemoteNode.start("localhost", 9999)
+    RemoteNode.start("localhost", 2552)
     log.info("Remote node started")
   }
 

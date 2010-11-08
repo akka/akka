@@ -15,47 +15,47 @@ public final class ProtobufProtocol {
       initFields();
     }
     private ProtobufPOJO(boolean noInit) {}
-    
+
     private static final ProtobufPOJO defaultInstance;
     public static ProtobufPOJO getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public ProtobufPOJO getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.actor.ProtobufProtocol.internal_static_akka_actor_ProtobufPOJO_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.actor.ProtobufProtocol.internal_static_akka_actor_ProtobufPOJO_fieldAccessorTable;
     }
-    
+
     // required uint64 id = 1;
     public static final int ID_FIELD_NUMBER = 1;
     private boolean hasId;
     private long id_ = 0L;
     public boolean hasId() { return hasId; }
     public long getId() { return id_; }
-    
+
     // required string name = 2;
     public static final int NAME_FIELD_NUMBER = 2;
     private boolean hasName;
     private java.lang.String name_ = "";
     public boolean hasName() { return hasName; }
     public java.lang.String getName() { return name_; }
-    
+
     // required bool status = 3;
     public static final int STATUS_FIELD_NUMBER = 3;
     private boolean hasStatus;
     private boolean status_ = false;
     public boolean hasStatus() { return hasStatus; }
     public boolean getStatus() { return status_; }
-    
+
     private void initFields() {
     }
     public final boolean isInitialized() {
@@ -64,7 +64,7 @@ public final class ProtobufProtocol {
       if (!hasStatus) return false;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -79,12 +79,12 @@ public final class ProtobufProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasId()) {
         size += com.google.protobuf.CodedOutputStream
@@ -102,7 +102,7 @@ public final class ProtobufProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static akka.actor.ProtobufProtocol.ProtobufPOJO parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -169,31 +169,31 @@ public final class ProtobufProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(akka.actor.ProtobufProtocol.ProtobufPOJO prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private akka.actor.ProtobufProtocol.ProtobufPOJO result;
-      
+
       // Construct using akka.actor.ProtobufProtocol.ProtobufPOJO.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new akka.actor.ProtobufProtocol.ProtobufPOJO();
         return builder;
       }
-      
+
       protected akka.actor.ProtobufProtocol.ProtobufPOJO internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -202,20 +202,20 @@ public final class ProtobufProtocol {
         result = new akka.actor.ProtobufProtocol.ProtobufPOJO();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.actor.ProtobufProtocol.ProtobufPOJO.getDescriptor();
       }
-      
+
       public akka.actor.ProtobufProtocol.ProtobufPOJO getDefaultInstanceForType() {
         return akka.actor.ProtobufProtocol.ProtobufPOJO.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -225,7 +225,7 @@ public final class ProtobufProtocol {
         }
         return buildPartial();
       }
-      
+
       private akka.actor.ProtobufProtocol.ProtobufPOJO buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -234,7 +234,7 @@ public final class ProtobufProtocol {
         }
         return buildPartial();
       }
-      
+
       public akka.actor.ProtobufProtocol.ProtobufPOJO buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -244,7 +244,7 @@ public final class ProtobufProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof akka.actor.ProtobufProtocol.ProtobufPOJO) {
           return mergeFrom((akka.actor.ProtobufProtocol.ProtobufPOJO)other);
@@ -253,7 +253,7 @@ public final class ProtobufProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(akka.actor.ProtobufProtocol.ProtobufPOJO other) {
         if (other == akka.actor.ProtobufProtocol.ProtobufPOJO.getDefaultInstance()) return this;
         if (other.hasId()) {
@@ -268,7 +268,7 @@ public final class ProtobufProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -305,8 +305,8 @@ public final class ProtobufProtocol {
           }
         }
       }
-      
-      
+
+
       // required uint64 id = 1;
       public boolean hasId() {
         return result.hasId();
@@ -324,7 +324,7 @@ public final class ProtobufProtocol {
         result.id_ = 0L;
         return this;
       }
-      
+
       // required string name = 2;
       public boolean hasName() {
         return result.hasName();
@@ -345,7 +345,7 @@ public final class ProtobufProtocol {
         result.name_ = getDefaultInstance().getName();
         return this;
       }
-      
+
       // required bool status = 3;
       public boolean hasStatus() {
         return result.hasStatus();
@@ -363,19 +363,19 @@ public final class ProtobufProtocol {
         result.status_ = false;
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:akka.actor.ProtobufPOJO)
     }
-    
+
     static {
       defaultInstance = new ProtobufPOJO(true);
       akka.actor.ProtobufProtocol.internalForceInit();
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:akka.actor.ProtobufPOJO)
   }
-  
+
   public static final class Counter extends
       com.google.protobuf.GeneratedMessage {
     // Use Counter.newBuilder() to construct.
@@ -383,40 +383,40 @@ public final class ProtobufProtocol {
       initFields();
     }
     private Counter(boolean noInit) {}
-    
+
     private static final Counter defaultInstance;
     public static Counter getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public Counter getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.actor.ProtobufProtocol.internal_static_akka_actor_Counter_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.actor.ProtobufProtocol.internal_static_akka_actor_Counter_fieldAccessorTable;
     }
-    
+
     // required uint32 count = 1;
     public static final int COUNT_FIELD_NUMBER = 1;
     private boolean hasCount;
     private int count_ = 0;
     public boolean hasCount() { return hasCount; }
     public int getCount() { return count_; }
-    
+
     private void initFields() {
     }
     public final boolean isInitialized() {
       if (!hasCount) return false;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -425,12 +425,12 @@ public final class ProtobufProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasCount()) {
         size += com.google.protobuf.CodedOutputStream
@@ -440,7 +440,7 @@ public final class ProtobufProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static akka.actor.ProtobufProtocol.Counter parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -507,31 +507,31 @@ public final class ProtobufProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(akka.actor.ProtobufProtocol.Counter prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private akka.actor.ProtobufProtocol.Counter result;
-      
+
       // Construct using akka.actor.ProtobufProtocol.Counter.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new akka.actor.ProtobufProtocol.Counter();
         return builder;
       }
-      
+
       protected akka.actor.ProtobufProtocol.Counter internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -540,20 +540,20 @@ public final class ProtobufProtocol {
         result = new akka.actor.ProtobufProtocol.Counter();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.actor.ProtobufProtocol.Counter.getDescriptor();
       }
-      
+
       public akka.actor.ProtobufProtocol.Counter getDefaultInstanceForType() {
         return akka.actor.ProtobufProtocol.Counter.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -563,7 +563,7 @@ public final class ProtobufProtocol {
         }
         return buildPartial();
       }
-      
+
       private akka.actor.ProtobufProtocol.Counter buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -572,7 +572,7 @@ public final class ProtobufProtocol {
         }
         return buildPartial();
       }
-      
+
       public akka.actor.ProtobufProtocol.Counter buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -582,7 +582,7 @@ public final class ProtobufProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof akka.actor.ProtobufProtocol.Counter) {
           return mergeFrom((akka.actor.ProtobufProtocol.Counter)other);
@@ -591,7 +591,7 @@ public final class ProtobufProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(akka.actor.ProtobufProtocol.Counter other) {
         if (other == akka.actor.ProtobufProtocol.Counter.getDefaultInstance()) return this;
         if (other.hasCount()) {
@@ -600,7 +600,7 @@ public final class ProtobufProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -629,8 +629,8 @@ public final class ProtobufProtocol {
           }
         }
       }
-      
-      
+
+
       // required uint32 count = 1;
       public boolean hasCount() {
         return result.hasCount();
@@ -648,19 +648,19 @@ public final class ProtobufProtocol {
         result.count_ = 0;
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:akka.actor.Counter)
     }
-    
+
     static {
       defaultInstance = new Counter(true);
       akka.actor.ProtobufProtocol.internalForceInit();
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:akka.actor.Counter)
   }
-  
+
   public static final class DualCounter extends
       com.google.protobuf.GeneratedMessage {
     // Use DualCounter.newBuilder() to construct.
@@ -668,40 +668,40 @@ public final class ProtobufProtocol {
       initFields();
     }
     private DualCounter(boolean noInit) {}
-    
+
     private static final DualCounter defaultInstance;
     public static DualCounter getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public DualCounter getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.actor.ProtobufProtocol.internal_static_akka_actor_DualCounter_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.actor.ProtobufProtocol.internal_static_akka_actor_DualCounter_fieldAccessorTable;
     }
-    
+
     // required uint32 count1 = 1;
     public static final int COUNT1_FIELD_NUMBER = 1;
     private boolean hasCount1;
     private int count1_ = 0;
     public boolean hasCount1() { return hasCount1; }
     public int getCount1() { return count1_; }
-    
+
     // required uint32 count2 = 2;
     public static final int COUNT2_FIELD_NUMBER = 2;
     private boolean hasCount2;
     private int count2_ = 0;
     public boolean hasCount2() { return hasCount2; }
     public int getCount2() { return count2_; }
-    
+
     private void initFields() {
     }
     public final boolean isInitialized() {
@@ -709,7 +709,7 @@ public final class ProtobufProtocol {
       if (!hasCount2) return false;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -721,12 +721,12 @@ public final class ProtobufProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasCount1()) {
         size += com.google.protobuf.CodedOutputStream
@@ -740,7 +740,7 @@ public final class ProtobufProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static akka.actor.ProtobufProtocol.DualCounter parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -807,31 +807,31 @@ public final class ProtobufProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(akka.actor.ProtobufProtocol.DualCounter prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private akka.actor.ProtobufProtocol.DualCounter result;
-      
+
       // Construct using akka.actor.ProtobufProtocol.DualCounter.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new akka.actor.ProtobufProtocol.DualCounter();
         return builder;
       }
-      
+
       protected akka.actor.ProtobufProtocol.DualCounter internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -840,20 +840,20 @@ public final class ProtobufProtocol {
         result = new akka.actor.ProtobufProtocol.DualCounter();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.actor.ProtobufProtocol.DualCounter.getDescriptor();
       }
-      
+
       public akka.actor.ProtobufProtocol.DualCounter getDefaultInstanceForType() {
         return akka.actor.ProtobufProtocol.DualCounter.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -863,7 +863,7 @@ public final class ProtobufProtocol {
         }
         return buildPartial();
       }
-      
+
       private akka.actor.ProtobufProtocol.DualCounter buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -872,7 +872,7 @@ public final class ProtobufProtocol {
         }
         return buildPartial();
       }
-      
+
       public akka.actor.ProtobufProtocol.DualCounter buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -882,7 +882,7 @@ public final class ProtobufProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof akka.actor.ProtobufProtocol.DualCounter) {
           return mergeFrom((akka.actor.ProtobufProtocol.DualCounter)other);
@@ -891,7 +891,7 @@ public final class ProtobufProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(akka.actor.ProtobufProtocol.DualCounter other) {
         if (other == akka.actor.ProtobufProtocol.DualCounter.getDefaultInstance()) return this;
         if (other.hasCount1()) {
@@ -903,7 +903,7 @@ public final class ProtobufProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -936,8 +936,8 @@ public final class ProtobufProtocol {
           }
         }
       }
-      
-      
+
+
       // required uint32 count1 = 1;
       public boolean hasCount1() {
         return result.hasCount1();
@@ -955,7 +955,7 @@ public final class ProtobufProtocol {
         result.count1_ = 0;
         return this;
       }
-      
+
       // required uint32 count2 = 2;
       public boolean hasCount2() {
         return result.hasCount2();
@@ -973,19 +973,19 @@ public final class ProtobufProtocol {
         result.count2_ = 0;
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:akka.actor.DualCounter)
     }
-    
+
     static {
       defaultInstance = new DualCounter(true);
       akka.actor.ProtobufProtocol.internalForceInit();
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:akka.actor.DualCounter)
   }
-  
+
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_akka_actor_ProtobufPOJO_descriptor;
   private static
@@ -1001,7 +1001,7 @@ public final class ProtobufProtocol {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_actor_DualCounter_fieldAccessorTable;
-  
+
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
@@ -1053,8 +1053,8 @@ public final class ProtobufProtocol {
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
-  
+
   public static void internalForceInit() {}
-  
+
   // @@protoc_insertion_point(outer_class_scope)
 }

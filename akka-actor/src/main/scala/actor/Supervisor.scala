@@ -80,7 +80,7 @@ case class SupervisorFactory(val config: SupervisorConfig) extends Logging {
 
   def newInstance: Supervisor = newInstanceFor(config)
 
-  def newInstanceFor(config: SupervisorConfig): Supervisor = { 
+  def newInstanceFor(config: SupervisorConfig): Supervisor = {
     val supervisor = new Supervisor(config.restartStrategy)
     supervisor.configure(config)
     supervisor.start
@@ -141,9 +141,9 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
             _childActors.put(className, actorRef :: currentActors)
             actorRef.lifeCycle = lifeCycle
             supervisor.link(actorRef)
-            remoteAddress.foreach { address =>
-              RemoteServerModule.registerActor(
-                new InetSocketAddress(address.hostname, address.port), actorRef.uuid, actorRef)
+            if (remoteAddress.isDefined) {
+              val address = remoteAddress.get
+              RemoteServerModule.registerActor(new InetSocketAddress(address.hostname, address.port), actorRef)
             }
           case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)

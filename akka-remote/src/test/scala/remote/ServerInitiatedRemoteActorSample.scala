@@ -17,7 +17,7 @@ class HelloWorldActor extends Actor {
 object ServerInitiatedRemoteActorServer {
 
   def run = {
-    RemoteNode.start("localhost", 9999)
+    RemoteNode.start("localhost", 2552)
     RemoteNode.register("hello-service", actorOf[HelloWorldActor])
   }
 
@@ -27,7 +27,7 @@ object ServerInitiatedRemoteActorServer {
 object ServerInitiatedRemoteActorClient extends Logging {
 
   def run = {
-    val actor = RemoteClient.actorFor("hello-service", "localhost", 9999)
+    val actor = RemoteClient.actorFor("hello-service", "localhost", 2552)
     val result = actor !! "Hello"
     log.info("Result from Remote Actor: %s", result)
   }

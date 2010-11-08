@@ -14,14 +14,17 @@ object CassandraStorage extends Storage {
   def newMap: PersistentMap[ElementType, ElementType] = newMap(newUuid.toString)
   def newVector: PersistentVector[ElementType] = newVector(newUuid.toString)
   def newRef: PersistentRef[ElementType] = newRef(newUuid.toString)
+  override def newQueue: PersistentQueue[ElementType] = newQueue(newUuid.toString)
 
   def getMap(id: String): PersistentMap[ElementType, ElementType] = newMap(id)
   def getVector(id: String): PersistentVector[ElementType] = newVector(id)
   def getRef(id: String): PersistentRef[ElementType] = newRef(id)
+  override def getQueue(id: String): PersistentQueue[ElementType] = newQueue(id)
 
   def newMap(id: String): PersistentMap[ElementType, ElementType] = new CassandraPersistentMap(id)
   def newVector(id: String): PersistentVector[ElementType] = new CassandraPersistentVector(id)
   def newRef(id: String): PersistentRef[ElementType] = new CassandraPersistentRef(id)
+  override def newQueue(id: String): PersistentQueue[ElementType] = new CassandraPersistentQueue(id)
 }
 
 /**
@@ -46,6 +49,11 @@ class CassandraPersistentVector(id: String) extends PersistentVector[Array[Byte]
 }
 
 class CassandraPersistentRef(id: String) extends PersistentRef[Array[Byte]] {
+  val uuid = id
+  val storage = CassandraStorageBackend
+}
+
+class CassandraPersistentQueue(id: String) extends PersistentQueue[Array[Byte]] {
   val uuid = id
   val storage = CassandraStorageBackend
 }

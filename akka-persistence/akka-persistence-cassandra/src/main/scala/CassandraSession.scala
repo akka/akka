@@ -27,8 +27,8 @@ trait CassandraSession extends Closeable with Flushable {
   import scala.collection.JavaConversions._
   import java.util.{Map => JMap, List => JList}
 
-  protected val client: Cassandra.Client
-  protected val keyspace: String
+  val client: Cassandra.Client
+  val keyspace: String
 
   val obtainedAt: Long
   val consistencyLevel: ConsistencyLevel
