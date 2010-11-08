@@ -10,6 +10,7 @@ import org.apache.camel.{Exchange, Processor}
 import org.apache.camel.model.{RouteDefinition, ProcessorDefinition}
 
 import akka.actor._
+import akka.japi.{Function => JFunction}
 
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
@@ -66,6 +67,12 @@ trait UntypedConsumer extends Consumer { self: UntypedActor =>
    * doesn't have any effect on one-way communications (they'll never block).
    */
   def isBlocking() = super.blocking
+
+  /**
+   * Sets the route definition handler for creating a custom route to this consumer instance.
+   */
+  def onRouteDefinition(h: JFunction[RouteDefinition, ProcessorDefinition[_]]): Unit =
+    onRouteDefinition { rd: RouteDefinition => h(rd) }
 }
 
 /**

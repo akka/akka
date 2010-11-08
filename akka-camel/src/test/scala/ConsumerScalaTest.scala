@@ -14,9 +14,9 @@ import akka.actor._
 /**
  * @author Martin Krasser
  */
-class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
+class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
   import CamelContextManager.mandatoryTemplate
-  import ConsumerTest._
+  import ConsumerScalaTest._
 
   var service: CamelService = _
 
@@ -195,7 +195,7 @@ class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
   }
 }
 
-object ConsumerTest {
+object ConsumerScalaTest {
   trait BlockingConsumer extends Consumer { self: Actor =>
     override def blocking = true
   }
