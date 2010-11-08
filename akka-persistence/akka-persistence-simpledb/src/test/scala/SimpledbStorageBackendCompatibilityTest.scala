@@ -1,12 +1,49 @@
-package
+package akka.persistence.simpledb
 
 
-/**
- * Created by IntelliJ IDEA.
- * User: ticktock
- * Date: 11/7/10
- * Time: 7:48 PM
- * To change this template use File | Settings | File Templates.
- */
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+import akka.persistence.common.{QueueStorageBackendTest, VectorStorageBackendTest, MapStorageBackendTest, RefStorageBackendTest}
 
-class SimpledbStorageBackendCompatibilityTest
+@RunWith(classOf[JUnitRunner])
+class SimpledbRefStorageBackendTestIntegration extends RefStorageBackendTest   {
+  def dropRefs = {
+    SimpledbStorageBackend.refAccess.drop
+  }
+
+
+  def storage = SimpledbStorageBackend
+}
+
+@RunWith(classOf[JUnitRunner])
+class SimpledbMapStorageBackendTestIntegration extends MapStorageBackendTest   {
+  def dropMaps = {
+    SimpledbStorageBackend.mapAccess.drop
+  }
+
+
+  def storage = SimpledbStorageBackend
+}
+
+@RunWith(classOf[JUnitRunner])
+class SimpledbVectorStorageBackendTestIntegration extends VectorStorageBackendTest   {
+  def dropVectors = {
+    SimpledbStorageBackend.vectorAccess.drop
+  }
+
+
+  def storage = SimpledbStorageBackend
+}
+
+
+@RunWith(classOf[JUnitRunner])
+class SimpledbQueueStorageBackendTestIntegration extends QueueStorageBackendTest  {
+  def dropQueues = {
+    SimpledbStorageBackend.queueAccess.drop
+  }
+
+
+  def storage = SimpledbStorageBackend
+}
+
+

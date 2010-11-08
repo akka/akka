@@ -1,12 +1,23 @@
-package
-
-
 /**
- * Created by IntelliJ IDEA.
- * User: ticktock
- * Date: 11/7/10
- * Time: 7:48 PM
- * To change this template use File | Settings | File Templates.
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-class SimpledbTicket343TestIntegration
+package akka.persistence.simpledb
+
+
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+import akka.persistence.common._
+
+@RunWith(classOf[JUnitRunner])
+class SimpledbTicket343TestIntegration extends Ticket343Test {
+  def dropMapsAndVectors: Unit = {
+    SimpledbStorageBackend.vectorAccess.drop
+    SimpledbStorageBackend.mapAccess.drop
+  }
+
+  def getVector: (String) => PersistentVector[Array[Byte]] = SimpledbStorage.getVector
+
+  def getMap: (String) => PersistentMap[Array[Byte], Array[Byte]] = SimpledbStorage.getMap
+
+}

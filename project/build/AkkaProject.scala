@@ -285,7 +285,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val spymemcached  = "spy" % "memcached" % "2.5" % "compile"
 
     //simpledb
-    lazy val simpledb = "org.sublime" % "amazon-simpledb" % "0.9-SNAPSHOT" % "compile"
+    lazy val simpledb = "com.amazonaws" % "aws-java-sdk" % "1.0.14" % "compile"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
