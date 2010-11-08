@@ -77,6 +77,14 @@ class ActorInitializationException private[akka](message: String) extends AkkaEx
 class ActorTimeoutException private[akka](message: String) extends AkkaException(message)
 
 /**
+ * This message is thrown by default when an Actors behavior doesn't match a message
+ */
+case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception {
+  override def getMessage() = "Actor %s does not handle [%s]".format(ref,msg)
+  override def fillInStackTrace() = this //Don't waste cycles generating stack trace
+}
+
+/**
  * Actor factory module with factory methods for creating various kinds of Actors.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -388,6 +396,16 @@ trait Actor extends Logging {
   def postRestart(reason: Throwable) {}
 
   /**
+   * User overridable callback.
+   * <p/>
+   * Is called when a message isn't handled by the current behavior of the actor
+   * by default it throws an UnhandledMessageException
+   */
+  def unhandled(msg: Any){
+    throw new UnhandledMessageException(msg,self)
+  }
+
+  /**
    * Is the actor able to handle the message passed in as arguments?
    */
   def isDefinedAt(message: Any): Boolean = processingBehavior.isDefinedAt(message)
@@ -407,8 +425,9 @@ trait Actor extends Logging {
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
-  private[akka] def apply(msg: Any) = processingBehavior(msg)
+  private[akka] def apply(msg: Any) = fullBehavior(msg)
 
+  /*Processingbehavior and fullBehavior are duplicates so make sure changes are done to both */
   private lazy val processingBehavior: Receive = {
     lazy val defaultBehavior = receive
     val actorBehavior: Receive = {
@@ -423,6 +442,25 @@ trait Actor extends Logging {
                   self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
       case msg if self.hotswap.isEmpty   &&
                   defaultBehavior.isDefinedAt(msg)   => defaultBehavior.apply(msg)
+    }
+    actorBehavior
+  }
+
+  private lazy val fullBehavior: Receive = {
+    lazy val defaultBehavior = receive
+    val actorBehavior: Receive = {
+      case HotSwap(code)                             => become(code)
+      case RevertHotSwap                             => unbecome
+      case Exit(dead, reason)                        => self.handleTrapExit(dead, reason)
+      case Link(child)                               => self.link(child)
+      case Unlink(child)                             => self.unlink(child)
+      case UnlinkAndStop(child)                      => self.unlink(child); child.stop
+      case Restart(reason)                           => throw reason
+      case msg if !self.hotswap.isEmpty &&
+                  self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
+      case msg if self.hotswap.isEmpty   &&
+                  defaultBehavior.isDefinedAt(msg)   => defaultBehavior.apply(msg)
+      case unknown                                   => unhandled(unknown) //This is the only line that differs from processingbehavior
     }
     actorBehavior
   }
