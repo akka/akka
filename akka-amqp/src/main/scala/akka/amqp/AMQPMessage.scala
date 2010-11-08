@@ -38,6 +38,7 @@ case class Delivery(
     payload: Array[Byte],
     routingKey: String,
     deliveryTag: Long,
+    isRedeliver: Boolean,
     properties: BasicProperties,
     sender: Option[ActorRef]) extends AMQPMessage
 

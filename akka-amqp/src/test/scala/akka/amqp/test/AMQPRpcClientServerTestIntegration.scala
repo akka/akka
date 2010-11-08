@@ -44,8 +44,8 @@ class AMQPRpcClientServerTestIntegration extends JUnitSuite with MustMatchers {
 
     def requestHandler(request: String) = 3
 
-    val rpcServer = RPC.newRpcServer[String, Int](connection, exchangeName, "rpc.routing", rpcServerSerializer,
-      requestHandler _, channelParameters = Some(channelParameters))
+    val rpcServer = RPC.newRpcServer[String, Int](connection, exchangeName, rpcServerSerializer,
+      requestHandler _, Some("rpc.routing"), channelParameters = Some(channelParameters))
 
     val rpcClientSerializer = new RpcClientSerializer[String, Int](
       new ToBinary[String] {
@@ -54,11 +54,11 @@ class AMQPRpcClientServerTestIntegration extends JUnitSuite with MustMatchers {
         def fromBinary(bytes: Array[Byte]) = bytes.head.toInt
       })
 
-    val rpcClient = RPC.newRpcClient[String, Int](connection, exchangeName, "rpc.routing", rpcClientSerializer,
+    val rpcClient = RPC.newRpcClient[String, Int](connection, exchangeName, rpcClientSerializer, Some("rpc.routing"),
       channelParameters = Some(channelParameters))
 
     countDown.await(2, TimeUnit.SECONDS) must be(true)
-    val response = rpcClient !! "some_payload"
+    val response = rpcClient.call("some_payload")
     response must be(Some(3))
   }
 }
