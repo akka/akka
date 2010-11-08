@@ -228,7 +228,7 @@ class MyActorWithDualCounter extends Actor {
     case "hello" =>
       count = count + 1
       self.reply("world " + count)
-    case "swap" => 
+    case "swap" =>
       become { case "hello" => self.reply("swapped") }
   }
 }

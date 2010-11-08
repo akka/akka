@@ -77,11 +77,54 @@ class ActorInitializationException private[akka](message: String) extends AkkaEx
 class ActorTimeoutException private[akka](message: String) extends AkkaException(message)
 
 /**
+ * This message is thrown by default when an Actors behavior doesn't match a message
+ */
+case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception {
+  override def getMessage() = "Actor %s does not handle [%s]".format(ref,msg)
+  override def fillInStackTrace() = this //Don't waste cycles generating stack trace
+}
+
+/**
  * Actor factory module with factory methods for creating various kinds of Actors.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor extends Logging {
+
+  /**
+   * Add shutdown cleanups
+   */
+  private[akka] lazy val shutdownHook = {
+    val hook = new Runnable {
+      override def run {
+        // Shutdown HawtDispatch GlobalQueue
+        log.info("Shutting down Hawt Dispatch global queue")
+        org.fusesource.hawtdispatch.ScalaDispatch.globalQueue.asInstanceOf[org.fusesource.hawtdispatch.internal.GlobalDispatchQueue].shutdown
+
+        // Clear Thread.subclassAudits
+        log.info("Clearing subclass audits")
+        val tf = classOf[java.lang.Thread].getDeclaredField("subclassAudits")
+        tf.setAccessible(true)
+        val subclassAudits = tf.get(null).asInstanceOf[java.util.Map[_,_]]
+        subclassAudits.synchronized {subclassAudits.clear}
+
+        // Clear and reset j.u.l.Level.known (due to Configgy)
+        log.info("Removing Configgy-installed log levels")
+        import java.util.logging.Level
+        val lf = classOf[Level].getDeclaredField("known")
+        lf.setAccessible(true)
+        val known = lf.get(null).asInstanceOf[java.util.ArrayList[Level]]
+        known.synchronized {
+          known.clear
+          List(Level.OFF,Level.SEVERE,Level.WARNING,Level.INFO,Level.CONFIG,
+               Level.FINE,Level.FINER,Level.FINEST,Level.ALL) foreach known.add
+        }
+      }
+    }
+    Runtime.getRuntime.addShutdownHook(new Thread(hook))
+    hook
+  }
+
   val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
@@ -110,7 +153,6 @@ object Actor extends Logging {
   def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
-<<<<<<< HEAD:akka-actor/src/main/scala/actor/Actor.scala
    * Creates an ActorRef out of the Actor with type T.
    * <pre>
    *   import Actor._
@@ -354,13 +396,23 @@ trait Actor extends Logging {
   def postRestart(reason: Throwable) {}
 
   /**
+   * User overridable callback.
+   * <p/>
+   * Is called when a message isn't handled by the current behavior of the actor
+   * by default it throws an UnhandledMessageException
+   */
+  def unhandled(msg: Any){
+    throw new UnhandledMessageException(msg,self)
+  }
+
+  /**
    * Is the actor able to handle the message passed in as arguments?
    */
   def isDefinedAt(message: Any): Boolean = processingBehavior.isDefinedAt(message)
 
   /**
    * Changes tha Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
-   * Puts the behavior on top of the hotswap stack. 
+   * Puts the behavior on top of the hotswap stack.
    */
   def become(behavior: Receive): Unit = self.hotswap = self.hotswap.push(behavior)
 
@@ -373,8 +425,9 @@ trait Actor extends Logging {
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
-  private[akka] def apply(msg: Any) = processingBehavior(msg)
+  private[akka] def apply(msg: Any) = fullBehavior(msg)
 
+  /*Processingbehavior and fullBehavior are duplicates so make sure changes are done to both */
   private lazy val processingBehavior: Receive = {
     lazy val defaultBehavior = receive
     val actorBehavior: Receive = {
@@ -389,6 +442,25 @@ trait Actor extends Logging {
                   self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
       case msg if self.hotswap.isEmpty   &&
                   defaultBehavior.isDefinedAt(msg)   => defaultBehavior.apply(msg)
+    }
+    actorBehavior
+  }
+
+  private lazy val fullBehavior: Receive = {
+    lazy val defaultBehavior = receive
+    val actorBehavior: Receive = {
+      case HotSwap(code)                             => become(code)
+      case RevertHotSwap                             => unbecome
+      case Exit(dead, reason)                        => self.handleTrapExit(dead, reason)
+      case Link(child)                               => self.link(child)
+      case Unlink(child)                             => self.unlink(child)
+      case UnlinkAndStop(child)                      => self.unlink(child); child.stop
+      case Restart(reason)                           => throw reason
+      case msg if !self.hotswap.isEmpty &&
+                  self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
+      case msg if self.hotswap.isEmpty   &&
+                  defaultBehavior.isDefinedAt(msg)   => defaultBehavior.apply(msg)
+      case unknown                                   => unhandled(unknown) //This is the only line that differs from processingbehavior
     }
     actorBehavior
   }

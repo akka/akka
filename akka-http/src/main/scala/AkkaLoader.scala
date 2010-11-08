@@ -6,6 +6,7 @@ package akka.servlet
 
 import akka.config.Config
 import akka.util.{Logging, Bootable}
+import akka.actor.Actor
 
 /*
  * This class is responsible for booting up a stack of bundles and then shutting them down
@@ -40,6 +41,7 @@ class AkkaLoader extends Logging {
       log.info("Shutting down Akka...")
       _bundles.foreach(_.onUnload)
       _bundles = None
+      Actor.shutdownHook.run
       log.info("Akka succesfully shut down")
     }
   }

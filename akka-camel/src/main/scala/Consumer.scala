@@ -22,7 +22,7 @@ trait Consumer { self: Actor =>
   /**
    * Determines whether two-way communications between an endpoint and this consumer actor
    * should be done in blocking or non-blocking mode (default is non-blocking). This method
-   * doesn't have any effect on one-way communications (they'll never block). 
+   * doesn't have any effect on one-way communications (they'll never block).
    */
   def blocking = false
 }

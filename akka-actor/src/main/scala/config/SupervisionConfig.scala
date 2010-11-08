@@ -35,7 +35,7 @@ object Supervision {
     def this(actorRef: ActorRef, lifeCycle: LifeCycle) =
       this(actorRef, lifeCycle, None)
   }
-  
+
   object Supervise {
     def apply(actorRef: ActorRef, lifeCycle: LifeCycle, remoteAddress: RemoteAddress) = new Supervise(actorRef, lifeCycle, remoteAddress)
     def apply(actorRef: ActorRef, lifeCycle: LifeCycle) = new Supervise(actorRef, lifeCycle, None)

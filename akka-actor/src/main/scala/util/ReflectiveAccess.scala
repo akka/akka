@@ -111,10 +111,10 @@ object ReflectiveAccess extends Logging {
    */
   object RemoteServerModule {
     val HOSTNAME = Config.config.getString("akka.remote.server.hostname", "localhost")
-    val PORT     = Config.config.getInt("akka.remote.server.port", 9999)
+    val PORT     = Config.config.getInt("akka.remote.server.port", 2552)
 
     type RemoteServerObject = {
-      def registerActor(address: InetSocketAddress, uuid: Uuid, actor: ActorRef): Unit
+      def registerActor(address: InetSocketAddress, actor: ActorRef): Unit
       def registerTypedActor(address: InetSocketAddress, name: String, typedActor: AnyRef): Unit
     }
 
@@ -128,9 +128,9 @@ object ReflectiveAccess extends Logging {
     val remoteNodeObjectInstance: Option[RemoteNodeObject] =
       getObjectFor("akka.remote.RemoteNode$")
 
-    def registerActor(address: InetSocketAddress, uuid: Uuid, actorRef: ActorRef) = {
+    def registerActor(address: InetSocketAddress, actorRef: ActorRef) = {
       ensureRemotingEnabled
-      remoteServerObjectInstance.get.registerActor(address, uuid, actorRef)
+      remoteServerObjectInstance.get.registerActor(address, actorRef)
     }
 
     def registerTypedActor(address: InetSocketAddress, implementationClassName: String, proxy: AnyRef) = {
@@ -208,10 +208,10 @@ object ReflectiveAccess extends Logging {
       def enqueue(message: MessageInvocation)
       def dequeue: MessageInvocation
     }
-    
+
     type Serializer = {
       def toBinary(obj: AnyRef): Array[Byte]
-      def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef      
+      def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
     }
 
     lazy val isEnterpriseEnabled = clusterObjectInstance.isDefined
@@ -219,7 +219,7 @@ object ReflectiveAccess extends Logging {
     val clusterObjectInstance: Option[AnyRef] =
       getObjectFor("akka.cluster.Cluster$")
 
-    val serializerClass: Option[Class[_]] = 
+    val serializerClass: Option[Class[_]] =
       getClassFor("akka.serialization.Serializer")
 
     def ensureEnterpriseEnabled = if (!isEnterpriseEnabled) throw new ModuleNotAvailableException(

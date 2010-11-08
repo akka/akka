@@ -9,13 +9,13 @@ import java.net.InetSocketAddress
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.{Map => JMap}
 
-import akka.actor.{
-  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage, uuidFrom, Uuid, ActorRegistry}
 import akka.actor.Actor._
+import akka.actor.{Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage, uuidFrom, Uuid, ActorRegistry, LifeCycleMessage, ActorType => AkkaActorType}
 import akka.util._
 import akka.remote.protocol.RemoteProtocol._
 import akka.remote.protocol.RemoteProtocol.ActorType._
 import akka.config.Config._
+import akka.config.ConfigurationException
 import akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 import akka.serialization.RemoteActorSerialization
 import akka.serialization.RemoteActorSerialization._
@@ -31,7 +31,6 @@ import org.jboss.netty.handler.ssl.SslHandler
 
 import scala.collection.mutable.Map
 import scala.reflect.BeanProperty
-import akka.config.ConfigurationException
 
 /**
  * Use this object if you need a single remote server on a specific node.
@@ -69,20 +68,17 @@ object RemoteNode extends RemoteServer
 object RemoteServer {
   val UUID_PREFIX = "uuid:"
 
-  val SECURE_COOKIE: Option[String] = { 
-    val cookie = config.getString("akka.remote.secure-cookie", "")
-    if (cookie == "") None
-    else Some(cookie)
-  }
-  val REQUIRE_COOKIE                       = {
+  val SECURE_COOKIE: Option[String] = config.getString("akka.remote.secure-cookie")
+  val REQUIRE_COOKIE = {
     val requireCookie = config.getBool("akka.remote.server.require-cookie", true)
-    if (RemoteServer.SECURE_COOKIE.isEmpty) throw new ConfigurationException(
+    if (requireCookie && RemoteServer.SECURE_COOKIE.isEmpty) throw new ConfigurationException(
       "Configuration option 'akka.remote.server.require-cookie' is turned on but no secure cookie is defined in 'akka.remote.secure-cookie'.")
     requireCookie
   }
- 
+
+  val UNTRUSTED_MODE            = config.getBool("akka.remote.server.untrusted-mode", false)
   val HOSTNAME                  = config.getString("akka.remote.server.hostname", "localhost")
-  val PORT                      = config.getInt("akka.remote.server.port", 9999)
+  val PORT                      = config.getInt("akka.remote.server.port", 2552)
   val CONNECTION_TIMEOUT_MILLIS = Duration(config.getInt("akka.remote.server.connection-timeout", 1), TIME_UNIT)
   val COMPRESSION_SCHEME        = config.getString("akka.remote.compression-scheme", "zlib")
   val ZLIB_COMPRESSION_LEVEL    = {
@@ -138,17 +134,42 @@ object RemoteServer {
   private[akka] def unregister(hostname: String, port: Int) = guard.withWriteGuard {
     remoteServers.remove(Address(hostname, port))
   }
+
+  /**
+   * Used in REflectiveAccess
+   */
+  private[akka] def registerActor(address: InetSocketAddress, actorRef: ActorRef) {
+    serverFor(address) foreach { _.register(actorRef) }
+  }
+
+  /**
+   * Used in Reflective
+   */
+  private[akka] def registerTypedActor(address: InetSocketAddress, implementationClassName: String, proxy: AnyRef) {
+    serverFor(address) foreach { _.registerTypedActor(implementationClassName,proxy)}
+  }
 }
 
 /**
- * Life-cycle events for RemoteServer.
+ *  Life-cycle events for RemoteServer.
  */
 sealed trait RemoteServerLifeCycleEvent
-case class RemoteServerError(@BeanProperty val cause: Throwable, @BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
-case class RemoteServerShutdown(@BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
-case class RemoteServerStarted(@BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
-case class RemoteServerClientConnected(@BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
-case class RemoteServerClientDisconnected(@BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
+case class RemoteServerStarted(
+  @BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
+case class RemoteServerShutdown(
+  @BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
+case class RemoteServerError(
+  @BeanProperty val cause: Throwable, 
+  @BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
+case class RemoteServerClientConnected(
+  @BeanProperty val server: RemoteServer, 
+  @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
+case class RemoteServerClientDisconnected(
+  @BeanProperty val server: RemoteServer, 
+  @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
+case class RemoteServerClientClosed(
+  @BeanProperty val server: RemoteServer, 
+  @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
 
 /**
  * Use this class if you need a more than one remote server on a specific node.
@@ -311,7 +332,7 @@ class RemoteServer extends Logging with ListenerManagement {
   def unregister(id: String):Unit = synchronized {
     if (_isRunning) {
       log.info("Unregistering server side remote actor with id [%s]", id)
-      if (id.startsWith(UUID_PREFIX)) actorsByUuid.remove(id.substring(UUID_PREFIX.length)) 
+      if (id.startsWith(UUID_PREFIX)) actorsByUuid.remove(id.substring(UUID_PREFIX.length))
       else {
         val actorRef = actors get id
         actorsByUuid.remove(actorRef.uuid, actorRef)
@@ -381,7 +402,7 @@ class RemoteServerPipelineFactory(
     val ssl         = if(RemoteServer.SECURE) join(new SslHandler(engine)) else join()
     val lenDec      = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
     val lenPrep     = new LengthFieldPrepender(4)
-    val protobufDec = new ProtobufDecoder(RemoteRequestProtocol.getDefaultInstance)
+    val protobufDec = new ProtobufDecoder(RemoteMessageProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
     val (enc, dec)  = RemoteServer.COMPRESSION_SCHEME match {
       case "zlib"  => (join(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL)), join(new ZlibDecoder))
@@ -417,26 +438,33 @@ class RemoteServerHandler(
   override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) = openChannels.add(ctx.getChannel)
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    log.debug("Remote client connected to [%s]", server.name)
+    val clientAddress = getClientAddress(ctx)
+    log.debug("Remote client [%s] connected to [%s]", clientAddress, server.name)
     if (RemoteServer.SECURE) {
       val sslHandler: SslHandler = ctx.getPipeline.get(classOf[SslHandler])
-
       // Begin handshake.
       sslHandler.handshake().addListener(new ChannelFutureListener {
         def operationComplete(future: ChannelFuture): Unit = {
           if (future.isSuccess) {
             openChannels.add(future.getChannel)
-            server.notifyListeners(RemoteServerClientConnected(server))
+            server.notifyListeners(RemoteServerClientConnected(server, clientAddress))
           } else future.getChannel.close
         }
       })
-    } else server.notifyListeners(RemoteServerClientConnected(server))
+    } else server.notifyListeners(RemoteServerClientConnected(server, clientAddress))
     if (RemoteServer.REQUIRE_COOKIE) ctx.setAttachment(CHANNEL_INIT) // signal that this is channel initialization, which will need authentication
   }
 
+  override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
+    val clientAddress = getClientAddress(ctx)
+    log.debug("Remote client [%s] disconnected from [%s]", clientAddress, server.name)
+    server.notifyListeners(RemoteServerClientDisconnected(server, clientAddress))
+  }
+
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    log.debug("Remote client disconnected from [%s]", server.name)
-    server.notifyListeners(RemoteServerClientDisconnected(server))
+    val clientAddress = getClientAddress(ctx)
+    log.debug("Remote client [%s] channel closed from [%s]", clientAddress, server.name)
+    server.notifyListeners(RemoteServerClientClosed(server, clientAddress))
   }
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
@@ -449,10 +477,10 @@ class RemoteServerHandler(
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val message = event.getMessage
     if (message eq null) throw new IllegalActorStateException("Message in remote MessageEvent is null: " + event)
-    if (message.isInstanceOf[RemoteRequestProtocol]) {
-      val requestProtocol = message.asInstanceOf[RemoteRequestProtocol]
+    if (message.isInstanceOf[RemoteMessageProtocol]) {
+      val requestProtocol = message.asInstanceOf[RemoteMessageProtocol]
        if (RemoteServer.REQUIRE_COOKIE) authenticateRemoteClient(requestProtocol, ctx)
-      handleRemoteRequestProtocol(requestProtocol, event.getChannel)
+      handleRemoteMessageProtocol(requestProtocol, event.getChannel)
     }
   }
 
@@ -462,8 +490,14 @@ class RemoteServerHandler(
     server.notifyListeners(RemoteServerError(event.getCause, server))
   }
 
-  private def handleRemoteRequestProtocol(request: RemoteRequestProtocol, channel: Channel) = {
-    log.debug("Received RemoteRequestProtocol[\n%s]", request.toString)
+  private def getClientAddress(ctx: ChannelHandlerContext): Option[InetSocketAddress] = {
+    val remoteAddress = ctx.getChannel.getRemoteAddress
+    if (remoteAddress.isInstanceOf[InetSocketAddress]) Some(remoteAddress.asInstanceOf[InetSocketAddress])
+    else None
+  }
+
+  private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = {
+    log.debug("Received RemoteMessageProtocol[\n%s]", request.toString)
     request.getActorInfo.getActorType match {
       case SCALA_ACTOR => dispatchToActor(request, channel)
       case TYPED_ACTOR => dispatchToTypedActor(request, channel)
@@ -472,11 +506,19 @@ class RemoteServerHandler(
     }
   }
 
-  private def dispatchToActor(request: RemoteRequestProtocol, channel: Channel) = {
+  private def dispatchToActor(request: RemoteMessageProtocol, channel: Channel) {
     val actorInfo = request.getActorInfo
     log.debug("Dispatching to remote actor [%s:%s]", actorInfo.getTarget, actorInfo.getUuid)
 
-    val actorRef = createActor(actorInfo).start
+    val actorRef =
+      try {
+        createActor(actorInfo).start
+      } catch {
+        case e: SecurityException =>
+          channel.write(createErrorReplyMessage(e, request, AkkaActorType.ScalaActor))
+          server.notifyListeners(RemoteServerError(e, server))
+          return
+      }
 
     val message = MessageSerializer.deserialize(request.getMessage)
     val sender =
@@ -484,9 +526,14 @@ class RemoteServerHandler(
       else None
 
     message match { // first match on system messages
-      case RemoteActorSystemMessage.Stop => actorRef.stop
+      case RemoteActorSystemMessage.Stop =>
+        if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException("Remote server is operating is untrusted mode, can not stop the actor")
+        else actorRef.stop
+      case _: LifeCycleMessage if (RemoteServer.UNTRUSTED_MODE) =>
+        throw new SecurityException("Remote server is operating is untrusted mode, can not pass on a LifeCycleMessage to the remote actor")
+
       case _ =>     // then match on user defined messages
-        if (request.getIsOneWay) actorRef.!(message)(sender)
+        if (request.getOneWay) actorRef.!(message)(sender)
         else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(
           message,
           request.getActorInfo.getTimeout,
@@ -494,16 +541,24 @@ class RemoteServerHandler(
           Some(new DefaultCompletableFuture[AnyRef](request.getActorInfo.getTimeout){
             override def onComplete(result: AnyRef) {
               log.debug("Returning result from actor invocation [%s]", result)
-              val replyBuilder = RemoteReplyProtocol.newBuilder
-                .setUuid(request.getUuid)
-                .setMessage(MessageSerializer.serialize(result))
-                .setIsSuccessful(true)
-                .setIsActor(true)
+              val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+                Some(actorRef),
+                Right(request.getUuid), 
+                actorInfo.getId, 
+                actorInfo.getTarget, 
+                actorInfo.getTimeout, 
+                Left(result), 
+                true, 
+                Some(actorRef), 
+                None, 
+                AkkaActorType.ScalaActor, 
+                None)
 
-              if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
+              // FIXME lift in the supervisor uuid management into toh createRemoteMessageProtocolBuilder method
+              if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
 
               try {
-                channel.write(replyBuilder.build)
+                channel.write(messageBuilder.build)
               } catch {
                 case e: Throwable => server.notifyListeners(RemoteServerError(e, server))
               }
@@ -511,7 +566,7 @@ class RemoteServerHandler(
 
             override def onCompleteException(exception: Throwable) {
               try {
-                channel.write(createErrorReplyMessage(exception, request, true))
+                channel.write(createErrorReplyMessage(exception, request, AkkaActorType.ScalaActor))
               } catch {
                 case e: Throwable => server.notifyListeners(RemoteServerError(e, server))
               }
@@ -521,7 +576,7 @@ class RemoteServerHandler(
     }
   }
 
-  private def dispatchToTypedActor(request: RemoteRequestProtocol, channel: Channel) = {
+  private def dispatchToTypedActor(request: RemoteMessageProtocol, channel: Channel) = {
     val actorInfo = request.getActorInfo
     val typedActorInfo = actorInfo.getTypedActorInfo
     log.debug("Dispatching to remote typed actor [%s :: %s]", typedActorInfo.getMethod, typedActorInfo.getInterface)
@@ -532,24 +587,32 @@ class RemoteServerHandler(
 
     try {
       val messageReceiver = typedActor.getClass.getDeclaredMethod(typedActorInfo.getMethod, argClasses: _*)
-      if (request.getIsOneWay) messageReceiver.invoke(typedActor, args: _*)
+      if (request.getOneWay) messageReceiver.invoke(typedActor, args: _*)
       else {
         val result = messageReceiver.invoke(typedActor, args: _*)
         log.debug("Returning result from remote typed actor invocation [%s]", result)
-        val replyBuilder = RemoteReplyProtocol.newBuilder
-            .setUuid(request.getUuid)
-            .setMessage(MessageSerializer.serialize(result))
-            .setIsSuccessful(true)
-            .setIsActor(false)
-        if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-        channel.write(replyBuilder.build)
+
+        val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+          None,
+          Right(request.getUuid), 
+          actorInfo.getId, 
+          actorInfo.getTarget, 
+          actorInfo.getTimeout, 
+          Left(result),
+          true, 
+          None,
+          None, 
+          AkkaActorType.TypedActor, 
+          None)
+        if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
+        channel.write(messageBuilder.build)
       }
     } catch {
       case e: InvocationTargetException =>
-        channel.write(createErrorReplyMessage(e.getCause, request, false))
+        channel.write(createErrorReplyMessage(e.getCause, request, AkkaActorType.TypedActor))
         server.notifyListeners(RemoteServerError(e, server))
       case e: Throwable =>
-        channel.write(createErrorReplyMessage(e, request, false))
+        channel.write(createErrorReplyMessage(e, request, AkkaActorType.TypedActor))
         server.notifyListeners(RemoteServerError(e, server))
     }
   }
@@ -599,9 +662,12 @@ class RemoteServerHandler(
     val timeout = actorInfo.getTimeout
 
     val actorRefOrNull = findActorByIdOrUuid(id, uuidFrom(uuid.getHigh,uuid.getLow).toString)
-    
+
     if (actorRefOrNull eq null) {
       try {
+        if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException(
+          "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
+
         log.info("Creating a new remote actor [%s:%s]", name, uuid)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
                     else Class.forName(name)
@@ -633,6 +699,9 @@ class RemoteServerHandler(
       val targetClassname = actorInfo.getTarget
 
       try {
+        if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException(
+          "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
+
         log.info("Creating a new remote typed actor:\n\t[%s :: %s]", interfaceClassname, targetClassname)
 
         val (interfaceClass, targetClass) =
@@ -653,24 +722,31 @@ class RemoteServerHandler(
     } else typedActorOrNull
   }
 
-  private def createErrorReplyMessage(e: Throwable, request: RemoteRequestProtocol, isActor: Boolean): RemoteReplyProtocol = {
+  private def createErrorReplyMessage(exception: Throwable, request: RemoteMessageProtocol, actorType: AkkaActorType): RemoteMessageProtocol = {
     val actorInfo = request.getActorInfo
-    log.error(e, "Could not invoke remote typed actor [%s :: %s]", actorInfo.getTypedActorInfo.getMethod, actorInfo.getTarget)
-    val replyBuilder = RemoteReplyProtocol.newBuilder
-        .setUuid(request.getUuid)
-        .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
-        .setIsSuccessful(false)
-        .setIsActor(isActor)
-    if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-    replyBuilder.build
+    log.error(exception, "Could not invoke remote actor [%s]", actorInfo.getTarget)
+    val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+      None,
+      Right(request.getUuid), 
+      actorInfo.getId, 
+      actorInfo.getTarget, 
+      actorInfo.getTimeout, 
+      Right(exception), 
+      true, 
+      None, 
+      None, 
+      actorType, 
+      None)
+    if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
+    messageBuilder.build
   }
 
-  private def authenticateRemoteClient(request: RemoteRequestProtocol, ctx: ChannelHandlerContext) = {
+  private def authenticateRemoteClient(request: RemoteMessageProtocol, ctx: ChannelHandlerContext) = {
     val attachment = ctx.getAttachment
-    if ((attachment ne null) && 
-        attachment.isInstanceOf[String] && 
+    if ((attachment ne null) &&
+        attachment.isInstanceOf[String] &&
         attachment.asInstanceOf[String] == CHANNEL_INIT) { // is first time around, channel initialization
-      ctx.setAttachment(null) 
+      ctx.setAttachment(null)
       val clientAddress = ctx.getChannel.getRemoteAddress.toString
       if (!request.hasCookie) throw new SecurityException(
         "The remote client [" + clientAddress + "] does not have a secure cookie.")

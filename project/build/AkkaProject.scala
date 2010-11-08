@@ -21,9 +21,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         "-Xmigration",
         "-Xcheckinit",
         "-Xstrict-warnings",
+       // "-optimise", //Uncomment this for release compile
         "-Xwarninit",
         "-encoding", "utf8")
-        .map(x => CompileOption(x))
+        .map(CompileOption(_))
   override def javaCompileOptions = JavaCompileOption("-Xlint:unchecked") :: super.javaCompileOptions.toList
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -118,7 +119,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val ATMO_VERSION          = "0.6.2"
-  lazy val CAMEL_VERSION         = "2.4.0"
+  lazy val CAMEL_VERSION         = "2.5.0"
   lazy val CASSANDRA_VERSION     = "0.6.1"
   lazy val DISPATCH_VERSION      = "0.7.4"
   lazy val HAWT_DISPATCH_VERSION = "1.0"
@@ -128,9 +129,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val SCALATEST_VERSION     = "1.2"
   lazy val LOGBACK_VERSION       = "0.9.24"
   lazy val SLF4J_VERSION         = "1.6.0"
-  lazy val SPRING_VERSION        = "3.0.3.RELEASE"
+  lazy val SPRING_VERSION        = "3.0.4.RELEASE"
   lazy val ASPECTWERKZ_VERSION   = "2.2.2"
-  lazy val JETTY_VERSION         = "7.1.4.v20100610"
+  lazy val JETTY_VERSION         = "7.1.6.v20100715"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
@@ -248,6 +249,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val hbase_core = "org.apache.hbase" % "hbase-core" % "0.20.6" % "compile"
 
+    lazy val google_coll    = "com.google.collections" % "google-collections"  % "1.0"             % "compile"
+
     //Riak PB Client
     lazy val riak_pb_client = "com.trifork"   %  "riak-java-pb-client"      % "1.0-for-akka-by-ticktock"  % "compile"
 
@@ -256,8 +259,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val camel_spring   = "org.apache.camel"       % "camel-spring"        % CAMEL_VERSION     % "test"
     lazy val cassandra_clhm = "org.apache.cassandra"   % "clhm-production"     % CASSANDRA_VERSION % "test"
     lazy val commons_coll   = "commons-collections"    % "commons-collections" % "3.2.1"           % "test"
-    lazy val google_coll    = "com.google.collections" % "google-collections"  % "1.0"             % "test"
-    lazy val google_coll_compile    = "com.google.collections" % "google-collections"  % "1.0"             % "compile"
 
     lazy val high_scale     = "org.apache.cassandra"   % "high-scale-lib"      % CASSANDRA_VERSION % "test"
     lazy val testJetty      = "org.eclipse.jetty"      % "jetty-server"        % JETTY_VERSION     % "test"
@@ -279,6 +280,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val vold_jetty = "org.mortbay.jetty" % "jetty" % "6.1.18" % "test"
     lazy val velocity = "org.apache.velocity" % "velocity" % "1.6.2" % "test"
     lazy val dbcp = "commons-dbcp" % "commons-dbcp" % "1.2.2" % "test"
+
+    //memcached
+    lazy val spymemcached  = "spy" % "memcached" % "2.5" % "compile"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -515,7 +519,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val camel_core = Dependencies.camel_core
-    
+
     override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
@@ -540,6 +544,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaRiakProject(_), akka_persistence_common)
     lazy val akka_persistence_couchdb = project("akka-persistence-couchdb", "akka-persistence-couchdb",
       new AkkaCouchDBProject(_), akka_persistence_common)
+    lazy val akka_persistence_memcached= project("akka-persistence-memcached", "akka-persistence-memcached",
+      new AkkaMemcachedProject(_), akka_persistence_common)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -630,7 +636,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     //testing
     val scalatest = Dependencies.scalatest
-    val google_coll_compile = Dependencies.google_coll_compile
+    val google_coll  = Dependencies.google_coll
     val jdom = Dependencies.jdom
     val jetty = Dependencies.vold_jetty
     val velocity = Dependencies.velocity
@@ -656,6 +662,15 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaCouchDBProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
         val couch = Dependencies.commonsHttpClient
                 val spec = Dependencies.specs
+
+    override def testOptions = createTestFilter( _.endsWith("Test"))
+  }
+
+  class AkkaMemcachedProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+        val memcached = Dependencies.spymemcached
+     val commons_codec = Dependencies.commons_codec
+
+     val scalatest = Dependencies.scalatest
 
     override def testOptions = createTestFilter( _.endsWith("Test"))
   }
@@ -690,7 +705,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val atomikos_transactions_jta = Dependencies.atomikos_transactions_jta
     //val jta_1_1                   = Dependencies.jta_1_1
     //val atomikos_transactions_util = "com.atomikos" % "transactions-util" % "3.2.3" % "compile"
-    
+
     //Testing
     val junit        = Dependencies.junit
     val scalatest    = Dependencies.scalatest
@@ -767,7 +782,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val commons_fileupload = "commons-fileupload"        % "commons-fileupload" % "1.2.1" % "compile" intransitive
     val jms_1_1            = "org.apache.geronimo.specs" % "geronimo-jms_1.1_spec" % "1.1.1" % "compile" intransitive
     val joda               = "joda-time"                 % "joda-time" % "1.6" intransitive
-    
+
     override def packageAction =
       task {
         val libs: Seq[Path] = managedClasspath(config("compile")).get.toSeq
@@ -820,7 +835,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         </dependency>
         <dependency org="org.apache.geronimo.specs" name="geronimo-servlet_2.5_spec" rev="1.1.1">
         </dependency>
-        <dependency org="org.apache.camel" name="camel-jetty" rev="2.4.0.1">
+        <dependency org="org.apache.camel" name="camel-jetty" rev={CAMEL_VERSION}>
           <exclude module="geronimo-servlet_2.4_spec"/>
         </dependency>
         <dependency org="org.apache.camel" name="camel-jms" rev={CAMEL_VERSION}>

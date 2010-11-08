@@ -17,7 +17,7 @@ trait InfiniteIterator[T] extends Iterator[T]
  */
 class CyclicIterator[T](items: List[T]) extends InfiniteIterator[T] {
   def this(items: java.util.List[T]) = this(items.toList)
-  
+
   @volatile private[this] var current: List[T] = items
 
   def hasNext = items != Nil

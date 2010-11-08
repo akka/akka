@@ -61,7 +61,7 @@ object ClientInitiatedRemoteActorSpec {
     var prefix = "default-"
     var count = 0
     def receive = {
-      case "incrPrefix" => count += 1; prefix = "" + count + "-" 
+      case "incrPrefix" => count += 1; prefix = "" + count + "-"
       case msg: String => self.reply(prefix + msg)
     }
   }
@@ -140,25 +140,8 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
         a.makeRemote(HOSTNAME, PORT1)
         a.start
       }).toList
-    actors.map(_ !!! "Hello").
-           foreach(future => assert("World" === future.await.result.asInstanceOf[Option[String]].get))
+    actors.map(_ !!! "Hello").foreach(future => assert("World" === future.await.result.asInstanceOf[Option[String]].get))
     actors.foreach(_.stop)
-  }
-
-  @Test
-  def shouldSendAndReceiveRemoteException {
-    implicit val timeout = 500000000L
-    val actor = actorOf[RemoteActorSpecActorBidirectional]
-    actor.makeRemote(HOSTNAME, PORT1)
-    actor.start
-    try {
-      actor !! "Failure"
-      fail("Should have thrown an exception")
-    } catch {
-      case e =>
-        assert("Expected exception; to test fault-tolerance" === e.getMessage())
-    }
-    actor.stop
   }
 
   @Test
@@ -179,6 +162,22 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
 
     actor1.stop
     actor2.stop
+  }
+
+  @Test
+  def shouldSendAndReceiveRemoteException {
+    implicit val timeout = 500000000L
+    val actor = actorOf[RemoteActorSpecActorBidirectional]
+    actor.makeRemote(HOSTNAME, PORT1)
+    actor.start
+    try {
+      actor !! "Failure"
+      fail("Should have thrown an exception")
+    } catch {
+      case e =>
+        assert("Expected exception; to test fault-tolerance" === e.getMessage())
+    }
+    actor.stop
   }
 }
 

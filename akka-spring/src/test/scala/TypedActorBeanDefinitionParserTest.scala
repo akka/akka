@@ -60,24 +60,24 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
     it("should parse remote TypedActors configuration") {
       val xml = <akka:typed-actor id="remote typed-actor" implementation="akka.spring.foo.MyPojo"
                   timeout="1000">
-                  <akka:remote host="com.some.host" port="9999"/>
+                  <akka:remote host="com.some.host" port="2552"/>
                 </akka:typed-actor>
       val props = parser.parseActor(dom(xml).getDocumentElement);
       assert(props ne null)
       assert(props.host === "com.some.host")
-      assert(props.port === "9999")
+      assert(props.port === "2552")
       assert(!props.serverManaged)
     }
 
     it("should parse remote server managed TypedActors configuration") {
       val xml = <akka:typed-actor id="remote typed-actor" implementation="akka.spring.foo.MyPojo"
                   timeout="1000">
-                  <akka:remote host="com.some.host" port="9999" service-name="my-service"/>
+                  <akka:remote host="com.some.host" port="2552" service-name="my-service"/>
                 </akka:typed-actor>
       val props = parser.parseActor(dom(xml).getDocumentElement);
       assert(props ne null)
       assert(props.host === "com.some.host")
-      assert(props.port === "9999")
+      assert(props.port === "2552")
       assert(props.serviceName === "my-service")
       assert(props.serverManaged)
     }

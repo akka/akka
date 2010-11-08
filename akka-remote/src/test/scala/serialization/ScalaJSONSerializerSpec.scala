@@ -11,15 +11,15 @@ import akka.serialization.Serializer.ScalaJSON
 object Protocols {
   import sjson.json.DefaultProtocol._
   case class Shop(store: String, item: String, price: Int)
-  implicit val ShopFormat: sjson.json.Format[Shop] = 
+  implicit val ShopFormat: sjson.json.Format[Shop] =
     asProduct3("store", "item", "price")(Shop)(Shop.unapply(_).get)
 
   case class MyMessage(val id: String, val value: Tuple2[String, Int])
   implicit val MyMessageFormat: sjson.json.Format[MyMessage] =
     asProduct2("id", "value")(MyMessage)(MyMessage.unapply(_).get)
 
-  case class MyJsonObject(val key: String, val map: Map[String, Int], 
-    val standAloneInt: Int) 
+  case class MyJsonObject(val key: String, val map: Map[String, Int],
+    val standAloneInt: Int)
   implicit val MyJsonObjectFormat: sjson.json.Format[MyJsonObject] =
     asProduct3("key", "map", "standAloneInt")(MyJsonObject)(MyJsonObject.unapply(_).get)
 }

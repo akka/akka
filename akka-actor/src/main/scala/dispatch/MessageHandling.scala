@@ -95,7 +95,7 @@ trait MessageDispatcher extends MailboxFactory with Logging {
       }
     }
   }
-  
+
   private[akka] def unregister(actorRef: ActorRef) = {
     if (uuids remove actorRef.uuid) {
       actorRef.mailbox = null

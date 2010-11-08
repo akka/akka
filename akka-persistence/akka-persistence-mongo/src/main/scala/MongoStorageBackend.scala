@@ -48,10 +48,10 @@ private[akka] object MongoStorageBackend extends
     db.safely { db =>
       val q: DBObject = MongoDBObject(KEY -> name)
       coll.findOne(q) match {
-        case Some(dbo) => 
+        case Some(dbo) =>
           entries.foreach { case (k, v) => dbo += new String(k) -> v }
           db.safely { db => coll.update(q, dbo, true, false) }
-        case None => 
+        case None =>
           val builder = MongoDBObject.newBuilder
           builder += KEY -> name
           entries.foreach { case (k, v) => builder += new String(k) -> v }
@@ -79,7 +79,7 @@ private[akka] object MongoStorageBackend extends
   }
 
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = queryFor(name) { (q, dbo) =>
-    dbo.map { d => 
+    dbo.map { d =>
       d.getAs[Array[Byte]](new String(key))
     }.getOrElse(None)
   }
@@ -132,7 +132,7 @@ private[akka] object MongoStorageBackend extends
     db.safely { db =>
       coll.findOne(q) match {
         // exists : need to update
-        case Some(dbo) => 
+        case Some(dbo) =>
           dbo -= KEY
           dbo -= "_id"
           val listBuilder = MongoDBList.newBuilder
@@ -146,7 +146,7 @@ private[akka] object MongoStorageBackend extends
           coll.update(q, builder.result.asDBObject, true, false)
 
         // new : just add
-        case None => 
+        case None =>
           val listBuilder = MongoDBList.newBuilder
           listBuilder ++= elements
 
@@ -166,7 +166,7 @@ private[akka] object MongoStorageBackend extends
   }
 
   def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] = queryFor(name) { (q, dbo) =>
-    dbo.map { d => 
+    dbo.map { d =>
       d(index.toString).asInstanceOf[Array[Byte]]
     }.getOrElse(Array.empty[Byte])
   }
@@ -207,12 +207,12 @@ private[akka] object MongoStorageBackend extends
     db.safely { db =>
       coll.findOne(q) match {
         // exists : need to update
-        case Some(dbo) => 
+        case Some(dbo) =>
           dbo += ((REF, element))
           coll.update(q, dbo, true, false)
 
         // not found : make one
-        case None => 
+        case None =>
           val builder = MongoDBObject.newBuilder
           builder += KEY -> name
           builder += REF -> element
@@ -222,7 +222,7 @@ private[akka] object MongoStorageBackend extends
   }
 
   def getRefStorageFor(name: String): Option[Array[Byte]] = queryFor(name) { (q, dbo) =>
-    dbo.map { d => 
+    dbo.map { d =>
       d.getAs[Array[Byte]](REF)
     }.getOrElse(None)
   }

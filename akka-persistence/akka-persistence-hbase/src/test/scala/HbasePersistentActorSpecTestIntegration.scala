@@ -83,7 +83,7 @@ class HbasePersistentActorSpecTestIntegration extends JUnitSuite with BeforeAndA
   override def beforeAll {
     testUtil.startMiniCluster
   }
-  
+
   override def afterAll {
     testUtil.shutdownMiniCluster
   }
@@ -92,7 +92,7 @@ class HbasePersistentActorSpecTestIntegration extends JUnitSuite with BeforeAndA
   def beforeEach {
     HbaseStorageBackend.drop
   }
-  
+
   @After
   def afterEach {
     HbaseStorageBackend.drop
