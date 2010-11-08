@@ -145,10 +145,17 @@
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
-    <xsd:attribute name="implementation" type="xsd:string" use="required">
+    <xsd:attribute name="implementation" type="xsd:string">
       <xsd:annotation>
         <xsd:documentation>
           Name of the implementation class.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="ref" type="xsd:string">
+      <xsd:annotation>
+        <xsd:documentation>
+          Bean instance behind the actor
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
@@ -191,10 +198,17 @@
       <xsd:element ref="beans:property" minOccurs="0" maxOccurs="unbounded"/>
     </xsd:sequence>
     <xsd:attribute name="id" type="xsd:ID"/>
-    <xsd:attribute name="implementation" type="xsd:string" use="required">
+    <xsd:attribute name="implementation" type="xsd:string">
       <xsd:annotation>
         <xsd:documentation>
           Name of the implementation class.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="ref" type="xsd:string">
+      <xsd:annotation>
+        <xsd:documentation>
+          Bean instance behind the actor
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>

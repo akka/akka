@@ -53,7 +53,8 @@ trait ActorParser extends BeanParser with DispatcherParser {
     }
 
     objectProperties.timeoutStr = element.getAttribute(TIMEOUT)
-    objectProperties.target = mandatory(element, IMPLEMENTATION)
+    objectProperties.target = if (element.getAttribute(IMPLEMENTATION).isEmpty) null else element.getAttribute(IMPLEMENTATION)
+    objectProperties.beanRef = if (element.getAttribute(BEANREF).isEmpty) null else element.getAttribute(BEANREF)
     objectProperties.transactional = if (element.getAttribute(TRANSACTIONAL).isEmpty) false else element.getAttribute(TRANSACTIONAL).toBoolean
 
     if (element.hasAttribute(INTERFACE)) {

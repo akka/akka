@@ -81,6 +81,14 @@ class TypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with B
       assert(MyPojo.lastOneWayMessage === "hello 1")
     }
 
+    scenario("get a typed actor of bean") {
+      val myPojo = getTypedActorFromContext("/typed-actor-config.xml", "simple-typed-actor-of-bean")
+      assert(myPojo.getFoo() === "foo")
+      myPojo.oneWay("hello 1")
+      MyPojo.latch.await
+      assert(MyPojo.lastOneWayMessage === "hello 1")
+    }
+
     scenario("FutureTimeoutException when timed out") {
       val myPojo = getTypedActorFromContext("/typed-actor-config.xml", "simple-typed-actor")
       evaluating {myPojo.longRunning()} should produce[FutureTimeoutException]

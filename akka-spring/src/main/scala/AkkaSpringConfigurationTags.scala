@@ -43,6 +43,7 @@ object AkkaSpringConfigurationTags {
   // actor attributes
   val TIMEOUT = "timeout"
   val IMPLEMENTATION = "implementation"
+  val BEANREF = "ref"
   val INTERFACE = "interface"
   val TRANSACTIONAL = "transactional"
   val HOST = "host"
