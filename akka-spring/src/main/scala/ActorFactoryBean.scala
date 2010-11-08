@@ -40,6 +40,7 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   @BeanProperty var typed: String = ""
   @BeanProperty var interface: String = ""
   @BeanProperty var implementation: String = ""
+  @BeanProperty var beanRef: String = null
   @BeanProperty var timeoutStr: String = ""
   @BeanProperty var transactional: Boolean = false
   @BeanProperty var host: String = ""
@@ -102,10 +103,18 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   private[akka] def createTypedInstance() : AnyRef = {
     if ((interface eq null) || interface == "") throw new AkkaBeansException(
         "The 'interface' part of the 'akka:actor' element in the Spring config file can't be null or empty string")
-    if ((implementation eq null) || implementation == "") throw new AkkaBeansException(
-        "The 'implementation' part of the 'akka:typed-actor' element in the Spring config file can't be null or empty string")
+    if (((implementation eq null) || implementation == "") && (beanRef eq null)) throw new AkkaBeansException(
+        "Either 'implementation' or 'ref' must be specified as attribute of the 'akka:typed-actor' element in the Spring config file ")
 
-    val typedActor: AnyRef = TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
+    val typedActor: AnyRef = if (beanRef eq null ) {
+	TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
+    }
+    else
+    {
+	TypedActor.newInstance(interface.toClass, getBeanFactory().getBean(beanRef), createConfig)
+    }
+
+
     if (isRemote && serverManaged) {
       val server = RemoteServer.getOrCreateServer(new InetSocketAddress(host, port.toInt))
       if (serviceName.isEmpty) {
@@ -121,9 +130,13 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
    * Create an UntypedActor.
    */
   private[akka] def createUntypedInstance() : ActorRef = {
-    if ((implementation eq null) || implementation == "") throw new AkkaBeansException(
-        "The 'implementation' part of the 'akka:untyped-actor' element in the Spring config file can't be null or empty string")
-    val actorRef = Actor.actorOf(implementation.toClass)
+    if (((implementation eq null) || implementation == "") && (beanRef eq null)) throw new AkkaBeansException(
+        "Either 'implementation' or 'ref' must be specified as attribute of the 'akka:untyped-actor' element in the Spring config file ")
+    val actorRef = if (beanRef eq null ) 
+	Actor.actorOf(implementation.toClass) 
+    else 
+	Actor.actorOf(getBeanFactory().getBean(beanRef).asInstanceOf[Actor])
+
     if (timeout > 0) {
       actorRef.setTimeout(timeout)
     }

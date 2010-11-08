@@ -14,6 +14,14 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
                       implementation="akka.spring.foo.MyPojo"
                       timeout="1000"/>
 
+  <bean id="myPojoBean" class="akka.spring.foo.MyPojo" scope="prototype"/>
+
+  <akka:typed-actor id="simple-typed-actor-of-bean"
+                      interface="akka.spring.foo.IMyPojo"
+                      ref="myPojoBean"
+                      timeout="1000"/>
+
+
   <akka:typed-actor id="simple-typed-actor-long-timeout"
                       interface="akka.spring.foo.IMyPojo"
                       implementation="akka.spring.foo.MyPojo"
