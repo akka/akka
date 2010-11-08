@@ -69,7 +69,7 @@ trait MapStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAfter
     it("should insert multiple map storage elements properly") {
       val mapName = "insertMultipleTest"
       val rand = new Random(3).nextInt(100)
-      val entries = (1 to rand).toList.map {
+      val entries = (1 to rand).toList.map{
         index =>
           (("insertMultipleTestKey" + index).getBytes -> ("insertMutlipleTestValue" + index).getBytes)
       }
@@ -97,7 +97,7 @@ trait MapStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAfter
     it("should accurately track the number of key value pairs in a map") {
       val mapName = "sizeTest"
       val rand = new Random(3).nextInt(100)
-      val entries = (1 to rand).toList.map {
+      val entries = (1 to rand).toList.map{
         index =>
           (("sizeTestKey" + index).getBytes -> ("sizeTestValue" + index).getBytes)
       }
@@ -112,7 +112,7 @@ trait MapStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAfter
       val mapName = "allTest"
       val rand = new Random(3).nextInt(100)
       var entries = new TreeMap[Array[Byte], Array[Byte]]()(ArrayOrdering)
-      (1 to rand).foreach {
+      (1 to rand).foreach{
         index =>
           entries += (("allTestKey" + index).getBytes -> ("allTestValue" + index).getBytes)
       }
@@ -124,12 +124,20 @@ trait MapStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAfter
 
 
 
-      val entryMap = new HashMap[String, String] ++ entries.map {_ match {case (k, v) => (new String(k), new String(v))}}
-      val retrievedMap = new HashMap[String, String] ++ entries.map {_ match {case (k, v) => (new String(k), new String(v))}}
+      val entryMap = new HashMap[String, String] ++ entries.map{
+        _ match {
+          case (k, v) => (new String(k), new String(v))
+        }
+      }
+      val retrievedMap = new HashMap[String, String] ++ entries.map{
+        _ match {
+          case (k, v) => (new String(k), new String(v))
+        }
+      }
 
       entryMap should equal(retrievedMap)
 
-      (0 until rand).foreach {
+      (0 until rand).foreach{
         i: Int => {
           new String(entries.toList(i)._1) should be(new String(retrieved(i)._1))
         }
@@ -153,6 +161,14 @@ trait MapStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAfter
 
     it("should not throw an exception when size is called on a non existent map?") {
       storage.getMapStorageSizeFor("nonExistent") should be(0)
+    }
+
+    it("should not stomp on the map keyset when a map key of 0xff is used") {
+      val mapName = "keySetStomp"
+      val key = CommonStorageBackend.mapKeysIndex
+      storage.insertMapStorageEntryFor(mapName, key, key)
+      storage.getMapStorageSizeFor(mapName) should be(1)
+      storage.getMapStorageEntryFor(mapName,key).get should be (key)
     }
 
 
