@@ -140,7 +140,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   object Dependencies {
 
     // Compile
-                lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
+    lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
 
     lazy val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
 
@@ -310,8 +310,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     manifestClassPath.map(cp => ManifestAttributes(
       (Attributes.Name.CLASS_PATH, cp),
       (IMPLEMENTATION_TITLE, "Akka"),
-      (IMPLEMENTATION_URL, "http://akkasource.org"),
-      (IMPLEMENTATION_VENDOR, "The Akka Project")
+      (IMPLEMENTATION_URL, "http://akka.io"),
+      (IMPLEMENTATION_VENDOR, "Scalable Solutions AB")
     )).toList :::
     getMainClass(false).map(MainClass(_)).toList
 
@@ -393,7 +393,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       val artifactRE(path, artifactId, artifactVersion) = absPath
       val command = "mvn install:install-file" +
                     " -Dfile=" + absPath +
-                    " -DgroupId=akka" +
+                    " -DgroupId=se.scalablesolutions.akka" +
                     " -DartifactId=" + artifactId +
                     " -Dversion=" + version +
                     " -Dpackaging=jar -DgeneratePom=true"
