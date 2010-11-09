@@ -3,7 +3,8 @@ package akka.camel
 import java.util.concurrent.{TimeoutException, CountDownLatch, TimeUnit}
 
 import org.apache.camel.CamelExecutionException
-import org.apache.camel.builder.RouteBuilder
+import org.apache.camel.builder.Builder
+import org.apache.camel.model.RouteDefinition
 import org.scalatest.{BeforeAndAfterAll, WordSpec}
 import org.scalatest.matchers.MustMatchers
 
@@ -13,9 +14,9 @@ import akka.actor._
 /**
  * @author Martin Krasser
  */
-class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
+class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
   import CamelContextManager.mandatoryTemplate
-  import ConsumerTest._
+  import ConsumerScalaTest._
 
   var service: CamelService = _
 
@@ -171,14 +172,86 @@ class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
       }
     }
   }
+
+  "A responding, blocking consumer" when {
+    "activated with a custom error handler" must {
+      "handle thrown exceptions by generating a custom response" in {
+        service.awaitEndpointActivation(1) {
+          actorOf[ErrorHandlingConsumer].start
+        } must be (true)
+        mandatoryTemplate.requestBody("direct:error-handler-test", "hello") must equal ("error: hello")
+
+      }
+    }
+    "activated with a custom redelivery handler" must {
+      "handle thrown exceptions by redelivering the initial message" in {
+        service.awaitEndpointActivation(1) {
+          actorOf[RedeliveringConsumer].start
+        } must be (true)
+        mandatoryTemplate.requestBody("direct:redelivery-test", "hello") must equal ("accepted: hello")
+
+      }
+    }
+  }
 }
 
-object ConsumerTest {
+object ConsumerScalaTest {
+  trait BlockingConsumer extends Consumer { self: Actor =>
+    override def blocking = true
+  }
+
   class TestConsumer(uri: String) extends Actor with Consumer {
     def endpointUri = uri
     protected def receive = {
       case msg: Message => self.reply("received %s" format msg.body)
     }
+  }
+
+  class TestBlocker(uri: String) extends Actor with BlockingConsumer {
+    self.timeout = 1000
+    def endpointUri = uri
+    protected def receive = {
+      case msg: Message => { /* do not reply */ }
+    }
+  }
+
+  class ErrorHandlingConsumer extends Actor with BlockingConsumer {
+    def endpointUri = "direct:error-handler-test"
+
+    onRouteDefinition {rd: RouteDefinition =>
+      rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
+    }
+
+    protected def receive = {
+      case msg: Message => throw new Exception("error: %s" format msg.body)
+    }
+  }
+
+  class RedeliveringConsumer extends Actor with BlockingConsumer {
+    def endpointUri = "direct:redelivery-test"
+
+    onRouteDefinition {rd: RouteDefinition =>
+      rd.onException(classOf[Exception]).maximumRedeliveries(1).end
+    }
+
+    //
+    // first message to this actor is not valid and will be rejected
+    //
+
+    var valid = false
+
+    protected def receive = {
+      case msg: Message => try {
+        respondTo(msg)
+      } finally {
+        valid = true
+      }
+    }
+
+    private def respondTo(msg: Message) =
+      if (valid) self.reply("accepted: %s" format msg.body)
+      else throw new Exception("rejected: %s" format msg.body)
+
   }
 
   trait TestTypedConsumer {
@@ -193,12 +266,6 @@ object ConsumerTest {
     def bar(s: String) = "bar: %s" format s
   }
 
-  class TestBlocker(uri: String) extends Actor with Consumer {
-    self.timeout = 1000
-    def endpointUri = uri
-    override def blocking = true
-    protected def receive = {
-      case msg: Message => { /* do not reply */ }
-    }
-  }
+
+
 }
