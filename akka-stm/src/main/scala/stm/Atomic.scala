@@ -33,7 +33,7 @@ package akka.stm
  * }.execute();
  * }}}
  */
-abstract class Atomic[T](factory: TransactionFactory) {
+abstract class Atomic[T](val factory: TransactionFactory) {
   def this() = this(DefaultTransactionFactory)
   def atomically: T
   def execute: T = atomic(factory)(atomically)

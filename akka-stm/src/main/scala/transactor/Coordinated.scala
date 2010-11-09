@@ -5,7 +5,7 @@
 package akka.transactor
 
 import akka.config.Config
-import akka.stm.{DefaultTransactionConfig, TransactionFactory}
+import akka.stm.{Atomic, DefaultTransactionConfig, TransactionFactory}
 
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.commitbarriers.CountDownCommitBarrier
@@ -84,14 +84,42 @@ object Coordinated {
  * @see [[akka.actor.Transactor]] for an actor that implements coordinated transactions
  */
 class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
+
+  // Java API constructors
+  def this(message: Any) = this(message, Coordinated.createBarrier)
+  def this() = this(null, Coordinated.createBarrier)
+
+  /**
+   * Create a new Coordinated object and increment the number of parties by one.
+   * Use this method to ''pass on'' the coordination.
+   */
   def apply(msg: Any) = {
     barrier.incParties(1)
     new Coordinated(msg, barrier)
   }
 
+  /**
+   * Java API: get the message for this Coordinated.
+   */
+  def getMessage() = message
+
+  /**
+   * Java API: create a new Coordinated object and increment the number of parties by one.
+   * Use this method to ''pass on'' the coordination.
+   */
+  def coordinate(msg: Any) = apply(msg)
+
+  /**
+   * Delimits the coordinated transaction. The transaction will wait for all other transactions
+   * in this coordination before committing. The timeout is specified by the transaction factory.
+   */
   def atomic[T](body: => T)(implicit factory: TransactionFactory = Coordinated.DefaultFactory): T =
     atomic(factory)(body)
 
+  /**
+   * Delimits the coordinated transaction. The transaction will wait for all other transactions
+   * in this coordination before committing. The timeout is specified by the transaction factory.
+   */
   def atomic[T](factory: TransactionFactory)(body: => T): T = {
     factory.boilerplate.execute(new TransactionalCallable[T]() {
       def call(mtx: MultiverseTransaction): T = {
@@ -108,4 +136,11 @@ class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
       }
     })
   }
+
+  /**
+   * Java API: coordinated atomic method that accepts an [[akka.stm.Atomic]].
+   * Delimits the coordinated transaction. The transaction will wait for all other transactions
+   * in this coordination before committing. The timeout is specified by the transaction factory.
+   */
+  def atomic[T](jatomic: Atomic[T]): T = atomic(jatomic.factory)(jatomic.atomically)
 }
