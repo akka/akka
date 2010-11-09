@@ -1,8 +1,9 @@
-package akka.stm.test
+package akka.transactor.test
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
+import akka.transactor.Coordinated
 import akka.actor.{Actor, ActorRef}
 import akka.stm._
 import akka.util.duration._
