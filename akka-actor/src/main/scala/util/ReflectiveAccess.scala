@@ -259,7 +259,7 @@ object ReflectiveAccess extends Logging {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e =>
-      log.debug("Could not instantiate class [%s] due to [%s]", clazz.getName, e)
+      log.warning("Could not instantiate class [%s] due to [%s]", clazz.getName, e.getCause)
       None
   }
 
@@ -276,7 +276,7 @@ object ReflectiveAccess extends Logging {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e =>
-      log.debug("Could not instantiate class [%s] due to [%s]", fqn, e)
+      log.warning("Could not instantiate class [%s] due to [%s]", fqn, e.getCause)
       None
   }
 

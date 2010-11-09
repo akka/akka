@@ -83,7 +83,7 @@ class RemoteTypedActorSpec extends
   }
 
   describe("Remote Typed Actor ") {
-/*
+
     it("should receive one-way message") {
       clearMessageLogs
       val ta = conf.getInstance(classOf[RemoteTypedActorOne])
@@ -102,7 +102,7 @@ class RemoteTypedActorSpec extends
         ta.requestReply("ping")
       }
     }
-*/
+
     it("should be restarted on failure") {
       clearMessageLogs
       val ta = conf.getInstance(classOf[RemoteTypedActorOne])
@@ -112,7 +112,7 @@ class RemoteTypedActorSpec extends
       }
       messageLog.poll(5, TimeUnit.SECONDS) should equal ("Expected exception; to test fault-tolerance")
     }
-/*
+
     it("should restart linked friends on failure") {
       clearMessageLogs
       val ta1 = conf.getInstance(classOf[RemoteTypedActorOne])
@@ -124,5 +124,5 @@ class RemoteTypedActorSpec extends
       messageLog.poll(5, TimeUnit.SECONDS) should equal ("Expected exception; to test fault-tolerance")
       messageLog.poll(5, TimeUnit.SECONDS) should equal ("Expected exception; to test fault-tolerance")
     }
-*/  }
+  }
 }
