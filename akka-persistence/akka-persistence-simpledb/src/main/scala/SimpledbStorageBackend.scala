@@ -23,13 +23,13 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
   val seperatorBytes = seperator.getBytes("UTF-8")
   val base64 = new Base64(1024, seperatorBytes, true)
   val base64key = new Base64(1024, Array.empty[Byte], true)
-  val key = config.getString("akka.storage.simpledb.account.key", "foo")
-  val keyId = config.getString("akka.storage.simpledb.account.keyId", "bar")
+  val id = config.getString("akka.storage.simpledb.account.id", "foo")
+  val secretKey = config.getString("akka.storage.simpledb.account.secretKey", "bar")
   val refDomain = config.getString("akka.storage.simpledb.domain.ref", "ref")
   val mapDomain = config.getString("akka.storage.simpledb.domain.map", "map")
   val queueDomain = config.getString("akka.storage.simpledb.domain.queue", "queue")
   val vectorDomain = config.getString("akka.storage.simpledb.domain.vector", "vector")
-  val credentials = new BasicAWSCredentials(key, keyId)
+  val credentials = new BasicAWSCredentials(id, secretKey)
   val client = new AmazonSimpleDBClient(credentials)
 
 
