@@ -40,9 +40,9 @@ class PublishRequestorTest extends JUnitSuite {
     val obj = TypedActor.newInstance(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl])
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     val event = (publisher !! GetRetainedMessage).as[ConsumerMethodRegistered].get
-    assert(event.uri === "direct:foo")
+    assert(event.endpointUri === "direct:foo")
     assert(event.typedActor === obj)
-    assert(event.method.getName === "foo")
+    assert(event.methodName === "foo")
   }
 
   @Test def shouldReceiveOneConsumerMethodUnregisteredEvent = {
@@ -52,9 +52,9 @@ class PublishRequestorTest extends JUnitSuite {
     TypedActor.stop(obj)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     val event = (publisher !! GetRetainedMessage).as[ConsumerMethodUnregistered].get
-    assert(event.uri === "direct:foo")
+    assert(event.endpointUri === "direct:foo")
     assert(event.typedActor === obj)
-    assert(event.method.getName === "foo")
+    assert(event.methodName === "foo")
   }
 
   @Test def shouldReceiveThreeConsumerMethodRegisteredEvents = {
@@ -83,7 +83,7 @@ class PublishRequestorTest extends JUnitSuite {
     requestor ! ActorRegistered(consumer)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     assert((publisher !! GetRetainedMessage) ===
-      Some(ConsumerRegistered(consumer, consumer.actor.asInstanceOf[Consumer])))
+      Some(ConsumerActorRegistered(consumer, consumer.actor.asInstanceOf[Consumer])))
   }
 
   @Test def shouldReceiveOneConsumerUnregisteredEvent = {
@@ -91,7 +91,7 @@ class PublishRequestorTest extends JUnitSuite {
     requestor ! ActorUnregistered(consumer)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     assert((publisher !! GetRetainedMessage) ===
-      Some(ConsumerUnregistered(consumer, consumer.actor.asInstanceOf[Consumer])))
+      Some(ConsumerActorUnregistered(consumer, consumer.actor.asInstanceOf[Consumer])))
   }
 }
 
