@@ -63,33 +63,37 @@ class Ref[T](initialValue: T) extends BasicRef[T](initialValue) with Transaction
 
   val uuid = newUuid.toString
 
-  def swap(elem: T) = set(elem)
+  def apply() = get
+
+  def update(newValue: T) = set(newValue)
+
+  def swap(newValue: T) = set(newValue)
 
   def alter(f: T => T): T = {
-    val value = f(this.get)
+    val value = f(get)
     set(value)
     value
   }
 
-  def opt: Option[T] = Option(this.get)
+  def opt: Option[T] = Option(get)
 
   def getOrWait: T = getOrAwait
 
   def getOrElse(default: => T): T =
-    if (isNull) default else this.get
+    if (isNull) default else get
 
   def isDefined: Boolean = !isNull
 
   def isEmpty: Boolean = isNull
 
   def map[B](f: T => B): Ref[B] =
-    if (isEmpty) Ref[B] else Ref(f(this.get))
+    if (isEmpty) Ref[B] else Ref(f(get))
 
   def flatMap[B](f: T => Ref[B]): Ref[B] =
-    if (isEmpty) Ref[B] else f(this.get)
+    if (isEmpty) Ref[B] else f(get)
 
   def filter(p: T => Boolean): Ref[T] =
-    if (isDefined && p(this.get)) Ref(this.get) else Ref[T]
+    if (isDefined && p(get)) Ref(get) else Ref[T]
 
   /**
    * Necessary to keep from being implicitly converted to Iterable in for comprehensions.
@@ -104,17 +108,17 @@ class Ref[T](initialValue: T) extends BasicRef[T](initialValue) with Transaction
   }
 
   def foreach[U](f: T => U): Unit =
-    if (isDefined) f(this.get)
+    if (isDefined) f(get)
 
   def elements: Iterator[T] =
-    if (isEmpty) Iterator.empty else Iterator(this.get)
+    if (isEmpty) Iterator.empty else Iterator(get)
 
   def toList: List[T] =
-    if (isEmpty) List() else List(this.get)
+    if (isEmpty) List() else List(get)
 
   def toRight[X](left: => X) =
-    if (isEmpty) Left(left) else Right(this.get)
+    if (isEmpty) Left(left) else Right(get)
 
   def toLeft[X](right: => X) =
-    if (isEmpty) Right(right) else Left(this.get)
+    if (isEmpty) Right(right) else Left(get)
 }

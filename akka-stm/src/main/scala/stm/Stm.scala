@@ -8,6 +8,16 @@ import org.multiverse.api.{StmUtils => MultiverseStmUtils}
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.templates.{TransactionalCallable, OrElseTemplate}
 
+object Stm {
+  /**
+   * Check whether there is an active Multiverse transaction.
+   */
+  def activeTransaction() = {
+    val tx = org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction
+    (tx ne null) && !tx.getStatus.isDead
+  }
+}
+
 /**
  * Defines the atomic block for local transactions. Automatically imported with:
  *
@@ -122,7 +132,7 @@ trait StmUtil {
    * STM retry for blocking transactions (use within an atomic).
    * Can be used to wait for a condition.
    */
-  def retry = MultiverseStmUtils.retry
+  def retry() = MultiverseStmUtils.retry
 
   /**
    * Use either-orElse to combine two blocking transactions.
