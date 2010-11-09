@@ -12,6 +12,21 @@ option optimize_for = SPEED;
 *******************************************/
 
 /**
+ * Defines a remote message.
+ */
+message RemoteMessageProtocol {
+  required UuidProtocol uuid = 1;
+  required ActorInfoProtocol actorInfo = 2;
+  required bool oneWay = 3;
+  optional MessageProtocol message = 4;
+  optional ExceptionProtocol exception = 5;
+  optional UuidProtocol supervisorUuid = 6;
+  optional RemoteActorRefProtocol sender = 7;
+  repeated MetadataEntryProtocol metadata = 8;
+  optional string cookie = 9;
+}
+
+/**
  * Defines a remote ActorRef that "remembers" and uses its original Actor instance
  * on the original node.
  */
@@ -89,21 +104,6 @@ message ActorInfoProtocol {
 message TypedActorInfoProtocol {
   required string interface = 1;
   required string method = 2;
-}
-
-/**
- * Defines a remote message.
- */
-message RemoteMessageProtocol {
-  required UuidProtocol uuid = 1;
-  required ActorInfoProtocol actorInfo = 2;
-  required bool oneWay = 3;
-  optional MessageProtocol message = 4;
-  optional ExceptionProtocol exception = 5;
-  optional UuidProtocol supervisorUuid = 6;
-  optional RemoteActorRefProtocol sender = 7;
-  repeated MetadataEntryProtocol metadata = 8;
-  optional string cookie = 9;
 }
 
 /**
