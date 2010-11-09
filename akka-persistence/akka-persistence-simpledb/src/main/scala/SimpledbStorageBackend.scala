@@ -18,11 +18,11 @@ import com.amazonaws.services.simpledb.model._
 import collection.{JavaConversions, Map}
 
 private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
-
   import org.apache.commons.codec.binary.Base64
 
   val seperator = "\r\n"
   val seperatorBytes = seperator.getBytes("UTF-8")
+  val sizeAtt = "size"
   val base64 = new Base64(1024, seperatorBytes, true)
   val base64key = new Base64(1024, Array.empty[Byte], true)
   val id = config.getString("akka.storage.simpledb.account.id", "YOU NEED TO PROVIDE AN AWS ID")
@@ -51,7 +51,6 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
   val ref = new SimpledbAccess(refDomain)
 
   private[akka] class SimpledbAccess(val domainName: String) extends KVStorageBackendAccess {
-
     var created = false
 
     def getClient(): AmazonSimpleDBClient = {
@@ -101,8 +100,8 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
 
     def encodeAndValidateKey(key: Array[Byte]): String = {
       val keystr = base64key.encodeToString(key)
-      if (keystr.length > 1024) {
-        throw new IllegalArgumentException("encoded key was longer than 1024 bytes")
+      if (keystr.size > 1024) {
+        throw new IllegalArgumentException("encoded key was longer than 1024 bytes (or 768 bytes unencoded)")
       }
       keystr
     }
@@ -111,7 +110,7 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
       val encoded = base64.encodeToString(value)
       val strings = encoded.split(seperator)
       if (strings.size > 255) {
-        throw new IllegalArgumentException("The decomposed value is larger than 255K")
+        throw new IllegalArgumentException("The decomposed value is larger than 255K (or 195840 bytes unencoded)")
       }
 
       val list: JAList[ReplaceableAttribute] = strings.zipWithIndex.foldLeft(new JAList[ReplaceableAttribute]) {
@@ -124,7 +123,7 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
           }
         }
       }
-      list.add(new ReplaceableAttribute("size", list.size.toString, true))
+      list.add(new ReplaceableAttribute(sizeAtt, list.size.toString, true))
       list
     }
 
@@ -134,7 +133,7 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
           map += (att.getName -> att.getValue)
         }
       }
-      itemSnapshot.get("size") match {
+      itemSnapshot.get(sizeAtt) match {
         case Some(strSize) => {
           val size = Integer.parseInt(strSize)
           val encoded = (0 until size).map(_.toString).map(itemSnapshot.get(_).get).reduceLeft[String] {
