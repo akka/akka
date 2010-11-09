@@ -12,6 +12,11 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
   <akka:untyped-actor id="simple-untyped-actor"
                       implementation="akka.spring.foo.PingActor"/>
 
+  <bean id="pingActorBean" class="akka.spring.foo.PingActor" scope="prototype"/>
+
+  <akka:untyped-actor id="simple-untyped-actor-of-bean"
+                      ref="pingActorBean"/>
+
   <akka:untyped-actor id="simple-untyped-actor-long-timeout"
                       implementation="akka.spring.foo.PingActor"
                       timeout="10000"/>

@@ -15,6 +15,7 @@ import AkkaSpringConfigurationTags._
 class ActorProperties {
   var typed: String = ""
   var target: String = ""
+  var beanRef: String = ""
   var timeoutStr: String = ""
   var interface: String = ""
   var transactional: Boolean = false
@@ -40,6 +41,7 @@ class ActorProperties {
     builder.addPropertyValue("serviceName", serviceName)
     builder.addPropertyValue("timeoutStr", timeoutStr)
     builder.addPropertyValue(IMPLEMENTATION, target)
+    builder.addPropertyValue("beanRef", beanRef)
     builder.addPropertyValue(INTERFACE, interface)
     builder.addPropertyValue(TRANSACTIONAL, transactional)
     builder.addPropertyValue(LIFECYCLE, lifecycle)
