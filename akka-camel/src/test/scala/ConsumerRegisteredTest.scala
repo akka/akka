@@ -2,46 +2,47 @@ package akka.camel
 
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
-
-import akka.actor.{Actor, UntypedActor}
+import akka.actor.{ActorRef, Actor, UntypedActor}
 
 class ConsumerRegisteredTest extends JUnitSuite {
   import ConsumerRegisteredTest._
 
   @Test def shouldCreateSomeNonBlockingPublishRequestFromConsumer = {
     val c = Actor.actorOf[ConsumerActor1]
-    val event = ConsumerRegistered.forConsumer(c)
-    assert(event === Some(ConsumerRegistered(c, "mock:test1", c.uuid, false)))
+    val event = ConsumerActorRegistered.forConsumer(c)
+    assert(event === Some(ConsumerActorRegistered(c, consumerOf(c))))
   }
 
   @Test def shouldCreateSomeBlockingPublishRequestFromConsumer = {
     val c = Actor.actorOf[ConsumerActor2]
-    val event = ConsumerRegistered.forConsumer(c)
-    assert(event === Some(ConsumerRegistered(c, "mock:test2", c.uuid, true)))
+    val event = ConsumerActorRegistered.forConsumer(c)
+    assert(event === Some(ConsumerActorRegistered(c, consumerOf(c))))
   }
 
   @Test def shouldCreateNoneFromConsumer = {
-    val event = ConsumerRegistered.forConsumer(Actor.actorOf[PlainActor])
+    val event = ConsumerActorRegistered.forConsumer(Actor.actorOf[PlainActor])
     assert(event === None)
   }
 
   @Test def shouldCreateSomeNonBlockingPublishRequestFromUntypedConsumer = {
     val uc = UntypedActor.actorOf(classOf[SampleUntypedConsumer])
-    val event = ConsumerRegistered.forConsumer(uc)
-    assert(event === Some(ConsumerRegistered(uc, "direct:test-untyped-consumer", uc.uuid, false)))
+    val event = ConsumerActorRegistered.forConsumer(uc)
+    assert(event === Some(ConsumerActorRegistered(uc, consumerOf(uc))))
   }
 
   @Test def shouldCreateSomeBlockingPublishRequestFromUntypedConsumer = {
     val uc = UntypedActor.actorOf(classOf[SampleUntypedConsumerBlocking])
-    val event = ConsumerRegistered.forConsumer(uc)
-    assert(event === Some(ConsumerRegistered(uc, "direct:test-untyped-consumer-blocking", uc.uuid, true)))
+    val event = ConsumerActorRegistered.forConsumer(uc)
+    assert(event === Some(ConsumerActorRegistered(uc, consumerOf(uc))))
   }
 
   @Test def shouldCreateNoneFromUntypedConsumer = {
     val a = UntypedActor.actorOf(classOf[SampleUntypedActor])
-    val event = ConsumerRegistered.forConsumer(a)
+    val event = ConsumerActorRegistered.forConsumer(a)
     assert(event === None)
   }
+
+  private def consumerOf(ref: ActorRef) = ref.actor.asInstanceOf[Consumer]
 }
 
 object ConsumerRegisteredTest {
