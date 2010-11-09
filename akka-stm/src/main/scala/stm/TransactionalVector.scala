@@ -8,7 +8,6 @@ import scala.collection.immutable.Vector
 
 import akka.actor.newUuid
 
-import org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction
 
 /**
  * Transactional vector that implements the IndexedSeq interface with an underlying Ref and Vector.
@@ -21,13 +20,13 @@ object TransactionalVector {
 
 /**
  * Transactional vector that implements the IndexedSeq interface with an underlying Ref and Vector.
- * <p/>
+ *
  * TransactionalMap and TransactionalVector look like regular mutable datastructures, they even
  * implement the standard Scala 'Map' and 'IndexedSeq' interfaces, but they are implemented using
  * persistent datastructures and managed references under the hood. Therefore they are safe to use
  * in a concurrent environment through the STM. Underlying TransactionalVector is Vector, an immutable
  * sequence but with near constant time access and modification operations.
- * <p/>
+ *
  * From Scala you can use TVector as a shorter alias for TransactionalVector.
  */
 class TransactionalVector[T](initialValue: Vector[T]) extends Transactional with IndexedSeq[T] {
@@ -62,9 +61,6 @@ class TransactionalVector[T](initialValue: Vector[T]) extends Transactional with
     other.isInstanceOf[TransactionalVector[_]] &&
     other.hashCode == hashCode
 
-  override def toString = if (outsideTransaction) "<TransactionalVector>" else super.toString
-
-  def outsideTransaction =
-    org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction eq null
+  override def toString = if (Stm.activeTransaction) super.toString else "<TransactionalVector>"
 }
 

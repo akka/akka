@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package akka.actor
 
 import akka.stm.{Coordinated, DefaultTransactionConfig, TransactionFactory}
