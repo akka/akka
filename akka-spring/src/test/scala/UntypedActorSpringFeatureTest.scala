@@ -67,6 +67,14 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
       assert(myactor.isDefinedAt("some string message"))
     }
 
+    scenario("untyped-actor of provided bean") {
+      val myactor = getPingActorFromContext("/untyped-actor-config.xml", "simple-untyped-actor-of-bean")
+      myactor.sendOneWay("Hello")
+      PingActor.latch.await
+      assert(PingActor.lastMessage === "Hello")
+      assert(myactor.isDefinedAt("some string message"))
+    }
+
     scenario("untyped-actor with timeout") {
       val myactor = getPingActorFromContext("/untyped-actor-config.xml", "simple-untyped-actor-long-timeout")
       assert(myactor.getTimeout() === 10000)
