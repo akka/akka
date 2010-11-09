@@ -2,9 +2,10 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.actor
+package akka.transactor
 
-import akka.stm.{Coordinated, DefaultTransactionConfig, TransactionFactory}
+import akka.actor.{Actor, ActorRef}
+import akka.stm.{DefaultTransactionConfig, TransactionFactory}
 
 /**
  * Transactor. See companion class for information.
@@ -111,7 +112,7 @@ trait Transactor extends Actor {
   /**
    * Implement a general pattern for using coordinated transactions.
    */
-  def receive = {
+  final def receive = {
     case coordinated @ Coordinated(message) => {
       val others = (coordinate orElse alone)(message)
       for (sendTo <- others) {

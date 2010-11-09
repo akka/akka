@@ -2,9 +2,10 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.stm
+package akka.transactor
 
 import akka.config.Config
+import akka.stm.{DefaultTransactionConfig, TransactionFactory}
 
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.commitbarriers.CountDownCommitBarrier
