@@ -683,6 +683,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
    class AkkaSimpledbProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
      val memcached = Dependencies.simpledb
      val commons_codec = Dependencies.commons_codec
+     val http = Dependencies.commonsHttpClient
 
      val scalatest = Dependencies.scalatest
 
