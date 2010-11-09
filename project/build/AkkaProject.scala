@@ -72,6 +72,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
     lazy val EmbeddedRepo         = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
     lazy val FusesourceSnapshotRepo = MavenRepository("Fusesource Snapshots", "http://repo.fusesource.com/nexus/content/repositories/snapshots")
+    lazy val GlassfishRepo        = MavenRepository("Glassfish Repo", "http://download.java.net/maven/glassfish")
     lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
     lazy val JBossRepo            = MavenRepository("JBoss Repo", "http://repository.jboss.org/nexus/content/groups/public/")
     lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
@@ -111,6 +112,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val casbahModuleConfig      = ModuleConfiguration("com.novus", CasbahRepo)
   lazy val timeModuleConfig        = ModuleConfiguration("org.scala-tools", "time", CasbahSnapshotRepo)
   lazy val voldemortModuleConfig   = ModuleConfiguration("voldemort", ClojarsRepo)
+  lazy val glassfishModuleConfig   = ModuleConfiguration("org.glassfish", GlassfishRepo)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -131,6 +133,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val SPRING_VERSION        = "3.0.4.RELEASE"
   lazy val ASPECTWERKZ_VERSION   = "2.2.2"
   lazy val JETTY_VERSION         = "7.1.6.v20100715"
+  lazy val JAVAX_SERVLET_VERSION = "3.0"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
@@ -168,6 +171,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val dispatch_http = "net.databinder" % "dispatch-http_2.8.0" % DISPATCH_VERSION % "compile" //LGPL v2
     lazy val dispatch_json = "net.databinder" % "dispatch-json_2.8.0" % DISPATCH_VERSION % "compile" //LGPL v2
+
+    lazy val javax_servlet_30 = "org.glassfish" % "javax.servlet" % JAVAX_SERVLET_VERSION % "compile" //CDDL v1
 
     lazy val jetty         = "org.eclipse.jetty" % "jetty-server"  % JETTY_VERSION % "compile" //Eclipse license
     lazy val jetty_util    = "org.eclipse.jetty" % "jetty-util"    % JETTY_VERSION % "compile" //Eclipse license
@@ -520,6 +525,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jersey_server    = Dependencies.jersey_server
     val jsr311           = Dependencies.jsr311
     val stax_api         = Dependencies.stax_api
+    val servlet30        = Dependencies.javax_servlet_30
 
     // testing
     val junit     = Dependencies.junit
