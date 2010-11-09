@@ -1,6 +1,5 @@
 package akka.camel;
 
-import akka.japi.Function;
 import org.apache.camel.builder.Builder;
 import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.model.RouteDefinition;
@@ -19,8 +18,8 @@ public class SampleErrorHandlingConsumer extends UntypedConsumerActor {
     }
 
     public void preStart() {
-        onRouteDefinition(new Function<RouteDefinition, ProcessorDefinition<?>>() {
-            public ProcessorDefinition<?> apply(RouteDefinition rd) {
+        onRouteDefinition(new RouteDefinitionHandler() {
+            public ProcessorDefinition<?> onRouteDefinition(RouteDefinition rd) {
                 return rd.onException(Exception.class).handled(true).transform(Builder.exceptionMessage()).end();
             }
         });

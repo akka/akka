@@ -18,12 +18,12 @@ import akka.japi.{Function => JFunction}
  * @author Martin Krasser
  */
 trait Consumer { self: Actor =>
-  import Consumer.Handler
+  import RouteDefinitionHandler._
 
   /**
    * The default route definition handler is the identity function
    */
-  private[camel] var routeDefinitionHandler: Handler = { rd: RouteDefinition => rd }
+  private[camel] var routeDefinitionHandler: RouteDefinitionHandler = identity
 
   /**
    * Returns the Camel endpoint URI to consume messages from.
@@ -40,7 +40,14 @@ trait Consumer { self: Actor =>
   /**
    * Sets the route definition handler for creating a custom route to this consumer instance.
    */
-  def onRouteDefinition(h: Handler): Unit = routeDefinitionHandler = h
+  def onRouteDefinition(h: RouteDefinition => ProcessorDefinition[_]): Unit = onRouteDefinition(from(h))
+
+  /**
+   * Sets the route definition handler for creating a custom route to this consumer instance.
+   * <p>
+   * Java API.
+   */
+  def onRouteDefinition(h: RouteDefinitionHandler): Unit = routeDefinitionHandler = h
 }
 
 /**
@@ -67,12 +74,6 @@ trait UntypedConsumer extends Consumer { self: UntypedActor =>
    * doesn't have any effect on one-way communications (they'll never block).
    */
   def isBlocking() = super.blocking
-
-  /**
-   * Sets the route definition handler for creating a custom route to this consumer instance.
-   */
-  def onRouteDefinition(h: JFunction[RouteDefinition, ProcessorDefinition[_]]): Unit =
-    onRouteDefinition { rd: RouteDefinition => h(rd) }
 }
 
 /**
@@ -96,16 +97,45 @@ abstract class RemoteUntypedConsumerActor(address: InetSocketAddress) extends Re
 }
 
 /**
+ * A callback handler for route definitions to consumer actors.
+ *
+ * @author Martin Krasser
+ */
+trait RouteDefinitionHandler {
+  def onRouteDefinition(rd: RouteDefinition): ProcessorDefinition[_]
+}
+
+/**
+ * The identity route definition handler.
+ *
+ * @author Martin Krasser
+ *
+ */
+class RouteDefinitionIdentity extends RouteDefinitionHandler {
+  def onRouteDefinition(rd: RouteDefinition) = rd
+}
+
+/**
+ * @author Martin Krasser
+ */
+object RouteDefinitionHandler {
+  /**
+   * Returns the identity route definition handler
+   */
+  val identity = new RouteDefinitionIdentity
+
+  /**
+   * Created a route definition handler from the given function.
+   */
+  def from(f: RouteDefinition => ProcessorDefinition[_]) = new RouteDefinitionHandler {
+    def onRouteDefinition(rd: RouteDefinition) = f(rd)
+  }
+}
+
+/**
  * @author Martin Krasser
  */
 private[camel] object Consumer {
-  /**
-   * Type of a route definition handler. A route definition handler is a function
-   * that modifies a route definition which is passed as argument and returns the
-   * modified definition.
-   */
-  type Handler = RouteDefinition => ProcessorDefinition[_]
-
   /**
    * Applies a function <code>f</code> to <code>actorRef</code> if <code>actorRef</code>
    * references a consumer actor. A valid reference to a consumer actor is a local actor

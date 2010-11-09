@@ -9,36 +9,36 @@ class ConsumerRegisteredTest extends JUnitSuite {
 
   @Test def shouldCreateSomeNonBlockingPublishRequestFromConsumer = {
     val c = Actor.actorOf[ConsumerActor1]
-    val event = ConsumerRegistered.forConsumer(c)
-    assert(event === Some(ConsumerRegistered(c, consumerOf(c))))
+    val event = ConsumerActorRegistered.forConsumer(c)
+    assert(event === Some(ConsumerActorRegistered(c, consumerOf(c))))
   }
 
   @Test def shouldCreateSomeBlockingPublishRequestFromConsumer = {
     val c = Actor.actorOf[ConsumerActor2]
-    val event = ConsumerRegistered.forConsumer(c)
-    assert(event === Some(ConsumerRegistered(c, consumerOf(c))))
+    val event = ConsumerActorRegistered.forConsumer(c)
+    assert(event === Some(ConsumerActorRegistered(c, consumerOf(c))))
   }
 
   @Test def shouldCreateNoneFromConsumer = {
-    val event = ConsumerRegistered.forConsumer(Actor.actorOf[PlainActor])
+    val event = ConsumerActorRegistered.forConsumer(Actor.actorOf[PlainActor])
     assert(event === None)
   }
 
   @Test def shouldCreateSomeNonBlockingPublishRequestFromUntypedConsumer = {
     val uc = UntypedActor.actorOf(classOf[SampleUntypedConsumer])
-    val event = ConsumerRegistered.forConsumer(uc)
-    assert(event === Some(ConsumerRegistered(uc, consumerOf(uc))))
+    val event = ConsumerActorRegistered.forConsumer(uc)
+    assert(event === Some(ConsumerActorRegistered(uc, consumerOf(uc))))
   }
 
   @Test def shouldCreateSomeBlockingPublishRequestFromUntypedConsumer = {
     val uc = UntypedActor.actorOf(classOf[SampleUntypedConsumerBlocking])
-    val event = ConsumerRegistered.forConsumer(uc)
-    assert(event === Some(ConsumerRegistered(uc, consumerOf(uc))))
+    val event = ConsumerActorRegistered.forConsumer(uc)
+    assert(event === Some(ConsumerActorRegistered(uc, consumerOf(uc))))
   }
 
   @Test def shouldCreateNoneFromUntypedConsumer = {
     val a = UntypedActor.actorOf(classOf[SampleUntypedActor])
-    val event = ConsumerRegistered.forConsumer(a)
+    val event = ConsumerActorRegistered.forConsumer(a)
     assert(event === None)
   }
 
