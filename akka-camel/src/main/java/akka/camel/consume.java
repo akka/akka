@@ -24,4 +24,11 @@ public @interface consume {
      */
     public abstract String value();
 
+    /**
+     * Route definition handler class for customizing route to annotated method.
+     * The handler class must have a default constructor.
+     */
+    public abstract Class<? extends RouteDefinitionHandler> routeDefinitionHandler()
+        default RouteDefinitionIdentity.class;
+
 }
