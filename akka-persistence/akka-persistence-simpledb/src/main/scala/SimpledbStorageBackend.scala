@@ -18,20 +18,21 @@ import com.amazonaws.services.simpledb.model._
 import collection.{JavaConversions, Map}
 
 private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
+
   import org.apache.commons.codec.binary.Base64
+
   val seperator = "\r\n"
   val seperatorBytes = seperator.getBytes("UTF-8")
   val base64 = new Base64(1024, seperatorBytes, true)
   val base64key = new Base64(1024, Array.empty[Byte], true)
-  val id = config.getString("akka.storage.simpledb.account.id", "foo")
-  val secretKey = config.getString("akka.storage.simpledb.account.secretKey", "bar")
+  val id = config.getString("akka.storage.simpledb.account.id")
+  val secretKey = config.getString("akka.storage.simpledb.account.secretKey")
   val refDomain = config.getString("akka.storage.simpledb.domain.ref", "ref")
   val mapDomain = config.getString("akka.storage.simpledb.domain.map", "map")
   val queueDomain = config.getString("akka.storage.simpledb.domain.queue", "queue")
   val vectorDomain = config.getString("akka.storage.simpledb.domain.vector", "vector")
-  val credentials = new BasicAWSCredentials(id, secretKey)
+  val credentials = new BasicAWSCredentials(id, secretKey);
   val client = new AmazonSimpleDBClient(credentials)
-
 
   def queueAccess = queue
 
@@ -50,11 +51,24 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
   val ref = new SimpledbAccess(refDomain)
 
   private[akka] class SimpledbAccess(val domainName: String) extends KVStorageBackendAccess {
-    client.createDomain(new CreateDomainRequest(domainName))
 
-    def drop(): Unit = client.deleteDomain(new DeleteDomainRequest(domainName))
+    var created = false
 
-    def delete(key: Array[Byte]): Unit = client.deleteAttributes(new DeleteAttributesRequest(domainName, encodeAndValidateKey(key)))
+    def getClient(): AmazonSimpleDBClient = {
+      if (!created) {
+        client.createDomain(new CreateDomainRequest(domainName))
+        created = true
+      }
+      client
+    }
+
+
+    def drop(): Unit = {
+      created = false
+      client.deleteDomain(new DeleteDomainRequest(domainName))
+    }
+
+    def delete(key: Array[Byte]): Unit = getClient.deleteAttributes(new DeleteAttributesRequest(domainName, encodeAndValidateKey(key)))
 
     def getAll(keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
       keys.foldLeft(new HashMap[Array[Byte], Array[Byte]]) {
@@ -71,7 +85,7 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
 
     def getValue(key: Array[Byte], default: Array[Byte]): Array[Byte] = {
       val req = new GetAttributesRequest(domainName, encodeAndValidateKey(key)).withConsistentRead(true)
-      val resp = client.getAttributes(req)
+      val resp = getClient.getAttributes(req)
       recomposeValue(resp.getAttributes) match {
         case Some(value) => value
         case None => default
@@ -82,7 +96,7 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
 
     def put(key: Array[Byte], value: Array[Byte]): Unit = {
       val req = new PutAttributesRequest(domainName, encodeAndValidateKey(key), decomposeValue(value))
-      client.putAttributes(req)
+      getClient.putAttributes(req)
     }
 
     def encodeAndValidateKey(key: Array[Byte]): String = {
