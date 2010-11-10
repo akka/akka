@@ -280,7 +280,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val dbcp           = "commons-dbcp"           % "commons-dbcp"        % "1.2.2"           % "test" //ApacheV2
 
     //memcached
-    lazy val spymemcached   = "spy"                    % "memcached"           % "2.5"             % "compile" //MIT
+    lazy val spymemcached  = "spy" % "memcached" % "2.5" % "compile"
+
+    //simpledb
+    lazy val simpledb = "com.amazonaws" % "aws-java-sdk" % "1.0.14" % "compile"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -544,6 +547,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaCouchDBProject(_), akka_persistence_common)
     lazy val akka_persistence_memcached= project("akka-persistence-memcached", "akka-persistence-memcached",
       new AkkaMemcachedProject(_), akka_persistence_common)
+    lazy val akka_persistence_simpledb= project("akka-persistence-simpledb", "akka-persistence-simpledb",
+      new AkkaSimpledbProject(_), akka_persistence_common)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -667,6 +672,16 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaMemcachedProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
         val memcached = Dependencies.spymemcached
      val commons_codec = Dependencies.commons_codec
+
+     val scalatest = Dependencies.scalatest
+
+    override def testOptions = createTestFilter( _.endsWith("Test"))
+  }
+
+   class AkkaSimpledbProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+     val memcached = Dependencies.simpledb
+     val commons_codec = Dependencies.commons_codec
+     val http = Dependencies.commonsHttpClient
 
      val scalatest = Dependencies.scalatest
 
