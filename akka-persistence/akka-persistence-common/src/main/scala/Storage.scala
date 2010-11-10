@@ -305,10 +305,25 @@ object PersistentMapBinary {
         ArrayOrdering.compare(o1.toArray, o2.toArray)
     }
     //backend
+
     implicit object ArrayOrdering extends Ordering[Array[Byte]] {
-      def compare(o1: Array[Byte], o2: Array[Byte]) =
-        new String(o1) compare new String(o2)
+      def compare(o1: Array[Byte], o2: Array[Byte]): Int = {
+        if (o1.size == o2.size) {
+          for (i <- 0 until o1.size) {
+            var a = o1(i)
+            var b = o2(i)
+            if (a != b) {
+              return (a - b) / (Math.abs(a - b))
+            }
+          }
+          0
+        } else {
+          (o1.length - o2.length) / (Math.max(1, Math.abs(o1.length - o2.length)))
+        }
+      }
+
     }
+
   }
 }
 
