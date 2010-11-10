@@ -4,7 +4,7 @@
  * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-package sample.mist
+package sample.rest.scala
 
 import akka.actor._
 import akka.actor.Actor._
@@ -19,27 +19,16 @@ class Boot {
   val factory = SupervisorFactory(
     SupervisorConfig(
       OneForOneStrategy(List(classOf[Exception]), 3, 100),
+        //
+        // in this particular case, just boot the built-in default root endpoint
+        //
       Supervise(
-        actorOf[ServiceRoot],
+        actorOf[RootEndpoint],
         Permanent) ::
       Supervise(
-        actorOf[SimpleService],
+        actorOf[SimpleAkkaAsyncHttpService],
         Permanent)
       :: Nil))
   factory.newInstance.start
-}
-
-
-class ServiceRoot extends RootEndpoint
-{
-  //
-  // use the configurable dispatcher
-  //
-  self.dispatcher = Endpoint.Dispatcher
-
-  //
-  // TODO: make this a config prop
-  //
-  self.id = "DefaultRootEndpoint"
 }
 

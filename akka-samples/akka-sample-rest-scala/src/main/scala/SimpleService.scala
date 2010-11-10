@@ -22,7 +22,7 @@ import org.atmosphere.util.XSSHtmlFilter
 import org.atmosphere.cpr.{Broadcaster, BroadcastFilter}
 import org.atmosphere.jersey.Broadcastable
 
-class Boot {
+class BootPrev {
   val factory = SupervisorFactory(
     SupervisorConfig(
       OneForOneStrategy(List(classOf[Exception]), 3, 100),
