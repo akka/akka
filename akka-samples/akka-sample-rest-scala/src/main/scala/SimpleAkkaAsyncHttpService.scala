@@ -4,7 +4,7 @@
  * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-package sample.mist
+package sample.rest.scala
 
 import akka.actor._
 import akka.actor.Actor._
@@ -18,7 +18,7 @@ import akka.http._
  *
  *  @author Garrick Evans
  */
-class SimpleService extends Actor with Endpoint
+class SimpleAkkaAsyncHttpService extends Actor with Endpoint
 {
   final val ServiceRoot = "/simple/"
   final val ProvideSameActor = ServiceRoot + "same"
@@ -147,9 +147,9 @@ class BoringActor extends Actor
       }
     }
 
-    case other if other.isInstanceOf[SuspendedRequest] =>
+    case other if other.isInstanceOf[RequestMethod] =>
     {
-      other.asInstanceOf[SuspendedRequest].NotAllowed("Invalid method for this endpoint")
+      other.asInstanceOf[RequestMethod].NotAllowed("Invalid method for this endpoint")
     }
   }
 }
