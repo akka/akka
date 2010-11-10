@@ -14,37 +14,18 @@ package akka.http
  */
 object Types
 {
-  import javax.servlet. {ServletContext, ServletRequest, ServletResponse}
+  import javax.servlet. {ServletRequest, ServletResponse}
 
   type tAsyncRequest = {
-    def startAsync:tAsyncContext
+    def startAsync:tAsyncRequestContext
   }
 
-  type tAsyncContext = {
+  /**
+   * Used to match both AsyncContext and AsyncContinuation in order to complete the request
+   */
+  type tAsyncRequestContext = {
     def complete:Unit
-    def dispatch:Unit
-    def dispatch(s:String):Unit
-    def dispatch(c:ServletContext, s:String)
     def getRequest:ServletRequest
     def getResponse:ServletResponse
-    def hasOriginalRequestAndResponse:Boolean
-    def setTimeout(ms:Long):Unit
-    def start(r:Runnable):Unit
-  }
-
-  type tContinuation = {
-    def complete:Unit
-    def isExpired:Boolean
-    def isInitial:Boolean
-    def isResumed:Boolean
-    def isSuspended:Boolean
-    def resume:Unit
-    def suspend:Unit
-    def undispatch:Unit
-  }
-
-  type tContinuationListener = {
-    def onComplete(c:tContinuation)
-    def onTimeout(c:tContinuation)
   }
 }
