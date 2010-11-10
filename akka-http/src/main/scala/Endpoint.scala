@@ -55,9 +55,9 @@ trait Endpoint
       //
       // dispatch the suspended requests
       //
-      case msg if msg.isInstanceOf[SuspendedRequest] =>
+      case msg if msg.isInstanceOf[RequestMethod] =>
         {
-          val req = msg.asInstanceOf[SuspendedRequest]
+          val req = msg.asInstanceOf[RequestMethod]
           val uri = req.request.getRequestURI
           val endpoints = _attachments.filter {_._1(uri)}
 
@@ -78,7 +78,7 @@ trait Endpoint
   /**
    * no endpoint available - completes the request with a 404
    */
-  protected def _na(uri: String, req: SuspendedRequest) =
+  protected def _na(uri: String, req: RequestMethod) =
     {
       req.NotFound("No endpoint available for [" + uri + "]")
       log.debug("No endpoint available for [" + uri + "]")
@@ -89,6 +89,7 @@ trait Endpoint
 class RootEndpoint extends Actor with Endpoint
 {
   import Endpoint._
+  import AkkaHttpServlet._
 
   final val Root = "/"
 
@@ -96,6 +97,11 @@ class RootEndpoint extends Actor with Endpoint
   // use the configurable dispatcher
   //
   self.dispatcher = Endpoint.Dispatcher
+
+  //
+  // adopt the configured id
+  //
+  if (RootActorBuiltin) self.id = RootActorID
 
   override def preStart = _attachments = Tuple2((uri: String) => {uri eq Root}, (uri: String) => this.actor) :: _attachments
 
@@ -130,5 +136,5 @@ object Endpoint
   type Provider = Function[String, ActorRef]
 
   case class Attach(hook: Hook, provider: Provider)
-  case class NoneAvailable(uri: String, req: SuspendedRequest)
+  case class NoneAvailable(uri: String, req: RequestMethod)
 }
