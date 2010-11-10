@@ -48,10 +48,10 @@ private[akka] object MemcachedStorageBackend extends CommonStorageBackend {
       base64.encodeToString(key)
     }
 
-    override def decodeKey(owner: String, key: Array[Byte]) = {
+    override def decodeMapKey(owner: String, key: Array[Byte]) = {
       val newkey = new Array[Byte](key.length - typeBytes.length)
       System.arraycopy(key, 0, newkey, 0, newkey.length)
-      super.decodeKey(owner, newkey)
+      super.decodeMapKey(owner, newkey)
     }
 
     def drop() = client.flush()
