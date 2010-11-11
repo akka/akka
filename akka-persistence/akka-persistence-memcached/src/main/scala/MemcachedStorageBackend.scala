@@ -74,14 +74,14 @@ private[akka] object MemcachedStorageBackend extends CommonStorageBackend {
       }
     }
 
-    def getValue(key: Array[Byte], default: Array[Byte]) = {
+    def get(key: Array[Byte], default: Array[Byte]) = {
       Option(client.get(keyStr(encodeKey(key)))) match {
         case Some(value) => value.asInstanceOf[Array[Byte]]
         case None => default
       }
     }
 
-    def getValue(key: Array[Byte]) = getValue(key, null)
+    def get(key: Array[Byte]) = get(key, null)
 
 
     def put(key: Array[Byte], value: Array[Byte]) = {

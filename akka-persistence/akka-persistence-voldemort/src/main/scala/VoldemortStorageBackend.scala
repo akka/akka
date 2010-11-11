@@ -68,11 +68,11 @@ private[akka] object VoldemortStorageBackend extends CommonStorageBackend {
       client.put(key, value)
     }
 
-    def getValue(key: Array[Byte]): Array[Byte] = {
+    def get(key: Array[Byte]): Array[Byte] = {
       client.getValue(key)
     }
 
-    def getValue(key: Array[Byte], default: Array[Byte]): Array[Byte] = {
+    def get(key: Array[Byte], default: Array[Byte]): Array[Byte] = {
       client.getValue(key, default)
     }
 
