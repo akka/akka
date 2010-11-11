@@ -101,9 +101,9 @@ private[akka] trait KVStorageBackendAccess extends CommonStorageBackendAccess wi
 
   def put(key: Array[Byte], value: Array[Byte]): Unit
 
-  def getValue(key: Array[Byte]): Array[Byte]
+  def get(key: Array[Byte]): Array[Byte]
 
-  def getValue(key: Array[Byte], default: Array[Byte]): Array[Byte]
+  def get(key: Array[Byte], default: Array[Byte]): Array[Byte]
 
   def getAll(keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]]
 
@@ -131,16 +131,16 @@ private[akka] trait KVStorageBackendAccess extends CommonStorageBackendAccess wi
 
 
   override def get(owner: String, key: Array[Byte]): Array[Byte] = {
-    getValue(getKey(owner, key))
+    get(getKey(owner, key))
   }
 
   override def getIndexed(owner: String, index: Int): Array[Byte] = {
-    getValue(getIndexedKey(owner, index))
+    get(getIndexedKey(owner, index))
   }
 
 
   override def get(owner: String, key: Array[Byte], default: Array[Byte]): Array[Byte] = {
-    getValue(getKey(owner, key), default)
+    get(getKey(owner, key), default)
   }
 
 

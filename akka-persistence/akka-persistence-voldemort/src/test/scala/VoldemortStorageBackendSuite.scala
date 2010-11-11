@@ -19,9 +19,9 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     val value = "testRefValue"
     val valueBytes = bytes(value)
     refAccess.delete(key.getBytes)
-    refAccess.getValue(key.getBytes, empty) should be(empty)
+    refAccess.get(key.getBytes, empty) should be(empty)
     refAccess.put(key.getBytes, valueBytes)
-    refAccess.getValue(key.getBytes) should be(valueBytes)
+    refAccess.get(key.getBytes) should be(valueBytes)
   }
 
   test("PersistentRef apis function as expected") {
@@ -38,7 +38,7 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     val key = "testmapKey"
     val mapKeys = new TreeSet[Array[Byte]] + bytes("key1")
     mapAccess.delete(getKey(key, mapKeysIndex))
-    mapAccess.getValue(getKey(key, mapKeysIndex), SortedSetSerializer.toBytes(emptySet)) should equal(SortedSetSerializer.toBytes(emptySet))
+    mapAccess.get(getKey(key, mapKeysIndex), SortedSetSerializer.toBytes(emptySet)) should equal(SortedSetSerializer.toBytes(emptySet))
     putMapKeys(key, mapKeys)
     getMapKeys(key) should equal(mapKeys)
   }
@@ -47,7 +47,7 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     val key = bytes("keyForTestingMapValueClient")
     val value = bytes("value for testing map value client")
     mapAccess.put(key, value)
-    mapAccess.getValue(key, empty) should equal(value)
+    mapAccess.get(key, empty) should equal(value)
   }
 
 
@@ -93,9 +93,9 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     val vecKey = getIndexedKey(key, index)
     getIndexFromVectorValueKey(key, vecKey) should be(index)
     vectorAccess.delete(vecKey)
-    vectorAccess.getValue(vecKey, empty) should equal(empty)
+    vectorAccess.get(vecKey, empty) should equal(empty)
     vectorAccess.put(vecKey, value)
-    vectorAccess.getValue(vecKey) should equal(value)
+    vectorAccess.get(vecKey) should equal(value)
   }
 
   test("PersistentVector apis function as expected") {
