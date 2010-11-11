@@ -850,7 +850,7 @@ private[akka] abstract class ActorAspect {
       ActorType.TypedActor)
 
     if (isOneWay) null // for void methods
-    //else if (TypedActor.returnsFuture_?(methodRtti)) future.get
+    else if (TypedActor.returnsFuture_?(methodRtti)) future.get
     else {
       if (future.isDefined) {
         future.get.await
