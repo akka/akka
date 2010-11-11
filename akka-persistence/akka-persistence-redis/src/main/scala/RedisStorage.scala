@@ -74,7 +74,7 @@ class RedisPersistentQueue(id: String) extends PersistentQueue[Array[Byte]] {
  *
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-class RedisPersistentSortedSet(id: String) extends PersistentSortedSet[Array[Byte]] {
+class RedisPersistentSortedSet(id: String) extends PersistentSortedSetBinary {
   val uuid = id
   val storage = RedisStorageBackend
 }
