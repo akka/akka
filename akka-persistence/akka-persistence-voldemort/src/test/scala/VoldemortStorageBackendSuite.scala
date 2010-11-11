@@ -102,8 +102,8 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     val key = "vectorApiKey"
     val value = bytes("Some bytes we want to store in a vector")
     val updatedValue = bytes("Some updated bytes we want to store in a vector")
-    vectorAccess.delete(getKey(key, vectorHeadIndex))
-    vectorAccess.delete(getKey(key, vectorTailIndex))
+    vectorAccess.deleteIndexed(key, vectorHeadIndex)
+    vectorAccess.deleteIndexed(key, vectorTailIndex)
     vectorAccess.delete(getIndexedKey(key, 0))
     vectorAccess.delete(getIndexedKey(key, 1))
 
@@ -145,8 +145,8 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     dequeue(key).get should be(valueOdd)
     VoldemortStorageBackend.size(key) should be(0)
     dequeue(key) should be(None)
-    queueAccess.put(getKey(key, queueHeadIndex), IntSerializer.toBytes(Integer.MAX_VALUE))
-    queueAccess.put(getKey(key, queueTailIndex), IntSerializer.toBytes(Integer.MAX_VALUE))
+    queueAccess.putIndexed(key,queueHeadIndex, IntSerializer.toBytes(Integer.MAX_VALUE))
+    queueAccess.putIndexed(key, queueTailIndex, IntSerializer.toBytes(Integer.MAX_VALUE))
     VoldemortStorageBackend.size(key) should be(0)
     enqueue(key, value) should be(Some(1))
     VoldemortStorageBackend.size(key) should be(1)

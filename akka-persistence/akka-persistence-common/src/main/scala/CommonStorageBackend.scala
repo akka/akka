@@ -53,44 +53,48 @@ private[akka] trait CommonStorageBackendAccess {
 
   /*concrete*/
 
-  def decodeMapKey(owner: String, key: Array[Byte]) = key
+  def decodeMapKey(owner: String, key: Array[Byte]): Array[Byte] = key
 
-  def decodeIndexedKey(owner: String, key: Array[Byte]) = key
+  def encodeMapKey(owner: String, key: Array[Byte]): Array[Byte] = key
 
-  def deleteIndexed(owner: String, index: Int): Unit = delete(owner, IntSerializer.toBytes(index))
+  def decodeIndexedKey(owner: String, key: Array[Byte]): Int = IntSerializer.fromBytes(key)
 
-  def getIndexed(owner: String, index: Int): Array[Byte] = get(owner, IntSerializer.toBytes(index))
+  def encodeIndexedKey(owner: String, keyint: Int): Array[Byte] = IntSerializer.toBytes(keyint)
+
+  def deleteIndexed(owner: String, index: Int): Unit = delete(owner, encodeIndexedKey(owner, index))
+
+  def getIndexed(owner: String, index: Int): Array[Byte] = get(owner, encodeIndexedKey(owner, index))
 
   def get(owner: String, key: Array[Byte]): Array[Byte] = get(owner, key, null)
 
-  def putIndexed(owner: String, index: Int, value: Array[Byte]): Unit = put(owner, IntSerializer.toBytes(index), value)
+  def putIndexed(owner: String, index: Int, value: Array[Byte]): Unit = put(owner, encodeIndexedKey(owner, index), value)
 
   def putAllIndexed(owner: String, values: Iterable[(Int, Array[Byte])]): Unit = {
     putAll(owner, values.map{
       iv => {
         iv match {
-          case (i, value) => (IntSerializer.toBytes(i) -> value)
+          case (i, value) => (encodeIndexedKey(owner, i) -> value)
         }
       }
     })
   }
 
   def getAllIndexed(owner: String, keys: Iterable[Int]): Map[Int, Array[Byte]] = {
-    val byteKeys = keys.map(IntSerializer.toBytes(_))
+    val byteKeys = keys.map(encodeIndexedKey(owner, _))
     getAll(owner, byteKeys).map{
       kv => kv match {
-        case (key, value) => (IntSerializer.fromBytes(key) -> value)
+        case (key, value) => (decodeIndexedKey(owner, key) -> value)
       }
     }
   }
 
   def deleteAllIndexed(owner: String, keys: Iterable[Int]): Unit = {
-    val byteKeys = keys.map(IntSerializer.toBytes(_))
+    val byteKeys = keys.map(encodeIndexedKey(owner, _))
     deleteAll(owner, byteKeys)
   }
 }
 
-private[akka] trait KVStorageBackendAccess extends CommonStorageBackendAccess {
+private[akka] trait KVStorageBackendAccess extends CommonStorageBackendAccess with Logging {
 
   import CommonStorageBackend._
   import KVStorageBackend._
@@ -112,6 +116,10 @@ private[akka] trait KVStorageBackendAccess extends CommonStorageBackendAccess {
     mapkey
   }
 
+
+  override def decodeIndexedKey(owner: String, key: Array[Byte]): Int = {
+    IntSerializer.fromBytes(decodeMapKey(owner,key))
+  }
 
   override def put(owner: String, key: Array[Byte], value: Array[Byte]): Unit = {
     put(getKey(owner, key), value)
@@ -300,10 +308,10 @@ private[akka] trait CommonStorageBackend extends MapStorageBackend[Array[Byte], 
 
   import CommonStorageBackend._
 
-  val vectorHeadIndex = IntSerializer.toBytes(-1)
-  val vectorTailIndex = IntSerializer.toBytes(-2)
-  val queueHeadIndex = IntSerializer.toBytes(-1)
-  val queueTailIndex = IntSerializer.toBytes(-2)
+  val vectorHeadIndex = -1
+  val vectorTailIndex = -2
+  val queueHeadIndex = -1
+  val queueTailIndex = -2
   val zero = IntSerializer.toBytes(0)
   val refItem = "refItem".getBytes("UTF-8")
 
@@ -387,7 +395,6 @@ private[akka] trait CommonStorageBackend extends MapStorageBackend[Array[Byte], 
     keys.foreach{
       key =>
         mapAccess.delete(name, key)
-        log.debug("deleted key %s for %s", key, name)
     }
     mapAccess.delete(name, mapKeysIndex)
   }
@@ -491,7 +498,7 @@ private[akka] trait CommonStorageBackend extends MapStorageBackend[Array[Byte], 
 
     vectorAccess.deleteAllIndexed(name, deletes)
     vectorAccess.putAllIndexed(name, puts)
-    vectorAccess.put(name, vectorHeadIndex, IntSerializer.toBytes(mdata.head))
+    vectorAccess.putIndexed(name, vectorHeadIndex, IntSerializer.toBytes(mdata.head))
 
   }
 
@@ -502,7 +509,7 @@ private[akka] trait CommonStorageBackend extends MapStorageBackend[Array[Byte], 
         case null => vectorAccess.deleteIndexed(name, mdata.head)
         case _ => vectorAccess.putIndexed(name, mdata.head, element)
       }
-      vectorAccess.put(name, vectorHeadIndex, IntSerializer.toBytes(mdata.nextInsert))
+      vectorAccess.putIndexed(name, vectorHeadIndex, IntSerializer.toBytes(mdata.nextInsert))
     } else {
       throw new IllegalStateException("The vector %s is full".format(name))
     }
@@ -513,7 +520,7 @@ private[akka] trait CommonStorageBackend extends MapStorageBackend[Array[Byte], 
   override def removeVectorStorageEntryFor(name: String) = {
     val mdata = getVectorMetadata(name)
     if (mdata.canRemove) {
-      vectorAccess.put(name, vectorTailIndex, IntSerializer.toBytes(mdata.nextRemove))
+      vectorAccess.putIndexed(name, vectorTailIndex, IntSerializer.toBytes(mdata.nextRemove))
       try
       {
         vectorAccess.deleteIndexed(name, mdata.tail)
@@ -527,11 +534,10 @@ private[akka] trait CommonStorageBackend extends MapStorageBackend[Array[Byte], 
   }
 
   def getVectorMetadata(name: String): VectorMetadata = {
-    val result = vectorAccess.getAll(name, List(vectorHeadIndex, vectorTailIndex))
+    val result = vectorAccess.getAllIndexed(name, List(vectorHeadIndex, vectorTailIndex))
     val head = result.getOrElse(vectorHeadIndex, zero)
     val tail = result.getOrElse(vectorTailIndex, zero)
     val mdata = VectorMetadata(IntSerializer.fromBytes(head), IntSerializer.fromBytes(tail))
-    log.debug(mdata.toString)
     mdata
   }
 
@@ -549,8 +555,8 @@ private[akka] trait CommonStorageBackend extends MapStorageBackend[Array[Byte], 
       index =>
         queueAccess.deleteIndexed(name, index)
     }
-    queueAccess.delete(name, queueHeadIndex)
-    queueAccess.delete(name, queueTailIndex)
+    queueAccess.deleteIndexed(name, queueHeadIndex)
+    queueAccess.deleteIndexed(name, queueTailIndex)
     true
   }
 
@@ -571,7 +577,7 @@ private[akka] trait CommonStorageBackend extends MapStorageBackend[Array[Byte], 
       try
       {
         val dequeued = queueAccess.getIndexed(name, mdata.head)
-        queueAccess.put(name, queueHeadIndex, IntSerializer.toBytes(mdata.nextDequeue))
+        queueAccess.putIndexed(name, queueHeadIndex, IntSerializer.toBytes(mdata.nextDequeue))
         Some(dequeued)
       } finally {
         try
@@ -594,7 +600,7 @@ private[akka] trait CommonStorageBackend extends MapStorageBackend[Array[Byte], 
         case null => queueAccess.deleteIndexed(name, mdata.tail)
         case _ => queueAccess.putIndexed(name, mdata.tail, item)
       }
-      queueAccess.put(name, queueTailIndex, IntSerializer.toBytes(mdata.nextEnqueue))
+      queueAccess.putIndexed(name, queueTailIndex, IntSerializer.toBytes(mdata.nextEnqueue))
       Some(mdata.size + 1)
     } else {
       None
@@ -602,7 +608,7 @@ private[akka] trait CommonStorageBackend extends MapStorageBackend[Array[Byte], 
   }
 
   def getQueueMetadata(name: String): QueueMetadata = {
-    val result = queueAccess.getAll(name, List(vectorHeadIndex, vectorTailIndex))
+    val result = queueAccess.getAllIndexed(name, List(vectorHeadIndex, vectorTailIndex))
     val head = result.get(vectorHeadIndex).getOrElse(zero)
     val tail = result.get(vectorTailIndex).getOrElse(zero)
     QueueMetadata(IntSerializer.fromBytes(head), IntSerializer.fromBytes(tail))
