@@ -16,7 +16,6 @@ import akka.remote.protocol.RemoteProtocol._
 import akka.remote.protocol.RemoteProtocol.ActorType._
 import akka.config.Config._
 import akka.config.ConfigurationException
-import akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 import akka.serialization.RemoteActorSerialization
 import akka.serialization.RemoteActorSerialization._
 
@@ -31,6 +30,7 @@ import org.jboss.netty.handler.ssl.SslHandler
 
 import scala.collection.mutable.Map
 import scala.reflect.BeanProperty
+import akka.dispatch. {Future, DefaultCompletableFuture, CompletableFuture}
 
 /**
  * Use this object if you need a single remote server on a specific node.
@@ -66,10 +66,10 @@ object RemoteNode extends RemoteServer
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteServer {
-  val UUID_PREFIX = "uuid:"
-
-  val SECURE_COOKIE: Option[String] = config.getString("akka.remote.secure-cookie")
-  val REQUIRE_COOKIE = {
+  val UUID_PREFIX        = "uuid:"
+  val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.server.message-frame-size", 1048576)
+  val SECURE_COOKIE      = config.getString("akka.remote.secure-cookie")
+  val REQUIRE_COOKIE     = {
     val requireCookie = config.getBool("akka.remote.server.require-cookie", true)
     if (requireCookie && RemoteServer.SECURE_COOKIE.isEmpty) throw new ConfigurationException(
       "Configuration option 'akka.remote.server.require-cookie' is turned on but no secure cookie is defined in 'akka.remote.secure-cookie'.")
@@ -400,7 +400,7 @@ class RemoteServerPipelineFactory(
     }
 
     val ssl         = if(RemoteServer.SECURE) join(new SslHandler(engine)) else join()
-    val lenDec      = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
+    val lenDec      = new LengthFieldBasedFrameDecoder(RemoteServer.MESSAGE_FRAME_SIZE, 0, 4, 0, 4)
     val lenPrep     = new LengthFieldPrepender(4)
     val protobufDec = new ProtobufDecoder(RemoteMessageProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
