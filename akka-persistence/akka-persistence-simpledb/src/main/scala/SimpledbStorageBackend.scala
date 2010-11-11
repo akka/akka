@@ -18,6 +18,7 @@ import com.amazonaws.services.simpledb.model._
 import collection.{JavaConversions, Map}
 
 private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
+
   import org.apache.commons.codec.binary.Base64
 
   val seperator = "\r\n"
@@ -70,6 +71,7 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
     def delete(key: Array[Byte]): Unit = getClient.deleteAttributes(new DeleteAttributesRequest(domainName, encodeAndValidateKey(key)))
 
     def getAll(keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
+      //Todo rewrite as select request
       keys.foldLeft(new HashMap[Array[Byte], Array[Byte]]) {
         (map, key) => {
           val value = getValue(key)
@@ -96,6 +98,22 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
     def put(key: Array[Byte], value: Array[Byte]): Unit = {
       val req = new PutAttributesRequest(domainName, encodeAndValidateKey(key), decomposeValue(value))
       getClient.putAttributes(req)
+    }
+
+
+    override def putAll(owner: String, keyValues: Iterable[(Array[Byte], Array[Byte])]) = {
+      val items = keyValues.foldLeft(new JAList[ReplaceableItem]()) {
+        (jal, kv) => kv match {
+          case (key, value) => {
+            jal.add(new ReplaceableItem(encodeAndValidateKey(key), decomposeValue(value)))
+            jal
+          }
+        }
+      }
+      //Max items per post = 25, max size per post 1MB
+      val req = new BatchPutAttributesRequest(domainName,items)
+      //TODO assure the above
+      getClient.batchPutAttributes(req)
     }
 
     def encodeAndValidateKey(key: Array[Byte]): String = {
