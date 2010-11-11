@@ -589,7 +589,10 @@ class RemoteServerHandler(
       val messageReceiver = typedActor.getClass.getDeclaredMethod(typedActorInfo.getMethod, argClasses: _*)
       if (request.getOneWay) messageReceiver.invoke(typedActor, args: _*)
       else {
-        val result = messageReceiver.invoke(typedActor, args: _*)
+        val result = messageReceiver.invoke(typedActor, args: _*) match {
+          case f: Future[_] => f.await.result.get
+          case other => other
+        }
         log.debug("Returning result from remote typed actor invocation [%s]", result)
 
         val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
