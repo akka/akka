@@ -25,6 +25,10 @@ public class SamplePojoImpl extends TypedActor implements SamplePojo {
         throw new RuntimeException("expected");
     }
 
+    public akka.dispatch.Future<String> someFutureString() {
+        return future("foo");
+    }
+
     @Override
     public void preRestart(Throwable e) {
       _pre = true;
