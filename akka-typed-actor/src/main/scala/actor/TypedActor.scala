@@ -181,7 +181,6 @@ abstract class TypedActor extends Actor with Proxyable {
       if (Actor.SERIALIZE_MESSAGES)       serializeArguments(joinPoint)
       if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
       else                                self.reply(joinPoint.proceed)
-
     case Link(proxy)   => self.link(proxy)
     case Unlink(proxy) => self.unlink(proxy)
     case unexpected    => throw new IllegalActorStateException(
@@ -851,6 +850,7 @@ private[akka] abstract class ActorAspect {
       ActorType.TypedActor)
 
     if (isOneWay) null // for void methods
+    else if (TypedActor.returnsFuture_?(methodRtti)) future.get
     else {
       if (future.isDefined) {
         future.get.await
