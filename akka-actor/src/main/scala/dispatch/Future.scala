@@ -38,14 +38,18 @@ object Futures {
   def awaitAll(futures: List[Future[_]]): Unit = futures.foreach(_.await)
 
   /**
-   * Returns the First Future that is completed
-   * if no Future is completed, awaitOne optionally sleeps "sleepMs" millis and then re-scans
+   * Returns the First Future that is completed (blocking!)
    */
-  def awaitOne(futures: List[Future[_]], timeout: Long = Long.MaxValue): Future[_] = {
+  def awaitOne(futures: List[Future[_]], timeout: Long = Long.MaxValue): Future[_] = firstCompletedOf(futures).await
+
+  /**
+   * Returns a Future to the result of the first future in the list that is completed
+   */
+  def firstCompletedOf(futures: List[Future[_]], timeout: Long = Long.MaxValue): Future[_] = {
     val futureResult = new DefaultCompletableFuture[Any](timeout)
     val fun = (f: Future[_]) => futureResult completeWith f.asInstanceOf[Future[Any]]
     for(f <- futures) f onComplete fun
-    futureResult.await
+    futureResult
   }
 
   /**
