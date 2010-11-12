@@ -200,7 +200,7 @@ object ExampleSession {
 
     def requestHandler(request: String) = 3
 
-    val rpcServer = RPC.newRpcServer[String,Int](connection, exchangeName, rpcServerSerializer, requestHandler _,
+    val rpcServer = RPC.newRpcServer(connection, exchangeName, rpcServerSerializer, requestHandler _,
       routingKey = Some("rpc.in.key"), queueName = Some("rpc.in.key.queue"))
 
 
@@ -213,7 +213,7 @@ object ExampleSession {
     }
     val rpcClientSerializer = new RpcClientSerializer[String, Int](clientToBinary, clientFromBinary)
 
-    val rpcClient = RPC.newRpcClient[String,Int](connection, exchangeName, rpcClientSerializer, Some("rpc.in.key"))
+    val rpcClient = RPC.newRpcClient(connection, exchangeName, rpcClientSerializer, Some("rpc.in.key"))
 
     val response = rpcClient.call("rpc_request")
     log.info("Response: " + response)
