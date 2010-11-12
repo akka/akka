@@ -7,8 +7,9 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import akka.actor.{Actor, ActorRef, Transactor}
+import akka.actor.{Actor, ActorRef}
 import Actor._
+import akka.stm._
 
 /**
  * A persistent actor based on Redis sortedset storage.
@@ -20,9 +21,11 @@ import Actor._
 case class AddEmail(email: String, value: String)
 case class GetAll(email: String)
 
-class MySortedSet extends Transactor {
+class MySortedSet extends Actor {
 
-  def receive = {
+  def receive = { case message => atomic { atomicReceive(message) } }
+
+  def atomicReceive: Receive = {
     case AddEmail(userEmail, value) => {
       val registryId = "userValues:%s".format(userEmail)
       val storageSet = RedisStorage.getSortedSet(registryId)
