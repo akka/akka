@@ -10,6 +10,7 @@ import akka.routing.Dispatcher
 
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit
+import akka.japi.Procedure
 
 class FutureTimeoutException(message: String) extends AkkaException(message)
 
@@ -100,6 +101,11 @@ sealed trait Future[T] {
 
   def exception: Option[Throwable]
 
+  def onComplete(func: Future[T] => Unit): Future[T]
+
+  /* Java API */
+  def onComplete(proc: Procedure[Future[T]]): Future[T] = onComplete(f => proc(f))
+
   def map[O](f: (T) => O): Future[O] = {
     val wrapped = this
     new Future[O] {
@@ -110,13 +116,13 @@ sealed trait Future[T] {
       def timeoutInNanos = wrapped.timeoutInNanos
       def result: Option[O] = { wrapped.result map f }
       def exception: Option[Throwable] = wrapped.exception
+      def onComplete(func: Future[O] => Unit): Future[O] = { wrapped.onComplete(_ => func(this)); this }
     }
   }
 }
 
 trait CompletableFuture[T] extends Future[T] {
   def completeWithResult(result: T)
-
   def completeWithException(exception: Throwable)
 }
 
@@ -133,6 +139,7 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
   private var _completed: Boolean = _
   private var _result: Option[T] = None
   private var _exception: Option[Throwable] = None
+  private var _listeners: List[Future[T] => Unit] = Nil
 
   def await = try {
     _lock.lock
@@ -190,33 +197,67 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
     _lock.unlock
   }
 
-  def completeWithResult(result: T) = try {
-    _lock.lock
-    if (!_completed) {
-      _completed = true
-      _result = Some(result)
-      onComplete(result)
+  def completeWithResult(result: T) {
+    val notify = try {
+      _lock.lock
+      if (!_completed) {
+        _completed = true
+        _result = Some(result)
+        true
+      } else false
+    } finally {
+      _signal.signalAll
+      _lock.unlock
     }
-  } finally {
-    _signal.signalAll
-    _lock.unlock
+
+    if (notify)
+      notifyListeners
   }
 
-  def completeWithException(exception: Throwable) = try {
-    _lock.lock
-    if (!_completed) {
-      _completed = true
-      _exception = Some(exception)
-      onCompleteException(exception)
+  def completeWithException(exception: Throwable) {
+    val notify = try {
+      _lock.lock
+      if (!_completed) {
+        _completed = true
+        _exception = Some(exception)
+        true
+      } else false
+    } finally {
+      _signal.signalAll
+      _lock.unlock
     }
-  } finally {
-    _signal.signalAll
-    _lock.unlock
+
+    if (notify)
+      notifyListeners
   }
 
-  protected def onComplete(result: T) {}
+  def onComplete(func: Future[T] => Unit): CompletableFuture[T] = {
+    val notifyNow = try {
+      _lock.lock
+      if (!_completed) {
+        _listeners ::= func
+        false
+      }
+      else
+        true
+    } finally {
+      _lock.unlock
+    }
 
-  protected def onCompleteException(exception: Throwable) {}
+    if (notifyNow)
+      notifyListener(func)
+
+    this
+  }
+
+  private def notifyListeners() {
+    for(l <- _listeners)
+      notifyListener(l)
+  }
+
+  private def notifyListener(func: Future[T] => Unit) {
+    func(this)
+  }
 
   private def currentTimeInNanos: Long = TIME_UNIT.toNanos(System.currentTimeMillis)
 }
