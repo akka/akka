@@ -16,7 +16,7 @@ class RpcServerActor[I,O](
   log.info("%s started", this)
 
   protected def receive = {
-    case Delivery(payload, _, tag, props, sender) => {
+    case Delivery(payload, _, tag, _, props, sender) => {
 
       log.debug("%s handling delivery with tag %d", this, tag)
       val request = serializer.fromBinary.fromBinary(payload)

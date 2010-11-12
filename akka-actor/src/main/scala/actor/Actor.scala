@@ -413,8 +413,14 @@ trait Actor extends Logging {
   /**
    * Changes tha Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * Puts the behavior on top of the hotswap stack.
+   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
    */
-  def become(behavior: Receive): Unit = self.hotswap = self.hotswap.push(behavior)
+  def become(behavior: Receive, discardOld: Boolean = false) {
+    if (discardOld)
+      unbecome
+
+    self.hotswap = self.hotswap.push(behavior)
+  }
 
   /**
    * Reverts the Actor behavior to the previous one in the hotswap stack.
