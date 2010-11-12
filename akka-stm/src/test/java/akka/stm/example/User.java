@@ -1,4 +1,4 @@
-package akka.stm.test;
+package akka.stm.example;
 
 public class User {
     private String name;
