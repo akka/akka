@@ -497,7 +497,7 @@ class RemoteServerHandler(
   }
 
   private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = {
-    log.debug("Received RemoteMessageProtocol[\n%s]", request.toString)
+    log.debug("Received RemoteMessageProtocol[\n%s]".format(request.toString))
     request.getActorInfo.getActorType match {
       case SCALA_ACTOR => dispatchToActor(request, channel)
       case TYPED_ACTOR => dispatchToTypedActor(request, channel)
@@ -538,41 +538,46 @@ class RemoteServerHandler(
           message,
           request.getActorInfo.getTimeout,
           None,
-          Some(new DefaultCompletableFuture[AnyRef](request.getActorInfo.getTimeout){
-            override def onComplete(result: AnyRef) {
-              log.debug("Returning result from actor invocation [%s]", result)
-              val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
-                Some(actorRef),
-                Right(request.getUuid), 
-                actorInfo.getId, 
-                actorInfo.getTarget, 
-                actorInfo.getTimeout, 
-                Left(result), 
-                true, 
-                Some(actorRef), 
-                None, 
-                AkkaActorType.ScalaActor, 
-                None)
+          Some(new DefaultCompletableFuture[AnyRef](request.getActorInfo.getTimeout).
+            onComplete(f => {
+              val result = f.result
+              val exception = f.exception
 
-              // FIXME lift in the supervisor uuid management into toh createRemoteMessageProtocolBuilder method
-              if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
+              if (exception.isDefined) {
+                log.debug("Returning exception from actor invocation [%s]".format(exception.get))
+                try {
+                  channel.write(createErrorReplyMessage(exception.get, request, AkkaActorType.ScalaActor))
+                } catch {
+                  case e: Throwable => server.notifyListeners(RemoteServerError(e, server))
+                }
+              }
+              else if (result.isDefined) {
+                log.debug("Returning result from actor invocation [%s]".format(result.get))
+                val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+                  Some(actorRef),
+                  Right(request.getUuid),
+                  actorInfo.getId,
+                  actorInfo.getTarget,
+                  actorInfo.getTimeout,
+                  Left(result.get),
+                  true,
+                  Some(actorRef),
+                  None,
+                  AkkaActorType.ScalaActor,
+                  None)
 
-              try {
-                channel.write(messageBuilder.build)
-              } catch {
-                case e: Throwable => server.notifyListeners(RemoteServerError(e, server))
+                // FIXME lift in the supervisor uuid management into toh createRemoteMessageProtocolBuilder method
+                if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
+
+                try {
+                  channel.write(messageBuilder.build)
+                } catch {
+                  case e: Throwable => server.notifyListeners(RemoteServerError(e, server))
+                }
               }
             }
-
-            override def onCompleteException(exception: Throwable) {
-              try {
-                channel.write(createErrorReplyMessage(exception, request, AkkaActorType.ScalaActor))
-              } catch {
-                case e: Throwable => server.notifyListeners(RemoteServerError(e, server))
-              }
-            }
-        }
-     ))
+          )
+       ))
     }
   }
 
