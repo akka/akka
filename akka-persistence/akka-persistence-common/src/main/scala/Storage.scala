@@ -307,18 +307,19 @@ object PersistentMapBinary {
     //backend
 
     implicit object ArrayOrdering extends Ordering[Array[Byte]] {
+      import java.lang.{Math=>M}
       def compare(o1: Array[Byte], o2: Array[Byte]): Int = {
         if (o1.size == o2.size) {
           for (i <- 0 until o1.size) {
             var a = o1(i)
             var b = o2(i)
             if (a != b) {
-              return (a - b) / (Math.abs(a - b))
+              return (a - b) / (M.abs(a - b))
             }
           }
           0
         } else {
-          (o1.length - o2.length) / (Math.max(1, Math.abs(o1.length - o2.length)))
+          (o1.length - o2.length) / (M.max(1, M.abs(o1.length - o2.length)))
         }
       }
 
