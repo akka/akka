@@ -145,7 +145,11 @@ trait MessageDispatcher extends MailboxFactory with Logging {
     }
   }
 
-  private[akka] def timeoutMs: Long = 1000
+  /**
+   * When the dispatcher no longer has any actors registered, how long will it wait until it shuts itself down, in Ms
+   * defaulting to your akka configs "akka.actor.dispatcher-shutdown-timeout" or otherwise, 1 Second
+   */
+  private[akka] def timeoutMs: Long = Dispatchers.DEFAULT_SHUTDOWN_TIMEOUT.toMillis
 
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
