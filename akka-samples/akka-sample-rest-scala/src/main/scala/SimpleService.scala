@@ -10,7 +10,6 @@ import akka.stm.TransactionalMap
 import akka.persistence.cassandra.CassandraStorage
 import akka.config.Supervision._
 import akka.util.Logging
-import akka.comet.AkkaClusterBroadcastFilter
 import scala.xml.NodeSeq
 import java.lang.Integer
 import java.nio.ByteBuffer
@@ -90,7 +89,6 @@ class PubSub {
   @Broadcast
   @Path("/topic/{topic}/{message}/")
   @Produces(Array("text/plain;charset=ISO-8859-1"))
-  //FIXME @Cluster(value = Array(classOf[AkkaClusterBroadcastFilter]),name = "foo")
   def say(@PathParam("topic") topic: Broadcaster, @PathParam("message") message: String): Broadcastable = new Broadcastable(message, topic)
 }
 
@@ -148,7 +146,6 @@ class Chat {
 
   @POST
   @Broadcast(Array(classOf[XSSHtmlFilter], classOf[JsonpFilter]))
-  //FIXME @Cluster(value = Array(classOf[AkkaClusterBroadcastFilter]),name = "bar")
   @Consumes(Array("application/x-www-form-urlencoded"))
   @Produces(Array("text/html"))
   def publishMessage(form: MultivaluedMap[String, String]) = {

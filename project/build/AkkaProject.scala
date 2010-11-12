@@ -101,7 +101,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", SunJDMKRepo)
   lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
-  lazy val jgroupsModuleConfig     = ModuleConfiguration("jgroups", JBossRepo)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsRelRepo)
@@ -190,8 +189,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val jersey_json    = "com.sun.jersey"          % "jersey-json"   % JERSEY_VERSION % "compile" //CDDL v1
     lazy val jersey_server  = "com.sun.jersey"          % "jersey-server" % JERSEY_VERSION % "compile" //CDDL v1
     lazy val jersey_contrib = "com.sun.jersey.contribs" % "jersey-scala"  % JERSEY_VERSION % "compile" //CDDL v1
-
-    lazy val jgroups = "jgroups" % "jgroups" % "2.9.0.GA" % "compile" //LGPL 2.1
 
     lazy val jsr166x = "jsr166x" % "jsr166x" % "1.0" % "compile" //CC Public Domain
 
@@ -453,7 +450,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val h2_lzf        = Dependencies.h2_lzf
     val jackson       = Dependencies.jackson
     val jackson_core  = Dependencies.jackson_core
-    val jgroups       = Dependencies.jgroups
     val jta_1_1       = Dependencies.jta_1_1
     val netty         = Dependencies.netty
     val protobuf      = Dependencies.protobuf

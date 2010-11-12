@@ -243,7 +243,6 @@ class RemoteServer extends Logging with ListenerManagement {
 
         openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
         _isRunning = true
-        Cluster.registerLocalNode(hostname, port)
         notifyListeners(RemoteServerStarted(this))
       }
     } catch {
@@ -261,7 +260,6 @@ class RemoteServer extends Logging with ListenerManagement {
         openChannels.disconnect
         openChannels.close.awaitUninterruptibly
         bootstrap.releaseExternalResources
-        Cluster.deregisterLocalNode(hostname, port)
         notifyListeners(RemoteServerShutdown(this))
       } catch {
         case e: java.nio.channels.ClosedChannelException =>  {}
@@ -590,7 +588,7 @@ class RemoteServerHandler(
       if (request.getOneWay) messageReceiver.invoke(typedActor, args: _*)
       else {
         val result = messageReceiver.invoke(typedActor, args: _*) match {
-          case f: Future[_] => f.await.result.get
+          case f: Future[_] => f.await.result.get //TODO replace this with a Listener on the Future to avoid blocking
           case other => other
         }
         log.debug("Returning result from remote typed actor invocation [%s]", result)
