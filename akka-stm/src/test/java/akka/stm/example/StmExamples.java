@@ -1,4 +1,4 @@
-package akka.stm.test;
+package akka.stm.example;
 
 public class StmExamples {
     public static void main(String[] args) {

@@ -12,14 +12,14 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-public class CoordinatedCounter extends UntypedActor {
-    String name;
-    Ref<Integer> count = new Ref(0);
-    TransactionFactory txFactory = new TransactionFactoryBuilder()
+public class UntypedCoordinatedCounter extends UntypedActor {
+    private String name;
+    private Ref<Integer> count = new Ref(0);
+    private TransactionFactory txFactory = new TransactionFactoryBuilder()
         .setTimeout(new Duration(3, TimeUnit.SECONDS))
         .build();
 
-    public CoordinatedCounter(String name) {
+    public UntypedCoordinatedCounter(String name) {
         this.name = name;
     }
 
@@ -34,8 +34,8 @@ public class CoordinatedCounter extends UntypedActor {
             Object message = coordinated.getMessage();
             if (message instanceof Increment) {
                 Increment increment = (Increment) message;
-                List<ActorRef> friends = increment.friends;
-                final CountDownLatch latch = increment.latch;
+                List<ActorRef> friends = increment.getFriends();
+                final CountDownLatch latch = increment.getLatch();
                 if (!friends.isEmpty()) {
                     Increment coordMessage = new Increment(friends.subList(1, friends.size()), latch);
                     friends.get(0).sendOneWay(coordinated.coordinate(coordMessage));

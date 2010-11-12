@@ -7,16 +7,11 @@ package akka.transactor
 import akka.actor.{Actor, ActorRef}
 import akka.stm.{DefaultTransactionConfig, TransactionFactory}
 
+
 /**
- * Transactor. See companion class for information.
+ * Used for specifying actor refs and messages to send to during coordination.
  */
-object Transactor {
-  /**
-   * Used internally by Transactor for collecting actor refs and messages
-   * to send to during coordination.
-   */
-  case class SendTo(actor: ActorRef, message: Option[Any] = None)
-}
+case class SendTo(actor: ActorRef, message: Option[Any] = None)
 
 /**
  * An actor with built-in support for coordinated transactions.
@@ -100,8 +95,6 @@ object Transactor {
  * @see [[akka.stm.Coordinated]] for more information about the underlying mechanism
  */
 trait Transactor extends Actor {
-  import Transactor.SendTo
-
   private lazy val txFactory = transactionFactory
 
   /**
@@ -131,7 +124,7 @@ trait Transactor extends Actor {
   /**
    * Override this method to coordinate with other transactors.
    * The other transactors are added to the coordinated transaction barrier
-   * and sent a Coordinated message. The message to send is either specified
+   * and sent a Coordinated message. The message to send can be specified
    * or otherwise the same message as received is sent. Use the 'include' and
    * 'sendTo' methods to easily create the set of transactors to be involved.
    */
@@ -148,13 +141,13 @@ trait Transactor extends Actor {
   def nobody: Set[SendTo] = Set.empty
 
   /**
-   * Incude other actors in this coordinated transaction and send
+   * Include other actors in this coordinated transaction and send
    * them the same message as received. Use as the result in 'coordinated'.
    */
   def include(actors: ActorRef*): Set[SendTo] = actors map (SendTo(_)) toSet
 
   /**
-   * Incude other actors in this coordinated transaction and specify the message
+   * Include other actors in this coordinated transaction and specify the message
    * to send by providing ActorRef -> Message pairs. Use as the result in 'coordinated'.
    */
   def sendTo(pairs: (ActorRef, Any)*): Set[SendTo] = pairs map (p => SendTo(p._1, Some(p._2))) toSet

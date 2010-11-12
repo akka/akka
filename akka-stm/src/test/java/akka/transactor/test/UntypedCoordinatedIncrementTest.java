@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import scala.Option;
 
-public class CoordinatedIncrementTest {
+public class UntypedCoordinatedIncrementTest {
     List<ActorRef> counters;
     ActorRef failer;
 
@@ -30,13 +30,13 @@ public class CoordinatedIncrementTest {
             final String name = "counter" + i;
             ActorRef counter = UntypedActor.actorOf(new UntypedActorFactory() {
                 public UntypedActor create() {
-                    return new CoordinatedCounter(name);
+                    return new UntypedCoordinatedCounter(name);
                 }
             });
             counter.start();
             counters.add(counter);
         }
-        failer = UntypedActor.actorOf(CoordinatedFailer.class);
+        failer = UntypedActor.actorOf(UntypedFailer.class);
         failer.start();
     }
 
