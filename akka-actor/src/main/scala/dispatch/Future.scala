@@ -41,13 +41,11 @@ object Futures {
    * Returns the First Future that is completed
    * if no Future is completed, awaitOne optionally sleeps "sleepMs" millis and then re-scans
    */
-  def awaitOne(futures: List[Future[_]], sleepMs: Long = 0): Future[_] = {
-    var future: Option[Future[_]] = None
-    do {
-      future = futures.find(_.isCompleted)
-      if (sleepMs > 0 && future.isEmpty) Thread.sleep(sleepMs)
-    } while (future.isEmpty)
-    future.get
+  def awaitOne(futures: List[Future[_]], timeout: Long = Long.MaxValue): Future[_] = {
+    val futureResult = new DefaultCompletableFuture[Any](timeout)
+    val fun = (f: Future[_]) => futureResult completeWith f.asInstanceOf[Future[Any]]
+    for(f <- futures) f onComplete fun
+    futureResult.await
   }
 
   /**
@@ -124,6 +122,13 @@ sealed trait Future[T] {
 trait CompletableFuture[T] extends Future[T] {
   def completeWithResult(result: T)
   def completeWithException(exception: Throwable)
+  def completeWith(other: Future[T]) {
+    val result = other.result
+    val exception = other.exception
+    if (result.isDefined) completeWithResult(result.get)
+    else if (exception.isDefined) completeWithException(exception.get)
+    //else TODO how to handle this case?
+  }
 }
 
 // Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
