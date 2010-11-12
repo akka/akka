@@ -106,10 +106,9 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
 
     override def getAll(keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
 
-      val batcher = GetBatcher(domainName, 20)
-      keys.foreach(batcher.addItem(_))
       var map = new HashMap[Array[Byte], Array[Byte]]
-      batcher.getRequests foreach {
+
+      GetBatcher(domainName, 20).addItems(keys).getRequests foreach {
         req => {
           var res = getClient.select(req)
           var continue = true
@@ -133,6 +132,11 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
       val reqs = new ArrayBuffer[SelectRequest]
       var currentItems = new ArrayBuffer[String]
       var items = 0
+
+      def addItems(items: Iterable[Array[Byte]]): GetBatcher = {
+        items foreach(addItem(_))
+        this
+      }
 
       def addItem(item: Array[Byte]) = {
         if ((items + 1 > maxItems)) {
@@ -196,19 +200,22 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
         }
       }
 
-      val batcher = new PutBatcher(domainName, 25, 1000)
-      items foreach (batcher.addItem(_))
-      val reqs = batcher.getRequests
-      reqs foreach (getClient.batchPutAttributes(_))
+      PutBatcher(domainName, 25, 1000).addItems(items).getRequests foreach (getClient.batchPutAttributes(_))
+
     }
 
 
-    class PutBatcher(domain: String, maxItems: Int, maxAttributes: Int) {
+    case class PutBatcher(domain: String, maxItems: Int, maxAttributes: Int) {
 
       val reqs = new ArrayBuffer[BatchPutAttributesRequest]
       var currentItems = new JAList[ReplaceableItem]()
       var items = 0
       var atts = 0
+
+      def addItems(items: Seq[ReplaceableItem]): PutBatcher = {
+        items foreach(addItem(_))
+        this
+      }
 
       def addItem(item: ReplaceableItem) = {
         if ((items + 1 > maxItems) || (atts + item.getAttributes.size > maxAttributes)) {
