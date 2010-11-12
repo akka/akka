@@ -60,7 +60,8 @@ object AMQP {
    */
   case class ChannelParameters(
           shutdownListener: Option[ShutdownListener] = None,
-          channelCallback: Option[ActorRef] = None) {
+          channelCallback: Option[ActorRef] = None,
+          prefetchSize: Int = 0) {
 
     // Needed for Java API usage
     def this() = this (None, None)

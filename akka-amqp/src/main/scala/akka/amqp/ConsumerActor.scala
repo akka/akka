@@ -30,6 +30,8 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
 
   protected def setupChannel(ch: Channel) = {
 
+    channelParameters.foreach(params => ch.basicQos(params.prefetchSize))
+    
     val exchangeName = exchangeParameters.flatMap(params => Some(params.exchangeName))
     val consumingQueue = exchangeName match {
       case Some(exchange) =>
