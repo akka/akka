@@ -140,149 +140,150 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   object Dependencies {
 
     // Compile
-                lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
+    lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile" //ApacheV2
 
-    lazy val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
+    lazy val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile" //Public domain
 
-    lazy val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile"
+    lazy val atmo          = "org.atmosphere" % "atmosphere-annotations"     % ATMO_VERSION % "compile" //CDDL v1
+    lazy val atmo_jbossweb = "org.atmosphere" % "atmosphere-compat-jbossweb" % ATMO_VERSION % "compile" //CDDL v1
+    lazy val atmo_jersey   = "org.atmosphere" % "atmosphere-jersey"          % ATMO_VERSION % "compile" //CDDL v1
+    lazy val atmo_runtime  = "org.atmosphere" % "atmosphere-runtime"         % ATMO_VERSION % "compile" //CDDL v1
+    lazy val atmo_tomcat   = "org.atmosphere" % "atmosphere-compat-tomcat"   % ATMO_VERSION % "compile" //CDDL v1
+    lazy val atmo_weblogic = "org.atmosphere" % "atmosphere-compat-weblogic" % ATMO_VERSION % "compile" //CDDL v1
 
-    lazy val atmo          = "org.atmosphere" % "atmosphere-annotations"     % ATMO_VERSION % "compile"
-    lazy val atmo_jbossweb = "org.atmosphere" % "atmosphere-compat-jbossweb" % ATMO_VERSION % "compile"
-    lazy val atmo_jersey   = "org.atmosphere" % "atmosphere-jersey"          % ATMO_VERSION % "compile"
-    lazy val atmo_runtime  = "org.atmosphere" % "atmosphere-runtime"         % ATMO_VERSION % "compile"
-    lazy val atmo_tomcat   = "org.atmosphere" % "atmosphere-compat-tomcat"   % ATMO_VERSION % "compile"
-    lazy val atmo_weblogic = "org.atmosphere" % "atmosphere-compat-weblogic" % ATMO_VERSION % "compile"
+    lazy val atomikos_transactions     = "com.atomikos" % "transactions"     % "3.2.3" % "compile" //ApacheV2
+    lazy val atomikos_transactions_api = "com.atomikos" % "transactions-api" % "3.2.3" % "compile" //ApacheV2
+    lazy val atomikos_transactions_jta = "com.atomikos" % "transactions-jta" % "3.2.3" % "compile" //ApacheV2
 
-    lazy val atomikos_transactions     = "com.atomikos" % "transactions"     % "3.2.3" % "compile"
-    lazy val atomikos_transactions_api = "com.atomikos" % "transactions-api" % "3.2.3" % "compile"
-    lazy val atomikos_transactions_jta = "com.atomikos" % "transactions-jta" % "3.2.3" % "compile"
+    lazy val camel_core = "org.apache.camel" % "camel-core" % CAMEL_VERSION % "compile" //ApacheV2
 
-    lazy val camel_core = "org.apache.camel" % "camel-core" % CAMEL_VERSION % "compile"
+    lazy val cassandra = "org.apache.cassandra" % "cassandra" % CASSANDRA_VERSION % "compile" //ApacheV2
 
-    lazy val cassandra = "org.apache.cassandra" % "cassandra" % CASSANDRA_VERSION % "compile"
+    lazy val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile" //ApacheV2
 
-    lazy val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile"
+    lazy val commons_io = "commons-io" % "commons-io" % "1.4" % "compile" //ApacheV2
 
-    lazy val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
+    lazy val commons_pool = "commons-pool" % "commons-pool" % "1.5.4" % "compile" //ApacheV2
 
-    lazy val commons_pool = "commons-pool" % "commons-pool" % "1.5.4" % "compile"
+    lazy val configgy = "net.lag" % "configgy" % "2.8.0-1.5.5" % "compile" //ApacheV2
 
-    lazy val configgy = "net.lag" % "configgy" % "2.8.0-1.5.5" % "compile"
+    lazy val dispatch_http = "net.databinder" % "dispatch-http_2.8.0" % DISPATCH_VERSION % "compile" //LGPL v2
+    lazy val dispatch_json = "net.databinder" % "dispatch-json_2.8.0" % DISPATCH_VERSION % "compile" //LGPL v2
 
-    lazy val dispatch_http = "net.databinder" % "dispatch-http_2.8.0" % DISPATCH_VERSION % "compile"
-    lazy val dispatch_json = "net.databinder" % "dispatch-json_2.8.0" % DISPATCH_VERSION % "compile"
+    lazy val jetty         = "org.eclipse.jetty" % "jetty-server"  % JETTY_VERSION % "compile" //Eclipse license
+    lazy val jetty_util    = "org.eclipse.jetty" % "jetty-util"    % JETTY_VERSION % "compile" //Eclipse license
+    lazy val jetty_xml     = "org.eclipse.jetty" % "jetty-xml"     % JETTY_VERSION % "compile" //Eclipse license
+    lazy val jetty_servlet = "org.eclipse.jetty" % "jetty-servlet" % JETTY_VERSION % "compile" //Eclipse license
 
-    lazy val jetty         = "org.eclipse.jetty" % "jetty-server"  % JETTY_VERSION % "compile"
-    lazy val jetty_util    = "org.eclipse.jetty" % "jetty-util"    % JETTY_VERSION % "compile"
-    lazy val jetty_xml     = "org.eclipse.jetty" % "jetty-xml"     % JETTY_VERSION % "compile"
-    lazy val jetty_servlet = "org.eclipse.jetty" % "jetty-servlet" % JETTY_VERSION % "compile"
+    lazy val uuid       = "com.eaio" % "uuid" % "3.2" % "compile" //MIT license
 
-    lazy val uuid       = "com.eaio" % "uuid" % "3.2" % "compile"
+    lazy val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile" //ApacheV2
 
-    lazy val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile"
+    lazy val h2_lzf = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile" //ApacheV2
 
-    lazy val h2_lzf = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile"
+    lazy val hawtdispatch = "org.fusesource.hawtdispatch" % "hawtdispatch-scala" % HAWT_DISPATCH_VERSION % "compile" //ApacheV2
 
-    lazy val hawtdispatch = "org.fusesource.hawtdispatch" % "hawtdispatch-scala" % HAWT_DISPATCH_VERSION % "compile"
+    lazy val jackson          = "org.codehaus.jackson" % "jackson-mapper-asl" % JACKSON_VERSION % "compile" //ApacheV2
+    lazy val jackson_core     = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile" //ApacheV2
 
-    lazy val jackson          = "org.codehaus.jackson" % "jackson-mapper-asl" % JACKSON_VERSION % "compile"
-    lazy val jackson_core     = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile"
+    lazy val jersey         = "com.sun.jersey"          % "jersey-core"   % JERSEY_VERSION % "compile" //CDDL v1
+    lazy val jersey_json    = "com.sun.jersey"          % "jersey-json"   % JERSEY_VERSION % "compile" //CDDL v1
+    lazy val jersey_server  = "com.sun.jersey"          % "jersey-server" % JERSEY_VERSION % "compile" //CDDL v1
+    lazy val jersey_contrib = "com.sun.jersey.contribs" % "jersey-scala"  % JERSEY_VERSION % "compile" //CDDL v1
 
-    lazy val jersey         = "com.sun.jersey"          % "jersey-core"   % JERSEY_VERSION % "compile"
-    lazy val jersey_json    = "com.sun.jersey"          % "jersey-json"   % JERSEY_VERSION % "compile"
-    lazy val jersey_server  = "com.sun.jersey"          % "jersey-server" % JERSEY_VERSION % "compile"
-    lazy val jersey_contrib = "com.sun.jersey.contribs" % "jersey-scala"  % JERSEY_VERSION % "compile"
+    lazy val jgroups = "jgroups" % "jgroups" % "2.9.0.GA" % "compile" //LGPL 2.1
 
-    lazy val jgroups = "jgroups" % "jgroups" % "2.9.0.GA" % "compile"
+    lazy val jsr166x = "jsr166x" % "jsr166x" % "1.0" % "compile" //CC Public Domain
 
-    lazy val jsr166x = "jsr166x" % "jsr166x" % "1.0" % "compile"
+    lazy val jsr250 = "javax.annotation" % "jsr250-api" % "1.0" % "compile" //CDDL v1
 
-    lazy val jsr250 = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
+    lazy val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile" //CDDL v1
 
-    lazy val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
+    lazy val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile" intransitive //ApacheV2
 
-    lazy val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile" intransitive
+    lazy val mongo = "org.mongodb" % "mongo-java-driver" % "2.0" % "compile" //ApacheV2
 
-    lazy val mongo = "org.mongodb" % "mongo-java-driver" % "2.0" % "compile"
+    lazy val casbah = "com.novus" % "casbah_2.8.0" % "1.0.8.5" % "compile" //ApacheV2
 
-    lazy val casbah = "com.novus" % "casbah_2.8.0" % "1.0.8.5" % "compile"
+    lazy val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" intransitive //ApacheV2
 
-    lazy val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" intransitive
+    lazy val netty = "org.jboss.netty" % "netty" % "3.2.3.Final" % "compile" //ApacheV2
 
-    lazy val netty = "org.jboss.netty" % "netty" % "3.2.3.Final" % "compile"
+    lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile" //New BSD
 
-    lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile"
+    lazy val osgi_core = "org.osgi" % "org.osgi.core" % "4.2.0" //ApacheV2
 
-    lazy val osgi_core = "org.osgi" % "org.osgi.core" % "4.2.0"
+    lazy val rabbit = "com.rabbitmq" % "amqp-client" % "1.8.1" % "compile" //Mozilla public license
 
-    lazy val rabbit = "com.rabbitmq" % "amqp-client" % "1.8.1" % "compile"
+    lazy val redis = "com.redis" % "redisclient" % "2.8.0-2.0.3" % "compile" //ApacheV2
 
-    lazy val redis = "com.redis" % "redisclient" % "2.8.0-2.0.3" % "compile"
+    lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile" //MIT
 
-    lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile"
+    lazy val sjson = "sjson.json" % "sjson" % "0.8-2.8.0" % "compile" //ApacheV2
+    lazy val sjson_test = "sjson.json" % "sjson" % "0.8-2.8.0" % "test" //ApacheV2
 
-    lazy val sjson = "sjson.json" % "sjson" % "0.8-2.8.0" % "compile"
-    lazy val sjson_test = "sjson.json" % "sjson" % "0.8-2.8.0" % "test"
+    lazy val slf4j       = "org.slf4j" % "slf4j-api"     % SLF4J_VERSION % "compile" //MIT
 
-    lazy val slf4j       = "org.slf4j" % "slf4j-api"     % SLF4J_VERSION % "compile"
+    lazy val logback      = "ch.qos.logback" % "logback-classic" % LOGBACK_VERSION % "compile" //LGPL 2.1
+    lazy val logback_core = "ch.qos.logback" % "logback-core" % LOGBACK_VERSION % "compile" //LGPL 2.1
 
-    lazy val logback      = "ch.qos.logback" % "logback-classic" % LOGBACK_VERSION % "compile"
-    lazy val logback_core = "ch.qos.logback" % "logback-core" % LOGBACK_VERSION % "compile"
+    lazy val spring_beans   = "org.springframework" % "spring-beans"   % SPRING_VERSION % "compile" //ApacheV2
+    lazy val spring_context = "org.springframework" % "spring-context" % SPRING_VERSION % "compile" //ApacheV2
 
-    lazy val spring_beans   = "org.springframework" % "spring-beans"   % SPRING_VERSION % "compile"
-    lazy val spring_context = "org.springframework" % "spring-context" % SPRING_VERSION % "compile"
+    lazy val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile" //ApacheV2
 
-    lazy val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile"
+    lazy val thrift = "com.facebook" % "thrift" % "r917130" % "compile" //ApacheV2
 
-    lazy val thrift = "com.facebook" % "thrift" % "r917130" % "compile"
+    lazy val voldemort = "voldemort" % "voldemort" % "0.81" % "compile" //ApacheV2
+    lazy val voldemort_contrib = "voldemort" % "voldemort-contrib" % "0.81" % "compile" //ApacheV2
+    lazy val voldemort_needs_log4j = "org.slf4j" % "log4j-over-slf4j" % SLF4J_VERSION % "compile" //MIT
 
-    lazy val voldemort = "voldemort" % "voldemort" % "0.81" % "compile"
-    lazy val voldemort_contrib = "voldemort" % "voldemort-contrib" % "0.81" % "compile"
-    lazy val voldemort_needs_log4j = "org.slf4j" % "log4j-over-slf4j" % SLF4J_VERSION % "compile"
+    lazy val werkz      = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % ASPECTWERKZ_VERSION % "compile" //LGPL 2.1
+    lazy val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5"        % ASPECTWERKZ_VERSION % "compile" //LGPL 2.1
 
-    lazy val werkz      = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % ASPECTWERKZ_VERSION % "compile"
-    lazy val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5"        % ASPECTWERKZ_VERSION % "compile"
+    lazy val zookeeper  = "org.apache.hadoop.zookeeper" % "zookeeper" % "3.2.2" % "compile" //ApacheV2
 
-    lazy val zookeeper  = "org.apache.hadoop.zookeeper" % "zookeeper" % "3.2.2" % "compile"
+    lazy val hadoop_core = "org.apache.hadoop" % "hadoop-core" % "0.20.2" % "compile" //ApacheV2
 
-    lazy val hadoop_core = "org.apache.hadoop" % "hadoop-core" % "0.20.2" % "compile"
+    lazy val hbase_core = "org.apache.hbase" % "hbase-core" % "0.20.6" % "compile" //ApacheV2
 
-    lazy val hbase_core = "org.apache.hbase" % "hbase-core" % "0.20.6" % "compile"
-
-    lazy val google_coll    = "com.google.collections" % "google-collections"  % "1.0"             % "compile"
+    lazy val google_coll    = "com.google.collections" % "google-collections"  % "1.0"             % "compile" //ApacheV2
 
     //Riak PB Client
-    lazy val riak_pb_client = "com.trifork"   %  "riak-java-pb-client"      % "1.0-for-akka-by-ticktock"  % "compile"
+    lazy val riak_pb_client = "com.trifork"   %  "riak-java-pb-client"      % "1.0-for-akka-by-ticktock"  % "compile" //ApacheV2
 
     // Test
 
-    lazy val camel_spring   = "org.apache.camel"       % "camel-spring"        % CAMEL_VERSION     % "test"
-    lazy val cassandra_clhm = "org.apache.cassandra"   % "clhm-production"     % CASSANDRA_VERSION % "test"
-    lazy val commons_coll   = "commons-collections"    % "commons-collections" % "3.2.1"           % "test"
+    lazy val camel_spring   = "org.apache.camel"       % "camel-spring"        % CAMEL_VERSION     % "test" //ApacheV2
+    lazy val cassandra_clhm = "org.apache.cassandra"   % "clhm-production"     % CASSANDRA_VERSION % "test" //ApacheV2
+    lazy val commons_coll   = "commons-collections"    % "commons-collections" % "3.2.1"           % "test" //ApacheV2
 
-    lazy val high_scale     = "org.apache.cassandra"   % "high-scale-lib"      % CASSANDRA_VERSION % "test"
-    lazy val testJetty      = "org.eclipse.jetty"      % "jetty-server"        % JETTY_VERSION     % "test"
-    lazy val testJettyWebApp= "org.eclipse.jetty"      % "jetty-webapp"        % JETTY_VERSION     % "test"
+    lazy val high_scale     = "org.apache.cassandra"   % "high-scale-lib"      % CASSANDRA_VERSION % "test" //ApacheV2
+    lazy val testJetty      = "org.eclipse.jetty"      % "jetty-server"        % JETTY_VERSION     % "test" //Eclipse license
+    lazy val testJettyWebApp= "org.eclipse.jetty"      % "jetty-webapp"        % JETTY_VERSION     % "test" //Eclipse license
 
-    lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test"
-    lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test"
-    lazy val scalatest      = "org.scalatest"          % "scalatest"           % SCALATEST_VERSION % "test"
-    lazy val specs          = "org.scala-tools.testing" %% "specs"             % "1.6.5"           % "test"
+    lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test" //Common Public License 1.0
+    lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test" //MIT
+    lazy val scalatest      = "org.scalatest"          % "scalatest"           % SCALATEST_VERSION % "test" //ApacheV2
+    lazy val specs          = "org.scala-tools.testing" %% "specs"             % "1.6.5"           % "test" //MIT
 
     //HBase testing
-    lazy val hadoop_test    = "org.apache.hadoop"      % "hadoop-test"         % "0.20.2"          % "test"
-    lazy val hbase_test     = "org.apache.hbase"       % "hbase-test"          % "0.20.6"          % "test"
-    lazy val log4j          = "log4j"                  % "log4j"               % "1.2.15"          % "test"
-    lazy val jetty_mortbay  = "org.mortbay.jetty"      % "jetty"               % "6.1.14"          % "test"
+    lazy val hadoop_test    = "org.apache.hadoop"      % "hadoop-test"         % "0.20.2"          % "test" //ApacheV2
+    lazy val hbase_test     = "org.apache.hbase"       % "hbase-test"          % "0.20.6"          % "test" //ApacheV2
+    lazy val log4j          = "log4j"                  % "log4j"               % "1.2.15"          % "test" //ApacheV2
+    lazy val jetty_mortbay  = "org.mortbay.jetty"      % "jetty"               % "6.1.14"          % "test" //Eclipse license
 
     //voldemort testing
-    lazy val jdom = "org.jdom" % "jdom" % "1.1" % "test"
-    lazy val vold_jetty = "org.mortbay.jetty" % "jetty" % "6.1.18" % "test"
-    lazy val velocity = "org.apache.velocity" % "velocity" % "1.6.2" % "test"
-    lazy val dbcp = "commons-dbcp" % "commons-dbcp" % "1.2.2" % "test"
+    lazy val jdom           = "org.jdom"               % "jdom"                % "1.1"             % "test" //JDOM license: ApacheV2 - acknowledgement
+    lazy val vold_jetty     = "org.mortbay.jetty"      % "jetty"               % "6.1.18"          % "test" //ApacheV2
+    lazy val velocity       = "org.apache.velocity"    % "velocity"            % "1.6.2"           % "test" //ApacheV2
+    lazy val dbcp           = "commons-dbcp"           % "commons-dbcp"        % "1.2.2"           % "test" //ApacheV2
 
     //memcached
     lazy val spymemcached  = "spy" % "memcached" % "2.5" % "compile"
+
+    //simpledb
+    lazy val simpledb = "com.amazonaws" % "aws-java-sdk" % "1.0.14" % "compile"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -313,8 +314,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     manifestClassPath.map(cp => ManifestAttributes(
       (Attributes.Name.CLASS_PATH, cp),
       (IMPLEMENTATION_TITLE, "Akka"),
-      (IMPLEMENTATION_URL, "http://akkasource.org"),
-      (IMPLEMENTATION_VENDOR, "The Akka Project")
+      (IMPLEMENTATION_URL, "http://akka.io"),
+      (IMPLEMENTATION_VENDOR, "Scalable Solutions AB")
     )).toList :::
     getMainClass(false).map(MainClass(_)).toList
 
@@ -396,7 +397,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       val artifactRE(path, artifactId, artifactVersion) = absPath
       val command = "mvn install:install-file" +
                     " -Dfile=" + absPath +
-                    " -DgroupId=akka" +
+                    " -DgroupId=se.scalablesolutions.akka" +
                     " -DartifactId=" + artifactId +
                     " -Dversion=" + version +
                     " -Dpackaging=jar -DgeneratePom=true"
@@ -488,7 +489,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaHttpProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val annotation       = Dependencies.annotation
+    val jsr250           = Dependencies.jsr250
     val atmo             = Dependencies.atmo
     val atmo_jbossweb    = Dependencies.atmo_jbossweb
     val atmo_jersey      = Dependencies.atmo_jersey
@@ -546,6 +547,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaCouchDBProject(_), akka_persistence_common)
     lazy val akka_persistence_memcached= project("akka-persistence-memcached", "akka-persistence-memcached",
       new AkkaMemcachedProject(_), akka_persistence_common)
+    lazy val akka_persistence_simpledb= project("akka-persistence-simpledb", "akka-persistence-simpledb",
+      new AkkaSimpledbProject(_), akka_persistence_common)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -669,6 +672,16 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaMemcachedProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
         val memcached = Dependencies.spymemcached
      val commons_codec = Dependencies.commons_codec
+
+     val scalatest = Dependencies.scalatest
+
+    override def testOptions = createTestFilter( _.endsWith("Test"))
+  }
+
+   class AkkaSimpledbProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+     val memcached = Dependencies.simpledb
+     val commons_codec = Dependencies.commons_codec
+     val http = Dependencies.commonsHttpClient
 
      val scalatest = Dependencies.scalatest
 

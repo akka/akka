@@ -310,13 +310,11 @@ class RemoteClient private[akka] (
         connection.getChannel.write(request)
         None
       } else {
-        futures.synchronized {
           val futureResult = if (senderFuture.isDefined) senderFuture.get
           else new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
           futures.put(uuidFrom(request.getUuid.getHigh, request.getUuid.getLow), futureResult)
           connection.getChannel.write(request)
           Some(futureResult)
-        }
       }
     } else {
       val exception = new RemoteClientException(
