@@ -5,6 +5,7 @@ import org.junit.Test
 import akka.dispatch.Futures
 import Actor._
 import org.multiverse.api.latches.StandardLatch
+import java.util.concurrent.CountDownLatch
 
 object FutureSpec {
   class TestActor extends Actor {
@@ -53,7 +54,6 @@ class FutureSpec extends JUnitSuite {
     actor.stop
   }
 
-  /*
   // FIXME: implement Futures.awaitEither, and uncomment these two tests
   @Test def shouldFutureAwaitEitherLeft = {
     val actor1 = actorOf[TestActor].start
@@ -78,7 +78,7 @@ class FutureSpec extends JUnitSuite {
     actor1.stop
     actor2.stop
   }
-  */
+
   @Test def shouldFutureAwaitOneLeft = {
     val actor1 = actorOf[TestActor].start
     val actor2 = actorOf[TestActor].start

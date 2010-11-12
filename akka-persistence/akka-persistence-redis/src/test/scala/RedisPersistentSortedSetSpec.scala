@@ -72,7 +72,7 @@ class SortedSetActor extends Transactor {
         hackers.+(h.name.getBytes, h.zscore)
       }
       try {
-        r.foreach{ h =>
+        r.foreach { h =>
           if (hackers.size <= 3)
             throw new SetThresholdViolationException
           hackers.-(h.name.getBytes)
@@ -184,11 +184,10 @@ class RedisPersistentSortedSetSpec extends
       val add1 = List(h5, h6)
 
       // remove 3
-      val rem1 = List(h1, h3, h4)
+      val rem1 = List(h1, h3, h4, h5)
       try {
         qa !! MULTI(add1, rem1, failer)
-      } catch { case e: Exception => {}
-      }
+      } catch { case e: RuntimeException => {} }
       (qa !! SIZE).get.asInstanceOf[Int] should equal(3)
     }
   }
