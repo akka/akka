@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ *  Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.dispatch
@@ -35,6 +35,9 @@ object Futures {
     f
   }
 
+  /**
+   * (Blocking!)
+   */
   def awaitAll(futures: List[Future[_]]): Unit = futures.foreach(_.await)
 
   /**
@@ -58,34 +61,10 @@ object Futures {
   def awaitMap[A,B](in: Traversable[Future[A]])(fun: (Future[A]) => B): Traversable[B] =
     in map { f => fun(f.await) }
 
-  /*
-  def awaitEither[T](f1: Future[T], f2: Future[T]): Option[T] = {
-    import Actor.Sender.Self
-    import Actor.{spawn, actor}
-
-    case class Result(res: Option[T])
-    val handOff = new SynchronousQueue[Option[T]]
-    spawn {
-      try {
-        println("f1 await")
-        f1.await
-        println("f1 offer")
-        handOff.offer(f1.result)
-      } catch {case _ => {}}
-    }
-    spawn {
-      try {
-        println("f2 await")
-        f2.await
-        println("f2 offer")
-        println("f2 offer: " + f2.result)
-        handOff.offer(f2.result)
-      } catch {case _ => {}}
-    }
-    Thread.sleep(100)
-    handOff.take
-  }
-*/
+  /**
+   * Returns Future.resultOrException of the first completed of the 2 Futures provided (blocking!)
+   */
+  def awaitEither[T](f1: Future[T], f2: Future[T]): Option[T] = awaitOne(List(f1,f2)).asInstanceOf[Future[T]].resultOrException
 }
 
 sealed trait Future[T] {
@@ -104,6 +83,19 @@ sealed trait Future[T] {
   def exception: Option[Throwable]
 
   def onComplete(func: Future[T] => Unit): Future[T]
+
+  /**
+   *  Returns the current result, throws the exception is one has been raised, else returns None
+   */
+  def resultOrException: Option[T] = {
+    val r = result
+    if (r.isDefined) result
+    else {
+      val problem = exception
+      if (problem.isDefined) throw problem.get
+      else None
+    }
+  }
 
   /* Java API */
   def onComplete(proc: Procedure[Future[T]]): Future[T] = onComplete(f => proc(f))
