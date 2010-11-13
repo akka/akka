@@ -51,11 +51,17 @@ class AgentSpec extends WordSpec with MustMatchers {
 
     "be immediately readable" in {
       val countDown = new CountDownFunction[Int]
+      val readLatch = new CountDownLatch(1)
+      val readTimeout = 5 seconds
 
       val agent = Agent(5)
-      val f1 = (i: Int) => { Thread.sleep(2000); i + 5 }
+      val f1 = (i: Int) => {
+        readLatch.await(readTimeout.length, readTimeout.unit)
+        i + 5
+      }
       agent send f1
       val read = agent()
+      readLatch.countDown
       agent send countDown
 
       countDown.await(5 seconds)
