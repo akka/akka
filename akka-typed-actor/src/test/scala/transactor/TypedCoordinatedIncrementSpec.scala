@@ -5,8 +5,8 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.actor.TypedActor
 import akka.stm.Ref
-import akka.transactor.typed.Coordinated
-import akka.transactor.typed.Coordination._
+import akka.transactor.annotation.Coordinated
+import akka.transactor.Coordination._
 
 object TypedCoordinatedIncrement {
   trait Counter {

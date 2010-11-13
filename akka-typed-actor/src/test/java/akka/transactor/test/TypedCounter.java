@@ -1,6 +1,6 @@
 package akka.transactor.test;
 
-import akka.transactor.typed.Coordinated;
+import akka.transactor.annotation.Coordinated;
 
 public interface TypedCounter {
     @Coordinated public void increment();

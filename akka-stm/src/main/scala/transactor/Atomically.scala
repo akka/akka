@@ -13,7 +13,7 @@ import akka.stm.TransactionFactory
  * or to Coordination.coordinate.
  *
  * @see [[akka.transactor.Coordinated]]
- * @see [[akka.transactor.typed.Coordination]]
+ * @see [[akka.transactor.Coordination]]
  */
 abstract class Atomically(val factory: TransactionFactory) {
   def this() = this(Coordinated.DefaultFactory)
