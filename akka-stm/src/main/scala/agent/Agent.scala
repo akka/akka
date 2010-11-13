@@ -10,11 +10,14 @@ import akka.japi.{Function => JFunc, Procedure => JProc}
 import akka.dispatch.Dispatchers
 
 /**
+ * Used internally to send functions.
+ */
+private[akka] case class Update[T](function: T => T)
+
+/**
  * Factory method for creating an Agent.
  */
 object Agent {
-  private[akka] case class Update[T](function: T => T)
-
   def apply[T](initialValue: T) = new Agent(initialValue)
 }
 
@@ -89,8 +92,6 @@ object Agent {
  * }}}
  */
 class Agent[T](initialValue: T) {
-  import Agent._
-
   private[akka] val ref = Ref(initialValue)
   private[akka] val updater = Actor.actorOf(new AgentUpdater(this)).start
 
@@ -215,8 +216,6 @@ class Agent[T](initialValue: T) {
  * Agent updater actor. Used internally for `send` actions.
  */
 class AgentUpdater[T](agent: Agent[T]) extends Actor {
-  import Agent._
-
   val txFactory = TransactionFactory(familyName = "AgentUpdater", readonly = false)
 
   def receive = {
@@ -230,8 +229,6 @@ class AgentUpdater[T](agent: Agent[T]) extends Actor {
  * Thread-based agent updater actor. Used internally for `sendOff` actions.
  */
 class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
-  import Agent._
-
   self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
 
   val txFactory = TransactionFactory(familyName = "ThreadBasedAgentUpdater", readonly = false)
