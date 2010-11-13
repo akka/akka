@@ -22,7 +22,7 @@ case class SendTo(actor: ActorRef, message: Option[Any] = None)
  * Transactors can also accept explicitly sent `Coordinated` messages.
  * <br/><br/>
  *
- * Simple transactors will just implement the `atomically` method which similar to
+ * Simple transactors will just implement the `atomically` method which is similar to
  * the actor `receive` method but runs within a coordinated transaction.
  *
  * Example of a simple transactor that will join a coordinated transaction:
@@ -45,7 +45,7 @@ case class SendTo(actor: ActorRef, message: Option[Any] = None)
  * The `include` method will send on the same message that was received to other transactors.
  * The `sendTo` method allows you to specify both the actor to send to, and message to send.
  *
- * Example of using coordinating an increment:
+ * Example of coordinating an increment:
  *
  * {{{
  * class FriendlyCounter(friend: ActorRef) extends Transactor {
