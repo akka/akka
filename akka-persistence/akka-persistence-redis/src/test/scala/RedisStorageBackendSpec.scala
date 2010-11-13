@@ -153,6 +153,7 @@ class RedisStorageBackendSpec extends
 
       insertRefStorageFor("T-4", "1200".getBytes)
       new String(getRefStorageFor("T-4").get) should equal("1200")
+      getRefStorageFor("T-44") should equal(None)
     }
     it("should write a Name object and fetch it properly") {
       val dtb = Calendar.getInstance.getTime
@@ -226,21 +227,6 @@ class RedisStorageBackendSpec extends
       u.map{ case (e, s) => new String(e) } should equal(sorted)
     }
   }
-
-  describe("store and query test in sorted set") {
-    it("should give proper sorted set semantics") {
-      zadd("hckers", "1965", "yukihiro matsumoto".getBytes)
-      zadd("hckers", "1953", "richard stallman".getBytes)
-      zadd("hckers", "1916", "claude shannon".getBytes)
-      zadd("hckers", "1969", "linus torvalds".getBytes)
-      zadd("hckers", "1940", "alan kay".getBytes)
-      zadd("hckers", "1912", "alan turing".getBytes)
-      zadd("hckers", "1912", "debasish ghosh".getBytes)
-      println(zcard("hckers"))
-      println(zrange("hckers", 0, -1))
-    }
-  }
-
 }
 
 object NameSerialization {
