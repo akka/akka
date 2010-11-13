@@ -9,8 +9,8 @@ import akka.dispatch.{MessageDispatcher, Future, CompletableFuture, Dispatchers}
 import akka.config.Supervision._
 import akka.util._
 import ReflectiveAccess._
-import akka.transactor.Coordinated
-import akka.transactor.typed.{Coordination, Coordinated => CoordinatedAnnotation}
+import akka.transactor.{Coordinated, Coordination}
+import akka.transactor.annotation.{Coordinated => CoordinatedAnnotation}
 
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy

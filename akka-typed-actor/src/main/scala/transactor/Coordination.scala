@@ -2,10 +2,8 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.transactor.typed
+package akka.transactor
 
-import akka.transactor.{Coordinated => CoordinatedObject}
-import akka.transactor.Atomically
 import akka.stm.Atomic
 
 import scala.util.DynamicVariable
@@ -38,12 +36,12 @@ import scala.util.DynamicVariable
  * }}}
  */
 object Coordination {
-  private[akka] val coordinated = new DynamicVariable[CoordinatedObject](null)
+  private[akka] val coordinated = new DynamicVariable[Coordinated](null)
   private[akka] val firstParty = new DynamicVariable[Boolean](false)
 
   /**
    * For creating a coordination between typed actors that use
-   * the [[akka.transactor.typed.Coordinated]] annotation.
+   * the [[akka.transactor.annotation.Coordinated]] annotation.
    * Coordinated transactions will wait for all other transactions in the coordination
    * before committing. The timeout is specified by the default transaction factory.
    * It's possible to specify whether or not this `coordinate` block waits for all of
@@ -51,7 +49,7 @@ object Coordination {
    */
   def coordinate[U](wait: Boolean = true)(body: => U): Unit = {
     firstParty.value = !wait
-    coordinated.withValue(CoordinatedObject()) {
+    coordinated.withValue(Coordinated()) {
       body
       if (wait) coordinated.value.await
     }
@@ -60,7 +58,7 @@ object Coordination {
 
   /**
    * For creating a coordination between typed actors that use
-   * the [[akka.transactor.typed.Coordinated]] annotation.
+   * the [[akka.transactor.annotation.Coordinated]] annotation.
    * Coordinated transactions will wait for all other transactions in the coordination
    * before committing. The timeout is specified by the default transaction factory.
    */
@@ -69,7 +67,7 @@ object Coordination {
   /**
    * Java API: coordinate that accepts an [[akka.transactor.Atomically]].
    * For creating a coordination between typed actors that use
-   * the [[akka.transactor.typed.Coordinated]] annotation.
+   * the [[akka.transactor.annotation.Coordinated]] annotation.
    * Coordinated transactions will wait for all other transactions in the coordination
    * before committing. The timeout is specified by the default transaction factory.
    * Use the `wait` parameter to specify whether or not this `coordinate` block
@@ -80,7 +78,7 @@ object Coordination {
   /**
    * Java API: coordinate that accepts an [[akka.stm.Atomic]].
    * For creating a coordination between typed actors that use
-   * the [[akka.transactor.typed.Coordinated]] annotation.
+   * the [[akka.transactor.annotation.Coordinated]] annotation.
    * Coordinated transactions will wait for all other transactions in the coordination
    * before committing. The timeout is specified by the default transaction factory.
    * Use the `wait` parameter to specify whether or not this `coordinate` block

@@ -1,4 +1,4 @@
-package akka.transactor.typed;
+package akka.transactor.annotation;
 
 import java.lang.annotation.*;
 

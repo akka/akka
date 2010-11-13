@@ -6,7 +6,7 @@ import org.junit.Before;
 import org.junit.After;
 
 import akka.actor.TypedActor;
-import akka.transactor.typed.Coordination;
+import akka.transactor.Coordination;
 import akka.transactor.Atomically;
 
 import java.util.ArrayList;
