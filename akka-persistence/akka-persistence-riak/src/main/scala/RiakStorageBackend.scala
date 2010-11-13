@@ -75,7 +75,7 @@ private[akka] object RiakStorageBackend extends CommonStorageBackend {
       }
     }
 
-    def getValue(key: Array[Byte]): Array[Byte] = {
+    def get(key: Array[Byte]): Array[Byte] = {
       val objs = riakClient.fetch(bucket, key, quorum)
       objs.size match {
         case 0 => null;
@@ -86,8 +86,8 @@ private[akka] object RiakStorageBackend extends CommonStorageBackend {
       }
     }
 
-    def getValue(key: Array[Byte], default: Array[Byte]): Array[Byte] = {
-      Option(getValue(key)) match {
+    def get(key: Array[Byte], default: Array[Byte]): Array[Byte] = {
+      Option(get(key)) match {
         case Some(value) => value
         case None => default
       }
@@ -97,7 +97,7 @@ private[akka] object RiakStorageBackend extends CommonStorageBackend {
       var result = new HashMap[Array[Byte], Array[Byte]]
       keys.foreach{
         key =>
-          val value = getValue(key)
+          val value = get(key)
           Option(value) match {
             case Some(value) => result += key -> value
             case None => ()

@@ -62,8 +62,6 @@ private[akka] object CassandraStorageBackend extends CommonStorageBackend {
     CONSISTENCY_LEVEL)
 
 
-
-
   class CassandraAccess(parent: ColumnParent) extends CommonStorageBackendAccess {
 
     def path(key: Array[Byte]): ColumnPath = {
@@ -77,7 +75,8 @@ private[akka] object CassandraStorageBackend extends CommonStorageBackend {
         }
       }
     }
-    def getAll(owner: String, keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
+
+    override def getAll(owner: String, keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
       sessions.withSession{
         session => {
           var predicate = new SlicePredicate().setColumn_names(JavaConversions.asList(keys.toList))
@@ -91,7 +90,8 @@ private[akka] object CassandraStorageBackend extends CommonStorageBackend {
       }
     }
 
-    def getValue(owner: String, key: Array[Byte], default: Array[Byte]) = {
+
+    def get(owner: String, key: Array[Byte], default: Array[Byte]) = {
       sessions.withSession{
         session => {
           try
@@ -114,6 +114,7 @@ private[akka] object CassandraStorageBackend extends CommonStorageBackend {
         }
       }
     }
+
 
     def drop() = {
       sessions.withSession{

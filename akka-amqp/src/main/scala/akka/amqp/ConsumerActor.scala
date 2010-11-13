@@ -10,7 +10,7 @@ import akka.util.Logging
 
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.{Channel, Envelope, DefaultConsumer}
-import akka.amqp.AMQP.{NoActionDeclaration, ActiveDeclaration, PassiveDeclaration, ConsumerParameters}
+import akka.amqp.AMQP._
 
 private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
         extends FaultTolerantChannelActor(
@@ -30,38 +30,38 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
 
   protected def setupChannel(ch: Channel) = {
 
-    val queueDeclare: com.rabbitmq.client.AMQP.Queue.DeclareOk = {
-      queueName match {
-        case Some(name) =>
-          queueDeclaration match {
-            case PassiveDeclaration =>
-              log.debug("Passively declaring new queue [%s] for %s", name, toString)
-              ch.queueDeclarePassive(name)
-            case ActiveDeclaration(durable, autoDelete, exclusive) =>
-              log.debug("Actively declaring new queue [%s] for %s", name, toString)
-              val configurationArguments = exchangeParameters match {
-                case Some(params) => params.configurationArguments
-                case _ => Map.empty
-              }
-              ch.queueDeclare(name, durable, exclusive, autoDelete, JavaConversions.asMap(configurationArguments.toMap))
-            case NoActionDeclaration => new com.rabbitmq.client.impl.AMQImpl.Queue.DeclareOk(name, 0, 0) // do nothing here
+    channelParameters.foreach(params => ch.basicQos(params.prefetchSize))
+    
+    val exchangeName = exchangeParameters.flatMap(params => Some(params.exchangeName))
+    val consumingQueue = exchangeName match {
+      case Some(exchange) =>
+        val queueDeclare: com.rabbitmq.client.AMQP.Queue.DeclareOk = {
+          queueName match {
+            case Some(name) =>
+              declareQueue(ch, name, queueDeclaration)
+            case None =>
+              log.debug("Declaring new generated queue for %s", toString)
+              ch.queueDeclare
           }
-        case None =>
-          log.debug("Declaring new generated queue for %s", toString)
-          ch.queueDeclare
-      }
+        }
+        log.debug("Binding new queue [%s] with [%s] for %s", queueDeclare.getQueue, routingKey, toString)
+        ch.queueBind(queueDeclare.getQueue, exchange, routingKey)
+        queueDeclare.getQueue
+      case None =>
+        // no exchange, use routing key as queuename
+        log.debug("No exchange specified, creating queue using routingkey as name (%s)", routingKey)
+        declareQueue(ch, routingKey, queueDeclaration)
+        routingKey
     }
 
-    val exchangeName = exchangeParameters.flatMap(params => Some(params.exchangeName))
-    log.debug("Binding new queue [%s] for %s", queueDeclare.getQueue, toString)
-    ch.queueBind(queueDeclare.getQueue, exchangeName.getOrElse(""), routingKey)
 
-    val tag = ch.basicConsume(queueDeclare.getQueue, false, new DefaultConsumer(ch) with Logging {
+    val tag = ch.basicConsume(consumingQueue, false, new DefaultConsumer(ch) with Logging {
       override def handleDelivery(tag: String, envelope: Envelope, properties: BasicProperties, payload: Array[Byte]) {
         try {
           val deliveryTag = envelope.getDeliveryTag
           log.debug("Passing a message on to %s", toString)
-          deliveryHandler ! Delivery(payload, envelope.getRoutingKey, envelope.getDeliveryTag, properties, someSelf)
+          import envelope._
+          deliveryHandler ! Delivery(payload, getRoutingKey, getDeliveryTag, isRedeliver, properties, someSelf)
 
           if (selfAcknowledging) {
             log.debug("Self acking...")
@@ -76,6 +76,22 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
     })
     listenerTag = Some(tag)
     log.info("Intitialized %s", toString)
+  }
+
+  private def declareQueue(ch: Channel, queueName: String, queueDeclaration: Declaration): com.rabbitmq.client.AMQP.Queue.DeclareOk = {
+    queueDeclaration match {
+      case PassiveDeclaration =>
+        log.debug("Passively declaring new queue [%s] for %s", queueName, toString)
+        ch.queueDeclarePassive(queueName)
+      case ActiveDeclaration(durable, autoDelete, exclusive) =>
+        log.debug("Actively declaring new queue [%s] for %s", queueName, toString)
+        val configurationArguments = exchangeParameters match {
+          case Some(params) => params.configurationArguments
+          case _ => Map.empty
+        }
+        ch.queueDeclare(queueName, durable, exclusive, autoDelete, JavaConversions.asMap(configurationArguments.toMap))
+      case NoActionDeclaration => new com.rabbitmq.client.impl.AMQImpl.Queue.DeclareOk(queueName, 0, 0) // do nothing here
+    }
   }
 
   private def acknowledgeDeliveryTag(deliveryTag: Long, remoteAcknowledgement: Boolean) = {

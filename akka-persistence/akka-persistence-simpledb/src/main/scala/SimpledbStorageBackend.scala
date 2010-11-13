@@ -10,29 +10,64 @@ import java.lang.String
 import java.util.{List => JList, ArrayList => JAList}
 
 import collection.immutable.{HashMap, Iterable}
-import collection.mutable.{HashMap => MMap}
-
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.simpledb.AmazonSimpleDBClient
 import com.amazonaws.services.simpledb.model._
 import collection.{JavaConversions, Map}
+import collection.mutable.{ArrayBuffer, HashMap => MMap}
+import com.amazonaws.{Protocol, ClientConfiguration}
 
 private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
+
   import org.apache.commons.codec.binary.Base64
+  import KVStorageBackend._
 
   val seperator = "\r\n"
   val seperatorBytes = seperator.getBytes("UTF-8")
   val sizeAtt = "size"
+  val ownerAtt = "owner"
   val base64 = new Base64(1024, seperatorBytes, true)
   val base64key = new Base64(1024, Array.empty[Byte], true)
-  val id = config.getString("akka.storage.simpledb.account.id", "YOU NEED TO PROVIDE AN AWS ID")
-  val secretKey = config.getString("akka.storage.simpledb.account.secretKey", "YOU NEED TO PROVIDE AN AWS SECRET KEY")
+  val id = config.getString("akka.storage.simpledb.account.id").getOrElse{
+    val e = new IllegalStateException("You must provide an AWS id")
+    log.error(e, "You Must Provide an AWS id to use the SimpledbStorageBackend")
+    throw e
+  }
+  val secretKey = config.getString("akka.storage.simpledb.account.secretKey").getOrElse{
+    val e = new IllegalStateException("You must provide an AWS secretKey")
+    log.error(e, "You Must Provide an AWS secretKey to use the SimpledbStorageBackend")
+    throw e
+  }
   val refDomain = config.getString("akka.storage.simpledb.domain.ref", "ref")
   val mapDomain = config.getString("akka.storage.simpledb.domain.map", "map")
   val queueDomain = config.getString("akka.storage.simpledb.domain.queue", "queue")
   val vectorDomain = config.getString("akka.storage.simpledb.domain.vector", "vector")
   val credentials = new BasicAWSCredentials(id, secretKey);
-  val client = new AmazonSimpleDBClient(credentials)
+  val clientConfig = new ClientConfiguration()
+  for (i <- config.getInt("akka.storage.simpledb.client.timeout")) {
+    clientConfig.setConnectionTimeout(i)
+  }
+  for (i <- config.getInt("akka.storage.simpledb.client.maxconnections")) {
+    clientConfig.setMaxConnections(i)
+  }
+  clientConfig.setMaxErrorRetry(config.getInt("akka.storage.simpledb.client.maxretries", 10))
+
+  for (s <- config.getString("akka.storage.simpledb.client.protocol")) {
+    clientConfig.setProtocol(Protocol.valueOf(s))
+  }
+  for (i <- config.getInt("akka.storage.simpledb.client.sockettimeout")) {
+    clientConfig.setSocketTimeout(i)
+  }
+  for {s <- config.getInt("akka.storage.simpledb.client.sendbuffer")
+       r <- config.getInt("akka.storage.simpledb.client.receivebuffer")} {
+    clientConfig.setSocketBufferSizeHints(s, r)
+  }
+
+  for (s <- config.getString("akka.storage.simpledb.client.useragent")) {
+    clientConfig.setUserAgent(s)
+  }
+
+  val client = new AmazonSimpleDBClient(credentials, clientConfig)
 
   def queueAccess = queue
 
@@ -69,20 +104,78 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
 
     def delete(key: Array[Byte]): Unit = getClient.deleteAttributes(new DeleteAttributesRequest(domainName, encodeAndValidateKey(key)))
 
-    def getAll(keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
-      keys.foldLeft(new HashMap[Array[Byte], Array[Byte]]) {
-        (map, key) => {
-          val value = getValue(key)
-          if (value != null) {
-            map + (key -> getValue(key))
-          } else {
-            map
-          }
+    override def getAll(keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
+
+      var map = new HashMap[Array[Byte], Array[Byte]]
+
+      GetBatcher(domainName, 20).addItems(keys).getRequests foreach {
+        req => {
+          var res = getClient.select(req)
+          var continue = true
+          do {
+            JavaConversions.asIterable(res.getItems) foreach {
+              item => map += (base64key.decode(item.getName) -> recomposeValue(item.getAttributes).get)
+            }
+            if (res.getNextToken ne null) {
+              res = getClient.select(req.withNextToken(res.getNextToken))
+            } else {
+              continue = false
+            }
+          } while (continue == true)
         }
       }
+      map
     }
 
-    def getValue(key: Array[Byte], default: Array[Byte]): Array[Byte] = {
+    case class GetBatcher(domain: String, maxItems: Int) {
+
+      val reqs = new ArrayBuffer[SelectRequest]
+      var currentItems = new ArrayBuffer[String]
+      var items = 0
+
+      def addItems(items: Iterable[Array[Byte]]): GetBatcher = {
+        items foreach(addItem(_))
+        this
+      }
+
+      def addItem(item: Array[Byte]) = {
+        if ((items + 1 > maxItems)) {
+          addReq
+        }
+        currentItems += (encodeAndValidateKey(item))
+        items += 1
+      }
+
+      private def addReq() {
+        items = 0
+        reqs += new SelectRequest(select, true)
+        currentItems = new ArrayBuffer[String]
+      }
+
+      def getRequests() = {
+        if (items > 0) {
+          addReq
+        }
+        reqs
+      }
+
+
+      def select(): String = {
+        val in = currentItems.reduceLeft[String] {
+          (acc, key) => {
+            acc + "', '" + key
+          }
+        }
+
+        "select * from " + domainName + " where itemName() in ('" + in + "')"
+      }
+
+    }
+
+
+    def get(key: Array[Byte]) = get(key, null)
+
+    def get(key: Array[Byte], default: Array[Byte]): Array[Byte] = {
       val req = new GetAttributesRequest(domainName, encodeAndValidateKey(key)).withConsistentRead(true)
       val resp = getClient.getAttributes(req)
       recomposeValue(resp.getAttributes) match {
@@ -91,11 +184,62 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
       }
     }
 
-    def getValue(key: Array[Byte]): Array[Byte] = getValue(key, null)
 
-    def put(key: Array[Byte], value: Array[Byte]): Unit = {
+    override def put(key: Array[Byte], value: Array[Byte]) = {
       val req = new PutAttributesRequest(domainName, encodeAndValidateKey(key), decomposeValue(value))
       getClient.putAttributes(req)
+    }
+
+
+    override def putAll(owner: String, keyValues: Iterable[(Array[Byte], Array[Byte])]) = {
+      val items = keyValues.foldLeft(new ArrayBuffer[ReplaceableItem]()) {
+        (jal, kv) => kv match {
+          case (key, value) => {
+            jal += (new ReplaceableItem(encodeAndValidateKey(getKey(owner, key)), decomposeValue(value)))
+          }
+        }
+      }
+
+      PutBatcher(domainName, 25, 1000).addItems(items).getRequests foreach (getClient.batchPutAttributes(_))
+
+    }
+
+
+    case class PutBatcher(domain: String, maxItems: Int, maxAttributes: Int) {
+
+      val reqs = new ArrayBuffer[BatchPutAttributesRequest]
+      var currentItems = new JAList[ReplaceableItem]()
+      var items = 0
+      var atts = 0
+
+      def addItems(items: Seq[ReplaceableItem]): PutBatcher = {
+        items foreach(addItem(_))
+        this
+      }
+
+      def addItem(item: ReplaceableItem) = {
+        if ((items + 1 > maxItems) || (atts + item.getAttributes.size > maxAttributes)) {
+          addReq
+        }
+        currentItems.add(item)
+        items += 1
+        atts += item.getAttributes.size
+      }
+
+      private def addReq() {
+        items = 0
+        atts = 0
+        reqs += new BatchPutAttributesRequest(domain, currentItems)
+        currentItems = new JAList[ReplaceableItem]()
+      }
+
+      def getRequests() = {
+        if (items > 0) {
+          addReq
+        }
+        reqs
+      }
+
     }
 
     def encodeAndValidateKey(key: Array[Byte]): String = {
