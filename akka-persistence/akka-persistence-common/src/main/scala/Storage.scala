@@ -798,14 +798,6 @@ trait PersistentSortedSet[A] extends Transactional with Committable with Abortab
     appendOnlyTxLog.add(LogEntry(elem, None, REM))
   }
 
-  implicit def order(x: (A, Float)) = new Ordered[(A, Float)] {
-    def compare(that: (A, Float)) = x._2 compare that._2
-  }
-
-  implicit def ordering = new scala.math.Ordering[(A, Float)] {
-    def compare(x: (A, Float), y: (A, Float)) = x._2 compare y._2
-  }
-
   protected def replay: List[(A, Float)] = {
     val es = collection.mutable.Map() ++ storage.zrangeWithScore(uuid, 0, -1)
 
@@ -826,7 +818,25 @@ trait PersistentSortedSet[A] extends Transactional with Committable with Abortab
 
   def zrange(start: Int, end: Int): List[(A, Float)] = {
     import PersistentSortedSet._
-    val ts = collection.immutable.TreeSet(replay: _*) 
+
+    // easier would have been to use a TreeSet
+    // problem is the treeset has to be ordered on the score
+    // but we cannot kick out elements with duplicate score
+    // But we need to treat the value (A) as set, i.e. replace duplicates with
+    // the latest one, as par with the behavior of redis zrange
+    val es = replay
+
+    // a multimap with key as A and value as Set of scores
+    val m = new collection.mutable.HashMap[A, collection.mutable.Set[Float]] 
+                with collection.mutable.MultiMap[A, Float]
+    for(e <- es) m.addBinding(e._1, e._2)
+
+    // another list for unique values
+    val as = es.map(_._1).distinct
+
+    // iterate the list of unique values and for each pick the head element
+    // from the score map
+    val ts = as.map(a => (a, m(a).head)).sortWith((a, b) => a._2 < b._2)
     val l = ts.size
 
     // -1 means the last element, -2 means the second last
