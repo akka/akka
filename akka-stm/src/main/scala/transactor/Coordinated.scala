@@ -99,6 +99,12 @@ class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
   }
 
   /**
+   * Create a new Coordinated object but *do not* increment the number of parties by one.
+   * Only use this method if you know this is what you need.
+   */
+  def noIncrement(msg: Any) = new Coordinated(msg, barrier)
+
+  /**
    * Java API: get the message for this Coordinated.
    */
   def getMessage() = message
@@ -143,4 +149,10 @@ class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
    * in this coordination before committing. The timeout is specified by the transaction factory.
    */
   def atomic[T](jatomic: Atomic[T]): T = atomic(jatomic.factory)(jatomic.atomically)
+
+  /**
+   * An empty coordinated atomic block. Can be used to complete the number of parties involved
+   * and wait for all transactions to complete.
+   */
+  def await() = atomic(Coordinated.DefaultFactory) {}
 }
