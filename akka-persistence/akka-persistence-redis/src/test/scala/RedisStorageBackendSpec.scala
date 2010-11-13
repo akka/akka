@@ -153,6 +153,7 @@ class RedisStorageBackendSpec extends
 
       insertRefStorageFor("T-4", "1200".getBytes)
       new String(getRefStorageFor("T-4").get) should equal("1200")
+      getRefStorageFor("T-44") should equal(None)
     }
     it("should write a Name object and fetch it properly") {
       val dtb = Calendar.getInstance.getTime

@@ -14,8 +14,8 @@ object RPC {
   def newRpcClient[O, I](connection: ActorRef,
                          exchangeName: String,
                          routingKey: String,
-                         serializer: RpcClientSerializer[O, I]): ActorRef = {
-    newRpcClient(connection, exchangeName, routingKey, serializer, None)
+                         serializer: RpcClientSerializer[O, I]): RpcClient[O,I] = {
+    newRpcClient(connection, exchangeName, serializer, Some(routingKey), None)
   }
 
   // Needed for Java API usage
@@ -23,81 +23,93 @@ object RPC {
                          exchangeName: String,
                          routingKey: String,
                          serializer: RpcClientSerializer[O, I],
-                         channelParameters: ChannelParameters): ActorRef = {
-    newRpcClient(connection, exchangeName, routingKey, serializer, Some(channelParameters))
+                         channelParameters: ChannelParameters): RpcClient[O,I] = {
+    newRpcClient(connection, exchangeName, serializer, Some(routingKey), Some(channelParameters))
   }
 
   def newRpcClient[O, I](connection: ActorRef,
                          exchangeName: String,
-                         routingKey: String,
                          serializer: RpcClientSerializer[O, I],
-                         channelParameters: Option[ChannelParameters] = None): ActorRef = {
+                         routingKey: Option[String] = None,
+                         channelParameters: Option[ChannelParameters] = None): RpcClient[O,I] = {
+
+    val rKey = routingKey.getOrElse("%s.request".format(exchangeName))
+
     val rpcActor: ActorRef = actorOf(new RpcClientActor[O, I](
-      ExchangeParameters(exchangeName, exchangeDeclaration = PassiveDeclaration), routingKey, serializer, channelParameters))
+      ExchangeParameters(exchangeName, exchangeDeclaration = PassiveDeclaration), rKey, serializer, channelParameters))
     connection.startLink(rpcActor)
     rpcActor ! Start
     rpcActor
+    new RpcClient(rpcActor)
   }
 
   // Needed for Java API usage
   def newRpcServer[I, O](connection: ActorRef,
                          exchangeName: String,
-                         routingKey: String,
                          serializer: RpcServerSerializer[I, O],
-                         requestHandler: japi.Function[I,O]): RpcServerHandle = {
-    newRpcServer(connection, exchangeName, routingKey, serializer, requestHandler.apply _)
+                         requestHandler: japi.Function[I,O],
+                         routingKey: String): RpcServerHandle = {
+    newRpcServer(connection, exchangeName, serializer, requestHandler.apply _, Some(routingKey))
   }
 
   // Needed for Java API usage
   def newRpcServer[I, O](connection: ActorRef,
                          exchangeName: String,
-                         routingKey: String,
                          serializer: RpcServerSerializer[I, O],
                          requestHandler: Function[I,O],
+                         routingKey: String,
                          queueName: String): RpcServerHandle = {
-    newRpcServer(connection, exchangeName, routingKey, serializer, requestHandler.apply _, Some(queueName))
+    newRpcServer(connection, exchangeName, serializer, requestHandler.apply _, Some(routingKey), Some(queueName))
   }
 
   // Needed for Java API usage
   def newRpcServer[I, O](connection: ActorRef,
                          exchangeName: String,
-                         routingKey: String,
                          serializer: RpcServerSerializer[I, O],
                          requestHandler: japi.Function[I,O],
+                         routingKey: String,
                          channelParameters: ChannelParameters): RpcServerHandle = {
-    newRpcServer(connection, exchangeName, routingKey, serializer, requestHandler.apply _, None, Some(channelParameters))
+    newRpcServer(connection, exchangeName, serializer, requestHandler.apply _, Some(routingKey), None, Some(channelParameters))
   }
 
   // Needed for Java API usage
   def newRpcServer[I, O](connection: ActorRef,
                          exchangeName: String,
-                         routingKey: String,
                          serializer: RpcServerSerializer[I, O],
                          requestHandler: japi.Function[I,O],
+                         routingKey: String,
                          queueName: String,
                          channelParameters: ChannelParameters): RpcServerHandle = {
-    newRpcServer(connection, exchangeName, routingKey, serializer, requestHandler.apply _, Some(queueName), Some(channelParameters))
+    newRpcServer(connection, exchangeName, serializer, requestHandler.apply _, Some(routingKey), Some(queueName), Some(channelParameters))
   }
 
   def newRpcServer[I, O](connection: ActorRef,
                          exchangeName: String,
-                         routingKey: String,
                          serializer: RpcServerSerializer[I, O],
                          requestHandler: I => O,
+                         routingKey: Option[String] = None,
                          queueName: Option[String] = None,
-                         channelParameters: Option[ChannelParameters] = None): RpcServerHandle = {
+                         channelParameters: Option[ChannelParameters] = None,
+                         poolSize: Int = 1): RpcServerHandle = {
+
+    val rKey = routingKey.getOrElse("%s.request".format(exchangeName))
+    val qName = queueName.getOrElse("%s.in".format(rKey))
 
     val producer = newProducer(connection, ProducerParameters(channelParameters = channelParameters))
-    val rpcServer = actorOf(new RpcServerActor[I, O](producer, serializer, requestHandler))
-    val consumer = newConsumer(connection, ConsumerParameters(routingKey, rpcServer,
-      exchangeParameters = Some(ExchangeParameters(exchangeName)), channelParameters = channelParameters,
-      selfAcknowledging = false, queueName = queueName))
-    RpcServerHandle(producer, consumer)
+
+    val consumers = (1 to poolSize).map {
+      num =>
+        val rpcServer = actorOf(new RpcServerActor[I, O](producer, serializer, requestHandler))
+        newConsumer(connection, ConsumerParameters(rKey, rpcServer,
+          exchangeParameters = Some(ExchangeParameters(exchangeName)), channelParameters = channelParameters,
+          selfAcknowledging = false, queueName = Some(qName)))
+    }
+    RpcServerHandle(producer, consumers)
   }
 
-  case class RpcServerHandle(producer: ActorRef, consumer: ActorRef) {
+  case class RpcServerHandle(producer: ActorRef, consumers: Seq[ActorRef]) {
     def stop = {
-      consumer.stop
+      consumers.foreach(_.stop)
       producer.stop
     }
   }
@@ -195,7 +207,7 @@ object RPC {
         def toBinary(t: O) = t.toByteArray
       })
 
-    startServer(connection, exchangeName, requestHandler, routingKey, queueName, serializer)
+    newRpcServer(connection, exchangeName, serializer, requestHandler, routingKey, queueName)
   }
 
   // Needed for Java API usage
@@ -234,7 +246,7 @@ object RPC {
         }
       })
 
-    startClient(connection, exchangeName, routingKey, serializer)
+    newRpcClient(connection, exchangeName, serializer, routingKey)
   }
 
   // Needed for Java API usage
@@ -276,7 +288,7 @@ object RPC {
         def toBinary(t: String) = t.getBytes
       })
 
-    startServer(connection, exchangeName, requestHandler, routingKey, queueName, serializer)
+    newRpcServer(connection, exchangeName, serializer, requestHandler, routingKey, queueName)
   }
 
   // Needed for Java API usage
@@ -306,31 +318,7 @@ object RPC {
         }
       })
 
-    startClient(connection, exchange, routingKey, serializer)
-  }
-
-  private def startClient[O, I](connection: ActorRef,
-                                exchangeName: String,
-                                routingKey: Option[String] = None,
-                                serializer: RpcClientSerializer[O, I]): RpcClient[O, I] = {
-
-    val rKey = routingKey.getOrElse("%s.request".format(exchangeName))
-
-    val client = newRpcClient(connection, exchangeName, rKey, serializer)
-    new RpcClient(client)
-  }
-
-  private def startServer[I, O](connection: ActorRef,
-                                exchangeName: String,
-                                requestHandler: I => O,
-                                routingKey: Option[String] = None,
-                                queueName: Option[String] = None,
-                                serializer: RpcServerSerializer[I, O]): RpcServerHandle = {
-
-    val rKey = routingKey.getOrElse("%s.request".format(exchangeName))
-    val qName = queueName.getOrElse("%s.in".format(rKey))
-
-    newRpcServer(connection, exchangeName, rKey, serializer, requestHandler, Some(qName))
+    newRpcClient(connection, exchange, serializer, routingKey)
   }
 }
 

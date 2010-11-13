@@ -21,11 +21,12 @@ case class AddEmail(email: String, value: String)
 case class GetAll(email: String)
 
 class MySortedSet extends Transactor {
+
   def receive = {
     case AddEmail(userEmail, value) => {
       val registryId = "userValues:%s".format(userEmail)
       val storageSet = RedisStorage.getSortedSet(registryId)
-      storageSet.add(value.getBytes, System.nanoTime.toFloat)
+      storageSet.add(value.getBytes, System.currentTimeMillis.toFloat)
       self.reply(storageSet.size)
     }
     case GetAll(userEmail) => {
@@ -57,9 +58,8 @@ class RedisTicket513Spec extends
   describe("insert into user specific set") {
     val a = actorOf[MySortedSet]
     a.start
-    it("should work with transactors") {
+    it("should work with same score value") {
       (a !! AddEmail("test.user@gmail.com", "foo")).get should equal(1)
-      Thread.sleep(10)
       (a !! AddEmail("test.user@gmail.com", "bar")).get should equal(2)
       (a !! GetAll("test.user@gmail.com")).get.asInstanceOf[List[_]].size should equal(2)
     }

@@ -35,10 +35,10 @@ class AMQPConsumerManualRejectTestIntegration extends JUnitSuite with MustMatche
       val rejectedLatch = new StandardLatch
       val consumer:ActorRef = AMQP.newConsumer(connection, ConsumerParameters("manual.reject.this", actorOf( new Actor {
         def receive = {
-          case Delivery(payload, _, deliveryTag, _, sender) => sender.foreach(_ ! Reject(deliveryTag))
+          case Delivery(payload, _, deliveryTag, _, _, sender) => sender.foreach(_ ! Reject(deliveryTag))
           case Rejected(deliveryTag) => rejectedLatch.open
         }
-      }).start, queueName = Some("self.reject.queue"), exchangeParameters = Some(exchangeParameters),
+      }), queueName = Some("self.reject.queue"), exchangeParameters = Some(exchangeParameters),
         selfAcknowledging = false, channelParameters = Some(channelParameters)))
 
       val producer = AMQP.newProducer(connection,
