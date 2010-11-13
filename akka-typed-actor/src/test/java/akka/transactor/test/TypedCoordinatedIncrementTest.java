@@ -7,7 +7,7 @@ import org.junit.After;
 
 import akka.actor.TypedActor;
 import akka.transactor.typed.Coordination;
-import akka.stm.Atomic;
+import akka.transactor.Atomically;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,12 +28,11 @@ public class TypedCoordinatedIncrementTest {
     }
 
     @Test public void incrementAllCountersWithSuccessfulTransaction() {
-        Coordination.coordinate(true, new Atomic<Object>() {
-            public Object atomically() {
+        Coordination.coordinate(true, new Atomically() {
+            public void atomically() {
                 for (TypedCounter counter : counters) {
                     counter.increment();
                 }
-                return null;
             }
         });
         for (TypedCounter counter : counters) {
@@ -44,13 +43,12 @@ public class TypedCoordinatedIncrementTest {
 
     @Test public void incrementNoCountersWithFailingTransaction() {
         try {
-            Coordination.coordinate(true, new Atomic<Object>() {
-                public Object atomically() {
+            Coordination.coordinate(true, new Atomically() {
+                public void atomically() {
                     for (TypedCounter counter : counters) {
                         counter.increment();
                     }
                     failer.increment();
-                    return null;
                 }
             });
         } catch (Exception e) {

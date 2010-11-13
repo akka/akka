@@ -5,6 +5,7 @@
 package akka.transactor.typed
 
 import akka.transactor.{Coordinated => CoordinatedObject}
+import akka.transactor.Atomically
 import akka.stm.Atomic
 
 import scala.util.DynamicVariable
@@ -66,6 +67,17 @@ object Coordination {
   def coordinate[U](body: => U): Unit = coordinate(true)(body)
 
   /**
+   * Java API: coordinate that accepts an [[akka.transactor.Atomically]].
+   * For creating a coordination between typed actors that use
+   * the [[akka.transactor.typed.Coordinated]] annotation.
+   * Coordinated transactions will wait for all other transactions in the coordination
+   * before committing. The timeout is specified by the default transaction factory.
+   * Use the `wait` parameter to specify whether or not this `coordinate` block
+   * waits for all of the transactions to complete.
+   */
+  def coordinate(wait: Boolean, atomically: Atomically): Unit = coordinate(wait)(atomically.atomically)
+
+  /**
    * Java API: coordinate that accepts an [[akka.stm.Atomic]].
    * For creating a coordination between typed actors that use
    * the [[akka.transactor.typed.Coordinated]] annotation.
@@ -74,5 +86,5 @@ object Coordination {
    * Use the `wait` parameter to specify whether or not this `coordinate` block
    * waits for all of the transactions to complete.
    */
-  def coordinate[U](wait: Boolean, jatomic: Atomic[U]): Unit = coordinate(wait)(jatomic.atomically)
+  def coordinate[U](wait: Boolean, atomic: Atomic[U]): Unit = coordinate(wait)(atomic.atomically)
 }

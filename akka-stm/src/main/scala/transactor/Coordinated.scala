@@ -151,6 +151,13 @@ class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
   def atomic[T](jatomic: Atomic[T]): T = atomic(jatomic.factory)(jatomic.atomically)
 
   /**
+   * Java API: coordinated atomic method that accepts an [[akka.transactor.Atomically]].
+   * Delimits the coordinated transaction. The transaction will wait for all other transactions
+   * in this coordination before committing. The timeout is specified by the transaction factory.
+   */
+  def atomic(atomically: Atomically): Unit = atomic(atomically.factory)(atomically.atomically)
+
+  /**
    * An empty coordinated atomic block. Can be used to complete the number of parties involved
    * and wait for all transactions to complete. The default timeout is used.
    */

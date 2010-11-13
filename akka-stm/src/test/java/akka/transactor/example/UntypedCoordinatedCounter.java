@@ -1,9 +1,10 @@
 package akka.transactor.example;
 
 import akka.transactor.Coordinated;
+import akka.transactor.Atomically;
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
-import akka.stm.*;
+import akka.stm.Ref;
 
 public class UntypedCoordinatedCounter extends UntypedActor {
     private Ref<Integer> count = new Ref(0);
@@ -22,10 +23,9 @@ public class UntypedCoordinatedCounter extends UntypedActor {
                 if (increment.hasFriend()) {
                     increment.getFriend().sendOneWay(coordinated.coordinate(new Increment()));
                 }
-                coordinated.atomic(new Atomic() {
-                    public Object atomically() {
+                coordinated.atomic(new Atomically() {
+                    public void atomically() {
                         increment();
-                        return null;
                     }
                 });
             }

@@ -1,6 +1,7 @@
 package akka.transactor.test;
 
 import akka.transactor.Coordinated;
+import akka.transactor.Atomically;
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.stm.*;
@@ -40,8 +41,8 @@ public class UntypedCoordinatedCounter extends UntypedActor {
                     Increment coordMessage = new Increment(friends.subList(1, friends.size()), latch);
                     friends.get(0).sendOneWay(coordinated.coordinate(coordMessage));
                 }
-                coordinated.atomic(new Atomic<Object>(txFactory) {
-                    public Object atomically() {
+                coordinated.atomic(new Atomically(txFactory) {
+                    public void atomically() {
                         increment();
                         StmUtils.scheduleDeferredTask(new Runnable() {
                             public void run() { latch.countDown(); }
@@ -49,7 +50,6 @@ public class UntypedCoordinatedCounter extends UntypedActor {
                         StmUtils.scheduleCompensatingTask(new Runnable() {
                             public void run() { latch.countDown(); }
                         });
-                        return null;
                     }
                 });
             }
