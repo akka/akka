@@ -249,13 +249,10 @@ class RedisPersistentSortedSetSpec extends
       val qa = actorOf[SortedSetActor]
       qa.start
 
-      val failer = actorOf[PersistentFailerActor]
-      failer.start
-
       (qa !! SIZE).get.asInstanceOf[Int] should equal(0)
       val add = List(h1, h2, h3, h4, h5, h6)
       val rem = List(h2)
-      (qa !! MULTI(add, rem, failer)).get.asInstanceOf[Tuple2[Int, Int]] should equal((6,1))
+      (qa !! MULTI(add, rem)).get.asInstanceOf[Tuple2[Int, Int]] should equal((6,1))
       (qa !! SIZE).get.asInstanceOf[Int] should equal(5)
 
       // has equal score as h6
