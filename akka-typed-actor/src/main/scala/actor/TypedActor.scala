@@ -9,6 +9,8 @@ import akka.dispatch.{MessageDispatcher, Future, CompletableFuture, Dispatchers}
 import akka.config.Supervision._
 import akka.util._
 import ReflectiveAccess._
+import akka.transactor.Coordinated
+import akka.transactor.typed.{Coordination, Coordinated => CoordinatedAnnotation}
 
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy
@@ -181,6 +183,11 @@ abstract class TypedActor extends Actor with Proxyable {
       if (Actor.SERIALIZE_MESSAGES)       serializeArguments(joinPoint)
       if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
       else                                self.reply(joinPoint.proceed)
+    case coordinated @ Coordinated(joinPoint: JoinPoint) =>
+      SenderContextInfo.senderActorRef.value = self
+      SenderContextInfo.senderProxy.value = proxy
+      if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
+      coordinated atomic { joinPoint.proceed }
     case Link(proxy)   => self.link(proxy)
     case Unlink(proxy) => self.unlink(proxy)
     case unexpected    => throw new IllegalActorStateException(
@@ -702,6 +709,12 @@ object TypedActor extends Logging {
   private[akka] def isOneWay(methodRtti: MethodRtti): Boolean =
     methodRtti.getMethod.getReturnType == java.lang.Void.TYPE
 
+  private[akka] def isCoordinated(joinPoint: JoinPoint): Boolean =
+    isCoordinated(joinPoint.getRtti.asInstanceOf[MethodRtti])
+
+  private[akka] def isCoordinated(methodRtti: MethodRtti): Boolean =
+    methodRtti.getMethod.isAnnotationPresent(classOf[CoordinatedAnnotation])
+
   private[akka] def returnsFuture_?(methodRtti: MethodRtti): Boolean =
     classOf[Future[_]].isAssignableFrom(methodRtti.getMethod.getReturnType)
 
@@ -783,11 +796,25 @@ private[akka] abstract class ActorAspect {
     val isOneWay = TypedActor.isOneWay(methodRtti)
     val senderActorRef = Some(SenderContextInfo.senderActorRef.value)
     val senderProxy = Some(SenderContextInfo.senderProxy.value)
+    val isCoordinated = TypedActor.isCoordinated(methodRtti)
 
     typedActor.context._sender = senderProxy
     if (!actorRef.isRunning && !isStopped) {
       isStopped = true
       joinPoint.proceed
+
+    } else if (isOneWay && isCoordinated) {
+      val coordinatedOpt = Option(Coordination.coordinated.value)
+      val coordinated = coordinatedOpt.map( coord =>
+        if (Coordination.firstParty.value) { // already included in coordination
+          Coordination.firstParty.value = false
+          coord.noIncrement(joinPoint)
+        } else {
+          coord(joinPoint)
+        }).getOrElse(Coordinated(joinPoint))
+
+      actorRef.!(coordinated)(senderActorRef)
+      null.asInstanceOf[AnyRef]
 
     } else if (isOneWay) {
       actorRef.!(joinPoint)(senderActorRef)

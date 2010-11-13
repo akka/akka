@@ -77,7 +77,7 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers {
 
     "increment no counters with a failing transaction" in {
       val (counters, failer) = createActors
-      val failLatch = new CountDownLatch(numCounters + 1)
+      val failLatch = new CountDownLatch(numCounters)
       counters(0) ! Coordinated(Increment(counters.tail :+ failer, failLatch))
       failLatch.await(timeout.length, timeout.unit)
       for (counter <- counters) {
@@ -88,5 +88,3 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers {
     }
   }
 }
-
-

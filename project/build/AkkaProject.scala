@@ -290,7 +290,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   lazy val akka_actor       = project("akka-actor", "akka-actor", new AkkaActorProject(_))
   lazy val akka_stm         = project("akka-stm", "akka-stm", new AkkaStmProject(_), akka_actor)
-  lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_actor)
+  lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_stm)
   lazy val akka_remote      = project("akka-remote", "akka-remote", new AkkaRemoteProject(_), akka_typed_actor)
   lazy val akka_amqp        = project("akka-amqp", "akka-amqp", new AkkaAMQPProject(_), akka_remote)
   lazy val akka_http        = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_remote, akka_camel)
