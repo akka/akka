@@ -152,7 +152,7 @@ class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
 
   /**
    * An empty coordinated atomic block. Can be used to complete the number of parties involved
-   * and wait for all transactions to complete.
+   * and wait for all transactions to complete. The default timeout is used.
    */
   def await() = atomic(Coordinated.DefaultFactory) {}
 }

@@ -5,13 +5,11 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.transactor.Coordinated
 import akka.actor.{Actor, ActorRef}
-import akka.stm._
+import akka.stm.{Ref, TransactionFactory}
 import akka.util.duration._
 
-import java.util.concurrent.CountDownLatch
-
 object CoordinatedIncrement {
-  case class Increment(friends: Seq[ActorRef], latch: CountDownLatch)
+  case class Increment(friends: Seq[ActorRef])
   case object GetCount
 
   class Counter(name: String) extends Actor {
@@ -25,14 +23,12 @@ object CoordinatedIncrement {
     }
 
     def receive = {
-      case coordinated @ Coordinated(Increment(friends, latch)) => {
+      case coordinated @ Coordinated(Increment(friends)) => {
         if (friends.nonEmpty) {
-          friends.head ! coordinated(Increment(friends.tail, latch))
+          friends.head ! coordinated(Increment(friends.tail))
         }
         coordinated atomic {
           increment
-          deferred { latch.countDown }
-          compensating { latch.countDown }
         }
       }
 
@@ -42,7 +38,7 @@ object CoordinatedIncrement {
 
   class Failer extends Actor {
     def receive = {
-      case Coordinated(Increment(friends, latch)) => {
+      case Coordinated(Increment(friends)) => {
         throw new RuntimeException("Expected failure")
       }
     }
@@ -65,9 +61,9 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers {
   "Coordinated increment" should {
     "increment all counters by one with successful transactions" in {
       val (counters, failer) = createActors
-      val incrementLatch = new CountDownLatch(numCounters)
-      counters(0) ! Coordinated(Increment(counters.tail, incrementLatch))
-      incrementLatch.await(timeout.length, timeout.unit)
+      val coordinated = Coordinated()
+      counters(0) ! coordinated(Increment(counters.tail))
+      coordinated.await
       for (counter <- counters) {
         (counter !! GetCount).get must be === 1
       }
@@ -77,9 +73,9 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers {
 
     "increment no counters with a failing transaction" in {
       val (counters, failer) = createActors
-      val failLatch = new CountDownLatch(numCounters)
-      counters(0) ! Coordinated(Increment(counters.tail :+ failer, failLatch))
-      failLatch.await(timeout.length, timeout.unit)
+      val coordinated = Coordinated()
+      counters(0) ! Coordinated(Increment(counters.tail :+ failer))
+      coordinated.await
       for (counter <- counters) {
         (counter !! GetCount).get must be === 0
       }
