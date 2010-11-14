@@ -302,10 +302,27 @@ class RemoteServer extends Logging with ListenerManagement {
     else register(id, actorRef, actors)
   }
 
+  /**
+   * Register Remote Session Actor by a specific 'id' passed as argument.
+   * <p/>
+   * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself.
+   */
+  def registerPerSession(id: String, factory: => ActorRef): Unit = synchronized {
+    log.debug("Registering server side remote session actor with id [%s]", id)
+    if (id.startsWith(UUID_PREFIX)) register(id.substring(UUID_PREFIX.length), factory, actorsByUuid)
+    else registerPerSession(id, () => factory, actorsFactories)
+  }
+
   private def register[Key](id: Key, actorRef: ActorRef, registry: ConcurrentHashMap[Key, ActorRef]) {
     if (_isRunning && !registry.contains(id)) {
       if (!actorRef.isRunning) actorRef.start
       registry.put(id, actorRef)
+    }
+  }
+
+  private def registerPerSession[Key](id: Key, factory: () => ActorRef, registry: ConcurrentHashMap[Key,() => ActorRef]) {
+    if (_isRunning && !registry.contains(id)) {
+      registry.put(id, factory)
     }
   }
 
@@ -342,6 +359,18 @@ class RemoteServer extends Logging with ListenerManagement {
   }
 
   /**
+   * Unregister Remote Actor by specific 'id'.
+   * <p/>
+   * NOTE: You need to call this method if you have registered an actor by a custom ID.
+   */
+  def unregisterPerSession(id: String):Unit = synchronized {
+    if (_isRunning) {
+      log.info("Unregistering server side remote session actor with id [%s]", id)
+      actorsFactories.remove(id)
+    }
+  }
+
+  /**
    * Unregister Remote Typed Actor by specific 'id'.
    * <p/>
    * NOTE: You need to call this method if you have registered an actor by a custom ID.
@@ -358,8 +387,10 @@ class RemoteServer extends Logging with ListenerManagement {
 
   protected[akka] override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
 
+
   private[akka] def actors            = ActorRegistry.actors(address)
   private[akka] def actorsByUuid      = ActorRegistry.actorsByUuid(address)
+  private[akka] def actorsFactories   = ActorRegistry.actorsFactories(address)
   private[akka] def typedActors       = ActorRegistry.typedActors(address)
   private[akka] def typedActorsByUuid = ActorRegistry.typedActorsByUuid(address)
 }
@@ -428,6 +459,8 @@ class RemoteServerHandler(
 
   val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
   val CHANNEL_INIT    = "channel-init".intern
+
+  val sessionActors = new ChannelLocal(); 
 
   applicationLoader.foreach(MessageSerializer.setClassLoader(_))
 
