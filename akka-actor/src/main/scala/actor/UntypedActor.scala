@@ -62,6 +62,8 @@ import scala.reflect.BeanProperty
  */
 abstract class UntypedActor extends Actor {
 
+  def logger = log.logger //Give the Java guys a break
+
   def getContext(): ActorRef = self
 
   final protected def receive = {
