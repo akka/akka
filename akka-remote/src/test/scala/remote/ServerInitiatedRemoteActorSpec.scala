@@ -36,6 +36,22 @@ object ServerInitiatedRemoteActorSpec {
     }
   }
 
+  case class Login(user:String);
+  case class GetUser();
+  
+  class RemoteStatefullSessionActorSpec extends Actor {
+
+    var user : String= _;
+
+    def receive = {
+      case Login(user) => 
+	      this.user = user;
+      case GetUser() =>
+        self.reply(this.user)
+    }
+  }
+
+
   object RemoteActorSpecActorAsyncSender {
     val latch = new CountDownLatch(1)
   }
@@ -63,6 +79,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     server.register(actorOf[RemoteActorSpecActorUnidirectional])
     server.register(actorOf[RemoteActorSpecActorBidirectional])
     server.register(actorOf[RemoteActorSpecActorAsyncSender])
+    server.registerPerSession("statefull-session-actor", actorOf[RemoteStatefullSessionActorSpec])
 
     Thread.sleep(1000)
   }
@@ -101,6 +118,29 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
     actor.stop
+  }
+
+  @Test
+  def shouldKeepSessionInformation {
+    val session1 = RemoteClient.actorFor(
+      "statefull-session-actor",
+      5000L,
+      HOSTNAME, PORT)
+    val session2 = RemoteClient.actorFor(
+      "statefull-session-actor",
+      5000L,
+      HOSTNAME, PORT)
+
+    session1 ! Login("session1");
+    session2 ! Login("session2");
+
+    val result1 = session1 !! GetUser();
+    assert("session1" === result1.get.asInstanceOf[String])
+    val result2 = session2 !! GetUser();
+    assert("session2" === result2.get.asInstanceOf[String])
+
+    session1.stop()
+    session2.stop()
   }
 
   @Test
@@ -204,6 +244,13 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     assert(server.actors.get("my-service-1") ne null, "actor registered")
     server.unregister("my-service-1")
     assert(server.actors.get("my-service-1") eq null, "actor unregistered")
+  }
+  @Test
+  def shouldRegisterAndUnregisterSession {
+    server.registerPerSession("my-service-1", actorOf[RemoteActorSpecActorUnidirectional])
+    assert(server.actorsFactories.get("my-service-1") ne null, "actor registered")
+    server.unregisterPerSession("my-service-1")
+    assert(server.actorsFactories.get("my-service-1") eq null, "actor unregistered")
   }
 
   @Test
