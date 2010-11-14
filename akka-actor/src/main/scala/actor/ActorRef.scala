@@ -7,16 +7,9 @@ package akka.actor
 import akka.dispatch._
 import akka.config.Config._
 import akka.config.Supervision._
-import akka.stm.global._
-import akka.stm.TransactionManagement._
-import akka.stm.{ TransactionManagement, TransactionSetAbortedException }
 import akka.AkkaException
 import akka.util._
 import ReflectiveAccess._
-
-import org.multiverse.api.ThreadLocalTransaction._
-import org.multiverse.commitbarriers.CountDownCommitBarrier
-import org.multiverse.api.exceptions.DeadTransactionException
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
@@ -39,10 +32,6 @@ private[akka] object ActorRefInternals extends Logging {
   object RUNNING extends StatusType
   object BEING_RESTARTED extends StatusType
   object SHUTDOWN extends StatusType
-
-  case class TransactorConfig(factory: Option[TransactionFactory] = None, config: TransactionConfig = DefaultGlobalTransactionConfig)
-  val DefaultTransactorConfig = TransactorConfig()
-  val NoTransactionConfig = TransactorConfig()
 }
 
 
@@ -78,7 +67,7 @@ private[akka] object ActorRefInternals extends Logging {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ActorRef extends ActorRefShared with TransactionManagement with java.lang.Comparable[ActorRef] { scalaRef: ScalaActorRef =>
+trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scalaRef: ScalaActorRef =>
   //Reuse same logger
   import Actor.log
 
@@ -173,23 +162,6 @@ trait ActorRef extends ActorRefShared with TransactionManagement with java.lang.
    */
   @volatile
   protected[akka] var hotswap = Stack[PartialFunction[Any, Unit]]()
-
-  /**
-   * User overridable callback/setting.
-   * <p/>
-   * Set to true if messages should have REQUIRES_NEW semantics, e.g. a new transaction should
-   * start if there is no one running, else it joins the existing transaction.
-   */
-  @volatile
-  protected[akka] var transactorConfig = ActorRefInternals.NoTransactionConfig
-
-  /**
-   * Returns true if this Actor is a Transactor
-   */
-  def isTransactor: Boolean = {
-    val c = transactorConfig
-    (c ne ActorRefInternals.NoTransactionConfig) && (c ne null) //Could possibly be null if called before var init
-  }
 
   /**
    *  This is a reference to the message currently being processed by the actor
@@ -411,34 +383,6 @@ trait ActorRef extends ActorRefShared with TransactionManagement with java.lang.
    * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
    */
   def makeRemote(address: InetSocketAddress): Unit
-
-  /**
-   * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
-   * However, it will always participate in an existing transaction.
-   */
-  def makeTransactionRequired(): Unit
-
-  /**
-   * Sets the transaction configuration for this actor. Needs to be invoked before the actor is started.
-   */
-  def transactionConfig_=(config: TransactionConfig): Unit
-
-  /**
-   * Akka Java API
-   * Sets the transaction configuration for this actor. Needs to be invoked before the actor is started.
-   */
-  def setTransactionConfig(config: TransactionConfig): Unit = transactionConfig = config
-
-  /**
-   * Get the transaction configuration for this actor.
-   */
-  def transactionConfig: TransactionConfig
-
-  /**
-   * Akka Java API
-   * Get the transaction configuration for this actor.
-   */
-  def getTransactionConfig(): TransactionConfig = transactionConfig
 
   /**
    * Returns the home address and port for this actor.
@@ -664,7 +608,6 @@ class LocalActorRef private[akka] (
     __id: String,
     __hostname: String,
     __port: Int,
-    __isTransactor: Boolean,
     __timeout: Long,
     __receiveTimeout: Option[Long],
     __lifeCycle: LifeCycle,
@@ -675,7 +618,6 @@ class LocalActorRef private[akka] (
     _uuid = __uuid
     id = __id
     homeAddress = (__hostname, __port)
-    transactorConfig = if (__isTransactor) ActorRefInternals.DefaultTransactorConfig else ActorRefInternals.NoTransactionConfig
     timeout = __timeout
     receiveTimeout = __receiveTimeout
     lifeCycle = __lifeCycle
@@ -738,33 +680,6 @@ class LocalActorRef private[akka] (
   }
 
   /**
-   * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
-   * However, it will always participate in an existing transaction.
-   */
-  def makeTransactionRequired() = guard.withGuard {
-    if (!isRunning || isBeingRestarted) {
-      if (transactorConfig eq ActorRefInternals.NoTransactionConfig)
-        transactorConfig = ActorRefInternals.DefaultTransactorConfig
-    }
-    else throw new ActorInitializationException(
-      "Can not make actor transaction required after it has been started")
-  }
-
-  /**
-   * Sets the transaction configuration for this actor. Needs to be invoked before the actor is started.
-   */
-  def transactionConfig_=(configuration: TransactionConfig) = guard.withGuard {
-    if (!isRunning || isBeingRestarted) transactorConfig = transactorConfig.copy(config = configuration)
-    else throw new ActorInitializationException(
-      "Cannot set transaction configuration for actor after it has been started")
-  }
-
-  /**
-   * Get the transaction configuration for this actor.
-   */
-  def transactionConfig: TransactionConfig = transactorConfig.config
-
-  /**
    * Set the contact address for this actor. This is used for replying to messages
    * sent asynchronously when no reply channel exists.
    */
@@ -784,8 +699,6 @@ class LocalActorRef private[akka] (
       "Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
       dispatcher.attach(this)
-      if (isTransactor)
-        transactorConfig = transactorConfig.copy(factory = Some(TransactionFactory(transactorConfig.config, id)))
 
       _status = ActorRefInternals.RUNNING
 
@@ -806,7 +719,6 @@ class LocalActorRef private[akka] (
       receiveTimeout = None
       cancelReceiveTimeout
       dispatcher.detach(this)
-      transactorConfig = transactorConfig.copy(factory = None)
       _status = ActorRefInternals.SHUTDOWN
       actor.postStop
       ActorRegistry.unregister(this)
@@ -948,13 +860,11 @@ class LocalActorRef private[akka] (
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = _supervisor = sup
 
   protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
-    joinTransaction(message)
-
     if (remoteAddress.isDefined && isRemotingEnabled) {
       RemoteClientModule.send[Any](
         message, senderOption, None, remoteAddress.get, timeout, true, this, None, ActorType.ScalaActor)
     } else {
-      val invocation = new MessageInvocation(this, message, senderOption, None, transactionSet.get)
+      val invocation = new MessageInvocation(this, message, senderOption, None)
       dispatcher dispatchMessage invocation
     }
   }
@@ -964,7 +874,6 @@ class LocalActorRef private[akka] (
     timeout: Long,
     senderOption: Option[ActorRef],
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-    joinTransaction(message)
 
     if (remoteAddress.isDefined && isRemotingEnabled) {
       val future = RemoteClientModule.send[T](
@@ -974,7 +883,7 @@ class LocalActorRef private[akka] (
     } else {
       val future = if (senderFuture.isDefined) senderFuture else Some(new DefaultCompletableFuture[T](timeout))
       val invocation = new MessageInvocation(
-        this, message, senderOption, future.asInstanceOf[Some[CompletableFuture[Any]]], transactionSet.get)
+        this, message, senderOption, future.asInstanceOf[Some[CompletableFuture[Any]]])
       dispatcher dispatchMessage invocation
       future.get
     }
@@ -1151,61 +1060,18 @@ class LocalActorRef private[akka] (
     a
   }
 
-  private def joinTransaction(message: Any) = if (isTransactionSetInScope) {
-    import org.multiverse.api.ThreadLocalTransaction
-    val oldTxSet = getTransactionSetInScope
-    val currentTxSet = if (oldTxSet.isAborted || oldTxSet.isCommitted) {
-      clearTransactionSet
-      createNewTransactionSet
-    } else oldTxSet
-    Actor.log.trace("Joining transaction set [" + currentTxSet +
-      "];\n\tactor " + toString +
-      "\n\twith message [" + message + "]")
-    val mtx = ThreadLocalTransaction.getThreadLocalTransaction
-    if ((mtx eq null) || mtx.getStatus.isDead) currentTxSet.incParties
-    else currentTxSet.incParties(mtx, 1)
-  }
-
   private def dispatch[T](messageHandle: MessageInvocation) = {
     Actor.log.trace("Invoking actor with message: %s\n", messageHandle)
     val message = messageHandle.message //serializeMessage(messageHandle.message)
-    val isXactor = isTransactor
-    var topLevelTransaction = false
-    val txSet: Option[CountDownCommitBarrier] =
-      if (messageHandle.transactionSet.isDefined) messageHandle.transactionSet
-      else {
-        topLevelTransaction = true // FIXME create a new internal atomic block that can wait for X seconds if top level tx
-        if (isXactor) {
-          Actor.log.trace("Creating a new transaction set (top-level transaction)\n\tfor actor " + toString +
-            "\n\twith message " + messageHandle)
-          Some(createNewTransactionSet)
-        } else None
-      }
-    setTransactionSet(txSet)
 
     try {
       cancelReceiveTimeout // FIXME: leave this here?
-      if (isXactor) {
-        val txFactory = transactorConfig.factory.getOrElse(DefaultGlobalTransactionFactory)
-        atomic(txFactory) {
-          actor(message)
-          setTransactionSet(txSet) // restore transaction set to allow atomic block to do commit
-        }
-      } else {
-        actor(message)
-        setTransactionSet(txSet) // restore transaction set to allow atomic block to do commit
-      }
+      actor(message)
     } catch {
-      case e: DeadTransactionException =>
-        handleExceptionInDispatch(
-          new TransactionSetAbortedException("Transaction set has been aborted by another participant"),
-          message, topLevelTransaction)
       case e: InterruptedException => {} // received message while actor is shutting down, ignore
-      case e => handleExceptionInDispatch(e, message, topLevelTransaction)
+      case e => handleExceptionInDispatch(e, message)
     }
     finally {
-      clearTransaction
-      if (topLevelTransaction) clearTransactionSet
       checkReceiveTimeout // Reschedule receive timeout
     }
   }
@@ -1226,25 +1092,13 @@ class LocalActorRef private[akka] (
     true
   }
 
-  private def handleExceptionInDispatch(reason: Throwable, message: Any, topLevelTransaction: Boolean) = {
+  private def handleExceptionInDispatch(reason: Throwable, message: Any) = {
     Actor.log.error(reason, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
 
     //Prevent any further messages to be processed until the actor has been restarted
     dispatcher.suspend(this)
 
-    // abort transaction set
-    if (isTransactionSetInScope) {
-      val txSet = getTransactionSetInScope
-      if (!txSet.isCommitted) {
-        Actor.log.debug("Aborting transaction set [%s]", txSet)
-        txSet.abort
-      }
-    }
-
     senderFuture.foreach(_.completeWithException(reason))
-
-    clearTransaction
-    if (topLevelTransaction) clearTransactionSet
 
     if (supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
     else {
@@ -1298,7 +1152,6 @@ class LocalActorRef private[akka] (
     actor.preStart // run actor preStart
     Actor.log.trace("[%s] has started", toString)
     ActorRegistry.register(this)
-    clearTransactionSet // clear transaction set that might have been created if atomic block has been used within the Actor constructor body
   }
 
   /*
@@ -1395,9 +1248,6 @@ private[akka] case class RemoteActorRef private[akka] (
   def actorClass: Class[_ <: Actor] = unsupported
   def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported
-  def makeTransactionRequired: Unit = unsupported
-  def transactionConfig_=(config: TransactionConfig): Unit = unsupported
-  def transactionConfig: TransactionConfig = unsupported
   def makeRemote(hostname: String, port: Int): Unit = unsupported
   def makeRemote(address: InetSocketAddress): Unit = unsupported
   def homeAddress_=(address: InetSocketAddress): Unit = unsupported

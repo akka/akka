@@ -5,7 +5,6 @@
 package akka.actor
 
 import akka.dispatch._
-import akka.stm.global._
 import akka.config.Supervision._
 import akka.japi.Procedure
 
@@ -63,6 +62,8 @@ import scala.reflect.BeanProperty
  */
 abstract class UntypedActor extends Actor {
 
+  def logger = log.logger //Give the Java guys a break
+
   def getContext(): ActorRef = self
 
   final protected def receive = {
@@ -72,19 +73,16 @@ abstract class UntypedActor extends Actor {
   /**
    * Java API for become
    */
-  def become(behavior: Procedure[Any]): Unit = super.become { case msg => behavior.apply(msg) }
+  def become(behavior: Procedure[Any]):Unit = become(behavior,false)
+
+  /*
+   * Java API for become with optional discardOld
+   */
+  def become(behavior: Procedure[Any], discardOld: Boolean): Unit =
+    super.become({ case msg => behavior.apply(msg) }, discardOld)
 
   @throws(classOf[Exception])
   def onReceive(message: Any): Unit
-}
-
-/**
- * Implements the Transactor abstraction. E.g. a transactional UntypedActor.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-abstract class UntypedTransactor extends UntypedActor {
-  self.makeTransactionRequired
 }
 
 /**

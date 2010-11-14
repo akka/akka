@@ -1,6 +1,5 @@
 import sample.ants._
 import sample.ants.Config._
-import akka.stm.local._
 
 val scale = 5
 

@@ -88,7 +88,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     val targetClass =
       if (component.target.isInstanceOf[Class[_ <: TypedActor]]) component.target.asInstanceOf[Class[_ <: TypedActor]]
       else throw new IllegalArgumentException("TypedActor [" + component.target.getName + "] must be a subclass of TypedActor")
-    val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired))
+    val actorRef = Actor.actorOf(new Dispatcher())
     if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
     val remoteAddress =
       if (component.remoteAddress.isDefined)

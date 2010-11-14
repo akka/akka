@@ -4,8 +4,6 @@
 
 package akka.dispatch
 
-import org.multiverse.commitbarriers.CountDownCommitBarrier
-
 import java.util.concurrent._
 import atomic. {AtomicInteger, AtomicBoolean, AtomicReference, AtomicLong}
 import akka.util. {Switch, ReentrantGuard, Logging, HashCode}
@@ -17,8 +15,7 @@ import akka.actor._
 final class MessageInvocation(val receiver: ActorRef,
                               val message: Any,
                               val sender: Option[ActorRef],
-                              val senderFuture: Option[CompletableFuture[Any]],
-                              val transactionSet: Option[CountDownCommitBarrier]) {
+                              val senderFuture: Option[CompletableFuture[Any]]) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
 
   def invoke = try {
@@ -47,7 +44,6 @@ final class MessageInvocation(val receiver: ActorRef,
      "\n\treceiver = " + receiver +
      "\n\tsender = " + sender +
      "\n\tsenderFuture = " + senderFuture +
-     "\n\ttransactionSet = " + transactionSet +
      "]"
   }
 }
@@ -145,7 +141,11 @@ trait MessageDispatcher extends MailboxFactory with Logging {
     }
   }
 
-  private[akka] def timeoutMs: Long = 1000
+  /**
+   * When the dispatcher no longer has any actors registered, how long will it wait until it shuts itself down, in Ms
+   * defaulting to your akka configs "akka.actor.dispatcher-shutdown-timeout" or otherwise, 1 Second
+   */
+  private[akka] def timeoutMs: Long = Dispatchers.DEFAULT_SHUTDOWN_TIMEOUT.toMillis
 
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference

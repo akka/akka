@@ -33,8 +33,8 @@ class AMQPConsumerMessageTestIntegration extends JUnitSuite with MustMatchers {
 
     val payloadLatch = new StandardLatch
     val consumer = AMQP.newConsumer(connection, ConsumerParameters("non.interesting.routing.key", actorOf(new Actor {
-      def receive = { case Delivery(payload, _, _, _, _) => payloadLatch.open }
-    }).start, exchangeParameters = Some(exchangeParameters), channelParameters = Some(channelParameters)))
+      def receive = { case Delivery(payload, _, _, _, _, _) => payloadLatch.open }
+    }), exchangeParameters = Some(exchangeParameters), channelParameters = Some(channelParameters)))
 
     val producer = AMQP.newProducer(connection,
       ProducerParameters(Some(exchangeParameters), channelParameters = Some(channelParameters)))

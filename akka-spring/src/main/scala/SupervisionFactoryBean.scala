@@ -61,15 +61,15 @@ class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
       //val remote = new RemoteAddress(props.host, props.port)
       val remote = new RemoteAddress(props.host, props.port.toInt)
       if (withInterface) {
-        new SuperviseTypedActor(props.interface.toClass, props.target.toClass, lifeCycle, props.timeout, props.transactional, remote)
+        new SuperviseTypedActor(props.interface.toClass, props.target.toClass, lifeCycle, props.timeout, remote)
       } else {
-        new SuperviseTypedActor(props.target.toClass, lifeCycle, props.timeout, props.transactional, remote)
+        new SuperviseTypedActor(props.target.toClass, lifeCycle, props.timeout, remote)
       }
     } else {
       if (withInterface) {
-        new SuperviseTypedActor(props.interface.toClass, props.target.toClass, lifeCycle, props.timeout, props.transactional)
+        new SuperviseTypedActor(props.interface.toClass, props.target.toClass, lifeCycle, props.timeout)
       } else {
-        new SuperviseTypedActor(props.target.toClass, lifeCycle, props.timeout, props.transactional)
+        new SuperviseTypedActor(props.target.toClass, lifeCycle, props.timeout)
       }
     }
   }
@@ -84,9 +84,6 @@ class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
     val actorRef = Actor.actorOf(props.target.toClass)
     if (props.timeout > 0) {
       actorRef.setTimeout(props.timeout)
-    }
-    if (props.transactional) {
-      actorRef.makeTransactionRequired
     }
 
     val supervise = if (isRemote) {

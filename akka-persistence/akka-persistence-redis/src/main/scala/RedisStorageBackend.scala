@@ -248,9 +248,6 @@ private [akka] object RedisStorageBackend extends
   def getRefStorageFor(name: String): Option[Array[Byte]] = withErrorHandling {
     db.get(name)
       .map(stringToByteArray(_))
-      .orElse {
-        throw new NoSuchElementException(name + " not present")
-      }
   }
 
   // add to the end of the queue

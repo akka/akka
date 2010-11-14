@@ -4,9 +4,6 @@
 
 package akka.serialization
 
-import akka.stm.global._
-import akka.stm.TransactionManagement._
-import akka.stm.TransactionManagement
 import akka.dispatch.MessageInvocation
 import akka.remote.{RemoteServer, RemoteClient, MessageSerializer}
 import akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
@@ -111,7 +108,6 @@ object ActorSerialization {
       .setId(actorRef.id)
       .setActorClassname(actorRef.actorClass.getName)
       .setOriginalAddress(originalAddress)
-      .setIsTransactor(actorRef.isTransactor)
       .setTimeout(actorRef.timeout)
 
 
@@ -197,7 +193,6 @@ object ActorSerialization {
       protocol.getId,
       protocol.getOriginalAddress.getHostname,
       protocol.getOriginalAddress.getPort,
-      if (protocol.hasIsTransactor) protocol.getIsTransactor else false,
       if (protocol.hasTimeout) protocol.getTimeout else Actor.TIMEOUT,
       if (protocol.hasReceiveTimeout) Some(protocol.getReceiveTimeout) else None,
       lifeCycle,

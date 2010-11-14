@@ -30,7 +30,6 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
       assert(props ne null)
       assert(props.timeout == 1000)
       assert(props.target == "foo.bar.MyPojo")
-      assert(props.transactional)
     }
 
     it("should parse the supervisor restart strategy") {
@@ -72,8 +71,7 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
   private def createTypedActorElement : Element = {
     val xml = <akka:typed-actor id="typed-actor1"
                                         implementation="foo.bar.MyPojo"
-                                        timeout="1000"
-                        transactional="true"/>
+                                        timeout="1000"/>
     dom(xml).getDocumentElement
   }
 

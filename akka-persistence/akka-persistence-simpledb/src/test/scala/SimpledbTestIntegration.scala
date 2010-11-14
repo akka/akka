@@ -22,7 +22,7 @@ class SimpledbTestIntegration extends Spec with ShouldMatchers with BeforeAndAft
 
       val value = new Array[Byte](valsize)
       mapAccess.put(name, key, value)
-      val result = mapAccess.getValue(name, key, Array.empty[Byte])
+      val result = mapAccess.get(name, key, Array.empty[Byte])
       result.size should be(value.size)
       result should be(value)
     }
