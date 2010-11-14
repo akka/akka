@@ -7,11 +7,13 @@ import org.junit.{Test, Before, After}
 import akka.remote.{RemoteServer, RemoteClient}
 import akka.actor.Actor._
 import akka.actor.{ActorRegistry, ActorRef, Actor}
+import scala.collection.mutable.Set
 
 object ServerInitiatedRemoteActorSpec {
   val HOSTNAME = "localhost"
   val PORT = 9990
   var server: RemoteServer = null
+
 
   case class Send(actor: ActorRef)
 
@@ -38,16 +40,29 @@ object ServerInitiatedRemoteActorSpec {
 
   case class Login(user:String);
   case class GetUser();
-  
+  case class DoSomethingWeird();
+
+  val instantiatedSessionActors= Set[ActorRef]();
+
   class RemoteStatefullSessionActorSpec extends Actor {
 
-    var user : String= _;
+    var user : String= "anonymous";
 
+    override def preStart = {
+      instantiatedSessionActors += self;
+    }
+
+    override def postStop = {
+      instantiatedSessionActors -= self;
+    }
+    
     def receive = {
       case Login(user) => 
 	      this.user = user;
       case GetUser() =>
         self.reply(this.user)
+      case DoSomethingWeird() =>
+        throw new Exception("Bad boy")
     }
   }
 
@@ -122,25 +137,82 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
 
   @Test
   def shouldKeepSessionInformation {
+
+    //RemoteClient.clientFor(HOSTNAME, PORT).connect
+
     val session1 = RemoteClient.actorFor(
       "statefull-session-actor",
       5000L,
       HOSTNAME, PORT)
+
+
+    val default1 = session1 !! GetUser();
+    assert("anonymous" === default1.get.asInstanceOf[String])
+
+    session1 ! Login("session[1]");
+
+    val result1 = session1 !! GetUser();
+    assert("session[1]" === result1.get.asInstanceOf[String])
+
+    session1.stop()
+
+    RemoteClient.shutdownAll
+
+    //RemoteClient.clientFor(HOSTNAME, PORT).connect
+
     val session2 = RemoteClient.actorFor(
       "statefull-session-actor",
       5000L,
       HOSTNAME, PORT)
 
-    session1 ! Login("session1");
-    session2 ! Login("session2");
+    // since this is a new session, the server should reset the state
+    val default2 = session2 !! GetUser();
+    assert("anonymous" === default2.get.asInstanceOf[String])
 
-    val result1 = session1 !! GetUser();
-    assert("session1" === result1.get.asInstanceOf[String])
-    val result2 = session2 !! GetUser();
-    assert("session2" === result2.get.asInstanceOf[String])
-
-    session1.stop()
     session2.stop()
+
+    RemoteClient.shutdownAll
+  }
+
+  @Test
+  def shouldStopActorOnDisconnect{
+
+
+    val session1 = RemoteClient.actorFor(
+      "statefull-session-actor",
+      5000L,
+      HOSTNAME, PORT)
+
+
+    val default1 = session1 !! GetUser();
+    assert("anonymous" === default1.get.asInstanceOf[String])
+
+    assert(instantiatedSessionActors.size == 1);
+
+    RemoteClient.shutdownAll
+    Thread.sleep(1000)
+    assert(instantiatedSessionActors.size == 0);
+
+  }
+
+  @Test
+  def shouldStopActorOnError{
+
+
+    val session1 = RemoteClient.actorFor(
+      "statefull-session-actor",
+      5000L,
+      HOSTNAME, PORT)
+
+
+    session1 ! DoSomethingWeird();
+    session1.stop()
+
+    RemoteClient.shutdownAll
+    Thread.sleep(1000)
+
+    assert(instantiatedSessionActors.size == 0);
+
   }
 
   @Test
