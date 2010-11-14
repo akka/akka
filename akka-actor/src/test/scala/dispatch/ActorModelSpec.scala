@@ -192,7 +192,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     a.start
     assertDispatcher(dispatcher)(starts = 1, stops = 0)
     a.stop
-    await(dispatcher.stops.get == 1)(withinMs = 10000)
+    await(dispatcher.stops.get == 1)(withinMs = dispatcher.timeoutMs * 5)
     assertDispatcher(dispatcher)(starts = 1, stops = 1)
     assertRef(a,dispatcher)(
       suspensions = 0,

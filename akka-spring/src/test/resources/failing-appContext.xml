@@ -9,7 +9,6 @@
 
     <akka:typed-actor id="bean"
                         implementation="org.springframework.core.io.ResourceEditor"
-                        transactional="true"
                         timeout="1000"
                         scope="prototype">
         <property name="source" ref="nonExistentRef"/>

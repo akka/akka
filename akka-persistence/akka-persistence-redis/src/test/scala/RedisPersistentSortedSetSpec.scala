@@ -7,8 +7,9 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import akka.actor.{Actor, ActorRef, Transactor}
+import akka.actor.{Actor, ActorRef}
 import Actor._
+import akka.stm._
 
 /**
  * A persistent actor based on Redis sortedset storage.
@@ -43,13 +44,17 @@ case class SCORE(h: Hacker)
 case class RANGE(start: Int, end: Int)
 
 // add and remove subject to the condition that there will be at least 3 hackers
-case class MULTI(add: List[Hacker], rem: List[Hacker], failer: ActorRef)
+case class MULTI(add: List[Hacker], rem: List[Hacker])
 
-class SortedSetActor extends Transactor {
+case class MULTIRANGE(add: List[Hacker])
+
+class SortedSetActor extends Actor {
   self.timeout = 100000
-  private lazy val hackers = RedisStorage.newSortedSet
+  private val hackers = RedisStorage.newSortedSet
 
-  def receive = {
+  def receive = { case message => atomic { atomicReceive(message) } }
+
+  def atomicReceive: Receive = {
     case ADD(h) =>
       hackers.+(h.name.getBytes, h.zscore)
       self.reply(true)
@@ -67,22 +72,29 @@ class SortedSetActor extends Transactor {
     case RANGE(s, e) =>
       self.reply(hackers.zrange(s, e))
 
-    case MULTI(a, r, failer) =>
+    case MULTI(a, r) =>
       a.foreach{ h: Hacker =>
         hackers.+(h.name.getBytes, h.zscore)
       }
       try {
-        r.foreach{ h =>
+        r.foreach { h =>
           if (hackers.size <= 3)
             throw new SetThresholdViolationException
           hackers.-(h.name.getBytes)
         }
       } catch {
-        case e: Exception =>
-          failer !! "Failure"
+        case e: Exception => fail
       }
       self.reply((a.size, r.size))
+
+    case MULTIRANGE(hs) =>
+      hs.foreach{ h: Hacker =>
+        hackers.+(h.name.getBytes, h.zscore)
+      }
+      self.reply(hackers.zrange(0, -1))
   }
+
+  def fail = throw new RuntimeException("Expected exception; to test fault-tolerance")
 }
 
 import RedisStorageBackend._
@@ -170,13 +182,10 @@ class RedisPersistentSortedSetSpec extends
       val qa = actorOf[SortedSetActor]
       qa.start
 
-      val failer = actorOf[PersistentFailerActor]
-      failer.start
-
       (qa !! SIZE).get.asInstanceOf[Int] should equal(0)
       val add = List(h1, h2, h3, h4)
       val rem = List(h2)
-      (qa !! MULTI(add, rem, failer)).get.asInstanceOf[Tuple2[Int, Int]] should equal((4,1))
+      (qa !! MULTI(add, rem)).get.asInstanceOf[Tuple2[Int, Int]] should equal((4,1))
       (qa !! SIZE).get.asInstanceOf[Int] should equal(3)
       // size == 3
 
@@ -184,11 +193,10 @@ class RedisPersistentSortedSetSpec extends
       val add1 = List(h5, h6)
 
       // remove 3
-      val rem1 = List(h1, h3, h4)
+      val rem1 = List(h1, h3, h4, h5)
       try {
-        qa !! MULTI(add1, rem1, failer)
-      } catch { case e: Exception => {}
-      }
+        qa !! MULTI(add1, rem1)
+      } catch { case e: RuntimeException => {} }
       (qa !! SIZE).get.asInstanceOf[Int] should equal(3)
     }
   }
@@ -233,6 +241,31 @@ class RedisPersistentSortedSetSpec extends
       (qa !! RANGE(0, -2)).get.asInstanceOf[List[_]].size should equal(5)
       (qa !! RANGE(0, -4)).get.asInstanceOf[List[_]].size should equal(3)
       (qa !! RANGE(-4, -1)).get.asInstanceOf[List[_]].size should equal(4)
+    }
+  }
+
+  describe("zrange with equal values and equal score") {
+    it ("should report proper range") {
+      val qa = actorOf[SortedSetActor]
+      qa.start
+
+      (qa !! SIZE).get.asInstanceOf[Int] should equal(0)
+      val add = List(h1, h2, h3, h4, h5, h6)
+      val rem = List(h2)
+      (qa !! MULTI(add, rem)).get.asInstanceOf[Tuple2[Int, Int]] should equal((6,1))
+      (qa !! SIZE).get.asInstanceOf[Int] should equal(5)
+
+      // has equal score as h6
+      val h7 = Hacker("Debasish Ghosh", "1912")
+
+      // has equal value as h6
+      val h8 = Hacker("Alan Turing", "1992")
+
+      val ret = (qa !! MULTIRANGE(List(h7, h8))).get.asInstanceOf[List[(Array[Byte], Float)]]
+      ret.size should equal(6)
+      val m = collection.immutable.Map() ++ ret.map(e => (new String(e._1), e._2))
+      m("Debasish Ghosh") should equal(1912f)
+      m("Alan Turing") should equal(1992f)
     }
   }
 }

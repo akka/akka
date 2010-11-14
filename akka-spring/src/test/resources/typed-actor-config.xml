@@ -27,24 +27,16 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
                       implementation="akka.spring.foo.MyPojo"
                       timeout="10000"/>
 
-  <akka:typed-actor id="transactional-typed-actor"
-                      interface="akka.spring.foo.IMyPojo"
-                      implementation="akka.spring.foo.MyPojo"
-                      timeout="2000"
-                      transactional="true"/>
-
   <akka:typed-actor id="typed-actor-callbacks"
                       interface="akka.spring.foo.IMyPojo"
                       implementation="akka.spring.foo.MyPojo"
-                      timeout="2000"
-                      transactional="true">
+                      timeout="2000">
   </akka:typed-actor>
 
   <akka:typed-actor id="remote-typed-actor"
                       interface="akka.spring.foo.IMyPojo"
                       implementation="akka.spring.foo.MyPojo"
-                      timeout="2000"
-                      transactional="true">
+                      timeout="2000">
     <akka:remote host="localhost" port="9990"/>
   </akka:typed-actor>
 

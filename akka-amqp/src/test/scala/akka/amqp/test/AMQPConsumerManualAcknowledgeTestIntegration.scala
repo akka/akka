@@ -36,7 +36,7 @@ class AMQPConsumerManualAcknowledgeTestIntegration extends JUnitSuite with MustM
       var deliveryTagCheck: Long = -1
       val consumer:ActorRef = AMQP.newConsumer(connection, ConsumerParameters("manual.ack.this", actorOf( new Actor {
         def receive = {
-          case Delivery(payload, _, deliveryTag, _, sender) => {
+          case Delivery(payload, _, deliveryTag, _, _, sender) => {
             if (!failLatch.isOpen) {
               failLatch.open
               error("Make it fail!")
@@ -47,7 +47,7 @@ class AMQPConsumerManualAcknowledgeTestIntegration extends JUnitSuite with MustM
           }
           case Acknowledged(deliveryTag) => if (deliveryTagCheck == deliveryTag) acknowledgeLatch.open
         }
-      }).start, queueName = Some("self.ack.queue"), exchangeParameters = Some(exchangeParameters),
+      }), queueName = Some("self.ack.queue"), exchangeParameters = Some(exchangeParameters),
         selfAcknowledging = false, channelParameters = Some(channelParameters),
         queueDeclaration = ActiveDeclaration(autoDelete = false)))
 

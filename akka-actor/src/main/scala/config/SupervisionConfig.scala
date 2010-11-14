@@ -105,7 +105,6 @@ object Supervision {
                   val target: Class[_],
                   val lifeCycle: LifeCycle,
                   val timeout: Long,
-                  val transactionRequired: Boolean,
                   _dispatcher: MessageDispatcher, // optional
                   _remoteAddress: RemoteAddress   // optional
           ) extends Server {
@@ -114,48 +113,24 @@ object Supervision {
     val remoteAddress: Option[RemoteAddress] = Option(_remoteAddress)
 
     def this(target: Class[_], lifeCycle: LifeCycle, timeout: Long) =
-      this(null: Class[_], target, lifeCycle, timeout, false, null.asInstanceOf[MessageDispatcher], null: RemoteAddress)
+      this(null: Class[_], target, lifeCycle, timeout, null: MessageDispatcher, null: RemoteAddress)
 
     def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Long) =
-      this(intf, target, lifeCycle, timeout, false, null.asInstanceOf[MessageDispatcher], null: RemoteAddress)
+      this(intf, target, lifeCycle, timeout, null: MessageDispatcher, null: RemoteAddress)
 
     def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Long, dispatcher: MessageDispatcher) =
-      this(intf, target, lifeCycle, timeout, false, dispatcher, null)
+      this(intf, target, lifeCycle, timeout, dispatcher, null: RemoteAddress)
 
     def this(target: Class[_], lifeCycle: LifeCycle, timeout: Long, dispatcher: MessageDispatcher) =
-      this(null: Class[_], target, lifeCycle, timeout, false, dispatcher, null:RemoteAddress)
+      this(null: Class[_], target, lifeCycle, timeout, dispatcher, null: RemoteAddress)
 
     def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Long, remoteAddress: RemoteAddress) =
-      this(intf, target, lifeCycle, timeout, false, null: MessageDispatcher, remoteAddress)
+      this(intf, target, lifeCycle, timeout, null: MessageDispatcher, remoteAddress)
 
     def this(target: Class[_], lifeCycle: LifeCycle, timeout: Long, remoteAddress: RemoteAddress) =
-      this(null: Class[_], target, lifeCycle, timeout, false, null, remoteAddress)
-
-    def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Long, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
-      this(intf, target, lifeCycle, timeout, false, dispatcher, remoteAddress)
+      this(null: Class[_], target, lifeCycle, timeout, null: MessageDispatcher, remoteAddress)
 
     def this(target: Class[_], lifeCycle: LifeCycle, timeout: Long, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
-      this(null: Class[_], target, lifeCycle, timeout, false, dispatcher, remoteAddress)
-
-    def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Long, transactionRequired: Boolean) =
-      this(intf, target, lifeCycle, timeout, transactionRequired, null: MessageDispatcher, null: RemoteAddress)
-
-    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Long, transactionRequired: Boolean) =
-      this(null: Class[_], target, lifeCycle, timeout, transactionRequired, null: MessageDispatcher, null: RemoteAddress)
-
-    def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher) =
-      this(intf, target, lifeCycle, timeout, transactionRequired, dispatcher, null: RemoteAddress)
-
-    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher) =
-      this(null: Class[_], target, lifeCycle, timeout, transactionRequired, dispatcher, null: RemoteAddress)
-
-    def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Long, transactionRequired: Boolean, remoteAddress: RemoteAddress) =
-      this(intf, target, lifeCycle, timeout, transactionRequired, null: MessageDispatcher, remoteAddress)
-
-    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Long, transactionRequired: Boolean, remoteAddress: RemoteAddress) =
-      this(null: Class[_], target, lifeCycle, timeout, transactionRequired, null: MessageDispatcher, remoteAddress)
-
-    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
-      this(null: Class[_], target, lifeCycle, timeout, transactionRequired, dispatcher, remoteAddress)
+      this(null: Class[_], target, lifeCycle, timeout, dispatcher, remoteAddress)
   }
 }

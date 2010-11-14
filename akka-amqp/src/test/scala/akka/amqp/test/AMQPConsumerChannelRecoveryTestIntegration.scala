@@ -45,8 +45,8 @@ class AMQPConsumerChannelRecoveryTestIntegration extends JUnitSuite with MustMat
       val consumerExchangeParameters = ExchangeParameters("text_exchange")
       val consumerChannelParameters = ChannelParameters(channelCallback = Some(consumerChannelCallback))
       val consumer = AMQP.newConsumer(connection, ConsumerParameters("non.interesting.routing.key", actorOf( new Actor {
-        def receive = { case Delivery(payload, _, _, _, _) => payloadLatch.open }
-      }).start,
+        def receive = { case Delivery(payload, _, _, _, _, _) => payloadLatch.open }
+      }),
         exchangeParameters = Some(consumerExchangeParameters), channelParameters = Some(consumerChannelParameters)))
       consumerStartedLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
 

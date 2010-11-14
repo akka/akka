@@ -18,17 +18,6 @@ import akka.util. {ReflectiveAccess, Logging, Duration}
 import akka.japi.Procedure
 
 /**
- * Implements the Transactor abstraction. E.g. a transactional actor.
- * <p/>
- * Equivalent to invoking the <code>makeTransactionRequired</code> method in the body of the <code>Actor</code
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait Transactor extends Actor {
-  self.makeTransactionRequired
-}
-
-/**
  * Extend this abstract class to create a remote actor.
  * <p/>
  * Equivalent to invoking the <code>makeRemote(..)</code> method in the body of the <code>Actor</code
@@ -246,7 +235,7 @@ object Actor extends Logging {
  * Here you find functions like:
  *   - !, !!, !!! and forward
  *   - link, unlink, startLink, spawnLink etc
- *   - makeTransactional, makeRemote etc.
+ *   - makeRemote etc.
  *   - start, stop
  *   - etc.
  *
@@ -413,8 +402,14 @@ trait Actor extends Logging {
   /**
    * Changes tha Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * Puts the behavior on top of the hotswap stack.
+   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
    */
-  def become(behavior: Receive): Unit = self.hotswap = self.hotswap.push(behavior)
+  def become(behavior: Receive, discardOld: Boolean = false) {
+    if (discardOld)
+      unbecome
+
+    self.hotswap = self.hotswap.push(behavior)
+  }
 
   /**
    * Reverts the Actor behavior to the previous one in the hotswap stack.

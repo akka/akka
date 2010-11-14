@@ -55,7 +55,6 @@ trait Consumer { self: Actor =>
  *
  * @see UntypedConsumerActor
  * @see RemoteUntypedConsumerActor
- * @see UntypedConsumerTransactor
  *
  * @author Martin Krasser
  */
@@ -81,12 +80,6 @@ trait UntypedConsumer extends Consumer { self: UntypedActor =>
  * class is meant to be used from Java.
  */
 abstract class UntypedConsumerActor extends UntypedActor with UntypedConsumer
-
-/**
- * Subclass this abstract class to create an MDB-style transacted untyped consumer
- * actor. This class is meant to be used from Java.
- */
-abstract class UntypedConsumerTransactor extends UntypedTransactor with UntypedConsumer
 
 /**
  * Subclass this abstract class to create an MDB-style remote untyped consumer

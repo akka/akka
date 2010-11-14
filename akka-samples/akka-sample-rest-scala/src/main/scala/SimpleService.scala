@@ -4,13 +4,13 @@
 
 package sample.rest.scala
 
-import akka.actor.{Transactor, SupervisorFactory, Actor}
+import akka.actor.{SupervisorFactory, Actor}
 import akka.actor.Actor._
+import akka.stm._
 import akka.stm.TransactionalMap
 import akka.persistence.cassandra.CassandraStorage
 import akka.config.Supervision._
 import akka.util.Logging
-import akka.comet.AkkaClusterBroadcastFilter
 import scala.xml.NodeSeq
 import java.lang.Integer
 import java.nio.ByteBuffer
@@ -60,18 +60,24 @@ class SimpleService {
   }
 }
 
-class SimpleServiceActor extends Transactor {
+class SimpleServiceActor extends Actor {
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
-  private lazy val storage = TransactionalMap[String, Integer]()
+  private val storage = TransactionalMap[String, Integer]()
 
   def receive = {
     case "Tick" => if (hasStartedTicking) {
-      val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
-      storage.put(KEY, new Integer(counter + 1))
-      self.reply(<success>Tick:{counter + 1}</success>)
+      val count = atomic {
+        val current = storage.get(KEY).get.asInstanceOf[Integer].intValue
+        val updated = current + 1
+        storage.put(KEY, new Integer(updated))
+        updated
+      }
+      self.reply(<success>Tick:{count}</success>)
     } else {
-      storage.put(KEY, new Integer(0))
+      atomic {
+        storage.put(KEY, new Integer(0))
+      }
       hasStartedTicking = true
       self.reply(<success>Tick: 0</success>)
     }
@@ -90,7 +96,6 @@ class PubSub {
   @Broadcast
   @Path("/topic/{topic}/{message}/")
   @Produces(Array("text/plain;charset=ISO-8859-1"))
-  //FIXME @Cluster(value = Array(classOf[AkkaClusterBroadcastFilter]),name = "foo")
   def say(@PathParam("topic") topic: Broadcaster, @PathParam("message") message: String): Broadcastable = new Broadcastable(message, topic)
 }
 
@@ -115,22 +120,28 @@ class PersistentSimpleService {
   }
 }
 
-class PersistentSimpleServiceActor extends Transactor {
+class PersistentSimpleServiceActor extends Actor {
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
   private lazy val storage = CassandraStorage.newMap
 
   def receive = {
     case "Tick" => if (hasStartedTicking) {
-      val bytes = storage.get(KEY.getBytes).get
-      val counter = Integer.parseInt(new String(bytes, "UTF8"))
-      storage.put(KEY.getBytes, (counter + 1).toString.getBytes )
+      val count = atomic {
+        val bytes = storage.get(KEY.getBytes).get
+        val current = Integer.parseInt(new String(bytes, "UTF8"))
+        val updated = current + 1
+        storage.put(KEY.getBytes, (updated).toString.getBytes)
+        updated
+      }
 //      val bytes = storage.get(KEY.getBytes).get
 //      val counter = ByteBuffer.wrap(bytes).getInt
 //      storage.put(KEY.getBytes, ByteBuffer.allocate(4).putInt(counter + 1).array)
-      self.reply(<success>Tick:{counter + 1}</success>)
+      self.reply(<success>Tick:{count}</success>)
     } else {
-      storage.put(KEY.getBytes, "0".getBytes)
+      atomic {
+        storage.put(KEY.getBytes, "0".getBytes)
+      }
 //      storage.put(KEY.getBytes, Array(0.toByte))
       hasStartedTicking = true
       self.reply(<success>Tick: 0</success>)
@@ -148,7 +159,6 @@ class Chat {
 
   @POST
   @Broadcast(Array(classOf[XSSHtmlFilter], classOf[JsonpFilter]))
-  //FIXME @Cluster(value = Array(classOf[AkkaClusterBroadcastFilter]),name = "bar")
   @Consumes(Array("application/x-www-form-urlencoded"))
   @Produces(Array("text/html"))
   def publishMessage(form: MultivaluedMap[String, String]) = {

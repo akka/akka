@@ -83,13 +83,6 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
       assert(PingActor.lastMessage === "Hello 2")
     }
 
-    scenario("transactional untyped-actor") {
-      val myactor = getPingActorFromContext("/untyped-actor-config.xml", "transactional-untyped-actor")
-      myactor.sendOneWay("Hello 3")
-      PingActor.latch.await
-      assert(PingActor.lastMessage === "Hello 3")
-    }
-
     scenario("get a remote typed-actor") {
       val myactor = getPingActorFromContext("/untyped-actor-config.xml", "remote-untyped-actor")
       myactor.sendOneWay("Hello 4")

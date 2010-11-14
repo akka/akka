@@ -27,7 +27,6 @@ trait BootableRemoteActorService extends Bootable with Logging {
 
   abstract override def onLoad = {
     if (config.getBool("akka.remote.server.service", true)) {
-      if (config.getBool("akka.remote.cluster.service", true)) Cluster.start(self.applicationLoader)
       log.info("Initializing Remote Actors Service...")
       startRemoteService
       log.info("Remote Actors Service initialized")
@@ -39,8 +38,6 @@ trait BootableRemoteActorService extends Bootable with Logging {
     log.info("Shutting down Remote Actors Service")
     RemoteNode.shutdown
     if (remoteServerThread.isAlive) remoteServerThread.join(1000)
-    log.info("Shutting down Cluster")
-    Cluster.shutdown
     log.info("Remote Actors Service has been shut down")
     super.onUnload
   }
