@@ -293,7 +293,7 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
 
   protected def register = {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
-    transaction.get.get.register(uuid, this)
+    transaction.get.get.register("Map:" + uuid, this)
   }
 }
 
@@ -551,7 +551,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
 
   protected def register = {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
-    transaction.get.get.register(uuid, this)
+    transaction.get.get.register("Vector" + uuid, this)
   }
 }
 
@@ -589,7 +589,7 @@ trait PersistentRef[T] extends Transactional with Committable with Abortable {
 
   protected def register = {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
-    transaction.get.get.register(uuid, this)
+    transaction.get.get.register("Ref" + uuid, this)
   }
 }
 
@@ -712,7 +712,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
 
   protected def register = {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
-    transaction.get.get.register(uuid, this)
+    transaction.get.get.register("Queue:" + uuid, this)
   }
 }
 
@@ -827,7 +827,7 @@ trait PersistentSortedSet[A] extends Transactional with Committable with Abortab
     val es = replay
 
     // a multimap with key as A and value as Set of scores
-    val m = new collection.mutable.HashMap[A, collection.mutable.Set[Float]] 
+    val m = new collection.mutable.HashMap[A, collection.mutable.Set[Float]]
                 with collection.mutable.MultiMap[A, Float]
     for(e <- es) m.addBinding(e._1, e._2)
 
@@ -851,7 +851,7 @@ trait PersistentSortedSet[A] extends Transactional with Committable with Abortab
 
   protected def register = {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
-    transaction.get.get.register(uuid, this)
+    transaction.get.get.register("SortedSet:" + uuid, this)
   }
 }
 

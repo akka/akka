@@ -142,7 +142,8 @@ object Transaction {
   private[akka] def decrement = depth.decrementAndGet
 
   private[akka] def isTopLevel = depth.get == 0
-
+  //when calling this method, make sure to prefix the uuid with the type so you
+  //have no possibility of kicking a diffferent type with the same uuid out of a transction
   private[akka] def register(uuid: String, storage: Committable with Abortable) = persistentStateMap.put(uuid, storage)
 
   private def ensureIsActive = if (status != TransactionStatus.Active)
