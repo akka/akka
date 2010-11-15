@@ -203,6 +203,14 @@ trait Abortable {
 }
 
 /**
+ * Used for integration with the persistence modules.
+ */
+trait Recoverable{
+  def getLog():Array[Byte]
+  def applyLog(log:Array[Byte])
+}
+
+/**
  * Used internally for reflective access to the JTA module.
  * Allows JTA integration to work when akka-jta.jar is on the classpath.
  */
