@@ -9,6 +9,8 @@ import akka.dispatch.{MessageDispatcher, Future, CompletableFuture, Dispatchers}
 import akka.config.Supervision._
 import akka.util._
 import ReflectiveAccess._
+import akka.transactor.{Coordinated, Coordination}
+import akka.transactor.annotation.{Coordinated => CoordinatedAnnotation}
 
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy
@@ -181,6 +183,11 @@ abstract class TypedActor extends Actor with Proxyable {
       if (Actor.SERIALIZE_MESSAGES)       serializeArguments(joinPoint)
       if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
       else                                self.reply(joinPoint.proceed)
+    case coordinated @ Coordinated(joinPoint: JoinPoint) =>
+      SenderContextInfo.senderActorRef.value = self
+      SenderContextInfo.senderProxy.value = proxy
+      if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
+      coordinated atomic { joinPoint.proceed }
     case Link(proxy)   => self.link(proxy)
     case Unlink(proxy) => self.unlink(proxy)
     case unexpected    => throw new IllegalActorStateException(
@@ -231,16 +238,6 @@ abstract class TypedActor extends Actor with Proxyable {
       joinPoint
     }
   }
-}
-
-/**
- * Transactional TypedActor. All messages send to this actor as sent in a transaction. If an enclosing transaction
- * exists it will be joined, if not then a new transaction will be created.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-abstract class TypedTransactor extends TypedActor {
-  self.makeTransactionRequired
 }
 
 /**
@@ -327,12 +324,6 @@ object TypedActorConfiguration {
   def apply(host: String, port: Int, timeout: Long) : TypedActorConfiguration = {
     new TypedActorConfiguration().makeRemote(host, port).timeout(Duration(timeout, "millis"))
   }
-
-  def apply(transactionRequired: Boolean) : TypedActorConfiguration = {
-    if (transactionRequired) {
-      new TypedActorConfiguration().makeTransactionRequired
-    } else new TypedActorConfiguration()
-  }
 }
 
 /**
@@ -342,7 +333,6 @@ object TypedActorConfiguration {
  */
 final class TypedActorConfiguration {
   private[akka] var _timeout: Long = Actor.TIMEOUT
-  private[akka] var _transactionRequired = false
   private[akka] var _host: Option[InetSocketAddress] = None
   private[akka] var _messageDispatcher: Option[MessageDispatcher] = None
   private[akka] var _threadBasedDispatcher: Option[Boolean] = None
@@ -350,11 +340,6 @@ final class TypedActorConfiguration {
   def timeout = _timeout
   def timeout(timeout: Duration) : TypedActorConfiguration = {
     _timeout = timeout.toMillis
-    this
-  }
-
-  def makeTransactionRequired() : TypedActorConfiguration = {
-    _transactionRequired = true;
     this
   }
 
@@ -700,12 +685,6 @@ object TypedActor extends Logging {
     this
   }
 
-  def isTransactional(clazz: Class[_]): Boolean = {
-    if (clazz eq null) false
-    else if (clazz.isAssignableFrom(classOf[TypedTransactor])) true
-    else isTransactional(clazz.getSuperclass)
-  }
-
   private[akka] def newTypedActor(targetClass: Class[_]): TypedActor = {
     val instance = targetClass.newInstance
     val typedActor =
@@ -729,6 +708,12 @@ object TypedActor extends Logging {
 
   private[akka] def isOneWay(methodRtti: MethodRtti): Boolean =
     methodRtti.getMethod.getReturnType == java.lang.Void.TYPE
+
+  private[akka] def isCoordinated(joinPoint: JoinPoint): Boolean =
+    isCoordinated(joinPoint.getRtti.asInstanceOf[MethodRtti])
+
+  private[akka] def isCoordinated(methodRtti: MethodRtti): Boolean =
+    methodRtti.getMethod.isAnnotationPresent(classOf[CoordinatedAnnotation])
 
   private[akka] def returnsFuture_?(methodRtti: MethodRtti): Boolean =
     classOf[Future[_]].isAssignableFrom(methodRtti.getMethod.getReturnType)
@@ -811,11 +796,25 @@ private[akka] abstract class ActorAspect {
     val isOneWay = TypedActor.isOneWay(methodRtti)
     val senderActorRef = Some(SenderContextInfo.senderActorRef.value)
     val senderProxy = Some(SenderContextInfo.senderProxy.value)
+    val isCoordinated = TypedActor.isCoordinated(methodRtti)
 
     typedActor.context._sender = senderProxy
     if (!actorRef.isRunning && !isStopped) {
       isStopped = true
       joinPoint.proceed
+
+    } else if (isOneWay && isCoordinated) {
+      val coordinatedOpt = Option(Coordination.coordinated.value)
+      val coordinated = coordinatedOpt.map( coord =>
+        if (Coordination.firstParty.value) { // already included in coordination
+          Coordination.firstParty.value = false
+          coord.noIncrement(joinPoint)
+        } else {
+          coord(joinPoint)
+        }).getOrElse(Coordinated(joinPoint))
+
+      actorRef.!(coordinated)(senderActorRef)
+      null.asInstanceOf[AnyRef]
 
     } else if (isOneWay) {
       actorRef.!(joinPoint)(senderActorRef)

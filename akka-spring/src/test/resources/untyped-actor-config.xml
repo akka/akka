@@ -21,11 +21,6 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
                       implementation="akka.spring.foo.PingActor"
                       timeout="10000"/>
 
-  <akka:untyped-actor id="transactional-untyped-actor"
-                      implementation="akka.spring.foo.PingActor"
-                      timeout="2000"
-                      transactional="true"/>
-
   <akka:untyped-actor id="remote-untyped-actor"
                       implementation="akka.spring.foo.PingActor"
                       timeout="2000">
