@@ -304,6 +304,7 @@ object ActorRegistry extends ListenerManagement {
   private[akka] def actorsFactories(address: Address) = actorsFor(address).actorsFactories
   private[akka] def typedActors(address: Address) = actorsFor(address).typedActors
   private[akka] def typedActorsByUuid(address: Address) = actorsFor(address).typedActorsByUuid
+  private[akka] def typedActorsFactories(address: Address) = actorsFor(address).typedActorsFactories
 
   private[akka] class RemoteActorSet {
     private[ActorRegistry] val actors = new ConcurrentHashMap[String, ActorRef]
@@ -311,6 +312,7 @@ object ActorRegistry extends ListenerManagement {
     private[ActorRegistry] val actorsFactories = new ConcurrentHashMap[String, () => ActorRef]
     private[ActorRegistry] val typedActors = new ConcurrentHashMap[String, AnyRef]
     private[ActorRegistry] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
+    private[ActorRegistry] val typedActorsFactories = new ConcurrentHashMap[String, () => AnyRef]
   }
 }
 

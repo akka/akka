@@ -40,7 +40,7 @@ object ServerInitiatedRemoteActorSpec {
 
   case class Login(user:String);
   case class GetUser();
-  case class DoSomethingWeird();
+  case class DoSomethingFunny();
 
   val instantiatedSessionActors= Set[ActorRef]();
 
@@ -61,7 +61,7 @@ object ServerInitiatedRemoteActorSpec {
 	      this.user = user;
       case GetUser() =>
         self.reply(this.user)
-      case DoSomethingWeird() =>
+      case DoSomethingFunny() =>
         throw new Exception("Bad boy")
     }
   }
@@ -94,7 +94,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     server.register(actorOf[RemoteActorSpecActorUnidirectional])
     server.register(actorOf[RemoteActorSpecActorBidirectional])
     server.register(actorOf[RemoteActorSpecActorAsyncSender])
-    server.registerPerSession("statefull-session-actor", actorOf[RemoteStatefullSessionActorSpec])
+    server.registerPerSession("untyped-session-actor-service", actorOf[RemoteStatefullSessionActorSpec])
 
     Thread.sleep(1000)
   }
@@ -141,7 +141,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     //RemoteClient.clientFor(HOSTNAME, PORT).connect
 
     val session1 = RemoteClient.actorFor(
-      "statefull-session-actor",
+      "untyped-session-actor-service",
       5000L,
       HOSTNAME, PORT)
 
@@ -161,7 +161,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     //RemoteClient.clientFor(HOSTNAME, PORT).connect
 
     val session2 = RemoteClient.actorFor(
-      "statefull-session-actor",
+      "untyped-session-actor-service",
       5000L,
       HOSTNAME, PORT)
 
@@ -179,7 +179,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
 
 
     val session1 = RemoteClient.actorFor(
-      "statefull-session-actor",
+      "untyped-session-actor-service",
       5000L,
       HOSTNAME, PORT)
 
@@ -200,12 +200,12 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
 
 
     val session1 = RemoteClient.actorFor(
-      "statefull-session-actor",
+      "untyped-session-actor-service",
       5000L,
       HOSTNAME, PORT)
 
 
-    session1 ! DoSomethingWeird();
+    session1 ! DoSomethingFunny();
     session1.stop()
 
     RemoteClient.shutdownAll
