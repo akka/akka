@@ -45,7 +45,6 @@ object AkkaSpringConfigurationTags {
   val IMPLEMENTATION = "implementation"
   val BEANREF = "ref"
   val INTERFACE = "interface"
-  val TRANSACTIONAL = "transactional"
   val HOST = "host"
   val PORT = "port"
   val MANAGED_BY = "managed-by"

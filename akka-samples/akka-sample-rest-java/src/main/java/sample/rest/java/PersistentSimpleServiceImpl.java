@@ -4,28 +4,38 @@
 
 package sample.rest.java;
 
-import akka.actor.TypedTransactor;
+import akka.actor.TypedActor;
+import akka.stm.Atomic;
 import akka.persistence.common.PersistentMap;
 import akka.persistence.cassandra.CassandraStorage;
 
 import java.nio.ByteBuffer;
 
-public class PersistentSimpleServiceImpl extends TypedTransactor implements PersistentSimpleService {
+public class PersistentSimpleServiceImpl extends TypedActor implements PersistentSimpleService {
   private String KEY = "COUNTER";
 
   private boolean hasStartedTicking = false;
-  private PersistentMap<byte[], byte[]> storage;
+  private final PersistentMap<byte[], byte[]> storage = CassandraStorage.newMap();
 
   public String count() {
-    if (storage == null) storage = CassandraStorage.newMap();
     if (!hasStartedTicking) {
-      storage.put(KEY.getBytes(), ByteBuffer.allocate(4).putInt(0).array());
+      new Atomic() {
+        public Object atomically() {
+          storage.put(KEY.getBytes(), ByteBuffer.allocate(4).putInt(0).array());
+          return null;
+        }
+      }.execute();
       hasStartedTicking = true;
       return "Tick: 0\n";
     } else {
-      byte[] bytes = (byte[])storage.get(KEY.getBytes()).get();
-      int counter = ByteBuffer.wrap(bytes).getInt();
-      storage.put(KEY.getBytes(), ByteBuffer.allocate(4).putInt(counter + 1).array());
+      int counter = new Atomic<Integer>() {
+        public Integer atomically() {
+          byte[] bytes = (byte[])storage.get(KEY.getBytes()).get();
+          int count = ByteBuffer.wrap(bytes).getInt() + 1;
+          storage.put(KEY.getBytes(), ByteBuffer.allocate(4).putInt(count).array());
+          return count;
+        }
+      }.execute();
       return "Tick: " + counter + "\n";
     }
   }

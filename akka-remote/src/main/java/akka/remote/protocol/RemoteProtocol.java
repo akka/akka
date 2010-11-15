@@ -1076,50 +1076,43 @@ public final class RemoteProtocol {
     public boolean hasSerializerClassname() { return hasSerializerClassname; }
     public java.lang.String getSerializerClassname() { return serializerClassname_; }
     
-    // optional bool isTransactor = 7;
-    public static final int ISTRANSACTOR_FIELD_NUMBER = 7;
-    private boolean hasIsTransactor;
-    private boolean isTransactor_ = false;
-    public boolean hasIsTransactor() { return hasIsTransactor; }
-    public boolean getIsTransactor() { return isTransactor_; }
-    
-    // optional uint64 timeout = 8;
-    public static final int TIMEOUT_FIELD_NUMBER = 8;
+    // optional uint64 timeout = 7;
+    public static final int TIMEOUT_FIELD_NUMBER = 7;
     private boolean hasTimeout;
     private long timeout_ = 0L;
     public boolean hasTimeout() { return hasTimeout; }
     public long getTimeout() { return timeout_; }
     
-    // optional uint64 receiveTimeout = 9;
-    public static final int RECEIVETIMEOUT_FIELD_NUMBER = 9;
+    // optional uint64 receiveTimeout = 8;
+    public static final int RECEIVETIMEOUT_FIELD_NUMBER = 8;
     private boolean hasReceiveTimeout;
     private long receiveTimeout_ = 0L;
     public boolean hasReceiveTimeout() { return hasReceiveTimeout; }
     public long getReceiveTimeout() { return receiveTimeout_; }
     
-    // optional .LifeCycleProtocol lifeCycle = 10;
-    public static final int LIFECYCLE_FIELD_NUMBER = 10;
+    // optional .LifeCycleProtocol lifeCycle = 9;
+    public static final int LIFECYCLE_FIELD_NUMBER = 9;
     private boolean hasLifeCycle;
     private akka.remote.protocol.RemoteProtocol.LifeCycleProtocol lifeCycle_;
     public boolean hasLifeCycle() { return hasLifeCycle; }
     public akka.remote.protocol.RemoteProtocol.LifeCycleProtocol getLifeCycle() { return lifeCycle_; }
     
-    // optional .RemoteActorRefProtocol supervisor = 11;
-    public static final int SUPERVISOR_FIELD_NUMBER = 11;
+    // optional .RemoteActorRefProtocol supervisor = 10;
+    public static final int SUPERVISOR_FIELD_NUMBER = 10;
     private boolean hasSupervisor;
     private akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol supervisor_;
     public boolean hasSupervisor() { return hasSupervisor; }
     public akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol getSupervisor() { return supervisor_; }
     
-    // optional bytes hotswapStack = 12;
-    public static final int HOTSWAPSTACK_FIELD_NUMBER = 12;
+    // optional bytes hotswapStack = 11;
+    public static final int HOTSWAPSTACK_FIELD_NUMBER = 11;
     private boolean hasHotswapStack;
     private com.google.protobuf.ByteString hotswapStack_ = com.google.protobuf.ByteString.EMPTY;
     public boolean hasHotswapStack() { return hasHotswapStack; }
     public com.google.protobuf.ByteString getHotswapStack() { return hotswapStack_; }
     
-    // repeated .RemoteMessageProtocol messages = 13;
-    public static final int MESSAGES_FIELD_NUMBER = 13;
+    // repeated .RemoteMessageProtocol messages = 12;
+    public static final int MESSAGES_FIELD_NUMBER = 12;
     private java.util.List<akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol> messages_ =
       java.util.Collections.emptyList();
     public java.util.List<akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol> getMessagesList() {
@@ -1176,26 +1169,23 @@ public final class RemoteProtocol {
       if (hasSerializerClassname()) {
         output.writeString(6, getSerializerClassname());
       }
-      if (hasIsTransactor()) {
-        output.writeBool(7, getIsTransactor());
-      }
       if (hasTimeout()) {
-        output.writeUInt64(8, getTimeout());
+        output.writeUInt64(7, getTimeout());
       }
       if (hasReceiveTimeout()) {
-        output.writeUInt64(9, getReceiveTimeout());
+        output.writeUInt64(8, getReceiveTimeout());
       }
       if (hasLifeCycle()) {
-        output.writeMessage(10, getLifeCycle());
+        output.writeMessage(9, getLifeCycle());
       }
       if (hasSupervisor()) {
-        output.writeMessage(11, getSupervisor());
+        output.writeMessage(10, getSupervisor());
       }
       if (hasHotswapStack()) {
-        output.writeBytes(12, getHotswapStack());
+        output.writeBytes(11, getHotswapStack());
       }
       for (akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol element : getMessagesList()) {
-        output.writeMessage(13, element);
+        output.writeMessage(12, element);
       }
       getUnknownFields().writeTo(output);
     }
@@ -1230,33 +1220,29 @@ public final class RemoteProtocol {
         size += com.google.protobuf.CodedOutputStream
           .computeStringSize(6, getSerializerClassname());
       }
-      if (hasIsTransactor()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(7, getIsTransactor());
-      }
       if (hasTimeout()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(8, getTimeout());
+          .computeUInt64Size(7, getTimeout());
       }
       if (hasReceiveTimeout()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(9, getReceiveTimeout());
+          .computeUInt64Size(8, getReceiveTimeout());
       }
       if (hasLifeCycle()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(10, getLifeCycle());
+          .computeMessageSize(9, getLifeCycle());
       }
       if (hasSupervisor()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(11, getSupervisor());
+          .computeMessageSize(10, getSupervisor());
       }
       if (hasHotswapStack()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(12, getHotswapStack());
+          .computeBytesSize(11, getHotswapStack());
       }
       for (akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol element : getMessagesList()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(13, element);
+          .computeMessageSize(12, element);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1438,9 +1424,6 @@ public final class RemoteProtocol {
         if (other.hasSerializerClassname()) {
           setSerializerClassname(other.getSerializerClassname());
         }
-        if (other.hasIsTransactor()) {
-          setIsTransactor(other.getIsTransactor());
-        }
         if (other.hasTimeout()) {
           setTimeout(other.getTimeout());
         }
@@ -1522,18 +1505,14 @@ public final class RemoteProtocol {
               break;
             }
             case 56: {
-              setIsTransactor(input.readBool());
-              break;
-            }
-            case 64: {
               setTimeout(input.readUInt64());
               break;
             }
-            case 72: {
+            case 64: {
               setReceiveTimeout(input.readUInt64());
               break;
             }
-            case 82: {
+            case 74: {
               akka.remote.protocol.RemoteProtocol.LifeCycleProtocol.Builder subBuilder = akka.remote.protocol.RemoteProtocol.LifeCycleProtocol.newBuilder();
               if (hasLifeCycle()) {
                 subBuilder.mergeFrom(getLifeCycle());
@@ -1542,7 +1521,7 @@ public final class RemoteProtocol {
               setLifeCycle(subBuilder.buildPartial());
               break;
             }
-            case 90: {
+            case 82: {
               akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.Builder subBuilder = akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.newBuilder();
               if (hasSupervisor()) {
                 subBuilder.mergeFrom(getSupervisor());
@@ -1551,11 +1530,11 @@ public final class RemoteProtocol {
               setSupervisor(subBuilder.buildPartial());
               break;
             }
-            case 98: {
+            case 90: {
               setHotswapStack(input.readBytes());
               break;
             }
-            case 106: {
+            case 98: {
               akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol.Builder subBuilder = akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol.newBuilder();
               input.readMessage(subBuilder, extensionRegistry);
               addMessages(subBuilder.buildPartial());
@@ -1724,25 +1703,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional bool isTransactor = 7;
-      public boolean hasIsTransactor() {
-        return result.hasIsTransactor();
-      }
-      public boolean getIsTransactor() {
-        return result.getIsTransactor();
-      }
-      public Builder setIsTransactor(boolean value) {
-        result.hasIsTransactor = true;
-        result.isTransactor_ = value;
-        return this;
-      }
-      public Builder clearIsTransactor() {
-        result.hasIsTransactor = false;
-        result.isTransactor_ = false;
-        return this;
-      }
-      
-      // optional uint64 timeout = 8;
+      // optional uint64 timeout = 7;
       public boolean hasTimeout() {
         return result.hasTimeout();
       }
@@ -1760,7 +1721,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional uint64 receiveTimeout = 9;
+      // optional uint64 receiveTimeout = 8;
       public boolean hasReceiveTimeout() {
         return result.hasReceiveTimeout();
       }
@@ -1778,7 +1739,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional .LifeCycleProtocol lifeCycle = 10;
+      // optional .LifeCycleProtocol lifeCycle = 9;
       public boolean hasLifeCycle() {
         return result.hasLifeCycle();
       }
@@ -1815,7 +1776,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional .RemoteActorRefProtocol supervisor = 11;
+      // optional .RemoteActorRefProtocol supervisor = 10;
       public boolean hasSupervisor() {
         return result.hasSupervisor();
       }
@@ -1852,7 +1813,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional bytes hotswapStack = 12;
+      // optional bytes hotswapStack = 11;
       public boolean hasHotswapStack() {
         return result.hasHotswapStack();
       }
@@ -1873,7 +1834,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // repeated .RemoteMessageProtocol messages = 13;
+      // repeated .RemoteMessageProtocol messages = 12;
       public java.util.List<akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol> getMessagesList() {
         return java.util.Collections.unmodifiableList(result.messages_);
       }
@@ -6060,49 +6021,48 @@ public final class RemoteProtocol {
       "(\0132\020.AddressProtocol\022\017\n\007timeout\030\004 \001(\004\"_\n" +
       "\033RemoteTypedActorRefProtocol\022)\n\010actorRef" +
       "\030\001 \002(\0132\027.RemoteActorRefProtocol\022\025\n\rinter" +
-      "faceName\030\002 \002(\t\"\217\003\n\032SerializedActorRefPro" +
+      "faceName\030\002 \002(\t\"\371\002\n\032SerializedActorRefPro" +
       "tocol\022\033\n\004uuid\030\001 \002(\0132\r.UuidProtocol\022\n\n\002id" +
       "\030\002 \002(\t\022\026\n\016actorClassname\030\003 \002(\t\022)\n\017origin" +
       "alAddress\030\004 \002(\0132\020.AddressProtocol\022\025\n\ract",
       "orInstance\030\005 \001(\014\022\033\n\023serializerClassname\030" +
-      "\006 \001(\t\022\024\n\014isTransactor\030\007 \001(\010\022\017\n\007timeout\030\010" +
-      " \001(\004\022\026\n\016receiveTimeout\030\t \001(\004\022%\n\tlifeCycl" +
-      "e\030\n \001(\0132\022.LifeCycleProtocol\022+\n\nsuperviso" +
-      "r\030\013 \001(\0132\027.RemoteActorRefProtocol\022\024\n\014hots" +
-      "wapStack\030\014 \001(\014\022(\n\010messages\030\r \003(\0132\026.Remot" +
-      "eMessageProtocol\"g\n\037SerializedTypedActor" +
-      "RefProtocol\022-\n\010actorRef\030\001 \002(\0132\033.Serializ" +
-      "edActorRefProtocol\022\025\n\rinterfaceName\030\002 \002(" +
-      "\t\"r\n\017MessageProtocol\0225\n\023serializationSch",
-      "eme\030\001 \002(\0162\030.SerializationSchemeType\022\017\n\007m" +
-      "essage\030\002 \002(\014\022\027\n\017messageManifest\030\003 \001(\014\"\255\001" +
-      "\n\021ActorInfoProtocol\022\033\n\004uuid\030\001 \002(\0132\r.Uuid" +
-      "Protocol\022\016\n\006target\030\002 \002(\t\022\017\n\007timeout\030\003 \002(" +
-      "\004\022\035\n\tactorType\030\004 \002(\0162\n.ActorType\022/\n\016type" +
-      "dActorInfo\030\005 \001(\0132\027.TypedActorInfoProtoco" +
-      "l\022\n\n\002id\030\006 \001(\t\";\n\026TypedActorInfoProtocol\022" +
-      "\021\n\tinterface\030\001 \002(\t\022\016\n\006method\030\002 \002(\t\"\277\002\n\025R" +
-      "emoteMessageProtocol\022\033\n\004uuid\030\001 \002(\0132\r.Uui" +
-      "dProtocol\022%\n\tactorInfo\030\002 \002(\0132\022.ActorInfo",
-      "Protocol\022\016\n\006oneWay\030\003 \002(\010\022!\n\007message\030\004 \001(" +
-      "\0132\020.MessageProtocol\022%\n\texception\030\005 \001(\0132\022" +
-      ".ExceptionProtocol\022%\n\016supervisorUuid\030\006 \001" +
-      "(\0132\r.UuidProtocol\022\'\n\006sender\030\007 \001(\0132\027.Remo" +
-      "teActorRefProtocol\022(\n\010metadata\030\010 \003(\0132\026.M" +
-      "etadataEntryProtocol\022\016\n\006cookie\030\t \001(\t\")\n\014" +
-      "UuidProtocol\022\014\n\004high\030\001 \002(\004\022\013\n\003low\030\002 \002(\004\"" +
-      "3\n\025MetadataEntryProtocol\022\013\n\003key\030\001 \002(\t\022\r\n" +
-      "\005value\030\002 \002(\014\"6\n\021LifeCycleProtocol\022!\n\tlif" +
-      "eCycle\030\001 \002(\0162\016.LifeCycleType\"1\n\017AddressP",
-      "rotocol\022\020\n\010hostname\030\001 \002(\t\022\014\n\004port\030\002 \002(\r\"" +
-      "7\n\021ExceptionProtocol\022\021\n\tclassname\030\001 \002(\t\022" +
-      "\017\n\007message\030\002 \002(\t*=\n\tActorType\022\017\n\013SCALA_A" +
-      "CTOR\020\001\022\016\n\nJAVA_ACTOR\020\002\022\017\n\013TYPED_ACTOR\020\003*" +
-      "]\n\027SerializationSchemeType\022\010\n\004JAVA\020\001\022\013\n\007" +
-      "SBINARY\020\002\022\016\n\nSCALA_JSON\020\003\022\r\n\tJAVA_JSON\020\004" +
-      "\022\014\n\010PROTOBUF\020\005*-\n\rLifeCycleType\022\r\n\tPERMA" +
-      "NENT\020\001\022\r\n\tTEMPORARY\020\002B\030\n\024akka.remote.pro" +
-      "tocolH\001"
+      "\006 \001(\t\022\017\n\007timeout\030\007 \001(\004\022\026\n\016receiveTimeout" +
+      "\030\010 \001(\004\022%\n\tlifeCycle\030\t \001(\0132\022.LifeCyclePro" +
+      "tocol\022+\n\nsupervisor\030\n \001(\0132\027.RemoteActorR" +
+      "efProtocol\022\024\n\014hotswapStack\030\013 \001(\014\022(\n\010mess" +
+      "ages\030\014 \003(\0132\026.RemoteMessageProtocol\"g\n\037Se" +
+      "rializedTypedActorRefProtocol\022-\n\010actorRe" +
+      "f\030\001 \002(\0132\033.SerializedActorRefProtocol\022\025\n\r" +
+      "interfaceName\030\002 \002(\t\"r\n\017MessageProtocol\0225" +
+      "\n\023serializationScheme\030\001 \002(\0162\030.Serializat",
+      "ionSchemeType\022\017\n\007message\030\002 \002(\014\022\027\n\017messag" +
+      "eManifest\030\003 \001(\014\"\255\001\n\021ActorInfoProtocol\022\033\n" +
+      "\004uuid\030\001 \002(\0132\r.UuidProtocol\022\016\n\006target\030\002 \002" +
+      "(\t\022\017\n\007timeout\030\003 \002(\004\022\035\n\tactorType\030\004 \002(\0162\n" +
+      ".ActorType\022/\n\016typedActorInfo\030\005 \001(\0132\027.Typ" +
+      "edActorInfoProtocol\022\n\n\002id\030\006 \001(\t\";\n\026Typed" +
+      "ActorInfoProtocol\022\021\n\tinterface\030\001 \002(\t\022\016\n\006" +
+      "method\030\002 \002(\t\"\277\002\n\025RemoteMessageProtocol\022\033" +
+      "\n\004uuid\030\001 \002(\0132\r.UuidProtocol\022%\n\tactorInfo" +
+      "\030\002 \002(\0132\022.ActorInfoProtocol\022\016\n\006oneWay\030\003 \002",
+      "(\010\022!\n\007message\030\004 \001(\0132\020.MessageProtocol\022%\n" +
+      "\texception\030\005 \001(\0132\022.ExceptionProtocol\022%\n\016" +
+      "supervisorUuid\030\006 \001(\0132\r.UuidProtocol\022\'\n\006s" +
+      "ender\030\007 \001(\0132\027.RemoteActorRefProtocol\022(\n\010" +
+      "metadata\030\010 \003(\0132\026.MetadataEntryProtocol\022\016" +
+      "\n\006cookie\030\t \001(\t\")\n\014UuidProtocol\022\014\n\004high\030\001" +
+      " \002(\004\022\013\n\003low\030\002 \002(\004\"3\n\025MetadataEntryProtoc" +
+      "ol\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\014\"6\n\021LifeCy" +
+      "cleProtocol\022!\n\tlifeCycle\030\001 \002(\0162\016.LifeCyc" +
+      "leType\"1\n\017AddressProtocol\022\020\n\010hostname\030\001 ",
+      "\002(\t\022\014\n\004port\030\002 \002(\r\"7\n\021ExceptionProtocol\022\021" +
+      "\n\tclassname\030\001 \002(\t\022\017\n\007message\030\002 \002(\t*=\n\tAc" +
+      "torType\022\017\n\013SCALA_ACTOR\020\001\022\016\n\nJAVA_ACTOR\020\002" +
+      "\022\017\n\013TYPED_ACTOR\020\003*]\n\027SerializationScheme" +
+      "Type\022\010\n\004JAVA\020\001\022\013\n\007SBINARY\020\002\022\016\n\nSCALA_JSO" +
+      "N\020\003\022\r\n\tJAVA_JSON\020\004\022\014\n\010PROTOBUF\020\005*-\n\rLife" +
+      "CycleType\022\r\n\tPERMANENT\020\001\022\r\n\tTEMPORARY\020\002B" +
+      "\030\n\024akka.remote.protocolH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -6130,7 +6090,7 @@ public final class RemoteProtocol {
           internal_static_SerializedActorRefProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SerializedActorRefProtocol_descriptor,
-              new java.lang.String[] { "Uuid", "Id", "ActorClassname", "OriginalAddress", "ActorInstance", "SerializerClassname", "IsTransactor", "Timeout", "ReceiveTimeout", "LifeCycle", "Supervisor", "HotswapStack", "Messages", },
+              new java.lang.String[] { "Uuid", "Id", "ActorClassname", "OriginalAddress", "ActorInstance", "SerializerClassname", "Timeout", "ReceiveTimeout", "LifeCycle", "Supervisor", "HotswapStack", "Messages", },
               akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol.class,
               akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol.Builder.class);
           internal_static_SerializedTypedActorRefProtocol_descriptor =

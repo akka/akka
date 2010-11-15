@@ -25,7 +25,6 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
       val xml = <akka:typed-actor id="typed-actor1"
                                     implementation="foo.bar.MyPojo"
                                     timeout="1000"
-                                    transactional="true"
                                                                         scope="prototype">
                                                 <property name="someProp" value="someValue" ref="someRef"/>
                                         </akka:typed-actor>
@@ -34,15 +33,12 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
       assert(props ne null)
       assert(props.timeout === 1000)
       assert(props.target === "foo.bar.MyPojo")
-      assert(props.transactional)
       assert(props.scope === "prototype")
       assert(props.propertyEntries.entryList.size === 1)
     }
 
     it("should throw IllegalArgumentException on missing mandatory attributes") {
-      val xml = <akka:typed-actor id="typed-actor1"
-                                    timeout="1000"
-                                    transactional="true"/>
+      val xml = <akka:typed-actor id="typed-actor1" timeout="1000"/>
 
       evaluating { parser.parseActor(dom(xml).getDocumentElement) } should produce [IllegalArgumentException]
     }

@@ -7,8 +7,9 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import akka.actor.{Actor, ActorRef, Transactor}
+import akka.actor.{Actor, ActorRef}
 import Actor._
+import akka.stm._
 
 /**
  * A persistent actor based on Redis sortedset storage.
@@ -20,15 +21,15 @@ import Actor._
 case class AddEmail(email: String, value: String)
 case class GetAll(email: String)
 
-class MySortedSet extends Transactor {
-  var score = 1
+class MySortedSet extends Actor {
 
-  def receive = {
+  def receive = { case message => atomic { atomicReceive(message) } }
+
+  def atomicReceive: Receive = {
     case AddEmail(userEmail, value) => {
       val registryId = "userValues:%s".format(userEmail)
       val storageSet = RedisStorage.getSortedSet(registryId)
-      storageSet.add(value.getBytes, score)
-      score += 1
+      storageSet.add(value.getBytes, System.currentTimeMillis.toFloat)
       self.reply(storageSet.size)
     }
     case GetAll(userEmail) => {
@@ -60,7 +61,7 @@ class RedisTicket513Spec extends
   describe("insert into user specific set") {
     val a = actorOf[MySortedSet]
     a.start
-    it("should work with transactors") {
+    it("should work with same score value") {
       (a !! AddEmail("test.user@gmail.com", "foo")).get should equal(1)
       (a !! AddEmail("test.user@gmail.com", "bar")).get should equal(2)
       (a !! GetAll("test.user@gmail.com")).get.asInstanceOf[List[_]].size should equal(2)

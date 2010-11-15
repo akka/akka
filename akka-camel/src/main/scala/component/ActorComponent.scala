@@ -16,7 +16,6 @@ import akka.actor._
 import akka.camel.{Failure, Message}
 import akka.camel.CamelMessageConversion.toExchangeAdapter
 import akka.dispatch.{CompletableFuture, MessageInvocation, MessageDispatcher}
-import akka.stm.TransactionConfig
 
 import scala.reflect.BeanProperty
 
@@ -274,9 +273,6 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   def actorClassName = unsupported
   def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported
-  def transactionConfig_=(config: TransactionConfig): Unit = unsupported
-  def transactionConfig: TransactionConfig = unsupported
-  def makeTransactionRequired: Unit = unsupported
   def makeRemote(hostname: String, port: Int): Unit = unsupported
   def makeRemote(address: InetSocketAddress): Unit = unsupported
   def homeAddress_=(address: InetSocketAddress): Unit = unsupported

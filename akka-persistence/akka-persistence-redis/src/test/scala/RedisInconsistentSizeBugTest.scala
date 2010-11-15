@@ -8,7 +8,7 @@ import akka.actor.{Actor, ActorRef}
 import akka.config.Supervision.{OneForOneStrategy, Permanent}
 import Actor._
 import akka.persistence.common.PersistentVector
-import akka.stm.global._
+import akka.stm._
 import akka.util.Logging
 
 import java.util.{Calendar, Date}

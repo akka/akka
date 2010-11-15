@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 import scala.util.Random.{nextInt => randomInt}
 import akka.actor.{Actor, ActorRef, Scheduler}
 import akka.actor.Actor.actorOf
-import akka.stm.local._
+import akka.stm._
 
 object Config {
   val Dim = 80               // dimensions of square world

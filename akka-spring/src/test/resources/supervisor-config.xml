@@ -59,7 +59,7 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
     </akka:restart-strategy>
     <akka:typed-actors>
       <akka:typed-actor implementation="akka.spring.foo.StatefulPojo" lifecycle="permanent"
-                          timeout="10000" transactional="true"/>
+                          timeout="10000"/>
     </akka:typed-actors>
   </akka:supervision>
     -->

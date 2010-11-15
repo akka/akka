@@ -5,27 +5,36 @@
 package sample.rest.java;
 
 import akka.actor.TypedActor;
-import akka.actor.TypedTransactor;
+import akka.stm.Atomic;
 import akka.stm.TransactionalMap;
 
-public class SimpleServiceImpl extends TypedTransactor implements SimpleService {
+public class SimpleServiceImpl extends TypedActor implements SimpleService {
   private String KEY = "COUNTER";
 
   private boolean hasStartedTicking = false;
-  private TransactionalMap<String, Integer> storage;
+  private final TransactionalMap<String, Integer> storage = new TransactionalMap<String, Integer>();
   private Receiver receiver = TypedActor.newInstance(Receiver.class, ReceiverImpl.class);
 
   public String count() {
-    if (storage == null) storage = new TransactionalMap<String, Integer>();
     if (!hasStartedTicking) {
-      storage.put(KEY, 0);
+      new Atomic() {
+        public Object atomically() {
+          storage.put(KEY, 0);
+          return null;
+        }
+      }.execute();
       hasStartedTicking = true;
       return "Tick: 0\n";
     } else {
       // Grabs the sender address and returns it
       //SimpleService sender = receiver.receive();
-      int counter = (Integer)storage.get(KEY).get() + 1;
-      storage.put(KEY, counter);
+      int counter = new Atomic<Integer>() {
+        public Integer atomically() {
+          int count = (Integer) storage.get(KEY).get() + 1;
+          storage.put(KEY, count);
+          return count;
+        }
+      }.execute();
       return "Tick: " + counter + "\n";
     }
   }

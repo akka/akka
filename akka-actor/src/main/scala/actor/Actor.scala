@@ -18,17 +18,6 @@ import akka.util. {ReflectiveAccess, Logging, Duration}
 import akka.japi.Procedure
 
 /**
- * Implements the Transactor abstraction. E.g. a transactional actor.
- * <p/>
- * Equivalent to invoking the <code>makeTransactionRequired</code> method in the body of the <code>Actor</code
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait Transactor extends Actor {
-  self.makeTransactionRequired
-}
-
-/**
  * Extend this abstract class to create a remote actor.
  * <p/>
  * Equivalent to invoking the <code>makeRemote(..)</code> method in the body of the <code>Actor</code
@@ -246,7 +235,7 @@ object Actor extends Logging {
  * Here you find functions like:
  *   - !, !!, !!! and forward
  *   - link, unlink, startLink, spawnLink etc
- *   - makeTransactional, makeRemote etc.
+ *   - makeRemote etc.
  *   - start, stop
  *   - etc.
  *
