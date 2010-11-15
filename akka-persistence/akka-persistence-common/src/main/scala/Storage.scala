@@ -9,6 +9,7 @@ import akka.stm.TransactionManagement.transaction
 import akka.util.Logging
 import akka.japi.{Option => JOption}
 import collection.mutable.ArraySeq
+import akka.serialization.Serializer.SBinary
 
 // FIXME move to 'stm' package + add message with more info
 class NoTransactionInScopeException extends RuntimeException
@@ -110,7 +111,7 @@ private[akka] object PersistentMap {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
-        with Transactional with Committable with Abortable with Logging {
+        with Transactional with Committable with Abortable with Recoverable with Logging {
 
   def asJava() : java.util.Map[K, V] = scala.collection.JavaConversions.asMap(this)
 
@@ -305,6 +306,15 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
     transaction.get.get.register("Map:" + uuid, this)
   }
+
+  def applyLog(log: Array[Byte]) = {
+    val tlog = SBinary.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]]))
+    tlog.foreach{
+      appendOnlyTxLog add _
+    }
+  }
+
+  def getLog() = SBinary.toBinary(appendOnlyTxLog)
 }
 
 object PersistentMapBinary {
@@ -464,7 +474,7 @@ private[akka] object PersistentVector {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable with Abortable {
+trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable with Abortable with Recoverable {
   //Import Ops
   import PersistentVector._
 
@@ -570,6 +580,15 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
     transaction.get.get.register("Vector" + uuid, this)
   }
+
+  def applyLog(log: Array[Byte]) = {
+    val tlog = SBinary.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]]))
+    tlog.foreach{
+      appendOnlyTxLog add _
+    }
+  }
+
+  def getLog() = SBinary.toBinary(appendOnlyTxLog)
 }
 
 /**
@@ -577,7 +596,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentRef[T] extends Transactional with Committable with Abortable {
+trait PersistentRef[T] extends Transactional with Committable with Abortable with Recoverable {
   protected val ref = Ref[T]()
 
   val storage: RefStorageBackend[T]
@@ -608,6 +627,12 @@ trait PersistentRef[T] extends Transactional with Committable with Abortable {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
     transaction.get.get.register("Ref" + uuid, this)
   }
+
+  def applyLog(log: Array[Byte]) = {
+    ref.swap(SBinary.fromBinary(log, Some(classOf[Ref[T]])))
+  }
+
+  def getLog() = SBinary.toBinary(ref.get)
 }
 
 private[akka] object PersistentQueue {
@@ -647,7 +672,7 @@ private[akka] object PersistentQueue {
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
 trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
-        with Transactional with Committable with Abortable with Logging {
+        with Transactional with Committable with Abortable with Recoverable with Logging {
 
   //Import Ops
   import PersistentQueue._
@@ -738,6 +763,16 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
     transaction.get.get.register("Queue:" + uuid, this)
   }
+
+  def applyLog(log: Array[Byte]) = {
+    val tlog = SBinary.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]]))
+    tlog.foreach{
+      appendOnlyTxLog add _
+    }
+  }
+
+  def getLog() = SBinary.toBinary(appendOnlyTxLog)
+
 }
 
 private[akka] object PersistentSortedSet {
@@ -784,7 +819,7 @@ private[akka] object PersistentSortedSet {
  *
  * @author <a href="http://debasishg.blogspot.com"</a>
  */
-trait PersistentSortedSet[A] extends Transactional with Committable with Abortable {
+trait PersistentSortedSet[A] extends Transactional with Committable with Abortable with Recoverable {
   //Import Ops
   import PersistentSortedSet._
 
@@ -884,6 +919,15 @@ trait PersistentSortedSet[A] extends Transactional with Committable with Abortab
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
     transaction.get.get.register("SortedSet:" + uuid, this)
   }
+
+  def applyLog(log: Array[Byte]) = {
+    val tlog = SBinary.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]]))
+    tlog.foreach{
+      appendOnlyTxLog add _
+    }
+  }
+
+  def getLog() = SBinary.toBinary(appendOnlyTxLog)
 }
 
 trait PersistentSortedSetBinary extends PersistentSortedSet[Array[Byte]] {

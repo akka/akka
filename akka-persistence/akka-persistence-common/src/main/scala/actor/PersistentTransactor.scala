@@ -24,6 +24,7 @@ trait PersistentTransactor extends Transactor{
       atomicallyWithStorage
     } catch {
       case e: TooManyRetriesException => {
+
         transaction.get.get.persistentStateMap foreach{
 
         }
@@ -32,17 +33,17 @@ trait PersistentTransactor extends Transactor{
   }
 
 
-  def atomicallyWithStorage
+  def atomicallyWithStorage:Unit
 
 
 }
 
-sealed trait CommitFailure
-case class RefFailure(uuid:String, ref: Array[Byte]) extends CommitFailure
-case class VectorFailure(uuid:String, log:Array[Byte]) extends CommitFailure
-case class MapFailure(uuid:String, log:Array[Byte]) extends CommitFailure
-case class QueueFailure(uuid:String, log:Array[Byte]) extends CommitFailure
-case class SortedSetFailure(uuid:String, log:Array[Byte]) extends CommitFailure
+@serializable sealed trait CommitFailure
+case class RefFailure(uuid:String, ref: Array[Byte], error:String) extends CommitFailure
+case class VectorFailure(uuid:String, log:Array[Byte],error:String) extends CommitFailure
+case class MapFailure(uuid:String, log:Array[Byte], error:String) extends CommitFailure
+case class QueueFailure(uuid:String, log:Array[Byte],error:String) extends CommitFailure
+case class SortedSetFailure(uuid:String, log:Array[Byte],error:String) extends CommitFailure
 
 
 
@@ -60,4 +61,11 @@ case class RecoverFailedTransaction extends RecoveryMesage
 trait PersistentTransactorRecoveryManager extends Actor {
   //log the failed transactions in hawtdb
   //send the failed transactions back to the restarted actor
+
+  protected def receive = {
+
+  }
+
+
+
 }
