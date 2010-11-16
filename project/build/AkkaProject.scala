@@ -581,7 +581,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val commons_codec = Dependencies.commons_codec
     val redis         = Dependencies.redis
 
-    // override def testOptions = createTestFilter( _.endsWith("Test"))
+    override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
