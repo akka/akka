@@ -910,7 +910,7 @@ trait PersistentSortedSet[A] extends Transactional with Committable with Abortab
 
   protected def register = {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
-    transaction.get.get.register((this.getClass, uuid), this)
+    transaction.get.get.register("SortedSet:"+uuid, this)
   }
 
   def applyLog(log: Array[Byte]) = {

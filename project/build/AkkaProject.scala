@@ -181,6 +181,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val h2_lzf = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile" //ApacheV2
 
     lazy val hawtdispatch = "org.fusesource.hawtdispatch" % "hawtdispatch-scala" % HAWT_DISPATCH_VERSION % "compile" //ApacheV2
+    lazy val hawtdb = "org.fusesource.hawtdb" % "hawtdb" % "1.5" % "compile" //ApacheV2
 
     lazy val jackson          = "org.codehaus.jackson" % "jackson-mapper-asl" % JACKSON_VERSION % "compile" //ApacheV2
     lazy val jackson_core     = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile" //ApacheV2
@@ -278,10 +279,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val dbcp           = "commons-dbcp"           % "commons-dbcp"        % "1.2.2"           % "test" //ApacheV2
 
     //memcached
-    lazy val spymemcached  = "spy" % "memcached" % "2.5" % "compile"
+    lazy val spymemcached  = "spy" % "memcached" % "2.5" % "compile"   //MIT
 
     //simpledb
-    lazy val simpledb = "com.amazonaws" % "aws-java-sdk" % "1.0.14" % "compile"
+    lazy val simpledb = "com.amazonaws" % "aws-java-sdk" % "1.0.14" % "compile" //ApacheV2
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -569,6 +570,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaPersistenceCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val commons_pool = Dependencies.commons_pool
     val thrift       = Dependencies.thrift
+    val hawtdb       = Dependencies.hawtdb
   }
 
   // -------------------------------------------------------------------------------------------------------------------
