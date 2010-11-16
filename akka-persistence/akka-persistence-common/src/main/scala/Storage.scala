@@ -9,7 +9,7 @@ import akka.stm.TransactionManagement.transaction
 import akka.util.Logging
 import akka.japi.{Option => JOption}
 import collection.mutable.ArraySeq
-import akka.serialization.Serializer.SBinary
+import akka.serialization.Serializer
 
 // FIXME move to 'stm' package + add message with more info
 class NoTransactionInScopeException extends RuntimeException
@@ -90,15 +90,17 @@ trait Storage {
 
 private[akka] object PersistentMap {
   // operations on the Map
-  sealed trait Op{
-    private var unexec = true
-    def wasExecuted() = {unexec = false}
-    def notExecuted() = unexec
-  }
+  sealed trait Op
   case object PUT extends Op
   case object REM extends Op
   case object UPD extends Op
   case object CLR extends Op
+}
+
+private[akka] trait ExecutableEntry{
+    private var unexec = true
+    def wasExecuted() = {unexec = false}
+    def notExecuted() = unexec
 }
 
 /**
@@ -121,7 +123,7 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
   // append only log: records all mutating operations
   protected val appendOnlyTxLog = TransactionalVector[LogEntry]()
 
-  case class LogEntry(key: Option[K], value: Option[V], op: Op)
+  case class LogEntry(key: Option[K], value: Option[V], op: Op) extends ExecutableEntry
 
   // need to override in subclasses e.g. "sameElements" for Array[Byte]
   def equal(k1: K, k2: K): Boolean = k1 == k2
@@ -185,17 +187,20 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
 
   def commit = {
     appendOnlyTxLog.foreach{
-      case LogEntry(k, v, o) => {
-        if (storage.transactional || o.notExecuted) {
-          o match {
-            case PUT => storage.insertMapStorageEntryFor(uuid, k.get, v.get)
-            case UPD => storage.insertMapStorageEntryFor(uuid, k.get, v.get)
-            case REM => storage.removeMapStorageFor(uuid, k.get)
-            case CLR => storage.removeMapStorageFor(uuid)
+      entry =>
+        if (storage.transactional || entry.notExecuted) {
+          entry match {
+            case LogEntry(k, v, o) => {
+              o match {
+                case PUT => storage.insertMapStorageEntryFor(uuid, k.get, v.get)
+                case UPD => storage.insertMapStorageEntryFor(uuid, k.get, v.get)
+                case REM => storage.removeMapStorageFor(uuid, k.get)
+                case CLR => storage.removeMapStorageFor(uuid)
+              }
+              entry.wasExecuted
+            }
           }
-          o.wasExecuted
         }
-      }
     }
     appendOnlyTxLog.clear
     clearDistinctKeys
@@ -308,13 +313,13 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
   }
 
   def applyLog(log: Array[Byte]) = {
-    val tlog = SBinary.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]]))
+    val tlog = Serializer.Java.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]])).asInstanceOf[TransactionalVector[LogEntry]]
     tlog.foreach{
       appendOnlyTxLog add _
     }
   }
 
-  def getLog() = SBinary.toBinary(appendOnlyTxLog)
+  def getLog() = Serializer.Java.toBinary(appendOnlyTxLog)
 }
 
 object PersistentMapBinary {
@@ -459,11 +464,7 @@ trait PersistentMapBinary extends PersistentMap[Array[Byte], Array[Byte]] {
 
 private[akka] object PersistentVector {
   // operations on the Vector
-  sealed trait Op{
-    private var unexec = true
-    def wasExecuted() = {unexec = false}
-    def notExecuted() = unexec
-  }
+  sealed trait Op
   case object ADD extends Op
   case object UPD extends Op
   case object POP extends Op
@@ -483,7 +484,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
   // append only log: records all mutating operations
   protected val appendOnlyTxLog = TransactionalVector[LogEntry]()
 
-  case class LogEntry(index: Option[Int], value: Option[T], op: Op)
+  case class LogEntry(index: Option[Int], value: Option[T], op: Op) extends ExecutableEntry
 
   // need to override in subclasses e.g. "sameElements" for Array[Byte]
   // def equal(v1: T, v2: T): Boolean = v1 == v2
@@ -492,13 +493,13 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
 
   def commit = {
     for (entry <- appendOnlyTxLog) {
-      if (storage.transactional || entry.op.notExecuted) {
+      if (storage.transactional || entry.notExecuted) {
         (entry: @unchecked) match {
           case LogEntry(_, Some(v), ADD) => storage.insertVectorStorageEntryFor(uuid, v)
           case LogEntry(Some(i), Some(v), UPD) => storage.updateVectorStorageEntryFor(uuid, i, v)
           case LogEntry(_, _, POP) => storage.removeVectorStorageEntryFor(uuid)
         }
-        entry.op.wasExecuted
+        entry.wasExecuted
       }
     }
     appendOnlyTxLog.clear
@@ -582,13 +583,13 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
   }
 
   def applyLog(log: Array[Byte]) = {
-    val tlog = SBinary.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]]))
+    val tlog = Serializer.Java.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]])).asInstanceOf[TransactionalVector[LogEntry]]
     tlog.foreach{
       appendOnlyTxLog add _
     }
   }
 
-  def getLog() = SBinary.toBinary(appendOnlyTxLog)
+  def getLog() = Serializer.Java.toBinary(appendOnlyTxLog)
 }
 
 /**
@@ -629,19 +630,15 @@ trait PersistentRef[T] extends Transactional with Committable with Abortable wit
   }
 
   def applyLog(log: Array[Byte]) = {
-    ref.swap(SBinary.fromBinary(log, Some(classOf[Ref[T]])))
+    ref.swap(Serializer.Java.fromBinary(log, Some(classOf[Ref[T]])).asInstanceOf[T])
   }
 
-  def getLog() = SBinary.toBinary(ref.get)
+  def getLog() = Serializer.Java.toBinary(ref.get.asInstanceOf[AnyRef])
 }
 
 private[akka] object PersistentQueue {
   //Operations for PersistentQueue
-  sealed trait QueueOp{
-    private var unexec = true
-    def wasExecuted() = {unexec = false}
-    def notExecuted() = unexec
-  }
+  sealed trait QueueOp
   case object ENQ extends QueueOp
   case object DEQ extends QueueOp
 }
@@ -677,7 +674,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
   //Import Ops
   import PersistentQueue._
 
-  case class LogEntry(value: Option[A], op: QueueOp)
+  case class LogEntry(value: Option[A], op: QueueOp) extends ExecutableEntry
 
   // current trail that will be played on commit to the underlying store
   protected val appendOnlyTxLog = TransactionalVector[LogEntry]()
@@ -687,12 +684,12 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
 
   def commit = synchronized{
     for (entry <- appendOnlyTxLog) {
-      if (storage.transactional || entry.op.notExecuted) {
+      if (storage.transactional || entry.notExecuted) {
         (entry: @unchecked) match {
           case LogEntry(Some(v), ENQ) => storage.enqueue(uuid, v)
           case LogEntry(_, DEQ) => storage.dequeue(uuid)
         }
-        entry.op.wasExecuted
+        entry.wasExecuted
       }
     }
     appendOnlyTxLog.clear
@@ -765,23 +762,19 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
   }
 
   def applyLog(log: Array[Byte]) = {
-    val tlog = SBinary.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]]))
+    val tlog = Serializer.Java.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]])).asInstanceOf[TransactionalVector[LogEntry]]
     tlog.foreach{
       appendOnlyTxLog add _
     }
   }
 
-  def getLog() = SBinary.toBinary(appendOnlyTxLog)
+  def getLog() = Serializer.Java.toBinary(appendOnlyTxLog)
 
 }
 
 private[akka] object PersistentSortedSet {
   // operations on the SortedSet
-  sealed trait Op{
-    private var unexec = true
-    def wasExecuted() = {unexec = false}
-    def notExecuted() = unexec
-  }
+  sealed trait Op
   case object ADD extends Op
   case object REM extends Op
 }
@@ -829,18 +822,18 @@ trait PersistentSortedSet[A] extends Transactional with Committable with Abortab
   // need to override in subclasses e.g. "sameElements" for Array[Byte]
   def equal(v1: A, v2: A): Boolean = v1 == v2
 
-  case class LogEntry(value: A, score: Option[Float], op: Op)
+  case class LogEntry(value: A, score: Option[Float], op: Op) extends ExecutableEntry
 
   val storage: SortedSetStorageBackend[A]
 
   def commit = {
     for (entry <- appendOnlyTxLog) {
-      if (storage.transactional || entry.op.notExecuted) {
+      if (storage.transactional || entry.notExecuted) {
         (entry: @unchecked) match {
           case LogEntry(e, Some(s), ADD) => storage.zadd(uuid, String.valueOf(s), e)
           case LogEntry(e, _, REM) => storage.zrem(uuid, e)
         }
-        entry.op.wasExecuted
+        entry.wasExecuted
       }
     }
     appendOnlyTxLog.clear
@@ -917,17 +910,17 @@ trait PersistentSortedSet[A] extends Transactional with Committable with Abortab
 
   protected def register = {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
-    transaction.get.get.register("SortedSet:" + uuid, this)
+    transaction.get.get.register((this.getClass, uuid), this)
   }
 
   def applyLog(log: Array[Byte]) = {
-    val tlog = SBinary.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]]))
+    val tlog = Serializer.Java.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]])).asInstanceOf[TransactionalVector[LogEntry]]
     tlog.foreach{
       appendOnlyTxLog add _
     }
   }
 
-  def getLog() = SBinary.toBinary(appendOnlyTxLog)
+  def getLog() = Serializer.Java.toBinary(appendOnlyTxLog)
 }
 
 trait PersistentSortedSetBinary extends PersistentSortedSet[Array[Byte]] {
