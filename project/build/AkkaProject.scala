@@ -249,6 +249,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     //Riak PB Client
     lazy val riak_pb_client = "com.trifork"   %  "riak-java-pb-client"      % "1.0-for-akka-by-ticktock"  % "compile" //ApacheV2
+    lazy val scalaj_coll = "org.scalaj" % "scalaj-collection_2.8.0" % "1.0" % "compile" //ApacheV2
 
     // Test
 
@@ -569,6 +570,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaPersistenceCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val commons_pool = Dependencies.commons_pool
     val thrift       = Dependencies.thrift
+    val scalaj_coll  = Dependencies.scalaj_coll
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -579,7 +581,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val commons_codec = Dependencies.commons_codec
     val redis         = Dependencies.redis
 
-    override def testOptions = createTestFilter( _.endsWith("Test"))
+    // override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
   // -------------------------------------------------------------------------------------------------------------------

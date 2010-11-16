@@ -106,7 +106,8 @@ private[akka] object PersistentMap {
 trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
         with Transactional with Committable with Abortable with Logging {
 
-  def asJava() : java.util.Map[K, V] = scala.collection.JavaConversions.asMap(this)
+  import scalaj.collection.Imports._
+  def asJavaMap() : java.util.Map[K, V] = this.asJava
 
   //Import Ops
   import PersistentMap._
@@ -454,7 +455,8 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
   //Import Ops
   import PersistentVector._
 
-  def asJava() : java.util.List[T] = scala.collection.JavaConversions.asList(this)
+  import scalaj.collection.Imports._
+  def asJavaList() : java.util.List[T] = this.asJava
 
   // append only log: records all mutating operations
   protected val appendOnlyTxLog = TransactionalVector[LogEntry]()
