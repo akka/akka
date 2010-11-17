@@ -62,5 +62,5 @@ trait AkkaProject extends AkkaBaseProject {
   def akkaModule(module: String) = "akka" %% ("akka-" + module) % akkaVersion
 
   // akka remote dependency by default
-  val akkaRemote = akkaModule("remote")
+  val akkaActor = akkaModule("actor")
 }
