@@ -4,12 +4,16 @@
 
 package akka.persistence.common
 
+import akka.actor.{newUuid}
 import akka.stm._
 import akka.stm.TransactionManagement.transaction
 import akka.util.Logging
 import akka.japi.{Option => JOption}
-import collection.mutable.ArraySeq
 import akka.serialization.Serializer
+import collection.JavaConversions
+import collection.mutable.{ArraySeq}
+import com.google.common.collect.MapMaker
+import java.util.concurrent.ConcurrentMap
 
 // FIXME move to 'stm' package + add message with more info
 class NoTransactionInScopeException extends RuntimeException
@@ -49,43 +53,177 @@ class StorageException(message: String) extends RuntimeException(message)
 trait Storage {
   type ElementType
 
-  def transactional:Boolean=false
+  protected val backend: Backend[ElementType]
 
-  def newMap: PersistentMap[ElementType, ElementType]
+  def transactional: Boolean = false
 
-  def newVector: PersistentVector[ElementType]
+  def newMap: PersistentMap[ElementType, ElementType] = newMap(newUuid.toString)
 
-  def newRef: PersistentRef[ElementType]
+  def newVector: PersistentVector[ElementType] = newVector(newUuid.toString)
 
-  def newQueue: PersistentQueue[ElementType] = // only implemented for redis
-    throw new UnsupportedOperationException
+  def newRef: PersistentRef[ElementType] = newRef(newUuid.toString)
 
-  def newSortedSet: PersistentSortedSet[ElementType] = // only implemented for redis
-    throw new UnsupportedOperationException
+  def newQueue: PersistentQueue[ElementType] = newQueue(newUuid.toString)
+
+  def newSortedSet: PersistentSortedSet[ElementType] = newSortedSet(newUuid.toString)
+
+  def getQueue(id: String): PersistentQueue[ElementType] = {
+    backend.storageManager.getQueue(id, {
+      backend.queueStorage match {
+        case None => throw new UnsupportedOperationException
+        case Some(store) => new PersistentQueue[ElementType] {
+          val uuid = id
+          val storage = store
+        }
+      }
+    })
+  }
+
+  def getRef(id: String): PersistentRef[ElementType] = {
+    backend.storageManager.getRef(id, {
+      backend.refStorage match {
+        case None => throw new UnsupportedOperationException
+        case Some(store) => new PersistentRef[ElementType] {
+          val uuid = id
+          val storage = store
+        }
+      }
+    })
+  }
+
+  def getVector(id: String): PersistentVector[ElementType] = {
+    backend.storageManager.getVector(id, {
+      backend.vectorStorage match {
+        case None => throw new UnsupportedOperationException
+        case Some(store) => new PersistentVector[ElementType] {
+          val uuid = id
+          val storage = store
+        }
+      }
+    })
+  }
 
   def getMap(id: String): PersistentMap[ElementType, ElementType]
 
-  def getVector(id: String): PersistentVector[ElementType]
+  def getSortedSet(id: String): PersistentSortedSet[ElementType]
 
-  def getRef(id: String): PersistentRef[ElementType]
+  def newMap(id: String): PersistentMap[ElementType, ElementType] = getMap(id)
 
-  def getQueue(id: String): PersistentQueue[ElementType] = // only implemented for redis
-    throw new UnsupportedOperationException
+  def newVector(id: String): PersistentVector[ElementType] = getVector(id)
 
-  def getSortedSet(id: String): PersistentSortedSet[ElementType] = // only implemented for redis
-    throw new UnsupportedOperationException
+  def newRef(id: String): PersistentRef[ElementType] = getRef(id)
 
-  def newMap(id: String): PersistentMap[ElementType, ElementType]
+  def newQueue(id: String): PersistentQueue[ElementType] = getQueue(id)
 
-  def newVector(id: String): PersistentVector[ElementType]
+  def newSortedSet(id: String): PersistentSortedSet[ElementType] = getSortedSet(id)
+}
 
-  def newRef(id: String): PersistentRef[ElementType]
+trait BytesStorage extends Storage with Logging{
+  type ElementType = Array[Byte]
 
-  def newQueue(id: String): PersistentQueue[ElementType] = // only implemented for redis
-    throw new UnsupportedOperationException
+  def getSortedSet(id: String): PersistentSortedSet[ElementType] = {
+    backend.storageManager.getSortedSet(id, {
+      backend.sortedSetStorage match {
+        case None => throw new UnsupportedOperationException
+        case Some(store) => new PersistentSortedSetBinary {
+          val uuid = id
+          val storage = store
+        }
+      }
+    })
+  }
 
-  def newSortedSet(id: String): PersistentSortedSet[ElementType] = // only implemented for redis
-    throw new UnsupportedOperationException
+  def getMap(id: String): PersistentMap[ElementType, ElementType] = {
+    log.error("Getmap:"+id)
+    backend.storageManager.getMap(id, {
+      log.error("CreateMap:"+id)
+      backend.mapStorage match {
+        case None => throw new UnsupportedOperationException
+        case Some(store) => new PersistentMapBinary {
+          val uuid = id
+          val storage = store
+        }
+      }
+    })
+  }
+}
+
+class DefaultStorageManager[ElementType] extends StorageManager[ElementType] {
+
+  val maps = JavaConversions.asConcurrentMap(new MapMaker().weakValues.makeMap.asInstanceOf[ConcurrentMap[String, PersistentMap[ElementType, ElementType]]])
+  val vectors = JavaConversions.asConcurrentMap(new MapMaker().weakValues.makeMap.asInstanceOf[ConcurrentMap[String, PersistentVector[ElementType]]])
+  val queues = JavaConversions.asConcurrentMap(new MapMaker().weakValues.makeMap.asInstanceOf[ConcurrentMap[String, PersistentQueue[ElementType]]])
+  val refs = JavaConversions.asConcurrentMap(new MapMaker().weakValues.makeMap.asInstanceOf[ConcurrentMap[String, PersistentRef[ElementType]]])
+  val sortedSets = JavaConversions.asConcurrentMap(new MapMaker().weakValues.makeMap.asInstanceOf[ConcurrentMap[String, PersistentSortedSet[ElementType]]])
+
+  def getRef(id: String, op: => PersistentRef[ElementType]) = {
+    refs.getOrElse(id, {
+      val ref = op
+      refs.putIfAbsent(id, ref) match {
+        case None => ref
+        case Some(other) => other
+      }
+    })
+  }
+
+  def getSortedSet(id: String, op: => PersistentSortedSet[ElementType]) = {
+    sortedSets.getOrElse(id, {
+      val set = op
+      sortedSets.putIfAbsent(id, set) match {
+        case None => set
+        case Some(other) => other
+      }
+    })
+  }
+
+  def getVector(id: String, op: => PersistentVector[ElementType]) = {
+    vectors.getOrElse(id, {
+      val vec = op
+      vectors.putIfAbsent(id, vec) match {
+        case None => vec
+        case Some(other) => other
+      }
+    })
+  }
+
+  def getQueue(id: String, op: => PersistentQueue[ElementType]) = {
+    queues.getOrElse(id, {
+      val queue = op
+      queues.putIfAbsent(id, queue) match {
+        case None => queue
+        case Some(other) => other
+      }
+    })
+  }
+
+  def getMap(id: String, op: => PersistentMap[ElementType, ElementType]) = {
+    maps.getOrElse(id, {
+      val map = op
+      maps.putIfAbsent(id, map) match {
+        case None => map
+        case Some(other) => other
+      }
+    })
+  }
+}
+
+//Manage the storage so that instances are shared since they are transactional
+trait StorageManager[ElementType] {
+  def getMap(id: String, op: => PersistentMap[ElementType, ElementType]):PersistentMap[ElementType, ElementType]
+  def getQueue(id: String, op: => PersistentQueue[ElementType]):PersistentQueue[ElementType]
+  def getVector(id: String, op: => PersistentVector[ElementType]):PersistentVector[ElementType]
+  def getSortedSet(id: String, op: => PersistentSortedSet[ElementType]):PersistentSortedSet[ElementType]
+  def getRef(id: String, op: => PersistentRef[ElementType]):PersistentRef[ElementType]
+}
+
+//Provide the backend and storage manager to use
+trait Backend[ElementType] {
+  val storageManager: StorageManager[ElementType]
+  val mapStorage: Option[MapStorageBackend[ElementType, ElementType]]
+  val queueStorage: Option[QueueStorageBackend[ElementType]]
+  val vectorStorage: Option[VectorStorageBackend[ElementType]]
+  val refStorage: Option[RefStorageBackend[ElementType]]
+  val sortedSetStorage: Option[SortedSetStorageBackend[ElementType]]
 }
 
 private[akka] object PersistentMap {
