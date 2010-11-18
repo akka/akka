@@ -571,6 +571,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val commons_pool = Dependencies.commons_pool
     val thrift       = Dependencies.thrift
     val hawtdb       = Dependencies.hawtdb
+    val goog         = Dependencies.google_coll
   }
 
   // -------------------------------------------------------------------------------------------------------------------
