@@ -112,7 +112,10 @@ object Transaction {
 
   def commit = synchronized {
     log.trace("Committing transaction " + toString)
-    retry(STATE_RETRIES){persistentStateMap.valuesIterator.foreach(_.commit)}
+    retry(STATE_RETRIES){
+      persistentStateMap.valuesIterator.foreach(_.commit)
+      persistentStateMap.clear
+    }
     status = TransactionStatus.Completed
     jta.foreach(_.commit)
   }
@@ -160,7 +163,13 @@ object Transaction {
   private[akka] def isTopLevel = depth.get == 0
   //when calling this method, make sure to prefix the uuid with the type so you
   //have no possibility of kicking a diffferent type with the same uuid out of a transction
-  private[akka] def register(uuid: String, storage: Committable with Abortable) = persistentStateMap.put(uuid, storage)
+  private[akka] def register(uuid: String, storage: Committable with Abortable) = {
+    if(persistentStateMap.getOrElseUpdate(uuid, {storage}) ne storage){
+      log.error("existing:"+System.identityHashCode(persistentStateMap.get(uuid).get))
+      log.error("new:"+System.identityHashCode(storage))
+      throw new IllegalStateException("attempted to register an instance of persistent data structure for id [%s] when there is already a different instance registered".format(uuid))
+    }
+  }
 
   private def ensureIsActive = if (status != TransactionStatus.Active)
     throw new StmConfigurationException(
