@@ -5,7 +5,9 @@
 package akka.persistence.common
 
 // abstracts persistence storage
-trait StorageBackend
+trait StorageBackend {
+  def transactional = false
+}
 
 // for Maps
 trait MapStorageBackend[K, V] extends StorageBackend {

@@ -89,6 +89,7 @@ object Transaction {
  */
 @serializable class Transaction extends Logging {
   val JTA_AWARE = config.getBool("akka.stm.jta-aware", false)
+  val STATE_RETRIES = config.getInt("akka.storage.retries",10)
 
   val id = Transaction.idFactory.incrementAndGet
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
@@ -111,7 +112,7 @@ object Transaction {
 
   def commit = synchronized {
     log.trace("Committing transaction " + toString)
-    persistentStateMap.valuesIterator.foreach(_.commit)
+    retry(STATE_RETRIES){persistentStateMap.valuesIterator.foreach(_.commit)}
     status = TransactionStatus.Completed
     jta.foreach(_.commit)
   }
@@ -121,6 +122,21 @@ object Transaction {
     jta.foreach(_.rollback)
     persistentStateMap.valuesIterator.foreach(_.abort)
     persistentStateMap.clear
+  }
+
+  def retry(tries:Int)(block: => Unit):Unit={
+    log.debug("Trying commit of persistent data structures")
+    if(tries==0){
+      throw new TransactionRetryException("Exhauste Retries while committing persistent state")
+    }
+    try{
+      block
+    } catch{
+      case e:Exception=>{
+        log.warn(e,"Exception while committing persistent state, retrying")
+        retry(tries-1){block}
+      }
+    }
   }
 
   def isNew = synchronized { status == TransactionStatus.New }
@@ -200,6 +216,14 @@ trait Committable {
  */
 trait Abortable {
   def abort(): Unit
+}
+
+/**
+ * Used for integration with the persistence modules.
+ */
+trait Recoverable{
+  def getLog():Array[Byte]
+  def applyLog(log:Array[Byte])
 }
 
 /**
