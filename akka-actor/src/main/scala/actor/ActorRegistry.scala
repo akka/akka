@@ -237,7 +237,7 @@ object ActorRegistry extends ListenerManagement {
   /**
    * Registers an actor in the ActorRegistry.
    */
-  def register(actor: ActorRef) = {
+  private[akka] def register(actor: ActorRef) = {
     // ID
     actorsById.put(actor.id, actor)
 
@@ -251,7 +251,7 @@ object ActorRegistry extends ListenerManagement {
   /**
    * Unregisters an actor in the ActorRegistry.
    */
-  def unregister(actor: ActorRef) = {
+  private[akka] def unregister(actor: ActorRef) = {
     actorsByUUID remove actor.uuid
 
     actorsById.remove(actor.id,actor)
