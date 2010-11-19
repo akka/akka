@@ -14,6 +14,7 @@ import collection.JavaConversions
 import collection.mutable.{ArraySeq}
 import com.google.common.collect.MapMaker
 import java.util.concurrent.ConcurrentMap
+import collection.mutable.{ConcurrentMap => SConcurrentMap}
 
 // FIXME move to 'stm' package + add message with more info
 class NoTransactionInScopeException extends RuntimeException
@@ -155,51 +156,31 @@ class DefaultStorageManager[ElementType] extends StorageManager[ElementType] wit
   val sortedSets = JavaConversions.asConcurrentMap(new MapMaker().weakValues.makeMap.asInstanceOf[ConcurrentMap[String, PersistentSortedSet[ElementType]]])
 
   def getRef(id: String, op: => PersistentRef[ElementType]) = {
-    refs.getOrElse(id, {
-      val ref = op
-      refs.putIfAbsent(id, ref) match {
-        case None => ref
-        case Some(other) => other
-      }
-    })
+    getOrPutIfAbsent(refs,id,op)
   }
 
   def getSortedSet(id: String, op: => PersistentSortedSet[ElementType]) = {
-    sortedSets.getOrElse(id, {
-      val set = op
-      sortedSets.putIfAbsent(id, set) match {
-        case None => set
-        case Some(other) => other
-      }
-    })
+    getOrPutIfAbsent(sortedSets,id,op)
   }
 
   def getVector(id: String, op: => PersistentVector[ElementType]) = {
-    vectors.getOrElse(id, {
-      val vec = op
-      vectors.putIfAbsent(id, vec) match {
-        case None => vec
-        case Some(other) => other
-      }
-    })
+   getOrPutIfAbsent(vectors,id,op)
   }
 
   def getQueue(id: String, op: => PersistentQueue[ElementType]) = {
-    queues.getOrElse(id, {
-      val queue = op
-      queues.putIfAbsent(id, queue) match {
-        case None => queue
-        case Some(other) => other
-      }
-    })
+   getOrPutIfAbsent(queues,id,op)
   }
 
   def getMap(id: String, op: => PersistentMap[ElementType, ElementType]) = {
-    maps.getOrElse(id, {
-      val map = op
-      maps.putIfAbsent(id, map) match {
+    getOrPutIfAbsent(maps,id,op)
+  }
+
+  def getOrPutIfAbsent[T](map:SConcurrentMap[String,T], id:String, op: => T):T= {
+     map.getOrElse(id, {
+      val it = op
+      map.putIfAbsent(id, it) match {
         case None => {
-          map
+          it
         }
         case Some(other) => {
           other
