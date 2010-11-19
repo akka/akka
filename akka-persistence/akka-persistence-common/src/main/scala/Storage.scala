@@ -134,9 +134,7 @@ trait BytesStorage extends Storage with Logging{
   }
 
   def getMap(id: String): PersistentMap[ElementType, ElementType] = {
-    log.error("Getmap:"+id)
     backend.storageManager.getMap(id, {
-      log.error("CreateMap:"+id)
       backend.mapStorage match {
         case None => throw new UnsupportedOperationException
         case Some(store) => new PersistentMapBinary {
@@ -148,7 +146,7 @@ trait BytesStorage extends Storage with Logging{
   }
 }
 
-class DefaultStorageManager[ElementType] extends StorageManager[ElementType] {
+class DefaultStorageManager[ElementType] extends StorageManager[ElementType] with Logging {
 
   val maps = JavaConversions.asConcurrentMap(new MapMaker().weakValues.makeMap.asInstanceOf[ConcurrentMap[String, PersistentMap[ElementType, ElementType]]])
   val vectors = JavaConversions.asConcurrentMap(new MapMaker().weakValues.makeMap.asInstanceOf[ConcurrentMap[String, PersistentVector[ElementType]]])
@@ -200,8 +198,12 @@ class DefaultStorageManager[ElementType] extends StorageManager[ElementType] {
     maps.getOrElse(id, {
       val map = op
       maps.putIfAbsent(id, map) match {
-        case None => map
-        case Some(other) => other
+        case None => {
+          map
+        }
+        case Some(other) => {
+          other
+        }
       }
     })
   }
@@ -218,7 +220,7 @@ trait StorageManager[ElementType] {
 
 //Provide the backend and storage manager to use
 trait Backend[ElementType] {
-  val storageManager: StorageManager[ElementType]
+  lazy val storageManager: StorageManager[ElementType] = new DefaultStorageManager[ElementType]
   val mapStorage: Option[MapStorageBackend[ElementType, ElementType]]
   val queueStorage: Option[QueueStorageBackend[ElementType]]
   val vectorStorage: Option[VectorStorageBackend[ElementType]]
@@ -251,7 +253,7 @@ private[akka] trait ExecutableEntry{
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
-        with Transactional with Committable with Abortable with Recoverable with Logging {
+        with Transactional with Committable with Abortable with Logging {
 
   import scalaj.collection.Imports._
   def asJavaMap() : java.util.Map[K, V] = this.asJava
@@ -451,14 +453,8 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     transaction.get.get.register("Map:" + uuid, this)
   }
 
-  def applyLog(log: Array[Byte]) = {
-    val tlog = Serializer.Java.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]])).asInstanceOf[TransactionalVector[LogEntry]]
-    tlog.foreach{
-      appendOnlyTxLog add _
-    }
-  }
 
-  def getLog() = Serializer.Java.toBinary(appendOnlyTxLog)
+
 }
 
 object PersistentMapBinary {
@@ -614,7 +610,7 @@ private[akka] object PersistentVector {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable with Abortable with Recoverable {
+trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable with Abortable  {
   //Import Ops
   import PersistentVector._
 
@@ -722,14 +718,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
     transaction.get.get.register("Vector" + uuid, this)
   }
 
-  def applyLog(log: Array[Byte]) = {
-    val tlog = Serializer.Java.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]])).asInstanceOf[TransactionalVector[LogEntry]]
-    tlog.foreach{
-      appendOnlyTxLog add _
-    }
-  }
 
-  def getLog() = Serializer.Java.toBinary(appendOnlyTxLog)
 }
 
 /**
@@ -737,7 +726,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentRef[T] extends Transactional with Committable with Abortable with Recoverable {
+trait PersistentRef[T] extends Transactional with Committable with Abortable  {
   protected val ref = Ref[T]()
 
   val storage: RefStorageBackend[T]
@@ -809,7 +798,7 @@ private[akka] object PersistentQueue {
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
 trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
-        with Transactional with Committable with Abortable with Recoverable with Logging {
+        with Transactional with Committable with Abortable with Logging {
 
   //Import Ops
   import PersistentQueue._
@@ -952,7 +941,7 @@ private[akka] object PersistentSortedSet {
  *
  * @author <a href="http://debasishg.blogspot.com"</a>
  */
-trait PersistentSortedSet[A] extends Transactional with Committable with Abortable with Recoverable {
+trait PersistentSortedSet[A] extends Transactional with Committable with Abortable {
   //Import Ops
   import PersistentSortedSet._
 
@@ -1053,14 +1042,7 @@ trait PersistentSortedSet[A] extends Transactional with Committable with Abortab
     transaction.get.get.register("SortedSet:"+uuid, this)
   }
 
-  def applyLog(log: Array[Byte]) = {
-    val tlog = Serializer.Java.fromBinary(log, Some(classOf[TransactionalVector[LogEntry]])).asInstanceOf[TransactionalVector[LogEntry]]
-    tlog.foreach{
-      appendOnlyTxLog add _
-    }
-  }
 
-  def getLog() = Serializer.Java.toBinary(appendOnlyTxLog)
 }
 
 trait PersistentSortedSetBinary extends PersistentSortedSet[Array[Byte]] {

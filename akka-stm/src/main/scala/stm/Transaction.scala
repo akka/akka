@@ -89,7 +89,7 @@ object Transaction {
  */
 @serializable class Transaction extends Logging {
   val JTA_AWARE = config.getBool("akka.stm.jta-aware", false)
-  val STATE_RETRIES = config.getInt("akka.storage.retries",10)
+  val STATE_RETRIES = config.getInt("akka.storage.max-retries",10)
 
   val id = Transaction.idFactory.incrementAndGet
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
@@ -127,7 +127,7 @@ object Transaction {
   def retry(tries:Int)(block: => Unit):Unit={
     log.debug("Trying commit of persistent data structures")
     if(tries==0){
-      throw new TransactionRetryException("Exhauste Retries while committing persistent state")
+      throw new TransactionRetryException("Exhausted Retries while committing persistent state")
     }
     try{
       block

@@ -249,6 +249,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     //Riak PB Client
     lazy val riak_pb_client = "com.trifork"   %  "riak-java-pb-client"      % "1.0-for-akka-by-ticktock"  % "compile" //ApacheV2
+    lazy val scalaj_coll = "org.scalaj" % "scalaj-collection_2.8.0" % "1.0" % "compile" //ApacheV2
 
     // Test
 

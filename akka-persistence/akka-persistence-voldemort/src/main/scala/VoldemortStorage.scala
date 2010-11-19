@@ -19,5 +19,4 @@ object VoldemortBackend extends Backend[Array[Byte]] {
   val vectorStorage = Some(VoldemortStorageBackend)
   val queueStorage = Some(VoldemortStorageBackend)
   val mapStorage = Some(VoldemortStorageBackend)
-  val storageManager = new DefaultStorageManager[Array[Byte]]
 }
