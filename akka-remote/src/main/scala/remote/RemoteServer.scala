@@ -335,19 +335,19 @@ class RemoteServer extends Logging with ListenerManagement {
 
   private def registerPerSession[Key](id: Key, factory: () => ActorRef, registry: ConcurrentHashMap[Key,() => ActorRef]) {
     if (_isRunning) {
-      registry.putIfAbsent(id, factory);
+      registry.putIfAbsent(id, factory)
     }
   }
 
   private def registerTypedActor[Key](id: Key, typedActor: AnyRef, registry: ConcurrentHashMap[Key, AnyRef]) {
     if (_isRunning) {
-      registry.putIfAbsent(id, typedActor);
+      registry.putIfAbsent(id, typedActor)
     }
   }
 
   private def registerTypedPerSessionActor[Key](id: Key, factory: () => AnyRef, registry: ConcurrentHashMap[Key,() => AnyRef]) {
     if (_isRunning) {
-      registry.putIfAbsent(id, factory);
+      registry.putIfAbsent(id, factory)
     }
   }
 
@@ -493,8 +493,8 @@ class RemoteServerHandler(
   val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
   val CHANNEL_INIT    = "channel-init".intern
 
-  val sessionActors = new ChannelLocal[ConcurrentHashMap[String, ActorRef]]();
-  val typedSessionActors = new ChannelLocal[ConcurrentHashMap[String, AnyRef]]();
+  val sessionActors = new ChannelLocal[ConcurrentHashMap[String, ActorRef]]()
+  val typedSessionActors = new ChannelLocal[ConcurrentHashMap[String, AnyRef]]()
 
   applicationLoader.foreach(MessageSerializer.setClassLoader(_))
 
@@ -506,8 +506,8 @@ class RemoteServerHandler(
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val clientAddress = getClientAddress(ctx)
-    sessionActors.set(event.getChannel(), new ConcurrentHashMap[String, ActorRef]());
-    typedSessionActors.set(event.getChannel(), new ConcurrentHashMap[String, AnyRef]());
+    sessionActors.set(event.getChannel(), new ConcurrentHashMap[String, ActorRef]())
+    typedSessionActors.set(event.getChannel(), new ConcurrentHashMap[String, AnyRef]())
     log.debug("Remote client [%s] connected to [%s]", clientAddress, server.name)
     if (RemoteServer.SECURE) {
       val sslHandler: SslHandler = ctx.getPipeline.get(classOf[SslHandler])
@@ -759,7 +759,7 @@ class RemoteServerHandler(
   private def createSessionActor(actorInfo: ActorInfoProtocol, channel: Channel): ActorRef = {
     val uuid = actorInfo.getUuid
     val id = actorInfo.getId
-    val sessionActorRefOrNull = findSessionActor(id, channel);
+    val sessionActorRefOrNull = findSessionActor(id, channel)
     if (sessionActorRefOrNull ne null)
       sessionActorRefOrNull
     else
@@ -767,9 +767,9 @@ class RemoteServerHandler(
       // we dont have it in the session either, see if we have a factory for it
       val actorFactoryOrNull = findActorFactory(id)
       if (actorFactoryOrNull ne null) {
-        val actorRef = actorFactoryOrNull();
+        val actorRef = actorFactoryOrNull()
         actorRef.uuid = uuidFrom(uuid.getHigh,uuid.getLow)
-        sessionActors.get(channel).put(id, actorRef);
+        sessionActors.get(channel).put(id, actorRef)
         actorRef
       }
       else
@@ -827,7 +827,7 @@ class RemoteServerHandler(
     else
     {
       // the actor has not been registered globally. See if we have it in the session
-      val sessionActorRefOrNull = createSessionActor(actorInfo, channel);
+      val sessionActorRefOrNull = createSessionActor(actorInfo, channel)
       if (sessionActorRefOrNull ne null) {
         println("giving session actor")
         sessionActorRefOrNull
@@ -845,14 +845,14 @@ class RemoteServerHandler(
    */
   private def createTypedSessionActor(actorInfo: ActorInfoProtocol, channel: Channel):AnyRef ={
     val id = actorInfo.getId
-    val sessionActorRefOrNull = findTypedSessionActor(id, channel);
+    val sessionActorRefOrNull = findTypedSessionActor(id, channel)
     if (sessionActorRefOrNull ne null)
       sessionActorRefOrNull
     else {
       val actorFactoryOrNull = findTypedActorFactory(id)
       if (actorFactoryOrNull ne null) {
-        val newInstance = actorFactoryOrNull();
-        typedSessionActors.get(channel).put(id, newInstance);
+        val newInstance = actorFactoryOrNull()
+        typedSessionActors.get(channel).put(id, newInstance)
         newInstance
       }
       else
