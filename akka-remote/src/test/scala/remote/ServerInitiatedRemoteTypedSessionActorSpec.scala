@@ -26,13 +26,13 @@ object ServerInitiatedRemoteTypedSessionActorSpec {
 class ServerInitiatedRemoteTypedSessionActorSpec extends
   FlatSpec with
   ShouldMatchers with
-  BeforeAndAfterAll {
+  BeforeAndAfterEach  {
   import ServerInitiatedRemoteTypedActorSpec._
 
   private val unit = TimeUnit.MILLISECONDS
 
 
-  override def beforeAll = {
+  override def beforeEach = {
     server = new RemoteServer()
     server.start(HOSTNAME, PORT)
 
@@ -43,7 +43,7 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends
   }
 
   // make sure the servers shutdown cleanly after the test has finished
-  override def afterAll = {
+  override def afterEach = {
     try {
       server.shutdown
       RemoteClient.shutdownAll
