@@ -227,13 +227,7 @@ trait Abortable {
   def abort(): Unit
 }
 
-/**
- * Used for integration with the persistence modules.
- */
-trait Recoverable{
-  def getLog():Array[Byte]
-  def applyLog(log:Array[Byte])
-}
+
 
 /**
  * Used internally for reflective access to the JTA module.
