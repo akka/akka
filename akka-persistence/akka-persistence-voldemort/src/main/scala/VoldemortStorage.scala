@@ -9,43 +9,15 @@ import akka.stm._
 import akka.persistence.common._
 
 
-object VoldemortStorage extends Storage {
-
-  type ElementType = Array[Byte]
-  def newMap: PersistentMap[ElementType, ElementType] = newMap(newUuid.toString)
-  def newVector: PersistentVector[ElementType] = newVector(newUuid.toString)
-  def newRef: PersistentRef[ElementType] = newRef(newUuid.toString)
-  override def newQueue: PersistentQueue[ElementType] = newQueue(newUuid.toString)
-
-  def getMap(id: String): PersistentMap[ElementType, ElementType] = newMap(id)
-  def getVector(id: String): PersistentVector[ElementType] = newVector(id)
-  def getRef(id: String): PersistentRef[ElementType] = newRef(id)
-  override def getQueue(id: String): PersistentQueue[ElementType] = newQueue(id)
-
-  def newMap(id: String): PersistentMap[ElementType, ElementType] = new VoldemortPersistentMap(id)
-  def newVector(id: String): PersistentVector[ElementType] = new VoldemortPersistentVector(id)
-  def newRef(id: String): PersistentRef[ElementType] = new VoldemortPersistentRef(id)
-  override def newQueue(id:String): PersistentQueue[ElementType] = new VoldemortPersistentQueue(id)
+object VoldemortStorage extends BytesStorage {
+  val backend = VoldemortBackend
 }
 
-
-class VoldemortPersistentMap(id: String) extends PersistentMapBinary {
-  val uuid = id
-  val storage = VoldemortStorageBackend
-}
-
-
-class VoldemortPersistentVector(id: String) extends PersistentVector[Array[Byte]] {
-  val uuid = id
-  val storage = VoldemortStorageBackend
-}
-
-class VoldemortPersistentRef(id: String) extends PersistentRef[Array[Byte]] {
-  val uuid = id
-  val storage = VoldemortStorageBackend
-}
-
-class VoldemortPersistentQueue(id: String) extends PersistentQueue[Array[Byte]] {
-  val uuid = id
-  val storage = VoldemortStorageBackend
+object VoldemortBackend extends Backend[Array[Byte]] {
+  val sortedSetStorage = None
+  val refStorage = Some(VoldemortStorageBackend)
+  val vectorStorage = Some(VoldemortStorageBackend)
+  val queueStorage = Some(VoldemortStorageBackend)
+  val mapStorage = Some(VoldemortStorageBackend)
+  val storageManager = new DefaultStorageManager[Array[Byte]]
 }
