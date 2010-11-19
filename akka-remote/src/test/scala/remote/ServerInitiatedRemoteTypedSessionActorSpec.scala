@@ -58,15 +58,15 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends
 
     val session1 = RemoteClient.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, HOSTNAME, PORT)
 
-    session1.getUser() should equal ("anonymous");
-    session1.login("session[1]");
-    session1.getUser() should equal ("session[1]");
+    session1.getUser() should equal ("anonymous")
+    session1.login("session[1]")
+    session1.getUser() should equal ("session[1]")
 
     RemoteClient.shutdownAll
 
     val session2 = RemoteClient.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, HOSTNAME, PORT)
 
-    session2.getUser() should equal ("anonymous");
+    session2.getUser() should equal ("anonymous")
 
     RemoteClient.shutdownAll
 
@@ -76,12 +76,12 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends
 
     val session1 = RemoteClient.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, HOSTNAME, PORT)
 
-    session1.getUser() should equal ("anonymous");
+    session1.getUser() should equal ("anonymous")
 
-    RemoteTypedSessionActorImpl.getInstances() should have size (1);
+    RemoteTypedSessionActorImpl.getInstances() should have size (1)
     RemoteClient.shutdownAll
     Thread.sleep(1000)
-    RemoteTypedSessionActorImpl.getInstances() should have size (0);
+    RemoteTypedSessionActorImpl.getInstances() should have size (0)
 
   }
 
@@ -89,11 +89,11 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends
 
     val session1 = RemoteClient.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, HOSTNAME, PORT)
 
-    session1.doSomethingFunny();
+    session1.doSomethingFunny()
 
     RemoteClient.shutdownAll
     Thread.sleep(1000)
-    RemoteTypedSessionActorImpl.getInstances() should have size (0);
+    RemoteTypedSessionActorImpl.getInstances() should have size (0)
 
   }
 

@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.remote.{RemoteServer, RemoteClient}
 import akka.actor._
+import akka.actor.Actor._
 import RemoteTypedActorLog._
 
 object ServerInitiatedRemoteSessionActorSpec {
@@ -21,27 +22,27 @@ object ServerInitiatedRemoteSessionActorSpec {
   val PORT = 9990
   var server: RemoteServer = null
 
-  case class Login(user:String);
-  case class GetUser();
-  case class DoSomethingFunny();
+  case class Login(user:String)
+  case class GetUser()
+  case class DoSomethingFunny()
 
-  val instantiatedSessionActors= Set[ActorRef]();
+  var instantiatedSessionActors= Set[ActorRef]()
 
   class RemoteStatefullSessionActorSpec extends Actor {
 
-    var user : String= "anonymous";
+    var user : String= "anonymous"
 
     override def preStart = {
-      instantiatedSessionActors += self;
+      instantiatedSessionActors += self
     }
 
     override def postStop = {
-      instantiatedSessionActors -= self;
+      instantiatedSessionActors -= self
     }
 
     def receive = {
       case Login(user) =>
-	      this.user = user;
+	      this.user = user
       case GetUser() =>
         self.reply(this.user)
       case DoSomethingFunny() =>
@@ -56,7 +57,7 @@ class ServerInitiatedRemoteSessionActorSpec extends
   FlatSpec with
   ShouldMatchers with
   BeforeAndAfterEach  {
-  import ServerInitiatedRemoteTypedActorSpec._
+  import ServerInitiatedRemoteSessionActorSpec._
 
   private val unit = TimeUnit.MILLISECONDS
 
@@ -65,7 +66,7 @@ class ServerInitiatedRemoteSessionActorSpec extends
     server = new RemoteServer()
     server.start(HOSTNAME, PORT)
 
-    server.registerTypedPerSessionActor("untyped-session-actor-service", actorOf[RemoteStatefullSessionActorSpec])
+    server.registerPerSession("untyped-session-actor-service", actorOf[RemoteStatefullSessionActorSpec])
 
     Thread.sleep(1000)
   }
@@ -107,7 +108,7 @@ class ServerInitiatedRemoteSessionActorSpec extends
       HOSTNAME, PORT)
 
     // since this is a new session, the server should reset the state
-    val default2 = session2 !! GetUser();
+    val default2 = session2 !! GetUser()
     default2.get.asInstanceOf[String] should equal ("anonymous")
 
     session2.stop()
@@ -125,11 +126,11 @@ class ServerInitiatedRemoteSessionActorSpec extends
     val default1 = session1 !! GetUser()
     default1.get.asInstanceOf[String] should equal ("anonymous")
 
-    instantiatedSessionActors.size should have size (1)
+    instantiatedSessionActors should have size (1)
 
     RemoteClient.shutdownAll
     Thread.sleep(1000)
-    instantiatedSessionActors.size should have size (0);
+    instantiatedSessionActors should have size (0)
 
   }
 
@@ -141,18 +142,18 @@ class ServerInitiatedRemoteSessionActorSpec extends
       HOSTNAME, PORT)
 
 
-    session1 ! DoSomethingFunny();
+    session1 ! DoSomethingFunny()
     session1.stop()
 
     RemoteClient.shutdownAll
     Thread.sleep(1000)
 
-    instantiatedSessionActors.size should have size (0);
+    instantiatedSessionActors should have size (0)
   }
 
 
   it should "be able to unregister" in {
-      server.registerPerSession("my-service-1", actorOf[RemoteActorSpecActorUnidirectional])
+      server.registerPerSession("my-service-1", actorOf[RemoteStatefullSessionActorSpec])
       server.actorsFactories.get("my-service-1") should not be (null)
       server.unregisterPerSession("my-service-1")
       server.actorsFactories.get("my-service-1") should be (null)
