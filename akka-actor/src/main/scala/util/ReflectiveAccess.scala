@@ -258,9 +258,15 @@ object ReflectiveAccess extends Logging {
     instance.setAccessible(true)
     Option(instance.get(null).asInstanceOf[T])
   } catch {
-    case e: ClassNotFoundException =>
+    case e: ClassNotFoundException =>  {
       log.debug("Could not get object [%s] due to [%s]", fqn, e)
       None
+    }
+    case ei: ExceptionInInitializerError => {
+      log.error("Exception in initializer for object [%s]".format(fqn))
+      log.error(ei.getCause, "Cause was:")
+      throw ei
+    }
   }
 
   def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Option[Class[T]] = try {
