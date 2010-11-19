@@ -38,35 +38,6 @@ object ServerInitiatedRemoteActorSpec {
     }
   }
 
-  case class Login(user:String);
-  case class GetUser();
-  case class DoSomethingFunny();
-
-  val instantiatedSessionActors= Set[ActorRef]();
-
-  class RemoteStatefullSessionActorSpec extends Actor {
-
-    var user : String= "anonymous";
-
-    override def preStart = {
-      instantiatedSessionActors += self;
-    }
-
-    override def postStop = {
-      instantiatedSessionActors -= self;
-    }
-    
-    def receive = {
-      case Login(user) => 
-	      this.user = user;
-      case GetUser() =>
-        self.reply(this.user)
-      case DoSomethingFunny() =>
-        throw new Exception("Bad boy")
-    }
-  }
-
-
   object RemoteActorSpecActorAsyncSender {
     val latch = new CountDownLatch(1)
   }
@@ -94,7 +65,6 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     server.register(actorOf[RemoteActorSpecActorUnidirectional])
     server.register(actorOf[RemoteActorSpecActorBidirectional])
     server.register(actorOf[RemoteActorSpecActorAsyncSender])
-    server.registerPerSession("untyped-session-actor-service", actorOf[RemoteStatefullSessionActorSpec])
 
     Thread.sleep(1000)
   }
@@ -135,85 +105,6 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     actor.stop
   }
 
-  @Test
-  def shouldKeepSessionInformation {
-
-    //RemoteClient.clientFor(HOSTNAME, PORT).connect
-
-    val session1 = RemoteClient.actorFor(
-      "untyped-session-actor-service",
-      5000L,
-      HOSTNAME, PORT)
-
-
-    val default1 = session1 !! GetUser();
-    assert("anonymous" === default1.get.asInstanceOf[String])
-
-    session1 ! Login("session[1]");
-
-    val result1 = session1 !! GetUser();
-    assert("session[1]" === result1.get.asInstanceOf[String])
-
-    session1.stop()
-
-    RemoteClient.shutdownAll
-
-    //RemoteClient.clientFor(HOSTNAME, PORT).connect
-
-    val session2 = RemoteClient.actorFor(
-      "untyped-session-actor-service",
-      5000L,
-      HOSTNAME, PORT)
-
-    // since this is a new session, the server should reset the state
-    val default2 = session2 !! GetUser();
-    assert("anonymous" === default2.get.asInstanceOf[String])
-
-    session2.stop()
-
-    RemoteClient.shutdownAll
-  }
-
-  @Test
-  def shouldStopActorOnDisconnect{
-
-
-    val session1 = RemoteClient.actorFor(
-      "untyped-session-actor-service",
-      5000L,
-      HOSTNAME, PORT)
-
-
-    val default1 = session1 !! GetUser();
-    assert("anonymous" === default1.get.asInstanceOf[String])
-
-    assert(instantiatedSessionActors.size == 1);
-
-    RemoteClient.shutdownAll
-    Thread.sleep(1000)
-    assert(instantiatedSessionActors.size == 0);
-
-  }
-
-  @Test
-  def shouldStopActorOnError{
-
-
-    val session1 = RemoteClient.actorFor(
-      "untyped-session-actor-service",
-      5000L,
-      HOSTNAME, PORT)
-
-
-    session1 ! DoSomethingFunny();
-    session1.stop()
-
-    RemoteClient.shutdownAll
-    Thread.sleep(1000)
-
-    assert(instantiatedSessionActors.size == 0);
-
-  }
 
   @Test
   def shouldSendWithBangAndGetReplyThroughSenderRef  {
@@ -316,13 +207,6 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     assert(server.actors.get("my-service-1") ne null, "actor registered")
     server.unregister("my-service-1")
     assert(server.actors.get("my-service-1") eq null, "actor unregistered")
-  }
-  @Test
-  def shouldRegisterAndUnregisterSession {
-    server.registerPerSession("my-service-1", actorOf[RemoteActorSpecActorUnidirectional])
-    assert(server.actorsFactories.get("my-service-1") ne null, "actor registered")
-    server.unregisterPerSession("my-service-1")
-    assert(server.actorsFactories.get("my-service-1") eq null, "actor unregistered")
   }
 
   @Test

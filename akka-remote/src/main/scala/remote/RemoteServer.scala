@@ -820,16 +820,23 @@ class RemoteServerHandler(
 
     val actorRefOrNull = findActorByIdOrUuid(id, uuidFrom(uuid.getHigh,uuid.getLow).toString)
 
-    if (actorRefOrNull ne null)
+    if (actorRefOrNull ne null)  {
+      println("Giving actor by id or uuid ")
       actorRefOrNull
+    }
     else
     {
       // the actor has not been registered globally. See if we have it in the session
       val sessionActorRefOrNull = createSessionActor(actorInfo, channel);
-      if (sessionActorRefOrNull ne null)
+      if (sessionActorRefOrNull ne null) {
+        println("giving session actor")
         sessionActorRefOrNull
+      }
       else  // maybe it is a client managed actor
-        createClientManagedActor(actorInfo)
+        {
+          println("Client managed actor")
+          createClientManagedActor(actorInfo)
+        }
     }
   }
 
