@@ -3,17 +3,16 @@ package akka.actor.remote
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
-
+import akka.util._
+                                       
 import akka.remote.{RemoteServer, RemoteClient}
 import akka.actor.Actor._
 import akka.actor.{ActorRegistry, ActorRef, Actor}
-import scala.collection.mutable.Set
 
 object ServerInitiatedRemoteActorSpec {
   val HOSTNAME = "localhost"
   val PORT = 9990
   var server: RemoteServer = null
-
 
   case class Send(actor: ActorRef)
 
@@ -104,7 +103,6 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     assert("World" === result.get.asInstanceOf[String])
     actor.stop
   }
-
 
   @Test
   def shouldSendWithBangAndGetReplyThroughSenderRef  {

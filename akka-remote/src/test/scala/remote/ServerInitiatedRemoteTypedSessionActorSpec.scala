@@ -68,8 +68,6 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends
 
     session2.getUser() should equal ("anonymous")
 
-    RemoteClient.shutdownAll
-
   }
 
   it should "stop the actor when the client disconnects" in {

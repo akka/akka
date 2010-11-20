@@ -326,28 +326,31 @@ class RemoteServer extends Logging with ListenerManagement {
   }
 
   private def register[Key](id: Key, actorRef: ActorRef, registry: ConcurrentHashMap[Key, ActorRef]) {
-    if (_isRunning) {
-      if (registry.putIfAbsent(id, actorRef) eq null) {
-        if (!actorRef.isRunning) actorRef.start
-      }
+    // TODO: contains is an alias for containsValue, not containsKey, so the contains is useless here
+    if (_isRunning && !registry.contains(id)) {
+      registry.put(id, actorRef);
+      if (!actorRef.isRunning) actorRef.start
     }
   }
 
   private def registerPerSession[Key](id: Key, factory: () => ActorRef, registry: ConcurrentHashMap[Key,() => ActorRef]) {
-    if (_isRunning) {
-      registry.putIfAbsent(id, factory)
+    // TODO: contains is an alias for containsValue, not containsKey, so the contains is useless here
+    if (_isRunning && !registry.contains(id)) {
+      registry.put(id, factory)
     }
   }
 
   private def registerTypedActor[Key](id: Key, typedActor: AnyRef, registry: ConcurrentHashMap[Key, AnyRef]) {
-    if (_isRunning) {
-      registry.putIfAbsent(id, typedActor)
+    // TODO: contains is an alias for containsValue, not containsKey, so the contains is useless here
+    if (_isRunning && !registry.contains(id)) {
+      registry.put(id, typedActor)
     }
   }
 
   private def registerTypedPerSessionActor[Key](id: Key, factory: () => AnyRef, registry: ConcurrentHashMap[Key,() => AnyRef]) {
-    if (_isRunning) {
-      registry.putIfAbsent(id, factory)
+    // TODO: contains is an alias for containsValue, not containsKey, so the contains is useless here
+    if (_isRunning && !registry.contains(id)) {
+      registry.put(id, factory)
     }
   }
 
@@ -820,23 +823,16 @@ class RemoteServerHandler(
 
     val actorRefOrNull = findActorByIdOrUuid(id, uuidFrom(uuid.getHigh,uuid.getLow).toString)
 
-    if (actorRefOrNull ne null)  {
-      println("Giving actor by id or uuid ")
+    if (actorRefOrNull ne null)
       actorRefOrNull
-    }
     else
     {
       // the actor has not been registered globally. See if we have it in the session
       val sessionActorRefOrNull = createSessionActor(actorInfo, channel)
-      if (sessionActorRefOrNull ne null) {
-        println("giving session actor")
+      if (sessionActorRefOrNull ne null) 
         sessionActorRefOrNull
-      }
       else  // maybe it is a client managed actor
-        {
-          println("Client managed actor")
-          createClientManagedActor(actorInfo)
-        }
+        createClientManagedActor(actorInfo)
     }
   }
 
