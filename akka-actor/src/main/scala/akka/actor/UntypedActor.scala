@@ -6,7 +6,7 @@ package akka.actor
 
 import akka.dispatch._
 import akka.config.Supervision._
-import akka.japi.Procedure
+import akka.japi.{Creator, Procedure}
 
 import java.net.InetSocketAddress
 
@@ -90,9 +90,7 @@ abstract class UntypedActor extends Actor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait UntypedActorFactory {
- def create: UntypedActor
-}
+trait UntypedActorFactory extends Creator[Actor]
 
 /**
  * Extend this abstract class to create a remote UntypedActor.
