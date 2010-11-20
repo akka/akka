@@ -145,7 +145,6 @@ class ServerInitiatedRemoteSessionActorSpec extends
     session1 ! DoSomethingFunny()
     session1.stop()
 
-    RemoteClient.shutdownAll
     Thread.sleep(1000)
 
     instantiatedSessionActors should have size (0)
