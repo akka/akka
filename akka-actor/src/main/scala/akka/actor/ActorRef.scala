@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ *  Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.actor
@@ -1522,5 +1522,15 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
  * Abstraction for unification of sender and senderFuture for later reply
  */
 abstract class Channel[T] {
+  /**
+   * Sends the specified message to the channel
+   * Scala API
+   */
   def !(msg: T): Unit
+
+  /**
+   * Sends the specified message to the channel
+   * Java API
+   */
+  def sendOneWay(msg: T): Unit = this.!(msg)
 }
