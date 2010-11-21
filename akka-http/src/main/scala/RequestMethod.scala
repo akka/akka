@@ -101,7 +101,7 @@ trait RequestMethod extends Logging
         }
         catch
         {
-          case io:IOException => log.error(io, "Failed to write data to connection on resume - the client probably disconnected")
+          case io => log.error(io, "Failed to write data to connection on resume - the client probably disconnected")
         }
       }
       

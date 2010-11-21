@@ -14,7 +14,7 @@ import Types._
 /**
  * @author Garrick Evans
  */
-trait JettyContinuation extends ContinuationListener  with akka.util.Logging
+trait JettyContinuation extends ContinuationListener with akka.util.Logging
 {
   import javax.servlet.http.HttpServletResponse
   import AkkaHttpServlet._
