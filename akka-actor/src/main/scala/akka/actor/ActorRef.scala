@@ -1226,6 +1226,8 @@ private[akka] case class RemoteActorRef private[akka] (
 
   ensureRemotingEnabled
 
+  val remoteAddress: Option[InetSocketAddress] = Some(new InetSocketAddress(hostname, port))
+
   id = classOrServiceName
   timeout = _timeout
 
@@ -1259,8 +1261,6 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = None
-
-  val remoteAddress: Option[InetSocketAddress] = Some(new InetSocketAddress(hostname, port))
 
   // ==== NOT SUPPORTED ====
   def actorClass: Class[_ <: Actor] = unsupported
