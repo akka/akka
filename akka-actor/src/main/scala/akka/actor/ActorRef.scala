@@ -158,9 +158,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   def setLifeCycle(lifeCycle: LifeCycle): Unit
   def getLifeCycle(): LifeCycle
 
-  @volatile
-  private[akka] var _dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
-
   /**
    * Akka Java API
    * The default dispatcher is the <tt>Dispatchers.globalExecutorBasedEventDrivenDispatcher</tt>.
@@ -616,6 +613,8 @@ class LocalActorRef private[akka] (
   private var restartsWithinTimeRangeTimestamp: Long = 0L
   @volatile
   private var _mailbox: AnyRef = _
+  @volatile
+  private[akka] var _dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
 
   protected[akka] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
 
