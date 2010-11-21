@@ -377,7 +377,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   override def pomExtra =
     <inceptionYear>2009</inceptionYear>
-    <url>http://akkasource.org</url>
+    <url>http://akka.io</url>
     <organization>
       <name>Scalable Solutions AB</name>
       <url>http://scalablesolutions.se</url>
