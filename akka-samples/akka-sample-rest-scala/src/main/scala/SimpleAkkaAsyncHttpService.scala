@@ -99,8 +99,6 @@ class BoringActor extends Actor
         //
       get.response.setContentType(MediaType.TEXT_HTML)
 
-      get.timeout(5000)
-
       //
       // "work"
       //
