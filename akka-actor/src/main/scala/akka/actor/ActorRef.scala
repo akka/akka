@@ -139,6 +139,25 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   def setFaultHandler(handler: FaultHandlingStrategy)
   def getFaultHandler(): FaultHandlingStrategy
 
+
+  /**
+   * Akka Java API
+   *  A lifeCycle defines whether the actor will be stopped on error (Temporary) or if it can be restarted (Permanent)
+   * <p/>
+   * Can be one of:
+   *
+   * import static akka.config.Supervision.*;
+   * <pre>
+   * getContext().setLifeCycle(permanent());
+   * </pre>
+   * Or:
+   * <pre>
+   * getContext().setLifeCycle(temporary());
+   * </pre>
+   */
+  def setLifeCycle(lifeCycle: LifeCycle): Unit
+  def getLifeCycle(): LifeCycle
+
   @volatile
   private[akka] var _dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
 
@@ -1313,9 +1332,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    */
   def id: String
 
-  def id_=(id: String): Unit
-
-  /**
+  def id_=(id: String): Unit /**
    * User overridable callback/setting.
    * <p/>
    * Defines the life-cycle for a supervised actor.
