@@ -30,7 +30,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Deploy/dist settings
   // -------------------------------------------------------------------------------------------------------------------
-  def distName = "%s-%s".format(name, version)
+  def distName = "%s_%s-%s".format(name, buildScalaVersion, version)
   lazy val deployPath = info.projectPath / "deploy"
   lazy val distPath = info.projectPath / "dist"
 
@@ -132,8 +132,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val SLF4J_VERSION         = "1.6.0"
   lazy val SPRING_VERSION        = "3.0.4.RELEASE"
   lazy val ASPECTWERKZ_VERSION   = "2.2.2"
-  lazy val JETTY_VERSION         = "7.1.6.v20100715"
-  lazy val JAVAX_SERVLET_VERSION = "3.0"
+  lazy val JETTY_VERSION         = "8.0.0.M1"
+  //lazy val JAVAX_SERVLET_VERSION = "3.0"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
@@ -172,7 +172,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val dispatch_http = "net.databinder" % "dispatch-http_2.8.0" % DISPATCH_VERSION % "compile" //LGPL v2
     lazy val dispatch_json = "net.databinder" % "dispatch-json_2.8.0" % DISPATCH_VERSION % "compile" //LGPL v2
 
-    lazy val javax_servlet_30 = "org.glassfish" % "javax.servlet" % JAVAX_SERVLET_VERSION % "compile" //CDDL v1
+    //lazy val javax_servlet_30 = "org.glassfish" % "javax.servlet" % JAVAX_SERVLET_VERSION % "compile" //CDDL v1
 
     lazy val jetty         = "org.eclipse.jetty" % "jetty-server"  % JETTY_VERSION % "compile" //Eclipse license
     lazy val jetty_util    = "org.eclipse.jetty" % "jetty-util"    % JETTY_VERSION % "compile" //Eclipse license
@@ -237,9 +237,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val thrift = "com.facebook" % "thrift" % "r917130" % "compile" //ApacheV2
 
-    lazy val voldemort = "voldemort" % "voldemort" % "0.81" % "compile" //ApacheV2
-    lazy val voldemort_contrib = "voldemort" % "voldemort-contrib" % "0.81" % "compile" //ApacheV2
-    lazy val voldemort_needs_log4j = "org.slf4j" % "log4j-over-slf4j" % SLF4J_VERSION % "compile" //MIT
+//    lazy val voldemort = "voldemort" % "voldemort" % "0.81" % "compile" //ApacheV2
+//    lazy val voldemort_contrib = "voldemort" % "voldemort-contrib" % "0.81" % "compile" //ApacheV2
+//    lazy val voldemort_needs_log4j = "org.slf4j" % "log4j-over-slf4j" % SLF4J_VERSION % "compile" //MIT
 
     lazy val werkz      = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % ASPECTWERKZ_VERSION % "compile" //LGPL 2.1
     lazy val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5"        % ASPECTWERKZ_VERSION % "compile" //LGPL 2.1
@@ -248,7 +248,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val hadoop_core = "org.apache.hadoop" % "hadoop-core" % "0.20.2" % "compile" //ApacheV2
 
-    lazy val hbase_core = "org.apache.hbase" % "hbase-core" % "0.20.6" % "compile" //ApacheV2
+    //lazy val hbase_core = "org.apache.hbase" % "hbase-core" % "0.20.6" % "compile" //ApacheV2
 
     lazy val google_coll    = "com.google.collections" % "google-collections"  % "1.0"             % "compile" //ApacheV2
 
@@ -275,11 +275,11 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val hadoop_test    = "org.apache.hadoop"      % "hadoop-test"         % "0.20.2"          % "test" //ApacheV2
     lazy val hbase_test     = "org.apache.hbase"       % "hbase-test"          % "0.20.6"          % "test" //ApacheV2
     lazy val log4j          = "log4j"                  % "log4j"               % "1.2.15"          % "test" //ApacheV2
-    lazy val jetty_mortbay  = "org.mortbay.jetty"      % "jetty"               % "6.1.14"          % "test" //Eclipse license
+    //lazy val jetty_mortbay  = "org.mortbay.jetty"      % "jetty"               % "6.1.14"          % "test" //Eclipse license
 
     //voldemort testing
     lazy val jdom           = "org.jdom"               % "jdom"                % "1.1"             % "test" //JDOM license: ApacheV2 - acknowledgement
-    lazy val vold_jetty     = "org.mortbay.jetty"      % "jetty"               % "6.1.18"          % "test" //ApacheV2
+    //lazy val vold_jetty     = "org.mortbay.jetty"      % "jetty"               % "6.1.18"          % "test" //ApacheV2
     lazy val velocity       = "org.apache.velocity"    % "velocity"            % "1.6.2"           % "test" //ApacheV2
     lazy val dbcp           = "commons-dbcp"           % "commons-dbcp"        % "1.2.2"           % "test" //ApacheV2
 
@@ -312,7 +312,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Miscellaneous
   // -------------------------------------------------------------------------------------------------------------------
-  override def artifactID: String = this.name
 
   override def mainClass = Some("akka.kernel.Main")
 
@@ -334,23 +333,23 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     .mkString(" ") +
     " config/" +
     " scala-library.jar" +
-    " dist/akka-actor-%s.jar".format(version) +
-    " dist/akka-stm-%s.jar".format(version) +
-    " dist/akka-typed-actor-%s.jar".format(version) +
-    " dist/akka-remote-%s.jar".format(version) +
-    " dist/akka-http-%s.jar".format(version) +
-    " dist/akka-camel-%s.jar".format(version) +
-    " dist/akka-amqp-%s.jar".format(version) +
-    " dist/akka-persistence-common-%s.jar".format(version) +
-    " dist/akka-persistence-redis-%s.jar".format(version) +
-    " dist/akka-persistence-mongo-%s.jar".format(version) +
-    " dist/akka-persistence-cassandra-%s.jar".format(version) +
-    " dist/akka-persistence-voldemort-%s.jar".format(version) +
-    " dist/akka-persistence-riak-%s.jar".format(version) +
-    " dist/akka-persistence-hbase-%s.jar".format(version) +
-    " dist/akka-kernel-%s.jar".format(version) +
-    " dist/akka-spring-%s.jar".format(version) +
-    " dist/akka-jta-%s.jar".format(version)
+    " dist/akka-actor_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-stm_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-typed-actor_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-remote_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-http_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-camel_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-amqp_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-common_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-redis_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-mongo_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-cassandra_%s-%s.jar".format(buildScalaVersion, version) +
+    //" dist/akka-persistence-voldemort_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-riak_%s-%s.jar".format(buildScalaVersion, version) +
+    //" dist/akka-persistence-hbase_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-kernel_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-spring_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-jta_%s-%s.jar".format(buildScalaVersion, version)
     )
 
   //Exclude slf4j1.5.11 from the classpath, it's conflicting...
@@ -508,12 +507,12 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaHttpProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val jsr250           = Dependencies.jsr250
-    val atmo             = Dependencies.atmo
-    val atmo_jbossweb    = Dependencies.atmo_jbossweb
-    val atmo_jersey      = Dependencies.atmo_jersey
-    val atmo_runtime     = Dependencies.atmo_runtime
-    val atmo_tomcat      = Dependencies.atmo_tomcat
-    val atmo_weblogic    = Dependencies.atmo_weblogic
+    //val atmo             = Dependencies.atmo
+    //val atmo_jbossweb    = Dependencies.atmo_jbossweb
+    //val atmo_jersey      = Dependencies.atmo_jersey
+    //val atmo_runtime     = Dependencies.atmo_runtime
+    //val atmo_tomcat      = Dependencies.atmo_tomcat
+    //val atmo_weblogic    = Dependencies.atmo_weblogic
     val jetty            = Dependencies.jetty
     val jetty_util       = Dependencies.jetty_util
     val jetty_xml        = Dependencies.jetty_xml
@@ -525,7 +524,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jersey_server    = Dependencies.jersey_server
     val jsr311           = Dependencies.jsr311
     val stax_api         = Dependencies.stax_api
-    val servlet30        = Dependencies.javax_servlet_30
+    //val servlet30        = Dependencies.javax_servlet_30
 
     // testing
     val junit     = Dependencies.junit
@@ -556,10 +555,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaMongoProject(_), akka_persistence_common)
     lazy val akka_persistence_cassandra = project("akka-persistence-cassandra", "akka-persistence-cassandra",
       new AkkaCassandraProject(_), akka_persistence_common)
-    lazy val akka_persistence_hbase = project("akka-persistence-hbase", "akka-persistence-hbase",
-      new AkkaHbaseProject(_), akka_persistence_common)
-    lazy val akka_persistence_voldemort = project("akka-persistence-voldemort", "akka-persistence-voldemort",
-      new AkkaVoldemortProject(_), akka_persistence_common)
+    //lazy val akka_persistence_hbase = project("akka-persistence-hbase", "akka-persistence-hbase",
+    //  new AkkaHbaseProject(_), akka_persistence_common)
+    //lazy val akka_persistence_voldemort = project("akka-persistence-voldemort", "akka-persistence-voldemort",
+    //  new AkkaVoldemortProject(_), akka_persistence_common)
     lazy val akka_persistence_riak = project("akka-persistence-riak", "akka-persistence-riak",
       new AkkaRiakProject(_), akka_persistence_common)
     lazy val akka_persistence_couchdb = project("akka-persistence-couchdb", "akka-persistence-couchdb",
@@ -622,7 +621,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // akka-persistence-hbase subproject
   // -------------------------------------------------------------------------------------------------------------------
-
+                                   /*
   class AkkaHbaseProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     override def ivyXML =
     <dependencies>
@@ -669,7 +668,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     override def testOptions = createTestFilter({ s:String=> s.endsWith("Suite") || s.endsWith("Test")})
   }
-
+            */
   // -------------------------------------------------------------------------------------------------------------------
   // akka-persistence-riak subproject
   // -------------------------------------------------------------------------------------------------------------------
@@ -761,8 +760,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaOSGiAssemblyProject(_), akka_osgi_dependencies_bundle, akka_remote, akka_amqp, akka_http,
         akka_camel, akka_spring, akka_jta, akka_persistence.akka_persistence_common,
         akka_persistence.akka_persistence_redis, akka_persistence.akka_persistence_mongo,
-        akka_persistence.akka_persistence_cassandra,akka_persistence.akka_persistence_hbase,
-      akka_persistence.akka_persistence_voldemort)
+        akka_persistence.akka_persistence_cassandra)//,akka_persistence.akka_persistence_hbase,
+      //akka_persistence.akka_persistence_voldemort)
   }
 
   class AkkaOSGiDependenciesBundleProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
@@ -866,6 +865,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jsr311 = Dependencies.jsr311
   }
 
+  /**
   class AkkaSampleCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
     //Must be like this to be able to exclude the geronimo-servlet_2.4_spec which is a too old Servlet spec
     override def ivyXML =
@@ -884,7 +884,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       </dependencies>
 
     override def testOptions = createTestFilter( _.endsWith("Test"))
-  }
+  }         **/
 
   class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
     val commons_codec = Dependencies.commons_codec
@@ -911,8 +911,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSampleRestJavaProject(_), akka_kernel)
     lazy val akka_sample_rest_scala = project("akka-sample-rest-scala", "akka-sample-rest-scala",
       new AkkaSampleRestScalaProject(_), akka_kernel)
-    lazy val akka_sample_camel = project("akka-sample-camel", "akka-sample-camel",
-      new AkkaSampleCamelProject(_), akka_kernel)
+    //lazy val akka_sample_camel = project("akka-sample-camel", "akka-sample-camel",
+    //  new AkkaSampleCamelProject(_), akka_kernel)
     lazy val akka_sample_security = project("akka-sample-security", "akka-sample-security",
       new AkkaSampleSecurityProject(_), akka_kernel)
     lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
@@ -949,13 +949,12 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     )
   }
 
-  def akkaArtifacts = descendents(info.projectPath / "dist", "*-" + version + ".jar")
+  def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "-" + version + ".jar")
   lazy val integrationTestsEnabled = systemOptional[Boolean]("integration.tests",false)
   lazy val stressTestsEnabled = systemOptional[Boolean]("stress.tests",false)
 
   // ------------------------------------------------------------
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject {
-    override def artifactID: String = this.name
     lazy val sourceArtifact = Artifact(this.artifactID, "source", "jar", Some("sources"), Nil, None)
     lazy val docsArtifact = Artifact(this.artifactID, "doc", "jar", Some("docs"), Nil, None)
     override def runClasspath = super.runClasspath +++ (AkkaParentProject.this.info.projectPath / "config")

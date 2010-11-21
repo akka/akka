@@ -88,6 +88,7 @@ class AkkaHttpServlet extends HttpServlet with Logging
 
       case (3,0) => {
         log.info("Supporting Java asynchronous contexts.")
+        _factory = Some(Servlet30ContextMethodFactory)
       }
 
       case _ if (server.toLowerCase startsWith JettyServer) => {
