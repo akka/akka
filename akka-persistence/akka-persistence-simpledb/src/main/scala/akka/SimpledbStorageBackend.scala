@@ -28,42 +28,42 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
   val ownerAtt = "owner"
   val base64 = new Base64(1024, seperatorBytes, true)
   val base64key = new Base64(1024, Array.empty[Byte], true)
-  val id = config.getString("akka.storage.simpledb.account.id").getOrElse{
+  val id = config.getString("akka.persistence.simpledb.account.id").getOrElse{
     val e = new IllegalStateException("You must provide an AWS id")
     log.error(e, "You Must Provide an AWS id to use the SimpledbStorageBackend")
     throw e
   }
-  val secretKey = config.getString("akka.storage.simpledb.account.secretKey").getOrElse{
+  val secretKey = config.getString("akka.persistence.simpledb.account.secretKey").getOrElse{
     val e = new IllegalStateException("You must provide an AWS secretKey")
     log.error(e, "You Must Provide an AWS secretKey to use the SimpledbStorageBackend")
     throw e
   }
-  val refDomain = config.getString("akka.storage.simpledb.domain.ref", "ref")
-  val mapDomain = config.getString("akka.storage.simpledb.domain.map", "map")
-  val queueDomain = config.getString("akka.storage.simpledb.domain.queue", "queue")
-  val vectorDomain = config.getString("akka.storage.simpledb.domain.vector", "vector")
+  val refDomain = config.getString("akka.persistence.simpledb.domain.ref", "ref")
+  val mapDomain = config.getString("akka.persistence.simpledb.domain.map", "map")
+  val queueDomain = config.getString("akka.persistence.simpledb.domain.queue", "queue")
+  val vectorDomain = config.getString("akka.persistence.simpledb.domain.vector", "vector")
   val credentials = new BasicAWSCredentials(id, secretKey);
   val clientConfig = new ClientConfiguration()
-  for (i <- config.getInt("akka.storage.simpledb.client.timeout")) {
+  for (i <- config.getInt("akka.persistence.simpledb.client.timeout")) {
     clientConfig.setConnectionTimeout(i)
   }
-  for (i <- config.getInt("akka.storage.simpledb.client.maxconnections")) {
+  for (i <- config.getInt("akka.persistence.simpledb.client.maxconnections")) {
     clientConfig.setMaxConnections(i)
   }
-  clientConfig.setMaxErrorRetry(config.getInt("akka.storage.simpledb.client.maxretries", 10))
+  clientConfig.setMaxErrorRetry(config.getInt("akka.persistence.simpledb.client.maxretries", 10))
 
-  for (s <- config.getString("akka.storage.simpledb.client.protocol")) {
+  for (s <- config.getString("akka.persistence.simpledb.client.protocol")) {
     clientConfig.setProtocol(Protocol.valueOf(s))
   }
-  for (i <- config.getInt("akka.storage.simpledb.client.sockettimeout")) {
+  for (i <- config.getInt("akka.persistence.simpledb.client.sockettimeout")) {
     clientConfig.setSocketTimeout(i)
   }
-  for {s <- config.getInt("akka.storage.simpledb.client.sendbuffer")
-       r <- config.getInt("akka.storage.simpledb.client.receivebuffer")} {
+  for {s <- config.getInt("akka.persistence.simpledb.client.sendbuffer")
+       r <- config.getInt("akka.persistence.simpledb.client.receivebuffer")} {
     clientConfig.setSocketBufferSizeHints(s, r)
   }
 
-  for (s <- config.getString("akka.storage.simpledb.client.useragent")) {
+  for (s <- config.getString("akka.persistence.simpledb.client.useragent")) {
     clientConfig.setUserAgent(s)
   }
 

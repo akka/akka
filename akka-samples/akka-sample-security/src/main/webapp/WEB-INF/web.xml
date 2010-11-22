@@ -8,7 +8,7 @@
 
   <servlet>
     <servlet-name>AkkaServlet</servlet-name>
-    <servlet-class>akka.rest.AkkaServlet</servlet-class>
+    <servlet-class>akka.http.AkkaServlet</servlet-class>
   </servlet>
 
   <servlet-mapping>
