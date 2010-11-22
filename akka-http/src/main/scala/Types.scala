@@ -17,15 +17,15 @@ object Types
   import javax.servlet. {ServletRequest, ServletResponse}
 
   type tAsyncRequest = {
-    def startAsync:tAsyncRequestContext
+    def startAsync: tAsyncRequestContext
   }
 
   /**
    * Used to match both AsyncContext and AsyncContinuation in order to complete the request
    */
   type tAsyncRequestContext = {
-    def complete:Unit
-    def getRequest:ServletRequest
-    def getResponse:ServletResponse
+    def complete: Unit
+    def getRequest: ServletRequest
+    def getResponse: ServletResponse
   }
 }
