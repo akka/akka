@@ -325,7 +325,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     .filter(_.getName.endsWith(".jar"))
     .filter(!_.getName.contains("servlet_2.4"))
     .filter(!_.getName.contains("scala-library"))
-    .map("lib_managed/scala_%s/compile/".format(buildScalaVersion) + _.getName)
+    .map("lib_managed/compile/" + _.getName)
     .mkString(" ") +
     " config/" +
     " scala-library.jar" +
@@ -785,6 +785,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaOSGiAssemblyProject(info: ProjectInfo) extends DefaultProject(info) {
+    override def disableCrossPaths = true
 
     // Scala bundle
     val scala_bundle = "com.weiglewilczek.scala-lang-osgi" % "scala-library" % buildScalaVersion % "compile" intransitive
@@ -845,6 +846,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
+    override def disableCrossPaths = true
     override def spdeSourcePath = mainSourcePath / "spde"
   }
 
