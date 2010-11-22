@@ -542,6 +542,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaPersistenceParentProject(info: ProjectInfo) extends ParentProject(info) {
+    override def disableCrossPaths = true
+
     lazy val akka_persistence_common = project("akka-persistence-common", "akka-persistence-common",
       new AkkaPersistenceCommonProject(_), akka_remote, akka_stm)
     lazy val akka_persistence_redis = project("akka-persistence-redis", "akka-persistence-redis",
@@ -749,6 +751,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaOSGiParentProject(info: ProjectInfo) extends ParentProject(info) {
+    override def disableCrossPaths = true
+
     lazy val akka_osgi_dependencies_bundle = project("akka-osgi-dependencies-bundle", "akka-osgi-dependencies-bundle",
       new AkkaOSGiDependenciesBundleProject(_), akka_kernel, akka_jta) // akka_kernel does not depend on akka_jta (why?) therefore we list akka_jta here
     lazy val akka_osgi_assembly = project("akka-osgi-assembly", "akka-osgi-assembly",
@@ -895,6 +899,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
+    override def disableCrossPaths = true
+
     lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
       new AkkaSampleAntsProject(_), akka_stm)
     lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
