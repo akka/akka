@@ -285,6 +285,21 @@ class RemoteServer extends Logging with ListenerManagement {
   }
 
   /**
+   * Register typed actor by interface name.
+   */
+  def registerTypedPerSessionActor(intfClass: Class[_], factory: => AnyRef) : Unit = registerTypedActor(intfClass.getName, factory)
+
+  /**
+   * Register remote typed actor by a specific id.
+   * @param id custom actor id
+   * @param typedActor typed actor to register
+   */
+  def registerTypedPerSessionActor(id: String, factory: => AnyRef): Unit = synchronized {
+    log.debug("Registering server side typed remote session actor with id [%s]", id)
+    registerTypedPerSessionActor(id, () => factory, typedActorsFactories)
+  }
+
+  /**
    * Register Remote Actor by the Actor's 'id' field. It starts the Actor if it is not started already.
    */
   def register(actorRef: ActorRef): Unit = register(actorRef.id, actorRef)
@@ -300,15 +315,43 @@ class RemoteServer extends Logging with ListenerManagement {
     else register(id, actorRef, actors)
   }
 
+  /**
+   * Register Remote Session Actor by a specific 'id' passed as argument.
+   * <p/>
+   * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself.
+   */
+  def registerPerSession(id: String, factory: => ActorRef): Unit = synchronized {
+    log.debug("Registering server side remote session actor with id [%s]", id)
+    registerPerSession(id, () => factory, actorsFactories)
+  }
+
   private def register[Key](id: Key, actorRef: ActorRef, registry: ConcurrentHashMap[Key, ActorRef]) {
+    // TODO: contains is an alias for containsValue, not containsKey, so the contains is useless here
     if (_isRunning && !registry.contains(id)) {
+      registry.put(id, actorRef);
       if (!actorRef.isRunning) actorRef.start
-      registry.put(id, actorRef)
+    }
+  }
+
+  private def registerPerSession[Key](id: Key, factory: () => ActorRef, registry: ConcurrentHashMap[Key,() => ActorRef]) {
+    // TODO: contains is an alias for containsValue, not containsKey, so the contains is useless here
+    if (_isRunning && !registry.contains(id)) {
+      registry.put(id, factory)
     }
   }
 
   private def registerTypedActor[Key](id: Key, typedActor: AnyRef, registry: ConcurrentHashMap[Key, AnyRef]) {
-    if (_isRunning && !registry.contains(id)) registry.put(id, typedActor)
+    // TODO: contains is an alias for containsValue, not containsKey, so the contains is useless here
+    if (_isRunning && !registry.contains(id)) {
+      registry.put(id, typedActor)
+    }
+  }
+
+  private def registerTypedPerSessionActor[Key](id: Key, factory: () => AnyRef, registry: ConcurrentHashMap[Key,() => AnyRef]) {
+    // TODO: contains is an alias for containsValue, not containsKey, so the contains is useless here
+    if (_isRunning && !registry.contains(id)) {
+      registry.put(id, factory)
+    }
   }
 
   /**
@@ -340,6 +383,18 @@ class RemoteServer extends Logging with ListenerManagement {
   }
 
   /**
+   * Unregister Remote Actor by specific 'id'.
+   * <p/>
+   * NOTE: You need to call this method if you have registered an actor by a custom ID.
+   */
+  def unregisterPerSession(id: String):Unit = {
+    if (_isRunning) {
+      log.info("Unregistering server side remote session actor with id [%s]", id)
+      actorsFactories.remove(id)
+    }
+  }
+
+  /**
    * Unregister Remote Typed Actor by specific 'id'.
    * <p/>
    * NOTE: You need to call this method if you have registered an actor by a custom ID.
@@ -352,14 +407,28 @@ class RemoteServer extends Logging with ListenerManagement {
     }
   }
 
+  /**
+  * Unregister Remote Typed Actor by specific 'id'.
+  * <p/>
+  * NOTE: You need to call this method if you have registered an actor by a custom ID.
+  */
+ def unregisterTypedPerSessionActor(id: String):Unit = {
+   if (_isRunning) {
+     typedActorsFactories.remove(id)
+   }
+ }
+
   protected override def manageLifeCycleOfListeners = false
 
   protected[akka] override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
 
+
   private[akka] def actors            = ActorRegistry.actors(address)
   private[akka] def actorsByUuid      = ActorRegistry.actorsByUuid(address)
+  private[akka] def actorsFactories   = ActorRegistry.actorsFactories(address)
   private[akka] def typedActors       = ActorRegistry.typedActors(address)
   private[akka] def typedActorsByUuid = ActorRegistry.typedActorsByUuid(address)
+  private[akka] def typedActorsFactories = ActorRegistry.typedActorsFactories(address)
 }
 
 object RemoteServerSslContext {
@@ -427,6 +496,9 @@ class RemoteServerHandler(
   val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
   val CHANNEL_INIT    = "channel-init".intern
 
+  val sessionActors = new ChannelLocal[ConcurrentHashMap[String, ActorRef]]()
+  val typedSessionActors = new ChannelLocal[ConcurrentHashMap[String, AnyRef]]()
+
   applicationLoader.foreach(MessageSerializer.setClassLoader(_))
 
   /**
@@ -437,6 +509,8 @@ class RemoteServerHandler(
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val clientAddress = getClientAddress(ctx)
+    sessionActors.set(event.getChannel(), new ConcurrentHashMap[String, ActorRef]())
+    typedSessionActors.set(event.getChannel(), new ConcurrentHashMap[String, AnyRef]())
     log.debug("Remote client [%s] connected to [%s]", clientAddress, server.name)
     if (RemoteServer.SECURE) {
       val sslHandler: SslHandler = ctx.getPipeline.get(classOf[SslHandler])
@@ -456,6 +530,19 @@ class RemoteServerHandler(
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val clientAddress = getClientAddress(ctx)
     log.debug("Remote client [%s] disconnected from [%s]", clientAddress, server.name)
+    // stop all session actors
+    val channelActors = sessionActors.remove(event.getChannel())
+    val channelActorsIterator = channelActors.elements()
+    while (channelActorsIterator.hasMoreElements()) {
+      channelActorsIterator.nextElement().stop()
+    }
+
+    val channelTypedActors = typedSessionActors.remove(event.getChannel())
+    val channelTypedActorsIterator = channelTypedActors.elements()
+    while (channelTypedActorsIterator.hasMoreElements()) {
+      TypedActor.stop(channelTypedActorsIterator.nextElement())
+    }
+
     server.notifyListeners(RemoteServerClientDisconnected(server, clientAddress))
   }
 
@@ -510,7 +597,7 @@ class RemoteServerHandler(
 
     val actorRef =
       try {
-        createActor(actorInfo).start
+        createActor(actorInfo, channel).start
       } catch {
         case e: SecurityException =>
           channel.write(createErrorReplyMessage(e, request, AkkaActorType.ScalaActor))
@@ -584,7 +671,7 @@ class RemoteServerHandler(
     val typedActorInfo = actorInfo.getTypedActorInfo
     log.debug("Dispatching to remote typed actor [%s :: %s]", typedActorInfo.getMethod, typedActorInfo.getInterface)
 
-    val typedActor = createTypedActor(actorInfo)
+    val typedActor = createTypedActor(actorInfo, channel)
     val args = MessageSerializer.deserialize(request.getMessage).asInstanceOf[Array[AnyRef]].toList
     val argClasses = args.map(_.getClass)
 
@@ -631,8 +718,24 @@ class RemoteServerHandler(
     server.actorsByUuid.get(uuid)
   }
 
+  private def findActorFactory(id: String) : () => ActorRef = {
+    server.actorsFactories.get(id) 
+  }
+
+  private def findSessionActor(id: String, channel: Channel) : ActorRef = {
+    sessionActors.get(channel).get(id)
+  }
+
   private def findTypedActorById(id: String) : AnyRef = {
     server.typedActors.get(id)
+  }
+
+  private def findTypedActorFactory(id: String) : () => AnyRef = {
+    server.typedActorsFactories.get(id)
+  }
+
+  private def findTypedSessionActor(id: String, channel: Channel) : AnyRef = {
+    typedSessionActors.get(channel).get(id)
   }
 
   private def findTypedActorByUuid(uuid: String) : AnyRef = {
@@ -654,78 +757,151 @@ class RemoteServerHandler(
   }
 
   /**
+   * gets the actor from the session, or creates one if there is a factory for it
+   */
+  private def createSessionActor(actorInfo: ActorInfoProtocol, channel: Channel): ActorRef = {
+    val uuid = actorInfo.getUuid
+    val id = actorInfo.getId
+    val sessionActorRefOrNull = findSessionActor(id, channel)
+    if (sessionActorRefOrNull ne null)
+      sessionActorRefOrNull
+    else
+    {
+      // we dont have it in the session either, see if we have a factory for it
+      val actorFactoryOrNull = findActorFactory(id)
+      if (actorFactoryOrNull ne null) {
+        val actorRef = actorFactoryOrNull()
+        actorRef.uuid = uuidFrom(uuid.getHigh,uuid.getLow)
+        sessionActors.get(channel).put(id, actorRef)
+        actorRef
+      }
+      else
+        null
+    }
+  }
+
+
+  private def createClientManagedActor(actorInfo: ActorInfoProtocol): ActorRef = {
+    val uuid = actorInfo.getUuid
+    val id = actorInfo.getId
+    val timeout = actorInfo.getTimeout
+    val name = actorInfo.getTarget
+
+    try {
+      if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException(
+        "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
+
+      log.info("Creating a new remote actor [%s:%s]", name, uuid)
+      val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
+                  else Class.forName(name)
+      val actorRef = Actor.actorOf(clazz.asInstanceOf[Class[_ <: Actor]])
+      actorRef.uuid = uuidFrom(uuid.getHigh,uuid.getLow)
+      actorRef.id = id
+      actorRef.timeout = timeout
+      actorRef.remoteAddress = None
+      server.actorsByUuid.put(actorRef.uuid.toString, actorRef) // register by uuid
+      actorRef
+    } catch {
+      case e =>
+        log.error(e, "Could not create remote actor instance")
+        server.notifyListeners(RemoteServerError(e, server))
+        throw e
+    }
+
+  }
+
+  /**
    * Creates a new instance of the actor with name, uuid and timeout specified as arguments.
    *
    * If actor already created then just return it from the registry.
    *
    * Does not start the actor.
    */
-  private def createActor(actorInfo: ActorInfoProtocol): ActorRef = {
+  private def createActor(actorInfo: ActorInfoProtocol, channel: Channel): ActorRef = {
     val uuid = actorInfo.getUuid
     val id = actorInfo.getId
 
-    val name = actorInfo.getTarget
-    val timeout = actorInfo.getTimeout
-
     val actorRefOrNull = findActorByIdOrUuid(id, uuidFrom(uuid.getHigh,uuid.getLow).toString)
 
-    if (actorRefOrNull eq null) {
-      try {
-        if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException(
-          "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
-
-        log.info("Creating a new remote actor [%s:%s]", name, uuid)
-        val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
-                    else Class.forName(name)
-        val actorRef = Actor.actorOf(clazz.asInstanceOf[Class[_ <: Actor]])
-        actorRef.uuid = uuidFrom(uuid.getHigh,uuid.getLow)
-        actorRef.id = id
-        actorRef.timeout = timeout
-        actorRef.remoteAddress = None
-        server.actorsByUuid.put(actorRef.uuid.toString, actorRef) // register by uuid
-        actorRef
-      } catch {
-        case e =>
-          log.error(e, "Could not create remote actor instance")
-          server.notifyListeners(RemoteServerError(e, server))
-          throw e
-      }
-    } else actorRefOrNull
+    if (actorRefOrNull ne null)
+      actorRefOrNull
+    else
+    {
+      // the actor has not been registered globally. See if we have it in the session
+      val sessionActorRefOrNull = createSessionActor(actorInfo, channel)
+      if (sessionActorRefOrNull ne null) 
+        sessionActorRefOrNull
+      else  // maybe it is a client managed actor
+        createClientManagedActor(actorInfo)
+    }
   }
 
-  private def createTypedActor(actorInfo: ActorInfoProtocol): AnyRef = {
+  /**
+   * gets the actor from the session, or creates one if there is a factory for it
+   */
+  private def createTypedSessionActor(actorInfo: ActorInfoProtocol, channel: Channel):AnyRef ={
+    val id = actorInfo.getId
+    val sessionActorRefOrNull = findTypedSessionActor(id, channel)
+    if (sessionActorRefOrNull ne null)
+      sessionActorRefOrNull
+    else {
+      val actorFactoryOrNull = findTypedActorFactory(id)
+      if (actorFactoryOrNull ne null) {
+        val newInstance = actorFactoryOrNull()
+        typedSessionActors.get(channel).put(id, newInstance)
+        newInstance
+      }
+      else
+        null       
+    }
+
+  }
+
+  private def createClientManagedTypedActor(actorInfo: ActorInfoProtocol) = {
+    val typedActorInfo = actorInfo.getTypedActorInfo
+    val interfaceClassname = typedActorInfo.getInterface
+    val targetClassname = actorInfo.getTarget
+    val uuid = actorInfo.getUuid
+
+    try {
+      if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException(
+        "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
+
+      log.info("Creating a new remote typed actor:\n\t[%s :: %s]", interfaceClassname, targetClassname)
+
+      val (interfaceClass, targetClass) =
+        if (applicationLoader.isDefined) (applicationLoader.get.loadClass(interfaceClassname),
+                                          applicationLoader.get.loadClass(targetClassname))
+        else (Class.forName(interfaceClassname), Class.forName(targetClassname))
+
+      val newInstance = TypedActor.newInstance(
+        interfaceClass, targetClass.asInstanceOf[Class[_ <: TypedActor]], actorInfo.getTimeout).asInstanceOf[AnyRef]
+      server.typedActors.put(uuidFrom(uuid.getHigh,uuid.getLow).toString, newInstance) // register by uuid
+      newInstance
+    } catch {
+      case e =>
+        log.error(e, "Could not create remote typed actor instance")
+        server.notifyListeners(RemoteServerError(e, server))
+        throw e
+    }
+  }
+
+  private def createTypedActor(actorInfo: ActorInfoProtocol, channel: Channel): AnyRef = {
     val uuid = actorInfo.getUuid
     val id = actorInfo.getId
 
     val typedActorOrNull = findTypedActorByIdOrUuid(id, uuidFrom(uuid.getHigh,uuid.getLow).toString)
-
-    if (typedActorOrNull eq null) {
-      val typedActorInfo = actorInfo.getTypedActorInfo
-      val interfaceClassname = typedActorInfo.getInterface
-      val targetClassname = actorInfo.getTarget
-
-      try {
-        if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException(
-          "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
-
-        log.info("Creating a new remote typed actor:\n\t[%s :: %s]", interfaceClassname, targetClassname)
-
-        val (interfaceClass, targetClass) =
-          if (applicationLoader.isDefined) (applicationLoader.get.loadClass(interfaceClassname),
-                                            applicationLoader.get.loadClass(targetClassname))
-          else (Class.forName(interfaceClassname), Class.forName(targetClassname))
-
-        val newInstance = TypedActor.newInstance(
-          interfaceClass, targetClass.asInstanceOf[Class[_ <: TypedActor]], actorInfo.getTimeout).asInstanceOf[AnyRef]
-        server.typedActors.put(uuidFrom(uuid.getHigh,uuid.getLow).toString, newInstance) // register by uuid
-        newInstance
-      } catch {
-        case e =>
-          log.error(e, "Could not create remote typed actor instance")
-          server.notifyListeners(RemoteServerError(e, server))
-          throw e
-      }
-    } else typedActorOrNull
+    if (typedActorOrNull ne null)
+      typedActorOrNull
+    else
+    {
+      // the actor has not been registered globally. See if we have it in the session
+      val sessionActorRefOrNull = createTypedSessionActor(actorInfo, channel)
+      if (sessionActorRefOrNull ne null)
+        sessionActorRefOrNull
+      else // maybe it is a client managed actor
+        createClientManagedTypedActor(actorInfo)
+    }
   }
 
   private def createErrorReplyMessage(exception: Throwable, request: RemoteMessageProtocol, actorType: AkkaActorType): RemoteMessageProtocol = {
