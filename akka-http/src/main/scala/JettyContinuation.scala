@@ -19,9 +19,9 @@ trait JettyContinuation extends ContinuationListener with akka.util.Logging
   import javax.servlet.http.HttpServletResponse
   import AkkaHttpServlet._
 
-  val builder:()=>tAsyncRequestContext
-  val context:Option[tAsyncRequestContext] = Some(builder())
-  def go = {_continuation.isDefined}
+  val builder:() => tAsyncRequestContext
+  val context: Option[tAsyncRequestContext] = Some(builder())
+  def go = _continuation.isDefined
 
   protected val _continuation:Option[AsyncContinuation] = {
 
@@ -31,36 +31,30 @@ trait JettyContinuation extends ContinuationListener with akka.util.Logging
      continuation.isSuspended,
      continuation.isExpired) match {
 
-          //
-          // the fresh continuation (coming through getAsyncContinuation)
-          //
+        //
+        // the fresh continuation (coming through getAsyncContinuation)
+        //
         case (true, false, false) => {
-
           continuation.setTimeout(DefaultTimeout)
 
-          //callback() foreach {listener => continuation.addContinuationListener(listener.asInstanceOf[ContinuationListener])}
           continuation.addContinuationListener(this)
           continuation.suspend
 
           Some(continuation)
         }
-          //
-          // the fresh continuation (coming through startAsync instead)
-          //
+        //
+        // the fresh continuation (coming through startAsync instead)
+        //
         case (true, true, false) => {
 
           continuation.setTimeout(DefaultTimeout)
-
-          //callback() foreach {listener => continuation.addContinuationListener(listener.asInstanceOf[ContinuationListener])}
           continuation.addContinuationListener(this)
 
           Some(continuation)
         }
-          //
-          // the timeout was reset and the continuation was resumed
-          //  need to update the timeout and resuspend
-          // very important to clear the context so the request is not rebroadcast to the endpoint
-          //
+        // the timeout was reset and the continuation was resumed
+        //  need to update the timeout and resuspend
+        // very important to clear the context so the request is not rebroadcast to the endpoint
         case (false, false, false) => {
 
           continuation.setTimeout(continuation.getAttribute(TimeoutAttribute).asInstanceOf[Long])
@@ -69,58 +63,41 @@ trait JettyContinuation extends ContinuationListener with akka.util.Logging
 
           None
         }
-          //
-          // we don't actually expect to get this one here since the listener will finish him off
-          //
+        //
+        // we don't actually expect to get this one here since the listener will finish him off
+        //
         case (_, _, true) => {
 
           None
         }
-          //
-          // snuh?
-          //
+        //
+        // snuh?
+        //
         case _ => {
-
           continuation.cancel
-
           None
         }
     }
   }
 
-  def suspended:Boolean =
-  {
-    _continuation match {
-
-      case Some(continuation) => (continuation.isSuspended || (continuation.getAttribute(TimeoutAttribute) != null))
-	    case None => {
-        false
-      }
-	  }
+  def suspended:Boolean = _continuation match {
+    case None => false
+    case Some(continuation) => (continuation.isSuspended || (continuation.getAttribute(TimeoutAttribute) ne null))
   }
   
-  def timeout(ms:Long):Boolean =
-  {
-    _continuation match {
-
-      case Some(continuation) => {
-
-        continuation.setAttribute(TimeoutAttribute, ms)
-        continuation.resume
-        true
-      }
-        
-      case None => false
-    }
-  }  
+  def timeout(ms:Long):Boolean = _continuation match {
+    case None => false
+    case Some(continuation) =>
+      continuation.setAttribute(TimeoutAttribute, ms)
+      continuation.resume
+      true
+  }
 
   //
   // ContinuationListener
   //
-
-  def onComplete(c:Continuation) = {}
-  def onTimeout(c:Continuation) = 
-  {
+  def onComplete(c: Continuation) = {}
+  def onTimeout(c: Continuation) = {
     c.getServletResponse.asInstanceOf[HttpServletResponse].addHeader(ExpiredHeaderName, ExpiredHeaderValue)
     c.complete
   }
@@ -128,13 +105,13 @@ trait JettyContinuation extends ContinuationListener with akka.util.Logging
 
 object JettyContinuationMethodFactory extends RequestMethodFactory
 {
-  def Delete(f:(()=>tAsyncRequestContext)):RequestMethod = {new Delete(f) with JettyContinuation}
-  def Get(f:(()=>tAsyncRequestContext)):RequestMethod = {new Get(f) with JettyContinuation}
-  def Head(f:(()=>tAsyncRequestContext)):RequestMethod = {new Head(f) with JettyContinuation}
-  def Options(f:(()=>tAsyncRequestContext)):RequestMethod = {new Options(f) with JettyContinuation}
-  def Post(f:(()=>tAsyncRequestContext)):RequestMethod = {new Post(f) with JettyContinuation}
-  def Put(f:(()=>tAsyncRequestContext)):RequestMethod = {new Put(f) with JettyContinuation}
-  def Trace(f:(()=>tAsyncRequestContext)):RequestMethod = {new Trace(f) with JettyContinuation}
+  def  Delete(f: () => tAsyncRequestContext): RequestMethod = new Delete(f) with JettyContinuation
+  def     Get(f: () => tAsyncRequestContext): RequestMethod = new Get(f) with JettyContinuation
+  def    Head(f: () => tAsyncRequestContext): RequestMethod = new Head(f) with JettyContinuation
+  def Options(f: () => tAsyncRequestContext): RequestMethod = new Options(f) with JettyContinuation
+  def    Post(f: () => tAsyncRequestContext): RequestMethod = new Post(f) with JettyContinuation
+  def     Put(f: () => tAsyncRequestContext): RequestMethod = new Put(f) with JettyContinuation
+  def   Trace(f: () => tAsyncRequestContext): RequestMethod = new Trace(f) with JettyContinuation
 }
 
 

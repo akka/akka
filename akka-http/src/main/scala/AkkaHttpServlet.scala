@@ -36,17 +36,14 @@ class AkkaHttpServlet extends HttpServlet with Logging
   /**
    *   Handles all servlet requests
    */
-  protected def _do(request:HttpServletRequest, response:HttpServletResponse)(builder:(()=>tAsyncRequestContext)=>RequestMethod) =
+  protected def _do(request:HttpServletRequest, response:HttpServletResponse)(builder:(() => tAsyncRequestContext) => RequestMethod) =
   {
-    def suspend:tAsyncRequestContext =
-    {
+    def suspend:tAsyncRequestContext = {
         //
         // set to right now, which is effectively "already expired"
         //
-      val gmt = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z")
-          gmt.setTimeZone(TimeZone.getTimeZone("GMT"))
 
-      response.setHeader("Expires", gmt.format(new Date))
+      response.setDateHeader("Expires", System.currentTimeMillis)
       response.setHeader("Cache-Control", "no-cache, must-revalidate")
 
         //
@@ -66,7 +63,7 @@ class AkkaHttpServlet extends HttpServlet with Logging
       // IMPORTANT: the suspend method is invoked on the server thread not in the actor
       //
     val method = builder(suspend _)
-    if (method.go) {_root ! method}
+    if (method.go) _root ! method
   }
 
 
@@ -103,13 +100,13 @@ class AkkaHttpServlet extends HttpServlet with Logging
     }
   }
 
-  protected override def doDelete(request: HttpServletRequest, response: HttpServletResponse) = _do(request, response)(_factory.get.Delete)
-  protected override def doGet(request: HttpServletRequest, response: HttpServletResponse) = _do(request, response)(_factory.get.Get)
-  protected override def doHead(request: HttpServletRequest, response: HttpServletResponse) = _do(request, response)(_factory.get.Head)
+  protected override def  doDelete(request: HttpServletRequest, response: HttpServletResponse) = _do(request, response)(_factory.get.Delete)
+  protected override def     doGet(request: HttpServletRequest, response: HttpServletResponse) = _do(request, response)(_factory.get.Get)
+  protected override def    doHead(request: HttpServletRequest, response: HttpServletResponse) = _do(request, response)(_factory.get.Head)
   protected override def doOptions(request: HttpServletRequest, response: HttpServletResponse) = _do(request, response)(_factory.get.Options)
-  protected override def doPost(request: HttpServletRequest, response: HttpServletResponse) = _do(request, response)(_factory.get.Post)
-  protected override def doPut(request: HttpServletRequest, response: HttpServletResponse) = _do(request, response)(_factory.get.Put)
-  protected override def doTrace(request: HttpServletRequest, response: HttpServletResponse) = _do(request, response) (_factory.get.Trace)
+  protected override def    doPost(request: HttpServletRequest, response: HttpServletResponse) = _do(request, response)(_factory.get.Post)
+  protected override def     doPut(request: HttpServletRequest, response: HttpServletResponse) = _do(request, response)(_factory.get.Put)
+  protected override def   doTrace(request: HttpServletRequest, response: HttpServletResponse) = _do(request, response)(_factory.get.Trace)
 }
 
 object AkkaHttpServlet

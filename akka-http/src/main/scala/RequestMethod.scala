@@ -26,14 +26,14 @@ trait RequestMethod extends Logging
   // required implementations
   //
 
-  val builder:()=>tAsyncRequestContext
+  val builder:() => tAsyncRequestContext
 
   /**
    * Provides a general type for the underlying context
    * 
    * @return a completable request context
    */
-  val context:Option[tAsyncRequestContext]
+  val context: Option[tAsyncRequestContext]
   def go:Boolean
 
   /**
@@ -41,12 +41,12 @@ trait RequestMethod extends Logging
    * 
    * @return true if updated, false if not supported
    */
-  def timeout(ms:Long):Boolean
+  def timeout(ms: Long): Boolean
   
   /**
    * Status of the suspension
    */
-  def suspended:Boolean
+  def suspended: Boolean
  
   //
   // convenience funcs
@@ -56,94 +56,71 @@ trait RequestMethod extends Logging
   def response = context.get.getResponse.asInstanceOf[HttpServletResponse]
 
   def getHeaderOrElse(name: String, default: Function[Any, String]): String =
-  {
     request.getHeader(name) match {
-	    
       case null => default(null)
-	  case s => s
-	}
-  }
+	    case s => s
+	  }
 
   def getParameterOrElse(name: String, default: Function[Any, String]): String =
-  {
     request.getParameter(name) match {
-        
       case null => default(null)
       case s => s
     }
-  }
 
 
   def complete(status: Int, body: String): Boolean = complete(status, body, List[Tuple2[String, String]]())
 
   def complete(status: Int, body: String, headers: List[Tuple2[String, String]]): Boolean =
-  {
-    var ok = false
     context match {
-      
       case Some(pipe) => {
-        try 
-        {
-          if (!suspended)
-          {
+        try {
+          if (!suspended) {
             log.warning("Attempt to complete an expired connection.")
+            false
           }
-          else
-          {
+          else {
             response.setStatus(status)
             headers foreach {h => response.setHeader(h._1, h._2)}
             response.getWriter.write(body)
             response.getWriter.close
             response.flushBuffer
             pipe.complete
-            ok = true
+            true
           }
+        } catch {
+          case io =>
+            log.error(io, "Failed to write data to connection on resume - the client probably disconnected")
+            false
         }
-        catch
-        {
-          case io => log.error(io, "Failed to write data to connection on resume - the client probably disconnected")
-        }
-      }
+    }
       
-      case None => {
-        log.error("Attempt to complete request with no context.  STATUS (" + status + ") BODY (" + body + ") HEADERS (" + headers + ")")
-      }
+    case None =>
+      log.error("Attempt to complete request with no context.  STATUS (" + status + ") BODY (" + body + ") HEADERS (" + headers + ")")
+      false
   }
-  ok
-}
 
-  def complete(t: Throwable): Unit =
-  {
-    var status = 0
+  def complete(t: Throwable) {
     context match {
-      
       case Some(pipe) => {
-        try
-        {
-          if (!suspended)
-          {
+        try {
+          if (!suspended) {
             log.warning("Attempt to complete an expired connection.")
           }
-          else
-          {
-            status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR
-            response.sendError(status, "Failed to write data to connection on resume")
+          else {
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to write data to connection on resume")
             pipe.complete
           }
         }
-        catch
-        {
+        catch {
           case io:IOException => log.error(io, "Request completed with internal error.")
         }
-        finally
-        {
+        finally {
           log.error(t, "Request completed with internal error.")
         }
       }
       
-      case None => {
+      case None =>
         log.error(t, "Attempt to complete request with no context")
-      }
     }
   }
 
@@ -166,21 +143,21 @@ trait RequestMethod extends Logging
   def Unavailable(body: String, retry: Int): Boolean = complete(HttpServletResponse.SC_SERVICE_UNAVAILABLE, body, List(("Retry-After", retry.toString)))
 }
 
-abstract class Delete(f:(()=>tAsyncRequestContext)) extends RequestMethod {val builder = f}
-abstract class Get(f:(()=>tAsyncRequestContext)) extends RequestMethod {val builder = f}
-abstract class Head(f:(()=>tAsyncRequestContext)) extends RequestMethod {val builder = f}
-abstract class Options(f:(()=>tAsyncRequestContext)) extends RequestMethod {val builder = f}
-abstract class Post(f:(()=>tAsyncRequestContext)) extends RequestMethod {val builder = f}
-abstract class Put(f:(()=>tAsyncRequestContext)) extends RequestMethod {val builder = f}
-abstract class Trace(f:(()=>tAsyncRequestContext)) extends RequestMethod {val builder = f}
+abstract class  Delete(val builder: () => tAsyncRequestContext) extends RequestMethod
+abstract class     Get(val builder: () => tAsyncRequestContext) extends RequestMethod
+abstract class    Head(val builder: () => tAsyncRequestContext) extends RequestMethod
+abstract class Options(val builder: () => tAsyncRequestContext) extends RequestMethod
+abstract class    Post(val builder: () => tAsyncRequestContext) extends RequestMethod
+abstract class     Put(val builder: () => tAsyncRequestContext) extends RequestMethod
+abstract class   Trace(val builder: () => tAsyncRequestContext) extends RequestMethod
 
 trait RequestMethodFactory
 {
-  def Delete(f:(()=>tAsyncRequestContext)):RequestMethod
-  def Get(f:(()=>tAsyncRequestContext)):RequestMethod
-  def Head(f:(()=>tAsyncRequestContext)):RequestMethod
-  def Options(f:(()=>tAsyncRequestContext)):RequestMethod
-  def Post(f:(()=>tAsyncRequestContext)):RequestMethod
-  def Put(f:(()=>tAsyncRequestContext)):RequestMethod
-  def Trace(f:(()=>tAsyncRequestContext)):RequestMethod
+  def  Delete(f: () => tAsyncRequestContext): RequestMethod
+  def     Get(f: () => tAsyncRequestContext): RequestMethod
+  def    Head(f: () => tAsyncRequestContext): RequestMethod
+  def Options(f: () => tAsyncRequestContext): RequestMethod
+  def    Post(f: () => tAsyncRequestContext): RequestMethod
+  def     Put(f: () => tAsyncRequestContext): RequestMethod
+  def   Trace(f: () => tAsyncRequestContext): RequestMethod
 }
