@@ -22,11 +22,9 @@ object ReflectiveAccess extends Logging {
 
   lazy val isRemotingEnabled   = RemoteClientModule.isEnabled
   lazy val isTypedActorEnabled = TypedActorModule.isEnabled
-  lazy val isAkkaCloudEnabled  = AkkaCloudModule.isEnabled
 
   def ensureRemotingEnabled   = RemoteClientModule.ensureEnabled
   def ensureTypedActorEnabled = TypedActorModule.ensureEnabled
-  def ensureAkkaCloudEnabled  = AkkaCloudModule.ensureEnabled
 
   /**
    * Reflective access to the RemoteClient module.
@@ -170,49 +168,6 @@ object ReflectiveAccess extends Logging {
         future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
       }
       typedActorObjectInstance.get.isJoinPoint(message)
-    }
-  }
-
-  object AkkaCloudModule {
-
-    type Mailbox = {
-      def enqueue(message: MessageInvocation)
-      def dequeue: MessageInvocation
-    }
-
-    type Serializer = {
-      def toBinary(obj: AnyRef): Array[Byte]
-      def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
-    }
-
-    lazy val isEnabled = clusterObjectInstance.isDefined
-
-    val clusterObjectInstance: Option[AnyRef] =
-      getObjectFor("akka.cloud.cluster.Cluster$")
-
-    val serializerClass: Option[Class[_]] =
-      getClassFor("akka.serialization.Serializer")
-
-    def ensureEnabled = if (!isEnabled) throw new ModuleNotAvailableException(
-      "Feature is only available in Akka Cloud")
-
-    def createFileBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.FileBasedMailbox", actorRef)
-
-    def createZooKeeperBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.ZooKeeperBasedMailbox", actorRef)
-
-    def createBeanstalkBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.BeanstalkBasedMailbox", actorRef)
-
-    def createRedisBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.RedisBasedMailbox", actorRef)
-
-    private def createMailbox(mailboxClassname: String, actorRef: ActorRef): Mailbox = {
-      ensureEnabled
-      createInstance(
-        mailboxClassname,
-        Array(classOf[ActorRef]),
-        Array(actorRef).asInstanceOf[Array[AnyRef]],
-        loader)
-        .getOrElse(throw new IllegalActorStateException("Could not create durable mailbox [" + mailboxClassname + "] for actor [" + actorRef + "]"))
-        .asInstanceOf[Mailbox]
     }
   }
 
