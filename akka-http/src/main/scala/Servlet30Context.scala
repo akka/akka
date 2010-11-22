@@ -18,63 +18,54 @@ trait Servlet30Context extends AsyncListener with akka.util.Logging
   import javax.servlet.http.HttpServletResponse
   import AkkaHttpServlet._
 
-  val builder:()=>tAsyncRequestContext
-  val context:Option[tAsyncRequestContext] = Some(builder())
-  def go = {context.isDefined}
+  val builder: () => tAsyncRequestContext
+  val context: Option[tAsyncRequestContext] = Some(builder())
+  def go = context.isDefined
 
-  protected val _ac:AsyncContext = {
+  protected val _ac: AsyncContext = {
     val ac = context.get.asInstanceOf[AsyncContext]
-    ac.setTimeout(DefaultTimeout)
-    ac.addListener(this)
+    ac setTimeout DefaultTimeout
+    ac addListener this
     ac
   }
 
-  def suspended:Boolean = true
+  def suspended = true
 
-  def timeout(ms:Long):Boolean =
-  {
+  def timeout(ms:Long):Boolean = {
     try {
-      _ac.setTimeout(ms)
+      _ac setTimeout ms
       true
     }
     catch {
-      case ex:IllegalStateException => {
-
+      case ex:IllegalStateException =>
         log.info("Cannot update timeout - already returned to container")
         false
-      }
     }
   }
 
   //
   // AsyncListener
   //
-
   def onComplete(e:AsyncEvent) = {}
-  def onError(e:AsyncEvent) =
-  {
-    e.getThrowable match {
-      case null => log.warning("Error occured...")
-      case t => log.warning(t, "Error occured")
-    }
+  def onError(e:AsyncEvent) = e.getThrowable match {
+    case null => log.warning("Error occured...")
+    case    t => log.warning(t, "Error occured")
   }
   def onStartAsync(e:AsyncEvent) = {}
-  def onTimeout(e:AsyncEvent) =
-  {
+  def onTimeout(e:AsyncEvent) = {
     e.getSuppliedResponse.asInstanceOf[HttpServletResponse].addHeader(ExpiredHeaderName, ExpiredHeaderValue)
     e.getAsyncContext.complete
   }
 }
 
-object Servlet30ContextMethodFactory extends RequestMethodFactory
-{
-  def Delete(f:(()=>tAsyncRequestContext)):RequestMethod = {new Delete(f) with Servlet30Context}
-  def Get(f:(()=>tAsyncRequestContext)):RequestMethod = {new Get(f) with Servlet30Context}
-  def Head(f:(()=>tAsyncRequestContext)):RequestMethod = {new Head(f) with Servlet30Context}
-  def Options(f:(()=>tAsyncRequestContext)):RequestMethod = {new Options(f) with Servlet30Context}
-  def Post(f:(()=>tAsyncRequestContext)):RequestMethod = {new Post(f) with Servlet30Context}
-  def Put(f:(()=>tAsyncRequestContext)):RequestMethod = {new Put(f) with Servlet30Context}
-  def Trace(f:(()=>tAsyncRequestContext)):RequestMethod = {new Trace(f) with Servlet30Context}
+object Servlet30ContextMethodFactory extends RequestMethodFactory {
+  def  Delete(f: () => tAsyncRequestContext): RequestMethod = new Delete(f) with Servlet30Context
+  def     Get(f: () => tAsyncRequestContext): RequestMethod = new Get(f) with Servlet30Context
+  def    Head(f: () => tAsyncRequestContext): RequestMethod = new Head(f) with Servlet30Context
+  def Options(f: () => tAsyncRequestContext): RequestMethod = new Options(f) with Servlet30Context
+  def    Post(f: () => tAsyncRequestContext): RequestMethod = new Post(f) with Servlet30Context
+  def     Put(f: () => tAsyncRequestContext): RequestMethod = new Put(f) with Servlet30Context
+  def   Trace(f: () => tAsyncRequestContext): RequestMethod = new Trace(f) with Servlet30Context
 }
 
 

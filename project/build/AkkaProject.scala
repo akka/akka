@@ -92,7 +92,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   import Repositories._
-  lazy val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", SonatypeSnapshotRepo)
   lazy val jettyModuleConfig       = ModuleConfiguration("org.eclipse.jetty", sbt.DefaultMavenRepository)
   lazy val glassfishModuleConfig   = ModuleConfiguration("org.glassfish", GlassfishRepo)
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
@@ -146,13 +145,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile" //ApacheV2
 
     lazy val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile" //Public domain
-
-    lazy val atmo          = "org.atmosphere" % "atmosphere-annotations"     % ATMO_VERSION % "compile" //CDDL v1
-    lazy val atmo_jbossweb = "org.atmosphere" % "atmosphere-compat-jbossweb" % ATMO_VERSION % "compile" //CDDL v1
-    lazy val atmo_jersey   = "org.atmosphere" % "atmosphere-jersey"          % ATMO_VERSION % "compile" //CDDL v1
-    lazy val atmo_runtime  = "org.atmosphere" % "atmosphere-runtime"         % ATMO_VERSION % "compile" //CDDL v1
-    lazy val atmo_tomcat   = "org.atmosphere" % "atmosphere-compat-tomcat"   % ATMO_VERSION % "compile" //CDDL v1
-    lazy val atmo_weblogic = "org.atmosphere" % "atmosphere-compat-weblogic" % ATMO_VERSION % "compile" //CDDL v1
 
     lazy val atomikos_transactions     = "com.atomikos" % "transactions"     % "3.2.3" % "compile" //ApacheV2
     lazy val atomikos_transactions_api = "com.atomikos" % "transactions-api" % "3.2.3" % "compile" //ApacheV2
@@ -509,12 +501,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaHttpProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val jsr250           = Dependencies.jsr250
-    val atmo             = Dependencies.atmo
-    val atmo_jbossweb    = Dependencies.atmo_jbossweb
-    val atmo_jersey      = Dependencies.atmo_jersey
-    val atmo_runtime     = Dependencies.atmo_runtime
-    val atmo_tomcat      = Dependencies.atmo_tomcat
-    val atmo_weblogic    = Dependencies.atmo_weblogic
     val javax_servlet30  = Dependencies.javax_servlet_30
     val jetty            = Dependencies.jetty
     val jetty_util       = Dependencies.jetty_util
