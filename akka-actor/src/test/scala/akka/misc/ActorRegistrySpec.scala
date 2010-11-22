@@ -27,7 +27,6 @@ object ActorRegistrySpec {
         self.reply("got ping")
     }
   }
-
 }
 
 class ActorRegistrySpec extends JUnitSuite {

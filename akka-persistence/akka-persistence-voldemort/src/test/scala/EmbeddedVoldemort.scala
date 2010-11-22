@@ -18,7 +18,7 @@ trait EmbeddedVoldemort extends BeforeAndAfterAll with Logging {
   override protected def beforeAll(): Unit = {
 
     try {
-      val dir = "./akka-persistence/akka-persistence-voldemort/target/scala_2.8.0/test-resources"
+      val dir = "./akka-persistence/akka-persistence-voldemort/target/test-resources"
       val home = new File(dir)
       log.info("Creating Voldemort Config")
       val config = VoldemortConfig.loadFromVoldemortHome(home.getCanonicalPath)
