@@ -5,7 +5,7 @@
 package akka.dispatch
 
 import akka.actor.{Actor, ActorType, ActorRef, ActorInitializationException}
-import akka.util.ReflectiveAccess.EnterpriseModule
+import akka.util.ReflectiveAccess.AkkaCloudModule
 import akka.AkkaException
 
 import java.util.{Queue, List}
@@ -42,15 +42,15 @@ case class BoundedMailbox(
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 }
 
-abstract class DurableMailboxType(val serializer: EnterpriseModule.Serializer) extends MailboxType {
+abstract class DurableMailboxType(val serializer: AkkaCloudModule.Serializer) extends MailboxType {
   if (serializer eq null) throw new IllegalArgumentException("The serializer for DurableMailboxType can not be null")
 }
-case class FileBasedDurableMailbox(ser: EnterpriseModule.Serializer) extends DurableMailboxType(ser)
-case class RedisBasedDurableMailbox(ser: EnterpriseModule.Serializer) extends DurableMailboxType(ser)
-case class BeanstalkBasedDurableMailbox(ser: EnterpriseModule.Serializer) extends DurableMailboxType(ser)
-case class ZooKeeperBasedDurableMailbox(ser: EnterpriseModule.Serializer) extends DurableMailboxType(ser)
-case class AMQPBasedDurableMailbox(ser: EnterpriseModule.Serializer) extends DurableMailboxType(ser)
-case class JMSBasedDurableMailbox(ser: EnterpriseModule.Serializer) extends DurableMailboxType(ser)
+case class FileBasedDurableMailbox(ser: AkkaCloudModule.Serializer) extends DurableMailboxType(ser)
+case class RedisBasedDurableMailbox(ser: AkkaCloudModule.Serializer) extends DurableMailboxType(ser)
+case class BeanstalkBasedDurableMailbox(ser: AkkaCloudModule.Serializer) extends DurableMailboxType(ser)
+case class ZooKeeperBasedDurableMailbox(ser: AkkaCloudModule.Serializer) extends DurableMailboxType(ser)
+case class AMQPBasedDurableMailbox(ser: AkkaCloudModule.Serializer) extends DurableMailboxType(ser)
+case class JMSBasedDurableMailbox(ser: AkkaCloudModule.Serializer) extends DurableMailboxType(ser)
 
 class DefaultUnboundedMessageQueue(blockDequeue: Boolean)
   extends LinkedBlockingQueue[MessageInvocation] with MessageQueue {

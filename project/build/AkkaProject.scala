@@ -313,7 +313,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Miscellaneous
   // -------------------------------------------------------------------------------------------------------------------
-  override def artifactID: String = this.name
+  override def disableCrossPaths = true
 
   override def mainClass = Some("akka.kernel.Main")
 
@@ -383,7 +383,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   override def pomExtra =
     <inceptionYear>2009</inceptionYear>
-    <url>http://akkasource.org</url>
+    <url>http://akka.io</url>
     <organization>
       <name>Scalable Solutions AB</name>
       <url>http://scalablesolutions.se</url>
@@ -956,7 +956,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject {
-    override def artifactID: String = this.name
+    override def disableCrossPaths = true
     lazy val sourceArtifact = Artifact(this.artifactID, "source", "jar", Some("sources"), Nil, None)
     lazy val docsArtifact = Artifact(this.artifactID, "doc", "jar", Some("docs"), Nil, None)
     override def runClasspath = super.runClasspath +++ (AkkaParentProject.this.info.projectPath / "config")

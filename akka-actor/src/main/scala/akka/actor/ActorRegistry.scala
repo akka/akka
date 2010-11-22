@@ -37,10 +37,10 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActorRegistry extends ListenerManagement {
-  private val actorsByUUID =          new ConcurrentHashMap[Uuid, ActorRef]
-  private val actorsById =            new Index[String,ActorRef]
-  private val remoteActorSets =       Map[Address, RemoteActorSet]()
-  private val guard = new ReadWriteGuard
+  private val actorsByUUID    = new ConcurrentHashMap[Uuid, ActorRef]
+  private val actorsById      = new Index[String,ActorRef]
+  private val remoteActorSets = Map[Address, RemoteActorSet]()
+  private val guard           = new ReadWriteGuard
 
   /**
    * Returns all actors in the system.
@@ -50,7 +50,7 @@ object ActorRegistry extends ListenerManagement {
   /**
    * Returns the number of actors in the system.
    */
-  def size : Int = actorsByUUID.size
+  def size: Int = actorsByUUID.size
 
   /**
    * Invokes a function for all actors.
@@ -68,8 +68,7 @@ object ActorRegistry extends ListenerManagement {
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
       val element = elements.nextElement
-      if(f isDefinedAt element)
-        return Some(f(element))
+      if (f isDefinedAt element) return Some(f(element))
     }
     None
   }
@@ -88,9 +87,7 @@ object ActorRegistry extends ListenerManagement {
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
       val actorId = elements.nextElement
-      if (p(actorId))  {
-        all += actorId
-      }
+      if (p(actorId)) all += actorId
     }
     all.toArray
   }
@@ -105,7 +102,7 @@ object ActorRegistry extends ListenerManagement {
    * Finds any actor that matches T.
    */
   def actorFor[T <: Actor](implicit manifest: Manifest[T]): Option[ActorRef] =
-    find({ case a:ActorRef if manifest.erasure.isAssignableFrom(a.actor.getClass) => a })
+    find({ case a: ActorRef if manifest.erasure.isAssignableFrom(a.actor.getClass) => a })
 
   /**
    * Finds all actors of type or sub-type specified by the class passed in as the Class argument.
@@ -132,13 +129,11 @@ object ActorRegistry extends ListenerManagement {
    * Invokes a function for all typed actors.
    */
   def foreachTypedActor(f: (AnyRef) => Unit) = {
-    TypedActorModule.ensureTypedActorEnabled
+    TypedActorModule.ensureEnabled
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
       val proxy = typedActorFor(elements.nextElement)
-      if (proxy.isDefined) {
-        f(proxy.get)
-      }
+      if (proxy.isDefined) f(proxy.get)
     }
   }
 
@@ -147,12 +142,11 @@ object ActorRegistry extends ListenerManagement {
    * Returns None if the function never returns Some
    */
   def findTypedActor[T](f: PartialFunction[AnyRef,T]) : Option[T] = {
-    TypedActorModule.ensureTypedActorEnabled
+    TypedActorModule.ensureEnabled
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
       val proxy = typedActorFor(elements.nextElement)
-      if(proxy.isDefined && (f isDefinedAt proxy))
-        return Some(f(proxy))
+      if (proxy.isDefined && (f isDefinedAt proxy)) return Some(f(proxy))
     }
     None
   }
@@ -161,14 +155,12 @@ object ActorRegistry extends ListenerManagement {
    * Finds all typed actors that satisfy a predicate.
    */
   def filterTypedActors(p: AnyRef => Boolean): Array[AnyRef] = {
-    TypedActorModule.ensureTypedActorEnabled
+    TypedActorModule.ensureEnabled
     val all = new ListBuffer[AnyRef]
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
       val proxy = typedActorFor(elements.nextElement)
-      if (proxy.isDefined && p(proxy.get))  {
-        all += proxy.get
-      }
+      if (proxy.isDefined && p(proxy.get)) all += proxy.get
     }
     all.toArray
   }
@@ -177,7 +169,7 @@ object ActorRegistry extends ListenerManagement {
    * Finds all typed actors that are subtypes of the class passed in as the Manifest argument.
    */
   def typedActorsFor[T <: AnyRef](implicit manifest: Manifest[T]): Array[AnyRef] = {
-    TypedActorModule.ensureTypedActorEnabled
+    TypedActorModule.ensureEnabled
     typedActorsFor[T](manifest.erasure.asInstanceOf[Class[T]])
   }
 
@@ -185,20 +177,20 @@ object ActorRegistry extends ListenerManagement {
    * Finds any typed actor that matches T.
    */
   def typedActorFor[T <: AnyRef](implicit manifest: Manifest[T]): Option[AnyRef] = {
-    TypedActorModule.ensureTypedActorEnabled
-    def predicate(proxy: AnyRef) : Boolean = {
+    TypedActorModule.ensureEnabled
+    def predicate(proxy: AnyRef): Boolean = {
       val actorRef = TypedActorModule.typedActorObjectInstance.get.actorFor(proxy)
       actorRef.isDefined && manifest.erasure.isAssignableFrom(actorRef.get.actor.getClass)
     }
-    findTypedActor({ case a:AnyRef if predicate(a) => a })
+    findTypedActor({ case a: Some[AnyRef] if predicate(a.get) => a })
   }
 
   /**
    * Finds all typed actors of type or sub-type specified by the class passed in as the Class argument.
    */
   def typedActorsFor[T <: AnyRef](clazz: Class[T]): Array[AnyRef] = {
-    TypedActorModule.ensureTypedActorEnabled
-    def predicate(proxy: AnyRef) : Boolean = {
+    TypedActorModule.ensureEnabled
+    def predicate(proxy: AnyRef): Boolean = {
       val actorRef = TypedActorModule.typedActorObjectInstance.get.actorFor(proxy)
       actorRef.isDefined && clazz.isAssignableFrom(actorRef.get.actor.getClass)
     }
@@ -209,7 +201,7 @@ object ActorRegistry extends ListenerManagement {
    * Finds all typed actors that have a specific id.
    */
   def typedActorsFor(id: String): Array[AnyRef] = {
-    TypedActorModule.ensureTypedActorEnabled
+    TypedActorModule.ensureEnabled
     val actorRefs = actorsById values id
     actorRefs.flatMap(typedActorFor(_))
   }
@@ -218,12 +210,10 @@ object ActorRegistry extends ListenerManagement {
    * Finds the typed actor that has a specific UUID.
    */
   def typedActorFor(uuid: Uuid): Option[AnyRef] = {
-    TypedActorModule.ensureTypedActorEnabled
+    TypedActorModule.ensureEnabled
     val actorRef = actorsByUUID get uuid
-    if (actorRef eq null)
-      None
-    else
-      typedActorFor(actorRef)
+    if (actorRef eq null) None
+    else typedActorFor(actorRef)
   }
 
   /**
@@ -265,20 +255,15 @@ object ActorRegistry extends ListenerManagement {
    */
   def shutdownAll() {
     log.info("Shutting down all actors in the system...")
-    if (TypedActorModule.isTypedActorEnabled) {
+    if (TypedActorModule.isEnabled) {
       val elements = actorsByUUID.elements
       while (elements.hasMoreElements) {
         val actorRef = elements.nextElement
         val proxy = typedActorFor(actorRef)
-        if (proxy.isDefined) {
-          TypedActorModule.typedActorObjectInstance.get.stop(proxy.get)
-        } else {
-          actorRef.stop
-        }
+        if (proxy.isDefined) TypedActorModule.typedActorObjectInstance.get.stop(proxy.get)
+        else actorRef.stop
       }
-    } else {
-      foreach(_.stop)
-    }
+    } else foreach(_.stop)
     actorsByUUID.clear
     actorsById.clear
     log.info("All actors have been shut down and unregistered from ActorRegistry")
@@ -301,14 +286,18 @@ object ActorRegistry extends ListenerManagement {
 
   private[akka] def actors(address: Address) = actorsFor(address).actors
   private[akka] def actorsByUuid(address: Address) = actorsFor(address).actorsByUuid
+  private[akka] def actorsFactories(address: Address) = actorsFor(address).actorsFactories
   private[akka] def typedActors(address: Address) = actorsFor(address).typedActors
   private[akka] def typedActorsByUuid(address: Address) = actorsFor(address).typedActorsByUuid
+  private[akka] def typedActorsFactories(address: Address) = actorsFor(address).typedActorsFactories
 
   private[akka] class RemoteActorSet {
     private[ActorRegistry] val actors = new ConcurrentHashMap[String, ActorRef]
     private[ActorRegistry] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
+    private[ActorRegistry] val actorsFactories = new ConcurrentHashMap[String, () => ActorRef]
     private[ActorRegistry] val typedActors = new ConcurrentHashMap[String, AnyRef]
     private[ActorRegistry] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
+    private[ActorRegistry] val typedActorsFactories = new ConcurrentHashMap[String, () => AnyRef]
   }
 }
 
@@ -337,16 +326,13 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
 
       if (set ne null) {
         set.synchronized {
-          if (set.isEmpty) {
-            retry = true //IF the set is empty then it has been removed, so signal retry
-          }
+          if (set.isEmpty) retry = true //IF the set is empty then it has been removed, so signal retry
           else { //Else add the value to the set and signal that retry is not needed
             added = set add v
             retry = false
           }
         }
-      }
-      else {
+      } else {
         val newSet = new ConcurrentSkipListSet[V]
         newSet add v
 
@@ -354,24 +340,20 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
         val oldSet = container.putIfAbsent(k,newSet)
         if (oldSet ne null) {
           oldSet.synchronized {
-            if (oldSet.isEmpty) {
-              retry = true //IF the set is empty then it has been removed, so signal retry
-            }
+            if (oldSet.isEmpty) retry = true //IF the set is empty then it has been removed, so signal retry
             else { //Else try to add the value to the set and signal that retry is not needed
               added = oldSet add v
               retry = false
             }
           }
-        } else {
-          added = true
-        }
+        } else added = true
       }
 
-      if (retry) spinPut(k,v)
+      if (retry) spinPut(k, v)
       else added
     }
 
-    spinPut(key,value)
+    spinPut(key, value)
   }
 
   /**
@@ -390,10 +372,8 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
   def findValue(key: K)(f: (V) => Boolean): Option[V] = {
     import scala.collection.JavaConversions._
     val set = container get key
-    if (set ne null)
-     set.iterator.find(f)
-    else
-     None
+    if (set ne null) set.iterator.find(f)
+    else None
   }
 
   /**
@@ -420,8 +400,7 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
             container.remove(key,emptySet) //We try to remove the key if it's mapped to an empty set
 
           true //Remove succeeded
-        }
-        else false //Remove failed
+        } else false //Remove failed
       }
     } else false //Remove failed
   }
@@ -434,5 +413,5 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
   /**
    *  Removes all keys and all values
    */
-  def clear = foreach { case (k,v) => remove(k,v) }
+  def clear = foreach { case (k, v) => remove(k, v) }
 }
