@@ -5,12 +5,11 @@
 package akka.dispatch
 
 import akka.actor.{ActorRef, IllegalActorStateException}
-import akka.util.ReflectiveAccess.AkkaCloudModule
+import akka.util.{ReflectiveAccess, Switch}
 
 import java.util.Queue
-import akka.util.Switch
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent. {ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue, LinkedBlockingQueue}
+import java.util.concurrent.{ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue, LinkedBlockingQueue}
 
 /**
  * Default settings are:
@@ -119,17 +118,10 @@ class ExecutorBasedEventDrivenDispatcher(
   }
 
   /**
-   *  Creates and returns a durable mailbox for the given actor.
+   * Creates and returns a durable mailbox for the given actor.
    */
-  def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = mailboxType match {
-    // FIXME make generic (work for TypedActor as well)
-    case FileBasedDurableMailbox(serializer)      => AkkaCloudModule.createFileBasedMailbox(actorRef).asInstanceOf[MessageQueue]
-    case ZooKeeperBasedDurableMailbox(serializer) => AkkaCloudModule.createZooKeeperBasedMailbox(actorRef).asInstanceOf[MessageQueue]
-    case BeanstalkBasedDurableMailbox(serializer) => AkkaCloudModule.createBeanstalkBasedMailbox(actorRef).asInstanceOf[MessageQueue]
-    case RedisBasedDurableMailbox(serializer)     => AkkaCloudModule.createRedisBasedMailbox(actorRef).asInstanceOf[MessageQueue]
-    case AMQPBasedDurableMailbox(serializer)      => throw new UnsupportedOperationException("AMQPBasedDurableMailbox is not yet supported")
-    case JMSBasedDurableMailbox(serializer)       => throw new UnsupportedOperationException("JMSBasedDurableMailbox is not yet supported")
-  }
+  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = 
+    createMailbox(mailboxType.mailboxImplClassname, actorRef)
 
   private[akka] def start = log.debug("Starting up %s\n\twith throughput [%d]", toString, throughput)
 
