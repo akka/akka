@@ -26,7 +26,7 @@ trait CamelService extends Bootable with Logging {
   private[camel] val consumerPublisher = actorOf[ConsumerPublisher]
   private[camel] val publishRequestor =  actorOf[PublishRequestor]
 
-  private val serviceEnabled = config.getBool("akka.camel.service", true)
+  private val serviceEnabled = config.getList("akka.enabled-modules").exists(_ == "camel")
 
   /**
    * Starts this CamelService unless <code>akka.camel.service</code> is set to <code>false</code>.

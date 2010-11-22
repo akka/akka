@@ -18,12 +18,12 @@ import com.trifork.riak.{RequestMeta, RiakObject, RiakClient}
 
 
 private[akka] object RiakStorageBackend extends CommonStorageBackend {
-  val refBucket = config.getString("akka.storage.riak.bucket.ref", "Refs")
-  val mapBucket = config.getString("akka.storage.riak.bucket.map", "Maps")
-  val vectorBucket = config.getString("akka.storage.riak.bucket.vector", "Vectors")
-  val queueBucket = config.getString("akka.storage.riak.bucket.queue", "Queues")
-  val clientHost = config.getString("akka.storage.riak.client.host", "localhost")
-  val clientPort = config.getInt("akka.storage.riak.client.port", 8087)
+  val refBucket = config.getString("akka.persistence.riak.bucket.ref", "Refs")
+  val mapBucket = config.getString("akka.persistence.riak.bucket.map", "Maps")
+  val vectorBucket = config.getString("akka.persistence.riak.bucket.vector", "Vectors")
+  val queueBucket = config.getString("akka.persistence.riak.bucket.queue", "Queues")
+  val clientHost = config.getString("akka.persistence.riak.client.host", "localhost")
+  val clientPort = config.getInt("akka.persistence.riak.client.port", 8087)
   val riakClient: RiakClient = new RiakClient(clientHost, clientPort);
 
   import CommonStorageBackendAccess._

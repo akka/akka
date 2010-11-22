@@ -31,9 +31,9 @@ private[akka] object MongoStorageBackend extends
   val REF = "__ref"
   val COLLECTION = "akka_coll"
 
-  val HOSTNAME = config.getString("akka.storage.mongodb.hostname", "127.0.0.1")
-  val DBNAME = config.getString("akka.storage.mongodb.dbname", "testdb")
-  val PORT = config.getInt("akka.storage.mongodb.port", 27017)
+  val HOSTNAME = config.getString("akka.persistence.mongodb.hostname", "127.0.0.1")
+  val DBNAME = config.getString("akka.persistence.mongodb.dbname", "testdb")
+  val PORT = config.getInt("akka.persistence.mongodb.port", 27017)
 
   val db: MongoDB = MongoConnection(HOSTNAME, PORT)(DBNAME)
   val coll: MongoCollection = db(COLLECTION)

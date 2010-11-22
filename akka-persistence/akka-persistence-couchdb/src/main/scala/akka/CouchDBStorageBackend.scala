@@ -31,8 +31,8 @@ private [akka] object CouchDBStorageBackend extends
         }
 
         lazy val URL = config.
-                   getString("akka.storage.couchdb.url").
-                   getOrElse(throw new IllegalArgumentException("'akka.storage.couchdb.url' not found in config"))
+                   getString("akka.persistence.couchdb.url").
+                   getOrElse(throw new IllegalArgumentException("'akka.persistence.couchdb.url' not found in config"))
 
   def drop() = {
     val client = new HttpClient()

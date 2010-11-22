@@ -12,7 +12,7 @@ import akka.dispatch.Dispatchers
 import org.atmosphere.jersey.util.JerseyBroadcasterUtil
 
 object AkkaBroadcaster {
-  val broadcasterDispatcher = Dispatchers.fromConfig("akka.rest.comet-dispatcher")
+  val broadcasterDispatcher = Dispatchers.fromConfig("akka.http.comet-dispatcher")
 
   type Event    = AtmosphereResourceEvent[_,_]
   type Resource = AtmosphereResource[_,_]

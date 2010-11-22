@@ -22,11 +22,11 @@ trait BootableRemoteActorService extends Bootable with Logging {
       else RemoteNode.start
     }
   }, "Akka Remote Service")
-
+ 
   def startRemoteService = remoteServerThread.start
 
   abstract override def onLoad = {
-    if (config.getBool("akka.remote.server.service", true)) {
+    if (RemoteServer.isRemotingEnabled) {
       log.info("Initializing Remote Actors Service...")
       startRemoteService
       log.info("Remote Actors Service initialized")

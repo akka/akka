@@ -51,11 +51,11 @@ class AkkaServlet extends AtmosphereServlet {
   addInitParameter(AtmosphereServlet.DISABLE_ONSTATE_EVENT,"true")
   addInitParameter(AtmosphereServlet.BROADCASTER_CLASS,classOf[AkkaBroadcaster].getName)
   addInitParameter(AtmosphereServlet.PROPERTY_USE_STREAM,"true")
-  addInitParameter("com.sun.jersey.config.property.packages",c.getList("akka.rest.resource_packages").mkString(";"))
-  addInitParameter("com.sun.jersey.spi.container.ResourceFilters",c.getList("akka.rest.filters").mkString(","))
+  addInitParameter("com.sun.jersey.config.property.packages",c.getList("akka.http.resource_packages").mkString(";"))
+  addInitParameter("com.sun.jersey.spi.container.ResourceFilters",c.getList("akka.http.filters").mkString(","))
 
-  c.getInt("akka.rest.maxInactiveActivity") foreach { value => addInitParameter(CometSupport.MAX_INACTIVE,value.toString) }
-  c.getString("akka.rest.cometSupport") foreach { value => addInitParameter("cometSupport",value) }
+  c.getInt("akka.http.maxInactiveActivity") foreach { value => addInitParameter(CometSupport.MAX_INACTIVE,value.toString) }
+  c.getString("akka.http.cometSupport") foreach { value => addInitParameter("cometSupport",value) }
 
   /*
    * Provide a fallback for default values

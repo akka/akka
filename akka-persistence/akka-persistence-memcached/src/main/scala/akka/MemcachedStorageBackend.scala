@@ -20,7 +20,7 @@ private[akka] object MemcachedStorageBackend extends CommonStorageBackend {
   import KVStorageBackend._
   import org.apache.commons.codec.binary.Base64
 
-  val clientAddresses = config.getString("akka.storage.memcached.client.addresses", "localhost:11211")
+  val clientAddresses = config.getString("akka.persistence.memcached.client.addresses", "localhost:11211")
   val factory = new KetamaConnectionFactory
   val client = new MemcachedClient(factory, AddrUtil.getAddresses(clientAddresses))
   val base64 = new Base64(76, Array.empty[Byte], true)
