@@ -139,8 +139,24 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   def setFaultHandler(handler: FaultHandlingStrategy)
   def getFaultHandler(): FaultHandlingStrategy
 
-  @volatile
-  private[akka] var _dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
+
+  /**
+   * Akka Java API
+   *  A lifeCycle defines whether the actor will be stopped on error (Temporary) or if it can be restarted (Permanent)
+   * <p/>
+   * Can be one of:
+   *
+   * import static akka.config.Supervision.*;
+   * <pre>
+   * getContext().setLifeCycle(permanent());
+   * </pre>
+   * Or:
+   * <pre>
+   * getContext().setLifeCycle(temporary());
+   * </pre>
+   */
+  def setLifeCycle(lifeCycle: LifeCycle): Unit
+  def getLifeCycle(): LifeCycle
 
   /**
    * Akka Java API
@@ -597,6 +613,8 @@ class LocalActorRef private[akka] (
   private var restartsWithinTimeRangeTimestamp: Long = 0L
   @volatile
   private var _mailbox: AnyRef = _
+  @volatile
+  private[akka] var _dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
 
   protected[akka] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
 
@@ -1208,6 +1226,8 @@ private[akka] case class RemoteActorRef private[akka] (
 
   ensureRemotingEnabled
 
+  val remoteAddress: Option[InetSocketAddress] = Some(new InetSocketAddress(hostname, port))
+
   id = classOrServiceName
   timeout = _timeout
 
@@ -1241,8 +1261,6 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = None
-
-  val remoteAddress: Option[InetSocketAddress] = Some(new InetSocketAddress(hostname, port))
 
   // ==== NOT SUPPORTED ====
   def actorClass: Class[_ <: Actor] = unsupported
@@ -1313,9 +1331,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    */
   def id: String
 
-  def id_=(id: String): Unit
-
-  /**
+  def id_=(id: String): Unit /**
    * User overridable callback/setting.
    * <p/>
    * Defines the life-cycle for a supervised actor.

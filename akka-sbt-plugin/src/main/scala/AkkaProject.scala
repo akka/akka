@@ -59,7 +59,7 @@ trait AkkaProject extends AkkaBaseProject {
   val akkaVersion = "1.0-SNAPSHOT"
 
   // convenience method
-  def akkaModule(module: String) = "akka" %% ("akka-" + module) % akkaVersion
+  def akkaModule(module: String) = "se.scalablesolutions.akka" % ("akka-" + module) % akkaVersion
 
   // akka actor dependency by default
   val akkaActor = akkaModule("actor")
