@@ -70,10 +70,10 @@
         <Set name="handlers">
          <Array type="org.eclipse.jetty.server.Handler">
            <Item>
-             <New id="AkkaRestHandler" class="org.eclipse.jetty.servlet.ServletContextHandler">
+             <New id="AkkaMistHandler" class="org.eclipse.jetty.servlet.ServletContextHandler">
                <Set name="contextPath">/</Set>
                <Call name="addServlet">
-	             <Arg>akka.comet.AkkaServlet</Arg>
+	             <Arg>akka.http.AkkaMistServlet</Arg>
 	             <Arg>/*</Arg>
 	           </Call>
 	         </New>
