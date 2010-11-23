@@ -10,7 +10,8 @@ import java.io.File
 
 import akka.actor.BootableActorLoaderService
 import akka.util.{Bootable, Logging}
-import akka.comet.AkkaServlet
+
+//import akka.comet.AkkaServlet
 
 import org.eclipse.jetty.xml.XmlConfiguration
 import org.eclipse.jetty.server.{Handler, Server}
