@@ -22,7 +22,7 @@ trait EmbeddedVoldemort extends BeforeAndAfterAll with Logging {
       val home = new File(dir)
       log.info("Creating Voldemort Config")
       val config = VoldemortConfig.loadFromVoldemortHome(home.getCanonicalPath)
-      config.setStorageConfigurations(JavaConversions.asList(List(classOf[InMemoryStorageConfiguration].getName)))
+      config.setStorageConfigurations(JavaConversions.asJavaList(List(classOf[InMemoryStorageConfiguration].getName)))
       log.info("Starting Voldemort")
       server = new VoldemortServer(config)
       server.start

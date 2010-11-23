@@ -68,7 +68,7 @@ abstract private[amqp] class FaultTolerantChannelActor(
         exchangeDeclaration match {
           case PassiveDeclaration => ch.exchangeDeclarePassive(exchangeName)
           case ActiveDeclaration(durable, autoDelete, _) =>
-            ch.exchangeDeclare(exchangeName, exchangeType.toString, durable, autoDelete, JavaConversions.asMap(configurationArguments))
+            ch.exchangeDeclare(exchangeName, exchangeType.toString, durable, autoDelete, JavaConversions.asJavaMap(configurationArguments))
           case NoActionDeclaration => // ignore
         }
     }

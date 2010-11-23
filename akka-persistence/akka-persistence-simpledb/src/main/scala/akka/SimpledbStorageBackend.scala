@@ -113,7 +113,7 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
           var res = getClient.select(req)
           var continue = true
           do {
-            JavaConversions.asIterable(res.getItems) foreach {
+            JavaConversions.asScalaIterable(res.getItems) foreach {
               item => map += (base64key.decode(item.getName) -> recomposeValue(item.getAttributes).get)
             }
             if (res.getNextToken ne null) {
@@ -272,7 +272,7 @@ private[akka] object SimpledbStorageBackend extends CommonStorageBackend {
     }
 
     def recomposeValue(atts: JList[Attribute]): Option[Array[Byte]] = {
-      val itemSnapshot = JavaConversions.asIterable(atts).foldLeft(new MMap[String, String]) {
+      val itemSnapshot = JavaConversions.asScalaIterable(atts).foldLeft(new MMap[String, String]) {
         (map, att) => {
           map += (att.getName -> att.getValue)
         }

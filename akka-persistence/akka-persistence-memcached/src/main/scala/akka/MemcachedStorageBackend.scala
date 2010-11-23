@@ -63,11 +63,11 @@ private[akka] object MemcachedStorageBackend extends CommonStorageBackend {
     }
 
     def getAll(keys: Iterable[Array[Byte]]) = {
-      val jmap = client.getBulk(JavaConversions.asList(keys.map{
+      val jmap = client.getBulk(JavaConversions.asJavaList(keys.map{
         k: Array[Byte] =>
           keyStr(encodeKey(k))
       }.toList))
-      JavaConversions.asMap(jmap).map{
+      JavaConversions.asScalaMap(jmap).map{
         kv => kv match {
           case (key, value) => (base64.decode(key) -> value.asInstanceOf[Array[Byte]])
         }

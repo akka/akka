@@ -79,7 +79,7 @@ private[akka] object CassandraStorageBackend extends CommonStorageBackend {
     override def getAll(owner: String, keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
       sessions.withSession{
         session => {
-          var predicate = new SlicePredicate().setColumn_names(JavaConversions.asList(keys.toList))
+          var predicate = new SlicePredicate().setColumn_names(JavaConversions.asJavaList(keys.toList))
           val cols = session / (owner, parent, predicate, CONSISTENCY_LEVEL)
           var map = new TreeMap[Array[Byte], Array[Byte]]()(ordering)
           cols.foreach{
@@ -124,10 +124,10 @@ private[akka] object CassandraStorageBackend extends CommonStorageBackend {
             new KeyRange().setStart_key("").setEnd_key(""), CONSISTENCY_LEVEL)
 
           val mutations = new JHMap[String, JMap[String, JList[Mutation]]]
-          JavaConversions.asIterable(slices).foreach{
+          JavaConversions.asScalaIterable(slices).foreach{
             keySlice: KeySlice => {
               val key = keySlice.getKey
-              val keyMutations = JavaConversions.asMap(mutations).getOrElse(key, {
+              val keyMutations = JavaConversions.asScalaMap(mutations).getOrElse(key, {
                 val km = new JHMap[String, JList[Mutation]]
                 mutations.put(key, km)
                 km
@@ -135,7 +135,7 @@ private[akka] object CassandraStorageBackend extends CommonStorageBackend {
               val amutation = new JAList[Mutation]
               val cols = new JAList[Array[Byte]]
               keyMutations.put(parent.getColumn_family, amutation)
-              JavaConversions.asIterable(keySlice.getColumns) foreach {
+              JavaConversions.asScalaIterable(keySlice.getColumns) foreach {
                 cosc: ColumnOrSuperColumn => {
                   cols.add(cosc.getColumn.getName)
                 }
