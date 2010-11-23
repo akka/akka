@@ -7,42 +7,9 @@ package akka.actor
 import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
-import java.util.Enumeration
 
 import akka.util.{Bootable, Logging}
 import akka.config.Config._
-
-class AkkaDeployClassLoader(urls : List[URL], parent : ClassLoader) extends URLClassLoader(urls.toArray.asInstanceOf[Array[URL]],parent)
-{
-  override def findResources(resource : String) = {
-    val normalResult = super.findResources(resource)
-    if(normalResult.hasMoreElements) normalResult else findDeployed(resource)
-  }
-
-  def findDeployed(resource : String) = new Enumeration[URL]{
-    private val it =  getURLs.flatMap( listClassesInPackage(_,resource) ).iterator
-    def hasMoreElements = it.hasNext
-    def nextElement = it.next
-  }
-
-  def listClassesInPackage(jar : URL, pkg : String) = {
-    val f  = new File(jar.getFile)
-    val jf = new JarFile(f)
-    try {
-      val es = jf.entries
-      var result = List[URL]()
-      while(es.hasMoreElements)
-      {
-        val e = es.nextElement
-        if(!e.isDirectory && e.getName.startsWith(pkg) && e.getName.endsWith(".class"))
-        result ::= new URL("jar:" + f.toURI.toURL + "!/" + e)
-      }
-    result
-    } finally {
-      jf.close
-    }
-  }
-}
 
 /**
  * Handles all modules in the deploy directory (load and unload)
@@ -79,7 +46,7 @@ trait BootableActorLoaderService extends Bootable with Logging {
       log.debug("Loading dependencies [%s]", dependencyJars)
       val allJars = toDeploy ::: dependencyJars
 
-      new AkkaDeployClassLoader(allJars,Thread.currentThread.getContextClassLoader)
+      new URLClassLoader(allJars.toArray,Thread.currentThread.getContextClassLoader)
     } else Thread.currentThread.getContextClassLoader)
   }
 
