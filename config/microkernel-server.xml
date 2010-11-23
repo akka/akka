@@ -73,7 +73,7 @@
              <New id="AkkaRestHandler" class="org.eclipse.jetty.servlet.ServletContextHandler">
                <Set name="contextPath">/</Set>
                <Call name="addServlet">
-	             <Arg>akka.http.AkkaHttpServlet</Arg>
+	             <Arg>akka.http.AkkaMistServlet</Arg>
 	             <Arg>/*</Arg>
 	           </Call>
 	         </New>
