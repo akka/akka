@@ -77,8 +77,8 @@ private[akka] object VoldemortStorageBackend extends CommonStorageBackend {
     }
 
     def getAll(keys: Iterable[Array[Byte]]): Map[Array[Byte], Array[Byte]] = {
-      val jmap = client.getAll(JavaConversions.asIterable(keys))
-      JavaConversions.asMap(jmap).map{
+      val jmap = client.getAll(JavaConversions.asJavaIterable(keys))
+      JavaConversions.asScalaMap(jmap).map{
         kv =>
           kv match {
             case (key: Array[Byte], versioned: Versioned[Array[Byte]]) => (key -> versioned.getValue)

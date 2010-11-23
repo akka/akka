@@ -368,10 +368,20 @@ trait RequestMethod extends Logging
       case s => s
     }
 
-
   def complete(status: Int, body: String): Boolean = complete(status, body, Headers())
 
   def complete(status: Int, body: String, headers: Headers): Boolean =
+    rawComplete {
+      res => {
+        res.setStatus(status)
+        headers foreach {h => response.setHeader(h._1, h._2)}
+        res.getWriter.write(body)
+        res.getWriter.close
+        res.flushBuffer
+      }
+    }
+
+  def rawComplete(completion: HttpServletResponse => Unit): Boolean =
     context match {
       case Some(pipe) => {
         try {
@@ -380,11 +390,7 @@ trait RequestMethod extends Logging
             false
           }
           else {
-            response.setStatus(status)
-            headers foreach {h => response.setHeader(h._1, h._2)}
-            response.getWriter.write(body)
-            response.getWriter.close
-            response.flushBuffer
+            completion(response)
             pipe.complete
             true
           }
@@ -396,7 +402,7 @@ trait RequestMethod extends Logging
     }
 
     case None =>
-      log.error("Attempt to complete request with no context.  STATUS (" + status + ") BODY (" + body + ") HEADERS (" + headers + ")")
+      log.error("Attempt to complete request with no context.")
       false
   }
 

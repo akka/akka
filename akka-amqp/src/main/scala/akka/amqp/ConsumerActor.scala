@@ -89,7 +89,7 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
           case Some(params) => params.configurationArguments
           case _ => Map.empty
         }
-        ch.queueDeclare(queueName, durable, exclusive, autoDelete, JavaConversions.asMap(configurationArguments.toMap))
+        ch.queueDeclare(queueName, durable, exclusive, autoDelete, JavaConversions.asJavaMap(configurationArguments.toMap))
       case NoActionDeclaration => new com.rabbitmq.client.impl.AMQImpl.Queue.DeclareOk(queueName, 0, 0) // do nothing here
     }
   }

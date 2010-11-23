@@ -112,7 +112,7 @@ private[akka] object RiakStorageBackend extends CommonStorageBackend {
 
     def drop() {
       val keys = riakClient.listKeys(bucket)
-      JavaConversions.asIterable(keys) foreach {
+      JavaConversions.asScalaIterable(keys) foreach {
         delete(_)
       }
       keys.close
