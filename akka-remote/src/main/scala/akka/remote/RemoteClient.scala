@@ -417,8 +417,7 @@ class RemoteClientHandler(
       if (result.isInstanceOf[RemoteMessageProtocol]) {
         val reply = result.asInstanceOf[RemoteMessageProtocol]
         val replyUuid = uuidFrom(reply.getUuid.getHigh, reply.getUuid.getLow)
-//        log.debug("Remote client received RemoteMessageProtocol[\n%s]".format(request.toString))
-        log.debug("Remote client received RemoteMessageProtocol[\n%s]", reply.toString)
+        log.debug("Remote client received RemoteMessageProtocol[\n%s]".format(reply.toString))
         val future = futures.get(replyUuid).asInstanceOf[CompletableFuture[Any]]
         if (reply.hasMessage) {
           if (future eq null) throw new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist")
