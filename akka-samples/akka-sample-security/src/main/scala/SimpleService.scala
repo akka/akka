@@ -39,7 +39,7 @@ class Boot {
 }
 
 /*
- * In akka.conf you can set the FQN of any AuthenticationActor of your wish, under the property name: akka.rest.authenticator
+ * In akka.conf you can set the FQN of any AuthenticationActor of your wish, under the property name: akka.http.authenticator
  */
 class DigestAuthenticationService extends DigestAuthenticationActor {
   //If you want to have a distributed nonce-map, you can use something like below,

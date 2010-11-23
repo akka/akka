@@ -52,14 +52,14 @@ private [akka] object RedisStorageBackend extends
   Logging {
 
   // need an explicit definition in akka-conf
-  val nodes = config.getList("akka.storage.redis.cluster")
+  val nodes = config.getList("akka.persistence.redis.cluster")
 
   def connect() =
     nodes match {
       case Seq() =>
         // no cluster defined
-        val REDIS_SERVER_HOSTNAME = config.getString("akka.storage.redis.hostname", "127.0.0.1")
-        val REDIS_SERVER_PORT = config.getInt("akka.storage.redis.port", 6379)
+        val REDIS_SERVER_HOSTNAME = config.getString("akka.persistence.redis.hostname", "127.0.0.1")
+        val REDIS_SERVER_PORT = config.getInt("akka.persistence.redis.port", 6379)
         new RedisClient(REDIS_SERVER_HOSTNAME, REDIS_SERVER_PORT)
 
       case s =>

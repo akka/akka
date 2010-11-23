@@ -7,7 +7,7 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 import akka.serialization.Serializer.ScalaJSON
-
+/*
 object Protocols {
   import sjson.json.DefaultProtocol._
   case class Shop(store: String, item: String, price: Int)
@@ -50,3 +50,4 @@ class ScalaJSONSerializerSpec extends
     }
   }
 }
+*/

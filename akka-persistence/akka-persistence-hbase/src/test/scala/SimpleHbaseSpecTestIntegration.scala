@@ -48,7 +48,7 @@ class SimpleHbaseSpecTestIntegration extends Spec with BeforeAndAfterAll with Sh
       import org.apache.hadoop.hbase.client.HBaseAdmin
       import org.apache.hadoop.hbase.client.HTable
 
-      val HBASE_ZOOKEEPER_QUORUM = config.getString("akka.storage.hbase.zookeeper-quorum", "0")
+      val HBASE_ZOOKEEPER_QUORUM = config.getString("akka.persistence.hbase.zookeeper-quorum", "0")
       HBASE_ZOOKEEPER_QUORUM should not equal ("0")
       HBASE_ZOOKEEPER_QUORUM should equal("localhost")
 
