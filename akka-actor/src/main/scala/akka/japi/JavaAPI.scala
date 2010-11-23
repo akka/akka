@@ -21,6 +21,14 @@ trait SideEffect {
 }
 
 /**
+ + * A constructor/factory, takes no parameters but creates a new value of type T every call
+ + */
+trait Creator[T] {
+  def create: T
+}
+
+
+/**
  * This class represents optional values. Instances of <code>Option</code>
  * are either instances of case class <code>Some</code> or it is case
  * object <code>None</code>.
