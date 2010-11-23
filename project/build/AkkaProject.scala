@@ -21,7 +21,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         "-Xmigration",
         "-Xcheckinit",
         "-Xstrict-warnings",
-       // "-optimise", //Uncomment this for release compile
+        // "-optimise", //Uncomment this for release compile
         "-Xwarninit",
         "-encoding", "utf8")
         .map(CompileOption(_))

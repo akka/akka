@@ -417,6 +417,7 @@ class RemoteClientHandler(
       if (result.isInstanceOf[RemoteMessageProtocol]) {
         val reply = result.asInstanceOf[RemoteMessageProtocol]
         val replyUuid = uuidFrom(reply.getUuid.getHigh, reply.getUuid.getLow)
+//        log.debug("Remote client received RemoteMessageProtocol[\n%s]".format(request.toString))
         log.debug("Remote client received RemoteMessageProtocol[\n%s]", reply.toString)
         val future = futures.get(replyUuid).asInstanceOf[CompletableFuture[Any]]
         if (reply.hasMessage) {
