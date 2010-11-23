@@ -75,7 +75,8 @@ object Transaction {
     TransactionManagement.transaction.set(Some(tx))
     mtx.registerLifecycleListener(new TransactionLifecycleListener() {
       def notify(mtx: MultiverseTransaction, event: TransactionLifecycleEvent) = event match {
-        case TransactionLifecycleEvent.PostCommit => tx.commit
+        case TransactionLifecycleEvent.PostCommit => tx.commitJta
+        case TransactionLifecycleEvent.PreCommit => tx.commitPersistentState
         case TransactionLifecycleEvent.PostAbort => tx.abort
         case _ => {}
       }
@@ -110,13 +111,16 @@ object Transaction {
     jta.foreach { _.beginWithStmSynchronization(this) }
   }
 
-  def commit = synchronized {
+  def commitPersistentState = synchronized {
     log.trace("Committing transaction " + toString)
     retry(STATE_RETRIES){
       persistentStateMap.valuesIterator.foreach(_.commit)
       persistentStateMap.clear
     }
     status = TransactionStatus.Completed
+  }
+
+  def commitJta = synchronized {
     jta.foreach(_.commit)
   }
 
