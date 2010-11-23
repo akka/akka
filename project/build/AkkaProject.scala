@@ -264,7 +264,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test" //Common Public License 1.0
     lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test" //MIT
     lazy val scalatest      = "org.scalatest"          % "scalatest"           % SCALATEST_VERSION % "test" //ApacheV2
-    lazy val specs          = "org.scala-tools.testing" %% "specs"             % "1.6.5"           % "test" //MIT
+    lazy val specs          = "org.scala-tools.testing" %% "specs"             % "1.6.6"           % "test" //MIT
 
     //HBase testing
     lazy val hadoop_test    = "org.apache.hadoop"      % "hadoop-test"         % "0.20.2"          % "test" //ApacheV2
