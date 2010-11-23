@@ -1,7 +1,5 @@
 /**
- * Copyright 2010 Autodesk, Inc.  All rights reserved.
- * Licensed under Apache License, Version 2.0 (the "License"); you may not use this software except in compliance with the License.
- * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.http
@@ -16,7 +14,7 @@ import Types._
 trait Servlet30Context extends AsyncListener with akka.util.Logging
 {
   import javax.servlet.http.HttpServletResponse
-  import AkkaHttpServlet._
+  import MistSettings._
 
   val builder: () => tAsyncRequestContext
   val context: Option[tAsyncRequestContext] = Some(builder())
@@ -31,13 +29,13 @@ trait Servlet30Context extends AsyncListener with akka.util.Logging
 
   def suspended = true
 
-  def timeout(ms:Long):Boolean = {
+  def timeout(ms: Long): Boolean = {
     try {
       _ac setTimeout ms
       true
     }
     catch {
-      case ex:IllegalStateException =>
+      case ex: IllegalStateException =>
         log.info("Cannot update timeout - already returned to container")
         false
     }
@@ -46,13 +44,13 @@ trait Servlet30Context extends AsyncListener with akka.util.Logging
   //
   // AsyncListener
   //
-  def onComplete(e:AsyncEvent) = {}
-  def onError(e:AsyncEvent) = e.getThrowable match {
+  def onComplete(e: AsyncEvent) {}
+  def onError(e: AsyncEvent) = e.getThrowable match {
     case null => log.warning("Error occured...")
     case    t => log.warning(t, "Error occured")
   }
-  def onStartAsync(e:AsyncEvent) = {}
-  def onTimeout(e:AsyncEvent) = {
+  def onStartAsync(e: AsyncEvent) {}
+  def onTimeout(e: AsyncEvent) = {
     e.getSuppliedResponse.asInstanceOf[HttpServletResponse].addHeader(ExpiredHeaderName, ExpiredHeaderValue)
     e.getAsyncContext.complete
   }

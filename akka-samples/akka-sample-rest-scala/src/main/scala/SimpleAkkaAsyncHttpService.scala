@@ -18,54 +18,52 @@ import akka.http._
  *
  *  @author Garrick Evans
  */
-class SimpleAkkaAsyncHttpService extends Actor with Endpoint
-{
-  final val ServiceRoot = "/simple/"
-  final val ProvideSameActor = ServiceRoot + "same"
-  final val ProvideNewActor = ServiceRoot + "new"
-
-    //
+class SimpleAkkaAsyncHttpService extends Actor with Endpoint {
+  //
     // use the configurable dispatcher
     //
   self.dispatcher = Endpoint.Dispatcher
 
-    //
-    // there are different ways of doing this - in this case, we'll use a single hook function
-    //  and discriminate in the provider; alternatively we can pair hooks & providers
-    //
-  def hook(uri: String): Boolean = ((uri == ProvideSameActor) || (uri == ProvideNewActor))
-  def provide(uri: String): ActorRef =
-  {
-    if (uri == ProvideSameActor)
-      same
-    else
-      actorOf[BoringActor].start
+  final val ServiceRoot = "/simple/"
+  final val ProvideSameActor = ServiceRoot + "same"
+  final val ProvideNewActor = ServiceRoot + "new"
+
+  //
+  // there are different ways of doing this - in this case, we'll use a single hook function
+  //  and discriminate in the provider; alternatively we can pair hooks & providers
+  //
+  def hook(uri: String): Boolean = uri match {
+    case ProvideSameActor | ProvideNewActor => true
+    case _ => false
   }
 
+  def provide(uri: String): ActorRef = uri match {
+    case ProvideSameActor => same
+    case _ => actorOf[BoringActor].start
+  }
+
+  //
+  // this is where you want attach your endpoint hooks
+  //
+  override def preStart {
     //
-    // this is where you want attach your endpoint hooks
+    // we expect there to be one root and that it's already been started up
+    // obviously there are plenty of other ways to obtaining this actor
+    //  the point is that we need to attach something (for starters anyway)
+    //  to the root
     //
-  override def preStart =
-    {
-        //
-        // we expect there to be one root and that it's already been started up
-        // obviously there are plenty of other ways to obtaining this actor
-        //  the point is that we need to attach something (for starters anyway)
-        //  to the root
-        //
-      val root = ActorRegistry.actorsFor(classOf[RootEndpoint]).head
-      root ! Endpoint.Attach(hook, provide)
-    }
+    val root = ActorRegistry.actorsFor(classOf[RootEndpoint]).head
+    root ! Endpoint.Attach(hook, provide)
+  }
 
     //
     // since this actor isn't doing anything else (i.e. not handling other messages)
     //  just assign the receive func like so...
     // otherwise you could do something like:
     //  def myrecv = {...}
-    //  def receive = myrecv orElse _recv
+    //  def receive = myrecv orElse handleHttpRequest
     //
-  def receive = _recv
-
+  def receive = handleHttpRequest
 
   //
   // this will be our "same" actor provided with ProvideSameActor endpoint is hit
@@ -76,57 +74,52 @@ class SimpleAkkaAsyncHttpService extends Actor with Endpoint
 /**
  * Define a service handler to respond to some HTTP requests
  */
-class BoringActor extends Actor
-{
+class BoringActor extends Actor {
   import java.util.Date
   import javax.ws.rs.core.MediaType
 
   var gets = 0
   var posts = 0
-  var lastget:Option[Date] = None
-  var lastpost:Option[Date] = None
+  var lastget: Option[Date] = None
+  var lastpost: Option[Date] = None
 
-  def receive =
-  {
-      //
-      // handle a get request
-      //
-    case get:Get =>
-    {
-        //
-        // the content type of the response.
-        // similar to @Produces annotation
-        //
-      get.response.setContentType(MediaType.TEXT_HTML)
+  def receive = {
+  //
+  // handle a get request
+  //
+  case get: Get => {
+    //
+    // the content type of the response.
+    // similar to @Produces annotation
+    //
+    get.response.setContentType(MediaType.TEXT_HTML)
 
-      //
-      // "work"
-      //
-      gets += 1
-      lastget = Some(new Date)
+    //
+    // "work"
+    //
+    gets += 1
+    lastget = Some(new Date)
 
-      //
-      // respond
-      //
-      val res = "<p>Gets: "+gets+" Posts: "+posts+"</p><p>Last Get: "+lastget.getOrElse("Never").toString+" Last Post: "+lastpost.getOrElse("Never").toString+"</p>"
-      get.OK(res)
-    }
+    //
+    // respond
+    //
+    val res = "<p>Gets: "+gets+" Posts: "+posts+"</p><p>Last Get: "+lastget.getOrElse("Never").toString+" Last Post: "+lastpost.getOrElse("Never").toString+"</p>"
+    get.OK(res)
+  }
 
       //
       // handle a post request
       //
-    case post:Post =>
-    {
+    case post:Post => {
+      //
+      // the expected content type of the request
+      // similar to @Consumes
+      //
+      if (post.request.getContentType startsWith MediaType.APPLICATION_FORM_URLENCODED) {
         //
-        // the expected content type of the request
-        // similar to @Consumes
+        // the content type of the response.
+        // similar to @Produces annotation
         //
-      if (post.request.getContentType startsWith MediaType.APPLICATION_FORM_URLENCODED)
-      {
-          //
-          // the content type of the response.
-          // similar to @Produces annotation
-          //
         post.response.setContentType(MediaType.TEXT_HTML)
 
         //
@@ -141,15 +134,11 @@ class BoringActor extends Actor
         val res = "<p>Gets: "+gets+" Posts: "+posts+"</p><p>Last Get: "+lastget.getOrElse("Never").toString+" Last Post: "+lastpost.getOrElse("Never").toString+"</p>"
         post.OK(res)
       }
-      else
-      {
+      else {
         post.UnsupportedMediaType("Content-Type request header missing or incorrect (was '" + post.request.getContentType + "' should be '" + MediaType.APPLICATION_FORM_URLENCODED + "')")
       }
     }
 
-    case other if other.isInstanceOf[RequestMethod] =>
-    {
-      other.asInstanceOf[RequestMethod].NotAllowed("Invalid method for this endpoint")
-    }
+    case other: RequestMethod => other.NotAllowed("Invalid method for this endpoint")
   }
 }
