@@ -34,10 +34,10 @@ private[akka] object CassandraStorageBackend extends CommonStorageBackend {
   val REF_KEY = "item".getBytes("UTF-8")
   val EMPTY_BYTE_ARRAY = new Array[Byte](0)
 
-  val CASSANDRA_SERVER_HOSTNAME = config.getString("akka.storage.cassandra.hostname", "127.0.0.1")
-  val CASSANDRA_SERVER_PORT = config.getInt("akka.storage.cassandra.port", 9160)
+  val CASSANDRA_SERVER_HOSTNAME = config.getString("akka.persistence.cassandra.hostname", "127.0.0.1")
+  val CASSANDRA_SERVER_PORT = config.getInt("akka.persistence.cassandra.port", 9160)
   val CONSISTENCY_LEVEL = {
-    config.getString("akka.storage.cassandra.consistency-level", "QUORUM") match {
+    config.getString("akka.persistence.cassandra.consistency-level", "QUORUM") match {
       case "ZERO" => ConsistencyLevel.ZERO
       case "ONE" => ConsistencyLevel.ONE
       case "QUORUM" => ConsistencyLevel.QUORUM

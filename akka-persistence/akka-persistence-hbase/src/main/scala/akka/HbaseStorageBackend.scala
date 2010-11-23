@@ -25,7 +25,7 @@ import org.apache.hadoop.hbase.util.Bytes
  */
 private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], Array[Byte]] with VectorStorageBackend[Array[Byte]] with RefStorageBackend[Array[Byte]] with Logging {
 
-  val HBASE_ZOOKEEPER_QUORUM = config.getString("akka.storage.hbase.zookeeper-quorum", "localhost")
+  val HBASE_ZOOKEEPER_QUORUM = config.getString("akka.persistence.hbase.zookeeper-quorum", "localhost")
   val CONFIGURATION = new HBaseConfiguration
   val REF_TABLE_NAME = "__REF_TABLE"
   val VECTOR_TABLE_NAME = "__VECTOR_TABLE"

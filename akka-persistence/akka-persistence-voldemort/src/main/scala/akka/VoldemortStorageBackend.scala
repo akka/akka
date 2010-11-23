@@ -28,14 +28,14 @@ private[akka] object VoldemortStorageBackend extends CommonStorageBackend {
   import VoldemortAccess._
 
   val bootstrapUrlsProp = "bootstrap_urls"
-  val clientConfig = config.getConfigMap("akka.storage.voldemort.client") match {
+  val clientConfig = config.getConfigMap("akka.persistence.voldemort.client") match {
     case Some(configMap) => getClientConfig(configMap.asMap)
     case None => getClientConfig(new HashMap[String, String] + (bootstrapUrlsProp -> "tcp://localhost:6666"))
   }
-  val refStore = config.getString("akka.storage.voldemort.store.ref", "Refs")
-  val mapStore = config.getString("akka.storage.voldemort.store.map", "Maps")
-  val vectorStore = config.getString("akka.storage.voldemort.store.vector", "Vectors")
-  val queueStore = config.getString("akka.storage.voldemort.store.queue", "Queues")
+  val refStore = config.getString("akka.persistence.voldemort.store.ref", "Refs")
+  val mapStore = config.getString("akka.persistence.voldemort.store.map", "Maps")
+  val vectorStore = config.getString("akka.persistence.voldemort.store.vector", "Vectors")
+  val queueStore = config.getString("akka.persistence.voldemort.store.queue", "Queues")
 
 
   var storeClientFactory: StoreClientFactory = null

@@ -69,7 +69,7 @@ object Config {
           "\n\tdue to: " + e.toString)
       }
       Configgy.config
-    }  else if (HOME.isDefined) {
+    } else if (HOME.isDefined) {
       try {
         val configFile = HOME.getOrElse(throwNoAkkaHomeException) + "/config/" + confName
         Configgy.configure(configFile)
