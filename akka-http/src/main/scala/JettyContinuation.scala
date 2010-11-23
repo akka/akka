@@ -17,7 +17,7 @@ import Types._
 trait JettyContinuation extends ContinuationListener with akka.util.Logging
 {
   import javax.servlet.http.HttpServletResponse
-  import AkkaHttpServlet._
+  import MistSettings._
 
   val builder:() => tAsyncRequestContext
   val context: Option[tAsyncRequestContext] = Some(builder())
@@ -103,8 +103,7 @@ trait JettyContinuation extends ContinuationListener with akka.util.Logging
   }
 }
 
-object JettyContinuationMethodFactory extends RequestMethodFactory
-{
+object JettyContinuationMethodFactory extends RequestMethodFactory {
   def  Delete(f: () => tAsyncRequestContext): RequestMethod = new Delete(f) with JettyContinuation
   def     Get(f: () => tAsyncRequestContext): RequestMethod = new Get(f) with JettyContinuation
   def    Head(f: () => tAsyncRequestContext): RequestMethod = new Head(f) with JettyContinuation
