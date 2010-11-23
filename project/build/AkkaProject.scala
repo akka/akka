@@ -30,7 +30,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Deploy/dist settings
   // -------------------------------------------------------------------------------------------------------------------
-  def distName = "%s_%s-%s".format(name, buildScalaVersion, version)
+  def distName = "%s-%s".format(name, version)
   lazy val deployPath = info.projectPath / "deploy"
   lazy val distPath = info.projectPath / "dist"
 
@@ -307,6 +307,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Miscellaneous
   // -------------------------------------------------------------------------------------------------------------------
+  override def disableCrossPaths = true
 
   override def mainClass = Some("akka.kernel.Main")
 
@@ -324,27 +325,27 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     .filter(_.getName.endsWith(".jar"))
     .filter(!_.getName.contains("servlet_2.4"))
     .filter(!_.getName.contains("scala-library"))
-    .map("lib_managed/scala_%s/compile/".format(buildScalaVersion) + _.getName)
+    .map("lib_managed/compile/" + _.getName)
     .mkString(" ") +
     " config/" +
     " scala-library.jar" +
-    " dist/akka-actor_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-stm_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-typed-actor_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-remote_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-http_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-camel_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-amqp_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-persistence-common_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-persistence-redis_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-persistence-mongo_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-persistence-cassandra_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-persistence-voldemort_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-persistence-riak_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-persistence-hbase_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-kernel_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-spring_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-jta_%s-%s.jar".format(buildScalaVersion, version)
+    " dist/akka-actor-%s.jar".format(version) +
+    " dist/akka-stm-%s.jar".format(version) +
+    " dist/akka-typed-actor-%s.jar".format(version) +
+    " dist/akka-remote-%s.jar".format(version) +
+    " dist/akka-http-%s.jar".format(version) +
+    " dist/akka-camel-%s.jar".format(version) +
+    " dist/akka-amqp-%s.jar".format(version) +
+    " dist/akka-persistence-common-%s.jar".format(version) +
+    " dist/akka-persistence-redis-%s.jar".format(version) +
+    " dist/akka-persistence-mongo-%s.jar".format(version) +
+    " dist/akka-persistence-cassandra-%s.jar".format(version) +
+    " dist/akka-persistence-voldemort-%s.jar".format(version) +
+    " dist/akka-persistence-riak-%s.jar".format(version) +
+    " dist/akka-persistence-hbase-%s.jar".format(version) +
+    " dist/akka-kernel-%s.jar".format(version) +
+    " dist/akka-spring-%s.jar".format(version) +
+    " dist/akka-jta-%s.jar".format(version)
     )
 
   //Exclude slf4j1.5.11 from the classpath, it's conflicting...
@@ -376,7 +377,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   override def pomExtra =
     <inceptionYear>2009</inceptionYear>
-    <url>http://akkasource.org</url>
+    <url>http://akka.io</url>
     <organization>
       <name>Scalable Solutions AB</name>
       <url>http://scalablesolutions.se</url>
@@ -541,6 +542,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaPersistenceParentProject(info: ProjectInfo) extends ParentProject(info) {
+    override def disableCrossPaths = true
+
     lazy val akka_persistence_common = project("akka-persistence-common", "akka-persistence-common",
       new AkkaPersistenceCommonProject(_), akka_remote, akka_stm)
     lazy val akka_persistence_redis = project("akka-persistence-redis", "akka-persistence-redis",
@@ -750,6 +753,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaOSGiParentProject(info: ProjectInfo) extends ParentProject(info) {
+    override def disableCrossPaths = true
+
     lazy val akka_osgi_dependencies_bundle = project("akka-osgi-dependencies-bundle", "akka-osgi-dependencies-bundle",
       new AkkaOSGiDependenciesBundleProject(_), akka_kernel, akka_jta) // akka_kernel does not depend on akka_jta (why?) therefore we list akka_jta here
     lazy val akka_osgi_assembly = project("akka-osgi-assembly", "akka-osgi-assembly",
@@ -786,6 +791,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaOSGiAssemblyProject(info: ProjectInfo) extends DefaultProject(info) {
+    override def disableCrossPaths = true
 
     // Scala bundle
     val scala_bundle = "com.weiglewilczek.scala-lang-osgi" % "scala-library" % buildScalaVersion % "compile" intransitive
@@ -846,6 +852,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
+    override def disableCrossPaths = true
     override def spdeSourcePath = mainSourcePath / "spde"
   }
 
@@ -894,6 +901,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
+    override def disableCrossPaths = true
+
     lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
       new AkkaSampleAntsProject(_), akka_stm)
     lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
@@ -944,12 +953,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     )
   }
 
-  def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "-" + version + ".jar")
+  def akkaArtifacts = descendents(info.projectPath / "dist", "*-" + version + ".jar")
   lazy val integrationTestsEnabled = systemOptional[Boolean]("integration.tests",false)
   lazy val stressTestsEnabled = systemOptional[Boolean]("stress.tests",false)
 
   // ------------------------------------------------------------
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject {
+    override def disableCrossPaths = true
     lazy val sourceArtifact = Artifact(this.artifactID, "source", "jar", Some("sources"), Nil, None)
     lazy val docsArtifact = Artifact(this.artifactID, "doc", "jar", Some("docs"), Nil, None)
     override def runClasspath = super.runClasspath +++ (AkkaParentProject.this.info.projectPath / "config")

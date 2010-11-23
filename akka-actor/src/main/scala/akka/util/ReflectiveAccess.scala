@@ -20,13 +20,13 @@ object ReflectiveAccess extends Logging {
 
   val loader = getClass.getClassLoader
 
-  lazy val isRemotingEnabled   = RemoteClientModule.isRemotingEnabled
-  lazy val isTypedActorEnabled = TypedActorModule.isTypedActorEnabled
-  lazy val isEnterpriseEnabled = EnterpriseModule.isEnterpriseEnabled
+  lazy val isRemotingEnabled   = RemoteClientModule.isEnabled
+  lazy val isTypedActorEnabled = TypedActorModule.isEnabled
+  lazy val isAkkaCloudEnabled  = AkkaCloudModule.isEnabled
 
-  def ensureRemotingEnabled   = RemoteClientModule.ensureRemotingEnabled
-  def ensureTypedActorEnabled = TypedActorModule.ensureTypedActorEnabled
-  def ensureEnterpriseEnabled = EnterpriseModule.ensureEnterpriseEnabled
+  def ensureRemotingEnabled   = RemoteClientModule.ensureEnabled
+  def ensureTypedActorEnabled = TypedActorModule.ensureEnabled
+  def ensureAkkaCloudEnabled  = AkkaCloudModule.ensureEnabled
 
   /**
    * Reflective access to the RemoteClient module.
@@ -56,32 +56,32 @@ object ReflectiveAccess extends Logging {
       def clientFor(hostname: String, port: Int, loader: Option[ClassLoader]): RemoteClient
     }
 
-    lazy val isRemotingEnabled = remoteClientObjectInstance.isDefined
+    lazy val isEnabled = remoteClientObjectInstance.isDefined
 
-    def ensureRemotingEnabled = if (!isRemotingEnabled) throw new ModuleNotAvailableException(
+    def ensureEnabled = if (!isEnabled) throw new ModuleNotAvailableException(
       "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
 
     val remoteClientObjectInstance: Option[RemoteClientObject] =
       getObjectFor("akka.remote.RemoteClient$")
 
     def register(address: InetSocketAddress, uuid: Uuid) = {
-      ensureRemotingEnabled
+      ensureEnabled
       remoteClientObjectInstance.get.register(address.getHostName, address.getPort, uuid)
     }
 
     def unregister(address: InetSocketAddress, uuid: Uuid) = {
-      ensureRemotingEnabled
+      ensureEnabled
       remoteClientObjectInstance.get.unregister(address.getHostName, address.getPort, uuid)
     }
 
     def registerSupervisorForActor(remoteAddress: InetSocketAddress, actorRef: ActorRef) = {
-      ensureRemotingEnabled
+      ensureEnabled
       val remoteClient = remoteClientObjectInstance.get.clientFor(remoteAddress)
       remoteClient.registerSupervisorForActor(actorRef)
     }
 
     def clientFor(hostname: String, port: Int, loader: Option[ClassLoader]): RemoteClient = {
-      ensureRemotingEnabled
+      ensureEnabled
       remoteClientObjectInstance.get.clientFor(hostname, port, loader)
     }
 
@@ -95,7 +95,7 @@ object ReflectiveAccess extends Logging {
       actorRef: ActorRef,
       typedActorInfo: Option[Tuple2[String, String]],
       actorType: ActorType): Option[CompletableFuture[T]] = {
-      ensureRemotingEnabled
+      ensureEnabled
       clientFor(remoteAddress.getHostName, remoteAddress.getPort, None).send[T](
         message, senderOption, senderFuture, remoteAddress, timeout, isOneWay, actorRef, typedActorInfo, actorType)
     }
@@ -126,17 +126,17 @@ object ReflectiveAccess extends Logging {
       getObjectFor("akka.remote.RemoteNode$")
 
     def registerActor(address: InetSocketAddress, actorRef: ActorRef) = {
-      ensureRemotingEnabled
+      RemoteClientModule.ensureEnabled
       remoteServerObjectInstance.get.registerActor(address, actorRef)
     }
 
     def registerTypedActor(address: InetSocketAddress, implementationClassName: String, proxy: AnyRef) = {
-      ensureRemotingEnabled
+      RemoteClientModule.ensureEnabled
       remoteServerObjectInstance.get.registerTypedActor(address, implementationClassName, proxy)
     }
 
     def unregister(actorRef: ActorRef) = {
-      ensureRemotingEnabled
+      RemoteClientModule.ensureEnabled
       remoteNodeObjectInstance.get.unregister(actorRef)
     }
   }
@@ -156,16 +156,16 @@ object ReflectiveAccess extends Logging {
       def stop(anyRef: AnyRef) : Unit
     }
 
-    lazy val isTypedActorEnabled = typedActorObjectInstance.isDefined
+    lazy val isEnabled = typedActorObjectInstance.isDefined
 
-    def ensureTypedActorEnabled = if (!isTypedActorEnabled) throw new ModuleNotAvailableException(
+    def ensureEnabled = if (!isTypedActorEnabled) throw new ModuleNotAvailableException(
       "Can't load the typed actor module, make sure that akka-typed-actor.jar is on the classpath")
 
     val typedActorObjectInstance: Option[TypedActorObject] =
       getObjectFor("akka.actor.TypedActor$")
 
     def resolveFutureIfMessageIsJoinPoint(message: Any, future: Future[_]): Boolean = {
-      ensureTypedActorEnabled
+      ensureEnabled
       if (typedActorObjectInstance.get.isJoinPointAndOneWay(message)) {
         future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
       }
@@ -173,7 +173,7 @@ object ReflectiveAccess extends Logging {
     }
   }
 
-  object EnterpriseModule {
+  object AkkaCloudModule {
 
     type Mailbox = {
       def enqueue(message: MessageInvocation)
@@ -185,27 +185,27 @@ object ReflectiveAccess extends Logging {
       def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
     }
 
-    lazy val isEnterpriseEnabled = clusterObjectInstance.isDefined
+    lazy val isEnabled = clusterObjectInstance.isDefined
 
     val clusterObjectInstance: Option[AnyRef] =
-      getObjectFor("akka.cluster.Cluster$")
+      getObjectFor("akka.cloud.cluster.Cluster$")
 
     val serializerClass: Option[Class[_]] =
       getClassFor("akka.serialization.Serializer")
 
-    def ensureEnterpriseEnabled = if (!isEnterpriseEnabled) throw new ModuleNotAvailableException(
-      "Feature is only available in Akka Enterprise edition")
+    def ensureEnabled = if (!isEnabled) throw new ModuleNotAvailableException(
+      "Feature is only available in Akka Cloud")
 
-    def createFileBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.actor.mailbox.FileBasedMailbox", actorRef)
+    def createFileBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.FileBasedMailbox", actorRef)
 
-    def createZooKeeperBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.actor.mailbox.ZooKeeperBasedMailbox", actorRef)
+    def createZooKeeperBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.ZooKeeperBasedMailbox", actorRef)
 
-    def createBeanstalkBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.actor.mailbox.BeanstalkBasedMailbox", actorRef)
+    def createBeanstalkBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.BeanstalkBasedMailbox", actorRef)
 
-    def createRedisBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.actor.mailbox.RedisBasedMailbox", actorRef)
+    def createRedisBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.RedisBasedMailbox", actorRef)
 
     private def createMailbox(mailboxClassname: String, actorRef: ActorRef): Mailbox = {
-      ensureEnterpriseEnabled
+      ensureEnabled
       createInstance(
         mailboxClassname,
         Array(classOf[ActorRef]),
