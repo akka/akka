@@ -129,7 +129,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val LOGBACK_VERSION       = "0.9.24"
   lazy val SLF4J_VERSION         = "1.6.0"
   lazy val SPRING_VERSION        = "3.0.4.RELEASE"
-  lazy val ASPECTWERKZ_VERSION   = "2.2.2"
   lazy val JETTY_VERSION         = "7.1.6.v20100715"
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -139,9 +138,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   object Dependencies {
 
     // Compile
-    lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile" //ApacheV2
-
     lazy val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile" //Public domain
+
+    lazy val aspectwerkz = "org.codehaus.aspectwerkz" % "aspectwerkz" % "2.2.3" % "compile" //LGPL 2.1
 
     lazy val atmo          = "org.atmosphere" % "atmosphere-annotations"     % ATMO_VERSION % "compile" //CDDL v1
     lazy val atmo_jbossweb = "org.atmosphere" % "atmosphere-compat-jbossweb" % ATMO_VERSION % "compile" //CDDL v1
@@ -157,6 +156,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val camel_core = "org.apache.camel" % "camel-core" % CAMEL_VERSION % "compile" //ApacheV2
 
     lazy val cassandra = "org.apache.cassandra" % "cassandra" % CASSANDRA_VERSION % "compile" //ApacheV2
+
+    lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile" //ApacheV2
 
     lazy val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile" //ApacheV2
 
@@ -235,9 +236,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val voldemort = "voldemort" % "voldemort" % "0.81" % "compile" //ApacheV2
     lazy val voldemort_contrib = "voldemort" % "voldemort-contrib" % "0.81" % "compile" //ApacheV2
     lazy val voldemort_needs_log4j = "org.slf4j" % "log4j-over-slf4j" % SLF4J_VERSION % "compile" //MIT
-
-    lazy val werkz      = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % ASPECTWERKZ_VERSION % "compile" //LGPL 2.1
-    lazy val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5"        % ASPECTWERKZ_VERSION % "compile" //LGPL 2.1
 
     lazy val zookeeper  = "org.apache.hadoop.zookeeper" % "zookeeper" % "3.2.2" % "compile" //ApacheV2
 
@@ -445,8 +443,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaTypedActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val aopalliance   = Dependencies.aopalliance
-    val werkz         = Dependencies.werkz
-    val werkz_core    = Dependencies.werkz_core
+    val aspectwerkz   = Dependencies.aspectwerkz
     val guicey        = Dependencies.guicey
 
     // testing
