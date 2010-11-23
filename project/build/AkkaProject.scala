@@ -66,21 +66,14 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   object Repositories {
-    lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
-    lazy val CasbahRepo           = MavenRepository("Casbah Repo", "http://repo.bumnetworks.com/releases")
-    lazy val CasbahSnapshotRepo   = MavenRepository("Casbah Snapshots", "http://repo.bumnetworks.com/snapshots")
-    lazy val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
     lazy val EmbeddedRepo         = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
-    lazy val FusesourceSnapshotRepo = MavenRepository("Fusesource Snapshots", "http://repo.fusesource.com/nexus/content/repositories/snapshots")
-    lazy val GlassfishRepo        = MavenRepository("Glassfish Repo", "http://download.java.net/maven/glassfish")
+    lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
+    lazy val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
     lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
     lazy val JBossRepo            = MavenRepository("JBoss Repo", "http://repository.jboss.org/nexus/content/groups/public/")
     lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
     lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
-    lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
-    lazy val CasbahRepoReleases   = MavenRepository("Casbah Release Repo", "http://repo.bumnetworks.com/releases")
-    lazy val ZookeeperRepo        = MavenRepository("Zookeeper Repo", "http://lilycms.org/maven/maven2/deploy/")
-    lazy val ClojarsRepo          = MavenRepository("Clojars Repo", "http://clojars.org/repo")
+    lazy val GlassfishRepo        = MavenRepository("Glassfish Repo", "http://download.java.net/maven/glassfish")
     lazy val ScalaToolsRelRepo    = MavenRepository("Scala Tools Releases Repo", "http://scala-tools.org/repo-releases")
   }
 
@@ -92,35 +85,22 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   import Repositories._
+  lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
   lazy val jettyModuleConfig       = ModuleConfiguration("org.eclipse.jetty", sbt.DefaultMavenRepository)
-  lazy val glassfishModuleConfig   = ModuleConfiguration("org.glassfish", GlassfishRepo)
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
-  // lazy val hawtdispatchModuleConfig  = ModuleConfiguration("org.fusesource.hawtdispatch", FusesourceSnapshotRepo)
+  lazy val glassfishModuleConfig   = ModuleConfiguration("org.glassfish", GlassfishRepo)
   lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
-  lazy val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", SunJDMKRepo)
-  lazy val jmsModuleConfig         = ModuleConfiguration("javax.jms", SunJDMKRepo)
-  lazy val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", SunJDMKRepo)
   lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsRelRepo)
-  lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback",sbt.DefaultMavenRepository)
-  lazy val atomikosModuleConfig    = ModuleConfiguration("com.atomikos",sbt.DefaultMavenRepository)
-  lazy val casbahRelease           = ModuleConfiguration("com.novus",CasbahRepoReleases)
-  lazy val zookeeperRelease        = ModuleConfiguration("org.apache.hadoop.zookeeper",ZookeeperRepo)
-  lazy val casbahModuleConfig      = ModuleConfiguration("com.novus", CasbahRepo)
-  lazy val timeModuleConfig        = ModuleConfiguration("org.scala-tools", "time", CasbahSnapshotRepo)
-  lazy val voldemortModuleConfig   = ModuleConfiguration("voldemort", ClojarsRepo)
-  lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
+  lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback", sbt.DefaultMavenRepository)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val ATMO_VERSION          = "0.6.2"
-  lazy val CAMEL_VERSION         = "2.5.0"
-  lazy val CASSANDRA_VERSION     = "0.6.1"
   lazy val DISPATCH_VERSION      = "0.7.4"
   lazy val HAWT_DISPATCH_VERSION = "1.0"
   lazy val JACKSON_VERSION       = "1.4.3"
@@ -129,7 +109,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val SCALATEST_VERSION     = "1.2"
   lazy val LOGBACK_VERSION       = "0.9.24"
   lazy val SLF4J_VERSION         = "1.6.0"
-  lazy val SPRING_VERSION        = "3.0.4.RELEASE"
   lazy val JETTY_VERSION         = "7.1.6.v20100715"
   lazy val JAVAX_SERVLET_VERSION = "3.0"
   
@@ -145,14 +124,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val aspectwerkz = "org.codehaus.aspectwerkz" % "aspectwerkz" % "2.2.3" % "compile" //LGPL 2.1
 
-    lazy val atomikos_transactions     = "com.atomikos" % "transactions"     % "3.2.3" % "compile" //ApacheV2
-    lazy val atomikos_transactions_api = "com.atomikos" % "transactions-api" % "3.2.3" % "compile" //ApacheV2
-    lazy val atomikos_transactions_jta = "com.atomikos" % "transactions-jta" % "3.2.3" % "compile" //ApacheV2
-
-    lazy val camel_core = "org.apache.camel" % "camel-core" % CAMEL_VERSION % "compile" //ApacheV2
-
-    lazy val cassandra = "org.apache.cassandra" % "cassandra" % CASSANDRA_VERSION % "compile" //ApacheV2
-
     lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile" //ApacheV2
 
     lazy val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile" //ApacheV2
@@ -166,6 +137,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val dispatch_http = "net.databinder" % "dispatch-http_2.8.0" % DISPATCH_VERSION % "compile" //LGPL v2
     lazy val dispatch_json = "net.databinder" % "dispatch-json_2.8.0" % DISPATCH_VERSION % "compile" //LGPL v2
 
+    lazy val javax_servlet_30 = "org.glassfish" % "javax.servlet" % JAVAX_SERVLET_VERSION % "provided" //CDDL v1
+   
     lazy val jetty         = "org.eclipse.jetty" % "jetty-server"  % JETTY_VERSION % "compile" //Eclipse license
     lazy val jetty_util    = "org.eclipse.jetty" % "jetty-util"    % JETTY_VERSION % "compile" //Eclipse license
     lazy val jetty_xml     = "org.eclipse.jetty" % "jetty-xml"     % JETTY_VERSION % "compile" //Eclipse license
@@ -182,8 +155,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val jackson          = "org.codehaus.jackson" % "jackson-mapper-asl" % JACKSON_VERSION % "compile" //ApacheV2
     lazy val jackson_core     = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile" //ApacheV2
     
-    lazy val javax_servlet_30 = "org.glassfish" % "javax.servlet" % JAVAX_SERVLET_VERSION % "provided" //CDDL v1
-
     lazy val jersey         = "com.sun.jersey"          % "jersey-core"   % JERSEY_VERSION % "compile" //CDDL v1
     lazy val jersey_json    = "com.sun.jersey"          % "jersey-json"   % JERSEY_VERSION % "compile" //CDDL v1
     lazy val jersey_server  = "com.sun.jersey"          % "jersey-server" % JERSEY_VERSION % "compile" //CDDL v1
@@ -195,24 +166,12 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile" //CDDL v1
 
-    lazy val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile" intransitive //ApacheV2
-
-    lazy val mongo = "org.mongodb" % "mongo-java-driver" % "2.0" % "compile" //ApacheV2
-
-    lazy val casbah = "com.novus" % "casbah_2.8.0" % "1.0.8.5" % "compile" //ApacheV2
-
     lazy val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" intransitive //ApacheV2
     lazy val multiverse_test = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "test" intransitive //ApacheV2
 
     lazy val netty = "org.jboss.netty" % "netty" % "3.2.3.Final" % "compile" //ApacheV2
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile" //New BSD
-
-    lazy val osgi_core = "org.osgi" % "org.osgi.core" % "4.2.0" //ApacheV2
-
-    lazy val rabbit = "com.rabbitmq" % "amqp-client" % "1.8.1" % "compile" //Mozilla public license
-
-    lazy val redis = "com.redis" % "redisclient" % "2.8.0-2.0.3" % "compile" //ApacheV2
 
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile" //MIT
 
@@ -224,61 +183,22 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val logback      = "ch.qos.logback" % "logback-classic" % LOGBACK_VERSION % "compile" //LGPL 2.1
     lazy val logback_core = "ch.qos.logback" % "logback-core" % LOGBACK_VERSION % "compile" //LGPL 2.1
 
-    lazy val spring_beans   = "org.springframework" % "spring-beans"   % SPRING_VERSION % "compile" //ApacheV2
-    lazy val spring_context = "org.springframework" % "spring-context" % SPRING_VERSION % "compile" //ApacheV2
-
     lazy val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile" //ApacheV2
 
     lazy val thrift = "com.facebook" % "thrift" % "r917130" % "compile" //ApacheV2
 
-    lazy val voldemort = "voldemort" % "voldemort" % "0.81" % "compile" //ApacheV2
-    lazy val voldemort_contrib = "voldemort" % "voldemort-contrib" % "0.81" % "compile" //ApacheV2
-    lazy val voldemort_needs_log4j = "org.slf4j" % "log4j-over-slf4j" % SLF4J_VERSION % "compile" //MIT
-
-    lazy val zookeeper  = "org.apache.hadoop.zookeeper" % "zookeeper" % "3.2.2" % "compile" //ApacheV2
-
-    lazy val hadoop_core = "org.apache.hadoop" % "hadoop-core" % "0.20.2" % "compile" //ApacheV2
-
-    lazy val hbase_core = "org.apache.hbase" % "hbase-core" % "0.20.6" % "compile" //ApacheV2
-
     lazy val google_coll    = "com.google.collections" % "google-collections"  % "1.0"             % "compile" //ApacheV2
-
-    //Riak PB Client
-    lazy val riak_pb_client = "com.trifork"   %  "riak-java-pb-client"      % "1.0-for-akka-by-ticktock"  % "compile" //ApacheV2
-    lazy val scalaj_coll = "org.scalaj" % "scalaj-collection_2.8.0" % "1.0" % "compile" //ApacheV2
 
     // Test
 
-    lazy val camel_spring   = "org.apache.camel"       % "camel-spring"        % CAMEL_VERSION     % "test" //ApacheV2
-    lazy val cassandra_clhm = "org.apache.cassandra"   % "clhm-production"     % CASSANDRA_VERSION % "test" //ApacheV2
     lazy val commons_coll   = "commons-collections"    % "commons-collections" % "3.2.1"           % "test" //ApacheV2
 
-    lazy val high_scale     = "org.apache.cassandra"   % "high-scale-lib"      % CASSANDRA_VERSION % "test" //ApacheV2
     lazy val testJetty      = "org.eclipse.jetty"      % "jetty-server"        % JETTY_VERSION     % "test" //Eclipse license
     lazy val testJettyWebApp= "org.eclipse.jetty"      % "jetty-webapp"        % JETTY_VERSION     % "test" //Eclipse license
 
     lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test" //Common Public License 1.0
     lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test" //MIT
     lazy val scalatest      = "org.scalatest"          % "scalatest"           % SCALATEST_VERSION % "test" //ApacheV2
-    lazy val specs          = "org.scala-tools.testing" %% "specs"             % "1.6.6"           % "test" //MIT
-
-    //HBase testing
-    lazy val hadoop_test    = "org.apache.hadoop"      % "hadoop-test"         % "0.20.2"          % "test" //ApacheV2
-    lazy val hbase_test     = "org.apache.hbase"       % "hbase-test"          % "0.20.6"          % "test" //ApacheV2
-    lazy val log4j          = "log4j"                  % "log4j"               % "1.2.15"          % "test" //ApacheV2
-    lazy val jetty_mortbay  = "org.mortbay.jetty"      % "jetty"               % "6.1.14"          % "test" //Eclipse license
-
-    //voldemort testing
-    lazy val jdom           = "org.jdom"               % "jdom"                % "1.1"             % "test" //JDOM license: ApacheV2 - acknowledgement
-    lazy val vold_jetty     = "org.mortbay.jetty"      % "jetty"               % "6.1.18"          % "test" //ApacheV2
-    lazy val velocity       = "org.apache.velocity"    % "velocity"            % "1.6.2"           % "test" //ApacheV2
-    lazy val dbcp           = "commons-dbcp"           % "commons-dbcp"        % "1.2.2"           % "test" //ApacheV2
-
-    //memcached
-    lazy val spymemcached  = "spy" % "memcached" % "2.5" % "compile"
-
-    //simpledb
-    lazy val simpledb = "com.amazonaws" % "aws-java-sdk" % "1.0.14" % "compile"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -297,16 +217,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   override def disableCrossPaths = true
 
-  override def mainClass = Some("akka.kernel.Main")
-
   override def packageOptions =
     manifestClassPath.map(cp => ManifestAttributes(
       (Attributes.Name.CLASS_PATH, cp),
       (IMPLEMENTATION_TITLE, "Akka"),
       (IMPLEMENTATION_URL, "http://akka.io"),
       (IMPLEMENTATION_VENDOR, "Scalable Solutions AB")
-    )).toList :::
-    getMainClass(false).map(MainClass(_)).toList
+    )).toList
 
   // create a manifest with all akka jars and dependency jars on classpath
   override def manifestClassPath = Some(allArtifacts.getFiles
@@ -321,19 +238,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-stm-%s.jar".format(version) +
     " dist/akka-typed-actor-%s.jar".format(version) +
     " dist/akka-remote-%s.jar".format(version) +
-    " dist/akka-http-%s.jar".format(version) +
-    " dist/akka-camel-%s.jar".format(version) +
-    " dist/akka-amqp-%s.jar".format(version) +
-    " dist/akka-persistence-common-%s.jar".format(version) +
-    " dist/akka-persistence-redis-%s.jar".format(version) +
-    " dist/akka-persistence-mongo-%s.jar".format(version) +
-    " dist/akka-persistence-cassandra-%s.jar".format(version) +
-    " dist/akka-persistence-voldemort-%s.jar".format(version) +
-    " dist/akka-persistence-riak-%s.jar".format(version) +
-    " dist/akka-persistence-hbase-%s.jar".format(version) +
-    " dist/akka-kernel-%s.jar".format(version) +
-    " dist/akka-spring-%s.jar".format(version) +
-    " dist/akka-jta-%s.jar".format(version)
+    " dist/akka-http-%s.jar".format(version)
     )
 
   //Exclude slf4j1.5.11 from the classpath, it's conflicting...
@@ -454,7 +359,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val h2_lzf        = Dependencies.h2_lzf
     val jackson       = Dependencies.jackson
     val jackson_core  = Dependencies.jackson_core
-    val jta_1_1       = Dependencies.jta_1_1
     val netty         = Dependencies.netty
     val protobuf      = Dependencies.protobuf
     val sbinary       = Dependencies.sbinary
@@ -493,16 +397,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-camel subproject
-  // -------------------------------------------------------------------------------------------------------------------
-
-  class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val camel_core = Dependencies.camel_core
-
-    override def testOptions = createTestFilter( _.endsWith("Test"))
-  }
-
-  // -------------------------------------------------------------------------------------------------------------------
   // Examples
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -511,7 +405,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def spdeSourcePath = mainSourcePath / "spde"
   }
 
-  class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
   class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
@@ -519,8 +412,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
       new AkkaSampleAntsProject(_), akka_stm)
-    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
-      new AkkaSampleChatProject(_), akka_remote)
     lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
       new AkkaSampleRemoteProject(_), akka_remote)
   }
@@ -529,11 +420,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Helpers
   // -------------------------------------------------------------------------------------------------------------------
 
-  def removeDupEntries(paths: PathFinder) =
-   Path.lazyPathFinder {
-     val mapped = paths.get map { p => (p.relativePath, p) }
-     (Map() ++ mapped).values.toList
-   }
+  def removeDupEntries(paths: PathFinder) = Path.lazyPathFinder {
+    val mapped = paths.get map { p => (p.relativePath, p) }
+    (Map() ++ mapped).values.toList
+  }
 
   def allArtifacts = {
     Path.fromFile(buildScalaInstance.libraryJar) +++
@@ -591,6 +481,7 @@ trait DeployProject { self: BasicScalaProject =>
 
   lazy val dist = deployTask(jarPath, packageDocsJar, packageSrcJar, deployPath, true, true, true) dependsOn(
     `package`, packageDocs, packageSrc) describedAs("Deploying")
+
   def deployTask(jar: Path, docs: Path, src: Path, toDir: Path,
                  genJar: Boolean, genDocs: Boolean, genSource: Boolean) = task {
     def gen(jar: Path, toDir: Path, flag: Boolean, msg: String): Option[String] =
@@ -608,36 +499,6 @@ trait DeployProject { self: BasicScalaProject =>
 trait OSGiProject extends BNDPlugin { self: DefaultProject =>
   override def bndExportPackage = Seq("akka.*;version=%s".format(projectVersion.value))
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
