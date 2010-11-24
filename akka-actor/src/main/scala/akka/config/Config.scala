@@ -57,7 +57,7 @@ object Config extends Logging {
       val configFile = System.getProperty("akka.config", "")
       try {
         Configgy.configure(configFile)
-        log.slf4j.info("Config loaded from -Dakka.config=%s", configFile)
+        log.slf4j.info("Config loaded from -Dakka.config={}", configFile)
       } catch {
         case e: ParseException => throw new ConfigurationException(
           "Config could not be loaded from -Dakka.config=" + configFile +
@@ -69,7 +69,7 @@ object Config extends Logging {
         val configFile = HOME.getOrElse(throwNoAkkaHomeException) + "/config/" + confName
         Configgy.configure(configFile)
         log.slf4j.info(
-          "AKKA_HOME is defined as [%s], config loaded from [%s].",
+          "AKKA_HOME is defined as [{}], config loaded from [{}].",
           HOME.getOrElse(throwNoAkkaHomeException),
           configFile)
       } catch {
@@ -82,7 +82,7 @@ object Config extends Logging {
     } else if (getClass.getClassLoader.getResource(confName) ne null) {
       try {
         Configgy.configureFromResource(confName, getClass.getClassLoader)
-        log.slf4j.info("Config [%s] loaded from the application classpath.",confName)
+        log.slf4j.info("Config [{}] loaded from the application classpath.",confName)
       } catch {
         case e: ParseException => throw new ConfigurationException(
           "Can't load '" + confName + "' config file from application classpath," +

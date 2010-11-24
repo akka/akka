@@ -43,7 +43,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
    * @return the typed actors for the class
    */
   def getInstance[T](clazz: Class[T]): List[T] = synchronized {
-    log.slf4j.debug("Retrieving typed actor [%s]", clazz.getName)
+    log.slf4j.debug("Retrieving typed actor [{}]", clazz.getName)
     if (injector eq null) throw new IllegalActorStateException(
       "inject() and/or supervise() must be called before invoking getInstance(clazz)")
     val (proxy, targetInstance, component) =

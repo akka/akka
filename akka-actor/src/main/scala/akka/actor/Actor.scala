@@ -358,7 +358,7 @@ trait Actor extends Logging {
    *       log.slf4j.info("got a 'OneWay' message")
    *
    *     case unknown =&gt;
-   *       log.slf4j.warn("unknown message [%s], ignoring", unknown)
+   *       log.slf4j.warn("unknown message [{}], ignoring", unknown)
    * }
    * </pre>
    */

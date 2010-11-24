@@ -171,12 +171,12 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     } else false
   }
 
-  private[akka] def start = log.slf4j.debug("Starting up %s",toString)
+  private[akka] def start = log.slf4j.debug("Starting up {}",toString)
 
   private[akka] def shutdown {
     val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
     if (old ne null) {
-      log.slf4j.debug("Shutting down %s", toString)
+      log.slf4j.debug("Shutting down {}", toString)
       old.shutdownNow()
     }
   }
@@ -244,7 +244,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
       case Some(aType) =>
         if (aType != actorOfId.actor.getClass)
           throw new IllegalActorStateException(String.format(
-            "Can't register actor %s in a work stealing dispatcher which already knows actors of type %s",
+            "Can't register actor {} in a work stealing dispatcher which already knows actors of type {}",
             actorOfId.actor, aType))
     }
   }

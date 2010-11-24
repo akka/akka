@@ -36,7 +36,7 @@ object ServerManagedRemoteActorClient extends Logging {
     log.slf4j.info("Remote client created")
     log.slf4j.info("Sending 'Hello' to remote actor")
     val result = actor !! "Hello"
-    log.slf4j.info("Result from Remote Actor: '%s'", result.get)
+    log.slf4j.info("Result from Remote Actor: '{}'", result.get)
   }
 
   def main(args: Array[String]) = run

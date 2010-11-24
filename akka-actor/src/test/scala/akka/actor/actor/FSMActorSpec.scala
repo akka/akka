@@ -40,7 +40,7 @@ object FSMActorSpec {
             goto(Open) using CodeState("", code) until timeout
           }
           case wrong => {
-            log.slf4j.error("Wrong code %s", wrong)
+            log.slf4j.error("Wrong code {}", wrong)
             stay using CodeState("", code)
           }
         }

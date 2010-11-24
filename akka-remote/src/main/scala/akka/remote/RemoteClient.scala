@@ -238,7 +238,7 @@ class RemoteClient private[akka] (
     bootstrap.setOption("tcpNoDelay", true)
     bootstrap.setOption("keepAlive", true)
 
-    log.slf4j.info("Starting remote client connection to [%s:%s]", hostname, port)
+    log.slf4j.info("Starting remote client connection to [{}:{}]", hostname, port)
 
     // Wait until the connection attempt succeeds or fails.
     connection = bootstrap.connect(remoteAddress)
@@ -247,14 +247,14 @@ class RemoteClient private[akka] (
 
     if (!connection.isSuccess) {
       notifyListeners(RemoteClientError(connection.getCause, this))
-      log.slf4j.error("Remote client connection to [%s:%s] has failed", hostname, port)
+      log.slf4j.error("Remote client connection to [{}:{}] has failed", hostname, port)
       log.slf4j.debug("Remote client connection failed", connection.getCause)
     }
     notifyListeners(RemoteClientStarted(this))
   }
 
   def shutdown = runSwitch switchOff {
-    log.slf4j.info("Shutting down %s", name)
+    log.slf4j.info("Shutting down {}", name)
     notifyListeners(RemoteClientShutdown(this))
     timer.stop
     timer = null
@@ -263,7 +263,7 @@ class RemoteClient private[akka] (
     bootstrap.releaseExternalResources
     bootstrap = null
     connection = null
-    log.slf4j.info("%s has been shut down", name)
+    log.slf4j.info("{} has been shut down", name)
   }
 
   @deprecated("Use addListener instead")
@@ -342,7 +342,7 @@ class RemoteClient private[akka] (
     } else {
       val timeLeft = reconnectionTimeWindow - (System.currentTimeMillis - reconnectionTimeWindowStart)
       if (timeLeft > 0) {
-        log.slf4j.info("Will try to reconnect to remote server for another [%s] milliseconds", timeLeft)
+        log.slf4j.info("Will try to reconnect to remote server for another [{}] milliseconds", timeLeft)
         true
       } else false
     }
@@ -418,7 +418,7 @@ class RemoteClientHandler(
       if (result.isInstanceOf[RemoteMessageProtocol]) {
         val reply = result.asInstanceOf[RemoteMessageProtocol]
         val replyUuid = uuidFrom(reply.getUuid.getHigh, reply.getUuid.getLow)
-        log.slf4j.debug("Remote client received RemoteMessageProtocol[\n%s]".format(reply.toString))
+        log.debug("Remote client received RemoteMessageProtocol[\n{}]",reply)
         val future = futures.get(replyUuid).asInstanceOf[CompletableFuture[Any]]
         if (reply.hasMessage) {
           if (future eq null) throw new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist")
@@ -446,7 +446,7 @@ class RemoteClientHandler(
     } catch {
       case e: Exception =>
         client.notifyListeners(RemoteClientError(e, client))
-        log.slf4j.error("Unexpected exception in remote client handler: %s", e)
+        log.slf4j.error("Unexpected exception in remote client handler: {}", e)
         throw e
     }
   }
@@ -457,12 +457,12 @@ class RemoteClientHandler(
         def run(timeout: Timeout) = {
           client.openChannels.remove(event.getChannel)
           client.isAuthenticated.set(false)
-          log.slf4j.debug("Remote client reconnecting to [%s]", remoteAddress)
+          log.slf4j.debug("Remote client reconnecting to [{}]", remoteAddress)
           client.connection = bootstrap.connect(remoteAddress)
           client.connection.awaitUninterruptibly // Wait until the connection attempt succeeds or fails.
           if (!client.connection.isSuccess) {
             client.notifyListeners(RemoteClientError(client.connection.getCause, client))
-            log.slf4j.error("Reconnection to [%s] has failed", remoteAddress)
+            log.slf4j.error("Reconnection to [{}] has failed", remoteAddress)
             log.slf4j.debug("Reconnection failed", client.connection.getCause)
           }
         }
@@ -473,7 +473,7 @@ class RemoteClientHandler(
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     def connect = {
       client.notifyListeners(RemoteClientConnected(client))
-      log.slf4j.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
+      log.slf4j.debug("Remote client connected to [{}]", ctx.getChannel.getRemoteAddress)
       client.resetReconnectionTimeWindow
     }
 
@@ -490,7 +490,7 @@ class RemoteClientHandler(
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     client.notifyListeners(RemoteClientDisconnected(client))
-    log.slf4j.debug("Remote client disconnected from [%s]", ctx.getChannel.getRemoteAddress)
+    log.slf4j.debug("Remote client disconnected from [{}]", ctx.getChannel.getRemoteAddress)
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {

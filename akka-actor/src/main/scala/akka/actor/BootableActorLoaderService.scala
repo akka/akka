@@ -26,7 +26,7 @@ trait BootableActorLoaderService extends Bootable with Logging {
       val DEPLOY = HOME.getOrElse(throwNoAkkaHomeException) + "/deploy"
       val DEPLOY_DIR = new File(DEPLOY)
       if (!DEPLOY_DIR.exists) {
-        log.slf4j.error("Could not find a deploy directory at [%s]", DEPLOY)
+        log.slf4j.error("Could not find a deploy directory at [{}]", DEPLOY)
         System.exit(-1)
       }
       val filesToDeploy = DEPLOY_DIR.listFiles.toArray.toList
@@ -42,8 +42,8 @@ trait BootableActorLoaderService extends Bootable with Logging {
         }
       }
       val toDeploy = filesToDeploy.map(_.toURI.toURL)
-      log.slf4j.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy)
-      log.slf4j.debug("Loading dependencies [%s]", dependencyJars)
+      log.slf4j.info("Deploying applications from [{}]: [{}]", DEPLOY, toDeploy)
+      log.slf4j.debug("Loading dependencies [{}]", dependencyJars)
       val allJars = toDeploy ::: dependencyJars
 
       new URLClassLoader(allJars.toArray,Thread.currentThread.getContextClassLoader)
@@ -56,7 +56,7 @@ trait BootableActorLoaderService extends Bootable with Logging {
     super.onLoad
 
     for (loader <- applicationLoader; clazz <- BOOT_CLASSES) {
-      log.slf4j.info("Loading boot class [%s]", clazz)
+      log.slf4j.info("Loading boot class [{}]", clazz)
       loader.loadClass(clazz).newInstance
     }
   }

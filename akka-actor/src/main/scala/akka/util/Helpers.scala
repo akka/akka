@@ -42,7 +42,7 @@ object Helpers extends Logging {
       narrow(o)
     } catch {
       case e: ClassCastException =>
-        log.slf4j.warn("Cannot narrow %s to expected type %s!", o, implicitly[Manifest[T]].erasure.getName)
+        log.slf4j.warn("Cannot narrow {} to expected type {}!", o, implicitly[Manifest[T]].erasure.getName)
         log.slf4j.trace("narrowSilently", e)
         None
     }

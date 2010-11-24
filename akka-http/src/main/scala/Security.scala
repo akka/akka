@@ -91,7 +91,7 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
               throw new WebApplicationException(r.asInstanceOf[Response])
             case None => throw new WebApplicationException(408)
             case unknown => {
-              log.slf4j.warn("Authenticator replied with unexpected result [%s]", unknown);
+              log.slf4j.warn("Authenticator replied with unexpected result [{}]", unknown)
               throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR)
             }
           }

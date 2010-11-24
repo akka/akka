@@ -57,7 +57,7 @@ trait ListenerManagement extends Logging {
       while (iterator.hasNext) {
         val listener = iterator.next
         if (listener.isRunning) listener ! msg
-        else log.slf4j.warn("Can't notify [%s] since it is not running.", listener)
+        else log.slf4j.warn("Can't notify [{}] since it is not running.", listener)
       }
     }
   }
@@ -70,7 +70,7 @@ trait ListenerManagement extends Logging {
     while (iterator.hasNext) {
       val listener = iterator.next
       if (listener.isRunning) f(listener)
-      else log.slf4j.warn("Can't notify [%s] since it is not running.", listener)
+      else log.slf4j.warn("Can't notify [{}] since it is not running.", listener)
     }
   }
 }
