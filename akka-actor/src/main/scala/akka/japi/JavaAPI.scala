@@ -21,6 +21,13 @@ trait SideEffect {
 }
 
 /**
+ * An executable piece of code that takes no parameters and doesn't return any value.
+ */
+trait Effect {
+  def apply: Unit
+}
+
+/**
  + * A constructor/factory, takes no parameters but creates a new value of type T every call
  + */
 trait Creator[T] {

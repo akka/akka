@@ -168,7 +168,7 @@ final class SupervisorActor private[akka] (handler: FaultHandlingStrategy) exten
     // FIXME add a way to respond to MaximumNumberOfRestartsWithinTimeRangeReached in declaratively configured Supervisor
     case MaximumNumberOfRestartsWithinTimeRangeReached(
       victim, maxNrOfRetries, withinTimeRange, lastExceptionCausingRestart) =>
-      Actor.log.warning(
+      Actor.log.slf4j.warn(
         "Declaratively configured supervisor received a [MaximumNumberOfRestartsWithinTimeRangeReached] notification," +
         "\n\tbut there is currently no way of handling it in a declaratively configured supervisor." +
         "\n\tIf you want to be able to handle this error condition then you need to create the supervision tree programatically." +
