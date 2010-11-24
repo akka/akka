@@ -157,8 +157,18 @@ object DataFlow {
   class DataFlowStream[T <: Any] extends Seq[T] {
     private[this] val queue = new LinkedBlockingQueue[DataFlowVariable[T]]
 
-    def <<<(ref: DataFlowVariable[T]) = queue.offer(ref)
+    def next: DataFlowVariable[T] = queue.take
 
+    //==== Java API ====
+
+    def offer(ref: DataFlowVariable[T]) = <<<(ref)
+    def offer(value: T) = <<<(value)
+    def take(): T = apply()
+
+    //==== Scala API ====
+
+    def <<<(ref: DataFlowVariable[T]) = queue.offer(ref)
+    
     def <<<(value: T) = {
       val ref = new DataFlowVariable[T]
       ref << value
@@ -171,8 +181,6 @@ object DataFlow {
       ref.shutdown
       result
     }
-
-    def take: DataFlowVariable[T] = queue.take
 
     //==== For Seq ====
 
