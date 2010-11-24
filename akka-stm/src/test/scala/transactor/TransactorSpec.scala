@@ -20,7 +20,7 @@ object TransactorIncrement {
     override def transactionFactory = TransactionFactory(timeout = 3 seconds)
 
     def increment = {
-      log.info(name + ": incrementing")
+      log.slf4j.info(name + ": incrementing")
       count alter (_ + 1)
     }
 
@@ -32,7 +32,7 @@ object TransactorIncrement {
     }
 
     override def before = {
-      case i: Increment => log.info(name + ": before transaction")
+      case i: Increment => log.slf4j.info(name + ": before transaction")
     }
 
     def atomically = {
@@ -44,7 +44,7 @@ object TransactorIncrement {
     }
 
     override def after = {
-      case i: Increment => log.info(name + ": after transaction")
+      case i: Increment => log.slf4j.info(name + ": after transaction")
     }
 
     override def normally = {

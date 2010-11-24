@@ -171,12 +171,12 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     } else false
   }
 
-  private[akka] def start = log.debug("Starting up %s",toString)
+  private[akka] def start = log.slf4j.debug("Starting up %s",toString)
 
   private[akka] def shutdown {
     val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
     if (old ne null) {
-      log.debug("Shutting down %s", toString)
+      log.slf4j.debug("Shutting down %s", toString)
       old.shutdownNow()
     }
   }

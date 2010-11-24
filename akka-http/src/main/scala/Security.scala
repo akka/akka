@@ -91,7 +91,7 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
               throw new WebApplicationException(r.asInstanceOf[Response])
             case None => throw new WebApplicationException(408)
             case unknown => {
-              log.warning("Authenticator replied with unexpected result [%s]", unknown);
+              log.slf4j.warn("Authenticator replied with unexpected result [%s]", unknown);
               throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR)
             }
           }
@@ -258,7 +258,7 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] w
       val ts = System.currentTimeMillis
       nonceMap.filter(tuple => (ts - tuple._2) < nonceValidityPeriod)
     case unknown =>
-      log.error("Don't know what to do with: ", unknown)
+      log.slf4j.error("Don't know what to do with: ", unknown)
   }
 
   //Schedule the invalidation of nonces
@@ -371,7 +371,7 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] w
         Some(UserInfo(user, null, rolesFor(user)))
       } catch {
         case e: PrivilegedActionException => {
-          log.error(e, "Action not allowed")
+          log.slf4j.error("Action not allowed", e)
           return None
         }
       }

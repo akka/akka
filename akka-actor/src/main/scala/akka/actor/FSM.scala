@@ -69,17 +69,17 @@ trait FSM[S, D] {
 
   private var handleEvent: StateFunction = {
     case Event(value, stateData) =>
-      log.warning("Event %s not handled in state %s, staying at current state", value, currentState.stateName)
+      log.slf4j.warn("Event %s not handled in state %s, staying at current state", value, currentState.stateName)
       stay
   }
 
   private var terminateEvent: PartialFunction[Reason, Unit] = {
-    case failure@Failure(_) => log.error("Stopping because of a %s", failure)
-    case reason => log.info("Stopping because of reason: %s", reason)
+    case failure@Failure(_) => log.slf4j.error("Stopping because of a %s", failure)
+    case reason => log.slf4j.info("Stopping because of reason: %s", reason)
   }
 
   private var transitionEvent: PartialFunction[Transition, Unit] = {
-    case Transition(from, to) => log.debug("Transitioning from state %s to %s", from, to)
+    case Transition(from, to) => log.slf4j.debug("Transitioning from state %s to %s", from, to)
   }
 
   override final protected def receive: Receive = {
@@ -87,7 +87,7 @@ trait FSM[S, D] {
       terminateEvent.apply(reason)
       self.stop
     case StateTimeout if (self.dispatcher.mailboxSize(self) > 0) =>
-    log.trace("Ignoring StateTimeout - ")
+    log.slf4j.trace("Ignoring StateTimeout - ")
     // state timeout when new message in queue, skip this timeout
     case value => {
       timeoutFuture = timeoutFuture.flatMap {ref => ref.cancel(true); None}
@@ -123,7 +123,7 @@ trait FSM[S, D] {
     def replying(replyValue:Any): State = {
       self.sender match {
         case Some(sender) => sender ! replyValue
-        case None => log.error("Unable to send reply value %s, no sender reference to reply to", replyValue)
+        case None => log.slf4j.error("Unable to send reply value %s, no sender reference to reply to", replyValue)
       }
       this
     }
