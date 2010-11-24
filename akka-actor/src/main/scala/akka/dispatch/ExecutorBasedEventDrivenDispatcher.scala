@@ -123,12 +123,12 @@ class ExecutorBasedEventDrivenDispatcher(
   private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = 
     createMailbox(mailboxType.mailboxImplClassname, actorRef)
 
-  private[akka] def start = log.slf4j.debug("Starting up {}\n\twith throughput [%d]", toString, throughput)
+  private[akka] def start = log.slf4j.debug("Starting up {}\n\twith throughput [{}]", this, throughput)
 
   private[akka] def shutdown {
     val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
     if (old ne null) {
-      log.slf4j.debug("Shutting down {}", toString)
+      log.slf4j.debug("Shutting down {}", this)
       old.shutdownNow()
     }
   }
