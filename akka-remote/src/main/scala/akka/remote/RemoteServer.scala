@@ -161,16 +161,16 @@ case class RemoteServerStarted(
 case class RemoteServerShutdown(
   @BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
 case class RemoteServerError(
-  @BeanProperty val cause: Throwable, 
+  @BeanProperty val cause: Throwable,
   @BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
 case class RemoteServerClientConnected(
-  @BeanProperty val server: RemoteServer, 
+  @BeanProperty val server: RemoteServer,
   @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
 case class RemoteServerClientDisconnected(
-  @BeanProperty val server: RemoteServer, 
+  @BeanProperty val server: RemoteServer,
   @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
 case class RemoteServerClientClosed(
-  @BeanProperty val server: RemoteServer, 
+  @BeanProperty val server: RemoteServer,
   @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
 
 /**
@@ -726,7 +726,7 @@ class RemoteServerHandler(
   }
 
   private def findActorFactory(id: String) : () => ActorRef = {
-    server.actorsFactories.get(id) 
+    server.actorsFactories.get(id)
   }
 
   private def findSessionActor(id: String, channel: Channel) : ActorRef = {
@@ -840,7 +840,7 @@ class RemoteServerHandler(
     {
       // the actor has not been registered globally. See if we have it in the session
       val sessionActorRefOrNull = createSessionActor(actorInfo, channel)
-      if (sessionActorRefOrNull ne null) 
+      if (sessionActorRefOrNull ne null)
         sessionActorRefOrNull
       else  // maybe it is a client managed actor
         createClientManagedActor(actorInfo)
@@ -863,7 +863,7 @@ class RemoteServerHandler(
         newInstance
       }
       else
-        null       
+        null
     }
 
   }
@@ -921,15 +921,15 @@ class RemoteServerHandler(
     log.slf4j.debug("Could not invoke remote actor", exception)
     val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
       None,
-      Right(request.getUuid), 
-      actorInfo.getId, 
-      actorInfo.getTarget, 
-      actorInfo.getTimeout, 
-      Right(exception), 
-      true, 
-      None, 
-      None, 
-      actorType, 
+      Right(request.getUuid),
+      actorInfo.getId,
+      actorInfo.getTarget,
+      actorInfo.getTimeout,
+      Right(exception),
+      true,
+      None,
+      None,
+      actorType,
       None)
     if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
     messageBuilder.build
