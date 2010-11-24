@@ -5,9 +5,10 @@
 package akka.http
 
 import akka.util.Logging
-import javax.servlet.http.HttpServlet
-import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import akka.actor.{ActorRegistry, ActorRef, Actor}
+
+import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
+import javax.servlet.http.HttpServlet
 import javax.servlet.Filter
 
 /**
