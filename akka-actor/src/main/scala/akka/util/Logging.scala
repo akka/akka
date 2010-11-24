@@ -6,11 +6,6 @@ package akka.util
 
 import org.slf4j.{Logger => SLFLogger,LoggerFactory => SLFLoggerFactory}
 
-import java.io.StringWriter
-import java.io.PrintWriter
-import java.net.InetAddress
-import java.net.UnknownHostException
-
 /**
  * Base trait for all classes that wants to be able use the logging infrastructure.
  *
