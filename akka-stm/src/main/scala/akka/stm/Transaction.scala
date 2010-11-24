@@ -100,24 +100,24 @@ object Transaction {
     if (JTA_AWARE) Some(ReflectiveJtaModule.createTransactionContainer)
     else None
 
-  log.trace("Creating transaction " + toString)
+  log.slf4j.trace("Creating transaction " + toString)
 
   // --- public methods ---------
 
   def begin = synchronized {
-    log.trace("Starting transaction " + toString)
+    log.slf4j.trace("Starting transaction " + toString)
     jta.foreach { _.beginWithStmSynchronization(this) }
   }
 
   def commit = synchronized {
-    log.trace("Committing transaction " + toString)
+    log.slf4j.trace("Committing transaction " + toString)
     persistentStateMap.valuesIterator.foreach(_.commit)
     status = TransactionStatus.Completed
     jta.foreach(_.commit)
   }
 
   def abort = synchronized {
-    log.trace("Aborting transaction " + toString)
+    log.slf4j.trace("Aborting transaction " + toString)
     jta.foreach(_.rollback)
     persistentStateMap.valuesIterator.foreach(_.abort)
     persistentStateMap.clear

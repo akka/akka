@@ -135,7 +135,7 @@ trait MessageDispatcher extends MailboxFactory with Logging {
       ActorRegistry.actorFor(uuid) match {
         case Some(actor) => actor.stop
         case None =>
-          log.error("stopAllLinkedActors couldn't find linked actor: " + uuid)
+          log.slf4j.error("stopAllLinkedActors couldn't find linked actor: " + uuid)
       }
     }
   }

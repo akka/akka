@@ -95,18 +95,18 @@ object Actor extends Logging {
     val hook = new Runnable {
       override def run {
         // Shutdown HawtDispatch GlobalQueue
-        log.info("Shutting down Hawt Dispatch global queue")
+        log.slf4j.info("Shutting down Hawt Dispatch global queue")
         org.fusesource.hawtdispatch.ScalaDispatch.globalQueue.asInstanceOf[org.fusesource.hawtdispatch.internal.GlobalDispatchQueue].shutdown
 
         // Clear Thread.subclassAudits
-        log.info("Clearing subclass audits")
+        log.slf4j.info("Clearing subclass audits")
         val tf = classOf[java.lang.Thread].getDeclaredField("subclassAudits")
         tf.setAccessible(true)
         val subclassAudits = tf.get(null).asInstanceOf[java.util.Map[_,_]]
         subclassAudits.synchronized {subclassAudits.clear}
 
         // Clear and reset j.u.l.Level.known (due to Configgy)
-        log.info("Removing Configgy-installed log levels")
+        log.slf4j.info("Removing Configgy-installed log levels")
         import java.util.logging.Level
         val lf = classOf[Level].getDeclaredField("known")
         lf.setAccessible(true)
@@ -351,14 +351,14 @@ trait Actor extends Logging {
    * <pre>
    *   def receive =  {
    *     case Ping =&gt;
-   *       log.info("got a 'Ping' message")
+   *       log.slf4j.info("got a 'Ping' message")
    *       self.reply("pong")
    *
    *     case OneWay =&gt;
-   *       log.info("got a 'OneWay' message")
+   *       log.slf4j.info("got a 'OneWay' message")
    *
    *     case unknown =&gt;
-   *       log.warning("unknown message [%s], ignoring", unknown)
+   *       log.slf4j.warn("unknown message [%s], ignoring", unknown)
    * }
    * </pre>
    */

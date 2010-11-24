@@ -174,18 +174,18 @@ class MonitorableThread(runnable: Runnable, name: String)
 
   setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
     def uncaughtException(thread: Thread, cause: Throwable) =
-      log.error(cause, "UNCAUGHT in thread [%s]", thread.getName)
+      log.slf4j.error("Thread.UncaughtException", cause)
   })
 
   override def run = {
     val debug = MonitorableThread.debugLifecycle
-    log.debug("Created thread %s", getName)
+    log.slf4j.debug("Created thread %s", getName)
     try {
       MonitorableThread.alive.incrementAndGet
       super.run
     } finally {
       MonitorableThread.alive.decrementAndGet
-      log.debug("Exiting thread %s", getName)
+      log.slf4j.debug("Exiting thread %s", getName)
     }
   }
 }
@@ -212,7 +212,7 @@ class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extend
       case e: RejectedExecutionException =>
         semaphore.release
       case e =>
-        log.error(e,"Unexpected exception")
+        log.slf4j.error("Unexpected exception", e)
         throw e
     }
   }
@@ -254,7 +254,7 @@ trait LazyExecutorService extends ExecutorServiceDelegate {
   def createExecutor: ExecutorService
 
   lazy val executor = {
-    log.info("Lazily initializing ExecutorService for ",this)
+    log.slf4j.info("Lazily initializing ExecutorService for ",this)
     createExecutor
   }
 }

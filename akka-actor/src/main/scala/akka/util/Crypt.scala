@@ -24,7 +24,7 @@ object Crypt extends Logging {
   def sha1(bytes: Array[Byte]): String = digest(bytes, MessageDigest.getInstance("SHA1"))
 
   def generateSecureCookie: String = {
-    log.info("Generating secure cookie...")
+    log.slf4j.info("Generating secure cookie...")
     val bytes = Array.fill(32)(0.byteValue)
     random.nextBytes(bytes)
     sha1(bytes)

@@ -123,12 +123,12 @@ class ExecutorBasedEventDrivenDispatcher(
   private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = 
     createMailbox(mailboxType.mailboxImplClassname, actorRef)
 
-  private[akka] def start = log.debug("Starting up %s\n\twith throughput [%d]", toString, throughput)
+  private[akka] def start = log.slf4j.debug("Starting up %s\n\twith throughput [%d]", toString, throughput)
 
   private[akka] def shutdown {
     val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
     if (old ne null) {
-      log.debug("Shutting down %s", toString)
+      log.slf4j.debug("Shutting down %s", toString)
       old.shutdownNow()
     }
   }
@@ -144,17 +144,17 @@ class ExecutorBasedEventDrivenDispatcher(
           throw e
       }
     }
-  } else log.warning("%s is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t%s", this, mbox)
+  } else log.slf4j.warn("%s is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t%s", this, mbox)
 
   override val toString = getClass.getSimpleName + "[" + name + "]"
 
   def suspend(actorRef: ActorRef) {
-    log.debug("Suspending %s",actorRef.uuid)
+    log.slf4j.debug("Suspending %s",actorRef.uuid)
     getMailbox(actorRef).suspended.switchOn
   }
 
   def resume(actorRef: ActorRef) {
-    log.debug("Resuming %s",actorRef.uuid)
+    log.slf4j.debug("Resuming %s",actorRef.uuid)
     val mbox = getMailbox(actorRef)
     mbox.suspended.switchOff
     registerForExecution(mbox)

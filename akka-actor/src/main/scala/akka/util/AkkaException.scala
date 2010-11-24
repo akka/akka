@@ -36,7 +36,7 @@ import java.net.{InetAddress, UnknownHostException}
   }
 
   private lazy val _log = {
-    AkkaException.log.error(toString)
+    AkkaException.log.slf4j.error(toString)
     ()
   }
 

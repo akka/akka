@@ -233,7 +233,7 @@ class RemoteServer extends Logging with ListenerManagement {
     try {
       if (!_isRunning) {
         address = Address(_hostname,_port)
-        log.info("Starting remote server at [%s:%s]", hostname, port)
+        log.slf4j.info("Starting remote server at [%s:%s]", hostname, port)
         RemoteServer.register(hostname, port, this)
 
         val pipelineFactory = new RemoteServerPipelineFactory(name, openChannels, loader, this)
@@ -249,7 +249,7 @@ class RemoteServer extends Logging with ListenerManagement {
       }
     } catch {
       case e =>
-        log.error(e, "Could not start up remote server")
+        log.slf4j.error("Could not start up remote server", e)
         notifyListeners(RemoteServerError(e, this))
     }
     this
@@ -265,7 +265,7 @@ class RemoteServer extends Logging with ListenerManagement {
         notifyListeners(RemoteServerShutdown(this))
       } catch {
         case e: java.nio.channels.ClosedChannelException =>  {}
-        case e => log.warning("Could not close remote server channel in a graceful way")
+        case e => log.slf4j.warn("Could not close remote server channel in a graceful way")
       }
     }
   }
@@ -281,7 +281,7 @@ class RemoteServer extends Logging with ListenerManagement {
    * @param typedActor typed actor to register
    */
   def registerTypedActor(id: String, typedActor: AnyRef): Unit = synchronized {
-    log.debug("Registering server side remote typed actor [%s] with id [%s]", typedActor.getClass.getName, id)
+    log.slf4j.debug("Registering server side remote typed actor [%s] with id [%s]", typedActor.getClass.getName, id)
     if (id.startsWith(UUID_PREFIX)) registerTypedActor(id.substring(UUID_PREFIX.length), typedActor, typedActorsByUuid)
     else registerTypedActor(id, typedActor, typedActors)
   }
@@ -297,7 +297,7 @@ class RemoteServer extends Logging with ListenerManagement {
    * @param typedActor typed actor to register
    */
   def registerTypedPerSessionActor(id: String, factory: => AnyRef): Unit = synchronized {
-    log.debug("Registering server side typed remote session actor with id [%s]", id)
+    log.slf4j.debug("Registering server side typed remote session actor with id [%s]", id)
     registerTypedPerSessionActor(id, () => factory, typedActorsFactories)
   }
 
@@ -312,7 +312,7 @@ class RemoteServer extends Logging with ListenerManagement {
    * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself.
    */
   def register(id: String, actorRef: ActorRef): Unit = synchronized {
-    log.debug("Registering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, id)
+    log.slf4j.debug("Registering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, id)
     if (id.startsWith(UUID_PREFIX)) register(id.substring(UUID_PREFIX.length), actorRef, actorsByUuid)
     else register(id, actorRef, actors)
   }
@@ -323,7 +323,7 @@ class RemoteServer extends Logging with ListenerManagement {
    * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself.
    */
   def registerPerSession(id: String, factory: => ActorRef): Unit = synchronized {
-    log.debug("Registering server side remote session actor with id [%s]", id)
+    log.slf4j.debug("Registering server side remote session actor with id [%s]", id)
     registerPerSession(id, () => factory, actorsFactories)
   }
 
@@ -354,7 +354,7 @@ class RemoteServer extends Logging with ListenerManagement {
    */
   def unregister(actorRef: ActorRef):Unit = synchronized {
     if (_isRunning) {
-      log.debug("Unregistering server side remote actor [%s] with id [%s:%s]", actorRef.actorClass.getName, actorRef.id, actorRef.uuid)
+      log.slf4j.debug("Unregistering server side remote actor [%s] with id [%s:%s]", Array(actorRef.actorClass.getName, actorRef.id, actorRef.uuid))
       actors.remove(actorRef.id, actorRef)
       actorsByUuid.remove(actorRef.uuid, actorRef)
     }
@@ -367,7 +367,7 @@ class RemoteServer extends Logging with ListenerManagement {
    */
   def unregister(id: String):Unit = synchronized {
     if (_isRunning) {
-      log.info("Unregistering server side remote actor with id [%s]", id)
+      log.slf4j.info("Unregistering server side remote actor with id [%s]", id)
       if (id.startsWith(UUID_PREFIX)) actorsByUuid.remove(id.substring(UUID_PREFIX.length))
       else {
         val actorRef = actors get id
@@ -384,7 +384,7 @@ class RemoteServer extends Logging with ListenerManagement {
    */
   def unregisterPerSession(id: String):Unit = {
     if (_isRunning) {
-      log.info("Unregistering server side remote session actor with id [%s]", id)
+      log.slf4j.info("Unregistering server side remote session actor with id [%s]", id)
       actorsFactories.remove(id)
     }
   }
@@ -396,7 +396,7 @@ class RemoteServer extends Logging with ListenerManagement {
    */
   def unregisterTypedActor(id: String):Unit = synchronized {
     if (_isRunning) {
-      log.info("Unregistering server side remote typed actor with id [%s]", id)
+      log.slf4j.info("Unregistering server side remote typed actor with id [%s]", id)
       if (id.startsWith(UUID_PREFIX)) typedActorsByUuid.remove(id.substring(UUID_PREFIX.length))
       else typedActors.remove(id)
     }
@@ -506,7 +506,7 @@ class RemoteServerHandler(
     val clientAddress = getClientAddress(ctx)
     sessionActors.set(event.getChannel(), new ConcurrentHashMap[String, ActorRef]())
     typedSessionActors.set(event.getChannel(), new ConcurrentHashMap[String, AnyRef]())
-    log.debug("Remote client [%s] connected to [%s]", clientAddress, server.name)
+    log.slf4j.debug("Remote client [%s] connected to [%s]", clientAddress, server.name)
     if (RemoteServer.SECURE) {
       val sslHandler: SslHandler = ctx.getPipeline.get(classOf[SslHandler])
       // Begin handshake.
@@ -524,7 +524,7 @@ class RemoteServerHandler(
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val clientAddress = getClientAddress(ctx)
-    log.debug("Remote client [%s] disconnected from [%s]", clientAddress, server.name)
+    log.slf4j.debug("Remote client [%s] disconnected from [%s]", clientAddress, server.name)
     // stop all session actors
     val channelActors = sessionActors.remove(event.getChannel)
     if (channelActors ne null) {
@@ -546,13 +546,13 @@ class RemoteServerHandler(
 
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val clientAddress = getClientAddress(ctx)
-    log.debug("Remote client [%s] channel closed from [%s]", clientAddress, server.name)
+    log.slf4j.debug("Remote client [%s] channel closed from [%s]", clientAddress, server.name)
     server.notifyListeners(RemoteServerClientClosed(server, clientAddress))
   }
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
     if (event.isInstanceOf[ChannelStateEvent] && event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
-      log.debug(event.toString)
+      log.slf4j.debug(event.toString)
     }
     super.handleUpstream(ctx, event)
   }
@@ -568,7 +568,7 @@ class RemoteServerHandler(
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    log.error(event.getCause, "Unexpected exception from remote downstream")
+    log.slf4j.error("Unexpected exception from remote downstream", event.getCause)
     event.getChannel.close
     server.notifyListeners(RemoteServerError(event.getCause, server))
   }
@@ -580,7 +580,7 @@ class RemoteServerHandler(
   }
 
   private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = {
-    log.debug("Received RemoteMessageProtocol[\n%s]".format(request.toString))
+    log.slf4j.debug("Received RemoteMessageProtocol[\n%s]".format(request.toString))
     request.getActorInfo.getActorType match {
       case SCALA_ACTOR => dispatchToActor(request, channel)
       case TYPED_ACTOR => dispatchToTypedActor(request, channel)
@@ -591,7 +591,7 @@ class RemoteServerHandler(
 
   private def dispatchToActor(request: RemoteMessageProtocol, channel: Channel) {
     val actorInfo = request.getActorInfo
-    log.debug("Dispatching to remote actor [%s:%s]", actorInfo.getTarget, actorInfo.getUuid)
+    log.slf4j.debug("Dispatching to remote actor [%s:%s]", actorInfo.getTarget, actorInfo.getUuid)
 
     val actorRef =
       try {
@@ -627,7 +627,7 @@ class RemoteServerHandler(
               val exception = f.exception
 
               if (exception.isDefined) {
-                log.debug("Returning exception from actor invocation [%s]",exception.get)
+                log.slf4j.debug("Returning exception from actor invocation [%s]",exception.get)
                 try {
                   channel.write(createErrorReplyMessage(exception.get, request, AkkaActorType.ScalaActor))
                 } catch {
@@ -635,7 +635,7 @@ class RemoteServerHandler(
                 }
               }
               else if (result.isDefined) {
-                log.debug("Returning result from actor invocation [%s]".format(result.get))
+                log.slf4j.debug("Returning result from actor invocation [%s]".format(result.get))
                 val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
                   Some(actorRef),
                   Right(request.getUuid),
@@ -667,7 +667,7 @@ class RemoteServerHandler(
   private def dispatchToTypedActor(request: RemoteMessageProtocol, channel: Channel) = {
     val actorInfo = request.getActorInfo
     val typedActorInfo = actorInfo.getTypedActorInfo
-    log.debug("Dispatching to remote typed actor [%s :: %s]", typedActorInfo.getMethod, typedActorInfo.getInterface)
+    log.slf4j.debug("Dispatching to remote typed actor [%s :: %s]", typedActorInfo.getMethod, typedActorInfo.getInterface)
 
     val typedActor = createTypedActor(actorInfo, channel)
     val args = MessageSerializer.deserialize(request.getMessage).asInstanceOf[Array[AnyRef]].toList
@@ -693,7 +693,7 @@ class RemoteServerHandler(
             None)
           if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
           channel.write(messageBuilder.build)
-          log.debug("Returning result from remote typed actor invocation [%s]", result)
+          log.slf4j.debug("Returning result from remote typed actor invocation [%s]", result)
         } catch {
           case e: Throwable => server.notifyListeners(RemoteServerError(e, server))
         }
@@ -798,7 +798,7 @@ class RemoteServerHandler(
       if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException(
         "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
 
-      log.info("Creating a new remote actor [%s:%s]", name, uuid)
+      log.slf4j.info("Creating a new remote actor [%s:%s]", name, uuid)
       val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
                   else Class.forName(name)
       val actorRef = Actor.actorOf(clazz.asInstanceOf[Class[_ <: Actor]])
@@ -810,7 +810,7 @@ class RemoteServerHandler(
       actorRef
     } catch {
       case e =>
-        log.error(e, "Could not create remote actor instance")
+        log.slf4j.error("Could not create remote actor instance", e)
         server.notifyListeners(RemoteServerError(e, server))
         throw e
     }
@@ -874,7 +874,7 @@ class RemoteServerHandler(
       if (RemoteServer.UNTRUSTED_MODE) throw new SecurityException(
         "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
 
-      log.info("Creating a new remote typed actor:\n\t[%s :: %s]", interfaceClassname, targetClassname)
+      log.slf4j.info("Creating a new remote typed actor:\n\t[%s :: %s]", interfaceClassname, targetClassname)
 
       val (interfaceClass, targetClass) =
         if (applicationLoader.isDefined) (applicationLoader.get.loadClass(interfaceClassname),
@@ -887,7 +887,7 @@ class RemoteServerHandler(
       newInstance
     } catch {
       case e =>
-        log.error(e, "Could not create remote typed actor instance")
+        log.slf4j.error("Could not create remote typed actor instance", e)
         server.notifyListeners(RemoteServerError(e, server))
         throw e
     }
@@ -913,7 +913,8 @@ class RemoteServerHandler(
 
   private def createErrorReplyMessage(exception: Throwable, request: RemoteMessageProtocol, actorType: AkkaActorType): RemoteMessageProtocol = {
     val actorInfo = request.getActorInfo
-    log.error(exception, "Could not invoke remote actor [%s]", actorInfo.getTarget)
+    log.slf4j.error("Could not invoke remote actor [%s]", actorInfo.getTarget)
+    log.slf4j.debug("Could not invoke remote actor", exception)
     val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
       None,
       Right(request.getUuid), 
@@ -941,7 +942,7 @@ class RemoteServerHandler(
         "The remote client [" + clientAddress + "] does not have a secure cookie.")
       if (!(request.getCookie == RemoteServer.SECURE_COOKIE.get)) throw new SecurityException(
         "The remote client [" + clientAddress + "] secure cookie is not the same as remote server secure cookie")
-      log.info("Remote client [%s] successfully authenticated using secure cookie", clientAddress)
+      log.slf4j.info("Remote client [%s] successfully authenticated using secure cookie", clientAddress)
     }
   }
 }

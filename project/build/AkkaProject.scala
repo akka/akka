@@ -486,7 +486,7 @@ trait DeployProject { self: BasicScalaProject =>
                  genJar: Boolean, genDocs: Boolean, genSource: Boolean) = task {
     def gen(jar: Path, toDir: Path, flag: Boolean, msg: String): Option[String] =
     if (flag) {
-      log.info(msg + " " + jar)
+      log.slf4j.info(msg + " " + jar)
       FileUtilities.copyFile(jar, toDir / jar.name, log)
     } else None
 
