@@ -23,7 +23,7 @@ object FSMActorSpec {
   case object Locked extends LockState
   case object Open extends LockState
 
-  class Lock(code: String, timeout: Int) extends Actor with FSM[LockState, CodeState] {
+  class Lock(code: String, timeout: (Long, TimeUnit)) extends Actor with FSM[LockState, CodeState] {
 
     notifying {
       case Transition(Locked, Open) => transitionLatch.open
@@ -37,7 +37,7 @@ object FSMActorSpec {
             stay using CodeState(incomplete, code)
           case codeTry if (codeTry == code) => {
             doUnlock
-            goto(Open) using CodeState("", code) until timeout
+            goto(Open) using CodeState("", code) forMax timeout
           }
           case wrong => {
             log.slf4j.error("Wrong code {}", wrong)
@@ -46,11 +46,11 @@ object FSMActorSpec {
         }
       }
       case Event("hello", _) => stay replying "world"
-      case Event("bye", _) => stop(Shutdown)
+      case Event("bye", _) => stop
     }
 
     when(Open) {
-      case Event(StateTimeout, stateData) => {
+      case Event(StateTimeout, _) => {
         doLock
         goto(Locked)
       }
@@ -91,7 +91,7 @@ class FSMActorSpec extends JUnitSuite {
   def unlockTheLock = {
 
     // lock that locked after being open for 1 sec
-    val lock = Actor.actorOf(new Lock("33221", 1000)).start
+    val lock = Actor.actorOf(new Lock("33221", (1, TimeUnit.SECONDS))).start
 
     lock ! '3'
     lock ! '3'
@@ -123,4 +123,3 @@ class FSMActorSpec extends JUnitSuite {
     assert(terminatedLatch.tryAwait(2, TimeUnit.SECONDS))
   }
 }
-

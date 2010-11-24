@@ -11,7 +11,7 @@ import akka.actor.{Actor, ActorRef}
 import akka.actor.Actor._
 import akka.dispatch.CompletableFuture
 import akka.AkkaException
-import akka.japi.{ Function, SideEffect }
+import akka.japi.{ Function, Effect }
 
 /**
  * Implements Oz-style dataflow (single assignment) variables.
@@ -28,10 +28,10 @@ object DataFlow {
    */
   def thread(body: => Unit): Unit = spawn(body)
 
-  /** Executes the supplied SideEffect in another thread
+  /** Executes the supplied Effect in another thread
    * JavaAPI
    */
-  def thread(body: SideEffect): Unit = spawn(body.apply)
+  def thread(body: Effect): Unit = spawn(body.apply)
 
   /** Executes the supplied function in another thread
    */
