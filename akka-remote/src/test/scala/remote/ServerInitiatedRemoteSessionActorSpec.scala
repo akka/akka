@@ -42,7 +42,7 @@ object ServerInitiatedRemoteSessionActorSpec {
 
     def receive = {
       case Login(user) =>
-	      this.user = user
+              this.user = user
       case GetUser() =>
         self.reply(this.user)
       case DoSomethingFunny() =>
