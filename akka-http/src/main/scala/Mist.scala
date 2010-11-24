@@ -118,16 +118,16 @@ trait Mist extends Logging {
     val server = context.getServerInfo
     val (major, minor) = (context.getMajorVersion, context.getMinorVersion)
 
-    log.info("Initializing Akka HTTP on "+server+" with Servlet API "+major+"."+minor)
+    log.slf4j.info("Initializing Akka HTTP on {} with Servlet API {}.{}",Array(server, major, minor))
 
     _factory = if (major >= 3) {
-      log.info("Supporting Java asynchronous contexts.")
+      log.slf4j.info("Supporting Java asynchronous contexts.")
       Some(Servlet30ContextMethodFactory)
     } else if (server.toLowerCase startsWith JettyServer) {
-      log.info("Supporting Jetty asynchronous continuations.")
+      log.slf4j.info("Supporting Jetty asynchronous continuations.")
       Some(JettyContinuationMethodFactory)
     } else {
-      log.error("No asynchronous request handling can be supported.")
+      log.slf4j.error("No asynchronous request handling can be supported.")
       None
     }
   }
@@ -185,7 +185,7 @@ class AkkaMistFilter extends Filter with Mist {
           case    "POST" => mistify(hreq, hres)(_factory.get.Post)
           case     "PUT" => mistify(hreq, hres)(_factory.get.Put)
           case   "TRACE" => mistify(hreq, hres)(_factory.get.Trace)
-          case   unknown => log.warn("Unknown http method: %s",unknown)
+          case   unknown => log.slf4j.warn("Unknown http method: {}",unknown)
         }
         chain.doFilter(req,res)
       case _ => chain.doFilter(req,res)
@@ -270,7 +270,7 @@ trait Endpoint { this: Actor =>
    */
   protected def _na(uri: String, req: RequestMethod) = {
     req.NotFound("No endpoint available for [" + uri + "]")
-    log.debug("No endpoint available for [" + uri + "]")
+    log.slf4j.debug("No endpoint available for [{}]", uri)
   }
 }
 
@@ -300,7 +300,7 @@ class RootEndpoint extends Actor with Endpoint {
 
   def recv: Receive = {
     case NoneAvailable(uri, req) => _na(uri, req)
-    case unknown => log.error("Unexpected message sent to root endpoint. [" + unknown + "]")
+    case unknown => log.slf4j.error("Unexpected message sent to root endpoint. [{}]", unknown)
   }
 
   /**
@@ -387,7 +387,7 @@ trait RequestMethod extends Logging
       case Some(pipe) => {
         try {
           if (!suspended) {
-            log.warning("Attempt to complete an expired connection.")
+            log.slf4j.warn("Attempt to complete an expired connection.")
             false
           }
           else {
@@ -397,13 +397,13 @@ trait RequestMethod extends Logging
           }
         } catch {
           case io =>
-            log.error(io, "Failed to write data to connection on resume - the client probably disconnected")
+            log.slf4j.error("Failed to write data to connection on resume - the client probably disconnected", io)
             false
         }
     }
 
     case None =>
-      log.error("Attempt to complete request with no context.")
+      log.slf4j.error("Attempt to complete request with no context.")
       false
   }
 
@@ -412,7 +412,7 @@ trait RequestMethod extends Logging
       case Some(pipe) => {
         try {
           if (!suspended) {
-            log.warning("Attempt to complete an expired connection.")
+            log.slf4j.warn("Attempt to complete an expired connection.")
           }
           else {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to write data to connection on resume")
@@ -420,15 +420,15 @@ trait RequestMethod extends Logging
           }
         }
         catch {
-          case io: IOException => log.error(io, "Request completed with internal error.")
+          case io: IOException => log.slf4j.error("Request completed with internal error.", io)
         }
         finally {
-          log.error(t, "Request completed with internal error.")
+          log.slf4j.error("Request completed with internal error.", t)
         }
       }
 
       case None =>
-        log.error(t, "Attempt to complete request with no context")
+        log.slf4j.error("Attempt to complete request with no context", t)
     }
   }
 

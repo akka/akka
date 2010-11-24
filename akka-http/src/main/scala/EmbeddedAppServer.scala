@@ -35,7 +35,7 @@ trait EmbeddedAppServer extends Bootable with Logging {
   abstract override def onLoad = {
     super.onLoad
     if (isRestEnabled) {
-      log.info("Attempting to start Akka HTTP service")
+      log.slf4j.info("Attempting to start Akka HTTP service")
 
       System.setProperty("jetty.port", REST_PORT.toString)
       System.setProperty("jetty.host", REST_HOSTNAME)
@@ -60,14 +60,14 @@ trait EmbeddedAppServer extends Bootable with Logging {
          s.start()
          s
       }
-      log.info("Akka HTTP service started")
+      log.slf4j.info("Akka HTTP service started")
     }
   }
 
   abstract override def onUnload = {
     super.onUnload
     server foreach { t =>
-      log.info("Shutting down REST service (Jersey)")
+      log.slf4j.info("Shutting down REST service (Jersey)")
       t.stop()
     }
   }
