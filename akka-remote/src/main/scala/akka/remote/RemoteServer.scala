@@ -730,7 +730,9 @@ class RemoteServerHandler(
   }
 
   private def findSessionActor(id: String, channel: Channel) : ActorRef = {
-    sessionActors.get(channel).get(id)
+    val map = sessionActors.get(channel)
+    if (map ne null) map.get(id)
+    else null
   }
 
   private def findTypedActorById(id: String) : AnyRef = {
@@ -742,7 +744,9 @@ class RemoteServerHandler(
   }
 
   private def findTypedSessionActor(id: String, channel: Channel) : AnyRef = {
-    typedSessionActors.get(channel).get(id)
+    val map = typedSessionActors.get(channel)
+    if (map ne null) map.get(id)
+    else null
   }
 
   private def findTypedActorByUuid(uuid: String) : AnyRef = {
