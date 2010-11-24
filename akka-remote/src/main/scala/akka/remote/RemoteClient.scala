@@ -290,15 +290,15 @@ class RemoteClient private[akka] (
     else None
     send(createRemoteMessageProtocolBuilder(
         Some(actorRef),
-        Left(actorRef.uuid), 
-        actorRef.id, 
-        actorRef.actorClassName, 
-        actorRef.timeout, 
-        Left(message), 
-        isOneWay, 
-        senderOption, 
-        typedActorInfo, 
-        actorType, 
+        Left(actorRef.uuid),
+        actorRef.id,
+        actorRef.actorClassName,
+        actorRef.timeout,
+        Left(message),
+        isOneWay,
+        senderOption,
+        typedActorInfo,
+        actorType,
         cookie
       ).build, senderFuture)
   }

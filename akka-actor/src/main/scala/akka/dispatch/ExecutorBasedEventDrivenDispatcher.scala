@@ -120,7 +120,7 @@ class ExecutorBasedEventDrivenDispatcher(
   /**
    * Creates and returns a durable mailbox for the given actor.
    */
-  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = 
+  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef =
     createMailbox(mailboxType.mailboxImplClassname, actorRef)
 
   private[akka] def start = log.slf4j.debug("Starting up {}\n\twith throughput [{}]", this, throughput)
