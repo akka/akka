@@ -24,10 +24,10 @@ class AkkaLoader extends Logging {
   def boot(withBanner: Boolean, b : Bootable): Unit = synchronized {
     if (!hasBooted) {
       if (withBanner) printBanner
-      log.info("Starting Akka...")
+      log.slf4j.info("Starting Akka...")
       b.onLoad
       Thread.currentThread.setContextClassLoader(getClass.getClassLoader)
-      log.info("Akka started successfully")
+      log.slf4j.info("Akka started successfully")
       hasBooted = true
       _bundles = Some(b)
     }
@@ -38,40 +38,40 @@ class AkkaLoader extends Logging {
    */
   def shutdown = synchronized {
     if (hasBooted) {
-      log.info("Shutting down Akka...")
+      log.slf4j.info("Shutting down Akka...")
       _bundles.foreach(_.onUnload)
       _bundles = None
       Actor.shutdownHook.run
-      log.info("Akka succesfully shut down")
+      log.slf4j.info("Akka succesfully shut down")
     }
   }
 
   private def printBanner = {
-    log.info("==================================================")
-    log.info("                       t")
-    log.info("             t       t t")
-    log.info("            t       t tt   t")
-    log.info("        tt  t   t  tt       t")
-    log.info("       t ttttttt  t      ttt t")
-    log.info("      t   tt ttt t       ttt  t")
-    log.info("     t     t ttt    t    ttt   t      t")
-    log.info("    tt    t  ttt         ttt    ttt    t")
-    log.info("   t     t   ttt         ttt     t tt  t")
-    log.info("   t         ttt         ttt      t     t")
-    log.info(" tt          ttt         ttt              t")
-    log.info("             ttt         ttt")
-    log.info("   tttttttt  ttt    ttt  ttt    ttt  tttttttt")
-    log.info("  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt")
-    log.info("  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt")
-    log.info("  ttt    ttt ttt    ttt  ttt    tt  ttt    ttt")
-    log.info("        tttt ttttttttt   tttttttt         tttt")
-    log.info("   ttttttttt ttt    ttt  ttt   ttt   ttttttttt")
-    log.info("  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt")
-    log.info("  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt")
-    log.info("  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt")
-    log.info("   tttttttt  ttt    ttt  ttt    ttt  tttttttt")
-    log.info("==================================================")
-    log.info("            Running version %s", Config.VERSION)
-    log.info("==================================================")
+    log.slf4j.info("==================================================")
+    log.slf4j.info("                       t")
+    log.slf4j.info("             t       t t")
+    log.slf4j.info("            t       t tt   t")
+    log.slf4j.info("        tt  t   t  tt       t")
+    log.slf4j.info("       t ttttttt  t      ttt t")
+    log.slf4j.info("      t   tt ttt t       ttt  t")
+    log.slf4j.info("     t     t ttt    t    ttt   t      t")
+    log.slf4j.info("    tt    t  ttt         ttt    ttt    t")
+    log.slf4j.info("   t     t   ttt         ttt     t tt  t")
+    log.slf4j.info("   t         ttt         ttt      t     t")
+    log.slf4j.info(" tt          ttt         ttt              t")
+    log.slf4j.info("             ttt         ttt")
+    log.slf4j.info("   tttttttt  ttt    ttt  ttt    ttt  tttttttt")
+    log.slf4j.info("  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt")
+    log.slf4j.info("  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt")
+    log.slf4j.info("  ttt    ttt ttt    ttt  ttt    tt  ttt    ttt")
+    log.slf4j.info("        tttt ttttttttt   tttttttt         tttt")
+    log.slf4j.info("   ttttttttt ttt    ttt  ttt   ttt   ttttttttt")
+    log.slf4j.info("  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt")
+    log.slf4j.info("  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt")
+    log.slf4j.info("  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt")
+    log.slf4j.info("   tttttttt  ttt    ttt  ttt    ttt  tttttttt")
+    log.slf4j.info("==================================================")
+    log.slf4j.info("            Running version {}", Config.VERSION)
+    log.slf4j.info("==================================================")
   }
 }
