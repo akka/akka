@@ -179,13 +179,13 @@ class MonitorableThread(runnable: Runnable, name: String)
 
   override def run = {
     val debug = MonitorableThread.debugLifecycle
-    log.slf4j.debug("Created thread %s", getName)
+    log.slf4j.debug("Created thread {}", getName)
     try {
       MonitorableThread.alive.incrementAndGet
       super.run
     } finally {
       MonitorableThread.alive.decrementAndGet
-      log.slf4j.debug("Exiting thread %s", getName)
+      log.slf4j.debug("Exiting thread {}", getName)
     }
   }
 }

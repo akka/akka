@@ -26,13 +26,17 @@ trait Logging {
  * Example:
  * <pre>
  * class Foo extends Logging {
- *   log.slf4j.info("My foo is %s","alive")
- *   log.slf4j.error(new Exception(),"My foo is %s","broken")
+ *   log.info("My foo is %s","alive")
+ *   log.error(new Exception(),"My foo is %s","broken")
  * }
  * </pre>
  *
  * The logger uses String.format:
  * http://download-llnw.oracle.com/javase/6/docs/api/java/lang/String.html#format(java.lang.String,%20java.lang.Object...)
+ *
+ * If you want to use underlying slf4j Logger, do:
+ *   log.slf4j.info("My foo is {}","alive")
+ *   log.slf4j.error("My foo is broken",new Exception())
  */
 class Logger(val slf4j: SLFLogger) {
   final def name      = logger.getName

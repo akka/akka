@@ -185,7 +185,7 @@ object ReflectiveAccess extends Logging {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e =>
-      log.slf4j.warn("Could not instantiate class [%s] due to [%s]", clazz.getName, e.getCause)
+      log.slf4j.warn("Could not instantiate class [{}] due to [{}]", clazz.getName, e.getCause)
       None
   }
 
@@ -202,7 +202,7 @@ object ReflectiveAccess extends Logging {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e =>
-      log.slf4j.warn("Could not instantiate class [%s] due to [%s]", fqn, e.getCause)
+      log.slf4j.warn("Could not instantiate class [{}] due to [{}]", fqn, e.getCause)
       None
   }
 
@@ -214,7 +214,7 @@ object ReflectiveAccess extends Logging {
     Option(instance.get(null).asInstanceOf[T])
   } catch {
     case e: ClassNotFoundException =>
-      log.slf4j.debug("Could not get object [%s] due to [%s]", fqn, e)
+      log.slf4j.debug("Could not get object [{}] due to [{}]", fqn, e)
       None
   }
 

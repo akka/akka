@@ -226,7 +226,7 @@ object RemoteActorSerialization {
    * Deserializes a RemoteActorRefProtocol Protocol Buffers (protobuf) Message into an RemoteActorRef instance.
    */
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
-    Actor.log.slf4j.debug("Deserializing RemoteActorRefProtocol to RemoteActorRef:\n %s", protocol)
+    Actor.log.slf4j.debug("Deserializing RemoteActorRefProtocol to RemoteActorRef:\n {}", protocol)
     RemoteActorRef(
       protocol.getClassOrServiceName,
       protocol.getActorClassname,
@@ -244,7 +244,7 @@ object RemoteActorSerialization {
     val host = homeAddress.getHostName
     val port = homeAddress.getPort
 
-    Actor.log.slf4j.debug("Register serialized Actor [%s] as remote @ [%s:%s]", Array(actorClassName, host, port))
+    Actor.log.slf4j.debug("Register serialized Actor [{}] as remote @ [{}:{}]", Array(actorClassName, host, port))
     RemoteServer.getOrCreateServer(homeAddress)
     ActorRegistry.registerActorByUuid(homeAddress, uuid.toString, ar)
 

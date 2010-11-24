@@ -36,7 +36,7 @@ object Scheduler extends Logging {
    */
   def schedule(receiver: ActorRef, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     log.slf4j.trace(
-      "Schedule scheduled event\n\tevent = [%s]\n\treceiver = [%s]\n\tinitialDelay = [%s]\n\tdelay = [%s]\n\ttimeUnit = [%s]",
+      "Schedule scheduled event\n\tevent = [{}]\n\treceiver = [{}]\n\tinitialDelay = [{}]\n\tdelay = [{}]\n\ttimeUnit = [{}]",
       Array(message, receiver, initialDelay, delay, timeUnit))
     try {
       service.scheduleAtFixedRate(
@@ -60,7 +60,7 @@ object Scheduler extends Logging {
    */
   def schedule(runnable: Runnable, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     log.slf4j.trace(
-      "Schedule scheduled event\n\trunnable = [%s]\n\tinitialDelay = [%s]\n\tdelay = [%s]\n\ttimeUnit = [%s]",
+      "Schedule scheduled event\n\trunnable = [{}]\n\tinitialDelay = [{}]\n\tdelay = [{}]\n\ttimeUnit = [{}]",
       Array(runnable, initialDelay, delay, timeUnit))
 
     try {
@@ -75,7 +75,7 @@ object Scheduler extends Logging {
    */
   def scheduleOnce(receiver: ActorRef, message: AnyRef, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     log.slf4j.trace(
-      "Schedule one-time event\n\tevent = [%s]\n\treceiver = [%s]\n\tdelay = [%s]\n\ttimeUnit = [%s]",
+      "Schedule one-time event\n\tevent = [{}]\n\treceiver = [{}]\n\tdelay = [{}]\n\ttimeUnit = [{}]",
       Array(message, receiver, delay, timeUnit))
     try {
       service.schedule(
@@ -99,7 +99,7 @@ object Scheduler extends Logging {
    */
   def scheduleOnce(runnable: Runnable, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     log.slf4j.trace(
-      "Schedule one-time event\n\trunnable = [%s]\n\tdelay = [%s]\n\ttimeUnit = [%s]",
+      "Schedule one-time event\n\trunnable = [{}]\n\tdelay = [{}]\n\ttimeUnit = [{}]",
       Array(runnable, delay, timeUnit))
     try {
       service.schedule(runnable,delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
