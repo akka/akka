@@ -24,22 +24,26 @@ object DataFlow {
 
   class DataFlowVariableException(msg: String) extends AkkaException(msg)
 
-  /** Executes the supplied thunk in another thread
+  /**
+   * Executes the supplied thunk in another thread.
    */
   def thread(body: => Unit): Unit = spawn(body)
 
-  /** Executes the supplied Effect in another thread
-   * JavaAPI
+  /**
+   * JavaAPI.
+   * Executes the supplied Effect in another thread.
    */
   def thread(body: Effect): Unit = spawn(body.apply)
 
-  /** Executes the supplied function in another thread
+  /**
+   * Executes the supplied function in another thread.
    */
   def thread[A <: AnyRef, R <: AnyRef](body: A => R) =
     actorOf(new ReactiveEventBasedThread(body)).start
 
-  /** Executes the supplied Function in another thread
-   * JavaAPI
+  /**
+   * JavaAPI.
+   * Executes the supplied Function in another thread.
    */
   def thread[A <: AnyRef, R <: AnyRef](body: Function[A,R]) =
     actorOf(new ReactiveEventBasedThread(body.apply)).start
@@ -97,7 +101,8 @@ object DataFlow {
 
     private[this] val in = actorOf(new In(this)).start
 
-    /** Sets the value of this variable (if unset) with the value of the supplied variable
+    /**
+     * Sets the value of this variable (if unset) with the value of the supplied variable.
      */
     def <<(ref: DataFlowVariable[T]) {
       if (this.value.get.isEmpty) in ! Set(ref())
@@ -105,12 +110,14 @@ object DataFlow {
             "Attempt to change data flow variable (from [" + this.value.get + "] to [" + ref() + "])")
     }
 
-    /** Sets the value of this variable (if unset) with the value of the supplied variable
-     * JavaAPI
+    /**
+     * JavaAPI.
+     * Sets the value of this variable (if unset) with the value of the supplied variable.
      */
     def set(ref: DataFlowVariable[T]) { this << ref }
 
-    /** Sets the value of this variable (if unset)
+    /**
+     * Sets the value of this variable (if unset).
      */
     def <<(value: T) {
       if (this.value.get.isEmpty) in ! Set(value)
@@ -118,18 +125,19 @@ object DataFlow {
             "Attempt to change data flow variable (from [" + this.value.get + "] to [" + value + "])")
     }
 
-    /** Sets the value of this variable (if unset) with the value of the supplied variable
-     * JavaAPI
+    /**
+     * JavaAPI.
+     * Sets the value of this variable (if unset) with the value of the supplied variable.
      */
     def set(value: T) { this << value }
 
-    /** Retrieves the value of variable
-     *  throws a DataFlowVariableException if it times out
+    /**
+     * Retrieves the value of variable, throws a DataFlowVariableException if it times out.
      */
     def get(): T = this()
 
-    /** Retrieves the value of variable
-     *  throws a DataFlowVariableException if it times out
+    /**
+     * Retrieves the value of variable, throws a DataFlowVariableException if it times out.
      */
     def apply(): T = {
       value.get getOrElse {
@@ -144,60 +152,11 @@ object DataFlow {
             throw e
         }
 
-        result.getOrElse(throw new DataFlowVariableException("Timed out (after " + timeoutMs + " milliseconds) while waiting for result"))
+        result.getOrElse(throw new DataFlowVariableException(
+            "Timed out (after " + timeoutMs + " milliseconds) while waiting for result"))
       }
     }
 
     def shutdown = in ! Exit
-  }
-
-  /**
-   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
-   */
-  class DataFlowStream[T <: Any] extends Seq[T] {
-    private[this] val queue = new LinkedBlockingQueue[DataFlowVariable[T]]
-
-    def next: DataFlowVariable[T] = queue.take
-
-    //==== Java API ====
-
-    def offer(ref: DataFlowVariable[T]) = <<<(ref)
-    def offer(value: T) = <<<(value)
-    def take(): T = apply()
-
-    //==== Scala API ====
-
-    def <<<(ref: DataFlowVariable[T]) = queue.offer(ref)
-    
-    def <<<(value: T) = {
-      val ref = new DataFlowVariable[T]
-      ref << value
-      queue.offer(ref)
-    }
-
-    def apply(): T = {
-      val ref = queue.take
-      val result = ref()
-      ref.shutdown
-      result
-    }
-
-    //==== For Seq ====
-
-    def length: Int = queue.size
-
-    def apply(i: Int): T = {
-      if (i == 0) apply()
-      else throw new UnsupportedOperationException(
-        "Access by index other than '0' is not supported by DataFlowStream")
-    }
-
-    def iterator: Iterator[T] = new Iterator[T] {
-      private val iter = queue.iterator
-      def hasNext: Boolean = iter.hasNext
-      def next: T = { val ref = iter.next; ref() }
-    }
-
-    override def toList: List[T] = queue.toArray.toList.asInstanceOf[List[T]]
   }
 }
