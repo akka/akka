@@ -21,8 +21,10 @@ trait FSM[S, D] {
     register(stateName, stateFunction)
   }
 
-  protected final def startWith(stateName: S, stateData: D, timeout: Option[Long] = None) = {
-    setState(State(stateName, stateData, timeout))
+  protected final def startWith(stateName: S,
+                                stateData: D,
+                                timeout: Option[(Long, TimeUnit)] = None) = {
+    applyState(State(stateName, stateData, timeout))
   }
 
   protected final def goto(nextStateName: S): State = {
@@ -42,8 +44,7 @@ trait FSM[S, D] {
   }
 
   protected final def stop(reason: Reason, stateData: D): State = {
-    self ! Stop(reason, stateData)
-    stay
+    stay using stateData withStopReason(reason)
   }
 
   def whenUnhandled(stateFunction: StateFunction) = {
@@ -57,13 +58,15 @@ trait FSM[S, D] {
   /** FSM State data and default handlers */
   private var currentState: State = _
   private var timeoutFuture: Option[ScheduledFuture[AnyRef]] = None
+  private var generation: Long = 0L
 
-  private val transitions = mutable.Map[S, StateFunction]()
+
+  private val stateFunctions = mutable.Map[S, StateFunction]()
   private def register(name: S, function: StateFunction) {
-    if (transitions contains name) {
-      transitions(name) = transitions(name) orElse function
+    if (stateFunctions contains name) {
+      stateFunctions(name) = stateFunctions(name) orElse function
     } else {
-      transitions(name) = function
+      stateFunctions(name) = function
     }
   }
 
@@ -83,40 +86,55 @@ trait FSM[S, D] {
   }
 
   override final protected def receive: Receive = {
-    case Stop(reason, stateData) =>
-      terminateEvent.apply(reason)
-      self.stop
-    case StateTimeout if (self.dispatcher.mailboxSize(self) > 0) =>
-    log.slf4j.trace("Ignoring StateTimeout - ")
-    // state timeout when new message in queue, skip this timeout
+    case TimeoutMarker(gen) =>
+      if (generation == gen) {
+        processEvent(StateTimeout)
+      }
     case value => {
       timeoutFuture = timeoutFuture.flatMap {ref => ref.cancel(true); None}
-      val event = Event(value, currentState.stateData)
-      val nextState = (transitions(currentState.stateName) orElse handleEvent).apply(event)
-      setState(nextState)
+      generation += 1
+      processEvent(value)
     }
   }
 
-  private def setState(nextState: State) = {
-    if (!transitions.contains(nextState.stateName)) {
-      stop(Failure("Next state %s does not exist".format(nextState.stateName)))
-    } else {
-      if (currentState != null && currentState.stateName != nextState.stateName) {
-        transitionEvent.apply(Transition(currentState.stateName, nextState.stateName))
-      }
-      currentState = nextState
-      currentState.timeout.foreach {
-        t =>
-          timeoutFuture = Some(Scheduler.scheduleOnce(self, StateTimeout, t, TimeUnit.MILLISECONDS))
-      }
+  private def processEvent(value: Any) = {
+    val event = Event(value, currentState.stateData)
+    val nextState = (stateFunctions(currentState.stateName) orElse handleEvent).apply(event)
+    nextState.stopReason match {
+      case Some(reason) => terminate(reason)
+      case None => makeTransition(nextState)
     }
   }
+
+  private def makeTransition(nextState: State) = {
+    if (!stateFunctions.contains(nextState.stateName)) {
+      terminate(Failure("Next state %s does not exist".format(nextState.stateName)))
+    } else {
+      if (currentState.stateName != nextState.stateName) {
+        transitionEvent.apply(Transition(currentState.stateName, nextState.stateName))
+      }
+      applyState(nextState)
+    }
+  }
+
+  private def applyState(nextState: State) = {
+    currentState = nextState
+    currentState.timeout.foreach { t =>
+      timeoutFuture = Some(Scheduler.scheduleOnce(self, TimeoutMarker(generation), t._1, t._2))
+    }
+  }
+
+  private def terminate(reason: Reason) = {
+    terminateEvent.apply(reason)
+    self.stop
+  }
+
 
   case class Event(event: Any, stateData: D)
 
-  case class State(stateName: S, stateData: D, timeout: Option[Long] = None) {
+  case class State(stateName: S, stateData: D, timeout: Option[(Long, TimeUnit)] = None) {
 
-    def until(timeout: Long): State = {
+    def forMax(timeout: (Long, TimeUnit)): State = {
       copy(timeout = Some(timeout))
     }
 
@@ -131,6 +149,12 @@ trait FSM[S, D] {
     def using(nextStateDate: D): State = {
       copy(stateData = nextStateDate)
     }
+
+    private[akka] var stopReason: Option[Reason] = None
+    private[akka] def withStopReason(reason: Reason): State = {
+      stopReason = Some(reason)
+      this
+    }
   }
 
   sealed trait Reason
@@ -139,8 +163,7 @@ trait FSM[S, D] {
   case class Failure(cause: Any) extends Reason
 
   case object StateTimeout
+  case class TimeoutMarker(generation: Long)
 
   case class Transition(from: S, to: S)
-
-  private case class Stop(reason: Reason, stateData: D)
 }
