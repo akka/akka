@@ -70,7 +70,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
         List(x,y,z).foreach(_.shutdown)
       }
 
-     /*it("should be able to join streams") {
+    it("should be able to join streams") {
       import DataFlow._
       ActorRegistry.shutdownAll
 
@@ -133,7 +133,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
       thread { recurseSum(consumer) }
 
       latch.await(15,TimeUnit.SECONDS) should equal (true)
-    }*/
+    }
 
   /* Test not ready for prime time, causes some sort of deadlock */
   /*  it("should be able to conditionally set variables") {
