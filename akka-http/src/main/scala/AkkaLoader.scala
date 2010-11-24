@@ -71,7 +71,7 @@ class AkkaLoader extends Logging {
     log.slf4j.info("  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt")
     log.slf4j.info("   tttttttt  ttt    ttt  ttt    ttt  tttttttt")
     log.slf4j.info("==================================================")
-    log.slf4j.info("            Running version %s", Config.VERSION)
+    log.slf4j.info("            Running version {}", Config.VERSION)
     log.slf4j.info("==================================================")
   }
 }
