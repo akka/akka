@@ -315,7 +315,7 @@ class RootEndpoint extends Actor with Endpoint {
 
 /**
  * Basic description of the suspended async http request.
- * 	Must be mixed with some kind of specific support (e.g. servlet 3.0 or jetty continuations)
+ *      Must be mixed with some kind of specific support (e.g. servlet 3.0 or jetty continuations)
  *
  * @author Garrick Evans
  */
@@ -360,8 +360,8 @@ trait RequestMethod extends Logging
   def getHeaderOrElse(name: String, default: Function[Any, String]): String =
     request.getHeader(name) match {
       case null => default(null)
-	    case s => s
-	  }
+            case s => s
+          }
 
   def getParameterOrElse(name: String, default: Function[Any, String]): String =
     request.getParameter(name) match {
