@@ -40,7 +40,7 @@ object FSMActorSpec {
             goto(Open) using CodeState("", code) forMax timeout
           }
           case wrong => {
-            log.error("Wrong code %s", wrong)
+            log.slf4j.error("Wrong code {}", wrong)
             stay using CodeState("", code)
           }
         }
@@ -60,7 +60,7 @@ object FSMActorSpec {
 
     whenUnhandled {
       case Event(_, stateData) => {
-        log.info("Unhandled")
+        log.slf4j.info("Unhandled")
         unhandledLatch.open
         stay
       }
@@ -71,12 +71,12 @@ object FSMActorSpec {
     }
 
     private def doLock() {
-      log.info("Locked")
+      log.slf4j.info("Locked")
       lockedLatch.open
     }
 
     private def doUnlock = {
-      log.info("Unlocked")
+      log.slf4j.info("Unlocked")
       unlockedLatch.open
     }
   }

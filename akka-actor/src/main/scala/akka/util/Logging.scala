@@ -6,11 +6,6 @@ package akka.util
 
 import org.slf4j.{Logger => SLFLogger,LoggerFactory => SLFLoggerFactory}
 
-import java.io.StringWriter
-import java.io.PrintWriter
-import java.net.InetAddress
-import java.net.UnknownHostException
-
 /**
  * Base trait for all classes that wants to be able use the logging infrastructure.
  *
@@ -33,110 +28,115 @@ trait Logging {
  *
  * The logger uses String.format:
  * http://download-llnw.oracle.com/javase/6/docs/api/java/lang/String.html#format(java.lang.String,%20java.lang.Object...)
+ *
+ * If you want to use underlying slf4j Logger, do:
+ *   log.slf4j.info("My foo is {}","alive")
+ *   log.slf4j.error("My foo is broken",new Exception())
  */
-class Logger(val logger: SLFLogger) {
-  def name      = logger.getName
+class Logger(val slf4j: SLFLogger) {
+  final def name      = logger.getName
+  final def logger    = slf4j
 
-  def trace_?   = logger.isTraceEnabled
-  def debug_?   = logger.isDebugEnabled
-  def info_?    = logger.isInfoEnabled
-  def warning_? = logger.isWarnEnabled
-  def error_?   = logger.isErrorEnabled
+  final def trace_?   = logger.isTraceEnabled
+  final def debug_?   = logger.isDebugEnabled
+  final def info_?    = logger.isInfoEnabled
+  final def warning_? = logger.isWarnEnabled
+  final def error_?   = logger.isErrorEnabled
 
   //Trace
-  def trace(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
+  final def trace(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     trace(t,message(fmt,arg,argN:_*))
   }
 
-  def trace(t: Throwable, msg: => String) {
+  final def trace(t: Throwable, msg: => String) {
     if (trace_?) logger.trace(msg,t)
   }
 
-  def trace(fmt: => String, arg: Any, argN: Any*) {
+  final def trace(fmt: => String, arg: Any, argN: Any*) {
      trace(message(fmt,arg,argN:_*))
   }
 
-  def trace(msg: => String) {
+  final def trace(msg: => String) {
      if (trace_?) logger trace msg
   }
 
   //Debug
-  def debug(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
+  final def debug(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     debug(t,message(fmt,arg,argN:_*))
   }
 
-  def debug(t: Throwable, msg: => String) {
+  final def debug(t: Throwable, msg: => String) {
     if (debug_?) logger.debug(msg,t)
   }
 
-  def debug(fmt: => String, arg: Any, argN: Any*) {
+  final def debug(fmt: => String, arg: Any, argN: Any*) {
      debug(message(fmt,arg,argN:_*))
   }
 
-  def debug(msg: => String) {
+  final def debug(msg: => String) {
      if (debug_?) logger debug msg
   }
 
   //Info
-  def info(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
+  final def info(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     info(t,message(fmt,arg,argN:_*))
   }
 
-  def info(t: Throwable, msg: => String) {
+  final def info(t: Throwable, msg: => String) {
     if (info_?) logger.info(msg,t)
   }
 
-  def info(fmt: => String, arg: Any, argN: Any*) {
+  final def info(fmt: => String, arg: Any, argN: Any*) {
      info(message(fmt,arg,argN:_*))
   }
 
-  def info(msg: => String) {
+  final def info(msg: => String) {
      if (info_?) logger info msg
   }
 
   //Warning
-  def warning(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
+  final def warning(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     warning(t,message(fmt,arg,argN:_*))
   }
 
-  def warn(t: Throwable, fmt: => String, arg: Any, argN: Any*) = warning(t, fmt, arg, argN)
+  final def warn(t: Throwable, fmt: => String, arg: Any, argN: Any*) = warning(t, fmt, arg, argN)
 
-  def warning(t: Throwable, msg: => String) {
+  final def warning(t: Throwable, msg: => String) {
     if (warning_?) logger.warn(msg,t)
   }
 
-  def warn(t: Throwable, msg: => String) = warning(t, msg)
+  final def warn(t: Throwable, msg: => String) = warning(t, msg)
 
-  def warning(fmt: => String, arg: Any, argN: Any*) {
+  final def warning(fmt: => String, arg: Any, argN: Any*) {
      warning(message(fmt,arg,argN:_*))
   }
 
-  def warn(fmt: => String, arg: Any, argN: Any*) = warning(fmt, arg, argN:_*)
+  final def warn(fmt: => String, arg: Any, argN: Any*) = warning(fmt, arg, argN:_*)
 
-  def warning(msg: => String) {
+  final def warning(msg: => String) {
      if (warning_?) logger warn msg
   }
 
-  def warn(msg: => String) = warning(msg)
+  final def warn(msg: => String) = warning(msg)
 
   //Error
-  def error(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
+  final def error(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     error(t,message(fmt,arg,argN:_*))
   }
 
-  def error(t: Throwable, msg: => String) {
+  final def error(t: Throwable, msg: => String) {
     if (error_?) logger.error(msg,t)
   }
 
-  def error(fmt: => String, arg: Any, argN: Any*) {
+  final def error(fmt: => String, arg: Any, argN: Any*) {
      error(message(fmt,arg,argN:_*))
   }
 
-  def error(msg: => String) {
+  final def error(msg: => String) {
      if (error_?) logger error msg
   }
 
-  protected def message(fmt: String, arg: Any, argN: Any*) : String = {
+  protected final def message(fmt: String, arg: Any, argN: Any*) : String = {
     if ((argN eq null) || argN.isEmpty) fmt.format(arg)
     else fmt.format((arg +: argN):_*)
   }
