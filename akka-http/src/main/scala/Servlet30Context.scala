@@ -36,7 +36,7 @@ trait Servlet30Context extends AsyncListener with akka.util.Logging
     }
     catch {
       case ex: IllegalStateException =>
-        log.info("Cannot update timeout - already returned to container")
+        log.slf4j.info("Cannot update timeout - already returned to container")
         false
     }
   }
@@ -46,8 +46,8 @@ trait Servlet30Context extends AsyncListener with akka.util.Logging
   //
   def onComplete(e: AsyncEvent) {}
   def onError(e: AsyncEvent) = e.getThrowable match {
-    case null => log.warning("Error occured...")
-    case    t => log.warning(t, "Error occured")
+    case null => log.slf4j.warn("Error occured...")
+    case    t => log.slf4j.warn("Error occured", t)
   }
   def onStartAsync(e: AsyncEvent) {}
   def onTimeout(e: AsyncEvent) = {
