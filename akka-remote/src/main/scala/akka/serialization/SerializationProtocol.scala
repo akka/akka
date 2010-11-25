@@ -299,9 +299,9 @@ object RemoteActorSerialization {
         .setOneWay(isOneWay)
 
     message match {
-      case Left(message) => 
+      case Left(message) =>
         messageBuilder.setMessage(MessageSerializer.serialize(message))
-      case Right(exception) => 
+      case Right(exception) =>
         messageBuilder.setException(ExceptionProtocol.newBuilder
             .setClassname(exception.getClass.getName)
             .setMessage(exception.getMessage)
@@ -310,7 +310,7 @@ object RemoteActorSerialization {
 
     secureCookie.foreach(messageBuilder.setCookie(_))
 
-    actorRef.foreach { ref => 
+    actorRef.foreach { ref =>
       ref.registerSupervisorAsRemoteActor.foreach { id =>
         messageBuilder.setSupervisorUuid(
           UuidProtocol.newBuilder
