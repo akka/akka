@@ -4,7 +4,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
 import akka.util._
-                                       
+
 import akka.remote.{RemoteServer, RemoteClient}
 import akka.actor.Actor._
 import akka.actor.{ActorRegistry, ActorRef, Actor}

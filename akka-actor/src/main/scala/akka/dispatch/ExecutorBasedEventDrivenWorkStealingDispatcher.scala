@@ -224,7 +224,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   /**
    * Creates and returns a durable mailbox for the given actor.
    */
-  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = 
+  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef =
     createMailbox(mailboxType.mailboxImplClassname, actorRef)
 
   private[akka] override def register(actorRef: ActorRef) = {

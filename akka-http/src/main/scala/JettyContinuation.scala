@@ -84,7 +84,7 @@ trait JettyContinuation extends ContinuationListener with akka.util.Logging
     case None => false
     case Some(continuation) => (continuation.isSuspended || (continuation.getAttribute(TimeoutAttribute) ne null))
   }
-  
+
   def timeout(ms:Long):Boolean = _continuation match {
     case None => false
     case Some(continuation) =>

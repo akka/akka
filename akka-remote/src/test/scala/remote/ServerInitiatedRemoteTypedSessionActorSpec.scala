@@ -98,7 +98,7 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends
 
   it should "be able to unregister" in {
     server.registerTypedPerSessionActor("my-service-1",TypedActor.newInstance(classOf[RemoteTypedSessionActor], classOf[RemoteTypedSessionActorImpl], 1000))
-    
+
     server.typedActorsFactories.get("my-service-1") should not be (null)
     server.unregisterTypedPerSessionActor("my-service-1")
     server.typedActorsFactories.get("my-service-1") should be (null)
