@@ -67,6 +67,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   object Repositories {
     lazy val EmbeddedRepo         = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
+    lazy val LocalMavenRepo       = MavenRepository("Local Maven Repo", (Path.userHome / ".m2" / "repository").asURL.toString)
     lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
     lazy val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
     lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
@@ -75,6 +76,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
     lazy val GlassfishRepo        = MavenRepository("Glassfish Repo", "http://download.java.net/maven/glassfish")
     lazy val ScalaToolsRelRepo    = MavenRepository("Scala Tools Releases Repo", "http://scala-tools.org/repo-releases")
+    lazy val DatabinderRepo       = MavenRepository("Databinder Repo", "http://databinder.net/repo")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -86,6 +88,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   import Repositories._
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
+  lazy val localMavenRepo          = LocalMavenRepo // Second exception, also fast! ;-)
   lazy val jettyModuleConfig       = ModuleConfiguration("org.eclipse.jetty", sbt.DefaultMavenRepository)
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
   lazy val glassfishModuleConfig   = ModuleConfiguration("org.glassfish", GlassfishRepo)
@@ -96,6 +99,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsRelRepo)
   lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback", sbt.DefaultMavenRepository)
+  lazy val spdeModuleConfig        = ModuleConfiguration("us.technically.spde", DatabinderRepo)
+  lazy val processingModuleConfig  = ModuleConfiguration("org.processing", DatabinderRepo)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
