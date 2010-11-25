@@ -7,8 +7,19 @@ package akka.actor
 import scala.collection.mutable
 import java.util.concurrent.{ScheduledFuture, TimeUnit}
 
+object FSM {
+  sealed trait Reason
+  case object Normal extends Reason
+  case object Shutdown extends Reason
+  case class Failure(cause: Any) extends Reason
+
+  case object StateTimeout
+  case class TimeoutMarker(generation: Long)
+}
+
 trait FSM[S, D] {
   this: Actor =>
+  import FSM._
 
   type StateFunction = scala.PartialFunction[Event, State]
 
@@ -156,14 +167,6 @@ trait FSM[S, D] {
       this
     }
   }
-
-  sealed trait Reason
-  case object Normal extends Reason
-  case object Shutdown extends Reason
-  case class Failure(cause: Any) extends Reason
-
-  case object StateTimeout
-  case class TimeoutMarker(generation: Long)
 
   case class Transition(from: S, to: S)
 }

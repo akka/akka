@@ -12,6 +12,7 @@ import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.TimeUnit
 
 object FSMActorSpec {
+  import FSM._
 
   val unlockedLatch = new StandardLatch
   val lockedLatch = new StandardLatch
