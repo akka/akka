@@ -1,6 +1,7 @@
 package sample.fsm.dining.fsm
 
 import akka.actor.{ActorRef, Actor, FSM}
+import akka.actor.FSM._
 import Actor._
 import java.util.concurrent.TimeUnit
 import TimeUnit._
