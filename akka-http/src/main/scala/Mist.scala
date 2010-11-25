@@ -205,7 +205,7 @@ object Endpoint {
   /**
    * leverage the akka config to tweak the dispatcher for our endpoints
    */
-  final val Dispatcher = Dispatchers.fromConfig("akka.http.comet-dispatcher")
+  final val Dispatcher = Dispatchers.fromConfig("akka.http.mist-dispatcher")
 
   type Hook     = Function[String, Boolean]
   type Provider = Function[String, ActorRef]
