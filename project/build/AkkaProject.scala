@@ -21,7 +21,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         "-Xmigration",
         "-Xcheckinit",
         "-Xstrict-warnings",
-        // "-optimise", //Uncomment this for release compile
+        "-optimise", //Uncomment this for release compile
         "-Xwarninit",
         "-encoding", "utf8")
         .map(CompileOption(_))
@@ -33,6 +33,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   def distName = "%s-%s".format(name, version)
   lazy val deployPath = info.projectPath / "deploy"
   lazy val distPath = info.projectPath / "dist"
+
+  lazy override val `package` = task { None }
 
   //The distribution task, packages Akka into a zipfile and places it into the projectPath/dist directory
   lazy val dist = task {
@@ -230,32 +232,15 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       (IMPLEMENTATION_VENDOR, "Scalable Solutions AB")
     )).toList
 
-  // create a manifest with all akka jars and dependency jars on classpath
-  override def manifestClassPath = Some(allArtifacts.getFiles
-    .filter(_.getName.endsWith(".jar"))
-    .filter(!_.getName.contains("servlet_2.4"))
-    .filter(!_.getName.contains("scala-library"))
-    .map("lib_managed/compile/" + _.getName)
-    .mkString(" ") +
-    " config/" +
-    " scala-library.jar" +
-    " dist/akka-actor-%s.jar".format(version) +
-    " dist/akka-stm-%s.jar".format(version) +
-    " dist/akka-typed-actor-%s.jar".format(version) +
-    " dist/akka-remote-%s.jar".format(version) +
-    " dist/akka-http-%s.jar".format(version)
-    )
-
   //Exclude slf4j1.5.11 from the classpath, it's conflicting...
   override def fullClasspath(config: Configuration): PathFinder = {
     super.fullClasspath(config) ---
     (super.fullClasspath(config) ** "slf4j*1.5.11.jar")
   }
 
-  override def mainResources = super.mainResources +++
-          (info.projectPath / "config").descendentsExcept("*", "logback-test.xml")
+//  override def mainResources = super.mainResources +++ (info.projectPath / "config").descendentsExcept("*", "logback-test.xml")
 
-  override def runClasspath = super.runClasspath +++ "config"
+//  override def runClasspath = super.runClasspath +++ "config"
 
   // ------------------------------------------------------------
   // publishing
