@@ -5,14 +5,14 @@
 package akka.servlet
 
 import akka.config.Config
-import akka.util.{Logging, Bootable}
 import akka.actor.Actor
+import akka.util. {Switch, Logging, Bootable}
 
 /*
  * This class is responsible for booting up a stack of bundles and then shutting them down
  */
 class AkkaLoader extends Logging {
-  @volatile private var hasBooted = false
+  private val hasBooted = new Switch(false)
 
   @volatile private var _bundles: Option[Bootable] = None
 
@@ -21,29 +21,24 @@ class AkkaLoader extends Logging {
   /*
    * Boot initializes the specified bundles
    */
-  def boot(withBanner: Boolean, b : Bootable): Unit = synchronized {
-    if (!hasBooted) {
-      if (withBanner) printBanner
-      log.slf4j.info("Starting Akka...")
-      b.onLoad
-      Thread.currentThread.setContextClassLoader(getClass.getClassLoader)
-      log.slf4j.info("Akka started successfully")
-      hasBooted = true
-      _bundles = Some(b)
-    }
+  def boot(withBanner: Boolean, b : Bootable): Unit = hasBooted switchOn {
+    if (withBanner) printBanner
+    log.slf4j.info("Starting Akka...")
+    b.onLoad
+    Thread.currentThread.setContextClassLoader(getClass.getClassLoader)
+    _bundles = Some(b)
+    log.slf4j.info("Akka started successfully")
   }
 
   /*
    * Shutdown, well, shuts down the bundles used in boot
    */
-  def shutdown = synchronized {
-    if (hasBooted) {
-      log.slf4j.info("Shutting down Akka...")
-      _bundles.foreach(_.onUnload)
-      _bundles = None
-      Actor.shutdownHook.run
-      log.slf4j.info("Akka succesfully shut down")
-    }
+  def shutdown: Unit = hasBooted switchOff {
+    log.slf4j.info("Shutting down Akka...")
+    _bundles.foreach(_.onUnload)
+    _bundles = None
+    Actor.shutdownHook.run
+    log.slf4j.info("Akka succesfully shut down")
   }
 
   private def printBanner = {
