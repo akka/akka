@@ -10,7 +10,8 @@ import java.io.File
 
 import akka.actor.BootableActorLoaderService
 import akka.util.{Bootable, Logging}
-import akka.comet.AkkaServlet
+
+//import akka.comet.AkkaServlet
 
 import org.eclipse.jetty.xml.XmlConfiguration
 import org.eclipse.jetty.server.{Handler, Server}
@@ -20,23 +21,25 @@ import org.eclipse.jetty.server.handler.{HandlerList, HandlerCollection, Context
  * Handles the Akka Comet Support (load/unload)
  */
 trait EmbeddedAppServer extends Bootable with Logging {
-  self : BootableActorLoaderService =>
+  self: BootableActorLoaderService =>
 
   import akka.config.Config._
 
-  val REST_HOSTNAME = config.getString("akka.rest.hostname", "localhost")
-  val REST_PORT = config.getInt("akka.rest.port", 9998)
+  val REST_HOSTNAME = config.getString("akka.http.hostname", "localhost")
+  val REST_PORT = config.getInt("akka.http.port", 9998)
+
+  val isRestEnabled = config.getList("akka.enabled-modules").exists(_ == "http")
 
   protected var server: Option[Server] = None
 
   abstract override def onLoad = {
     super.onLoad
-    if (config.getBool("akka.rest.service", true)) {
-      log.info("Attempting to start Akka REST service (Jersey)")
+    if (isRestEnabled) {
+      log.slf4j.info("Attempting to start Akka HTTP service")
 
-      System.setProperty("jetty.port",REST_PORT.toString)
-      System.setProperty("jetty.host",REST_HOSTNAME)
-      System.setProperty("jetty.home",HOME.getOrElse(throwNoAkkaHomeException) + "/deploy/root")
+      System.setProperty("jetty.port", REST_PORT.toString)
+      System.setProperty("jetty.host", REST_HOSTNAME)
+      System.setProperty("jetty.home", HOME.getOrElse(throwNoAkkaHomeException) + "/deploy/root")
 
       val configuration = new XmlConfiguration(
         new File(HOME.getOrElse(throwNoAkkaHomeException) + "/config/microkernel-server.xml").toURI.toURL)
@@ -57,16 +60,15 @@ trait EmbeddedAppServer extends Bootable with Logging {
          s.start()
          s
       }
-      log.info("Akka REST service started (Jersey)")
+      log.slf4j.info("Akka HTTP service started")
     }
   }
 
   abstract override def onUnload = {
     super.onUnload
-    server foreach { t => {
-      log.info("Shutting down REST service (Jersey)")
+    server foreach { t =>
+      log.slf4j.info("Shutting down REST service (Jersey)")
       t.stop()
-      }
     }
   }
 }

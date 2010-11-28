@@ -6,7 +6,6 @@ package akka.servlet
 
 import akka.remote.BootableRemoteActorService
 import akka.actor.BootableActorLoaderService
-import akka.camel.CamelService
 import akka.config.Config
 import akka.util.{Logging, Bootable}
 
@@ -30,5 +29,5 @@ class Initializer extends ServletContextListener {
      loader.shutdown
 
    def contextInitialized(e: ServletContextEvent): Unit =
-     loader.boot(true, new BootableActorLoaderService with BootableRemoteActorService with CamelService)
+     loader.boot(true, new BootableActorLoaderService with BootableRemoteActorService)
  }

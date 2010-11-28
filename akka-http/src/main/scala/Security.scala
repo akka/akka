@@ -91,7 +91,7 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
               throw new WebApplicationException(r.asInstanceOf[Response])
             case None => throw new WebApplicationException(408)
             case unknown => {
-              log.warning("Authenticator replied with unexpected result [%s]", unknown);
+              log.slf4j.warn("Authenticator replied with unexpected result [{}]", unknown)
               throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR)
             }
           }
@@ -101,8 +101,8 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
   }
 
   lazy val authenticatorFQN = {
-    val auth = Config.config.getString("akka.rest.authenticator", "N/A")
-    if (auth == "N/A") throw new IllegalActorStateException("The config option 'akka.rest.authenticator' is not defined in 'akka.conf'")
+    val auth = Config.config.getString("akka.http.authenticator", "N/A")
+    if (auth == "N/A") throw new IllegalActorStateException("The config option 'akka.http.authenticator' is not defined in 'akka.conf'")
     auth
   }
 
@@ -258,7 +258,7 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] w
       val ts = System.currentTimeMillis
       nonceMap.filter(tuple => (ts - tuple._2) < nonceValidityPeriod)
     case unknown =>
-      log.error("Don't know what to do with: ", unknown)
+      log.slf4j.error("Don't know what to do with: ", unknown)
   }
 
   //Schedule the invalidation of nonces
@@ -371,7 +371,7 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] w
         Some(UserInfo(user, null, rolesFor(user)))
       } catch {
         case e: PrivilegedActionException => {
-          log.error(e, "Action not allowed")
+          log.slf4j.error("Action not allowed", e)
           return None
         }
       }
@@ -399,8 +399,8 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] w
    * principal name for the HTTP kerberos service, i.e HTTP/  { server } @  { realm }
    */
   lazy val servicePrincipal = {
-    val p = Config.config.getString("akka.rest.kerberos.servicePrincipal", "N/A")
-    if (p == "N/A") throw new IllegalActorStateException("The config option 'akka.rest.kerberos.servicePrincipal' is not defined in 'akka.conf'")
+    val p = Config.config.getString("akka.http.kerberos.servicePrincipal", "N/A")
+    if (p == "N/A") throw new IllegalActorStateException("The config option 'akka.http.kerberos.servicePrincipal' is not defined in 'akka.conf'")
     p
   }
 
@@ -408,21 +408,21 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] w
    * keytab location with credentials for the service principal
    */
   lazy val keyTabLocation = {
-    val p = Config.config.getString("akka.rest.kerberos.keyTabLocation", "N/A")
-    if (p == "N/A") throw new IllegalActorStateException("The config option 'akka.rest.kerberos.keyTabLocation' is not defined in 'akka.conf'")
+    val p = Config.config.getString("akka.http.kerberos.keyTabLocation", "N/A")
+    if (p == "N/A") throw new IllegalActorStateException("The config option 'akka.http.kerberos.keyTabLocation' is not defined in 'akka.conf'")
     p
   }
 
   lazy val kerberosDebug = {
-    val p = Config.config.getString("akka.rest.kerberos.kerberosDebug", "N/A")
-    if (p == "N/A") throw new IllegalActorStateException("The config option 'akka.rest.kerberos.kerberosDebug' is not defined in 'akka.conf'")
+    val p = Config.config.getString("akka.http.kerberos.kerberosDebug", "N/A")
+    if (p == "N/A") throw new IllegalActorStateException("The config option 'akka.http.kerberos.kerberosDebug' is not defined in 'akka.conf'")
     p
   }
 
   /**
    * is not used by this authenticator, so accept an empty value
    */
-  lazy val realm = Config.config.getString("akka.rest.kerberos.realm", "")
+  lazy val realm = Config.config.getString("akka.http.kerberos.realm", "")
 
   /**
    * verify the kerberos token from a client with the server
