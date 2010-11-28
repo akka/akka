@@ -4,12 +4,14 @@
 
 package akka.dispatch
 
-import jsr166x.{Deque, ConcurrentLinkedDeque, LinkedBlockingDeque}
 
 import akka.actor.{Actor, ActorRef, IllegalActorStateException}
 import akka.util.Switch
+
 import java.util.concurrent. {ExecutorService, CopyOnWriteArrayList}
 import java.util.concurrent.atomic.AtomicReference
+
+import jsr166x.{Deque, ConcurrentLinkedDeque, LinkedBlockingDeque}
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -169,12 +171,12 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     } else false
   }
 
-  private[akka] def start = log.debug("Starting up %s",toString)
+  private[akka] def start = log.slf4j.debug("Starting up {}",toString)
 
   private[akka] def shutdown {
     val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
     if (old ne null) {
-      log.debug("Shutting down %s", toString)
+      log.slf4j.debug("Shutting down {}", toString)
       old.shutdownNow()
     }
   }
@@ -222,15 +224,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   /**
    * Creates and returns a durable mailbox for the given actor.
    */
-  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = mailboxType match {
-    // FIXME make generic (work for TypedActor as well)
-    case FileBasedDurableMailbox(serializer)      => throw new UnsupportedOperationException("FileBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
-    case ZooKeeperBasedDurableMailbox(serializer) => throw new UnsupportedOperationException("ZooKeeperBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
-    case BeanstalkBasedDurableMailbox(serializer) => throw new UnsupportedOperationException("BeanstalkBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
-    case RedisBasedDurableMailbox(serializer)     => throw new UnsupportedOperationException("RedisBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
-    case AMQPBasedDurableMailbox(serializer)      => throw new UnsupportedOperationException("AMQPBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
-    case JMSBasedDurableMailbox(serializer)       => throw new UnsupportedOperationException("JMSBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
-  }
+  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef =
+    createMailbox(mailboxType.mailboxImplClassname, actorRef)
 
   private[akka] override def register(actorRef: ActorRef) = {
     verifyActorsAreOfSameType(actorRef)
@@ -249,7 +244,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
       case Some(aType) =>
         if (aType != actorOfId.actor.getClass)
           throw new IllegalActorStateException(String.format(
-            "Can't register actor %s in a work stealing dispatcher which already knows actors of type %s",
+            "Can't register actor {} in a work stealing dispatcher which already knows actors of type {}",
             actorOfId.actor, aType))
     }
   }

@@ -12,7 +12,7 @@ import akka.util.Logging
 class RemoteHelloWorldActor extends RemoteActor("localhost", 2552) {
   def receive = {
     case "Hello" =>
-      log.info("Received 'Hello'")
+      log.slf4j.info("Received 'Hello'")
       self.reply("World")
   }
 }
@@ -20,7 +20,7 @@ class RemoteHelloWorldActor extends RemoteActor("localhost", 2552) {
 object ClientManagedRemoteActorServer extends Logging {
   def run = {
     RemoteNode.start("localhost", 2552)
-    log.info("Remote node started")
+    log.slf4j.info("Remote node started")
   }
 
   def main(args: Array[String]) = run
@@ -30,10 +30,10 @@ object ClientManagedRemoteActorClient extends Logging {
 
   def run = {
     val actor = actorOf[RemoteHelloWorldActor].start
-    log.info("Remote actor created, moved to the server")
-    log.info("Sending 'Hello' to remote actor")
+    log.slf4j.info("Remote actor created, moved to the server")
+    log.slf4j.info("Sending 'Hello' to remote actor")
     val result = actor !! "Hello"
-    log.info("Result from Remote Actor: '%s'", result.get)
+    log.slf4j.info("Result from Remote Actor: '{}'", result.get)
   }
 
   def main(args: Array[String]) = run

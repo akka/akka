@@ -34,16 +34,21 @@ abstract class RemoteActor(address: InetSocketAddress) extends Actor {
  */
 @serializable sealed trait LifeCycleMessage
 
-case class HotSwap(code: ActorRef => Actor.Receive) extends LifeCycleMessage {
+case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true) extends LifeCycleMessage {
   /**
    * Java API
    */
-  def this(code: akka.japi.Function[ActorRef,Procedure[Any]]) =
+  def this(code: akka.japi.Function[ActorRef,Procedure[Any]], discardOld: Boolean) =
     this( (self: ActorRef) => {
       val behavior = code(self)
       val result: Actor.Receive = { case msg => behavior(msg) }
       result
-    })
+    }, discardOld)
+
+  /**
+   *  Java API with default non-stacking behavior
+   */
+  def this(code: akka.japi.Function[ActorRef,Procedure[Any]]) = this(code, true)
 }
 
 case object RevertHotSwap extends LifeCycleMessage
@@ -74,7 +79,7 @@ class ActorInitializationException private[akka](message: String) extends AkkaEx
 class ActorTimeoutException private[akka](message: String) extends AkkaException(message)
 
 /**
- *   This message is thrown by default when an Actors behavior doesn't match a message
+ *    This message is thrown by default when an Actors behavior doesn't match a message
  */
 case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception {
   override def getMessage() = "Actor %s does not handle [%s]".format(ref,msg)
@@ -95,18 +100,18 @@ object Actor extends Logging {
     val hook = new Runnable {
       override def run {
         // Shutdown HawtDispatch GlobalQueue
-        log.info("Shutting down Hawt Dispatch global queue")
+        log.slf4j.info("Shutting down Hawt Dispatch global queue")
         org.fusesource.hawtdispatch.ScalaDispatch.globalQueue.asInstanceOf[org.fusesource.hawtdispatch.internal.GlobalDispatchQueue].shutdown
 
         // Clear Thread.subclassAudits
-        log.info("Clearing subclass audits")
+        log.slf4j.info("Clearing subclass audits")
         val tf = classOf[java.lang.Thread].getDeclaredField("subclassAudits")
         tf.setAccessible(true)
         val subclassAudits = tf.get(null).asInstanceOf[java.util.Map[_,_]]
         subclassAudits.synchronized {subclassAudits.clear}
 
         // Clear and reset j.u.l.Level.known (due to Configgy)
-        log.info("Removing Configgy-installed log levels")
+        log.slf4j.info("Removing Configgy-installed log levels")
         import java.util.logging.Level
         val lf = classOf[Level].getDeclaredField("known")
         lf.setAccessible(true)
@@ -351,14 +356,14 @@ trait Actor extends Logging {
    * <pre>
    *   def receive =  {
    *     case Ping =&gt;
-   *       log.info("got a 'Ping' message")
+   *       log.slf4j.info("got a 'Ping' message")
    *       self.reply("pong")
    *
    *     case OneWay =&gt;
-   *       log.info("got a 'OneWay' message")
+   *       log.slf4j.info("got a 'OneWay' message")
    *
    *     case unknown =&gt;
-   *       log.warning("unknown message [%s], ignoring", unknown)
+   *       log.slf4j.warn("unknown message [{}], ignoring", unknown)
    * }
    * </pre>
    */
@@ -412,7 +417,7 @@ trait Actor extends Logging {
    * Puts the behavior on top of the hotswap stack.
    * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
    */
-  def become(behavior: Receive, discardOld: Boolean = false) {
+  def become(behavior: Receive, discardOld: Boolean = true) {
     if (discardOld)
       unbecome
 
@@ -434,7 +439,7 @@ trait Actor extends Logging {
   private lazy val processingBehavior: Receive = {
     lazy val defaultBehavior = receive
     val actorBehavior: Receive = {
-      case HotSwap(code)                             => become(code(self))
+      case HotSwap(code,discardOld)                  => become(code(self),discardOld)
       case RevertHotSwap                             => unbecome
       case Exit(dead, reason)                        => self.handleTrapExit(dead, reason)
       case Link(child)                               => self.link(child)
@@ -452,7 +457,7 @@ trait Actor extends Logging {
   private lazy val fullBehavior: Receive = {
     lazy val defaultBehavior = receive
     val actorBehavior: Receive = {
-      case HotSwap(code)                             => become(code(self))
+      case HotSwap(code, discardOld)                 => become(code(self), discardOld)
       case RevertHotSwap                             => unbecome
       case Exit(dead, reason)                        => self.handleTrapExit(dead, reason)
       case Link(child)                               => self.link(child)

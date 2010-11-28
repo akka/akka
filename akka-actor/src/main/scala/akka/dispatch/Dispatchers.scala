@@ -5,9 +5,9 @@
 package akka.dispatch
 
 import akka.actor.{Actor, ActorRef}
+import akka.actor.newUuid
 import akka.config.Config._
 import akka.util.{Duration, Logging}
-import akka.actor.newUuid
 
 import net.lag.configgy.ConfigMap
 

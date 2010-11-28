@@ -12,6 +12,7 @@ import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.TimeUnit
 
 object FSMActorSpec {
+  import FSM._
 
   val unlockedLatch = new StandardLatch
   val lockedLatch = new StandardLatch
@@ -23,7 +24,7 @@ object FSMActorSpec {
   case object Locked extends LockState
   case object Open extends LockState
 
-  class Lock(code: String, timeout: Int) extends Actor with FSM[LockState, CodeState] {
+  class Lock(code: String, timeout: (Long, TimeUnit)) extends Actor with FSM[LockState, CodeState] {
 
     notifying {
       case Transition(Locked, Open) => transitionLatch.open
@@ -37,20 +38,20 @@ object FSMActorSpec {
             stay using CodeState(incomplete, code)
           case codeTry if (codeTry == code) => {
             doUnlock
-            goto(Open) using CodeState("", code) until timeout
+            goto(Open) using CodeState("", code) forMax timeout
           }
           case wrong => {
-            log.error("Wrong code %s", wrong)
+            log.slf4j.error("Wrong code {}", wrong)
             stay using CodeState("", code)
           }
         }
       }
       case Event("hello", _) => stay replying "world"
-      case Event("bye", _) => stop(Shutdown)
+      case Event("bye", _) => stop
     }
 
     when(Open) {
-      case Event(StateTimeout, stateData) => {
+      case Event(StateTimeout, _) => {
         doLock
         goto(Locked)
       }
@@ -60,7 +61,7 @@ object FSMActorSpec {
 
     whenUnhandled {
       case Event(_, stateData) => {
-        log.info("Unhandled")
+        log.slf4j.info("Unhandled")
         unhandledLatch.open
         stay
       }
@@ -71,12 +72,12 @@ object FSMActorSpec {
     }
 
     private def doLock() {
-      log.info("Locked")
+      log.slf4j.info("Locked")
       lockedLatch.open
     }
 
     private def doUnlock = {
-      log.info("Unlocked")
+      log.slf4j.info("Unlocked")
       unlockedLatch.open
     }
   }
@@ -91,7 +92,7 @@ class FSMActorSpec extends JUnitSuite {
   def unlockTheLock = {
 
     // lock that locked after being open for 1 sec
-    val lock = Actor.actorOf(new Lock("33221", 1000)).start
+    val lock = Actor.actorOf(new Lock("33221", (1, TimeUnit.SECONDS))).start
 
     lock ! '3'
     lock ! '3'
@@ -123,4 +124,3 @@ class FSMActorSpec extends JUnitSuite {
     assert(terminatedLatch.tryAwait(2, TimeUnit.SECONDS))
   }
 }
-
