@@ -498,7 +498,7 @@ class SupervisorSpec extends JUnitSuite {
     val inits = new AtomicInteger(0)
     val dyingActor = actorOf(new Actor {
       self.lifeCycle = Permanent
-      log.debug("Creating dying actor, attempt: " + inits.incrementAndGet)
+      log.slf4j.debug("Creating dying actor, attempt: " + inits.incrementAndGet)
 
       if (!(inits.get % 2 != 0))
         throw new IllegalStateException("Don't wanna!")

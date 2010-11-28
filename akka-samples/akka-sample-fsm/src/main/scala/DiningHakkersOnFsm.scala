@@ -1,7 +1,10 @@
 package sample.fsm.dining.fsm
 
 import akka.actor.{ActorRef, Actor, FSM}
+import akka.actor.FSM._
 import Actor._
+import java.util.concurrent.TimeUnit
+import TimeUnit._
 
 /*
  * Some messages for the chopstick
@@ -81,7 +84,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
   when(Waiting) {
     case Event(Think, _) =>
       log.info("%s starts to think", name)
-      startThinking(5000)
+      startThinking(5, SECONDS)
   }
 
   //When a hakker is thinking it can become hungry
@@ -115,12 +118,12 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
     case Event(Busy(chopstick), TakenChopsticks(leftOption, rightOption)) =>
       leftOption.foreach(_ ! Put)
       rightOption.foreach(_ ! Put)
-      startThinking(10)
+      startThinking(10, MILLISECONDS)
   }
 
   private def startEating(left: ActorRef, right: ActorRef): State = {
     log.info("%s has picked up %s and %s, and starts to eat", name, left.id, right.id)
-    goto(Eating) using TakenChopsticks(Some(left), Some(right)) until 5000
+    goto(Eating) using TakenChopsticks(Some(left), Some(right)) forMax (5, SECONDS)
   }
 
   // When the results of the other grab comes back,
@@ -129,9 +132,9 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
   when(FirstChopstickDenied) {
     case Event(Taken(secondChopstick), _) =>
       secondChopstick ! Put
-      startThinking(10)
+      startThinking(10, MILLISECONDS)
     case Event(Busy(chopstick), _) =>
-      startThinking(10)
+      startThinking(10, MILLISECONDS)
   }
 
   // When a hakker is eating, he can decide to start to think,
@@ -141,11 +144,11 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
       log.info("%s puts down his chopsticks and starts to think", name)
       left ! Put
       right ! Put
-      startThinking(5000)
+      startThinking(5, SECONDS)
   }
 
-  private def startThinking(period: Int): State = {
-    goto(Thinking) using TakenChopsticks(None, None) until period
+  private def startThinking(period: Int, timeUnit: TimeUnit): State = {
+    goto(Thinking) using TakenChopsticks(None, None) forMax (period, timeUnit)
   }
 
   //All hakkers start waiting

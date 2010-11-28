@@ -19,7 +19,7 @@
       <pattern>[%t] [%4p] [%d{ISO8601}] %c{1}: %m%n</pattern>
     </encoder>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>./logs/akka.log.%d{yyyy-MM-dd-HH}</fileNamePattern>
+      <fileNamePattern>./logs/akka.log.slf4j.%d{yyyy-MM-dd-HH}</fileNamePattern>
     </rollingPolicy>
   </appender>
   <logger name="akka" level="INFO"/>

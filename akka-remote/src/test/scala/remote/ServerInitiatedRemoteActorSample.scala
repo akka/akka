@@ -29,7 +29,7 @@ object ServerInitiatedRemoteActorClient extends Logging {
   def run = {
     val actor = RemoteClient.actorFor("hello-service", "localhost", 2552)
     val result = actor !! "Hello"
-    log.info("Result from Remote Actor: %s", result)
+    log.slf4j.info("Result from Remote Actor: {}", result)
   }
 
   def main(args: Array[String]) = run

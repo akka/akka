@@ -6,9 +6,6 @@ package akka.config
 
 import akka.AkkaException
 import akka.util.Logging
-import akka.actor.{ActorRef, IllegalActorStateException}
-import akka.dispatch.CompletableFuture
-
 import net.lag.configgy.{Config => CConfig, Configgy, ParseException}
 
 import java.net.InetSocketAddress
@@ -17,15 +14,13 @@ import java.lang.reflect.Method
 class ConfigurationException(message: String) extends AkkaException(message)
 class ModuleNotAvailableException(message: String) extends AkkaException(message)
 
-object ConfigLogger extends Logging
-
 /**
  * Loads up the configuration (from the akka.conf file).
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Config {
-  val VERSION = "1.0-SNAPSHOT"
+object Config extends Logging {
+  val VERSION = "1.0-RC1"
 
   val HOME = {
     val envHome = System.getenv("AKKA_HOME") match {
@@ -62,19 +57,19 @@ object Config {
       val configFile = System.getProperty("akka.config", "")
       try {
         Configgy.configure(configFile)
-        ConfigLogger.log.info("Config loaded from -Dakka.config=%s", configFile)
+        log.slf4j.info("Config loaded from -Dakka.config={}", configFile)
       } catch {
         case e: ParseException => throw new ConfigurationException(
           "Config could not be loaded from -Dakka.config=" + configFile +
           "\n\tdue to: " + e.toString)
       }
       Configgy.config
-    }  else if (HOME.isDefined) {
+    } else if (HOME.isDefined) {
       try {
         val configFile = HOME.getOrElse(throwNoAkkaHomeException) + "/config/" + confName
         Configgy.configure(configFile)
-        ConfigLogger.log.info(
-          "AKKA_HOME is defined as [%s], config loaded from [%s].",
+        log.slf4j.info(
+          "AKKA_HOME is defined as [{}], config loaded from [{}].",
           HOME.getOrElse(throwNoAkkaHomeException),
           configFile)
       } catch {
@@ -87,7 +82,7 @@ object Config {
     } else if (getClass.getClassLoader.getResource(confName) ne null) {
       try {
         Configgy.configureFromResource(confName, getClass.getClassLoader)
-        ConfigLogger.log.info("Config [%s] loaded from the application classpath.",confName)
+        log.slf4j.info("Config [{}] loaded from the application classpath.",confName)
       } catch {
         case e: ParseException => throw new ConfigurationException(
           "Can't load '" + confName + "' config file from application classpath," +
@@ -95,7 +90,7 @@ object Config {
       }
       Configgy.config
     } else {
-      ConfigLogger.log.warning(
+      log.slf4j.warn(
         "\nCan't load '" + confName + "'." +
         "\nOne of the three ways of locating the '" + confName + "' file needs to be defined:" +
         "\n\t1. Define the '-Dakka.config=...' system property option." +

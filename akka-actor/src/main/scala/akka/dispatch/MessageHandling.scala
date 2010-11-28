@@ -6,7 +6,8 @@ package akka.dispatch
 
 import java.util.concurrent._
 import atomic. {AtomicInteger, AtomicBoolean, AtomicReference, AtomicLong}
-import akka.util. {Switch, ReentrantGuard, Logging, HashCode}
+
+import akka.util.{Switch, ReentrantGuard, Logging, HashCode, ReflectiveAccess}
 import akka.actor._
 
 /**
@@ -59,10 +60,26 @@ object MessageDispatcher {
  */
 trait MessageDispatcher extends MailboxFactory with Logging {
   import MessageDispatcher._
+
   protected val uuids = new ConcurrentSkipListSet[Uuid]
   protected val guard = new ReentrantGuard
-  private var shutdownSchedule = UNSCHEDULED //This can be non-volatile since it is protected by guard withGuard
   protected val active = new Switch(false)
+
+  private var shutdownSchedule = UNSCHEDULED //This can be non-volatile since it is protected by guard withGuard
+
+  /**
+   *  Creates and returns a mailbox for the given actor.
+   */
+  def createMailbox(mailboxImplClassname: String, actorRef: ActorRef): MessageQueue = {
+    ReflectiveAccess.createInstance(
+      mailboxImplClassname,
+      Array(classOf[ActorRef]),
+      Array(actorRef).asInstanceOf[Array[AnyRef]],
+      ReflectiveAccess.loader)
+    .getOrElse(throw new IllegalActorStateException(
+        "Could not create mailbox [" + mailboxImplClassname + "] for actor [" + actorRef + "]"))
+    .asInstanceOf[MessageQueue]
+  }
 
   /**
    * Attaches the specified actorRef to this dispatcher
@@ -118,7 +135,7 @@ trait MessageDispatcher extends MailboxFactory with Logging {
       ActorRegistry.actorFor(uuid) match {
         case Some(actor) => actor.stop
         case None =>
-          log.error("stopAllLinkedActors couldn't find linked actor: " + uuid)
+          log.slf4j.error("stopAllLinkedActors couldn't find linked actor: " + uuid)
       }
     }
   }

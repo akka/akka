@@ -102,12 +102,12 @@ object Transaction {
     if (JTA_AWARE) Some(ReflectiveJtaModule.createTransactionContainer)
     else None
 
-  log.trace("Creating transaction " + toString)
+  log.slf4j.trace("Creating transaction " + toString)
 
   // --- public methods ---------
 
   def begin = synchronized {
-    log.trace("Starting transaction " + toString)
+    log.slf4j.trace("Starting transaction " + toString)
     jta.foreach { _.beginWithStmSynchronization(this) }
   }
 
@@ -125,7 +125,7 @@ object Transaction {
   }
 
   def abort = synchronized {
-    log.trace("Aborting transaction " + toString)
+    log.slf4j.trace("Aborting transaction " + toString)
     jta.foreach(_.rollback)
     persistentStateMap.valuesIterator.foreach(_.abort)
     persistentStateMap.clear
@@ -230,8 +230,6 @@ trait Committable {
 trait Abortable {
   def abort(): Unit
 }
-
-
 
 /**
  * Used internally for reflective access to the JTA module.

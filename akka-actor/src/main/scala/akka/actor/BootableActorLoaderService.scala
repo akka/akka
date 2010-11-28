@@ -7,42 +7,9 @@ package akka.actor
 import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
-import java.util.Enumeration
 
 import akka.util.{Bootable, Logging}
 import akka.config.Config._
-
-class AkkaDeployClassLoader(urls : List[URL], parent : ClassLoader) extends URLClassLoader(urls.toArray.asInstanceOf[Array[URL]],parent)
-{
-  override def findResources(resource : String) = {
-    val normalResult = super.findResources(resource)
-    if(normalResult.hasMoreElements) normalResult else findDeployed(resource)
-  }
-
-  def findDeployed(resource : String) = new Enumeration[URL]{
-    private val it =  getURLs.flatMap( listClassesInPackage(_,resource) ).iterator
-    def hasMoreElements = it.hasNext
-    def nextElement = it.next
-  }
-
-  def listClassesInPackage(jar : URL, pkg : String) = {
-    val f  = new File(jar.getFile)
-    val jf = new JarFile(f)
-    try {
-      val es = jf.entries
-      var result = List[URL]()
-      while(es.hasMoreElements)
-      {
-        val e = es.nextElement
-        if(!e.isDirectory && e.getName.startsWith(pkg) && e.getName.endsWith(".class"))
-        result ::= new URL("jar:" + f.toURI.toURL + "!/" + e)
-      }
-    result
-    } finally {
-      jf.close
-    }
-  }
-}
 
 /**
  * Handles all modules in the deploy directory (load and unload)
@@ -59,7 +26,7 @@ trait BootableActorLoaderService extends Bootable with Logging {
       val DEPLOY = HOME.getOrElse(throwNoAkkaHomeException) + "/deploy"
       val DEPLOY_DIR = new File(DEPLOY)
       if (!DEPLOY_DIR.exists) {
-        log.error("Could not find a deploy directory at [%s]", DEPLOY)
+        log.slf4j.error("Could not find a deploy directory at [{}]", DEPLOY)
         System.exit(-1)
       }
       val filesToDeploy = DEPLOY_DIR.listFiles.toArray.toList
@@ -75,21 +42,21 @@ trait BootableActorLoaderService extends Bootable with Logging {
         }
       }
       val toDeploy = filesToDeploy.map(_.toURI.toURL)
-      log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy)
-      log.debug("Loading dependencies [%s]", dependencyJars)
+      log.slf4j.info("Deploying applications from [{}]: [{}]", DEPLOY, toDeploy)
+      log.slf4j.debug("Loading dependencies [{}]", dependencyJars)
       val allJars = toDeploy ::: dependencyJars
 
-      new AkkaDeployClassLoader(allJars,Thread.currentThread.getContextClassLoader)
+      new URLClassLoader(allJars.toArray,Thread.currentThread.getContextClassLoader)
     } else Thread.currentThread.getContextClassLoader)
   }
 
   abstract override def onLoad = {
-    applicationLoader.foreach(_ => log.info("Creating /deploy class-loader"))
+    applicationLoader.foreach(_ => log.slf4j.info("Creating /deploy class-loader"))
 
     super.onLoad
 
     for (loader <- applicationLoader; clazz <- BOOT_CLASSES) {
-      log.info("Loading boot class [%s]", clazz)
+      log.slf4j.info("Loading boot class [{}]", clazz)
       loader.loadClass(clazz).newInstance
     }
   }
