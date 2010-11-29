@@ -31,6 +31,7 @@ import org.jboss.netty.handler.ssl.SslHandler
 import scala.collection.mutable.Map
 import scala.reflect.BeanProperty
 import akka.dispatch. {Future, DefaultCompletableFuture, CompletableFuture}
+import akka.japi.Creator
 
 /**
  * Use this object if you need a single remote server on a specific node.
@@ -292,6 +293,12 @@ class RemoteServer extends Logging with ListenerManagement {
   def registerTypedPerSessionActor(intfClass: Class[_], factory: => AnyRef) : Unit = registerTypedActor(intfClass.getName, factory)
 
   /**
+   * Register typed actor by interface name.
+   * Java API
+   */
+  def registerTypedPerSessionActor(intfClass: Class[_], factory: Creator[AnyRef]) : Unit = registerTypedActor(intfClass.getName, factory)
+
+  /**
    * Register remote typed actor by a specific id.
    * @param id custom actor id
    * @param typedActor typed actor to register
@@ -299,6 +306,17 @@ class RemoteServer extends Logging with ListenerManagement {
   def registerTypedPerSessionActor(id: String, factory: => AnyRef): Unit = synchronized {
     log.slf4j.debug("Registering server side typed remote session actor with id [{}]", id)
     registerTypedPerSessionActor(id, () => factory, typedActorsFactories)
+  }
+
+  /**
+   * Register remote typed actor by a specific id.
+   * @param id custom actor id
+   * @param typedActor typed actor to register
+   * Java API
+   */
+  def registerTypedPerSessionActor(id: String, factory: Creator[AnyRef]): Unit = synchronized {
+    log.slf4j.debug("Registering server side typed remote session actor with id [{}]", id)
+    registerTypedPerSessionActor(id, factory.create _, typedActorsFactories)
   }
 
   /**
@@ -325,6 +343,17 @@ class RemoteServer extends Logging with ListenerManagement {
   def registerPerSession(id: String, factory: => ActorRef): Unit = synchronized {
     log.slf4j.debug("Registering server side remote session actor with id [{}]", id)
     registerPerSession(id, () => factory, actorsFactories)
+  }
+
+  /**
+   * Register Remote Session Actor by a specific 'id' passed as argument.
+   * <p/>
+   * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself.
+   * Java API
+   */
+  def registerPerSession(id: String, factory: Creator[ActorRef]): Unit = synchronized {
+    log.slf4j.debug("Registering server side remote session actor with id [{}]", id)
+    registerPerSession(id, factory.create _, actorsFactories)
   }
 
   private def register[Key](id: Key, actorRef: ActorRef, registry: ConcurrentHashMap[Key, ActorRef]) {
