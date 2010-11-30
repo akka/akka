@@ -37,7 +37,7 @@ object Scheduler extends Logging {
   def schedule(receiver: ActorRef, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     log.slf4j.trace(
       "Schedule scheduled event\n\tevent = [{}]\n\treceiver = [{}]\n\tinitialDelay = [{}]\n\tdelay = [{}]\n\ttimeUnit = [{}]",
-      Array(message, receiver, initialDelay, delay, timeUnit))
+      Array[AnyRef](message, receiver, initialDelay.asInstanceOf[AnyRef], delay.asInstanceOf[AnyRef], timeUnit))
     try {
       service.scheduleAtFixedRate(
         new Runnable { def run = receiver ! message },
@@ -61,7 +61,7 @@ object Scheduler extends Logging {
   def schedule(runnable: Runnable, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     log.slf4j.trace(
       "Schedule scheduled event\n\trunnable = [{}]\n\tinitialDelay = [{}]\n\tdelay = [{}]\n\ttimeUnit = [{}]",
-      Array(runnable, initialDelay, delay, timeUnit))
+      Array[AnyRef](runnable, initialDelay.asInstanceOf[AnyRef], delay.asInstanceOf[AnyRef], timeUnit))
 
     try {
       service.scheduleAtFixedRate(runnable,initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
@@ -76,7 +76,7 @@ object Scheduler extends Logging {
   def scheduleOnce(receiver: ActorRef, message: AnyRef, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     log.slf4j.trace(
       "Schedule one-time event\n\tevent = [{}]\n\treceiver = [{}]\n\tdelay = [{}]\n\ttimeUnit = [{}]",
-      Array(message, receiver, delay, timeUnit))
+      Array[AnyRef](message, receiver, delay.asInstanceOf[AnyRef], timeUnit))
     try {
       service.schedule(
         new Runnable { def run = receiver ! message },
@@ -100,7 +100,7 @@ object Scheduler extends Logging {
   def scheduleOnce(runnable: Runnable, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     log.slf4j.trace(
       "Schedule one-time event\n\trunnable = [{}]\n\tdelay = [{}]\n\ttimeUnit = [{}]",
-      Array(runnable, delay, timeUnit))
+      Array[AnyRef](runnable, delay.asInstanceOf[AnyRef], timeUnit))
     try {
       service.schedule(runnable,delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
