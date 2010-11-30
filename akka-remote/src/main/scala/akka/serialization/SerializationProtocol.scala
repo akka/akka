@@ -241,10 +241,11 @@ object RemoteActorSerialization {
    */
   def toRemoteActorRefProtocol(ar: ActorRef): RemoteActorRefProtocol = {
     import ar._
-    val host = homeAddress.getHostName
-    val port = homeAddress.getPort
+    val home = homeAddress
+    val host = home.getHostName
+    val port = home.getPort
 
-    Actor.log.slf4j.debug("Register serialized Actor [{}] as remote @ [{}:{}]", Array(actorClassName, host, port))
+    Actor.log.slf4j.debug("Register serialized Actor [{}] as remote @ [{}]",actorClassName, home)
     RemoteServer.getOrCreateServer(homeAddress)
     ActorRegistry.registerActorByUuid(homeAddress, uuid.toString, ar)
 
