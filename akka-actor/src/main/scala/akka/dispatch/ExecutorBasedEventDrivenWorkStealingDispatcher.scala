@@ -194,7 +194,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
 
   override val toString = "ExecutorBasedEventDrivenWorkStealingDispatcher[" + name + "]"
 
-  private[akka] def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = mailboxType match {
+  private[akka] def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailbox): AnyRef = mailboxType match {
     case UnboundedMailbox(blocking) => // FIXME make use of 'blocking' in work stealer ConcurrentLinkedDeque
       new ConcurrentLinkedDeque[MessageInvocation] with MessageQueue with Runnable {
         def enqueue(handle: MessageInvocation): Unit = this.add(handle)
@@ -224,7 +224,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   /**
    * Creates and returns a durable mailbox for the given actor.
    */
-  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef =
+  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailbox): AnyRef =
     createMailbox(mailboxType.mailboxImplClassname, actorRef)
 
   private[akka] override def register(actorRef: ActorRef) = {

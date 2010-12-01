@@ -106,7 +106,7 @@ class ExecutorBasedEventDrivenDispatcher(
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
-  def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = mailboxType match {
+  def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailbox): AnyRef = mailboxType match {
     case UnboundedMailbox(blocking) => new DefaultUnboundedMessageQueue(blocking) with ExecutableMailbox {
       def dispatcher = ExecutorBasedEventDrivenDispatcher.this
     }
@@ -120,7 +120,7 @@ class ExecutorBasedEventDrivenDispatcher(
   /**
    * Creates and returns a durable mailbox for the given actor.
    */
-  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef =
+  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailbox): AnyRef =
     createMailbox(mailboxType.mailboxImplClassname, actorRef)
 
   private[akka] def start = log.slf4j.debug("Starting up {}\n\twith throughput [{}]", this, throughput)
