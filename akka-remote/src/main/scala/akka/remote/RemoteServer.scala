@@ -116,18 +116,18 @@ object RemoteServer {
   private val guard = new ReadWriteGuard
   private val remoteServers =   Map[Address, RemoteServer]()
 
+  def serverFor(address: InetSocketAddress): Option[RemoteServer] =
+    serverFor(address.getHostName, address.getPort)
+
+  def serverFor(hostname: String, port: Int): Option[RemoteServer] = guard.withReadGuard {
+    remoteServers.get(Address(hostname, port))
+  }
+
   private[akka] def getOrCreateServer(address: InetSocketAddress): RemoteServer = guard.withWriteGuard {
     serverFor(address) match {
       case Some(server) => server
       case None         => (new RemoteServer).start(address)
     }
-  }
-
-  private[akka] def serverFor(address: InetSocketAddress): Option[RemoteServer] =
-    serverFor(address.getHostName, address.getPort)
-
-  private[akka] def serverFor(hostname: String, port: Int): Option[RemoteServer] = guard.withReadGuard {
-    remoteServers.get(Address(hostname, port))
   }
 
   private[akka] def register(hostname: String, port: Int, server: RemoteServer) = guard.withWriteGuard {
