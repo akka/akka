@@ -166,12 +166,12 @@ class HawtDispatcher(val aggregate: Boolean = true, val parent: DispatchQueue = 
   def suspend(actorRef: ActorRef) = mailbox(actorRef).suspend
   def resume(actorRef:ActorRef)   = mailbox(actorRef).resume
 
-  private[akka] def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = null.asInstanceOf[AnyRef]
+  private[akka] def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailbox): AnyRef = null.asInstanceOf[AnyRef]
 
   /**
    * Creates and returns a durable mailbox for the given actor.
    */
-  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = null.asInstanceOf[AnyRef]
+  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailbox): AnyRef = null.asInstanceOf[AnyRef]
 
   override def toString = "HawtDispatcher"
 }
