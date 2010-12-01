@@ -383,7 +383,7 @@ class RemoteServer extends Logging with ListenerManagement {
    */
   def unregister(actorRef: ActorRef):Unit = synchronized {
     if (_isRunning) {
-      log.slf4j.debug("Unregistering server side remote actor [{}] with id [{}:{}]", Array(actorRef.actorClass.getName, actorRef.id, actorRef.uuid))
+      log.slf4j.debug("Unregistering server side remote actor [{}] with id [{}:{}]", Array[AnyRef](actorRef.actorClass.getName, actorRef.id, actorRef.uuid))
       actors.remove(actorRef.id, actorRef)
       actorsByUuid.remove(actorRef.uuid, actorRef)
     }
