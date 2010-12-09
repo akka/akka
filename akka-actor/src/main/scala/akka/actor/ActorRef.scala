@@ -995,7 +995,7 @@ class LocalActorRef private[akka] (
         "\n\tWill *not* restart actor [{}] anymore." +
         "\n\tLast exception causing restart was" +
         "\n\t[{}].",
-        Array(maxNrOfRetries, withinTimeRange, this, reason))
+        Array[AnyRef](maxNrOfRetries, withinTimeRange, this, reason))
       _supervisor.foreach { sup =>
         // can supervisor handle the notification?
         val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
