@@ -118,7 +118,7 @@ trait Mist extends Logging {
     val server = context.getServerInfo
     val (major, minor) = (context.getMajorVersion, context.getMinorVersion)
 
-    log.slf4j.info("Initializing Akka HTTP on {} with Servlet API {}.{}",Array(server, major, minor))
+    log.slf4j.info("Initializing Akka HTTP on {} with Servlet API {}.{}",Array[AnyRef](server, major: java.lang.Integer, minor: java.lang.Integer))
 
     _factory = if (major >= 3) {
       log.slf4j.info("Supporting Java asynchronous contexts.")
