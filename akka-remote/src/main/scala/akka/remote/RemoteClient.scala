@@ -77,16 +77,16 @@ object RemoteClient extends Logging {
   private val remoteActors  = new HashMap[Address, HashSet[Uuid]]
 
   def actorFor(classNameOrServiceId: String, hostname: String, port: Int): ActorRef =
-    actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, None)
+    actorFor(classNameOrServiceId, classNameOrServiceId, Actor.TIMEOUT, hostname, port, None)
 
   def actorFor(classNameOrServiceId: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, Some(loader))
+    actorFor(classNameOrServiceId, classNameOrServiceId, Actor.TIMEOUT, hostname, port, Some(loader))
 
   def actorFor(serviceId: String, className: String, hostname: String, port: Int): ActorRef =
-    actorFor(serviceId, className, 5000L, hostname, port, None)
+    actorFor(serviceId, className, Actor.TIMEOUT, hostname, port, None)
 
   def actorFor(serviceId: String, className: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    actorFor(serviceId, className, 5000L, hostname, port, Some(loader))
+    actorFor(serviceId, className, Actor.TIMEOUT, hostname, port, Some(loader))
 
   def actorFor(classNameOrServiceId: String, timeout: Long, hostname: String, port: Int): ActorRef =
     actorFor(classNameOrServiceId, classNameOrServiceId, timeout, hostname, port, None)
@@ -98,7 +98,7 @@ object RemoteClient extends Logging {
     RemoteActorRef(serviceId, className, hostname, port, timeout, None)
 
   def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, hostname: String, port: Int): T = {
-    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, 5000L, hostname, port, None)
+    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, Actor.TIMEOUT, hostname, port, None)
   }
 
   def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int): T = {
