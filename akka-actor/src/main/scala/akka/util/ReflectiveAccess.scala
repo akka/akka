@@ -171,6 +171,49 @@ object ReflectiveAccess extends Logging {
     }
   }
 
+  object AkkaCloudModule {
+
+    type Mailbox = {
+      def enqueue(message: MessageInvocation)
+      def dequeue: MessageInvocation
+    }
+
+    type Serializer = {
+      def toBinary(obj: AnyRef): Array[Byte]
+      def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
+    }
+
+    lazy val isEnabled = clusterObjectInstance.isDefined
+
+    val clusterObjectInstance: Option[AnyRef] =
+      getObjectFor("akka.cloud.cluster.Cluster$")
+
+    val serializerClass: Option[Class[_]] =
+      getClassFor("akka.serialization.Serializer")
+
+    def ensureEnabled = if (!isEnabled) throw new ModuleNotAvailableException(
+      "Feature is only available in Akka Cloud")
+
+    def createFileBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.FileBasedMailbox", actorRef)
+
+    def createZooKeeperBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.ZooKeeperBasedMailbox", actorRef)
+
+    def createBeanstalkBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.BeanstalkBasedMailbox", actorRef)
+
+    def createRedisBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.RedisBasedMailbox", actorRef)
+
+    private def createMailbox(mailboxClassname: String, actorRef: ActorRef): Mailbox = {
+      ensureEnabled
+      createInstance(
+        mailboxClassname,
+        Array(classOf[ActorRef]),
+        Array(actorRef).asInstanceOf[Array[AnyRef]],
+        loader)
+        .getOrElse(throw new IllegalActorStateException("Could not create durable mailbox [" + mailboxClassname + "] for actor [" + actorRef + "]"))
+        .asInstanceOf[Mailbox]
+    }
+  }
+
   val noParams = Array[Class[_]]()
   val noArgs   = Array[AnyRef]()
 
@@ -213,9 +256,15 @@ object ReflectiveAccess extends Logging {
     instance.setAccessible(true)
     Option(instance.get(null).asInstanceOf[T])
   } catch {
-    case e: ClassNotFoundException =>
+    case e: ClassNotFoundException => {
       log.slf4j.debug("Could not get object [{}] due to [{}]", fqn, e)
       None
+    }
+    case ei: ExceptionInInitializerError => {
+      log.error("Exception in initializer for object [%s]".format(fqn))
+      log.error(ei.getCause, "Cause was:")
+      throw ei
+    }
   }
 
   def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Option[Class[T]] = try {

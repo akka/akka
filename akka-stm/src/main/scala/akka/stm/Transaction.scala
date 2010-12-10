@@ -75,7 +75,8 @@ object Transaction {
     TransactionManagement.transaction.set(Some(tx))
     mtx.registerLifecycleListener(new TransactionLifecycleListener() {
       def notify(mtx: MultiverseTransaction, event: TransactionLifecycleEvent) = event match {
-        case TransactionLifecycleEvent.PostCommit => tx.commit
+        case TransactionLifecycleEvent.PostCommit => tx.commitJta
+        case TransactionLifecycleEvent.PreCommit => tx.commitPersistentState
         case TransactionLifecycleEvent.PostAbort => tx.abort
         case _ => {}
       }
@@ -89,6 +90,7 @@ object Transaction {
  */
 @serializable class Transaction extends Logging {
   val JTA_AWARE = config.getBool("akka.stm.jta-aware", false)
+  val STATE_RETRIES = config.getInt("akka.storage.max-retries",10)
 
   val id = Transaction.idFactory.incrementAndGet
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
@@ -109,10 +111,16 @@ object Transaction {
     jta.foreach { _.beginWithStmSynchronization(this) }
   }
 
-  def commit = synchronized {
-    log.slf4j.trace("Committing transaction " + toString)
-    persistentStateMap.valuesIterator.foreach(_.commit)
+  def commitPersistentState = synchronized {
+    log.trace("Committing transaction " + toString)
+    retry(STATE_RETRIES){
+      persistentStateMap.valuesIterator.foreach(_.commit)
+      persistentStateMap.clear
+    }
     status = TransactionStatus.Completed
+  }
+
+  def commitJta = synchronized {
     jta.foreach(_.commit)
   }
 
@@ -121,6 +129,21 @@ object Transaction {
     jta.foreach(_.rollback)
     persistentStateMap.valuesIterator.foreach(_.abort)
     persistentStateMap.clear
+  }
+
+  def retry(tries:Int)(block: => Unit):Unit={
+    log.debug("Trying commit of persistent data structures")
+    if(tries==0){
+      throw new TransactionRetryException("Exhausted Retries while committing persistent state")
+    }
+    try{
+      block
+    } catch{
+      case e:Exception=>{
+        log.warn(e,"Exception while committing persistent state, retrying")
+        retry(tries-1){block}
+      }
+    }
   }
 
   def isNew = synchronized { status == TransactionStatus.New }
@@ -144,7 +167,13 @@ object Transaction {
   private[akka] def isTopLevel = depth.get == 0
   //when calling this method, make sure to prefix the uuid with the type so you
   //have no possibility of kicking a diffferent type with the same uuid out of a transction
-  private[akka] def register(uuid: String, storage: Committable with Abortable) = persistentStateMap.put(uuid, storage)
+  private[akka] def register(uuid: String, storage: Committable with Abortable) = {
+    if(persistentStateMap.getOrElseUpdate(uuid, {storage}) ne storage){
+      log.error("existing:"+System.identityHashCode(persistentStateMap.get(uuid).get))
+      log.error("new:"+System.identityHashCode(storage))
+      throw new IllegalStateException("attempted to register an instance of persistent data structure for id [%s] when there is already a different instance registered".format(uuid))
+    }
+  }
 
   private def ensureIsActive = if (status != TransactionStatus.Active)
     throw new StmConfigurationException(
