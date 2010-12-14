@@ -485,14 +485,12 @@ class RemoteServerHandler(
     super.handleUpstream(ctx, event)
   }
 
-  override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
-    val message = event.getMessage
-    if (message eq null) throw new IllegalActorStateException("Message in remote MessageEvent is null: " + event)
-    if (message.isInstanceOf[RemoteMessageProtocol]) {
-      val requestProtocol = message.asInstanceOf[RemoteMessageProtocol]
-       if (RemoteServer.REQUIRE_COOKIE) authenticateRemoteClient(requestProtocol, ctx)
+  override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = event.getMessage match {
+    case null => throw new IllegalActorStateException("Message in remote MessageEvent is null: " + event)
+    case requestProtocol: RemoteMessageProtocol =>
+      if (RemoteServer.REQUIRE_COOKIE) authenticateRemoteClient(requestProtocol, ctx)
       handleRemoteMessageProtocol(requestProtocol, event.getChannel)
-    }
+    case _ => //ignore
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
