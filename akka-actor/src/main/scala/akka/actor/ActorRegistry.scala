@@ -12,8 +12,9 @@ import java.util.{Set => JSet}
 
 import annotation.tailrec
 import akka.util.ReflectiveAccess._
-import akka.util.{ReadWriteGuard, Address, ListenerManagement}
 import java.net.InetSocketAddress
+import akka.util. {ReadWriteGuard, Address, ListenerManagement}
+import akka.remoteinterface.RemoteServerModule
 
 /**
  * Base trait for ActorRegistry events, allows listen to when an actor is added and removed from the ActorRegistry.
@@ -223,9 +224,19 @@ object ActorRegistry extends ListenerManagement {
     TypedActorModule.typedActorObjectInstance.get.proxyFor(actorRef)
   }
 
+  /**
+   * Handy access to the RemoteServer module
+   */
+  lazy val remote: RemoteServerModule = getObjectFor("akka.remote.RemoteNode$") match {
+    case Some(module) => module
+    case None =>
+      log.slf4j.error("Wanted remote module but didn't exist on classpath")
+      null
+  }
+
 
   /**
-   * Registers an actor in the ActorRegistry.
+   *  Registers an actor in the ActorRegistry.
    */
   private[akka] def register(actor: ActorRef) = {
     // ID

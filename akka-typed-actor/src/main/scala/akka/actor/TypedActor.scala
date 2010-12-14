@@ -512,9 +512,9 @@ object TypedActor extends Logging {
     typedActor.initialize(proxy)
     if (config._messageDispatcher.isDefined) actorRef.dispatcher = config._messageDispatcher.get
     if (config._threadBasedDispatcher.isDefined) actorRef.dispatcher = Dispatchers.newThreadBasedDispatcher(actorRef)
-    if (config._host.isDefined) actorRef.makeRemote(config._host.get)
+    if (config._host.isDefined) log.slf4j.warn("Client-managed typed actors are not supported!") //TODO: REVISIT: FIXME
     actorRef.timeout = config.timeout
-    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, actorRef.remoteAddress, actorRef.timeout))
+    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, None, actorRef.timeout)) //TODO: REVISIT fix Client managed typed actor
     actorRef.start
     proxy.asInstanceOf[T]
   }
@@ -751,7 +751,7 @@ private[akka] sealed class ServerManagedTypedActorAspect extends ActorAspect {
 
   override def initialize(joinPoint: JoinPoint): Unit = {
     super.initialize(joinPoint)
-    remoteAddress = actorRef.remoteAddress
+    //remoteAddress = actorRef.remoteAddress //TODO: REVISIT: Fix Server managed Typed Actor
   }
 }
 

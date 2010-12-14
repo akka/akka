@@ -107,36 +107,6 @@ object ReflectiveAccess extends Logging {
   object RemoteServerModule {
     val HOSTNAME = Config.config.getString("akka.remote.server.hostname", "localhost")
     val PORT     = Config.config.getInt("akka.remote.server.port", 2552)
-
-    type RemoteServerObject = {
-      def registerActor(address: InetSocketAddress, actor: ActorRef): Unit
-      def registerTypedActor(address: InetSocketAddress, name: String, typedActor: AnyRef): Unit
-    }
-
-    type RemoteNodeObject = {
-      def unregister(actorRef: ActorRef): Unit
-    }
-
-    val remoteServerObjectInstance: Option[RemoteServerObject] =
-      getObjectFor("akka.remote.RemoteServer$")
-
-    val remoteNodeObjectInstance: Option[RemoteNodeObject] =
-      getObjectFor("akka.remote.RemoteNode$")
-
-    def registerActor(address: InetSocketAddress, actorRef: ActorRef) = {
-      RemoteClientModule.ensureEnabled
-      remoteServerObjectInstance.get.registerActor(address, actorRef)
-    }
-
-    def registerTypedActor(address: InetSocketAddress, implementationClassName: String, proxy: AnyRef) = {
-      RemoteClientModule.ensureEnabled
-      remoteServerObjectInstance.get.registerTypedActor(address, implementationClassName, proxy)
-    }
-
-    def unregister(actorRef: ActorRef) = {
-      RemoteClientModule.ensureEnabled
-      remoteNodeObjectInstance.get.unregister(actorRef)
-    }
   }
 
   /**

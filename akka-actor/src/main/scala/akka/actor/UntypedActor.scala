@@ -93,16 +93,6 @@ abstract class UntypedActor extends Actor {
 trait UntypedActorFactory extends Creator[Actor]
 
 /**
- * Extend this abstract class to create a remote UntypedActor.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-abstract class RemoteUntypedActor(address: InetSocketAddress) extends UntypedActor {
-  def this(hostname: String, port: Int) = this(new InetSocketAddress(hostname, port))
-  self.makeRemote(address)
-}
-
-/**
  * Factory object for creating and managing 'UntypedActor's. Meant to be used from Java.
  * <p/>
  * Example on how to create an actor:

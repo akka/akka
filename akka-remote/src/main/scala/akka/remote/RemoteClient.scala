@@ -95,7 +95,7 @@ object RemoteClient extends Logging {
     actorFor(classNameOrServiceId, classNameOrServiceId, timeout, hostname, port, Some(loader))
 
   def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef =
-    RemoteActorRef(serviceId, className, hostname, port, timeout, None)
+    RemoteActorRef(serviceId, className, hostname, port, timeout, false, None)
 
   def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, hostname: String, port: Int): T = {
     typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, Actor.TIMEOUT, hostname, port, None)
@@ -114,15 +114,15 @@ object RemoteClient extends Logging {
   }
 
   private[akka] def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): T = {
-    val actorRef = RemoteActorRef(serviceId, implClassName, hostname, port, timeout, loader, ActorType.TypedActor)
+    val actorRef = RemoteActorRef(serviceId, implClassName, hostname, port, timeout, false, loader, ActorType.TypedActor)
     TypedActor.createProxyForRemoteActorRef(intfClass, actorRef)
   }
 
   private[akka] def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    RemoteActorRef(serviceId, className, hostname, port, timeout, Some(loader))
+    RemoteActorRef(serviceId, className, hostname, port, timeout, false, Some(loader))
 
   private[akka] def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): ActorRef =
-    RemoteActorRef(serviceId, className, hostname, port, timeout, loader)
+    RemoteActorRef(serviceId, className, hostname, port, timeout, false, loader)
 
   def clientFor(hostname: String, port: Int): RemoteClient =
     clientFor(new InetSocketAddress(hostname, port), None)

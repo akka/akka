@@ -77,8 +77,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   @volatile
   protected[this] var _status: ActorRefInternals.StatusType = ActorRefInternals.UNSTARTED
   @volatile
-  protected[akka] var _homeAddress = new InetSocketAddress(RemoteServerModule.HOSTNAME, RemoteServerModule.PORT)
-  @volatile
   protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
   protected[akka] val guard = new ReentrantGuard
 
@@ -391,62 +389,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   def dispatcher: MessageDispatcher
 
   /**
-   * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
-   */
-  def makeRemote(hostname: String, port: Int): Unit
-
-  /**
-   * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
-   */
-  def makeRemote(address: InetSocketAddress): Unit
-
-  /**
-   * Returns the home address and port for this actor.
-   */
-  def homeAddress: InetSocketAddress = _homeAddress
-
-  /**
-   * Akka Java API
-   * Returns the home address and port for this actor.
-   */
-  def getHomeAddress(): InetSocketAddress = homeAddress
-
-  /**
-   * Set the home address and port for this actor.
-   */
-  def homeAddress_=(hostnameAndPort: Tuple2[String, Int]): Unit =
-    homeAddress_=(new InetSocketAddress(hostnameAndPort._1, hostnameAndPort._2))
-
-  /**
-   * Akka Java API
-   * Set the home address and port for this actor.
-   */
-  def setHomeAddress(hostname: String, port: Int): Unit = homeAddress = (hostname, port)
-
-  /**
-   * Set the home address and port for this actor.
-   */
-  def homeAddress_=(address: InetSocketAddress): Unit
-
-  /**
-   * Akka Java API
-   * Set the home address and port for this actor.
-   */
-  def setHomeAddress(address: InetSocketAddress): Unit = homeAddress = address
-
-  /**
-   * Returns the remote address for the actor, if any, else None.
-   */
-  def remoteAddress: Option[InetSocketAddress]
-  protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit
-
-  /**
-   * Akka Java API
-   * Gets the remote address for the actor, if any, else None.
-   */
-  def getRemoteAddress(): Option[InetSocketAddress] = remoteAddress
-
-  /**
    * Starts up the actor and its message queue.
    */
   def start(): ActorRef
@@ -562,7 +504,8 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
 
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit
 
-  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid]
+  //TODO: REVISIT: REMOVE
+  //protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid]
 
   protected[akka] def linkedActors: JMap[Uuid, ActorRef]
 
@@ -602,8 +545,6 @@ class LocalActorRef private[akka] (
   extends ActorRef with ScalaActorRef {
 
   @volatile
-  private[akka] var _remoteAddress: Option[InetSocketAddress] = None // only mutable to maintain identity across nodes
-  @volatile
   private[akka] lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
   @volatile
   private[akka] var _supervisor: Option[ActorRef] = None
@@ -635,7 +576,6 @@ class LocalActorRef private[akka] (
     this(__factory)
     _uuid = __uuid
     id = __id
-    homeAddress = (__hostname, __port)
     timeout = __timeout
     receiveTimeout = __receiveTimeout
     lifeCycle = __lifeCycle
@@ -675,41 +615,6 @@ class LocalActorRef private[akka] (
   def dispatcher: MessageDispatcher = _dispatcher
 
   /**
-   * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
-   */
-  def makeRemote(hostname: String, port: Int): Unit = {
-    ensureRemotingEnabled
-    if (!isRunning || isBeingRestarted) makeRemote(new InetSocketAddress(hostname, port))
-    else throw new ActorInitializationException(
-      "Can't make a running actor remote. Make sure you call 'makeRemote' before 'start'.")
-  }
-
-  /**
-   * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
-   */
-  def makeRemote(address: InetSocketAddress): Unit = guard.withGuard {
-    ensureRemotingEnabled
-    if (!isRunning || isBeingRestarted) {
-      _remoteAddress = Some(address)
-      RemoteClientModule.register(address, uuid)
-      homeAddress = (RemoteServerModule.HOSTNAME, RemoteServerModule.PORT)
-    } else throw new ActorInitializationException(
-      "Can't make a running actor remote. Make sure you call 'makeRemote' before 'start'.")
-  }
-
-  /**
-   * Set the contact address for this actor. This is used for replying to messages
-   * sent asynchronously when no reply channel exists.
-   */
-  def homeAddress_=(address: InetSocketAddress): Unit = _homeAddress = address
-
-  /**
-   * Returns the remote address for the actor, if any, else None.
-   */
-  def remoteAddress: Option[InetSocketAddress] = _remoteAddress
-  protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = _remoteAddress = addr
-
-  /**
    * Starts up the actor and its message queue.
    */
   def start: ActorRef = guard.withGuard {
@@ -740,11 +645,6 @@ class LocalActorRef private[akka] (
       _status = ActorRefInternals.SHUTDOWN
       actor.postStop
       ActorRegistry.unregister(this)
-      if (isRemotingEnabled) {
-        if (remoteAddress.isDefined)
-          RemoteClientModule.unregister(remoteAddress.get, uuid)
-        RemoteServerModule.unregister(this)
-      }
       setActorSelfFields(actorInstance.get,null)
     } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
   }
@@ -795,11 +695,8 @@ class LocalActorRef private[akka] (
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = guard.withGuard {
-    ensureRemotingEnabled
-    actorRef.makeRemote(hostname, port)
-    link(actorRef)
-    actorRef.start
+  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = {
+    //TODO: REVISIT: REMOVED
   }
 
   /**
@@ -818,10 +715,7 @@ class LocalActorRef private[akka] (
    */
   def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef = guard.withGuard {
     ensureRemotingEnabled
-    val actor = Actor.actorOf(clazz)
-    actor.makeRemote(hostname, port)
-    actor.start
-    actor
+    Actor.actorOf(clazz, hostname, port).start
   }
 
   /**
@@ -843,8 +737,7 @@ class LocalActorRef private[akka] (
    */
   def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef = guard.withGuard {
     ensureRemotingEnabled
-    val actor = Actor.actorOf(clazz)
-    actor.makeRemote(hostname, port)
+    val actor = Actor.actorOf(clazz, hostname, port)
     link(actor)
     actor.start
     actor
@@ -878,13 +771,8 @@ class LocalActorRef private[akka] (
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = _supervisor = sup
 
   protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
-    if (remoteAddress.isDefined && isRemotingEnabled) {
-      RemoteClientModule.send[Any](
-        message, senderOption, None, remoteAddress.get, timeout, true, this, None, ActorType.ScalaActor)
-    } else {
-      val invocation = new MessageInvocation(this, message, senderOption, None)
-      dispatcher dispatchMessage invocation
-    }
+    val invocation = new MessageInvocation(this, message, senderOption, None)
+    dispatcher dispatchMessage invocation
   }
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
@@ -892,19 +780,11 @@ class LocalActorRef private[akka] (
     timeout: Long,
     senderOption: Option[ActorRef],
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-
-    if (remoteAddress.isDefined && isRemotingEnabled) {
-      val future = RemoteClientModule.send[T](
-        message, senderOption, senderFuture, remoteAddress.get, timeout, false, this, None, ActorType.ScalaActor)
-      if (future.isDefined) future.get
-      else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
-    } else {
       val future = if (senderFuture.isDefined) senderFuture else Some(new DefaultCompletableFuture[T](timeout))
       val invocation = new MessageInvocation(
         this, message, senderOption, future.asInstanceOf[Some[CompletableFuture[Any]]])
       dispatcher dispatchMessage invocation
       future.get
-    }
   }
 
   /**
@@ -1061,13 +941,15 @@ class LocalActorRef private[akka] (
     }
   }
 
+  //TODO: REVISIT: REMOVE
+  /*
   protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = guard.withGuard {
     ensureRemotingEnabled
     if (_supervisor.isDefined) {
       remoteAddress.foreach(address => RemoteClientModule.registerSupervisorForActor(address, this))
       Some(_supervisor.get.uuid)
     } else None
-  }
+  }*/
 
   protected[akka] def linkedActors: JMap[Uuid, ActorRef] = _linkedActors
 
@@ -1222,13 +1104,14 @@ private[akka] case class RemoteActorRef private[akka] (
   val hostname: String,
   val port: Int,
   _timeout: Long,
+  clientManaged: Boolean,
   loader: Option[ClassLoader],
   val actorType: ActorType = ActorType.ScalaActor)
   extends ActorRef with ScalaActorRef {
 
   ensureRemotingEnabled
 
-  val remoteAddress: Option[InetSocketAddress] = Some(new InetSocketAddress(hostname, port))
+  val homeAddress = new InetSocketAddress(hostname, port)
 
   id = classOrServiceName
   timeout = _timeout
@@ -1237,7 +1120,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
     RemoteClientModule.send[Any](
-      message, senderOption, None, remoteAddress.get, timeout, true, this, None, actorType)
+      message, senderOption, None, homeAddress, timeout, true, this, None, actorType)
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
     message: Any,
@@ -1245,13 +1128,16 @@ private[akka] case class RemoteActorRef private[akka] (
     senderOption: Option[ActorRef],
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
     val future = RemoteClientModule.send[T](
-      message, senderOption, senderFuture, remoteAddress.get, timeout, false, this, None, actorType)
+      message, senderOption, senderFuture, homeAddress, timeout, false, this, None, actorType)
     if (future.isDefined) future.get
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
 
   def start: ActorRef = synchronized {
     _status = ActorRefInternals.RUNNING
+    if (clientManaged) {
+      RemoteClientModule.register(homeAddress, uuid)
+    }
     this
   }
 
@@ -1259,18 +1145,20 @@ private[akka] case class RemoteActorRef private[akka] (
     if (_status == ActorRefInternals.RUNNING) {
       _status = ActorRefInternals.SHUTDOWN
       postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
+      if (clientManaged) {
+        RemoteClientModule.unregister(homeAddress, uuid)
+        ActorRegistry.remote.unregister(this) //TODO: Why does this need to be deregistered from the server?
+      }
     }
   }
 
-  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = None
+  //TODO: REVISIT: REMOVE
+  //protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = None
 
   // ==== NOT SUPPORTED ====
   def actorClass: Class[_ <: Actor] = unsupported
   def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported
-  def makeRemote(hostname: String, port: Int): Unit = unsupported
-  def makeRemote(address: InetSocketAddress): Unit = unsupported
-  def homeAddress_=(address: InetSocketAddress): Unit = unsupported
   def link(actorRef: ActorRef): Unit = unsupported
   def unlink(actorRef: ActorRef): Unit = unsupported
   def startLink(actorRef: ActorRef): Unit = unsupported
@@ -1288,7 +1176,6 @@ private[akka] case class RemoteActorRef private[akka] (
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def linkedActors: JMap[Uuid, ActorRef] = unsupported
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported
-  protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = unsupported
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = unsupported
   protected[akka] def actorInstance: AtomicReference[Actor] = unsupported
   private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
