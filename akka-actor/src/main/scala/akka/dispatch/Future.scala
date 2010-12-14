@@ -43,7 +43,7 @@ object Futures {
   /**
    * Returns the First Future that is completed (blocking!)
    */
-  def awaitOne(futures: List[Future[_]], timeout: Long = Long.MaxValue): Future[_] = firstCompletedOf(futures).await
+  def awaitOne(futures: List[Future[_]], timeout: Long = Long.MaxValue): Future[_] = firstCompletedOf(futures, timeout).await
 
   /**
    * Returns a Future to the result of the first future in the list that is completed
