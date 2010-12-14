@@ -5,11 +5,10 @@
 package sample.remote
 
 import akka.actor.Actor._
-import akka.actor.RemoteActor
-import akka.remote.RemoteNode
 import akka.util.Logging
+import akka.actor. {ActorRegistry, Actor}
 
-class RemoteHelloWorldActor extends RemoteActor("localhost", 2552) {
+class RemoteHelloWorldActor extends Actor {
   def receive = {
     case "Hello" =>
       log.slf4j.info("Received 'Hello'")
@@ -19,7 +18,7 @@ class RemoteHelloWorldActor extends RemoteActor("localhost", 2552) {
 
 object ClientManagedRemoteActorServer extends Logging {
   def run = {
-    RemoteNode.start("localhost", 2552)
+    ActorRegistry.remote.start("localhost", 2552)
     log.slf4j.info("Remote node started")
   }
 
@@ -29,7 +28,7 @@ object ClientManagedRemoteActorServer extends Logging {
 object ClientManagedRemoteActorClient extends Logging {
 
   def run = {
-    val actor = actorOf[RemoteHelloWorldActor].start
+    val actor = actorOf[RemoteHelloWorldActor]("localhost",2552).start
     log.slf4j.info("Remote actor created, moved to the server")
     log.slf4j.info("Sending 'Hello' to remote actor")
     val result = actor !! "Hello"

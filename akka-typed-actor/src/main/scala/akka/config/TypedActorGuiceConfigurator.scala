@@ -115,6 +115,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
 
     val proxy = Proxy.newInstance(Array(interfaceClass), Array(typedActor), true, false)
 
+    /*
     val remoteAddress =
       if (component.remoteAddress.isDefined)
         Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
@@ -122,11 +123,11 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
 
     remoteAddress.foreach { address =>
       actorRef.makeRemote(remoteAddress.get)
-    }
+    }*/
 
     AspectInitRegistry.register(
       proxy,
-      AspectInit(interfaceClass, typedActor, actorRef, remoteAddress, timeout))
+      AspectInit(interfaceClass, typedActor, actorRef, None, timeout)) //TODO: REVISIT: FIX CLIENT MANAGED ACTORS
     typedActor.initialize(proxy)
     actorRef.start
 

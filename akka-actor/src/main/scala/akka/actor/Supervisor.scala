@@ -130,7 +130,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
     case SupervisorConfig(_, servers) =>
       servers.map(server =>
         server match {
-          case Supervise(actorRef, lifeCycle, remoteAddress) =>
+          case Supervise(actorRef, lifeCycle, registerAsRemoteService) =>
             actorRef.start
             val className = actorRef.actor.getClass.getName
             val currentActors = {
@@ -141,10 +141,8 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
             _childActors.put(className, actorRef :: currentActors)
             actorRef.lifeCycle = lifeCycle
             supervisor.link(actorRef)
-            if (remoteAddress.isDefined) {
-              val address = remoteAddress.get
-              RemoteServerModule.registerActor(new InetSocketAddress(address.hostname, address.port), actorRef)
-            }
+            if (registerAsRemoteService)
+              ActorRegistry.remote.register(actorRef)
           case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)
             supervisor.link(childSupervisor.supervisor)

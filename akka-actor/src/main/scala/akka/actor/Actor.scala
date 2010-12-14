@@ -18,18 +18,6 @@ import akka.util. {ReflectiveAccess, Logging, Duration}
 import akka.japi.Procedure
 
 /**
- * Extend this abstract class to create a remote actor.
- * <p/>
- * Equivalent to invoking the <code>makeRemote(..)</code> method in the body of the <code>Actor</code
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-abstract class RemoteActor(address: InetSocketAddress) extends Actor {
-  def this(hostname: String, port: Int) = this(new InetSocketAddress(hostname, port))
-  self.makeRemote(address)
-}
-
-/**
  * Life-cycle messages for the Actors
  */
 @serializable sealed trait LifeCycleMessage
@@ -155,17 +143,35 @@ object Actor extends Logging {
   def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
-   * Creates an ActorRef out of the Actor with type T.
+   * Creates a Client-managed ActorRef out of the Actor of the specified Class.
+   * If the supplied host and port is identical of the configured local node, it will be a local actor
    * <pre>
    *   import Actor._
-   *   val actor = actorOf[MyActor]
+   *   val actor = actorOf[MyActor]("www.akka.io",2552)
    *   actor.start
    *   actor ! message
    *   actor.stop
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf[MyActor].start
+   *   val actor = actorOf[MyActor]("www.akka.io",2552).start
+   * </pre>
+   */
+  def actorOf[T <: Actor : Manifest](host: String, port: Int): ActorRef =
+    actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], host, port)
+
+  /**
+   * Creates an ActorRef out of the Actor of the specified Class.
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf(classOf[MyActor])
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf(classOf[MyActor]).start
    * </pre>
    */
   def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(() => {
@@ -177,6 +183,39 @@ object Actor extends Logging {
         "\nif so put it outside the class/trait, f.e. in a companion object," +
         "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
   })
+
+  /**
+   * Creates a Client-managed ActorRef out of the Actor of the specified Class.
+   * If the supplied host and port is identical of the configured local node, it will be a local actor
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552)
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552).start
+   * </pre>
+   */
+  def actorOf(clazz: Class[_ <: Actor], host: String, port: Int, timeout: Long = TIMEOUT): ActorRef = {
+    import ReflectiveAccess._
+    import ReflectiveAccess.RemoteServerModule.{HOSTNAME,PORT}
+    ensureRemotingEnabled
+
+    (host,port) match {
+      case null             => throw new IllegalArgumentException("No location specified")
+      case (HOSTNAME, PORT) => actorOf(clazz) //Local
+      case                _ => new RemoteActorRef(clazz.getName,
+                                        clazz.getName,
+                                        host,
+                                        port,
+                                        timeout,
+                                        true, //Client managed
+                                        None)
+    }
+  }
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
