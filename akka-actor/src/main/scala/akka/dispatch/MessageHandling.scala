@@ -132,7 +132,7 @@ trait MessageDispatcher extends MailboxFactory with Logging {
     val i = uuids.iterator
     while(i.hasNext()) {
       val uuid = i.next()
-      ActorRegistry.actorFor(uuid) match {
+      ActorRegistry.actorFor(uuid) match { //TODO: REVISIT: How to keep track of which registry?
         case Some(actor) => actor.stop
         case None =>
           log.slf4j.error("stopAllLinkedActors couldn't find linked actor: " + uuid)

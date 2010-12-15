@@ -17,7 +17,7 @@ trait BootableRemoteActorService extends Bootable with Logging {
   self: BootableActorLoaderService =>
 
   protected lazy val remoteServerThread = new Thread(new Runnable() {
-    import ReflectiveAccess.RemoteServerModule.{HOSTNAME,PORT}
+    import ReflectiveAccess.Remote.{HOSTNAME,PORT}
     def run = ActorRegistry.remote.start(HOSTNAME,PORT,loader = self.applicationLoader)
   }, "Akka Remote Service")
 
@@ -34,7 +34,7 @@ trait BootableRemoteActorService extends Bootable with Logging {
 
   abstract override def onUnload = {
     log.slf4j.info("Shutting down Remote Actors Service")
-    RemoteNode.shutdown
+    ActorRegistry.remote.shutdown
     if (remoteServerThread.isAlive) remoteServerThread.join(1000)
     log.slf4j.info("Remote Actors Service has been shut down")
     super.onUnload

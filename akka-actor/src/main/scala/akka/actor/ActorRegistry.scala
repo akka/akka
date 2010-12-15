@@ -13,8 +13,9 @@ import java.util.{Set => JSet}
 import annotation.tailrec
 import akka.util.ReflectiveAccess._
 import java.net.InetSocketAddress
-import akka.util. {ReadWriteGuard, Address, ListenerManagement}
-import akka.remoteinterface.RemoteServerModule
+import akka.util. {ReflectiveAccess, ReadWriteGuard, Address, ListenerManagement}
+import akka.dispatch. {MessageDispatcher, Dispatchers}
+import akka.remoteinterface. {RemoteSupport, RemoteServerModule}
 
 /**
  * Base trait for ActorRegistry events, allows listen to when an actor is added and removed from the ActorRegistry.
@@ -37,7 +38,9 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object ActorRegistry extends ListenerManagement {
+object ActorRegistry extends ActorRegistryInstance(ReflectiveAccess.Remote.defaultRemoteSupport)
+
+class ActorRegistryInstance(remoteBootstrap: Option[(ActorRegistryInstance) => RemoteSupport]) extends ListenerManagement {
   private val actorsByUUID    = new ConcurrentHashMap[Uuid, ActorRef]
   private val actorsById      = new Index[String,ActorRef]
   private val remoteActorSets = Map[Address, RemoteActorSet]()
@@ -227,11 +230,127 @@ object ActorRegistry extends ListenerManagement {
   /**
    * Handy access to the RemoteServer module
    */
-  lazy val remote: RemoteServerModule = getObjectFor("akka.remote.RemoteNode$") match {
-    case Some(module) => module
-    case None =>
-      log.slf4j.error("Wanted remote module but didn't exist on classpath")
-      null
+  lazy val remote: RemoteSupport = remoteBootstrap.map(_(this)).getOrElse(throw new UnsupportedOperationException("You need to have akka-remote on classpath"))
+
+  /**
+   * Creates an ActorRef out of the Actor with type T.
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf[MyActor]
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf[MyActor].start
+   * </pre>
+   */
+  def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+
+  /**
+   * Creates a Client-managed ActorRef out of the Actor of the specified Class.
+   * If the supplied host and port is identical of the configured local node, it will be a local actor
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf[MyActor]("www.akka.io",2552)
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf[MyActor]("www.akka.io",2552).start
+   * </pre>
+   */
+  def actorOf[T <: Actor : Manifest](host: String, port: Int): ActorRef =
+    actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], host, port)
+
+  /**
+   * Creates an ActorRef out of the Actor of the specified Class.
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf(classOf[MyActor])
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf(classOf[MyActor]).start
+   * </pre>
+   */
+  def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(this, () => {
+    import ReflectiveAccess.{ createInstance, noParams, noArgs }
+    createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
+      throw new ActorInitializationException(
+        "Could not instantiate Actor" +
+        "\nMake sure Actor is NOT defined inside a class/trait," +
+        "\nif so put it outside the class/trait, f.e. in a companion object," +
+        "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
+  })
+
+  /**
+   * Creates a Client-managed ActorRef out of the Actor of the specified Class.
+   * If the supplied host and port is identical of the configured local node, it will be a local actor
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552)
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552).start
+   * </pre>
+   */
+  def actorOf(clazz: Class[_ <: Actor], host: String, port: Int, timeout: Long = Actor.TIMEOUT): ActorRef =
+    remote.clientManagedActorOf(clazz, host, port, timeout)
+
+  /**
+   * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
+   * that creates the Actor. Please note that this function can be invoked multiple
+   * times if for example the Actor is supervised and needs to be restarted.
+   * <p/>
+   * This function should <b>NOT</b> be used for remote actors.
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf(new MyActor)
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf(new MyActor).start
+   * </pre>
+   */
+  def actorOf(factory: => Actor): ActorRef = new LocalActorRef(this,() => factory)
+
+  /**
+   * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
+   * the block has been executed.
+   * <p/>
+   * NOTE: If used from within an Actor then has to be qualified with 'ActorRegistry.spawn' since
+   * there is a method 'spawn[ActorType]' in the Actor trait already.
+   * Example:
+   * <pre>
+   * import ActorRegistry.{spawn}
+   *
+   * spawn  {
+   *   ... // do stuff
+   * }
+   * </pre>
+   */
+  def spawn(body: => Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit = {
+    case object Spawn
+    actorOf(new Actor() {
+      self.dispatcher = dispatcher
+      def receive = {
+        case Spawn => try { body } finally { self.stop }
+      }
+    }).start ! Spawn
   }
 
 
@@ -303,12 +422,12 @@ object ActorRegistry extends ListenerManagement {
   private[akka] def typedActorsFactories(address: Address) = actorsFor(address).typedActorsFactories
 
   private[akka] class RemoteActorSet {
-    private[ActorRegistry] val actors = new ConcurrentHashMap[String, ActorRef]
-    private[ActorRegistry] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
-    private[ActorRegistry] val actorsFactories = new ConcurrentHashMap[String, () => ActorRef]
-    private[ActorRegistry] val typedActors = new ConcurrentHashMap[String, AnyRef]
-    private[ActorRegistry] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
-    private[ActorRegistry] val typedActorsFactories = new ConcurrentHashMap[String, () => AnyRef]
+    private[ActorRegistryInstance] val actors = new ConcurrentHashMap[String, ActorRef]
+    private[ActorRegistryInstance] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
+    private[ActorRegistryInstance] val actorsFactories = new ConcurrentHashMap[String, () => ActorRef]
+    private[ActorRegistryInstance] val typedActors = new ConcurrentHashMap[String, AnyRef]
+    private[ActorRegistryInstance] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
+    private[ActorRegistryInstance] val typedActorsFactories = new ConcurrentHashMap[String, () => AnyRef]
   }
 }
 

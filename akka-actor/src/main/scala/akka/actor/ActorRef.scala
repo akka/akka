@@ -80,6 +80,8 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
   protected[akka] val guard = new ReentrantGuard
 
+  private[akka] def registry: ActorRegistryInstance
+
   /**
    * User overridable callback/setting.
    * <p/>
@@ -541,6 +543,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
+  private[akka] val registry: ActorRegistryInstance,
   private[this] val actorFactory: () => Actor)
   extends ActorRef with ScalaActorRef {
 
@@ -563,7 +566,9 @@ class LocalActorRef private[akka] (
   if (isRunning) initializeActorInstance
 
   // used only for deserialization
-  private[akka] def this(__uuid: Uuid,
+  private[akka] def this(
+    __registry: ActorRegistryInstance,
+    __uuid: Uuid,
     __id: String,
     __hostname: String,
     __port: Int,
@@ -573,7 +578,7 @@ class LocalActorRef private[akka] (
     __supervisor: Option[ActorRef],
     __hotswap: Stack[PartialFunction[Any, Unit]],
     __factory: () => Actor) = {
-    this(__factory)
+    this(__registry, __factory)
     _uuid = __uuid
     id = __id
     timeout = __timeout
@@ -583,7 +588,7 @@ class LocalActorRef private[akka] (
     hotswap = __hotswap
     setActorSelfFields(actor,this)
     start
-    ActorRegistry.register(this)
+    __registry.register(this)
   }
 
   // ========= PUBLIC FUNCTIONS =========
@@ -644,7 +649,7 @@ class LocalActorRef private[akka] (
       dispatcher.detach(this)
       _status = ActorRefInternals.SHUTDOWN
       actor.postStop
-      ActorRegistry.unregister(this)
+      registry.unregister(this)
       setActorSelfFields(actorInstance.get,null)
     } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
   }
@@ -942,8 +947,8 @@ class LocalActorRef private[akka] (
   }
 
   //TODO: REVISIT: REMOVE
-  /*
-  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = guard.withGuard {
+
+  /*protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = guard.withGuard {
     ensureRemotingEnabled
     if (_supervisor.isDefined) {
       remoteAddress.foreach(address => RemoteClientModule.registerSupervisorForActor(address, this))
@@ -1053,34 +1058,8 @@ class LocalActorRef private[akka] (
   private def initializeActorInstance = {
     actor.preStart // run actor preStart
     Actor.log.slf4j.trace("[{}] has started", toString)
-    ActorRegistry.register(this)
+    registry.register(this)
   }
-
-  /*
-  private def serializeMessage(message: AnyRef): AnyRef = if (Actor.SERIALIZE_MESSAGES) {
-    if (!message.isInstanceOf[String] &&
-        !message.isInstanceOf[Byte] &&
-        !message.isInstanceOf[Int] &&
-        !message.isInstanceOf[Long] &&
-        !message.isInstanceOf[Float] &&
-        !message.isInstanceOf[Double] &&
-        !message.isInstanceOf[Boolean] &&
-        !message.isInstanceOf[Char] &&
-        !message.isInstanceOf[Tuple2[_, _]] &&
-        !message.isInstanceOf[Tuple3[_, _, _]] &&
-        !message.isInstanceOf[Tuple4[_, _, _, _]] &&
-        !message.isInstanceOf[Tuple5[_, _, _, _, _]] &&
-        !message.isInstanceOf[Tuple6[_, _, _, _, _, _]] &&
-        !message.isInstanceOf[Tuple7[_, _, _, _, _, _, _]] &&
-        !message.isInstanceOf[Tuple8[_, _, _, _, _, _, _, _]] &&
-        !message.getClass.isArray &&
-        !message.isInstanceOf[List[_]] &&
-        !message.isInstanceOf[scala.collection.immutable.Map[_, _]] &&
-        !message.isInstanceOf[scala.collection.immutable.Set[_]]) {
-      Serializer.Java.deepClone(message)
-    } else message
-  } else message
-  */
 }
 
 /**
@@ -1099,12 +1078,13 @@ object RemoteActorSystemMessage {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] case class RemoteActorRef private[akka] (
+  registry: ActorRegistryInstance,
   classOrServiceName: String,
   val actorClassName: String,
   val hostname: String,
   val port: Int,
   _timeout: Long,
-  clientManaged: Boolean,
+  clientManaged: Boolean, //TODO: REVISIT: ENCODE CLIENT_MANAGED INTO REMOTE PROTOCOL
   loader: Option[ClassLoader],
   val actorType: ActorType = ActorType.ScalaActor)
   extends ActorRef with ScalaActorRef {
@@ -1119,16 +1099,14 @@ private[akka] case class RemoteActorRef private[akka] (
   start
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
-    RemoteClientModule.send[Any](
-      message, senderOption, None, homeAddress, timeout, true, this, None, actorType)
+    registry.remote.send[Any](message, senderOption, None, homeAddress, timeout, true, this, None, actorType)
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
     message: Any,
     timeout: Long,
     senderOption: Option[ActorRef],
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-    val future = RemoteClientModule.send[T](
-      message, senderOption, senderFuture, homeAddress, timeout, false, this, None, actorType)
+    val future = registry.remote.send[T](message, senderOption, senderFuture, homeAddress, timeout, false, this, None, actorType)
     if (future.isDefined) future.get
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
@@ -1136,7 +1114,7 @@ private[akka] case class RemoteActorRef private[akka] (
   def start: ActorRef = synchronized {
     _status = ActorRefInternals.RUNNING
     if (clientManaged) {
-      RemoteClientModule.register(homeAddress, uuid)
+      registry.remote.registerClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
     }
     this
   }
@@ -1146,8 +1124,8 @@ private[akka] case class RemoteActorRef private[akka] (
       _status = ActorRefInternals.SHUTDOWN
       postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
       if (clientManaged) {
-        RemoteClientModule.unregister(homeAddress, uuid)
-        ActorRegistry.remote.unregister(this) //TODO: Why does this need to be deregistered from the server?
+        registry.remote.unregisterClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
+        registry.remote.unregister(this) //TODO: REVISIT: Why does this need to be deregistered from the server?
       }
     }
   }

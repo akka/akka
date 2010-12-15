@@ -17,7 +17,7 @@ import scala.collection.immutable.Stack
 
 import com.google.protobuf.ByteString
 import akka.util.ReflectiveAccess
-import akka.util.ReflectiveAccess.RemoteServerModule.{HOSTNAME,PORT}
+import akka.util.ReflectiveAccess.Remote.{HOSTNAME,PORT}
 
 /**
  * Type class definition for Actor Serialization
@@ -191,6 +191,7 @@ object ActorSerialization {
     }
 
     val ar = new LocalActorRef(
+      ActorRegistry,//TODO: REVISIST: Change to an implicit ActorRegistryInstance?
       uuidFrom(protocol.getUuid.getHigh, protocol.getUuid.getLow),
       protocol.getId,
       protocol.getOriginalAddress.getHostname,
@@ -230,6 +231,7 @@ object RemoteActorSerialization {
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
     Actor.log.slf4j.debug("Deserializing RemoteActorRefProtocol to RemoteActorRef:\n {}", protocol)
     RemoteActorRef(
+      ActorRegistry,//TODO: REVISIST: Change to an implicit ActorRegistryInstance?
       protocol.getClassOrServiceName,
       protocol.getActorClassname,
       protocol.getHomeAddress.getHostname,
@@ -245,8 +247,10 @@ object RemoteActorSerialization {
   def toRemoteActorRefProtocol(ar: ActorRef): RemoteActorRefProtocol = {
     import ar._
 
-    Actor.log.slf4j.debug("Register serialized Actor [{}] as remote @ [{}:{}]",Array[AnyRef](actorClassName, HOSTNAME, PORT.asInstanceOf[AnyRef]))
-    ActorRegistry.remote.registerByUuid(ar)
+    Actor.log.slf4j.debug("Register serialized Actor [{}] as remote @ [{}:{}]",
+      Array[AnyRef](actorClassName, registry.remote.hostname, registry.remote.port.asInstanceOf[AnyRef]))
+
+    registry.remote.registerByUuid(ar)
 
     RemoteActorRefProtocol.newBuilder
         .setClassOrServiceName(uuid.toString)

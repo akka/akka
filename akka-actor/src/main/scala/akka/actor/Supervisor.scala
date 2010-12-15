@@ -142,7 +142,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
             actorRef.lifeCycle = lifeCycle
             supervisor.link(actorRef)
             if (registerAsRemoteService)
-              ActorRegistry.remote.register(actorRef)
+              ActorRegistry.remote.register(actorRef) //TODO: REVISIT: Is this the most sensible approach? other way of obtaining ActorRegistry?
           case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)
             supervisor.link(childSupervisor.supervisor)
