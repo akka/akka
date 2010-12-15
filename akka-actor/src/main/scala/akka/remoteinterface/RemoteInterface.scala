@@ -5,13 +5,33 @@
 package akka.remoteinterface
 
 import akka.japi.Creator
-import akka.actor.ActorRef
-import akka.util.{ReentrantGuard, Logging, ListenerManagement}
+import java.net.InetSocketAddress
+import akka.actor._
+import akka.util._
+import akka.dispatch.CompletableFuture
+import akka.actor. {ActorRegistryInstance, ActorType, RemoteActorRef, ActorRef}
+import akka.config.Config.{config, TIME_UNIT}
+
+trait RemoteModule extends Logging {
+  def registry: ActorRegistryInstance
+  def optimizeLocalScoped_?(): Boolean //Apply optimizations for remote operations in local scope
+  protected[akka] def notifyListeners(message: => Any): Unit
+}
+
+
+abstract class RemoteSupport extends ListenerManagement with RemoteServerModule with RemoteClientModule {
+  def shutdown {
+    this.shutdownServerModule
+    this.shutdownClientModule
+  }
+  protected override def manageLifeCycleOfListeners = false
+  protected[akka] override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
+}
 
 /**
  * This is the interface for the RemoteServer functionality, it's used in ActorRegistry.remote
  */
-trait RemoteServerModule extends ListenerManagement with Logging {
+trait RemoteServerModule extends RemoteModule {
   protected val guard = new ReentrantGuard
 
   /**
@@ -37,12 +57,12 @@ trait RemoteServerModule extends ListenerManagement with Logging {
   /**
    *  Starts the server up
    */
-  def start(host: String, port: Int, loader: Option[ClassLoader] = None): RemoteServerModule //TODO possibly hidden
+  def start(host: String, port: Int, loader: Option[ClassLoader] = None): RemoteServerModule
 
   /**
    *  Shuts the server down
    */
-  def shutdown: Unit //TODO possibly hidden
+  def shutdownServerModule: Unit
 
   /**
    *  Register typed actor by interface name.
@@ -146,4 +166,72 @@ trait RemoteServerModule extends ListenerManagement with Logging {
   * NOTE: You need to call this method if you have registered an actor by a custom ID.
   */
  def unregisterTypedPerSessionActor(id: String): Unit
+}
+
+trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
+
+  def actorFor(classNameOrServiceId: String, hostname: String, port: Int): ActorRef =
+    actorFor(classNameOrServiceId, classNameOrServiceId, Actor.TIMEOUT, hostname, port, None)
+
+  def actorFor(classNameOrServiceId: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
+    actorFor(classNameOrServiceId, classNameOrServiceId, Actor.TIMEOUT, hostname, port, Some(loader))
+
+  def actorFor(serviceId: String, className: String, hostname: String, port: Int): ActorRef =
+    actorFor(serviceId, className, Actor.TIMEOUT, hostname, port, None)
+
+  def actorFor(serviceId: String, className: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
+    actorFor(serviceId, className, Actor.TIMEOUT, hostname, port, Some(loader))
+
+  def actorFor(classNameOrServiceId: String, timeout: Long, hostname: String, port: Int): ActorRef =
+    actorFor(classNameOrServiceId, classNameOrServiceId, timeout, hostname, port, None)
+
+  def actorFor(classNameOrServiceId: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
+    actorFor(classNameOrServiceId, classNameOrServiceId, timeout, hostname, port, Some(loader))
+
+  def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef =
+    actorFor(serviceId, className, timeout, hostname, port, None)
+
+  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, hostname: String, port: Int): T =
+    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, Actor.TIMEOUT, hostname, port, None)
+
+  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int): T =
+    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, timeout, hostname, port, None)
+
+  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): T =
+    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, timeout, hostname, port, Some(loader))
+
+  def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): T =
+    typedActorFor(intfClass, serviceId, implClassName, timeout, hostname, port, Some(loader))
+
+  def clientManagedActorOf(clazz: Class[_ <: Actor], host: String, port: Int, timeout: Long): ActorRef
+
+  /** Methods that needs to be implemented by a transport **/
+
+    protected[akka] def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, host: String, port: Int, loader: Option[ClassLoader]): T
+
+    protected[akka] def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): ActorRef
+
+    protected[akka] def send[T](message: Any,
+                                senderOption: Option[ActorRef],
+                                senderFuture: Option[CompletableFuture[T]],
+                                remoteAddress: InetSocketAddress,
+                                timeout: Long,
+                                isOneWay: Boolean,
+                                actorRef: ActorRef,
+                                typedActorInfo: Option[Tuple2[String, String]],
+                                actorType: ActorType): Option[CompletableFuture[T]]
+
+    //TODO: REVISIT: IMPLEMENT OR REMOVE
+    //private[akka] def registerSupervisorForActor(actorRef: ActorRef): ActorRef
+
+    //private[akka] def deregisterSupervisorForActor(actorRef: ActorRef): ActorRef
+
+    /**
+     * Clean-up all open connections.
+     */
+    def shutdownClientModule: Unit
+
+    private[akka] def registerClientManagedActor(hostname: String, port: Int, uuid: Uuid): Unit
+
+    private[akka] def unregisterClientManagedActor(hostname: String, port: Int, uuid: Uuid): Unit
 }

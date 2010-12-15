@@ -76,9 +76,6 @@ object RemoteSupervisorSpec {
   var server: RemoteServer = null
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 class RemoteSupervisorSpec extends JUnitSuite {
   import RemoteSupervisorSpec._
 

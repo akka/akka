@@ -4,10 +4,11 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
 
-import akka.remote.{RemoteServer, RemoteClient}
 import akka.dispatch.Dispatchers
-import akka.actor.{ActorRef, Actor}
-import Actor._
+import akka.remote. {NettyRemoteSupport, RemoteServer, RemoteClient}
+import akka.actor. {RemoteActorRef, ActorRegistryInstance, ActorRef, Actor}
+
+class ExpectedRemoteProblem extends RuntimeException
 
 object ClientInitiatedRemoteActorSpec {
   case class Send(actor: Actor)
@@ -28,8 +29,7 @@ object ClientInitiatedRemoteActorSpec {
     def receive = {
       case "Hello" =>
         self.reply("World")
-      case "Failure" =>
-        throw new RuntimeException("Expected exception; to test fault-tolerance")
+      case "Failure" => throw new ExpectedRemoteProblem
     }
   }
 
@@ -37,6 +37,12 @@ object ClientInitiatedRemoteActorSpec {
     def receive = {
       case "Hello" =>
         self.reply("World")
+    }
+  }
+
+  class CountDownActor(latch: CountDownLatch) extends Actor {
+    def receive = {
+      case "World" => latch.countDown
     }
   }
 
@@ -74,59 +80,54 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
   val HOSTNAME = "localhost"
   val PORT1 = 9990
   val PORT2 = 9991
-  var s1: RemoteServer = null
+  var s1,s2: ActorRegistryInstance = null
 
   private val unit = TimeUnit.MILLISECONDS
 
   @Before
   def init() {
-    s1 = new RemoteServer()
-    s1.start(HOSTNAME, PORT1)
-    Thread.sleep(1000)
+    s1 = new ActorRegistryInstance(Some(new NettyRemoteSupport(_)))
+    s2 = new ActorRegistryInstance(Some(new NettyRemoteSupport(_)))
+    s1.remote.start(HOSTNAME, PORT1)
+    s2.remote.start(HOSTNAME, PORT2)
+    Thread.sleep(2000)
   }
 
   @After
   def finished() {
-    s1.shutdown
-    val s2 = RemoteServer.serverFor(HOSTNAME, PORT2)
-    if (s2.isDefined) s2.get.shutdown
-    RemoteClient.shutdownAll
+    s1.remote.shutdown
+    s2.remote.shutdown
+    s1.shutdownAll
+    s2.shutdownAll
     Thread.sleep(1000)
   }
 
   @Test
   def shouldSendOneWay = {
-    val actor = actorOf[RemoteActorSpecActorUnidirectional]
-    actor.makeRemote(HOSTNAME, PORT1)
-    actor.start
-    actor ! "OneWay"
+    val clientManaged = s1.actorOf[RemoteActorSpecActorUnidirectional](HOSTNAME,PORT2).start
+    //implicit val self = Some(s2.actorOf[RemoteActorSpecActorUnidirectional].start)
+    assert(clientManaged ne null)
+    assert(clientManaged.getClass.equals(classOf[RemoteActorRef]))
+    clientManaged ! "OneWay"
     assert(RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS))
-    actor.stop
+    clientManaged.stop
   }
 
 
   @Test
   def shouldSendOneWayAndReceiveReply = {
-    val actor = actorOf[SendOneWayAndReplyReceiverActor]
-    actor.makeRemote(HOSTNAME, PORT1)
-    actor.start
-    val sender = actorOf[SendOneWayAndReplySenderActor]
-    sender.homeAddress = (HOSTNAME, PORT2)
-    sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].sendTo = actor
-    sender.start
-    sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].sendOff
-    assert(SendOneWayAndReplySenderActor.latch.await(3, TimeUnit.SECONDS))
-    assert(sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].state.isDefined === true)
-    assert("World" === sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].state.get.asInstanceOf[String])
-    actor.stop
-    sender.stop
+    val latch = new CountDownLatch(1)
+    val actor = s2.actorOf[SendOneWayAndReplyReceiverActor](HOSTNAME, PORT1).start
+    implicit val sender = Some(s1.actorOf(new CountDownActor(latch)).start)
+
+    actor ! "OneWay"
+
+    assert(latch.await(3,TimeUnit.SECONDS))
   }
 
   @Test
   def shouldSendBangBangMessageAndReceiveReply = {
-    val actor = actorOf[RemoteActorSpecActorBidirectional]
-    actor.makeRemote(HOSTNAME, PORT1)
-    actor.start
+    val actor = s2.actorOf[RemoteActorSpecActorBidirectional](HOSTNAME, PORT1).start
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
     actor.stop
@@ -134,29 +135,20 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
 
   @Test
   def shouldSendBangBangMessageAndReceiveReplyConcurrently = {
-    val actors = (1 to 10).
-      map(num => {
-        val a = actorOf[RemoteActorSpecActorBidirectional]
-        a.makeRemote(HOSTNAME, PORT1)
-        a.start
-      }).toList
+    val actors = (1 to 10).map(num => { s2.actorOf[RemoteActorSpecActorBidirectional](HOSTNAME, PORT1).start }).toList
     actors.map(_ !!! "Hello").foreach(future => assert("World" === future.await.result.asInstanceOf[Option[String]].get))
     actors.foreach(_.stop)
   }
 
   @Test
   def shouldRegisterActorByUuid {
-    val actor1 = actorOf[MyActorCustomConstructor]
-    actor1.makeRemote(HOSTNAME, PORT1)
-    actor1.start
+    val actor1 = s2.actorOf[MyActorCustomConstructor](HOSTNAME, PORT1).start
     actor1 ! "incrPrefix"
     assert((actor1 !! "test").get === "1-test")
     actor1 ! "incrPrefix"
     assert((actor1 !! "test").get === "2-test")
 
-    val actor2 = actorOf[MyActorCustomConstructor]
-    actor2.makeRemote(HOSTNAME, PORT1)
-    actor2.start
+    val actor2 = s2.actorOf[MyActorCustomConstructor](HOSTNAME, PORT1).start
 
     assert((actor2 !! "test").get === "default-test")
 
@@ -164,19 +156,11 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
     actor2.stop
   }
 
-  @Test
+  @Test(expected=classOf[ExpectedRemoteProblem])
   def shouldSendAndReceiveRemoteException {
     implicit val timeout = 500000000L
-    val actor = actorOf[RemoteActorSpecActorBidirectional]
-    actor.makeRemote(HOSTNAME, PORT1)
-    actor.start
-    try {
-      actor !! "Failure"
-      fail("Should have thrown an exception")
-    } catch {
-      case e =>
-        assert("Expected exception; to test fault-tolerance" === e.getMessage())
-    }
+    val actor = s2.actorOf[RemoteActorSpecActorBidirectional](HOSTNAME, PORT1).start
+    actor !! "Failure"
     actor.stop
   }
 }

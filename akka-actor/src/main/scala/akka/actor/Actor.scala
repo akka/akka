@@ -126,7 +126,7 @@ object Actor extends Logging {
 
   private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
 
-  /**
+   /**
    * Creates an ActorRef out of the Actor with type T.
    * <pre>
    *   import Actor._
@@ -140,7 +140,8 @@ object Actor extends Logging {
    *   val actor = actorOf[MyActor].start
    * </pre>
    */
-  def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+  def actorOf[T <: Actor : Manifest]: ActorRef =
+    ActorRegistry.actorOf[T]
 
   /**
    * Creates a Client-managed ActorRef out of the Actor of the specified Class.
@@ -158,7 +159,7 @@ object Actor extends Logging {
    * </pre>
    */
   def actorOf[T <: Actor : Manifest](host: String, port: Int): ActorRef =
-    actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], host, port)
+    ActorRegistry.actorOf[T](host,port)
 
   /**
    * Creates an ActorRef out of the Actor of the specified Class.
@@ -174,15 +175,8 @@ object Actor extends Logging {
    *   val actor = actorOf(classOf[MyActor]).start
    * </pre>
    */
-  def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(() => {
-    import ReflectiveAccess.{ createInstance, noParams, noArgs }
-    createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
-      throw new ActorInitializationException(
-        "Could not instantiate Actor" +
-        "\nMake sure Actor is NOT defined inside a class/trait," +
-        "\nif so put it outside the class/trait, f.e. in a companion object," +
-        "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
-  })
+  def actorOf(clazz: Class[_ <: Actor]): ActorRef =
+    ActorRegistry.actorOf(clazz)
 
   /**
    * Creates a Client-managed ActorRef out of the Actor of the specified Class.
@@ -199,23 +193,8 @@ object Actor extends Logging {
    *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552).start
    * </pre>
    */
-  def actorOf(clazz: Class[_ <: Actor], host: String, port: Int, timeout: Long = TIMEOUT): ActorRef = {
-    import ReflectiveAccess._
-    import ReflectiveAccess.RemoteServerModule.{HOSTNAME,PORT}
-    ensureRemotingEnabled
-
-    (host,port) match {
-      case null             => throw new IllegalArgumentException("No location specified")
-      case (HOSTNAME, PORT) => actorOf(clazz) //Local
-      case                _ => new RemoteActorRef(clazz.getName,
-                                        clazz.getName,
-                                        host,
-                                        port,
-                                        timeout,
-                                        true, //Client managed
-                                        None)
-    }
-  }
+  def actorOf(clazz: Class[_ <: Actor], host: String, port: Int, timeout: Long = Actor.TIMEOUT): ActorRef =
+    ActorRegistry.actorOf(clazz, host, port, timeout)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -235,7 +214,7 @@ object Actor extends Logging {
    *   val actor = actorOf(new MyActor).start
    * </pre>
    */
-  def actorOf(factory: => Actor): ActorRef = new LocalActorRef(() => factory)
+  def actorOf(factory: => Actor): ActorRef = ActorRegistry.actorOf(factory)
 
   /**
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
@@ -252,15 +231,9 @@ object Actor extends Logging {
    * }
    * </pre>
    */
-  def spawn(body: => Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit = {
-    case object Spawn
-    actorOf(new Actor() {
-      self.dispatcher = dispatcher
-      def receive = {
-        case Spawn => try { body } finally { self.stop }
-      }
-    }).start ! Spawn
-  }
+  def spawn(body: => Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit =
+    ActorRegistry.spawn(body)(dispatcher)
+
 
   /**
    * Implicitly converts the given Option[Any] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
