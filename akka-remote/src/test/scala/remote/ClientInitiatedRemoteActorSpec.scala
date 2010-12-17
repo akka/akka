@@ -1,167 +1,169 @@
 package akka.actor.remote
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import org.scalatest.junit.JUnitSuite
-import org.junit.{Test, Before, After}
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.junit.JUnitRunner
+import org.junit.runner.RunWith
 
 import akka.dispatch.Dispatchers
 import akka.remote. {NettyRemoteSupport, RemoteServer, RemoteClient}
-import akka.actor. {RemoteActorRef, ActorRegistryInstance, ActorRef, Actor}
+import akka.actor. {RemoteActorRef, ActorRegistry, ActorRef, Actor}
+import akka.actor.Actor._
 
-class ExpectedRemoteProblem extends RuntimeException
+class ExpectedRemoteProblem(msg: String) extends RuntimeException(msg)
 
-object ClientInitiatedRemoteActorSpec {
-  case class Send(actor: Actor)
+object RemoteActorSpecActorUnidirectional {
+  val latch = new CountDownLatch(1)
+}
+class RemoteActorSpecActorUnidirectional extends Actor {
+  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
 
-  object RemoteActorSpecActorUnidirectional {
-    val latch = new CountDownLatch(1)
-  }
-  class RemoteActorSpecActorUnidirectional extends Actor {
-    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
-
-    def receive = {
-      case "OneWay" =>
-        RemoteActorSpecActorUnidirectional.latch.countDown
-    }
-  }
-
-  class RemoteActorSpecActorBidirectional extends Actor {
-    def receive = {
-      case "Hello" =>
-        self.reply("World")
-      case "Failure" => throw new ExpectedRemoteProblem
-    }
-  }
-
-  class SendOneWayAndReplyReceiverActor extends Actor {
-    def receive = {
-      case "Hello" =>
-        self.reply("World")
-    }
-  }
-
-  class CountDownActor(latch: CountDownLatch) extends Actor {
-    def receive = {
-      case "World" => latch.countDown
-    }
-  }
-
-  object SendOneWayAndReplySenderActor {
-    val latch = new CountDownLatch(1)
-  }
-  class SendOneWayAndReplySenderActor extends Actor {
-    var state: Option[AnyRef] = None
-    var sendTo: ActorRef = _
-    var latch: CountDownLatch = _
-
-    def sendOff = sendTo ! "Hello"
-
-    def receive = {
-      case msg: AnyRef =>
-        state = Some(msg)
-        SendOneWayAndReplySenderActor.latch.countDown
-    }
-  }
-
-  class MyActorCustomConstructor extends Actor {
-    var prefix = "default-"
-    var count = 0
-    def receive = {
-      case "incrPrefix" => count += 1; prefix = "" + count + "-"
-      case msg: String => self.reply(prefix + msg)
-    }
+  def receive = {
+    case "OneWay" =>
+      RemoteActorSpecActorUnidirectional.latch.countDown
   }
 }
 
-class ClientInitiatedRemoteActorSpec extends JUnitSuite {
-  import ClientInitiatedRemoteActorSpec._
-  akka.config.Config.config
-
-  val HOSTNAME = "localhost"
-  val PORT1 = 9990
-  val PORT2 = 9991
-  var s1,s2: ActorRegistryInstance = null
-
-  private val unit = TimeUnit.MILLISECONDS
-
-  @Before
-  def init() {
-    s1 = new ActorRegistryInstance(Some(new NettyRemoteSupport(_)))
-    s2 = new ActorRegistryInstance(Some(new NettyRemoteSupport(_)))
-    s1.remote.start(HOSTNAME, PORT1)
-    s2.remote.start(HOSTNAME, PORT2)
-    Thread.sleep(2000)
-  }
-
-  @After
-  def finished() {
-    s1.remote.shutdown
-    s2.remote.shutdown
-    s1.shutdownAll
-    s2.shutdownAll
-    Thread.sleep(1000)
-  }
-
-  @Test
-  def shouldSendOneWay = {
-    val clientManaged = s1.actorOf[RemoteActorSpecActorUnidirectional](HOSTNAME,PORT2).start
-    //implicit val self = Some(s2.actorOf[RemoteActorSpecActorUnidirectional].start)
-    assert(clientManaged ne null)
-    assert(clientManaged.getClass.equals(classOf[RemoteActorRef]))
-    clientManaged ! "OneWay"
-    assert(RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS))
-    clientManaged.stop
-  }
-
-
-  @Test
-  def shouldSendOneWayAndReceiveReply = {
-    val latch = new CountDownLatch(1)
-    val actor = s2.actorOf[SendOneWayAndReplyReceiverActor](HOSTNAME, PORT1).start
-    implicit val sender = Some(s1.actorOf(new CountDownActor(latch)).start)
-
-    actor ! "OneWay"
-
-    assert(latch.await(3,TimeUnit.SECONDS))
-  }
-
-  @Test
-  def shouldSendBangBangMessageAndReceiveReply = {
-    val actor = s2.actorOf[RemoteActorSpecActorBidirectional](HOSTNAME, PORT1).start
-    val result = actor !! "Hello"
-    assert("World" === result.get.asInstanceOf[String])
-    actor.stop
-  }
-
-  @Test
-  def shouldSendBangBangMessageAndReceiveReplyConcurrently = {
-    val actors = (1 to 10).map(num => { s2.actorOf[RemoteActorSpecActorBidirectional](HOSTNAME, PORT1).start }).toList
-    actors.map(_ !!! "Hello").foreach(future => assert("World" === future.await.result.asInstanceOf[Option[String]].get))
-    actors.foreach(_.stop)
-  }
-
-  @Test
-  def shouldRegisterActorByUuid {
-    val actor1 = s2.actorOf[MyActorCustomConstructor](HOSTNAME, PORT1).start
-    actor1 ! "incrPrefix"
-    assert((actor1 !! "test").get === "1-test")
-    actor1 ! "incrPrefix"
-    assert((actor1 !! "test").get === "2-test")
-
-    val actor2 = s2.actorOf[MyActorCustomConstructor](HOSTNAME, PORT1).start
-
-    assert((actor2 !! "test").get === "default-test")
-
-    actor1.stop
-    actor2.stop
-  }
-
-  @Test(expected=classOf[ExpectedRemoteProblem])
-  def shouldSendAndReceiveRemoteException {
-    implicit val timeout = 500000000L
-    val actor = s2.actorOf[RemoteActorSpecActorBidirectional](HOSTNAME, PORT1).start
-    actor !! "Failure"
-    actor.stop
+class RemoteActorSpecActorBidirectional extends Actor {
+  def receive = {
+    case "Hello" =>
+      self.reply("World")
+    case "Failure" => throw new ExpectedRemoteProblem("expected")
   }
 }
 
+class SendOneWayAndReplyReceiverActor extends Actor {
+  def receive = {
+    case "Hello" =>
+      self.reply("World")
+  }
+}
+
+class CountDownActor(latch: CountDownLatch) extends Actor {
+  def receive = {
+    case "World" => latch.countDown
+  }
+}
+
+object SendOneWayAndReplySenderActor {
+  val latch = new CountDownLatch(1)
+}
+class SendOneWayAndReplySenderActor extends Actor {
+  var state: Option[AnyRef] = None
+  var sendTo: ActorRef = _
+  var latch: CountDownLatch = _
+
+  def sendOff = sendTo ! "Hello"
+
+  def receive = {
+    case msg: AnyRef =>
+      state = Some(msg)
+      SendOneWayAndReplySenderActor.latch.countDown
+  }
+}
+
+class MyActorCustomConstructor extends Actor {
+  var prefix = "default-"
+  var count = 0
+  def receive = {
+    case "incrPrefix" => count += 1; prefix = "" + count + "-"
+    case msg: String => self.reply(prefix + msg)
+  }
+}
+
+@RunWith(classOf[JUnitRunner])
+class ClientInitiatedRemoteActorSpec extends
+  WordSpec with
+  MustMatchers with
+  BeforeAndAfterAll with
+  BeforeAndAfterEach {
+
+  var optimizeLocal_? = ActorRegistry.remote.asInstanceOf[NettyRemoteSupport].optimizeLocalScoped_?
+
+  override def beforeAll() {
+    ActorRegistry.remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(false) //Can't run the test if we're eliminating all remote calls
+    ActorRegistry.remote.start()
+  }
+
+  override def afterAll() {
+    ActorRegistry.remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(optimizeLocal_?) //Reset optimizelocal after all tests
+    ActorRegistry.shutdownAll
+  }
+
+  override def afterEach() {
+    ActorRegistry.shutdownAll
+    super.afterEach
+  }
+
+  "ClientInitiatedRemoteActor" should {
+   val unit = TimeUnit.MILLISECONDS
+   val (host, port) = (ActorRegistry.remote.hostname,ActorRegistry.remote.port)
+
+   "shouldSendOneWay" in {
+      val clientManaged = actorOf[RemoteActorSpecActorUnidirectional](host,port).start
+      clientManaged must not be null
+      clientManaged.getClass must be (classOf[RemoteActorRef])
+      clientManaged ! "OneWay"
+      RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS) must be (true)
+      clientManaged.stop
+    }
+
+    "shouldSendOneWayAndReceiveReply" in {
+      val latch = new CountDownLatch(1)
+      val actor = actorOf[SendOneWayAndReplyReceiverActor](host,port).start
+      implicit val sender = Some(actorOf(new CountDownActor(latch)).start)
+
+      actor ! "Hello"
+
+      latch.await(3,TimeUnit.SECONDS) must be (true)
+    }
+
+    "shouldSendBangBangMessageAndReceiveReply" in {
+      val actor = actorOf[RemoteActorSpecActorBidirectional](host,port).start
+      val result = actor !! "Hello"
+      "World" must equal (result.get.asInstanceOf[String])
+      actor.stop
+    }
+
+    "shouldSendBangBangMessageAndReceiveReplyConcurrently" in {
+      val actors = (1 to 10).map(num => { actorOf[RemoteActorSpecActorBidirectional](host,port).start }).toList
+      actors.map(_ !!! "Hello") foreach { future =>
+        "World" must equal (future.await.result.asInstanceOf[Option[String]].get)
+      }
+      actors.foreach(_.stop)
+    }
+
+    "shouldRegisterActorByUuid" in {
+      val actor1 = actorOf[MyActorCustomConstructor](host, port).start
+      val actor2 = actorOf[MyActorCustomConstructor](host, port).start
+
+      actor1 ! "incrPrefix"
+
+      (actor1 !! "test").get must equal ("1-test")
+
+      actor1 ! "incrPrefix"
+
+      (actor1 !! "test").get must equal ("2-test")
+
+      (actor2 !! "test").get must equal ("default-test")
+
+      actor1.stop
+      actor2.stop
+    }
+
+    "shouldSendAndReceiveRemoteException" in {
+
+      val actor = actorOf[RemoteActorSpecActorBidirectional](host, port).start
+      try {
+        implicit val timeout = 500000000L
+        val f = (actor !!! "Failure").await.resultOrException
+        fail("Shouldn't get here!!!")
+      } catch {
+        case e: ExpectedRemoteProblem =>
+      }
+      actor.stop
+    }
+  }
+}

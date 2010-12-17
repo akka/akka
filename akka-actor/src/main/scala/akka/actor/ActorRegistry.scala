@@ -38,12 +38,13 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object ActorRegistry extends ActorRegistryInstance(ReflectiveAccess.Remote.defaultRemoteSupport)
 
-class ActorRegistryInstance(remoteBootstrap: Option[(ActorRegistryInstance) => RemoteSupport]) extends ListenerManagement {
+object ActorRegistry extends ListenerManagement {
+
+  protected def remoteBootstrap = ReflectiveAccess.Remote.defaultRemoteSupport
+
   private val actorsByUUID    = new ConcurrentHashMap[Uuid, ActorRef]
   private val actorsById      = new Index[String,ActorRef]
-  private val remoteActorSets = Map[Address, RemoteActorSet]()
   private val guard           = new ReadWriteGuard
 
   /**
@@ -230,7 +231,7 @@ class ActorRegistryInstance(remoteBootstrap: Option[(ActorRegistryInstance) => R
   /**
    * Handy access to the RemoteServer module
    */
-  lazy val remote: RemoteSupport = remoteBootstrap.map(_(this)).getOrElse(throw new UnsupportedOperationException("You need to have akka-remote on classpath"))
+  lazy val remote: RemoteSupport = remoteBootstrap.map(_()).getOrElse(throw new UnsupportedOperationException("You need to have akka-remote on classpath"))
 
   /**
    * Creates an ActorRef out of the Actor with type T.
@@ -280,7 +281,7 @@ class ActorRegistryInstance(remoteBootstrap: Option[(ActorRegistryInstance) => R
    *   val actor = actorOf(classOf[MyActor]).start
    * </pre>
    */
-  def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(this, () => {
+  def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(() => {
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
     createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
       throw new ActorInitializationException(
@@ -326,7 +327,7 @@ class ActorRegistryInstance(remoteBootstrap: Option[(ActorRegistryInstance) => R
    *   val actor = actorOf(new MyActor).start
    * </pre>
    */
-  def actorOf(factory: => Actor): ActorRef = new LocalActorRef(this,() => factory)
+  def actorOf(factory: => Actor): ActorRef = new LocalActorRef(() => factory)
 
   /**
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
@@ -394,40 +395,12 @@ class ActorRegistryInstance(remoteBootstrap: Option[(ActorRegistryInstance) => R
         else actorRef.stop
       }
     } else foreach(_.stop)
+    if (Remote.isEnabled) {
+      remote.clear
+    }
     actorsByUUID.clear
     actorsById.clear
     log.slf4j.info("All actors have been shut down and unregistered from ActorRegistry")
-  }
-
-  /**
-   * Get the remote actors for the given server address. For internal use only.
-   */
-  private[akka] def actorsFor(remoteServerAddress: Address): RemoteActorSet = guard.withWriteGuard {
-    remoteActorSets.getOrElseUpdate(remoteServerAddress, new RemoteActorSet)
-  }
-
-  private[akka] def registerActorByUuid(address: InetSocketAddress, uuid: String, actor: ActorRef) {
-    actorsByUuid(Address(address.getHostName, address.getPort)).putIfAbsent(uuid, actor)
-  }
-
-  private[akka] def registerTypedActorByUuid(address: InetSocketAddress, uuid: String, typedActor: AnyRef) {
-    typedActorsByUuid(Address(address.getHostName, address.getPort)).putIfAbsent(uuid, typedActor)
-  }
-
-  private[akka] def actors(address: Address) = actorsFor(address).actors
-  private[akka] def actorsByUuid(address: Address) = actorsFor(address).actorsByUuid
-  private[akka] def actorsFactories(address: Address) = actorsFor(address).actorsFactories
-  private[akka] def typedActors(address: Address) = actorsFor(address).typedActors
-  private[akka] def typedActorsByUuid(address: Address) = actorsFor(address).typedActorsByUuid
-  private[akka] def typedActorsFactories(address: Address) = actorsFor(address).typedActorsFactories
-
-  private[akka] class RemoteActorSet {
-    private[ActorRegistryInstance] val actors = new ConcurrentHashMap[String, ActorRef]
-    private[ActorRegistryInstance] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
-    private[ActorRegistryInstance] val actorsFactories = new ConcurrentHashMap[String, () => ActorRef]
-    private[ActorRegistryInstance] val typedActors = new ConcurrentHashMap[String, AnyRef]
-    private[ActorRegistryInstance] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
-    private[ActorRegistryInstance] val typedActorsFactories = new ConcurrentHashMap[String, () => AnyRef]
   }
 }
 

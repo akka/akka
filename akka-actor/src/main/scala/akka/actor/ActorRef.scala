@@ -80,8 +80,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
   protected[akka] val guard = new ReentrantGuard
 
-  private[akka] def registry: ActorRegistryInstance
-
   /**
    * User overridable callback/setting.
    * <p/>
@@ -543,7 +541,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
-  private[akka] val registry: ActorRegistryInstance,
   private[this] val actorFactory: () => Actor)
   extends ActorRef with ScalaActorRef {
 
@@ -567,7 +564,6 @@ class LocalActorRef private[akka] (
 
   // used only for deserialization
   private[akka] def this(
-    __registry: ActorRegistryInstance,
     __uuid: Uuid,
     __id: String,
     __hostname: String,
@@ -578,7 +574,7 @@ class LocalActorRef private[akka] (
     __supervisor: Option[ActorRef],
     __hotswap: Stack[PartialFunction[Any, Unit]],
     __factory: () => Actor) = {
-    this(__registry, __factory)
+    this(__factory)
     _uuid = __uuid
     id = __id
     timeout = __timeout
@@ -588,7 +584,7 @@ class LocalActorRef private[akka] (
     hotswap = __hotswap
     setActorSelfFields(actor,this)
     start
-    __registry.register(this)
+    ActorRegistry.register(this) //TODO: REVISIT: Is this needed?
   }
 
   // ========= PUBLIC FUNCTIONS =========
@@ -649,7 +645,7 @@ class LocalActorRef private[akka] (
       dispatcher.detach(this)
       _status = ActorRefInternals.SHUTDOWN
       actor.postStop
-      registry.unregister(this)
+      ActorRegistry.unregister(this)
       setActorSelfFields(actorInstance.get,null)
     } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
   }
@@ -1058,7 +1054,7 @@ class LocalActorRef private[akka] (
   private def initializeActorInstance = {
     actor.preStart // run actor preStart
     Actor.log.slf4j.trace("[{}] has started", toString)
-    registry.register(this)
+    ActorRegistry.register(this)
   }
 }
 
@@ -1078,13 +1074,11 @@ object RemoteActorSystemMessage {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] case class RemoteActorRef private[akka] (
-  registry: ActorRegistryInstance,
-  classOrServiceName: String,
+  classOrServiceName: Option[String],
   val actorClassName: String,
   val hostname: String,
   val port: Int,
   _timeout: Long,
-  clientManaged: Boolean, //TODO: REVISIT: ENCODE CLIENT_MANAGED INTO REMOTE PROTOCOL
   loader: Option[ClassLoader],
   val actorType: ActorType = ActorType.ScalaActor)
   extends ActorRef with ScalaActorRef {
@@ -1093,40 +1087,40 @@ private[akka] case class RemoteActorRef private[akka] (
 
   val homeAddress = new InetSocketAddress(hostname, port)
 
-  id = classOrServiceName
+  protected def clientManaged = classOrServiceName.isEmpty //If no class or service name, it's client managed
+
+  id = classOrServiceName.getOrElse("uuid:" + uuid) //If we're a server-managed we want to have classOrServiceName as id, or else, we're a client-managed and we want to have our uuid as id
+
   timeout = _timeout
 
   start
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
-    registry.remote.send[Any](message, senderOption, None, homeAddress, timeout, true, this, None, actorType)
+    ActorRegistry.remote.send[Any](message, senderOption, None, homeAddress, timeout, true, this, None, actorType)
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
     message: Any,
     timeout: Long,
     senderOption: Option[ActorRef],
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-    val future = registry.remote.send[T](message, senderOption, senderFuture, homeAddress, timeout, false, this, None, actorType)
+    val future = ActorRegistry.remote.send[T](message, senderOption, senderFuture, homeAddress, timeout, false, this, None, actorType)
     if (future.isDefined) future.get
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
 
   def start: ActorRef = synchronized {
     _status = ActorRefInternals.RUNNING
-    if (clientManaged) {
-      registry.remote.registerClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
-    }
+    if (clientManaged)
+      ActorRegistry.remote.registerClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
     this
   }
 
   def stop: Unit = synchronized {
     if (_status == ActorRefInternals.RUNNING) {
       _status = ActorRefInternals.SHUTDOWN
-      postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
-      if (clientManaged) {
-        registry.remote.unregisterClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
-        registry.remote.unregister(this) //TODO: REVISIT: Why does this need to be deregistered from the server?
-      }
+      postMessageToMailbox(RemoteActorSystemMessage.Stop, None) //TODO: REVISIT: Should this be called for both server-managed and client-managed?
+      if (clientManaged)
+        ActorRegistry.remote.unregisterClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
     }
   }
 

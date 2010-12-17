@@ -127,7 +127,7 @@ object ActorSerialization {
         messages.map(m =>
           RemoteActorSerialization.createRemoteMessageProtocolBuilder(
             Some(actorRef),
-            Left(actorRef.uuid),
+            Left(actorRef.uuid), //TODO: REVISIT: generate uuid for the request
             actorRef.id,
             actorRef.actorClassName,
             actorRef.timeout,
@@ -191,7 +191,6 @@ object ActorSerialization {
     }
 
     val ar = new LocalActorRef(
-      ActorRegistry,//TODO: REVISIST: Change to an implicit ActorRegistryInstance?
       uuidFrom(protocol.getUuid.getHigh, protocol.getUuid.getLow),
       protocol.getId,
       protocol.getOriginalAddress.getHostname,
@@ -230,15 +229,16 @@ object RemoteActorSerialization {
    */
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
     Actor.log.slf4j.debug("Deserializing RemoteActorRefProtocol to RemoteActorRef:\n {}", protocol)
-    RemoteActorRef(
-      ActorRegistry,//TODO: REVISIST: Change to an implicit ActorRegistryInstance?
-      protocol.getClassOrServiceName,
+    val ref = RemoteActorRef(
+      Some(protocol.getClassOrServiceName),
       protocol.getActorClassname,
       protocol.getHomeAddress.getHostname,
       protocol.getHomeAddress.getPort,
       protocol.getTimeout,
-      false,
       loader)
+
+    Actor.log.slf4j.debug("Newly deserialized RemoteActorRef has uuid: {}", ref.uuid)
+    ref
   }
 
   /**
@@ -248,12 +248,12 @@ object RemoteActorSerialization {
     import ar._
 
     Actor.log.slf4j.debug("Register serialized Actor [{}] as remote @ [{}:{}]",
-      Array[AnyRef](actorClassName, registry.remote.hostname, registry.remote.port.asInstanceOf[AnyRef]))
+      Array[AnyRef](actorClassName, ActorSerialization.localAddress.getHostname, ActorSerialization.localAddress.getPort.asInstanceOf[AnyRef]))
 
-    registry.remote.registerByUuid(ar)
+    ActorRegistry.remote.registerByUuid(ar)
 
     RemoteActorRefProtocol.newBuilder
-        .setClassOrServiceName(uuid.toString)
+        .setClassOrServiceName("uuid:"+uuid.toString)
         .setActorClassname(actorClassName)
         .setHomeAddress(ActorSerialization.localAddress)
         .setTimeout(timeout)
@@ -262,7 +262,7 @@ object RemoteActorSerialization {
 
   def createRemoteMessageProtocolBuilder(
       actorRef: Option[ActorRef],
-      uuid: Either[Uuid, UuidProtocol],
+      replyUuid: Either[Uuid, UuidProtocol],
       actorId: String,
       actorClassName: String,
       timeout: Long,
@@ -273,7 +273,7 @@ object RemoteActorSerialization {
       actorType: ActorType,
       secureCookie: Option[String]): RemoteMessageProtocol.Builder = {
 
-    val uuidProtocol = uuid match {
+    val uuidProtocol = replyUuid match {
       case Left(uid)       => UuidProtocol.newBuilder.setHigh(uid.getTime).setLow(uid.getClockSeqAndNode).build
       case Right(protocol) => protocol
     }
@@ -298,7 +298,10 @@ object RemoteActorSerialization {
     }
     val actorInfo = actorInfoBuilder.build
     val messageBuilder = RemoteMessageProtocol.newBuilder
-        .setUuid(uuidProtocol)
+        .setUuid({
+          val messageUuid = newUuid
+          UuidProtocol.newBuilder.setHigh(messageUuid.getTime).setLow(messageUuid.getClockSeqAndNode).build
+        })
         .setActorInfo(actorInfo)
         .setOneWay(isOneWay)
 
@@ -308,8 +311,13 @@ object RemoteActorSerialization {
       case Right(exception) =>
         messageBuilder.setException(ExceptionProtocol.newBuilder
             .setClassname(exception.getClass.getName)
-            .setMessage(exception.getMessage)
+            .setMessage(empty(exception.getMessage))
             .build)
+    }
+
+    def empty(s: String): String = s match {
+      case null => ""
+      case s => s
     }
 
     secureCookie.foreach(messageBuilder.setCookie(_))
