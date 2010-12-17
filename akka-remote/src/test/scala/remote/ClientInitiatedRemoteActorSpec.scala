@@ -46,7 +46,7 @@ class CountDownActor(latch: CountDownLatch) extends Actor {
     case "World" => latch.countDown
   }
 }
-
+/*
 object SendOneWayAndReplySenderActor {
   val latch = new CountDownLatch(1)
 }
@@ -62,7 +62,7 @@ class SendOneWayAndReplySenderActor extends Actor {
       state = Some(msg)
       SendOneWayAndReplySenderActor.latch.countDown
   }
-}
+}*/
 
 class MyActorCustomConstructor extends Actor {
   var prefix = "default-"
@@ -73,34 +73,8 @@ class MyActorCustomConstructor extends Actor {
   }
 }
 
-@RunWith(classOf[JUnitRunner])
-class ClientInitiatedRemoteActorSpec extends
-  WordSpec with
-  MustMatchers with
-  BeforeAndAfterAll with
-  BeforeAndAfterEach {
-
-  var optimizeLocal_? = ActorRegistry.remote.asInstanceOf[NettyRemoteSupport].optimizeLocalScoped_?
-
-  override def beforeAll() {
-    ActorRegistry.remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(false) //Can't run the test if we're eliminating all remote calls
-    ActorRegistry.remote.start()
-  }
-
-  override def afterAll() {
-    ActorRegistry.remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(optimizeLocal_?) //Reset optimizelocal after all tests
-    ActorRegistry.shutdownAll
-  }
-
-  override def afterEach() {
-    ActorRegistry.shutdownAll
-    super.afterEach
-  }
-
+class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
   "ClientInitiatedRemoteActor" should {
-   val unit = TimeUnit.MILLISECONDS
-   val (host, port) = (ActorRegistry.remote.hostname,ActorRegistry.remote.port)
-
    "shouldSendOneWay" in {
       val clientManaged = actorOf[RemoteActorSpecActorUnidirectional](host,port).start
       clientManaged must not be null

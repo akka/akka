@@ -1,5 +1,5 @@
 package akka.remote
-
+/* THIS SHOULD BE UNCOMMENTED
 import akka.actor.Actor
 
 import Actor._
@@ -37,3 +37,4 @@ object RemoteServerAndClusterShutdownRunner {
     s3.shutdown
   }
 }
+*/

@@ -1,6 +1,8 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
+
+/* THIS SHOULD BE UNCOMMENTED
 package akka.actor.serialization
 
 import org.scalatest.Spec
@@ -164,3 +166,5 @@ class MyStatelessTypedActorImpl extends TypedActor with MyTypedActor {
     if (message == "hello") "world" else ("hello " + message)
   }
 }
+
+*/

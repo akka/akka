@@ -15,12 +15,12 @@ import akka.remote.{RemoteServer, RemoteClient}
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
 import org.scalatest.{BeforeAndAfterEach, Spec, Assertions, BeforeAndAfterAll}
 import akka.config.{Config, TypedActorConfigurator, RemoteAddress}
-
+/* THIS SHOULD BE UNCOMMENTED
 object RemoteTypedActorSpec {
   val HOSTNAME = "localhost"
   val PORT = 9988
   var server: RemoteServer = null
-}
+}*/
 
 object RemoteTypedActorLog {
   val messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
@@ -31,7 +31,7 @@ object RemoteTypedActorLog {
     oneWayLog.clear
   }
 }
-
+/* THIS SHOULD BE UNCOMMENTED
 @RunWith(classOf[JUnitRunner])
 class RemoteTypedActorSpec extends
   Spec with
@@ -125,4 +125,4 @@ class RemoteTypedActorSpec extends
       messageLog.poll(5, TimeUnit.SECONDS) should equal ("Expected exception; to test fault-tolerance")
     }
   }
-}
+} */
