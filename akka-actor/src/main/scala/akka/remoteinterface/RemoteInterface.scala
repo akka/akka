@@ -9,13 +9,20 @@ import java.net.InetSocketAddress
 import akka.actor._
 import akka.util._
 import akka.dispatch.CompletableFuture
-import akka.actor. {ActorRegistryInstance, ActorType, RemoteActorRef, ActorRef}
 import akka.config.Config.{config, TIME_UNIT}
+import java.util.concurrent.ConcurrentHashMap
 
 trait RemoteModule extends Logging {
-  def registry: ActorRegistryInstance
   def optimizeLocalScoped_?(): Boolean //Apply optimizations for remote operations in local scope
   protected[akka] def notifyListeners(message: => Any): Unit
+
+
+  private[akka] def actors: ConcurrentHashMap[String, ActorRef]
+  private[akka] def actorsByUuid: ConcurrentHashMap[String, ActorRef]
+  private[akka] def actorsFactories: ConcurrentHashMap[String, () => ActorRef]
+  private[akka] def typedActors: ConcurrentHashMap[String, AnyRef]
+  private[akka] def typedActorsByUuid: ConcurrentHashMap[String, AnyRef]
+  private[akka] def typedActorsFactories: ConcurrentHashMap[String, () => AnyRef]
 }
 
 
@@ -23,9 +30,21 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   def shutdown {
     this.shutdownServerModule
     this.shutdownClientModule
+    clear
   }
   protected override def manageLifeCycleOfListeners = false
   protected[akka] override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
+
+  private[akka] val actors = new ConcurrentHashMap[String, ActorRef]
+  private[akka] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
+  private[akka] val actorsFactories = new ConcurrentHashMap[String, () => ActorRef]
+  private[akka] val typedActors = new ConcurrentHashMap[String, AnyRef]
+  private[akka] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
+  private[akka] val typedActorsFactories = new ConcurrentHashMap[String, () => AnyRef]
+
+  def clear {
+    List(actors,actorsByUuid,actorsFactories,typedActors,typedActorsByUuid,typedActorsFactories) foreach (_.clear)
+  }
 }
 
 /**
@@ -57,7 +76,7 @@ trait RemoteServerModule extends RemoteModule {
   /**
    *  Starts the server up
    */
-  def start(host: String, port: Int, loader: Option[ClassLoader] = None): RemoteServerModule
+  def start(host: String = ReflectiveAccess.Remote.HOSTNAME, port: Int = ReflectiveAccess.Remote.PORT, loader: Option[ClassLoader] = None): RemoteServerModule
 
   /**
    *  Shuts the server down

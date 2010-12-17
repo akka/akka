@@ -45,10 +45,9 @@ object ReflectiveAccess extends Logging {
     //TODO: REVISIT: Make class configurable
     val remoteSupportClass: Option[Class[_ <: RemoteSupport]] = getClassFor(TRANSPORT)
 
-    protected[akka] val defaultRemoteSupport: Option[ActorRegistryInstance => RemoteSupport] = remoteSupportClass map {
-      remoteClass => (registry: ActorRegistryInstance) =>
-        createInstance[RemoteSupport](remoteClass,Array[Class[_]](classOf[ActorRegistryInstance]),Array[AnyRef](registry)).
-        getOrElse(throw new ModuleNotAvailableException("Can't instantiate "+
+    protected[akka] val defaultRemoteSupport: Option[() => RemoteSupport] = remoteSupportClass map {
+      remoteClass => () => createInstance[RemoteSupport](remoteClass,Array[Class[_]](),Array[AnyRef]()).
+                           getOrElse(throw new ModuleNotAvailableException("Can't instantiate "+
                                                         remoteClass.getName+
                                                         ", make sure that akka-remote.jar is on the classpath"))
     }
@@ -101,6 +100,7 @@ object ReflectiveAccess extends Logging {
   } catch {
     case e =>
       log.slf4j.warn("Could not instantiate class [{}] due to [{}]", clazz.getName, e.getCause)
+      e.printStackTrace
       None
   }
 
