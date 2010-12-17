@@ -3,49 +3,39 @@
  */
 package akka.actor.ticket
 
-import org.scalatest.Spec
-import org.scalatest.matchers.ShouldMatchers
+
 import akka.actor.Actor._
 import akka.actor.{Uuid,newUuid,uuidFrom}
 import akka.actor.remote.ServerInitiatedRemoteActorSpec.RemoteActorSpecActorUnidirectional
-import java.util.concurrent.TimeUnit
-import akka.remote.{RemoteClient, RemoteServer}
 import akka.remote.protocol.RemoteProtocol._
+import akka.actor.remote.AkkaRemoteTest
+import java.util.concurrent.CountDownLatch
 
+class Ticket434Spec extends AkkaRemoteTest {
+  "A server managed remote actor" should {
+    "can use a custom service name containing ':'" in {
+      val latch = new CountDownLatch(1)
+      implicit val sender = replyHandler(latch,"Pong")
+      remote.register("my:service", actorOf[RemoteActorSpecActorUnidirectional])
 
-class Ticket434Spec extends Spec with ShouldMatchers {
+      val actor = remote.actorFor("my:service", 5000L, host, port)
 
-  val HOSTNAME = "localhost"
-  val PORT = 9991
+      actor ! "Ping"
 
-  describe("A server managed remote actor") {
-    it("can use a custom service name containing ':'") {
-      val server = new RemoteServer().start(HOSTNAME, PORT)
-      server.register("my:service", actorOf[RemoteActorSpecActorUnidirectional])
-
-      val actor = RemoteClient.actorFor("my:service", 5000L, HOSTNAME, PORT)
-      actor ! "OneWay"
-
-      assert(RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS))
-      actor.stop
-
-      server.shutdown
-      RemoteClient.shutdownAll
+      latch.await(1, unit) must be (true)
     }
-  }
 
-  describe("The ActorInfoProtocol") {
-    it("should be possible to set the acor id and uuuid") {
+    "should be possible to set the acor id and uuuid" in {
       val uuid = newUuid
-      val actorInfoBuilder = ActorInfoProtocol.newBuilder
+      val actorInfo = ActorInfoProtocol.newBuilder
         .setUuid(UuidProtocol.newBuilder.setHigh(uuid.getTime).setLow(uuid.getClockSeqAndNode).build)
         .setId("some-id")
         .setTarget("actorClassName")
         .setTimeout(5000L)
-        .setActorType(ActorType.SCALA_ACTOR)
-      val actorInfo = actorInfoBuilder.build
-      assert(uuidFrom(actorInfo.getUuid.getHigh,actorInfo.getUuid.getLow) === uuid)
-      assert(actorInfo.getId === "some-id")
+        .setActorType(ActorType.SCALA_ACTOR).build
+
+      uuidFrom(actorInfo.getUuid.getHigh,actorInfo.getUuid.getLow) must equal (uuid)
+      actorInfo.getId must equal ("some-id")
     }
   }
 }

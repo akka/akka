@@ -1,7 +1,6 @@
 package akka.actor.remote
 
-import akka.actor.Actor
-import akka.remote.{RemoteClient, RemoteNode}
+import akka.actor.{Actor, ActorRegistry}
 import akka.util.Logging
 
 import Actor._
@@ -16,22 +15,17 @@ class HelloWorldActor extends Actor {
 
 object ServerInitiatedRemoteActorServer {
 
-  def run = {
-    RemoteNode.start("localhost", 2552)
-    RemoteNode.register("hello-service", actorOf[HelloWorldActor])
+  def main(args: Array[String]) = {
+    ActorRegistry.remote.start("localhost", 2552)
+    ActorRegistry.remote.register("hello-service", actorOf[HelloWorldActor])
   }
-
-  def main(args: Array[String]) = run
 }
 
 object ServerInitiatedRemoteActorClient extends Logging {
-
-  def run = {
-    val actor = RemoteClient.actorFor("hello-service", "localhost", 2552)
+  def main(args: Array[String]) = {
+    val actor = ActorRegistry.remote.actorFor("hello-service", "localhost", 2552)
     val result = actor !! "Hello"
     log.slf4j.info("Result from Remote Actor: {}", result)
   }
-
-  def main(args: Array[String]) = run
 }
 

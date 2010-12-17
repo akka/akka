@@ -2,6 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
+/* THIS SHOULD BE UNCOMMENTED
 package akka.actor.remote
 
 import org.scalatest._
@@ -104,5 +105,5 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends
     server.typedActorsFactories.get("my-service-1") should be (null)
   }
 
-}
+}*/
 

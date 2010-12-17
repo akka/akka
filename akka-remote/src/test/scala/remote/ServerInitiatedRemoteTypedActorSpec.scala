@@ -2,6 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
+/* THIS SHOULD BE UNCOMMENTED
 package akka.actor.remote
 
 import org.scalatest.Spec
@@ -133,5 +134,5 @@ class ServerInitiatedRemoteTypedActorSpec extends
 
     }
   }
-}
+} */
 
