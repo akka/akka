@@ -175,5 +175,8 @@ trait Transactor extends Actor {
   /**
    * Default catch-all for the different Receive methods.
    */
-  def doNothing: Receive = { case _ => }
+  def doNothing: Receive = new Receive {
+    def apply(any: Any) = {}
+    def isDefinedAt(any: Any) = false
+  }
 }
