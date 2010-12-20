@@ -54,17 +54,16 @@ class ServerInitiatedRemoteSessionActorSpec extends AkkaRemoteTest {
 
   "A remote session Actor" should {
     "create a new session actor per connection" in {
+      remote.registerPerSession("untyped-session-actor-service", actorOf[RemoteStatefullSessionActorSpec])
 
       val session1 = remote.actorFor("untyped-session-actor-service", 5000L, host, port)
 
       val default1 = session1 !! GetUser()
-      default1.as[String].get must equal ("anonymous")
+      default1.as[String] must equal (Some("anonymous"))
 
       session1 ! Login("session[1]")
       val result1 = session1 !! GetUser()
-      result1.as[String].get must equal ("session[1]")
-
-      session1.stop
+      result1.as[String] must equal (Some("session[1]"))
 
       remote.shutdownClientModule
 
@@ -72,9 +71,7 @@ class ServerInitiatedRemoteSessionActorSpec extends AkkaRemoteTest {
 
       // since this is a new session, the server should reset the state
       val default2 = session2 !! GetUser()
-      default2.as[String].get must equal ("anonymous")
-
-      session2.stop()
+      default2.as[String] must equal (Some("anonymous"))
     }
 
     /*"stop the actor when the client disconnects" in {

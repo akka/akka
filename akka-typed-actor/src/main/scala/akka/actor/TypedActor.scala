@@ -841,12 +841,13 @@ private[akka] abstract class ActorAspect {
     val isOneWay = TypedActor.isOneWay(methodRtti)
 
     val (message: Array[AnyRef], isEscaped) = escapeArguments(methodRtti.getParameterValues)
-    //TODO: REVISIT: MAKE REGISTRY COME FROM ACTORREF
+
     val future = ActorRegistry.remote.send[AnyRef](
       message, None, None, remoteAddress.get,
       timeout, isOneWay, actorRef,
       Some((interfaceClass.getName, methodRtti.getMethod.getName)),
-      ActorType.TypedActor)
+      ActorType.TypedActor,
+      None) //TODO: REVISIT: Use another classloader?
 
     if (isOneWay) null // for void methods
     else if (TypedActor.returnsFuture_?(methodRtti)) future.get

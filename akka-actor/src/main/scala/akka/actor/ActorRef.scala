@@ -1096,14 +1096,14 @@ private[akka] case class RemoteActorRef private[akka] (
   start
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
-    ActorRegistry.remote.send[Any](message, senderOption, None, homeAddress, timeout, true, this, None, actorType)
+    ActorRegistry.remote.send[Any](message, senderOption, None, homeAddress, timeout, true, this, None, actorType, loader)
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
     message: Any,
     timeout: Long,
     senderOption: Option[ActorRef],
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-    val future = ActorRegistry.remote.send[T](message, senderOption, senderFuture, homeAddress, timeout, false, this, None, actorType)
+    val future = ActorRegistry.remote.send[T](message, senderOption, senderFuture, homeAddress, timeout, false, this, None, actorType, loader)
     if (future.isDefined) future.get
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
