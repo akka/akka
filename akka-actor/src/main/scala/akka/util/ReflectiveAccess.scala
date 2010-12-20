@@ -92,9 +92,10 @@ object ReflectiveAccess extends Logging {
       isOneWay: Boolean,
       actorRef: ActorRef,
       typedActorInfo: Option[Tuple2[String, String]],
-      actorType: ActorType): Option[CompletableFuture[T]] = {
+      actorType: ActorType,
+      loader: Option[ClassLoader] = None): Option[CompletableFuture[T]] = {
       ensureEnabled
-      clientFor(remoteAddress.getHostName, remoteAddress.getPort, None).send[T](
+      clientFor(remoteAddress.getHostName, remoteAddress.getPort, loader).send[T](
         message, senderOption, senderFuture, remoteAddress, timeout, isOneWay, actorRef, typedActorInfo, actorType)
     }
   }
