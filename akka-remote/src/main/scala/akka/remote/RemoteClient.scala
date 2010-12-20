@@ -56,6 +56,8 @@ case class RemoteClientShutdown(
  */
 class RemoteClientException private[akka] (message: String, @BeanProperty val client: RemoteClient) extends AkkaException(message)
 
+case class UnparsableException private[akka] (val originalClassName: String, val originalMessage: String) extends AkkaException(originalMessage)
+
 /**
  * The RemoteClient object manages RemoteClient instances and gives you an API to lookup remote actor handles.
  *
@@ -506,10 +508,16 @@ class RemoteClientHandler(
   private def parseException(reply: RemoteMessageProtocol, loader: Option[ClassLoader]): Throwable = {
     val exception = reply.getException
     val classname = exception.getClassname
-    val exceptionClass = if (loader.isDefined) loader.get.loadClass(classname)
-                         else Class.forName(classname)
-    exceptionClass
-      .getConstructor(Array[Class[_]](classOf[String]): _*)
-      .newInstance(exception.getMessage).asInstanceOf[Throwable]
+    try {
+      val exceptionClass = if (loader.isDefined) loader.get.loadClass(classname)
+                           else Class.forName(classname)
+      exceptionClass
+        .getConstructor(Array[Class[_]](classOf[String]): _*)
+        .newInstance(exception.getMessage).asInstanceOf[Throwable]
+    } catch {
+      case problem =>
+        log.warn("Couldn't create instance of {} with message {}, returning UnparsableException",classname, exception.getMessage)
+        UnparsableException(classname, exception.getMessage)
+    }
   }
 }
