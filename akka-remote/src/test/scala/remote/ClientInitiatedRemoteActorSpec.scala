@@ -9,8 +9,8 @@ import org.junit.runner.RunWith
 
 import akka.dispatch.Dispatchers
 import akka.remote. {NettyRemoteSupport, RemoteServer, RemoteClient}
-import akka.actor. {RemoteActorRef, ActorRegistry, ActorRef, Actor}
 import akka.actor.Actor._
+import akka.actor._
 
 class ExpectedRemoteProblem(msg: String) extends RuntimeException(msg)
 
@@ -78,7 +78,7 @@ class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
    "shouldSendOneWay" in {
       val clientManaged = actorOf[RemoteActorSpecActorUnidirectional](host,port).start
       clientManaged must not be null
-      clientManaged.getClass must be (classOf[RemoteActorRef])
+      clientManaged.getClass must be (classOf[LocalActorRef])
       clientManaged ! "OneWay"
       RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS) must be (true)
       clientManaged.stop

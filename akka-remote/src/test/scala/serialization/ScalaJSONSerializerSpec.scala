@@ -7,6 +7,7 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 import akka.serialization.Serializer.ScalaJSON
+//TODO: FIXME WHY IS THIS COMMENTED OUT?
 /*
 object Protocols {
   import sjson.json.DefaultProtocol._

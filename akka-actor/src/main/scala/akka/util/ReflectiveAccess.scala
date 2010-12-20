@@ -37,6 +37,8 @@ object ReflectiveAccess extends Logging {
     val HOSTNAME  = Config.config.getString("akka.remote.server.hostname", "localhost")
     val PORT      = Config.config.getInt("akka.remote.server.port", 2552)
 
+    lazy val localAddress = new InetSocketAddress(HOSTNAME,PORT)
+
     lazy val isEnabled = remoteSupportClass.isDefined
 
     def ensureEnabled = if (!isEnabled) throw new ModuleNotAvailableException(
