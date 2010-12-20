@@ -516,6 +516,7 @@ class RemoteClientHandler(
         .newInstance(exception.getMessage).asInstanceOf[Throwable]
     } catch {
       case problem =>
+        log.debug("Couldn't parse exception returned from RemoteServer",problem)
         log.warn("Couldn't create instance of {} with message {}, returning UnparsableException",classname, exception.getMessage)
         UnparsableException(classname, exception.getMessage)
     }
