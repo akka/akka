@@ -64,6 +64,11 @@ case class RemoteClientShutdown(
 class RemoteClientException private[akka] (message: String, @BeanProperty val client: RemoteClient) extends AkkaException(message)
 
 /**
+ * Returned when a remote exception cannot be instantiated or parsed
+ */
+case class UnparsableException private[akka] (originalClassName: String, originalMessage: String) extends AkkaException(originalMessage)
+
+/**
  * The RemoteClient object manages RemoteClient instances and gives you an API to lookup remote actor handles.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -83,8 +88,9 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
                               isOneWay: Boolean,
                               actorRef: ActorRef,
                               typedActorInfo: Option[Tuple2[String, String]],
-                              actorType: AkkaActorType): Option[CompletableFuture[T]] =
-  clientFor(remoteAddress, None).send[T](message, senderOption, senderFuture, remoteAddress, timeout, isOneWay, actorRef, typedActorInfo, actorType)
+                              actorType: AkkaActorType,
+                              loader: Option[ClassLoader]): Option[CompletableFuture[T]] =
+  clientFor(remoteAddress, loader).send[T](message, senderOption, senderFuture, remoteAddress, timeout, isOneWay, actorRef, typedActorInfo, actorType)
 
   private[akka] def clientFor(
     address: InetSocketAddress, loader: Option[ClassLoader]): RemoteClient = synchronized { //TODO: REVIST: synchronized here seems bottlenecky
@@ -376,11 +382,14 @@ class RemoteClientHandler(
           log.slf4j.debug("Remote client received RemoteMessageProtocol[\n{}]",reply)
           log.slf4j.debug("Trying to map back to future: {}",replyUuid)
           val future = futures.remove(replyUuid).asInstanceOf[CompletableFuture[Any]]
+
           if (reply.hasMessage) {
             if (future eq null) throw new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist")
             val message = MessageSerializer.deserialize(reply.getMessage)
             future.completeWithResult(message)
           } else {
+            val exception = parseException(reply, client.loader)
+
             if (reply.hasSupervisorUuid()) {
               val supervisorUuid = uuidFrom(reply.getSupervisorUuid.getHigh, reply.getSupervisorUuid.getLow)
               if (!supervisors.containsKey(supervisorUuid)) throw new IllegalActorStateException(
@@ -388,10 +397,10 @@ class RemoteClientHandler(
               val supervisedActor = supervisors.get(supervisorUuid)
               if (!supervisedActor.supervisor.isDefined) throw new IllegalActorStateException(
                 "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
-              else supervisedActor.supervisor.get ! Exit(supervisedActor, parseException(reply, client.loader))
+              else supervisedActor.supervisor.get ! Exit(supervisedActor, exception)
             }
 
-            future.completeWithException(parseException(reply, client.loader))
+            future.completeWithException(exception)
           }
 
         case other =>
@@ -460,11 +469,18 @@ class RemoteClientHandler(
   private def parseException(reply: RemoteMessageProtocol, loader: Option[ClassLoader]): Throwable = {
     val exception = reply.getException
     val classname = exception.getClassname
-    val exceptionClass = if (loader.isDefined) loader.get.loadClass(classname)
-                         else Class.forName(classname)
-    exceptionClass
-      .getConstructor(Array[Class[_]](classOf[String]): _*)
-      .newInstance(exception.getMessage).asInstanceOf[Throwable]
+    try {
+      val exceptionClass = if (loader.isDefined) loader.get.loadClass(classname)
+                           else Class.forName(classname)
+      exceptionClass
+        .getConstructor(Array[Class[_]](classOf[String]): _*)
+        .newInstance(exception.getMessage).asInstanceOf[Throwable]
+    } catch {
+      case problem =>
+        log.debug("Couldn't parse exception returned from RemoteServer",problem)
+        log.warn("Couldn't create instance of {} with message {}, returning UnparsableException",classname, exception.getMessage)
+        UnparsableException(classname, exception.getMessage)
+    }
   }
 }
 
@@ -1119,10 +1135,10 @@ class RemoteServerHandler(
     val uuid = actorInfo.getUuid
     val id = actorInfo.getId
     val sessionActorRefOrNull = findSessionActor(id, channel)
-    if (sessionActorRefOrNull ne null)
+    if (sessionActorRefOrNull ne null) {
+      log.debug("found session actor with id {} for channel {}",id, channel)
       sessionActorRefOrNull
-    else
-    {
+    } else {
       // we dont have it in the session either, see if we have a factory for it
       val actorFactoryOrNull = findActorFactory(id)
       if (actorFactoryOrNull ne null) {

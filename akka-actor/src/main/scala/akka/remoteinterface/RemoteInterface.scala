@@ -238,7 +238,8 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
                                 isOneWay: Boolean,
                                 actorRef: ActorRef,
                                 typedActorInfo: Option[Tuple2[String, String]],
-                                actorType: ActorType): Option[CompletableFuture[T]]
+                                actorType: ActorType,
+                                loader: Option[ClassLoader]): Option[CompletableFuture[T]]
 
     //TODO: REVISIT: IMPLEMENT OR REMOVE
     //private[akka] def registerSupervisorForActor(actorRef: ActorRef): ActorRef

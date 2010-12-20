@@ -59,8 +59,22 @@ object TransactorIncrement {
   }
 }
 
+object SimpleTransactor {
+  case class Set(ref: Ref[Int], value: Int, latch: CountDownLatch)
+
+  class Setter extends Transactor {
+    def atomically = {
+      case Set(ref, value, latch) => {
+        ref.set(value)
+        latch.countDown
+      }
+    }
+  }
+}
+
 class TransactorSpec extends WordSpec with MustMatchers {
   import TransactorIncrement._
+  import SimpleTransactor._
 
   val numCounters = 5
   val timeout = 5 seconds
@@ -95,6 +109,19 @@ class TransactorSpec extends WordSpec with MustMatchers {
       }
       counters foreach (_.stop)
       failer.stop
+    }
+  }
+
+  "Transactor" should {
+    "be usable without overriding normally" in {
+      val transactor = Actor.actorOf(new Setter).start
+      val ref = Ref(0)
+      val latch = new CountDownLatch(1)
+      transactor ! Set(ref, 5, latch)
+      latch.await(timeout.length, timeout.unit)
+      val value = atomic { ref.get }
+      value must be === 5
+      transactor.stop
     }
   }
 }
