@@ -172,7 +172,17 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   def getDispatcher(): MessageDispatcher = dispatcher
 
   /**
-   * Holds the hot swapped partial function.
+   * Returns on which node this actor lives
+   */
+  def homeAddress: InetSocketAddress
+
+  /**
+   * Java API
+   */
+  def getHomeAddress(): InetSocketAddress = homeAddress
+
+  /**
+   *   Holds the hot swapped partial function.
    */
   @volatile
   protected[akka] var hotswap = Stack[PartialFunction[Any, Unit]]()
@@ -504,8 +514,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
 
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit
 
-  //TODO: REVISIT: REMOVE
-  //protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid]
+  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid]
 
   protected[akka] def linkedActors: JMap[Uuid, ActorRef]
 
@@ -541,7 +550,8 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
-  private[this] val actorFactory: () => Actor)
+  private[this] val actorFactory: () => Actor,
+  val homeAddress: InetSocketAddress = Remote.localAddress)
   extends ActorRef with ScalaActorRef {
 
   @volatile
@@ -566,15 +576,14 @@ class LocalActorRef private[akka] (
   private[akka] def this(
     __uuid: Uuid,
     __id: String,
-    __hostname: String,
-    __port: Int,
     __timeout: Long,
     __receiveTimeout: Option[Long],
     __lifeCycle: LifeCycle,
     __supervisor: Option[ActorRef],
     __hotswap: Stack[PartialFunction[Any, Unit]],
-    __factory: () => Actor) = {
-    this(__factory)
+    __factory: () => Actor,
+    __homeAddress: InetSocketAddress) = {
+    this(__factory, __homeAddress)
     _uuid = __uuid
     id = __id
     timeout = __timeout
@@ -586,6 +595,8 @@ class LocalActorRef private[akka] (
     start
     ActorRegistry.register(this) //TODO: REVISIT: Is this needed?
   }
+
+  private final def isClientManaged_? = (homeAddress ne Remote.localAddress) && homeAddress != Remote.localAddress
 
   // ========= PUBLIC FUNCTIONS =========
 
@@ -630,6 +641,9 @@ class LocalActorRef private[akka] (
       if ((actorInstance ne null) && (actorInstance.get ne null))
         initializeActorInstance
 
+      if (isRemotingEnabled && isClientManaged_?)
+        ActorRegistry.remote.registerClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
+
       checkReceiveTimeout //Schedule the initial Receive timeout
     }
     this
@@ -646,6 +660,11 @@ class LocalActorRef private[akka] (
       _status = ActorRefInternals.SHUTDOWN
       actor.postStop
       ActorRegistry.unregister(this)
+      if (isRemotingEnabled) {
+        if (isClientManaged_?)
+          ActorRegistry.remote.registerClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
+        ActorRegistry.remote.unregister(this)
+      }
       setActorSelfFields(actorInstance.get,null)
     } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
   }
@@ -771,21 +790,28 @@ class LocalActorRef private[akka] (
 
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = _supervisor = sup
 
-  protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
-    val invocation = new MessageInvocation(this, message, senderOption, None)
-    dispatcher dispatchMessage invocation
-  }
+  protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
+    if (isClientManaged_? && isRemotingEnabled) {
+      ActorRegistry.remote.send[Any](
+        message, senderOption, None, homeAddress, timeout, true, this, None, ActorType.ScalaActor, None)
+    } else
+      dispatcher dispatchMessage new MessageInvocation(this, message, senderOption, None)
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
     message: Any,
     timeout: Long,
     senderOption: Option[ActorRef],
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
+      if (isClientManaged_? && isRemotingEnabled) {
+      val future = ActorRegistry.remote.send[T](
+        message, senderOption, senderFuture, homeAddress, timeout, false, this, None, ActorType.ScalaActor, None)
+      if (future.isDefined) future.get
+      else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
+    } else {
       val future = if (senderFuture.isDefined) senderFuture else Some(new DefaultCompletableFuture[T](timeout))
-      val invocation = new MessageInvocation(
-        this, message, senderOption, future.asInstanceOf[Some[CompletableFuture[Any]]])
-      dispatcher dispatchMessage invocation
+      dispatcher dispatchMessage new MessageInvocation(this, message, senderOption, future.asInstanceOf[Some[CompletableFuture[Any]]])
       future.get
+    }
   }
 
   /**
@@ -942,15 +968,13 @@ class LocalActorRef private[akka] (
     }
   }
 
-  //TODO: REVISIT: REMOVE
-
-  /*protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = guard.withGuard {
+  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = guard.withGuard {
     ensureRemotingEnabled
     if (_supervisor.isDefined) {
-      remoteAddress.foreach(address => RemoteClientModule.registerSupervisorForActor(address, this))
+      ActorRegistry.remote.registerSupervisorForActor(this)
       Some(_supervisor.get.uuid)
     } else None
-  }*/
+  }
 
   protected[akka] def linkedActors: JMap[Uuid, ActorRef] = _linkedActors
 
@@ -1074,7 +1098,7 @@ object RemoteActorSystemMessage {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] case class RemoteActorRef private[akka] (
-  classOrServiceName: Option[String],
+  classOrServiceName: String,
   val actorClassName: String,
   val hostname: String,
   val port: Int,
@@ -1087,9 +1111,9 @@ private[akka] case class RemoteActorRef private[akka] (
 
   val homeAddress = new InetSocketAddress(hostname, port)
 
-  protected def clientManaged = classOrServiceName.isEmpty //If no class or service name, it's client managed
-
-  id = classOrServiceName.getOrElse("uuid:" + uuid) //If we're a server-managed we want to have classOrServiceName as id, or else, we're a client-managed and we want to have our uuid as id
+  //protected def clientManaged = classOrServiceName.isEmpty //If no class or service name, it's client managed
+  id = classOrServiceName
+  //id = classOrServiceName.getOrElse("uuid:" + uuid) //If we're a server-managed we want to have classOrServiceName as id, or else, we're a client-managed and we want to have our uuid as id
 
   timeout = _timeout
 
@@ -1110,22 +1134,21 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def start: ActorRef = synchronized {
     _status = ActorRefInternals.RUNNING
-    if (clientManaged)
-      ActorRegistry.remote.registerClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
+    //if (clientManaged)
+    //  ActorRegistry.remote.registerClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
     this
   }
 
   def stop: Unit = synchronized {
     if (_status == ActorRefInternals.RUNNING) {
       _status = ActorRefInternals.SHUTDOWN
-      postMessageToMailbox(RemoteActorSystemMessage.Stop, None) //TODO: REVISIT: Should this be called for both server-managed and client-managed?
-      if (clientManaged)
-        ActorRegistry.remote.unregisterClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
+      postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
+     // if (clientManaged)
+     //   ActorRegistry.remote.unregisterClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
     }
   }
 
-  //TODO: REVISIT: REMOVE
-  //protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = None
+  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = None
 
   // ==== NOT SUPPORTED ====
   def actorClass: Class[_ <: Actor] = unsupported

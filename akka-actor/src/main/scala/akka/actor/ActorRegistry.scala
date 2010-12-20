@@ -396,7 +396,7 @@ object ActorRegistry extends ListenerManagement {
       }
     } else foreach(_.stop)
     if (Remote.isEnabled) {
-      remote.clear
+      remote.clear //TODO: REVISIT: Should this be here?
     }
     actorsByUUID.clear
     actorsById.clear

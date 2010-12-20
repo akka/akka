@@ -4,10 +4,6 @@ import java.util.concurrent.TimeUnit
 import org.scalatest._
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
-
 import akka.actor.{ProtobufProtocol, Actor}
 import ProtobufProtocol.ProtobufPOJO
 import Actor._

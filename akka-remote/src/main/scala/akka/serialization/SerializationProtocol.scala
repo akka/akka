@@ -18,6 +18,7 @@ import scala.collection.immutable.Stack
 import com.google.protobuf.ByteString
 import akka.util.ReflectiveAccess
 import akka.util.ReflectiveAccess.Remote.{HOSTNAME,PORT}
+import java.net.InetSocketAddress
 
 /**
  * Type class definition for Actor Serialization
@@ -90,9 +91,10 @@ object ActorSerialization {
   def toBinaryJ[T <: Actor](a: ActorRef, format: Format[T], srlMailBox: Boolean = true): Array[Byte] =
     toBinary(a, srlMailBox)(format)
 
-  val localAddress = AddressProtocol.newBuilder
-        .setHostname(HOSTNAME)
-        .setPort(PORT)
+  private[akka] def toAddressProtocol(actorRef: ActorRef) =
+    AddressProtocol.newBuilder
+        .setHostname(actorRef.homeAddress.getHostName)
+        .setPort(actorRef.homeAddress.getPort)
         .build
 
   private[akka] def toSerializedActorRefProtocol[T <: Actor](
@@ -109,7 +111,7 @@ object ActorSerialization {
       .setUuid(UuidProtocol.newBuilder.setHigh(actorRef.uuid.getTime).setLow(actorRef.uuid.getClockSeqAndNode).build)
       .setId(actorRef.id)
       .setActorClassname(actorRef.actorClass.getName)
-      .setOriginalAddress(localAddress)
+      .setOriginalAddress(toAddressProtocol(actorRef))
       .setTimeout(actorRef.timeout)
 
 
@@ -193,14 +195,13 @@ object ActorSerialization {
     val ar = new LocalActorRef(
       uuidFrom(protocol.getUuid.getHigh, protocol.getUuid.getLow),
       protocol.getId,
-      protocol.getOriginalAddress.getHostname,
-      protocol.getOriginalAddress.getPort,
       if (protocol.hasTimeout) protocol.getTimeout else Actor.TIMEOUT,
       if (protocol.hasReceiveTimeout) Some(protocol.getReceiveTimeout) else None,
       lifeCycle,
       supervisor,
       hotswap,
-      factory)
+      factory,
+      new InetSocketAddress(protocol.getOriginalAddress.getHostname,protocol.getOriginalAddress.getPort))
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
     messages.foreach(message => ar ! MessageSerializer.deserialize(message.getMessage))
@@ -230,7 +231,7 @@ object RemoteActorSerialization {
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
     Actor.log.slf4j.debug("Deserializing RemoteActorRefProtocol to RemoteActorRef:\n {}", protocol)
     val ref = RemoteActorRef(
-      Some(protocol.getClassOrServiceName),
+      protocol.getClassOrServiceName,
       protocol.getActorClassname,
       protocol.getHomeAddress.getHostname,
       protocol.getHomeAddress.getPort,
@@ -247,15 +248,14 @@ object RemoteActorSerialization {
   def toRemoteActorRefProtocol(ar: ActorRef): RemoteActorRefProtocol = {
     import ar._
 
-    Actor.log.slf4j.debug("Register serialized Actor [{}] as remote @ [{}:{}]",
-      Array[AnyRef](actorClassName, ActorSerialization.localAddress.getHostname, ActorSerialization.localAddress.getPort.asInstanceOf[AnyRef]))
+    Actor.log.slf4j.debug("Register serialized Actor [{}] as remote @ [{}:{}]",actorClassName, ar.homeAddress)
 
     ActorRegistry.remote.registerByUuid(ar)
 
     RemoteActorRefProtocol.newBuilder
         .setClassOrServiceName("uuid:"+uuid.toString)
         .setActorClassname(actorClassName)
-        .setHomeAddress(ActorSerialization.localAddress)
+        .setHomeAddress(ActorSerialization.toAddressProtocol(ar))
         .setTimeout(timeout)
         .build
   }
@@ -322,8 +322,6 @@ object RemoteActorSerialization {
 
     secureCookie.foreach(messageBuilder.setCookie(_))
 
-    //TODO: REVISIT: REMOVE
-    /**
     actorRef.foreach { ref =>
       ref.registerSupervisorAsRemoteActor.foreach { id =>
         messageBuilder.setSupervisorUuid(
@@ -332,7 +330,7 @@ object RemoteActorSerialization {
               .setLow(id.getClockSeqAndNode)
               .build)
       }
-    }*/
+    }
 
     if( senderOption.isDefined)
       messageBuilder.setSender(toRemoteActorRefProtocol(senderOption.get))

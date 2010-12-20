@@ -28,8 +28,8 @@ trait RemoteModule extends Logging {
 
 abstract class RemoteSupport extends ListenerManagement with RemoteServerModule with RemoteClientModule {
   def shutdown {
-    this.shutdownServerModule
     this.shutdownClientModule
+    this.shutdownServerModule
     clear
   }
   protected override def manageLifeCycleOfListeners = false
@@ -241,10 +241,9 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
                                 actorType: ActorType,
                                 loader: Option[ClassLoader]): Option[CompletableFuture[T]]
 
-    //TODO: REVISIT: IMPLEMENT OR REMOVE
-    //private[akka] def registerSupervisorForActor(actorRef: ActorRef): ActorRef
+    private[akka] def registerSupervisorForActor(actorRef: ActorRef): ActorRef
 
-    //private[akka] def deregisterSupervisorForActor(actorRef: ActorRef): ActorRef
+    private[akka] def deregisterSupervisorForActor(actorRef: ActorRef): ActorRef
 
     /**
      * Clean-up all open connections.
