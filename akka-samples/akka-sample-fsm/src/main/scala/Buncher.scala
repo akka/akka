@@ -1,18 +1,19 @@
-package akka.actor
+package sample.fsm.buncher
 
 import scala.reflect.ClassManifest
 import akka.util.Duration
+import akka.actor.{FSM, Actor}
 
 /*
- * generic typed object buncher.
- * 
- * To instantiate it, use the factory method like so:
- *   Buncher(100, 500)(x : List[AnyRef] => x foreach println)
- * which will yield a fully functional and started ActorRef.
- * The type of messages allowed is strongly typed to match the
- * supplied processing method; other messages are discarded (and
- * possibly logged).
- */
+* generic typed object buncher.
+*
+* To instantiate it, use the factory method like so:
+*   Buncher(100, 500)(x : List[AnyRef] => x foreach println)
+* which will yield a fully functional and started ActorRef.
+* The type of messages allowed is strongly typed to match the
+* supplied processing method; other messages are discarded (and
+* possibly logged).
+*/
 object Buncher {
 	trait State
 	case object Idle extends State
