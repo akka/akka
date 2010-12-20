@@ -593,7 +593,6 @@ class LocalActorRef private[akka] (
     hotswap = __hotswap
     setActorSelfFields(actor,this)
     start
-    ActorRegistry.register(this) //TODO: REVISIT: Is this needed?
   }
 
   private final def isClientManaged_? = (homeAddress ne Remote.localAddress) && homeAddress != Remote.localAddress
