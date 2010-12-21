@@ -101,6 +101,7 @@ object Config extends Logging {
       CConfig.fromString("<akka></akka>") // default empty config
     }
   }
+  if (config.getBool("akka.enable-jmx-for-config", true)) config.registerWithJmx("akka")
 
   val CONFIG_VERSION = config.getString("akka.version", VERSION)
   if (VERSION != CONFIG_VERSION) throw new ConfigurationException(
