@@ -56,6 +56,8 @@ case class RemoteClientShutdown(
  */
 class RemoteClientException private[akka] (message: String, @BeanProperty val client: RemoteClient) extends AkkaException(message)
 
+case class UnparsableException private[akka] (originalClassName: String, originalMessage: String) extends AkkaException(originalMessage)
+
 /**
  * The RemoteClient object manages RemoteClient instances and gives you an API to lookup remote actor handles.
  *
@@ -414,32 +416,33 @@ class RemoteClientHandler(
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) {
     try {
-      val result = event.getMessage
-      if (result.isInstanceOf[RemoteMessageProtocol]) {
-        val reply = result.asInstanceOf[RemoteMessageProtocol]
-        val replyUuid = uuidFrom(reply.getUuid.getHigh, reply.getUuid.getLow)
-        log.debug("Remote client received RemoteMessageProtocol[\n{}]",reply)
-        val future = futures.get(replyUuid).asInstanceOf[CompletableFuture[Any]]
-        if (reply.hasMessage) {
-          if (future eq null) throw new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist")
-          val message = MessageSerializer.deserialize(reply.getMessage)
-          future.completeWithResult(message)
-        } else {
-          if (reply.hasSupervisorUuid()) {
-            val supervisorUuid = uuidFrom(reply.getSupervisorUuid.getHigh, reply.getSupervisorUuid.getLow)
-            if (!supervisors.containsKey(supervisorUuid)) throw new IllegalActorStateException(
-              "Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
-            val supervisedActor = supervisors.get(supervisorUuid)
-            if (!supervisedActor.supervisor.isDefined) throw new IllegalActorStateException(
-              "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
-            else supervisedActor.supervisor.get ! Exit(supervisedActor, parseException(reply, client.loader))
+      event.getMessage match {
+        case reply: RemoteMessageProtocol =>
+          val replyUuid = uuidFrom(reply.getActorInfo.getUuid.getHigh, reply.getActorInfo.getUuid.getLow)
+          log.debug("Remote client received RemoteMessageProtocol[\n{}]",reply)
+          val future = futures.remove(replyUuid).asInstanceOf[CompletableFuture[Any]]
+
+          if (reply.hasMessage) {
+            if (future eq null) throw new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist")
+            val message = MessageSerializer.deserialize(reply.getMessage)
+            future.completeWithResult(message)
+          } else {
+            val exception = parseException(reply, client.loader)
+            if (reply.hasSupervisorUuid()) {
+              val supervisorUuid = uuidFrom(reply.getSupervisorUuid.getHigh, reply.getSupervisorUuid.getLow)
+              if (!supervisors.containsKey(supervisorUuid)) throw new IllegalActorStateException(
+                "Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
+              val supervisedActor = supervisors.get(supervisorUuid)
+              if (!supervisedActor.supervisor.isDefined) throw new IllegalActorStateException(
+                "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
+              else supervisedActor.supervisor.get ! Exit(supervisedActor, exception)
+            }
+
+            future.completeWithException(exception)
           }
-          val exception = parseException(reply, client.loader)
-          future.completeWithException(exception)
-        }
-        futures remove replyUuid
-      } else {
-        val exception = new RemoteClientException("Unknown message received in remote client handler: " + result, client)
+
+      case message =>
+        val exception = new RemoteClientException("Unknown message received in remote client handler: " + message, client)
         client.notifyListeners(RemoteClientError(exception, client))
         throw exception
       }
@@ -506,10 +509,17 @@ class RemoteClientHandler(
   private def parseException(reply: RemoteMessageProtocol, loader: Option[ClassLoader]): Throwable = {
     val exception = reply.getException
     val classname = exception.getClassname
-    val exceptionClass = if (loader.isDefined) loader.get.loadClass(classname)
-                         else Class.forName(classname)
-    exceptionClass
-      .getConstructor(Array[Class[_]](classOf[String]): _*)
-      .newInstance(exception.getMessage).asInstanceOf[Throwable]
+    try {
+      val exceptionClass = if (loader.isDefined) loader.get.loadClass(classname)
+                           else Class.forName(classname)
+      exceptionClass
+        .getConstructor(Array[Class[_]](classOf[String]): _*)
+        .newInstance(exception.getMessage).asInstanceOf[Throwable]
+    } catch {
+      case problem =>
+        log.debug("Couldn't parse exception returned from RemoteServer",problem)
+        log.warn("Couldn't create instance of {} with message {}, returning UnparsableException",classname, exception.getMessage)
+        UnparsableException(classname, exception.getMessage)
+    }
   }
 }

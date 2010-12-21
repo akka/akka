@@ -11,17 +11,18 @@ import akka.util._
 import com.google.protobuf.{Message, ByteString}
 
 object MessageSerializer extends Logging {
-  private var SERIALIZER_JAVA:       Serializer.Java      = Serializer.Java
-  private var SERIALIZER_JAVA_JSON:  Serializer.JavaJSON  = Serializer.JavaJSON
-  private var SERIALIZER_SCALA_JSON: Serializer.ScalaJSON = Serializer.ScalaJSON
-  private var SERIALIZER_SBINARY:    Serializer.SBinary   = Serializer.SBinary
-  private var SERIALIZER_PROTOBUF:   Serializer.Protobuf  = Serializer.Protobuf
+  private def SERIALIZER_JAVA:       Serializer.Java      = Serializer.Java
+  private def SERIALIZER_JAVA_JSON:  Serializer.JavaJSON  = Serializer.JavaJSON
+  private def SERIALIZER_SCALA_JSON: Serializer.ScalaJSON = Serializer.ScalaJSON
+  private def SERIALIZER_SBINARY:    Serializer.SBinary   = Serializer.SBinary
+  private def SERIALIZER_PROTOBUF:   Serializer.Protobuf  = Serializer.Protobuf
 
   def setClassLoader(cl: ClassLoader) = {
-    SERIALIZER_JAVA.classLoader       = Some(cl)
-    SERIALIZER_JAVA_JSON.classLoader  = Some(cl)
-    SERIALIZER_SCALA_JSON.classLoader = Some(cl)
-    SERIALIZER_SBINARY.classLoader    = Some(cl)
+    val someCl = Some(cl)
+    SERIALIZER_JAVA.classLoader       = someCl
+    SERIALIZER_JAVA_JSON.classLoader  = someCl
+    SERIALIZER_SCALA_JSON.classLoader = someCl
+    SERIALIZER_SBINARY.classLoader    = someCl
   }
 
   def deserialize(messageProtocol: MessageProtocol): Any = {
