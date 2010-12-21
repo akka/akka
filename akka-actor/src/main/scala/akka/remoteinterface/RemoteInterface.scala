@@ -13,6 +13,8 @@ import akka.config.Config.{config, TIME_UNIT}
 import java.util.concurrent.ConcurrentHashMap
 
 trait RemoteModule extends Logging {
+  val UUID_PREFIX        = "uuid:"
+
   def optimizeLocalScoped_?(): Boolean //Apply optimizations for remote operations in local scope
   protected[akka] def notifyListeners(message: => Any): Unit
 
@@ -23,6 +25,35 @@ trait RemoteModule extends Logging {
   private[akka] def typedActors: ConcurrentHashMap[String, AnyRef]
   private[akka] def typedActorsByUuid: ConcurrentHashMap[String, AnyRef]
   private[akka] def typedActorsFactories: ConcurrentHashMap[String, () => AnyRef]
+
+
+  /** Lookup methods **/
+
+  private[akka] def findActorById(id: String) : ActorRef = actors.get(id)
+
+  private[akka] def findActorByUuid(uuid: String) : ActorRef = actorsByUuid.get(uuid)
+
+  private[akka] def findActorFactory(id: String) : () => ActorRef = actorsFactories.get(id)
+
+  private[akka] def findTypedActorById(id: String) : AnyRef = typedActors.get(id)
+
+  private[akka] def findTypedActorFactory(id: String) : () => AnyRef = typedActorsFactories.get(id)
+
+  private[akka] def findTypedActorByUuid(uuid: String) : AnyRef = typedActorsByUuid.get(uuid)
+
+  private[akka] def findActorByIdOrUuid(id: String, uuid: String) : ActorRef = {
+    var actorRefOrNull = if (id.startsWith(UUID_PREFIX)) findActorByUuid(id.substring(UUID_PREFIX.length))
+                         else findActorById(id)
+    if (actorRefOrNull eq null) actorRefOrNull = findActorByUuid(uuid)
+    actorRefOrNull
+  }
+
+  private[akka] def findTypedActorByIdOrUuid(id: String, uuid: String) : AnyRef = {
+    var actorRefOrNull = if (id.startsWith(UUID_PREFIX)) findTypedActorByUuid(id.substring(UUID_PREFIX.length))
+                         else findTypedActorById(id)
+    if (actorRefOrNull eq null) actorRefOrNull = findTypedActorByUuid(uuid)
+    actorRefOrNull
+  }
 }
 
 
@@ -35,11 +66,11 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   protected override def manageLifeCycleOfListeners = false
   protected[akka] override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
 
-  private[akka] val actors = new ConcurrentHashMap[String, ActorRef]
-  private[akka] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
-  private[akka] val actorsFactories = new ConcurrentHashMap[String, () => ActorRef]
-  private[akka] val typedActors = new ConcurrentHashMap[String, AnyRef]
-  private[akka] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
+  private[akka] val actors               = new ConcurrentHashMap[String, ActorRef]
+  private[akka] val actorsByUuid         = new ConcurrentHashMap[String, ActorRef]
+  private[akka] val actorsFactories      = new ConcurrentHashMap[String, () => ActorRef]
+  private[akka] val typedActors          = new ConcurrentHashMap[String, AnyRef]
+  private[akka] val typedActorsByUuid    = new ConcurrentHashMap[String, AnyRef]
   private[akka] val typedActorsFactories = new ConcurrentHashMap[String, () => AnyRef]
 
   def clear {
@@ -64,19 +95,16 @@ trait RemoteServerModule extends RemoteModule {
   def name: String
 
   /**
-   * Gets the current hostname of the server instance
+   * Gets the address of the server instance
    */
-  def hostname: String
-
-  /**
-   *  Gets the current port of the server instance
-   */
-  def port: Int
+  def address: InetSocketAddress
 
   /**
    *  Starts the server up
    */
-  def start(host: String = ReflectiveAccess.Remote.HOSTNAME, port: Int = ReflectiveAccess.Remote.PORT, loader: Option[ClassLoader] = None): RemoteServerModule
+  def start(host: String = ReflectiveAccess.Remote.configDefaultAddress.getHostName,
+            port: Int = ReflectiveAccess.Remote.configDefaultAddress.getPort,
+            loader: Option[ClassLoader] = None): RemoteServerModule
 
   /**
    *  Shuts the server down
@@ -222,7 +250,7 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
   def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): T =
     typedActorFor(intfClass, serviceId, implClassName, timeout, hostname, port, Some(loader))
 
-  def clientManagedActorOf(clazz: Class[_ <: Actor], host: String, port: Int, timeout: Long): ActorRef
+  def clientManagedActorOf(factory: () => Actor, host: String, port: Int): ActorRef
 
   /** Methods that needs to be implemented by a transport **/
 

@@ -27,8 +27,9 @@ class AkkaRemoteTest extends
 
   val remote = ActorRegistry.remote
   val unit = TimeUnit.SECONDS
-  val host = remote.hostname
-  val port = remote.port
+
+  val host = "localhost"
+  val port = 25520
 
   var optimizeLocal_? = remote.asInstanceOf[NettyRemoteSupport].optimizeLocalScoped_?
 
@@ -41,7 +42,7 @@ class AkkaRemoteTest extends
   }
 
   override def beforeEach {
-    remote.start()
+    remote.start(host,port)
     Thread.sleep(2000)
     super.beforeEach
   }

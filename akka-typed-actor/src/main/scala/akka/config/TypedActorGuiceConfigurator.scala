@@ -108,26 +108,24 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     val implementationClass = component.target
     val timeout = component.timeout
 
-    val actorRef = Actor.actorOf(TypedActor.newTypedActor(implementationClass))
+    val (remoteAddress,actorRef) =
+      component.remoteAddress match {
+        case Some(a) =>
+          (Some(new InetSocketAddress(a.hostname, a.port)),
+           Actor.actorOf(TypedActor.newTypedActor(implementationClass), a.hostname, a.port))
+        case None =>
+          (None, Actor.actorOf(TypedActor.newTypedActor(implementationClass)))
+    }
+
     actorRef.timeout = timeout
     if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
     val typedActor = actorRef.actorInstance.get.asInstanceOf[TypedActor]
 
     val proxy = Proxy.newInstance(Array(interfaceClass), Array(typedActor), true, false)
 
-    /*
-    val remoteAddress =
-      if (component.remoteAddress.isDefined)
-        Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
-      else None
-
-    remoteAddress.foreach { address =>
-      actorRef.makeRemote(remoteAddress.get)
-    }*/
-
     AspectInitRegistry.register(
       proxy,
-      AspectInit(interfaceClass, typedActor, actorRef, None, timeout)) //TODO: REVISIT: FIX CLIENT MANAGED ACTORS
+      AspectInit(interfaceClass, typedActor, actorRef, remoteAddress, timeout))
     typedActor.initialize(proxy)
     actorRef.start
 

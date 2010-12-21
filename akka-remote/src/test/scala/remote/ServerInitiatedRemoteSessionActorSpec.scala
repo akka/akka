@@ -4,13 +4,6 @@
 
 package akka.actor.remote
 
-import org.scalatest._
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
-
 import akka.actor._
 import akka.actor.Actor._
 import akka.remote.NettyRemoteSupport

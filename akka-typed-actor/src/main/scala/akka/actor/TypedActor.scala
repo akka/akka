@@ -478,21 +478,29 @@ object TypedActor extends Logging {
    * @param factory factory method that constructs the typed actor
    * @paramm config configuration object fo the typed actor
    */
-  def newInstance[T](intfClass: Class[T], factory: => AnyRef, config: TypedActorConfiguration): T = {
-    val actorRef = actorOf(newTypedActor(factory))
-    newInstance(intfClass, actorRef, config)
+  def newInstance[T](intfClass: Class[T], factory: => AnyRef, config: TypedActorConfiguration): T =
+    newInstance(intfClass, createActorRef(newTypedActor(factory),config), config)
+
+  /**
+   * Creates an ActorRef, can be local only or client-managed-remote
+   */
+  private[akka] def createActorRef(typedActor: => TypedActor, config: TypedActorConfiguration): ActorRef = {
+    config match {
+      case null => actorOf(typedActor)
+      case c: TypedActorConfiguration if (c._host.isDefined) =>
+        actorOf(typedActor, c._host.get.getHostName, c._host.get.getPort)
+      case _ => actorOf(typedActor)
+    }
   }
 
   /**
-   * Factory method for typed actor.
+   *  Factory method for typed actor.
    * @param intfClass interface the typed actor implements
    * @param targetClass implementation class of the typed actor
    * @paramm config configuration object fo the typed actor
    */
-  def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T = {
-    val actorRef = actorOf(newTypedActor(targetClass))
-    newInstance(intfClass, actorRef, config)
-  }
+  def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T =
+    newInstance(intfClass, createActorRef(newTypedActor(targetClass),config), config)
 
   private[akka] def newInstance[T](intfClass: Class[T], actorRef: ActorRef): T = {
     if (!actorRef.actorInstance.get.isInstanceOf[TypedActor]) throw new IllegalArgumentException("ActorRef is not a ref to a typed actor")
@@ -512,9 +520,9 @@ object TypedActor extends Logging {
     typedActor.initialize(proxy)
     if (config._messageDispatcher.isDefined) actorRef.dispatcher = config._messageDispatcher.get
     if (config._threadBasedDispatcher.isDefined) actorRef.dispatcher = Dispatchers.newThreadBasedDispatcher(actorRef)
-    if (config._host.isDefined) log.slf4j.warn("Client-managed typed actors are not supported!") //TODO: REVISIT: FIXME
     actorRef.timeout = config.timeout
-    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, None, actorRef.timeout)) //TODO: REVISIT fix Client managed typed actor
+    log.slf4j.warn("config._host for {} is {} but homeAddress is {}",intfClass, config._host)
+    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, config._host, actorRef.timeout)) //TODO: REVISIT fix Client managed typed actor
     actorRef.start
     proxy.asInstanceOf[T]
   }
@@ -582,7 +590,7 @@ object TypedActor extends Logging {
     val jProxy = JProxy.newProxyInstance(intfClass.getClassLoader(), interfaces, handler)
     val awProxy = Proxy.newInstance(interfaces, Array(jProxy, jProxy), true, false)
 
-    AspectInitRegistry.register(awProxy, AspectInit(intfClass, null, actorRef, None, 5000L))
+    AspectInitRegistry.register(awProxy, AspectInit(intfClass, null, actorRef, None, 5000L)) //TODO: does .homeAddress work here or do we need to check if it's local and then provide None?
     awProxy.asInstanceOf[T]
   }
 

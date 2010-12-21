@@ -21,7 +21,7 @@ object ReflectiveAccess extends Logging {
 
   val loader = getClass.getClassLoader
 
-  lazy val isRemotingEnabled   = Remote.isEnabled
+  def isRemotingEnabled   = Remote.isEnabled
   lazy val isTypedActorEnabled = TypedActorModule.isEnabled
 
   def ensureRemotingEnabled   = Remote.ensureEnabled
@@ -33,18 +33,18 @@ object ReflectiveAccess extends Logging {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object Remote {
-    val TRANSPORT = Config.config.getString("akka.remote.transport","akka.remote.NettyRemoteSupport")
-    val HOSTNAME  = Config.config.getString("akka.remote.server.hostname", "localhost")
-    val PORT      = Config.config.getInt("akka.remote.server.port", 2552)
+    val TRANSPORT = Config.config.getString("akka.remote.layer","akka.remote.NettyRemoteSupport")
 
-    lazy val localAddress = new InetSocketAddress(HOSTNAME,PORT)
+    private[akka] val configDefaultAddress =
+      new InetSocketAddress(Config.config.getString("akka.remote.server.hostname", "localhost"),
+                            Config.config.getInt("akka.remote.server.port", 2552))
+
 
     lazy val isEnabled = remoteSupportClass.isDefined
 
     def ensureEnabled = if (!isEnabled) throw new ModuleNotAvailableException(
       "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
 
-    //TODO: REVISIT: Make class configurable
     val remoteSupportClass: Option[Class[_ <: RemoteSupport]] = getClassFor(TRANSPORT)
 
     protected[akka] val defaultRemoteSupport: Option[() => RemoteSupport] = remoteSupportClass map {
