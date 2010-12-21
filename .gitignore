@@ -19,10 +19,9 @@ deploy/*.jar
 data
 out
 logs
+log
 .#*
-.codefellow
 storage
-.codefellow
 .ensime
 _dump
 .manager
@@ -33,10 +32,10 @@ tm*.lck
 tm.out
 *.tm.epoch
 .DS_Store
+.idea
 *.iws
 *.ipr
 *.iml
-run-codefellow
 .project
 .settings
 .classpath

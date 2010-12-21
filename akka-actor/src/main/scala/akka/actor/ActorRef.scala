@@ -1228,7 +1228,8 @@ private[akka] case class RemoteActorRef private[akka] (
 
   ensureRemotingEnabled
 
-  val remoteAddress: Option[InetSocketAddress] = Some(new InetSocketAddress(hostname, port))
+  _homeAddress = new InetSocketAddress(hostname, port)
+  val remoteAddress: Option[InetSocketAddress] = Some(_homeAddress)
 
   id = classOrServiceName
   timeout = _timeout
