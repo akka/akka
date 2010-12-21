@@ -109,18 +109,6 @@ object Actor extends Logging {
         tf.setAccessible(true)
         val subclassAudits = tf.get(null).asInstanceOf[java.util.Map[_,_]]
         subclassAudits.synchronized {subclassAudits.clear}
-
-        // Clear and reset j.u.l.Level.known (due to Configgy)
-        log.slf4j.info("Removing Configgy-installed log levels")
-        import java.util.logging.Level
-        val lf = classOf[Level].getDeclaredField("known")
-        lf.setAccessible(true)
-        val known = lf.get(null).asInstanceOf[java.util.ArrayList[Level]]
-        known.synchronized {
-          known.clear
-          List(Level.OFF,Level.SEVERE,Level.WARNING,Level.INFO,Level.CONFIG,
-               Level.FINE,Level.FINER,Level.FINEST,Level.ALL) foreach known.add
-        }
       }
     }
     Runtime.getRuntime.addShutdownHook(new Thread(hook))
