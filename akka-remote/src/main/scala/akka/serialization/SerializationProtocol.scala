@@ -17,7 +17,6 @@ import scala.collection.immutable.Stack
 
 import com.google.protobuf.ByteString
 import akka.util.ReflectiveAccess
-import akka.util.ReflectiveAccess.Remote.{HOSTNAME,PORT}
 import java.net.InetSocketAddress
 
 /**
@@ -91,11 +90,14 @@ object ActorSerialization {
   def toBinaryJ[T <: Actor](a: ActorRef, format: Format[T], srlMailBox: Boolean = true): Array[Byte] =
     toBinary(a, srlMailBox)(format)
 
-  private[akka] def toAddressProtocol(actorRef: ActorRef) =
+  private[akka] def toAddressProtocol(actorRef: ActorRef) = {
+    val address = actorRef.homeAddress.getOrElse(ActorRegistry.remote.address)
     AddressProtocol.newBuilder
-        .setHostname(actorRef.homeAddress.getHostName)
-        .setPort(actorRef.homeAddress.getPort)
+        .setHostname(address.getHostName)
+        .setPort(address.getPort)
         .build
+  }
+
 
   private[akka] def toSerializedActorRefProtocol[T <: Actor](
     actorRef: ActorRef, format: Format[T], serializeMailBox: Boolean = true): SerializedActorRefProtocol = {
@@ -129,7 +131,7 @@ object ActorSerialization {
         messages.map(m =>
           RemoteActorSerialization.createRemoteMessageProtocolBuilder(
             Some(actorRef),
-            Left(actorRef.uuid), //TODO: REVISIT: generate uuid for the request
+            Left(actorRef.uuid),
             actorRef.id,
             actorRef.actorClassName,
             actorRef.timeout,
@@ -201,7 +203,7 @@ object ActorSerialization {
       supervisor,
       hotswap,
       factory,
-      new InetSocketAddress(protocol.getOriginalAddress.getHostname,protocol.getOriginalAddress.getPort))
+      None) //TODO: shouldn't originalAddress be optional?
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
     messages.foreach(message => ar ! MessageSerializer.deserialize(message.getMessage))

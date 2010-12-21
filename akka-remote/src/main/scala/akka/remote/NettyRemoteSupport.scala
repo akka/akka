@@ -115,10 +115,10 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
   }
 
   private[akka] def registerSupervisorForActor(actorRef: ActorRef): ActorRef =
-    clientFor(actorRef.homeAddress, None).registerSupervisorForActor(actorRef)
+    clientFor(actorRef.homeAddress.get, None).registerSupervisorForActor(actorRef)
 
   private[akka] def deregisterSupervisorForActor(actorRef: ActorRef): ActorRef =
-    clientFor(actorRef.homeAddress, None).deregisterSupervisorForActor(actorRef)
+    clientFor(actorRef.homeAddress.get, None).deregisterSupervisorForActor(actorRef)
 
   /**
    * Clean-up all open connections.
@@ -486,8 +486,6 @@ class RemoteClientHandler(
  */
 object RemoteServer {
   val isRemotingEnabled = config.getList("akka.enabled-modules").exists(_ == "remote")
-
-  val UUID_PREFIX        = "uuid:"
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.server.message-frame-size", 1048576)
   val SECURE_COOKIE      = config.getString("akka.remote.secure-cookie")
   val REQUIRE_COOKIE     = {
@@ -563,31 +561,22 @@ class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with
 
   def optimizeLocalScoped_?() = optimizeLocal.get
 
-  protected[akka] def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): ActorRef = {
-    //TODO: REVISIT: Possible to optimize server-managed actors in local scope?
-    //val Host = this.hostname
-    //val Port = this.port
+  protected[akka] def actorFor(serviceId: String, className: String, timeout: Long, host: String, port: Int, loader: Option[ClassLoader]): ActorRef = {
+    if (optimizeLocalScoped_?) {
+      val home = this.address
+      if (host == home.getHostName && port == home.getPort) {//TODO: switch to InetSocketAddres.equals?
+        val localRef = findActorByIdOrUuid(serviceId,serviceId)
 
-    //(host,port) match {
-    //  case (Host, Port) if optimizeLocalScoped_? =>
-        //if actor with that servicename or uuid is present locally, return a LocalActorRef to that one
-        //else return RemoteActorRef(registry, serviceId, className, hostname, port, timeout, false, loader)
-    //  case _ =>
-    //    RemoteActorRef(registry, serviceId, className, hostname, port, timeout, false, loader)
-    //}
-    RemoteActorRef(serviceId, className, hostname, port, timeout, loader)
+        if (localRef ne null) return localRef //Code significantly simpler with the return statement
+      }
+    }
+
+    RemoteActorRef(serviceId, className, host, port, timeout, loader)
   }
 
-  def clientManagedActorOf(clazz: Class[_ <: Actor], host: String, port: Int, timeout: Long): ActorRef = {
-    import ReflectiveAccess.{ createInstance, noParams, noArgs }
-    val ref = new LocalActorRef(() => createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
-                throw new ActorInitializationException(
-                  "Could not instantiate Actor" +
-                  "\nMake sure Actor is NOT defined inside a class/trait," +
-                  "\nif so put it outside the class/trait, f.e. in a companion object," +
-                  "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.")),
-              new InetSocketAddress(host, port))
-    ref.timeout = timeout
+  def clientManagedActorOf(factory: () => Actor, host: String, port: Int): ActorRef = {
+    val ref = new LocalActorRef(factory, Some(new InetSocketAddress(host, port)))
+    //ref.timeout = timeout //removed because setting default timeout should be done after construction
     ref
   }
 }
@@ -595,6 +584,7 @@ class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with
 class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String, val port: Int, val loader: Option[ClassLoader]) {
 
   val name = "NettyRemoteServer@" + host + ":" + port
+  val address = new InetSocketAddress(host,port)
 
   private val factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool,Executors.newCachedThreadPool)
 
@@ -610,7 +600,7 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
   bootstrap.setOption("child.reuseAddress", true)
   bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS.toMillis)
 
-  openChannels.add(bootstrap.bind(new InetSocketAddress(host, port)))
+  openChannels.add(bootstrap.bind(address))
   serverModule.notifyListeners(RemoteServerStarted(serverModule))
 
   def shutdown {
@@ -630,19 +620,16 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
   import RemoteServer._
 
   private[akka] val currentServer = new AtomicReference[Option[NettyRemoteServer]](None)
-  def hostname = currentServer.get match {
-    case Some(s) => s.host
-    case None    => ReflectiveAccess.Remote.HOSTNAME
-  }
-
-  def port = currentServer.get match {
-    case Some(s) => s.port
-    case None    => ReflectiveAccess.Remote.PORT
+  def address = currentServer.get match {
+    case Some(s) => s.address
+    case None    => ReflectiveAccess.Remote.configDefaultAddress
   }
 
   def name = currentServer.get match {
     case Some(s) => s.name
-    case None    => "NettyRemoteServer@" + ReflectiveAccess.Remote.HOSTNAME + ":" + ReflectiveAccess.Remote.PORT
+    case None    =>
+       val a = ReflectiveAccess.Remote.configDefaultAddress
+      "NettyRemoteServer@" + a.getHostName + ":" + a.getPort
   }
 
   private val _isRunning = new Switch(false)
@@ -1096,55 +1083,16 @@ class RemoteServerHandler(
     }
   }
 
-  private def findActorById(id: String) : ActorRef = {
-    server.actors.get(id)
-  }
-
-  private def findActorByUuid(uuid: String) : ActorRef = {
-    log.slf4j.debug("Trying to find actor for uuid '{}' inside {}",uuid,server.actorsByUuid)
-    server.actorsByUuid.get(uuid)
-  }
-
-  private def findActorFactory(id: String) : () => ActorRef = {
-    server.actorsFactories.get(id)
-  }
-
   private def findSessionActor(id: String, channel: Channel) : ActorRef = {
     val map = sessionActors.get(channel)
     if (map ne null) map.get(id)
     else null
   }
 
-  private def findTypedActorById(id: String) : AnyRef = {
-    server.typedActors.get(id)
-  }
-
-  private def findTypedActorFactory(id: String) : () => AnyRef = {
-    server.typedActorsFactories.get(id)
-  }
-
   private def findTypedSessionActor(id: String, channel: Channel) : AnyRef = {
     val map = typedSessionActors.get(channel)
     if (map ne null) map.get(id)
     else null
-  }
-
-  private def findTypedActorByUuid(uuid: String) : AnyRef = {
-    server.typedActorsByUuid.get(uuid)
-  }
-
-  private def findActorByIdOrUuid(id: String, uuid: String) : ActorRef = {
-    var actorRefOrNull = if (id.startsWith(UUID_PREFIX)) findActorByUuid(id.substring(UUID_PREFIX.length))
-                         else findActorById(id)
-    if (actorRefOrNull eq null) actorRefOrNull = findActorByUuid(uuid)
-    actorRefOrNull
-  }
-
-  private def findTypedActorByIdOrUuid(id: String, uuid: String) : AnyRef = {
-    var actorRefOrNull = if (id.startsWith(UUID_PREFIX)) findTypedActorByUuid(id.substring(UUID_PREFIX.length))
-                         else findTypedActorById(id)
-    if (actorRefOrNull eq null) actorRefOrNull = findTypedActorByUuid(uuid)
-    actorRefOrNull
   }
 
   /**
@@ -1159,7 +1107,7 @@ class RemoteServerHandler(
       sessionActorRefOrNull
     } else {
       // we dont have it in the session either, see if we have a factory for it
-      val actorFactoryOrNull = findActorFactory(id)
+      val actorFactoryOrNull = server.findActorFactory(id)
       if (actorFactoryOrNull ne null) {
         val actorRef = actorFactoryOrNull()
         actorRef.uuid = uuidFrom(uuid.getHigh,uuid.getLow)
@@ -1185,7 +1133,7 @@ class RemoteServerHandler(
       log.slf4j.info("Creating a new client-managed remote actor [{}:{}]", name, uuid)
       val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
                   else Class.forName(name)
-      val actorRef = ActorRegistry.actorOf(clazz.asInstanceOf[Class[_ <: Actor]])
+      val actorRef = Actor.actorOf(clazz.asInstanceOf[Class[_ <: Actor]])
       actorRef.uuid = uuidFrom(uuid.getHigh,uuid.getLow)
       actorRef.id = id
       actorRef.timeout = timeout
@@ -1211,7 +1159,7 @@ class RemoteServerHandler(
     val uuid = actorInfo.getUuid
     val id = actorInfo.getId
 
-    val actorRefOrNull = findActorByIdOrUuid(id, uuidFrom(uuid.getHigh,uuid.getLow).toString)
+    val actorRefOrNull = server.findActorByIdOrUuid(id, uuidFrom(uuid.getHigh,uuid.getLow).toString)
 
     if (actorRefOrNull ne null)
       actorRefOrNull
@@ -1235,7 +1183,7 @@ class RemoteServerHandler(
     if (sessionActorRefOrNull ne null)
       sessionActorRefOrNull
     else {
-      val actorFactoryOrNull = findTypedActorFactory(id)
+      val actorFactoryOrNull = server.findTypedActorFactory(id)
       if (actorFactoryOrNull ne null) {
         val newInstance = actorFactoryOrNull()
         typedSessionActors.get(channel).put(id, newInstance)
@@ -1280,7 +1228,7 @@ class RemoteServerHandler(
     val uuid = actorInfo.getUuid
     val id = actorInfo.getId
 
-    val typedActorOrNull = findTypedActorByIdOrUuid(id, uuidFrom(uuid.getHigh,uuid.getLow).toString)
+    val typedActorOrNull = server.findTypedActorByIdOrUuid(id, uuidFrom(uuid.getHigh,uuid.getLow).toString)
     if (typedActorOrNull ne null)
       typedActorOrNull
     else

@@ -2,108 +2,74 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-/* THIS SHOULD BE UNCOMMENTED
 package akka.actor.remote
 
-import org.scalatest._
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
-
-import java.util.concurrent.TimeUnit
-
-import akka.remote.{RemoteServer, RemoteClient}
 import akka.actor._
 import RemoteTypedActorLog._
 
-object ServerInitiatedRemoteTypedSessionActorSpec {
-  val HOSTNAME = "localhost"
-  val PORT = 9990
-  var server: RemoteServer = null
-}
-
-@RunWith(classOf[JUnitRunner])
-class ServerInitiatedRemoteTypedSessionActorSpec extends
-  FlatSpec with
-  ShouldMatchers with
-  BeforeAndAfterEach  {
-  import ServerInitiatedRemoteTypedActorSpec._
-
-  private val unit = TimeUnit.MILLISECONDS
+class ServerInitiatedRemoteTypedSessionActorSpec extends AkkaRemoteTest {
 
 
   override def beforeEach = {
-    server = new RemoteServer()
-    server.start(HOSTNAME, PORT)
+    super.beforeEach
 
-    server.registerTypedPerSessionActor("typed-session-actor-service",
+    remote.registerTypedPerSessionActor("typed-session-actor-service",
       TypedActor.newInstance(classOf[RemoteTypedSessionActor], classOf[RemoteTypedSessionActorImpl], 1000))
-
-    Thread.sleep(1000)
   }
 
   // make sure the servers shutdown cleanly after the test has finished
   override def afterEach = {
-    try {
-      server.shutdown
-      RemoteClient.shutdownAll
+    super.afterEach
+    clearMessageLogs
+  }
+
+  "A remote session Actor" should {
+    "create a new session actor per connection" in {
+
+      val session1 = remote.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, host, port)
+
+      session1.getUser() must equal ("anonymous")
+      session1.login("session[1]")
+      session1.getUser() must equal ("session[1]")
+
+      remote.shutdownClientModule
+
+      val session2 = remote.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, host, port)
+
+      session2.getUser() must equal ("anonymous")
+
+    }
+
+    "stop the actor when the client disconnects" in {
+      val session1 = remote.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, host, port)
+
+      session1.getUser() must equal ("anonymous")
+
+      RemoteTypedSessionActorImpl.getInstances() must have size (1)
+      remote.shutdownClientModule
       Thread.sleep(1000)
-    } catch {
-      case e => ()
+      RemoteTypedSessionActorImpl.getInstances() must have size (0)
+
+    }
+
+    "stop the actor when there is an error" in {
+      val session1 = remote.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, host, port)
+
+      session1.doSomethingFunny()
+
+      remote.shutdownClientModule
+      Thread.sleep(1000)
+      RemoteTypedSessionActorImpl.getInstances() must have size (0)
+    }
+
+
+    "be able to unregister" in {
+      remote.registerTypedPerSessionActor("my-service-1",TypedActor.newInstance(classOf[RemoteTypedSessionActor], classOf[RemoteTypedSessionActorImpl], 1000))
+
+      remote.typedActorsFactories.get("my-service-1") must not be (null)
+      remote.unregisterTypedPerSessionActor("my-service-1")
+      remote.typedActorsFactories.get("my-service-1") must be (null)
     }
   }
-
-  "A remote session Actor" should "create a new session actor per connection" in {
-    clearMessageLogs
-
-    val session1 = RemoteClient.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, HOSTNAME, PORT)
-
-    session1.getUser() should equal ("anonymous")
-    session1.login("session[1]")
-    session1.getUser() should equal ("session[1]")
-
-    RemoteClient.shutdownAll
-
-    val session2 = RemoteClient.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, HOSTNAME, PORT)
-
-    session2.getUser() should equal ("anonymous")
-
-  }
-
-  it should "stop the actor when the client disconnects" in {
-
-    val session1 = RemoteClient.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, HOSTNAME, PORT)
-
-    session1.getUser() should equal ("anonymous")
-
-    RemoteTypedSessionActorImpl.getInstances() should have size (1)
-    RemoteClient.shutdownAll
-    Thread.sleep(1000)
-    RemoteTypedSessionActorImpl.getInstances() should have size (0)
-
-  }
-
-  it should "stop the actor when there is an error" in {
-
-    val session1 = RemoteClient.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, HOSTNAME, PORT)
-
-    session1.doSomethingFunny()
-
-    RemoteClient.shutdownAll
-    Thread.sleep(1000)
-    RemoteTypedSessionActorImpl.getInstances() should have size (0)
-
-  }
-
-
-  it should "be able to unregister" in {
-    server.registerTypedPerSessionActor("my-service-1",TypedActor.newInstance(classOf[RemoteTypedSessionActor], classOf[RemoteTypedSessionActorImpl], 1000))
-
-    server.typedActorsFactories.get("my-service-1") should not be (null)
-    server.unregisterTypedPerSessionActor("my-service-1")
-    server.typedActorsFactories.get("my-service-1") should be (null)
-  }
-
-}*/
+}
 

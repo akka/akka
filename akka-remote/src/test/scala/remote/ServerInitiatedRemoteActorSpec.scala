@@ -1,16 +1,10 @@
 package akka.actor.remote
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
-import akka.util._
 
 import akka.actor.Actor._
 import akka.actor.{ActorRegistry, ActorRef, Actor}
-import akka.remote. {NettyRemoteSupport, RemoteServer, RemoteClient}
+import akka.remote. {NettyRemoteSupport}
 
 object ServerInitiatedRemoteActorSpec {
   case class Send(actor: ActorRef)

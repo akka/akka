@@ -2,49 +2,30 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-/* THIS SHOULD BE UNCOMMENTED
-package akka.actor.serialization
 
-import org.scalatest.Spec
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
+package akka.actor.serialization
 
 import akka.serialization._
 import akka.actor._
 
 import TypedActorSerialization._
 import Actor._
-import akka.remote.{RemoteClient, RemoteServer}
 import akka.actor.remote.ServerInitiatedRemoteActorSpec.RemoteActorSpecActorUnidirectional
+import akka.actor.remote.AkkaRemoteTest
 
-@RunWith(classOf[JUnitRunner])
-class TypedActorSerializationSpec extends
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterAll {
-
-  var server1: RemoteServer = null
+class TypedActorSerializationSpec extends AkkaRemoteTest {
   var typedActor: MyTypedActor = null
 
   override def beforeAll = {
-    server1 = new RemoteServer().start("localhost", 9991)
+    super.beforeAll
     typedActor = TypedActor.newInstance(classOf[MyTypedActor], classOf[MyTypedActorImpl], 1000)
-    server1.registerTypedActor("typed-actor-service", typedActor)
-    Thread.sleep(1000)
+    remote.registerTypedActor("typed-actor-service", typedActor)
   }
 
   // make sure the servers shutdown cleanly after the test has finished
   override def afterAll = {
-    try {
-      TypedActor.stop(typedActor)
-      server1.shutdown
-      RemoteClient.shutdownAll
-      Thread.sleep(1000)
-    } catch {
-      case e => ()
-    }
+    TypedActor.stop(typedActor)
+    super.afterAll
   }
 
   object MyTypedStatelessActorFormat extends StatelessActorFormat[MyStatelessTypedActorImpl]
@@ -71,48 +52,48 @@ class TypedActorSerializationSpec extends
   }
 
 
-  describe("Serializable typed actor") {
+  "Serializable typed actor" should {
 
-    it("should be able to serialize and de-serialize a stateless typed actor") {
+    "should be able to serialize and de-serialize a stateless typed actor" in {
       val typedActor1 = TypedActor.newInstance(classOf[MyTypedActor], classOf[MyStatelessTypedActorImpl], 1000)
-      typedActor1.requestReply("hello") should equal("world")
-      typedActor1.requestReply("hello") should equal("world")
+      typedActor1.requestReply("hello") must equal("world")
+      typedActor1.requestReply("hello") must equal("world")
 
       val bytes = toBinaryJ(typedActor1, MyTypedStatelessActorFormat)
       val typedActor2: MyTypedActor = fromBinaryJ(bytes, MyTypedStatelessActorFormat)
-      typedActor2.requestReply("hello") should equal("world")
+      typedActor2.requestReply("hello") must equal("world")
     }
 
-    it("should be able to serialize and de-serialize a stateful typed actor") {
+    "should be able to serialize and de-serialize a stateful typed actor" in  {
       val typedActor1 = TypedActor.newInstance(classOf[MyTypedActor], classOf[MyTypedActorImpl], 1000)
-      typedActor1.requestReply("hello") should equal("world 1")
-      typedActor1.requestReply("scala") should equal("hello scala 2")
+      typedActor1.requestReply("hello") must equal("world 1")
+      typedActor1.requestReply("scala") must equal("hello scala 2")
 
       val f = new MyTypedActorFormat
       val bytes = toBinaryJ(typedActor1, f)
       val typedActor2: MyTypedActor = fromBinaryJ(bytes, f)
-      typedActor2.requestReply("hello") should equal("world 3")
+      typedActor2.requestReply("hello") must equal("world 3")
     }
 
-    it("should be able to serialize and de-serialize a stateful typed actor with compound state") {
+    "should be able to serialize and de-serialize a stateful typed actor with compound state" in {
       val typedActor1 = TypedActor.newInstance(classOf[MyTypedActor], classOf[MyTypedActorWithDualCounter], 1000)
-      typedActor1.requestReply("hello") should equal("world 1 1")
-      typedActor1.requestReply("hello") should equal("world 2 2")
+      typedActor1.requestReply("hello") must equal("world 1 1")
+      typedActor1.requestReply("hello") must equal("world 2 2")
 
       val f = new MyTypedActorWithDualCounterFormat
       val bytes = toBinaryJ(typedActor1, f)
       val typedActor2: MyTypedActor = fromBinaryJ(bytes, f)
-      typedActor2.requestReply("hello") should equal("world 3 3")
+      typedActor2.requestReply("hello") must equal("world 3 3")
     }
 
-    it("should be able to serialize a local yped actor ref to a remote typed actor ref proxy") {
+    "should be able to serialize a local yped actor ref to a remote typed actor ref proxy" in {
       val typedActor1 = TypedActor.newInstance(classOf[MyTypedActor], classOf[MyStatelessTypedActorImpl], 1000)
-      typedActor1.requestReply("hello") should equal("world")
-      typedActor1.requestReply("hello") should equal("world")
+      typedActor1.requestReply("hello") must equal("world")
+      typedActor1.requestReply("hello") must equal("world")
 
       val bytes = RemoteTypedActorSerialization.toBinary(typedActor1)
       val typedActor2: MyTypedActor = RemoteTypedActorSerialization.fromBinaryToRemoteTypedActorRef(bytes)
-      typedActor1.requestReply("hello") should equal("world")
+      typedActor1.requestReply("hello") must equal("world")
     }
   }
 }
@@ -166,5 +147,3 @@ class MyStatelessTypedActorImpl extends TypedActor with MyTypedActor {
     if (message == "hello") "world" else ("hello " + message)
   }
 }
-
-*/
