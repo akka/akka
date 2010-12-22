@@ -63,6 +63,80 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
     this.shutdownServerModule
     clear
   }
+
+
+  /**
+   * Creates a Client-managed ActorRef out of the Actor of the specified Class.
+   * If the supplied host and port is identical of the configured local node, it will be a local actor
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552)
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552).start
+   * </pre>
+   */
+  def actorOf(factory: => Actor, host: String, port: Int): ActorRef =
+    ActorRegistry.remote.clientManagedActorOf(() => factory, host, port)
+
+  /**
+   * Creates a Client-managed ActorRef out of the Actor of the specified Class.
+   * If the supplied host and port is identical of the configured local node, it will be a local actor
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552)
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552).start
+   * </pre>
+   */
+  def actorOf(clazz: Class[_ <: Actor], host: String, port: Int): ActorRef = {
+    import ReflectiveAccess.{ createInstance, noParams, noArgs }
+    clientManagedActorOf(() =>
+        createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
+          throw new ActorInitializationException(
+            "Could not instantiate Actor" +
+            "\nMake sure Actor is NOT defined inside a class/trait," +
+            "\nif so put it outside the class/trait, f.e. in a companion object," +
+            "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.")),
+      host, port)
+  }
+
+  /**
+   * Creates a Client-managed ActorRef out of the Actor of the specified Class.
+   * If the supplied host and port is identical of the configured local node, it will be a local actor
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf[MyActor]("www.akka.io",2552)
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf[MyActor]("www.akka.io",2552).start
+   * </pre>
+   */
+  def actorOf[T <: Actor : Manifest](host: String, port: Int): ActorRef = {
+    import ReflectiveAccess.{ createInstance, noParams, noArgs }
+    clientManagedActorOf(() =>
+      createInstance[Actor](manifest[T].erasure.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
+        throw new ActorInitializationException(
+          "Could not instantiate Actor" +
+          "\nMake sure Actor is NOT defined inside a class/trait," +
+          "\nif so put it outside the class/trait, f.e. in a companion object," +
+          "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.")),
+      host, port)
+  }
+
   protected override def manageLifeCycleOfListeners = false
   protected[akka] override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
 

@@ -737,7 +737,7 @@ class LocalActorRef private[akka] (
    */
   def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long = Actor.TIMEOUT): ActorRef = guard.withGuard {
     ensureRemotingEnabled
-    val ref = Actor.actorOf(clazz, hostname, port)
+    val ref = ActorRegistry.remote.actorOf(clazz, hostname, port)
     ref.timeout = timeout
     ref.start
   }
@@ -762,7 +762,7 @@ class LocalActorRef private[akka] (
   def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long = Actor.TIMEOUT): ActorRef =
     guard.withGuard {
       ensureRemotingEnabled
-      val actor = Actor.actorOf(clazz, hostname, port)
+      val actor = ActorRegistry.remote.actorOf(clazz, hostname, port)
       actor.timeout = timeout
       link(actor)
       actor.start
