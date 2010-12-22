@@ -488,7 +488,7 @@ object TypedActor extends Logging {
     config match {
       case null => actorOf(typedActor)
       case c: TypedActorConfiguration if (c._host.isDefined) =>
-        actorOf(typedActor, c._host.get.getHostName, c._host.get.getPort)
+        ActorRegistry.remote.actorOf(typedActor, c._host.get.getHostName, c._host.get.getPort)
       case _ => actorOf(typedActor)
     }
   }

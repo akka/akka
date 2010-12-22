@@ -564,7 +564,7 @@ class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with
   protected[akka] def actorFor(serviceId: String, className: String, timeout: Long, host: String, port: Int, loader: Option[ClassLoader]): ActorRef = {
     if (optimizeLocalScoped_?) {
       val home = this.address
-      if (host == home.getHostName && port == home.getPort) {//TODO: switch to InetSocketAddres.equals?
+      if (host == home.getHostName && port == home.getPort) {//TODO: switch to InetSocketAddress.equals?
         val localRef = findActorByIdOrUuid(serviceId,serviceId)
 
         if (localRef ne null) return localRef //Code significantly simpler with the return statement
@@ -575,6 +575,13 @@ class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with
   }
 
   def clientManagedActorOf(factory: () => Actor, host: String, port: Int): ActorRef = {
+
+    if (optimizeLocalScoped_?) {
+      val home = this.address
+      if (host == home.getHostName && port == home.getPort)//TODO: switch to InetSocketAddress.equals?
+        return new LocalActorRef(factory, None) // Code is much simpler with return
+    }
+
     val ref = new LocalActorRef(factory, Some(new InetSocketAddress(host, port)))
     //ref.timeout = timeout //removed because setting default timeout should be done after construction
     ref

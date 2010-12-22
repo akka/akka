@@ -112,7 +112,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
       component.remoteAddress match {
         case Some(a) =>
           (Some(new InetSocketAddress(a.hostname, a.port)),
-           Actor.actorOf(TypedActor.newTypedActor(implementationClass), a.hostname, a.port))
+           ActorRegistry.remote.actorOf(TypedActor.newTypedActor(implementationClass), a.hostname, a.port))
         case None =>
           (None, Actor.actorOf(TypedActor.newTypedActor(implementationClass)))
     }
