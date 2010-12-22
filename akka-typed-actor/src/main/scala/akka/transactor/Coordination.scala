@@ -4,9 +4,12 @@
 
 package akka.transactor
 
+import akka.AkkaException
 import akka.stm.Atomic
 
 import scala.util.DynamicVariable
+
+class CoordinateException private[akka](message: String) extends AkkaException(message)
 
 /**
  * Coordinating transactions between typed actors.
