@@ -272,8 +272,45 @@ abstract class TypedActor extends Actor with Proxyable {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final class TypedActorContext(private val actorRef: ActorRef) {
+final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   private[akka] var _sender: AnyRef = _
+
+  /**
+5  * Returns the uuid for the actor.
+   */
+  def getUuid() = actorRef.uuid
+
+  /**
+5  * Returns the uuid for the actor.
+   */
+  def uuid = actorRef.uuid
+
+  def timeout = actorRef.timeout
+  def getTimout = timeout
+  def setTimout(timeout: Long) = actorRef.timeout = timeout
+
+  def id =  actorRef.id
+  def getId = id
+  def setId(id: String) = actorRef.id = id
+
+  def receiveTimeout = actorRef.receiveTimeout
+  def getReceiveTimeout = receiveTimeout
+  def setReceiveTimeout(timeout: Long) = actorRef.setReceiveTimeout(timeout)
+
+  /**
+   * Is the actor running?
+   */
+  def isRunning: Boolean = actorRef.isRunning
+
+  /**
+   * Is the actor shut down?
+   */
+  def isShutdown: Boolean = actorRef.isShutdown
+
+  /**
+   * Is the actor ever started?
+   */
+  def isUnstarted: Boolean = actorRef.isUnstarted
 
   /**
    * Returns the current sender reference.
@@ -285,8 +322,15 @@ final class TypedActorContext(private val actorRef: ActorRef) {
   }
 
   /**
+   * Returns the current sender future TypedActor reference.
+   * Scala style getter.
+   */
+  def senderFuture: Option[CompletableFuture[Any]] = actorRef.senderFuture
+
+  /**
    * Returns the current sender reference.
    * Java style getter.
+   * @deprecated use 'sender()'
    */
    def getSender: AnyRef = {
      if (_sender eq null) throw new IllegalActorStateException("Sender reference should not be null.")
@@ -295,16 +339,16 @@ final class TypedActorContext(private val actorRef: ActorRef) {
 
   /**
    * Returns the current sender future TypedActor reference.
-   * Scala style getter.
-   */
-  def senderFuture: Option[CompletableFuture[Any]] = actorRef.senderFuture
-
-  /**
-   * Returns the current sender future TypedActor reference.
    * Java style getter.
    * This method returns 'null' if the sender future is not available.
+   * @deprecated use 'senderFuture()'
    */
   def getSenderFuture = senderFuture
+
+  /**
+    * Returns the home address and port for this actor.
+    */
+   def homeAddress: InetSocketAddress = actorRef.homeAddress
 }
 
 object TypedActorConfiguration {
