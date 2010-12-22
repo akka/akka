@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.config
@@ -20,7 +20,7 @@ class ModuleNotAvailableException(message: String) extends AkkaException(message
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Config extends Logging {
-  val VERSION = "1.0-RC2-SNAPSHOT"
+  val VERSION = "1.0-RC2"
 
   val HOME = {
     val envHome = System.getenv("AKKA_HOME") match {
