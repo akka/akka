@@ -212,12 +212,12 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Subprojects
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val akka_actor       = project("akka-actor", "akka-actor", new AkkaActorProject(_))
-  lazy val akka_stm         = project("akka-stm", "akka-stm", new AkkaStmProject(_), akka_actor)
+  lazy val akka_actor       = project("akka-actor",       "akka-actor",       new AkkaActorProject(_))
+  lazy val akka_stm         = project("akka-stm",         "akka-stm",         new AkkaStmProject(_),        akka_actor)
   lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_stm)
-  lazy val akka_remote      = project("akka-remote", "akka-remote", new AkkaRemoteProject(_), akka_typed_actor)
-  lazy val akka_http        = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_remote)
-  lazy val akka_samples     = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
+  lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),     akka_typed_actor)
+  lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_remote)
+  lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
 
   // -------------------------------------------------------------------------------------------------------------------
   // Miscellaneous
@@ -249,13 +249,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   val publishTo = Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile)
 
   val sourceArtifact = Artifact(artifactID, "source", "jar", Some("sources"), Nil, None)
-  val docsArtifact = Artifact(artifactID, "doc", "jar", Some("docs"), Nil, None)
+  val docsArtifact   = Artifact(artifactID, "doc", "jar", Some("docs"), Nil, None)
 
   // Credentials(Path.userHome / ".akka_publish_credentials", log)
 
   //override def documentOptions = encodingUtf8.map(SimpleDocOption(_))
-  override def packageDocsJar = defaultJarPath("-docs.jar")
-  override def packageSrcJar= defaultJarPath("-sources.jar")
+  override def packageDocsJar          = defaultJarPath("-docs.jar")
+  override def packageSrcJar           = defaultJarPath("-sources.jar")
   override def packageToPublishActions = super.packageToPublishActions ++ Seq(packageDocs, packageSrc)
 
   override def pomExtra =
