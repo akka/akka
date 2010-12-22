@@ -7,7 +7,7 @@ import akka.util.Logging
 import Actor._
 
 /*************************************
-Instructions how to run the sample: 
+Instructions how to run the sample:
 
 * Download Akka distribution.
 * Unzip and step into the Akka root dir
@@ -23,7 +23,7 @@ Instructions how to run the sample:
 Then run:
 * ServerInitiatedRemoteActorServer.run in one shell
 * ServerInitiatedRemoteActorClient.run in one shell
-Have fun. 
+Have fun.
 *************************************/
 
 class HelloWorldActor extends Actor {
