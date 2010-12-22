@@ -185,10 +185,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val sjson = "sjson.json" % "sjson" % "0.8-2.8.0" % "compile" //ApacheV2
     lazy val sjson_test = "sjson.json" % "sjson" % "0.8-2.8.0" % "test" //ApacheV2
 
-    lazy val slf4j       = "org.slf4j" % "slf4j-api"     % SLF4J_VERSION % "compile" //MIT
-
     lazy val logback      = "ch.qos.logback" % "logback-classic" % LOGBACK_VERSION % "compile" //LGPL 2.1
-    lazy val logback_core = "ch.qos.logback" % "logback-core" % LOGBACK_VERSION % "compile" //LGPL 2.1
 
     lazy val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile" //ApacheV2
 
@@ -300,9 +297,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val configgy      = Dependencies.configgy
     val hawtdispatch  = Dependencies.hawtdispatch
     val jsr166x       = Dependencies.jsr166x
-    val slf4j         = Dependencies.slf4j
     val logback       = Dependencies.logback
-    val logback_core  = Dependencies.logback_core
 
     // testing
     val junit           = Dependencies.junit
