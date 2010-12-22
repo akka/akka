@@ -9,7 +9,7 @@ import akka.dispatch.{MessageDispatcher, Future, CompletableFuture, Dispatchers}
 import akka.config.Supervision._
 import akka.util._
 import ReflectiveAccess._
-import akka.transactor.{Coordinated, Coordination}
+import akka.transactor.{Coordinated, Coordination, CoordinateException}
 import akka.transactor.annotation.{Coordinated => CoordinatedAnnotation}
 
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
@@ -815,6 +815,9 @@ private[akka] abstract class ActorAspect {
 
       actorRef.!(coordinated)(senderActorRef)
       null.asInstanceOf[AnyRef]
+
+    } else if (isCoordinated) {
+      throw new CoordinateException("Can't use @Coordinated annotation with non-void methods.")
 
     } else if (isOneWay) {
       actorRef.!(joinPoint)(senderActorRef)
