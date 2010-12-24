@@ -10,16 +10,17 @@ import java.util.concurrent.{ScheduledFuture, TimeUnit}
 
 object FSM {
 
-  sealed trait Reason
-  case object Normal extends Reason
-  case object Shutdown extends Reason
-  case class Failure(cause: Any) extends Reason
-
   case class Event[D](event: Any, stateData: D)
 
   case class Transition[S](from: S, to: S)
   case class SubscribeTransitionCallBack(actorRef: ActorRef)
   case class UnsubscribeTransitionCallBack(actorRef: ActorRef)
+
+  sealed trait Reason
+  case object Normal extends Reason
+  case object Shutdown extends Reason
+  case class Failure(cause: Any) extends Reason
+  case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D)
 
   case object StateTimeout
   case class TimeoutMarker(generation: Long)
@@ -237,7 +238,7 @@ trait FSM[S, D] {
   /**
    * Set handler which is called upon termination of this FSM actor.
    */
-  protected final def onTermination(terminationHandler: PartialFunction[Reason, Unit]) = {
+  protected final def onTermination(terminationHandler: PartialFunction[StopEvent[S,D], Unit]) = {
     terminateEvent = terminationHandler
   }
 
@@ -284,9 +285,10 @@ trait FSM[S, D] {
       stay
   }
 
-  private var terminateEvent: PartialFunction[Reason, Unit] = {
-    case failure@Failure(_) => log.slf4j.error("Stopping because of a {}", failure)
-    case reason => log.slf4j.info("Stopping because of reason: {}", reason)
+  private var terminateEvent: PartialFunction[StopEvent[S,D], Unit] = {
+    case StopEvent(Failure(cause), _, _) =>
+      log.slf4j.error("Stopping because of a failure with cause {}", cause)
+    case StopEvent(reason, _, _) => log.slf4j.info("Stopping because of reason: {}", reason)
   }
 
   private var transitionEvent: PartialFunction[Transition[S], Unit] = {
@@ -353,7 +355,7 @@ trait FSM[S, D] {
   }
 
   private def terminate(reason: Reason) = {
-    terminateEvent.apply(reason)
+    terminateEvent.apply(StopEvent(reason, currentState.stateName, currentState.stateData))
     self.stop
   }
 
