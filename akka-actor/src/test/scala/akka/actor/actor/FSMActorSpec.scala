@@ -20,6 +20,7 @@ object FSMActorSpec {
   val unhandledLatch = new StandardLatch
   val terminatedLatch = new StandardLatch
   val transitionLatch = new StandardLatch
+  val initialStateLatch = new StandardLatch
   val transitionCallBackLatch = new StandardLatch
 
   sealed trait LockState
@@ -28,6 +29,8 @@ object FSMActorSpec {
 
   class Lock(code: String, timeout: (Long, TimeUnit)) extends Actor with FSM[LockState, CodeState] {
 
+    startWith(Locked, CodeState("", code))
+    
     when(Locked) {
       case Event(digit: Char, CodeState(soFar, code)) => {
         soFar + digit match {
@@ -73,7 +76,8 @@ object FSMActorSpec {
         terminatedLatch.open
     }
 
-    startWith(Locked, CodeState("", code))
+    // initialize the lock
+    initialize
 
     private def doLock() {
       log.slf4j.info("Locked")
@@ -101,9 +105,11 @@ class FSMActorSpec extends JUnitSuite {
 
     val transitionTester = Actor.actorOf(new Actor { def receive = {
       case Transition(_, _) => transitionCallBackLatch.open
+      case Locked => initialStateLatch.open
     }}).start
 
     lock ! SubscribeTransitionCallBack(transitionTester)
+    assert(initialStateLatch.tryAwait(1, TimeUnit.SECONDS))
 
     lock ! '3'
     lock ! '3'
