@@ -44,7 +44,7 @@ object FSMActorSpec {
         }
       }
       case Event("hello", _) => stay replying "world"
-      case Event("bye", _) => stop
+      case Event("bye", _) => stop(Shutdown)
     }
 
     when(Open) {
@@ -68,7 +68,9 @@ object FSMActorSpec {
     }
 
     onTermination {
-      case reason => terminatedLatch.open
+      case StopEvent(Shutdown, Locked, _) =>
+        // stop is called from lockstate with shutdown as reason...
+        terminatedLatch.open
     }
 
     startWith(Locked, CodeState("", code))
