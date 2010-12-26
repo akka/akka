@@ -283,6 +283,12 @@ class DurationInt(n: Int) {
 
   def seconds = Duration(n, TimeUnit.SECONDS)
   def second = Duration(n, TimeUnit.SECONDS)
+
+  def minutes = Duration(60 * n, TimeUnit.SECONDS)
+  def minute = Duration(60 * n, TimeUnit.SECONDS)
+
+  def hours = Duration(3600 * n, TimeUnit.SECONDS)
+  def hour = Duration(3600 * n, TimeUnit.SECONDS)
 }
 
 class DurationLong(n: Long) {
@@ -303,4 +309,10 @@ class DurationLong(n: Long) {
 
   def seconds = Duration(n, TimeUnit.SECONDS)
   def second = Duration(n, TimeUnit.SECONDS)
+
+  def minutes = Duration(60 * n, TimeUnit.SECONDS)
+  def minute = Duration(60 * n, TimeUnit.SECONDS)
+
+  def hours = Duration(3600 * n, TimeUnit.SECONDS)
+  def hour = Duration(3600 * n, TimeUnit.SECONDS)
 }

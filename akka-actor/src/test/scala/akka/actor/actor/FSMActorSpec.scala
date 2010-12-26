@@ -6,19 +6,24 @@ package akka.actor
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+import FSM._
 
 import org.multiverse.api.latches.StandardLatch
 
 import java.util.concurrent.TimeUnit
 
+import akka.util.duration._
+
 object FSMActorSpec {
-  import FSM._
+
 
   val unlockedLatch = new StandardLatch
   val lockedLatch = new StandardLatch
   val unhandledLatch = new StandardLatch
   val terminatedLatch = new StandardLatch
   val transitionLatch = new StandardLatch
+  val initialStateLatch = new StandardLatch
+  val transitionCallBackLatch = new StandardLatch
 
   sealed trait LockState
   case object Locked extends LockState
@@ -26,11 +31,8 @@ object FSMActorSpec {
 
   class Lock(code: String, timeout: (Long, TimeUnit)) extends Actor with FSM[LockState, CodeState] {
 
-    notifying {
-      case Transition(Locked, Open) => transitionLatch.open
-      case Transition(_, _) => ()
-    }
-
+    startWith(Locked, CodeState("", code))
+    
     when(Locked) {
       case Event(digit: Char, CodeState(soFar, code)) => {
         soFar + digit match {
@@ -47,7 +49,7 @@ object FSMActorSpec {
         }
       }
       case Event("hello", _) => stay replying "world"
-      case Event("bye", _) => stop
+      case Event("bye", _) => stop(Shutdown)
     }
 
     when(Open) {
@@ -57,8 +59,6 @@ object FSMActorSpec {
       }
     }
 
-    startWith(Locked, CodeState("", code))
-
     whenUnhandled {
       case Event(_, stateData) => {
         log.slf4j.info("Unhandled")
@@ -67,9 +67,19 @@ object FSMActorSpec {
       }
     }
 
-    onTermination {
-      case reason => terminatedLatch.open
+    onTransition {
+      case Transition(Locked, Open) => transitionLatch.open
+      case Transition(_, _) => ()
     }
+
+    onTermination {
+      case StopEvent(Shutdown, Locked, _) =>
+        // stop is called from lockstate with shutdown as reason...
+        terminatedLatch.open
+    }
+
+    // initialize the lock
+    initialize
 
     private def doLock() {
       log.slf4j.info("Locked")
@@ -88,11 +98,20 @@ object FSMActorSpec {
 class FSMActorSpec extends JUnitSuite {
   import FSMActorSpec._
 
+
   @Test
   def unlockTheLock = {
 
     // lock that locked after being open for 1 sec
     val lock = Actor.actorOf(new Lock("33221", (1, TimeUnit.SECONDS))).start
+
+    val transitionTester = Actor.actorOf(new Actor { def receive = {
+      case Transition(_, _) => transitionCallBackLatch.open
+      case Locked => initialStateLatch.open
+    }}).start
+
+    lock ! SubscribeTransitionCallBack(transitionTester)
+    assert(initialStateLatch.tryAwait(1, TimeUnit.SECONDS))
 
     lock ! '3'
     lock ! '3'
@@ -102,7 +121,9 @@ class FSMActorSpec extends JUnitSuite {
 
     assert(unlockedLatch.tryAwait(1, TimeUnit.SECONDS))
     assert(transitionLatch.tryAwait(1, TimeUnit.SECONDS))
+    assert(transitionCallBackLatch.tryAwait(1, TimeUnit.SECONDS))
     assert(lockedLatch.tryAwait(2, TimeUnit.SECONDS))
+
 
     lock ! "not_handled"
     assert(unhandledLatch.tryAwait(2, TimeUnit.SECONDS))
