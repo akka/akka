@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.config
@@ -20,7 +20,7 @@ class ModuleNotAvailableException(message: String) extends AkkaException(message
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Config extends Logging {
-  val VERSION = "1.0-RC2-SNAPSHOT"
+  val VERSION = "1.1-SNAPSHOT"
 
   val HOME = {
     val envHome = System.getenv("AKKA_HOME") match {
@@ -64,9 +64,19 @@ object Config extends Logging {
           "\n\tdue to: " + e.toString)
       }
       Configgy.config
+    } else if (getClass.getClassLoader.getResource(confName) ne null) {
+      try {
+        Configgy.configureFromResource(confName, getClass.getClassLoader)
+        log.slf4j.info("Config [{}] loaded from the application classpath.",confName)
+      } catch {
+        case e: ParseException => throw new ConfigurationException(
+          "Can't load '" + confName + "' config file from application classpath," +
+          "\n\tdue to: " + e.toString)
+      }
+      Configgy.config
     } else if (HOME.isDefined) {
       try {
-        val configFile = HOME.getOrElse(throwNoAkkaHomeException) + "/config/" + confName
+        val configFile = HOME.get + "/config/" + confName
         Configgy.configure(configFile)
         log.slf4j.info(
           "AKKA_HOME is defined as [{}], config loaded from [{}].",
@@ -76,16 +86,6 @@ object Config extends Logging {
         case e: ParseException => throw new ConfigurationException(
           "AKKA_HOME is defined as [" + HOME.get + "] " +
           "\n\tbut the 'akka.conf' config file can not be found at [" + HOME.get + "/config/"+ confName + "]," +
-          "\n\tdue to: " + e.toString)
-      }
-      Configgy.config
-    } else if (getClass.getClassLoader.getResource(confName) ne null) {
-      try {
-        Configgy.configureFromResource(confName, getClass.getClassLoader)
-        log.slf4j.info("Config [{}] loaded from the application classpath.",confName)
-      } catch {
-        case e: ParseException => throw new ConfigurationException(
-          "Can't load '" + confName + "' config file from application classpath," +
           "\n\tdue to: " + e.toString)
       }
       Configgy.config
@@ -101,6 +101,7 @@ object Config extends Logging {
       CConfig.fromString("<akka></akka>") // default empty config
     }
   }
+  if (config.getBool("akka.enable-jmx", true)) config.registerWithJmx("akka")
 
   val CONFIG_VERSION = config.getString("akka.version", VERSION)
   if (VERSION != CONFIG_VERSION) throw new ConfigurationException(

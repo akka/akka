@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.remote
@@ -404,7 +404,7 @@ class RemoteClientHandler(
     } catch {
       case e: Exception =>
         client.notifyListeners(RemoteClientError(e, client))
-        log.slf4j.error("Unexpected exception in remote client handler: {}", e)
+        log.slf4j.error("Unexpected exception in remote client handler", e)
         throw e
     }
   }
