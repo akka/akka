@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 import com.weiglewilczek.bnd4sbt.BNDPlugin
@@ -209,12 +209,12 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Subprojects
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val akka_actor       = project("akka-actor", "akka-actor", new AkkaActorProject(_))
-  lazy val akka_stm         = project("akka-stm", "akka-stm", new AkkaStmProject(_), akka_actor)
+  lazy val akka_actor       = project("akka-actor",       "akka-actor",       new AkkaActorProject(_))
+  lazy val akka_stm         = project("akka-stm",         "akka-stm",         new AkkaStmProject(_),        akka_actor)
   lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_stm)
-  lazy val akka_remote      = project("akka-remote", "akka-remote", new AkkaRemoteProject(_), akka_typed_actor)
-  lazy val akka_http        = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_remote)
-  lazy val akka_samples     = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
+  lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),     akka_typed_actor)
+  lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_remote)
+  lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
 
   // -------------------------------------------------------------------------------------------------------------------
   // Miscellaneous
@@ -242,11 +242,12 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // ------------------------------------------------------------
   // publishing
   override def managedStyle = ManagedStyle.Maven
+
   //override def defaultPublishRepository = Some(Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile))
   val publishTo = Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile)
 
   val sourceArtifact = Artifact(artifactID, "source", "jar", Some("sources"), Nil, None)
-  val docsArtifact = Artifact(artifactID, "doc", "jar", Some("docs"), Nil, None)
+  val docsArtifact   = Artifact(artifactID, "doc", "jar", Some("docs"), Nil, None)
 
   // Credentials(Path.userHome / ".akka_publish_credentials", log)
 
@@ -313,8 +314,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val multiverse = Dependencies.multiverse
 
     // testing
-    val junit           = Dependencies.junit
-    val scalatest       = Dependencies.scalatest
+    val junit     = Dependencies.junit
+    val scalatest = Dependencies.scalatest
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -322,9 +323,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaTypedActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val aopalliance   = Dependencies.aopalliance
-    val aspectwerkz   = Dependencies.aspectwerkz
-    val guicey        = Dependencies.guicey
+    val aopalliance  = Dependencies.aopalliance
+    val aspectwerkz  = Dependencies.aspectwerkz
+    val guicey       = Dependencies.guicey
 
     // testing
     val junit     = Dependencies.junit
@@ -391,6 +392,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+
   class AkkaSampleFSMProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
@@ -436,7 +438,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val stressTestsEnabled = systemOptional[Boolean]("stress.tests",false)
 
   // ------------------------------------------------------------
-  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject with McPom {
+  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) 
+    with DeployProject with OSGiProject with McPom {
     override def disableCrossPaths = true
     lazy val sourceArtifact = Artifact(this.artifactID, "source", "jar", Some("sources"), Nil, None)
     lazy val docsArtifact = Artifact(this.artifactID, "doc", "jar", Some("docs"), Nil, None)
@@ -495,32 +498,36 @@ trait McPom { self: DefaultProject =>
   def mcPom(mcs: Set[ModuleConfiguration])(node: Node): Node = {
 
     def cleanUrl(url: String) = url match {
-      case null => ""
-      case "" => ""
+      case null                => ""
+      case ""                  => ""
       case u if u endsWith "/" => u
-      case u => u + "/"
+      case u                   => u + "/"
     }
 
-    val oldRepos = (node \\ "project" \ "repositories" \ "repository").
-                     map( n => cleanUrl((n \ "url").text) -> (n \ "name").text).toList
-    val newRepos = mcs.filter(_.resolver.isInstanceOf[MavenRepository]).map(m => {
-                      val r = m.resolver.asInstanceOf[MavenRepository]
-                      cleanUrl(r.root) -> r.name
-                   })
+    val oldRepos = 
+      (node \\ "project" \ "repositories" \ "repository").map { n => 
+        cleanUrl((n \ "url").text) -> (n \ "name").text
+      }.toList
 
-    val repos = Map((oldRepos ++ newRepos):_*).map( pair =>
-                  <repository>
-                     <id>{pair._2.toSeq.filter(_.isLetterOrDigit).mkString}</id>
-                     <name>{pair._2}</name>
-                     <url>{pair._1}</url>
-                  </repository>
-                )
+    val newRepos = 
+      mcs.filter(_.resolver.isInstanceOf[MavenRepository]).map { m =>
+        val r = m.resolver.asInstanceOf[MavenRepository]
+        cleanUrl(r.root) -> r.name
+      }
 
-    def rewrite(pf:PartialFunction[Node,Node])(ns: Seq[Node]): Seq[Node] = for(subnode <- ns) yield subnode match {
-        case e: Elem =>
-          if (pf isDefinedAt e) pf(e)
-          else Elem(e.prefix, e.label, e.attributes, e.scope, rewrite(pf)(e.child):_*)
-        case other => other
+    val repos = Map((oldRepos ++ newRepos): _*).map { pair =>
+      <repository>
+        <id>{pair._2.toSeq.filter(_.isLetterOrDigit).mkString}</id>
+        <name>{pair._2}</name>
+        <url>{pair._1}</url>
+      </repository>
+    }
+
+    def rewrite(pf: PartialFunction[Node, Node])(ns: Seq[Node]): Seq[Node] = for(subnode <- ns) yield subnode match {
+      case e: Elem =>
+        if (pf isDefinedAt e) pf(e)
+        else Elem(e.prefix, e.label, e.attributes, e.scope, rewrite(pf)(e.child):_*)
+      case other => other
     }
 
     val rule: PartialFunction[Node,Node] = if ((node \\ "project" \ "repositories" ).isEmpty) {
@@ -528,7 +535,7 @@ trait McPom { self: DefaultProject =>
            Elem(prefix, "project", attribs, scope, children ++ <repositories>{repos}</repositories>:_*)
     } else {
       case Elem(prefix, "repositories", attribs, scope, children @ _*) =>
-           Elem(prefix, "repositories", attribs, scope, repos.toList:_*)
+           Elem(prefix, "repositories", attribs, scope, repos.toList: _*)
     }
 
     rewrite(rule)(node.theSeq)(0)
