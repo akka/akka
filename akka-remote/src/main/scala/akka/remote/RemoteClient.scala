@@ -449,7 +449,7 @@ class RemoteClientHandler(
     } catch {
       case e: Exception =>
         client.notifyListeners(RemoteClientError(e, client))
-        log.slf4j.error("Unexpected exception in remote client handler: {}", e)
+        log.slf4j.error("Unexpected exception in remote client handler", e)
         throw e
     }
   }
