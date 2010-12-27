@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 package akka.http
 
@@ -14,7 +14,7 @@ class AkkaRestServlet extends ServletContainer {
 
   val initParams = new java.util.HashMap[String,String]
 
-  addInitParameter("com.sun.jersey.config.property.packages",     c.getList("akka.http.resource_packages").mkString(";"))
+  addInitParameter("com.sun.jersey.config.property.packages",     c.getList("akka.http.resource-packages").mkString(";"))
   addInitParameter("com.sun.jersey.spi.container.ResourceFilters",c.getList("akka.http.filters").mkString(","))
 
 /**

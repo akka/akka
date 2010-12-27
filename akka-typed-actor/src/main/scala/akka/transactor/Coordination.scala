@@ -1,12 +1,15 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.transactor
 
+import akka.AkkaException
 import akka.stm.Atomic
 
 import scala.util.DynamicVariable
+
+class CoordinateException private[akka](message: String) extends AkkaException(message)
 
 /**
  * Coordinating transactions between typed actors.

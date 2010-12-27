@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.actor
@@ -9,7 +9,7 @@ import akka.dispatch.{MessageDispatcher, Future, CompletableFuture, Dispatchers}
 import akka.config.Supervision._
 import akka.util._
 import ReflectiveAccess._
-import akka.transactor.{Coordinated, Coordination}
+import akka.transactor.{Coordinated, Coordination, CoordinateException}
 import akka.transactor.annotation.{Coordinated => CoordinatedAnnotation}
 
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
@@ -272,8 +272,45 @@ abstract class TypedActor extends Actor with Proxyable {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final class TypedActorContext(private val actorRef: ActorRef) {
+final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   private[akka] var _sender: AnyRef = _
+
+  /**
+5  * Returns the uuid for the actor.
+   */
+  def getUuid() = actorRef.uuid
+
+  /**
+5  * Returns the uuid for the actor.
+   */
+  def uuid = actorRef.uuid
+
+  def timeout = actorRef.timeout
+  def getTimout = timeout
+  def setTimout(timeout: Long) = actorRef.timeout = timeout
+
+  def id =  actorRef.id
+  def getId = id
+  def setId(id: String) = actorRef.id = id
+
+  def receiveTimeout = actorRef.receiveTimeout
+  def getReceiveTimeout = receiveTimeout
+  def setReceiveTimeout(timeout: Long) = actorRef.setReceiveTimeout(timeout)
+
+  /**
+   * Is the actor running?
+   */
+  def isRunning: Boolean = actorRef.isRunning
+
+  /**
+   * Is the actor shut down?
+   */
+  def isShutdown: Boolean = actorRef.isShutdown
+
+  /**
+   * Is the actor ever started?
+   */
+  def isUnstarted: Boolean = actorRef.isUnstarted
 
   /**
    * Returns the current sender reference.
@@ -285,8 +322,15 @@ final class TypedActorContext(private val actorRef: ActorRef) {
   }
 
   /**
+   * Returns the current sender future TypedActor reference.
+   * Scala style getter.
+   */
+  def senderFuture: Option[CompletableFuture[Any]] = actorRef.senderFuture
+
+  /**
    * Returns the current sender reference.
    * Java style getter.
+   * @deprecated use 'sender()'
    */
    def getSender: AnyRef = {
      if (_sender eq null) throw new IllegalActorStateException("Sender reference should not be null.")
@@ -295,16 +339,16 @@ final class TypedActorContext(private val actorRef: ActorRef) {
 
   /**
    * Returns the current sender future TypedActor reference.
-   * Scala style getter.
-   */
-  def senderFuture: Option[CompletableFuture[Any]] = actorRef.senderFuture
-
-  /**
-   * Returns the current sender future TypedActor reference.
    * Java style getter.
    * This method returns 'null' if the sender future is not available.
+   * @deprecated use 'senderFuture()'
    */
   def getSenderFuture = senderFuture
+
+  /**
+    * Returns the home address and port for this actor.
+    */
+  def homeAddress: InetSocketAddress = actorRef.homeAddress.getOrElse(ActorRegistry.homeAddress)
 }
 
 object TypedActorConfiguration {
@@ -521,8 +565,8 @@ object TypedActor extends Logging {
     if (config._messageDispatcher.isDefined) actorRef.dispatcher = config._messageDispatcher.get
     if (config._threadBasedDispatcher.isDefined) actorRef.dispatcher = Dispatchers.newThreadBasedDispatcher(actorRef)
     actorRef.timeout = config.timeout
-    log.slf4j.warn("config._host for {} is {} but homeAddress is {}",intfClass, config._host)
-    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, config._host, actorRef.timeout)) //TODO: REVISIT fix Client managed typed actor
+    //log.slf4j.debug("config._host for {} is {} but homeAddress is {} and on ref {}",Array[AnyRef](intfClass, config._host, typedActor.context.homeAddress,actorRef.homeAddress))
+    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, actorRef.homeAddress, actorRef.timeout))
     actorRef.start
     proxy.asInstanceOf[T]
   }
@@ -590,7 +634,7 @@ object TypedActor extends Logging {
     val jProxy = JProxy.newProxyInstance(intfClass.getClassLoader(), interfaces, handler)
     val awProxy = Proxy.newInstance(interfaces, Array(jProxy, jProxy), true, false)
 
-    AspectInitRegistry.register(awProxy, AspectInit(intfClass, null, actorRef, None, 5000L)) //TODO: does .homeAddress work here or do we need to check if it's local and then provide None?
+    AspectInitRegistry.register(awProxy, AspectInit(intfClass, null, actorRef, actorRef.homeAddress, 5000L))
     awProxy.asInstanceOf[T]
   }
 
@@ -823,6 +867,9 @@ private[akka] abstract class ActorAspect {
 
       actorRef.!(coordinated)(senderActorRef)
       null.asInstanceOf[AnyRef]
+
+    } else if (isCoordinated) {
+      throw new CoordinateException("Can't use @Coordinated annotation with non-void methods.")
 
     } else if (isOneWay) {
       actorRef.!(joinPoint)(senderActorRef)
