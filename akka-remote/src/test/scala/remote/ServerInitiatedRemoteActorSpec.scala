@@ -160,9 +160,11 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
       remote.actorsByUuid.get(actor1.uuid) must be (null)
     }
 
-    "should be able to remotely comunicate between 2 server-managed actors" in {
-      remote.register("foo", actorOf[Decrementer])
-      remote.register("bar", actorOf[Decrementer])
+    "should be able to remotely communicate between 2 server-managed actors" in {
+      val localFoo = actorOf[Decrementer]
+      val localBar = actorOf[Decrementer]
+      remote.register("foo", localFoo)
+      remote.register("bar", localBar)
 
       val remoteFoo = remote.actorFor("foo", host, port)
       val remoteBar = remote.actorFor("bar", host, port)
@@ -180,6 +182,11 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
         else
           latch.countDown
       }
+
+      val decrementers = ActorRegistry.actorsFor[Decrementer]
+      decrementers must have size(2) //No new are allowed to have been created
+      decrementers.find( _ eq localFoo) must equal (Some(localFoo))
+      decrementers.find( _ eq localBar) must equal (Some(localBar))
     }
   }
 }
