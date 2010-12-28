@@ -15,6 +15,20 @@ object ServerInitiatedRemoteActorSpec {
     }
   }
 
+  class Decrementer extends Actor {
+    def receive = {
+      case "done" => self.reply_?(false)
+      case i: Int if i > 0 =>
+        self.reply_?(i - 1)
+      case i: Int =>
+        self.reply_?(0)
+        this become {
+          case "done" => self.reply_?(true)
+          case _ => //Do Nothing
+        }
+    }
+  }
+
   class RemoteActorSpecActorBidirectional extends Actor {
 
     def receive = {
@@ -144,6 +158,28 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
 
       remote.unregister(uuid)
       remote.actorsByUuid.get(actor1.uuid) must be (null)
+    }
+
+    "should be able to remotely comunicate between 2 server-managed actors" in {
+      remote.register("foo", actorOf[Decrementer])
+      remote.register("bar", actorOf[Decrementer])
+
+      val remoteFoo = remote.actorFor("foo", host, port)
+      val remoteBar = remote.actorFor("bar", host, port)
+
+      //Seed the start
+      remoteFoo.!(10)(Some(remoteBar))
+
+      val latch = new CountDownLatch(100)
+      while(
+        (remoteFoo !! "done").as[Boolean].getOrElse(false) &&
+        (remoteBar !! "done").as[Boolean].getOrElse(false)
+      ) {
+        if (latch.await(200, TimeUnit.MILLISECONDS))
+          error("Test didn't complete within 100 cycles")
+        else
+          latch.countDown
+      }
     }
   }
 }
