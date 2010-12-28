@@ -227,6 +227,14 @@ trait FSM[S, D] {
   protected final def timerActive_?(name: String) = timers contains name
 
   /**
+   * Set state timeout explicitly. This method can safely be used from within a
+   * state handler.
+   */
+  protected final def setStateTimeout(state : S, timeout : Timeout) {
+    stateTimeouts(state) = timeout
+  }
+
+  /**
    * Set handler which is called upon each state transition, i.e. not when
    * staying in the same state.
    */
