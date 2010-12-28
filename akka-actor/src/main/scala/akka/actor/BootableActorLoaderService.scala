@@ -19,11 +19,10 @@ trait BootableActorLoaderService extends Bootable with Logging {
   val BOOT_CLASSES = config.getList("akka.boot")
   lazy val applicationLoader: Option[ClassLoader] = createApplicationClassLoader
 
-  protected def createApplicationClassLoader : Option[ClassLoader] = {
-    Some(
+  protected def createApplicationClassLoader : Option[ClassLoader] = Some({
     if (HOME.isDefined) {
-      val CONFIG = HOME.getOrElse(throwNoAkkaHomeException) + "/config"
-      val DEPLOY = HOME.getOrElse(throwNoAkkaHomeException) + "/deploy"
+      val CONFIG = HOME.get + "/config"
+      val DEPLOY = HOME.get + "/deploy"
       val DEPLOY_DIR = new File(DEPLOY)
       if (!DEPLOY_DIR.exists) {
         log.slf4j.error("Could not find a deploy directory at [{}]", DEPLOY)
@@ -47,8 +46,8 @@ trait BootableActorLoaderService extends Bootable with Logging {
       val allJars = toDeploy ::: dependencyJars
 
       new URLClassLoader(allJars.toArray,Thread.currentThread.getContextClassLoader)
-    } else Thread.currentThread.getContextClassLoader)
-  }
+    } else Thread.currentThread.getContextClassLoader
+  })
 
   abstract override def onLoad = {
     applicationLoader.foreach(_ => log.slf4j.info("Creating /deploy class-loader"))
