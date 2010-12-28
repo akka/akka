@@ -11,11 +11,11 @@ import java.io.File
 import akka.actor.BootableActorLoaderService
 import akka.util.{Bootable, Logging}
 
-//import akka.comet.AkkaServlet
-
 import org.eclipse.jetty.xml.XmlConfiguration
 import org.eclipse.jetty.server.{Handler, Server}
 import org.eclipse.jetty.server.handler.{HandlerList, HandlerCollection, ContextHandler}
+import java.net.URL
+import akka.AkkaException
 
 /**
  * Handles the Akka Comet Support (load/unload)
@@ -32,17 +32,21 @@ trait EmbeddedAppServer extends Bootable with Logging {
 
   protected var server: Option[Server] = None
 
+  protected def findJettyConfigXML: Option[URL] =
+    Option(applicationLoader.getOrElse(this.getClass.getClassLoader).getResource("microkernel-server.xml")) orElse
+    HOME.map(home => new File(home + "/config/microkernel-server.xml").toURI.toURL)
+
   abstract override def onLoad = {
     super.onLoad
     if (isRestEnabled) {
       log.slf4j.info("Attempting to start Akka HTTP service")
 
+      val configuration = new XmlConfiguration(findJettyConfigXML.getOrElse(error("microkernel-server.xml not found!")))
+
       System.setProperty("jetty.port", REST_PORT.toString)
       System.setProperty("jetty.host", REST_HOSTNAME)
-      System.setProperty("jetty.home", HOME.getOrElse(throwNoAkkaHomeException) + "/deploy/root")
 
-      val configuration = new XmlConfiguration(
-        new File(HOME.getOrElse(throwNoAkkaHomeException) + "/config/microkernel-server.xml").toURI.toURL)
+      HOME.foreach( home => System.setProperty("jetty.home", home + "/deploy/root") )
 
       server = Option(configuration.configure.asInstanceOf[Server]) map { s => //Set the correct classloader to our contexts
          applicationLoader foreach { loader =>
