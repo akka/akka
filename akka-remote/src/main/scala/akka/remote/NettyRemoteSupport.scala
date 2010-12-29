@@ -83,9 +83,7 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
 
   def shutdownClientConnection(address: InetSocketAddress): Boolean = synchronized {
     remoteClients.remove(makeKey(address)) match {
-      case Some(client) =>
-        client.shutdown
-        true
+      case Some(client) => client.shutdown
       case None => false
     }
   }
@@ -133,9 +131,9 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
 }
 
 object RemoteClient {
-  val SECURE_COOKIE: Option[String] = {
-    val cookie = config.getString("akka.remote.secure-cookie", "")
-    if (cookie == "") None else Some(cookie)
+  val SECURE_COOKIE: Option[String] = config.getString("akka.remote.secure-cookie", "") match {
+    case "" => None
+    case cookie => Some(cookie)
   }
 
   val READ_TIMEOUT       = Duration(config.getInt("akka.remote.client.read-timeout", 1), TIME_UNIT)
