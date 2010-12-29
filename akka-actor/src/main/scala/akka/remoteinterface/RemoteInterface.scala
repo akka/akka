@@ -379,31 +379,42 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
 
   def clientManagedActorOf(factory: () => Actor, host: String, port: Int): ActorRef
 
+
+  /**
+   * Clean-up all open connections.
+   */
+  def shutdownClientModule: Unit
+
+  /**
+   * Shuts down a specific client connected to the supplied remote address returns true if successful
+   */
+  def shutdownClientConnection(address: InetSocketAddress): Boolean
+
+  /**
+   * Restarts a specific client connected to the supplied remote address, but only if the client is not shut down
+   */
+  def restartClientConnection(address: InetSocketAddress): Boolean
+
   /** Methods that needs to be implemented by a transport **/
 
-    protected[akka] def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, host: String, port: Int, loader: Option[ClassLoader]): T
+  protected[akka] def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, host: String, port: Int, loader: Option[ClassLoader]): T
 
-    protected[akka] def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): ActorRef
+  protected[akka] def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): ActorRef
 
-    protected[akka] def send[T](message: Any,
-                                senderOption: Option[ActorRef],
-                                senderFuture: Option[CompletableFuture[T]],
-                                remoteAddress: InetSocketAddress,
-                                timeout: Long,
-                                isOneWay: Boolean,
-                                actorRef: ActorRef,
-                                typedActorInfo: Option[Tuple2[String, String]],
-                                actorType: ActorType,
-                                loader: Option[ClassLoader]): Option[CompletableFuture[T]]
+  protected[akka] def send[T](message: Any,
+                              senderOption: Option[ActorRef],
+                              senderFuture: Option[CompletableFuture[T]],
+                              remoteAddress: InetSocketAddress,
+                              timeout: Long,
+                              isOneWay: Boolean,
+                              actorRef: ActorRef,
+                              typedActorInfo: Option[Tuple2[String, String]],
+                              actorType: ActorType,
+                              loader: Option[ClassLoader]): Option[CompletableFuture[T]]
 
-    private[akka] def registerSupervisorForActor(actorRef: ActorRef): ActorRef
+  private[akka] def registerSupervisorForActor(actorRef: ActorRef): ActorRef
 
-    private[akka] def deregisterSupervisorForActor(actorRef: ActorRef): ActorRef
-
-    /**
-     * Clean-up all open connections.
-     */
-    def shutdownClientModule: Unit
+  private[akka] def deregisterSupervisorForActor(actorRef: ActorRef): ActorRef
 
     private[akka] def registerClientManagedActor(hostname: String, port: Int, uuid: Uuid): Unit
 
