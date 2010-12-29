@@ -31,14 +31,18 @@ class AkkaRemoteTest extends
   val host = "localhost"
   val port = 25520
 
+  def OptimizeLocal = false
+
   var optimizeLocal_? = remote.asInstanceOf[NettyRemoteSupport].optimizeLocalScoped_?
 
   override def beforeAll {
-    remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(false) //Can't run the test if we're eliminating all remote calls
+    if (!OptimizeLocal)
+      remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(false) //Can't run the test if we're eliminating all remote calls
   }
 
   override def afterAll {
-    remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(optimizeLocal_?) //Reset optimizelocal after all tests
+    if (!OptimizeLocal)
+      remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(optimizeLocal_?) //Reset optimizelocal after all tests
   }
 
   override def beforeEach {
