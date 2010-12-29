@@ -10,11 +10,11 @@ object TestActor {
     case class SetTimeout(d : Duration)
 }
 
-class TestActor(queue : BlockingQueue[AnyRef]) extends Actor with FSM[Int, Null] {
+class TestActor(queue : BlockingQueue[AnyRef]) extends Actor with FSM[Int, Unit] {
     import FSM._
     import TestActor._
 
-    startWith(0, null)
+    startWith(0, ())
     when(0, stateTimeout = 5 seconds) {
         case Event(SetTimeout(d), _) =>
             setStateTimeout(0, if (d.finite_?) d else None)
@@ -146,7 +146,7 @@ trait TestKit {
      * @return the received object
      */
     def expect(max : Duration, obj : Any) : AnyRef = {
-        val o = if (max.finite_?) queue.poll(max.length, max.unit) else queue.take
+        val o = receiveOne(max)
         assert (o ne null, "timeout during expect")
         assert (obj == o, "expected "+obj+", found "+o)
         o
@@ -169,7 +169,7 @@ trait TestKit {
      * @return the received object as transformed by the partial function
      */
     def expect[T](max : Duration)(f : PartialFunction[Any, T]) : T = {
-        val o = if (max.finite_?) queue.poll(max.length, max.unit) else queue.take
+        val o = receiveOne(max)
         assert (o ne null, "timeout during expect")
         assert (f.isDefinedAt(o), "does not match: "+o)
         f(o)
@@ -189,7 +189,7 @@ trait TestKit {
      * @return the received object
      */
     def expectClass[C](max : Duration, c : Class[C]) : C = {
-        val o = if (max.finite_?) queue.poll(max.length, max.unit) else queue.take
+        val o = receiveOne(max)
         assert (o ne null, "timeout during expectClass")
         assert (c isInstance o, "expected "+c+", found "+o.getClass)
         o.asInstanceOf[C]
@@ -209,7 +209,7 @@ trait TestKit {
      * @return the received object
      */
     def expectAnyOf(max : Duration, obj : Any*) : AnyRef = {
-        val o = if (max.finite_?) queue.poll(max.length, max.unit) else queue.take
+        val o = receiveOne(max)
         assert (o ne null, "timeout during expectAnyOf")
         assert (obj exists (_ == o), "found unexpected "+o)
         o
@@ -229,7 +229,7 @@ trait TestKit {
      * @return the received object
      */
     def expectAnyClassOf(max : Duration, obj : Class[_]*) : AnyRef = {
-        val o = if (max.finite_?) queue.poll(max.length, max.unit) else queue.take
+        val o = receiveOne(max)
         assert (o ne null, "timeout during expectAnyClassOf")
         assert (obj exists (_ isInstance o), "found unexpected "+o)
         o
@@ -257,13 +257,7 @@ trait TestKit {
      * </pre>
      */
     def expectAllOf(max : Duration, obj : Any*) {
-        val stop = now + max
-        val recv = for { x <- 1 to obj.size } yield {
-            val timeout = stop - now
-            val o = queue.poll(timeout.length, timeout.unit)
-            assert (o ne null, "timeout during expectAllClassOf")
-            o
-        }
+        val recv = receiveN(obj.size, now + max)
         assert (obj forall (x => recv exists (x == _)), "not found all")
     }
 
@@ -282,13 +276,7 @@ trait TestKit {
      * being thrown in case of timeout.
      */
     def expectAllClassOf(max : Duration, obj : Class[_]*) {
-        val stop = now + max
-        val recv = for { x <- 1 to obj.size } yield {
-            val timeout = stop - now
-            val o = queue.poll(timeout.length, timeout.unit)
-            assert (o ne null, "timeout during expectAllClassOf")
-            o
-        }
+        val recv = receiveN(obj.size, now + max)
         assert (obj forall (x => recv exists (_.getClass eq x)), "not found all")
     }
 
@@ -310,14 +298,25 @@ trait TestKit {
      * may be counter-intuitive.
      */
     def expectAllConformingOf(max : Duration, obj : Class[_]*) {
-        val stop = now + max
-        val recv = for { x <- 1 to obj.size } yield {
+        val recv = receiveN(obj.size, now + max)
+        assert (obj forall (x => recv exists (x isInstance _)), "not found all")
+    }
+
+    private def receiveN(n : Int, stop : Duration) = {
+        for { x <- 1 to n } yield {
             val timeout = stop - now
-            val o = queue.poll(timeout.length, timeout.unit)
-            assert (o ne null, "timeout during expectAllClassOf")
+            val o = receiveOne(timeout)
+            assert (o ne null, "timeout while expecting "+n+" messages")
             o
         }
-        assert (obj forall (x => recv exists (x isInstance _)), "not found all")
+    }
+
+    private def receiveOne(max : Duration) = {
+        if (max.finite_?) {
+            queue.poll(max.length, max.unit)
+        } else {
+            queue.take
+        }
     }
 }
 
