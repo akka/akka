@@ -79,7 +79,7 @@ object ActorRegistry extends ListenerManagement {
   }
 
   /**
-   * Finds all actors that are subtypes of the class passed in as the Manifest argument and supproting passed message.
+   * Finds all actors that are subtypes of the class passed in as the Manifest argument and supporting passed message.
    */
   def actorsFor[T <: Actor](message: Any)(implicit manifest: Manifest[T] ): Array[ActorRef] =
     filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass) && a.isDefinedAt(message))
@@ -104,7 +104,7 @@ object ActorRegistry extends ListenerManagement {
     actorsFor[T](manifest.erasure.asInstanceOf[Class[T]])
 
   /**
-   * Finds any actor that matches T.
+   * Finds any actor that matches T. Very expensive, traverses ALL alive actors.
    */
   def actorFor[T <: Actor](implicit manifest: Manifest[T]): Option[ActorRef] =
     find({ case a: ActorRef if manifest.erasure.isAssignableFrom(a.actor.getClass) => a })
@@ -328,12 +328,12 @@ object ActorRegistry extends ListenerManagement {
   /**
    *  Registers an actor in the ActorRegistry.
    */
-  private[akka] def register(actor: ActorRef) = {
-    // ID
-    actorsById.put(actor.id, actor)
+  private[akka] def register(actor: ActorRef) {
+    val id = actor.id
+    val uuid = actor.uuid
 
-    // UUID
-    actorsByUUID.put(actor.uuid, actor)
+    actorsById.put(id, actor)
+    actorsByUUID.put(uuid, actor)
 
     // notify listeners
     notifyListeners(ActorRegistered(actor))
@@ -342,10 +342,12 @@ object ActorRegistry extends ListenerManagement {
   /**
    * Unregisters an actor in the ActorRegistry.
    */
-  private[akka] def unregister(actor: ActorRef) = {
-    actorsByUUID remove actor.uuid
+  private[akka] def unregister(actor: ActorRef) {
+    val id = actor.id
+    val uuid = actor.uuid
 
-    actorsById.remove(actor.id,actor)
+    actorsByUUID remove uuid
+    actorsById.remove(id,actor)
 
     // notify listeners
     notifyListeners(ActorUnregistered(actor))
