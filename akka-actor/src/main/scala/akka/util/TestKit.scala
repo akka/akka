@@ -7,22 +7,29 @@ import duration._
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue}
 
 object TestActor {
+    type Ignore = Option[PartialFunction[AnyRef, Boolean]]
+
     case class SetTimeout(d : Duration)
+    case class SetIgnore(i : Ignore)
 }
 
-class TestActor(queue : BlockingQueue[AnyRef]) extends Actor with FSM[Int, Unit] {
+class TestActor(queue : BlockingQueue[AnyRef]) extends Actor with FSM[Int, TestActor.Ignore] {
     import FSM._
     import TestActor._
 
-    startWith(0, ())
+    startWith(0, None)
     when(0, stateTimeout = 5 seconds) {
         case Event(SetTimeout(d), _) =>
             setStateTimeout(0, if (d.finite_?) d else None)
             stay
+        case Event(SetIgnore(ign), _) => stay using ign
         case Event(StateTimeout, _) =>
             stop
-        case Event(x : AnyRef, _) =>
-            queue offer x
+        case Event(x : AnyRef, ign) =>
+            val ignore = ign map (z => if (z isDefinedAt x) z(x) else false) getOrElse false
+            if (!ignore) {
+                queue offer x
+            }
             stay
     }
     initialize
@@ -31,7 +38,7 @@ class TestActor(queue : BlockingQueue[AnyRef]) extends Actor with FSM[Int, Unit]
 /**
  * Test kit for testing actors. Inheriting from this trait enables reception of
  * replies from actors, which are queued by an internal actor and can be
- * examined using the `expect...` methods. Assertions and bounds concerning
+ * examined using the `expectMsg...` methods. Assertions and bounds concerning
  * timing are available in the form of `within` blocks.
  *
  * <pre>
@@ -40,8 +47,8 @@ class TestActor(queue : BlockingQueue[AnyRef]) extends Actor with FSM[Int, Unit]
  *
  *     within (1 second) {
  *         test ! SomeWork
- *         expect(Result1) // bounded to 1 second
- *         expect(Result2) // bounded to the remainder of the 1 second
+ *         expectMsg(Result1) // bounded to 1 second
+ *         expectMsg(Result2) // bounded to the remainder of the 1 second
  *     }
  * }
  * </pre>
@@ -54,14 +61,29 @@ class TestActor(queue : BlockingQueue[AnyRef]) extends Actor with FSM[Int, Unit]
  *  - this trait is not thread-safe (only one actor with one queue, one stack
  *    of `within` blocks); it is expected that the code is executed from a
  *    constructor as shown above, which makes this a non-issue, otherwise take
- *    care not to run tests within a single test class in parallel.
+ *    care not to run tests within a single test class instance in parallel.
+ *
+ * TODO: add receiveWhile for receiving a series of messages (single timeout,
+ * overall maximum time, partial function for selection, ...)
+ *
+ * @author Roland Kuhn
+ * @since 1.1
  */
 trait TestKit {
 
     private val queue = new LinkedBlockingQueue[AnyRef]()
     
-    private val sender = actorOf(new TestActor(queue)).start
-    protected implicit val senderOption = Some(sender)
+    /**
+     * ActorRef of the test actor. Access is provided to enable e.g.
+     * registration as message target.
+     */
+    protected val testActor = actorOf(new TestActor(queue)).start
+
+    /**
+     * Implicit sender reference so that replies are possible for messages sent
+     * from the test class.
+     */
+    protected implicit val senderOption = Some(testActor)
 
     private var end : Duration = Duration.Inf
 
@@ -69,7 +91,7 @@ trait TestKit {
      * Stop test actor. Should be done at the end of the test unless relying on
      * test actor timeout.
      */
-    def stopTestActor { sender.stop }
+    def stopTestActor { testActor.stop }
 
     /**
      * Set test actor timeout. By default, the test actor shuts itself down
@@ -83,7 +105,18 @@ trait TestKit {
      *   } finally { stopTestActor }
      * </pre>
      */
-    def setTestActorTimeout(d : Duration) { sender ! TestActor.SetTimeout(d) }
+    def setTestActorTimeout(d : Duration) { testActor ! TestActor.SetTimeout(d) }
+
+    /**
+     * Ignore all messages in the test actor for which the given partial
+     * function returns true.
+     */
+    def ignoreMsg(f : PartialFunction[AnyRef, Boolean]) { testActor ! TestActor.SetIgnore(Some(f)) }
+
+    /**
+     * Stop ignoring messages in the test actor.
+     */
+    def ignoreNoMsg { testActor ! TestActor.SetIgnore(None) }
 
     /**
      * Obtain current time (`System.currentTimeMillis`) as Duration.
@@ -104,7 +137,7 @@ trait TestKit {
      * <pre>
      * val ret = within(50 millis) {
      *             test ! "ping"
-     *             expectClass(classOf[String])
+     *             expectMsgClass(classOf[String])
      *           }
      * </pre>
      */
@@ -133,10 +166,10 @@ trait TestKit {
     def within[T](max : Duration)(f : => T) : T = within(0 seconds, max)(f)
 
     /**
-     * Same as `expect`, but takes the maximum wait time from the innermost
+     * Same as `expectMsg`, but takes the maximum wait time from the innermost
      * enclosing `within` block.
      */
-    def expect(obj : Any) : AnyRef = expect(remaining, obj)
+    def expectMsg(obj : Any) : AnyRef = expectMsg(remaining, obj)
 
     /**
      * Receive one message from the test actor and assert that it equals the
@@ -145,18 +178,18 @@ trait TestKit {
      *
      * @return the received object
      */
-    def expect(max : Duration, obj : Any) : AnyRef = {
+    def expectMsg(max : Duration, obj : Any) : AnyRef = {
         val o = receiveOne(max)
-        assert (o ne null, "timeout during expect")
+        assert (o ne null, "timeout during expectMsg")
         assert (obj == o, "expected "+obj+", found "+o)
         o
     }
 
     /**
-     * Same as `expect`, but takes the maximum wait time from the innermost
+     * Same as `expectMsg`, but takes the maximum wait time from the innermost
      * enclosing `within` block.
      */
-    def expect[T](f : PartialFunction[Any, T]) : T = expect(remaining)(f)
+    def expectMsg[T](f : PartialFunction[Any, T]) : T = expectMsg(remaining)(f)
 
     /**
      * Receive one message from the test actor and assert that the given
@@ -168,18 +201,18 @@ trait TestKit {
      *
      * @return the received object as transformed by the partial function
      */
-    def expect[T](max : Duration)(f : PartialFunction[Any, T]) : T = {
+    def expectMsg[T](max : Duration)(f : PartialFunction[Any, T]) : T = {
         val o = receiveOne(max)
-        assert (o ne null, "timeout during expect")
+        assert (o ne null, "timeout during expectMsg")
         assert (f.isDefinedAt(o), "does not match: "+o)
         f(o)
     }
 
     /**
-     * Same as `expectClass`, but takes the maximum wait time from the innermost
+     * Same as `expectMsgClass`, but takes the maximum wait time from the innermost
      * enclosing `within` block.
      */
-    def expectClass[C](c : Class[C]) : C = expectClass(remaining, c)
+    def expectMsgClass[C](c : Class[C]) : C = expectMsgClass(remaining, c)
 
     /**
      * Receive one message from the test actor and assert that it conforms to
@@ -188,18 +221,18 @@ trait TestKit {
      *
      * @return the received object
      */
-    def expectClass[C](max : Duration, c : Class[C]) : C = {
+    def expectMsgClass[C](max : Duration, c : Class[C]) : C = {
         val o = receiveOne(max)
-        assert (o ne null, "timeout during expectClass")
+        assert (o ne null, "timeout during expectMsgClass")
         assert (c isInstance o, "expected "+c+", found "+o.getClass)
         o.asInstanceOf[C]
     }
 
     /**
-     * Same as `expectAnyOf`, but takes the maximum wait time from the innermost
+     * Same as `expectMsgAnyOf`, but takes the maximum wait time from the innermost
      * enclosing `within` block.
      */
-    def expectAnyOf(obj : Any*) : AnyRef = expectAnyOf(remaining, obj : _*)
+    def expectMsgAnyOf(obj : Any*) : AnyRef = expectMsgAnyOf(remaining, obj : _*)
 
     /**
      * Receive one message from the test actor and assert that it equals one of
@@ -208,18 +241,18 @@ trait TestKit {
      *
      * @return the received object
      */
-    def expectAnyOf(max : Duration, obj : Any*) : AnyRef = {
+    def expectMsgAnyOf(max : Duration, obj : Any*) : AnyRef = {
         val o = receiveOne(max)
-        assert (o ne null, "timeout during expectAnyOf")
+        assert (o ne null, "timeout during expectMsgAnyOf")
         assert (obj exists (_ == o), "found unexpected "+o)
         o
     }
 
     /**
-     * Same as `expectAnyClassOf`, but takes the maximum wait time from the innermost
+     * Same as `expectMsgAnyClassOf`, but takes the maximum wait time from the innermost
      * enclosing `within` block.
      */
-    def expectAnyClassOf(obj : Class[_]*) : AnyRef = expectAnyClassOf(remaining, obj : _*)
+    def expectMsgAnyClassOf(obj : Class[_]*) : AnyRef = expectMsgAnyClassOf(remaining, obj : _*)
 
     /**
      * Receive one message from the test actor and assert that it conforms to
@@ -228,18 +261,18 @@ trait TestKit {
      *
      * @return the received object
      */
-    def expectAnyClassOf(max : Duration, obj : Class[_]*) : AnyRef = {
+    def expectMsgAnyClassOf(max : Duration, obj : Class[_]*) : AnyRef = {
         val o = receiveOne(max)
-        assert (o ne null, "timeout during expectAnyClassOf")
+        assert (o ne null, "timeout during expectMsgAnyClassOf")
         assert (obj exists (_ isInstance o), "found unexpected "+o)
         o
     }
 
     /**
-     * Same as `expectAllOf`, but takes the maximum wait time from the innermost
+     * Same as `expectMsgAllOf`, but takes the maximum wait time from the innermost
      * enclosing `within` block.
      */
-    def expectAllOf(obj : Any*) { expectAllOf(remaining, obj : _*) }
+    def expectMsgAllOf(obj : Any*) { expectMsgAllOf(remaining, obj : _*) }
 
     /**
      * Receive a number of messages from the test actor matching the given
@@ -252,20 +285,20 @@ trait TestKit {
      * within(1 second) {
      *   dispatcher ! SomeWork1()
      *   dispatcher ! SomeWork2()
-     *   expectAllOf(Result1(), Result2())
+     *   expectMsgAllOf(Result1(), Result2())
      * }
      * </pre>
      */
-    def expectAllOf(max : Duration, obj : Any*) {
+    def expectMsgAllOf(max : Duration, obj : Any*) {
         val recv = receiveN(obj.size, now + max)
         assert (obj forall (x => recv exists (x == _)), "not found all")
     }
 
     /**
-     * Same as `expectAllClassOf`, but takes the maximum wait time from the innermost
+     * Same as `expectMsgAllClassOf`, but takes the maximum wait time from the innermost
      * enclosing `within` block.
      */
-    def expectAllClassOf(obj : Class[_]*) { expectAllClassOf(remaining, obj : _*) }
+    def expectMsgAllClassOf(obj : Class[_]*) { expectMsgAllClassOf(remaining, obj : _*) }
 
     /**
      * Receive a number of messages from the test actor matching the given
@@ -275,16 +308,16 @@ trait TestKit {
      * Wait time is bounded by the given duration, with an AssertionFailure
      * being thrown in case of timeout.
      */
-    def expectAllClassOf(max : Duration, obj : Class[_]*) {
+    def expectMsgAllClassOf(max : Duration, obj : Class[_]*) {
         val recv = receiveN(obj.size, now + max)
         assert (obj forall (x => recv exists (_.getClass eq x)), "not found all")
     }
 
     /**
-     * Same as `expectAllConformingOf`, but takes the maximum wait time from the innermost
+     * Same as `expectMsgAllConformingOf`, but takes the maximum wait time from the innermost
      * enclosing `within` block.
      */
-    def expectAllConformingOf(obj : Class[_]*) { expectAllClassOf(remaining, obj : _*) }
+    def expectMsgAllConformingOf(obj : Class[_]*) { expectMsgAllClassOf(remaining, obj : _*) }
 
     /**
      * Receive a number of messages from the test actor matching the given
@@ -297,7 +330,7 @@ trait TestKit {
      * Beware that one object may satisfy all given class constraints, which
      * may be counter-intuitive.
      */
-    def expectAllConformingOf(max : Duration, obj : Class[_]*) {
+    def expectMsgAllConformingOf(max : Duration, obj : Class[_]*) {
         val recv = receiveN(obj.size, now + max)
         assert (obj forall (x => recv exists (x isInstance _)), "not found all")
     }
