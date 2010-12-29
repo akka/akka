@@ -128,7 +128,8 @@ object Actor extends Logging {
    *   val actor = actorOf[MyActor].start
    * </pre>
    */
-  @deprecated def actorOf[T <: Actor : Manifest]: ActorRef = ActorRegistry.actorOf[T]
+  @deprecated("Use ActorRegistry.actorOf instead")
+  def actorOf[T <: Actor : Manifest]: ActorRef = ActorRegistry.actorOf[T]
 
   /**
    * Creates an ActorRef out of the Actor of the specified Class.
@@ -144,7 +145,8 @@ object Actor extends Logging {
    *   val actor = actorOf(classOf[MyActor]).start
    * </pre>
    */
-  @deprecated def actorOf(clazz: Class[_ <: Actor]): ActorRef = ActorRegistry.actorOf(clazz)
+  @deprecated("Use ActorRegistry.actorOf instead")
+  def actorOf(clazz: Class[_ <: Actor]): ActorRef = ActorRegistry.actorOf(clazz)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -164,7 +166,8 @@ object Actor extends Logging {
    *   val actor = actorOf(new MyActor).start
    * </pre>
    */
-  @deprecated def actorOf(factory: => Actor): ActorRef = ActorRegistry.actorOf(factory)
+  @deprecated("Use ActorRegistry.actorOf instead")
+  def actorOf(factory: => Actor): ActorRef = ActorRegistry.actorOf(factory)
 
   /**
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
@@ -181,7 +184,8 @@ object Actor extends Logging {
    * }
    * </pre>
    */
-  @deprecated def spawn(body: => Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit =
+  @deprecated("Use ActorRegistry.spawn instead")
+  def spawn(body: => Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit =
     ActorRegistry.spawn(body)
 
   /**
