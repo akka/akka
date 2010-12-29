@@ -11,6 +11,8 @@ import akka.util._
 import akka.dispatch.CompletableFuture
 import akka.config.Config.{config, TIME_UNIT}
 import java.util.concurrent.ConcurrentHashMap
+import akka.AkkaException
+import reflect.BeanProperty
 
 trait RemoteModule extends Logging {
   val UUID_PREFIX        = "uuid:"
@@ -55,6 +57,57 @@ trait RemoteModule extends Logging {
     actorRefOrNull
   }
 }
+
+/**
+ * Life-cycle events for RemoteClient.
+ */
+sealed trait RemoteClientLifeCycleEvent //TODO: REVISIT: Document change from RemoteClient to RemoteClientModule + remoteAddress
+case class RemoteClientError(
+  @BeanProperty val cause: Throwable,
+  @BeanProperty val client: RemoteClientModule, val remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+case class RemoteClientDisconnected(
+  @BeanProperty val client: RemoteClientModule, val remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+case class RemoteClientConnected(
+  @BeanProperty val client: RemoteClientModule, val remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+case class RemoteClientStarted(
+  @BeanProperty val client: RemoteClientModule, val remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+case class RemoteClientShutdown(
+  @BeanProperty val client: RemoteClientModule, val remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+
+
+/**
+ *  Life-cycle events for RemoteServer.
+ */
+sealed trait RemoteServerLifeCycleEvent //TODO: REVISIT: Document change from RemoteServer to RemoteServerModule
+case class RemoteServerStarted(
+  @BeanProperty val server: RemoteServerModule) extends RemoteServerLifeCycleEvent
+case class RemoteServerShutdown(
+  @BeanProperty val server: RemoteServerModule) extends RemoteServerLifeCycleEvent
+case class RemoteServerError(
+  @BeanProperty val cause: Throwable,
+  @BeanProperty val server: RemoteServerModule) extends RemoteServerLifeCycleEvent
+case class RemoteServerClientConnected(
+  @BeanProperty val server: RemoteServerModule,
+  @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
+case class RemoteServerClientDisconnected(
+  @BeanProperty val server: RemoteServerModule,
+  @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
+case class RemoteServerClientClosed(
+  @BeanProperty val server: RemoteServerModule,
+  @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
+
+/**
+ * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down.
+ */
+class RemoteClientException private[akka] (message: String,
+                                           @BeanProperty val client: RemoteClientModule,
+                                           val remoteAddress: InetSocketAddress) extends AkkaException(message)
+
+/**
+ * Returned when a remote exception cannot be instantiated or parsed
+ */
+case class UnparsableException private[akka] (originalClassName: String,
+                                              originalMessage: String) extends AkkaException(originalMessage)
 
 
 abstract class RemoteSupport extends ListenerManagement with RemoteServerModule with RemoteClientModule {
