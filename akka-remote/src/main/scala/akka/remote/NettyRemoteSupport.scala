@@ -263,15 +263,32 @@ class RemoteClient private[akka] (
     log.slf4j.debug("sending message: {} has future {}", request, senderFuture)
     if (isRunning) {
       if (request.getOneWay) {
-        connection.getChannel.write(request)
+        connection.getChannel.write(request).addListener(new ChannelFutureListener {
+          def operationComplete(future: ChannelFuture) {
+            if (future.isCancelled) {
+                //We don't care about that right now
+            } else if (!future.isSuccess) {
+              notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
+            }
+          }
+        })
         None
       } else {
           val futureResult = if (senderFuture.isDefined) senderFuture.get
                              else new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
-          val futureUuid = uuidFrom(request.getUuid.getHigh, request.getUuid.getLow)
-          futures.put(futureUuid, futureResult)
-          log.slf4j.debug("Stashing away future for {}",futureUuid)
-          connection.getChannel.write(request)
+
+          connection.getChannel.write(request).addListener(new ChannelFutureListener {
+            def operationComplete(future: ChannelFuture) {
+              if (future.isCancelled) {
+                //We don't care about that right now
+              } else if (!future.isSuccess) {
+                notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
+              } else {
+                val futureUuid = uuidFrom(request.getUuid.getHigh, request.getUuid.getLow)
+                futures.put(futureUuid, futureResult)
+              }
+            }
+          })
           Some(futureResult)
       }
     } else {
