@@ -63,16 +63,20 @@ trait RemoteModule extends Logging {
  */
 sealed trait RemoteClientLifeCycleEvent //TODO: REVISIT: Document change from RemoteClient to RemoteClientModule + remoteAddress
 case class RemoteClientError(
-  @BeanProperty val cause: Throwable,
-  @BeanProperty val client: RemoteClientModule, val remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty cause: Throwable,
+  @BeanProperty client: RemoteClientModule, remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 case class RemoteClientDisconnected(
-  @BeanProperty val client: RemoteClientModule, val remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty client: RemoteClientModule, remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 case class RemoteClientConnected(
-  @BeanProperty val client: RemoteClientModule, val remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty client: RemoteClientModule, remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 case class RemoteClientStarted(
-  @BeanProperty val client: RemoteClientModule, val remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty client: RemoteClientModule, remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 case class RemoteClientShutdown(
-  @BeanProperty val client: RemoteClientModule, val remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty client: RemoteClientModule, remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+case class RemoteClientWriteFailed(
+  @BeanProperty request: AnyRef,
+  @BeanProperty cause: Throwable,
+  @BeanProperty client: RemoteClientModule, remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 
 
 /**
