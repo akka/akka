@@ -11,6 +11,9 @@ import java.util.concurrent.{ScheduledFuture, TimeUnit}
 object FSM {
 
   case class Event[D](event: Any, stateData: D)
+  object Ev {
+    def unapply[D](e : Event[D]) : Option[Any] = Some(e.event)
+  }
 
   case class Transition[S](from: S, to: S)
   case class SubscribeTransitionCallBack(actorRef: ActorRef)
@@ -67,7 +70,10 @@ object FSM {
  *     import A._
  *
  *     startWith(One, Data(42))
- *     when(One) { [some partial function] }
+ *     when(One) {
+ *         case Event(SomeMsg, Data(x)) => ...
+ *         case Ev(SomeMsg) => ... // convenience when data not needed
+ *     }
  *     when(Two, stateTimeout = 5 seconds) { ... }
  *     initialize
  *   }
