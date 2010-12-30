@@ -4,7 +4,9 @@ import akka.actor.{Actor, FSM}
 import Actor._
 import duration._
 
-import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue}
+import java.util.concurrent.{BlockingDeque, LinkedBlockingDeque}
+
+import scala.annotation.tailrec
 
 object TestActor {
     type Ignore = Option[PartialFunction[AnyRef, Boolean]]
@@ -13,7 +15,7 @@ object TestActor {
     case class SetIgnore(i : Ignore)
 }
 
-class TestActor(queue : BlockingQueue[AnyRef]) extends Actor with FSM[Int, TestActor.Ignore] {
+class TestActor(queue : BlockingDeque[AnyRef]) extends Actor with FSM[Int, TestActor.Ignore] {
     import FSM._
     import TestActor._
 
@@ -28,7 +30,7 @@ class TestActor(queue : BlockingQueue[AnyRef]) extends Actor with FSM[Int, TestA
         case Event(x : AnyRef, ign) =>
             val ignore = ign map (z => if (z isDefinedAt x) z(x) else false) getOrElse false
             if (!ignore) {
-                queue offer x
+                queue.offerLast(x)
             }
             stay
     }
@@ -63,15 +65,12 @@ class TestActor(queue : BlockingQueue[AnyRef]) extends Actor with FSM[Int, TestA
  *    constructor as shown above, which makes this a non-issue, otherwise take
  *    care not to run tests within a single test class instance in parallel.
  *
- * TODO: add receiveWhile for receiving a series of messages (single timeout,
- * overall maximum time, partial function for selection, ...)
- *
  * @author Roland Kuhn
  * @since 1.1
  */
 trait TestKit {
 
-    private val queue = new LinkedBlockingQueue[AnyRef]()
+    private val queue = new LinkedBlockingDeque[AnyRef]()
     
     /**
      * ActorRef of the test actor. Access is provided to enable e.g.
@@ -86,6 +85,13 @@ trait TestKit {
     protected implicit val senderOption = Some(testActor)
 
     private var end : Duration = Duration.Inf
+    /*
+     * THIS IS A HACK: expectNoMsg and receiveWhile are bounded by `end`, but
+     * running them should not trigger an AssertionError, so mark their end
+     * time here and do not fail at the end of `within` if that time is not
+     * long gone.
+     */
+    private var lastSoftTimeout : Duration = now - 5.millis
 
     /**
      * Stop test actor. Should be done at the end of the test unless relying on
@@ -121,7 +127,7 @@ trait TestKit {
     /**
      * Obtain current time (`System.currentTimeMillis`) as Duration.
      */
-    def now : Duration = System.currentTimeMillis.millis
+    def now : Duration = System.nanoTime.nanos
 
     /**
      * Obtain time remaining for execution of the innermost enclosing `within` block.
@@ -154,7 +160,14 @@ trait TestKit {
 
         val diff = now - start
         assert (min <= diff, "block took "+diff+", should at least have been "+min)
-        assert (diff <= max_diff, "block took "+diff+", exceeding "+max_diff)
+        /*
+         * caution: HACK AHEAD
+         */
+        if (now - lastSoftTimeout > 5.millis) {
+            assert (diff <= max_diff, "block took "+diff+", exceeding "+max_diff)
+        } else {
+            lastSoftTimeout -= 5.millis
+        }
 
         end = prev_end
         ret
@@ -335,7 +348,68 @@ trait TestKit {
         assert (obj forall (x => recv exists (x isInstance _)), "not found all")
     }
 
-    private def receiveN(n : Int, stop : Duration) = {
+    /**
+     * Same as `expectNoMsg`, but takes the maximum wait time from the innermost
+     * enclosing `within` block.
+     */
+    def expectNoMsg { expectNoMsg(remaining) }
+
+    /**
+     * Assert that no message is received for the specified time.
+     */
+    def expectNoMsg(max : Duration) {
+        val o = receiveOne(max)
+        assert (o eq null, "received unexpected message "+o)
+        lastSoftTimeout = now
+    }
+
+    /**
+     * Same as `receiveWhile`, but takes the maximum wait time from the innermost
+     * enclosing `within` block.
+     */
+    def receiveWhile[T](f : PartialFunction[AnyRef, T]) : Seq[T] = receiveWhile(remaining)(f)
+
+    /**
+     * Receive a series of messages as long as the given partial function
+     * accepts them or the idle timeout is met or the overall maximum duration
+     * is elapsed. Returns the sequence of messages.
+     *
+     * Beware that the maximum duration is not implicitly bounded by or taken
+     * from the innermost enclosing `within` block, as it is not an error to
+     * hit the `max` duration in this case.
+     *
+     * One possible use of this method is for testing whether messages of
+     * certain characteristics are generated at a certain rate:
+     *
+     * <pre>
+     * test ! ScheduleTicks(100 millis)
+     * val series = receiveWhile(750 millis) {
+     *     case Tick(count) => count
+     * }
+     * assert(series == (1 to 7).toList)
+     * </pre>
+     */
+    def receiveWhile[T](max : Duration)(f : PartialFunction[AnyRef, T]) : Seq[T] = {
+        val stop = now + max
+
+        @tailrec def doit(acc : List[T]) : List[T] = {
+            receiveOne(stop - now) match {
+                case null =>
+                    acc.reverse
+                case o if (f isDefinedAt o) =>
+                    doit(f(o) :: acc)
+                case o =>
+                    queue.offerFirst(o)
+                    acc.reverse
+            }
+        }
+
+        val ret = doit(Nil)
+        lastSoftTimeout = now
+        ret
+    }
+
+    private def receiveN(n : Int, stop : Duration) : Seq[AnyRef] = {
         for { x <- 1 to n } yield {
             val timeout = stop - now
             val o = receiveOne(timeout)
@@ -344,11 +418,13 @@ trait TestKit {
         }
     }
 
-    private def receiveOne(max : Duration) = {
-        if (max.finite_?) {
-            queue.poll(max.length, max.unit)
+    private def receiveOne(max : Duration) : AnyRef = {
+        if (max == 0.seconds) {
+            queue.pollFirst
+        } else if (max.finite_?) {
+            queue.pollFirst(max.length, max.unit)
         } else {
-            queue.take
+            queue.takeFirst
         }
     }
 }
