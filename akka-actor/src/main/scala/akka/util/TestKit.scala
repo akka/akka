@@ -4,7 +4,7 @@ import akka.actor.{Actor, FSM}
 import Actor._
 import duration._
 
-import java.util.concurrent.{BlockingDeque, LinkedBlockingDeque}
+import java.util.concurrent.{BlockingDeque, LinkedBlockingDeque, TimeUnit}
 
 import scala.annotation.tailrec
 
@@ -21,11 +21,11 @@ class TestActor(queue : BlockingDeque[AnyRef]) extends Actor with FSM[Int, TestA
 
     startWith(0, None)
     when(0, stateTimeout = 5 seconds) {
-        case Event(SetTimeout(d), _) =>
+        case Ev(SetTimeout(d)) =>
             setStateTimeout(0, if (d.finite_?) d else None)
             stay
-        case Event(SetIgnore(ign), _) => stay using ign
-        case Event(StateTimeout, _) =>
+        case Ev(SetIgnore(ign)) => stay using ign
+        case Ev(StateTimeout) =>
             stop
         case Event(x : AnyRef, ign) =>
             val ignore = ign map (z => if (z isDefinedAt x) z(x) else false) getOrElse false
@@ -150,7 +150,7 @@ trait TestKit {
     def within[T](min : Duration, max : Duration)(f : => T) : T = {
         val start = now
         val rem = end - start
-        assert (rem >= min, "required min time "+min+" not possible, only "+rem+" left")
+        assert (rem >= min, "required min time "+min+" not possible, only "+format(min.unit, rem)+" left")
 
         val max_diff = if (max < rem) max else rem
         val prev_end = end
@@ -159,12 +159,12 @@ trait TestKit {
         val ret = f
 
         val diff = now - start
-        assert (min <= diff, "block took "+diff+", should at least have been "+min)
+        assert (min <= diff, "block took "+format(min.unit, diff)+", should at least have been "+min)
         /*
          * caution: HACK AHEAD
          */
         if (now - lastSoftTimeout > 5.millis) {
-            assert (diff <= max_diff, "block took "+diff+", exceeding "+max_diff)
+            assert (diff <= max_diff, "block took "+format(max.unit, diff)+", exceeding "+format(max.unit, max_diff))
         } else {
             lastSoftTimeout -= 5.millis
         }
@@ -427,6 +427,8 @@ trait TestKit {
             queue.takeFirst
         }
     }
+
+    private def format(u : TimeUnit, d : Duration) = "%.3f %s".format(d.toUnit(u), u.toString.toLowerCase)
 }
 
 // vim: set ts=4 sw=4 et:
