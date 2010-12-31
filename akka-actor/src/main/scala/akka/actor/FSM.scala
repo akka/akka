@@ -40,8 +40,9 @@ object FSM {
     }
 
     def cancel {
-      ref = ref flatMap {
-        t => t.cancel(true); None
+      if (ref.isDefined) {
+        ref.get.cancel(true)
+        ref = None
       }
     }
   }
@@ -259,7 +260,7 @@ trait FSM[S, D] {
    * Set handler which is called upon reception of unhandled messages.
    */
   protected final def whenUnhandled(stateFunction: StateFunction) = {
-    handleEvent = stateFunction
+    handleEvent = stateFunction orElse handleEventDefault
   }
 
   /**
@@ -292,7 +293,8 @@ trait FSM[S, D] {
     }
   }
 
-  private var handleEvent: StateFunction = {
+  private var handleEvent: StateFunction = handleEventDefault
+  private val handleEventDefault: StateFunction = {
     case Event(value, stateData) =>
       log.slf4j.warn("Event {} not handled in state {}, staying at current state", value, currentState.stateName)
       stay
@@ -327,8 +329,9 @@ trait FSM[S, D] {
     case UnsubscribeTransitionCallBack(actorRef) =>
       transitionCallBackList = transitionCallBackList.filterNot(_ == actorRef)
     case value => {
-      timeoutFuture = timeoutFuture.flatMap{
-        ref => ref.cancel(true); None
+      if (timeoutFuture.isDefined) {
+        timeoutFuture.get.cancel(true)
+        timeoutFuture = None
       }
       generation += 1
       processEvent(value)
@@ -337,7 +340,13 @@ trait FSM[S, D] {
 
   private def processEvent(value: Any) = {
     val event = Event(value, currentState.stateData)
-    val nextState = (stateFunctions(currentState.stateName) orElse handleEvent).apply(event)
+    val stateFunc = stateFunctions(currentState.stateName)
+    val nextState = if (stateFunc isDefinedAt event) {
+        stateFunc(event)
+      } else {
+        // handleEventDefault ensures that this is always defined
+        handleEvent(event)
+      }
     nextState.stopReason match {
       case Some(reason) => terminate(reason)
       case None => makeTransition(nextState)
@@ -359,11 +368,12 @@ trait FSM[S, D] {
 
   private def applyState(nextState: State) = {
     currentState = nextState
-    currentState.timeout orElse stateTimeouts(currentState.stateName) foreach {
-      t =>
-        if (t.length >= 0) {
-          timeoutFuture = Some(Scheduler.scheduleOnce(self, TimeoutMarker(generation), t.length, t.unit))
-        }
+    val timeout = currentState.timeout orElse stateTimeouts(currentState.stateName)
+    if (timeout.isDefined) {
+      val t = timeout.get
+      if (t.length >= 0) {
+        timeoutFuture = Some(Scheduler.scheduleOnce(self, TimeoutMarker(generation), t.length, t.unit))
+      }
     }
   }
 
