@@ -3,15 +3,12 @@ package akka.actor
 import akka.util.TestKit
 import akka.util.duration._
 
-import org.scalatest.Spec
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
 
-@RunWith(classOf[JUnitRunner])
 class FSMTimingSpec
-        extends Spec
-        with ShouldMatchers
+        extends WordSpec
+        with MustMatchers
         with TestKit {
 
     import FSMTimingSpec._
@@ -25,9 +22,9 @@ class FSMTimingSpec
         case Transition(Initial, _) => true
     }
 
-    describe("A Finite State Machine") {
+    "A Finite State Machine" must {
 
-        it("should receive StateTimeout") {
+        "receive StateTimeout" in {
             within (50 millis, 150 millis) {
                 fsm ! TestStateTimeout
                 expectMsg(Transition(TestStateTimeout, Initial))
@@ -35,7 +32,7 @@ class FSMTimingSpec
             }
         }
 
-        it("should receive single-shot timer") {
+        "receive single-shot timer" in {
             within (50 millis, 150 millis) {
                 fsm ! TestSingleTimer
                 expectMsg(Tick)
@@ -44,12 +41,12 @@ class FSMTimingSpec
             }
         }
 
-        it("should receive and cancel a repeated timer") {
+        "receive and cancel a repeated timer" in {
             fsm ! TestRepeatedTimer
             val seq = receiveWhile(550 millis) {
                 case Tick => Tick
             }
-            seq should have length (5)
+            seq must have length (5)
             within(250 millis) {
                 fsm ! Cancel
                 expectMsg(Transition(TestRepeatedTimer, Initial))
@@ -57,9 +54,12 @@ class FSMTimingSpec
             }
         }
 
-        it("should notify unhandled messages") {
-            fsm ! Cancel
-            expectMsg(Unhandled(Cancel))
+        "notify unhandled messages" in {
+            within(200 millis) {
+                fsm ! Cancel
+                expectMsg(Unhandled(Cancel))
+                expectNoMsg
+            }
         }
 
     }
