@@ -31,7 +31,6 @@ import org.jboss.netty.handler.ssl.SslHandler
 
 import java.net.{ SocketAddress, InetSocketAddress }
 import java.util.concurrent.{ TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap, ConcurrentSkipListSet }
-import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.collection.mutable.{ HashSet, HashMap }
 import scala.reflect.BeanProperty
 import java.lang.reflect.InvocationTargetException
@@ -52,7 +51,7 @@ trait NettyRemoteShared {
 trait NettyRemoteClientModule extends RemoteClientModule with NettyRemoteShared { self: ListenerManagement with Logging =>
   private val remoteClients = new HashMap[String, RemoteClient]
   private val remoteActors  = new Index[Address, Uuid]
-  private val lock          = new ReentrantReadWriteLock
+  private val lock          = new ReadWriteGuard
 
   protected[akka] def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): T =
     TypedActor.createProxyForRemoteActorRef(intfClass, RemoteActorRef(serviceId, implClassName, hostname, port, timeout, loader, AkkaActorType.TypedActor))
@@ -148,43 +147,27 @@ trait NettyRemoteClientModule extends RemoteClientModule with NettyRemoteShared 
     case address => address.getHostName + ':' + address.getPort
   }
 
-  def shutdownClientConnection(address: InetSocketAddress): Boolean = {
-    lock.writeLock.lock
-    try {
-      remoteClients.remove(makeKey(address)) match {
-        case Some(client) => client.shutdown
-        case None => false
-      }
-    } finally {
-      lock.writeLock.unlock
+  def shutdownClientConnection(address: InetSocketAddress): Boolean = lock withWriteGuard {
+    remoteClients.remove(makeKey(address)) match {
+      case Some(client) => client.shutdown
+      case None => false
     }
   }
 
-  def restartClientConnection(address: InetSocketAddress): Boolean = {
-    lock.readLock.lock
-    try {
-      remoteClients.get(makeKey(address)) match {
-        case Some(client) => client.connect(reconnectIfAlreadyConnected = true)
-        case None => false
-      }
-    } finally {
-      lock.readLock.unlock
+  def restartClientConnection(address: InetSocketAddress): Boolean = lock withReadGuard {
+    remoteClients.get(makeKey(address)) match {
+      case Some(client) => client.connect(reconnectIfAlreadyConnected = true)
+      case None => false
     }
   }
 
   private[akka] def registerSupervisorForActor(actorRef: ActorRef): ActorRef =
     clientFor(actorRef.homeAddress.get, None).registerSupervisorForActor(actorRef)
 
-  private[akka] def deregisterSupervisorForActor(actorRef: ActorRef): ActorRef = {
-    val key = makeKey(actorRef.homeAddress.get)
-    lock.readLock.lock //TODO: perhaps use writelock here
-    try {
-      remoteClients.get(key) match {
-        case Some(client) => client.deregisterSupervisorForActor(actorRef)
-        case None => actorRef
-      }
-    } finally {
-      lock.readLock.unlock
+  private[akka] def deregisterSupervisorForActor(actorRef: ActorRef): ActorRef = lock withReadGuard {
+    remoteClients.get(makeKey(actorRef.homeAddress.get)) match {
+      case Some(client) => client.deregisterSupervisorForActor(actorRef)
+      case None => actorRef
     }
   }
 
@@ -197,12 +180,9 @@ trait NettyRemoteClientModule extends RemoteClientModule with NettyRemoteShared 
     //remoteActors.clear
   }
 
-  def shutdownRemoteClients = try {
-    lock.writeLock.lock
+  def shutdownRemoteClients = lock withWriteGuard {
     remoteClients.foreach({ case (addr, client) => client.shutdown })
     remoteClients.clear
-  } finally {
-    lock.writeLock.unlock
   }
 
   def registerClientManagedActor(hostname: String, port: Int, uuid: Uuid) = {

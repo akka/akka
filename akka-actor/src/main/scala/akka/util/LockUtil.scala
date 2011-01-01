@@ -37,8 +37,8 @@ class ReentrantGuard {
  */
 class ReadWriteGuard {
   private val rwl = new ReentrantReadWriteLock
-  private val readLock = rwl.readLock
-  private val writeLock = rwl.writeLock
+  val readLock = rwl.readLock
+  val writeLock = rwl.writeLock
 
   def withWriteGuard[T](body: => T): T = {
     writeLock.lock
