@@ -29,6 +29,7 @@ class ClusterConfigSpec extends AkkaSpec(
       GossipInitialDelay must be(5 seconds)
       GossipFrequency must be(1 second)
       NrOfGossipDaemons must be(4)
+      NrOfDeputyNodes must be(3)
     }
   }
 }
