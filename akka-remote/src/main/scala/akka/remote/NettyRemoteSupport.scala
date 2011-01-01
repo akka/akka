@@ -74,22 +74,24 @@ trait NettyRemoteClientModule extends RemoteClientModule with NettyRemoteShared 
 
     val key = makeKey(address)
     lock.readLock.lock
-    remoteClients.get(key) match {
-      case Some(client) => try { client } finally { lock.readLock.unlock }
-      case None =>
-        lock.readLock.unlock
-        lock.writeLock.lock //Lock upgrade, not supported natively
-        try {
-          remoteClients.get(key) match { //Recheck for addition, race between upgrades
-            case Some(client) => client //If already populated by other writer
-            case None => //Populate map
-              val client = new ActiveRemoteClient(this, address, loader, self.notifyListeners _)
-              client.connect()
-              remoteClients += key -> client
-              client
-          }
-        } finally { lock.writeLock.unlock }
-    }
+    try {
+      remoteClients.get(key) match {
+        case Some(client) => client
+        case None =>
+          lock.readLock.unlock
+          lock.writeLock.lock //Lock upgrade, not supported natively
+          try {
+            remoteClients.get(key) match { //Recheck for addition, race between upgrades
+              case Some(client) => client //If already populated by other writer
+              case None => //Populate map
+                val client = new ActiveRemoteClient(this, address, loader, self.notifyListeners _)
+                client.connect()
+                remoteClients += key -> client
+                client
+            }
+          } finally { lock.readLock.lock; lock.writeLock.unlock } //downgrade
+      }
+    } finally { lock.readLock.unlock }
   }
 
   /**
@@ -99,22 +101,24 @@ trait NettyRemoteClientModule extends RemoteClientModule with NettyRemoteShared 
     val address = channel.getRemoteAddress.asInstanceOf[InetSocketAddress]
     val key = makeKey(address)
     lock.readLock.lock
-    remoteClients.get(key) match {
-      case Some(client) => try { false } finally { lock.readLock.unlock }
-      case None =>
-        lock.readLock.unlock
-        lock.writeLock.lock //Lock upgrade, not supported natively
-        try {
-          remoteClients.get(key) match {
-            case Some(client) => false
-            case None =>
-              val client = new PassiveRemoteClient(this, address, channel, self.notifyListeners _ )
-              client.connect()
-              remoteClients.put(key, client)
-              true
-          }
-        } finally { lock.writeLock.unlock }
-    }
+    try {
+      remoteClients.get(key) match {
+        case Some(client) => false
+        case None =>
+          lock.readLock.unlock
+          lock.writeLock.lock //Lock upgrade, not supported natively
+          try {
+            remoteClients.get(key) match {
+              case Some(client) => false
+              case None =>
+                val client = new PassiveRemoteClient(this, address, channel, self.notifyListeners _ )
+                client.connect()
+                remoteClients.put(key, client)
+                true
+            }
+          } finally { lock.readLock.lock; lock.writeLock.unlock } //downgrade
+      }
+    } finally { lock.readLock.unlock }
   }
 
   /**
@@ -124,22 +128,24 @@ trait NettyRemoteClientModule extends RemoteClientModule with NettyRemoteShared 
     val address = channel.getRemoteAddress.asInstanceOf[InetSocketAddress]
     val key = makeKey(address)
     lock.readLock.lock
-    remoteClients.get(key) match {
-      case Some(client: PassiveRemoteClient) =>
-        lock.readLock.unlock
-        lock.writeLock.lock //Lock upgrade, not supported natively
-        try {
-          remoteClients.get(key) match {
-            case Some(client: ActiveRemoteClient) => false
-            case None => false
-            case Some(client: PassiveRemoteClient) =>
-              remoteClients.remove(key)
-              true
-          }
-        } finally { lock.writeLock.unlock }
-      //Otherwise, unlock the readlock and return false
-      case _ => try { false } finally { lock.readLock.unlock }
-    }
+    try {
+      remoteClients.get(key) match {
+        case Some(client: PassiveRemoteClient) =>
+          lock.readLock.unlock
+          lock.writeLock.lock //Lock upgrade, not supported natively
+          try {
+            remoteClients.get(key) match {
+              case Some(client: ActiveRemoteClient) => false
+              case None => false
+              case Some(client: PassiveRemoteClient) =>
+                remoteClients.remove(key)
+                true
+            }
+          } finally { lock.readLock.lock; lock.writeLock.unlock } //downgrade
+        //Otherwise, unlock the readlock and return false
+        case _ => false
+      }
+    } finally { lock.readLock.unlock }
   }
 
   private def makeKey(a: InetSocketAddress): String = a match {
