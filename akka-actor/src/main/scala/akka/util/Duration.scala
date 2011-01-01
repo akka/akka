@@ -87,10 +87,13 @@ object Duration {
    * Parse TimeUnit from string representation.
    */
   def timeUnit(unit: String) = unit.toLowerCase match {
-    case "nanoseconds" | "nanos" | "nanosecond" | "nano" => NANOSECONDS
-    case "microseconds" | "micros" |  "microsecond" | "micro" => MICROSECONDS
-    case "milliseconds" | "millis" | "millisecond" | "milli" => MILLISECONDS
-    case _ => SECONDS
+    case "d"   | "day"    | "days"                                    => DAYS
+    case "h"   | "hour"   | "hours"                                   => HOURS
+    case "min" | "minute" | "minutes"                                 => MINUTES
+    case "s"   | "sec"    | "second" | "seconds"                      => SECONDS
+    case "ms"  | "milli"  | "millis" | "millisecond" | "milliseconds" => MILLISECONDS
+    case "µs"  | "micro"  | "micros" | "microsecond" | "microseconds" => MICROSECONDS
+    case "ns"  | "nano"   | "nanos"  | "nanosecond"  | "nanoseconds"  => NANOSECONDS
   }
 
   trait Infinite {
@@ -153,11 +156,11 @@ object Duration {
  * <p/>
  * Examples of usage from Java:
  * <pre>
- * import akka.util.Duration;
+ * import akka.util.FiniteDuration;
  * import java.util.concurrent.TimeUnit;
  *
- * Duration duration = new Duration(100, MILLISECONDS);
- * Duration duration = new Duration(5, "seconds");
+ * Duration duration = new FiniteDuration(100, MILLISECONDS);
+ * Duration duration = new FiniteDuration(5, "seconds");
  *
  * duration.toNanos();
  * </pre>
