@@ -10,11 +10,6 @@ import java.util.concurrent.ScheduledFuture
 
 object FSM {
 
-  case class Event[D](event: Any, stateData: D)
-  object Ev {
-    def unapply[D](e : Event[D]) : Option[Any] = Some(e.event)
-  }
-
   case class Transition[S](from: S, to: S)
   case class SubscribeTransitionCallBack(actorRef: ActorRef)
   case class UnsubscribeTransitionCallBack(actorRef: ActorRef)
@@ -23,7 +18,6 @@ object FSM {
   case object Normal extends Reason
   case object Shutdown extends Reason
   case class Failure(cause: Any) extends Reason
-  case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D)
 
   case object StateTimeout
   case class TimeoutMarker(generation: Long)
@@ -386,6 +380,10 @@ trait FSM[S, D] {
     self.stop
   }
 
+  case class Event[D](event: Any, stateData: D)
+  object Ev {
+    def unapply[D](e : Event[D]) : Option[Any] = Some(e.event)
+  }
 
   case class State(stateName: S, stateData: D, timeout: Timeout = None) {
 
@@ -427,4 +425,5 @@ trait FSM[S, D] {
     }
   }
 
+  case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D)
 }
