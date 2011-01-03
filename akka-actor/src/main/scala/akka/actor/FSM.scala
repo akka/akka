@@ -6,7 +6,7 @@ package akka.actor
 import akka.util._
 
 import scala.collection.mutable
-import java.util.concurrent.{ScheduledFuture, TimeUnit}
+import java.util.concurrent.ScheduledFuture
 
 object FSM {
 
@@ -124,6 +124,7 @@ trait FSM[S, D] {
 
   type StateFunction = scala.PartialFunction[Event[D], State]
   type Timeout = Option[Duration]
+  type TransitionHandler = (S, S) => Unit
 
   /* DSL */
 
@@ -245,7 +246,7 @@ trait FSM[S, D] {
    * Set handler which is called upon each state transition, i.e. not when
    * staying in the same state.
    */
-  protected final def onTransition(transitionHandler: PartialFunction[Transition[S], Unit]) = {
+  protected final def onTransition(transitionHandler: TransitionHandler) = {
     transitionEvent = transitionHandler
   }
 
@@ -306,8 +307,8 @@ trait FSM[S, D] {
     case StopEvent(reason, _, _) => log.slf4j.info("Stopping because of reason: {}", reason)
   }
 
-  private var transitionEvent: PartialFunction[Transition[S], Unit] = {
-    case Transition(from, to) => log.slf4j.debug("Transitioning from state {} to {}", from, to)
+  private var transitionEvent: TransitionHandler = (from, to) => {
+    log.slf4j.debug("Transitioning from state {} to {}", from, to)
   }
 
   override final protected def receive: Receive = {
@@ -358,9 +359,11 @@ trait FSM[S, D] {
       terminate(Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
       if (currentState.stateName != nextState.stateName) {
-        val transition = Transition(currentState.stateName, nextState.stateName)
-        transitionEvent.apply(transition)
-        transitionCallBackList.foreach(_ ! transition)
+        transitionEvent.apply(currentState.stateName, nextState.stateName)
+        if (!transitionCallBackList.isEmpty) {
+          val transition = Transition(currentState.stateName, nextState.stateName)
+          transitionCallBackList.foreach(_ ! transition)
+        }
       }
       applyState(nextState)
     }
