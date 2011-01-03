@@ -6,8 +6,8 @@ package akka.actor.remote
 
 import akka.actor._
 import akka.actor.Actor._
-import akka.remote.NettyRemoteSupport
 import java.util.concurrent. {ConcurrentSkipListSet, TimeUnit}
+import akka.remote.netty.NettyRemoteSupport
 
 object ServerInitiatedRemoteSessionActorSpec {
 

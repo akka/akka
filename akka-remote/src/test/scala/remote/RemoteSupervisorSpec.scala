@@ -7,7 +7,6 @@ package akka.actor.remote
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
 import akka.serialization.BinaryString
 import akka.config.Supervision._
-import akka.remote.{RemoteServer, RemoteClient}
 import akka.OneWay
 import org.scalatest._
 import org.scalatest.WordSpec

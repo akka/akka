@@ -8,7 +8,6 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 import akka.dispatch.Dispatchers
-import akka.remote. {NettyRemoteSupport, RemoteServer, RemoteClient}
 import akka.actor.Actor._
 import akka.actor._
 

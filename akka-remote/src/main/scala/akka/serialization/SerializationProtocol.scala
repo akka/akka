@@ -5,7 +5,6 @@
 package akka.serialization
 
 import akka.dispatch.MessageInvocation
-import akka.remote.{RemoteServer, RemoteClient, MessageSerializer}
 import akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
 
 import ActorTypeProtocol._
@@ -18,6 +17,7 @@ import scala.collection.immutable.Stack
 import com.google.protobuf.ByteString
 import akka.util.ReflectiveAccess
 import java.net.InetSocketAddress
+import akka.remote. {RemoteClientSettings, MessageSerializer}
 
 /**
  * Type class definition for Actor Serialization
@@ -140,7 +140,7 @@ object ActorSerialization {
             actorRef.getSender,
             None,
             ActorType.ScalaActor,
-            RemoteClient.SECURE_COOKIE).build)
+            RemoteClientSettings.SECURE_COOKIE).build)
 
       requestProtocols.foreach(rp => builder.addMessages(rp))
     }
