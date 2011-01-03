@@ -99,6 +99,10 @@ case class RemoteServerClientDisconnected(
 case class RemoteServerClientClosed(
   @BeanProperty val server: RemoteServerModule,
   @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
+case class RemoteServerWriteFailed(
+  @BeanProperty request: AnyRef,
+  @BeanProperty cause: Throwable,
+  @BeanProperty client: RemoteServerModule, remoteAddress: InetSocketAddress) extends RemoteServerLifeCycleEvent
 
 /**
  * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down.
