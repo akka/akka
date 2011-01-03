@@ -16,7 +16,7 @@ class FSMTimingSpec
 
   val fsm = Actor.actorOf(new StateMachine(testActor)).start
   fsm ! SubscribeTransitionCallBack(testActor)
-  expectMsg(50 millis, Initial)
+  expectMsg(100 millis, Initial)
 
   ignoreMsg {
     case Transition(Initial, _) => true
@@ -64,6 +64,10 @@ class FSMTimingSpec
         fsm ! SetHandler
         fsm ! Tick
         expectMsg(Unhandled(Tick))
+        expectNoMsg
+      }
+      within(100 millis) {
+        fsm ! Unhandled("test")
         expectNoMsg
       }
       within(100 millis) {
@@ -123,8 +127,8 @@ object FSMTimingSpec {
     when(TestUnhandled) {
       case Ev(SetHandler) =>
         whenUnhandled {
-          case Ev(msg : AnyRef) =>
-            tester ! Unhandled(msg)
+          case Ev(Tick) =>
+            tester ! Unhandled(Tick)
             stay
         }
         stay
