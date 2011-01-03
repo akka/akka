@@ -16,7 +16,7 @@ class FSMTimingSpec
 
     val fsm = Actor.actorOf(new StateMachine(testActor)).start
     fsm ! SubscribeTransitionCallBack(testActor)
-    expectMsg(50 millis, Initial)
+    expectMsg(50 millis, CurrentState(fsm, Initial))
 
     ignoreMsg {
         case Transition(_, Initial, _) => true

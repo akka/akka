@@ -108,7 +108,7 @@ class FSMActorSpec extends JUnitSuite {
 
     val transitionTester = Actor.actorOf(new Actor { def receive = {
       case Transition(_, _, _) => transitionCallBackLatch.open
-      case Locked => initialStateLatch.open
+      case CurrentState(_, Locked) => initialStateLatch.open
     }}).start
 
     lock ! SubscribeTransitionCallBack(transitionTester)

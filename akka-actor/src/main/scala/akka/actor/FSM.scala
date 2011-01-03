@@ -10,6 +10,7 @@ import java.util.concurrent.ScheduledFuture
 
 object FSM {
 
+  case class CurrentState[S](fsmRef: ActorRef, state: S)
   case class Transition[S](fsmRef: ActorRef, from: S, to: S)
   case class SubscribeTransitionCallBack(actorRef: ActorRef)
   case class UnsubscribeTransitionCallBack(actorRef: ActorRef)
@@ -319,7 +320,7 @@ trait FSM[S, D] {
       }
     case SubscribeTransitionCallBack(actorRef) =>
     // send current state back as reference point
-      actorRef ! currentState.stateName
+      actorRef ! CurrentState(self, currentState.stateName)
       transitionCallBackList ::= actorRef
     case UnsubscribeTransitionCallBack(actorRef) =>
       transitionCallBackList = transitionCallBackList.filterNot(_ == actorRef)
