@@ -378,6 +378,7 @@ trait FSM[S, D] {
   }
 
   private def terminate(reason: Reason) = {
+    timers.foreach{ case (timer, t) => log.slf4j.info("Canceling timer {}", timer); t.cancel}
     terminateEvent.apply(StopEvent(reason, currentState.stateName, currentState.stateData))
     self.stop
   }
