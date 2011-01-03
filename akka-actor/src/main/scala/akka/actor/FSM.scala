@@ -288,12 +288,12 @@ trait FSM[S, D] {
     }
   }
 
-  private var handleEvent: StateFunction = handleEventDefault
   private val handleEventDefault: StateFunction = {
     case Event(value, stateData) =>
       log.slf4j.warn("Event {} not handled in state {}, staying at current state", value, currentState.stateName)
       stay
   }
+  private var handleEvent: StateFunction = handleEventDefault
 
   private var terminateEvent: PartialFunction[StopEvent[S,D], Unit] = {
     case StopEvent(Failure(cause), _, _) =>
