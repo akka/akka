@@ -380,10 +380,17 @@ final class TypedActorConfiguration {
   private[akka] var _host: Option[InetSocketAddress] = None
   private[akka] var _messageDispatcher: Option[MessageDispatcher] = None
   private[akka] var _threadBasedDispatcher: Option[Boolean] = None
+  private[akka] var _id: Option[String] = None
 
   def timeout = _timeout
   def timeout(timeout: Duration) : TypedActorConfiguration = {
     _timeout = timeout.toMillis
+    this
+  }
+
+  def id = _id
+  def id(id: String): TypedActorConfiguration = {
+    _id = Option(id)
     this
   }
 
@@ -564,6 +571,8 @@ object TypedActor extends Logging {
     typedActor.initialize(proxy)
     if (config._messageDispatcher.isDefined) actorRef.dispatcher = config._messageDispatcher.get
     if (config._threadBasedDispatcher.isDefined) actorRef.dispatcher = Dispatchers.newThreadBasedDispatcher(actorRef)
+    if (config._id.isDefined) actorRef.id = config._id.get
+
     actorRef.timeout = config.timeout
     //log.slf4j.debug("config._host for {} is {} but homeAddress is {} and on ref {}",Array[AnyRef](intfClass, config._host, typedActor.context.homeAddress,actorRef.homeAddress))
     AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, actorRef.homeAddress, actorRef.timeout))

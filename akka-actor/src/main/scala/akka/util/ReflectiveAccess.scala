@@ -144,8 +144,8 @@ object ReflectiveAccess extends Logging {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e =>
-      log.slf4j.warn("Could not instantiate class [{}] due to [{}]", clazz.getName, e.getCause)
-      e.printStackTrace
+      log.slf4j.warn("Could not instantiate class [{}]", clazz.getName)
+      log.slf4j.warn("createInstance",e.getCause)
       None
   }
 
@@ -162,7 +162,8 @@ object ReflectiveAccess extends Logging {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e =>
-      log.slf4j.warn("Could not instantiate class [{}] due to [{}]", fqn, e.getCause)
+      log.slf4j.warn("Could not instantiate class [{}]", fqn)
+      log.slf4j.warn("createInstance",e.getCause)
       None
   }
 
@@ -174,12 +175,13 @@ object ReflectiveAccess extends Logging {
     Option(instance.get(null).asInstanceOf[T])
   } catch {
     case e: ClassNotFoundException => {
-      log.slf4j.debug("Could not get object [{}] due to [{}]", fqn, e)
+      log.slf4j.debug("Could not get object [{}]", fqn)
+      log.slf4j.debug("getObjectFor", e)
       None
     }
     case ei: ExceptionInInitializerError => {
-      log.error("Exception in initializer for object [%s]".format(fqn))
-      log.error(ei.getCause, "Cause was:")
+      log.slf4j.error("Exception in initializer for object [{}]",fqn)
+      log.slf4j.error("Cause was:",ei.getCause)
       throw ei
     }
   }
