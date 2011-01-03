@@ -1,13 +1,8 @@
 package akka.actor.serialization
 
-import java.util.concurrent.TimeUnit
-import org.scalatest._
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import akka.actor.{ProtobufProtocol, Actor}
 import ProtobufProtocol.ProtobufPOJO
 import Actor._
-import akka.remote.NettyRemoteSupport
 import akka.actor.remote.AkkaRemoteTest
 
 /* ---------------------------

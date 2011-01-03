@@ -5,7 +5,7 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
-import akka.remote.NettyRemoteSupport
+import akka.remote.netty.NettyRemoteSupport
 import akka.actor. {Actor, ActorRegistry}
 import java.util.concurrent. {TimeUnit, CountDownLatch}
 

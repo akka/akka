@@ -6,7 +6,6 @@ package akka.actor.remote
 
 import java.util.concurrent.TimeUnit
 
-import akka.remote.{RemoteServer, RemoteClient}
 import akka.actor._
 import RemoteTypedActorLog._
 

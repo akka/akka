@@ -4,7 +4,6 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import akka.actor.Actor._
 import akka.actor.{ActorRegistry, ActorRef, Actor}
-import akka.remote. {NettyRemoteSupport}
 
 object ServerInitiatedRemoteActorSpec {
   case class Send(actor: ActorRef)

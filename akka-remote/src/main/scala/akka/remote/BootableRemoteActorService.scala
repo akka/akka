@@ -23,7 +23,7 @@ trait BootableRemoteActorService extends Bootable with Logging {
   def startRemoteService = remoteServerThread.start
 
   abstract override def onLoad = {
-    if (RemoteServer.isRemotingEnabled) {
+    if (ReflectiveAccess.isRemotingEnabled && RemoteServerSettings.isRemotingEnabled) {
       log.slf4j.info("Initializing Remote Actors Service...")
       startRemoteService
       log.slf4j.info("Remote Actors Service initialized")
