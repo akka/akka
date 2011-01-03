@@ -55,10 +55,20 @@ class FSMTimingSpec
     }
 
     "notify unhandled messages" in {
-      within(200 millis) {
-        fsm ! Cancel
-        expectMsg(Unhandled(Cancel))
+      fsm ! TestUnhandled
+      within(100 millis) {
+        fsm ! Tick
         expectNoMsg
+      }
+      within(100 millis) {
+        fsm ! SetHandler
+        fsm ! Tick
+        expectMsg(Unhandled(Tick))
+        expectNoMsg
+      }
+      within(100 millis) {
+        fsm ! Cancel
+        expectMsg(Transition(TestUnhandled, Initial))
       }
     }
 
@@ -73,9 +83,11 @@ object FSMTimingSpec {
   case object TestStateTimeout extends State
   case object TestSingleTimer extends State
   case object TestRepeatedTimer extends State
+  case object TestUnhandled extends State
 
   case object Tick
   case object Cancel
+  case object SetHandler
 
   case class Unhandled(msg : AnyRef)
 
@@ -84,13 +96,13 @@ object FSMTimingSpec {
 
     startWith(Initial, ())
     when(Initial) {
-      case Ev(TestStateTimeout) => goto(TestStateTimeout)
       case Ev(TestSingleTimer) =>
         setTimer("tester", Tick, 100 millis, false)
         goto(TestSingleTimer)
       case Ev(TestRepeatedTimer) =>
         setTimer("tester", Tick, 100 millis, true)
         goto(TestRepeatedTimer)
+      case Ev(x : FSMTimingSpec.State) => goto(x)
     }
     when(TestStateTimeout, stateTimeout = 100 millis) {
       case Ev(StateTimeout) => goto(Initial)
@@ -108,14 +120,19 @@ object FSMTimingSpec {
         cancelTimer("tester")
         goto(Initial)
     }
-
-    whenUnhandled {
-      case Ev(msg : AnyRef) =>
-        tester ! Unhandled(msg)
+    when(TestUnhandled) {
+      case Ev(SetHandler) =>
+        whenUnhandled {
+          case Ev(msg : AnyRef) =>
+            tester ! Unhandled(msg)
+            stay
+        }
         stay
+      case Ev(Cancel) =>
+        goto(Initial)
     }
   }
 
 }
 
-// vim: set ts=4 sw=4 et:
+// vim: set ts=2 sw=2 et:
