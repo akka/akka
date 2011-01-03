@@ -67,10 +67,10 @@ object FSMActorSpec {
       }
     }
 
-    onTransition {
+    onTransition((oldState, newState) => Transition(oldState, newState) match {
       case Transition(Locked, Open) => transitionLatch.open
       case Transition(_, _) => ()
-    }
+    })
 
     onTermination {
       case StopEvent(Shutdown, Locked, _) =>
