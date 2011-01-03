@@ -19,7 +19,7 @@ class FSMTimingSpec
     expectMsg(50 millis, Initial)
 
     ignoreMsg {
-        case Transition(Initial, _) => true
+        case Transition(_, Initial, _) => true
     }
 
     "A Finite State Machine" must {
@@ -27,7 +27,7 @@ class FSMTimingSpec
         "receive StateTimeout" in {
             within (50 millis, 150 millis) {
                 fsm ! TestStateTimeout
-                expectMsg(Transition(TestStateTimeout, Initial))
+                expectMsg(Transition(fsm, TestStateTimeout, Initial))
                 expectNoMsg
             }
         }
@@ -36,7 +36,7 @@ class FSMTimingSpec
             within (50 millis, 150 millis) {
                 fsm ! TestSingleTimer
                 expectMsg(Tick)
-                expectMsg(Transition(TestSingleTimer, Initial))
+                expectMsg(Transition(fsm, TestSingleTimer, Initial))
                 expectNoMsg
             }
         }
@@ -49,7 +49,7 @@ class FSMTimingSpec
             seq must have length (5)
             within(250 millis) {
                 fsm ! Cancel
-                expectMsg(Transition(TestRepeatedTimer, Initial))
+                expectMsg(Transition(fsm, TestRepeatedTimer, Initial))
                 expectNoMsg
             }
         }
