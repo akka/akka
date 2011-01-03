@@ -67,10 +67,11 @@ object FSMActorSpec {
       }
     }
 
-    onTransition((oldState, newState) => Transition(oldState, newState) match {
-      case Transition(Locked, Open) => transitionLatch.open
-      case Transition(_, _) => ()
-    })
+    onTransition(transitionHandler)
+
+    def transitionHandler(from: LockState, to: LockState) = {
+      if (from == Locked && to == Open) transitionLatch.open
+    }
 
     onTermination {
       case StopEvent(Shutdown, Locked, _) =>
@@ -106,7 +107,7 @@ class FSMActorSpec extends JUnitSuite {
     val lock = Actor.actorOf(new Lock("33221", (1, TimeUnit.SECONDS))).start
 
     val transitionTester = Actor.actorOf(new Actor { def receive = {
-      case Transition(_, _) => transitionCallBackLatch.open
+      case Transition(_, _, _) => transitionCallBackLatch.open
       case Locked => initialStateLatch.open
     }}).start
 

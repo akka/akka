@@ -10,7 +10,7 @@ import java.util.concurrent.ScheduledFuture
 
 object FSM {
 
-  case class Transition[S](from: S, to: S)
+  case class Transition[S](fsmRef: ActorRef, from: S, to: S)
   case class SubscribeTransitionCallBack(actorRef: ActorRef)
   case class UnsubscribeTransitionCallBack(actorRef: ActorRef)
 
@@ -355,7 +355,7 @@ trait FSM[S, D] {
       if (currentState.stateName != nextState.stateName) {
         transitionEvent.apply(currentState.stateName, nextState.stateName)
         if (!transitionCallBackList.isEmpty) {
-          val transition = Transition(currentState.stateName, nextState.stateName)
+          val transition = Transition(self, currentState.stateName, nextState.stateName)
           transitionCallBackList.foreach(_ ! transition)
         }
       }
