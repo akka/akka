@@ -160,6 +160,17 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
       remote.actorsByUuid.get(actor1.uuid) must be (null)
     }
 
+    "shouldHandleOneWayReplyThroughPassiveRemoteClient" in {
+      val actor1 = actorOf[RemoteActorSpecActorUnidirectional]
+      remote.register("foo", actor1)
+      val latch = new CountDownLatch(1)
+      val actor2 = actorOf(new Actor { def receive = { case "Pong" => latch.countDown } }).start
+
+      val remoteActor = remote.actorFor("foo", host, port)
+      remoteActor.!("Ping")(Some(actor2))
+      latch.await(3,TimeUnit.SECONDS) must be (true)
+    }
+
     "should be able to remotely communicate between 2 server-managed actors" in {
       val localFoo = actorOf[Decrementer]
       val localBar = actorOf[Decrementer]

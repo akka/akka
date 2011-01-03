@@ -8,7 +8,7 @@ object Address {
 }
 
 class Address(val hostname: String, val port: Int) {
-  override def hashCode: Int = {
+  override val hashCode: Int = {
     var result = HashCode.SEED
     result = HashCode.hash(result, hostname)
     result = HashCode.hash(result, port)
