@@ -677,7 +677,7 @@ object TypedActor extends Logging {
    */
   def actorFor(proxy: AnyRef): Option[ActorRef] =
     Actor.registry find {
-      case a if classOf[TypedActor].isAssignableFrom(a.actor.getClass) && a.actor.asInstanceOf[TypedActor].proxy == proxy =>
+      case a if a.actor.isInstanceOf[TypedActor] && a.actor.asInstanceOf[TypedActor].proxy == proxy =>
       a
     }
 
