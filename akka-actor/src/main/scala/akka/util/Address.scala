@@ -3,12 +3,18 @@
  */
 package akka.util
 
+import java.net.InetSocketAddress
+
 object Address {
   def apply(hostname: String, port: Int) = new Address(hostname, port)
+  def apply(inetAddress: InetSocketAddress): Address = inetAddress match {
+    case null => null
+    case inet => new Address(inet.getHostName, inet.getPort)
+  }
 }
 
 class Address(val hostname: String, val port: Int) {
-  override def hashCode: Int = {
+  override val hashCode: Int = {
     var result = HashCode.SEED
     result = HashCode.hash(result, hostname)
     result = HashCode.hash(result, port)

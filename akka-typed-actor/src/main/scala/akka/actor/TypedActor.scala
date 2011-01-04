@@ -348,7 +348,7 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   /**
     * Returns the home address and port for this actor.
     */
-   def homeAddress: InetSocketAddress = actorRef.homeAddress
+  def homeAddress: InetSocketAddress = actorRef.homeAddress.getOrElse(null)//TODO: REVISIT: Sensible to return null?
 }
 
 object TypedActorConfiguration {
@@ -529,21 +529,29 @@ object TypedActor extends Logging {
    * @param factory factory method that constructs the typed actor
    * @paramm config configuration object fo the typed actor
    */
-  def newInstance[T](intfClass: Class[T], factory: => AnyRef, config: TypedActorConfiguration): T = {
-    val actorRef = actorOf(newTypedActor(factory))
-    newInstance(intfClass, actorRef, config)
+  def newInstance[T](intfClass: Class[T], factory: => AnyRef, config: TypedActorConfiguration): T =
+    newInstance(intfClass, createActorRef(newTypedActor(factory),config), config)
+
+  /**
+   * Creates an ActorRef, can be local only or client-managed-remote
+   */
+  private[akka] def createActorRef(typedActor: => TypedActor, config: TypedActorConfiguration): ActorRef = {
+    config match {
+      case null => actorOf(typedActor)
+      case c: TypedActorConfiguration if (c._host.isDefined) =>
+        Actor.remote.actorOf(typedActor, c._host.get.getHostName, c._host.get.getPort)
+      case _ => actorOf(typedActor)
+    }
   }
 
   /**
-   * Factory method for typed actor.
+   *  Factory method for typed actor.
    * @param intfClass interface the typed actor implements
    * @param targetClass implementation class of the typed actor
    * @paramm config configuration object fo the typed actor
    */
-  def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T = {
-    val actorRef = actorOf(newTypedActor(targetClass))
-    newInstance(intfClass, actorRef, config)
-  }
+  def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T =
+    newInstance(intfClass, createActorRef(newTypedActor(targetClass),config), config)
 
   private[akka] def newInstance[T](intfClass: Class[T], actorRef: ActorRef): T = {
     if (!actorRef.actorInstance.get.isInstanceOf[TypedActor]) throw new IllegalArgumentException("ActorRef is not a ref to a typed actor")
@@ -563,10 +571,11 @@ object TypedActor extends Logging {
     typedActor.initialize(proxy)
     if (config._messageDispatcher.isDefined) actorRef.dispatcher = config._messageDispatcher.get
     if (config._threadBasedDispatcher.isDefined) actorRef.dispatcher = Dispatchers.newThreadBasedDispatcher(actorRef)
-    if (config._host.isDefined) actorRef.makeRemote(config._host.get)
     if (config._id.isDefined) actorRef.id = config._id.get
+
     actorRef.timeout = config.timeout
-    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, actorRef.remoteAddress, actorRef.timeout))
+    //log.slf4j.debug("config._host for {} is {} but homeAddress is {} and on ref {}",Array[AnyRef](intfClass, config._host, typedActor.context.homeAddress,actorRef.homeAddress))
+    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, actorRef.homeAddress, actorRef.timeout))
     actorRef.start
     proxy.asInstanceOf[T]
   }
@@ -634,7 +643,7 @@ object TypedActor extends Logging {
     val jProxy = JProxy.newProxyInstance(intfClass.getClassLoader(), interfaces, handler)
     val awProxy = Proxy.newInstance(interfaces, Array(jProxy, jProxy), true, false)
 
-    AspectInitRegistry.register(awProxy, AspectInit(intfClass, null, actorRef, None, 5000L))
+    AspectInitRegistry.register(awProxy, AspectInit(intfClass, null, actorRef, actorRef.homeAddress, 5000L))
     awProxy.asInstanceOf[T]
   }
 
@@ -667,9 +676,10 @@ object TypedActor extends Logging {
    * Get the underlying typed actor for the given Typed Actor.
    */
   def actorFor(proxy: AnyRef): Option[ActorRef] =
-    ActorRegistry
-      .actorsFor(classOf[TypedActor])
-      .find(a => a.actor.asInstanceOf[TypedActor].proxy == proxy)
+    Actor.registry find {
+      case a if a.actor.isInstanceOf[TypedActor] && a.actor.asInstanceOf[TypedActor].proxy == proxy =>
+      a
+    }
 
   /**
    * Get the typed actor proxy for the given Typed Actor.
@@ -803,7 +813,7 @@ private[akka] sealed class ServerManagedTypedActorAspect extends ActorAspect {
 
   override def initialize(joinPoint: JoinPoint): Unit = {
     super.initialize(joinPoint)
-    remoteAddress = actorRef.remoteAddress
+    //remoteAddress = actorRef.remoteAddress //TODO: REVISIT: Fix Server managed Typed Actor
   }
 }
 
@@ -897,11 +907,12 @@ private[akka] abstract class ActorAspect {
 
     val (message: Array[AnyRef], isEscaped) = escapeArguments(methodRtti.getParameterValues)
 
-    val future = RemoteClientModule.send[AnyRef](
+    val future = Actor.remote.send[AnyRef](
       message, None, None, remoteAddress.get,
       timeout, isOneWay, actorRef,
       Some((interfaceClass.getName, methodRtti.getMethod.getName)),
-      ActorType.TypedActor)
+      ActorType.TypedActor,
+      None) //TODO: REVISIT: Use another classloader?
 
     if (isOneWay) null // for void methods
     else if (TypedActor.returnsFuture_?(methodRtti)) future.get

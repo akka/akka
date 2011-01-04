@@ -15,19 +15,8 @@ import java.net.InetSocketAddress
 
 import scala.reflect.BeanProperty
 import akka.util. {ReflectiveAccess, Logging, Duration}
-import akka.japi.Procedure
-
-/**
- * Extend this abstract class to create a remote actor.
- * <p/>
- * Equivalent to invoking the <code>makeRemote(..)</code> method in the body of the <code>Actor</code
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-abstract class RemoteActor(address: InetSocketAddress) extends Actor {
-  def this(hostname: String, port: Int) = this(new InetSocketAddress(hostname, port))
-  self.makeRemote(address)
-}
+import akka.remoteinterface.RemoteSupport
+import akka.japi. {Creator, Procedure}
 
 /**
  * Life-cycle messages for the Actors
@@ -92,7 +81,6 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor extends Logging {
-
   /**
    * Add shutdown cleanups
    */
@@ -115,8 +103,18 @@ object Actor extends Logging {
     hook
   }
 
-  val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
-  val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
+  val registry = new ActorRegistry
+
+  lazy val remote: RemoteSupport = {
+    ReflectiveAccess.
+    Remote.
+    defaultRemoteSupport.
+    map(_()).
+    getOrElse(throw new UnsupportedOperationException("You need to have akka-remote on classpath"))
+  }
+
+  private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
+  private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**
    * A Receive is a convenience type that defines actor message behavior currently modeled as
@@ -126,8 +124,10 @@ object Actor extends Logging {
 
   private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
 
-  /**
-   * Creates an ActorRef out of the Actor with type T.
+
+
+   /**
+   *  Creates an ActorRef out of the Actor with type T.
    * <pre>
    *   import Actor._
    *   val actor = actorOf[MyActor]
@@ -143,17 +143,17 @@ object Actor extends Logging {
   def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
-   * Creates an ActorRef out of the Actor with type T.
+   * Creates an ActorRef out of the Actor of the specified Class.
    * <pre>
    *   import Actor._
-   *   val actor = actorOf[MyActor]
+   *   val actor = actorOf(classOf[MyActor])
    *   actor.start
    *   actor ! message
    *   actor.stop
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf[MyActor].start
+   *   val actor = actorOf(classOf[MyActor]).start
    * </pre>
    */
   def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(() => {
@@ -164,7 +164,7 @@ object Actor extends Logging {
         "\nMake sure Actor is NOT defined inside a class/trait," +
         "\nif so put it outside the class/trait, f.e. in a companion object," +
         "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
-  })
+  }, None)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -184,7 +184,17 @@ object Actor extends Logging {
    *   val actor = actorOf(new MyActor).start
    * </pre>
    */
-  def actorOf(factory: => Actor): ActorRef = new LocalActorRef(() => factory)
+  def actorOf(factory: => Actor): ActorRef = new LocalActorRef(() => factory, None)
+
+  /**
+   * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
+   * that creates the Actor. Please note that this function can be invoked multiple
+   * times if for example the Actor is supervised and needs to be restarted.
+   * <p/>
+   * This function should <b>NOT</b> be used for remote actors.
+   * JAVA API
+   */
+  def actorOf(creator: Creator[Actor]): ActorRef = new LocalActorRef(() => creator.create, None)
 
   /**
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
@@ -194,7 +204,7 @@ object Actor extends Logging {
    * there is a method 'spawn[ActorType]' in the Actor trait already.
    * Example:
    * <pre>
-   * import Actor._
+   * import Actor.{spawn}
    *
    * spawn  {
    *   ... // do stuff
@@ -210,7 +220,6 @@ object Actor extends Logging {
       }
     }).start ! Spawn
   }
-
   /**
    * Implicitly converts the given Option[Any] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
    * to convert an Option[Any] to an Option[T].

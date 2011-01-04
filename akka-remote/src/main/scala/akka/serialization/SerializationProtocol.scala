@@ -5,7 +5,6 @@
 package akka.serialization
 
 import akka.dispatch.MessageInvocation
-import akka.remote.{RemoteServer, RemoteClient, MessageSerializer}
 import akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
 
 import ActorTypeProtocol._
@@ -16,6 +15,9 @@ import akka.actor._
 import scala.collection.immutable.Stack
 
 import com.google.protobuf.ByteString
+import akka.util.ReflectiveAccess
+import java.net.InetSocketAddress
+import akka.remote. {RemoteClientSettings, MessageSerializer}
 
 /**
  * Type class definition for Actor Serialization
@@ -88,6 +90,15 @@ object ActorSerialization {
   def toBinaryJ[T <: Actor](a: ActorRef, format: Format[T], srlMailBox: Boolean = true): Array[Byte] =
     toBinary(a, srlMailBox)(format)
 
+  private[akka] def toAddressProtocol(actorRef: ActorRef) = {
+    val address = actorRef.homeAddress.getOrElse(Actor.remote.address)
+    AddressProtocol.newBuilder
+        .setHostname(address.getHostName)
+        .setPort(address.getPort)
+        .build
+  }
+
+
   private[akka] def toSerializedActorRefProtocol[T <: Actor](
     actorRef: ActorRef, format: Format[T], serializeMailBox: Boolean = true): SerializedActorRefProtocol = {
     val lifeCycleProtocol: Option[LifeCycleProtocol] = {
@@ -98,16 +109,11 @@ object ActorSerialization {
       }
     }
 
-    val originalAddress = AddressProtocol.newBuilder
-        .setHostname(actorRef.homeAddress.getHostName)
-        .setPort(actorRef.homeAddress.getPort)
-        .build
-
     val builder = SerializedActorRefProtocol.newBuilder
       .setUuid(UuidProtocol.newBuilder.setHigh(actorRef.uuid.getTime).setLow(actorRef.uuid.getClockSeqAndNode).build)
       .setId(actorRef.id)
       .setActorClassname(actorRef.actorClass.getName)
-      .setOriginalAddress(originalAddress)
+      .setOriginalAddress(toAddressProtocol(actorRef))
       .setTimeout(actorRef.timeout)
 
 
@@ -134,7 +140,7 @@ object ActorSerialization {
             actorRef.getSender,
             None,
             ActorType.ScalaActor,
-            RemoteClient.SECURE_COOKIE).build)
+            RemoteClientSettings.SECURE_COOKIE).build)
 
       requestProtocols.foreach(rp => builder.addMessages(rp))
     }
@@ -191,14 +197,13 @@ object ActorSerialization {
     val ar = new LocalActorRef(
       uuidFrom(protocol.getUuid.getHigh, protocol.getUuid.getLow),
       protocol.getId,
-      protocol.getOriginalAddress.getHostname,
-      protocol.getOriginalAddress.getPort,
       if (protocol.hasTimeout) protocol.getTimeout else Actor.TIMEOUT,
       if (protocol.hasReceiveTimeout) Some(protocol.getReceiveTimeout) else None,
       lifeCycle,
       supervisor,
       hotswap,
-      factory)
+      factory,
+      None) //TODO: shouldn't originalAddress be optional?
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
     messages.foreach(message => ar ! MessageSerializer.deserialize(message.getMessage))
@@ -227,13 +232,16 @@ object RemoteActorSerialization {
    */
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
     Actor.log.slf4j.debug("Deserializing RemoteActorRefProtocol to RemoteActorRef:\n {}", protocol)
-    RemoteActorRef(
+    val ref = RemoteActorRef(
       protocol.getClassOrServiceName,
       protocol.getActorClassname,
       protocol.getHomeAddress.getHostname,
       protocol.getHomeAddress.getPort,
       protocol.getTimeout,
       loader)
+
+    Actor.log.slf4j.debug("Newly deserialized RemoteActorRef has uuid: {}", ref.uuid)
+    ref
   }
 
   /**
@@ -241,25 +249,22 @@ object RemoteActorSerialization {
    */
   def toRemoteActorRefProtocol(ar: ActorRef): RemoteActorRefProtocol = {
     import ar._
-    val home = homeAddress
-    val host = home.getHostName
-    val port = home.getPort
 
-    Actor.log.slf4j.debug("Register serialized Actor [{}] as remote @ [{}]",actorClassName, home)
-    RemoteServer.getOrCreateServer(homeAddress)
-    ActorRegistry.registerActorByUuid(homeAddress, uuid.toString, ar)
+    Actor.log.slf4j.debug("Register serialized Actor [{}] as remote @ [{}:{}]",actorClassName, ar.homeAddress)
+
+    Actor.remote.registerByUuid(ar)
 
     RemoteActorRefProtocol.newBuilder
-        .setClassOrServiceName(uuid.toString)
+        .setClassOrServiceName("uuid:"+uuid.toString)
         .setActorClassname(actorClassName)
-        .setHomeAddress(AddressProtocol.newBuilder.setHostname(host).setPort(port).build)
+        .setHomeAddress(ActorSerialization.toAddressProtocol(ar))
         .setTimeout(timeout)
         .build
   }
 
   def createRemoteMessageProtocolBuilder(
       actorRef: Option[ActorRef],
-      uuid: Either[Uuid, UuidProtocol],
+      replyUuid: Either[Uuid, UuidProtocol],
       actorId: String,
       actorClassName: String,
       timeout: Long,
@@ -270,7 +275,7 @@ object RemoteActorSerialization {
       actorType: ActorType,
       secureCookie: Option[String]): RemoteMessageProtocol.Builder = {
 
-    val uuidProtocol = uuid match {
+    val uuidProtocol = replyUuid match {
       case Left(uid)       => UuidProtocol.newBuilder.setHigh(uid.getTime).setLow(uid.getClockSeqAndNode).build
       case Right(protocol) => protocol
     }
@@ -308,8 +313,13 @@ object RemoteActorSerialization {
       case Right(exception) =>
         messageBuilder.setException(ExceptionProtocol.newBuilder
             .setClassname(exception.getClass.getName)
-            .setMessage(exception.getMessage)
+            .setMessage(empty(exception.getMessage))
             .build)
+    }
+
+    def empty(s: String): String = s match {
+      case null => ""
+      case s => s
     }
 
     secureCookie.foreach(messageBuilder.setCookie(_))
@@ -324,11 +334,9 @@ object RemoteActorSerialization {
       }
     }
 
-    senderOption.foreach { sender =>
-      RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid.toString, sender)
-      messageBuilder.setSender(toRemoteActorRefProtocol(sender))
+    if( senderOption.isDefined)
+      messageBuilder.setSender(toRemoteActorRefProtocol(senderOption.get))
 
-    }
     messageBuilder
   }
 }

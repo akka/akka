@@ -4,133 +4,95 @@
 
 package akka.actor.remote
 
-import org.scalatest.Spec
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
-
 import java.util.concurrent.TimeUnit
 
-import akka.remote.{RemoteServer, RemoteClient}
 import akka.actor._
 import RemoteTypedActorLog._
 
-object ServerInitiatedRemoteTypedActorSpec {
-  val HOSTNAME = "localhost"
-  val PORT = 9990
-  var server: RemoteServer = null
-}
+class ServerInitiatedRemoteTypedActorSpec extends AkkaRemoteTest {
 
-@RunWith(classOf[JUnitRunner])
-class ServerInitiatedRemoteTypedActorSpec extends
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterAll {
-  import ServerInitiatedRemoteTypedActorSpec._
-
-  private val unit = TimeUnit.MILLISECONDS
-
-
-  override def beforeAll = {
-    server = new RemoteServer()
-    server.start(HOSTNAME, PORT)
-
+  override def beforeEach = {
+    super.beforeEach
     val typedActor = TypedActor.newInstance(classOf[RemoteTypedActorOne], classOf[RemoteTypedActorOneImpl], 1000)
-    server.registerTypedActor("typed-actor-service", typedActor)
-
-    Thread.sleep(1000)
+    remote.registerTypedActor("typed-actor-service", typedActor)
   }
 
-  // make sure the servers shutdown cleanly after the test has finished
-  override def afterAll = {
-    try {
-      server.shutdown
-      RemoteClient.shutdownAll
-      Thread.sleep(1000)
-    } catch {
-      case e => ()
-    }
+  override def afterEach {
+    super.afterEach
+    clearMessageLogs
   }
 
-  describe("Server managed remote typed Actor ") {
+  def createRemoteActorRef = remote.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, host, port)
 
-    it("should receive one-way message") {
-      clearMessageLogs
-      val actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, HOSTNAME, PORT)
-      expect("oneway") {
-        actor.oneWay
-        oneWayLog.poll(5, TimeUnit.SECONDS)
-      }
+  "Server managed remote typed Actor " should {
+
+    "receive one-way message" in {
+      val actor = createRemoteActorRef
+      actor.oneWay
+      oneWayLog.poll(5, TimeUnit.SECONDS) must equal ("oneway")
     }
 
-    it("should respond to request-reply message") {
-      clearMessageLogs
-      val actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, HOSTNAME, PORT)
-      expect("pong") {
-        actor.requestReply("ping")
-      }
+    "should respond to request-reply message" in {
+      val actor = createRemoteActorRef
+      actor.requestReply("ping") must equal ("pong")
     }
 
-    it("should not recreate registered actors") {
-      val actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, HOSTNAME, PORT)
-      val numberOfActorsInRegistry = ActorRegistry.actors.length
-      expect("oneway") {
-        actor.oneWay
-        oneWayLog.poll(5, TimeUnit.SECONDS)
-      }
-      assert(numberOfActorsInRegistry === ActorRegistry.actors.length)
+    "should not recreate registered actors" in {
+      val actor = createRemoteActorRef
+      val numberOfActorsInRegistry = Actor.registry.actors.length
+      actor.oneWay
+      oneWayLog.poll(5, TimeUnit.SECONDS) must equal ("oneway")
+      numberOfActorsInRegistry must be (Actor.registry.actors.length)
     }
 
-    it("should support multiple variants to get the actor from client side") {
-      var actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, HOSTNAME, PORT)
-      expect("oneway") {
-        actor.oneWay
-        oneWayLog.poll(5, TimeUnit.SECONDS)
-      }
-      actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", HOSTNAME, PORT)
-      expect("oneway") {
-        actor.oneWay
-        oneWayLog.poll(5, TimeUnit.SECONDS)
-      }
-      actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, HOSTNAME, PORT, this.getClass().getClassLoader)
-      expect("oneway") {
-        actor.oneWay
-        oneWayLog.poll(5, TimeUnit.SECONDS)
-      }
+    "should support multiple variants to get the actor from client side" in {
+      var actor = createRemoteActorRef
+
+      actor.oneWay
+      oneWayLog.poll(5, TimeUnit.SECONDS) must equal ("oneway")
+
+      actor = remote.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", host, port)
+
+      actor.oneWay
+      oneWayLog.poll(5, TimeUnit.SECONDS) must equal ("oneway")
+
+      actor = remote.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, host, port, this.getClass().getClassLoader)
+
+      actor.oneWay
+      oneWayLog.poll(5, TimeUnit.SECONDS) must equal ("oneway")
     }
 
-    it("should register and unregister typed actors") {
+    "should register and unregister typed actors" in {
       val typedActor = TypedActor.newInstance(classOf[RemoteTypedActorOne], classOf[RemoteTypedActorOneImpl], 1000)
-      server.registerTypedActor("my-test-service", typedActor)
-      assert(server.typedActors.get("my-test-service") ne null, "typed actor registered")
-      server.unregisterTypedActor("my-test-service")
-      assert(server.typedActors.get("my-test-service") eq null, "typed actor unregistered")
+      remote.registerTypedActor("my-test-service", typedActor)
+      remote.typedActors.get("my-test-service") must not be (null)
+      remote.unregisterTypedActor("my-test-service")
+      remote.typedActors.get("my-test-service") must be (null)
     }
 
-    it("should register and unregister typed actors by uuid") {
+    "should register and unregister typed actors by uuid" in {
       val typedActor = TypedActor.newInstance(classOf[RemoteTypedActorOne], classOf[RemoteTypedActorOneImpl], 1000)
       val init = AspectInitRegistry.initFor(typedActor)
       val uuid = "uuid:" + init.actorRef.uuid
-      server.registerTypedActor(uuid, typedActor)
-      assert(server.typedActorsByUuid.get(init.actorRef.uuid.toString) ne null, "typed actor registered")
-      server.unregisterTypedActor(uuid)
-      assert(server.typedActorsByUuid.get(init.actorRef.uuid.toString) eq null, "typed actor unregistered")
+
+      remote.registerTypedActor(uuid, typedActor)
+      remote.typedActorsByUuid.get(init.actorRef.uuid.toString) must not be (null)
+
+      remote.unregisterTypedActor(uuid)
+      remote.typedActorsByUuid.get(init.actorRef.uuid.toString) must be (null)
     }
 
-    it("should find typed actors by uuid") {
+    "should find typed actors by uuid" in {
       val typedActor = TypedActor.newInstance(classOf[RemoteTypedActorOne], classOf[RemoteTypedActorOneImpl], 1000)
       val init = AspectInitRegistry.initFor(typedActor)
       val uuid = "uuid:" + init.actorRef.uuid
-      server.registerTypedActor(uuid, typedActor)
-      assert(server.typedActorsByUuid.get(init.actorRef.uuid.toString) ne null, "typed actor registered")
 
-      val actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], uuid, HOSTNAME, PORT)
-      expect("oneway") {
-        actor.oneWay
-        oneWayLog.poll(5, TimeUnit.SECONDS)
-      }
+      remote.registerTypedActor(uuid, typedActor)
+      remote.typedActorsByUuid.get(init.actorRef.uuid.toString) must not be (null)
 
+      val actor = remote.typedActorFor(classOf[RemoteTypedActorOne], uuid, host, port)
+      actor.oneWay
+      oneWayLog.poll(5, TimeUnit.SECONDS) must equal ("oneway")
     }
   }
 }

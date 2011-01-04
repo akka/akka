@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.junit.Before;
 
 import akka.transactor.Coordinated;
+import akka.actor.Actors;
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
@@ -28,7 +29,7 @@ public class UntypedCoordinatedIncrementTest {
         counters = new ArrayList<ActorRef>();
         for (int i = 1; i <= numCounters; i++) {
             final String name = "counter" + i;
-            ActorRef counter = UntypedActor.actorOf(new UntypedActorFactory() {
+            ActorRef counter = Actors.actorOf(new UntypedActorFactory() {
                 public UntypedActor create() {
                     return new UntypedCoordinatedCounter(name);
                 }
@@ -36,7 +37,7 @@ public class UntypedCoordinatedIncrementTest {
             counter.start();
             counters.add(counter);
         }
-        failer = UntypedActor.actorOf(UntypedFailer.class);
+        failer = Actors.actorOf(UntypedFailer.class);
         failer.start();
     }
 

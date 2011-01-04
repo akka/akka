@@ -3,28 +3,17 @@
  */
 package akka.actor.ticket
 
-import org.scalatest.Spec
-import org.scalatest.matchers.ShouldMatchers
-import akka.remote.{RemoteClient, RemoteServer}
 import akka.actor._
+import akka.actor.remote.AkkaRemoteTest
 
 
-class Ticket519Spec extends Spec with ShouldMatchers {
-
-  val HOSTNAME = "localhost"
-  val PORT = 6666
-
-  describe("A remote TypedActor") {
-    it("should handle remote future replies") {
-      import akka.remote._
-
-      val server = { val s = new RemoteServer; s.start(HOSTNAME,PORT); s}
-      val actor = TypedActor.newRemoteInstance(classOf[SamplePojo], classOf[SamplePojoImpl],7000,HOSTNAME,PORT)
+class Ticket519Spec extends AkkaRemoteTest {
+  "A remote TypedActor" should {
+    "should handle remote future replies" in {
+      val actor = TypedActor.newRemoteInstance(classOf[SamplePojo], classOf[SamplePojoImpl],7000,host,port)
       val r = actor.someFutureString
 
-      r.await.result.get should equal ("foo")
-      TypedActor.stop(actor)
-      server.shutdown
+      r.await.result.get must equal ("foo")
     }
   }
 }
