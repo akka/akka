@@ -7,52 +7,52 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
 class FSMTimingSpec
-        extends WordSpec
-        with MustMatchers
-        with TestKit {
+    extends WordSpec
+    with MustMatchers
+    with TestKit {
 
-    import FSMTimingSpec._
-    import FSM._
+  import FSMTimingSpec._
+  import FSM._
 
-    val fsm = Actor.actorOf(new StateMachine(testActor)).start
-    fsm ! SubscribeTransitionCallBack(testActor)
-    expectMsg(100 millis, CurrentState(fsm, Initial))
+  val fsm = Actor.actorOf(new StateMachine(testActor)).start
+  fsm ! SubscribeTransitionCallBack(testActor)
+  expectMsg(100 millis, CurrentState(fsm, Initial))
 
-    ignoreMsg {
-        case Transition(_, Initial, _) => true
+  ignoreMsg {
+      case Transition(_, Initial, _) => true
+  }
+
+  "A Finite State Machine" must {
+
+    "receive StateTimeout" in {
+      within (50 millis, 150 millis) {
+        fsm ! TestStateTimeout
+        expectMsg(Transition(fsm, TestStateTimeout, Initial))
+        expectNoMsg
+      }
     }
 
-    "A Finite State Machine" must {
+    "receive single-shot timer" in {
+      within (50 millis, 150 millis) {
+        fsm ! TestSingleTimer
+        expectMsg(Tick)
+        expectMsg(Transition(fsm, TestSingleTimer, Initial))
+        expectNoMsg
+      }
+    }
 
-        "receive StateTimeout" in {
-            within (50 millis, 150 millis) {
-                fsm ! TestStateTimeout
-                expectMsg(Transition(fsm, TestStateTimeout, Initial))
-                expectNoMsg
-            }
-        }
-
-        "receive single-shot timer" in {
-            within (50 millis, 150 millis) {
-                fsm ! TestSingleTimer
-                expectMsg(Tick)
-                expectMsg(Transition(fsm, TestSingleTimer, Initial))
-                expectNoMsg
-            }
-        }
-
-        "receive and cancel a repeated timer" in {
-            fsm ! TestRepeatedTimer
-            val seq = receiveWhile(550 millis) {
-                case Tick => Tick
-            }
-            seq must have length (5)
-            within(250 millis) {
-                fsm ! Cancel
-                expectMsg(Transition(fsm, TestRepeatedTimer, Initial))
-                expectNoMsg
-            }
-        }
+    "receive and cancel a repeated timer" in {
+      fsm ! TestRepeatedTimer
+      val seq = receiveWhile(550 millis) {
+        case Tick => Tick
+      }
+      seq must have length (5)
+      within(250 millis) {
+        fsm ! Cancel
+        expectMsg(Transition(fsm, TestRepeatedTimer, Initial))
+        expectNoMsg
+      }
+    }
 
     "notify unhandled messages" in {
       fsm ! TestUnhandled
