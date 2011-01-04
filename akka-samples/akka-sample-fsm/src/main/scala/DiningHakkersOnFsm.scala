@@ -33,6 +33,9 @@ case class TakenBy(hakker: Option[ActorRef])
 class Chopstick(name: String) extends Actor with FSM[ChopstickState, TakenBy] {
   self.id = name
 
+  // A chopstick begins its existence as available and taken by no one
+  startWith(Available, TakenBy(None))
+
   // When a chopstick is available, it can be taken by a some hakker
   when(Available) {
     case Event(Take, _) =>
@@ -49,8 +52,8 @@ class Chopstick(name: String) extends Actor with FSM[ChopstickState, TakenBy] {
       goto(Available) using TakenBy(None)
   }
 
-  // A chopstick begins its existence as available and taken by no one
-  startWith(Available, TakenBy(None))
+  // Initialze the chopstick
+  initialize
 }
 
 /**
@@ -80,6 +83,9 @@ case class TakenChopsticks(left: Option[ActorRef], right: Option[ActorRef])
  */
 class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor with FSM[FSMHakkerState, TakenChopsticks] {
   self.id = name
+
+  //All hakkers start waiting
+  startWith(Waiting, TakenChopsticks(None, None))
 
   when(Waiting) {
     case Event(Think, _) =>
@@ -147,12 +153,12 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
       startThinking(5 seconds)
   }
 
+  // Initialize the hakker
+  initialize
+
   private def startThinking(duration: Duration): State = {
     goto(Thinking) using TakenChopsticks(None, None) forMax duration
   }
-
-  //All hakkers start waiting
-  startWith(Waiting, TakenChopsticks(None, None))
 }
 
 /*
