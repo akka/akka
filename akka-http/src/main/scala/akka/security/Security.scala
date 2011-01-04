@@ -110,7 +110,7 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
    * Currently we always take the first, since there usually should be at most one authentication actor, but a round-robin
    * strategy could be implemented in the future
    */
-  def authenticator: ActorRef = ActorRegistry.actorsFor(authenticatorFQN).head
+  def authenticator: ActorRef = Actor.registry.actorsFor(authenticatorFQN).head
 
   def mkFilter(roles: Option[List[String]]): java.util.List[ResourceFilter] =
     java.util.Collections.singletonList(new Filter(authenticator, roles))
