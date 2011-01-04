@@ -12,8 +12,7 @@ import java.util.{Set => JSet}
 
 import annotation.tailrec
 import akka.util.ReflectiveAccess._
-import akka.util.{ReadWriteGuard, Address, ListenerManagement}
-import java.net.InetSocketAddress
+import akka.util. {ReflectiveAccess, ReadWriteGuard, ListenerManagement}
 
 /**
  * Base trait for ActorRegistry events, allows listen to when an actor is added and removed from the ActorRegistry.
@@ -36,10 +35,11 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object ActorRegistry extends ListenerManagement {
+
+private[actor] final class ActorRegistry private[actor] () extends ListenerManagement {
+
   private val actorsByUUID    = new ConcurrentHashMap[Uuid, ActorRef]
   private val actorsById      = new Index[String,ActorRef]
-  private val remoteActorSets = Map[Address, RemoteActorSet]()
   private val guard           = new ReadWriteGuard
 
   /**
@@ -74,7 +74,7 @@ object ActorRegistry extends ListenerManagement {
   }
 
   /**
-   * Finds all actors that are subtypes of the class passed in as the Manifest argument and supproting passed message.
+   * Finds all actors that are subtypes of the class passed in as the Manifest argument and supporting passed message.
    */
   def actorsFor[T <: Actor](message: Any)(implicit manifest: Manifest[T] ): Array[ActorRef] =
     filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass) && a.isDefinedAt(message))
@@ -99,7 +99,7 @@ object ActorRegistry extends ListenerManagement {
     actorsFor[T](manifest.erasure.asInstanceOf[Class[T]])
 
   /**
-   * Finds any actor that matches T.
+   * Finds any actor that matches T. Very expensive, traverses ALL alive actors.
    */
   def actorFor[T <: Actor](implicit manifest: Manifest[T]): Option[ActorRef] =
     find({ case a: ActorRef if manifest.erasure.isAssignableFrom(a.actor.getClass) => a })
@@ -223,16 +223,15 @@ object ActorRegistry extends ListenerManagement {
     TypedActorModule.typedActorObjectInstance.get.proxyFor(actorRef)
   }
 
-
   /**
-   * Registers an actor in the ActorRegistry.
+   *  Registers an actor in the ActorRegistry.
    */
-  private[akka] def register(actor: ActorRef) = {
-    // ID
-    actorsById.put(actor.id, actor)
+  private[akka] def register(actor: ActorRef) {
+    val id = actor.id
+    val uuid = actor.uuid
 
-    // UUID
-    actorsByUUID.put(actor.uuid, actor)
+    actorsById.put(id, actor)
+    actorsByUUID.put(uuid, actor)
 
     // notify listeners
     notifyListeners(ActorRegistered(actor))
@@ -241,10 +240,12 @@ object ActorRegistry extends ListenerManagement {
   /**
    * Unregisters an actor in the ActorRegistry.
    */
-  private[akka] def unregister(actor: ActorRef) = {
-    actorsByUUID remove actor.uuid
+  private[akka] def unregister(actor: ActorRef) {
+    val id = actor.id
+    val uuid = actor.uuid
 
-    actorsById.remove(actor.id,actor)
+    actorsByUUID remove uuid
+    actorsById.remove(id,actor)
 
     // notify listeners
     notifyListeners(ActorUnregistered(actor))
@@ -264,40 +265,12 @@ object ActorRegistry extends ListenerManagement {
         else actorRef.stop
       }
     } else foreach(_.stop)
+    if (Remote.isEnabled) {
+      Actor.remote.clear //TODO: REVISIT: Should this be here?
+    }
     actorsByUUID.clear
     actorsById.clear
     log.slf4j.info("All actors have been shut down and unregistered from ActorRegistry")
-  }
-
-  /**
-   * Get the remote actors for the given server address. For internal use only.
-   */
-  private[akka] def actorsFor(remoteServerAddress: Address): RemoteActorSet = guard.withWriteGuard {
-    remoteActorSets.getOrElseUpdate(remoteServerAddress, new RemoteActorSet)
-  }
-
-  private[akka] def registerActorByUuid(address: InetSocketAddress, uuid: String, actor: ActorRef) {
-    actorsByUuid(Address(address.getHostName, address.getPort)).putIfAbsent(uuid, actor)
-  }
-
-  private[akka] def registerTypedActorByUuid(address: InetSocketAddress, uuid: String, typedActor: AnyRef) {
-    typedActorsByUuid(Address(address.getHostName, address.getPort)).putIfAbsent(uuid, typedActor)
-  }
-
-  private[akka] def actors(address: Address) = actorsFor(address).actors
-  private[akka] def actorsByUuid(address: Address) = actorsFor(address).actorsByUuid
-  private[akka] def actorsFactories(address: Address) = actorsFor(address).actorsFactories
-  private[akka] def typedActors(address: Address) = actorsFor(address).typedActors
-  private[akka] def typedActorsByUuid(address: Address) = actorsFor(address).typedActorsByUuid
-  private[akka] def typedActorsFactories(address: Address) = actorsFor(address).typedActorsFactories
-
-  private[akka] class RemoteActorSet {
-    private[ActorRegistry] val actors = new ConcurrentHashMap[String, ActorRef]
-    private[ActorRegistry] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
-    private[ActorRegistry] val actorsFactories = new ConcurrentHashMap[String, () => ActorRef]
-    private[ActorRegistry] val typedActors = new ConcurrentHashMap[String, AnyRef]
-    private[ActorRegistry] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
-    private[ActorRegistry] val typedActorsFactories = new ConcurrentHashMap[String, () => AnyRef]
   }
 }
 

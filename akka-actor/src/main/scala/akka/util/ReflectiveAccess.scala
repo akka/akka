@@ -4,12 +4,13 @@
 
 package akka.util
 
-import akka.actor.{ActorRef, IllegalActorStateException, ActorType, Uuid}
 import akka.dispatch.{Future, CompletableFuture, MessageInvocation}
 import akka.config.{Config, ModuleNotAvailableException}
 import akka.AkkaException
 
 import java.net.InetSocketAddress
+import akka.remoteinterface.RemoteSupport
+import akka.actor._
 
 /**
  * Helper class for reflective access to different modules in order to allow optional loading of modules.
@@ -20,10 +21,10 @@ object ReflectiveAccess extends Logging {
 
   val loader = getClass.getClassLoader
 
-  lazy val isRemotingEnabled   = RemoteClientModule.isEnabled
+  def isRemotingEnabled   = Remote.isEnabled
   lazy val isTypedActorEnabled = TypedActorModule.isEnabled
 
-  def ensureRemotingEnabled   = RemoteClientModule.ensureEnabled
+  def ensureRemotingEnabled   = Remote.ensureEnabled
   def ensureTypedActorEnabled = TypedActorModule.ensureEnabled
 
   /**
@@ -31,112 +32,26 @@ object ReflectiveAccess extends Logging {
    *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  object RemoteClientModule {
+  object Remote {
+    val TRANSPORT = Config.config.getString("akka.remote.layer","akka.remote.netty.NettyRemoteSupport")
 
-    type RemoteClient = {
-      def send[T](
-        message: Any,
-        senderOption: Option[ActorRef],
-        senderFuture: Option[CompletableFuture[_]],
-        remoteAddress: InetSocketAddress,
-        timeout: Long,
-        isOneWay: Boolean,
-        actorRef: ActorRef,
-        typedActorInfo: Option[Tuple2[String, String]],
-        actorType: ActorType): Option[CompletableFuture[T]]
-      def registerSupervisorForActor(actorRef: ActorRef)
-    }
+    private[akka] val configDefaultAddress =
+      new InetSocketAddress(Config.config.getString("akka.remote.server.hostname", "localhost"),
+                            Config.config.getInt("akka.remote.server.port", 2552))
 
-    type RemoteClientObject = {
-      def register(hostname: String, port: Int, uuid: Uuid): Unit
-      def unregister(hostname: String, port: Int, uuid: Uuid): Unit
-      def clientFor(address: InetSocketAddress): RemoteClient
-      def clientFor(hostname: String, port: Int, loader: Option[ClassLoader]): RemoteClient
-    }
 
-    lazy val isEnabled = remoteClientObjectInstance.isDefined
+    lazy val isEnabled = remoteSupportClass.isDefined
 
     def ensureEnabled = if (!isEnabled) throw new ModuleNotAvailableException(
       "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
 
-    val remoteClientObjectInstance: Option[RemoteClientObject] =
-      getObjectFor("akka.remote.RemoteClient$")
+    val remoteSupportClass: Option[Class[_ <: RemoteSupport]] = getClassFor(TRANSPORT)
 
-    def register(address: InetSocketAddress, uuid: Uuid) = {
-      ensureEnabled
-      remoteClientObjectInstance.get.register(address.getHostName, address.getPort, uuid)
-    }
-
-    def unregister(address: InetSocketAddress, uuid: Uuid) = {
-      ensureEnabled
-      remoteClientObjectInstance.get.unregister(address.getHostName, address.getPort, uuid)
-    }
-
-    def registerSupervisorForActor(remoteAddress: InetSocketAddress, actorRef: ActorRef) = {
-      ensureEnabled
-      val remoteClient = remoteClientObjectInstance.get.clientFor(remoteAddress)
-      remoteClient.registerSupervisorForActor(actorRef)
-    }
-
-    def clientFor(hostname: String, port: Int, loader: Option[ClassLoader]): RemoteClient = {
-      ensureEnabled
-      remoteClientObjectInstance.get.clientFor(hostname, port, loader)
-    }
-
-    def send[T](
-      message: Any,
-      senderOption: Option[ActorRef],
-      senderFuture: Option[CompletableFuture[_]],
-      remoteAddress: InetSocketAddress,
-      timeout: Long,
-      isOneWay: Boolean,
-      actorRef: ActorRef,
-      typedActorInfo: Option[Tuple2[String, String]],
-      actorType: ActorType,
-      loader: Option[ClassLoader] = None): Option[CompletableFuture[T]] = {
-      ensureEnabled
-      clientFor(remoteAddress.getHostName, remoteAddress.getPort, loader).send[T](
-        message, senderOption, senderFuture, remoteAddress, timeout, isOneWay, actorRef, typedActorInfo, actorType)
-    }
-  }
-
-  /**
-   * Reflective access to the RemoteServer module.
-   *
-   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
-   */
-  object RemoteServerModule {
-    val HOSTNAME = Config.config.getString("akka.remote.server.hostname", "localhost")
-    val PORT     = Config.config.getInt("akka.remote.server.port", 2552)
-
-    type RemoteServerObject = {
-      def registerActor(address: InetSocketAddress, actor: ActorRef): Unit
-      def registerTypedActor(address: InetSocketAddress, name: String, typedActor: AnyRef): Unit
-    }
-
-    type RemoteNodeObject = {
-      def unregister(actorRef: ActorRef): Unit
-    }
-
-    val remoteServerObjectInstance: Option[RemoteServerObject] =
-      getObjectFor("akka.remote.RemoteServer$")
-
-    val remoteNodeObjectInstance: Option[RemoteNodeObject] =
-      getObjectFor("akka.remote.RemoteNode$")
-
-    def registerActor(address: InetSocketAddress, actorRef: ActorRef) = {
-      RemoteClientModule.ensureEnabled
-      remoteServerObjectInstance.get.registerActor(address, actorRef)
-    }
-
-    def registerTypedActor(address: InetSocketAddress, implementationClassName: String, proxy: AnyRef) = {
-      RemoteClientModule.ensureEnabled
-      remoteServerObjectInstance.get.registerTypedActor(address, implementationClassName, proxy)
-    }
-
-    def unregister(actorRef: ActorRef) = {
-      RemoteClientModule.ensureEnabled
-      remoteNodeObjectInstance.get.unregister(actorRef)
+    protected[akka] val defaultRemoteSupport: Option[() => RemoteSupport] = remoteSupportClass map {
+      remoteClass => () => createInstance[RemoteSupport](remoteClass,Array[Class[_]](),Array[AnyRef]()).
+                           getOrElse(throw new ModuleNotAvailableException("Can't instantiate "+
+                                                        remoteClass.getName+
+                                                        ", make sure that akka-remote.jar is on the classpath"))
     }
   }
 

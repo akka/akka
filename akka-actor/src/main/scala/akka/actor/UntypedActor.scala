@@ -43,14 +43,14 @@ import scala.reflect.BeanProperty
  *
  *        } else if (msg.equals("ForwardMessage")) {
  *          // Retreive an actor from the ActorRegistry by ID and get an ActorRef back
- *          ActorRef actorRef = ActorRegistry.actorsFor("some-actor-id").head();
+ *          ActorRef actorRef = Actor.registry.actorsFor("some-actor-id").head();
  *
  *        } else throw new IllegalArgumentException("Unknown message: " + message);
  *      } else throw new IllegalArgumentException("Unknown message: " + message);
  *    }
  *
  *    public static void main(String[] args) {
- *      ActorRef actor = UntypedActor.actorOf(SampleUntypedActor.class);
+ *      ActorRef actor = Actors.actorOf(SampleUntypedActor.class);
  *      actor.start();
  *      actor.sendOneWay("SendToSelf");
  *      actor.stop();
@@ -86,76 +86,8 @@ abstract class UntypedActor extends Actor {
 }
 
 /**
- * Factory closure for an UntypedActor, to be used with 'UntypedActor.actorOf(factory)'.
+ * Factory closure for an UntypedActor, to be used with 'Actors.actorOf(factory)'.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait UntypedActorFactory extends Creator[Actor]
-
-/**
- * Extend this abstract class to create a remote UntypedActor.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-abstract class RemoteUntypedActor(address: InetSocketAddress) extends UntypedActor {
-  def this(hostname: String, port: Int) = this(new InetSocketAddress(hostname, port))
-  self.makeRemote(address)
-}
-
-/**
- * Factory object for creating and managing 'UntypedActor's. Meant to be used from Java.
- * <p/>
- * Example on how to create an actor:
- * <pre>
- *   ActorRef actor = UntypedActor.actorOf(MyUntypedActor.class);
- *   actor.start();
- *   actor.sendOneWay(message, context)
- *   actor.stop();
- * </pre>
- * You can create and start the actor in one statement like this:
- * <pre>
- *   ActorRef actor = UntypedActor.actorOf(MyUntypedActor.class).start();
- * </pre>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object UntypedActor {
-
-  /**
-   * Creates an ActorRef out of the Actor type represented by the class provided.
-   *  Example in Java:
-   * <pre>
-   *   ActorRef actor = UntypedActor.actorOf(MyUntypedActor.class);
-   *   actor.start();
-   *   actor.sendOneWay(message, context);
-   *   actor.stop();
-   * </pre>
-   * You can create and start the actor in one statement like this:
-   * <pre>
-   *   val actor = actorOf(classOf[MyActor]).start
-   * </pre>
-   */
-  def actorOf[T <: Actor](clazz: Class[T]): ActorRef = Actor.actorOf(clazz)
-
- /**
-   * NOTE: Use this convenience method with care, do NOT make it possible to get a reference to the
-   * UntypedActor instance directly, but only through its 'ActorRef' wrapper reference.
-   * <p/>
-   * Creates an ActorRef out of the Actor. Allows you to pass in the instance for the UntypedActor.
-   * Only use this method when you need to pass in constructor arguments into the 'UntypedActor'.
-   * <p/>
-   * You use it by implementing the UntypedActorFactory interface.
-   * Example in Java:
-   * <pre>
-   *   ActorRef actor = UntypedActor.actorOf(new UntypedActorFactory() {
-   *     public UntypedActor create() {
-   *       return new MyUntypedActor("service:name", 5);
-   *     }
-   *   });
-   *   actor.start();
-   *   actor.sendOneWay(message, context);
-   *   actor.stop();
-   * </pre>
-   */
-  def actorOf(factory: UntypedActorFactory): ActorRef = Actor.actorOf(factory.create)
-}

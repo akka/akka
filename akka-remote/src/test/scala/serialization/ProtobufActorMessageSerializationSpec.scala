@@ -1,13 +1,9 @@
 package akka.actor.serialization
 
-import java.util.concurrent.TimeUnit
-import org.scalatest.junit.JUnitSuite
-import org.junit.{Test, Before, After}
-
-import akka.remote.{RemoteServer, RemoteClient}
 import akka.actor.{ProtobufProtocol, Actor}
 import ProtobufProtocol.ProtobufPOJO
 import Actor._
+import akka.actor.remote.AkkaRemoteTest
 
 /* ---------------------------
 Uses this Protobuf message:
@@ -20,11 +16,6 @@ message ProtobufPOJO {
 --------------------------- */
 
 object ProtobufActorMessageSerializationSpec {
-  val unit = TimeUnit.MILLISECONDS
-  val HOSTNAME = "localhost"
-  val PORT = 9990
-  var server: RemoteServer = null
-
   class RemoteActorSpecActorBidirectional extends Actor {
     def receive = {
       case pojo: ProtobufPOJO =>
@@ -36,35 +27,16 @@ object ProtobufActorMessageSerializationSpec {
   }
 }
 
-class ProtobufActorMessageSerializationSpec extends JUnitSuite {
+class ProtobufActorMessageSerializationSpec extends AkkaRemoteTest {
   import ProtobufActorMessageSerializationSpec._
 
-  @Before
-  def init() {
-    server = new RemoteServer
-    server.start(HOSTNAME, PORT)
-    server.register("RemoteActorSpecActorBidirectional", actorOf[RemoteActorSpecActorBidirectional])
-    Thread.sleep(1000)
-  }
-
-  // make sure the servers postStop cleanly after the test has finished
-  @After
-  def finished() {
-    server.shutdown
-    RemoteClient.shutdownAll
-    Thread.sleep(1000)
-  }
-
-  @Test
-  def shouldSendReplyAsync  {
-    val actor = RemoteClient.actorFor("RemoteActorSpecActorBidirectional", 5000L, HOSTNAME, PORT)
-    val result = actor !! ProtobufPOJO.newBuilder
-        .setId(11)
-        .setStatus(true)
-        .setName("Coltrane")
-        .build
-    assert(12L === result.get.asInstanceOf[Long])
-    actor.stop
+  "A ProtobufMessage" should {
+    "SendReplyAsync" in {
+      remote.register("RemoteActorSpecActorBidirectional",actorOf[RemoteActorSpecActorBidirectional])
+      val actor = remote.actorFor("RemoteActorSpecActorBidirectional", 5000L, host, port)
+      val result = actor !! ProtobufPOJO.newBuilder.setId(11).setStatus(true).setName("Coltrane").build
+      result.as[Long] must equal (Some(12))
+    }
   }
 }
 

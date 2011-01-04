@@ -68,7 +68,7 @@ class TypedActorSpec extends
   }
 
   override def afterEach() {
-    ActorRegistry.shutdownAll
+    Actor.registry.shutdownAll
   }
 
   describe("TypedActor") {
@@ -115,67 +115,67 @@ class TypedActorSpec extends
     it("should support finding a typed actor by uuid ") {
       val typedActorRef = TypedActor.actorFor(simplePojo).get
       val uuid = typedActorRef.uuid
-      assert(ActorRegistry.typedActorFor(newUuid()) === None)
-      assert(ActorRegistry.typedActorFor(uuid).isDefined)
-      assert(ActorRegistry.typedActorFor(uuid).get === simplePojo)
+      assert(Actor.registry.typedActorFor(newUuid()) === None)
+      assert(Actor.registry.typedActorFor(uuid).isDefined)
+      assert(Actor.registry.typedActorFor(uuid).get === simplePojo)
     }
 
     it("should support finding typed actors by id ") {
-      val typedActors = ActorRegistry.typedActorsFor("my-custom-id")
+      val typedActors = Actor.registry.typedActorsFor("my-custom-id")
       assert(typedActors.length === 1)
       assert(typedActors.contains(pojo))
 
       // creating untyped actor with same custom id
       val actorRef = Actor.actorOf[MyActor].start
-      val typedActors2 = ActorRegistry.typedActorsFor("my-custom-id")
+      val typedActors2 = Actor.registry.typedActorsFor("my-custom-id")
       assert(typedActors2.length === 1)
       assert(typedActors2.contains(pojo))
       actorRef.stop
     }
 
     it("should support to filter typed actors") {
-      val actors = ActorRegistry.filterTypedActors(ta => ta.isInstanceOf[MyTypedActor])
+      val actors = Actor.registry.filterTypedActors(ta => ta.isInstanceOf[MyTypedActor])
       assert(actors.length === 1)
       assert(actors.contains(pojo))
     }
 
     it("should support to find typed actors by class") {
-      val actors = ActorRegistry.typedActorsFor(classOf[MyTypedActorImpl])
+      val actors = Actor.registry.typedActorsFor(classOf[MyTypedActorImpl])
       assert(actors.length === 1)
       assert(actors.contains(pojo))
-      assert(ActorRegistry.typedActorsFor(classOf[MyActor]).isEmpty)
+      assert(Actor.registry.typedActorsFor(classOf[MyActor]).isEmpty)
     }
 
     it("should support to get all typed actors") {
-      val actors = ActorRegistry.typedActors
+      val actors = Actor.registry.typedActors
       assert(actors.length === 2)
       assert(actors.contains(pojo))
       assert(actors.contains(simplePojo))
     }
 
     it("should support to find typed actors by manifest") {
-      val actors = ActorRegistry.typedActorsFor[MyTypedActorImpl]
+      val actors = Actor.registry.typedActorsFor[MyTypedActorImpl]
       assert(actors.length === 1)
       assert(actors.contains(pojo))
-      assert(ActorRegistry.typedActorsFor[MyActor].isEmpty)
+      assert(Actor.registry.typedActorsFor[MyActor].isEmpty)
     }
 
     it("should support foreach for typed actors") {
       val actorRef = Actor.actorOf[MyActor].start
-      assert(ActorRegistry.actors.size === 3)
-      assert(ActorRegistry.typedActors.size === 2)
-      ActorRegistry.foreachTypedActor(TypedActor.stop(_))
-      assert(ActorRegistry.actors.size === 1)
-      assert(ActorRegistry.typedActors.size === 0)
+      assert(Actor.registry.actors.size === 3)
+      assert(Actor.registry.typedActors.size === 2)
+      Actor.registry.foreachTypedActor(TypedActor.stop(_))
+      assert(Actor.registry.actors.size === 1)
+      assert(Actor.registry.typedActors.size === 0)
     }
 
     it("should shutdown all typed and untyped actors") {
       val actorRef = Actor.actorOf[MyActor].start
-      assert(ActorRegistry.actors.size === 3)
-      assert(ActorRegistry.typedActors.size === 2)
-      ActorRegistry.shutdownAll()
-      assert(ActorRegistry.actors.size === 0)
-      assert(ActorRegistry.typedActors.size === 0)
+      assert(Actor.registry.actors.size === 3)
+      assert(Actor.registry.typedActors.size === 2)
+      Actor.registry.shutdownAll()
+      assert(Actor.registry.actors.size === 0)
+      assert(Actor.registry.typedActors.size === 0)
     }
   }
 }

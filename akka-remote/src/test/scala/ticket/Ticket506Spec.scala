@@ -1,61 +1,43 @@
 package ticket
 
-import org.scalatest.Spec
-import org.scalatest.matchers.ShouldMatchers
-
-import akka.remote.{RemoteClient, RemoteNode, RemoteServer}
 import akka.actor.{Actor, ActorRef}
 import akka.serialization.RemoteActorSerialization
 import akka.actor.Actor.actorOf
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-
-object State {
-  val latch = new CountDownLatch(1)
-}
+import akka.actor.remote.AkkaRemoteTest
 
 case class RecvActorRef(bytes:Array[Byte])
 
-class ActorRefService extends Actor {
+class ActorRefService(latch: CountDownLatch) extends Actor {
   import self._
 
   def receive:Receive = {
     case RecvActorRef(bytes) =>
       val ref = RemoteActorSerialization.fromBinaryToRemoteActorRef(bytes)
       ref ! "hello"
-    case "hello" =>
-      State.latch.countDown
+    case "hello" => latch.countDown
   }
 }
 
-class Ticket506Spec extends Spec with ShouldMatchers  {
-  val hostname:String = "localhost"
-  val port:Int = 9440
+class Ticket506Spec extends AkkaRemoteTest {
+  "a RemoteActorRef serialized" should {
+      "should be remotely usable" in {
 
-  describe("a RemoteActorRef serialized") {
-      it("should be remotely usable") {
-      val s1,s2 = new RemoteServer
-      s1.start(hostname, port)
-      s2.start(hostname, port + 1)
+      val latch = new CountDownLatch(1)
+      val a1 = actorOf( new ActorRefService(null))
+      val a2 = actorOf( new ActorRefService(latch))
 
-      val a1,a2 = actorOf[ActorRefService]
-      a1.homeAddress = (hostname, port)
-      a2.homeAddress = (hostname, port+1)
-
-      s1.register("service", a1)
-      s2.register("service", a2)
+      remote.register("service1", a1)
+      remote.register("service2", a2)
 
       // connect to the first server/service
-      val c1 = RemoteClient.actorFor("service", hostname, port)
+      val c1 = remote.actorFor("service1", host, port)
 
       val bytes = RemoteActorSerialization.toRemoteActorRefProtocol(a2).toByteArray
       c1 ! RecvActorRef(bytes)
 
-      State.latch.await(1000, TimeUnit.MILLISECONDS) should be(true)
-
-      RemoteClient.shutdownAll
-      s1.shutdown
-      s2.shutdown
+      latch.await(1, unit) must be(true)
     }
   }
 }
