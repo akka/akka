@@ -43,7 +43,7 @@ class UntypedActorSerializationSpec extends
 
   describe("Serializable untyped actor") {
     it("should be able to serialize and de-serialize a stateful untyped actor") {
-      val actor1 = UntypedActor.actorOf[MyUntypedActor](classOf[MyUntypedActor]).start
+      val actor1 = Actors.actorOf(classOf[MyUntypedActor]).start
       actor1.sendRequestReply("hello") should equal("world 1")
       actor1.sendRequestReply("debasish") should equal("hello debasish 2")
 

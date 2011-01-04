@@ -2,7 +2,7 @@ package akka.transactor.example;
 
 import akka.transactor.Coordinated;
 import akka.transactor.Atomically;
-import akka.actor.ActorRef;
+import akka.actor.Actors;
 import akka.actor.UntypedActor;
 import akka.stm.Ref;
 

@@ -1,6 +1,6 @@
 package akka.actor.remote
 
-import akka.actor. {ActorRegistry, Actor}
+import akka.actor.{Actor}
 
 object OptimizedLocalScopedSpec {
   class TestActor extends Actor {
@@ -14,14 +14,14 @@ class OptimizedLocalScopedSpec extends AkkaRemoteTest {
 
   "An enabled optimized local scoped remote" should {
     "Fetch local actor ref when scope is local" in {
-      val fooActor = ActorRegistry.actorOf[TestActor].start
+      val fooActor = Actor.actorOf[TestActor].start
       remote.register("foo", fooActor)
 
       remote.actorFor("foo", host, port) must be (fooActor)
     }
 
     "Create local actor when client-managed is hosted locally" in {
-      val localClientManaged = ActorRegistry.remote.actorOf[TestActor](host, port)
+      val localClientManaged = Actor.remote.actorOf[TestActor](host, port)
       localClientManaged.homeAddress must be (None)
     }
 

@@ -7,7 +7,7 @@ package sample.remote
 import akka.actor.Actor._
 import akka.util.Logging
 import akka.actor. {ActorRegistry, Actor}
-import ActorRegistry.remote
+import Actor.remote
 
 class RemoteHelloWorldActor extends Actor {
   def receive = {

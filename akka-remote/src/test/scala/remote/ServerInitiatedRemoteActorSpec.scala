@@ -96,10 +96,10 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
       implicit val sender = replyHandler(latch, "Pong")
       remote.register(actorOf[RemoteActorSpecActorUnidirectional])
       val actor = remote.actorFor("akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional", host, port)
-      val numberOfActorsInRegistry = ActorRegistry.actors.length
+      val numberOfActorsInRegistry = Actor.registry.actors.length
       actor ! "Ping"
       latch.await(1, TimeUnit.SECONDS) must be (true)
-      numberOfActorsInRegistry must equal (ActorRegistry.actors.length)
+      numberOfActorsInRegistry must equal (Actor.registry.actors.length)
     }
 
     "UseServiceNameAsIdForRemoteActorRef" in {
@@ -194,7 +194,7 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
           latch.countDown
       }
 
-      val decrementers = ActorRegistry.actorsFor[Decrementer]
+      val decrementers = Actor.registry.actorsFor[Decrementer]
       decrementers must have size(2) //No new are allowed to have been created
       decrementers.find( _ eq localFoo) must equal (Some(localFoo))
       decrementers.find( _ eq localBar) must equal (Some(localBar))

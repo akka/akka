@@ -12,10 +12,7 @@ import java.util.{Set => JSet}
 
 import annotation.tailrec
 import akka.util.ReflectiveAccess._
-import java.net.InetSocketAddress
-import akka.util. {ReflectiveAccess, ReadWriteGuard, Address, ListenerManagement}
-import akka.dispatch. {MessageDispatcher, Dispatchers}
-import akka.remoteinterface. {RemoteSupport, RemoteServerModule}
+import akka.util. {ReflectiveAccess, ReadWriteGuard, ListenerManagement}
 
 /**
  * Base trait for ActorRegistry events, allows listen to when an actor is added and removed from the ActorRegistry.
@@ -39,9 +36,7 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 
-object ActorRegistry extends ListenerManagement {
-
-  protected def remoteBootstrap = ReflectiveAccess.Remote.defaultRemoteSupport
+private[actor] final class ActorRegistry private[actor] () extends ListenerManagement {
 
   private val actorsByUUID    = new ConcurrentHashMap[Uuid, ActorRef]
   private val actorsById      = new Index[String,ActorRef]
@@ -229,103 +224,6 @@ object ActorRegistry extends ListenerManagement {
   }
 
   /**
-   * Handy access to the RemoteServer module
-   */
-  lazy val remote: RemoteSupport = remoteBootstrap.map(_()).getOrElse(throw new UnsupportedOperationException("You need to have akka-remote on classpath"))
-
-  /**
-   * Current home address of this ActorRegistry
-   */
-  def homeAddress(): InetSocketAddress = if (isRemotingEnabled) remote.address else Remote.configDefaultAddress
-
-
-   /**
-   *  Creates an ActorRef out of the Actor with type T.
-   * <pre>
-   *   import Actor._
-   *   val actor = actorOf[MyActor]
-   *   actor.start
-   *   actor ! message
-   *   actor.stop
-   * </pre>
-   * You can create and start the actor in one statement like this:
-   * <pre>
-   *   val actor = actorOf[MyActor].start
-   * </pre>
-   */
-  def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
-
-  /**
-   * Creates an ActorRef out of the Actor of the specified Class.
-   * <pre>
-   *   import Actor._
-   *   val actor = actorOf(classOf[MyActor])
-   *   actor.start
-   *   actor ! message
-   *   actor.stop
-   * </pre>
-   * You can create and start the actor in one statement like this:
-   * <pre>
-   *   val actor = actorOf(classOf[MyActor]).start
-   * </pre>
-   */
-  def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(() => {
-    import ReflectiveAccess.{ createInstance, noParams, noArgs }
-    createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
-      throw new ActorInitializationException(
-        "Could not instantiate Actor" +
-        "\nMake sure Actor is NOT defined inside a class/trait," +
-        "\nif so put it outside the class/trait, f.e. in a companion object," +
-        "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
-  }, None)
-
-  /**
-   * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
-   * that creates the Actor. Please note that this function can be invoked multiple
-   * times if for example the Actor is supervised and needs to be restarted.
-   * <p/>
-   * This function should <b>NOT</b> be used for remote actors.
-   * <pre>
-   *   import Actor._
-   *   val actor = actorOf(new MyActor)
-   *   actor.start
-   *   actor ! message
-   *   actor.stop
-   * </pre>
-   * You can create and start the actor in one statement like this:
-   * <pre>
-   *   val actor = actorOf(new MyActor).start
-   * </pre>
-   */
-  def actorOf(factory: => Actor): ActorRef = new LocalActorRef(() => factory, None)
-
-  /**
-   * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
-   * the block has been executed.
-   * <p/>
-   * NOTE: If used from within an Actor then has to be qualified with 'ActorRegistry.spawn' since
-   * there is a method 'spawn[ActorType]' in the Actor trait already.
-   * Example:
-   * <pre>
-   * import ActorRegistry.{spawn}
-   *
-   * spawn  {
-   *   ... // do stuff
-   * }
-   * </pre>
-   */
-  def spawn(body: => Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit = {
-    case object Spawn
-    actorOf(new Actor() {
-      self.dispatcher = dispatcher
-      def receive = {
-        case Spawn => try { body } finally { self.stop }
-      }
-    }).start ! Spawn
-  }
-
-
-  /**
    *  Registers an actor in the ActorRegistry.
    */
   private[akka] def register(actor: ActorRef) {
@@ -368,7 +266,7 @@ object ActorRegistry extends ListenerManagement {
       }
     } else foreach(_.stop)
     if (Remote.isEnabled) {
-      remote.clear //TODO: REVISIT: Should this be here?
+      Actor.remote.clear //TODO: REVISIT: Should this be here?
     }
     actorsByUUID.clear
     actorsById.clear

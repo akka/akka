@@ -112,11 +112,11 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
           }
         }
 
-        it("should postStop non-supervised, annotated typed actor on ActorRegistry.shutdownAll") {
+        it("should postStop non-supervised, annotated typed actor on Actor.registry.shutdownAll") {
           val obj = TypedActor.newInstance(classOf[SamplePojoAnnotated])
           assert(AspectInitRegistry.initFor(obj) ne null)
           assert("hello akka" === obj.greet("akka"))
-          ActorRegistry.shutdownAll
+          Actor.registry.shutdownAll
           assert(AspectInitRegistry.initFor(obj) eq null)
           assert(!obj.pre)
           assert(!obj.post)

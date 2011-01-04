@@ -142,7 +142,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
             actorRef.lifeCycle = lifeCycle
             supervisor.link(actorRef)
             if (registerAsRemoteService)
-              ActorRegistry.remote.register(actorRef)
+              Actor.remote.register(actorRef)
           case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)
             supervisor.link(childSupervisor.supervisor)

@@ -36,14 +36,14 @@ class HelloWorldActor extends Actor {
 object ServerInitiatedRemoteActorServer {
 
   def main(args: Array[String]) = {
-    ActorRegistry.remote.start("localhost", 2552)
-    ActorRegistry.remote.register("hello-service", actorOf[HelloWorldActor])
+    Actor.remote.start("localhost", 2552)
+    Actor.remote.register("hello-service", actorOf[HelloWorldActor])
   }
 }
 
 object ServerInitiatedRemoteActorClient extends Logging {
   def main(args: Array[String]) = {
-    val actor = ActorRegistry.remote.actorFor("hello-service", "localhost", 2552)
+    val actor = Actor.remote.actorFor("hello-service", "localhost", 2552)
     val result = actor !! "Hello"
     log.slf4j.info("Result from Remote Actor: {}", result)
   }

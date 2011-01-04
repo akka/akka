@@ -348,7 +348,7 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   /**
     * Returns the home address and port for this actor.
     */
-  def homeAddress: InetSocketAddress = actorRef.homeAddress.getOrElse(ActorRegistry.homeAddress)
+  def homeAddress: InetSocketAddress = actorRef.homeAddress.getOrElse(null)//TODO: REVISIT: Sensible to return null?
 }
 
 object TypedActorConfiguration {
@@ -539,7 +539,7 @@ object TypedActor extends Logging {
     config match {
       case null => actorOf(typedActor)
       case c: TypedActorConfiguration if (c._host.isDefined) =>
-        ActorRegistry.remote.actorOf(typedActor, c._host.get.getHostName, c._host.get.getPort)
+        Actor.remote.actorOf(typedActor, c._host.get.getHostName, c._host.get.getPort)
       case _ => actorOf(typedActor)
     }
   }
@@ -676,9 +676,10 @@ object TypedActor extends Logging {
    * Get the underlying typed actor for the given Typed Actor.
    */
   def actorFor(proxy: AnyRef): Option[ActorRef] =
-    ActorRegistry
-      .actorsFor(classOf[TypedActor])
-      .find(a => a.actor.asInstanceOf[TypedActor].proxy == proxy)
+    Actor.registry find {
+      case a if classOf[TypedActor].isAssignableFrom(a.actor.getClass) && a.actor.asInstanceOf[TypedActor].proxy == proxy =>
+      a
+    }
 
   /**
    * Get the typed actor proxy for the given Typed Actor.
@@ -906,7 +907,7 @@ private[akka] abstract class ActorAspect {
 
     val (message: Array[AnyRef], isEscaped) = escapeArguments(methodRtti.getParameterValues)
 
-    val future = ActorRegistry.remote.send[AnyRef](
+    val future = Actor.remote.send[AnyRef](
       message, None, None, remoteAddress.get,
       timeout, isOneWay, actorRef,
       Some((interfaceClass.getName, methodRtti.getMethod.getName)),
