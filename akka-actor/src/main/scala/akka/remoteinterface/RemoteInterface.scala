@@ -142,7 +142,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    * </pre>
    */
   def actorOf(factory: => Actor, host: String, port: Int): ActorRef =
-    ActorRegistry.remote.clientManagedActorOf(() => factory, host, port)
+    Actor.remote.clientManagedActorOf(() => factory, host, port)
 
   /**
    * Creates a Client-managed ActorRef out of the Actor of the specified Class.
@@ -214,7 +214,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
 }
 
 /**
- * This is the interface for the RemoteServer functionality, it's used in ActorRegistry.remote
+ * This is the interface for the RemoteServer functionality, it's used in Actor.remote
  */
 trait RemoteServerModule extends RemoteModule {
   protected val guard = new ReentrantGuard

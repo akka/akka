@@ -91,7 +91,7 @@ object ActorSerialization {
     toBinary(a, srlMailBox)(format)
 
   private[akka] def toAddressProtocol(actorRef: ActorRef) = {
-    val address = actorRef.homeAddress.getOrElse(ActorRegistry.remote.address)
+    val address = actorRef.homeAddress.getOrElse(Actor.remote.address)
     AddressProtocol.newBuilder
         .setHostname(address.getHostName)
         .setPort(address.getPort)
@@ -252,7 +252,7 @@ object RemoteActorSerialization {
 
     Actor.log.slf4j.debug("Register serialized Actor [{}] as remote @ [{}:{}]",actorClassName, ar.homeAddress)
 
-    ActorRegistry.remote.registerByUuid(ar)
+    Actor.remote.registerByUuid(ar)
 
     RemoteActorRefProtocol.newBuilder
         .setClassOrServiceName("uuid:"+uuid.toString)

@@ -644,7 +644,7 @@ class LocalActorRef private[akka] (
         initializeActorInstance
 
       if (isClientManaged_?)
-        ActorRegistry.remote.registerClientManagedActor(homeAddress.get.getHostName,homeAddress.get.getPort, uuid)
+        Actor.remote.registerClientManagedActor(homeAddress.get.getHostName,homeAddress.get.getPort, uuid)
 
       checkReceiveTimeout //Schedule the initial Receive timeout
     }
@@ -661,11 +661,11 @@ class LocalActorRef private[akka] (
       dispatcher.detach(this)
       _status = ActorRefInternals.SHUTDOWN
       actor.postStop
-      ActorRegistry.unregister(this)
+      Actor.registry.unregister(this)
       if (isRemotingEnabled) {
         if (isClientManaged_?)
-          ActorRegistry.remote.registerClientManagedActor(homeAddress.get.getHostName,homeAddress.get.getPort, uuid)
-        ActorRegistry.remote.unregister(this)
+          Actor.remote.registerClientManagedActor(homeAddress.get.getHostName,homeAddress.get.getPort, uuid)
+        Actor.remote.unregister(this)
       }
       setActorSelfFields(actorInstance.get,null)
     } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
@@ -737,7 +737,7 @@ class LocalActorRef private[akka] (
    */
   def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long = Actor.TIMEOUT): ActorRef = guard.withGuard {
     ensureRemotingEnabled
-    val ref = ActorRegistry.remote.actorOf(clazz, hostname, port)
+    val ref = Actor.remote.actorOf(clazz, hostname, port)
     ref.timeout = timeout
     ref.start
   }
@@ -762,7 +762,7 @@ class LocalActorRef private[akka] (
   def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long = Actor.TIMEOUT): ActorRef =
     guard.withGuard {
       ensureRemotingEnabled
-      val actor = ActorRegistry.remote.actorOf(clazz, hostname, port)
+      val actor = Actor.remote.actorOf(clazz, hostname, port)
       actor.timeout = timeout
       link(actor)
       actor.start
@@ -798,7 +798,7 @@ class LocalActorRef private[akka] (
 
   protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
     if (isClientManaged_?) {
-      ActorRegistry.remote.send[Any](
+      Actor.remote.send[Any](
         message, senderOption, None, homeAddress.get, timeout, true, this, None, ActorType.ScalaActor, None)
     } else
       dispatcher dispatchMessage new MessageInvocation(this, message, senderOption, None)
@@ -809,7 +809,7 @@ class LocalActorRef private[akka] (
     senderOption: Option[ActorRef],
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
       if (isClientManaged_?) {
-      val future = ActorRegistry.remote.send[T](
+      val future = Actor.remote.send[T](
         message, senderOption, senderFuture, homeAddress.get, timeout, false, this, None, ActorType.ScalaActor, None)
       if (future.isDefined) future.get
       else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
@@ -978,7 +978,7 @@ class LocalActorRef private[akka] (
     ensureRemotingEnabled
     if (_supervisor.isDefined) {
       if (homeAddress.isDefined)
-        ActorRegistry.remote.registerSupervisorForActor(this)
+        Actor.remote.registerSupervisorForActor(this)
       Some(_supervisor.get.uuid)
     } else None
   }
@@ -1085,7 +1085,7 @@ class LocalActorRef private[akka] (
   private def initializeActorInstance = {
     actor.preStart // run actor preStart
     Actor.log.slf4j.trace("[{}] has started", toString)
-    ActorRegistry.register(this)
+    Actor.registry.register(this)
   }
 }
 
@@ -1127,14 +1127,14 @@ private[akka] case class RemoteActorRef private[akka] (
   start
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
-    ActorRegistry.remote.send[Any](message, senderOption, None, homeAddress.get, timeout, true, this, None, actorType, loader)
+    Actor.remote.send[Any](message, senderOption, None, homeAddress.get, timeout, true, this, None, actorType, loader)
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
     message: Any,
     timeout: Long,
     senderOption: Option[ActorRef],
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-    val future = ActorRegistry.remote.send[T](message, senderOption, senderFuture, homeAddress.get, timeout, false, this, None, actorType, loader)
+    val future = Actor.remote.send[T](message, senderOption, senderFuture, homeAddress.get, timeout, false, this, None, actorType, loader)
     if (future.isDefined) future.get
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
@@ -1142,7 +1142,7 @@ private[akka] case class RemoteActorRef private[akka] (
   def start: ActorRef = synchronized {
     _status = ActorRefInternals.RUNNING
     //if (clientManaged)
-    //  ActorRegistry.remote.registerClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
+    //  Actor.remote.registerClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
     this
   }
 
@@ -1151,7 +1151,7 @@ private[akka] case class RemoteActorRef private[akka] (
       _status = ActorRefInternals.SHUTDOWN
       postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
      // if (clientManaged)
-     //   ActorRegistry.remote.unregisterClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
+     //   Actor.remote.unregisterClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
     }
   }
 

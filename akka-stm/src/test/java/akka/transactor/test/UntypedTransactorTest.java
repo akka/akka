@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.junit.Before;
 
 import akka.actor.ActorRef;
+import akka.actor.Actors;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.dispatch.Future;
@@ -27,7 +28,7 @@ public class UntypedTransactorTest {
         counters = new ArrayList<ActorRef>();
         for (int i = 1; i <= numCounters; i++) {
             final String name = "counter" + i;
-            ActorRef counter = UntypedActor.actorOf(new UntypedActorFactory() {
+            ActorRef counter = Actors.actorOf(new UntypedActorFactory() {
                 public UntypedActor create() {
                     return new UntypedCounter(name);
                 }
@@ -35,7 +36,7 @@ public class UntypedTransactorTest {
             counter.start();
             counters.add(counter);
         }
-        failer = UntypedActor.actorOf(UntypedFailer.class);
+        failer = Actors.actorOf(UntypedFailer.class);
         failer.start();
     }
 

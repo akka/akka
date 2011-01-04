@@ -25,7 +25,7 @@ class AkkaRemoteTest extends
   BeforeAndAfterEach {
   import AkkaRemoteTest._
 
-  val remote = ActorRegistry.remote
+  val remote = Actor.remote
   val unit = TimeUnit.SECONDS
 
   val host = "localhost"
@@ -53,7 +53,7 @@ class AkkaRemoteTest extends
 
   override def afterEach() {
     remote.shutdown
-    ActorRegistry.shutdownAll
+    Actor.registry.shutdownAll
     super.afterEach
   }
 

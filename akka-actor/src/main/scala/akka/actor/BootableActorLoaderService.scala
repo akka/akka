@@ -62,6 +62,6 @@ trait BootableActorLoaderService extends Bootable with Logging {
 
   abstract override def onUnload = {
     super.onUnload
-    ActorRegistry.shutdownAll
+    Actor.registry.shutdownAll
   }
 }
