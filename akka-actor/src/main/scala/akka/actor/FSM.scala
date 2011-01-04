@@ -366,7 +366,7 @@ trait FSM[S, D] {
 
   private def applyState(nextState: State) = {
     currentState = nextState
-    val timeout = currentState.timeout orElse stateTimeouts(currentState.stateName)
+    val timeout = if (currentState.timeout.isDefined) currentState.timeout else stateTimeouts(currentState.stateName)
     if (timeout.isDefined) {
       val t = timeout.get
       if (t.length >= 0) {
