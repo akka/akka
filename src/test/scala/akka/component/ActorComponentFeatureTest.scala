@@ -16,7 +16,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
   import ActorComponentFeatureTest._
 
   override protected def beforeAll = {
-    ActorRegistry.shutdownAll
+    Actor.registry.shutdownAll
     CamelContextManager.init
     CamelContextManager.mandatoryContext.addRoutes(new TestRoute)
     CamelContextManager.start
@@ -25,7 +25,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
   override protected def afterAll = CamelContextManager.stop
 
   override protected def afterEach = {
-    ActorRegistry.shutdownAll
+    Actor.registry.shutdownAll
     mockEndpoint.reset
   }
 

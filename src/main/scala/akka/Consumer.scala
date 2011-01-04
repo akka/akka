@@ -82,14 +82,6 @@ trait UntypedConsumer extends Consumer { self: UntypedActor =>
 abstract class UntypedConsumerActor extends UntypedActor with UntypedConsumer
 
 /**
- * Subclass this abstract class to create an MDB-style remote untyped consumer
- * actor. This class is meant to be used from Java.
- */
-abstract class RemoteUntypedConsumerActor(address: InetSocketAddress) extends RemoteUntypedActor(address) with UntypedConsumer {
-  def this(host: String, port: Int) = this(new InetSocketAddress(host, port))
-}
-
-/**
  * A callback handler for route definitions to consumer actors.
  *
  * @author Martin Krasser
@@ -139,7 +131,7 @@ private[camel] object Consumer {
    */
   def forConsumer[T](actorRef: ActorRef)(f: Consumer => T): Option[T] = {
     if (!actorRef.actor.isInstanceOf[Consumer]) None
-    else if (actorRef.remoteAddress.isDefined) None
+    else if (actorRef.homeAddress.isDefined) None
     else Some(f(actorRef.actor.asInstanceOf[Consumer]))
   }
 }

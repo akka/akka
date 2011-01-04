@@ -12,7 +12,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
   import ProducerFeatureTest._
 
   override protected def beforeAll = {
-    ActorRegistry.shutdownAll
+    Actor.registry.shutdownAll
     CamelContextManager.init
     CamelContextManager.mandatoryContext.addRoutes(new TestRoute)
     CamelContextManager.start
@@ -20,7 +20,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
   override protected def afterAll = {
     CamelContextManager.stop
-    ActorRegistry.shutdownAll
+    Actor.registry.shutdownAll
   }
 
   override protected def afterEach = {

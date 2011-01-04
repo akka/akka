@@ -31,7 +31,7 @@ class PublishRequestorTest extends JUnitSuite {
 
   @After def tearDown = {
     AspectInitRegistry.removeListener(requestor);
-    ActorRegistry.shutdownAll
+    Actor.registry.shutdownAll
   }
 
   @Test def shouldReceiveOneConsumerMethodRegisteredEvent = {

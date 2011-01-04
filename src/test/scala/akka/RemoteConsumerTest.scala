@@ -6,7 +6,6 @@ import org.scalatest.{GivenWhenThen, BeforeAndAfterAll, FeatureSpec}
 
 import akka.actor._
 import akka.actor.Actor._
-import akka.remote.{RemoteClient, RemoteServer}
 
 /**
  * @author Martin Krasser
@@ -15,26 +14,23 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
   import CamelServiceManager._
   import RemoteConsumerTest._
 
-  var server: RemoteServer = _
-
   override protected def beforeAll = {
-    ActorRegistry.shutdownAll
+    registry.shutdownAll
 
     startCamelService
 
-    server = new RemoteServer()
-    server.start(host, port)
+    remote.shutdown
+    remote.start(host,port)
 
     Thread.sleep(1000)
   }
 
   override protected def afterAll = {
-    server.shutdown
+    remote.shutdown
 
     stopCamelService
 
-    RemoteClient.shutdownAll
-    ActorRegistry.shutdownAll
+    registry.shutdownAll
 
     Thread.sleep(1000)
   }
@@ -42,7 +38,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
   feature("Publish consumer on remote node") {
     scenario("access published remote consumer") {
       given("a client-initiated remote consumer")
-      val consumer = actorOf[RemoteConsumer].start
+      val consumer = remote.actorOf[RemoteConsumer](host, port).start
 
       when("remote consumer publication is triggered")
       assert(mandatoryService.awaitEndpointActivation(1) {
@@ -73,7 +69,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
   feature("Publish untyped consumer on remote node") {
     scenario("access published remote untyped consumer") {
       given("a client-initiated remote untyped consumer")
-      val consumer = UntypedActor.actorOf(classOf[SampleRemoteUntypedConsumer]).start
+      val consumer = remote.actorOf(classOf[SampleRemoteUntypedConsumer], host, port).start
 
       when("remote untyped consumer publication is triggered")
       assert(mandatoryService.awaitEndpointActivation(1) {
@@ -90,7 +86,7 @@ object RemoteConsumerTest {
   val host = "localhost"
   val port = 7774
 
-  class RemoteConsumer extends RemoteActor(host, port) with Consumer {
+  class RemoteConsumer extends Actor with Consumer {
     def endpointUri = "direct:remote-consumer"
 
     protected def receive = {

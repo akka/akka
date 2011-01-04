@@ -3,7 +3,7 @@ package akka.camel
 import org.scalatest.{BeforeAndAfterAll, WordSpec}
 import org.scalatest.matchers.MustMatchers
 
-import akka.actor.ActorRegistry
+import akka.actor.Actor
 
 /**
  * @author Martin Krasser
@@ -12,7 +12,7 @@ class CamelServiceManagerTest extends WordSpec with BeforeAndAfterAll with MustM
 
   override def afterAll = {
     CamelServiceManager.stopCamelService
-    ActorRegistry.shutdownAll
+    Actor.registry.shutdownAll
   }
 
   "A CamelServiceManager" when {

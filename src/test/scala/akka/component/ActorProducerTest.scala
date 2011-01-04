@@ -11,14 +11,13 @@ import org.scalatest.junit.JUnitSuite
 import org.scalatest.BeforeAndAfterAll
 
 import akka.actor.Actor._
-import akka.actor.ActorRegistry
 import akka.camel.{Failure, Message}
 import akka.camel.support._
 
 class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   import ActorProducerTest._
 
-  @After def tearDown = ActorRegistry.shutdownAll
+  @After def tearDown = registry.shutdownAll
 
   @Test def shouldSendMessageToActorWithSyncProcessor = {
     val actor = actorOf[Tester1].start

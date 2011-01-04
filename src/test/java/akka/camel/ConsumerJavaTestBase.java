@@ -1,7 +1,7 @@
 package akka.camel;
 
-import akka.actor.ActorRegistry;
 import akka.actor.TypedActor;
+import static akka.actor.Actors.*;
 import akka.actor.UntypedActor;
 import akka.japi.SideEffect;
 
@@ -29,14 +29,14 @@ public class ConsumerJavaTestBase {
     @AfterClass
     public static void tearDownAfterClass() {
         stopCamelService();
-        ActorRegistry.shutdownAll();
+        registry().shutdownAll();
     }
 
     @Test
     public void shouldHandleExceptionThrownByActorAndGenerateCustomResponse() {
         getMandatoryService().awaitEndpointActivation(1, new SideEffect() {
             public void apply() {
-                UntypedActor.actorOf(SampleErrorHandlingConsumer.class).start();
+                actorOf(SampleErrorHandlingConsumer.class).start();
             }
         });
         String result = getMandatoryTemplate().requestBody("direct:error-handler-test-java", "hello", String.class);

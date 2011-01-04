@@ -5,7 +5,7 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.{DefaultCamelContext, SimpleRegistry}
 import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec}
 
-import akka.actor.{ActorRegistry, TypedActor}
+import akka.actor.{Actor, TypedActor}
 import akka.camel._
 
 /**
@@ -33,7 +33,7 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
 
   override protected def afterAll = {
     CamelContextManager.stop
-    ActorRegistry.shutdownAll
+    Actor.registry.shutdownAll
   }
 
   feature("Communicate with an internally-registered typed actor using typed-actor-internal endpoint URIs") {

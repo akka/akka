@@ -21,7 +21,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
   var service: CamelService = _
 
   override protected def beforeAll = {
-    ActorRegistry.shutdownAll
+    registry.shutdownAll
     // create new CamelService instance
     service = CamelServiceFactory.createCamelService
     // Register publish requestor as listener
@@ -38,7 +38,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
 
   override protected def afterAll = {
     service.stop
-    ActorRegistry.shutdownAll
+    registry.shutdownAll
   }
 
   "A responding consumer" when {
@@ -133,7 +133,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
   }
 
   "A responding, untyped consumer" when {
-    val consumer = UntypedActor.actorOf(classOf[SampleUntypedConsumer])
+    val consumer = Actor.actorOf(classOf[SampleUntypedConsumer])
     "started" must {
       "support an in-out message exchange via its endpoint" in {
         service.awaitEndpointActivation(1) {

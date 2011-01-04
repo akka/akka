@@ -2,7 +2,7 @@ package akka.camel
 
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
-import akka.actor.{ActorRef, Actor, UntypedActor}
+import akka.actor.{ActorRef, Actor}
 
 class ConsumerRegisteredTest extends JUnitSuite {
   import ConsumerRegisteredTest._
@@ -25,19 +25,19 @@ class ConsumerRegisteredTest extends JUnitSuite {
   }
 
   @Test def shouldCreateSomeNonBlockingPublishRequestFromUntypedConsumer = {
-    val uc = UntypedActor.actorOf(classOf[SampleUntypedConsumer])
+    val uc = Actor.actorOf(classOf[SampleUntypedConsumer])
     val event = ConsumerActorRegistered.forConsumer(uc)
     assert(event === Some(ConsumerActorRegistered(uc, consumerOf(uc))))
   }
 
   @Test def shouldCreateSomeBlockingPublishRequestFromUntypedConsumer = {
-    val uc = UntypedActor.actorOf(classOf[SampleUntypedConsumerBlocking])
+    val uc = Actor.actorOf(classOf[SampleUntypedConsumerBlocking])
     val event = ConsumerActorRegistered.forConsumer(uc)
     assert(event === Some(ConsumerActorRegistered(uc, consumerOf(uc))))
   }
 
   @Test def shouldCreateNoneFromUntypedConsumer = {
-    val a = UntypedActor.actorOf(classOf[SampleUntypedActor])
+    val a = Actor.actorOf(classOf[SampleUntypedActor])
     val event = ConsumerActorRegistered.forConsumer(a)
     assert(event === None)
   }

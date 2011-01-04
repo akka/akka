@@ -183,12 +183,12 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
     case null         => uuid
   }
 
-  private def targetById(id: String) = ActorRegistry.actorsFor(id) match {
+  private def targetById(id: String) = Actor.registry.actorsFor(id) match {
     case actors if actors.length == 0 => None
     case actors                       => Some(actors(0))
   }
 
-  private def targetByUuid(uuid: Uuid) = ActorRegistry.actorFor(uuid)
+  private def targetByUuid(uuid: Uuid) = Actor.registry.actorFor(uuid)
 }
 
 /**
@@ -201,7 +201,7 @@ private[camel] object ActorProducer {
 
 /**
  * Thrown to indicate that an actor referenced by an endpoint URI cannot be
- * found in the ActorRegistry.
+ * found in the Actor.registry.
  *
  * @author Martin Krasser
  */
@@ -282,11 +282,12 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   def startLink(actorRef: ActorRef): Unit = unsupported
   def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = unsupported
   def spawn(clazz: Class[_ <: Actor]): ActorRef = unsupported
-  def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef = unsupported
+  def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef = unsupported
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef = unsupported
-  def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef = unsupported
+  def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef = unsupported
   def shutdownLinkedActors: Unit = unsupported
   def supervisor: Option[ActorRef] = unsupported
+  def homeAddress: Option[InetSocketAddress] = None
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](message: Any, timeout: Long, senderOption: Option[ActorRef], senderFuture: Option[CompletableFuture[T]]) = unsupported
   protected[akka] def mailbox: AnyRef = unsupported
   protected[akka] def mailbox_=(msg: AnyRef):AnyRef = unsupported

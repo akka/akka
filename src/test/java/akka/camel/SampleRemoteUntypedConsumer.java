@@ -1,20 +1,11 @@
 package akka.camel;
 
-import akka.camel.RemoteUntypedConsumerActor;
+import akka.camel.UntypedConsumerActor;
 
 /**
  * @author Martin Krasser
  */
-public class SampleRemoteUntypedConsumer extends RemoteUntypedConsumerActor {
-
-    public SampleRemoteUntypedConsumer() {
-        this("localhost", 7774);
-    }
-
-    public SampleRemoteUntypedConsumer(String host, int port) {
-        super(host, port);
-    }
-
+public class SampleRemoteUntypedConsumer extends UntypedConsumerActor {
     public String getEndpointUri() {
         return "direct:remote-untyped-consumer";
     }

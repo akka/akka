@@ -174,17 +174,17 @@ trait CamelService extends Bootable with Logging {
     (consumerPublisher !! SetExpectedUnregistrationCount(count)).as[CountDownLatch].get
 
   private[camel] def publishRequestorRegistered: Boolean = {
-    ActorRegistry.hasListener(publishRequestor) ||
+    registry.hasListener(publishRequestor) ||
     AspectInitRegistry.hasListener(publishRequestor)
   }
 
   private[camel] def registerPublishRequestor: Unit = {
-    ActorRegistry.addListener(publishRequestor)
+    registry.addListener(publishRequestor)
     AspectInitRegistry.addListener(publishRequestor)
   }
 
   private[camel] def unregisterPublishRequestor: Unit = {
-    ActorRegistry.removeListener(publishRequestor)
+    registry.removeListener(publishRequestor)
     AspectInitRegistry.removeListener(publishRequestor)
   }
 }
