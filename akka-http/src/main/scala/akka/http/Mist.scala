@@ -70,7 +70,7 @@ trait Mist extends Logging {
   /**
    * The root endpoint actor
    */
-  protected val _root = ActorRegistry.actorsFor(RootActorID).head
+  protected val _root = Actor.registry.actorsFor(RootActorID).head
 
   /**
    * Server-specific method factory
