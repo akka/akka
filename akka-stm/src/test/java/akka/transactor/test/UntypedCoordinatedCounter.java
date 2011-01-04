@@ -5,7 +5,7 @@ import akka.transactor.Atomically;
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.stm.*;
-import akka.util.Duration;
+import akka.util.FiniteDuration;
 
 import org.multiverse.api.StmUtils;
 
@@ -17,7 +17,7 @@ public class UntypedCoordinatedCounter extends UntypedActor {
     private String name;
     private Ref<Integer> count = new Ref(0);
     private TransactionFactory txFactory = new TransactionFactoryBuilder()
-        .setTimeout(new Duration(3, TimeUnit.SECONDS))
+        .setTimeout(new FiniteDuration(3, TimeUnit.SECONDS))
         .build();
 
     public UntypedCoordinatedCounter(String name) {
