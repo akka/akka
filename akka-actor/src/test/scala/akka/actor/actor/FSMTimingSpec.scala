@@ -16,7 +16,7 @@ class FSMTimingSpec
 
     val fsm = Actor.actorOf(new StateMachine(testActor)).start
     fsm ! SubscribeTransitionCallBack(testActor)
-    expectMsg(50 millis, CurrentState(fsm, Initial))
+    expectMsg(100 millis, CurrentState(fsm, Initial))
 
     ignoreMsg {
         case Transition(_, Initial, _) => true
@@ -54,68 +54,89 @@ class FSMTimingSpec
             }
         }
 
-        "notify unhandled messages" in {
-            within(200 millis) {
-                fsm ! Cancel
-                expectMsg(Unhandled(Cancel))
-                expectNoMsg
-            }
-        }
-
+    "notify unhandled messages" in {
+      fsm ! TestUnhandled
+      within(100 millis) {
+        fsm ! Tick
+        expectNoMsg
+      }
+      within(100 millis) {
+        fsm ! SetHandler
+        fsm ! Tick
+        expectMsg(Unhandled(Tick))
+        expectNoMsg
+      }
+      within(100 millis) {
+        fsm ! Unhandled("test")
+        expectNoMsg
+      }
+      within(100 millis) {
+        fsm ! Cancel
+        expectMsg(Transition(fsm, TestUnhandled, Initial))
+      }
     }
+
+  }
 
 }
 
 object FSMTimingSpec {
 
-    trait State
-    case object Initial extends State
-    case object TestStateTimeout extends State
-    case object TestSingleTimer extends State
-    case object TestRepeatedTimer extends State
+  trait State
+  case object Initial extends State
+  case object TestStateTimeout extends State
+  case object TestSingleTimer extends State
+  case object TestRepeatedTimer extends State
+  case object TestUnhandled extends State
 
-    case object Tick
-    case object Cancel
+  case object Tick
+  case object Cancel
+  case object SetHandler
 
-    case class Unhandled(msg : AnyRef)
+  case class Unhandled(msg : AnyRef)
 
-    class StateMachine(tester : ActorRef) extends Actor with FSM[State, Unit] {
-        import FSM._
+  class StateMachine(tester : ActorRef) extends Actor with FSM[State, Unit] {
+    import FSM._
 
-        startWith(Initial, ())
-        when(Initial) {
-            case Ev(TestStateTimeout) => goto(TestStateTimeout)
-            case Ev(TestSingleTimer) =>
-                setTimer("tester", Tick, 100 millis, false)
-                goto(TestSingleTimer)
-            case Ev(TestRepeatedTimer) =>
-                setTimer("tester", Tick, 100 millis, true)
-                goto(TestRepeatedTimer)
-        }
-        when(TestStateTimeout, stateTimeout = 100 millis) {
-            case Ev(StateTimeout) => goto(Initial)
-        }
-        when(TestSingleTimer) {
-            case Ev(Tick) =>
-                tester ! Tick
-                goto(Initial)
-        }
-        when(TestRepeatedTimer) {
-            case Ev(Tick) =>
-                tester ! Tick
-                stay
-            case Ev(Cancel) =>
-                cancelTimer("tester")
-                goto(Initial)
-        }
-
-        whenUnhandled {
-            case Ev(msg : AnyRef) =>
-                tester ! Unhandled(msg)
-                stay
-        }
+    startWith(Initial, ())
+    when(Initial) {
+      case Ev(TestSingleTimer) =>
+        setTimer("tester", Tick, 100 millis, false)
+        goto(TestSingleTimer)
+      case Ev(TestRepeatedTimer) =>
+        setTimer("tester", Tick, 100 millis, true)
+        goto(TestRepeatedTimer)
+      case Ev(x : FSMTimingSpec.State) => goto(x)
     }
+    when(TestStateTimeout, stateTimeout = 100 millis) {
+      case Ev(StateTimeout) => goto(Initial)
+    }
+    when(TestSingleTimer) {
+      case Ev(Tick) =>
+        tester ! Tick
+        goto(Initial)
+    }
+    when(TestRepeatedTimer) {
+      case Ev(Tick) =>
+        tester ! Tick
+        stay
+      case Ev(Cancel) =>
+        cancelTimer("tester")
+        goto(Initial)
+    }
+    when(TestUnhandled) {
+      case Ev(SetHandler) =>
+        whenUnhandled {
+          case Ev(Tick) =>
+            tester ! Unhandled(Tick)
+            stay
+        }
+        stay
+      case Ev(Cancel) =>
+        goto(Initial)
+    }
+  }
 
 }
 
-// vim: set ts=4 sw=4 et:
+// vim: set ts=2 sw=2 et:
