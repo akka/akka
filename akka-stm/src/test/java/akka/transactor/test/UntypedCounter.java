@@ -4,7 +4,7 @@ import akka.transactor.UntypedTransactor;
 import akka.transactor.SendTo;
 import akka.actor.ActorRef;
 import akka.stm.*;
-import akka.util.Duration;
+import akka.util.FiniteDuration;
 
 import org.multiverse.api.StmUtils;
 
@@ -23,7 +23,7 @@ public class UntypedCounter extends UntypedTransactor {
 
     @Override public TransactionFactory transactionFactory() {
         return new TransactionFactoryBuilder()
-            .setTimeout(new Duration(3, TimeUnit.SECONDS))
+            .setTimeout(new FiniteDuration(3, TimeUnit.SECONDS))
             .build();
     }
 
