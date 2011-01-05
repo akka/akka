@@ -171,7 +171,7 @@ abstract class RemoteClient private[akka] (
     isOneWay: Boolean,
     actorRef: ActorRef,
     typedActorInfo: Option[Tuple2[String, String]],
-    actorType: AkkaActorType): Option[CompletableFuture[T]] = {
+    actorType: AkkaActorType): Option[CompletableFuture[T]] = synchronized { //TODO: find better strategy to prevent race
     send(createRemoteMessageProtocolBuilder(
         Some(actorRef),
         Left(actorRef.uuid),
@@ -811,7 +811,7 @@ class RemoteServerHandler(
   val typedSessionActors = new ChannelLocal[ConcurrentHashMap[String, AnyRef]]()
 
   //Writes the specified message to the specified channel and propagates write errors to listeners
-  private def write(channel: Channel, message: AnyRef): Unit =
+  private def write(channel: Channel, message: AnyRef): Unit = {
     channel.write(message).addListener(
       new ChannelFutureListener {
         def operationComplete(future: ChannelFuture): Unit = {
@@ -826,6 +826,7 @@ class RemoteServerHandler(
           }
         }
       })
+  }
 
   /**
    * ChannelOpen overridden to store open channels for a clean postStop of a node.
