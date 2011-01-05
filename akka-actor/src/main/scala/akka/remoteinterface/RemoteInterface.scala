@@ -61,28 +61,34 @@ trait RemoteModule extends Logging {
 /**
  * Life-cycle events for RemoteClient.
  */
-sealed trait RemoteClientLifeCycleEvent //TODO: REVISIT: Document change from RemoteClient to RemoteClientModule + remoteAddress
+sealed trait RemoteClientLifeCycleEvent
 case class RemoteClientError(
   @BeanProperty cause: Throwable,
-  @BeanProperty client: RemoteClientModule, remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty client: RemoteClientModule,
+  @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 case class RemoteClientDisconnected(
-  @BeanProperty client: RemoteClientModule, remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty client: RemoteClientModule,
+  @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 case class RemoteClientConnected(
-  @BeanProperty client: RemoteClientModule, remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty client: RemoteClientModule,
+  @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 case class RemoteClientStarted(
-  @BeanProperty client: RemoteClientModule, remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty client: RemoteClientModule,
+  @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 case class RemoteClientShutdown(
-  @BeanProperty client: RemoteClientModule, remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty client: RemoteClientModule,
+  @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 case class RemoteClientWriteFailed(
   @BeanProperty request: AnyRef,
   @BeanProperty cause: Throwable,
-  @BeanProperty client: RemoteClientModule, remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty client: RemoteClientModule,
+  @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 
 
 /**
  *  Life-cycle events for RemoteServer.
  */
-sealed trait RemoteServerLifeCycleEvent //TODO: REVISIT: Document change from RemoteServer to RemoteServerModule
+sealed trait RemoteServerLifeCycleEvent
 case class RemoteServerStarted(
   @BeanProperty val server: RemoteServerModule) extends RemoteServerLifeCycleEvent
 case class RemoteServerShutdown(
@@ -102,7 +108,8 @@ case class RemoteServerClientClosed(
 case class RemoteServerWriteFailed(
   @BeanProperty request: AnyRef,
   @BeanProperty cause: Throwable,
-  @BeanProperty server: RemoteServerModule, remoteAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
+  @BeanProperty server: RemoteServerModule,
+  @BeanProperty clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
 
 /**
  * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down.
@@ -239,7 +246,8 @@ trait RemoteServerModule extends RemoteModule {
    */
   def start(): RemoteServerModule =
     start(ReflectiveAccess.Remote.configDefaultAddress.getHostName,
-          ReflectiveAccess.Remote.configDefaultAddress.getPort)
+          ReflectiveAccess.Remote.configDefaultAddress.getPort,
+          None)
 
   /**
    *  Starts the server up
@@ -252,7 +260,19 @@ trait RemoteServerModule extends RemoteModule {
   /**
    *  Starts the server up
    */
-  def start(host: String, port: Int, loader: Option[ClassLoader] = None): RemoteServerModule
+  def start(host: String, port: Int): RemoteServerModule =
+    start(host,port,None)
+
+  /**
+   *  Starts the server up
+   */
+  def start(host: String, port: Int, loader: ClassLoader): RemoteServerModule =
+    start(host,port,Option(loader))
+
+  /**
+   *  Starts the server up
+   */
+  def start(host: String, port: Int, loader: Option[ClassLoader]): RemoteServerModule
 
   /**
    *  Shuts the server down
