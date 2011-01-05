@@ -3,7 +3,7 @@ package akka.camel
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.scalatest.{GivenWhenThen, BeforeAndAfterAll, FeatureSpec}
-
+import akka.remote.netty.NettyRemoteSupport
 import akka.actor._
 import akka.actor.Actor._
 
@@ -20,6 +20,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
     startCamelService
 
     remote.shutdown
+    remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(false)
     remote.start(host,port)
 
     Thread.sleep(1000)
@@ -31,7 +32,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
     stopCamelService
 
     registry.shutdownAll
-
+    remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(true)
     Thread.sleep(1000)
   }
 
