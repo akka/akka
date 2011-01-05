@@ -88,7 +88,7 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
   def build = dispatcherFactory(config)
 
   //TODO remove this, for backwards compat only
-  def buildThreadPool = build
+  @deprecated("Use .build instead") def buildThreadPool = build
 
   def withNewBoundedThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity(bounds: Int): ThreadPoolConfigDispatcherBuilder =
     this.copy(config = config.copy(flowHandler = flowHandler(bounds), queueFactory = linkedBlockingQueue()))

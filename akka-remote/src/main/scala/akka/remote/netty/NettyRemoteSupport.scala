@@ -172,6 +172,7 @@ abstract class RemoteClient private[akka] (
     actorRef: ActorRef,
     typedActorInfo: Option[Tuple2[String, String]],
     actorType: AkkaActorType): Option[CompletableFuture[T]] = synchronized { //TODO: find better strategy to prevent race
+
     send(createRemoteMessageProtocolBuilder(
         Some(actorRef),
         Left(actorRef.uuid),
@@ -819,8 +820,8 @@ class RemoteServerHandler(
             //Not interesting at the moment
           } else if (!future.isSuccess) {
             val socketAddress = future.getChannel.getRemoteAddress match {
-              case i: InetSocketAddress => i
-              case _ => null
+              case i: InetSocketAddress => Some(i)
+              case _ => None
             }
             server.notifyListeners(RemoteServerWriteFailed(message, future.getCause, server, socketAddress))
           }

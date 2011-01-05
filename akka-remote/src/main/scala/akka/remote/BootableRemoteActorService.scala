@@ -17,7 +17,7 @@ trait BootableRemoteActorService extends Bootable with Logging {
   self: BootableActorLoaderService =>
 
   protected lazy val remoteServerThread = new Thread(new Runnable() {
-    def run = Actor.remote.start(loader = self.applicationLoader) //Use config host/port
+    def run = Actor.remote.start(self.applicationLoader.getOrElse(null)) //Use config host/port
   }, "Akka Remote Service")
 
   def startRemoteService = remoteServerThread.start

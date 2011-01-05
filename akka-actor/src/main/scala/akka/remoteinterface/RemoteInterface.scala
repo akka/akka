@@ -102,7 +102,7 @@ case class RemoteServerClientClosed(
 case class RemoteServerWriteFailed(
   @BeanProperty request: AnyRef,
   @BeanProperty cause: Throwable,
-  @BeanProperty client: RemoteServerModule, remoteAddress: InetSocketAddress) extends RemoteServerLifeCycleEvent
+  @BeanProperty server: RemoteServerModule, remoteAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
 
 /**
  * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down.
@@ -237,14 +237,27 @@ trait RemoteServerModule extends RemoteModule {
   /**
    *  Starts the server up
    */
-  def start(host: String = ReflectiveAccess.Remote.configDefaultAddress.getHostName,
-            port: Int = ReflectiveAccess.Remote.configDefaultAddress.getPort,
-            loader: Option[ClassLoader] = None): RemoteServerModule
+  def start(): RemoteServerModule =
+    start(ReflectiveAccess.Remote.configDefaultAddress.getHostName,
+          ReflectiveAccess.Remote.configDefaultAddress.getPort)
+
+  /**
+   *  Starts the server up
+   */
+  def start(loader: ClassLoader): RemoteServerModule =
+    start(ReflectiveAccess.Remote.configDefaultAddress.getHostName,
+          ReflectiveAccess.Remote.configDefaultAddress.getPort,
+          Option(loader))
+
+  /**
+   *  Starts the server up
+   */
+  def start(host: String, port: Int, loader: Option[ClassLoader] = None): RemoteServerModule
 
   /**
    *  Shuts the server down
    */
-  def shutdownServerModule: Unit
+  def shutdownServerModule(): Unit
 
   /**
    *  Register typed actor by interface name.
@@ -391,7 +404,7 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
   /**
    * Clean-up all open connections.
    */
-  def shutdownClientModule: Unit
+  def shutdownClientModule(): Unit
 
   /**
    * Shuts down a specific client connected to the supplied remote address returns true if successful
@@ -424,7 +437,7 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
 
   private[akka] def deregisterSupervisorForActor(actorRef: ActorRef): ActorRef
 
-    private[akka] def registerClientManagedActor(hostname: String, port: Int, uuid: Uuid): Unit
+  private[akka] def registerClientManagedActor(hostname: String, port: Int, uuid: Uuid): Unit
 
-    private[akka] def unregisterClientManagedActor(hostname: String, port: Int, uuid: Uuid): Unit
+  private[akka] def unregisterClientManagedActor(hostname: String, port: Int, uuid: Uuid): Unit
 }
