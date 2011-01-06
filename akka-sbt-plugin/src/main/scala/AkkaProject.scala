@@ -56,7 +56,7 @@ trait AkkaBaseProject extends BasicScalaProject {
 }
 
 trait AkkaProject extends AkkaBaseProject {
-  val akkaVersion = "1.1-SNAPSHOT"
+  val akkaVersion = "1.0-RC3"
 
   // convenience method
   def akkaModule(module: String) = "se.scalablesolutions.akka" % ("akka-" + module) % akkaVersion
