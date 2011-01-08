@@ -24,7 +24,7 @@ object RemoteServerSettings {
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.server.message-frame-size", 1048576)
   val SECURE_COOKIE      = config.getString("akka.remote.secure-cookie")
   val REQUIRE_COOKIE     = {
-    val requireCookie = config.getBool("akka.remote.server.require-cookie", true)
+    val requireCookie = config.getBool("akka.remote.server.require-cookie", false)
     if (isRemotingEnabled && requireCookie && SECURE_COOKIE.isEmpty) throw new ConfigurationException(
       "Configuration option 'akka.remote.server.require-cookie' is turned on but no secure cookie is defined in 'akka.remote.secure-cookie'.")
     requireCookie
