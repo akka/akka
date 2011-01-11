@@ -73,6 +73,11 @@ class TypedActorSpec extends
 
   describe("TypedActor") {
 
+    it("should return POJO method return value when invoked") {
+      val result = simplePojo.hello("POJO")
+      result should equal ("Hello POJO")
+    }
+
     it("should resolve Future return from method defined to return a Future") {
       val future = simplePojo.square(10)
       future.await

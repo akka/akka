@@ -6,6 +6,7 @@ import akka.dispatch.Future;
 import akka.japi.Option;
 
 public interface SimpleJavaPojo {
+  String hello(String name);
   public Object getSender();
   public Object getSenderFuture();
   public Future<Integer> square(int value);
