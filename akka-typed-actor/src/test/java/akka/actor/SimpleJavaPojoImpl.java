@@ -18,6 +18,10 @@ public class SimpleJavaPojoImpl extends TypedActor implements SimpleJavaPojo {
 
   private String name;
 
+  public String hello(String name) {
+    return "Hello " + name;
+  }
+
   public Future<Integer> square(int value) {
     return future(value * value);
   }
