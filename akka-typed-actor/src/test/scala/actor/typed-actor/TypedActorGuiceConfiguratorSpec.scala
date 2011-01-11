@@ -56,7 +56,7 @@ class TypedActorGuiceConfiguratorSpec extends
   override def afterAll = conf.stop
 
   describe("TypedActorGuiceConfigurator") {
-/*
+
     it("should inject typed actor using guice") {
       messageLog = ""
       val foo = conf.getInstance(classOf[Foo])
@@ -77,7 +77,7 @@ class TypedActorGuiceConfiguratorSpec extends
         fail("exception should have been thrown")
       } catch {
         case e: Exception =>
-          classOf[IllegalStateException] should equal(e.getClass)
+          classOf[IllegalActorStateException] should equal(e.getClass)
       }
     }
 
@@ -125,6 +125,5 @@ class TypedActorGuiceConfiguratorSpec extends
           classOf[RuntimeException] should equal(e.getClass)
       }
     }
-    */
   }
 }

@@ -138,14 +138,14 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    * If the supplied host and port is identical of the configured local node, it will be a local actor
    * <pre>
    *   import Actor._
-   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552)
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io", 2552)
    *   actor.start
    *   actor ! message
    *   actor.stop
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552).start
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io", 2552).start
    * </pre>
    */
   def actorOf(factory: => Actor, host: String, port: Int): ActorRef =
