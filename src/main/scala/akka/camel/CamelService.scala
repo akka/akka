@@ -69,6 +69,10 @@ trait CamelService extends Bootable with Logging {
     // start actor that exposes consumer actors and typed actors via Camel endpoints
     consumerPublisher.start
 
+    // send registration events for all (un)typed actors that have been registered in the past.
+    for (event <- PublishRequestor.pastActorRegisteredEvents) publishRequestor ! event
+    for (event <- PublishRequestor.pastAspectInitRegisteredEvents) publishRequestor ! event
+
     // init publishRequestor so that buffered and future events are delivered to consumerPublisher
     publishRequestor ! PublishRequestorInit(consumerPublisher)
 

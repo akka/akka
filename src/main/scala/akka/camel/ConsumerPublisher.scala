@@ -3,8 +3,6 @@
  */
 package akka.camel
 
-import collection.mutable.ListBuffer
-
 import java.io.InputStream
 import java.lang.reflect.Method
 import java.util.concurrent.CountDownLatch
@@ -169,7 +167,7 @@ private[camel] class ConsumerMethodRouteBuilder(event: ConsumerMethodRegistered)
  * @author Martin Krasser
  */
 private[camel] class PublishRequestor extends Actor {
-  private val events = ListBuffer[ConsumerEvent]()
+  private val events = collection.mutable.Map[String, ConsumerEvent]()
   private var publisher: Option[ActorRef] = None
 
   protected def receive = {
@@ -191,14 +189,31 @@ private[camel] class PublishRequestor extends Actor {
   private def deliverCurrentEvent(event: ConsumerEvent) = {
     publisher match {
       case Some(pub) => pub ! event
-      case None      => events += event
+      case None      => events += event.uuid -> event
     }
   }
 
   private def deliverBufferedEvents = {
-    for (event <- events) deliverCurrentEvent(event)
+    for (event <- events.values) deliverCurrentEvent(event)
     events.clear
   }
+}
+
+/**
+ * @author Martin Krasser
+ */
+private[camel] object PublishRequestor {
+  def pastActorRegisteredEvents =
+    for {
+      actor <- Actor.registry.actors
+    } yield ActorRegistered(actor)
+
+  def pastAspectInitRegisteredEvents =
+    for {
+      actor <- Actor.registry.typedActors
+      init = AspectInitRegistry.initFor(actor)
+      if (init ne null)
+    } yield AspectInitRegistered(actor, init)
 }
 
 /**
@@ -210,7 +225,9 @@ private[camel] case class PublishRequestorInit(consumerPublisher: ActorRef)
 /**
  * A consumer (un)registration event.
  */
-private[camel] sealed trait ConsumerEvent
+private[camel] sealed trait ConsumerEvent {
+  val uuid: String
+}
 
 /**
  * A consumer actor (un)registration event.

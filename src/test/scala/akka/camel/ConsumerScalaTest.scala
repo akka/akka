@@ -24,10 +24,11 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
     registry.shutdownAll
     // create new CamelService instance
     service = CamelServiceFactory.createCamelService
+    // register test consumer before registering the publish requestor
+    // and before starting the CamelService (registry is scanned for consumers)
+    actorOf(new TestConsumer("direct:publish-test-1")).start
     // Register publish requestor as listener
     service.registerPublishRequestor
-    // register test consumer before starting the CamelService
-    actorOf(new TestConsumer("direct:publish-test-1")).start
     // start consumer publisher, otherwise we cannot set message
     // count expectations in the next step (needed for testing only).
     service.consumerPublisher.start
