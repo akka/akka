@@ -1341,10 +1341,10 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    */
   def forward(message: Any)(implicit sender: Some[ActorRef]) = {
     if (isRunning) {
-      if (sender.get.senderFuture.isDefined) postMessageToMailboxAndCreateFutureResultWithTimeout(
-        message, timeout, sender.get.sender, sender.get.senderFuture)
-      else if (sender.get.sender.isDefined) postMessageToMailbox(message, sender.get.sender)
-      else postMessageToMailbox(message, None)
+      if (sender.get.senderFuture.isDefined)
+        postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, sender.get.sender, sender.get.senderFuture)
+      else
+        postMessageToMailbox(message, sender.get.sender)
     } else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
