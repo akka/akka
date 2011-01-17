@@ -1344,7 +1344,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
       if (sender.get.senderFuture.isDefined) postMessageToMailboxAndCreateFutureResultWithTimeout(
         message, timeout, sender.get.sender, sender.get.senderFuture)
       else if (sender.get.sender.isDefined) postMessageToMailbox(message, sender.get.sender)
-      else throw new IllegalActorStateException("Can't forward message when initial sender is not an actor")
+      else postMessageToMailbox(message, None)
     } else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
