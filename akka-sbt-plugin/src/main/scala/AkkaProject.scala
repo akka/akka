@@ -1,18 +1,18 @@
 import sbt._
 
 object AkkaRepositories {
-  lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
-  lazy val ScalaToolsRepo       = MavenRepository("Scala-Tools Repo", "http://scala-tools.org/repo-releases")
-  lazy val ClojarsRepo          = MavenRepository("Clojars Repo", "http://clojars.org/repo")
-  lazy val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
-  lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
-  lazy val JBossRepo            = MavenRepository("JBoss Repo", "http://repository.jboss.org/nexus/content/groups/public/")
-  lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
-  lazy val MsgPackRepo          = MavenRepository("Message Pack Releases Repo","http://msgpack.sourceforge.net/maven2/")
-  lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
-  lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
-  lazy val TerrastoreRepo       = MavenRepository("Terrastore Releases Repo", "http://m2.terrastore.googlecode.com/hg/repo")
-  lazy val ZookeeperRepo        = MavenRepository("Zookeeper Repo", "http://lilycms.org/maven/maven2/deploy/")
+  val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
+  val ScalaToolsRepo       = MavenRepository("Scala-Tools Repo", "http://scala-tools.org/repo-releases")
+  val ClojarsRepo          = MavenRepository("Clojars Repo", "http://clojars.org/repo")
+  val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
+  val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
+  val JBossRepo            = MavenRepository("JBoss Repo", "http://repository.jboss.org/nexus/content/groups/public/")
+  val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
+  val MsgPackRepo          = MavenRepository("Message Pack Releases Repo","http://msgpack.sourceforge.net/maven2/")
+  val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
+  val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
+  val TerrastoreRepo       = MavenRepository("Terrastore Releases Repo", "http://m2.terrastore.googlecode.com/hg/repo")
+  val ZookeeperRepo        = MavenRepository("Zookeeper Repo", "http://lilycms.org/maven/maven2/deploy/")
 }
 
 trait AkkaBaseProject extends BasicScalaProject {
