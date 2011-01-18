@@ -2,8 +2,7 @@ import sbt._
 
 object AkkaRepositories {
   val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
-  val CasbahRepo           = MavenRepository("Casbah Repo", "http://repo.bumnetworks.com/releases")
-  val CasbahSnapshotRepo   = MavenRepository("Casbah Snapshots", "http://repo.bumnetworks.com/snapshots")
+  val ScalaToolsRepo       = MavenRepository("Scala-Tools Repo", "http://scala-tools.org/repo-releases")
   val ClojarsRepo          = MavenRepository("Clojars Repo", "http://clojars.org/repo")
   val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
   val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
@@ -42,7 +41,7 @@ trait AkkaBaseProject extends BasicScalaProject {
 
   val args4jModuleConfig      = ModuleConfiguration("args4j", JBossRepo)
   val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", SonatypeSnapshotRepo)
-  val casbahModuleConfig      = ModuleConfiguration("com.novus", CasbahRepo)
+  val casbahModuleConfig      = ModuleConfiguration("com.mongodb.casbah", ScalaToolsRepo)
   val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", JavaNetRepo)
   val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
   val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
@@ -59,7 +58,7 @@ trait AkkaBaseProject extends BasicScalaProject {
   val resteasyModuleConfig    = ModuleConfiguration("org.jboss.resteasy", JBossRepo)
   val scannotationModuleConfig= ModuleConfiguration("org.scannotation", JBossRepo)
   val terrastoreModuleConfig  = ModuleConfiguration("terrastore", TerrastoreRepo)
-  val timeModuleConfig        = ModuleConfiguration("org.scala-tools", "time", CasbahSnapshotRepo)
+  val timeModuleConfig        = ModuleConfiguration("org.scala-tools", "time", ScalaToolsRepo)
   val voldemortModuleConfig   = ModuleConfiguration("voldemort", ClojarsRepo)
   val zookeeperModuleConfig   = ModuleConfiguration("org.apache.hadoop.zookeeper", ZookeeperRepo)
 }
