@@ -13,7 +13,7 @@ import akka.actor._
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final class MessageInvocation(val receiver: ActorRef,
+final case class MessageInvocation(val receiver: ActorRef,
                               val message: Any,
                               val sender: Option[ActorRef],
                               val senderFuture: Option[CompletableFuture[Any]]) {
@@ -24,28 +24,6 @@ final class MessageInvocation(val receiver: ActorRef,
   } catch {
     case e: NullPointerException => throw new ActorInitializationException(
       "Don't call 'self ! message' in the Actor's constructor (in Scala this means in the body of the class).")
-  }
-
-  override def hashCode(): Int = {
-    var result = HashCode.SEED
-    result = HashCode.hash(result, receiver.actor)
-    result = HashCode.hash(result, message.asInstanceOf[AnyRef])
-    result
-  }
-
-  override def equals(that: Any): Boolean = {
-    that.isInstanceOf[MessageInvocation] &&
-    that.asInstanceOf[MessageInvocation].receiver.actor == receiver.actor &&
-    that.asInstanceOf[MessageInvocation].message == message
-  }
-
-  override def toString = {
-    "MessageInvocation[" +
-     "\n\tmessage = " + message +
-     "\n\treceiver = " + receiver +
-     "\n\tsender = " + sender +
-     "\n\tsenderFuture = " + senderFuture +
-     "]"
   }
 }
 
