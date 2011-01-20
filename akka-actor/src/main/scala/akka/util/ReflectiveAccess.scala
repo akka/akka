@@ -109,25 +109,6 @@ object ReflectiveAccess extends Logging {
 
     def ensureEnabled = if (!isEnabled) throw new ModuleNotAvailableException(
       "Feature is only available in Akka Cloud")
-
-    def createFileBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.FileBasedMailbox", actorRef)
-
-    def createZooKeeperBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.ZooKeeperBasedMailbox", actorRef)
-
-    def createBeanstalkBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.BeanstalkBasedMailbox", actorRef)
-
-    def createRedisBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("akka.cloud.cluster.RedisBasedMailbox", actorRef)
-
-    private def createMailbox(mailboxClassname: String, actorRef: ActorRef): Mailbox = {
-      ensureEnabled
-      createInstance(
-        mailboxClassname,
-        Array(classOf[ActorRef]),
-        Array(actorRef).asInstanceOf[Array[AnyRef]],
-        loader)
-        .getOrElse(throw new IllegalActorStateException("Could not create durable mailbox [" + mailboxClassname + "] for actor [" + actorRef + "]"))
-        .asInstanceOf[Mailbox]
-    }
   }
 
   val noParams = Array[Class[_]]()
