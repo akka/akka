@@ -68,7 +68,7 @@ class ExecutorBasedEventDrivenDispatcher(
   _name: String,
   val throughput: Int = Dispatchers.THROUGHPUT,
   val throughputDeadlineTime: Int = Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS,
-  _mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
+  val mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
   val config: ThreadPoolConfig = ThreadPoolConfig())
   extends MessageDispatcher {
 
@@ -88,7 +88,6 @@ class ExecutorBasedEventDrivenDispatcher(
     this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 
   val name        = "akka:event-driven:dispatcher:" + _name
-  val mailboxType = Some(_mailboxType)
 
   private[akka] val threadFactory = new MonitorableThreadFactory(name)
   private[akka] val executorService = new AtomicReference[ExecutorService](config.createLazyExecutorService(threadFactory))
@@ -106,7 +105,7 @@ class ExecutorBasedEventDrivenDispatcher(
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
-  def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailbox): AnyRef = mailboxType match {
+  def createMailbox(actorRef: ActorRef): AnyRef = mailboxType match {
     case UnboundedMailbox(blocking) => new DefaultUnboundedMessageQueue(blocking) with ExecutableMailbox {
       def dispatcher = ExecutorBasedEventDrivenDispatcher.this
     }
@@ -116,12 +115,6 @@ class ExecutorBasedEventDrivenDispatcher(
         def dispatcher = ExecutorBasedEventDrivenDispatcher.this
       }
   }
-
-  /**
-   * Creates and returns a durable mailbox for the given actor.
-   */
-  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailbox): AnyRef =
-    createMailbox(mailboxType.mailboxImplClassname, actorRef)
 
   private[akka] def start = log.slf4j.debug("Starting up {}\n\twith throughput [{}]", this, throughput)
 

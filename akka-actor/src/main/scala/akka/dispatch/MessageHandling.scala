@@ -58,7 +58,7 @@ object MessageDispatcher {
 /**
  *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait MessageDispatcher extends MailboxFactory with Logging {
+trait MessageDispatcher extends Logging {
   import MessageDispatcher._
 
   protected val uuids = new ConcurrentSkipListSet[Uuid]
@@ -70,16 +70,7 @@ trait MessageDispatcher extends MailboxFactory with Logging {
   /**
    *  Creates and returns a mailbox for the given actor.
    */
-  def createMailbox(mailboxImplClassname: String, actorRef: ActorRef): MessageQueue = {
-    ReflectiveAccess.createInstance(
-      mailboxImplClassname,
-      Array(classOf[ActorRef]),
-      Array(actorRef).asInstanceOf[Array[AnyRef]],
-      ReflectiveAccess.loader)
-    .getOrElse(throw new IllegalActorStateException(
-        "Could not create mailbox [" + mailboxImplClassname + "] for actor [" + actorRef + "]"))
-    .asInstanceOf[MessageQueue]
-  }
+  private[akka] def createMailbox(actorRef: ActorRef): AnyRef
 
   /**
    * Attaches the specified actorRef to this dispatcher
@@ -100,7 +91,9 @@ trait MessageDispatcher extends MailboxFactory with Logging {
   } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
 
   private[akka] def register(actorRef: ActorRef) {
-    if (actorRef.mailbox eq null) actorRef.mailbox = createMailbox(actorRef)
+    if (actorRef.mailbox eq null)
+      actorRef.mailbox = createMailbox(actorRef)
+
     uuids add actorRef.uuid
     if (active.isOff) {
       active.switchOn {

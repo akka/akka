@@ -35,16 +35,13 @@ import jsr166x.{Deque, ConcurrentLinkedDeque, LinkedBlockingDeque}
  */
 class ExecutorBasedEventDrivenWorkStealingDispatcher(
   _name: String,
-  _mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
+  val mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
   config: ThreadPoolConfig = ThreadPoolConfig()) extends MessageDispatcher {
 
   def this(_name: String, mailboxType: MailboxType) = this(_name, mailboxType,ThreadPoolConfig())
 
   def this(_name: String) = this(_name, Dispatchers.MAILBOX_TYPE,ThreadPoolConfig())
 
-  //implicit def actorRef2actor(actorRef: ActorRef): Actor = actorRef.actor
-
-  val mailboxType = Some(_mailboxType)
   val name = "akka:event-driven-work-stealing:dispatcher:" + _name
 
   /** Type of the actors registered in this dispatcher. */
@@ -194,7 +191,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
 
   override val toString = "ExecutorBasedEventDrivenWorkStealingDispatcher[" + name + "]"
 
-  private[akka] def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailbox): AnyRef = mailboxType match {
+  private[akka] def createMailbox(actorRef: ActorRef): AnyRef = mailboxType match {
     case UnboundedMailbox(blocking) => // FIXME make use of 'blocking' in work stealer ConcurrentLinkedDeque
       new ConcurrentLinkedDeque[MessageInvocation] with MessageQueue with Runnable {
         def enqueue(handle: MessageInvocation): Unit = this.add(handle)
@@ -220,12 +217,6 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
         }
       }
   }
-
-  /**
-   * Creates and returns a durable mailbox for the given actor.
-   */
-  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailbox): AnyRef =
-    createMailbox(mailboxType.mailboxImplClassname, actorRef)
 
   private[akka] override def register(actorRef: ActorRef) = {
     verifyActorsAreOfSameType(actorRef)
