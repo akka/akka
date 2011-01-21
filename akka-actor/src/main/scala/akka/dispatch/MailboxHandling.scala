@@ -31,17 +31,14 @@ trait MessageQueue {
  */
 sealed trait MailboxType
 
-abstract class TransientMailbox(val blocking: Boolean = false) extends MailboxType
-case class UnboundedMailbox(block: Boolean = false) extends TransientMailbox(block)
+case class UnboundedMailbox(val blocking: Boolean = false) extends MailboxType
 case class BoundedMailbox(
-  block: Boolean            = false,
+  val blocking: Boolean            = false,
   val capacity: Int         = { if (Dispatchers.MAILBOX_CAPACITY < 0) Int.MaxValue else Dispatchers.MAILBOX_CAPACITY },
-  val pushTimeOut: Duration = Dispatchers.MAILBOX_PUSH_TIME_OUT) extends TransientMailbox(block) {
+  val pushTimeOut: Duration = Dispatchers.MAILBOX_PUSH_TIME_OUT) extends MailboxType {
   if (capacity < 0)        throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 }
-
-case class DurableMailbox(mailboxImplClassname: String) extends MailboxType
 
 class DefaultUnboundedMessageQueue(blockDequeue: Boolean)
   extends LinkedBlockingQueue[MessageInvocation] with MessageQueue {
@@ -69,31 +66,4 @@ class DefaultBoundedMessageQueue(capacity: Int, pushTimeOut: Duration, blockDequ
   final def dequeue(): MessageInvocation =
     if (blockDequeue) this.take()
     else this.poll()
-}
-
-/**
- *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait MailboxFactory {
-
-  val mailboxType: Option[MailboxType]
-
-  /**
-   * Creates a MessageQueue (Mailbox) with the specified properties.
-   */
-  private[akka] def createMailbox(actorRef: ActorRef): AnyRef =
-    mailboxType.getOrElse(throw new IllegalStateException("No mailbox type defined")) match {
-      case mb: TransientMailbox => createTransientMailbox(actorRef, mb)
-      case mb: DurableMailbox   => createDurableMailbox(actorRef, mb)
-    }
-
-  /**
-   *  Creates and returns a transient mailbox for the given actor.
-   */
-  private[akka] def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailbox): AnyRef
-
-  /**
-   *  Creates and returns a durable mailbox for the given actor.
-   */
-  private[akka] def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailbox): AnyRef
 }
