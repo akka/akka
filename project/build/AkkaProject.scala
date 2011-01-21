@@ -30,9 +30,11 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Deploy/dist settings
   // -------------------------------------------------------------------------------------------------------------------
-  def distName = "%s-%s".format(name, version)
-  lazy val deployPath = info.projectPath / "deploy"
-  lazy val distPath = info.projectPath / "dist"
+  val distName = "%s-%s".format(name, version)
+  val distArchiveName = distName + ".zip"
+  val deployPath = info.projectPath / "deploy"
+  val distPath = info.projectPath / "dist"
+  val distArchive = (distPath ##) / distArchiveName
 
   lazy override val `package` = task { None }
 
@@ -53,12 +55,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     //Temporary directory to hold the dist currently being generated
     val currentDist = genDistDir / distName
-    //ArchiveName = name of the zip file distribution that will be generated
-    val archiveName = distName + ".zip"
 
     FileUtilities.copy(allArtifacts.get, currentDist, log).left.toOption orElse //Copy all needed artifacts into the root archive
-    FileUtilities.zip(List(currentDist),distName + ".zip",true,log) orElse //Compress the root archive into a zipfile
-    transferFile(info.projectPath / archiveName,distPath / archiveName) orElse //Move the archive into the dist folder
+    FileUtilities.zip(List(currentDist), distArchiveName, true, log) orElse //Compress the root archive into a zipfile
+    transferFile(info.projectPath / distArchiveName, distArchive) orElse //Move the archive into the dist folder
     FileUtilities.clean(genDistDir,log) //Cleanup the generated jars
 
   } dependsOn (`package`) describedAs("Zips up the distribution.")
@@ -215,6 +215,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),     akka_typed_actor)
   lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_remote)
   lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
+  lazy val akka_sbt_plugin  = project("akka-sbt-plugin",  "akka-sbt-plugin",  new AkkaSbtPluginProject(_))
 
   // -------------------------------------------------------------------------------------------------------------------
   // Miscellaneous
@@ -288,6 +289,24 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     }
     None
   } dependsOn(dist) describedAs("Run mvn install for artifacts in dist.")
+
+
+  // Build release
+
+  val localReleasePath = outputPath / "release" / version.toString
+  val localReleaseRepository = Resolver.file("Local Release", localReleasePath / "repository" asFile)
+  val localReleaseDownloads = localReleasePath / "downloads"
+
+  override def otherRepositories = super.otherRepositories ++ Seq(localReleaseRepository)
+
+  lazy val publishRelease = {
+    val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
+    publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
+  }
+
+  lazy val buildRelease = task {
+    FileUtilities.copy(Seq(distArchive), localReleaseDownloads, log).left.toOption
+  } dependsOn (publishRelease, dist)
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-actor subproject
@@ -407,6 +426,17 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
+  // akka-sbt-plugin subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaSbtPluginProject(info: ProjectInfo) extends PluginProject(info) {
+    lazy val publishRelease = {
+      val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
+      publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
+    }
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -463,6 +493,11 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         case s: String if stressTestsEnabled.value      => s.endsWith("TestStress")
         case _ => false
       }) :: Nil
+    }
+
+    lazy val publishRelease = {
+      val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
+      publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
     }
   }
 }
