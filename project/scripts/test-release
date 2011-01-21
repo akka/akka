@@ -1,0 +1,11 @@
+clean
+clean-lib
+script find-replace.sh {{project.version}} {{test-release.arg1}}
+script find-replace.sh //[[:space:]]*release:[[:space:]]*
+reload
+update
+test-compile
+test
+build-release
+sh git reset --hard
+reload
