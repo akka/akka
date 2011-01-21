@@ -1,7 +1,7 @@
 import sbt._
 
 object AkkaRepositories {
-  val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
+  val AkkaRepo             = MavenRepository("Akka Repository", "http://akka.io/repository")
   val ScalaToolsRepo       = MavenRepository("Scala-Tools Repo", "http://scala-tools.org/repo-releases")
   val ClojarsRepo          = MavenRepository("Clojars Repo", "http://clojars.org/repo")
   val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
@@ -22,7 +22,7 @@ trait AkkaBaseProject extends BasicScalaProject {
   // is resolved from a ModuleConfiguration. This will result in a significant acceleration of the update action.
 
   // for development version resolve to .ivy2/local
-  // val akkaModuleConfig        = ModuleConfiguration("se.scalablesolutions.akka", AkkaRepo)
+  // release: val akkaModuleConfig        = ModuleConfiguration("se.scalablesolutions.akka", AkkaRepo)
 
   val aspectwerkzModuleConfig = ModuleConfiguration("org.codehaus.aspectwerkz", AkkaRepo)
   val cassandraModuleConfig   = ModuleConfiguration("org.apache.cassandra", AkkaRepo)
