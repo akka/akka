@@ -7,10 +7,8 @@ package akka.dispatch
 import akka.actor.ActorRef
 import akka.util.Switch
 
-import org.fusesource.hawtdispatch.DispatchQueue
-import org.fusesource.hawtdispatch.ScalaDispatch._
+import org.fusesource.hawtdispatch._
 import org.fusesource.hawtdispatch.DispatchQueue.QueueType
-import org.fusesource.hawtdispatch.ListEventAggregator
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicBoolean}
 import java.util.concurrent.CountDownLatch
@@ -156,7 +154,7 @@ class HawtDispatcher(val aggregate: Boolean = true, val parent: DispatchQueue = 
   override def mailboxSize(actorRef: ActorRef) = 0
 
   def createMailbox(actorRef: ActorRef): AnyRef = {
-    val queue = parent.createSerialQueue(actorRef.toString)
+    val queue = parent.createQueue(actorRef.toString)
     if (aggregate) new AggregatingHawtDispatcherMailbox(queue)
     else new HawtDispatcherMailbox(queue)
   }
