@@ -246,8 +246,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   //override def defaultPublishRepository = Some(Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile))
   val publishTo = Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile)
-
-  val sourceArtifact = Artifact(artifactID, "source", "jar", Some("sources"), Nil, None)
+  val sourceArtifact = Artifact(artifactID, "src", "jar", Some("sources"), Nil, None)
   val docsArtifact   = Artifact(artifactID, "doc", "jar", Some("docs"), Nil, None)
 
   // Credentials(Path.userHome / ".akka_publish_credentials", log)
@@ -277,7 +276,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val publishLocalMvn = runMvnInstall
   def runMvnInstall = task {
     for (absPath <- akkaArtifacts.getPaths) {
-      val artifactRE = """(.*)/dist/(.*)-(.*).jar""".r
+      val artifactRE = """(.*)/dist/(.*)-(\d.*)\.jar""".r
       val artifactRE(path, artifactId, artifactVersion) = absPath
       val command = "mvn install:install-file" +
                     " -Dfile=" + absPath +
@@ -471,7 +470,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) 
     with DeployProject with OSGiProject with McPom {
     override def disableCrossPaths = true
-    lazy val sourceArtifact = Artifact(this.artifactID, "source", "jar", Some("sources"), Nil, None)
+    lazy val sourceArtifact = Artifact(this.artifactID, "src", "jar", Some("sources"), Nil, None)
     lazy val docsArtifact = Artifact(this.artifactID, "doc", "jar", Some("docs"), Nil, None)
     override def runClasspath = super.runClasspath +++ (AkkaParentProject.this.info.projectPath / "config")
     override def testClasspath = super.testClasspath +++ (AkkaParentProject.this.info.projectPath / "config")
