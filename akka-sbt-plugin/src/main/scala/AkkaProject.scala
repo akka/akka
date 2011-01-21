@@ -22,7 +22,7 @@ trait AkkaBaseProject extends BasicScalaProject {
   // is resolved from a ModuleConfiguration. This will result in a significant acceleration of the update action.
 
   // for development version resolve to .ivy2/local
-  // val akkaModuleConfig        = ModuleConfiguration("se.scalablesolutions.akka", AkkaRepo)
+  // release: val akkaModuleConfig        = ModuleConfiguration("se.scalablesolutions.akka", AkkaRepo)
 
   val aspectwerkzModuleConfig = ModuleConfiguration("org.codehaus.aspectwerkz", AkkaRepo)
   val cassandraModuleConfig   = ModuleConfiguration("org.apache.cassandra", AkkaRepo)
