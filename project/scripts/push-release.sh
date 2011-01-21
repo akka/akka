@@ -28,7 +28,8 @@ git push origin --tags
 release="target/release/${VERSION}"
 tmp="/tmp/akka-release-${VERSION}"
 
-ssh -t ${AKKA_RELEASE_SERVER} sudo -v
 rsync -avz ${release}/ ${AKKA_RELEASE_SERVER}:${tmp}/
+echo "Verify sudo on $AKKA_RELEASE_SERVER"
+ssh -t ${AKKA_RELEASE_SERVER} sudo -v
 ssh -t ${AKKA_RELEASE_SERVER} sudo rsync -rpt ${tmp}/ ${AKKA_RELEASE_PATH}
-ssh -t rm -rf ${tmp}
+ssh -t ${AKKA_RELEASE_SERVER} rm -rf ${tmp}
