@@ -109,7 +109,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val DISPATCH_VERSION      = "0.7.4"
-  lazy val HAWT_DISPATCH_VERSION = "1.0"
+  lazy val HAWT_DISPATCH_VERSION = "1.1"
   lazy val JACKSON_VERSION       = "1.4.3"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.1"

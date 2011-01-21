@@ -16,8 +16,7 @@ import akka.actor._
 import akka.actor.Actor._
 import akka.dispatch.HawtDispatcher
 
-import org.fusesource.hawtdispatch.DispatchSource
-import org.fusesource.hawtdispatch.ScalaDispatch._
+import org.fusesource.hawtdispatch._
 
 /**
  * This is an example of how to crate an Akka actor based TCP echo server using

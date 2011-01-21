@@ -89,7 +89,7 @@ object Actor extends Logging {
       override def run {
         // Shutdown HawtDispatch GlobalQueue
         log.slf4j.info("Shutting down Hawt Dispatch global queue")
-        org.fusesource.hawtdispatch.ScalaDispatch.globalQueue.asInstanceOf[org.fusesource.hawtdispatch.internal.GlobalDispatchQueue].shutdown
+        org.fusesource.hawtdispatch.globalQueue.asInstanceOf[org.fusesource.hawtdispatch.internal.GlobalDispatchQueue].shutdown
 
         // Clear Thread.subclassAudits
         log.slf4j.info("Clearing subclass audits")
