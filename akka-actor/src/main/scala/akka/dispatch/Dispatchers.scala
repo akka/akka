@@ -198,7 +198,7 @@ object Dispatchers extends Logging {
       val capacity = cfg.getInt("mailbox-capacity", MAILBOX_CAPACITY)
       // FIXME how do we read in isBlocking for mailbox? Now set to 'false'.
       if (capacity < 0) UnboundedMailbox()
-      else BoundedMailbox(false, capacity, Duration(cfg.getInt("mailbox-push-timeout", MAILBOX_PUSH_TIME_OUT.toMillis.toInt), TIME_UNIT))
+      else BoundedMailbox(false, capacity, Duration(cfg.getInt("mailbox-push-timeout-time", MAILBOX_PUSH_TIME_OUT.toMillis.toInt), TIME_UNIT))
     }
 
     cfg.getString("type") map {
@@ -206,7 +206,7 @@ object Dispatchers extends Logging {
         configureThreadPool(threadPoolConfig => new ExecutorBasedEventDrivenDispatcher(
           name,
           cfg.getInt("throughput", THROUGHPUT),
-          cfg.getInt("throughput-deadline", THROUGHPUT_DEADLINE_TIME_MILLIS),
+          cfg.getInt("throughput-deadline-time", THROUGHPUT_DEADLINE_TIME_MILLIS),
           mailboxType,
           threadPoolConfig)).build
 
