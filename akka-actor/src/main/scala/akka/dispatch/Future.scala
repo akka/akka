@@ -97,7 +97,11 @@ object Futures {
       }
     }
 
-    futures foreach { _ onComplete aggregate }
+    if(futures.isEmpty)
+      result completeWithResult zero
+    else
+      futures foreach { _ onComplete aggregate }
+
     result
   }
 
