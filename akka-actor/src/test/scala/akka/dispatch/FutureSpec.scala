@@ -168,4 +168,29 @@ class FutureSpec extends JUnitSuite {
     def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 100 )) }
     assert(Futures.fold(0)(futures)(_ + _).awaitBlocking.exception.get.getMessage === "shouldFoldResultsWithException: expected")
   }
+
+  @Test def shouldReduceResults {
+    val actors = (1 to 10).toList map { _ =>
+      actorOf(new Actor {
+        def receive = { case (add: Int, wait: Int) => Thread.sleep(wait); self reply_? add }
+      }).start
+    }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 )) }
+    assert(Futures.reduce(futures)(_ + _).awaitBlocking.result.get === 45)
+  }
+
+  @Test def shouldReduceResultsWithException {
+    val actors = (1 to 10).toList map { _ =>
+      actorOf(new Actor {
+        def receive = {
+          case (add: Int, wait: Int) =>
+            Thread.sleep(wait)
+            if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
+            self reply_? add
+        }
+      }).start
+    }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 100 )) }
+    assert(Futures.reduce(futures)(_ + _).awaitBlocking.exception.get.getMessage === "shouldFoldResultsWithException: expected")
+  }
 }
