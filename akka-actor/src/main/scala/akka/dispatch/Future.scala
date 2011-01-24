@@ -11,8 +11,9 @@ import akka.routing.Dispatcher
 import java.util.concurrent.locks.ReentrantLock
 import akka.japi.Procedure
 import java.util.concurrent. {ConcurrentLinkedQueue, TimeUnit}
-import java.util.concurrent.atomic. {AtomicInteger}
 import akka.actor.Actor
+import annotation.tailrec
+import java.util.concurrent.atomic. {AtomicBoolean, AtomicInteger}
 
 class FutureTimeoutException(message: String) extends AkkaException(message)
 
@@ -50,7 +51,7 @@ object Futures {
   /**
    * Returns a Future to the result of the first future in the list that is completed
    */
-  def firstCompletedOf(futures: List[Future[_]], timeout: Long = Long.MaxValue): Future[_] = {
+  def firstCompletedOf(futures: Iterable[Future[_]], timeout: Long = Long.MaxValue): Future[_] = {
     val futureResult = new DefaultCompletableFuture[Any](timeout)
     val fun = (f: Future[_]) => futureResult completeWith f.asInstanceOf[Future[Any]]
     for(f <- futures) f onComplete fun
@@ -74,7 +75,7 @@ object Futures {
    * the result will be the first failure of any of the futures, or any failure in the actual fold,
    * or the result of the fold.
    */
-  def fold[R,T](zero: R, timeout: Long = Actor.TIMEOUT)(futures: Traversable[Future[T]])(foldFun: (R, T) => R): Future[R] = {
+  def fold[R,T](zero: R, timeout: Long = Actor.TIMEOUT)(futures: Iterable[Future[T]])(foldFun: (R, T) => R): Future[R] = {
     val result = new DefaultCompletableFuture[R](timeout)
     val results = new ConcurrentLinkedQueue[T]()
     val waitingFor = new AtomicInteger(futures.size)
@@ -99,6 +100,25 @@ object Futures {
     futures foreach { _ onComplete aggregate }
     result
   }
+
+  /**
+   * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
+   */
+  def reduce[T](futures: Iterable[Future[T]], timeout: Long = Actor.TIMEOUT)(op: (T,T) => T): Future[T] = {
+    val result = new DefaultCompletableFuture[T](timeout)
+    val seedFound = new AtomicBoolean(false)
+    val seedFold = (f: Future[T]) => {
+      if (seedFound.compareAndSet(false, true)){ //Only the first completed should trigger the fold
+        if (f.exception.isDefined) result completeWithException f.exception.get //If the seed is a failure, we're done here
+        else (fold[T,T](f.result.get, timeout)(futures.filterNot(_ eq f))(op)).onComplete(result.completeWith(_)) //Fold using the seed
+      }
+      () //Returns Unit
+    }
+    for(f <- futures) f onComplete seedFold //Attach the listener to the Futures
+    result
+  }
+
+
 }
 
 sealed trait Future[T] {
