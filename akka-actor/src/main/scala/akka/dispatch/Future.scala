@@ -68,6 +68,12 @@ object Futures {
    */
   def awaitEither[T](f1: Future[T], f2: Future[T]): Option[T] = awaitOne(List(f1,f2)).asInstanceOf[Future[T]].resultOrException
 
+  /**
+   * A non-blocking fold over the specified futures.
+   * The fold is performed on the thread where the last future is completed,
+   * the result will be the first failure of any of the futures, or any failure in the actual fold,
+   * or the result of the fold.
+   */
   def fold[R,T](zero: R, timeout: Long = Actor.TIMEOUT)(futures: Traversable[Future[T]])(foldFun: (R, T) => R): Future[R] = {
     val result = new DefaultCompletableFuture[R](timeout)
     val results = new ConcurrentLinkedQueue[T]()
