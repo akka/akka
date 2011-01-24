@@ -2,10 +2,10 @@ package akka.actor
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import akka.dispatch.Futures
 import Actor._
 import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.CountDownLatch
+import akka.dispatch. {Future, Futures}
 
 object FutureSpec {
   class TestActor extends Actor {
@@ -169,6 +169,10 @@ class FutureSpec extends JUnitSuite {
     assert(Futures.fold(0)(futures)(_ + _).awaitBlocking.exception.get.getMessage === "shouldFoldResultsWithException: expected")
   }
 
+  @Test def shouldFoldReturnZeroOnEmptyInput {
+    assert(Futures.fold(0)(List[Future[Int]]())(_ + _).awaitBlocking.result.get === 0)
+  }
+
   @Test def shouldReduceResults {
     val actors = (1 to 10).toList map { _ =>
       actorOf(new Actor {
@@ -192,5 +196,9 @@ class FutureSpec extends JUnitSuite {
     }
     def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 100 )) }
     assert(Futures.reduce(futures)(_ + _).awaitBlocking.exception.get.getMessage === "shouldFoldResultsWithException: expected")
+  }
+
+  @Test(expected = classOf[UnsupportedOperationException]) def shouldReduceThrowIAEOnEmptyInput {
+    Futures.reduce(List[Future[Int]]())(_ + _).await.resultOrException
   }
 }
