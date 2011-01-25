@@ -884,22 +884,27 @@ class LocalActorRef private[akka] (
   }
 
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
-
-    def performRestart {
+     def performRestart {
       Actor.log.slf4j.info("Restarting actor [{}] configured as PERMANENT.", id)
       val failedActor = actorInstance.get
-      Actor.log.slf4j.debug("Invoking 'preRestart' for failed actor instance [{}].", id)
-      failedActor.preRestart(reason)
-      val freshActor = newActor
-      setActorSelfFields(failedActor,null) //Only null out the references if we could instantiate the new actor
-      actorInstance.set(freshActor) //Assign it here so if preStart fails, we can null out the sef-refs next call
-      freshActor.preStart
+
       failedActor match {
-        case p: Proxyable => p.swapProxiedActor(freshActor)
+        case p: Proxyable =>
+          //p.swapProxiedActor(freshActor) //TODO: broken
+          Actor.log.slf4j.debug("Invoking 'preRestart' for failed actor instance [{}].", id)
+          failedActor.preRestart(reason)
+          Actor.log.slf4j.debug("Invoking 'postRestart' for failed actor instance [{}].", id)
+          failedActor.postRestart(reason)
         case _ =>
+          Actor.log.slf4j.debug("Invoking 'preRestart' for failed actor instance [{}].", id)
+          failedActor.preRestart(reason)
+          val freshActor = newActor
+          setActorSelfFields(failedActor,null) //Only null out the references if we could instantiate the new actor
+          actorInstance.set(freshActor) //Assign it here so if preStart fails, we can null out the sef-refs next call
+          freshActor.preStart
+          Actor.log.slf4j.debug("Invoking 'postRestart' for new actor instance [{}].", id)
+          freshActor.postRestart(reason)
       }
-      Actor.log.slf4j.debug("Invoking 'postRestart' for new actor instance [{}].", id)
-      freshActor.postRestart(reason)
     }
 
     def tooManyRestarts {
@@ -935,7 +940,8 @@ class LocalActorRef private[akka] (
                 performRestart
                 true
               } catch {
-                case e => false //An error or exception here should trigger a retry
+                case e => Actor.log.slf4j.debug("Unexpected exception during restart",e)
+                          false //An error or exception here should trigger a retry
               }
 
               Actor.log.slf4j.debug("Restart: {} for [{}].", success, id)
