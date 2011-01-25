@@ -17,6 +17,7 @@ import org.codehaus.aspectwerkz.proxy.Proxy
 import org.codehaus.aspectwerkz.annotation.{Aspect, Around}
 
 import java.net.InetSocketAddress
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.reflect.BeanProperty
 import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
 
@@ -807,7 +808,7 @@ private[akka] sealed class ServerManagedTypedActorAspect extends ActorAspect {
 
   @Around("execution(* *.*(..)) && this(akka.actor.ServerManagedTypedActor)")
   def invoke(joinPoint: JoinPoint): AnyRef = {
-    if (!isInitialized) initialize(joinPoint)
+    initialize(joinPoint)
     remoteDispatch(joinPoint)
   }
 
@@ -830,7 +831,7 @@ private[akka] sealed class TypedActorAspect extends ActorAspect {
 
   @Around("execution(* *.*(..)) && !this(akka.actor.ServerManagedTypedActor)")
   def invoke(joinPoint: JoinPoint): AnyRef = {
-    if (!isInitialized) initialize(joinPoint)
+    initialize(joinPoint)
     dispatch(joinPoint)
   }
 
@@ -844,8 +845,8 @@ private[akka] sealed class TypedActorAspect extends ActorAspect {
  * Base class for TypedActorAspect and ServerManagedTypedActorAspect to reduce code duplication.
  */
 private[akka] abstract class ActorAspect {
-  @volatile protected var isInitialized = false
-  @volatile protected var isStopped = false
+  protected val isInitialized = new AtomicBoolean(false)
+  protected val isStopped = new AtomicBoolean(false)
   protected var interfaceClass: Class[_] = _
   protected var typedActor: TypedActor = _
   protected var actorRef: ActorRef = _
@@ -861,11 +862,16 @@ private[akka] abstract class ActorAspect {
     val isCoordinated = TypedActor.isCoordinated(methodRtti)
 
     typedActor.context._sender = senderProxy
-    if (!actorRef.isRunning && !isStopped) {
-      isStopped = true
-      joinPoint.proceed
 
-    } else if (isOneWay && isCoordinated) {
+    if (!isStopped.get && !actorRef.isRunning) {
+      if (isStopped.compareAndSet(false,true)) {
+        val proxy = TypedActor.proxyFor(actorRef)
+        if (proxy ne null)
+        TypedActor.stop(proxy)
+      }
+    }
+
+    if (isOneWay && isCoordinated) {
       val coordinatedOpt = Option(Coordination.coordinated.value)
       val coordinated = coordinatedOpt.map( coord =>
         if (Coordination.firstParty.value) { // already included in coordination
@@ -880,7 +886,6 @@ private[akka] abstract class ActorAspect {
 
     } else if (isCoordinated) {
       throw new CoordinateException("Can't use @Coordinated annotation with non-void methods.")
-
     } else if (isOneWay) {
       actorRef.!(joinPoint)(senderActorRef)
       null.asInstanceOf[AnyRef]
@@ -942,15 +947,16 @@ private[akka] abstract class ActorAspect {
     (escapedArgs, isEscaped)
   }
 
-  protected def initialize(joinPoint: JoinPoint): Unit = {
-    val init = AspectInitRegistry.initFor(joinPoint.getThis)
-    interfaceClass = init.interfaceClass
-    typedActor = init.targetInstance
-    actorRef = init.actorRef
-    uuid = actorRef.uuid
-    remoteAddress = init.remoteAddress
-    timeout = init.timeout
-    isInitialized = true
+  protected def initialize(joinPoint: JoinPoint) {
+    if(isInitialized.compareAndSet(false, true)) {
+      val init = AspectInitRegistry.initFor(joinPoint.getThis)
+      interfaceClass = init.interfaceClass
+      typedActor = init.targetInstance
+      actorRef = init.actorRef
+      uuid = actorRef.uuid
+      remoteAddress = init.remoteAddress
+      timeout = init.timeout
+    }
   }
 }
 
