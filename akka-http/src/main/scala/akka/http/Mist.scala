@@ -251,7 +251,7 @@ trait Endpoint { this: Actor =>
     // dispatch the suspended requests
     //
     case req: RequestMethod => {
-      val uri = req.request.getRequestURI
+      val uri = req.request.getPathInfo
       val endpoints = _attachments.filter { _._1(uri) }
 
       if (!endpoints.isEmpty)
