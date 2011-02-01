@@ -180,4 +180,247 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 
     for(a <- List(t1,t2,d1,d2)) a.stop
   }
+
+	// Actor Pool Capacity Tests
+	
+		//
+		// make sure the pool is of the fixed, expected capacity
+		//
+  	@Test def testFixedCapacityActorPool = {
+
+		val latch = new CountDownLatch(2)
+		val counter = new AtomicInteger(0)
+		class TestPool extends Actor with DefaultActorPool 
+									 with FixedCapacityStrategy
+									 with SmallestMailboxSelector
+		{
+			def factory = actorOf(new Actor {
+				def receive = {
+					case _ =>
+						counter.incrementAndGet
+						latch.countDown
+				}
+			})
+			
+			def limit = 2
+			def selectionCount = 1
+			def partialFill = true
+			def instance = factory
+			def receive = _route
+		}
+		
+		val pool = actorOf(new TestPool).start
+		pool ! "a"
+		pool ! "b"
+		val done = latch.await(1,TimeUnit.SECONDS)
+		done must be (true)
+		counter.get must be (2)
+		(pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (2)
+		
+		pool stop
+	}
+	
+		//
+		// make sure the pool starts at the expected lower limit and grows to the upper as needed
+		//	as influenced by the backlog of blocking pooled actors
+		//
+  	@Test def testBoundedCapacityActorPoolWithActiveFuturesPressure = {
+
+		var latch = new CountDownLatch(3)
+		val counter = new AtomicInteger(0)
+		class TestPool extends Actor with DefaultActorPool 
+									 with BoundedCapacityStrategy
+									 with ActiveFuturesPressureCapacitor
+									 with SmallestMailboxSelector
+		{
+			def factory = actorOf(new Actor {
+				def receive = {
+					case n:Int => 
+						Thread.sleep(n)
+						counter.incrementAndGet
+						latch.countDown
+				}
+			})
+
+			def lowerBound = 2
+			def upperBound = 4
+			def capacityIncrement = 1
+			def partialFill = true
+			def selectionCount = 1
+			def instance = factory
+			def receive = _route
+		}
+
+		//
+		// first message should create the minimum number of delgates
+		//
+		val pool = actorOf(new TestPool).start
+		pool ! 1
+		(pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (2)
+
+		var loops = 0
+		def loop(t:Int) = {
+			latch = new CountDownLatch(loops)
+			counter.set(0)
+			for (m <- 0 until loops) {
+				pool !!! t
+				Thread.sleep(50)
+			}
+		}
+		
+		//
+		// 2 more should go thru w/out triggering more
+		//
+		loops = 2
+		loop(500)
+		var done = latch.await(5,TimeUnit.SECONDS)
+		done must be (true)
+		counter.get must be (loops)
+		(pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (2)
+
+		//
+		// a whole bunch should max it out
+		//
+		loops = 10
+		loop(500)
+
+		done = latch.await(5,TimeUnit.SECONDS)
+		done must be (true)
+		counter.get must be (loops)
+		(pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (4)
+		
+		pool stop
+	}
+
+		//
+		// make sure the pool starts at the expected lower limit and grows to the upper as needed
+		//	as influenced by the backlog of messages in the delegate mailboxes
+		//
+  	@Test def testBoundedCapacityActorPoolWithMailboxPressure = {
+
+		var latch = new CountDownLatch(3)
+		val counter = new AtomicInteger(0)
+		class TestPool extends Actor with DefaultActorPool 
+									 with BoundedCapacityStrategy
+									 with MailboxPressureCapacitor
+									 with SmallestMailboxSelector
+		{
+			def factory = actorOf(new Actor {
+				def receive = {
+					case n:Int => 
+						Thread.sleep(n)
+						counter.incrementAndGet
+						latch.countDown
+				}
+			})
+
+			def lowerBound = 2
+			def upperBound = 4
+			def pressureThreshold = 3
+			def capacityIncrement = 1
+			def partialFill = true
+			def selectionCount = 1
+			def instance = factory
+			def receive = _route
+		}
+
+		val pool = actorOf(new TestPool).start
+
+		var loops = 0
+		def loop(t:Int) = {
+			latch = new CountDownLatch(loops)
+			counter.set(0)
+			for (m <- 0 until loops) {
+				pool ! t
+			}
+		}
+		
+		//
+		// send a few messages and observe pool at its lower bound
+		//
+		loops = 3
+		loop(500)
+		var done = latch.await(5,TimeUnit.SECONDS)
+		done must be (true)
+		counter.get must be (loops)
+		(pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (2)
+
+		//
+		// send a bunch over the theshold and observe an increment
+		//
+		loops = 15
+		loop(500)
+
+		done = latch.await(10,TimeUnit.SECONDS)
+		done must be (true)
+		counter.get must be (loops)
+		(pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (3)
+		
+		pool stop
+	}
+	
+	// Actor Pool Selector Tests
+	
+	@Test def testRoundRobinSelector = {
+
+		var latch = new CountDownLatch(2)
+		val delegates = new java.util.concurrent.ConcurrentHashMap[String, String]
+		
+		class TestPool1 extends Actor with DefaultActorPool 
+									  with FixedCapacityStrategy
+									  with RoundRobinSelector
+		{
+			def factory = actorOf(new Actor {
+				def receive = {
+					case _ => 
+						delegates put(self.uuid.toString, "")
+						latch.countDown
+				}
+			})
+			
+			def limit = 1
+			def selectionCount = 2
+			def partialFill = true
+			def instance = factory
+			def receive = _route
+		}
+		
+		val pool1 = actorOf(new TestPool1).start
+		pool1 ! "a"
+		pool1 ! "b"
+		var done = latch.await(1,TimeUnit.SECONDS)
+		done must be (true)
+		delegates.size must be (1)
+		pool1 stop
+		
+		class TestPool2 extends Actor with DefaultActorPool 
+					 				  with FixedCapacityStrategy
+					 				  with RoundRobinSelector
+		{
+			def factory = actorOf(new Actor {
+				def receive = {
+					case _ => 
+						delegates put(self.uuid.toString, "")
+						latch.countDown
+				}
+			})
+			
+			def limit = 2
+			def selectionCount = 2
+			def partialFill = false
+			def instance = factory
+			def receive = _route
+		}		
+
+		latch = new CountDownLatch(2)
+		delegates clear
+		
+		val pool2 = actorOf(new TestPool2).start
+		pool2 ! "a"
+		pool2 ! "b"
+	 	done = latch.await(1,TimeUnit.SECONDS)
+		done must be (true)
+		delegates.size must be (2)
+		pool2 stop
+	}
 }
