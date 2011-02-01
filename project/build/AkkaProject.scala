@@ -16,16 +16,18 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Compile settings
   // -------------------------------------------------------------------------------------------------------------------
 
-  override def compileOptions = super.compileOptions ++
+  val scalaCompileSettings =
     Seq("-deprecation",
         "-Xmigration",
         "-Xcheckinit",
-        "-Xstrict-warnings",
-        "-optimise", //Uncomment this for release compile
+        "-optimise",
         "-Xwarninit",
         "-encoding", "utf8")
-        .map(CompileOption(_))
-  override def javaCompileOptions = JavaCompileOption("-Xlint:unchecked") :: super.javaCompileOptions.toList
+
+  val javaCompileSettings = Seq("-Xlint:unchecked")
+
+  override def compileOptions = super.compileOptions ++ scalaCompileSettings.map(CompileOption)
+  override def javaCompileOptions = super.javaCompileOptions ++ javaCompileSettings.map(JavaCompileOption)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Deploy/dist settings
@@ -471,6 +473,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) 
     with DeployProject with OSGiProject with McPom {
     override def disableCrossPaths = true
+
+    override def compileOptions = super.compileOptions ++ scalaCompileSettings.map(CompileOption)
+    override def javaCompileOptions = super.javaCompileOptions ++ javaCompileSettings.map(JavaCompileOption)
+
     lazy val sourceArtifact = Artifact(this.artifactID, "src", "jar", Some("sources"), Nil, None)
     lazy val docsArtifact = Artifact(this.artifactID, "doc", "jar", Some("docs"), Nil, None)
     override def runClasspath = super.runClasspath +++ (AkkaParentProject.this.info.projectPath / "config")
