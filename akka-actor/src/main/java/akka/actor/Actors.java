@@ -69,4 +69,18 @@ public class Actors {
     public static ActorRef actorOf(final Class<? extends Actor> type) {
         return Actor$.MODULE$.actorOf(type);
     }
+
+
+    /**
+     * The message that is sent when an Actor gets a receive timeout.
+     * <pre>
+     *  if( message == receiveTimeout() ) {
+     *    //Timed out
+     *  }
+     * </pre>
+     * @return the single instance of ReceiveTimeout
+     */
+    public final static ReceiveTimeout$ receiveTimeout() {
+        return ReceiveTimeout$.MODULE$;
+    }
 }

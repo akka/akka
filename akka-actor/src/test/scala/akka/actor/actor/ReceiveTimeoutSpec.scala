@@ -101,4 +101,8 @@ class ReceiveTimeoutSpec extends JUnitSuite {
     assert(timeoutLatch.tryAwait(1, TimeUnit.SECONDS) == false)
     timeoutActor.stop
   }
+
+  @Test def ActorsReceiveTimeoutShouldBeReceiveTimeout {
+    assert(akka.actor.Actors.receiveTimeout() eq ReceiveTimeout)
+  }
 }
