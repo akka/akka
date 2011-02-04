@@ -14,20 +14,6 @@ import akka.actor.remote.ServerInitiatedRemoteActorSpec.RemoteActorSpecActorUnid
 import akka.actor.remote.AkkaRemoteTest
 
 class TypedActorSerializationSpec extends AkkaRemoteTest {
-  var typedActor: MyTypedActor = null
-
-  override def beforeAll = {
-    super.beforeAll
-    typedActor = TypedActor.newInstance(classOf[MyTypedActor], classOf[MyTypedActorImpl], 1000)
-    remote.registerTypedActor("typed-actor-service", typedActor)
-  }
-
-  // make sure the servers shutdown cleanly after the test has finished
-  override def afterAll = {
-    TypedActor.stop(typedActor)
-    super.afterAll
-  }
-
   object MyTypedStatelessActorFormat extends StatelessActorFormat[MyStatelessTypedActorImpl]
 
   class MyTypedActorFormat extends Format[MyTypedActorImpl] {
@@ -86,7 +72,7 @@ class TypedActorSerializationSpec extends AkkaRemoteTest {
       typedActor2.requestReply("hello") must equal("world 3 3")
     }
 
-    "should be able to serialize a local yped actor ref to a remote typed actor ref proxy" in {
+    "should be able to serialize a local typed actor ref to a remote typed actor ref proxy" in {
       val typedActor1 = TypedActor.newInstance(classOf[MyTypedActor], classOf[MyStatelessTypedActorImpl], 1000)
       typedActor1.requestReply("hello") must equal("world")
       typedActor1.requestReply("hello") must equal("world")

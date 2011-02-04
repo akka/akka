@@ -527,7 +527,7 @@ class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with
         return new LocalActorRef(factory, None) // Code is much simpler with return
     }
 
-    val ref = new LocalActorRef(factory, Some(new InetSocketAddress(host, port)))
+    val ref = new LocalActorRef(factory, Some(new InetSocketAddress(host, port)), clientManaged = true)
     //ref.timeout = timeout //removed because setting default timeout should be done after construction
     ref
   }
