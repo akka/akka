@@ -551,7 +551,8 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
  */
 class LocalActorRef private[akka] (
   private[this] val actorFactory: () => Actor,
-  val homeAddress: Option[InetSocketAddress])
+  val homeAddress: Option[InetSocketAddress],
+  val clientManaged: Boolean = false)
   extends ActorRef with ScalaActorRef {
 
   @volatile
@@ -598,7 +599,7 @@ class LocalActorRef private[akka] (
   /**
    * Returns whether this actor ref is client-managed remote or not
    */
-  private[akka] final def isClientManaged_? = homeAddress.isDefined && isRemotingEnabled
+  private[akka] final def isClientManaged_? = clientManaged && homeAddress.isDefined && isRemotingEnabled
 
   // ========= PUBLIC FUNCTIONS =========
 
@@ -644,7 +645,7 @@ class LocalActorRef private[akka] (
         initializeActorInstance
 
       if (isClientManaged_?)
-        Actor.remote.registerClientManagedActor(homeAddress.get.getHostName,homeAddress.get.getPort, uuid)
+        Actor.remote.registerClientManagedActor(homeAddress.get.getHostName, homeAddress.get.getPort, uuid)
 
       checkReceiveTimeout //Schedule the initial Receive timeout
     }
@@ -664,7 +665,7 @@ class LocalActorRef private[akka] (
       Actor.registry.unregister(this)
       if (isRemotingEnabled) {
         if (isClientManaged_?)
-          Actor.remote.registerClientManagedActor(homeAddress.get.getHostName,homeAddress.get.getPort, uuid)
+          Actor.remote.unregisterClientManagedActor(homeAddress.get.getHostName, homeAddress.get.getPort, uuid)
         Actor.remote.unregister(this)
       }
       setActorSelfFields(actorInstance.get,null)

@@ -575,8 +575,16 @@ object TypedActor extends Logging {
     if (config._id.isDefined) actorRef.id = config._id.get
 
     actorRef.timeout = config.timeout
+
     //log.slf4j.debug("config._host for {} is {} but homeAddress is {} and on ref {}",Array[AnyRef](intfClass, config._host, typedActor.context.homeAddress,actorRef.homeAddress))
-    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, actorRef.homeAddress, actorRef.timeout))
+
+    val remoteAddress = actorRef match {
+      case remote: RemoteActorRef => remote.homeAddress
+      case local: LocalActorRef if local.clientManaged => local.homeAddress
+      case _ => None
+    }
+
+    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, remoteAddress, actorRef.timeout))
     actorRef.start
     proxy.asInstanceOf[T]
   }

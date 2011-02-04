@@ -206,6 +206,11 @@ object ActorSerialization {
       else actorClass.newInstance.asInstanceOf[Actor]
     }
 
+    val homeAddress = {
+      val address = protocol.getOriginalAddress
+      Some(new InetSocketAddress(address.getHostname, address.getPort))
+    }
+
     val ar = new LocalActorRef(
       uuidFrom(protocol.getUuid.getHigh, protocol.getUuid.getLow),
       protocol.getId,
@@ -215,7 +220,7 @@ object ActorSerialization {
       supervisor,
       hotswap,
       factory,
-      None) //TODO: shouldn't originalAddress be optional?
+      homeAddress)
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
     messages.foreach(message => ar ! MessageSerializer.deserialize(message.getMessage))
