@@ -76,8 +76,11 @@ trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
  * Module for local actor serialization.
  */
 object ActorSerialization {
+  def fromBinary[T <: Actor](bytes: Array[Byte], homeAddress: InetSocketAddress)(implicit format: Format[T]): ActorRef =
+    fromBinaryToLocalActorRef(bytes, Some(homeAddress), format)
+
   def fromBinary[T <: Actor](bytes: Array[Byte])(implicit format: Format[T]): ActorRef =
-    fromBinaryToLocalActorRef(bytes, format)
+    fromBinaryToLocalActorRef(bytes, None, format)
 
   def toBinary[T <: Actor](a: ActorRef, serializeMailBox: Boolean = true)(implicit format: Format[T]): Array[Byte] =
     toSerializedActorRefProtocol(a, format, serializeMailBox).toByteArray
@@ -153,8 +156,17 @@ object ActorSerialization {
     builder.build
   }
 
-  private def fromBinaryToLocalActorRef[T <: Actor](bytes: Array[Byte], format: Format[T]): ActorRef =
-    fromProtobufToLocalActorRef(SerializedActorRefProtocol.newBuilder.mergeFrom(bytes).build, format, None)
+  private def fromBinaryToLocalActorRef[T <: Actor](
+    bytes: Array[Byte], 
+    homeAddress: Option[InetSocketAddress], 
+    format: Format[T]): ActorRef = {
+    val builder = SerializedActorRefProtocol.newBuilder.mergeFrom(bytes)
+    homeAddress.foreach { addr => 
+      val addressProtocol = AddressProtocol.newBuilder.setHostname(addr.getHostName).setPort(addr.getPort).build
+      builder.setOriginalAddress(addressProtocol)
+    }
+    fromProtobufToLocalActorRef(builder.build, format, None)
+  }
 
   private[akka] def fromProtobufToLocalActorRef[T <: Actor](
       protocol: SerializedActorRefProtocol, format: Format[T], loader: Option[ClassLoader]): ActorRef = {
@@ -194,6 +206,11 @@ object ActorSerialization {
       else actorClass.newInstance.asInstanceOf[Actor]
     }
 
+    val homeAddress = {
+      val address = protocol.getOriginalAddress
+      Some(new InetSocketAddress(address.getHostname, address.getPort))
+    }
+
     val ar = new LocalActorRef(
       uuidFrom(protocol.getUuid.getHigh, protocol.getUuid.getLow),
       protocol.getId,
@@ -203,7 +220,7 @@ object ActorSerialization {
       supervisor,
       hotswap,
       factory,
-      None) //TODO: shouldn't originalAddress be optional?
+      homeAddress)
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
     messages.foreach(message => ar ! MessageSerializer.deserialize(message.getMessage))
