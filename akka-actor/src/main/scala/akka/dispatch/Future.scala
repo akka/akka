@@ -44,7 +44,7 @@ object Futures {
   def awaitAll(futures: List[Future[_]]): Unit = futures.foreach(_.await)
 
   /**
-   * Returns the First Future that is completed (blocking!)
+   *  Returns the First Future that is completed (blocking!)
    */
   def awaitOne(futures: List[Future[_]], timeout: Long = Long.MaxValue): Future[_] = firstCompletedOf(futures, timeout).await
 
@@ -141,21 +141,25 @@ sealed trait Future[T] {
 
   def result: Option[T]
 
+  /**
+   * Returns the result of the Future if one is available within the specified time,
+   * if the time left on the future is less than the specified time, the time left on the future will be used instead
+   * of the specified time.
+   * returns None if no result, Some(Left(t)) if a result, and Some(Right(error)) if there was an exception
+   */
+  def resultWithin(time: Long, unit: TimeUnit): Option[Either[T,Throwable]]
+
   def exception: Option[Throwable]
 
   def onComplete(func: Future[T] => Unit): Future[T]
 
   /**
-   *  Returns the current result, throws the exception is one has been raised, else returns None
+   *   Returns the current result, throws the exception is one has been raised, else returns None
    */
-  def resultOrException: Option[T] = {
-    val r = result
-    if (r.isDefined) result
-    else {
-      val problem = exception
-      if (problem.isDefined) throw problem.get
-      else None
-    }
+  def resultOrException: Option[T] = resultWithin(0, TimeUnit.MILLISECONDS) match {
+    case None => None
+    case Some(Left(t)) => Some(t)
+    case Some(Right(t)) => throw t
   }
 
   /* Java API */
@@ -171,6 +175,11 @@ sealed trait Future[T] {
       def timeoutInNanos = wrapped.timeoutInNanos
       def result: Option[O] = { wrapped.result map f }
       def exception: Option[Throwable] = wrapped.exception
+      def resultWithin(time: Long, unit: TimeUnit): Option[Either[O,Throwable]] = wrapped.resultWithin(time, unit) match {
+        case None => None
+        case Some(Left(t)) => Some(Left(f(t)))
+        case Some(Right(t)) => Some(Right(t))
+      }
       def onComplete(func: Future[O] => Unit): Future[O] = { wrapped.onComplete(_ => func(this)); this }
     }
   }
@@ -203,11 +212,31 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
   private var _exception: Option[Throwable] = None
   private var _listeners: List[Future[T] => Unit] = Nil
 
+  def resultWithin(time: Long, unit: TimeUnit): Option[Either[T,Throwable]] = try {
+    _lock.lock
+    var wait = unit.toNanos(time).min(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos))
+    while (!_completed && wait > 0) {
+      val start = currentTimeInNanos
+      try {
+        wait = _signal.awaitNanos(wait)
+      } catch {
+        case e: InterruptedException =>
+          wait = wait - (currentTimeInNanos - start)
+      }
+    }
+    if(_completed) {
+      if (_result.isDefined) Some(Left(_result.get))
+      else Some(Right(_exception.get))
+    } else None
+  } finally {
+    _lock.unlock
+  }
+
   def await = try {
     _lock.lock
     var wait = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
     while (!_completed && wait > 0) {
-      var start = currentTimeInNanos
+      val start = currentTimeInNanos
       try {
         wait = _signal.awaitNanos(wait)
         if (wait <= 0) throw new FutureTimeoutException("Futures timed out after [" + timeout + "] milliseconds")
