@@ -42,6 +42,8 @@ object RemoteServerSettings {
     level
   }
 
+  val BACKLOG = config.getInt("akka.remote.server.backlog", 4096)
+
   val SECURE = {
     /*if (config.getBool("akka.remote.ssl.service",false)) {
       val properties = List(
