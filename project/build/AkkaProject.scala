@@ -248,15 +248,18 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   //override def defaultPublishRepository = Some(Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile))
   val publishTo = Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile)
-  val sourceArtifact = Artifact(artifactID, "src", "jar", Some("sources"), Nil, None)
-  val docsArtifact   = Artifact(artifactID, "doc", "jar", Some("docs"), Nil, None)
+
+  override def artifacts = Set(Artifact(artifactID, "pom", "pom"))
+
+  // val sourceArtifact = Artifact(artifactID, "src", "jar", Some("sources"), Nil, None)
+  // val docsArtifact   = Artifact(artifactID, "doc", "jar", Some("docs"), Nil, None)
 
   // Credentials(Path.userHome / ".akka_publish_credentials", log)
 
-  //override def documentOptions = encodingUtf8.map(SimpleDocOption(_))
-  override def packageDocsJar = defaultJarPath("-docs.jar")
-  override def packageSrcJar= defaultJarPath("-sources.jar")
-  override def packageToPublishActions = super.packageToPublishActions ++ Seq(packageDocs, packageSrc)
+  // override def documentOptions = encodingUtf8.map(SimpleDocOption(_))
+  // override def packageDocsJar = defaultJarPath("-docs.jar")
+  // override def packageSrcJar= defaultJarPath("-sources.jar")
+  // override def packageToPublishActions = super.packageToPublishActions ++ Seq(packageDocs, packageSrc)
 
   override def pomExtra =
     <inceptionYear>2009</inceptionYear>
@@ -409,6 +412,17 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
     override def disableCrossPaths = true
     override def spdeSourcePath = mainSourcePath / "spde"
+
+    lazy val sourceArtifact = Artifact(this.artifactID, "src", "jar", Some("sources"), Nil, None)
+    lazy val docsArtifact = Artifact(this.artifactID, "doc", "jar", Some("docs"), Nil, None)
+    override def packageDocsJar = this.defaultJarPath("-docs.jar")
+    override def packageSrcJar  = this.defaultJarPath("-sources.jar")
+    override def packageToPublishActions = super.packageToPublishActions ++ Seq(this.packageDocs, this.packageSrc)
+
+    lazy val publishRelease = {
+      val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
+      publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
+    }
   }
 
   class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
@@ -424,6 +438,11 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSampleFSMProject(_), akka_actor)
     lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
       new AkkaSampleRemoteProject(_), akka_remote)
+
+    lazy val publishRelease = {
+      val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
+      publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
+    }
   }
 
   // -------------------------------------------------------------------------------------------------------------------
