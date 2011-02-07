@@ -4,8 +4,8 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import Actor._
 import org.multiverse.api.latches.StandardLatch
-import java.util.concurrent.CountDownLatch
 import akka.dispatch. {Future, Futures}
+import java.util.concurrent. {TimeUnit, CountDownLatch}
 
 object FutureSpec {
   class TestActor extends Actor {
@@ -200,5 +200,22 @@ class FutureSpec extends JUnitSuite {
 
   @Test(expected = classOf[UnsupportedOperationException]) def shouldReduceThrowIAEOnEmptyInput {
     Futures.reduce(List[Future[Int]]())(_ + _).await.resultOrException
+  }
+
+  @Test def resultWithinShouldNotThrowExceptions {
+    val actors = (1 to 10).toList map { _ =>
+      actorOf(new Actor {
+        def receive = { case (add: Int, wait: Int) => Thread.sleep(wait); self reply_? add }
+      }).start
+    }
+
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, if(idx >= 5) 5000 else 0 )) }
+    val result = for(f <- futures) yield f.resultWithin(2, TimeUnit.SECONDS)
+    val done = result collect { case Some(Left(x)) => x }
+    val undone = result collect { case None => None }
+    val errors = result collect { case Some(Right(t)) => t }
+    assert(done.size === 5)
+    assert(undone.size === 5)
+    assert(errors.size === 0)
   }
 }
