@@ -547,6 +547,7 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
 
   val pipelineFactory = new RemoteServerPipelineFactory(name, openChannels, loader, serverModule)
   bootstrap.setPipelineFactory(pipelineFactory)
+  bootstrap.setOption("backlog", RemoteServerSettings.BACKLOG)
   bootstrap.setOption("child.tcpNoDelay", true)
   bootstrap.setOption("child.keepAlive", true)
   bootstrap.setOption("child.reuseAddress", true)
