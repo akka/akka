@@ -354,7 +354,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 		done = latch.await(10,TimeUnit.SECONDS)
 		done must be (true)
 		counter.get must be (loops)
-		(pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (3)
+		(pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be >= (3)
 		
 		pool stop
 	}
