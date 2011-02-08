@@ -251,6 +251,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   override def artifacts = Set(Artifact(artifactID, "pom", "pom"))
 
+  override def deliverProjectDependencies =
+    super.deliverProjectDependencies.toList - akka_samples.projectID - akka_sbt_plugin.projectID
+
   // val sourceArtifact = Artifact(artifactID, "src", "jar", Some("sources"), Nil, None)
   // val docsArtifact   = Artifact(artifactID, "doc", "jar", Some("docs"), Nil, None)
 
