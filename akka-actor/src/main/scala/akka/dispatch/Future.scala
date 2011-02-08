@@ -53,8 +53,10 @@ object Futures {
    */
   def firstCompletedOf(futures: Iterable[Future[_]], timeout: Long = Long.MaxValue): Future[_] = {
     val futureResult = new DefaultCompletableFuture[Any](timeout)
-    val fun = (f: Future[_]) => futureResult completeWith f.asInstanceOf[Future[Any]]
-    for(f <- futures) f onComplete fun
+
+    val completeFirst: Future[_] => Unit = f => futureResult.completeWith(f.asInstanceOf[Future[Any]])
+    for(f <- futures) f onComplete completeFirst
+
     futureResult
   }
 
@@ -76,33 +78,33 @@ object Futures {
    * or the result of the fold.
    */
   def fold[T,R](zero: R, timeout: Long = Actor.TIMEOUT)(futures: Iterable[Future[T]])(foldFun: (R, T) => R): Future[R] = {
-    val result = new DefaultCompletableFuture[R](timeout)
-    val results = new ConcurrentLinkedQueue[T]()
-    val waitingFor = new AtomicInteger(futures.size)
+    if(futures.isEmpty) {
+      (new DefaultCompletableFuture[R](timeout)) completeWithResult zero
+    } else {
+      val result = new DefaultCompletableFuture[R](timeout)
+      val results = new ConcurrentLinkedQueue[T]()
+      val waitingFor = new AtomicInteger(futures.size)
 
-    val aggregate = (f: Future[T]) => if (!result.isCompleted) { //TODO: This is an optimization, is it premature?
-      if (f.exception.isDefined)
-        result completeWithException f.exception.get
-      else {
-        results add f.result.get
-        if (waitingFor.decrementAndGet == 0) { //Only one thread can get here
-          try {
-            val r = scala.collection.JavaConversions.asScalaIterable(results).foldLeft(zero)(foldFun)
-            results.clear //Do not retain the values since someone can hold onto the Future for a long time
-            result completeWithResult r
-          } catch {
-            case e: Exception => result completeWithException e
+      val aggregate: Future[T] => Unit = f => if (!result.isCompleted) { //TODO: This is an optimization, is it premature?
+        if (f.exception.isDefined)
+          result completeWithException f.exception.get
+        else {
+          results add f.result.get
+          if (waitingFor.decrementAndGet == 0) { //Only one thread can get here
+            try {
+              val r = scala.collection.JavaConversions.asScalaIterable(results).foldLeft(zero)(foldFun)
+              results.clear //Do not retain the values since someone can hold onto the Future for a long time
+              result completeWithResult r
+            } catch {
+              case e: Exception => result completeWithException e
+            }
           }
         }
       }
-    }
 
-    if(futures.isEmpty)
-      result completeWithResult zero
-    else
       futures foreach { _ onComplete aggregate }
-
-    result
+      result
+    }
   }
 
   /**
@@ -110,19 +112,20 @@ object Futures {
    */
   def reduce[T, R >: T](futures: Iterable[Future[T]], timeout: Long = Actor.TIMEOUT)(op: (R,T) => T): Future[R] = {
     if (futures.isEmpty)
-      throw new UnsupportedOperationException("empty reduce left")
-
-    val result = new DefaultCompletableFuture[R](timeout)
-    val seedFound = new AtomicBoolean(false)
-    val seedFold = (f: Future[T]) => {
-      if (seedFound.compareAndSet(false, true)){ //Only the first completed should trigger the fold
-        if (f.exception.isDefined) result completeWithException f.exception.get //If the seed is a failure, we're done here
-        else (fold[T,R](f.result.get, timeout)(futures.filterNot(_ eq f))(op)).onComplete(result.completeWith(_)) //Fold using the seed
+      (new DefaultCompletableFuture[R](timeout)).completeWithException(new UnsupportedOperationException("empty reduce left"))
+    else {
+      val result = new DefaultCompletableFuture[R](timeout)
+      val seedFound = new AtomicBoolean(false)
+      val seedFold: Future[T] => Unit = f => {
+        if (seedFound.compareAndSet(false, true)){ //Only the first completed should trigger the fold
+          if (f.exception.isDefined) result completeWithException f.exception.get //If the seed is a failure, we're done here
+          else (fold[T,R](f.result.get, timeout)(futures.filterNot(_ eq f))(op)).onComplete(result.completeWith(_)) //Fold using the seed
+        }
+        () //Without this Unit value, the compiler crashes
       }
-      () //Returns Unit
+      for(f <- futures) f onComplete seedFold //Attach the listener to the Futures
+      result
     }
-    for(f <- futures) f onComplete seedFold //Attach the listener to the Futures
-    result
   }
 
 
@@ -163,7 +166,7 @@ sealed trait Future[T] {
   }
 
   /* Java API */
-  def onComplete(proc: Procedure[Future[T]]): Future[T] = onComplete(f => proc(f))
+  def onComplete(proc: Procedure[Future[T]]): Future[T] = onComplete(proc(_))
 
   def map[O](f: (T) => O): Future[O] = {
     val wrapped = this
@@ -186,14 +189,15 @@ sealed trait Future[T] {
 }
 
 trait CompletableFuture[T] extends Future[T] {
-  def completeWithResult(result: T)
-  def completeWithException(exception: Throwable)
-  def completeWith(other: Future[T]) {
+  def completeWithResult(result: T): CompletableFuture[T]
+  def completeWithException(exception: Throwable): CompletableFuture[T]
+  def completeWith(other: Future[T]): CompletableFuture[T] = {
     val result = other.result
     val exception = other.exception
     if (result.isDefined) completeWithResult(result.get)
     else if (exception.isDefined) completeWithException(exception.get)
     //else TODO how to handle this case?
+    this
   }
 }
 
@@ -288,7 +292,7 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
     _lock.unlock
   }
 
-  def completeWithResult(result: T) {
+  def completeWithResult(result: T): DefaultCompletableFuture[T] = {
     val notifyTheseListeners = try {
       _lock.lock
       if (!_completed) {
@@ -305,9 +309,11 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
 
     if (notifyTheseListeners.nonEmpty)
       notifyTheseListeners foreach notify
+
+    this
   }
 
-  def completeWithException(exception: Throwable) {
+  def completeWithException(exception: Throwable): DefaultCompletableFuture[T] = {
     val notifyTheseListeners = try {
       _lock.lock
       if (!_completed) {
@@ -324,6 +330,8 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
 
     if (notifyTheseListeners.nonEmpty)
       notifyTheseListeners foreach notify
+
+    this
   }
 
   def onComplete(func: Future[T] => Unit): CompletableFuture[T] = {
