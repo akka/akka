@@ -284,6 +284,19 @@ class ActiveRemoteClient private[akka] (
         log.slf4j.debug("Remote client connection failed", connection.getCause)
         false
       } else {
+        timer.newTimeout(new TimerTask() {
+          def run(timeout: Timeout) = {
+            if(isRunning) {
+              log.slf4j.debug("Reaping expired futures awaiting completion from [{}]", remoteAddress)
+              val i = futures.entrySet.iterator
+              while(i.hasNext) {
+                val e = i.next
+                if (e.getValue.isExpired)
+                  futures.remove(e.getKey)
+              }
+            }
+          }
+        }, RemoteClientSettings.REAP_FUTURES_DELAY.length, RemoteClientSettings.REAP_FUTURES_DELAY.unit)
         notifyListeners(RemoteClientStarted(module, remoteAddress))
         true
       }
@@ -440,8 +453,10 @@ class ActiveRemoteClientHandler(
     if (client.isWithinReconnectionTimeWindow) {
       timer.newTimeout(new TimerTask() {
         def run(timeout: Timeout) = {
-          client.openChannels.remove(event.getChannel)
-          client.connect(reconnectIfAlreadyConnected = true)
+          if (client.isRunning) {
+            client.openChannels.remove(event.getChannel)
+            client.connect(reconnectIfAlreadyConnected = true)
+          }
         }
       }, RemoteClientSettings.RECONNECT_DELAY.toMillis, TimeUnit.MILLISECONDS)
     } else spawn { client.shutdown }
