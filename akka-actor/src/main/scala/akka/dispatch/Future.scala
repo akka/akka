@@ -224,6 +224,8 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
           wait = wait - (currentTimeInNanos - start)
       }
     }
+    if (!_value.isDefined)
+      throw new FutureTimeoutException("Futures timed out after [" + timeout + "] milliseconds")
     this
   } finally {
     _lock.unlock
