@@ -210,16 +210,16 @@ abstract class RemoteClient private[akka] (
       } else {
           val futureResult = if (senderFuture.isDefined) senderFuture.get
                              else new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
-
+          val futureUuid = uuidFrom(request.getUuid.getHigh, request.getUuid.getLow)
+          futures.put(futureUuid, futureResult) //Add this prematurely, remove it if write fails
           currentChannel.write(request).addListener(new ChannelFutureListener {
             def operationComplete(future: ChannelFuture) {
               if (future.isCancelled) {
+                futures.remove(futureUuid) //Clean this up
                 //We don't care about that right now
               } else if (!future.isSuccess) {
+                futures.remove(futureUuid) //Clean this up
                 notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
-              } else {
-                val futureUuid = uuidFrom(request.getUuid.getHigh, request.getUuid.getLow)
-                futures.put(futureUuid, futureResult)
               }
             }
           })
