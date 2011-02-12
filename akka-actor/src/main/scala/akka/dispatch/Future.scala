@@ -146,6 +146,8 @@ sealed trait Future[T] {
 
   def result: Option[T] = value flatMap (_.right.toOption)
 
+  def awaitResult: Option[Either[Throwable, T]]
+
   /**
    * Returns the result of the Future if one is available within the specified time,
    * if the time left on the future is less than the specified time, the time left on the future will be used instead
@@ -207,6 +209,14 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
     } else {
       _value.isDefined
     }
+  }
+
+  def awaitResult: Option[Either[Throwable, T]] = try {
+    _lock.lock
+    awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos))
+    _value
+  } finally {
+    _lock.unlock
   }
 
   def resultWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]] = try {
