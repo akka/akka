@@ -11,6 +11,7 @@ import akka.routing.Dispatcher
 import java.util.concurrent.locks.ReentrantLock
 import akka.japi.Procedure
 import java.util.concurrent. {ConcurrentLinkedQueue, TimeUnit}
+import java.util.concurrent.TimeUnit.{NANOSECONDS => NANOS, MILLISECONDS => MILLIS}
 import akka.actor.Actor
 import annotation.tailrec
 import java.util.concurrent.atomic. {AtomicBoolean, AtomicInteger}
@@ -184,19 +185,20 @@ trait CompletableFuture[T] extends Future[T] {
 }
 
 // Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
-class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
-  import TimeUnit.{MILLISECONDS => TIME_UNIT}
+class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends CompletableFuture[T] {
 
-  def this() = this(0)
+  def this() = this(0, MILLIS)
 
-  val timeoutInNanos = TIME_UNIT.toNanos(timeout)
+  def this(timeout: Long) = this(timeout, MILLIS)
+
+  val timeoutInNanos = timeunit.toNanos(timeout)
   private val _startTimeInNanos = currentTimeInNanos
   private val _lock = new ReentrantLock
   private val _signal = _lock.newCondition
   private var _value: Option[Either[Throwable, T]] = None
   private var _listeners: List[Future[T] => Unit] = Nil
 
-  @scala.annotation.tailrec
+  @tailrec
   private def awaitUnsafe(wait: Long): Boolean = {
     if (!_value.isDefined && wait > 0) {
       val start = currentTimeInNanos
@@ -232,7 +234,7 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
     if (awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)))
       this
     else
-      throw new FutureTimeoutException("Futures timed out after [" + timeout + "] milliseconds")
+      throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(timeoutInNanos) + "] milliseconds")
   } finally {
     _lock.unlock
   }
@@ -304,5 +306,5 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
     func(this)
   }
 
-  private def currentTimeInNanos: Long = TIME_UNIT.toNanos(System.currentTimeMillis)
+  private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis)
 }
