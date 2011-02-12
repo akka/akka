@@ -169,13 +169,13 @@ sealed trait Future[T] {
 }
 
 trait CompletableFuture[T] extends Future[T] {
-  def completeWithValue(value: Either[Throwable, T]): CompletableFuture[T]
-  def completeWithResult(result: T): CompletableFuture[T] = completeWithValue(Right(result))
-  def completeWithException(exception: Throwable): CompletableFuture[T] = completeWithValue(Left(exception))
+  def complete(value: Either[Throwable, T]): CompletableFuture[T]
+  def completeWithResult(result: T): CompletableFuture[T] = complete(Right(result))
+  def completeWithException(exception: Throwable): CompletableFuture[T] = complete(Left(exception))
   def completeWith(other: Future[T]): CompletableFuture[T] = {
     val value = other.value
     if (value.isDefined)
-      completeWithValue(value.get)
+      complete(value.get)
     else
       this
   }
@@ -255,7 +255,7 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
     _lock.unlock
   }
 
-  def completeWithValue(value: Either[Throwable, T]): DefaultCompletableFuture[T] = {
+  def complete(value: Either[Throwable, T]): DefaultCompletableFuture[T] = {
     val notifyTheseListeners = try {
       _lock.lock
       if (!_value.isDefined) {
