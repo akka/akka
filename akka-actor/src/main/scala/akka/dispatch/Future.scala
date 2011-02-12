@@ -194,18 +194,24 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
   private var _value: Option[Either[Throwable, T]] = None
   private var _listeners: List[Future[T] => Unit] = Nil
 
-  def resultWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]] = try {
-    _lock.lock
-    var wait = unit.toNanos(time).min(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos))
-    while (!_value.isDefined && wait > 0) {
+  @scala.annotation.tailrec
+  private def awaitUnsafe(wait: Long): Boolean = {
+    if (!_value.isDefined && wait > 0) {
       val start = currentTimeInNanos
-      try {
-        wait = _signal.awaitNanos(wait)
+      awaitUnsafe(try {
+        _signal.awaitNanos(wait)
       } catch {
         case e: InterruptedException =>
-          wait = wait - (currentTimeInNanos - start)
-      }
+          wait - (currentTimeInNanos - start)
+      })
+    } else {
+      _value.isDefined
     }
+  }
+
+  def resultWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]] = try {
+    _lock.lock
+    awaitUnsafe(unit.toNanos(time).min(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)))
     _value
   } finally {
     _lock.unlock
@@ -213,20 +219,10 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
 
   def await = try {
     _lock.lock
-    var wait = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
-    while (!_value.isDefined && wait > 0) {
-      val start = currentTimeInNanos
-      try {
-        wait = _signal.awaitNanos(wait)
-        if (wait <= 0) throw new FutureTimeoutException("Futures timed out after [" + timeout + "] milliseconds")
-      } catch {
-        case e: InterruptedException =>
-          wait = wait - (currentTimeInNanos - start)
-      }
-    }
-    if (!_value.isDefined)
+    if (awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)))
+      this
+    else
       throw new FutureTimeoutException("Futures timed out after [" + timeout + "] milliseconds")
-    this
   } finally {
     _lock.unlock
   }
