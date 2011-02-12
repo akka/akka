@@ -52,7 +52,7 @@ trait JettyContinuation extends ContinuationListener with akka.util.Logging
 
           Some(continuation)
         }
-		//
+        //
         // the timeout was reset and the continuation was resumed
         // this happens when used with getAsyncContinuation
         //
@@ -64,10 +64,10 @@ trait JettyContinuation extends ContinuationListener with akka.util.Logging
 
           None
         }
-		//
+        //
         // the timeout was reset and the continuation is still suspended
-		// this happens when used with startAsync
-		//
+        // this happens when used with startAsync
+        //
         case (false, true, false) => {
 
           continuation.setTimeout(continuation.getAttribute(TimeoutAttribute).asInstanceOf[Long])
@@ -79,7 +79,7 @@ trait JettyContinuation extends ContinuationListener with akka.util.Logging
         // unexpected continution state(s) - log and do nothing
         //
         case _ => {
-			log.slf4j.warn("Received continuation in unexpected state: "+continuation.isInitial+" "+continuation.isSuspended+" "+continuation.isExpired+" "+continuation.isResumed)
+          log.slf4j.warn("Received continuation in unexpected state: "+continuation.isInitial+" "+continuation.isSuspended+" "+continuation.isExpired+" "+continuation.isResumed)
           //continuation.cancel
           None
         }
@@ -94,7 +94,6 @@ trait JettyContinuation extends ContinuationListener with akka.util.Logging
   def timeout(ms:Long):Boolean = _continuation match {
     case None => false
     case Some(continuation) =>
-		log.slf4j.info("reseting timeout...")
       continuation.setAttribute(TimeoutAttribute, ms)
       continuation.resume
       true
