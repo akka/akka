@@ -5,11 +5,12 @@
 package akka.dispatch
 
 import akka.AkkaException
-import akka.actor.Actor.spawn
+import akka.actor.Actor.{ spawn, TIMEOUT }
 import akka.routing.Dispatcher
 
 import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ TimeUnit, ConcurrentLinkedQueue }
+import java.util.concurrent.atomic.{ AtomicInteger, AtomicBoolean }
 import akka.japi.Procedure
 
 class FutureTimeoutException(message: String) extends AkkaException(message)
@@ -65,6 +66,69 @@ object Futures {
    * Returns Future.resultOrException of the first completed of the 2 Futures provided (blocking!)
    */
   def awaitEither[T](f1: Future[T], f2: Future[T]): Option[T] = awaitOne(List(f1,f2)).asInstanceOf[Future[T]].resultOrException
+
+  /**
+   * A non-blocking fold over the specified futures.
+   * The fold is performed on the thread where the last future is completed,
+   * the result will be the first failure of any of the futures, or any failure in the actual fold,
+   * or the result of the fold.
+   */
+  def fold[T,R](zero: R, timeout: Long = TIMEOUT)(futures: Iterable[Future[T]])(foldFun: (R, T) => R): Future[R] = {
+    if(futures.isEmpty) {
+      val f = new DefaultCompletableFuture[R](timeout)
+      f completeWithResult zero
+      f
+    } else {
+      val result = new DefaultCompletableFuture[R](timeout)
+      val results = new ConcurrentLinkedQueue[T]()
+      val waitingFor = new AtomicInteger(futures.size)
+
+      val aggregate: Future[T] => Unit = f => if (!result.isCompleted) { //TODO: This is an optimization, is it premature?
+        if (f.exception.isDefined)
+          result completeWithException f.exception.get
+        else {
+          results add f.result.get
+          if (waitingFor.decrementAndGet == 0) { //Only one thread can get here
+            try {
+              val r = scala.collection.JavaConversions.asScalaIterable(results).foldLeft(zero)(foldFun)
+              results.clear //Do not retain the values since someone can hold onto the Future for a long time
+              result completeWithResult r
+            } catch {
+              case e: Exception => result completeWithException e
+            }
+          }
+        }
+      }
+
+      futures foreach { _ onComplete aggregate }
+      result
+    }
+  }
+
+  /**
+   * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
+   */
+  def reduce[T, R >: T](futures: Iterable[Future[T]], timeout: Long = TIMEOUT)(op: (R,T) => T): Future[R] = {
+    if (futures.isEmpty) {
+      val f = (new DefaultCompletableFuture[R](timeout))
+      f.completeWithException(new UnsupportedOperationException("empty reduce left"))
+      f
+    }
+    else {
+      val result = new DefaultCompletableFuture[R](timeout)
+      val seedFound = new AtomicBoolean(false)
+      val seedFold: Future[T] => Unit = f => {
+        if (seedFound.compareAndSet(false, true)){ //Only the first completed should trigger the fold
+          if (f.exception.isDefined) result completeWithException f.exception.get //If the seed is a failure, we're done here
+          else (fold[T,R](f.result.get, timeout)(futures.filterNot(_ eq f))(op)).onComplete(result.completeWith(_)) //Fold using the seed
+        }
+        () //Without this Unit value, the compiler crashes
+      }
+      for(f <- futures) f onComplete seedFold //Attach the listener to the Futures
+      result
+    }
+  }
+
 }
 
 sealed trait Future[T] {

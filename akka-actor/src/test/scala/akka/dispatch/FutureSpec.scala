@@ -2,7 +2,7 @@ package akka.actor
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import akka.dispatch.Futures
+import akka.dispatch.{ Future, Futures }
 import Actor._
 import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.CountDownLatch
@@ -142,5 +142,63 @@ class FutureSpec extends JUnitSuite {
     latches foreach { _.open }
 
     assert(Futures.awaitMap(futures)(_.result.map(_.length).getOrElse(0)).sum === (latches.size * "World".length))
+  }
+
+    @Test def shouldFoldResults {
+    val actors = (1 to 10).toList map { _ =>
+      actorOf(new Actor {
+        def receive = { case (add: Int, wait: Int) => Thread.sleep(wait); self reply_? add }
+      }).start
+    }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 )) }
+    assert(Futures.fold(0)(futures)(_ + _).awaitBlocking.result.get === 45)
+  }
+
+  @Test def shouldFoldResultsWithException {
+    val actors = (1 to 10).toList map { _ =>
+      actorOf(new Actor {
+        def receive = {
+          case (add: Int, wait: Int) =>
+            Thread.sleep(wait)
+            if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
+            self reply_? add
+        }
+      }).start
+    }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 100 )) }
+    assert(Futures.fold(0)(futures)(_ + _).awaitBlocking.exception.get.getMessage === "shouldFoldResultsWithException: expected")
+  }
+
+  @Test def shouldFoldReturnZeroOnEmptyInput {
+    assert(Futures.fold(0)(List[Future[Int]]())(_ + _).awaitBlocking.result.get === 0)
+  }
+
+  @Test def shouldReduceResults {
+    val actors = (1 to 10).toList map { _ =>
+      actorOf(new Actor {
+        def receive = { case (add: Int, wait: Int) => Thread.sleep(wait); self reply_? add }
+      }).start
+    }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 )) }
+    assert(Futures.reduce(futures)(_ + _).awaitBlocking.result.get === 45)
+  }
+
+  @Test def shouldReduceResultsWithException {
+    val actors = (1 to 10).toList map { _ =>
+      actorOf(new Actor {
+        def receive = {
+          case (add: Int, wait: Int) =>
+            Thread.sleep(wait)
+            if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
+            self reply_? add
+        }
+      }).start
+    }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 100 )) }
+    assert(Futures.reduce(futures)(_ + _).awaitBlocking.exception.get.getMessage === "shouldFoldResultsWithException: expected")
+  }
+
+  @Test(expected = classOf[UnsupportedOperationException]) def shouldReduceThrowIAEOnEmptyInput {
+    Futures.reduce(List[Future[Int]]())(_ + _).await.resultOrException
   }
 }
