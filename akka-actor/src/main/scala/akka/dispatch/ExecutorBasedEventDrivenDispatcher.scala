@@ -149,8 +149,8 @@ class ExecutorBasedEventDrivenDispatcher(
   def resume(actorRef: ActorRef) {
     log.slf4j.debug("Resuming {}",actorRef.uuid)
     val mbox = getMailbox(actorRef)
-    if (mbox.suspended.tryUnlock)
-      registerForExecution(mbox)
+    mbox.suspended.tryUnlock
+    registerForExecution(mbox)
   }
 }
 
