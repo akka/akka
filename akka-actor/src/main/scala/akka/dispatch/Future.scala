@@ -170,6 +170,17 @@ sealed trait Future[T] {
   def onComplete(func: Future[T] => Unit): Future[T]
 
   /**
+   * When the future is compeleted, apply the result to the provided PartialFunction if a match is found
+   */
+  final def receive(pf: PartialFunction[Any, Unit]): Future[T] = onComplete { f =>
+    val optr = f.result
+    if (optr.isDefined) {
+      val r = optr.get
+      if (pf.isDefinedAt(r)) pf(r)
+    }
+  }
+
+  /**
    *   Returns the current result, throws the exception is one has been raised, else returns None
    */
   final def resultOrException: Option[T] = {
