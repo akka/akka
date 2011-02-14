@@ -54,6 +54,8 @@ case class UnlinkAndStop(child: ActorRef) extends LifeCycleMessage
 
 case object ReceiveTimeout extends LifeCycleMessage
 
+case object PoisonPill extends LifeCycleMessage
+
 case class MaximumNumberOfRestartsWithinTimeRangeReached(
   @BeanProperty val victim: ActorRef,
   @BeanProperty val maxNrOfRetries: Option[Int],
@@ -443,6 +445,12 @@ trait Actor extends Logging {
       case Unlink(child)                             => self.unlink(child)
       case UnlinkAndStop(child)                      => self.unlink(child); child.stop
       case Restart(reason)                           => throw reason
+      case PoisonPill                                => if(self.senderFuture.isDefined) {
+                                                          self.senderFuture.get.completeWithException(
+                                                            new ActorKilledException("PoisonPill")
+                                                          )
+                                                        }
+                                                        self.stop
       case msg if !self.hotswap.isEmpty &&
                   self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
       case msg if self.hotswap.isEmpty   &&
@@ -461,6 +469,12 @@ trait Actor extends Logging {
       case Unlink(child)                             => self.unlink(child)
       case UnlinkAndStop(child)                      => self.unlink(child); child.stop
       case Restart(reason)                           => throw reason
+      case PoisonPill                                => if(self.senderFuture.isDefined) {
+                                                          self.senderFuture.get.completeWithException(
+                                                            new ActorKilledException("PoisonPill")
+                                                          )
+                                                        }
+                                                        self.stop
       case msg if !self.hotswap.isEmpty &&
                   self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
       case msg if self.hotswap.isEmpty   &&
