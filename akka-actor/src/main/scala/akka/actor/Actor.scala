@@ -23,7 +23,10 @@ import akka.japi. {Creator, Procedure}
  */
 @serializable sealed trait LifeCycleMessage
 
-case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true) extends LifeCycleMessage {
+/* Marker trait to show which Messages are automatically handled by Akka */
+sealed trait AutoReceivedMessage { self: LifeCycleMessage => }
+
+case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true) extends AutoReceivedMessage with LifeCycleMessage {
   /**
    * Java API
    */
@@ -40,21 +43,21 @@ case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true) 
   def this(code: akka.japi.Function[ActorRef,Procedure[Any]]) = this(code, true)
 }
 
-case object RevertHotSwap extends LifeCycleMessage
+case object RevertHotSwap extends AutoReceivedMessage with LifeCycleMessage
 
-case class Restart(reason: Throwable) extends LifeCycleMessage
+case class Restart(reason: Throwable) extends AutoReceivedMessage with LifeCycleMessage
 
-case class Exit(dead: ActorRef, killer: Throwable) extends LifeCycleMessage
+case class Exit(dead: ActorRef, killer: Throwable) extends AutoReceivedMessage with LifeCycleMessage
 
-case class Link(child: ActorRef) extends LifeCycleMessage
+case class Link(child: ActorRef) extends AutoReceivedMessage with LifeCycleMessage
 
-case class Unlink(child: ActorRef) extends LifeCycleMessage
+case class Unlink(child: ActorRef) extends AutoReceivedMessage with LifeCycleMessage
 
-case class UnlinkAndStop(child: ActorRef) extends LifeCycleMessage
+case class UnlinkAndStop(child: ActorRef) extends AutoReceivedMessage with LifeCycleMessage
+
+case object PoisonPill extends AutoReceivedMessage with LifeCycleMessage
 
 case object ReceiveTimeout extends LifeCycleMessage
-
-case object PoisonPill extends LifeCycleMessage
 
 case class MaximumNumberOfRestartsWithinTimeRangeReached(
   @BeanProperty val victim: ActorRef,
@@ -303,8 +306,7 @@ trait Actor extends Logging {
       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))', or" +
       "\n\t\t'val actor = Actor.actor { case msg => .. } }'")
-     val ref = optRef.asInstanceOf[Some[ActorRef]].get
-     ref.id = getClass.getName //FIXME: Is this needed?
+     optRef.asInstanceOf[Some[ActorRef]].get.id = getClass.getName //FIXME: Is this needed?
      optRef.asInstanceOf[Some[ActorRef]]
   }
 
@@ -434,24 +436,30 @@ trait Actor extends Logging {
 
   private[akka] def apply(msg: Any) = fullBehavior(msg)
 
+  private final def autoReceiveMessage(msg: AutoReceivedMessage) {
+    msg match {
+      case HotSwap(code,discardOld)  => become(code(self),discardOld)
+      case RevertHotSwap             => unbecome
+      case Exit(dead, reason)        => self.handleTrapExit(dead, reason)
+      case Link(child)               => self.link(child)
+      case Unlink(child)             => self.unlink(child)
+      case UnlinkAndStop(child)      => self.unlink(child); child.stop
+      case Restart(reason)           => throw reason
+      case PoisonPill                => if(self.senderFuture.isDefined) {
+                                          self.senderFuture.get.completeWithException(
+                                            new ActorKilledException("PoisonPill")
+                                          )
+                                        }
+                                        self.stop
+    }
+  }
+
   /*Processingbehavior and fullBehavior are duplicates so make sure changes are done to both */
   private lazy val processingBehavior: Receive = {
-    lazy val defaultBehavior = receive
+    val defaultBehavior = receive
     val actorBehavior: Receive = {
-      case HotSwap(code,discardOld)                  => become(code(self),discardOld)
-      case RevertHotSwap                             => unbecome
-      case Exit(dead, reason)                        => self.handleTrapExit(dead, reason)
-      case Link(child)                               => self.link(child)
-      case Unlink(child)                             => self.unlink(child)
-      case UnlinkAndStop(child)                      => self.unlink(child); child.stop
-      case Restart(reason)                           => throw reason
-      case PoisonPill                                => if(self.senderFuture.isDefined) {
-                                                          self.senderFuture.get.completeWithException(
-                                                            new ActorKilledException("PoisonPill")
-                                                          )
-                                                        }
-                                                        self.stop
-      case msg if !self.hotswap.isEmpty &&
+      case l: AutoReceivedMessage => autoReceiveMessage(l)
+      case msg if self.hotswap.nonEmpty &&
                   self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
       case msg if self.hotswap.isEmpty   &&
                   defaultBehavior.isDefinedAt(msg)   => defaultBehavior.apply(msg)
@@ -460,22 +468,10 @@ trait Actor extends Logging {
   }
 
   private lazy val fullBehavior: Receive = {
-    lazy val defaultBehavior = receive
+    val defaultBehavior = receive
     val actorBehavior: Receive = {
-      case HotSwap(code, discardOld)                 => become(code(self), discardOld)
-      case RevertHotSwap                             => unbecome
-      case Exit(dead, reason)                        => self.handleTrapExit(dead, reason)
-      case Link(child)                               => self.link(child)
-      case Unlink(child)                             => self.unlink(child)
-      case UnlinkAndStop(child)                      => self.unlink(child); child.stop
-      case Restart(reason)                           => throw reason
-      case PoisonPill                                => if(self.senderFuture.isDefined) {
-                                                          self.senderFuture.get.completeWithException(
-                                                            new ActorKilledException("PoisonPill")
-                                                          )
-                                                        }
-                                                        self.stop
-      case msg if !self.hotswap.isEmpty &&
+      case l: AutoReceivedMessage => autoReceiveMessage(l)
+      case msg if self.hotswap.nonEmpty &&
                   self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
       case msg if self.hotswap.isEmpty   &&
                   defaultBehavior.isDefinedAt(msg)   => defaultBehavior.apply(msg)
