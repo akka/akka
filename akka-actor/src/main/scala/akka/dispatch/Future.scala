@@ -137,7 +137,7 @@ sealed trait Future[T] {
 
   def awaitBlocking : Future[T]
 
-  def isCompleted: Boolean = value.isDefined
+  final def isCompleted: Boolean = value.isDefined
 
   def isExpired: Boolean
 
@@ -145,7 +145,11 @@ sealed trait Future[T] {
 
   def value: Option[Either[Throwable, T]]
 
-  def result: Option[T] = value flatMap (_.right.toOption)
+  final def result: Option[T] = {
+    val v = value
+    if (v.isDefined) v.get.right.toOption
+    else None
+  }
 
   def awaitResult: Option[Either[Throwable, T]]
 
@@ -157,30 +161,39 @@ sealed trait Future[T] {
    */
   def resultWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]]
 
-  def exception: Option[Throwable] = value flatMap (_.left.toOption)
+  final def exception: Option[Throwable] = {
+    val v = value
+    if (v.isDefined) v.get.left.toOption
+    else None
+  }
 
   def onComplete(func: Future[T] => Unit): Future[T]
 
   /**
    *   Returns the current result, throws the exception is one has been raised, else returns None
    */
-  def resultOrException: Option[T] = value map (_.fold(t => throw t, identity))
+  final def resultOrException: Option[T] = {
+    val v = value
+    if (v.isDefined) {
+      val r = v.get
+      if (r.isLeft) throw r.left.get
+      else r.right.toOption
+    } else None
+  }
 
   /* Java API */
-  def onComplete(proc: Procedure[Future[T]]): Future[T] = onComplete(proc(_))
+  final def onComplete(proc: Procedure[Future[T]]): Future[T] = onComplete(proc(_))
 
 }
 
 trait CompletableFuture[T] extends Future[T] {
   def complete(value: Either[Throwable, T]): CompletableFuture[T]
-  def completeWithResult(result: T): CompletableFuture[T] = complete(Right(result))
-  def completeWithException(exception: Throwable): CompletableFuture[T] = complete(Left(exception))
-  def completeWith(other: Future[T]): CompletableFuture[T] = {
-    val value = other.value
-    if (value.isDefined)
-      complete(value.get)
-    else
-      this
+  final def completeWithResult(result: T): CompletableFuture[T] = complete(Right(result))
+  final def completeWithException(exception: Throwable): CompletableFuture[T] = complete(Left(exception))
+  final def completeWith(other: Future[T]): CompletableFuture[T] = {
+    val v = other.value
+    if (v.isDefined) complete(v.get)
+    else this
   }
 }
 
@@ -200,7 +213,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
 
   @tailrec
   private def awaitUnsafe(wait: Long): Boolean = {
-    if (!_value.isDefined && wait > 0) {
+    if (_value.isEmpty && wait > 0) {
       val start = currentTimeInNanos
       awaitUnsafe(try {
         _signal.awaitNanos(wait)
@@ -241,7 +254,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
 
   def awaitBlocking = try {
     _lock.lock
-    while (!_value.isDefined) {
+    while (_value.isEmpty) {
       _signal.await
     }
     this
@@ -249,12 +262,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     _lock.unlock
   }
 
-  def isExpired: Boolean = try {
-    _lock.lock
-    timeoutInNanos - (currentTimeInNanos - _startTimeInNanos) <= 0
-  } finally {
-    _lock.unlock
-  }
+  def isExpired: Boolean = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos) <= 0
 
   def value: Option[Either[Throwable, T]] = try {
     _lock.lock
@@ -266,7 +274,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   def complete(value: Either[Throwable, T]): DefaultCompletableFuture[T] = {
     val notifyTheseListeners = try {
       _lock.lock
-      if (!_value.isDefined) {
+      if (_value.isEmpty) {
         _value = Some(value)
         val all = _listeners
         _listeners = Nil
@@ -284,21 +292,16 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   def onComplete(func: Future[T] => Unit): CompletableFuture[T] = {
-    val notifyNow = try {
+    if (try {
       _lock.lock
-      if (!_value.isDefined) {
+      if (_value.isEmpty) {
         _listeners ::= func
         false
       }
-      else
-        true
+      else true
     } finally {
       _lock.unlock
-    }
-
-    if (notifyNow)
-      notify(func)
-
+    }) notify(func)
     this
   }
 
