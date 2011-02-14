@@ -11,6 +11,7 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 import akka.actor._
+import akka.dispatch.Future
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 object ActorRefSpec {
@@ -96,6 +97,31 @@ class ActorRefSpec extends
       assert(latch.await(4L, TimeUnit.SECONDS))
       clientRef.stop
       serverRef.stop
+    }
+
+    it("should stop when sent a poison pill") {
+      val ref = Actor.actorOf(
+        new Actor {
+          def receive = {
+            case 5 => self reply_? "five"
+            case null => self reply_? "null"
+          }
+        }
+      ).start
+
+      val ffive: Future[String] = ref !!! 5
+      val fnull: Future[String] = ref !!! null
+
+      intercept[ActorKilledException] {
+        ref !! PoisonPill
+        fail("shouldn't get here")
+      }
+
+      assert(ffive.resultOrException.get == "five")
+      assert(fnull.resultOrException.get == "null")
+
+      assert(ref.isRunning == false)
+      assert(ref.isShutdown == true)
     }
   }
 }
