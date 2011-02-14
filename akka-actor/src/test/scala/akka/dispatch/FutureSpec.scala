@@ -204,4 +204,12 @@ class FutureSpec extends JUnitSuite {
     assert(undone.size === 5)
     assert(errors.size === 0)
   }
+
+  @Test def receiveShouldExecuteOnComplete {
+    val latch = new StandardLatch
+    val actor = actorOf[TestActor].start
+    actor !!! "Hello" receive { case "World" => latch.open }
+    assert(latch.tryAwait(5, TimeUnit.SECONDS))
+    actor.stop
+  }
 }
