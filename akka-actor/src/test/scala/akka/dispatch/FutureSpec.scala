@@ -117,20 +117,6 @@ class FutureSpec extends JUnitSuite {
     actor2.stop
   }
 
-  @Test def shouldFutureMapBeDeferred {
-    val latch = new StandardLatch
-    val actor1 = actorOf(new TestDelayActor(latch)).start
-
-    val mappedFuture = (actor1.!!![String]("Hello")).map(x => 5)
-    assert(mappedFuture.isCompleted === false)
-    assert(mappedFuture.isExpired === false)
-    latch.open
-    mappedFuture.await
-    assert(mappedFuture.isCompleted === true)
-    assert(mappedFuture.isExpired === false)
-    assert(mappedFuture.result === Some(5))
-  }
-
   @Test def shouldFuturesAwaitMapHandleEmptySequence {
     assert(Futures.awaitMap[Nothing,Unit](Nil)(x => ()) === Nil)
   }
@@ -211,9 +197,9 @@ class FutureSpec extends JUnitSuite {
 
     def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, if(idx >= 5) 5000 else 0 )) }
     val result = for(f <- futures) yield f.resultWithin(2, TimeUnit.SECONDS)
-    val done = result collect { case Some(Left(x)) => x }
+    val done = result collect { case Some(Right(x)) => x }
     val undone = result collect { case None => None }
-    val errors = result collect { case Some(Right(t)) => t }
+    val errors = result collect { case Some(Left(t)) => t }
     assert(done.size === 5)
     assert(undone.size === 5)
     assert(errors.size === 0)
