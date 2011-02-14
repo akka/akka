@@ -38,6 +38,12 @@ trait Consumer { self: Actor =>
   def blocking = false
 
   /**
+   * Determines whether one-way communications between an endpoint and this consumer actor
+   * should be auto-acknowledged or application-acknowledged.
+   */
+  def autoack = true
+
+  /**
    * Sets the route definition handler for creating a custom route to this consumer instance.
    */
   def onRouteDefinition(h: RouteDefinition => ProcessorDefinition[_]): Unit = onRouteDefinition(from(h))
@@ -61,6 +67,7 @@ trait Consumer { self: Actor =>
 trait UntypedConsumer extends Consumer { self: UntypedActor =>
   final override def endpointUri = getEndpointUri
   final override def blocking = isBlocking
+  final override def autoack = isAutoack
 
   /**
    * Returns the Camel endpoint URI to consume messages from.
@@ -73,6 +80,12 @@ trait UntypedConsumer extends Consumer { self: UntypedActor =>
    * doesn't have any effect on one-way communications (they'll never block).
    */
   def isBlocking() = super.blocking
+
+  /**
+   * Determines whether one-way communications between an endpoint and this consumer actor
+   * should be auto-acknowledged or application-acknowledged.
+   */
+  def isAutoack() = super.autoack
 }
 
 /**

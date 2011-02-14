@@ -140,7 +140,7 @@ private[camel] abstract class ConsumerRouteBuilder(endpointUri: String, id: Stri
  */
 private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) extends ConsumerRouteBuilder(event.endpointUri, event.uuid) {
   protected def routeDefinitionHandler: RouteDefinitionHandler = event.routeDefinitionHandler
-  protected def targetUri = "actor:uuid:%s?blocking=%s" format (event.uuid, event.blocking)
+  protected def targetUri = "actor:uuid:%s?blocking=%s&autoack=%s" format (event.uuid, event.blocking, event.autoack)
 }
 
 /**
@@ -239,6 +239,7 @@ private[camel] trait ConsumerActorEvent extends ConsumerEvent {
   val uuid                   = actorRef.uuid.toString
   val endpointUri            = actor.endpointUri
   val blocking               = actor.blocking
+  val autoack                = actor.autoack
   val routeDefinitionHandler = actor.routeDefinitionHandler
 }
 

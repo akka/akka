@@ -91,6 +91,20 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
     assert(exchange.getOut.getHeader("k3") === null) // headers from failure message are currently ignored
   }
 
+  @Test def shouldSendMessageToActorAndReceiveAckWithAsyncProcessor = {
+    val actor = actorOf(new Tester2 {
+      override def response(msg: Message) = akka.camel.Ack
+    }).start
+    val completion = expectAsyncCompletion
+    val endpoint = actorEndpoint("actor:uuid:%s?autoack=false" format actor.uuid)
+    val exchange = endpoint.createExchange(ExchangePattern.InOnly)
+    exchange.getIn.setBody("Martin")
+    actorAsyncProducer(endpoint).process(exchange, completion)
+    assert(completion.latch.await(5000, TimeUnit.MILLISECONDS))
+    assert(exchange.getIn.getBody === "Martin")
+    assert(exchange.getOut.getBody === null)
+  }
+
   @Test def shouldDynamicallyRouteMessageToActorWithDefaultId = {
     val actor1 = actorOf[Tester1]
     val actor2 = actorOf[Tester1]

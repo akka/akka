@@ -2,8 +2,9 @@ package akka.camel
 
 import java.util.concurrent.{TimeoutException, CountDownLatch, TimeUnit}
 
-import org.apache.camel.CamelExecutionException
+import org.apache.camel.{AsyncProcessor, AsyncCallback, CamelExecutionException}
 import org.apache.camel.builder.Builder
+import org.apache.camel.component.direct.DirectEndpoint
 import org.apache.camel.model.RouteDefinition
 import org.scalatest.{BeforeAndAfterAll, WordSpec}
 import org.scalatest.matchers.MustMatchers
@@ -15,6 +16,7 @@ import akka.actor._
  * @author Martin Krasser
  */
 class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
+  import CamelContextManager.mandatoryContext
   import CamelContextManager.mandatoryTemplate
   import ConsumerScalaTest._
 
@@ -194,6 +196,34 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
       }
     }
   }
+
+  "An non auto-acknowledging consumer" when {
+    val consumer = actorOf(new TestAckConsumer("direct:application-ack-test"))
+    "started" must {
+      "must support acknowledgements on application level" in {
+        service.awaitEndpointActivation(1) {
+          consumer.start
+        } must be (true)
+        
+        val endpoint = mandatoryContext.getEndpoint("direct:application-ack-test", classOf[DirectEndpoint])
+        val producer = endpoint.createProducer.asInstanceOf[AsyncProcessor]
+        val exchange = endpoint.createExchange
+
+        val latch = new CountDownLatch(1)
+        val handler = new AsyncCallback {
+          def done(doneSync: Boolean) = {
+            doneSync must be (false)
+            latch.countDown
+          }
+        }
+
+        exchange.getIn.setBody("test")
+        producer.process(exchange, handler)
+
+        latch.await(5, TimeUnit.SECONDS) must be (true)
+      }
+    }
+  }
 }
 
 object ConsumerScalaTest {
@@ -213,6 +243,14 @@ object ConsumerScalaTest {
     def endpointUri = uri
     protected def receive = {
       case msg: Message => { /* do not reply */ }
+    }
+  }
+
+  class TestAckConsumer(uri:String) extends Actor with Consumer {
+    def endpointUri = uri
+    override def autoack = false
+    protected def receive = {
+      case msg: Message => self.reply(Ack)
     }
   }
 
@@ -266,7 +304,4 @@ object ConsumerScalaTest {
     @consume("direct:publish-test-4")
     def bar(s: String) = "bar: %s" format s
   }
-
-
-
 }

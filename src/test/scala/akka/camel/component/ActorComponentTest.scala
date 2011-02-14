@@ -21,6 +21,8 @@ class ActorComponentTest extends JUnitSuite {
     assert(ep2.idType === "id")
     assert(!ep1.blocking)
     assert(!ep2.blocking)
+    assert(ep1.autoack)
+    assert(ep2.autoack)
   }
 
   @Test def shouldCreateEndpointWithIdTemplate = {
@@ -28,6 +30,7 @@ class ActorComponentTest extends JUnitSuite {
     assert(ep.idValue === None)
     assert(ep.idType === "id")
     assert(!ep.blocking)
+    assert(ep.autoack)
   }
 
   @Test def shouldCreateEndpointWithIdTemplateAndBlockingSet = {
@@ -35,6 +38,7 @@ class ActorComponentTest extends JUnitSuite {
     assert(ep.idValue === None)
     assert(ep.idType === "id")
     assert(ep.blocking)
+    assert(ep.autoack)
   }
 
   @Test def shouldCreateEndpointWithUuidDefined = {
@@ -42,6 +46,7 @@ class ActorComponentTest extends JUnitSuite {
     assert(ep.idValue === Some(testUUID))
     assert(ep.idType === "uuid")
     assert(!ep.blocking)
+    assert(ep.autoack)
   }
 
   @Test def shouldCreateEndpointWithUuidTemplate = {
@@ -49,13 +54,15 @@ class ActorComponentTest extends JUnitSuite {
     assert(ep.idValue === None)
     assert(ep.idType === "uuid")
     assert(!ep.blocking)
+    assert(ep.autoack)
   }
 
-  @Test def shouldCreateEndpointWithUuidTemplateandBlockingSet = {
+  @Test def shouldCreateEndpointWithUuidTemplateAndBlockingSet = {
     val ep: ActorEndpoint = component.createEndpoint("actor:uuid:?blocking=true").asInstanceOf[ActorEndpoint]
     assert(ep.idValue === None)
     assert(ep.idType === "uuid")
     assert(ep.blocking)
+    assert(ep.autoack)
   }
 
   @Test def shouldCreateEndpointWithBlockingSet = {
@@ -63,6 +70,15 @@ class ActorComponentTest extends JUnitSuite {
     assert(ep.idValue === Some(testUUID))
     assert(ep.idType === "uuid")
     assert(ep.blocking)
+    assert(ep.autoack)
+  }
+
+  @Test def shouldCreateEndpointWithAutoackUnset = {
+    val ep: ActorEndpoint = component.createEndpoint("actor:uuid:%s?autoack=false" format testUUID).asInstanceOf[ActorEndpoint]
+    assert(ep.idValue === Some(testUUID))
+    assert(ep.idType === "uuid")
+    assert(!ep.blocking)
+    assert(!ep.autoack)
   }
 }
 

@@ -13,7 +13,7 @@ import org.apache.camel._
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
 
 import akka.actor._
-import akka.camel.{Failure, Message}
+import akka.camel.{Ack, Failure, Message}
 import akka.camel.CamelMessageConversion.toExchangeAdapter
 import akka.dispatch.{CompletableFuture, MessageInvocation, MessageDispatcher}
 
@@ -86,6 +86,14 @@ class ActorEndpoint(uri: String,
   @BeanProperty var blocking: Boolean = false
 
   /**
+   * Whether to auto-acknowledge one-way message exchanges with (untyped) actors. This is
+   * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
+   * <code>true</code>. When set to <code>true</code> consumer actors need to additionally
+   * call <code>Consumer.ack</code> within <code>Actor.receive</code>.
+   */
+  @BeanProperty var autoack: Boolean = true
+
+  /**
    * @throws UnsupportedOperationException
    */
   def createConsumer(processor: Processor): Consumer =
@@ -131,29 +139,36 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
     if (exchange.getPattern.isOutCapable) sendSync(exchange) else sendAsync(exchange)
 
   def process(exchange: Exchange, callback: AsyncCallback): Boolean = {
-    (exchange.getPattern.isOutCapable, ep.blocking) match {
-      case (true, true) => {
+    (exchange.getPattern.isOutCapable, ep.blocking, ep.autoack) match {
+      case (true, true, _) => {
         sendSync(exchange)
         callback.done(true)
         true
       }
-      case (true, false) => {
+      case (true, false, _) => {
         sendAsync(exchange, Some(AsyncCallbackAdapter(exchange, callback)))
         false
       }
-      case (false, _) => {
+      case (false, _, true) => {
         sendAsync(exchange)
         callback.done(true)
         true
+      }
+      case (false, _, false) => {
+        sendAsync(exchange, Some(AsyncCallbackAdapter(exchange, callback)))
+        false
       }
     }
   }
 
   private def sendSync(exchange: Exchange) = {
+    import akka.camel.Consumer._
+
     val actor = target(exchange)
     val result: Any = actor !! requestFor(exchange)
 
     result match {
+      case Some(Ack)          => { /* no response message to set */ }
       case Some(msg: Failure) => exchange.fromFailureMessage(msg)
       case Some(msg)          => exchange.fromResponseMessage(Message.canonicalize(msg))
       case None               => throw new TimeoutException("timeout (%d ms) while waiting response from %s"
@@ -243,6 +258,7 @@ private[akka] object AsyncCallbackAdapter {
  * @author Martin Krasser
  */
 private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCallback) extends ActorRef with ScalaActorRef {
+  import akka.camel.Consumer._
 
   def start = {
     _status = ActorRefInternals.RUNNING
@@ -263,6 +279,7 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
    */
   protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]) = {
     message match {
+      case Ack          => { /* no response message to set */ }
       case msg: Failure => exchange.fromFailureMessage(msg)
       case msg          => exchange.fromResponseMessage(Message.canonicalize(msg))
     }
@@ -304,3 +321,4 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s" format classOf[AsyncCallbackAdapter].getName)
 }
+

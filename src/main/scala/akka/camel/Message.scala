@@ -197,11 +197,6 @@ object Message {
   val MessageExchangeId = "MessageExchangeId".intern
 
   /**
-   * Creates a new Message with <code>body</code> as message body and an empty header map.
-   */
-  //def apply(body: Any) = new Message(body)
-
-  /**
    * Creates a canonical form of the given message <code>msg</code>. If <code>msg</code> of type
    * Message then <code>msg</code> is returned, otherwise <code>msg</code> is set as body of a
    * newly created Message object.
@@ -211,6 +206,13 @@ object Message {
     case body          => new Message(body)
   }
 }
+
+/**
+ * Positive acknowledgement message (used for application-acknowledged message receipts).
+ *
+ * @author Martin Krasser
+ */
+case object Ack
 
 /**
  * An immutable representation of a failed Camel exchange. It contains the failure cause
