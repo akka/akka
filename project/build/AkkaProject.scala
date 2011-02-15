@@ -114,7 +114,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val HAWT_DISPATCH_VERSION = "1.0"
   lazy val JACKSON_VERSION       = "1.4.3"
   lazy val JERSEY_VERSION        = "1.3"
-  lazy val MULTIVERSE_VERSION    = "0.6.1"
+  lazy val MULTIVERSE_VERSION    = "0.6.2"
   lazy val SCALATEST_VERSION     = "1.2"
   lazy val LOGBACK_VERSION       = "0.9.24"
   lazy val SLF4J_VERSION         = "1.6.0"
@@ -175,8 +175,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile" //CDDL v1
 
-    lazy val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" intransitive //ApacheV2
-    lazy val multiverse_test = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "test" intransitive //ApacheV2
+    lazy val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" //ApacheV2
+    lazy val multiverse_test = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "test" //ApacheV2
 
     lazy val netty = "org.jboss.netty" % "netty" % "3.2.3.Final" % "compile" //ApacheV2
 
