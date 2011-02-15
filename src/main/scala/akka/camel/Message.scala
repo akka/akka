@@ -212,7 +212,10 @@ object Message {
  *
  * @author Martin Krasser
  */
-case object Ack
+case object Ack {
+  /** Java API to get the Ack singleton */
+  def ack = this
+}
 
 /**
  * An immutable representation of a failed Camel exchange. It contains the failure cause
