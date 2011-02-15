@@ -458,7 +458,7 @@ trait Actor extends Logging {
   private lazy val processingBehavior: Receive = {
     val defaultBehavior = receive
     val actorBehavior: Receive = {
-      case l: AutoReceivedMessage => autoReceiveMessage(l)
+      case l: AutoReceivedMessage                    => autoReceiveMessage(l)
       case msg if self.hotswap.nonEmpty &&
                   self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
       case msg if self.hotswap.isEmpty   &&
@@ -470,7 +470,7 @@ trait Actor extends Logging {
   private lazy val fullBehavior: Receive = {
     val defaultBehavior = receive
     val actorBehavior: Receive = {
-      case l: AutoReceivedMessage => autoReceiveMessage(l)
+      case l: AutoReceivedMessage                    => autoReceiveMessage(l)
       case msg if self.hotswap.nonEmpty &&
                   self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
       case msg if self.hotswap.isEmpty   &&

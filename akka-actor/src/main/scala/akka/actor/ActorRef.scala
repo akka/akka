@@ -829,7 +829,16 @@ class LocalActorRef private[akka] (
     else {
       currentMessage = messageHandle
       try {
-        dispatch(messageHandle)
+        Actor.log.slf4j.trace("Invoking actor with message: {}\n", messageHandle)
+        try {
+          cancelReceiveTimeout // FIXME: leave this here?
+          actor(messageHandle.message)
+        } catch {
+          case e: InterruptedException => {} // received message while actor is shutting down, ignore
+          case e => handleExceptionInDispatch(e, messageHandle.message)
+        } finally {
+          checkReceiveTimeout // Reschedule receive timeout
+        }
       } catch {
         case e =>
           Actor.log.slf4j.error("Could not invoke actor [{}]", this)
@@ -1001,22 +1010,6 @@ class LocalActorRef private[akka] (
     val a = Actor.actorRefInCreation.withValue(Some(this)) { actorFactory() }
     if (a eq null) throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
     a
-  }
-
-  private def dispatch[T](messageHandle: MessageInvocation) = {
-    Actor.log.slf4j.trace("Invoking actor with message: {}\n", messageHandle)
-    val message = messageHandle.message //serializeMessage(messageHandle.message)
-
-    try {
-      cancelReceiveTimeout // FIXME: leave this here?
-      actor(message)
-    } catch {
-      case e: InterruptedException => {} // received message while actor is shutting down, ignore
-      case e => handleExceptionInDispatch(e, message)
-    }
-    finally {
-      checkReceiveTimeout // Reschedule receive timeout
-    }
   }
 
   private def shutDownTemporaryActor(temporaryActor: ActorRef) {
