@@ -27,11 +27,6 @@ import akka.actor. {Actor, ActorRef}
 
 object ActorPool
 {
-	type DelegateFactory = ()=>ActorRef
-	type Capacitor = (Seq[ActorRef])=>Int
-	type Selector = (Seq[ActorRef])=>Tuple2[Iterator[ActorRef], Int]
-	type Filter = (Int, Int)=>Int
-	
 	case object Stat
 	case class  Stats(size:Int)
 }
@@ -111,8 +106,8 @@ trait DefaultActorPool extends ActorPool
 		} 
 		else if (_lastCapacityChange < 0) {
 			val s = _delegates splitAt(_delegates.length + _lastCapacityChange)
-			s._1 foreach {_ stop}
-			_delegates = s._2
+			s._2 foreach {_ stop}
+			_delegates = s._1
 
 			log.slf4j.debug("Pool capacity decreased by {}", -1*_lastCapacityChange)
 		}
@@ -213,20 +208,16 @@ trait BoundedCapacitor
 {
 	def lowerBound:Int
 	def upperBound:Int
-	def capacityIncrement:Int
 	
 	def capacity(delegates:Seq[ActorRef]):Int =
 	{
 		val current = delegates length
-		val pressure = _eval(delegates)
-		var delta = {
-			if (current > pressure) 0
-			else capacityIncrement
-		}
+		var delta = _eval(delegates)
 		val proposed = current + delta
-		
+				
 		if (proposed < lowerBound) delta += (lowerBound - proposed)
 		else if (proposed > upperBound) delta -= (proposed - upperBound)
+		
 		delta
 	}
 	
@@ -239,7 +230,6 @@ trait BoundedCapacitor
 trait MailboxPressureCapacitor
 {
 	def pressureThreshold:Int
-	def capacityIncrement:Int
 	
 	def pressure(delegates:Seq[ActorRef]):Int = 
 	{
@@ -270,17 +260,108 @@ trait CapacityStrategy
 	import ActorPool._
 	
 	def pressure(delegates:Seq[ActorRef]):Int
-	def filter:Option[Filter] = None
+	def filter(pressure:Int, capacity:Int):Int
 	
-	protected def _eval(delegates:Seq[ActorRef]):Int = 
-	{
-		val p = pressure(delegates)
-		filter match {
-			case Some(f) => f(p, delegates size)
-			case None => p
-		}
-	}
+	protected def _eval(delegates:Seq[ActorRef]):Int = filter(pressure(delegates), delegates.size)
 }
 
 trait FixedCapacityStrategy extends FixedSizeCapacitor
 trait BoundedCapacityStrategy extends CapacityStrategy with BoundedCapacitor
+
+/**
+ * Filters
+ *  These traits refine the raw pressure reading into a more appropriate capacity delta.
+ */
+
+/**
+ * The basic filter trait that composes ramp-up and and back-off subfiltering.
+ */
+trait Filter
+{
+  def rampup(pressure:Int, capacity:Int):Int
+  def backoff(pressure:Int, capacity:Int):Int
+
+  def filter(pressure:Int, capacity:Int):Int = 
+  {
+      //
+      // pass through both filters just to be sure any internal counters
+      // are updated consistently. ramping up is always + and backing off
+      // is always - and each should return 0 otherwise...
+      //
+	rampup (pressure, capacity) + backoff (pressure, capacity)
+  }
+}
+
+trait BasicFilter extends Filter with BasicRampup with BasicBackoff
+
+/**
+ * Filter performs steady incremental growth using only the basic ramp-up subfilter
+ */
+trait BasicNoBackoffFilter extends BasicRampup
+{
+  def filter(pressure:Int, capacity:Int):Int = rampup(pressure, capacity)
+}
+
+/**
+ * Basic incremental growth as a percentage of the current pool capacity
+ */
+trait BasicRampup
+{
+  def rampupRate:Double
+  
+  def rampup(pressure:Int, capacity:Int):Int = 
+  {    
+    if (pressure < capacity) 0
+    else math.ceil(rampupRate * capacity) toInt
+ }
+}
+
+/**
+ * Basic decrement as a percentage of the current pool capacity
+ */
+trait BasicBackoff
+{
+  def backoffThreshold:Double
+  def backoffRate:Double
+
+  def backoff(pressure:Int, capacity:Int):Int =
+  {
+    if (capacity > 0 && pressure/capacity < backoffThreshold)
+      math.ceil(-1.0 * backoffRate * capacity) toInt
+    else
+      0
+  }
+}
+/**
+ * This filter tracks the average pressure over the lifetime of the pool (or since last reset) and
+ * will begin to reduce capacity once this value drops below the provided threshold.  The number of
+ * delegates to cull from the pool is determined by some scaling factor (the backoffRate) multiplied
+ * by the difference in capacity and pressure.
+ */
+trait RunningMeanBackoff
+{
+  def backoffThreshold:Double
+  def backoffRate:Double
+
+  private var _pressure:Double = 0.0
+  private var _capacity:Double = 0.0
+
+  def backoff(pressure:Int, capacity:Int):Int = 
+  {
+    _pressure += pressure
+    _capacity += capacity
+
+    if (capacity > 0 && pressure/capacity < backoffThreshold && 
+	    _capacity > 0  && _pressure/_capacity < backoffThreshold) {
+      math.floor(-1.0 * backoffRate * (capacity-pressure)).toInt
+    }
+    else
+      0
+  }
+
+  def backoffReset = 
+  {
+    _pressure - 0.0
+    _capacity = 0.0
+  }
+}

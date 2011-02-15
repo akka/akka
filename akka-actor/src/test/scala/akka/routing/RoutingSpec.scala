@@ -232,6 +232,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 									 with BoundedCapacityStrategy
 									 with ActiveFuturesPressureCapacitor
 									 with SmallestMailboxSelector
+                                     with BasicNoBackoffFilter
 		{
 			def factory = actorOf(new Actor {
 				def receive = {
@@ -244,7 +245,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 
 			def lowerBound = 2
 			def upperBound = 4
-			def capacityIncrement = 1
+			def rampupRate = 0.1
 			def partialFill = true
 			def selectionCount = 1
 			def instance = factory
@@ -304,6 +305,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 									 with BoundedCapacityStrategy
 									 with MailboxPressureCapacitor
 									 with SmallestMailboxSelector
+                                     with BasicNoBackoffFilter
 		{
 			def factory = actorOf(new Actor {
 				def receive = {
@@ -317,7 +319,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 			def lowerBound = 2
 			def upperBound = 4
 			def pressureThreshold = 3
-			def capacityIncrement = 1
+			def rampupRate = 0.1
 			def partialFill = true
 			def selectionCount = 1
 			def instance = factory
@@ -369,6 +371,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 		class TestPool1 extends Actor with DefaultActorPool 
 									  with FixedCapacityStrategy
 									  with RoundRobinSelector
+                                      with BasicNoBackoffFilter
 		{
 			def factory = actorOf(new Actor {
 				def receive = {
@@ -380,6 +383,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 			
 			def limit = 1
 			def selectionCount = 2
+			def rampupRate = 0.1
 			def partialFill = true
 			def instance = factory
 			def receive = _route
@@ -396,6 +400,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 		class TestPool2 extends Actor with DefaultActorPool 
 					 				  with FixedCapacityStrategy
 					 				  with RoundRobinSelector
+                                      with BasicNoBackoffFilter
 		{
 			def factory = actorOf(new Actor {
 				def receive = {
@@ -407,6 +412,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 			
 			def limit = 2
 			def selectionCount = 2
+			def rampupRate = 0.1
 			def partialFill = false
 			def instance = factory
 			def receive = _route
@@ -423,4 +429,67 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 		delegates.size must be (2)
 		pool2 stop
 	}
+	
+	// Actor Pool Filter Tests
+	
+		//
+		// reuse previous test to max pool then observe filter reducing capacity over time
+		//
+  	@Test def testBoundedCapacityActorPoolWithBackoffFilter = {
+
+		var latch = new CountDownLatch(10)
+		class TestPool extends Actor with DefaultActorPool 
+									 with BoundedCapacityStrategy
+									 with MailboxPressureCapacitor
+									 with SmallestMailboxSelector
+									 with Filter
+									   with RunningMeanBackoff
+									   with BasicRampup
+		{
+			def factory = actorOf(new Actor {
+				def receive = {
+					case n:Int => 
+						Thread.sleep(n)
+						latch.countDown
+				}
+			})
+
+			def lowerBound = 1
+			def upperBound = 5
+			def pressureThreshold = 1
+			def partialFill = true
+			def selectionCount = 1
+			def rampupRate = 0.1
+			def backoffRate = 0.50
+			def backoffThreshold = 0.50
+			def instance = factory
+			def receive = _route
+		}
+
+
+		//
+		// put some pressure on the pool
+		//
+		val pool = actorOf(new TestPool).start
+		for (m <- 0 to 10) pool ! 250
+		Thread.sleep(5)
+		val z = (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size 
+		z must be >= (2)
+		var done = latch.await(10,TimeUnit.SECONDS)
+		done must be (true)
+
+		
+		//
+		// 
+		//
+		for (m <- 0 to 3) {
+			pool ! 1
+			Thread.sleep(500)
+		}
+		(pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be <= (z)
+		
+		pool stop
+	}
+	
+	
 }
