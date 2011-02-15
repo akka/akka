@@ -1323,8 +1323,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
           if (isMessageJoinPoint) throw e
           else None
       }
-      if (future.exception.isDefined) throw future.exception.get
-      else future.result
+      future.resultOrException
     } else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
