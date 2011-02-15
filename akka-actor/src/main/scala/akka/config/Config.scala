@@ -20,7 +20,7 @@ class ModuleNotAvailableException(message: String) extends AkkaException(message
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Config extends Logging {
-  val VERSION = "1.0-SNAPSHOT"
+  val VERSION = "1.0"
 
   val HOME = {
     val envHome = System.getenv("AKKA_HOME") match {
