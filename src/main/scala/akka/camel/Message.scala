@@ -224,19 +224,19 @@ case object Ack {
  *
  * @author Martin Krasser
  */
-case class Failure(val cause: Exception, val headers: Map[String, Any] = Map.empty) {
+case class Failure(val cause: Throwable, val headers: Map[String, Any] = Map.empty) {
 
   /**
    * Creates a Failure with cause body and empty headers map.
    */
-  def this(cause: Exception) = this(cause, Map.empty[String, Any])
+  def this(cause: Throwable) = this(cause, Map.empty[String, Any])
 
   /**
    * Creates a Failure with given cause and headers map. A copy of the headers map is made.
    * <p>
    * Java API
    */
-  def this(cause: Exception, headers: JMap[String, Any]) = this(cause, headers.toMap)
+  def this(cause: Throwable, headers: JMap[String, Any]) = this(cause, headers.toMap)
 
   /**
    * Returns the cause of this Failure.
