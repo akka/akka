@@ -17,13 +17,18 @@ import akka.japi.{Function => JFunction}
  *
  * @author Martin Krasser
  */
-trait Consumer { self: Actor =>
+trait Consumer { this: Actor =>
   import RouteDefinitionHandler._
 
   /**
    * The default route definition handler is the identity function
    */
   private[camel] var routeDefinitionHandler: RouteDefinitionHandler = identity
+
+  /**
+   * A reply channel that can be set via <code>storeChannel</code>.
+   */
+  protected var replyChannel: Option[Channel[Any]] = None
 
   /**
    * Returns the Camel endpoint URI to consume messages from.
@@ -54,10 +59,24 @@ trait Consumer { self: Actor =>
    * Java API.
    */
   def onRouteDefinition(h: RouteDefinitionHandler): Unit = routeDefinitionHandler = h
+
+  /**
+   * Manages a <code>replyChannel</code> for the <code>receive</code> partial function.
+   * Sets a reply channel before calling <code>receive</code> and un-sets the reply channel
+   * after <code>receive</code> terminated normally. The reply channel is not un-set if
+   * <code>receive</code> throws an exception.
+   */
+  protected def manageReplyChannelFor(receive: PartialFunction[Any, Unit]): PartialFunction[Any, Unit] = {
+    case msg => {
+      replyChannel = try { Some(self.channel) } catch { case e => None }
+      receive(msg)
+      replyChannel = None
+    }
+  }
 }
 
 /**
- * Java-friendly Consumer.
+ *  Java-friendly Consumer.
  *
  * @see UntypedConsumerActor
  * @see RemoteUntypedConsumerActor

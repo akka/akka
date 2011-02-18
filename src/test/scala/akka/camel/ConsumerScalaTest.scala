@@ -11,6 +11,7 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Actor._
 import akka.actor._
+import akka.config.Supervision._
 
 /**
  * @author Martin Krasser
@@ -224,6 +225,42 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
       }
     }
   }
+
+  "A consumer doing reply channel management" must {
+    "be able to reply during receive" in {
+      val consumer = Actor.actorOf(new ChannelManagementConsumer("reply-channel-test-1")).start
+      (consumer !! "succeed") match {
+        case Some(r) => r must equal ("ok")
+        case None    => fail("reply expected")
+      }
+    }
+    "be able to reply during preRestart" in {
+      val consumer = Actor.actorOf(new ChannelManagementConsumer("reply-channel-test-2"))
+      val supervisor = Supervisor(
+        SupervisorConfig(
+          OneForOneStrategy(List(classOf[Exception]), 2, 10000),
+          Supervise(consumer, Permanent) :: Nil))
+
+      val latch = new CountDownLatch(1)
+      val sender = Actor.actorOf(new Sender("pr", latch)).start
+
+      consumer.!("fail")(Some(sender))
+      latch.await(5, TimeUnit.SECONDS) must be (true)
+    }
+    "be able to reply during postStop" in {
+      val consumer = Actor.actorOf(new ChannelManagementConsumer("reply-channel-test-3"))
+      val supervisor = Supervisor(
+        SupervisorConfig(
+          OneForOneStrategy(List(classOf[Exception]), 2, 10000),
+          Supervise(consumer, Temporary) :: Nil))
+
+      val latch = new CountDownLatch(1)
+      val sender = Actor.actorOf(new Sender("ps", latch)).start
+
+      consumer.!("fail")(Some(sender))
+      latch.await(5, TimeUnit.SECONDS) must be (true)
+    }
+  }
 }
 
 object ConsumerScalaTest {
@@ -263,6 +300,30 @@ object ConsumerScalaTest {
 
     protected def receive = {
       case msg: Message => throw new Exception("error: %s" format msg.body)
+    }
+  }
+
+  class ChannelManagementConsumer(name: String) extends Actor with Consumer {
+    def endpointUri = "direct:%s" format name
+
+    protected def receive = manageReplyChannelFor {
+      case "fail"    => { throw new Exception("test") }
+      case "succeed" => replyChannel foreach { _ ! "ok" }
+    }
+
+    override def preRestart(reason: scala.Throwable) {
+      replyChannel foreach { _ ! "pr" }
+    }
+
+    override def postStop {
+      replyChannel foreach { _ ! "ps" }
+    }
+  }
+
+  class Sender(expected: String, latch: CountDownLatch) extends Actor {
+    def receive = {
+      case msg if (msg == expected) => latch.countDown
+      case _                        => { }
     }
   }
 
