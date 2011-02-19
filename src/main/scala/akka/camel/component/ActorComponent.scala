@@ -149,14 +149,22 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
         sendAsync(exchange, Some(AsyncCallbackAdapter(exchange, callback)))
         false
       }
-      case (false, _, true) => {
+      case (false, false, true) => {
         sendAsync(exchange)
         callback.done(true)
         true
       }
-      case (false, _, false) => {
+      case (false, false, false) => {
         sendAsync(exchange, Some(AsyncCallbackAdapter(exchange, callback)))
         false
+      }
+      case (false, true, false) => {
+        sendSync(exchange)
+        callback.done(true)
+        true
+      }
+      case (false, true, true) => {
+        throw new IllegalStateException("cannot have blocking=true and autoack=true for in-only message exchanges")
       }
     }
   }
@@ -165,7 +173,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
     import akka.camel.Consumer._
 
     val actor = target(exchange)
-    val result: Any = actor !! requestFor(exchange)
+    val result: Any = try { actor !! requestFor(exchange) } catch { case e => Some(Failure(e)) }
 
     result match {
       case Some(Ack)          => { /* no response message to set */ }
