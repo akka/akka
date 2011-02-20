@@ -411,7 +411,7 @@ trait Actor extends Logging {
   /**
    * Is the actor able to handle the message passed in as arguments?
    */
-  def isDefinedAt(message: Any): Boolean = processingBehavior.isDefinedAt(message)
+  final def isDefinedAt(message: Any): Boolean = processingBehavior.isDefinedAt(message)
 
   /**
    * Changes tha Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
@@ -428,13 +428,17 @@ trait Actor extends Logging {
   /**
    * Reverts the Actor behavior to the previous one in the hotswap stack.
    */
-  def unbecome: Unit = if (!self.hotswap.isEmpty) self.hotswap = self.hotswap.pop
+  def unbecome: Unit = {
+    val h = self.hotwap
+    if (h.nonEmpty)
+      self.hotswap = h.pop
+  }
 
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
-  private[akka] def apply(msg: Any) = fullBehavior(msg)
+  private[akka] final def apply(msg: Any) = fullBehavior(msg)
 
   private final def autoReceiveMessage(msg: AutoReceivedMessage) {
     msg match {
@@ -445,12 +449,14 @@ trait Actor extends Logging {
       case Unlink(child)             => self.unlink(child)
       case UnlinkAndStop(child)      => self.unlink(child); child.stop
       case Restart(reason)           => throw reason
-      case PoisonPill                => if(self.senderFuture.isDefined) {
-                                          self.senderFuture.get.completeWithException(
-                                            new ActorKilledException("PoisonPill")
-                                          )
-                                        }
-                                        self.stop
+      case PoisonPill                => {
+        val f = self.senderFuture
+        if(f.isDefined) {
+          f.get.completeWithException(new ActorKilledException("PoisonPill"))
+        }
+        self.stop
+      }
+
     }
   }
 
