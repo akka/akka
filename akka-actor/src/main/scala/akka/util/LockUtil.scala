@@ -144,7 +144,7 @@ class Switch(startAsOn: Boolean = false) {
   }
 
   def ifOffYield[T](action: => T): Option[T] = {
-    if (switch.get) Some(action)
+    if (!switch.get) Some(action)
     else None
   }
 
@@ -160,6 +160,34 @@ class Switch(startAsOn: Boolean = false) {
       action
       true
     } else false
+  }
+
+  def whileOnYield[T](action: => T): Option[T] = synchronized {
+    if (switch.get) Some(action)
+    else None
+  }
+
+  def whileOffYield[T](action: => T): Option[T] = synchronized {
+    if (!switch.get) Some(action)
+    else None
+  }
+
+  def whileOn(action: => Unit): Boolean = synchronized {
+    if (switch.get) {
+      action
+      true
+    } else false
+  }
+
+  def whileOff(action: => Unit): Boolean = synchronized {
+    if (switch.get) {
+      action
+      true
+    } else false
+  }
+
+  def ifElseYield[T](on: => T)(off: => T) = synchronized {
+    if (switch.get) on else off
   }
 
   def isOn = switch.get
