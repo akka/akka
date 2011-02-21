@@ -429,7 +429,7 @@ trait Actor extends Logging {
    * Reverts the Actor behavior to the previous one in the hotswap stack.
    */
   def unbecome: Unit = {
-    val h = self.hotwap
+    val h = self.hotswap
     if (h.nonEmpty)
       self.hotswap = h.pop
   }
@@ -438,7 +438,7 @@ trait Actor extends Logging {
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
-  private[akka] final def apply(msg: Any) = fullBehavior(msg)
+  private[akka] final def apply(msg: Any) = fullBehavior(msg) //TODO: Scala 2.9.0 => processingBehavior.applyOrElse(msg, unhandledMsgFun)
 
   private final def autoReceiveMessage(msg: AutoReceivedMessage) {
     msg match {
@@ -472,7 +472,8 @@ trait Actor extends Logging {
     }
     actorBehavior
   }
-
+  
+  //TODO: Scala2.9.0 replace with: val unhandledMsgFun: Any => Unit = unhandled _
   private lazy val fullBehavior: Receive = {
     val defaultBehavior = receive
     val actorBehavior: Receive = {
