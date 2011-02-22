@@ -95,13 +95,13 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
    * @return
    */
   private def processMailbox(mailbox: MessageQueue): Boolean = try {
-    if (mailbox.suspended.isOn)
+    if (mailbox.suspended.locked)
         return false
 
     var messageInvocation = mailbox.dequeue
     while (messageInvocation ne null) {
       messageInvocation.invoke
-      if (mailbox.suspended.isOn)
+      if (mailbox.suspended.locked)
         return false
       messageInvocation = mailbox.dequeue
     }
@@ -180,12 +180,12 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
 
 
   def suspend(actorRef: ActorRef) {
-    getMailbox(actorRef).suspended.switchOn
+    getMailbox(actorRef).suspended.tryLock
   }
 
   def resume(actorRef: ActorRef) {
     val mbox = getMailbox(actorRef)
-    mbox.suspended.switchOff
+    mbox.suspended.tryUnlock
     executorService.get() execute mbox
   }
 
