@@ -180,6 +180,24 @@ sealed trait Future[T] {
     }
   }
 
+  final def map[A](f: T => A): Future[A] = {
+    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    onComplete (_.value.foreach(_.fold(fa.completeWithException, r => fa.complete(try { Right(f(r)) } catch { case e => Left(e) }))))
+    fa
+  }
+
+  final def flatMap[A](f: T => Future[A]): Future[A] = {
+    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    onComplete (_.value.foreach(_.fold(fa.completeWithException, r => try { f(r).onComplete(fa.completeWith(_)) } catch { case e => fa.completeWithException(e) })))
+    fa
+  }
+
+  final def foreach(f: T => Unit): Unit = onComplete { ft =>
+    val optr = ft.result
+    if (optr.isDefined)
+      f(optr.get)
+  }
+
   /**
    *   Returns the current result, throws the exception is one has been raised, else returns None
    */
