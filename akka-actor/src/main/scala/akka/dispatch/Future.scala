@@ -198,6 +198,12 @@ sealed trait Future[T] {
       f(optr.get)
   }
 
+  final def filter(p: T => Boolean): Future[T] = {
+    val f = new DefaultCompletableFuture[T](timeoutInNanos, NANOS)
+    onComplete (_.value.foreach(_.fold(f.completeWithException, r => f.complete(try { if (p(r)) Right(r) else Left(new MatchError(r)) } catch { case e => Left(e) }))))
+    f
+  }
+
   /**
    *   Returns the current result, throws the exception is one has been raised, else returns None
    */
