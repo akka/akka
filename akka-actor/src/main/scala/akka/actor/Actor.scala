@@ -411,7 +411,7 @@ trait Actor extends Logging {
   /**
    * Is the actor able to handle the message passed in as arguments?
    */
-  final def isDefinedAt(message: Any): Boolean = processingBehavior.isDefinedAt(message)
+  def isDefinedAt(message: Any): Boolean = processingBehavior.isDefinedAt(message)
 
   /**
    * Changes tha Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
