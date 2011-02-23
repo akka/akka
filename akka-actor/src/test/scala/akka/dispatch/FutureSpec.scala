@@ -203,6 +203,16 @@ class FutureSpec extends JUnitSuite {
     assert(Futures.fold(0)(futures)(_ + _).awaitBlocking.result.get === 45)
   }
 
+  @Test def shouldFoldResultsByComposing {
+    val actors = (1 to 10).toList map { _ =>
+      actorOf(new Actor {
+        def receive = { case (add: Int, wait: Int) => Thread.sleep(wait); self reply_? add }
+      }).start
+    }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 )) }
+    assert(futures.foldLeft(Futures.future(0)(0))((fr, fa) => fr flatMap (r => fa map (_ + r))).awaitBlocking.result.get === 45)
+  }
+
   @Test def shouldFoldResultsWithException {
     val actors = (1 to 10).toList map { _ =>
       actorOf(new Actor {
