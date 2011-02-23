@@ -9,7 +9,7 @@ import akka.util.{ReflectiveAccess, Switch}
 
 import java.util.Queue
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.{ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue, LinkedBlockingQueue}
+import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue, LinkedBlockingQueue}
 
 /**
  * Default settings are:
@@ -128,7 +128,7 @@ class ExecutorBasedEventDrivenDispatcher(
 
 
   private[akka] def registerForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = if (active.isOn) {
-    if (mbox.suspended.isOff && mbox.dispatcherLock.tryLock()) {
+    if (!mbox.suspended.locked && mbox.dispatcherLock.tryLock()) {
       try {
         executorService.get() execute mbox
       } catch {
@@ -143,13 +143,13 @@ class ExecutorBasedEventDrivenDispatcher(
 
   def suspend(actorRef: ActorRef) {
     log.slf4j.debug("Suspending {}",actorRef.uuid)
-    getMailbox(actorRef).suspended.switchOn
+    getMailbox(actorRef).suspended.tryLock
   }
 
   def resume(actorRef: ActorRef) {
     log.slf4j.debug("Resuming {}",actorRef.uuid)
     val mbox = getMailbox(actorRef)
-    mbox.suspended.switchOff
+    mbox.suspended.tryUnlock
     registerForExecution(mbox)
   }
 }
@@ -162,12 +162,14 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
   def dispatcher: ExecutorBasedEventDrivenDispatcher
 
   final def run = {
-    val reschedule = try {
-      try { processMailbox() } catch { case ie: InterruptedException => true }
+    try {
+      processMailbox()
+    } catch {
+      case ie: InterruptedException =>
     } finally {
       dispatcherLock.unlock()
     }
-    if (reschedule || !self.isEmpty)
+    if (!self.isEmpty)
       dispatcher.registerForExecution(this)
   }
 
@@ -176,33 +178,33 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
    *
    * @return true if the processing finished before the mailbox was empty, due to the throughput constraint
    */
-  final def processMailbox(): Boolean = {
-    if (self.suspended.isOn)
-      true
-    else {
+  final def processMailbox() {
+    if (!self.suspended.locked) {
       var nextMessage = self.dequeue
-      if (nextMessage ne null) {
-        val throttle          = dispatcher.throughput > 0
-        var processedMessages = 0
-        val isDeadlineEnabled = throttle && dispatcher.throughputDeadlineTime > 0
-        val started = if (isDeadlineEnabled) System.currentTimeMillis else 0
-        do {
-          nextMessage.invoke
+      if (nextMessage ne null) { //If we have a message
+        if (dispatcher.throughput <= 1) //If we only run one message per process
+          nextMessage.invoke //Just run it
+        else { //But otherwise, if we are throttled, we need to do some book-keeping
+          var processedMessages = 0
+          val isDeadlineEnabled = dispatcher.throughputDeadlineTime > 0
+          val deadlineNs = if (isDeadlineEnabled) System.nanoTime + TimeUnit.MILLISECONDS.toNanos(dispatcher.throughputDeadlineTime) else 0
+          do {
+            nextMessage.invoke
 
-          if (throttle) { // Will be elided when false
-            processedMessages += 1
-            if ((processedMessages >= dispatcher.throughput) ||
-                    (isDeadlineEnabled && (System.currentTimeMillis - started) >= dispatcher.throughputDeadlineTime)) // If we're throttled, break out
-              return !self.isEmpty
-          }
-
-          if (self.suspended.isOn)
-            return true
-
-          nextMessage = self.dequeue
-        } while (nextMessage ne null)
+            nextMessage =
+              if (self.suspended.locked) {
+                null //If we are suspended, abort
+              }
+              else { //If we aren't suspended, we need to make sure we're not overstepping our boundaries
+                processedMessages += 1
+                if ((processedMessages >= dispatcher.throughput) || (isDeadlineEnabled && System.nanoTime >= deadlineNs)) // If we're throttled, break out
+                  null //We reached our boundaries, abort
+                else
+                  self.dequeue //Dequeue the next message
+              }
+          } while (nextMessage ne null)
+        }
       }
-      false
     }
   }
 }

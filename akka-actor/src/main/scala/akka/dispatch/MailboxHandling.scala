@@ -19,7 +19,7 @@ class MessageQueueAppendFailedException(message: String) extends AkkaException(m
  */
 trait MessageQueue {
   val dispatcherLock = new SimpleLock
-  val suspended = new Switch(false)
+  val suspended = new SimpleLock
   def enqueue(handle: MessageInvocation)
   def dequeue(): MessageInvocation
   def size: Int
