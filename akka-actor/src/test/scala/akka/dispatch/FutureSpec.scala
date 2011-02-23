@@ -54,6 +54,69 @@ class FutureSpec extends JUnitSuite {
     actor.stop
   }
 
+  @Test def shouldFutureCompose {
+    val actor1 = actorOf[TestActor].start
+    val actor2 = actorOf(new Actor { def receive = { case s: String => self reply s.toUpperCase } } ).start
+    val future1 = actor1.!!![Any]("Hello").flatMap{ case s: String => actor2.!!![Any](s) }
+    val future2 = actor1.!!![Any]("Hello").flatMap{ case s: Int => actor2.!!![Any](s) }
+    assert(Some(Right("WORLD")) === future1.await.value)
+    assert(Some("scala.MatchError: World") === future2.await.exception.map(_.toString))
+    actor1.stop
+    actor2.stop
+  }
+
+  @Test def shouldFutureForComprehension {
+    val actor = actorOf(new Actor {
+      def receive = {
+        case s: String => self reply s.length
+        case i: Int => self reply (i * 2).toString
+      }
+    }).start
+
+    val future1 = for {
+      a: Int    <- actor !!! "Hello" // returns 5
+      b: String <- actor !!! a       // returns "10"
+      c: String <- actor !!! 7       // returns "14"
+    } yield b + "-" + c
+
+    val future2 = for {
+      a: Int    <- actor !!! "Hello"
+      b: Int    <- actor !!! a
+      c: String <- actor !!! 7
+    } yield b + "-" + c
+
+    assert(Some(Right("10-14")) === future1.await.value)
+    assert(Some("java.lang.ClassCastException: java.lang.String cannot be cast to java.lang.Integer") === future2.await.exception.map(_.toString))
+    actor.stop
+  }
+
+  @Test def shouldFutureForComprehensionPatternMatch {
+    case class Req[T](req: T)
+    case class Res[T](res: T)
+    val actor = actorOf(new Actor {
+      def receive = {
+        case Req(s: String) => self reply Res(s.length)
+        case Req(i: Int) => self reply Res((i * 2).toString)
+      }
+    }).start
+
+    val future1 = for {
+      Res(a: Int)    <- (actor !!! Req("Hello")): Future[Any]
+      Res(b: String) <- (actor !!! Req(a)): Future[Any]
+      Res(c: String) <- (actor !!! Req(7)): Future[Any]
+    } yield b + "-" + c
+
+    val future2 = for {
+      Res(a: Int)    <- (actor !!! Req("Hello")): Future[Any]
+      Res(b: Int)    <- (actor !!! Req(a)): Future[Any]
+      Res(c: String) <- (actor !!! Req(7)): Future[Any]
+    } yield b + "-" + c
+
+    assert(Some(Right("10-14")) === future1.await.value)
+    assert(Some("scala.MatchError: Res(10)") === future2.await.exception.map(_.toString))
+    actor.stop
+  }
+
   // FIXME: implement Futures.awaitEither, and uncomment these two tests
   @Test def shouldFutureAwaitEitherLeft = {
     val actor1 = actorOf[TestActor].start
