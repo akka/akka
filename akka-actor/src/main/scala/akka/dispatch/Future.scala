@@ -182,13 +182,41 @@ sealed trait Future[T] {
 
   final def map[A](f: T => A): Future[A] = {
     val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
-    onComplete (_.value.foreach(_.fold(fa.completeWithException, r => fa.complete(try { Right(f(r)) } catch { case e => Left(e) }))))
+    onComplete { ft =>
+      val optv = ft.value
+      if (optv.isDefined) {
+        val v = optv.get
+        if (v.isLeft)
+          fa complete v.asInstanceOf[Either[Throwable, A]]
+        else {
+          fa complete (try {
+            Right(f(v.right.get))
+          } catch {
+            case e => Left(e)
+          })
+        }
+      }
+    }
     fa
   }
 
   final def flatMap[A](f: T => Future[A]): Future[A] = {
     val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
-    onComplete (_.value.foreach(_.fold(fa.completeWithException, r => try { f(r).onComplete(fa.completeWith(_)) } catch { case e => fa.completeWithException(e) })))
+    onComplete { ft =>
+      val optv = ft.value
+      if (optv.isDefined) {
+        val v = optv.get
+        if (v.isLeft)
+          fa complete v.asInstanceOf[Either[Throwable, A]]
+        else {
+          try {
+            f(v.right.get) onComplete (fa.completeWith(_))
+          } catch {
+            case e => fa completeWithException e
+          }
+        }
+      }
+    }
     fa
   }
 
@@ -200,7 +228,23 @@ sealed trait Future[T] {
 
   final def filter(p: T => Boolean): Future[T] = {
     val f = new DefaultCompletableFuture[T](timeoutInNanos, NANOS)
-    onComplete (_.value.foreach(_.fold(f.completeWithException, r => f.complete(try { if (p(r)) Right(r) else Left(new MatchError(r)) } catch { case e => Left(e) }))))
+    onComplete { ft =>
+      val optv = ft.value
+      if (optv.isDefined) {
+        val v = optv.get
+        if (v.isLeft)
+          f complete v
+        else {
+          val r = v.right.get
+          f complete (try {
+            if (p(r)) Right(r)
+            else Left(new MatchError(r))
+          } catch {
+            case e => Left(e)
+          })
+        }
+      }
+    }
     f
   }
 
