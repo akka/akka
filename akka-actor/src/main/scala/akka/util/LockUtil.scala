@@ -144,7 +144,7 @@ class Switch(startAsOn: Boolean = false) {
   }
 
   def ifOffYield[T](action: => T): Option[T] = {
-    if (switch.get) Some(action)
+    if (!switch.get) Some(action)
     else None
   }
 
