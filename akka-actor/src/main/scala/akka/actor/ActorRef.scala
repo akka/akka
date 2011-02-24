@@ -714,15 +714,6 @@ class LocalActorRef private[akka] (
   }
 
   /**
-   * Atomically start, link and make an actor remote.
-   * <p/>
-   * To be invoked from within the actor itself.
-   */
-  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = {
-    //TODO: REVISIT: REMOVED
-  }
-
-  /**
    * Atomically create (from actor class) and start an actor.
    * <p/>
    * To be invoked from within the actor itself.
