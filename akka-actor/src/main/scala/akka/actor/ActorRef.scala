@@ -435,11 +435,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   def startLink(actorRef: ActorRef): Unit
 
   /**
-   * Atomically start, link and make an actor remote.
-   */
-  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit
-
-  /**
    * Atomically create (from actor class) and start an actor.
    * <p/>
    * To be invoked from within the actor itself.
@@ -1158,7 +1153,6 @@ private[akka] case class RemoteActorRef private[akka] (
   def link(actorRef: ActorRef): Unit = unsupported
   def unlink(actorRef: ActorRef): Unit = unsupported
   def startLink(actorRef: ActorRef): Unit = unsupported
-  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = unsupported
   def spawn(clazz: Class[_ <: Actor]): ActorRef = unsupported
   def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef = unsupported
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef = unsupported
