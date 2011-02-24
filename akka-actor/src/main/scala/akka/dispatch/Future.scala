@@ -133,44 +133,92 @@ object Futures {
 }
 
 sealed trait Future[T] {
+  /**
+   * Blocks the current thread until the Future has been completed or the
+   * timeout has expired. In the case of the timeout expiring a
+   * FutureTimeoutException will be thrown.
+   */
   def await : Future[T]
 
+  /**
+   * Blocks the current thread until the Future has been completed. Use
+   * caution with this method as it ignores the timeout and will block
+   * indefinitely if the Future is never completed.
+   */
   def awaitBlocking : Future[T]
 
+  /**
+   * Tests whether this Future has been completed.
+   */
   final def isCompleted: Boolean = value.isDefined
 
+  /**
+   * Tests whether this Future's timeout has expired.
+   *
+   * Note that an expired Future may still contain a value, or it may be
+   * completed with a value.
+   */
   def isExpired: Boolean
 
+  /**
+   * This Future's timeout in nanoseconds.
+   */
   def timeoutInNanos: Long
 
+  /**
+   * The contained value of this Future. Before this Future is completed
+   * the value will be None. After completion the value will be Some(Right(t))
+   * if it contains a valid result, or Some(Left(error)) if it contains
+   * an exception.
+   */
   def value: Option[Either[Throwable, T]]
 
+  /**
+   * Returns the successful result of this Future if it exists.
+   */
   final def result: Option[T] = {
     val v = value
     if (v.isDefined) v.get.right.toOption
     else None
   }
 
+  /**
+   * Waits for the completion of this Future, then returns the completed value.
+   * If the Future's timeout expires while waiting a FutureTimeoutException
+   * will be thrown.
+   *
+   * Equivalent to calling future.await.value.
+   */
   def awaitResult: Option[Either[Throwable, T]]
 
   /**
-   * Returns the result of the Future if one is available within the specified time,
-   * if the time left on the future is less than the specified time, the time left on the future will be used instead
-   * of the specified time.
-   * returns None if no result, Some(Right(t)) if a result, and Some(Left(error)) if there was an exception
+   * Returns the result of the Future if one is available within the specified
+   * time, if the time left on the future is less than the specified time, the
+   * time left on the future will be used instead of the specified time.
+   * returns None if no result, Some(Right(t)) if a result, or
+   * Some(Left(error)) if there was an exception
    */
   def resultWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]]
 
+  /**
+   * Returns the contained exception of this Future if it exists.
+   */
   final def exception: Option[Throwable] = {
     val v = value
     if (v.isDefined) v.get.left.toOption
     else None
   }
 
+  /**
+   * When this Future is completed, apply the provided function to the
+   * Future. If the Future has already been completed, this will apply
+   * immediatly.
+   */
   def onComplete(func: Future[T] => Unit): Future[T]
 
   /**
-   * When the future is compeleted, apply the result to the provided PartialFunction if a match is found
+   * When the future is compeleted with a valid result, apply the provided
+   * PartialFunction to the result.
    */
   final def receive(pf: PartialFunction[Any, Unit]): Future[T] = onComplete { f =>
     val optr = f.result
@@ -180,6 +228,11 @@ sealed trait Future[T] {
     }
   }
 
+  /**
+   * Creates a new Future by applying a function to the successful result of
+   * this Future. If this Future is completed with an exception then the new
+   * Future will also contain this exception.
+   */
   final def map[A](f: T => A): Future[A] = {
     val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
     onComplete { ft =>
@@ -200,6 +253,12 @@ sealed trait Future[T] {
     fa
   }
 
+  /**
+   * Creates a new Future by applying a function to the successful result of
+   * this Future, and returns the result of the function as the new Future.
+   * If this Future is completed with an exception then the new Future will
+   * also contain this exception.
+   */
   final def flatMap[A](f: T => Future[A]): Future[A] = {
     val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
     onComplete { ft =>
