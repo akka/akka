@@ -66,6 +66,10 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     executorService.get() execute mbox
   }
 
+  private[akka] def executeFuture(invocation: FutureInvocation): Unit = if (active.isOn) {
+    executorService.get() execute invocation
+  } else log.slf4j.warn("{} is shut down", this)
+
   /**
    * Try processing the mailbox of the given actor. Fails if the dispatching lock on the actor is already held by
    * another thread (because then that thread is already processing the mailbox).

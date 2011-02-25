@@ -148,6 +148,9 @@ class HawtDispatcher(val aggregate: Boolean = true, val parent: DispatchQueue = 
     mailbox(invocation.receiver).dispatch(invocation)
   }
 
+  private[akka] def executeFuture(invocation: FutureInvocation): Unit =
+    parent execute invocation
+
   // hawtdispatch does not have a way to get queue sizes, getting an accurate
   // size can cause extra contention.. is this really needed?
   // TODO: figure out if this can be optional in akka

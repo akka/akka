@@ -32,10 +32,7 @@ object Futures {
                  dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher)
                 (body: => T): Future[T] = {
     val f = new DefaultCompletableFuture[T](timeout)
-    spawn({
-      try { f completeWithResult body }
-      catch { case e => f completeWithException e}
-    })(dispatcher)
+    dispatcher.dispatchFuture(FutureInvocation(f.asInstanceOf[CompletableFuture[Any]], () => body))
     f
   }
 

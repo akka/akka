@@ -98,6 +98,10 @@ class ExecutorBasedEventDrivenDispatcher(
     registerForExecution(mbox)
   }
 
+  private[akka] def executeFuture(invocation: FutureInvocation): Unit = if (active.isOn) {
+    executorService.get() execute invocation
+  } else log.slf4j.warn("{} is shut down", this)
+
   /**
    * @return the mailbox associated with the actor
    */
