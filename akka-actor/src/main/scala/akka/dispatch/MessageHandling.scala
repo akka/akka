@@ -27,6 +27,12 @@ final case class MessageInvocation(val receiver: ActorRef,
   }
 }
 
+final case class FutureInvocation(future: CompletableFuture[Any], function: () => Any) extends Runnable {
+  val uuid = akka.actor.newUuid
+
+  def run = future complete (try { Right(function.apply) } catch { case e => Left(e) })
+}
+
 object MessageDispatcher {
   val UNSCHEDULED = 0
   val SCHEDULED = 1
@@ -67,6 +73,24 @@ trait MessageDispatcher extends Logging {
   private[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = if (active.isOn) {
     dispatch(invocation)
   } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
+
+  private[akka] final def dispatchFuture(invocation: FutureInvocation): Unit = {
+    uuids add invocation.uuid
+    if (active.isOff) { active.switchOn { start } }
+    invocation.future.onComplete { f =>
+      if ((uuids remove invocation.uuid) && uuids.isEmpty) {
+        shutdownSchedule match {
+          case UNSCHEDULED =>
+            shutdownSchedule = SCHEDULED
+            Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
+          case SCHEDULED =>
+            shutdownSchedule = RESCHEDULED
+          case RESCHEDULED => //Already marked for reschedule
+        }
+      }
+    }
+    executeFuture(invocation)
+  }
 
   private[akka] def register(actorRef: ActorRef) {
     if (actorRef.mailbox eq null)
@@ -149,6 +173,8 @@ trait MessageDispatcher extends Logging {
    *   Will be called when the dispatcher is to queue an invocation for execution
    */
   private[akka] def dispatch(invocation: MessageInvocation): Unit
+
+  private[akka] def executeFuture(invocation: FutureInvocation): Unit
 
   /**
    * Called one time every time an actor is attached to this dispatcher and this dispatcher was previously shutdown
