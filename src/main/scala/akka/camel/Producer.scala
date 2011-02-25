@@ -54,6 +54,21 @@ trait ProducerSupport { this: Actor =>
   def headersToCopy: Set[String] = headersToCopyDefault
 
   /**
+   * Default implementation of <code>Actor.preRestart</code> for freeing resources needed
+   * to actually send messages to <code>endpointUri</code>.
+   */
+  override def preRestart(reason: Throwable) {
+    preRestartProducer(reason)
+    processor.stop
+  }
+
+  /**
+   * Does nothing by default. Can be overridden by concrete producers for implementing a
+   * pre-restart callback handler.
+   */
+  def preRestartProducer(reason: Throwable) {}
+
+  /**
    * Default implementation of <code>Actor.postStop</code> for freeing resources needed
    * to actually send messages to <code>endpointUri</code>.
    */

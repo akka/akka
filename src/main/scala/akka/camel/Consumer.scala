@@ -26,11 +26,6 @@ trait Consumer { this: Actor =>
   private[camel] var routeDefinitionHandler: RouteDefinitionHandler = identity
 
   /**
-   * A reply channel that can be set via <code>storeChannel</code>.
-   */
-  protected var replyChannel: Option[Channel[Any]] = None
-
-  /**
    * Returns the Camel endpoint URI to consume messages from.
    */
   def endpointUri: String
@@ -59,20 +54,6 @@ trait Consumer { this: Actor =>
    * Java API.
    */
   def onRouteDefinition(h: RouteDefinitionHandler): Unit = routeDefinitionHandler = h
-
-  /**
-   * Manages a <code>replyChannel</code> for the <code>receive</code> partial function.
-   * Sets a reply channel before calling <code>receive</code> and un-sets the reply channel
-   * after <code>receive</code> terminated normally. The reply channel is not un-set if
-   * <code>receive</code> throws an exception.
-   */
-  protected def manageReplyChannelFor(receive: PartialFunction[Any, Unit]): PartialFunction[Any, Unit] = {
-    case msg => {
-      replyChannel = try { Some(self.channel) } catch { case e => None }
-      receive(msg)
-      replyChannel = None
-    }
-  }
 }
 
 /**

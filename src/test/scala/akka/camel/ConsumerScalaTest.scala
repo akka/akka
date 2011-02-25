@@ -303,7 +303,7 @@ object ConsumerScalaTest {
     }
   }
 
-  class ChannelManagementConsumer(name: String) extends Actor with Consumer {
+  class ChannelManagementConsumer(name: String) extends Actor with Consumer with ChannelManagement {
     def endpointUri = "direct:%s" format name
 
     protected def receive = manageReplyChannelFor {
