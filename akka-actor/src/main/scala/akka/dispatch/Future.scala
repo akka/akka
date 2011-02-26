@@ -130,10 +130,13 @@ object Futures {
   import scala.collection.generic.CanBuildFrom
 
   def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]], timeout: Long = Actor.TIMEOUT)(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]]): Future[M[A]] =
-    in.foldLeft(new DefaultCompletableFuture[Builder[A, M[A]]](timeout).completeWithResult(cbf(in)): Future[Builder[A, M[A]]])((fb, fa) => for (a <- fa.asInstanceOf[Future[A]]; b <- fb) yield (b += a)).map(_.result)
+    in.foldLeft(new DefaultCompletableFuture[Builder[A, M[A]]](timeout).completeWithResult(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) => for (r <- fr; a <- fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
 
   def traverse[A, B, M[_] <: Traversable[_]](in: M[A], timeout: Long = Actor.TIMEOUT)(fn: A => Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]]): Future[M[B]] =
-    in.foldLeft(new DefaultCompletableFuture[Builder[B, M[B]]](timeout).completeWithResult(cbf(in)): Future[Builder[B, M[B]]])((fb, fa) => for (a <- fn(fa.asInstanceOf[A]); b <- fb) yield (b += a)).map(_.result)
+    in.foldLeft(new DefaultCompletableFuture[Builder[B, M[B]]](timeout).completeWithResult(cbf(in)): Future[Builder[B, M[B]]]) { (fr, a) =>
+      val fb = fn(a.asInstanceOf[A])
+      for (r <- fr; b <-fb) yield (r += b)
+    }.map(_.result)
 }
 
 sealed trait Future[T] {
