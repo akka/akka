@@ -81,6 +81,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val GlassfishRepo        = MavenRepository("Glassfish Repo", "http://download.java.net/maven/glassfish")
     lazy val ScalaToolsRelRepo    = MavenRepository("Scala Tools Releases Repo", "http://scala-tools.org/repo-releases")
     lazy val DatabinderRepo       = MavenRepository("Databinder Repo", "http://databinder.net/repo")
+    lazy val ScalaToolsSnapshotRepo = MavenRepository("Scala-Tools Snapshot Repo", "http://scala-tools.org/repo-snapshots")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -105,6 +106,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback", sbt.DefaultMavenRepository)
   lazy val spdeModuleConfig        = ModuleConfiguration("us.technically.spde", DatabinderRepo)
   lazy val processingModuleConfig  = ModuleConfiguration("org.processing", DatabinderRepo)
+  lazy val scalazModuleConfig      = ModuleConfiguration("org.scalaz", ScalaToolsSnapshotRepo)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
@@ -184,8 +186,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile" //MIT
 
-    lazy val sjson = "sjson.json" % "sjson" % "0.8-2.8.0" % "compile" //ApacheV2
-    lazy val sjson_test = "sjson.json" % "sjson" % "0.8-2.8.0" % "test" //ApacheV2
+    lazy val sjson = "net.debasishg" % "sjson_2.8.1" % "0.9" % "compile" //ApacheV2
+    lazy val sjson_test = "net.debasishg" % "sjson_2.8.1" % "0.9" % "test" //ApacheV2
 
     lazy val logback      = "ch.qos.logback" % "logback-classic" % LOGBACK_VERSION % "compile" //LGPL 2.1
 
