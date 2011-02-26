@@ -28,9 +28,8 @@ object Futures {
    * }
    * </pre>
    */
-   def future[T](timeout: Long,
-                 dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher)
-                (body: => T): Future[T] = {
+   def future[T](body: => T, timeout: Long = Actor.TIMEOUT,
+                 dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Future[T] = {
     val f = new DefaultCompletableFuture[T](timeout)
     dispatcher.dispatchFuture(FutureInvocation(f.asInstanceOf[CompletableFuture[Any]], () => body))
     f
