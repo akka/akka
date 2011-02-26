@@ -46,6 +46,7 @@ trait MessageDispatcher extends Logging {
   import MessageDispatcher._
 
   protected val uuids = new ConcurrentSkipListSet[Uuid]
+  protected val futures = new ConcurrentSkipListSet[Uuid]
   protected val guard = new ReentrantGuard
   protected val active = new Switch(false)
 
@@ -75,10 +76,10 @@ trait MessageDispatcher extends Logging {
   } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
 
   private[akka] final def dispatchFuture(invocation: FutureInvocation): Unit = {
-    uuids add invocation.uuid
+    futures add invocation.uuid
     if (active.isOff) { active.switchOn { start } }
     invocation.future.onComplete { f =>
-      if ((uuids remove invocation.uuid) && uuids.isEmpty) {
+      if ((futures remove invocation.uuid) && futures.isEmpty && uuids.isEmpty) {
         shutdownSchedule match {
           case UNSCHEDULED =>
             shutdownSchedule = SCHEDULED
@@ -107,7 +108,7 @@ trait MessageDispatcher extends Logging {
   private[akka] def unregister(actorRef: ActorRef) = {
     if (uuids remove actorRef.uuid) {
       actorRef.mailbox = null
-      if (uuids.isEmpty){
+      if (uuids.isEmpty && futures.isEmpty){
         shutdownSchedule match {
           case UNSCHEDULED =>
             shutdownSchedule = SCHEDULED
@@ -142,7 +143,7 @@ trait MessageDispatcher extends Logging {
           shutdownSchedule = SCHEDULED
           Scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
         case SCHEDULED =>
-          if (uuids.isEmpty()) {
+          if (uuids.isEmpty() && futures.isEmpty) {
             active switchOff {
               shutdown // shut down in the dispatcher's references is zero
             }
