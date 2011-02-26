@@ -210,7 +210,7 @@ class FutureSpec extends JUnitSuite {
       }).start
     }
     def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 )) }
-    assert(futures.foldLeft(Futures.future(0)(0))((fr, fa) => fr flatMap (r => fa map (_ + r))).awaitBlocking.result.get === 45)
+    assert(futures.foldLeft(Futures.future(0))((fr, fa) => fr flatMap (r => fa map (_ + r))).awaitBlocking.result.get === 45)
   }
 
   @Test def shouldFoldResultsWithException {
