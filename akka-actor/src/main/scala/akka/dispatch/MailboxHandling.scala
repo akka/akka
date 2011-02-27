@@ -33,7 +33,7 @@ sealed trait MailboxType
 
 case class UnboundedMailbox(val blocking: Boolean = false) extends MailboxType
 case class BoundedMailbox(
-  val blocking: Boolean            = false,
+  val blocking: Boolean     = false,
   val capacity: Int         = { if (Dispatchers.MAILBOX_CAPACITY < 0) Int.MaxValue else Dispatchers.MAILBOX_CAPACITY },
   val pushTimeOut: Duration = Dispatchers.MAILBOX_PUSH_TIME_OUT) extends MailboxType {
   if (capacity < 0)        throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")

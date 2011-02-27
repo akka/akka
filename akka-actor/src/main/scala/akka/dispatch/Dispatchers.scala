@@ -61,18 +61,7 @@ object Dispatchers extends Logging {
     config.getConfigMap("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalExecutorBasedEventDrivenDispatcher)
   }
 
-  object globalHawtDispatcher extends HawtDispatcher
-
   object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global", THROUGHPUT, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE)
-
-  /**
-   * Creates an event-driven dispatcher based on the excellent HawtDispatch library.
-   * <p/>
-   * Can be beneficial to use the <code>HawtDispatcher.pin(self)</code> to "pin" an actor to a specific thread.
-   * <p/>
-   * See the ScalaDoc for the {@link akka.dispatch.HawtDispatcher} for details.
-   */
-  def newHawtDispatcher(aggregate: Boolean) = new HawtDispatcher(aggregate)
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
@@ -141,7 +130,7 @@ object Dispatchers extends Logging {
    * Has a fluent builder interface for configuring its semantics.
    */
   def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, mailboxType: MailboxType) =
-    ThreadPoolConfigDispatcherBuilder(config => new ExecutorBasedEventDrivenWorkStealingDispatcher(name,mailboxType,config),ThreadPoolConfig())
+    ThreadPoolConfigDispatcherBuilder(config => new ExecutorBasedEventDrivenWorkStealingDispatcher(name, THROUGHPUT, THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType, config, THROUGHPUT),ThreadPoolConfig())
 
   /**
    * Utility function that tries to load the specified dispatcher config from the akka.conf
@@ -156,7 +145,7 @@ object Dispatchers extends Logging {
    * default-dispatcher {
    *   type = "GlobalExecutorBasedEventDriven" # Must be one of the following, all "Global*" are non-configurable
    *                               # (ExecutorBasedEventDrivenWorkStealing), ExecutorBasedEventDriven,
-   *                               # Hawt, GlobalExecutorBasedEventDriven, GlobalHawt
+   *                               # GlobalExecutorBasedEventDriven
    *   keep-alive-time = 60        # Keep alive time for threads
    *   core-pool-size-factor = 1.0 # No of core threads ... ceil(available processors * factor)
    *   max-pool-size-factor  = 4.0 # Max no of threads ... ceil(available processors * factor)
@@ -164,7 +153,6 @@ object Dispatchers extends Logging {
    *   allow-core-timeout = on     # Allow core threads to time out
    *   rejection-policy = "caller-runs" # abort, caller-runs, discard-oldest, discard
    *   throughput = 5              # Throughput for ExecutorBasedEventDrivenDispatcher
-   *   aggregate = off             # Aggregate on/off for HawtDispatchers
    * }
    * ex: from(config.getConfigMap(identifier).get)
    *
@@ -211,11 +199,14 @@ object Dispatchers extends Logging {
           threadPoolConfig)).build
 
       case "ExecutorBasedEventDrivenWorkStealing" =>
-        configureThreadPool(poolCfg => new ExecutorBasedEventDrivenWorkStealingDispatcher(name, mailboxType,poolCfg)).build
-
-      case "Hawt"                                 => new HawtDispatcher(cfg.getBool("aggregate",true))
+        configureThreadPool(threadPoolConfig => new ExecutorBasedEventDrivenWorkStealingDispatcher(
+          name,
+          cfg.getInt("throughput", THROUGHPUT),
+          cfg.getInt("throughput-deadline-time", THROUGHPUT_DEADLINE_TIME_MILLIS),
+          mailboxType,
+          threadPoolConfig,
+          cfg.getInt("max-donation", THROUGHPUT))).build
       case "GlobalExecutorBasedEventDriven"       => globalExecutorBasedEventDrivenDispatcher
-      case "GlobalHawt"                           => globalHawtDispatcher
       case unknown                                => throw new IllegalArgumentException("Unknown dispatcher type [%s]" format unknown)
     }
   }
