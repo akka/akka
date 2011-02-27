@@ -22,7 +22,6 @@ object DispatchersSpec {
   val allowcoretimeout   = "allow-core-timeout"
   val rejectionpolicy    = "rejection-policy"   // abort, caller-runs, discard-oldest, discard
   val throughput         = "throughput"         // Throughput for ExecutorBasedEventDrivenDispatcher
-  val aggregate          = "aggregate"          // Aggregate on/off for HawtDispatchers
 
   def instance(dispatcher: MessageDispatcher): (MessageDispatcher) => Boolean = _ == dispatcher
   def ofType[T <: MessageDispatcher : Manifest]: (MessageDispatcher) => Boolean = _.getClass == manifest[T].erasure
@@ -30,9 +29,7 @@ object DispatchersSpec {
   def typesAndValidators: Map[String,(MessageDispatcher) => Boolean] = Map(
     "ExecutorBasedEventDrivenWorkStealing"      -> ofType[ExecutorBasedEventDrivenWorkStealingDispatcher],
     "ExecutorBasedEventDriven"                  -> ofType[ExecutorBasedEventDrivenDispatcher],
-    "Hawt"                                      -> ofType[HawtDispatcher],
-    "GlobalExecutorBasedEventDriven"            -> instance(globalExecutorBasedEventDrivenDispatcher),
-    "GlobalHawt"                                -> instance(globalHawtDispatcher)
+    "GlobalExecutorBasedEventDriven"            -> instance(globalExecutorBasedEventDrivenDispatcher)
   )
 
   def validTypes = typesAndValidators.keys.toList

@@ -101,7 +101,7 @@ class ExecutorBasedEventDrivenDispatcher(
   /**
    * @return the mailbox associated with the actor
    */
-  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
+  protected def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
@@ -126,7 +126,6 @@ class ExecutorBasedEventDrivenDispatcher(
     }
   }
 
-
   private[akka] def registerForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = if (active.isOn) {
     if (!mbox.suspended.locked && mbox.dispatcherLock.tryLock()) {
       try {
@@ -137,7 +136,11 @@ class ExecutorBasedEventDrivenDispatcher(
           throw e
       }
     }
-  } else log.slf4j.warn("{} is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t{}", this, mbox)
+  }
+  else log.slf4j.warn("{} is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t{}", this, mbox)
+
+  private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
+    registerForExecution(mbox)
 
   override val toString = getClass.getSimpleName + "[" + name + "]"
 
@@ -150,7 +153,7 @@ class ExecutorBasedEventDrivenDispatcher(
     log.slf4j.debug("Resuming {}",actorRef.uuid)
     val mbox = getMailbox(actorRef)
     mbox.suspended.tryUnlock
-    registerForExecution(mbox)
+    reRegisterForExecution(mbox)
   }
 }
 
@@ -170,7 +173,7 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
       dispatcherLock.unlock()
     }
     if (!self.isEmpty)
-      dispatcher.registerForExecution(this)
+      dispatcher.reRegisterForExecution(this)
   }
 
   /**

@@ -111,7 +111,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val DISPATCH_VERSION      = "0.7.4"
-  lazy val HAWT_DISPATCH_VERSION = "1.1"
   lazy val JACKSON_VERSION       = "1.4.3"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.2"
@@ -159,8 +158,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val h2_lzf = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile" //ApacheV2
 
-    lazy val hawtdispatch = "org.fusesource.hawtdispatch" % "hawtdispatch-scala" % HAWT_DISPATCH_VERSION % "compile" //ApacheV2
-
     lazy val jackson          = "org.codehaus.jackson" % "jackson-mapper-asl" % JACKSON_VERSION % "compile" //ApacheV2
     lazy val jackson_core     = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile" //ApacheV2
 
@@ -168,8 +165,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val jersey_json    = "com.sun.jersey"          % "jersey-json"   % JERSEY_VERSION % "compile" //CDDL v1
     lazy val jersey_server  = "com.sun.jersey"          % "jersey-server" % JERSEY_VERSION % "compile" //CDDL v1
     lazy val jersey_contrib = "com.sun.jersey.contribs" % "jersey-scala"  % JERSEY_VERSION % "compile" //CDDL v1
-
-    lazy val jsr166x = "jsr166x" % "jsr166x" % "1.0" % "compile" //CC Public Domain
 
     lazy val jsr250 = "javax.annotation" % "jsr250-api" % "1.0" % "compile" //CDDL v1
 
@@ -322,8 +317,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val uuid          = Dependencies.uuid
     val configgy      = Dependencies.configgy
-    val hawtdispatch  = Dependencies.hawtdispatch
-    val jsr166x       = Dependencies.jsr166x
     val logback       = Dependencies.logback
 
     // testing

@@ -30,7 +30,6 @@ trait AkkaBaseProject extends BasicScalaProject {
   val facebookModuleConfig    = ModuleConfiguration("com.facebook", AkkaRepo)
   val h2lzfModuleConfig       = ModuleConfiguration("voldemort.store.compress", AkkaRepo)
   val hbaseModuleConfig       = ModuleConfiguration("org.apache.hbase", AkkaRepo)
-  val jsr166xModuleConfig     = ModuleConfiguration("jsr166x", AkkaRepo)
   val memcachedModuleConfig   = ModuleConfiguration("spy", "memcached", AkkaRepo)
   val netLagModuleConfig      = ModuleConfiguration("net.lag", AkkaRepo)
   val redisModuleConfig       = ModuleConfiguration("com.redis", AkkaRepo)
