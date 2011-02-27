@@ -116,12 +116,11 @@ class ExecutorBasedEventDrivenDispatcher(
       }
   }
 
-  private[akka] def start = log.slf4j.debug("Starting up {}\n\twith throughput [{}]", this, throughput)
+  private[akka] def start {}
 
   private[akka] def shutdown {
     val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
     if (old ne null) {
-      log.slf4j.debug("Shutting down {}", this)
       old.shutdownNow()
     }
   }
@@ -137,7 +136,6 @@ class ExecutorBasedEventDrivenDispatcher(
       }
     }
   }
-  else log.slf4j.warn("{} is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t{}", this, mbox)
 
   private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
     registerForExecution(mbox)
@@ -145,12 +143,10 @@ class ExecutorBasedEventDrivenDispatcher(
   override val toString = getClass.getSimpleName + "[" + name + "]"
 
   def suspend(actorRef: ActorRef) {
-    log.slf4j.debug("Suspending {}",actorRef.uuid)
     getMailbox(actorRef).suspended.tryLock
   }
 
   def resume(actorRef: ActorRef) {
-    log.slf4j.debug("Resuming {}",actorRef.uuid)
     val mbox = getMailbox(actorRef)
     mbox.suspended.tryUnlock
     reRegisterForExecution(mbox)

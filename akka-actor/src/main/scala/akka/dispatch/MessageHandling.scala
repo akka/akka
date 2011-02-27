@@ -36,7 +36,7 @@ object MessageDispatcher {
 /**
  *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait MessageDispatcher extends Logging {
+trait MessageDispatcher {
   import MessageDispatcher._
 
   protected val uuids = new ConcurrentSkipListSet[Uuid]
@@ -106,7 +106,6 @@ trait MessageDispatcher extends Logging {
       Actor.registry.actorFor(uuid) match {
         case Some(actor) => actor.stop
         case None =>
-          log.slf4j.error("stopAllLinkedActors couldn't find linked actor: " + uuid)
       }
     }
   }
