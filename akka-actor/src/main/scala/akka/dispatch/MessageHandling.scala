@@ -64,9 +64,7 @@ trait MessageDispatcher {
     unregister(actorRef)
   }
 
-  private[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = if (active.isOn) {
-    dispatch(invocation)
-  } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
+  private[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = dispatch(invocation)
 
   private[akka] def register(actorRef: ActorRef) {
     if (actorRef.mailbox eq null)
