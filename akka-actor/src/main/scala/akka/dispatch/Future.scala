@@ -138,6 +138,14 @@ object Futures {
     }.map(_.result)
 }
 
+object Future {
+  def apply[T](body: => T, timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher): Future[T] = {
+    val f = new DefaultCompletableFuture[T](timeout)
+    dispatcher.dispatchFuture(FutureInvocation(f.asInstanceOf[CompletableFuture[Any]], () => body))
+    f
+  }
+}
+
 sealed trait Future[T] {
   /**
    * Blocks the current thread until the Future has been completed or the
