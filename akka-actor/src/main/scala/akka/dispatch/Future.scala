@@ -370,82 +370,103 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     }
   }
 
-  def awaitResult: Option[Either[Throwable, T]] = try {
-    _lock.lock
-    awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos))
-    _value
-  } finally {
-    _lock.unlock
-  }
+  def awaitResult: Option[Either[Throwable, T]] =
+    if (_value.isDefined) _value
+    else {
+      _lock.lock
+      try {
+        awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos))
+        _value
+      } finally {
+        _lock.unlock
+      }
+    }
 
-  def resultWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]] = try {
-    _lock.lock
-    awaitUnsafe(unit.toNanos(time).min(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)))
-    _value
-  } finally {
-    _lock.unlock
-  }
+  def resultWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]] =
+    if (_value.isDefined) _value
+    else {
+      _lock.lock
+      try {
+        awaitUnsafe(unit.toNanos(time).min(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)))
+        _value
+      } finally {
+        _lock.unlock
+      }
+    }
 
-  def await = try {
-    _lock.lock
-    if (awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)))
-      this
-    else
-      throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(timeoutInNanos) + "] milliseconds")
-  } finally {
-    _lock.unlock
-  }
-
-  def awaitBlocking = try {
-    _lock.lock
-    while (_value.isEmpty) {
-      _signal.await
+  def await = {
+    if (_value.isEmpty) {
+      _lock.lock
+      try {
+        if (!awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)))
+          throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(timeoutInNanos) + "] milliseconds")
+      } finally {
+        _lock.unlock
+      }
     }
     this
-  } finally {
-    _lock.unlock
+  }
+
+  def awaitBlocking = {
+    if (_value.isEmpty) {
+      _lock.lock
+      try {
+        while (_value.isEmpty) {
+          _signal.await
+        }
+      } finally {
+        _lock.unlock
+      }
+    }
+    this
   }
 
   def isExpired: Boolean = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos) <= 0
 
-  def value: Option[Either[Throwable, T]] = try {
-    _lock.lock
-    _value
-  } finally {
-    _lock.unlock
-  }
-
-  def complete(value: Either[Throwable, T]): DefaultCompletableFuture[T] = {
-    val notifyTheseListeners = try {
+  def value: Option[Either[Throwable, T]] =
+    if (_value.isDefined) _value
+    else {
       _lock.lock
-      if (_value.isEmpty) {
-        _value = Some(value)
-        val all = _listeners
-        _listeners = Nil
-        all
-      } else Nil
-    } finally {
-      _signal.signalAll
-      _lock.unlock
+      try {
+        _value
+      } finally {
+        _lock.unlock
+      }
     }
 
-    if (notifyTheseListeners.nonEmpty)
-      notifyTheseListeners foreach notify
+  def complete(value: Either[Throwable, T]): DefaultCompletableFuture[T] = {
+    if (_value.isEmpty) {
+      val notifyTheseListeners = try {
+        _lock.lock
+        if (_value.isEmpty) {
+          _value = Some(value)
+          val all = _listeners
+          _listeners = Nil
+          all
+        } else Nil
+      } finally {
+        _signal.signalAll
+        _lock.unlock
+      }
 
+      if (notifyTheseListeners.nonEmpty)
+        notifyTheseListeners foreach notify
+    }
     this
   }
 
   def onComplete(func: Future[T] => Unit): CompletableFuture[T] = {
-    if (try {
-      _lock.lock
-      if (_value.isEmpty) {
-        _listeners ::= func
-        false
-      }
-      else true
-    } finally {
-      _lock.unlock
-    }) notify(func)
+    if (_value.isDefined) notify(func)
+    else
+      if (try {
+        _lock.lock
+        if (_value.isEmpty) {
+          _listeners ::= func
+          false
+        } else true
+      } finally {
+        _lock.unlock
+      }) notify(func)
     this
   }
 
