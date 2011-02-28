@@ -17,7 +17,7 @@ import akka.actor._
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object ReflectiveAccess extends Logging {
+object ReflectiveAccess {
 
   val loader = getClass.getClassLoader
 
@@ -125,8 +125,6 @@ object ReflectiveAccess extends Logging {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e =>
-      log.slf4j.warn("Could not instantiate class [{}]", clazz.getName)
-      log.slf4j.warn("createInstance",e.getCause)
       None
   }
 
@@ -143,8 +141,6 @@ object ReflectiveAccess extends Logging {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e =>
-      log.slf4j.warn("Could not instantiate class [{}]", fqn)
-      log.slf4j.warn("createInstance",e.getCause)
       None
   }
 
@@ -156,13 +152,9 @@ object ReflectiveAccess extends Logging {
     Option(instance.get(null).asInstanceOf[T])
   } catch {
     case e: ClassNotFoundException => {
-      log.slf4j.debug("Could not get object [{}]", fqn)
-      log.slf4j.debug("getObjectFor", e)
       None
     }
     case ei: ExceptionInInitializerError => {
-      log.slf4j.error("Exception in initializer for object [{}]",fqn)
-      log.slf4j.error("Cause was:",ei.getCause)
       throw ei
     }
   }

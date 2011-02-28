@@ -25,7 +25,6 @@ package akka.security
 import akka.actor.{Scheduler, Actor, ActorRef, ActorRegistry, IllegalActorStateException}
 import akka.actor.Actor._
 import akka.config.Config
-import akka.util.Logging
 
 import com.sun.jersey.api.model.AbstractMethod
 import com.sun.jersey.spi.container.{ResourceFilterFactory, ContainerRequest, ContainerRequestFilter, ContainerResponse, ContainerResponseFilter, ResourceFilter}
@@ -69,9 +68,9 @@ case class SpnegoCredentials(token: Array[Byte]) extends Credentials
 /**
  * Jersey Filter for invocation intercept and authorization/authentication
  */
-class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
+class AkkaSecurityFilterFactory extends ResourceFilterFactory {
   class Filter(actor: ActorRef, rolesAllowed: Option[List[String]])
-      extends ResourceFilter with ContainerRequestFilter with Logging {
+      extends ResourceFilter with ContainerRequestFilter {
 
     override def getRequestFilter: ContainerRequestFilter = this
 
@@ -91,7 +90,6 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
               throw new WebApplicationException(r.asInstanceOf[Response])
             case None => throw new WebApplicationException(408)
             case unknown => {
-              log.slf4j.warn("Authenticator replied with unexpected result [{}]", unknown)
               throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR)
             }
           }
@@ -244,7 +242,7 @@ trait BasicAuthenticationActor extends AuthenticationActor[BasicCredentials] {
  * class to create an authenticator. Don't forget to set the authenticator FQN in the
  * rest-part of the akka config
  */
-trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] with Logging {
+trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] {
   import LiftUtils._
 
   private object InvalidateNonces
@@ -257,8 +255,7 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] w
     case InvalidateNonces =>
       val ts = System.currentTimeMillis
       nonceMap.filter(tuple => (ts - tuple._2) < nonceValidityPeriod)
-    case unknown =>
-      log.slf4j.error("Don't know what to do with: ", unknown)
+    case unknown => {}
   }
 
   //Schedule the invalidation of nonces
@@ -345,7 +342,7 @@ import org.ietf.jgss.GSSContext
 import org.ietf.jgss.GSSCredential
 import org.ietf.jgss.GSSManager
 
-trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] with Logging {
+trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] {
   override def unauthorized =
     Response.status(401).header("WWW-Authenticate", "Negotiate").build
 
@@ -371,7 +368,6 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] w
         Some(UserInfo(user, null, rolesFor(user)))
       } catch {
         case e: PrivilegedActionException => {
-          log.slf4j.error("Action not allowed", e)
           return None
         }
       }
