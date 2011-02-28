@@ -56,7 +56,7 @@ object Config {
       val configFile = System.getProperty("akka.config", "")
       try {
         Configgy.configure(configFile)
-        println("Config loaded from -Dakka.config={}", configFile)
+        println("Config loaded from -Dakka.config=" + configFile)
       } catch {
         case e: ParseException => throw new ConfigurationException(
           "Config could not be loaded from -Dakka.config=" + configFile +
@@ -66,7 +66,7 @@ object Config {
     } else if (getClass.getClassLoader.getResource(confName) ne null) {
       try {
         Configgy.configureFromResource(confName, getClass.getClassLoader)
-        println("Config [{}] loaded from the application classpath.",confName)
+        println("Config [" + confName + "] loaded from the application classpath.")
       } catch {
         case e: ParseException => throw new ConfigurationException(
           "Can't load '" + confName + "' config file from application classpath," +
@@ -78,9 +78,8 @@ object Config {
         val configFile = HOME.get + "/config/" + confName
         Configgy.configure(configFile)
         println(
-          "AKKA_HOME is defined as [{}], config loaded from [{}].",
-          HOME.getOrElse(throwNoAkkaHomeException),
-          configFile)
+          "AKKA_HOME is defined as [" + HOME.getOrElse(throwNoAkkaHomeException) + 
+          "], config loaded from [" + configFile + "].")
       } catch {
         case e: ParseException => throw new ConfigurationException(
           "AKKA_HOME is defined as [" + HOME.get + "] " +
