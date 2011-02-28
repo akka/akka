@@ -37,6 +37,8 @@ object MessageDispatcher {
   val UNSCHEDULED = 0
   val SCHEDULED = 1
   val RESCHEDULED = 2
+
+  implicit def defaultGlobalDispatcher = Dispatchers.defaultGlobalDispatcher
 }
 
 /**
