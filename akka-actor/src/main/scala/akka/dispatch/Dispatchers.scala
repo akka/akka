@@ -7,7 +7,7 @@ package akka.dispatch
 import akka.actor.{Actor, ActorRef}
 import akka.actor.newUuid
 import akka.config.Config._
-import akka.util.{Duration, Logging}
+import akka.util.{Duration}
 
 import net.lag.configgy.ConfigMap
 
@@ -46,7 +46,7 @@ import java.util.concurrent.TimeUnit
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Dispatchers extends Logging {
+object Dispatchers {
   val THROUGHPUT                      = config.getInt("akka.actor.throughput", 5)
   val DEFAULT_SHUTDOWN_TIMEOUT        = config.getLong("akka.actor.dispatcher-shutdown-timeout").
                                         map(time => Duration(time, TIME_UNIT)).

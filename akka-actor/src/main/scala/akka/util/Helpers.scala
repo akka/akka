@@ -7,7 +7,7 @@ package akka.util
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Helpers extends Logging {
+object Helpers {
 
   implicit def null2Option[T](t: T): Option[T] = Option(t)
 
@@ -42,8 +42,6 @@ object Helpers extends Logging {
       narrow(o)
     } catch {
       case e: ClassCastException =>
-        log.slf4j.warn("Cannot narrow {} to expected type {}!", o, implicitly[Manifest[T]].erasure.getName)
-        log.slf4j.trace("narrowSilently", e)
         None
     }
 

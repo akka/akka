@@ -4,7 +4,6 @@
 
 package akka.http
 
-import akka.util.Logging
 import akka.actor.{ActorRegistry, ActorRef, Actor}
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
@@ -63,7 +62,7 @@ import Types._
 /**
  *
  */
-trait Mist extends Logging {
+trait Mist {
   import javax.servlet.{ServletContext}
   import MistSettings._
 
@@ -118,16 +117,11 @@ trait Mist extends Logging {
     val server = context.getServerInfo
     val (major, minor) = (context.getMajorVersion, context.getMinorVersion)
 
-    log.slf4j.info("Initializing Akka HTTP on {} with Servlet API {}.{}",Array[AnyRef](server, major: java.lang.Integer, minor: java.lang.Integer))
-
     _factory = if (major >= 3) {
-      log.slf4j.info("Supporting Java asynchronous contexts.")
       Some(Servlet30ContextMethodFactory)
     } else if (server.toLowerCase startsWith JettyServer) {
-      log.slf4j.info("Supporting Jetty asynchronous continuations.")
       Some(JettyContinuationMethodFactory)
     } else {
-      log.slf4j.error("No asynchronous request handling can be supported.")
       None
     }
   }
@@ -185,7 +179,7 @@ class AkkaMistFilter extends Filter with Mist {
           case    "POST" => mistify(hreq, hres)(_factory.get.Post)
           case     "PUT" => mistify(hreq, hres)(_factory.get.Put)
           case   "TRACE" => mistify(hreq, hres)(_factory.get.Trace)
-          case   unknown => log.slf4j.warn("Unknown http method: {}",unknown)
+          case   unknown => {}
         }
         chain.doFilter(req,res)
       case _ => chain.doFilter(req,res)
@@ -270,7 +264,6 @@ trait Endpoint { this: Actor =>
    */
   protected def _na(uri: String, req: RequestMethod) = {
     req.NotFound("No endpoint available for [" + uri + "]")
-    log.slf4j.debug("No endpoint available for [{}]", uri)
   }
 }
 
@@ -300,7 +293,7 @@ class RootEndpoint extends Actor with Endpoint {
 
   def recv: Receive = {
     case NoneAvailable(uri, req) => _na(uri, req)
-    case unknown => log.slf4j.error("Unexpected message sent to root endpoint. [{}]", unknown)
+    case unknown => {}
   }
 
   /**
@@ -319,8 +312,7 @@ class RootEndpoint extends Actor with Endpoint {
  *
  * @author Garrick Evans
  */
-trait RequestMethod extends Logging
-{
+trait RequestMethod {
   import java.io.IOException
   import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 
@@ -387,7 +379,6 @@ trait RequestMethod extends Logging
       case Some(pipe) => {
         try {
           if (!suspended) {
-            log.slf4j.warn("Attempt to complete an expired connection.")
             false
           }
           else {
@@ -397,13 +388,11 @@ trait RequestMethod extends Logging
           }
         } catch {
           case io =>
-            log.slf4j.error("Failed to write data to connection on resume - the client probably disconnected", io)
             false
         }
     }
 
     case None =>
-      log.slf4j.error("Attempt to complete request with no context.")
       false
   }
 
@@ -411,24 +400,16 @@ trait RequestMethod extends Logging
     context match {
       case Some(pipe) => {
         try {
-          if (!suspended) {
-            log.slf4j.warn("Attempt to complete an expired connection.")
-          }
-          else {
+          if (suspended) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to write data to connection on resume")
             pipe.complete
           }
-        }
-        catch {
-          case io: IOException => log.slf4j.error("Request completed with internal error.", io)
-        }
-        finally {
-          log.slf4j.error("Request completed with internal error.", t)
+        } catch {
+          case io: IOException => {}
         }
       }
 
-      case None =>
-        log.slf4j.error("Attempt to complete request with no context", t)
+      case None => {}
     }
   }
 

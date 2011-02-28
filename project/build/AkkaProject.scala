@@ -26,7 +26,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   val javaCompileSettings = Seq("-Xlint:unchecked")
 
-  override def compileOptions = super.compileOptions ++ scalaCompileSettings.map(CompileOption)
+  override def compileOptions     = super.compileOptions ++ scalaCompileSettings.map(CompileOption)
   override def javaCompileOptions = super.javaCompileOptions ++ javaCompileSettings.map(JavaCompileOption)
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -103,7 +103,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsRelRepo)
-  lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback", sbt.DefaultMavenRepository)
   lazy val spdeModuleConfig        = ModuleConfiguration("us.technically.spde", DatabinderRepo)
   lazy val processingModuleConfig  = ModuleConfiguration("org.processing", DatabinderRepo)
   lazy val scalazModuleConfig      = ModuleConfiguration("org.scalaz", ScalaToolsSnapshotRepo)
@@ -118,11 +117,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.2"
   lazy val SCALATEST_VERSION     = "1.3"
-  lazy val LOGBACK_VERSION       = "0.9.24"
-  lazy val SLF4J_VERSION         = "1.6.0"
   lazy val JETTY_VERSION         = "7.1.6.v20100715"
   lazy val JAVAX_SERVLET_VERSION = "3.0"
-
 
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
@@ -188,8 +184,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val sjson = "net.debasishg" % "sjson_2.8.1" % "0.9" % "compile" //ApacheV2
     lazy val sjson_test = "net.debasishg" % "sjson_2.8.1" % "0.9" % "test" //ApacheV2
-
-    lazy val logback      = "ch.qos.logback" % "logback-classic" % LOGBACK_VERSION % "compile" //LGPL 2.1
 
     lazy val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile" //ApacheV2
 
@@ -326,7 +320,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val configgy      = Dependencies.configgy
     val hawtdispatch  = Dependencies.hawtdispatch
     val jsr166x       = Dependencies.jsr166x
-    val logback       = Dependencies.logback
 
     // testing
     val junit           = Dependencies.junit

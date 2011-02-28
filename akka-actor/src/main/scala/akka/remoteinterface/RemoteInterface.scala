@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.AkkaException
 import reflect.BeanProperty
 
-trait RemoteModule extends Logging {
+trait RemoteModule {
   val UUID_PREFIX        = "uuid:"
 
   def optimizeLocalScoped_?(): Boolean //Apply optimizations for remote operations in local scope

@@ -7,7 +7,7 @@ package akka.dispatch
 import java.util.concurrent._
 import atomic. {AtomicInteger, AtomicBoolean, AtomicReference, AtomicLong}
 
-import akka.util.{Switch, ReentrantGuard, Logging, HashCode, ReflectiveAccess}
+import akka.util.{Switch, ReentrantGuard, HashCode, ReflectiveAccess}
 import akka.actor._
 
 /**
@@ -36,7 +36,7 @@ object MessageDispatcher {
 /**
  *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait MessageDispatcher extends Logging {
+trait MessageDispatcher {
   import MessageDispatcher._
 
   protected val uuids = new ConcurrentSkipListSet[Uuid]
@@ -105,8 +105,7 @@ trait MessageDispatcher extends Logging {
       val uuid = i.next()
       Actor.registry.actorFor(uuid) match {
         case Some(actor) => actor.stop
-        case None =>
-          log.slf4j.error("stopAllLinkedActors couldn't find linked actor: " + uuid)
+        case None => {}
       }
     }
   }

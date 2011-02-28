@@ -2,7 +2,6 @@ package akka.actor.routing
 
 import akka.actor.Actor
 import akka.actor.Actor._
-import akka.util.Logging
 
 import org.scalatest.Suite
 import org.junit.runner.RunWith
@@ -15,7 +14,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import akka.routing._
 
 @RunWith(classOf[JUnitRunner])
-class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers with Logging {
+class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers {
   import Routing._
 
   @Test def testDispatcher = {

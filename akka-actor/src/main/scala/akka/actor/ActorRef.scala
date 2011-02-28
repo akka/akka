@@ -22,7 +22,7 @@ import scala.reflect.BeanProperty
 import scala.collection.immutable.Stack
 import scala.annotation.tailrec
 
-private[akka] object ActorRefInternals extends Logging {
+private[akka] object ActorRefInternals {
 
   /**
    * LifeCycles for ActorRefs.
@@ -68,9 +68,6 @@ private[akka] object ActorRefInternals extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scalaRef: ScalaActorRef =>
-  //Reuse same logger
-  import Actor.log
-
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile
   protected[akka] var _uuid = newUuid
@@ -525,7 +522,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   protected[akka] def checkReceiveTimeout = {
     cancelReceiveTimeout
     if (receiveTimeout.isDefined && dispatcher.mailboxSize(this) <= 0) { //Only reschedule if desired and there are currently no more messages to be processed
-      log.slf4j.debug("Scheduling timeout for {}", this)
       _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, receiveTimeout.get, TimeUnit.MILLISECONDS))
     }
   }
@@ -534,7 +530,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
     if (_futureTimeout.isDefined) {
       _futureTimeout.get.cancel(true)
       _futureTimeout = None
-      log.slf4j.debug("Timeout canceled for {}", this)
     }
   }
 }
@@ -682,7 +677,6 @@ class LocalActorRef private[akka] (
       "Actor can only have one supervisor [" + actorRef + "], e.g. link(actor) fails")
     linkedActors.put(actorRef.uuid, actorRef)
     actorRef.supervisor = Some(this)
-    Actor.log.slf4j.debug("Linking actor [{}] to actor [{}]", actorRef, this)
   }
 
   /**
@@ -695,7 +689,6 @@ class LocalActorRef private[akka] (
       "Actor [" + actorRef + "] is not a linked actor, can't unlink")
     linkedActors.remove(actorRef.uuid)
     actorRef.supervisor = None
-    Actor.log.slf4j.debug("Unlinking actor [{}] from actor [{}]", actorRef, this)
   }
 
   /**
@@ -811,11 +804,10 @@ class LocalActorRef private[akka] (
    * Callback for the dispatcher. This is the single entry point to the user Actor implementation.
    */
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = guard.withGuard {
-    if (isShutdown) Actor.log.slf4j.warn("Actor [{}] is shut down,\n\tignoring message [{}]", toString, messageHandle)
+    if (isShutdown) {}
     else {
       currentMessage = messageHandle
       try {
-        Actor.log.slf4j.trace("Invoking actor with message: {}\n", messageHandle)
         try {
           cancelReceiveTimeout // FIXME: leave this here?
           actor(messageHandle.message)
@@ -827,8 +819,6 @@ class LocalActorRef private[akka] (
         }
       } catch {
         case e =>
-          Actor.log.slf4j.error("Could not invoke actor [{}]", this)
-          Actor.log.slf4j.error("Problem", e)
           throw e
       } finally {
         currentMessage = null //TODO: Don't reset this, we might want to resend the message
@@ -884,42 +874,28 @@ class LocalActorRef private[akka] (
 
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
      def performRestart {
-      Actor.log.slf4j.info("Restarting actor [{}] configured as PERMANENT.", id)
       val failedActor = actorInstance.get
 
       failedActor match {
         case p: Proxyable =>
           //p.swapProxiedActor(freshActor) //TODO: broken
-          Actor.log.slf4j.debug("Invoking 'preRestart' for failed actor instance [{}].", id)
           failedActor.preRestart(reason)
-          Actor.log.slf4j.debug("Invoking 'postRestart' for failed actor instance [{}].", id)
           failedActor.postRestart(reason)
         case _ =>
-          Actor.log.slf4j.debug("Invoking 'preRestart' for failed actor instance [{}].", id)
           failedActor.preRestart(reason)
           val freshActor = newActor
           setActorSelfFields(failedActor,null) //Only null out the references if we could instantiate the new actor
           actorInstance.set(freshActor) //Assign it here so if preStart fails, we can null out the sef-refs next call
           freshActor.preStart
-          Actor.log.slf4j.debug("Invoking 'postRestart' for new actor instance [{}].", id)
           freshActor.postRestart(reason)
       }
     }
 
     def tooManyRestarts {
-      Actor.log.slf4j.warn(
-        "Maximum number of restarts [{}] within time range [{}] reached." +
-        "\n\tWill *not* restart actor [{}] anymore." +
-        "\n\tLast exception causing restart was" +
-        "\n\t[{}].",
-        Array[AnyRef](maxNrOfRetries, withinTimeRange, this, reason))
       _supervisor.foreach { sup =>
         // can supervisor handle the notification?
         val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
         if (sup.isDefinedAt(notification)) notifySupervisorWithMessage(notification)
-        else Actor.log.slf4j.warn(
-          "No message handler defined for system message [MaximumNumberOfRestartsWithinTimeRangeReached]" +
-          "\n\tCan't send the message to the supervisor [{}].", sup)
       }
 
       stop
@@ -939,11 +915,8 @@ class LocalActorRef private[akka] (
                 performRestart
                 true
               } catch {
-                case e => Actor.log.slf4j.debug("Unexpected exception during restart",e)
-                          false //An error or exception here should trigger a retry
+                case e => false //An error or exception here should trigger a retry
               }
-
-              Actor.log.slf4j.debug("Restart: {} for [{}].", success, id)
 
               if (success) {
                 _status = ActorRefInternals.RUNNING
@@ -999,15 +972,10 @@ class LocalActorRef private[akka] (
   }
 
   private def shutDownTemporaryActor(temporaryActor: ActorRef) {
-    Actor.log.slf4j.info("Actor [{}] configured as TEMPORARY and will not be restarted.", temporaryActor.id)
     temporaryActor.stop
     linkedActors.remove(temporaryActor.uuid) // remove the temporary actor
     // if last temporary actor is gone, then unlink me from supervisor
     if (linkedActors.isEmpty) {
-      Actor.log.slf4j.info(
-        "All linked actors have died permanently (they were all configured as TEMPORARY)" +
-        "\n\tshutting down and unlinking supervisor actor as well [{}].",
-        temporaryActor.id)
       notifySupervisorWithMessage(UnlinkAndStop(this))
     }
 
@@ -1015,9 +983,6 @@ class LocalActorRef private[akka] (
   }
 
   private def handleExceptionInDispatch(reason: Throwable, message: Any) = {
-    Actor.log.slf4j.error("Exception when invoking \n\tactor [{}] \n\twith message [{}]", this, message)
-    Actor.log.slf4j.error("Problem", reason)
-
     //Prevent any further messages to be processed until the actor has been restarted
     dispatcher.suspend(this)
 
@@ -1073,7 +1038,6 @@ class LocalActorRef private[akka] (
 
   private def initializeActorInstance = {
     actor.preStart // run actor preStart
-    Actor.log.slf4j.trace("[{}] has started", toString)
     Actor.registry.register(this)
   }
 }

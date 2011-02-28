@@ -9,7 +9,7 @@ import java.util.concurrent._
 import atomic.{AtomicLong, AtomicInteger}
 import ThreadPoolExecutor.CallerRunsPolicy
 
-import akka.util. {Duration, Logging}
+import akka.util. {Duration}
 
 object ThreadPoolConfig {
   type Bounds = Int
@@ -170,22 +170,19 @@ object MonitorableThread {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class MonitorableThread(runnable: Runnable, name: String)
-    extends Thread(runnable, name + "-" + MonitorableThread.created.incrementAndGet) with Logging {
+    extends Thread(runnable, name + "-" + MonitorableThread.created.incrementAndGet) {
 
   setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-    def uncaughtException(thread: Thread, cause: Throwable) =
-      log.slf4j.error("Thread.UncaughtException", cause)
+    def uncaughtException(thread: Thread, cause: Throwable) = {}
   })
 
   override def run = {
     val debug = MonitorableThread.debugLifecycle
-    log.slf4j.debug("Created thread {}", getName)
     try {
       MonitorableThread.alive.incrementAndGet
       super.run
     } finally {
       MonitorableThread.alive.decrementAndGet
-      log.slf4j.debug("Exiting thread {}", getName)
     }
   }
 }
@@ -212,13 +209,12 @@ class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extend
       case e: RejectedExecutionException =>
         semaphore.release
       case e =>
-        log.slf4j.error("Unexpected exception", e)
         throw e
     }
   }
 }
 
-trait ExecutorServiceDelegate extends ExecutorService with Logging {
+trait ExecutorServiceDelegate extends ExecutorService {
 
   def executor: ExecutorService
 
@@ -254,7 +250,6 @@ trait LazyExecutorService extends ExecutorServiceDelegate {
   def createExecutor: ExecutorService
 
   lazy val executor = {
-    log.slf4j.info("Lazily initializing ExecutorService for ",this)
     createExecutor
   }
 }

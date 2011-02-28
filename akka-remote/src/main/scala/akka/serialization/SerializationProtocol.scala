@@ -170,7 +170,6 @@ object ActorSerialization {
 
   private[akka] def fromProtobufToLocalActorRef[T <: Actor](
       protocol: SerializedActorRefProtocol, format: Format[T], loader: Option[ClassLoader]): ActorRef = {
-    Actor.log.slf4j.debug("Deserializing SerializedActorRefProtocol to LocalActorRef:\n" + protocol)
 
     val serializer =
     if (format.isInstanceOf[SerializerBasedActorFormat[_]])
@@ -248,7 +247,6 @@ object RemoteActorSerialization {
    * Deserializes a RemoteActorRefProtocol Protocol Buffers (protobuf) Message into an RemoteActorRef instance.
    */
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
-    Actor.log.slf4j.debug("Deserializing RemoteActorRefProtocol to RemoteActorRef:\n {}", protocol)
     val ref = RemoteActorRef(
       protocol.getClassOrServiceName,
       protocol.getActorClassname,
@@ -256,8 +254,6 @@ object RemoteActorSerialization {
       protocol.getHomeAddress.getPort,
       protocol.getTimeout,
       loader)
-
-    Actor.log.slf4j.debug("Newly deserialized RemoteActorRef has uuid: {}", ref.uuid)
     ref
   }
 
@@ -266,8 +262,6 @@ object RemoteActorSerialization {
    */
   def toRemoteActorRefProtocol(ar: ActorRef): RemoteActorRefProtocol = {
     import ar._
-
-    Actor.log.slf4j.debug("Register serialized Actor [{}] as remote @ [{}:{}]",actorClassName, ar.homeAddress)
 
     Actor.remote.registerByUuid(ar)
 
@@ -396,7 +390,6 @@ object TypedActorSerialization {
 
   private def fromProtobufToLocalTypedActorRef[T <: Actor, U <: AnyRef](
       protocol: SerializedTypedActorRefProtocol, format: Format[T], loader: Option[ClassLoader]): U = {
-    Actor.log.slf4j.debug("Deserializing SerializedTypedActorRefProtocol to LocalActorRef:\n" + protocol)
     val actorRef = ActorSerialization.fromProtobufToLocalActorRef(protocol.getActorRef, format, loader)
     val intfClass = toClass(loader, protocol.getInterfaceName)
     TypedActor.newInstance(intfClass, actorRef).asInstanceOf[U]
@@ -436,7 +429,6 @@ object RemoteTypedActorSerialization {
    * Deserializes a RemoteTypedActorRefProtocol Protocol Buffers (protobuf) Message into AW RemoteActorRef proxy.
    */
   private[akka] def fromProtobufToRemoteTypedActorRef[T](protocol: RemoteTypedActorRefProtocol, loader: Option[ClassLoader]): T = {
-    Actor.log.slf4j.debug("Deserializing RemoteTypedActorRefProtocol to AW RemoteActorRef proxy:\n" + protocol)
     val actorRef = RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getActorRef, loader)
     val intfClass = TypedActorSerialization.toClass(loader, protocol.getInterfaceName)
     TypedActor.createProxyForRemoteActorRef(intfClass, actorRef).asInstanceOf[T]

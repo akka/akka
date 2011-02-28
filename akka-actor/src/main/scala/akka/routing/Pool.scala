@@ -71,8 +71,7 @@ trait DefaultActorPool extends ActorPool
 			self reply_? Stats(_delegates length)
 			
 		case max:MaximumNumberOfRestartsWithinTimeRangeReached =>
-        	log.error("Pooled actor will be removed after exceeding maxium number of restart retries.  ["+max.victim.toString+"]")
-          	_delegates = _delegates filter {delegate => (delegate.uuid != max.victim.uuid)}
+    	_delegates = _delegates filter {delegate => (delegate.uuid != max.victim.uuid)}
 
 		case msg =>
 			_capacity
@@ -102,14 +101,11 @@ trait DefaultActorPool extends ActorPool
 					delegate
 				}
 			}
-			log.slf4j.debug("Pool capacity increased by {}", _lastCapacityChange)
 		} 
 		else if (_lastCapacityChange < 0) {
 			val s = _delegates splitAt(_delegates.length + _lastCapacityChange)
 			s._2 foreach {_ stop}
 			_delegates = s._1
-
-			log.slf4j.debug("Pool capacity decreased by {}", -1*_lastCapacityChange)
 		}
 	}
 	

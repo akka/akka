@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable.HashMap
 
-import akka.util.{Logging, ReflectiveAccess}
+import akka.util.ReflectiveAccess
 import akka.config.Config._
 import akka.config.ModuleNotAvailableException
 import akka.AkkaException
@@ -88,7 +88,7 @@ object Transaction {
  * The Akka-specific Transaction class.
  * For integration with persistence modules and JTA support.
  */
-@serializable class Transaction extends Logging {
+@serializable class Transaction {
   val JTA_AWARE = config.getBool("akka.stm.jta-aware", false)
   val STATE_RETRIES = config.getInt("akka.storage.max-retries",10)
 
@@ -102,17 +102,13 @@ object Transaction {
     if (JTA_AWARE) Some(ReflectiveJtaModule.createTransactionContainer)
     else None
 
-  log.slf4j.trace("Creating transaction " + toString)
-
   // --- public methods ---------
 
   def begin = synchronized {
-    log.slf4j.trace("Starting transaction " + toString)
     jta.foreach { _.beginWithStmSynchronization(this) }
   }
 
   def commitPersistentState = synchronized {
-    log.trace("Committing transaction " + toString)
     retry(STATE_RETRIES){
       persistentStateMap.valuesIterator.foreach(_.commit)
       persistentStateMap.clear
@@ -125,14 +121,12 @@ object Transaction {
   }
 
   def abort = synchronized {
-    log.slf4j.trace("Aborting transaction " + toString)
     jta.foreach(_.rollback)
     persistentStateMap.valuesIterator.foreach(_.abort)
     persistentStateMap.clear
   }
 
   def retry(tries:Int)(block: => Unit):Unit={
-    log.debug("Trying commit of persistent data structures")
     if(tries==0){
       throw new TransactionRetryException("Exhausted Retries while committing persistent state")
     }
@@ -140,7 +134,6 @@ object Transaction {
       block
     } catch{
       case e:Exception=>{
-        log.warn(e,"Exception while committing persistent state, retrying")
         retry(tries-1){block}
       }
     }
@@ -169,8 +162,6 @@ object Transaction {
   //have no possibility of kicking a diffferent type with the same uuid out of a transction
   private[akka] def register(uuid: String, storage: Committable with Abortable) = {
     if(persistentStateMap.getOrElseUpdate(uuid, {storage}) ne storage){
-      log.error("existing:"+System.identityHashCode(persistentStateMap.get(uuid).get))
-      log.error("new:"+System.identityHashCode(storage))
       throw new IllegalStateException("attempted to register an instance of persistent data structure for id [%s] when there is already a different instance registered".format(uuid))
     }
   }
