@@ -14,8 +14,7 @@ import Types._
 /**
  * @author Garrick Evans
  */
-trait JettyContinuation extends ContinuationListener with akka.util.Logging
-{
+trait JettyContinuation extends ContinuationListener {
   import javax.servlet.http.HttpServletResponse
   import MistSettings._
 
@@ -79,7 +78,6 @@ trait JettyContinuation extends ContinuationListener with akka.util.Logging
         // unexpected continution state(s) - log and do nothing
         //
         case _ => {
-          log.slf4j.warn("Received continuation in unexpected state: "+continuation.isInitial+" "+continuation.isSuspended+" "+continuation.isExpired+" "+continuation.isResumed)
           //continuation.cancel
           None
         }
