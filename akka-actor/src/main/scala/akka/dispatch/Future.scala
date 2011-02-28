@@ -28,12 +28,12 @@ object Futures {
    * }
    * </pre>
    */
-   def future[T](body: => T, timeout: Long = Actor.TIMEOUT,
-                 dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Future[T] = {
-    val f = new DefaultCompletableFuture[T](timeout)
-    dispatcher.dispatchFuture(FutureInvocation(f.asInstanceOf[CompletableFuture[Any]], () => body))
-    f
-  }
+  def future[T](body: => T, timeout: Long = Actor.TIMEOUT,
+    dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Future[T] = {
+      val f = new DefaultCompletableFuture[T](timeout)
+      dispatcher.dispatchFuture(FutureInvocation(f.asInstanceOf[CompletableFuture[Any]], () => body))
+      f
+    }
 
   /**
    * (Blocking!)
@@ -341,7 +341,9 @@ trait CompletableFuture[T] extends Future[T] {
   }
 }
 
-// Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
+/**
+ * Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
+ */
 class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends CompletableFuture[T] {
 
   def this() = this(0, MILLIS)
@@ -359,114 +361,105 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   private def awaitUnsafe(wait: Long): Boolean = {
     if (_value.isEmpty && wait > 0) {
       val start = currentTimeInNanos
-      awaitUnsafe(try {
+      val remaining = try {
         _signal.awaitNanos(wait)
       } catch {
         case e: InterruptedException =>
           wait - (currentTimeInNanos - start)
-      })
+      }
+      awaitUnsafe(remaining)
     } else {
       _value.isDefined
     }
   }
 
-  def awaitResult: Option[Either[Throwable, T]] =
-    if (_value.isDefined) _value
-    else {
-      _lock.lock
-      try {
-        awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos))
-        _value
-      } finally {
-        _lock.unlock
-      }
+  def awaitResult: Option[Either[Throwable, T]] = {
+    _lock.lock
+    try {
+      awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos))
+      _value
+    } finally {
+      _lock.unlock
     }
+  }
 
-  def resultWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]] =
-    if (_value.isDefined) _value
-    else {
-      _lock.lock
-      try {
-        awaitUnsafe(unit.toNanos(time).min(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)))
-        _value
-      } finally {
-        _lock.unlock
-      }
+  def resultWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]] = {
+    _lock.lock
+    try {
+      awaitUnsafe(unit.toNanos(time).min(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)))
+      _value
+    } finally {
+      _lock.unlock
     }
+  }
 
   def await = {
-    if (_value.isEmpty) {
-      _lock.lock
-      try {
-        if (!awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)))
-          throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(timeoutInNanos) + "] milliseconds")
-      } finally {
-        _lock.unlock
-      }
+    _lock.lock
+    try {
+      if (awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos))) this
+      else throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(timeoutInNanos) + "] milliseconds")
+    } finally {
+      _lock.unlock
     }
-    this
   }
 
   def awaitBlocking = {
-    if (_value.isEmpty) {
-      _lock.lock
-      try {
-        while (_value.isEmpty) {
-          _signal.await
-        }
-      } finally {
-        _lock.unlock
+    _lock.lock
+    try {
+      while (_value.isEmpty) {
+        _signal.await
       }
+      this
+    } finally {
+      _lock.unlock
     }
-    this
   }
 
   def isExpired: Boolean = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos) <= 0
 
-  def value: Option[Either[Throwable, T]] =
-    if (_value.isDefined) _value
-    else {
-      _lock.lock
-      try {
-        _value
-      } finally {
-        _lock.unlock
-      }
+  def value: Option[Either[Throwable, T]] = {
+    _lock.lock
+    try {
+      _value
+    } finally {
+      _lock.unlock
     }
+  }
 
   def complete(value: Either[Throwable, T]): DefaultCompletableFuture[T] = {
-    if (_value.isEmpty) {
-      val notifyTheseListeners = try {
-        _lock.lock
-        if (_value.isEmpty) {
-          _value = Some(value)
-          val all = _listeners
-          _listeners = Nil
-          all
-        } else Nil
-      } finally {
-        _signal.signalAll
-        _lock.unlock
-      }
+    var notifyTheseListeners: List[Future[T] => Unit] = Nil
 
-      if (notifyTheseListeners.nonEmpty)
-        notifyTheseListeners foreach notify
+    _lock.lock
+    try {
+      if (_value.isEmpty) {
+        _value = Some(value)
+        notifyTheseListeners = _listeners
+        _listeners = Nil
+      }
+    } finally {
+      _signal.signalAll
+      _lock.unlock
     }
+
+    if (notifyTheseListeners.nonEmpty)
+      notifyTheseListeners foreach notify
+
     this
   }
 
   def onComplete(func: Future[T] => Unit): CompletableFuture[T] = {
-    if (_value.isDefined) notify(func)
-    else
-      if (try {
-        _lock.lock
-        if (_value.isEmpty) {
-          _listeners ::= func
-          false
-        } else true
-      } finally {
-        _lock.unlock
-      }) notify(func)
+    var notifyNow = false
+
+    _lock.lock
+    try {
+      if (_value.isEmpty) _listeners ::= func
+      else notifyNow = true
+    } finally {
+      _lock.unlock
+    }
+
+    if (notifyNow) notify(func)
+
     this
   }
 
