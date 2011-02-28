@@ -14,8 +14,8 @@ import akka.actor. {Actor, ActorRef}
  *
  * Selectors - A selector is a trait that determines how and how many pooled actors will receive an incoming message.
  * Capacitors - A capacitor is a trait that influences the size of pool.  There are effectively two types.  
- *				The first determines the size itself - either fixed or bounded.
- *				The second determines how to adjust of the pool according to some internal pressure characteristic.
+ *                              The first determines the size itself - either fixed or bounded.
+ *                              The second determines how to adjust of the pool according to some internal pressure characteristic.
  * Filters - A filter can be used to refine the raw pressure value returned from a capacitor.
  * 
  * It should be pointed out that all actors in the pool are treated as essentially equivalent.  This is not to say 
@@ -27,8 +27,8 @@ import akka.actor. {Actor, ActorRef}
 
 object ActorPool
 {
-	case object Stat
-	case class  Stats(size:Int)
+        case object Stat
+        case class  Stats(size:Int)
 }
 
 /**
@@ -36,91 +36,91 @@ object ActorPool
  */
 trait ActorPool
 {
-	def instance():ActorRef 
-	def capacity(delegates:Seq[ActorRef]):Int
-	def select(delegates:Seq[ActorRef]):Tuple2[Iterator[ActorRef], Int]
+        def instance():ActorRef 
+        def capacity(delegates:Seq[ActorRef]):Int
+        def select(delegates:Seq[ActorRef]):Tuple2[Iterator[ActorRef], Int]
 }
 
 /**
  * A default implementation of a pool, on each message to route,
- * 	- checks the current capacity and adjusts accordingly if needed
- * 	- routes the incoming message to a selection set of delegate actors
+ *      - checks the current capacity and adjusts accordingly if needed
+ *      - routes the incoming message to a selection set of delegate actors
  */
 trait DefaultActorPool extends ActorPool
 {
-	this: Actor =>
-	
-	import ActorPool._
-	import collection.mutable.LinkedList
-	import akka.actor.MaximumNumberOfRestartsWithinTimeRangeReached
-	
-	
-	protected var _delegates = LinkedList[ActorRef]()
-	private var _lastCapacityChange = 0
-	private var _lastSelectorCount = 0
-	
-	
-	override def postStop = _delegates foreach {_ stop}
-	
-	protected def _route:Receive =
-	{
-			//
-			// for testing...
-			//
-		case Stat =>
-			self reply_? Stats(_delegates length)
-			
-		case max:MaximumNumberOfRestartsWithinTimeRangeReached =>
-    	_delegates = _delegates filter {delegate => (delegate.uuid != max.victim.uuid)}
+        this: Actor =>
+        
+        import ActorPool._
+        import collection.mutable.LinkedList
+        import akka.actor.MaximumNumberOfRestartsWithinTimeRangeReached
+        
+        
+        protected var _delegates = LinkedList[ActorRef]()
+        private var _lastCapacityChange = 0
+        private var _lastSelectorCount = 0
+        
+        
+        override def postStop = _delegates foreach {_ stop}
+        
+        protected def _route:Receive =
+        {
+                        //
+                        // for testing...
+                        //
+                case Stat =>
+                        self reply_? Stats(_delegates length)
+                        
+                case max:MaximumNumberOfRestartsWithinTimeRangeReached =>
+        _delegates = _delegates filter {delegate => (delegate.uuid != max.victim.uuid)}
 
-		case msg =>
-			_capacity
-			_select foreach {delegate =>
-				self.senderFuture match {
-					case None => delegate ! msg
-					case Some(future) =>
-						Actor.spawn {
-							try {
-								future completeWithResult (delegate !! msg).getOrElse(None)
-							} catch {
-								case ex => future completeWithException ex
-							}
-						}
-				}
-			}
-	}
-	
-	private def _capacity =
-	{
-		_lastCapacityChange = capacity(_delegates)
-		if (_lastCapacityChange > 0) {
-			_delegates ++= {
-				for (i <- 0 until _lastCapacityChange) yield {
-					val delegate = instance()
-					self startLink delegate
-					delegate
-				}
-			}
-		} 
-		else if (_lastCapacityChange < 0) {
-			val s = _delegates splitAt(_delegates.length + _lastCapacityChange)
-			s._2 foreach {_ stop}
-			_delegates = s._1
-		}
-	}
-	
-	private def _select =
-	{
-		val s = select(_delegates)
-		_lastSelectorCount = s._2
-		s._1
-	}
+                case msg =>
+                        _capacity
+                        _select foreach {delegate =>
+                                self.senderFuture match {
+                                        case None => delegate ! msg
+                                        case Some(future) =>
+                                                Actor.spawn {
+                                                        try {
+                                                                future completeWithResult (delegate !! msg).getOrElse(None)
+                                                        } catch {
+                                                                case ex => future completeWithException ex
+                                                        }
+                                                }
+                                }
+                        }
+        }
+        
+        private def _capacity =
+        {
+                _lastCapacityChange = capacity(_delegates)
+                if (_lastCapacityChange > 0) {
+                        _delegates ++= {
+                                for (i <- 0 until _lastCapacityChange) yield {
+                                        val delegate = instance()
+                                        self startLink delegate
+                                        delegate
+                                }
+                        }
+                } 
+                else if (_lastCapacityChange < 0) {
+                        val s = _delegates splitAt(_delegates.length + _lastCapacityChange)
+                        s._2 foreach {_ stop}
+                        _delegates = s._1
+                }
+        }
+        
+        private def _select =
+        {
+                val s = select(_delegates)
+                _lastSelectorCount = s._2
+                s._1
+        }
 }
 
 
 /**
  * Selectors
- *	These traits define how, when a message needs to be routed, delegate(s) are chosen from the pool
+ *      These traits define how, when a message needs to be routed, delegate(s) are chosen from the pool
  **/
 
 /**
@@ -128,24 +128,24 @@ trait DefaultActorPool extends ActorPool
  */
 trait SmallestMailboxSelector
 {
-	def selectionCount:Int
-	def partialFill:Boolean
-	
-	def select(delegates:Seq[ActorRef]):Tuple2[Iterator[ActorRef], Int] =
-	{
-		var set:Seq[ActorRef] = Nil
-		var take = {
-			if (partialFill) math.min(selectionCount, delegates.length)
-			else selectionCount
-		}
-			
-		while (take > 0) {
-			set = delegates.sortWith((a,b) => a.mailboxSize < b.mailboxSize).take(take) ++ set
-			take -= set.size
-		}
+        def selectionCount:Int
+        def partialFill:Boolean
+        
+        def select(delegates:Seq[ActorRef]):Tuple2[Iterator[ActorRef], Int] =
+        {
+                var set:Seq[ActorRef] = Nil
+                var take = {
+                        if (partialFill) math.min(selectionCount, delegates.length)
+                        else selectionCount
+                }
+                        
+                while (take > 0) {
+                        set = delegates.sortWith((a,b) => a.mailboxSize < b.mailboxSize).take(take) ++ set
+                        take -= set.size
+                }
 
-		(set.iterator, set.size)		
-	}
+                (set.iterator, set.size)                
+        }
 }
 
 /**
@@ -153,33 +153,33 @@ trait SmallestMailboxSelector
  */
 trait RoundRobinSelector
 {
-	private var _last:Int = -1;
-	
-	def selectionCount:Int
-	def partialFill:Boolean
-	
-	def select(delegates:Seq[ActorRef]):Tuple2[Iterator[ActorRef], Int] =
-	{
-		val length = delegates.length
-		val take = {
-			if (partialFill) math.min(selectionCount, length)
-			else selectionCount
-		}
-		
-		var set = for (i <- 0 to take) yield {
-					_last += 1
-					if (_last >= length) _last = 0
-					delegates(_last)
-				}
-		
-		(set.iterator, set.size)
-	}
+        private var _last:Int = -1;
+        
+        def selectionCount:Int
+        def partialFill:Boolean
+        
+        def select(delegates:Seq[ActorRef]):Tuple2[Iterator[ActorRef], Int] =
+        {
+                val length = delegates.length
+                val take = {
+                        if (partialFill) math.min(selectionCount, length)
+                        else selectionCount
+                }
+                
+                var set = for (i <- 0 to take) yield {
+                                        _last += 1
+                                        if (_last >= length) _last = 0
+                                        delegates(_last)
+                                }
+                
+                (set.iterator, set.size)
+        }
 }
 
 
 /**
  * Capacitors
- *	These traits define how to alter the size of the pool
+ *      These traits define how to alter the size of the pool
  */
 
 /**
@@ -187,14 +187,14 @@ trait RoundRobinSelector
  */
 trait FixedSizeCapacitor
 {
-	def limit:Int
-	
-	def capacity(delegates:Seq[ActorRef]):Int =
-	{
-		val d = limit - delegates.size
-		if (d>0) d
-		else 0
-	}
+        def limit:Int
+        
+        def capacity(delegates:Seq[ActorRef]):Int =
+        {
+                val d = limit - delegates.size
+                if (d>0) d
+                else 0
+        }
 }
 
 /**
@@ -202,22 +202,22 @@ trait FixedSizeCapacitor
  */
 trait BoundedCapacitor
 {
-	def lowerBound:Int
-	def upperBound:Int
-	
-	def capacity(delegates:Seq[ActorRef]):Int =
-	{
-		val current = delegates length
-		var delta = _eval(delegates)
-		val proposed = current + delta
-				
-		if (proposed < lowerBound) delta += (lowerBound - proposed)
-		else if (proposed > upperBound) delta -= (proposed - upperBound)
-		
-		delta
-	}
-	
-	protected def _eval(delegates:Seq[ActorRef]):Int
+        def lowerBound:Int
+        def upperBound:Int
+        
+        def capacity(delegates:Seq[ActorRef]):Int =
+        {
+                val current = delegates length
+                var delta = _eval(delegates)
+                val proposed = current + delta
+                                
+                if (proposed < lowerBound) delta += (lowerBound - proposed)
+                else if (proposed > upperBound) delta -= (proposed - upperBound)
+                
+                delta
+        }
+        
+        protected def _eval(delegates:Seq[ActorRef]):Int
 }
 
 /**
@@ -225,14 +225,14 @@ trait BoundedCapacitor
  */
 trait MailboxPressureCapacitor
 {
-	def pressureThreshold:Int
-	
-	def pressure(delegates:Seq[ActorRef]):Int = 
-	{
-		var n = 0;
-		delegates foreach {d => if (d.mailboxSize > pressureThreshold) n+=1}
-		n
-	}
+        def pressureThreshold:Int
+        
+        def pressure(delegates:Seq[ActorRef]):Int = 
+        {
+                var n = 0;
+                delegates foreach {d => if (d.mailboxSize > pressureThreshold) n+=1}
+                n
+        }
 }
 
 /**
@@ -240,12 +240,12 @@ trait MailboxPressureCapacitor
  */
 trait ActiveFuturesPressureCapacitor
 {
-	def pressure(delegates:Seq[ActorRef]):Int = 
-	{
-		var n = 0;
-		delegates foreach {d => if (d.senderFuture.isDefined) n+=1}
-		n
-	}
+        def pressure(delegates:Seq[ActorRef]):Int = 
+        {
+                var n = 0;
+                delegates foreach {d => if (d.senderFuture.isDefined) n+=1}
+                n
+        }
 }
 
 
@@ -253,12 +253,12 @@ trait ActiveFuturesPressureCapacitor
  */
 trait CapacityStrategy
 {
-	import ActorPool._
-	
-	def pressure(delegates:Seq[ActorRef]):Int
-	def filter(pressure:Int, capacity:Int):Int
-	
-	protected def _eval(delegates:Seq[ActorRef]):Int = filter(pressure(delegates), delegates.size)
+        import ActorPool._
+        
+        def pressure(delegates:Seq[ActorRef]):Int
+        def filter(pressure:Int, capacity:Int):Int
+        
+        protected def _eval(delegates:Seq[ActorRef]):Int = filter(pressure(delegates), delegates.size)
 }
 
 trait FixedCapacityStrategy extends FixedSizeCapacitor
@@ -284,7 +284,7 @@ trait Filter
       // are updated consistently. ramping up is always + and backing off
       // is always - and each should return 0 otherwise...
       //
-	rampup (pressure, capacity) + backoff (pressure, capacity)
+        rampup (pressure, capacity) + backoff (pressure, capacity)
   }
 }
 
@@ -348,7 +348,7 @@ trait RunningMeanBackoff
     _capacity += capacity
 
     if (capacity > 0 && pressure/capacity < backoffThreshold && 
-	    _capacity > 0  && _pressure/_capacity < backoffThreshold) {
+            _capacity > 0  && _pressure/_capacity < backoffThreshold) {
       math.floor(-1.0 * backoffRate * (capacity-pressure)).toInt
     }
     else
