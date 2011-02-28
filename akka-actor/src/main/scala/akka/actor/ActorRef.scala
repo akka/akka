@@ -978,11 +978,12 @@ class LocalActorRef private[akka] (
     if (linkedActors.isEmpty) {
       notifySupervisorWithMessage(UnlinkAndStop(this))
     }
-
     true
   }
 
   private def handleExceptionInDispatch(reason: Throwable, message: Any) = {
+    ErrorHandler notifyListeners ErrorHandlerEvent(reason, this, message.toString)
+    
     //Prevent any further messages to be processed until the actor has been restarted
     dispatcher.suspend(this)
 
@@ -992,7 +993,7 @@ class LocalActorRef private[akka] (
     else {
       lifeCycle match {
         case Temporary => shutDownTemporaryActor(this)
-        case _ => dispatcher.resume(this) //Resume processing for this actor
+        case _         => dispatcher.resume(this) //Resume processing for this actor
       }
     }
   }
@@ -1022,9 +1023,7 @@ class LocalActorRef private[akka] (
         case e: NoSuchFieldException => false
       }
 
-      if (success) {
-        true
-      }
+      if (success) true
       else {
         val parent = clazz.getSuperclass
         if (parent eq null)

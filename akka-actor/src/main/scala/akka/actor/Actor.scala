@@ -67,18 +67,25 @@ case class MaximumNumberOfRestartsWithinTimeRangeReached(
   @BeanProperty val lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
 
 // Exceptions for Actors
-class ActorStartException private[akka](message: String) extends AkkaException(message)
-class IllegalActorStateException private[akka](message: String) extends AkkaException(message)
-class ActorKilledException private[akka](message: String) extends AkkaException(message)
+class ActorStartException          private[akka](message: String) extends AkkaException(message)
+class IllegalActorStateException   private[akka](message: String) extends AkkaException(message)
+class ActorKilledException         private[akka](message: String) extends AkkaException(message)
 class ActorInitializationException private[akka](message: String) extends AkkaException(message)
-class ActorTimeoutException private[akka](message: String) extends AkkaException(message)
+class ActorTimeoutException        private[akka](message: String) extends AkkaException(message)
+
+case class ErrorHandlerEvent(
+  @BeanProperty val cause: Throwable,
+  @BeanProperty val instance: AnyRef,
+  @BeanProperty val message: String = "") {
+  @BeanProperty val thread: Thread = Thread.currentThread
+}
 
 /**
  * Error handler.
  * <pre>
  * val errorHandlerEventListener = new Actor {
  *   def receive = {
- *     case ErrorHandlerEvent(cause: Throwable, instance: AnyRef) => 
+ *     case ErrorHandlerEvent(cause: Throwable, message: String) => 
  *   }
  * }
  * 
@@ -90,11 +97,33 @@ class ActorTimeoutException private[akka](message: String) extends AkkaException
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ErrorHandler extends ListenerManagement {
-  case class ErrorHandlerEvent(
-    @BeanProperty val cause: Throwable,
-    @BeanProperty val instance: AnyRef) {
-    @BeanProperty val thread: Thread = Thread.currentThread
+  val error = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
+  
+  class DefaultListener extends Actor {
+    import java.io.{StringWriter, PrintWriter}
+    import java.net.{InetAddress, UnknownHostException}
+
+    def receive = {
+      case event @ ErrorHandlerEvent(cause, instance, message) => 
+        val stackTrace = {
+          val sw = new StringWriter
+          val pw = new PrintWriter(sw)
+          cause.printStackTrace(pw)
+          sw.toString
+        }
+        val time = java.text.DateFormat.getInstance.format(new java.util.Date)
+        val log = error.format(
+          time,
+          event.thread.getName,
+          instance.getClass.getSimpleName,
+          message,
+          stackTrace)
+        println(log)
+      case _ => {} 
+    }
   }
+  
+  addListener(Actor.actorOf[DefaultListener].start) // FIXME configurable in config (on/off)
 }
 
 /**
