@@ -81,7 +81,8 @@ trait MessageDispatcher extends Logging {
     futures add invocation.uuid
     if (active.isOff) { active.switchOn { start } }
     invocation.future.onComplete { f =>
-      if ((futures remove invocation.uuid) && futures.isEmpty && uuids.isEmpty) {
+      futures remove invocation.uuid
+      if (futures.isEmpty && uuids.isEmpty) {
         shutdownSchedule match {
           case UNSCHEDULED =>
             shutdownSchedule = SCHEDULED
