@@ -78,18 +78,22 @@ trait MessageDispatcher extends Logging {
   } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
 
   private[akka] final def dispatchFuture(invocation: FutureInvocation): Unit = {
-    futures add invocation.uuid
-    if (active.isOff) { active.switchOn { start } }
+    guard withGuard {
+      futures add invocation.uuid
+      if (active.isOff) { active.switchOn { start } }
+    }
     invocation.future.onComplete { f =>
-      futures remove invocation.uuid
-      if (futures.isEmpty && uuids.isEmpty) {
-        shutdownSchedule match {
-          case UNSCHEDULED =>
-            shutdownSchedule = SCHEDULED
-            Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
-          case SCHEDULED =>
-            shutdownSchedule = RESCHEDULED
-          case RESCHEDULED => //Already marked for reschedule
+      guard withGuard {
+        futures remove invocation.uuid
+        if (futures.isEmpty && uuids.isEmpty) {
+          shutdownSchedule match {
+            case UNSCHEDULED =>
+              shutdownSchedule = SCHEDULED
+              Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
+            case SCHEDULED =>
+              shutdownSchedule = RESCHEDULED
+            case RESCHEDULED => //Already marked for reschedule
+          }
         }
       }
     }
