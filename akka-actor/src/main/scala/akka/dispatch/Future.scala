@@ -5,12 +5,11 @@
 package akka.dispatch
 
 import akka.AkkaException
-import akka.actor.Actor.spawn
 import akka.routing.Dispatcher
 
 import java.util.concurrent.locks.ReentrantLock
 import akka.japi.Procedure
-import java.util.concurrent. {ConcurrentLinkedQueue, TimeUnit}
+import java.util.concurrent. {ConcurrentLinkedQueue, TimeUnit, Callable}
 import java.util.concurrent.TimeUnit.{NANOSECONDS => NANOS, MILLISECONDS => MILLIS}
 import akka.actor.Actor
 import annotation.tailrec
@@ -20,20 +19,17 @@ class FutureTimeoutException(message: String) extends AkkaException(message)
 
 object Futures {
 
-  /**
-   * Module with utility methods for working with Futures.
-   * <pre>
-   * val future = Futures.future(1000) {
-   *  ... // do stuff
-   * }
-   * </pre>
-   */
-  def future[T](body: => T, timeout: Long = Actor.TIMEOUT,
-    dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Future[T] = {
-      val f = new DefaultCompletableFuture[T](timeout)
-      dispatcher.dispatchFuture(FutureInvocation(f.asInstanceOf[CompletableFuture[Any]], () => body))
-      f
-    }
+  def future[T](body: Callable[T]): Future[T] =
+    Future(body.call)
+
+  def future[T](body: Callable[T], timeout: Long): Future[T] =
+    Future(body.call, timeout)
+
+  def future[T](body: Callable[T], dispatcher: MessageDispatcher): Future[T] =
+    Future(body.call)(dispatcher)
+
+  def future[T](body: Callable[T], timeout: Long, dispatcher: MessageDispatcher): Future[T] =
+    Future(body.call, timeout)(dispatcher)
 
   /**
    * (Blocking!)
