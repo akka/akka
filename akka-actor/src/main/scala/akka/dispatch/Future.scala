@@ -446,7 +446,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     }
 
     if (notifyTheseListeners.nonEmpty)
-      notifyTheseListeners foreach notify
+      notifyTheseListeners.reverse foreach notify
 
     this
   }
