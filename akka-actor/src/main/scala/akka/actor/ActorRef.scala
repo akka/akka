@@ -656,14 +656,18 @@ class LocalActorRef private[akka] (
       cancelReceiveTimeout
       dispatcher.detach(this)
       _status = ActorRefInternals.SHUTDOWN
-      actor.postStop
-      Actor.registry.unregister(this)
-      if (isRemotingEnabled) {
-        if (isClientManaged_?)
-          Actor.remote.unregisterClientManagedActor(homeAddress.get.getHostName, homeAddress.get.getPort, uuid)
-        Actor.remote.unregister(this)
+      try {
+        actor.postStop
+      } finally {
+        currentMessage = null
+        Actor.registry.unregister(this)
+        if (isRemotingEnabled) {
+          if (isClientManaged_?)
+            Actor.remote.unregisterClientManagedActor(homeAddress.get.getHostName, homeAddress.get.getPort, uuid)
+          Actor.remote.unregister(this)
+        }
+        setActorSelfFields(actorInstance.get,null)
       }
-      setActorSelfFields(actorInstance.get,null)
     } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
   }
 
@@ -819,8 +823,9 @@ class LocalActorRef private[akka] (
         try {
           cancelReceiveTimeout // FIXME: leave this here?
           actor(messageHandle.message)
+          currentMessage = null // reset current message after successful invocation
         } catch {
-          case e: InterruptedException => {} // received message while actor is shutting down, ignore
+          case e: InterruptedException => { currentMessage = null } // received message while actor is shutting down, ignore
           case e => handleExceptionInDispatch(e, messageHandle.message)
         } finally {
           checkReceiveTimeout // Reschedule receive timeout
@@ -830,8 +835,6 @@ class LocalActorRef private[akka] (
           Actor.log.slf4j.error("Could not invoke actor [{}]", this)
           Actor.log.slf4j.error("Problem", e)
           throw e
-      } finally {
-        currentMessage = null //TODO: Don't reset this, we might want to resend the message
       }
     }
   }
@@ -941,6 +944,8 @@ class LocalActorRef private[akka] (
               } catch {
                 case e => Actor.log.slf4j.debug("Unexpected exception during restart",e)
                           false //An error or exception here should trigger a retry
+              } finally {
+                currentMessage = null
               }
 
               Actor.log.slf4j.debug("Restart: {} for [{}].", success, id)
