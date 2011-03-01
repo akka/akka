@@ -73,19 +73,40 @@ class ActorKilledException         private[akka](message: String) extends AkkaEx
 class ActorInitializationException private[akka](message: String) extends AkkaException(message)
 class ActorTimeoutException        private[akka](message: String) extends AkkaException(message)
 
+sealed trait ErrorHandlerEventLevel {
+  def asString: String 
+}
+object HighErrorHandlerEventLevel   extends ErrorHandlerEventLevel {
+  def asString = "high"
+}
+object MediumErrorHandlerEventLevel extends ErrorHandlerEventLevel {
+  def asString = "medium"
+}
+object LowErrorHandlerEventLevel    extends ErrorHandlerEventLevel {
+  def asString = "low"
+}
+
 case class ErrorHandlerEvent(
   @BeanProperty val cause: Throwable,
   @BeanProperty val instance: AnyRef,
-  @BeanProperty val message: String = "") {
+  @BeanProperty val message: String = "",
+  @BeanProperty val level: ErrorHandlerEventLevel = MediumErrorHandlerEventLevel) {
   @BeanProperty val thread: Thread = Thread.currentThread
 }
 
+// FIXME add flume listener
+// document writing custom
+
 /**
  * Error handler.
+ * 
+ * Create, add and remove a listener:
  * <pre>
  * val errorHandlerEventListener = new Actor {
+ *   self.dispatcher = ErrorHandler.ErrorHandlerDispatcher
+ *     
  *   def receive = {
- *     case ErrorHandlerEvent(cause: Throwable, message: String) => 
+ *     case ErrorHandlerEvent(cause, message, level) => 
  *   }
  * }
  * 
@@ -94,36 +115,51 @@ case class ErrorHandlerEvent(
  * ErrorHandler.removeListener(errorHandlerEventListener)
  * </pre>
  *
+ * Log an error event:
+ * <pre>
+ * ErrorHandler notifyListeners ErrorHandlerEvent(reason, this, message.toString)
+ * </pre>
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ErrorHandler extends ListenerManagement {
-  val error = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
+  import java.io.{StringWriter, PrintWriter}
+  import java.text.DateFormat
+  import java.util.Date
+  import akka.dispatch.Dispatchers
+
+  val error = "[error:%s] [%s] [%s] [%s] %s\n%s".intern
+  val ID = "default:error:handler"
+  val ErrorHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
+
+  def formattedTimestamp = DateFormat.getInstance.format(new Date)
+  
+  def stackTraceFor(e: Throwable) = {
+    val sw = new StringWriter
+    val pw = new PrintWriter(sw)
+    e.printStackTrace(pw)
+    sw.toString
+  }
   
   class DefaultListener extends Actor {
-    import java.io.{StringWriter, PrintWriter}
-    import java.net.{InetAddress, UnknownHostException}
+    self.id = ID
+    self.dispatcher = ErrorHandlerDispatcher
 
     def receive = {
-      case event @ ErrorHandlerEvent(cause, instance, message) => 
-        val stackTrace = {
-          val sw = new StringWriter
-          val pw = new PrintWriter(sw)
-          cause.printStackTrace(pw)
-          sw.toString
-        }
-        val time = java.text.DateFormat.getInstance.format(new java.util.Date)
+      case event @ ErrorHandlerEvent(cause, instance, message, level) => 
         val log = error.format(
-          time,
+          level.asString,
+          formattedTimestamp,
           event.thread.getName,
           instance.getClass.getSimpleName,
           message,
-          stackTrace)
+          stackTraceFor(cause))
         println(log)
       case _ => {} 
     }
   }
   
-  addListener(Actor.actorOf[DefaultListener].start) // FIXME configurable in config (on/off)
+  if (config.getBool("akka.default-error-handler", true))
+    addListener(Actor.actorOf[DefaultListener].start) // FIXME configurable in config (on/off)
 }
 
 /**

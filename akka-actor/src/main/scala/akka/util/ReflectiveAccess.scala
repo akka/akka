@@ -125,6 +125,7 @@ object ReflectiveAccess {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e =>
+      //ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
       None
   }
 
@@ -141,6 +142,7 @@ object ReflectiveAccess {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e =>
+      //ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
       None
   }
 
@@ -152,9 +154,11 @@ object ReflectiveAccess {
     Option(instance.get(null).asInstanceOf[T])
   } catch {
     case e: ClassNotFoundException => {
+      //ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
       None
     }
     case ei: ExceptionInInitializerError => {
+      //ErrorHandler notifyListeners ErrorHandlerEvent(ei, this)
       throw ei
     }
   }
@@ -163,6 +167,8 @@ object ReflectiveAccess {
     assert(fqn ne null)
     Some(classloader.loadClass(fqn).asInstanceOf[Class[T]])
   } catch {
-    case e => None
+    case e => 
+      //ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+      None
   }
 }
