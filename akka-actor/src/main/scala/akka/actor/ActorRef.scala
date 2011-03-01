@@ -656,15 +656,18 @@ class LocalActorRef private[akka] (
       cancelReceiveTimeout
       dispatcher.detach(this)
       _status = ActorRefInternals.SHUTDOWN
-      actor.postStop
-      currentMessage = null
-      Actor.registry.unregister(this)
-      if (isRemotingEnabled) {
-        if (isClientManaged_?)
-          Actor.remote.unregisterClientManagedActor(homeAddress.get.getHostName, homeAddress.get.getPort, uuid)
-        Actor.remote.unregister(this)
+      try {
+        actor.postStop
+      } finally {
+        currentMessage = null
+        Actor.registry.unregister(this)
+        if (isRemotingEnabled) {
+          if (isClientManaged_?)
+            Actor.remote.unregisterClientManagedActor(homeAddress.get.getHostName, homeAddress.get.getPort, uuid)
+          Actor.remote.unregister(this)
+        }
+        setActorSelfFields(actorInstance.get,null)
       }
-      setActorSelfFields(actorInstance.get,null)
     } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
   }
 
