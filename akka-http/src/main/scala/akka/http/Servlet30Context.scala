@@ -7,6 +7,7 @@ package akka.http
 import javax.servlet. {AsyncContext, AsyncListener, AsyncEvent};
 import Types._
 
+import akka.actor.{ErrorHandler, ErrorHandlerEvent}
 
 /**
  * @author Garrick Evans
@@ -35,6 +36,7 @@ trait Servlet30Context extends AsyncListener {
     }
     catch {
       case ex: IllegalStateException =>
+        ErrorHandler notifyListeners ErrorHandlerEvent(ex, this)
         false
     }
   }

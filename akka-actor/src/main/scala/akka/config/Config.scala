@@ -5,6 +5,7 @@
 package akka.config
 
 import akka.AkkaException
+import akka.actor.{ErrorHandler, ErrorHandlerEvent}
 import net.lag.configgy.{Config => CConfig, Configgy, ParseException}
 
 import java.net.InetSocketAddress
@@ -58,9 +59,13 @@ object Config {
         Configgy.configure(configFile)
         println("Config loaded from -Dakka.config=" + configFile)
       } catch {
-        case e: ParseException => throw new ConfigurationException(
-          "Config could not be loaded from -Dakka.config=" + configFile +
-          "\n\tdue to: " + e.toString)
+        case cause: ParseException => 
+          val e = new ConfigurationException(
+            "Config could not be loaded from -Dakka.config=" + configFile +
+            "\n\tdue to: " + cause.toString)
+          ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+          throw e
+          
       }
       Configgy.config
     } else if (getClass.getClassLoader.getResource(confName) ne null) {
@@ -68,9 +73,12 @@ object Config {
         Configgy.configureFromResource(confName, getClass.getClassLoader)
         println("Config [" + confName + "] loaded from the application classpath.")
       } catch {
-        case e: ParseException => throw new ConfigurationException(
-          "Can't load '" + confName + "' config file from application classpath," +
-          "\n\tdue to: " + e.toString)
+        case cause: ParseException => 
+          val e = new ConfigurationException(
+            "Can't load '" + confName + "' config file from application classpath," +
+            "\n\tdue to: " + cause.toString)
+          ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+          throw e
       }
       Configgy.config
     } else if (HOME.isDefined) {
@@ -81,10 +89,13 @@ object Config {
           "AKKA_HOME is defined as [" + HOME.getOrElse(throwNoAkkaHomeException) + 
           "], config loaded from [" + configFile + "].")
       } catch {
-        case e: ParseException => throw new ConfigurationException(
-          "AKKA_HOME is defined as [" + HOME.get + "] " +
-          "\n\tbut the 'akka.conf' config file can not be found at [" + HOME.get + "/config/"+ confName + "]," +
-          "\n\tdue to: " + e.toString)
+        case cause: ParseException => 
+          val e = throw new ConfigurationException(
+            "AKKA_HOME is defined as [" + HOME.get + "] " +
+            "\n\tbut the 'akka.conf' config file can not be found at [" + HOME.get + "/config/"+ confName + "]," +
+            "\n\tdue to: " + cause.toString)
+          ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+          throw e
       }
       Configgy.config
     } else {

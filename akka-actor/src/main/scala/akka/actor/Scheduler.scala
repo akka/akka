@@ -37,7 +37,9 @@ object Scheduler {
         new Runnable { def run = receiver ! message },
         initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception => throw SchedulerException(message + " could not be scheduled on " + receiver, e)
+      case e: Exception => 
+        ErrorHandler notifyListeners ErrorHandlerEvent(e, this, receiver + " @ " + message)
+        throw SchedulerException(message + " could not be scheduled on " + receiver, e)
     }
   }
 
@@ -54,9 +56,11 @@ object Scheduler {
    */
   def schedule(runnable: Runnable, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     try {
-      service.scheduleAtFixedRate(runnable,initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
+      service.scheduleAtFixedRate(runnable, initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception => throw SchedulerException("Failed to schedule a Runnable", e)
+      case e: Exception => 
+        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+        throw SchedulerException("Failed to schedule a Runnable", e)
     }
   }
 
@@ -69,7 +73,9 @@ object Scheduler {
         new Runnable { def run = receiver ! message },
         delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception => throw SchedulerException( message + " could not be scheduleOnce'd on " + receiver, e)
+      case e: Exception => 
+        ErrorHandler notifyListeners ErrorHandlerEvent(e, this, receiver + " @ " + message)
+        throw SchedulerException( message + " could not be scheduleOnce'd on " + receiver, e)
     }
   }
 
@@ -88,7 +94,9 @@ object Scheduler {
     try {
       service.schedule(runnable,delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception => throw SchedulerException("Failed to scheduleOnce a Runnable", e)
+      case e: Exception => 
+        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+        throw SchedulerException("Failed to scheduleOnce a Runnable", e)
     }
   }
 

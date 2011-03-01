@@ -6,15 +6,15 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.actor.Actor.spawn
+import akka.actor.{Actor, ErrorHandler, ErrorHandlerEvent}
 import akka.routing.Dispatcher
+import akka.japi.Procedure
 
 import java.util.concurrent.locks.ReentrantLock
-import akka.japi.Procedure
 import java.util.concurrent. {ConcurrentLinkedQueue, TimeUnit}
 import java.util.concurrent.TimeUnit.{NANOSECONDS => NANOS, MILLISECONDS => MILLIS}
-import akka.actor.Actor
-import annotation.tailrec
 import java.util.concurrent.atomic. {AtomicBoolean, AtomicInteger}
+import annotation.tailrec
 
 class FutureTimeoutException(message: String) extends AkkaException(message)
 
@@ -33,8 +33,13 @@ object Futures {
                 (body: => T): Future[T] = {
     val f = new DefaultCompletableFuture[T](timeout)
     spawn({
-      try { f completeWithResult body }
-      catch { case e => f completeWithException e}
+      try { 
+        f completeWithResult body 
+      } catch { 
+        case e => 
+          ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+          f completeWithException e
+      }
     })(dispatcher)
     f
   }
@@ -97,7 +102,9 @@ object Futures {
               results.clear //Do not retain the values since someone can hold onto the Future for a long time
               result completeWithResult r
             } catch {
-              case e: Exception => result completeWithException e
+              case e: Exception => 
+                ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+                result completeWithException e
             }
           }
         }
@@ -255,7 +262,9 @@ sealed trait Future[T] {
           fa complete (try {
             Right(f(v.right.get))
           } catch {
-            case e => Left(e)
+            case e => 
+              ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+              Left(e)
           })
         }
       }
@@ -281,7 +290,9 @@ sealed trait Future[T] {
           try {
             f(v.right.get) onComplete (fa.completeWith(_))
           } catch {
-            case e => fa completeWithException e
+            case e => 
+              ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+              fa completeWithException e
           }
         }
       }
@@ -309,7 +320,9 @@ sealed trait Future[T] {
             if (p(r)) Right(r)
             else Left(new MatchError(r))
           } catch {
-            case e => Left(e)
+            case e => 
+              ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+              Left(e)
           })
         }
       }

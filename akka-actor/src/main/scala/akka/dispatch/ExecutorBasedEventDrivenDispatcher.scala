@@ -4,7 +4,7 @@
 
 package akka.dispatch
 
-import akka.actor.{ActorRef, IllegalActorStateException}
+import akka.actor.{ActorRef, IllegalActorStateException, ErrorHandler, ErrorHandlerEvent}
 import akka.util.{ReflectiveAccess, Switch}
 
 import java.util.Queue
@@ -132,6 +132,7 @@ class ExecutorBasedEventDrivenDispatcher(
         executorService.get() execute mbox
       } catch {
         case e: RejectedExecutionException =>
+          ErrorHandler notifyListeners ErrorHandlerEvent(e, this, _name)
           mbox.dispatcherLock.unlock()
           throw e
       }

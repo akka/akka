@@ -819,6 +819,7 @@ class LocalActorRef private[akka] (
         }
       } catch {
         case e =>
+          ErrorHandler notifyListeners ErrorHandlerEvent(e, this, messageHandle.message.toString)
           throw e
       } finally {
         currentMessage = null //TODO: Don't reset this, we might want to resend the message

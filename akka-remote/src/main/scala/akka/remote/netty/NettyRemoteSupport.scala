@@ -16,6 +16,7 @@ import akka.remoteinterface._
 import akka.actor. {Index, ActorInitializationException, LocalActorRef, newUuid, ActorRegistry, Actor, RemoteActorRef, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage, uuidFrom, Uuid, Exit, LifeCycleMessage, ActorType => AkkaActorType}
 import akka.AkkaException
 import akka.actor.Actor._
+import akka.actor.{ErrorHandler, ErrorHandlerEvent}
 import akka.util._
 import akka.remote.{MessageSerializer, RemoteClientSettings, RemoteServerSettings}
 
@@ -428,6 +429,7 @@ class ActiveRemoteClientHandler(
       }
     } catch {
       case e: Exception =>
+        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
         client.notifyListeners(RemoteClientError(e, client.module, client.remoteAddress))
         throw e
     }
@@ -484,6 +486,7 @@ class ActiveRemoteClientHandler(
         .newInstance(exception.getMessage).asInstanceOf[Throwable]
     } catch {
       case problem =>
+        ErrorHandler notifyListeners ErrorHandlerEvent(problem, this)
         UnparsableException(classname, exception.getMessage)
     }
   }
@@ -554,8 +557,8 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
       bootstrap.releaseExternalResources
       serverModule.notifyListeners(RemoteServerShutdown(serverModule))
     } catch {
-      case e: java.nio.channels.ClosedChannelException =>  {}
-      case e => {}
+      case e => 
+        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
     }
   }
 }
@@ -587,6 +590,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
       }
     } catch {
       case e =>
+        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
         notifyListeners(RemoteServerError(e, this))
     }
     this
@@ -899,6 +903,7 @@ class RemoteServerHandler(
     val actorRef =
       try { createActor(actorInfo, channel).start } catch {
         case e: SecurityException =>
+          ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
           write(channel, createErrorReplyMessage(e, request, AkkaActorType.ScalaActor))
           server.notifyListeners(RemoteServerError(e, server))
           return
@@ -985,7 +990,9 @@ class RemoteServerHandler(
 
           write(channel, messageBuilder.build)
         } catch {
-          case e: Throwable => server.notifyListeners(RemoteServerError(e, server))
+          case e: Throwable => 
+            ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+            server.notifyListeners(RemoteServerError(e, server))
         }
 
         messageReceiver.invoke(typedActor, args: _*) match {
@@ -1000,9 +1007,11 @@ class RemoteServerHandler(
       }
     } catch {
       case e: InvocationTargetException =>
+        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
         write(channel, createErrorReplyMessage(e.getCause, request, AkkaActorType.TypedActor))
         server.notifyListeners(RemoteServerError(e, server))
       case e: Throwable =>
+        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
         write(channel, createErrorReplyMessage(e, request, AkkaActorType.TypedActor))
         server.notifyListeners(RemoteServerError(e, server))
     }
@@ -1062,6 +1071,7 @@ class RemoteServerHandler(
       actorRef
     } catch {
       case e =>
+        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
         server.notifyListeners(RemoteServerError(e, server))
         throw e
     }
@@ -1128,6 +1138,7 @@ class RemoteServerHandler(
       newInstance
     } catch {
       case e =>
+        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
         server.notifyListeners(RemoteServerError(e, server))
         throw e
     }
