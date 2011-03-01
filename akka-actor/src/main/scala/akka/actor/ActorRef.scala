@@ -825,7 +825,7 @@ class LocalActorRef private[akka] (
           actor(messageHandle.message)
           currentMessage = null // reset current message after successful invocation
         } catch {
-          case e: InterruptedException => {} // received message while actor is shutting down, ignore
+          case e: InterruptedException => { currentMessage = null } // received message while actor is shutting down, ignore
           case e => handleExceptionInDispatch(e, messageHandle.message)
         } finally {
           checkReceiveTimeout // Reschedule receive timeout
