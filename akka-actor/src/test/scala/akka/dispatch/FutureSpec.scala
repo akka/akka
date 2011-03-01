@@ -1,10 +1,10 @@
-package akka.actor
+package akka.dispatch
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+import akka.actor.{ Actor, ActorRef }
 import Actor._
 import org.multiverse.api.latches.StandardLatch
-import akka.dispatch. {Future, Futures}
 import java.util.concurrent. {TimeUnit, CountDownLatch}
 
 object FutureSpec {
@@ -30,6 +30,8 @@ object FutureSpec {
     }
   }
 }
+
+class JavaFutureSpec extends JavaFutureTests with JUnitSuite
 
 class FutureSpec extends JUnitSuite {
   import FutureSpec._
