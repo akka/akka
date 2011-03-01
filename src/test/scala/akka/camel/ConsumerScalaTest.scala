@@ -226,16 +226,17 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
     }
   }
 
-  "A consumer doing reply channel management" must {
+  "A supervised consumer" must {
     "be able to reply during receive" in {
-      val consumer = Actor.actorOf(new ChannelManagementConsumer("reply-channel-test-1")).start
+      val consumer = Actor.actorOf(new SupervisedConsumer("reply-channel-test-1")).start
       (consumer !! "succeed") match {
         case Some(r) => r must equal ("ok")
         case None    => fail("reply expected")
       }
     }
-    "be able to reply during preRestart" in {
-      val consumer = Actor.actorOf(new ChannelManagementConsumer("reply-channel-test-2"))
+
+    "be able to reply on failure during preRestart" in {
+      val consumer = Actor.actorOf(new SupervisedConsumer("reply-channel-test-2"))
       val supervisor = Supervisor(
         SupervisorConfig(
           OneForOneStrategy(List(classOf[Exception]), 2, 10000),
@@ -247,8 +248,9 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
       consumer.!("fail")(Some(sender))
       latch.await(5, TimeUnit.SECONDS) must be (true)
     }
-    "be able to reply during postStop" in {
-      val consumer = Actor.actorOf(new ChannelManagementConsumer("reply-channel-test-3"))
+
+    "be able to reply on failure during postStop" in {
+      val consumer = Actor.actorOf(new SupervisedConsumer("reply-channel-test-3"))
       val supervisor = Supervisor(
         SupervisorConfig(
           OneForOneStrategy(List(classOf[Exception]), 2, 10000),
@@ -303,20 +305,20 @@ object ConsumerScalaTest {
     }
   }
 
-  class ChannelManagementConsumer(name: String) extends Actor with Consumer with ChannelManagement {
+  class SupervisedConsumer(name: String) extends Actor with Consumer {
     def endpointUri = "direct:%s" format name
 
-    protected def receive = manageReplyChannelFor {
+    protected def receive = {
       case "fail"    => { throw new Exception("test") }
-      case "succeed" => replyChannel foreach { _ ! "ok" }
+      case "succeed" => self.reply("ok")
     }
 
     override def preRestart(reason: scala.Throwable) {
-      replyChannel foreach { _ ! "pr" }
+      self.reply_?("pr")
     }
 
     override def postStop {
-      replyChannel foreach { _ ! "ps" }
+      self.reply_?("ps")
     }
   }
 
