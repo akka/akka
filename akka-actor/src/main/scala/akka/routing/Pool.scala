@@ -4,7 +4,7 @@
 
 package akka.routing
 
-import akka.actor.{Actor, ActorRef, ErrorHandler, ErrorHandlerEvent}
+import akka.actor.{Actor, ActorRef, EventHandler}
 
 /**
  * Actor pooling
@@ -84,7 +84,7 @@ trait DefaultActorPool extends ActorPool
                                                                 future completeWithResult (delegate !! msg).getOrElse(None)
                                                         } catch {
                                                                 case e => 
-                                                                  ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+                                                                  EventHandler notifyListeners EventHandler.Error(e, this)
                                                                   future completeWithException e
                                                         }
                                                 }

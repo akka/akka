@@ -5,7 +5,7 @@
 package akka.config
 
 import akka.AkkaException
-import akka.actor.{ErrorHandler, ErrorHandlerEvent}
+import akka.actor.{EventHandler}
 import net.lag.configgy.{Config => CConfig, Configgy, ParseException}
 
 import java.net.InetSocketAddress
@@ -63,7 +63,7 @@ object Config {
           val e = new ConfigurationException(
             "Config could not be loaded from -Dakka.config=" + configFile +
             "\n\tdue to: " + cause.toString)
-          ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+          EventHandler notifyListeners EventHandler.Error(e, this)
           throw e
           
       }
@@ -77,7 +77,7 @@ object Config {
           val e = new ConfigurationException(
             "Can't load '" + confName + "' config file from application classpath," +
             "\n\tdue to: " + cause.toString)
-          ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+          EventHandler notifyListeners EventHandler.Error(e, this)
           throw e
       }
       Configgy.config
@@ -94,7 +94,7 @@ object Config {
             "AKKA_HOME is defined as [" + HOME.get + "] " +
             "\n\tbut the 'akka.conf' config file can not be found at [" + HOME.get + "/config/"+ confName + "]," +
             "\n\tdue to: " + cause.toString)
-          ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+          EventHandler notifyListeners EventHandler.Error(e, this)
           throw e
       }
       Configgy.config
