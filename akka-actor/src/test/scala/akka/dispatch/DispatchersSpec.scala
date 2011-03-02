@@ -7,7 +7,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-import net.lag.configgy.Config
+import akka.configgy.Config
 import scala.reflect.{Manifest}
 import akka.dispatch._
 

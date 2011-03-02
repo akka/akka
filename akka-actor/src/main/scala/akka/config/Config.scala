@@ -5,8 +5,8 @@
 package akka.config
 
 import akka.AkkaException
-import akka.actor.{EventHandler}
-import net.lag.configgy.{Config => CConfig, Configgy, ParseException}
+import akka.actor.EventHandler
+import akka.configgy.{Config => CConfig, Configgy, ParseException}
 
 import java.net.InetSocketAddress
 import java.lang.reflect.Method
