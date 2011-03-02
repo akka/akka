@@ -96,7 +96,7 @@ object ActorSerialization {
   private[akka] def toAddressProtocol(actorRef: ActorRef) = {
     val address = actorRef.homeAddress.getOrElse(Actor.remote.address)
     AddressProtocol.newBuilder
-        .setHostname(address.getHostName)
+        .setHostname(address.getAddress.getHostAddress)
         .setPort(address.getPort)
         .build
   }
@@ -162,7 +162,7 @@ object ActorSerialization {
     format: Format[T]): ActorRef = {
     val builder = SerializedActorRefProtocol.newBuilder.mergeFrom(bytes)
     homeAddress.foreach { addr => 
-      val addressProtocol = AddressProtocol.newBuilder.setHostname(addr.getHostName).setPort(addr.getPort).build
+      val addressProtocol = AddressProtocol.newBuilder.setHostname(addr.getAddress.getHostAddress).setPort(addr.getPort).build
       builder.setOriginalAddress(addressProtocol)
     }
     fromProtobufToLocalActorRef(builder.build, format, None)

@@ -640,7 +640,7 @@ class LocalActorRef private[akka] (
         initializeActorInstance
 
       if (isClientManaged_?)
-        Actor.remote.registerClientManagedActor(homeAddress.get.getHostName, homeAddress.get.getPort, uuid)
+        Actor.remote.registerClientManagedActor(homeAddress.get.getAddress.getHostAddress, homeAddress.get.getPort, uuid)
 
       checkReceiveTimeout //Schedule the initial Receive timeout
     }
@@ -663,7 +663,7 @@ class LocalActorRef private[akka] (
         Actor.registry.unregister(this)
         if (isRemotingEnabled) {
           if (isClientManaged_?)
-            Actor.remote.unregisterClientManagedActor(homeAddress.get.getHostName, homeAddress.get.getPort, uuid)
+            Actor.remote.unregisterClientManagedActor(homeAddress.get.getAddress.getHostAddress, homeAddress.get.getPort, uuid)
           Actor.remote.unregister(this)
         }
         setActorSelfFields(actorInstance.get,null)
@@ -1133,8 +1133,6 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def start: ActorRef = synchronized {
     _status = ActorRefInternals.RUNNING
-    //if (clientManaged)
-    //  Actor.remote.registerClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
     this
   }
 
@@ -1142,8 +1140,6 @@ private[akka] case class RemoteActorRef private[akka] (
     if (_status == ActorRefInternals.RUNNING) {
       _status = ActorRefInternals.SHUTDOWN
       postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
-     // if (clientManaged)
-     //   Actor.remote.unregisterClientManagedActor(homeAddress.getHostName,homeAddress.getPort, uuid)
     }
   }
 

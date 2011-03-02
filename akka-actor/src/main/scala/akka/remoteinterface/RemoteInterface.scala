@@ -245,7 +245,7 @@ trait RemoteServerModule extends RemoteModule {
    *  Starts the server up
    */
   def start(): RemoteServerModule =
-    start(ReflectiveAccess.Remote.configDefaultAddress.getHostName,
+    start(ReflectiveAccess.Remote.configDefaultAddress.getAddress.getHostAddress,
           ReflectiveAccess.Remote.configDefaultAddress.getPort,
           None)
 
@@ -253,7 +253,7 @@ trait RemoteServerModule extends RemoteModule {
    *  Starts the server up
    */
   def start(loader: ClassLoader): RemoteServerModule =
-    start(ReflectiveAccess.Remote.configDefaultAddress.getHostName,
+    start(ReflectiveAccess.Remote.configDefaultAddress.getAddress.getHostAddress,
           ReflectiveAccess.Remote.configDefaultAddress.getPort,
           Option(loader))
 

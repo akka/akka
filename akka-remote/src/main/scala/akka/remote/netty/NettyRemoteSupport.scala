@@ -144,7 +144,7 @@ abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) extends Logging {
 
-  val name = this.getClass.getSimpleName + "@" + remoteAddress.getHostName + "::" + remoteAddress.getPort
+  val name = this.getClass.getSimpleName + "@" + remoteAddress.getAddress.getHostAddress + "::" + remoteAddress.getPort
 
   protected val futures = new ConcurrentHashMap[Uuid, CompletableFuture[_]]
   protected val supervisors = new ConcurrentHashMap[Uuid, ActorRef]
@@ -525,7 +525,7 @@ class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with
   protected[akka] def actorFor(serviceId: String, className: String, timeout: Long, host: String, port: Int, loader: Option[ClassLoader]): ActorRef = {
     if (optimizeLocalScoped_?) {
       val home = this.address
-      if (host == home.getHostName && port == home.getPort) {//TODO: switch to InetSocketAddress.equals?
+      if ((host == home.getAddress.getHostAddress || host == home.getHostName) && port == home.getPort) {//TODO: switch to InetSocketAddress.equals?
         val localRef = findActorByIdOrUuid(serviceId,serviceId)
         if (localRef ne null) return localRef //Code significantly simpler with the return statement
       }
@@ -538,7 +538,7 @@ class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with
 
     if (optimizeLocalScoped_?) {
       val home = this.address
-      if (host == home.getHostName && port == home.getPort)//TODO: switch to InetSocketAddress.equals?
+      if ((host == home.getHostName || host == home.getAddress.getHostAddress) && port == home.getPort)//TODO: switch to InetSocketAddress.equals?
         return new LocalActorRef(factory, None) // Code is much simpler with return
     }
 
@@ -597,7 +597,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
     case Some(s) => s.name
     case None    =>
        val a = ReflectiveAccess.Remote.configDefaultAddress
-      "NettyRemoteServer@" + a.getHostName + ":" + a.getPort
+      "NettyRemoteServer@" + a.getAddress.getHostAddress + ":" + a.getPort
   }
 
   private val _isRunning = new Switch(false)
