@@ -6,7 +6,7 @@ package akka.transactor
 
 import akka.config.Config
 import akka.stm.{Atomic, DefaultTransactionConfig, TransactionFactory}
-import akka.actor.{ErrorHandler, ErrorHandlerEvent}
+import akka.actor.{EventHandler}
 
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.commitbarriers.CountDownCommitBarrier
@@ -133,13 +133,7 @@ class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
         factory.addHooks
         val result = body
         val timeout = factory.config.timeout
-        try {
-          barrier.tryJoinCommit(mtx, timeout.length, timeout.unit)
-        } catch {
-          // Need to catch IllegalStateException until we have fix in Multiverse, since it throws it by mistake
-          case e: IllegalStateException =>
-            ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
-        }
+        barrier.tryJoinCommit(mtx, timeout.length, timeout.unit)
         result
       }
     })

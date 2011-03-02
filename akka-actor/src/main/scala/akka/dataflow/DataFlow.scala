@@ -7,7 +7,7 @@ package akka.dataflow
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 
-import akka.actor.{Actor, ActorRef, ErrorHandler, ErrorHandlerEvent}
+import akka.actor.{Actor, ActorRef, EventHandler}
 import akka.actor.Actor._
 import akka.dispatch.CompletableFuture
 import akka.AkkaException
@@ -148,7 +148,7 @@ object DataFlow {
           (out !! Get).as[T]
         } catch {
           case e: Exception =>
-            ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+            EventHandler notifyListeners EventHandler.Error(e, this)
             out ! Exit
             throw e
         }

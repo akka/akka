@@ -38,7 +38,7 @@ object Scheduler {
         initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
       case e: Exception => 
-        ErrorHandler notifyListeners ErrorHandlerEvent(e, this, receiver + " @ " + message)
+        EventHandler notifyListeners EventHandler.Error(e, this, receiver + " @ " + message)
         throw SchedulerException(message + " could not be scheduled on " + receiver, e)
     }
   }
@@ -59,7 +59,7 @@ object Scheduler {
       service.scheduleAtFixedRate(runnable, initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
       case e: Exception => 
-        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+        EventHandler notifyListeners EventHandler.Error(e, this)
         throw SchedulerException("Failed to schedule a Runnable", e)
     }
   }
@@ -74,7 +74,7 @@ object Scheduler {
         delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
       case e: Exception => 
-        ErrorHandler notifyListeners ErrorHandlerEvent(e, this, receiver + " @ " + message)
+        EventHandler notifyListeners EventHandler.Error(e, this, receiver + " @ " + message)
         throw SchedulerException( message + " could not be scheduleOnce'd on " + receiver, e)
     }
   }
@@ -95,7 +95,7 @@ object Scheduler {
       service.schedule(runnable,delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
       case e: Exception => 
-        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+        EventHandler notifyListeners EventHandler.Error(e, this)
         throw SchedulerException("Failed to scheduleOnce a Runnable", e)
     }
   }

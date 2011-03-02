@@ -799,7 +799,8 @@ class LocalActorRef private[akka] (
       else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
     } else {
       val future = if (senderFuture.isDefined) senderFuture else Some(new DefaultCompletableFuture[T](timeout))
-      dispatcher dispatchMessage new MessageInvocation(this, message, senderOption, future.asInstanceOf[Some[CompletableFuture[Any]]])
+      dispatcher dispatchMessage new MessageInvocation(
+        this, message, senderOption, future.asInstanceOf[Some[CompletableFuture[Any]]])
       future.get
     }
   }
@@ -808,8 +809,7 @@ class LocalActorRef private[akka] (
    * Callback for the dispatcher. This is the single entry point to the user Actor implementation.
    */
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = guard.withGuard {
-    if (isShutdown) {}
-    else {
+    if (!isShutdown) {
       currentMessage = messageHandle
       try {
         try {
@@ -817,14 +817,16 @@ class LocalActorRef private[akka] (
           actor(messageHandle.message)
           currentMessage = null // reset current message after successful invocation
         } catch {
-          case e: InterruptedException => { currentMessage = null } // received message while actor is shutting down, ignore
-          case e => handleExceptionInDispatch(e, messageHandle.message)
+          case e: InterruptedException => 
+            currentMessage = null // received message while actor is shutting down, ignore
+          case e => 
+            handleExceptionInDispatch(e, messageHandle.message)
         } finally {
           checkReceiveTimeout // Reschedule receive timeout
         }
       } catch {
-        case e =>
-          ErrorHandler notifyListeners ErrorHandlerEvent(e, this, messageHandle.message.toString)
+        case e: Throwable =>
+          EventHandler notifyListeners EventHandler.Error(e, this, messageHandle.message.toString)
           throw e
       }
     }
@@ -839,7 +841,7 @@ class LocalActorRef private[akka] (
         dead.restart(reason, maxRetries, within)
 
       case _ =>
-        if(_supervisor.isDefined)
+        if (_supervisor.isDefined)
           notifySupervisorWithMessage(Exit(this, reason))
         else
           dead.stop
@@ -986,7 +988,7 @@ class LocalActorRef private[akka] (
   }
 
   private def handleExceptionInDispatch(reason: Throwable, message: Any) = {
-    ErrorHandler notifyListeners ErrorHandlerEvent(reason, this, message.toString)
+    EventHandler notifyListeners EventHandler.Error(reason, this, message.toString)
     
     //Prevent any further messages to be processed until the actor has been restarted
     dispatcher.suspend(this)

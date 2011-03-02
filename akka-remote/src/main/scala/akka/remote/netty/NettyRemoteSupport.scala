@@ -16,7 +16,7 @@ import akka.remoteinterface._
 import akka.actor. {Index, ActorInitializationException, LocalActorRef, newUuid, ActorRegistry, Actor, RemoteActorRef, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage, uuidFrom, Uuid, Exit, LifeCycleMessage, ActorType => AkkaActorType}
 import akka.AkkaException
 import akka.actor.Actor._
-import akka.actor.{ErrorHandler, ErrorHandlerEvent}
+import akka.actor.{EventHandler}
 import akka.util._
 import akka.remote.{MessageSerializer, RemoteClientSettings, RemoteServerSettings}
 
@@ -428,8 +428,8 @@ class ActiveRemoteClientHandler(
           throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.module, client.remoteAddress)
       }
     } catch {
-      case e: Exception =>
-        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+      case e: Throwable =>
+        EventHandler notifyListeners EventHandler.Error(e, this)
         client.notifyListeners(RemoteClientError(e, client.module, client.remoteAddress))
         throw e
     }
@@ -485,8 +485,8 @@ class ActiveRemoteClientHandler(
         .getConstructor(Array[Class[_]](classOf[String]): _*)
         .newInstance(exception.getMessage).asInstanceOf[Throwable]
     } catch {
-      case problem =>
-        ErrorHandler notifyListeners ErrorHandlerEvent(problem, this)
+      case problem: Throwable =>
+        EventHandler notifyListeners EventHandler.Error(problem, this)
         UnparsableException(classname, exception.getMessage)
     }
   }
@@ -557,8 +557,8 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
       bootstrap.releaseExternalResources
       serverModule.notifyListeners(RemoteServerShutdown(serverModule))
     } catch {
-      case e => 
-        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+      case e: Exception => 
+        EventHandler notifyListeners EventHandler.Error(e, this)
     }
   }
 }
@@ -589,8 +589,8 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
         currentServer.set(Some(new NettyRemoteServer(this, _hostname, _port, loader)))
       }
     } catch {
-      case e =>
-        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+      case e: Exception => 
+        EventHandler notifyListeners EventHandler.Error(e, this)
         notifyListeners(RemoteServerError(e, this))
     }
     this
@@ -903,7 +903,7 @@ class RemoteServerHandler(
     val actorRef =
       try { createActor(actorInfo, channel).start } catch {
         case e: SecurityException =>
-          ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+          EventHandler notifyListeners EventHandler.Error(e, this)
           write(channel, createErrorReplyMessage(e, request, AkkaActorType.ScalaActor))
           server.notifyListeners(RemoteServerError(e, server))
           return
@@ -990,8 +990,8 @@ class RemoteServerHandler(
 
           write(channel, messageBuilder.build)
         } catch {
-          case e: Throwable => 
-            ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+          case e: Exception => 
+            EventHandler notifyListeners EventHandler.Error(e, this)
             server.notifyListeners(RemoteServerError(e, server))
         }
 
@@ -1007,11 +1007,11 @@ class RemoteServerHandler(
       }
     } catch {
       case e: InvocationTargetException =>
-        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+        EventHandler notifyListeners EventHandler.Error(e, this)
         write(channel, createErrorReplyMessage(e.getCause, request, AkkaActorType.TypedActor))
         server.notifyListeners(RemoteServerError(e, server))
-      case e: Throwable =>
-        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+      case e: Exception =>
+        EventHandler notifyListeners EventHandler.Error(e, this)
         write(channel, createErrorReplyMessage(e, request, AkkaActorType.TypedActor))
         server.notifyListeners(RemoteServerError(e, server))
     }
@@ -1070,8 +1070,8 @@ class RemoteServerHandler(
       server.actorsByUuid.put(actorRef.uuid.toString, actorRef) // register by uuid
       actorRef
     } catch {
-      case e =>
-        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+      case e: Throwable =>
+        EventHandler notifyListeners EventHandler.Error(e, this)
         server.notifyListeners(RemoteServerError(e, server))
         throw e
     }
@@ -1137,8 +1137,8 @@ class RemoteServerHandler(
       server.typedActors.put(parseUuid(uuid).toString, newInstance) // register by uuid
       newInstance
     } catch {
-      case e =>
-        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+      case e: Throwable =>
+        EventHandler notifyListeners EventHandler.Error(e, this)
         server.notifyListeners(RemoteServerError(e, server))
         throw e
     }

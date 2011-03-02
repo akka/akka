@@ -6,7 +6,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.actor.Actor.spawn
-import akka.actor.{Actor, ErrorHandler, ErrorHandlerEvent}
+import akka.actor.{Actor, EventHandler}
 import akka.routing.Dispatcher
 import akka.japi.Procedure
 
@@ -36,8 +36,8 @@ object Futures {
       try { 
         f completeWithResult body 
       } catch { 
-        case e => 
-          ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+        case e: Exception => 
+          EventHandler notifyListeners EventHandler.Error(e, this)
           f completeWithException e
       }
     })(dispatcher)
@@ -103,7 +103,7 @@ object Futures {
               result completeWithResult r
             } catch {
               case e: Exception => 
-                ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+                EventHandler notifyListeners EventHandler.Error(e, this)
                 result completeWithException e
             }
           }
@@ -262,8 +262,8 @@ sealed trait Future[T] {
           fa complete (try {
             Right(f(v.right.get))
           } catch {
-            case e => 
-              ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+            case e: Exception => 
+              EventHandler notifyListeners EventHandler.Error(e, this)
               Left(e)
           })
         }
@@ -290,8 +290,8 @@ sealed trait Future[T] {
           try {
             f(v.right.get) onComplete (fa.completeWith(_))
           } catch {
-            case e => 
-              ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+            case e: Exception => 
+              EventHandler notifyListeners EventHandler.Error(e, this)
               fa completeWithException e
           }
         }
@@ -320,8 +320,8 @@ sealed trait Future[T] {
             if (p(r)) Right(r)
             else Left(new MatchError(r))
           } catch {
-            case e => 
-              ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+            case e: Exception => 
+              EventHandler notifyListeners EventHandler.Error(e, this)
               Left(e)
           })
         }

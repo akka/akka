@@ -6,7 +6,7 @@ package akka.util
 
 import java.util.concurrent.locks.{ReentrantReadWriteLock, ReentrantLock}
 import java.util.concurrent.atomic. {AtomicBoolean}
-import akka.actor.{ErrorHandler, ErrorHandlerEvent}
+import akka.actor.{EventHandler}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -125,8 +125,8 @@ class Switch(startAsOn: Boolean = false) {
       try {
         action
       } catch {
-        case t =>
-          ErrorHandler notifyListeners ErrorHandlerEvent(t, this)
+        case t: Throwable =>
+          EventHandler notifyListeners EventHandler.Error(t, this)
           switch.compareAndSet(!from, from) //Revert status
           throw t
       }

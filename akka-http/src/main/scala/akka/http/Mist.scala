@@ -5,7 +5,7 @@
 package akka.http
 
 import akka.actor.{ActorRegistry, ActorRef, Actor}
-import akka.actor.{ErrorHandler, ErrorHandlerEvent}
+import akka.actor.{EventHandler}
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import javax.servlet.http.HttpServlet
@@ -388,8 +388,8 @@ trait RequestMethod {
             true
           }
         } catch {
-          case io =>
-            ErrorHandler notifyListeners ErrorHandlerEvent(io, this)
+          case io: Exception =>
+            EventHandler notifyListeners EventHandler.Error(io, this)
             false
         }
     }
@@ -408,7 +408,7 @@ trait RequestMethod {
           }
         } catch {
           case io: IOException => 
-            ErrorHandler notifyListeners ErrorHandlerEvent(io, this)
+            EventHandler notifyListeners EventHandler.Error(io, this)
         }
       }
 

@@ -10,7 +10,7 @@ import atomic.{AtomicLong, AtomicInteger}
 import ThreadPoolExecutor.CallerRunsPolicy
 
 import akka.util.Duration
-import akka.actor.{ErrorHandler, ErrorHandlerEvent}
+import akka.actor.{EventHandler}
 
 object ThreadPoolConfig {
   type Bounds = Int
@@ -208,10 +208,10 @@ class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extend
       })
     } catch {
       case e: RejectedExecutionException =>
-        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+        EventHandler notifyListeners EventHandler.Warning(e, this)
         semaphore.release
-      case e =>
-        ErrorHandler notifyListeners ErrorHandlerEvent(e, this)
+      case e: Throwable =>
+        EventHandler notifyListeners EventHandler.Error(e, this)
         throw e
     }
   }

@@ -1,4 +1,14 @@
 /**
+
+
+
+
+
+
+
+
+
+
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
@@ -73,63 +83,54 @@ class ActorKilledException         private[akka](message: String) extends AkkaEx
 class ActorInitializationException private[akka](message: String) extends AkkaException(message)
 class ActorTimeoutException        private[akka](message: String) extends AkkaException(message)
 
-sealed trait ErrorHandlerEventLevel {
-  def asString: String 
-}
-object HighErrorHandlerEventLevel   extends ErrorHandlerEventLevel {
-  def asString = "high"
-}
-object MediumErrorHandlerEventLevel extends ErrorHandlerEventLevel {
-  def asString = "medium"
-}
-object LowErrorHandlerEventLevel    extends ErrorHandlerEventLevel {
-  def asString = "low"
-}
-
-case class ErrorHandlerEvent(
-  @BeanProperty val cause: Throwable,
-  @BeanProperty val instance: AnyRef,
-  @BeanProperty val message: String = "",
-  @BeanProperty val level: ErrorHandlerEventLevel = MediumErrorHandlerEventLevel) {
-  @BeanProperty val thread: Thread = Thread.currentThread
-}
-
-// FIXME add flume listener
-// document writing custom
-
 /**
  * Error handler.
  * 
  * Create, add and remove a listener:
  * <pre>
  * val errorHandlerEventListener = new Actor {
- *   self.dispatcher = ErrorHandler.ErrorHandlerDispatcher
+ *   self.dispatcher = EventHandler.EventHandlerDispatcher
  *     
  *   def receive = {
- *     case ErrorHandlerEvent(cause, message, level) => 
+ *     case EventHandler.Error(cause, instance, message) => ...
+ *     case EventHandler.Warning(cause, instance, message) => ...
+ *     case EventHandler.Info(instance, message) => ...
+ *     case EventHandler.Debug(instance, message) => ...
  *   }
  * }
  * 
- * ErrorHandler.addListener(errorHandlerEventListener)
+ * EventHandler.addListener(errorHandlerEventListener)
  * ...
- * ErrorHandler.removeListener(errorHandlerEventListener)
+ * EventHandler.removeListener(errorHandlerEventListener)
  * </pre>
  *
  * Log an error event:
  * <pre>
- * ErrorHandler notifyListeners ErrorHandlerEvent(reason, this, message.toString)
+ * EventHandler notifyListeners EventHandler.Error(exception, this, message.toString)
  * </pre>
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object ErrorHandler extends ListenerManagement {
+object EventHandler extends ListenerManagement {
   import java.io.{StringWriter, PrintWriter}
   import java.text.DateFormat
   import java.util.Date
   import akka.dispatch.Dispatchers
 
-  val error = "[error:%s] [%s] [%s] [%s] %s\n%s".intern
-  val ID = "default:error:handler"
-  val ErrorHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
+  sealed trait Event {
+    val thread: Thread = Thread.currentThread
+  }
+  case class Error(cause: Throwable, instance: AnyRef, message: String = "") extends Event
+  case class Warning(cause: Throwable, instance: AnyRef, message: String = "") extends Event
+  case class Info(instance: AnyRef, message: String = "") extends Event
+  case class Debug(instance: AnyRef, message: String = "") extends Event
+
+  val error   = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
+  val warning = "[WARN]  [%s] [%s] [%s] %s\n%s".intern
+  val info    = "[INFO]  [%s] [%s] [%s] %s".intern
+  val debug   = "[DEBUG] [%s] [%s] [%s] %s".intern
+  val ID      = "default:error:handler".intern
+
+  val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
 
   def formattedTimestamp = DateFormat.getInstance.format(new Date)
   
@@ -142,18 +143,35 @@ object ErrorHandler extends ListenerManagement {
   
   class DefaultListener extends Actor {
     self.id = ID
-    self.dispatcher = ErrorHandlerDispatcher
+    self.dispatcher = EventHandlerDispatcher
 
     def receive = {
-      case event @ ErrorHandlerEvent(cause, instance, message, level) => 
-        val log = error.format(
-          level.asString,
+      case event @ Error(cause, instance, message) => 
+        println(error.format(
           formattedTimestamp,
           event.thread.getName,
           instance.getClass.getSimpleName,
           message,
-          stackTraceFor(cause))
-        println(log)
+          stackTraceFor(cause)))
+      case event @ Warning(cause, instance, message) => 
+        println(warning.format(
+          formattedTimestamp,
+          event.thread.getName,
+          instance.getClass.getSimpleName,
+          message,
+          stackTraceFor(cause)))
+      case event @ Info(instance, message) => 
+        println(info.format(
+          formattedTimestamp,
+          event.thread.getName,
+          instance.getClass.getSimpleName,
+          message))
+      case event @ Debug(instance, message) => 
+        println(debug.format(
+          formattedTimestamp,
+          event.thread.getName,
+          instance.getClass.getSimpleName,
+          message))
       case _ => {} 
     }
   }
