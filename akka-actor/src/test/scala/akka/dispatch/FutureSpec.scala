@@ -57,10 +57,13 @@ class FutureSpec extends JUnitSuite {
   @Test def shouldFutureCompose {
     val actor1 = actorOf[TestActor].start
     val actor2 = actorOf(new Actor { def receive = { case s: String => self reply s.toUpperCase } } ).start
-    val future1 = actor1.!!![Any]("Hello").flatMap{ case s: String => actor2.!!![Any](s) }
-    val future2 = actor1.!!![Any]("Hello").flatMap{ case s: Int => actor2.!!![Any](s) }
+    val future1 = actor1.!!![Any]("Hello") flatMap { case s: String => actor2.!!![Any](s) }
+    val future2 = actor1.!!![Any]("Hello") flatMap { case s: Int => actor2.!!![Any](s) }
+
+    println("'" + future2.await.exception.map(_.toString) + "'")
+
     assert(Some(Right("WORLD")) === future1.await.value)
-    assert(Some("scala.MatchError: World") === future2.await.exception.map(_.toString))
+    assert(Some("scala.MatchError: World (of class java.lang.String)") === future2.await.exception.map(_.toString))
     actor1.stop
     actor2.stop
   }
@@ -113,7 +116,7 @@ class FutureSpec extends JUnitSuite {
     } yield b + "-" + c
 
     assert(Some(Right("10-14")) === future1.await.value)
-    assert(Some("scala.MatchError: Res(10)") === future2.await.exception.map(_.toString))
+    assert("scala.MatchError: Res(10) (of class akka.actor.FutureSpec$Res$2)" === future2.await.exception.map(_.toString).get)
     actor.stop
   }
 
