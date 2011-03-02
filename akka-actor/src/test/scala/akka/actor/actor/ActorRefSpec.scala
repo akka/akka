@@ -123,5 +123,30 @@ class ActorRefSpec extends
       assert(ref.isRunning == false)
       assert(ref.isShutdown == true)
     }
+
+    it("should support spawning via manifest, class, and factory function") {
+      class SimpleActor extends Actor {
+        def receive = {
+          case _ =>
+        }
+      }
+
+      Actor.actorOf(
+        new Actor {
+          override def preStart {
+            self.spawn[SimpleActor]
+            self.spawn(classOf[SimpleActor])
+            self.spawn(new SimpleActor)
+
+            self.spawnLink[SimpleActor]
+            self.spawnLink(classOf[SimpleActor])
+            self.spawnLink(new SimpleActor)
+          }
+          def receive = {
+            case _ =>
+          }
+        }
+      )
+    }
   }
 }

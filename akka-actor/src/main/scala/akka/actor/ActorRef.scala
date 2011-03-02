@@ -1433,6 +1433,13 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
     spawn(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
+   * Atomically create (from factory function) and start an actor.
+   * <p/>
+   * To be invoked from within the actor itself.
+   */
+  def spawn(factory: => Actor): ActorRef
+
+  /**
    * Atomically create (from actor class), start and make an actor remote.
    */
   def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int, timeout: Long): ActorRef = {
@@ -1445,6 +1452,13 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    */
   def spawnLink[T <: Actor: Manifest]: ActorRef =
     spawnLink(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+
+  /**
+   * Atomically create (from factory function), link and start an actor.
+   * <p/>
+   * To be invoked from within the actor itself.
+   */
+  def spawnLink(factory: => Actor): ActorRef
 
   /**
    * Atomically create (from actor class), start, link and make an actor remote.
