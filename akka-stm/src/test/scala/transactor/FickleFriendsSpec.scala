@@ -26,7 +26,6 @@ object FickleFriends {
     implicit val txFactory = TransactionFactory(timeout = 3 seconds)
 
     def increment = {
-      log.slf4j.info(name + ": incrementing")
       count alter (_ + 1)
     }
 
@@ -65,7 +64,6 @@ object FickleFriends {
     implicit val txFactory = TransactionFactory(timeout = 3 seconds)
 
     def increment = {
-      log.slf4j.info(name + ": incrementing")
       count alter (_ + 1)
     }
 

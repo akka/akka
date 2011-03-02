@@ -4,7 +4,6 @@
 
 package akka
 
-import akka.util.Logging
 import akka.actor.newUuid
 
 import java.io.{StringWriter, PrintWriter}
@@ -34,16 +33,9 @@ import java.net.{InetAddress, UnknownHostException}
     printStackTrace(pw)
     sw.toString
   }
-
-  private lazy val _log = {
-    AkkaException.log.slf4j.error(toString)
-    ()
-  }
-
-  def log: Unit = _log
 }
 
-object AkkaException extends Logging {
+object AkkaException {
   val hostname = try {
     InetAddress.getLocalHost.getHostName
   } catch {

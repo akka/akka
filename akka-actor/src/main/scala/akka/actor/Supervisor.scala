@@ -76,7 +76,7 @@ object Supervisor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-case class SupervisorFactory(val config: SupervisorConfig) extends Logging {
+case class SupervisorFactory(val config: SupervisorConfig) {
 
   def newInstance: Supervisor = newInstanceFor(config)
 
@@ -166,11 +166,6 @@ final class SupervisorActor private[akka] (handler: FaultHandlingStrategy) exten
     // FIXME add a way to respond to MaximumNumberOfRestartsWithinTimeRangeReached in declaratively configured Supervisor
     case MaximumNumberOfRestartsWithinTimeRangeReached(
       victim, maxNrOfRetries, withinTimeRange, lastExceptionCausingRestart) =>
-      Actor.log.slf4j.warn(
-        "Declaratively configured supervisor received a [MaximumNumberOfRestartsWithinTimeRangeReached] notification," +
-        "\n\tbut there is currently no way of handling it in a declaratively configured supervisor." +
-        "\n\tIf you want to be able to handle this error condition then you need to create the supervision tree programatically." +
-        "\n\tThis will be supported in the future.")
     case unknown => throw new SupervisorException(
       "SupervisorActor can not respond to messages.\n\tUnknown message [" + unknown + "]")
   }

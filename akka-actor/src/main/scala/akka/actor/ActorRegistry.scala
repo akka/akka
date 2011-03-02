@@ -255,7 +255,6 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
    * Shuts down and unregisters all actors in the system.
    */
   def shutdownAll() {
-    log.slf4j.info("Shutting down all actors in the system...")
     if (TypedActorModule.isEnabled) {
       val elements = actorsByUUID.elements
       while (elements.hasMoreElements) {
@@ -270,7 +269,6 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
     }
     actorsByUUID.clear
     actorsById.clear
-    log.slf4j.info("All actors have been shut down and unregistered from ActorRegistry")
   }
 }
 

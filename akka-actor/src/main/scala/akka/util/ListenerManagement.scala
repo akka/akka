@@ -13,7 +13,7 @@ import akka.actor.ActorRef
  *
  * @author Martin Krasser
  */
-trait ListenerManagement extends Logging {
+trait ListenerManagement {
 
   private val listeners = new ConcurrentSkipListSet[ActorRef]
 
@@ -50,14 +50,13 @@ trait ListenerManagement extends Logging {
    */
   def hasListener(listener: ActorRef): Boolean = listeners.contains(listener)
 
-  protected def notifyListeners(message: => Any) {
+  protected[akka] def notifyListeners(message: => Any) {
     if (hasListeners) {
       val msg = message
       val iterator = listeners.iterator
       while (iterator.hasNext) {
         val listener = iterator.next
         if (listener.isRunning) listener ! msg
-        else log.slf4j.warn("Can't notify [{}] since it is not running.", listener)
       }
     }
   }
@@ -65,12 +64,11 @@ trait ListenerManagement extends Logging {
   /**
    * Execute <code>f</code> with each listener as argument.
    */
-  protected def foreachListener(f: (ActorRef) => Unit) {
+  protected[akka] def foreachListener(f: (ActorRef) => Unit) {
     val iterator = listeners.iterator
     while (iterator.hasNext) {
       val listener = iterator.next
       if (listener.isRunning) f(listener)
-      else log.slf4j.warn("Can't notify [{}] since it is not running.", listener)
     }
   }
 }

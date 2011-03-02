@@ -1,7 +1,6 @@
 package akka.actor.remote
 
 import akka.actor.{Actor, ActorRegistry}
-import akka.util.Logging
 
 import Actor._
 
@@ -41,11 +40,10 @@ object ServerInitiatedRemoteActorServer {
   }
 }
 
-object ServerInitiatedRemoteActorClient extends Logging {
+object ServerInitiatedRemoteActorClient {
   def main(args: Array[String]) = {
     val actor = Actor.remote.actorFor("hello-service", "localhost", 2552)
     val result = actor !! "Hello"
-    log.slf4j.info("Result from Remote Actor: {}", result)
   }
 }
 

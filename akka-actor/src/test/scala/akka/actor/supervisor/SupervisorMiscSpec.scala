@@ -46,7 +46,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
       }).start
 
       val actor4 = Actor.actorOf(new Actor {
-        self.dispatcher = Dispatchers.newHawtDispatcher(true)
+        self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
         override def postRestart(cause: Throwable) {countDownLatch.countDown}
 
         protected def receive = {

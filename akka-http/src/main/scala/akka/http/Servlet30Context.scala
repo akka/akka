@@ -7,12 +7,12 @@ package akka.http
 import javax.servlet. {AsyncContext, AsyncListener, AsyncEvent};
 import Types._
 
+import akka.actor.{EventHandler}
 
 /**
  * @author Garrick Evans
  */
-trait Servlet30Context extends AsyncListener with akka.util.Logging
-{
+trait Servlet30Context extends AsyncListener {
   import javax.servlet.http.HttpServletResponse
   import MistSettings._
 
@@ -36,7 +36,7 @@ trait Servlet30Context extends AsyncListener with akka.util.Logging
     }
     catch {
       case ex: IllegalStateException =>
-        log.slf4j.info("Cannot update timeout - already returned to container")
+        EventHandler notifyListeners EventHandler.Error(ex, this)
         false
     }
   }
@@ -46,8 +46,8 @@ trait Servlet30Context extends AsyncListener with akka.util.Logging
   //
   def onComplete(e: AsyncEvent) {}
   def onError(e: AsyncEvent) = e.getThrowable match {
-    case null => log.slf4j.warn("Error occured...")
-    case    t => log.slf4j.warn("Error occured", t)
+    case null => {}
+    case    t => {}
   }
   def onStartAsync(e: AsyncEvent) {}
   def onTimeout(e: AsyncEvent) = {

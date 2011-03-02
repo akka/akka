@@ -431,7 +431,7 @@ trait TypedActorFactory {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object TypedActor extends Logging {
+object TypedActor {
   import Actor.actorOf
 
   val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
@@ -540,7 +540,7 @@ object TypedActor extends Logging {
     config match {
       case null => actorOf(typedActor)
       case c: TypedActorConfiguration if (c._host.isDefined) =>
-        Actor.remote.actorOf(typedActor, c._host.get.getHostName, c._host.get.getPort)
+        Actor.remote.actorOf(typedActor, c._host.get.getAddress.getHostAddress, c._host.get.getPort)
       case _ => actorOf(typedActor)
     }
   }
@@ -575,8 +575,6 @@ object TypedActor extends Logging {
     if (config._id.isDefined) actorRef.id = config._id.get
 
     actorRef.timeout = config.timeout
-
-    //log.slf4j.debug("config._host for {} is {} but homeAddress is {} and on ref {}",Array[AnyRef](intfClass, config._host, typedActor.context.homeAddress,actorRef.homeAddress))
 
     val remoteAddress = actorRef match {
       case remote: RemoteActorRef => remote.homeAddress
