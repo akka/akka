@@ -7,7 +7,7 @@ package akka.dispatch
 import java.util.concurrent._
 import atomic. {AtomicInteger, AtomicBoolean, AtomicReference, AtomicLong}
 
-import akka.util.{Switch, ReentrantGuard, Logging, HashCode, ReflectiveAccess}
+import akka.util.{Switch, ReentrantGuard, HashCode, ReflectiveAccess}
 import akka.actor._
 
 /**
@@ -30,7 +30,13 @@ final case class MessageInvocation(val receiver: ActorRef,
 final case class FutureInvocation(future: CompletableFuture[Any], function: () => Any) extends Runnable {
   val uuid = akka.actor.newUuid
 
-  def run = future complete (try { Right(function.apply) } catch { case e => Left(e) })
+  def run = future complete (try {
+    Right(function.apply)
+  } catch {
+    case e: Exception => 
+      EventHandler notifyListeners EventHandler.Error(e, this)
+      Left(e)
+  })
 }
 
 object MessageDispatcher {
@@ -44,7 +50,7 @@ object MessageDispatcher {
 /**
  *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait MessageDispatcher extends Logging {
+trait MessageDispatcher {
   import MessageDispatcher._
 
   protected val uuids = new ConcurrentSkipListSet[Uuid]
@@ -73,9 +79,7 @@ trait MessageDispatcher extends Logging {
     unregister(actorRef)
   }
 
-  private[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = if (active.isOn) {
-    dispatch(invocation)
-  } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
+  private[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = dispatch(invocation)
 
   private[akka] final def dispatchFuture(invocation: FutureInvocation): Unit = {
     guard withGuard {
@@ -133,12 +137,11 @@ trait MessageDispatcher extends Logging {
    */
   def stopAllAttachedActors {
     val i = uuids.iterator
-    while(i.hasNext()) {
+    while (i.hasNext()) {
       val uuid = i.next()
       Actor.registry.actorFor(uuid) match {
         case Some(actor) => actor.stop
-        case None =>
-          log.slf4j.error("stopAllLinkedActors couldn't find linked actor: " + uuid)
+        case None        => {}
       }
     }
   }

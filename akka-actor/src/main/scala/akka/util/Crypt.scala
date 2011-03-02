@@ -9,7 +9,7 @@ import java.security.{MessageDigest, SecureRandom}
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Crypt extends Logging {
+object Crypt {
   val hex = "0123456789ABCDEF"
   val lineSeparator = System.getProperty("line.separator")
 
@@ -24,7 +24,6 @@ object Crypt extends Logging {
   def sha1(bytes: Array[Byte]): String = digest(bytes, MessageDigest.getInstance("SHA1"))
 
   def generateSecureCookie: String = {
-    log.slf4j.info("Generating secure cookie...")
     val bytes = Array.fill(32)(0.byteValue)
     random.nextBytes(bytes)
     sha1(bytes)

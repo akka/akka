@@ -6,14 +6,15 @@ package akka.util
 
 import java.util.concurrent.locks.{ReentrantReadWriteLock, ReentrantLock}
 import java.util.concurrent.atomic. {AtomicBoolean}
+import akka.actor.{EventHandler}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ReentrantGuard {
+final class ReentrantGuard {
   val lock = new ReentrantLock
 
-  def withGuard[T](body: => T): T = {
+  final def withGuard[T](body: => T): T = {
     lock.lock
     try {
       body
@@ -22,7 +23,7 @@ class ReentrantGuard {
     }
   }
 
-  def tryWithGuard[T](body: => T): T = {
+  final def tryWithGuard[T](body: => T): T = {
     while(!lock.tryLock) { Thread.sleep(10) } // wait on the monitor to be unlocked
     try {
       body
@@ -124,8 +125,9 @@ class Switch(startAsOn: Boolean = false) {
       try {
         action
       } catch {
-        case t =>
-          switch.compareAndSet(!from,from) //Revert status
+        case t: Throwable =>
+          EventHandler notifyListeners EventHandler.Error(t, this)
+          switch.compareAndSet(!from, from) //Revert status
           throw t
       }
       true

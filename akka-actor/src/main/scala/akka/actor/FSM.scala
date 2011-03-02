@@ -291,19 +291,16 @@ trait FSM[S, D] {
 
   private val handleEventDefault: StateFunction = {
     case Event(value, stateData) =>
-      log.slf4j.warn("Event {} not handled in state {}, staying at current state", value, currentState.stateName)
       stay
   }
   private var handleEvent: StateFunction = handleEventDefault
 
   private var terminateEvent: PartialFunction[StopEvent[S,D], Unit] = {
     case StopEvent(Failure(cause), _, _) =>
-      log.slf4j.error("Stopping because of a failure with cause {}", cause)
-    case StopEvent(reason, _, _) => log.slf4j.info("Stopping because of reason: {}", reason)
+    case StopEvent(reason, _, _) =>
   }
 
   private var transitionEvent: TransitionHandler = (from, to) => {
-    log.slf4j.debug("Transitioning from state {} to {}", from, to)
   }
 
   override final protected def receive: Receive = {
@@ -376,7 +373,6 @@ trait FSM[S, D] {
   }
 
   private def terminate(reason: Reason) = {
-    timers.foreach{ case (timer, t) => log.slf4j.info("Canceling timer {}", timer); t.cancel}
     terminateEvent.apply(StopEvent(reason, currentState.stateName, currentState.stateData))
     self.stop
   }
@@ -405,7 +401,7 @@ trait FSM[S, D] {
     def replying(replyValue: Any): State = {
       self.sender match {
         case Some(sender) => sender ! replyValue
-        case None => log.slf4j.error("Unable to send reply value {}, no sender reference to reply to", replyValue)
+        case None =>
       }
       this
     }

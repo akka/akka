@@ -10,7 +10,7 @@ import akka.util._
 
 import com.google.protobuf.{Message, ByteString}
 
-object MessageSerializer extends Logging {
+object MessageSerializer {
   private def SERIALIZER_JAVA:       Serializer.Java      = Serializer.Java
   private def SERIALIZER_JAVA_JSON:  Serializer.JavaJSON  = Serializer.JavaJSON
   private def SERIALIZER_SCALA_JSON: Serializer.ScalaJSON = Serializer.ScalaJSON

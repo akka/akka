@@ -5,15 +5,15 @@
 package akka.dispatch
 
 import akka.AkkaException
+import akka.actor.{Actor, EventHandler}
 import akka.routing.Dispatcher
+import akka.japi.Procedure
 
 import java.util.concurrent.locks.ReentrantLock
-import akka.japi.Procedure
 import java.util.concurrent. {ConcurrentLinkedQueue, TimeUnit, Callable}
 import java.util.concurrent.TimeUnit.{NANOSECONDS => NANOS, MILLISECONDS => MILLIS}
-import akka.actor.Actor
-import annotation.tailrec
 import java.util.concurrent.atomic. {AtomicBoolean, AtomicInteger}
+import annotation.tailrec
 
 class FutureTimeoutException(message: String) extends AkkaException(message)
 
@@ -89,7 +89,9 @@ object Futures {
               results.clear //Do not retain the values since someone can hold onto the Future for a long time
               result completeWithResult r
             } catch {
-              case e: Exception => result completeWithException e
+              case e: Exception => 
+                EventHandler notifyListeners EventHandler.Error(e, this)
+                result completeWithException e
             }
           }
         }
@@ -255,7 +257,9 @@ sealed trait Future[T] {
           fa complete (try {
             Right(f(v.right.get))
           } catch {
-            case e => Left(e)
+            case e: Exception => 
+              EventHandler notifyListeners EventHandler.Error(e, this)
+              Left(e)
           })
         }
       }
@@ -281,7 +285,9 @@ sealed trait Future[T] {
           try {
             f(v.right.get) onComplete (fa.completeWith(_))
           } catch {
-            case e => fa completeWithException e
+            case e: Exception => 
+              EventHandler notifyListeners EventHandler.Error(e, this)
+              fa completeWithException e
           }
         }
       }
@@ -309,7 +315,9 @@ sealed trait Future[T] {
             if (p(r)) Right(r)
             else Left(new MatchError(r))
           } catch {
-            case e => Left(e)
+            case e: Exception => 
+              EventHandler notifyListeners EventHandler.Error(e, this)
+              Left(e)
           })
         }
       }
