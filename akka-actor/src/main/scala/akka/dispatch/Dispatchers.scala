@@ -116,22 +116,41 @@ object Dispatchers extends Logging {
     ThreadPoolConfigDispatcherBuilder(config =>
       new ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineMs, mailboxType, config),ThreadPoolConfig())
 
-  /**
-   * Creates a executor-based event-driven dispatcher with work stealing (TODO: better doc) serving multiple (millions) of actors through a thread pool.
+    /**
+   * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String): ThreadPoolConfigDispatcherBuilder =
-    newExecutorBasedEventDrivenWorkStealingDispatcher(name,MAILBOX_TYPE)
+  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String) =
+    ThreadPoolConfigDispatcherBuilder(config => new ExecutorBasedEventDrivenWorkStealingDispatcher(name,config),ThreadPoolConfig())
 
   /**
-   * Creates a executor-based event-driven dispatcher with work stealing (TODO: better doc) serving multiple (millions) of actors through a thread pool.
+   * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, mailboxType: MailboxType) =
-    ThreadPoolConfigDispatcherBuilder(config => new ExecutorBasedEventDrivenWorkStealingDispatcher(name, THROUGHPUT, THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType, config, THROUGHPUT),ThreadPoolConfig())
+  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, throughput: Int) =
+    ThreadPoolConfigDispatcherBuilder(config =>
+      new ExecutorBasedEventDrivenWorkStealingDispatcher(name, throughput, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE, config),ThreadPoolConfig())
 
+  /**
+   * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
+   * <p/>
+   * Has a fluent builder interface for configuring its semantics.
+   */
+  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, throughput: Int, mailboxType: MailboxType) =
+    ThreadPoolConfigDispatcherBuilder(config =>
+      new ExecutorBasedEventDrivenWorkStealingDispatcher(name, throughput, THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType, config),ThreadPoolConfig())
+
+
+  /**
+   * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
+   * <p/>
+   * Has a fluent builder interface for configuring its semantics.
+   */
+  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) =
+    ThreadPoolConfigDispatcherBuilder(config =>
+      new ExecutorBasedEventDrivenWorkStealingDispatcher(name, throughput, throughputDeadlineMs, mailboxType, config),ThreadPoolConfig())
   /**
    * Utility function that tries to load the specified dispatcher config from the akka.conf
    * or else use the supplied default dispatcher
@@ -204,8 +223,7 @@ object Dispatchers extends Logging {
           cfg.getInt("throughput", THROUGHPUT),
           cfg.getInt("throughput-deadline-time", THROUGHPUT_DEADLINE_TIME_MILLIS),
           mailboxType,
-          threadPoolConfig,
-          cfg.getInt("max-donation", THROUGHPUT))).build
+          threadPoolConfig)).build
       case "GlobalExecutorBasedEventDriven"       => globalExecutorBasedEventDrivenDispatcher
       case unknown                                => throw new IllegalArgumentException("Unknown dispatcher type [%s]" format unknown)
     }

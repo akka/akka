@@ -111,7 +111,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val DISPATCH_VERSION      = "0.7.4"
   lazy val JACKSON_VERSION       = "1.4.3"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.2"
@@ -142,9 +141,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val commons_pool = "commons-pool" % "commons-pool" % "1.5.4" % "compile" //ApacheV2
 
     lazy val configgy = "net.lag" % "configgy" % "2.0.2-nologgy" % "compile" //ApacheV2
-
-    lazy val dispatch_http = "net.databinder" % "dispatch-http_2.8.0" % DISPATCH_VERSION % "compile" //LGPL v2
-    lazy val dispatch_json = "net.databinder" % "dispatch-json_2.8.0" % DISPATCH_VERSION % "compile" //LGPL v2
 
     lazy val javax_servlet_30 = "org.glassfish" % "javax.servlet" % JAVAX_SERVLET_VERSION % "provided" //CDDL v1
 
@@ -359,8 +355,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val commons_codec = Dependencies.commons_codec
     val commons_io    = Dependencies.commons_io
-    val dispatch_http = Dependencies.dispatch_http
-    val dispatch_json = Dependencies.dispatch_json
     val guicey        = Dependencies.guicey
     val h2_lzf        = Dependencies.h2_lzf
     val jackson       = Dependencies.jackson
