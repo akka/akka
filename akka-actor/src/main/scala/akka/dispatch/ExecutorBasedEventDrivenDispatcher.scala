@@ -101,7 +101,7 @@ class ExecutorBasedEventDrivenDispatcher(
   /**
    * @return the mailbox associated with the actor
    */
-  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
+  protected def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
@@ -116,7 +116,7 @@ class ExecutorBasedEventDrivenDispatcher(
       }
   }
 
-  private[akka] def start = {}
+  private[akka] def start {}
 
   private[akka] def shutdown {
     val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
@@ -125,19 +125,25 @@ class ExecutorBasedEventDrivenDispatcher(
     }
   }
 
-
-  private[akka] def registerForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = if (active.isOn) {
-    if (!mbox.suspended.locked && mbox.dispatcherLock.tryLock()) {
-      try {
-        executorService.get() execute mbox
-      } catch {
-        case e: RejectedExecutionException =>
-          EventHandler notifyListeners EventHandler.Warning(e, this, _name)
-          mbox.dispatcherLock.unlock()
-          throw e
+  private[akka] def registerForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
+    if (mbox.dispatcherLock.tryLock()) {
+      if (active.isOn && !mbox.suspended.locked) { //If the dispatcher is active and the actor not suspended
+        try {
+          executorService.get() execute mbox
+        } catch {
+          case e: RejectedExecutionException =>
+            EventHandler notifyListeners EventHandler.Warning(e, this, _name)
+            mbox.dispatcherLock.unlock()
+            throw e
+        }
+      } else {
+        mbox.dispatcherLock.unlock() //If the dispatcher isn't active or if the actor is suspended, unlock the dispatcher lock
       }
     }
   }
+
+  private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
+    registerForExecution(mbox)
 
   override val toString = getClass.getSimpleName + "[" + name + "]"
 
@@ -148,7 +154,7 @@ class ExecutorBasedEventDrivenDispatcher(
   def resume(actorRef: ActorRef) {
     val mbox = getMailbox(actorRef)
     mbox.suspended.tryUnlock
-    registerForExecution(mbox)
+    reRegisterForExecution(mbox)
   }
 }
 
@@ -168,7 +174,7 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
       dispatcherLock.unlock()
     }
     if (!self.isEmpty)
-      dispatcher.registerForExecution(this)
+      dispatcher.reRegisterForExecution(this)
   }
 
   /**

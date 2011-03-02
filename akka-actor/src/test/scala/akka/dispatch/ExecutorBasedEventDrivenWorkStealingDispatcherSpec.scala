@@ -11,9 +11,10 @@ import Actor._
 import akka.dispatch.{MessageQueue, Dispatchers}
 
 object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
-  val delayableActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher").build
-  val sharedActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher").build
-  val parentActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher").build
+
+  def newWorkStealer() = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher",1).build
+
+  val delayableActorDispatcher, sharedActorDispatcher, parentActorDispatcher = newWorkStealer()
 
   class DelayableActor(name: String, delay: Int, finishedCounter: CountDownLatch) extends Actor {
     self.dispatcher = delayableActorDispatcher

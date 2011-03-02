@@ -64,9 +64,7 @@ trait MessageDispatcher {
     unregister(actorRef)
   }
 
-  private[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = if (active.isOn) {
-    dispatch(invocation)
-  } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
+  private[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = dispatch(invocation)
 
   private[akka] def register(actorRef: ActorRef) {
     if (actorRef.mailbox eq null)
@@ -101,11 +99,11 @@ trait MessageDispatcher {
    */
   def stopAllAttachedActors {
     val i = uuids.iterator
-    while(i.hasNext()) {
+    while (i.hasNext()) {
       val uuid = i.next()
       Actor.registry.actorFor(uuid) match {
         case Some(actor) => actor.stop
-        case None => {}
+        case None        => {}
       }
     }
   }

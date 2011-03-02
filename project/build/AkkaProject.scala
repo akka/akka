@@ -110,9 +110,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val DISPATCH_VERSION      = "0.7.4"
-  lazy val HAWT_DISPATCH_VERSION = "1.1"
-  lazy val JACKSON_VERSION       = "1.4.3"
+  lazy val JACKSON_VERSION       = "1.7.1"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.2"
   lazy val SCALATEST_VERSION     = "1.3"
@@ -130,18 +128,11 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val aspectwerkz = "org.codehaus.aspectwerkz" % "aspectwerkz" % "2.2.3" % "compile" //LGPL 2.1
 
-    lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile" //ApacheV2
-
     lazy val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile" //ApacheV2
 
-    lazy val commons_io = "commons-io" % "commons-io" % "1.4" % "compile" //ApacheV2
-
-    lazy val commons_pool = "commons-pool" % "commons-pool" % "1.5.4" % "compile" //ApacheV2
+    lazy val commons_io = "commons-io" % "commons-io" % "2.0.1" % "compile" //ApacheV2
 
     lazy val configgy = "net.lag" % "configgy" % "2.0.2-nologgy" % "compile" //ApacheV2
-
-    lazy val dispatch_http = "net.databinder" % "dispatch-http_2.8.0" % DISPATCH_VERSION % "compile" //LGPL v2
-    lazy val dispatch_json = "net.databinder" % "dispatch-json_2.8.0" % DISPATCH_VERSION % "compile" //LGPL v2
 
     lazy val javax_servlet_30 = "org.glassfish" % "javax.servlet" % JAVAX_SERVLET_VERSION % "provided" //CDDL v1
 
@@ -150,13 +141,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val jetty_xml     = "org.eclipse.jetty" % "jetty-xml"     % JETTY_VERSION % "compile" //Eclipse license
     lazy val jetty_servlet = "org.eclipse.jetty" % "jetty-servlet" % JETTY_VERSION % "compile" //Eclipse license
 
-    lazy val uuid       = "com.eaio" % "uuid" % "3.2" % "compile" //MIT license
-
     lazy val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile" //ApacheV2
 
     lazy val h2_lzf = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile" //ApacheV2
-
-    lazy val hawtdispatch = "org.fusesource.hawtdispatch" % "hawtdispatch-scala" % HAWT_DISPATCH_VERSION % "compile" //ApacheV2
 
     lazy val jackson          = "org.codehaus.jackson" % "jackson-mapper-asl" % JACKSON_VERSION % "compile" //ApacheV2
     lazy val jackson_core     = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile" //ApacheV2
@@ -166,13 +153,11 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val jersey_server  = "com.sun.jersey"          % "jersey-server" % JERSEY_VERSION % "compile" //CDDL v1
     lazy val jersey_contrib = "com.sun.jersey.contribs" % "jersey-scala"  % JERSEY_VERSION % "compile" //CDDL v1
 
-    lazy val jsr166x = "jsr166x" % "jsr166x" % "1.0" % "compile" //CC Public Domain
-
     lazy val jsr250 = "javax.annotation" % "jsr250-api" % "1.0" % "compile" //CDDL v1
 
     lazy val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile" //CDDL v1
 
-    lazy val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" //ApacheV2
+    lazy val multiverse      = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" //ApacheV2
     lazy val multiverse_test = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "test" //ApacheV2
 
     lazy val netty = "org.jboss.netty" % "netty" % "3.2.3.Final" % "compile" //ApacheV2
@@ -181,14 +166,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile" //MIT
 
-    lazy val sjson = "net.debasishg" % "sjson_2.8.1" % "0.9.1" % "compile" //ApacheV2
+    lazy val sjson      = "net.debasishg" % "sjson_2.8.1" % "0.9.1" % "compile" //ApacheV2
     lazy val sjson_test = "net.debasishg" % "sjson_2.8.1" % "0.9.1" % "test" //ApacheV2
 
     lazy val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile" //ApacheV2
-
-    lazy val thrift = "com.facebook" % "thrift" % "r917130" % "compile" //ApacheV2
-
-    lazy val google_coll    = "com.google.collections" % "google-collections"  % "1.0"             % "compile" //ApacheV2
 
     // Test
 
@@ -315,10 +296,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val uuid          = Dependencies.uuid
     val configgy      = Dependencies.configgy
-    val hawtdispatch  = Dependencies.hawtdispatch
-    val jsr166x       = Dependencies.jsr166x
 
     // testing
     val junit           = Dependencies.junit
@@ -359,8 +337,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val commons_codec = Dependencies.commons_codec
     val commons_io    = Dependencies.commons_io
-    val dispatch_http = Dependencies.dispatch_http
-    val dispatch_json = Dependencies.dispatch_json
     val guicey        = Dependencies.guicey
     val h2_lzf        = Dependencies.h2_lzf
     val jackson       = Dependencies.jackson
