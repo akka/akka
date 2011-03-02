@@ -19,8 +19,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   val scalaCompileSettings =
     Seq("-deprecation",
         "-Xmigration",
-        //"-Xcheckinit",
-        //"-optimise",
+        "-Xcheckinit",
+        "-optimise",
         "-Xwarninit",
         "-encoding", "utf8")
 
@@ -102,9 +102,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
-  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsRelRepo)
+  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshotRepo)
   lazy val spdeModuleConfig        = ModuleConfiguration("us.technically.spde", DatabinderRepo)
   lazy val processingModuleConfig  = ModuleConfiguration("org.processing", DatabinderRepo)
+  lazy val scalaModuleConfig       = ModuleConfiguration("org.scala-lang", ScalaToolsSnapshotRepo)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
@@ -113,7 +114,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val JACKSON_VERSION       = "1.7.1"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.2"
-  lazy val SCALATEST_VERSION     = "1.3"
+  lazy val SCALATEST_VERSION     = "1.4-SNAPSHOT"
   lazy val JETTY_VERSION         = "7.1.6.v20100715"
   lazy val JAVAX_SERVLET_VERSION = "3.0"
 
@@ -382,6 +383,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Examples
   // -------------------------------------------------------------------------------------------------------------------
 
+  /** FIXME SPDE doesn't exist for 2.9.0-SNAPSHOT
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
     override def disableCrossPaths = true
     override def spdeSourcePath = mainSourcePath / "spde"
@@ -396,7 +398,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
       publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
     }
-  }
+  }*/
 
   class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
@@ -405,8 +407,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
     override def disableCrossPaths = true
 
-    lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
-      new AkkaSampleAntsProject(_), akka_stm)
+    //FIXME ANts is disabled due to unavailable for 2.9.0-SNAPSHOT
+   // lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
+    //  new AkkaSampleAntsProject(_), akka_stm)
     lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
       new AkkaSampleFSMProject(_), akka_actor)
     lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
