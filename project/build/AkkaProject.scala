@@ -132,13 +132,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val aspectwerkz = "org.codehaus.aspectwerkz" % "aspectwerkz" % "2.2.3" % "compile" //LGPL 2.1
 
-    lazy val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile" //ApacheV2
-
     lazy val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile" //ApacheV2
 
     lazy val commons_io = "commons-io" % "commons-io" % "1.4" % "compile" //ApacheV2
-
-    lazy val commons_pool = "commons-pool" % "commons-pool" % "1.5.4" % "compile" //ApacheV2
 
     lazy val configgy = "net.lag" % "configgy" % "2.0.2-nologgy" % "compile" //ApacheV2
 
@@ -180,10 +176,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val logback      = "ch.qos.logback" % "logback-classic" % LOGBACK_VERSION % "compile" //LGPL 2.1
 
     lazy val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile" //ApacheV2
-
-    lazy val thrift = "com.facebook" % "thrift" % "r917130" % "compile" //ApacheV2
-
-    lazy val google_coll    = "com.google.collections" % "google-collections"  % "1.0"             % "compile" //ApacheV2
 
     // Test
 
