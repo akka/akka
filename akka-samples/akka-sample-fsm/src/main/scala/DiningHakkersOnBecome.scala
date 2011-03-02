@@ -78,7 +78,7 @@ class Hakker(name: String,left: ActorRef, right: ActorRef) extends Actor {
   //back to think about how he should obtain his chopsticks :-)
   def waiting_for(chopstickToWaitFor: ActorRef, otherChopstick: ActorRef): Receive = {
     case Taken(`chopstickToWaitFor`) =>
-      log.info("%s has picked up %s and %s, and starts to eat",name,left.id,right.id)
+      println("%s has picked up %s and %s, and starts to eat",name,left.id,right.id)
       become(eating)
       Scheduler.scheduleOnce(self,Think,5,TimeUnit.SECONDS)
 
@@ -108,14 +108,14 @@ class Hakker(name: String,left: ActorRef, right: ActorRef) extends Actor {
       become(thinking)
        left ! Put(self)
       right ! Put(self)
-      log.info("%s puts down his chopsticks and starts to think",name)
+      println("%s puts down his chopsticks and starts to think",name)
       Scheduler.scheduleOnce(self,Eat,5,TimeUnit.SECONDS)
   }
 
   //All hakkers start in a non-eating state
   def receive = {
     case Think =>
-      log.info("%s starts to think",name)
+      println("%s starts to think",name)
       become(thinking)
       Scheduler.scheduleOnce(self,Eat,5,TimeUnit.SECONDS)
   }

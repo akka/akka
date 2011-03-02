@@ -9,7 +9,7 @@ import javax.servlet.ServletConfig
 import java.io.File
 
 import akka.actor.BootableActorLoaderService
-import akka.util.{Bootable, Logging}
+import akka.util.Bootable
 
 import org.eclipse.jetty.xml.XmlConfiguration
 import org.eclipse.jetty.server.{Handler, Server}
@@ -20,7 +20,7 @@ import akka.AkkaException
 /**
  * Handles the Akka Comet Support (load/unload)
  */
-trait EmbeddedAppServer extends Bootable with Logging {
+trait EmbeddedAppServer extends Bootable {
   self: BootableActorLoaderService =>
 
   import akka.config.Config._
@@ -39,7 +39,6 @@ trait EmbeddedAppServer extends Bootable with Logging {
   abstract override def onLoad = {
     super.onLoad
     if (isRestEnabled) {
-      log.slf4j.info("Attempting to start Akka HTTP service")
 
       val configuration = new XmlConfiguration(findJettyConfigXML.getOrElse(error("microkernel-server.xml not found!")))
 
@@ -64,15 +63,11 @@ trait EmbeddedAppServer extends Bootable with Logging {
          s.start()
          s
       }
-      log.slf4j.info("Akka HTTP service started")
     }
   }
 
   abstract override def onUnload = {
     super.onUnload
-    server foreach { t =>
-      log.slf4j.info("Shutting down REST service (Jersey)")
-      t.stop()
-    }
+    server foreach { _.stop() }
   }
 }

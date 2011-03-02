@@ -1,4 +1,14 @@
 /**
+
+
+
+
+
+
+
+
+
+
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
@@ -8,13 +18,14 @@ import akka.dispatch._
 import akka.config.Config._
 import akka.config.Supervision._
 import akka.util.Helpers.{narrow, narrowSilently}
+import akka.util.ListenerManagement
 import akka.AkkaException
 
 import java.util.concurrent.TimeUnit
 import java.net.InetSocketAddress
 
 import scala.reflect.BeanProperty
-import akka.util. {ReflectiveAccess, Logging, Duration}
+import akka.util. {ReflectiveAccess, Duration}
 import akka.remoteinterface.RemoteSupport
 import akka.japi. {Creator, Procedure}
 
@@ -66,14 +77,111 @@ case class MaximumNumberOfRestartsWithinTimeRangeReached(
   @BeanProperty val lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
 
 // Exceptions for Actors
-class ActorStartException private[akka](message: String) extends AkkaException(message)
-class IllegalActorStateException private[akka](message: String) extends AkkaException(message)
-class ActorKilledException private[akka](message: String) extends AkkaException(message)
+class ActorStartException          private[akka](message: String) extends AkkaException(message)
+class IllegalActorStateException   private[akka](message: String) extends AkkaException(message)
+class ActorKilledException         private[akka](message: String) extends AkkaException(message)
 class ActorInitializationException private[akka](message: String) extends AkkaException(message)
-class ActorTimeoutException private[akka](message: String) extends AkkaException(message)
+class ActorTimeoutException        private[akka](message: String) extends AkkaException(message)
 
 /**
- *    This message is thrown by default when an Actors behavior doesn't match a message
+ * Error handler.
+ * 
+ * Create, add and remove a listener:
+ * <pre>
+ * val errorHandlerEventListener = new Actor {
+ *   self.dispatcher = EventHandler.EventHandlerDispatcher
+ *     
+ *   def receive = {
+ *     case EventHandler.Error(cause, instance, message) => ...
+ *     case EventHandler.Warning(cause, instance, message) => ...
+ *     case EventHandler.Info(instance, message) => ...
+ *     case EventHandler.Debug(instance, message) => ...
+ *   }
+ * }
+ * 
+ * EventHandler.addListener(errorHandlerEventListener)
+ * ...
+ * EventHandler.removeListener(errorHandlerEventListener)
+ * </pre>
+ *
+ * Log an error event:
+ * <pre>
+ * EventHandler notifyListeners EventHandler.Error(exception, this, message.toString)
+ * </pre>
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object EventHandler extends ListenerManagement {
+  import java.io.{StringWriter, PrintWriter}
+  import java.text.DateFormat
+  import java.util.Date
+  import akka.dispatch.Dispatchers
+
+  sealed trait Event {
+    val thread: Thread = Thread.currentThread
+  }
+  case class Error(cause: Throwable, instance: AnyRef, message: String = "") extends Event
+  case class Warning(cause: Throwable, instance: AnyRef, message: String = "") extends Event
+  case class Info(instance: AnyRef, message: String = "") extends Event
+  case class Debug(instance: AnyRef, message: String = "") extends Event
+
+  val error   = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
+  val warning = "[WARN]  [%s] [%s] [%s] %s\n%s".intern
+  val info    = "[INFO]  [%s] [%s] [%s] %s".intern
+  val debug   = "[DEBUG] [%s] [%s] [%s] %s".intern
+  val ID      = "default:error:handler".intern
+
+  val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
+
+  def formattedTimestamp = DateFormat.getInstance.format(new Date)
+  
+  def stackTraceFor(e: Throwable) = {
+    val sw = new StringWriter
+    val pw = new PrintWriter(sw)
+    e.printStackTrace(pw)
+    sw.toString
+  }
+  
+  class DefaultListener extends Actor {
+    self.id = ID
+    self.dispatcher = EventHandlerDispatcher
+
+    def receive = {
+      case event @ Error(cause, instance, message) => 
+        println(error.format(
+          formattedTimestamp,
+          event.thread.getName,
+          instance.getClass.getSimpleName,
+          message,
+          stackTraceFor(cause)))
+      case event @ Warning(cause, instance, message) => 
+        println(warning.format(
+          formattedTimestamp,
+          event.thread.getName,
+          instance.getClass.getSimpleName,
+          message,
+          stackTraceFor(cause)))
+      case event @ Info(instance, message) => 
+        println(info.format(
+          formattedTimestamp,
+          event.thread.getName,
+          instance.getClass.getSimpleName,
+          message))
+      case event @ Debug(instance, message) => 
+        println(debug.format(
+          formattedTimestamp,
+          event.thread.getName,
+          instance.getClass.getSimpleName,
+          message))
+      case _ => {} 
+    }
+  }
+  
+  if (config.getBool("akka.default-error-handler", true))
+    addListener(Actor.actorOf[DefaultListener].start) // FIXME configurable in config (on/off)
+}
+
+/**
+ * This message is thrown by default when an Actors behavior doesn't match a message
  */
 case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception {
   override def getMessage() = "Actor %s does not handle [%s]".format(ref,msg)
@@ -85,7 +193,8 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception 
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Actor extends Logging {
+object Actor extends ListenerManagement {
+  
   /**
    * Add shutdown cleanups
    */
@@ -93,7 +202,6 @@ object Actor extends Logging {
     val hook = new Runnable {
       override def run {
         // Clear Thread.subclassAudits
-        log.slf4j.info("Clearing subclass audits")
         val tf = classOf[java.lang.Thread].getDeclaredField("subclassAudits")
         tf.setAccessible(true)
         val subclassAudits = tf.get(null).asInstanceOf[java.util.Map[_,_]]
@@ -279,7 +387,7 @@ object Actor extends Logging {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait Actor extends Logging {
+trait Actor {
 
   /**
    * Type alias because traits cannot have companion objects.
@@ -353,14 +461,14 @@ trait Actor extends Logging {
    * <pre>
    *   def receive =  {
    *     case Ping =&gt;
-   *       log.slf4j.info("got a 'Ping' message")
+   *       println("got a 'Ping' message")
    *       self.reply("pong")
    *
    *     case OneWay =&gt;
-   *       log.slf4j.info("got a 'OneWay' message")
+   *       println("got a 'OneWay' message")
    *
    *     case unknown =&gt;
-   *       log.slf4j.warn("unknown message [{}], ignoring", unknown)
+   *       println("unknown message: " + unknown)
    * }
    * </pre>
    */

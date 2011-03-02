@@ -7,7 +7,7 @@ package akka.dispatch
 import java.util.concurrent._
 import atomic. {AtomicInteger, AtomicBoolean, AtomicReference, AtomicLong}
 
-import akka.util.{Switch, ReentrantGuard, Logging, HashCode, ReflectiveAccess}
+import akka.util.{Switch, ReentrantGuard, HashCode, ReflectiveAccess}
 import akka.actor._
 
 /**
@@ -99,11 +99,11 @@ trait MessageDispatcher {
    */
   def stopAllAttachedActors {
     val i = uuids.iterator
-    while(i.hasNext()) {
+    while (i.hasNext()) {
       val uuid = i.next()
       Actor.registry.actorFor(uuid) match {
         case Some(actor) => actor.stop
-        case None =>
+        case None        => {}
       }
     }
   }

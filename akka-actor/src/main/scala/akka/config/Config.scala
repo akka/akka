@@ -5,7 +5,7 @@
 package akka.config
 
 import akka.AkkaException
-import akka.util.Logging
+import akka.actor.{EventHandler}
 import net.lag.configgy.{Config => CConfig, Configgy, ParseException}
 
 import java.net.InetSocketAddress
@@ -19,7 +19,7 @@ class ModuleNotAvailableException(message: String) extends AkkaException(message
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Config extends Logging {
+object Config {
   val VERSION = "1.1-SNAPSHOT"
 
   val HOME = {
@@ -57,40 +57,49 @@ object Config extends Logging {
       val configFile = System.getProperty("akka.config", "")
       try {
         Configgy.configure(configFile)
-        log.slf4j.info("Config loaded from -Dakka.config={}", configFile)
+        println("Config loaded from -Dakka.config=" + configFile)
       } catch {
-        case e: ParseException => throw new ConfigurationException(
-          "Config could not be loaded from -Dakka.config=" + configFile +
-          "\n\tdue to: " + e.toString)
+        case cause: ParseException => 
+          val e = new ConfigurationException(
+            "Config could not be loaded from -Dakka.config=" + configFile +
+            "\n\tdue to: " + cause.toString)
+          EventHandler notifyListeners EventHandler.Error(e, this)
+          throw e
+          
       }
       Configgy.config
     } else if (getClass.getClassLoader.getResource(confName) ne null) {
       try {
         Configgy.configureFromResource(confName, getClass.getClassLoader)
-        log.slf4j.info("Config [{}] loaded from the application classpath.",confName)
+        println("Config [" + confName + "] loaded from the application classpath.")
       } catch {
-        case e: ParseException => throw new ConfigurationException(
-          "Can't load '" + confName + "' config file from application classpath," +
-          "\n\tdue to: " + e.toString)
+        case cause: ParseException => 
+          val e = new ConfigurationException(
+            "Can't load '" + confName + "' config file from application classpath," +
+            "\n\tdue to: " + cause.toString)
+          EventHandler notifyListeners EventHandler.Error(e, this)
+          throw e
       }
       Configgy.config
     } else if (HOME.isDefined) {
       try {
         val configFile = HOME.get + "/config/" + confName
         Configgy.configure(configFile)
-        log.slf4j.info(
-          "AKKA_HOME is defined as [{}], config loaded from [{}].",
-          HOME.getOrElse(throwNoAkkaHomeException),
-          configFile)
+        println(
+          "AKKA_HOME is defined as [" + HOME.getOrElse(throwNoAkkaHomeException) + 
+          "], config loaded from [" + configFile + "].")
       } catch {
-        case e: ParseException => throw new ConfigurationException(
-          "AKKA_HOME is defined as [" + HOME.get + "] " +
-          "\n\tbut the 'akka.conf' config file can not be found at [" + HOME.get + "/config/"+ confName + "]," +
-          "\n\tdue to: " + e.toString)
+        case cause: ParseException => 
+          val e = throw new ConfigurationException(
+            "AKKA_HOME is defined as [" + HOME.get + "] " +
+            "\n\tbut the 'akka.conf' config file can not be found at [" + HOME.get + "/config/"+ confName + "]," +
+            "\n\tdue to: " + cause.toString)
+          EventHandler notifyListeners EventHandler.Error(e, this)
+          throw e
       }
       Configgy.config
     } else {
-      log.slf4j.warn(
+      println(
         "\nCan't load '" + confName + "'." +
         "\nOne of the three ways of locating the '" + confName + "' file needs to be defined:" +
         "\n\t1. Define the '-Dakka.config=...' system property option." +
