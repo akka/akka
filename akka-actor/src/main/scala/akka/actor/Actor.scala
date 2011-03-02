@@ -201,9 +201,6 @@ object Actor extends ListenerManagement {
   private[akka] lazy val shutdownHook = {
     val hook = new Runnable {
       override def run {
-        // Shutdown HawtDispatch GlobalQueue
-        org.fusesource.hawtdispatch.globalQueue.asInstanceOf[org.fusesource.hawtdispatch.internal.GlobalDispatchQueue].shutdown
-
         // Clear Thread.subclassAudits
         val tf = classOf[java.lang.Thread].getDeclaredField("subclassAudits")
         tf.setAccessible(true)
