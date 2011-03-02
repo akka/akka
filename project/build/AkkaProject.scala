@@ -133,8 +133,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val commons_io = "commons-io" % "commons-io" % "2.0.1" % "compile" //ApacheV2
 
-    lazy val configgy = "net.lag" % "configgy" % "2.0.2-nologgy" % "compile" //ApacheV2
-
     lazy val javax_servlet_30 = "org.glassfish" % "javax.servlet" % JAVAX_SERVLET_VERSION % "provided" //CDDL v1
 
     lazy val jetty         = "org.eclipse.jetty" % "jetty-server"  % JETTY_VERSION % "compile" //Eclipse license
@@ -297,8 +295,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val configgy      = Dependencies.configgy
-
     // testing
     val junit           = Dependencies.junit
     val scalatest       = Dependencies.scalatest
