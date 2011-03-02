@@ -717,16 +717,15 @@ class LocalActorRef private[akka] (
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def spawn(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
+  def spawn(clazz: Class[_ <: Actor]): ActorRef =
     Actor.actorOf(clazz).start
-  }
 
   /**
    * Atomically create (from actor class), start and make an actor remote.
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long = Actor.TIMEOUT): ActorRef = guard.withGuard {
+  def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long = Actor.TIMEOUT): ActorRef = {
     ensureRemotingEnabled
     val ref = Actor.remote.actorOf(clazz, hostname, port)
     ref.timeout = timeout
@@ -738,8 +737,8 @@ class LocalActorRef private[akka] (
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def spawnLink(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
-    val actor = Actor.actorOf(clazz)
+  def spawnLink(clazz: Class[_ <: Actor]): ActorRef = {
+    val actor = spawn(clazz)
     link(actor)
     actor.start
     actor
@@ -750,15 +749,14 @@ class LocalActorRef private[akka] (
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long = Actor.TIMEOUT): ActorRef =
-    guard.withGuard {
-      ensureRemotingEnabled
-      val actor = Actor.remote.actorOf(clazz, hostname, port)
-      actor.timeout = timeout
-      link(actor)
-      actor.start
-      actor
-    }
+  def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long = Actor.TIMEOUT): ActorRef = {
+    ensureRemotingEnabled
+    val actor = Actor.remote.actorOf(clazz, hostname, port)
+    actor.timeout = timeout
+    link(actor)
+    actor.start
+    actor
+  }
 
   /**
    * Returns the mailbox.
