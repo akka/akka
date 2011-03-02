@@ -442,6 +442,13 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   def spawn(clazz: Class[_ <: Actor]): ActorRef
 
   /**
+   * Atomically create (from factory function) and start an actor.
+   * <p/>
+   * To be invoked from within the actor itself.
+   */
+  def spawn(factory: => Actor): ActorRef
+
+  /**
    * Atomically create (from actor class), make it remote and start an actor.
    * <p/>
    * To be invoked from within the actor itself.
@@ -454,6 +461,13 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * To be invoked from within the actor itself.
    */
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef
+
+  /**
+   * Atomically create (from factory function), link and start an actor.
+   * <p/>
+   * To be invoked from within the actor itself.
+   */
+  def spawnLink(factory: => Actor): ActorRef
 
   /**
    * Atomically create (from actor class), make it remote, link and start an actor.
@@ -722,6 +736,15 @@ class LocalActorRef private[akka] (
   }
 
   /**
+   * Atomically create (from factory function) and start an actor.
+   * <p/>
+   * To be invoked from within the actor itself.
+   */
+  def spawn(factory: => Actor): ActorRef = guard.withGuard {
+    Actor.actorOf(factory).start
+  }
+
+  /**
    * Atomically create (from actor class), start and make an actor remote.
    * <p/>
    * To be invoked from within the actor itself.
@@ -740,6 +763,19 @@ class LocalActorRef private[akka] (
    */
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
     val actor = Actor.actorOf(clazz)
+    link(actor)
+    actor.start
+    actor
+
+  }
+
+  /**
+   * Atomically create (from factory function), start and link an actor.
+   * <p/>
+   * To be invoked from within the actor itself.
+   */
+  def spawnLink(factory: => Actor): ActorRef = guard.withGuard {
+    val actor = Actor.actorOf(factory)
     link(actor)
     actor.start
     actor
@@ -1159,8 +1195,10 @@ private[akka] case class RemoteActorRef private[akka] (
   def unlink(actorRef: ActorRef): Unit = unsupported
   def startLink(actorRef: ActorRef): Unit = unsupported
   def spawn(clazz: Class[_ <: Actor]): ActorRef = unsupported
+  def spawn(factory: => Actor): ActorRef = unsupported
   def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef = unsupported
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef = unsupported
+  def spawnLink(factory: => Actor): ActorRef = unsupported
   def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef = unsupported
   def supervisor: Option[ActorRef] = unsupported
   def shutdownLinkedActors: Unit = unsupported
