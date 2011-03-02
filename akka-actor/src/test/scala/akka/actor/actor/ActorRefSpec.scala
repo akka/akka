@@ -60,11 +60,9 @@ object ActorRefSpec {
       case "complex2" => replyActor ! "complexRequest2"
       case "simple" => replyActor ! "simpleRequest"
       case "complexReply" => {
-        println("got complex reply")
         latch.countDown
       }
       case "simpleReply" => {
-        println("got simple reply")
         latch.countDown
       }
     }
