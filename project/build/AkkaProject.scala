@@ -111,7 +111,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val JACKSON_VERSION       = "1.4.3"
+  lazy val JACKSON_VERSION       = "1.7.1"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.2"
   lazy val SCALATEST_VERSION     = "1.3"
@@ -134,7 +134,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile" //ApacheV2
 
-    lazy val commons_io = "commons-io" % "commons-io" % "1.4" % "compile" //ApacheV2
+    lazy val commons_io = "commons-io" % "commons-io" % "2.0.1" % "compile" //ApacheV2
 
     lazy val configgy = "net.lag" % "configgy" % "2.0.2-nologgy" % "compile" //ApacheV2
 
