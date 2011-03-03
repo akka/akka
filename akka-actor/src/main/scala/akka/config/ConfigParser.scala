@@ -1,25 +1,17 @@
-/*
- * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Based on Configgy by Robey Pointer.
+ *   Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+ *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package akka.configgy
+package akka.config
 
 import scala.collection.mutable.Stack
 import scala.util.parsing.combinator._
 import scala.util.parsing.input.CharSequenceReader
-import extensions._
+import akka.config.string._
 
 
 /**
@@ -33,7 +25,7 @@ class ParseException(reason: String, cause: Throwable) extends Exception(reason,
 }
 
 
-private[configgy] class ConfigParser(var attr: Attributes, val importer: Importer) extends RegexParsers {
+private[config] class ConfigParser(var attr: Attributes, val importer: Importer) extends RegexParsers {
 
   val sections = new Stack[String]
   var prefix = ""

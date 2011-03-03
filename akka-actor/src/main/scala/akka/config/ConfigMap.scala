@@ -1,20 +1,12 @@
-/*
- * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Based on Configgy by Robey Pointer.
+ *   Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+ *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package akka.configgy
+package akka.config
 
 import scala.collection.Map
 import scala.util.Sorting
@@ -117,16 +109,6 @@ trait ConfigMap {
    * compound (like `"inner.name"`).
    */
   def asMap(): Map[String, String]
-
-  /**
-   * Subscribe to changes on this map. Any changes (including deletions)
-   * that occur on this node will be sent through the subscriber to
-   * validate and possibly commit. See {@link Subscriber} for details
-   * on the validate/commit process.
-   *
-   * @return a key which can be used to cancel the subscription
-   */
-  def subscribe(subscriber: Subscriber): SubscriptionKey
 
   /**
    * Make a deep copy of this ConfigMap. Any inheritance chains will be
@@ -312,22 +294,7 @@ trait ConfigMap {
   }
 
   /**
-   * Subscribe to changes on this ConfigMap, but don't bother with
-   * validating. Whenever this ConfigMap changes, a new copy will be
-   * passed to the given function.
-   */
-  def subscribe(f: (Option[ConfigMap]) => Unit): SubscriptionKey = {
-    subscribe(new Subscriber {
-      def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = { }
-      def commit(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = {
-        f(replacement)
-      }
-    })
-  }
-
-  /**
-   * Convert this ConfigMap into a string which could be written into a config
-   * file and parsed by configgy.
+   * Convert this ConfigMap into a string which could be written into a config file.
    */
   def toConfigString: String
 

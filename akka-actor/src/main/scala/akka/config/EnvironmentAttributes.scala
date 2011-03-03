@@ -1,20 +1,12 @@
-/*
- * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Based on Configgy by Robey Pointer.
+ *   Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+ *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package akka.configgy
+package akka.config
 
 import java.net.InetAddress
 import scala.collection.{immutable, mutable}
@@ -24,7 +16,7 @@ import scala.collection.JavaConversions
  * A ConfigMap that wraps the system environment. This is used as a
  * fallback when looking up "$(...)" substitutions in config files.
  */
-private[configgy] object EnvironmentAttributes extends ConfigMap {
+private[config] object EnvironmentAttributes extends ConfigMap {
 
   private val env = immutable.Map.empty[String, String] ++ (JavaConversions.asMap(System.getenv()).elements)
 
@@ -68,7 +60,6 @@ private[configgy] object EnvironmentAttributes extends ConfigMap {
   def keys: Iterator[String] = (getSystemProperties().keySet ++ env.keySet).elements
   def asMap(): Map[String, String] = error("not implemented")
   def toConfigString = error("not implemented")
-  def subscribe(subscriber: Subscriber): SubscriptionKey = error("not implemented")
   def copy(): ConfigMap = this
   def copyInto[T <: ConfigMap](m: T) = m
   def inheritFrom: Option[ConfigMap] = None
