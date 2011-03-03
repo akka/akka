@@ -157,10 +157,16 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 final class SupervisorActor private[akka] (handler: FaultHandlingStrategy) extends Actor {
-  import self._
-  faultHandler = handler
+  self.faultHandler = handler
 
-  override def postStop(): Unit = shutdownLinkedActors
+  override def postStop(): Unit = {
+    val i = self.linkedActors.values.iterator
+    while(i.hasNext) {
+      val ref = i.next
+      ref.stop
+      self.unlink(ref)
+    }
+  }
 
   def receive = {
     // FIXME add a way to respond to MaximumNumberOfRestartsWithinTimeRangeReached in declaratively configured Supervisor
