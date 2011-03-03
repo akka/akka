@@ -61,9 +61,6 @@ class FutureSpec extends JUnitSuite {
     val actor2 = actorOf(new Actor { def receive = { case s: String => self reply s.toUpperCase } } ).start
     val future1 = actor1.!!![Any]("Hello") flatMap { case s: String => actor2.!!![Any](s) }
     val future2 = actor1.!!![Any]("Hello") flatMap { case s: Int => actor2.!!![Any](s) }
-
-    println("'" + future2.await.exception.map(_.toString) + "'")
-
     assert(Some(Right("WORLD")) === future1.await.value)
     assert(Some("scala.MatchError: World (of class java.lang.String)") === future2.await.exception.map(_.toString))
     actor1.stop
