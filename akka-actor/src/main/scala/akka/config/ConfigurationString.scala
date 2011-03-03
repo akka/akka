@@ -1,25 +1,17 @@
-/*
- * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Based on Configgy by Robey Pointer.
+ *   Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+ *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package akka.configgy
+package akka.config
 
 import scala.util.matching.Regex
 
 
-final class ConfiggyString(wrapped: String) {
+final class ConfigurationString(wrapped: String) {
   /**
    * For every section of a string that matches a regular expression, call
    * a function to determine a replacement (as in python's
@@ -117,40 +109,9 @@ final class ConfiggyString(wrapped: String) {
       ch.toString
     }
   }
-
-  /**
-   * Turn a string of hex digits into a byte array. This does the exact
-   * opposite of `Array[Byte]#hexlify`.
-   */
-  def unhexlify(): Array[Byte] = {
-    val buffer = new Array[Byte](wrapped.length / 2)
-    for (i <- 0.until(wrapped.length, 2)) {
-      buffer(i/2) = Integer.parseInt(wrapped.substring(i, i+2), 16).toByte
-    }
-    buffer
-  }
 }
 
-
-final class ConfiggyByteArray(wrapped: Array[Byte]) {
-  /**
-   * Turn an Array[Byte] into a string of hex digits.
-   */
-  def hexlify(): String = {
-    val out = new StringBuffer
-    for (b <- wrapped) {
-      val s = (b.toInt & 0xff).toHexString
-      if (s.length < 2) {
-        out append '0'
-      }
-      out append s
-    }
-    out.toString
-  }
+object string {
+  implicit def stringToConfigurationString(s: String): ConfigurationString = new ConfigurationString(s)
 }
 
-
-object extensions {
-  implicit def stringToConfiggyString(s: String): ConfiggyString = new ConfiggyString(s)
-  implicit def byteArrayToConfiggyByteArray(b: Array[Byte]): ConfiggyByteArray = new ConfiggyByteArray(b)
-}

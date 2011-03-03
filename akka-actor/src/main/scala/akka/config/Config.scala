@@ -6,7 +6,6 @@ package akka.config
 
 import akka.AkkaException
 import akka.actor.EventHandler
-import akka.configgy.{Config => CConfig, Configgy, ParseException}
 
 import java.net.InetSocketAddress
 import java.lang.reflect.Method
@@ -56,40 +55,39 @@ object Config {
     if (System.getProperty("akka.config", "") != "") {
       val configFile = System.getProperty("akka.config", "")
       try {
-        Configgy.configure(configFile)
+        Configure.configure(configFile)
         println("Config loaded from -Dakka.config=" + configFile)
       } catch {
-        case cause: ParseException => 
+        case cause: ParseException =>
           val e = new ConfigurationException(
             "Config could not be loaded from -Dakka.config=" + configFile +
             "\n\tdue to: " + cause.toString)
           EventHandler notifyListeners EventHandler.Error(e, this)
           throw e
-          
       }
-      Configgy.config
+      Configure.config
     } else if (getClass.getClassLoader.getResource(confName) ne null) {
       try {
-        Configgy.configureFromResource(confName, getClass.getClassLoader)
+        Configure.configureFromResource(confName, getClass.getClassLoader)
         println("Config [" + confName + "] loaded from the application classpath.")
       } catch {
-        case cause: ParseException => 
+        case cause: ParseException =>
           val e = new ConfigurationException(
             "Can't load '" + confName + "' config file from application classpath," +
             "\n\tdue to: " + cause.toString)
           EventHandler notifyListeners EventHandler.Error(e, this)
           throw e
       }
-      Configgy.config
+      Configure.config
     } else if (HOME.isDefined) {
       try {
         val configFile = HOME.get + "/config/" + confName
-        Configgy.configure(configFile)
+        Configure.configure(configFile)
         println(
-          "AKKA_HOME is defined as [" + HOME.getOrElse(throwNoAkkaHomeException) + 
+          "AKKA_HOME is defined as [" + HOME.getOrElse(throwNoAkkaHomeException) +
           "], config loaded from [" + configFile + "].")
       } catch {
-        case cause: ParseException => 
+        case cause: ParseException =>
           val e = throw new ConfigurationException(
             "AKKA_HOME is defined as [" + HOME.get + "] " +
             "\n\tbut the 'akka.conf' config file can not be found at [" + HOME.get + "/config/"+ confName + "]," +
@@ -97,7 +95,7 @@ object Config {
           EventHandler notifyListeners EventHandler.Error(e, this)
           throw e
       }
-      Configgy.config
+      Configure.config
     } else {
       println(
         "\nCan't load '" + confName + "'." +
@@ -107,10 +105,9 @@ object Config {
         "\n\t3. Define 'AKKA_HOME' environment variable pointing to the root of the Akka distribution." +
         "\nI have no way of finding the '" + confName + "' configuration file." +
         "\nUsing default values everywhere.")
-      CConfig.fromString("<akka></akka>") // default empty config
+      Configuration.fromString("<akka></akka>") // default empty config
     }
   }
-  if (config.getBool("akka.enable-jmx", true)) config.registerWithJmx("akka")
 
   val CONFIG_VERSION = config.getString("akka.version", VERSION)
   if (VERSION != CONFIG_VERSION) throw new ConfigurationException(

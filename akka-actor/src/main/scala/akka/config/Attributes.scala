@@ -1,45 +1,35 @@
-/*
- * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Based on Configgy by Robey Pointer.
+ *   Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+ *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package akka.configgy
+package akka.config
 
 import java.util.regex.Pattern
-import javax.{management => jmx}
 import scala.collection.{immutable, mutable, Map}
 import scala.util.Sorting
-import extensions._
+import akka.config.string._
 
 
-private[configgy] abstract class Cell
-private[configgy] case class StringCell(value: String) extends Cell
-private[configgy] case class AttributesCell(attr: Attributes) extends Cell
-private[configgy] case class StringListCell(array: Array[String]) extends Cell
+private[config] abstract class Cell
+private[config] case class StringCell(value: String) extends Cell
+private[config] case class AttributesCell(attr: Attributes) extends Cell
+private[config] case class StringListCell(array: Array[String]) extends Cell
 
 
 /**
  * Actual implementation of ConfigMap.
  * Stores items in Cell objects, and handles interpolation and key recursion.
  */
-private[configgy] class Attributes(val config: Config, val name: String) extends ConfigMap {
+private[config] class Attributes(val config: Configuration, val name: String) extends ConfigMap {
 
   private val cells = new mutable.HashMap[String, Cell]
-  private var monitored = false
   var inheritFrom: Option[ConfigMap] = None
 
-  def this(config: Config, name: String, copyFrom: ConfigMap) = {
+  def this(config: Configuration, name: String, copyFrom: ConfigMap) = {
     this(config, name)
     copyFrom.copyInto(this)
   }
@@ -162,9 +152,6 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
 
   private def createNested(key: String): Attributes = {
     val attr = new Attributes(config, if (name.equals("")) key else (name + "." + key))
-    if (monitored) {
-      attr.setMonitored
-    }
     cells(key) = new AttributesCell(attr)
     attr
   }
@@ -186,9 +173,9 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
 
   def configMap(key: String): ConfigMap = makeAttributes(key, true)
 
-  private[configgy] def makeAttributes(key: String): Attributes = makeAttributes(key, false)
+  private[config] def makeAttributes(key: String): Attributes = makeAttributes(key, false)
 
-  private[configgy] def makeAttributes(key: String, withInherit: Boolean): Attributes = {
+  private[config] def makeAttributes(key: String, withInherit: Boolean): Attributes = {
     if (key == "") {
       return this
     }
@@ -214,11 +201,6 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   }
 
   def setString(key: String, value: String): Unit = {
-    if (monitored) {
-      config.deepSet(name, key, value)
-      return
-    }
-
     recurse(key) match {
       case Some((attr, name)) => attr.setString(name, value)
       case None => cells.get(key) match {
@@ -229,11 +211,6 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   }
 
   def setList(key: String, value: Seq[String]): Unit = {
-    if (monitored) {
-      config.deepSet(name, key, value)
-      return
-    }
-
     recurse(key) match {
       case Some((attr, name)) => attr.setList(name, value)
       case None => cells.get(key) match {
@@ -244,11 +221,6 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   }
 
   def setConfigMap(key: String, value: ConfigMap): Unit = {
-    if (monitored) {
-      config.deepSet(name, key, value)
-      return
-    }
-
     recurse(key) match {
       case Some((attr, name)) => attr.setConfigMap(name, value)
       case None =>
@@ -272,10 +244,6 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   }
 
   def remove(key: String): Boolean = {
-    if (monitored) {
-      return config.deepRemove(name, key)
-    }
-
     recurse(key) match {
       case Some((attr, name)) => attr.remove(name)
       case None => {
@@ -325,15 +293,11 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     buffer.toList
   }
 
-  def subscribe(subscriber: Subscriber) = {
-    config.subscribe(name, subscriber)
-  }
-
   // substitute "$(...)" strings with looked-up vars
   // (and find "\$" and replace them with "$")
   private val INTERPOLATE_RE = """(?<!\\)\$\((\w[\w\d\._-]*)\)|\\\$""".r
 
-  protected[configgy] def interpolate(root: Attributes, s: String): String = {
+  protected[config] def interpolate(root: Attributes, s: String): String = {
     def lookup(key: String, path: List[ConfigMap]): String = {
       path match {
         case Nil => ""
@@ -353,32 +317,12 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     }
   }
 
-  protected[configgy] def interpolate(key: String, s: String): String = {
+  protected[config] def interpolate(key: String, s: String): String = {
     recurse(key) match {
       case Some((attr, name)) => attr.interpolate(this, s)
       case None => interpolate(this, s)
     }
   }
-
-  /* set this node as part of a monitored config tree. once this is set,
-   * all modification requests go through the root Config, so validation
-   * will happen.
-   */
-  protected[configgy] def setMonitored: Unit = {
-    if (monitored) {
-      return
-    }
-
-    monitored = true
-    for (cell <- cells.values) {
-      cell match {
-        case AttributesCell(x) => x.setMonitored
-        case _ => // pass
-      }
-    }
-  }
-
-  protected[configgy] def isMonitored = monitored
 
   // make a deep copy of the Attributes tree.
   def copy(): Attributes = {
@@ -398,37 +342,5 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
       }
     }
     attr
-  }
-
-  def asJmxAttributes(): Array[jmx.MBeanAttributeInfo] = {
-    cells.map { case (key, value) =>
-      value match {
-        case StringCell(_) =>
-          new jmx.MBeanAttributeInfo(key, "java.lang.String", "", true, true, false)
-        case StringListCell(_) =>
-          new jmx.MBeanAttributeInfo(key, "java.util.List", "", true, true, false)
-        case AttributesCell(_) =>
-          null
-      }
-    }.filter { x => x ne null }.toList.toArray
-  }
-
-  def asJmxDisplay(key: String): AnyRef = {
-    cells.get(key) match {
-      case Some(StringCell(x)) => x
-      case Some(StringListCell(x)) => java.util.Arrays.asList(x: _*)
-      case x => null
-    }
-  }
-
-  def getJmxNodes(prefix: String, name: String): List[(String, JmxWrapper)] = {
-    (prefix + ":type=Config,name=" + (if (name == "") "(root)" else name), new JmxWrapper(this)) :: cells.flatMap { item =>
-      val (key, value) = item
-      value match {
-        case AttributesCell(x) =>
-          x.getJmxNodes(prefix, if (name == "") key else (name + "." + key))
-        case _ => Nil
-      }
-    }.toList
   }
 }

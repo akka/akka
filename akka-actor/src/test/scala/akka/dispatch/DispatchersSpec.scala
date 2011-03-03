@@ -7,7 +7,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-import akka.configgy.Config
+import akka.config.Configuration
 import scala.reflect.{Manifest}
 import akka.dispatch._
 
@@ -35,7 +35,7 @@ object DispatchersSpec {
   def validTypes = typesAndValidators.keys.toList
 
   lazy val allDispatchers: Map[String,Option[MessageDispatcher]] = {
-    validTypes.map(t => (t,from(Config.fromMap(Map(tipe -> t))))).toMap
+    validTypes.map(t => (t,from(Configuration.fromMap(Map(tipe -> t))))).toMap
   }
 }
 
@@ -45,12 +45,12 @@ class DispatchersSpec extends JUnitSuite {
   import DispatchersSpec._
 
   @Test def shouldYieldNoneIfTypeIsMissing {
-    assert(from(Config.fromMap(Map())) === None)
+    assert(from(Configuration.fromMap(Map())) === None)
   }
 
   @Test(expected = classOf[IllegalArgumentException])
   def shouldThrowIllegalArgumentExceptionIfTypeDoesntExist {
-    from(Config.fromMap(Map(tipe -> "typedoesntexist")))
+    from(Configuration.fromMap(Map(tipe -> "typedoesntexist")))
   }
 
   @Test def shouldGetTheCorrectTypesOfDispatchers {
@@ -61,7 +61,7 @@ class DispatchersSpec extends JUnitSuite {
   }
 
   @Test def defaultingToDefaultWhileLoadingTheDefaultShouldWork {
-    assert(from(Config.fromMap(Map())).getOrElse(defaultGlobalDispatcher) == defaultGlobalDispatcher)
+    assert(from(Configuration.fromMap(Map())).getOrElse(defaultGlobalDispatcher) == defaultGlobalDispatcher)
   }
 
 }
