@@ -9,7 +9,7 @@ import akka.actor.newUuid
 import akka.config.Config._
 import akka.util.{Duration}
 
-import net.lag.configgy.ConfigMap
+import akka.config.ConfigMap
 
 import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy}
 import java.util.concurrent.TimeUnit
