@@ -12,18 +12,17 @@ import org.apache.camel.model.{ProcessorDefinition, RouteDefinition}
 
 import akka.actor._
 import akka.camel.component.TypedActorComponent
-import akka.util.Logging
 
 /**
  * @author Martin Krasser
  */
-private[camel] object ConsumerPublisher extends Logging {
+private[camel] object ConsumerPublisher {
   /**
    * Creates a route to the registered consumer actor.
    */
   def handleConsumerActorRegistered(event: ConsumerActorRegistered) {
     CamelContextManager.mandatoryContext.addRoutes(new ConsumerActorRouteBuilder(event))
-    log.info("published actor %s at endpoint %s" format (event.actorRef, event.endpointUri))
+    EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format (event.actorRef, event.endpointUri))
   }
 
   /**
@@ -31,7 +30,7 @@ private[camel] object ConsumerPublisher extends Logging {
    */
   def handleConsumerActorUnregistered(event: ConsumerActorUnregistered) {
     CamelContextManager.mandatoryContext.stopRoute(event.uuid)
-    log.info("unpublished actor %s from endpoint %s" format (event.actorRef, event.endpointUri))
+    EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format (event.actorRef, event.endpointUri))
   }
 
   /**
@@ -40,7 +39,7 @@ private[camel] object ConsumerPublisher extends Logging {
   def handleConsumerMethodRegistered(event: ConsumerMethodRegistered) {
     CamelContextManager.typedActorRegistry.put(event.methodUuid, event.typedActor)
     CamelContextManager.mandatoryContext.addRoutes(new ConsumerMethodRouteBuilder(event))
-    log.info("published method %s of %s at endpoint %s" format (event.methodName, event.typedActor, event.endpointUri))
+    EventHandler notifyListeners EventHandler.Info(this, "published method %s of %s at endpoint %s" format (event.methodName, event.typedActor, event.endpointUri))
   }
 
   /**
@@ -49,7 +48,7 @@ private[camel] object ConsumerPublisher extends Logging {
   def handleConsumerMethodUnregistered(event: ConsumerMethodUnregistered) {
     CamelContextManager.typedActorRegistry.remove(event.methodUuid)
     CamelContextManager.mandatoryContext.stopRoute(event.methodUuid)
-    log.info("unpublished method %s of %s from endpoint %s" format (event.methodName, event.typedActor, event.endpointUri))
+    EventHandler notifyListeners EventHandler.Info(this, "unpublished method %s of %s from endpoint %s" format (event.methodName, event.typedActor, event.endpointUri))
   }
 }
 

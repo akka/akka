@@ -9,9 +9,9 @@ import java.util.Map
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import org.apache.camel.impl.DefaultCamelContext
 
+import akka.actor.EventHandler
 import akka.camel.component.TypedActorComponent
 import akka.japi.{Option => JOption}
-import akka.util.Logging
 
 /**
  * Manages the lifecycle of a CamelContext. Allowed transitions are
@@ -19,7 +19,7 @@ import akka.util.Logging
  *
  * @author Martin Krasser
  */
-trait CamelContextLifecycle extends Logging {
+trait CamelContextLifecycle {
   // TODO: enforce correct state transitions
   // valid: init -> start -> stop -> init ...
 
@@ -114,7 +114,7 @@ trait CamelContextLifecycle extends Logging {
       c.start
       t.start
       _started = true
-      log.info("Camel context started")
+      EventHandler notifyListeners EventHandler.Info(this, "Camel context started")
     }
   }
 
@@ -130,7 +130,7 @@ trait CamelContextLifecycle extends Logging {
       c.stop
       _started = false
       _initialized = false
-      log.info("Camel context stopped")
+      EventHandler notifyListeners EventHandler.Info(this, "Camel context stopped")
     }
   }
 
@@ -157,7 +157,7 @@ trait CamelContextLifecycle extends Logging {
     this._template = Some(context.createProducerTemplate)
 
     _initialized = true
-    log.info("Camel context initialized")
+    EventHandler notifyListeners EventHandler.Info(this, "Camel context initialized")
   }
 }
 

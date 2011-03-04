@@ -12,7 +12,7 @@ import akka.actor.Actor._
 import akka.actor.{AspectInitRegistry, ActorRegistry}
 import akka.config.Config._
 import akka.japi.{SideEffect, Option => JOption}
-import akka.util.{Logging, Bootable}
+import akka.util.Bootable
 
 /**
  * Publishes (untyped) consumer actors and typed consumer actors via Camel endpoints. Actors
@@ -22,7 +22,7 @@ import akka.util.{Logging, Bootable}
  *
  * @author Martin Krasser
  */
-trait CamelService extends Bootable with Logging {
+trait CamelService extends Bootable {
   private[camel] val consumerPublisher = actorOf[ConsumerPublisher]
   private[camel] val publishRequestor =  actorOf[PublishRequestor]
 
