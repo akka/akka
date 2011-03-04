@@ -145,5 +145,36 @@ trait StmUtil {
   }
 }
 
+/**
+ * Stm utility methods for using from Java.
+ */
+object StmUtils {
+  /**
+   * Schedule a deferred task on the thread local transaction (use within an atomic).
+   * This is executed when the transaction commits.
+   */
+  def deferred(runnable: Runnable): Unit = MultiverseStmUtils.scheduleDeferredTask(runnable)
 
+  /**
+   * Schedule a compensating task on the thread local transaction (use within an atomic).
+   * This is executed when the transaction aborts.
+   */
+  def compensating(runnable: Runnable): Unit = MultiverseStmUtils.scheduleCompensatingTask(runnable)
 
+  /**
+   * STM retry for blocking transactions (use within an atomic).
+   * Can be used to wait for a condition.
+   */
+  def retry = MultiverseStmUtils.retry
+}
+
+/**
+ * Use EitherOrElse to combine two blocking transactions (from Java).
+ */
+abstract class EitherOrElse[T] extends OrElseTemplate[T] {
+  def either(mtx: MultiverseTransaction) = either
+  def orelse(mtx: MultiverseTransaction) = orElse
+
+  def either: T
+  def orElse: T
+}

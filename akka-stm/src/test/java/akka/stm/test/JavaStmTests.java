@@ -5,10 +5,13 @@ import org.junit.Test;
 import org.junit.Before;
 
 import akka.stm.*;
+import static akka.stm.StmUtils.deferred;
+import static akka.stm.StmUtils.compensating;
 
 import org.multiverse.api.ThreadLocalTransaction;
 import org.multiverse.api.TransactionConfiguration;
 import org.multiverse.api.exceptions.ReadonlyException;
+
 
 public class JavaStmTests {
 
@@ -86,5 +89,38 @@ public class JavaStmTests {
                 return ref.set(3);
             }
         }.execute();
+    }
+
+    @Test public void deferredTask() {
+        final Ref<Boolean> enteredDeferred = new Ref<Boolean>(false);
+        new Atomic() {
+            public Object atomically() {
+                deferred(new Runnable() {
+                    public void run() {
+                        enteredDeferred.set(true);
+                    }
+                });
+                return ref.set(3);
+            }
+        }.execute();
+        assertEquals(true, enteredDeferred.get());
+    }
+
+    @Test public void compensatingTask() {
+        final Ref<Boolean> enteredCompensating = new Ref<Boolean>(false);
+        try {
+            new Atomic() {
+                public Object atomically() {
+                    compensating(new Runnable() {
+                        public void run() {
+                            enteredCompensating.set(true);
+                        }
+                    });
+                    ref.set(3);
+                    throw new RuntimeException();
+                }
+            }.execute();
+        } catch(RuntimeException e) {}
+        assertEquals(true, enteredCompensating.get());
     }
 }
