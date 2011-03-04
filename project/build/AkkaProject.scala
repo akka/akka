@@ -213,8 +213,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     (super.fullClasspath(config) ** "slf4j*1.5.11.jar")
   }
 
-//  override def mainResources = super.mainResources +++ (info.projectPath / "config").descendentsExcept("*", "logback-test.xml")
-
 //  override def runClasspath = super.runClasspath +++ "config"
 
   // ------------------------------------------------------------
