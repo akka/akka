@@ -63,7 +63,7 @@ class FutureSpec extends JUnitSuite {
     println("'" + future2.await.exception.map(_.toString) + "'")
 
     assert(Some(Right("WORLD")) === future1.await.value)
-    assert(Some("scala.MatchError: World (of class java.lang.String)") === future2.await.exception.map(_.toString))
+    assert(Some("scala.MatchError: World") === future2.await.exception.map(_.toString))
     actor1.stop
     actor2.stop
   }
@@ -116,7 +116,7 @@ class FutureSpec extends JUnitSuite {
     } yield b + "-" + c
 
     assert(Some(Right("10-14")) === future1.await.value)
-    assert("scala.MatchError: Res(10) (of class akka.actor.FutureSpec$Res$2)" === future2.await.exception.map(_.toString).get)
+    assert("scala.MatchError: Res(10)" === future2.await.exception.map(_.toString).get)
     actor.stop
   }
 
