@@ -62,7 +62,7 @@ class FutureSpec extends JUnitSuite {
     val future1 = actor1.!!![Any]("Hello") flatMap { case s: String => actor2.!!![Any](s) }
     val future2 = actor1.!!![Any]("Hello") flatMap { case s: Int => actor2.!!![Any](s) }
     assert(Some(Right("WORLD")) === future1.await.value)
-    assert(Some("scala.MatchError: World (of class java.lang.String)") === future2.await.exception.map(_.toString))
+    intercept[MatchError] { future2.await.resultOrException }
     actor1.stop
     actor2.stop
   }
@@ -88,7 +88,7 @@ class FutureSpec extends JUnitSuite {
     } yield b + "-" + c
 
     assert(Some(Right("10-14")) === future1.await.value)
-    assert(Some("java.lang.ClassCastException: java.lang.String cannot be cast to java.lang.Integer") === future2.await.exception.map(_.toString))
+    intercept[ClassCastException] { future2.await.resultOrException }
     actor.stop
   }
 
@@ -115,7 +115,7 @@ class FutureSpec extends JUnitSuite {
     } yield b + "-" + c
 
     assert(Some(Right("10-14")) === future1.await.value)
-    assert("scala.MatchError: Res(10) (of class akka.dispatch.FutureSpec$Res$2)" === future2.await.exception.map(_.toString).get)
+    intercept[MatchError] { future2.await.resultOrException }
     actor.stop
   }
 
