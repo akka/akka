@@ -445,9 +445,8 @@ object TypedActor {
    * @param intfClass interface the typed actor implements
    * @param targetClass implementation class of the typed actor
    */
-  def newInstance[T](intfClass: Class[T], targetClass: Class[_]): T = {
+  def newInstance[T](intfClass: Class[T], targetClass: Class[_]): T = 
     newInstance(intfClass, targetClass, TypedActorConfiguration())
-  }
 
   /**
    * Factory method for typed actor.
@@ -759,7 +758,6 @@ object TypedActor {
     val typedActor =
       if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
       else throw new IllegalArgumentException("Actor [" + targetClass.getName + "] is not a sub class of 'TypedActor'")
-    typedActor.preStart
     typedActor
   }
 
@@ -768,7 +766,6 @@ object TypedActor {
     val typedActor =
       if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
       else throw new IllegalArgumentException("Actor [" + instance.getClass.getName + "] is not a sub class of 'TypedActor'")
-    typedActor.preStart
     typedActor
   }
 
