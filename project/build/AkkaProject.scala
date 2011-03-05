@@ -297,6 +297,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val junit           = Dependencies.junit
     val scalatest       = Dependencies.scalatest
     val multiverse_test = Dependencies.multiverse_test // StandardLatch
+
+     override def bndExportPackage = super.bndExportPackage ++ Seq("com.eaio.*;version=3.2")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
