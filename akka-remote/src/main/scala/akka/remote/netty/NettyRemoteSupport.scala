@@ -341,9 +341,7 @@ class ActiveRemoteClient private[akka] (
       reconnectionTimeWindowStart = System.currentTimeMillis
       true
     } else {
-      val timeLeft = RECONNECTION_TIME_WINDOW - (System.currentTimeMillis - reconnectionTimeWindowStart)
-
-      timeLeft > 0
+      /*Time left > 0*/ (RECONNECTION_TIME_WINDOW - (System.currentTimeMillis - reconnectionTimeWindowStart)) > 0
     }
   }
 
