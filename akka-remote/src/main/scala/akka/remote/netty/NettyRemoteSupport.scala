@@ -293,6 +293,7 @@ class ActiveRemoteClient private[akka] (
         notifyListeners(RemoteClientError(connection.getCause, module, remoteAddress))
         false
       } else {
+        //Add a task that does GCing of expired Futures
         timer.newTimeout(new TimerTask() {
           def run(timeout: Timeout) = {
             if(isRunning) {
