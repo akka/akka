@@ -1,8 +1,9 @@
-package akka.util
+package akka.testkit
 
 import akka.actor.{Actor, FSM}
 import Actor._
-import duration._
+import akka.util.Duration
+import akka.util.duration._
 
 import java.util.concurrent.{BlockingDeque, LinkedBlockingDeque, TimeUnit}
 

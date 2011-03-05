@@ -1,6 +1,6 @@
 package akka.actor
 
-import akka.util.TestKit
+import akka.testkit.TestKit
 import akka.util.duration._
 
 import org.scalatest.WordSpec

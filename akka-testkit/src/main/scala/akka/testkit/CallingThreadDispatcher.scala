@@ -1,6 +1,7 @@
-package akka.dispatch
+package akka.testkit
 
 import akka.actor.ActorRef
+import akka.dispatch.{MessageDispatcher, MessageInvocation}
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
 import java.util.concurrent.RejectedExecutionException
