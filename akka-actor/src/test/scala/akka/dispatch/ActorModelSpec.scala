@@ -315,7 +315,3 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherModelTest extends ActorModel
   def newInterceptedDispatcher = new ExecutorBasedEventDrivenWorkStealingDispatcher("foo") with MessageDispatcherInterceptor
 }
 
-class CallingThreadDispatcherTest extends ActorModelSpec {
-  def newInterceptedDispatcher = new CallingThreadDispatcher with MessageDispatcherInterceptor
-  override def dispatcherShouldProcessMessagesInParallel {}
-}
