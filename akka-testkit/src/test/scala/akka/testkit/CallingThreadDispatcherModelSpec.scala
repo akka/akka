@@ -2,7 +2,7 @@ package akka.testkit
 
 import akka.actor.dispatch.ActorModelSpec
 
-class CallingThreadDispatcherTest extends ActorModelSpec {
+class CallingThreadDispatcherModelSpec extends ActorModelSpec {
   import ActorModelSpec._
   def newInterceptedDispatcher = new CallingThreadDispatcher with MessageDispatcherInterceptor
   override def dispatcherShouldProcessMessagesInParallel {}
