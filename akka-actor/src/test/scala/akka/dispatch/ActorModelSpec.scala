@@ -26,6 +26,7 @@ object ActorModelSpec {
   case class Meet(acknowledge: CountDownLatch, waitFor: CountDownLatch) extends ActorModelMessage
   case class CountDownNStop(latch: CountDownLatch) extends ActorModelMessage
   case class Wait(time: Long) extends ActorModelMessage
+  case class WaitAck(time: Long, latch: CountDownLatch) extends ActorModelMessage
   case object Restart extends ActorModelMessage
 
   val Ping = "Ping"
@@ -52,6 +53,7 @@ object ActorModelSpec {
       case Await(latch)     => ack; latch.await(); busy.switchOff()
       case Meet(sign, wait) => ack; sign.countDown(); wait.await(); busy.switchOff()
       case Wait(time)       => ack; Thread.sleep(time); busy.switchOff()
+      case WaitAck(time, l) => ack; Thread.sleep(time); l.countDown; busy.switchOff()
       case Reply(msg)       => ack; self.reply(msg); busy.switchOff()
       case Reply_?(msg)     => ack; self.reply_?(msg); busy.switchOff()
       case Forward(to,msg)  => ack; to.forward(msg); busy.switchOff()
@@ -235,6 +237,26 @@ abstract class ActorModelSpec extends JUnitSuite {
     assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 3, msgsProcessed = 3)
   }
 
+  @Test def dispatcherShouldHandleQueueingFromMultipleThreads {
+    implicit val dispatcher = newInterceptedDispatcher
+    val a = newTestActor
+    val counter = new CountDownLatch(200)
+    a.start
+
+    def start = spawn { for (i <- 1 to 20) { a ! WaitAck(1, counter) } }
+    for (i <- 1 to 10) { start }
+    assertCountDown(counter, 3000, "Should process 200 messages")
+    assertRefDefaultZero(a)(registers = 1, msgsReceived = 200, msgsProcessed = 200)
+
+    a.stop
+  }
+
+  def spawn(f : => Unit) = {
+    val thread = new Thread { override def run { f } }
+    thread.start
+    thread
+  }
+
   @Test def dispatcherShouldProcessMessagesInParallel: Unit = {
     implicit val dispatcher = newInterceptedDispatcher
     val a, b = newTestActor.start
@@ -296,7 +318,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     }
     for(run <- 1 to 3) {
       flood(10000)
-      await(dispatcher.stops.get == run)(withinMs = 10000)
+      await(dispatcher.stops.get == run)(withinMs = 11000)
       assertDispatcher(dispatcher)(starts = run, stops = run)
     }
   }

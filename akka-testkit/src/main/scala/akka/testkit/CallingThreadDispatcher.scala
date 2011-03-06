@@ -101,7 +101,7 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
 
   private[akka] override def shutdown {}
 
-  private[akka] override def timeoutMs = 0L
+  private[akka] override def timeoutMs = 100L
 
   override def suspend(actor: ActorRef) {
     getMailbox(actor).suspended.switchOn
