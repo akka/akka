@@ -46,7 +46,7 @@ object CallingThreadDispatcher {
 
   /*
    * This method must be called with "own" being this thread's queue for the
-   * given mailbox. When this method returns, the queue will be entere
+   * given mailbox. When this method returns, the queue will be entered
    * (active).
    */
   def gatherFromAllInactiveQueues(mbox : CallingThreadMailbox, own : NestingQueue) : Unit = synchronized {
@@ -56,6 +56,11 @@ object CallingThreadDispatcher {
         ref <- queues(mbox)
         q = ref.get
         if (q ne null) && !q.isActive
+        /*
+         * if q.isActive was false, then it cannot change to true while we are
+         * holding the mbox.suspende.switch's lock under which we are currently
+         * executing
+         */
       } {
         while (q.peek ne null) {
           own.push(q.pop)
@@ -156,30 +161,38 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
    * there is no-one who cares to execute it before the next message is sent or
    * it is suspended and resumed.
    */
-  private def runQueue(mbox : CallingThreadMailbox, queue : NestingQueue) {
+  @tailrec private def runQueue(mbox : CallingThreadMailbox, queue : NestingQueue) {
     assert(queue.isActive)
-    val handle = mbox.suspended.ifElseYield[MessageInvocation] {
-        queue.leave
-        null
-      } {
-        val ret = queue.pop
-        if (ret eq null) queue.leave
-        ret
-      }
-    if (handle ne null) {
-      try {
-        handle.invoke
-        val f = handle.senderFuture
-        if (warnings && f.isDefined && !f.get.isCompleted) {
-          log.slf4j.warn("calling {} with message {} did not reply as expected, might deadlock", handle.receiver, handle.message)
+    mbox.lock.lock
+    val recurse = try {
+      val handle = mbox.suspended.ifElseYield[MessageInvocation] {
+          queue.leave
+          null
+        } {
+          val ret = queue.pop
+          if (ret eq null) queue.leave
+          ret
         }
-      } catch {
-        case _ => queue.leave
-      }
+      if (handle ne null) {
+        try {
+          handle.invoke
+          val f = handle.senderFuture
+          if (warnings && f.isDefined && !f.get.isCompleted) {
+            log.slf4j.warn("calling {} with message {} did not reply as expected, might deadlock", handle.receiver, handle.message)
+          }
+        } catch {
+          case _ => queue.leave
+        }
+        true
+      } else if (queue.isActive) {
+        queue.leave
+        false
+      } else false
+    } finally {
+      mbox.lock.unlock
+    }
+    if (recurse) {
       runQueue(mbox, queue)
-      log.info("runQueue")
-    } else if (queue.isActive) {
-      queue.leave
     }
   }
 }
@@ -204,6 +217,8 @@ class CallingThreadMailbox {
   }
 
   def queue = q.get
+
+  val lock = new ReentrantLock
 
   val suspended = new Switch(false)
 }
