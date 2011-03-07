@@ -47,7 +47,6 @@ class AkkaRemoteTest extends
 
   override def beforeEach {
     remote.start(host,port)
-    Thread.sleep(2000)
     super.beforeEach
   }
 
