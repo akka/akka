@@ -98,7 +98,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
   lazy val glassfishModuleConfig   = ModuleConfiguration("org.glassfish", GlassfishRepo)
   lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
-  lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
