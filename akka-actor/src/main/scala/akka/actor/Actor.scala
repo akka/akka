@@ -7,6 +7,7 @@ package akka.actor
 import akka.dispatch._
 import akka.config.Config._
 import akka.config.Supervision._
+import akka.config.ConfigurationException
 import akka.util.Helpers.{narrow, narrowSilently}
 import akka.util.ListenerManagement
 import akka.AkkaException
@@ -78,16 +79,16 @@ class ActorTimeoutException        private[akka](message: String) extends AkkaEx
  * 
  * Create, add and remove a listener:
  * <pre>
- * val errorHandlerEventListener = new Actor {
+ * val errorHandlerEventListener = Actor.actorOf(new Actor {
  *   self.dispatcher = EventHandler.EventHandlerDispatcher
- *     
+ *
  *   def receive = {
  *     case EventHandler.Error(cause, instance, message) => ...
- *     case EventHandler.Warning(cause, instance, message) => ...
+ *     case EventHandler.Warning(instance, message) => ...
  *     case EventHandler.Info(instance, message) => ...
  *     case EventHandler.Debug(instance, message) => ...
  *   }
- * }
+ * })
  * 
  * EventHandler.addListener(errorHandlerEventListener)
  * ...
@@ -96,7 +97,7 @@ class ActorTimeoutException        private[akka](message: String) extends AkkaEx
  *
  * Log an error event:
  * <pre>
- * EventHandler notifyListeners EventHandler.Error(exception, this, message.toString)
+ * EventHandler.notifyListeners(EventHandler.Error(exception, this, message.toString))
  * </pre>
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -110,12 +111,12 @@ object EventHandler extends ListenerManagement {
     val thread: Thread = Thread.currentThread
   }
   case class Error(cause: Throwable, instance: AnyRef, message: String = "") extends Event
-  case class Warning(cause: Throwable, instance: AnyRef, message: String = "") extends Event
+  case class Warning(instance: AnyRef, message: String = "") extends Event
   case class Info(instance: AnyRef, message: String = "") extends Event
   case class Debug(instance: AnyRef, message: String = "") extends Event
 
   val error   = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
-  val warning = "[WARN]  [%s] [%s] [%s] %s\n%s".intern
+  val warning = "[WARN]  [%s] [%s] [%s] %s".intern
   val info    = "[INFO]  [%s] [%s] [%s] %s".intern
   val debug   = "[DEBUG] [%s] [%s] [%s] %s".intern
   val ID      = "default:error:handler".intern
@@ -143,13 +144,12 @@ object EventHandler extends ListenerManagement {
           instance.getClass.getSimpleName,
           message,
           stackTraceFor(cause)))
-      case event @ Warning(cause, instance, message) => 
+      case event @ Warning(instance, message) => 
         println(warning.format(
           formattedTimestamp,
           event.thread.getName,
           instance.getClass.getSimpleName,
-          message,
-          stackTraceFor(cause)))
+          message))
       case event @ Info(instance, message) => 
         println(info.format(
           formattedTimestamp,
@@ -165,9 +165,19 @@ object EventHandler extends ListenerManagement {
       case _ => {} 
     }
   }
-  
-  if (config.getBool("akka.default-error-handler", true))
-    addListener(Actor.actorOf[DefaultListener].start) // FIXME configurable in config (on/off)
+
+  config.getList("akka.event-handlers") foreach { listenerName =>
+    try {
+      val clazz = Thread.currentThread.getContextClassLoader.loadClass(listenerName).asInstanceOf[Class[_]]
+      addListener(Actor.actorOf(clazz.asInstanceOf[Class[_ <: Actor]]).start)      
+    } catch {
+      case e: Exception => 
+        e.printStackTrace
+        new ConfigurationException(
+          "Event Handler specified in config can't be loaded [" + listenerName + 
+          "] due to [" + e.toString + "]")
+    }
+  }
 }
 
 /**
