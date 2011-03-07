@@ -37,7 +37,6 @@ private[camel] object ConsumerPublisher {
    * Creates a route to an typed actor method.
    */
   def handleConsumerMethodRegistered(event: ConsumerMethodRegistered) {
-    CamelContextManager.typedActorRegistry.put(event.methodUuid, event.typedActor)
     CamelContextManager.mandatoryContext.addRoutes(new ConsumerMethodRouteBuilder(event))
     EventHandler notifyListeners EventHandler.Info(this, "published method %s of %s at endpoint %s" format (event.methodName, event.typedActor, event.endpointUri))
   }
@@ -46,7 +45,6 @@ private[camel] object ConsumerPublisher {
    * Stops the route to the already un-registered consumer actor method.
    */
   def handleConsumerMethodUnregistered(event: ConsumerMethodUnregistered) {
-    CamelContextManager.typedActorRegistry.remove(event.methodUuid)
     CamelContextManager.mandatoryContext.stopRoute(event.methodUuid)
     EventHandler notifyListeners EventHandler.Info(this, "unpublished method %s of %s from endpoint %s" format (event.methodName, event.typedActor, event.endpointUri))
   }
@@ -149,7 +147,7 @@ private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) e
  */
 private[camel] class ConsumerMethodRouteBuilder(event: ConsumerMethodRegistered) extends ConsumerRouteBuilder(event.endpointUri, event.methodUuid) {
   protected def routeDefinitionHandler: RouteDefinitionHandler = event.routeDefinitionHandler
-  protected def targetUri = "%s:%s?method=%s" format (TypedActorComponent.InternalSchema, event.methodUuid, event.methodName)
+  protected def targetUri = "%s:%s?method=%s" format (TypedActorComponent.InternalSchema, event.uuid, event.methodName)
 }
 
 /**
@@ -170,14 +168,14 @@ private[camel] class PublishRequestor extends Actor {
   private var publisher: Option[ActorRef] = None
 
   protected def receive = {
-    case ActorRegistered(actor) =>
+    case ActorRegistered(actor) => {
       for (event <- ConsumerActorRegistered.forConsumer(actor)) deliverCurrentEvent(event)
-    case ActorUnregistered(actor) =>
+      for (event <- ConsumerMethodRegistered.forConsumer(actor)) deliverCurrentEvent(event)
+    }
+    case ActorUnregistered(actor) => {
       for (event <- ConsumerActorUnregistered.forConsumer(actor)) deliverCurrentEvent(event)
-    case AspectInitRegistered(proxy, init) =>
-      for (event <- ConsumerMethodRegistered.forConsumer(proxy, init)) deliverCurrentEvent(event)
-    case AspectInitUnregistered(proxy, init) =>
-      for (event <- ConsumerMethodUnregistered.forConsumer(proxy, init)) deliverCurrentEvent(event)
+      for (event <- ConsumerMethodUnregistered.forConsumer(actor)) deliverCurrentEvent(event)
+    }
     case PublishRequestorInit(pub) => {
       publisher = Some(pub)
       deliverBufferedEvents
@@ -202,17 +200,7 @@ private[camel] class PublishRequestor extends Actor {
  * @author Martin Krasser
  */
 private[camel] object PublishRequestor {
-  def pastActorRegisteredEvents =
-    for {
-      actor <- Actor.registry.actors
-    } yield ActorRegistered(actor)
-
-  def pastAspectInitRegisteredEvents =
-    for {
-      actor <- Actor.registry.typedActors
-      init = AspectInitRegistry.initFor(actor)
-      if (init ne null)
-    } yield AspectInitRegistered(actor, init)
+  def pastActorRegisteredEvents = for (actor <- Actor.registry.actors) yield ActorRegistered(actor)
 }
 
 /**
@@ -246,13 +234,13 @@ private[camel] trait ConsumerActorEvent extends ConsumerEvent {
  * A consumer method (un)registration event.
  */
 private[camel] trait ConsumerMethodEvent extends ConsumerEvent {
-  val typedActor: AnyRef
-  val init: AspectInit
+  val actorRef: ActorRef
   val method: Method
 
-  val uuid = init.actorRef.uuid.toString
+  val uuid = actorRef.uuid.toString
   val methodName = method.getName
   val methodUuid = "%s_%s" format (uuid, methodName)
+  val typedActor = actorRef.actor.asInstanceOf[TypedActor].proxy
 
   lazy val routeDefinitionHandler = consumeAnnotation.routeDefinitionHandler.newInstance
   lazy val consumeAnnotation = method.getAnnotation(classOf[consume])
@@ -270,16 +258,18 @@ private[camel] case class ConsumerActorRegistered(actorRef: ActorRef, actor: Con
 private[camel] case class ConsumerActorUnregistered(actorRef: ActorRef, actor: Consumer) extends ConsumerActorEvent
 
 /**
- * Event indicating that an typed actor proxy has been created for a typed actor. For each <code>@consume</code>
- * annotated typed actor method a separate instance of this class is created.
+ * Event indicating that a typed actor has been registered at the actor registry. For
+ * each <code>@consume</code> annotated typed actor method a separate instance of this
+ * class is created.
  */
-private[camel] case class ConsumerMethodRegistered(typedActor: AnyRef, init: AspectInit, method: Method) extends ConsumerMethodEvent
+private[camel] case class ConsumerMethodRegistered(actorRef: ActorRef, method: Method) extends ConsumerMethodEvent
 
 /**
- * Event indicating that an typed actor has been stopped. For each <code>@consume</code>
- * annotated typed object method a separate instance of this class is created.
+ * Event indicating that a typed actor has been unregistered from the actor registry. For
+ * each <code>@consume</code> annotated typed actor method a separate instance of this
+ * class is created.
  */
-private[camel] case class ConsumerMethodUnregistered(typedActor: AnyRef, init: AspectInit, method: Method) extends ConsumerMethodEvent
+private[camel] case class ConsumerMethodUnregistered(actorRef: ActorRef, method: Method) extends ConsumerMethodEvent
 
 /**
  * @author Martin Krasser
@@ -318,17 +308,19 @@ private[camel] object ConsumerMethod {
   /**
    * Applies a function <code>f</code> to each consumer method of <code>TypedActor</code> and
    * returns the function results as a list. A consumer method is one that is annotated with
-   * <code>@consume</code>. If <code>typedActor</code> is a proxy for a remote typed actor
-   * <code>f</code> is never called and <code>Nil</code> is returned.
+   * <code>@consume</code>. If <code>actorRef</code> is a remote actor reference, <code>f</code>
+   * is never called and <code>Nil</code> is returned.
    */
-  def forConsumer[T](typedActor: AnyRef, init: AspectInit)(f: Method => T): List[T] = {
-    if (init.remoteAddress.isDefined) Nil // let remote node publish typed actor methods on endpoints
+  def forConsumer[T](actorRef: ActorRef)(f: Method => T): List[T] = {
+    if (!actorRef.actor.isInstanceOf[TypedActor]) Nil
+    else if (actorRef.homeAddress.isDefined) Nil
     else {
+      val typedActor = actorRef.actor.asInstanceOf[TypedActor]
       // TODO: support consumer annotation inheritance
       // - visit overridden methods in superclasses
       // - visit implemented method declarations in interfaces
-      val intfClass = typedActor.getClass
-      val implClass = init.targetInstance.getClass
+      val intfClass = typedActor.proxy.getClass
+      val implClass = typedActor.getClass
       (for (m <- intfClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(m)) ++
       (for (m <- implClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(m))
     }
@@ -344,9 +336,9 @@ private[camel] object ConsumerMethodRegistered {
    * list if the typed actor is a proxy for a remote typed actor or the typed actor doesn't
    * have any <code>@consume</code> annotated methods.
    */
-  def forConsumer(typedActor: AnyRef, init: AspectInit): List[ConsumerMethodRegistered] = {
-    ConsumerMethod.forConsumer(typedActor, init) {
-      m => ConsumerMethodRegistered(typedActor, init, m)
+  def forConsumer(actorRef: ActorRef): List[ConsumerMethodRegistered] = {
+    ConsumerMethod.forConsumer(actorRef: ActorRef) {
+      m => ConsumerMethodRegistered(actorRef, m)
     }
   }
 }
@@ -360,9 +352,9 @@ private[camel] object ConsumerMethodUnregistered {
    * list if the typed actor is a proxy for a remote typed actor or the typed actor doesn't
    * have any <code>@consume</code> annotated methods.
    */
-  def forConsumer(typedActor: AnyRef, init: AspectInit): List[ConsumerMethodUnregistered] = {
-    ConsumerMethod.forConsumer(typedActor, init) {
-      m => ConsumerMethodUnregistered(typedActor, init, m)
+  def forConsumer(actorRef: ActorRef): List[ConsumerMethodUnregistered] = {
+    ConsumerMethod.forConsumer(actorRef) {
+      m => ConsumerMethodUnregistered(actorRef, m)
     }
   }
 }

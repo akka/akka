@@ -30,17 +30,6 @@ trait CamelContextLifecycle {
   private var _started = false
 
   /**
-   * Camel component for accessing typed actors.
-   */
-  private[camel] var typedActorComponent: TypedActorComponent = _
-
-  /**
-   * Registry in which typed actors are TEMPORARILY registered during
-   * creation of Camel routes to these actors.
-   */
-  private[camel] var typedActorRegistry: Map[String, AnyRef] = _
-
-  /**
    * Returns <code>Some(CamelContext)</code> (containing the current CamelContext)
    * if <code>CamelContextLifecycle</code> has been initialized, otherwise <code>None</code>.
    */
@@ -143,15 +132,12 @@ trait CamelContextLifecycle {
    * Initializes this lifecycle object with the given CamelContext. For the passed
    * CamelContext, stream-caching is enabled. If applications want to disable stream-
    * caching they can do so after this method returned and prior to calling start.
-   * This method also registers a new TypedActorComponent at the passes CamelContext
+   * This method also registers a new TypedActorComponent at the passed CamelContext
    * under a name defined by TypedActorComponent.InternalSchema.
    */
   def init(context: CamelContext) {
-    this.typedActorComponent = new TypedActorComponent
-    this.typedActorRegistry = typedActorComponent.typedActorRegistry
-
     context.setStreamCaching(true)
-    context.addComponent(TypedActorComponent.InternalSchema, typedActorComponent)
+    context.addComponent(TypedActorComponent.InternalSchema, new TypedActorComponent)
 
     this._context = Some(context)
     this._template = Some(context.createProducerTemplate)

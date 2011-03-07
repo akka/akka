@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit
 import org.apache.camel.CamelContext
 
 import akka.actor.Actor._
-import akka.actor.{AspectInitRegistry, ActorRegistry}
 import akka.config.Config._
 import akka.japi.{SideEffect, Option => JOption}
 import akka.util.Bootable
@@ -18,7 +17,7 @@ import akka.util.Bootable
  * Publishes (untyped) consumer actors and typed consumer actors via Camel endpoints. Actors
  * are published (asynchronously) when they are started and unpublished (asynchronously) when
  * they are stopped. The CamelService is notified about actor start- and stop-events by
- * registering listeners at ActorRegistry and AspectInitRegistry.
+ * registering listeners at Actor.registry.
  *
  * @author Martin Krasser
  */
@@ -71,7 +70,6 @@ trait CamelService extends Bootable {
 
     // send registration events for all (un)typed actors that have been registered in the past.
     for (event <- PublishRequestor.pastActorRegisteredEvents) publishRequestor ! event
-    for (event <- PublishRequestor.pastAspectInitRegisteredEvents) publishRequestor ! event
 
     // init publishRequestor so that buffered and future events are delivered to consumerPublisher
     publishRequestor ! PublishRequestorInit(consumerPublisher)
@@ -177,20 +175,14 @@ trait CamelService extends Bootable {
   private def expectEndpointDeactivationCount(count: Int): CountDownLatch =
     (consumerPublisher !! SetExpectedUnregistrationCount(count)).as[CountDownLatch].get
 
-  private[camel] def publishRequestorRegistered: Boolean = {
-    registry.hasListener(publishRequestor) ||
-    AspectInitRegistry.hasListener(publishRequestor)
-  }
+  private[camel] def publishRequestorRegistered: Boolean =
+    registry.hasListener(publishRequestor)
 
-  private[camel] def registerPublishRequestor: Unit = {
+  private[camel] def registerPublishRequestor: Unit =
     registry.addListener(publishRequestor)
-    AspectInitRegistry.addListener(publishRequestor)
-  }
 
-  private[camel] def unregisterPublishRequestor: Unit = {
+  private[camel] def unregisterPublishRequestor: Unit =
     registry.removeListener(publishRequestor)
-    AspectInitRegistry.removeListener(publishRequestor)
-  }
 }
 
 /**

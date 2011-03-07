@@ -6,8 +6,11 @@ package akka.camel.component
 
 import java.util.Map
 import java.util.concurrent.ConcurrentHashMap
+
 import org.apache.camel.CamelContext
 import org.apache.camel.component.bean._
+
+import akka.actor._
 
 /**
  * @author Martin Krasser
@@ -21,8 +24,10 @@ object TypedActorComponent {
 
 /**
  * Camel component for exchanging messages with typed actors. This component
- * tries to obtain the typed actor from its <code>typedActorRegistry</code>
- * first. If it's not there it tries to obtain it from the CamelContext's registry.
+ * tries to obtain the typed actor from <code>Actor.registry</code> if the
+ * schema is <code>TypedActorComponent.InternalSchema</code>. If the schema
+ * name is <code>typed-actor</code> this component tries to obtain the typed
+ * actor from the CamelContext's registry.
  *
  * @see org.apache.camel.component.bean.BeanComponent
  *
@@ -33,30 +38,30 @@ class TypedActorComponent extends BeanComponent {
 
   /**
    * Creates an <code>org.apache.camel.component.bean.BeanEndpoint</code> with a custom
-   * bean holder that uses <code>typedActorRegistry</code> for getting access to typed
-   * actors (beans).
+   * bean holder that uses <code>Actor.registry</code> for getting access to typed actors
+   * (beans).
    *
    * @see akka.camel.component.TypedActorHolder
    */
   override def createEndpoint(uri: String, remaining: String, parameters: Map[String, AnyRef]) = {
     val endpoint = new BeanEndpoint(uri, this)
     endpoint.setBeanName(remaining)
-    endpoint.setBeanHolder(createBeanHolder(remaining))
+    endpoint.setBeanHolder(createBeanHolder(uri, remaining))
     setProperties(endpoint.getProcessor, parameters)
     endpoint
   }
 
-  private def createBeanHolder(beanName: String) =
-    new TypedActorHolder(typedActorRegistry, getCamelContext, beanName).createCacheHolder
+  private def createBeanHolder(uri: String, beanName: String) =
+    new TypedActorHolder(uri, getCamelContext, beanName).createCacheHolder
 }
 
 /**
- * <code>org.apache.camel.component.bean.BeanHolder</code> implementation that uses a custom
- * registry for getting access to typed actors.
+ * <code>org.apache.camel.component.bean.BeanHolder</code> implementation that uses
+ * <code>Actor.registry</code> for getting access to typed actors.
  *
  * @author Martin Krasser
  */
-class TypedActorHolder(typedActorRegistry: Map[String, AnyRef], context: CamelContext, name: String)
+class TypedActorHolder(uri: String, context: CamelContext, name: String)
     extends RegistryBean(context, name) {
 
   /**
@@ -66,14 +71,16 @@ class TypedActorHolder(typedActorRegistry: Map[String, AnyRef], context: CamelCo
     new TypedActorInfo(getContext, getBean.getClass, getParameterMappingStrategy)
 
   /**
-   * Obtains a typed actor from <code>typedActorRegistry</code>. If the typed actor cannot
-   * be found then this method tries to obtain the actor from the CamelContext's registry.
+   * Obtains a typed actor from <code>Actor.registry</code> if the schema is
+   * <code>TypedActorComponent.InternalSchema</code>. If the schema name is
+   *  <code>typed-actor</code> this method obtains the typed actor from the
+   * CamelContext's registry.
    *
    * @return a typed actor or <code>null</code>.
    */
   override def getBean: AnyRef = {
-    val bean = typedActorRegistry.get(getName)
-    if (bean eq null) super.getBean else bean
+    val internal = uri.startsWith(TypedActorComponent.InternalSchema)
+    if (internal) Actor.registry.typedActorFor(uuidFrom(getName)) getOrElse null else super.getBean
   }
 }
 

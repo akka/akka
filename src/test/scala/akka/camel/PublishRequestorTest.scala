@@ -30,12 +30,12 @@ class PublishRequestorTest extends JUnitSuite {
   }
 
   @After def tearDown = {
-    AspectInitRegistry.removeListener(requestor);
+    Actor.registry.removeListener(requestor);
     Actor.registry.shutdownAll
   }
 
   @Test def shouldReceiveOneConsumerMethodRegisteredEvent = {
-    AspectInitRegistry.addListener(requestor)
+    Actor.registry.addListener(requestor)
     val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get
     val obj = TypedActor.newInstance(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl])
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
@@ -48,7 +48,7 @@ class PublishRequestorTest extends JUnitSuite {
   @Test def shouldReceiveOneConsumerMethodUnregisteredEvent = {
     val obj = TypedActor.newInstance(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl])
     val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get
-    AspectInitRegistry.addListener(requestor)
+    Actor.registry.addListener(requestor)
     TypedActor.stop(obj)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     val event = (publisher !! GetRetainedMessage).as[ConsumerMethodUnregistered].get
@@ -58,7 +58,7 @@ class PublishRequestorTest extends JUnitSuite {
   }
 
   @Test def shouldReceiveThreeConsumerMethodRegisteredEvents = {
-    AspectInitRegistry.addListener(requestor)
+    Actor.registry.addListener(requestor)
     val latch = (publisher !! SetExpectedTestMessageCount(3)).as[CountDownLatch].get
     val obj = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
@@ -70,7 +70,7 @@ class PublishRequestorTest extends JUnitSuite {
   @Test def shouldReceiveThreeConsumerMethodUnregisteredEvents = {
     val obj = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
     val latch = (publisher !! SetExpectedTestMessageCount(3)).as[CountDownLatch].get
-    AspectInitRegistry.addListener(requestor)
+    Actor.registry.addListener(requestor)
     TypedActor.stop(obj)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     val request = GetRetainedMessages(_.isInstanceOf[ConsumerMethodUnregistered])
