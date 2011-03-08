@@ -17,7 +17,6 @@ class ConfigSpec extends WordSpec with MustMatchers {
       import Config.config._
 
       getList("akka.boot") must equal(Nil)
-      getBool("akka.default-error-handler") must equal(Some(true))
       getString("akka.time-unit") must equal(Some("seconds"))
       getString("akka.version") must equal(Some("1.1-SNAPSHOT"))
 
