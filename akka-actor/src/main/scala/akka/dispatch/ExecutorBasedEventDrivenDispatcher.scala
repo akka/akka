@@ -102,7 +102,7 @@ class ExecutorBasedEventDrivenDispatcher(
     try executorService.get() execute invocation
     catch {
       case e: RejectedExecutionException =>
-        EventHandler notifyListeners EventHandler.Warning(e, this, _name)
+        EventHandler notifyListeners EventHandler.Warning(this, e.toString)
         throw e
     }
   }
