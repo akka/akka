@@ -31,7 +31,6 @@ class SerializerFactory {
   def getJava: Java.type = Java
   def getJavaJSON: JavaJSON.type = JavaJSON
   def getScalaJSON: ScalaJSON.type = ScalaJSON
-  def getSBinary: SBinary.type = SBinary
   def getProtobuf: Protobuf.type = Protobuf
 }
 
@@ -157,23 +156,5 @@ object Serializer {
     }
   }
   object ScalaJSON extends ScalaJSON
-
-  /**
-   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
-   */
-  object SBinary extends SBinary
-  class SBinary {
-    import sbinary._
-    import sbinary.Operations._
-    import sbinary.DefaultProtocol._
-
-    var classLoader: Option[ClassLoader] = None
-
-    def deepClone[T <: AnyRef](obj: T)(implicit w : Writes[T], r : Reads[T]): T = fromBinary[T](toBinary[T](obj), None)
-
-    def toBinary[T](t : T)(implicit bin : Writes[T]): Array[Byte] = toByteArray[T](t)
-
-    def fromBinary[T](array : Array[Byte], clazz: Option[Class[T]])(implicit bin : Reads[T]): T = fromByteArray[T](array)
-  }
 }
 

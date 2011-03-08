@@ -33,7 +33,6 @@ trait AkkaBaseProject extends BasicScalaProject {
   val memcachedModuleConfig   = ModuleConfiguration("spy", "memcached", AkkaRepo)
   val netLagModuleConfig      = ModuleConfiguration("net.lag", AkkaRepo)
   val redisModuleConfig       = ModuleConfiguration("com.redis", AkkaRepo)
-  val sbinaryModuleConfig     = ModuleConfiguration("sbinary", AkkaRepo)
   val sjsonModuleConfig       = ModuleConfiguration("sjson.json", AkkaRepo)
   val triforkModuleConfig     = ModuleConfiguration("com.trifork", AkkaRepo)
   val vscaladocModuleConfig   = ModuleConfiguration("org.scala-tools", "vscaladoc", "1.1-md-3", AkkaRepo)
