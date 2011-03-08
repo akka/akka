@@ -6,7 +6,7 @@ package akka.dispatch
 
 import java.util.concurrent._
 import atomic. {AtomicInteger, AtomicBoolean, AtomicReference, AtomicLong}
-import akka.config.ConfigMap
+import akka.config.Configuration
 import akka.config.Config.TIME_UNIT
 import akka.util.{Duration, Switch, ReentrantGuard, HashCode, ReflectiveAccess}
 import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy}
@@ -35,7 +35,7 @@ final case class FutureInvocation(future: CompletableFuture[Any], function: () =
   def run = future complete (try {
     Right(function.apply)
   } catch {
-    case e: Exception => 
+    case e: Exception =>
       EventHandler notifyListeners EventHandler.Error(e, this)
       Left(e)
   })
@@ -209,16 +209,16 @@ trait MessageDispatcher {
  * Trait to be used for hooking in new dispatchers into Dispatchers.fromConfig
  */
 abstract class MessageDispatcherConfigurator {
-  def configure(config: ConfigMap): MessageDispatcher
+  def configure(config: Configuration): MessageDispatcher
 
-  def mailboxType(config: ConfigMap): MailboxType = {
+  def mailboxType(config: Configuration): MailboxType = {
     val capacity = config.getInt("mailbox-capacity", Dispatchers.MAILBOX_CAPACITY)
     // FIXME how do we read in isBlocking for mailbox? Now set to 'false'.
     if (capacity < 0) UnboundedMailbox()
     else BoundedMailbox(false, capacity, Duration(config.getInt("mailbox-push-timeout-time", Dispatchers.MAILBOX_PUSH_TIME_OUT.toMillis.toInt), TIME_UNIT))
   }
 
-  def configureThreadPool(config: ConfigMap, createDispatcher: => (ThreadPoolConfig) => MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
+  def configureThreadPool(config: Configuration, createDispatcher: => (ThreadPoolConfig) => MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
     import ThreadPoolConfigDispatcherBuilder.conf_?
 
     //Apply the following options to the config if they are present in the config

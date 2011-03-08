@@ -9,148 +9,135 @@
 package akka.config
 
 import java.io.File
-import scala.collection.{Map, Set}
-import scala.collection.{immutable, mutable}
-
-class Configuration extends ConfigMap {
-  private var root = new Attributes(this, "")
-  private var reloadAction: Option[() => Unit] = None
-
-  /**
-   * Importer for resolving "include" lines when loading config files.
-   * By default, it's a FilesystemImporter based on the current working
-   * directory.
-   */
-  var importer: Importer = new FilesystemImporter(new File(".").getCanonicalPath)
-
-
-  /**
-   * Read config data from a string and use it to populate this object.
-   */
-  def load(data: String) {
-    reloadAction = Some(() => configure(data))
-    reload()
-  }
-
-  /**
-   * Read config data from a file and use it to populate this object.
-   */
-  def loadFile(filename: String) {
-    reloadAction = Some(() => configure(importer.importFile(filename)))
-    reload()
-  }
-
-  /**
-   * Read config data from a file and use it to populate this object.
-   */
-  def loadFile(path: String, filename: String) {
-    importer = new FilesystemImporter(path)
-    loadFile(filename)
-  }
-
-  /**
-   * Reloads the configuration from whatever source it was previously loaded
-   * from, undoing any in-memory changes.  This is a no-op if the configuration
-   * data has not be loaded from a source (file or string).
-   */
-  def reload() {
-    reloadAction.foreach(_())
-  }
-
-  private def configure(data: String) {
-    val newRoot = new Attributes(this, "")
-    new ConfigParser(newRoot, importer) parse data
-    root.replaceWith(newRoot)
-  }
-
-  override def toString = root.toString
-
-  // -----  implement AttributeMap by wrapping our root object:
-
-  def getString(key: String): Option[String] = root.getString(key)
-  def getConfigMap(key: String): Option[ConfigMap] = root.getConfigMap(key)
-  def configMap(key: String): ConfigMap = root.configMap(key)
-  def getList(key: String): Seq[String] = root.getList(key)
-  def setString(key: String, value: String): Unit = root.setString(key, value)
-  def setList(key: String, value: Seq[String]): Unit = root.setList(key, value)
-  def setConfigMap(key: String, value: ConfigMap): Unit = root.setConfigMap(key, value)
-  def contains(key: String): Boolean = root.contains(key)
-  def remove(key: String): Boolean = root.remove(key)
-  def keys: Iterator[String] = root.keys
-  def asMap(): Map[String, String] = root.asMap()
-  def toConfigString = root.toConfigString
-  def copy(): ConfigMap = root.copy()
-  def copyInto[T <: ConfigMap](m: T): T = root.copyInto(m)
-  def inheritFrom = root.inheritFrom
-  def inheritFrom_=(config: Option[ConfigMap]) = root.inheritFrom=(config)
-  def getName(): String = root.name
-}
 
 
 object Configuration {
-  /**
-   * Create a configuration object from a config file of the given path
-   * and filename. The filename must be relative to the path. The path is
-   * used to resolve filenames given in "include" lines.
-   */
-  def fromFile(path: String, filename: String): Configuration = {
-    val config = new Configuration
-    config.loadFile(path, filename)
-    config
+  val DefaultPath = new File(".").getCanonicalPath
+  val DefaultImporter = new FilesystemImporter(DefaultPath)
+
+  def load(data: String, importer: Importer = DefaultImporter): Configuration = {
+    val parser = new ConfigParser(importer = importer)
+    new Configuration(parser parse data)
   }
 
-  /**
-   * Create a Configuration object from a config file of the given filename.
-   * The base folder will be extracted from the filename and used as a base
-   * path for resolving filenames given in "include" lines.
-   */
+  def fromFile(filename: String, importer: Importer): Configuration = {
+    load(importer.importFile(filename), importer)
+  }
+
+  def fromFile(path: String, filename: String): Configuration = {
+    val importer = new FilesystemImporter(path)
+    fromFile(filename, importer)
+  }
+
   def fromFile(filename: String): Configuration = {
     val n = filename.lastIndexOf('/')
     if (n < 0) {
-      fromFile(new File(".").getCanonicalPath, filename)
+      fromFile(DefaultPath, filename)
     } else {
       fromFile(filename.substring(0, n), filename.substring(n + 1))
     }
   }
 
-  /**
-   * Create a Configuration object from the given named resource inside this jar
-   * file, using the system class loader. "include" lines will also operate
-   * on resource paths.
-   */
-  def fromResource(name: String): Configuration = {
-    fromResource(name, ClassLoader.getSystemClassLoader)
+  def fromResource(filename: String): Configuration = {
+    fromResource(filename, ClassLoader.getSystemClassLoader)
   }
 
-  /**
-   * Create a Configuration object from the given named resource inside this jar
-   * file, using a specific class loader. "include" lines will also operate
-   * on resource paths.
-   */
-  def fromResource(name: String, classLoader: ClassLoader): Configuration = {
-    val config = new Configuration
-    config.importer = new ResourceImporter(classLoader)
-    config.loadFile(name)
-    config
+  def fromResource(filename: String, classLoader: ClassLoader): Configuration = {
+    val importer = new ResourceImporter(classLoader)
+    fromFile(filename, importer)
   }
 
-  /**
-   * Create a Configuration object from a map of String keys and String values.
-   */
-  def fromMap(m: Map[String, String]) = {
-    val config = new Configuration
-    for ((k, v) <- m.elements) {
-      config(k) = v
-    }
-    config
+  def fromMap(map: Map[String, Any]) = {
+    new Configuration(map)
   }
 
-  /**
-   * Create a Configuration object from a string containing a config file's contents.
-   */
   def fromString(data: String): Configuration = {
-    val config = new Configuration
-    config.load(data)
-    config
+    load(data)
+  }
+}
+
+class Configuration(val map: Map[String, Any]) {
+  private val trueValues = Set("true", "on")
+  private val falseValues = Set("false", "off")
+
+  def contains(key: String): Boolean = map contains key
+
+  def keys: Iterable[String] = map.keys
+
+  def getString(key: String): Option[String] = map.get(key).map(_.toString)
+
+  def getString(key: String, defaultValue: String): String = getString(key).getOrElse(defaultValue)
+
+  def getList(key: String): Seq[String] = map(key).asInstanceOf[Seq[String]]
+
+  def getInt(key: String): Option[Int] = {
+    try {
+      Some(map(key).toString.toInt)
+    } catch {
+      case _ => None
+    }
+  }
+
+  def getInt(key: String, defaultValue: Int): Int = getInt(key).getOrElse(defaultValue)
+
+  def getLong(key: String): Option[Long] = {
+    try {
+      Some(map(key).toString.toLong)
+    } catch {
+      case _ => None
+    }
+  }
+
+  def getLong(key: String, defaultValue: Long): Long = getLong(key).getOrElse(defaultValue)
+
+  def getFloat(key: String): Option[Float] = {
+    try {
+      Some(map(key).toString.toFloat)
+    } catch {
+      case _ => None
+    }
+  }
+
+  def getFloat(key: String, defaultValue: Float): Float = getFloat(key).getOrElse(defaultValue)
+
+  def getDouble(key: String): Option[Double] = {
+    try {
+      Some(map(key).toString.toDouble)
+    } catch {
+      case _ => None
+    }
+  }
+
+  def getDouble(key: String, defaultValue: Double): Double = getDouble(key).getOrElse(defaultValue)
+
+  def getBoolean(key: String): Option[Boolean] = {
+    getString(key) flatMap { s =>
+      val isTrue = trueValues.contains(s)
+      if (!isTrue && !falseValues.contains(s)) None
+      else Some(isTrue)
+    }
+  }
+
+  def getBoolean(key: String, defaultValue: Boolean): Boolean = getBool(key).getOrElse(defaultValue)
+
+  def getBool(key: String): Option[Boolean] = getBoolean(key)
+
+  def getBool(key: String, defaultValue: Boolean): Boolean = getBoolean(key, defaultValue)
+
+  def apply(key: String): String = getString(key) match {
+    case None => throw new ConfigurationException("undefined config: " + key)
+    case Some(v) => v
+  }
+
+  def apply(key: String, defaultValue: String) = getString(key, defaultValue)
+  def apply(key: String, defaultValue: Int) = getInt(key, defaultValue)
+  def apply(key: String, defaultValue: Long) = getLong(key, defaultValue)
+  def apply(key: String, defaultValue: Boolean) = getBool(key, defaultValue)
+
+  def getSection(name: String): Option[Configuration] = {
+    val l = name.length + 1
+    val m = map.collect { case (k, v) if k.startsWith(name) => (k.substring(l), v) }
+    if (m.isEmpty) None
+    else Some(new Configuration(m))
   }
 }

@@ -52,64 +52,38 @@ object Config {
       (envConf orElse systemConf).map("akka." + _ + ".conf").getOrElse("akka.conf")
     }
 
-    if (System.getProperty("akka.config", "") != "") {
-      val configFile = System.getProperty("akka.config", "")
-      try {
-        Configure.configure(configFile)
-        println("Config loaded from -Dakka.config=" + configFile)
-      } catch {
-        case cause: ParseException =>
-          val e = new ConfigurationException(
-            "Config could not be loaded from -Dakka.config=" + configFile +
-            "\n\tdue to: " + cause.toString)
-          EventHandler notifyListeners EventHandler.Error(e, this)
-          throw e
-      }
-      Configure.config
-    } else if (getClass.getClassLoader.getResource(confName) ne null) {
-      try {
-        Configure.configureFromResource(confName, getClass.getClassLoader)
-        println("Config [" + confName + "] loaded from the application classpath.")
-      } catch {
-        case cause: ParseException =>
-          val e = new ConfigurationException(
-            "Can't load '" + confName + "' config file from application classpath," +
-            "\n\tdue to: " + cause.toString)
-          EventHandler notifyListeners EventHandler.Error(e, this)
-          throw e
-      }
-      Configure.config
-    } else if (HOME.isDefined) {
-      try {
+    try {
+      if (System.getProperty("akka.config", "") != "") {
+        val configFile = System.getProperty("akka.config", "")
+        println("Loading config from -Dakka.config=" + configFile)
+        Configuration.fromFile(configFile)
+      } else if (getClass.getClassLoader.getResource(confName) ne null) {
+        println("Loading config [" + confName + "] from the application classpath.")
+        Configuration.fromResource(confName, getClass.getClassLoader)
+      } else if (HOME.isDefined) {
         val configFile = HOME.get + "/config/" + confName
-        Configure.configure(configFile)
+        println("AKKA_HOME is defined as [" + HOME.get + "], loading config from [" + configFile + "].")
+        Configuration.fromFile(configFile)
+      } else {
         println(
-          "AKKA_HOME is defined as [" + HOME.getOrElse(throwNoAkkaHomeException) +
-          "], config loaded from [" + configFile + "].")
-      } catch {
-        case cause: ParseException =>
-          val e = throw new ConfigurationException(
-            "AKKA_HOME is defined as [" + HOME.get + "] " +
-            "\n\tbut the 'akka.conf' config file can not be found at [" + HOME.get + "/config/"+ confName + "]," +
-            "\n\tdue to: " + cause.toString)
-          EventHandler notifyListeners EventHandler.Error(e, this)
-          throw e
+          "\nCan't load '" + confName + "'." +
+          "\nOne of the three ways of locating the '" + confName + "' file needs to be defined:" +
+          "\n\t1. Define the '-Dakka.config=...' system property option." +
+          "\n\t2. Put the '" + confName + "' file on the classpath." +
+          "\n\t3. Define 'AKKA_HOME' environment variable pointing to the root of the Akka distribution." +
+          "\nI have no way of finding the '" + confName + "' configuration file." +
+          "\nUsing default values everywhere.")
+        Configuration.fromString("<akka></akka>") // default empty config
       }
-      Configure.config
-    } else {
-      println(
-        "\nCan't load '" + confName + "'." +
-        "\nOne of the three ways of locating the '" + confName + "' file needs to be defined:" +
-        "\n\t1. Define the '-Dakka.config=...' system property option." +
-        "\n\t2. Put the '" + confName + "' file on the classpath." +
-        "\n\t3. Define 'AKKA_HOME' environment variable pointing to the root of the Akka distribution." +
-        "\nI have no way of finding the '" + confName + "' configuration file." +
-        "\nUsing default values everywhere.")
-      Configuration.fromString("<akka></akka>") // default empty config
+    } catch {
+      case e =>
+        EventHandler notifyListeners EventHandler.Error(e, this)
+        throw e
     }
   }
 
   val CONFIG_VERSION = config.getString("akka.version", VERSION)
+
   if (VERSION != CONFIG_VERSION) throw new ConfigurationException(
     "Akka JAR version [" + VERSION + "] is different than the provided config version [" + CONFIG_VERSION + "]")
 
@@ -117,9 +91,4 @@ object Config {
 
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
-
-  def throwNoAkkaHomeException = throw new ConfigurationException(
-    "Akka home is not defined. Either:" +
-    "\n\t1. Define 'AKKA_HOME' environment variable pointing to the root of the Akka distribution." +
-    "\n\t2. Add the '-Dakka.home=...' option pointing to the root of the Akka distribution.")
 }
