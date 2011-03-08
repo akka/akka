@@ -216,31 +216,10 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   private[akka] val typedActorsFactories = new ConcurrentHashMap[String, () => AnyRef]
 
   def clear {
-    def clearActorMap(map: ConcurrentHashMap[String, ActorRef]) {
-      val i = map.values.iterator
-      while (i.hasNext) {
-        i.next match {
-          case ref: LocalActorRef => try { ref.stop } catch { case e: Exception => }
-          case _ =>
-        }
-      }
-      map.clear
-    }
-
-    def clearTypedActorMap(map: ConcurrentHashMap[String, AnyRef]) {
-      ReflectiveAccess.TypedActorModule.typedActorObjectInstance foreach {
-        case typedActor =>
-        val i = map.values.iterator
-        //FIXME Only stop local TypedActor?
-        while (i.hasNext) { try { typedActor.stop(i.next) } catch { case e: Exception => } }
-      }
-      map.clear
-    }
-
-    clearActorMap(actors)
-    clearActorMap(actorsByUuid)
-    clearTypedActorMap(typedActors)
-    clearTypedActorMap(typedActorsByUuid)
+    actors.clear
+    actorsByUuid.clear
+    typedActors.clear
+    typedActorsByUuid.clear
     actorsFactories.clear
     typedActorsFactories.clear
   }
