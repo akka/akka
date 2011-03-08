@@ -23,7 +23,7 @@ object TransactionConfig {
   val FAMILY_NAME      = "DefaultTransaction"
   val READONLY         = null.asInstanceOf[JBoolean]
   val MAX_RETRIES      = config.getInt("akka.stm.max-retries", 1000)
-  val TIMEOUT          = config.getLong("akka.stm.timeout", 10)
+  val TIMEOUT          = config.getLong("akka.stm.timeout", 5)
   val TRACK_READS      = null.asInstanceOf[JBoolean]
   val WRITE_SKEW       = config.getBool("akka.stm.write-skew", true)
   val BLOCKING_ALLOWED = config.getBool("akka.stm.blocking-allowed", false)

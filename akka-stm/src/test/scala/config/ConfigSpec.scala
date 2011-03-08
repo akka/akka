@@ -27,7 +27,7 @@ class ConfigSpec extends WordSpec with MustMatchers {
       getString("akka.stm.propagation") must equal(Some("requires"))
       getBool("akka.stm.quick-release") must equal(Some(true))
       getBool("akka.stm.speculative") must equal(Some(true))
-      getLong("akka.stm.timeout") must equal(Some(10))
+      getLong("akka.stm.timeout") must equal(Some(5))
       getString("akka.stm.trace-level") must equal(Some("none"))
       getBool("akka.stm.write-skew") must equal(Some(true))
     }

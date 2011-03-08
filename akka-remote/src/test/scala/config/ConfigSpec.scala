@@ -17,7 +17,7 @@ class ConfigSpec extends WordSpec with MustMatchers {
       import Config.config._
 
       getInt("akka.remote.client.message-frame-size") must equal(Some(1048576))
-      getInt("akka.remote.client.read-timeout") must equal(Some(1))
+      getInt("akka.remote.client.read-timeout") must equal(Some(10))
       getInt("akka.remote.client.reap-futures-delay") must equal(Some(5))
       getInt("akka.remote.client.reconnect-delay") must equal(Some(5))
       getInt("akka.remote.client.reconnection-time-window") must equal(Some(600))
