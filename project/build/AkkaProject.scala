@@ -155,8 +155,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile" //New BSD
 
-    lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile" //MIT
-
     lazy val sjson      = "net.debasishg" % "sjson_2.8.1" % "0.9.1" % "compile" //ApacheV2
     lazy val sjson_test = "net.debasishg" % "sjson_2.8.1" % "0.9.1" % "test" //ApacheV2
 
@@ -330,7 +328,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jackson_core  = Dependencies.jackson_core
     val netty         = Dependencies.netty
     val protobuf      = Dependencies.protobuf
-    val sbinary       = Dependencies.sbinary
     val sjson         = Dependencies.sjson
 
     // testing

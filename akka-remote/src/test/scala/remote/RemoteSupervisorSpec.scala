@@ -5,7 +5,6 @@
 package akka.actor.remote
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
-import akka.serialization.BinaryString
 import akka.config.Supervision._
 import akka.OneWay
 import org.scalatest._
@@ -26,14 +25,14 @@ object Log {
 
 @serializable class RemotePingPong1Actor extends Actor {
   def receive = {
-    case BinaryString("Ping") =>
+    case "Ping" =>
       Log.messageLog.put("ping")
       self.reply("pong")
 
     case OneWay =>
       Log.oneWayLog.put("oneway")
 
-    case BinaryString("Die") =>
+    case "Die" =>
       throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 
@@ -44,10 +43,10 @@ object Log {
 
 @serializable class RemotePingPong2Actor extends Actor {
   def receive = {
-    case BinaryString("Ping") =>
+    case "Ping" =>
       Log.messageLog.put("ping")
       self.reply("pong")
-    case BinaryString("Die") =>
+    case "Die" =>
       throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 
@@ -58,10 +57,10 @@ object Log {
 
 @serializable class RemotePingPong3Actor extends Actor {
   def receive = {
-    case BinaryString("Ping") =>
+    case "Ping" =>
       Log.messageLog.put("ping")
       self.reply("pong")
-    case BinaryString("Die") =>
+    case "Die" =>
       throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 
@@ -84,7 +83,7 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
       Log.messageLog.clear
       val sup = getSingleActorAllForOneSupervisor
 
-      (pingpong1 !! BinaryString("Ping")) must equal (Some("pong"))
+      (pingpong1 !! "Ping") must equal (Some("pong"))
     }
 
     "StartServerForNestedSupervisorHierarchy" in {
@@ -92,14 +91,14 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
       val sup = getNestedSupervisorsAllForOneConf
       sup.start
 
-      (pingpong1 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
+      (pingpong1 !! ("Ping", 5000)) must equal (Some("pong"))
     }
 
     "killSingleActorOneForOne" in {
       clearMessageLogs
       val sup = getSingleActorOneForOneSupervisor
 
-      (pingpong1 !!! (BinaryString("Die"), 5000)).await.exception.isDefined must be (true)
+      (pingpong1 !!! ("Die", 5000)).await.exception.isDefined must be (true)
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("Expected exception; to test fault-tolerance")
     }
@@ -108,14 +107,14 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
       clearMessageLogs
       val sup = getSingleActorOneForOneSupervisor
 
-      (pingpong1 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
+      (pingpong1 !! ("Ping", 5000)) must equal (Some("pong"))
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
 
-      (pingpong1 !!! (BinaryString("Die"), 5000)).await.exception.isDefined must be (true)
+      (pingpong1 !!! ("Die", 5000)).await.exception.isDefined must be (true)
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("Expected exception; to test fault-tolerance")
-      (pingpong1 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
+      (pingpong1 !! ("Ping", 5000)) must equal (Some("pong"))
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
     }
@@ -124,7 +123,7 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
       clearMessageLogs
       val sup = getSingleActorAllForOneSupervisor
 
-      (pingpong1 !!! (BinaryString("Die"), 5000)).await.exception.isDefined must be (true)
+      (pingpong1 !!! ("Die", 5000)).await.exception.isDefined must be (true)
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("Expected exception; to test fault-tolerance")
     }
@@ -133,15 +132,15 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
       clearMessageLogs
       val sup = getSingleActorAllForOneSupervisor
 
-      (pingpong1 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
+      (pingpong1 !! ("Ping", 5000)) must equal (Some("pong"))
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
 
-      (pingpong1 !!! (BinaryString("Die"), 5000)).await.exception.isDefined must be (true)
+      (pingpong1 !!! ("Die", 5000)).await.exception.isDefined must be (true)
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("Expected exception; to test fault-tolerance")
 
-      (pingpong1 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
+      (pingpong1 !! ("Ping", 5000)) must equal (Some("pong"))
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
     }
@@ -150,7 +149,7 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
       clearMessageLogs
       val sup = getMultipleActorsOneForOneConf
 
-      (pingpong1 !!! (BinaryString("Die"), 5000)).await.exception.isDefined must be (true)
+      (pingpong1 !!! ("Die", 5000)).await.exception.isDefined must be (true)
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("Expected exception; to test fault-tolerance")
     }
@@ -159,21 +158,21 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
       clearMessageLogs
       val sup = getMultipleActorsOneForOneConf
 
-      (pingpong1 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
-      (pingpong2 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
-      (pingpong3 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
+      (pingpong1 !! ("Ping", 5000)) must equal (Some("pong"))
+      (pingpong2 !! ("Ping", 5000)) must equal (Some("pong"))
+      (pingpong3 !! ("Ping", 5000)) must equal (Some("pong"))
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
 
-      (pingpong2 !!! (BinaryString("Die"), 5000)).await.exception.isDefined must be (true)
+      (pingpong2 !!! ("Die", 5000)).await.exception.isDefined must be (true)
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("Expected exception; to test fault-tolerance")
 
-      (pingpong1 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
-      (pingpong2 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
-      (pingpong3 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
+      (pingpong1 !! ("Ping", 5000)) must equal (Some("pong"))
+      (pingpong2 !! ("Ping", 5000)) must equal (Some("pong"))
+      (pingpong3 !! ("Ping", 5000)) must equal (Some("pong"))
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
@@ -184,7 +183,7 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
       clearMessageLogs
       val sup = getMultipleActorsAllForOneConf
 
-      (pingpong2 !!! (BinaryString("Die"), 5000)).await.exception.isDefined must be (true)
+      (pingpong2 !!! ("Die", 5000)).await.exception.isDefined must be (true)
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("Expected exception; to test fault-tolerance")
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("Expected exception; to test fault-tolerance")
@@ -195,23 +194,23 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
       clearMessageLogs
       val sup = getMultipleActorsAllForOneConf
 
-      pingpong1 !! (BinaryString("Ping"), 5000) must equal (Some("pong"))
-      pingpong2 !! (BinaryString("Ping"), 5000) must equal (Some("pong"))
-      pingpong3 !! (BinaryString("Ping"), 5000) must equal (Some("pong"))
+      pingpong1 !! ("Ping", 5000) must equal (Some("pong"))
+      pingpong2 !! ("Ping", 5000) must equal (Some("pong"))
+      pingpong3 !! ("Ping", 5000) must equal (Some("pong"))
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
 
-      (pingpong2 !!! (BinaryString("Die"), 5000)).await.exception.isDefined must be (true)
+      (pingpong2 !!! ("Die", 5000)).await.exception.isDefined must be (true)
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("Expected exception; to test fault-tolerance")
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("Expected exception; to test fault-tolerance")
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("Expected exception; to test fault-tolerance")
 
-      pingpong1 !! (BinaryString("Ping"), 5000) must equal (Some("pong"))
-      pingpong2 !! (BinaryString("Ping"), 5000) must equal (Some("pong"))
-      pingpong3 !! (BinaryString("Ping"), 5000) must equal (Some("pong"))
+      pingpong1 !! ("Ping", 5000) must equal (Some("pong"))
+      pingpong2 !! ("Ping", 5000) must equal (Some("pong"))
+      pingpong3 !! ("Ping", 5000) must equal (Some("pong"))
 
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
       messageLog.poll(5, TimeUnit.SECONDS) must equal ("ping")
@@ -332,7 +331,7 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
     val sup = getMultipleActorsOneForOneConf
 
     intercept[RuntimeException] {
-      pingpong3 !! (BinaryString("Die"), 5000)
+      pingpong3 !! ("Die", 5000)
     }
 
     expect("Expected exception; to test fault-tolerance") {
@@ -347,7 +346,7 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
     clearMessageLogs
     val sup = getSingleActorOneForOneSupervisor
 
-    pingpong1 ! BinaryString("Die")
+    pingpong1 ! "Die"
 
     expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
@@ -363,7 +362,7 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
     expect("oneway") {
       oneWayLog.poll(5, TimeUnit.SECONDS)
     }
-    pingpong1 ! BinaryString("Die")
+    pingpong1 ! "Die"
 
     expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
@@ -381,15 +380,15 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
 
 
     expect("pong") {
-      (pingpong1 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
+      (pingpong1 !! ("Ping", 5000)) must equal (Some("pong"))
     }
 
     expect("pong") {
-      (pingpong2 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
+      (pingpong2 !! ("Ping", 5000)) must equal (Some("pong"))
     }
 
     expect("pong") {
-      (pingpong3 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
+      (pingpong3 !! ("Ping", 5000)) must equal (Some("pong"))
     }
 
     expect("ping") {
@@ -402,7 +401,7 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong2 !! (BinaryString("Die"), 5000)
+      pingpong2 !! ("Die", 5000)
     }
 
     expect("Expected exception; to test fault-tolerance") {
@@ -415,15 +414,15 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
+      (pingpong1 !! ("Ping", 5000)) must equal (Some("pong"))
     }
 
     expect("pong") {
-      (pingpong2 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
+      (pingpong2 !! ("Ping", 5000)) must equal (Some("pong"))
     }
 
     expect("pong") {
-      (pingpong3 !! (BinaryString("Ping"), 5000)) must equal (Some("pong"))
+      (pingpong3 !! ("Ping", 5000)) must equal (Some("pong"))
     }
 
     expect("ping") {

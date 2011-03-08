@@ -14,7 +14,6 @@ object MessageSerializer {
   private def SERIALIZER_JAVA:       Serializer.Java      = Serializer.Java
   private def SERIALIZER_JAVA_JSON:  Serializer.JavaJSON  = Serializer.JavaJSON
   private def SERIALIZER_SCALA_JSON: Serializer.ScalaJSON = Serializer.ScalaJSON
-  private def SERIALIZER_SBINARY:    Serializer.SBinary   = Serializer.SBinary
   private def SERIALIZER_PROTOBUF:   Serializer.Protobuf  = Serializer.Protobuf
 
   def setClassLoader(cl: ClassLoader) = {
@@ -22,7 +21,6 @@ object MessageSerializer {
     SERIALIZER_JAVA.classLoader       = someCl
     SERIALIZER_JAVA_JSON.classLoader  = someCl
     SERIALIZER_SCALA_JSON.classLoader = someCl
-    SERIALIZER_SBINARY.classLoader    = someCl
   }
 
   def deserialize(messageProtocol: MessageProtocol): Any = {
@@ -33,11 +31,6 @@ object MessageSerializer {
       case SerializationSchemeType.PROTOBUF =>
         val clazz = loadManifest(SERIALIZER_PROTOBUF.classLoader, messageProtocol)
         SERIALIZER_PROTOBUF.fromBinary(messageProtocol.getMessage.toByteArray, Some(clazz))
-
-      case SerializationSchemeType.SBINARY =>
-        val clazz = loadManifest(SERIALIZER_SBINARY.classLoader, messageProtocol)
-        val renderer = clazz.newInstance.asInstanceOf[Serializable.SBinary[_ <: AnyRef]]
-        renderer.fromBytes(messageProtocol.getMessage.toByteArray)
 
       case SerializationSchemeType.SCALA_JSON =>
         val clazz = loadManifest(SERIALIZER_SCALA_JSON.classLoader, messageProtocol)
@@ -60,9 +53,6 @@ object MessageSerializer {
     } else if (message.isInstanceOf[Serializable.ScalaJSON[_]]) {
       builder.setSerializationScheme(SerializationSchemeType.SCALA_JSON)
       setMessageAndManifest(builder, message.asInstanceOf[Serializable.ScalaJSON[_ <: Any]])
-    } else if (message.isInstanceOf[Serializable.SBinary[_]]) {
-      builder.setSerializationScheme(SerializationSchemeType.SBINARY)
-      setMessageAndManifest(builder, message.asInstanceOf[Serializable.SBinary[_ <: Any]])
     } else if (message.isInstanceOf[Serializable.JavaJSON]) {
       builder.setSerializationScheme(SerializationSchemeType.JAVA_JSON)
       setMessageAndManifest(builder, message.asInstanceOf[Serializable.JavaJSON])
