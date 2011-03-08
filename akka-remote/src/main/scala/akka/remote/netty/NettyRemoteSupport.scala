@@ -887,12 +887,6 @@ class RemoteServerHandler(
     server.notifyListeners(RemoteServerClientClosed(server, clientAddress))
   }
 
-  override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
-    if (event.isInstanceOf[ChannelStateEvent] && event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
-    }
-    super.handleUpstream(ctx, event)
-  }
-
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = event.getMessage match {
     case null => throw new IllegalActorStateException("Message in remote MessageEvent is null: " + event)
     //case remoteProtocol: AkkaRemoteProtocol if remoteProtocol.hasInstruction => RemoteServer cannot receive control messages (yet)
