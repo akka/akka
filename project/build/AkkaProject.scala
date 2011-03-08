@@ -92,8 +92,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   import Repositories._
-  lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
-  lazy val localMavenRepo          = LocalMavenRepo // Second exception, also fast! ;-)
   lazy val jettyModuleConfig       = ModuleConfiguration("org.eclipse.jetty", sbt.DefaultMavenRepository)
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
   lazy val glassfishModuleConfig   = ModuleConfiguration("org.glassfish", GlassfishRepo)
@@ -105,6 +103,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val spdeModuleConfig        = ModuleConfiguration("us.technically.spde", DatabinderRepo)
   lazy val processingModuleConfig  = ModuleConfiguration("org.processing", DatabinderRepo)
   lazy val scalaModuleConfig       = ModuleConfiguration("org.scala-lang", ScalaToolsSnapshotRepo)
+  lazy val sjsonModuleConfig       = ModuleConfiguration("net.debasishg", ScalaToolsRelRepo)
+  lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
+  lazy val localMavenRepo          = LocalMavenRepo // Second exception, also fast! ;-)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
