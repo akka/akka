@@ -9,7 +9,7 @@ import akka.actor.newUuid
 import akka.config.Config._
 import akka.util.{Duration,ReflectiveAccess}
 
-import akka.config.ConfigMap
+import akka.config.Configuration
 
 import java.util.concurrent.TimeUnit
 
@@ -57,7 +57,7 @@ object Dispatchers {
   val MAILBOX_TYPE: MailboxType       = if (MAILBOX_CAPACITY < 0) UnboundedMailbox() else BoundedMailbox()
 
   lazy val defaultGlobalDispatcher = {
-    config.getConfigMap("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalExecutorBasedEventDrivenDispatcher)
+    config.getSection("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalExecutorBasedEventDrivenDispatcher)
   }
 
   object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global", THROUGHPUT, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE)
@@ -155,7 +155,7 @@ object Dispatchers {
    * or else use the supplied default dispatcher
    */
   def fromConfig(key: String, default: => MessageDispatcher = defaultGlobalDispatcher): MessageDispatcher =
-    config getConfigMap key flatMap from getOrElse default
+    config getSection key flatMap from getOrElse default
 
   /*
    * Creates of obtains a dispatcher from a ConfigMap according to the format below
@@ -180,7 +180,7 @@ object Dispatchers {
    * Throws: IllegalArgumentException if the value of "type" is not valid
    *         IllegalArgumentException if it cannot
    */
-  def from(cfg: ConfigMap): Option[MessageDispatcher] = {
+  def from(cfg: Configuration): Option[MessageDispatcher] = {
       cfg.getString("type") map {
         case "ExecutorBasedEventDriven"             => new ExecutorBasedEventDrivenDispatcherConfigurator()
         case "ExecutorBasedEventDrivenWorkStealing" => new ExecutorBasedEventDrivenWorkStealingDispatcherConfigurator()
@@ -203,11 +203,11 @@ object Dispatchers {
 }
 
 object GlobalExecutorBasedEventDrivenDispatcherConfigurator extends MessageDispatcherConfigurator {
-  def configure(config: ConfigMap): MessageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
+  def configure(config: Configuration): MessageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
 }
 
 class ExecutorBasedEventDrivenDispatcherConfigurator extends MessageDispatcherConfigurator {
-  def configure(config: ConfigMap): MessageDispatcher = {
+  def configure(config: Configuration): MessageDispatcher = {
     configureThreadPool(config, threadPoolConfig => new ExecutorBasedEventDrivenDispatcher(
       config.getString("name", newUuid.toString),
       config.getInt("throughput", Dispatchers.THROUGHPUT),
@@ -218,7 +218,7 @@ class ExecutorBasedEventDrivenDispatcherConfigurator extends MessageDispatcherCo
 }
 
 class ExecutorBasedEventDrivenWorkStealingDispatcherConfigurator extends MessageDispatcherConfigurator {
-  def configure(config: ConfigMap): MessageDispatcher = {
+  def configure(config: Configuration): MessageDispatcher = {
     configureThreadPool(config, threadPoolConfig => new ExecutorBasedEventDrivenWorkStealingDispatcher(
       config.getString("name", newUuid.toString),
       config.getInt("throughput", Dispatchers.THROUGHPUT),
