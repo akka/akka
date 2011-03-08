@@ -7,11 +7,10 @@ package akka.dispatch
 import akka.actor.{Actor, ActorRef}
 import akka.actor.newUuid
 import akka.config.Config._
-import akka.util.{Duration}
+import akka.util.{Duration,ReflectiveAccess}
 
 import akka.config.ConfigMap
 
-import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy}
 import java.util.concurrent.TimeUnit
 
 /**
@@ -165,6 +164,7 @@ object Dispatchers {
    *   type = "GlobalExecutorBasedEventDriven" # Must be one of the following, all "Global*" are non-configurable
    *                               # (ExecutorBasedEventDrivenWorkStealing), ExecutorBasedEventDriven,
    *                               # GlobalExecutorBasedEventDriven
+   *                               # A FQCN to a class inheriting MessageDispatcherConfigurator with a no-arg visible constructor
    *   keep-alive-time = 60        # Keep alive time for threads
    *   core-pool-size-factor = 1.0 # No of core threads ... ceil(available processors * factor)
    *   max-pool-size-factor  = 4.0 # Max no of threads ... ceil(available processors * factor)
@@ -178,54 +178,52 @@ object Dispatchers {
    * Gotcha: Only configures the dispatcher if possible
    * Returns: None if "type" isn't specified in the config
    * Throws: IllegalArgumentException if the value of "type" is not valid
+   *         IllegalArgumentException if it cannot
    */
   def from(cfg: ConfigMap): Option[MessageDispatcher] = {
-    lazy val name = cfg.getString("name", newUuid.toString)
+      cfg.getString("type") map {
+        case "ExecutorBasedEventDriven"             => new ExecutorBasedEventDrivenDispatcherConfigurator()
+        case "ExecutorBasedEventDrivenWorkStealing" => new ExecutorBasedEventDrivenWorkStealingDispatcherConfigurator()
+        case "GlobalExecutorBasedEventDriven"       => GlobalExecutorBasedEventDrivenDispatcherConfigurator
+        case fqn =>
+          ReflectiveAccess.getClassFor[MessageDispatcherConfigurator](fqn) match {
+            case Some(clazz) =>
+              val instance = ReflectiveAccess.createInstance[MessageDispatcherConfigurator](clazz, Array[Class[_]](), Array[AnyRef]())
+              if (instance.isEmpty)
+                throw new IllegalArgumentException("Cannot instantiate MessageDispatcherConfigurator type [%s], make sure it has a default no-args constructor" format fqn)
+              else
+                instance.get
+            case None =>
+              throw new IllegalArgumentException("Unknown MessageDispatcherConfigurator type [%s]" format fqn)
+          }
+      } map {
+        _ configure cfg
+      }
+  }
+}
 
-    def configureThreadPool(createDispatcher: => (ThreadPoolConfig) => MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
-      import ThreadPoolConfigDispatcherBuilder.conf_?
+object GlobalExecutorBasedEventDrivenDispatcherConfigurator extends MessageDispatcherConfigurator {
+  def configure(config: ConfigMap): MessageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
+}
 
-      //Apply the following options to the config if they are present in the cfg
-      ThreadPoolConfigDispatcherBuilder(createDispatcher,ThreadPoolConfig()).configure(
-        conf_?(cfg getInt    "keep-alive-time"      )(time   => _.setKeepAliveTime(Duration(time, TIME_UNIT))),
-        conf_?(cfg getDouble "core-pool-size-factor")(factor => _.setCorePoolSizeFromFactor(factor)),
-        conf_?(cfg getDouble "max-pool-size-factor" )(factor => _.setMaxPoolSizeFromFactor(factor)),
-        conf_?(cfg getInt    "executor-bounds"      )(bounds => _.setExecutorBounds(bounds)),
-        conf_?(cfg getBool   "allow-core-timeout"   )(allow  => _.setAllowCoreThreadTimeout(allow)),
-        conf_?(cfg getString "rejection-policy" map {
-          case "abort"          => new AbortPolicy()
-          case "caller-runs"    => new CallerRunsPolicy()
-          case "discard-oldest" => new DiscardOldestPolicy()
-          case "discard"        => new DiscardPolicy()
-          case x                => throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy!" format x)
-        })(policy => _.setRejectionPolicy(policy)))
-    }
+class ExecutorBasedEventDrivenDispatcherConfigurator extends MessageDispatcherConfigurator {
+  def configure(config: ConfigMap): MessageDispatcher = {
+    configureThreadPool(config, threadPoolConfig => new ExecutorBasedEventDrivenDispatcher(
+      config.getString("name", newUuid.toString),
+      config.getInt("throughput", Dispatchers.THROUGHPUT),
+      config.getInt("throughput-deadline-time", Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS),
+      mailboxType(config),
+      threadPoolConfig)).build
+  }
+}
 
-    lazy val mailboxType: MailboxType = {
-      val capacity = cfg.getInt("mailbox-capacity", MAILBOX_CAPACITY)
-      // FIXME how do we read in isBlocking for mailbox? Now set to 'false'.
-      if (capacity < 0) UnboundedMailbox()
-      else BoundedMailbox(false, capacity, Duration(cfg.getInt("mailbox-push-timeout-time", MAILBOX_PUSH_TIME_OUT.toMillis.toInt), TIME_UNIT))
-    }
-
-    cfg.getString("type") map {
-      case "ExecutorBasedEventDriven" =>
-        configureThreadPool(threadPoolConfig => new ExecutorBasedEventDrivenDispatcher(
-          name,
-          cfg.getInt("throughput", THROUGHPUT),
-          cfg.getInt("throughput-deadline-time", THROUGHPUT_DEADLINE_TIME_MILLIS),
-          mailboxType,
-          threadPoolConfig)).build
-
-      case "ExecutorBasedEventDrivenWorkStealing" =>
-        configureThreadPool(threadPoolConfig => new ExecutorBasedEventDrivenWorkStealingDispatcher(
-          name,
-          cfg.getInt("throughput", THROUGHPUT),
-          cfg.getInt("throughput-deadline-time", THROUGHPUT_DEADLINE_TIME_MILLIS),
-          mailboxType,
-          threadPoolConfig)).build
-      case "GlobalExecutorBasedEventDriven"       => globalExecutorBasedEventDrivenDispatcher
-      case unknown                                => throw new IllegalArgumentException("Unknown dispatcher type [%s]" format unknown)
-    }
+class ExecutorBasedEventDrivenWorkStealingDispatcherConfigurator extends MessageDispatcherConfigurator {
+  def configure(config: ConfigMap): MessageDispatcher = {
+    configureThreadPool(config, threadPoolConfig => new ExecutorBasedEventDrivenWorkStealingDispatcher(
+      config.getString("name", newUuid.toString),
+      config.getInt("throughput", Dispatchers.THROUGHPUT),
+      config.getInt("throughput-deadline-time", Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS),
+      mailboxType(config),
+      threadPoolConfig)).build
   }
 }
