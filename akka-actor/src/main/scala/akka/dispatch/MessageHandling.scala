@@ -6,8 +6,10 @@ package akka.dispatch
 
 import java.util.concurrent._
 import atomic. {AtomicInteger, AtomicBoolean, AtomicReference, AtomicLong}
-
-import akka.util.{Switch, ReentrantGuard, HashCode, ReflectiveAccess}
+import akka.config.ConfigMap
+import akka.config.Config.TIME_UNIT
+import akka.util.{Duration, Switch, ReentrantGuard, HashCode, ReflectiveAccess}
+import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy}
 import akka.actor._
 
 /**
@@ -201,4 +203,37 @@ trait MessageDispatcher {
    * Returns the size of the mailbox for the specified actor
    */
   def mailboxSize(actorRef: ActorRef): Int
+}
+
+/**
+ * Trait to be used for hooking in new dispatchers into Dispatchers.fromConfig
+ */
+abstract class MessageDispatcherConfigurator {
+  def configure(config: ConfigMap): MessageDispatcher
+
+  def mailboxType(config: ConfigMap): MailboxType = {
+    val capacity = config.getInt("mailbox-capacity", Dispatchers.MAILBOX_CAPACITY)
+    // FIXME how do we read in isBlocking for mailbox? Now set to 'false'.
+    if (capacity < 0) UnboundedMailbox()
+    else BoundedMailbox(false, capacity, Duration(config.getInt("mailbox-push-timeout-time", Dispatchers.MAILBOX_PUSH_TIME_OUT.toMillis.toInt), TIME_UNIT))
+  }
+
+  def configureThreadPool(config: ConfigMap, createDispatcher: => (ThreadPoolConfig) => MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
+    import ThreadPoolConfigDispatcherBuilder.conf_?
+
+    //Apply the following options to the config if they are present in the config
+    ThreadPoolConfigDispatcherBuilder(createDispatcher,ThreadPoolConfig()).configure(
+      conf_?(config getInt    "keep-alive-time"      )(time   => _.setKeepAliveTime(Duration(time, TIME_UNIT))),
+      conf_?(config getDouble "core-pool-size-factor")(factor => _.setCorePoolSizeFromFactor(factor)),
+      conf_?(config getDouble "max-pool-size-factor" )(factor => _.setMaxPoolSizeFromFactor(factor)),
+      conf_?(config getInt    "executor-bounds"      )(bounds => _.setExecutorBounds(bounds)),
+      conf_?(config getBool   "allow-core-timeout"   )(allow  => _.setAllowCoreThreadTimeout(allow)),
+      conf_?(config getString "rejection-policy" map {
+        case "abort"          => new AbortPolicy()
+        case "caller-runs"    => new CallerRunsPolicy()
+        case "discard-oldest" => new DiscardOldestPolicy()
+        case "discard"        => new DiscardPolicy()
+        case x                => throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy!" format x)
+      })(policy => _.setRejectionPolicy(policy)))
+  }
 }

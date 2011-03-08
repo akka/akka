@@ -23,15 +23,13 @@ import java.net.{InetAddress, UnknownHostException}
   import AkkaException._
   val exceptionName = getClass.getName
 
-  lazy val uuid = "%s_%s".format(hostname, newUuid)
+  val uuid = "%s_%s".format(hostname, newUuid)
 
-  override lazy val toString = "%s\n\t[%s]\n\t%s\n\t%s".format(exceptionName, uuid, message, stackTrace)
-
-  lazy val stackTrace = {
+  override val toString = "%s\n\t[%s]\n\t%s\n\t%s".format(exceptionName, uuid, message, {
     val sw = new StringWriter
     printStackTrace(new PrintWriter(sw))
     sw.toString
-  }
+  })
 }
 
 object AkkaException {

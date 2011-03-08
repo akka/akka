@@ -98,7 +98,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
   lazy val glassfishModuleConfig   = ModuleConfiguration("org.glassfish", GlassfishRepo)
   lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
-  lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
@@ -135,11 +134,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val javax_servlet_30 = "org.glassfish" % "javax.servlet" % JAVAX_SERVLET_VERSION % "provided" //CDDL v1
 
-    lazy val jetty         = "org.eclipse.jetty" % "jetty-server"  % JETTY_VERSION % "compile" //Eclipse license
-    lazy val jetty_util    = "org.eclipse.jetty" % "jetty-util"    % JETTY_VERSION % "compile" //Eclipse license
-    lazy val jetty_xml     = "org.eclipse.jetty" % "jetty-xml"     % JETTY_VERSION % "compile" //Eclipse license
-    lazy val jetty_servlet = "org.eclipse.jetty" % "jetty-servlet" % JETTY_VERSION % "compile" //Eclipse license
-
+    lazy val jetty         = "org.eclipse.jetty" % "jetty-server"  % JETTY_VERSION % "provided" //Eclipse license
     lazy val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile" //ApacheV2
 
     lazy val h2_lzf = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile" //ApacheV2
@@ -147,10 +142,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val jackson          = "org.codehaus.jackson" % "jackson-mapper-asl" % JACKSON_VERSION % "compile" //ApacheV2
     lazy val jackson_core     = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile" //ApacheV2
 
-    lazy val jersey         = "com.sun.jersey"          % "jersey-core"   % JERSEY_VERSION % "compile" //CDDL v1
-    lazy val jersey_json    = "com.sun.jersey"          % "jersey-json"   % JERSEY_VERSION % "compile" //CDDL v1
-    lazy val jersey_server  = "com.sun.jersey"          % "jersey-server" % JERSEY_VERSION % "compile" //CDDL v1
-    lazy val jersey_contrib = "com.sun.jersey.contribs" % "jersey-scala"  % JERSEY_VERSION % "compile" //CDDL v1
+    lazy val jersey_server  = "com.sun.jersey"          % "jersey-server" % JERSEY_VERSION % "provided" //CDDL v1
 
     lazy val jsr250 = "javax.annotation" % "jsr250-api" % "1.0" % "compile" //CDDL v1
 
@@ -167,8 +159,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val sjson      = "net.debasishg" % "sjson_2.8.1" % "0.9.1" % "compile" //ApacheV2
     lazy val sjson_test = "net.debasishg" % "sjson_2.8.1" % "0.9.1" % "test" //ApacheV2
-
-    lazy val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile" //ApacheV2
 
     // Test
 
@@ -297,6 +287,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val junit           = Dependencies.junit
     val scalatest       = Dependencies.scalatest
     val multiverse_test = Dependencies.multiverse_test // StandardLatch
+
+     override def bndExportPackage = super.bndExportPackage ++ Seq("com.eaio.*;version=3.2")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -356,16 +348,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jsr250           = Dependencies.jsr250
     val javax_servlet30  = Dependencies.javax_servlet_30
     val jetty            = Dependencies.jetty
-    val jetty_util       = Dependencies.jetty_util
-    val jetty_xml        = Dependencies.jetty_xml
-    val jetty_servlet    = Dependencies.jetty_servlet
-    val jackson_core     = Dependencies.jackson_core
-    val jersey           = Dependencies.jersey
-    val jersey_contrib   = Dependencies.jersey_contrib
-    val jersey_json      = Dependencies.jersey_json
-    val jersey_server    = Dependencies.jersey_server
+    val jersey           = Dependencies.jersey_server
     val jsr311           = Dependencies.jsr311
-    val stax_api         = Dependencies.stax_api
 
     // testing
     val junit     = Dependencies.junit
