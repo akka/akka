@@ -33,8 +33,8 @@ class ConfigSpec extends WordSpec with MustMatchers {
       getBool("akka.remote.server.require-cookie") must equal(Some(false))
       getBool("akka.remote.server.untrusted-mode") must equal(Some(false))
 
-      getBool("akka.remote.ssl.debug") must equal(Some(false))
-      getBool("akka.remote.ssl.service") must equal(Some(false))
+      getBool("akka.remote.ssl.debug") must equal(None)
+      getBool("akka.remote.ssl.service") must equal(None)
       getInt("akka.remote.zlib-compression-level") must equal(Some(6))
     }
   }
