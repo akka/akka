@@ -68,7 +68,13 @@ class Configuration(val map: Map[String, Any]) {
 
   def getString(key: String, defaultValue: String): String = getString(key).getOrElse(defaultValue)
 
-  def getList(key: String): Seq[String] = map(key).asInstanceOf[Seq[String]]
+  def getList(key: String): Seq[String] = {
+    try {
+      map(key).asInstanceOf[Seq[String]]
+    } catch {
+      case _ => Seq.empty[String]
+    }
+  }
 
   def getInt(key: String): Option[Int] = {
     try {
