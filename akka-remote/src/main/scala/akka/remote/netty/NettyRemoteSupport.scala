@@ -511,7 +511,7 @@ class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with
 
     if (optimizeLocalScoped_?) {
       val home = this.address
-      if ((host == home.getHostName || host == home.getAddress.getHostAddress) && port == home.getPort)//TODO: switch to InetSocketAddress.equals?
+      if ((host == home.getAddress.getHostAddress || host == home.getHostName) && port == home.getPort)//TODO: switch to InetSocketAddress.equals?
         return new LocalActorRef(factory, None) // Code is much simpler with return
     }
 
