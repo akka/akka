@@ -73,7 +73,7 @@ object Config {
           "\n\t3. Define 'AKKA_HOME' environment variable pointing to the root of the Akka distribution." +
           "\nI have no way of finding the '" + confName + "' configuration file." +
           "\nUsing default values everywhere.")
-        Configuration.fromString("<akka></akka>") // default empty config
+        Configuration.fromString("akka {}") // default empty config
       }
     } catch {
       case e =>
