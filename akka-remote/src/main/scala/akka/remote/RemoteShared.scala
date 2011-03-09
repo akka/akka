@@ -44,26 +44,4 @@ object RemoteServerSettings {
   }
 
   val BACKLOG = config.getInt("akka.remote.server.backlog", 4096)
-
-  val SECURE = {
-    /*if (config.getBool("akka.remote.ssl.service",false)) {
-      val properties = List(
-        ("key-store-type"  , "keyStoreType"),
-        ("key-store"       , "keyStore"),
-        ("key-store-pass"  , "keyStorePassword"),
-        ("trust-store-type", "trustStoreType"),
-        ("trust-store"     , "trustStore"),
-        ("trust-store-pass", "trustStorePassword")
-        ).map(x => ("akka.remote.ssl." + x._1, "javax.net.ssl." + x._2))
-
-      // If property is not set, and we have a value from our akka.conf, use that value
-      for {
-        p <- properties if System.getProperty(p._2) eq null
-        c <- config.getString(p._1)
-      } System.setProperty(p._2, c)
-
-      if (config.getBool("akka.remote.ssl.debug", false)) System.setProperty("javax.net.debug","ssl")
-      true
-    } else */false
-  }
 }
