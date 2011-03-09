@@ -729,21 +729,6 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
     if (_isRunning.isOn) typedActorsFactories.remove(id)
 }
 
-object RemoteServerSslContext {
-  import javax.net.ssl.SSLContext
-
-  val (client, server) = {
-    val protocol  = "TLS"
-    //val algorithm = Option(Security.getProperty("ssl.KeyManagerFactory.algorithm")).getOrElse("SunX509")
-    //val store = KeyStore.getInstance("JKS")
-    val s = SSLContext.getInstance(protocol)
-    s.init(null, null, null)
-    val c = SSLContext.getInstance(protocol)
-    c.init(null, null, null)
-    (c, s)
-  }
-}
-
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
