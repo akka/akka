@@ -221,3 +221,43 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
     }
   }
 }
+
+/**
+ * A version of ExecutorBasedEventDrivenDispatcher that gives all actors registered to it a priority mailbox,
+ * prioritized according to the supplied comparator.
+ */
+class PriorityExecutorBasedEventDrivenDispatcher(
+    name: String,
+    comparator: java.util.Comparator[MessageInvocation],
+    throughput: Int = Dispatchers.THROUGHPUT,
+    throughputDeadlineTime: Int = Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS,
+    mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
+    config: ThreadPoolConfig = ThreadPoolConfig()
+    ) extends ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineTime, mailboxType, config) {
+
+  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
+    this(name, comparator, throughput, throughputDeadlineTime, mailboxType,ThreadPoolConfig())  // Needed for Java API usage
+
+  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int, mailboxType: MailboxType) =
+    this(name, comparator, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
+
+  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int) =
+    this(name, comparator, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
+
+  def this(name: String, comparator: java.util.Comparator[MessageInvocation], config: ThreadPoolConfig) =
+    this(name, comparator, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE, config)
+
+  def this(name: String, comparator: java.util.Comparator[MessageInvocation]) =
+    this(name, comparator, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
+
+  override def createMailbox(actorRef: ActorRef): AnyRef = mailboxType match {
+    case UnboundedMailbox(blocking) => new UnboundedPriorityMessageQueue(blocking, comparator) with ExecutableMailbox {
+      def dispatcher = PriorityExecutorBasedEventDrivenDispatcher.this
+    }
+
+    case BoundedMailbox(blocking, capacity, pushTimeOut) =>
+      new BoundedPriorityMessageQueue(capacity, pushTimeOut, blocking, comparator) with ExecutableMailbox {
+        def dispatcher = PriorityExecutorBasedEventDrivenDispatcher.this
+      }
+  }
+}
