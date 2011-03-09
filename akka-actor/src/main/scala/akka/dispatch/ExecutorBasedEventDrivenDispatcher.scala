@@ -221,4 +221,3 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
     }
   }
 }
-
