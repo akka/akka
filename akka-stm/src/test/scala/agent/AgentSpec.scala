@@ -113,6 +113,28 @@ class AgentSpec extends WordSpec with MustMatchers {
       agent.close
     }
 
+    "be able to return a 'queued' future" in {
+      val agent = Agent("a")
+      agent send (_ + "b")
+      agent send (_ + "c")
+
+      val future = agent.future
+
+      future.await.result.get must be ("abc")
+
+      agent.close
+    }
+
+    "be able to await the value after updates have completed" in {
+      val agent = Agent("a")
+      agent send (_ + "b")
+      agent send (_ + "c")
+
+      agent.await must be ("abc")
+
+      agent.close
+    }
+
     "be able to be mapped" in {
       val agent1 = Agent(5)
       val agent2 = agent1 map (_ * 2)
