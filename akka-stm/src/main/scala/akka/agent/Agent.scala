@@ -7,12 +7,13 @@ package akka.agent
 import akka.stm._
 import akka.actor.Actor
 import akka.japi.{Function => JFunc, Procedure => JProc}
-import akka.dispatch.Dispatchers
+import akka.dispatch.{Dispatchers, Future}
 
 /**
  * Used internally to send functions.
  */
 private[akka] case class Update[T](function: T => T)
+private[akka] case object Get
 
 /**
  * Factory method for creating an Agent.
@@ -140,6 +141,17 @@ class Agent[T](initialValue: T) {
   })
 
   /**
+   * A future to the current value that will be completed after any currently
+   * queued updates.
+   */
+  def future(): Future[T] = (updater !!! Get).asInstanceOf[Future[T]]
+
+  /**
+   * Gets this agent's value after all currently queued updates have completed.
+   */
+  def await(): T = future.await.result.get
+
+  /**
    * Map this agent to a new agent, applying the function to the internal state.
    * Does not change the value of this agent.
    */
@@ -221,6 +233,7 @@ class AgentUpdater[T](agent: Agent[T]) extends Actor {
   def receive = {
     case update: Update[T] =>
       atomic(txFactory) { agent.ref alter update.function }
+    case Get => self reply agent.get
     case _ => ()
   }
 }
