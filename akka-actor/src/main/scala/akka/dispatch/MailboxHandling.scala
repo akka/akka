@@ -81,6 +81,8 @@ class UnboundedPriorityMessageQueue(val blockDequeue: Boolean, cmp: Comparator[M
       PriorityBlockingQueue[MessageInvocation](11, cmp) with
       UnboundedMessageQueueSemantics
 
-class BoundedPriorityMessageQueue(capacity: Int, val pushTimeOut: Duration, val blockDequeue: Boolean, cmp: Comparator[MessageInvocation]) extends
+/* PriorityBlockingQueue cannot be bounded
+  class BoundedPriorityMessageQueue(capacity: Int, val pushTimeOut: Duration, val blockDequeue: Boolean, cmp: Comparator[MessageInvocation]) extends
       PriorityBlockingQueue[MessageInvocation](capacity, cmp) with
       BoundedMessageQueueSemantics
+      */
