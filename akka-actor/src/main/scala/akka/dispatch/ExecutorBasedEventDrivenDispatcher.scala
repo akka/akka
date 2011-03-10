@@ -228,36 +228,40 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
  */
 class PriorityExecutorBasedEventDrivenDispatcher(
     name: String,
-    comparator: java.util.Comparator[MessageInvocation],
+    val comparator: java.util.Comparator[MessageInvocation],
     throughput: Int = Dispatchers.THROUGHPUT,
     throughputDeadlineTime: Int = Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS,
-    mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
+    mailboxType: UnboundedMailbox = UnboundedMailbox(false),
     config: ThreadPoolConfig = ThreadPoolConfig()
-    ) extends ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineTime, mailboxType, config) {
+    ) extends ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineTime, mailboxType, config) with PriorityMailbox {
 
-  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
+  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int, throughputDeadlineTime: Int, mailboxType: UnboundedMailbox) =
     this(name, comparator, throughput, throughputDeadlineTime, mailboxType,ThreadPoolConfig())  // Needed for Java API usage
 
-  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int, mailboxType: MailboxType) =
+  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int, mailboxType: UnboundedMailbox) =
     this(name, comparator, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
 
   def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int) =
-    this(name, comparator, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
+    this(name, comparator, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, UnboundedMailbox(false)) // Needed for Java API usage
 
   def this(name: String, comparator: java.util.Comparator[MessageInvocation], config: ThreadPoolConfig) =
-    this(name, comparator, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE, config)
+    this(name, comparator, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, UnboundedMailbox(false), config)
 
   def this(name: String, comparator: java.util.Comparator[MessageInvocation]) =
-    this(name, comparator, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
+    this(name, comparator, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, UnboundedMailbox(false)) // Needed for Java API usage
+}
 
-  override def createMailbox(actorRef: ActorRef): AnyRef = mailboxType match {
+trait PriorityMailbox { self: ExecutorBasedEventDrivenDispatcher =>
+  def comparator: java.util.Comparator[MessageInvocation]
+
+  override def createMailbox(actorRef: ActorRef): AnyRef = self.mailboxType match {
     case UnboundedMailbox(blocking) => new UnboundedPriorityMessageQueue(blocking, comparator) with ExecutableMailbox {
-      def dispatcher = PriorityExecutorBasedEventDrivenDispatcher.this
+      def dispatcher = self
     }
 
-    case BoundedMailbox(blocking, capacity, pushTimeOut) =>
-      new BoundedPriorityMessageQueue(capacity, pushTimeOut, blocking, comparator) with ExecutableMailbox {
-        def dispatcher = PriorityExecutorBasedEventDrivenDispatcher.this
-      }
+    case BoundedMailbox(blocking, capacity, pushTimeOut) => throw new IllegalStateException("PriorityMailbox does not work when a Bounded mailbox is specified.")
+      /*new BoundedPriorityMessageQueue(capacity, pushTimeOut, blocking, comparator) with ExecutableMailbox {
+        def dispatcher = self
+      }*/
   }
 }
