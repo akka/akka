@@ -3,7 +3,8 @@ package akka.dispatch;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import java.util.concurrent.Callable;
-import scala.runtime.AbstractFunction1;
+import akka.japi.Function;
+import akka.japi.Procedure;
 import scala.Some;
 import scala.Right;
 import static akka.dispatch.Futures.future;
@@ -17,7 +18,7 @@ import static akka.dispatch.Futures.future;
                 }
             });
 
-        Future f2 = f1.map(new AbstractFunction1<String, String>() {
+        Future f2 = f1.map(new Function<String, String>() {
                 public String apply(String s) {
                     return s + " World";
                 }
