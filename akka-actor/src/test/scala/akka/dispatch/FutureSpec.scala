@@ -59,8 +59,21 @@ class FutureSpec extends JUnitSuite {
   @Test def shouldFutureCompose {
     val actor1 = actorOf[TestActor].start
     val actor2 = actorOf(new Actor { def receive = { case s: String => self reply s.toUpperCase } } ).start
-    val future1 = actor1.!!![Any]("Hello") flatMap { case s: String => actor2.!!![Any](s) }
-    val future2 = actor1.!!![Any]("Hello") flatMap { case s: Int => actor2.!!![Any](s) }
+    val future1 = actor1 !!! "Hello" flatMap ((s: String) => actor2 !!! s)
+    val future2 = actor1 !!! "Hello" flatMap (actor2 !!! (_: String))
+    val future3 = actor1 !!! "Hello" flatMap (actor2 !!! (_: Int))
+    assert(Some(Right("WORLD")) === future1.await.value)
+    assert(Some(Right("WORLD")) === future2.await.value)
+    intercept[ClassCastException] { future3.await.resultOrException }
+    actor1.stop
+    actor2.stop
+  }
+
+  @Test def shouldFutureComposePatternMatch {
+    val actor1 = actorOf[TestActor].start
+    val actor2 = actorOf(new Actor { def receive = { case s: String => self reply s.toUpperCase } } ).start
+    val future1 = actor1 !!! "Hello" collect { case (s: String) => s } flatMap (actor2 !!! _)
+    val future2 = actor1 !!! "Hello" collect { case (n: Int) => n } flatMap (actor2 !!! _)
     assert(Some(Right("WORLD")) === future1.await.value)
     intercept[MatchError] { future2.await.resultOrException }
     actor1.stop
@@ -103,15 +116,15 @@ class FutureSpec extends JUnitSuite {
     }).start
 
     val future1 = for {
-      Res(a: Int)    <- (actor !!! Req("Hello")): Future[Any]
-      Res(b: String) <- (actor !!! Req(a)): Future[Any]
-      Res(c: String) <- (actor !!! Req(7)): Future[Any]
+      a <- actor !!! Req("Hello") collect { case Res(x: Int) => x }
+      b <- actor !!! Req(a) collect { case Res(x: String) => x }
+      c <- actor !!! Req(7) collect { case Res(x: String) => x }
     } yield b + "-" + c
 
     val future2 = for {
-      Res(a: Int)    <- (actor !!! Req("Hello")): Future[Any]
-      Res(b: Int)    <- (actor !!! Req(a)): Future[Any]
-      Res(c: String) <- (actor !!! Req(7)): Future[Any]
+      a <- actor !!! Req("Hello") collect { case Res(x: Int) => x }
+      b <- actor !!! Req(a) collect { case Res(x: Int) => x }
+      c <- actor !!! Req(7) collect { case Res(x: String) => x }
     } yield b + "-" + c
 
     assert(Some(Right("10-14")) === future1.await.value)
