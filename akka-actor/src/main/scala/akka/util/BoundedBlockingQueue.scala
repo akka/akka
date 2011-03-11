@@ -311,5 +311,12 @@ class BoundedBlockingQueue[E <: AnyRef](val maxCapacity: Int, private val backin
     }
   }
 
-  //FIXME Implement toArray[T] => Array[T]
+  override def toArray[X](a: Array[X with AnyRef]) = {
+    lock.lock()
+    try {
+      backing.toArray[X](a)
+    } finally {
+      lock.unlock()
+    }
+  }
 }
