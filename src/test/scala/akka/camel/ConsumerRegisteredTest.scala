@@ -9,36 +9,36 @@ class ConsumerRegisteredTest extends JUnitSuite {
 
   @Test def shouldCreateSomeNonBlockingPublishRequestFromConsumer = {
     val c = Actor.actorOf[ConsumerActor1]
-    val event = ConsumerActorRegistered.forConsumer(c)
+    val event = ConsumerActorRegistered.eventFor(c)
     assert(event === Some(ConsumerActorRegistered(c, consumerOf(c))))
   }
 
   @Test def shouldCreateSomeBlockingPublishRequestFromConsumer = {
     val c = Actor.actorOf[ConsumerActor2]
-    val event = ConsumerActorRegistered.forConsumer(c)
+    val event = ConsumerActorRegistered.eventFor(c)
     assert(event === Some(ConsumerActorRegistered(c, consumerOf(c))))
   }
 
   @Test def shouldCreateNoneFromConsumer = {
-    val event = ConsumerActorRegistered.forConsumer(Actor.actorOf[PlainActor])
+    val event = ConsumerActorRegistered.eventFor(Actor.actorOf[PlainActor])
     assert(event === None)
   }
 
   @Test def shouldCreateSomeNonBlockingPublishRequestFromUntypedConsumer = {
     val uc = Actor.actorOf(classOf[SampleUntypedConsumer])
-    val event = ConsumerActorRegistered.forConsumer(uc)
+    val event = ConsumerActorRegistered.eventFor(uc)
     assert(event === Some(ConsumerActorRegistered(uc, consumerOf(uc))))
   }
 
   @Test def shouldCreateSomeBlockingPublishRequestFromUntypedConsumer = {
     val uc = Actor.actorOf(classOf[SampleUntypedConsumerBlocking])
-    val event = ConsumerActorRegistered.forConsumer(uc)
+    val event = ConsumerActorRegistered.eventFor(uc)
     assert(event === Some(ConsumerActorRegistered(uc, consumerOf(uc))))
   }
 
   @Test def shouldCreateNoneFromUntypedConsumer = {
     val a = Actor.actorOf(classOf[SampleUntypedActor])
-    val event = ConsumerActorRegistered.forConsumer(a)
+    val event = ConsumerActorRegistered.eventFor(a)
     assert(event === None)
   }
 

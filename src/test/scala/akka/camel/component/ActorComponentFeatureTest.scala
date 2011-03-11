@@ -7,10 +7,10 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.component.mock.MockEndpoint
 import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec}
 
+import akka.actor.Actor
 import akka.actor.Actor._
-import akka.actor.{ActorRegistry, Actor}
 import akka.camel.{Failure, Message, CamelContextManager}
-import akka.camel.support._
+import akka.camel.CamelTestSupport._
 
 class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   import ActorComponentFeatureTest._

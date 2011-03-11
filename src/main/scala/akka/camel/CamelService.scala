@@ -13,6 +13,8 @@ import akka.config.Config._
 import akka.japi.{SideEffect, Option => JOption}
 import akka.util.Bootable
 
+import TypedCamelAccess._
+
 /**
  * Publishes (untyped) consumer actors and typed consumer actors via Camel endpoints. Actors
  * are published (asynchronously) when they are started and unpublished (asynchronously) when
@@ -22,8 +24,9 @@ import akka.util.Bootable
  * @author Martin Krasser
  */
 trait CamelService extends Bootable {
-  private[camel] val consumerPublisher = actorOf[ConsumerPublisher]
-  private[camel] val publishRequestor =  actorOf[PublishRequestor]
+  private[camel] val activationTracker = actorOf(new ActivationTracker)
+  private[camel] val consumerPublisher = actorOf(new ConsumerPublisher(activationTracker))
+  private[camel] val publishRequestor =  actorOf(new ConsumerPublishRequestor)
 
   private val serviceEnabled = config.getList("akka.enabled-modules").exists(_ == "camel")
 
@@ -31,7 +34,6 @@ trait CamelService extends Bootable {
    * Starts this CamelService unless <code>akka.camel.service</code> is set to <code>false</code>.
    */
   abstract override def onLoad = {
-    if (serviceEnabled) registerPublishRequestor
     super.onLoad
     if (serviceEnabled) start
   }
@@ -59,20 +61,22 @@ trait CamelService extends Bootable {
    * on a remote node).
    */
   def start: CamelService = {
-    if (!publishRequestorRegistered) registerPublishRequestor
-
     // Only init and start if not already done by application
     if (!CamelContextManager.initialized) CamelContextManager.init
     if (!CamelContextManager.started) CamelContextManager.start
 
-    // start actor that exposes consumer actors and typed actors via Camel endpoints
+    registerPublishRequestor
+
+    activationTracker.start
     consumerPublisher.start
 
     // send registration events for all (un)typed actors that have been registered in the past.
     for (event <- PublishRequestor.pastActorRegisteredEvents) publishRequestor ! event
 
     // init publishRequestor so that buffered and future events are delivered to consumerPublisher
-    publishRequestor ! PublishRequestorInit(consumerPublisher)
+    publishRequestor ! InitPublishRequestor(consumerPublisher)
+
+    for (tc <- TypedCamelModule.typedCamelObject) tc.onCamelServiceStart(this)
 
     // Register this instance as current CamelService and return it
     CamelServiceManager.register(this)
@@ -87,11 +91,14 @@ trait CamelService extends Bootable {
     // Unregister this instance as current CamelService
     CamelServiceManager.unregister(this)
 
+    for (tc <- TypedCamelModule.typedCamelObject) tc.onCamelServiceStop(this)
+
     // Remove related listeners from registry
     unregisterPublishRequestor
 
     // Stop related services
     consumerPublisher.stop
+    activationTracker.stop
     CamelContextManager.stop
   }
 
@@ -165,7 +172,7 @@ trait CamelService extends Bootable {
    * activations that occurred in the past are not considered.
    */
   private def expectEndpointActivationCount(count: Int): CountDownLatch =
-    (consumerPublisher !! SetExpectedRegistrationCount(count)).as[CountDownLatch].get
+    (activationTracker !! SetExpectedRegistrationCount(count)).as[CountDownLatch].get
 
   /**
    * Sets an expectation on the number of upcoming endpoint de-activations and returns
@@ -173,10 +180,7 @@ trait CamelService extends Bootable {
    * de-activations that occurred in the past are not considered.
    */
   private def expectEndpointDeactivationCount(count: Int): CountDownLatch =
-    (consumerPublisher !! SetExpectedUnregistrationCount(count)).as[CountDownLatch].get
-
-  private[camel] def publishRequestorRegistered: Boolean =
-    registry.hasListener(publishRequestor)
+    (activationTracker !! SetExpectedUnregistrationCount(count)).as[CountDownLatch].get
 
   private[camel] def registerPublishRequestor: Unit =
     registry.addListener(publishRequestor)

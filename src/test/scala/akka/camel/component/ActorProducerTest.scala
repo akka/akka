@@ -12,7 +12,7 @@ import org.scalatest.BeforeAndAfterAll
 
 import akka.actor.Actor._
 import akka.camel.{Failure, Message}
-import akka.camel.support._
+import akka.camel.CamelTestSupport._
 
 class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   import ActorProducerTest._

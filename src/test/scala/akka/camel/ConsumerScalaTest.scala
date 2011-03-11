@@ -25,16 +25,13 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
 
   override protected def beforeAll = {
     registry.shutdownAll
-    // create new CamelService instance
     service = CamelServiceFactory.createCamelService
     // register test consumer before registering the publish requestor
     // and before starting the CamelService (registry is scanned for consumers)
     actorOf(new TestConsumer("direct:publish-test-1")).start
-    // Register publish requestor as listener
     service.registerPublishRequestor
-    // start consumer publisher, otherwise we cannot set message
-    // count expectations in the next step (needed for testing only).
     service.consumerPublisher.start
+    service.activationTracker.start
     service.awaitEndpointActivation(1) {
       service.start
     } must be (true)
@@ -75,62 +72,6 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
         } must be (true)
         intercept[CamelExecutionException] {
           mandatoryTemplate.requestBody("direct:publish-test-2", "msg2")
-        }
-      }
-    }
-  }
-
-  "A responding, typed consumer" when {
-    var actor: SampleTypedConsumer = null
-    "started" must {
-      "support in-out message exchanges via its endpoints" in {
-        service.awaitEndpointActivation(3) {
-          actor = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
-        } must be (true)
-        mandatoryTemplate.requestBodyAndHeader("direct:m2", "x", "test", "y") must equal ("m2: x y")
-        mandatoryTemplate.requestBodyAndHeader("direct:m3", "x", "test", "y") must equal ("m3: x y")
-        mandatoryTemplate.requestBodyAndHeader("direct:m4", "x", "test", "y") must equal ("m4: x y")
-      }
-    }
-    "stopped" must {
-      "not support in-out message exchanges via its endpoints" in {
-        service.awaitEndpointDeactivation(3) {
-          TypedActor.stop(actor)
-        } must be (true)
-        intercept[CamelExecutionException] {
-          mandatoryTemplate.requestBodyAndHeader("direct:m2", "x", "test", "y")
-        }
-        intercept[CamelExecutionException] {
-          mandatoryTemplate.requestBodyAndHeader("direct:m3", "x", "test", "y")
-        }
-        intercept[CamelExecutionException] {
-          mandatoryTemplate.requestBodyAndHeader("direct:m4", "x", "test", "y")
-        }
-      }
-    }
-  }
-
-  "A responding, typed consumer (Scala)" when {
-    var actor: TestTypedConsumer = null
-    "started" must {
-      "support in-out message exchanges via its endpoints" in {
-        service.awaitEndpointActivation(2) {
-          actor = TypedActor.newInstance(classOf[TestTypedConsumer], classOf[TestTypedConsumerImpl])
-        } must be (true)
-        mandatoryTemplate.requestBody("direct:publish-test-3", "x") must equal ("foo: x")
-        mandatoryTemplate.requestBody("direct:publish-test-4", "x") must equal ("bar: x")
-      }
-    }
-    "stopped" must {
-      "not support in-out message exchanges via its endpoints" in {
-        service.awaitEndpointDeactivation(2) {
-          TypedActor.stop(actor)
-        } must be (true)
-        intercept[CamelExecutionException] {
-          mandatoryTemplate.requestBody("direct:publish-test-3", "x")
-        }
-        intercept[CamelExecutionException] {
-          mandatoryTemplate.requestBody("direct:publish-test-4", "x")
         }
       }
     }
@@ -354,17 +295,5 @@ object ConsumerScalaTest {
       if (valid) self.reply("accepted: %s" format msg.body)
       else throw new Exception("rejected: %s" format msg.body)
 
-  }
-
-  trait TestTypedConsumer {
-    @consume("direct:publish-test-3")
-    def foo(s: String): String
-    def bar(s: String): String
-  }
-
-  class TestTypedConsumerImpl extends TypedActor with TestTypedConsumer {
-    def foo(s: String) = "foo: %s" format s
-    @consume("direct:publish-test-4")
-    def bar(s: String) = "bar: %s" format s
   }
 }

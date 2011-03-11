@@ -4,14 +4,13 @@
 
 package akka.camel
 
-import java.util.Map
-
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import org.apache.camel.impl.DefaultCamelContext
 
 import akka.actor.EventHandler
-import akka.camel.component.TypedActorComponent
 import akka.japi.{Option => JOption}
+
+import TypedCamelAccess._
 
 /**
  * Manages the lifecycle of a CamelContext. Allowed transitions are
@@ -132,12 +131,11 @@ trait CamelContextLifecycle {
    * Initializes this lifecycle object with the given CamelContext. For the passed
    * CamelContext, stream-caching is enabled. If applications want to disable stream-
    * caching they can do so after this method returned and prior to calling start.
-   * This method also registers a new TypedActorComponent at the passed CamelContext
-   * under a name defined by TypedActorComponent.InternalSchema.
    */
   def init(context: CamelContext) {
     context.setStreamCaching(true)
-    context.addComponent(TypedActorComponent.InternalSchema, new TypedActorComponent)
+
+    for (tc <- TypedCamelModule.typedCamelObject) tc.onCamelContextInit(context)
 
     this._context = Some(context)
     this._template = Some(context.createProducerTemplate)
