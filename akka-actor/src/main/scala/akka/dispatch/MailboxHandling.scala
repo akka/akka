@@ -7,9 +7,8 @@ package akka.dispatch
 import akka.actor.{Actor, ActorType, ActorRef, ActorInitializationException}
 import akka.AkkaException
 
-import java.util.{Queue, List, Comparator}
+import java.util.{Queue, List, Comparator, PriorityQueue}
 import java.util.concurrent._
-import concurrent.forkjoin.LinkedTransferQueue
 import akka.util._
 
 class MessageQueueAppendFailedException(message: String) extends AkkaException(message)
@@ -58,7 +57,7 @@ trait BoundedMessageQueueSemantics extends MessageQueue { self: BlockingQueue[Me
   def pushTimeOut: Duration
 
   final def enqueue(handle: MessageInvocation) {
-    if (pushTimeOut.toMillis > 0) {
+    if (pushTimeOut.length > 0 && pushTimeOut.toMillis > 0) {
       if (!this.offer(handle, pushTimeOut.length, pushTimeOut.unit))
         throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + toString)
     } else this put handle
@@ -81,8 +80,6 @@ class UnboundedPriorityMessageQueue(val blockDequeue: Boolean, cmp: Comparator[M
       PriorityBlockingQueue[MessageInvocation](11, cmp) with
       UnboundedMessageQueueSemantics
 
-/* PriorityBlockingQueue cannot be bounded
   class BoundedPriorityMessageQueue(capacity: Int, val pushTimeOut: Duration, val blockDequeue: Boolean, cmp: Comparator[MessageInvocation]) extends
-      PriorityBlockingQueue[MessageInvocation](capacity, cmp) with
+      BoundedBlockingQueue[MessageInvocation](capacity, new PriorityQueue[MessageInvocation](capacity, cmp)) with
       BoundedMessageQueueSemantics
-      */
