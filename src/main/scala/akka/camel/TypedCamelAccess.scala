@@ -9,6 +9,8 @@ import org.apache.camel.CamelContext
 import akka.util.ReflectiveAccess.getObjectFor
 
 /**
+ * Module for reflective access to akka-camel-typed. 
+ *
  * @author Martin Krasser
  */
 private[camel] object TypedCamelAccess {

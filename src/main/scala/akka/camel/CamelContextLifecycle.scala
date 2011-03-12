@@ -123,14 +123,14 @@ trait CamelContextLifecycle {
   }
 
   /**
-   * Initializes this lifecycle object with the a DefaultCamelContext.
+   * Initializes this instance a new DefaultCamelContext.
    */
   def init(): Unit = init(new DefaultCamelContext)
 
   /**
-   * Initializes this lifecycle object with the given CamelContext. For the passed
-   * CamelContext, stream-caching is enabled. If applications want to disable stream-
-   * caching they can do so after this method returned and prior to calling start.
+   * Initializes this instance with the given CamelContext. For the passed <code>context</code>
+   * stream-caching is enabled. If applications want to disable stream-caching they can do so
+   * after this method returned and prior to calling start.
    */
   def init(context: CamelContext) {
     context.setStreamCaching(true)

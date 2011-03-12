@@ -12,6 +12,9 @@ import org.apache.camel.model.RouteDefinition
 import akka.actor._
 
 /**
+ * Concrete publish requestor that requests publication of consumer actors on <code>ActorRegistered</code>
+ * events and unpublication of consumer actors on <code>ActorUnregistered</code> events.
+ *
  * @author Martin Krasser
  */
 private[camel] class ConsumerPublishRequestor extends PublishRequestor {
@@ -22,6 +25,11 @@ private[camel] class ConsumerPublishRequestor extends PublishRequestor {
 }
 
 /**
+ * Publishes consumer actors on <code>ConsumerActorRegistered</code> events and unpublishes
+ * consumer actors on <code>ConsumerActorUnregistered</code> events. Publications are tracked
+ * by sending an <code>activationTracker</code> an <code>EndpointActivated</code> event,
+ * unpublications are tracked by sending an <code>EndpointActivated</code> event.
+ *
  * @author Martin Krasser
  */
 private[camel] class ConsumerPublisher(activationTracker: ActorRef) extends Actor {
@@ -62,10 +70,10 @@ private[camel] object ConsumerPublisher {
 }
 
 /**
- * Abstract route to a target which is either an actor or an typed actor method.
+ * Abstract builder of a route to a target which can be either an actor or an typed actor method.
  *
  * @param endpointUri endpoint URI of the consumer actor or typed actor method.
- * @param id actor identifier or typed actor identifier (registry key).
+ * @param id unique route identifier.
  *
  * @author Martin Krasser
  */
@@ -93,7 +101,7 @@ private[camel] abstract class ConsumerRouteBuilder(endpointUri: String, id: Stri
 }
 
 /**
- * Defines the route to a (untyped) consumer actor.
+ * Builder of a route to a consumer actor.
  *
  * @author Martin Krasser
  */
@@ -103,6 +111,12 @@ private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) e
 }
 
 /**
+ * Tracks <code>EndpointActivated</code> and <code>EndpointDectivated</code> events. Used to wait for a
+ * certain number of endpoints activations and de-activations to occur.
+ *
+ * @see SetExpectedActivationCount
+ * @see SetExpectedDeactivationCount
+ *
  * @author Martin Krasser
  */
 private[camel] class ActivationTracker extends Actor {
@@ -110,11 +124,11 @@ private[camel] class ActivationTracker extends Actor {
   private var deactivationLatch = new CountDownLatch(0)
 
   def receive = {
-    case SetExpectedRegistrationCount(num) => {
+    case SetExpectedActivationCount(num) => {
       activationLatch = new CountDownLatch(num)
       self.reply(activationLatch)
     }
-    case SetExpectedUnregistrationCount(num) => {
+    case SetExpectedDeactivationCount(num) => {
       deactivationLatch = new CountDownLatch(num)
       self.reply(deactivationLatch)
     }
@@ -126,12 +140,12 @@ private[camel] class ActivationTracker extends Actor {
 /**
  * Command message that sets the number of expected endpoint activations on <code>ActivationTracker</code>.
  */
-private[camel] case class SetExpectedRegistrationCount(num: Int)
+private[camel] case class SetExpectedActivationCount(num: Int)
 
 /**
  * Command message that sets the number of expected endpoint de-activations on <code>ActivationTracker</code>.
  */
-private[camel] case class SetExpectedUnregistrationCount(num: Int)
+private[camel] case class SetExpectedDeactivationCount(num: Int)
 
 /**
  * Event message indicating that a single endpoint has been activated.
