@@ -114,7 +114,7 @@ import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
 abstract class TypedActor extends Actor with Proxyable {
   val DELEGATE_FIELD_NAME = "DELEGATE_0".intern
 
-  @volatile private[actor] var proxy: AnyRef = _
+  @volatile private[akka] var proxy: AnyRef = _
   @volatile private var proxyDelegate: Field = _
 
   /**
