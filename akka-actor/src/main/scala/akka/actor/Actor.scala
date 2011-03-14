@@ -97,7 +97,11 @@ class ActorTimeoutException        private[akka](message: String) extends AkkaEx
  *
  * Log an error event:
  * <pre>
- * EventHandler.notifyListeners(EventHandler.Error(exception, this, message.toString))
+ * EventHandler.notify(EventHandler.Error(exception, this, message.toString))
+ * </pre>
+ * Or use the direct methods (better performance):
+ * <pre>
+ * EventHandler.error(exception, this, message.toString)
  * </pre>
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -114,14 +118,46 @@ object EventHandler extends ListenerManagement {
   case class Warning(instance: AnyRef, message: String = "") extends Event
   case class Info(instance: AnyRef, message: String = "") extends Event
   case class Debug(instance: AnyRef, message: String = "") extends Event
-
-  val error   = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
-  val warning = "[WARN]  [%s] [%s] [%s] %s".intern
-  val info    = "[INFO]  [%s] [%s] [%s] %s".intern
-  val debug   = "[DEBUG] [%s] [%s] [%s] %s".intern
-  val ID      = "default:error:handler".intern
+  
+  val error   = "[ERROR]   [%s] [%s] [%s] %s\n%s".intern
+  val warning = "[WARN]    [%s] [%s] [%s] %s".intern
+  val info    = "[INFO]    [%s] [%s] [%s] %s".intern
+  val debug   = "[DEBUG]   [%s] [%s] [%s] %s".intern
+  val generic = "[GENERIC] [%s] [%s]".intern
+  val ID      = "event:handler".intern
 
   val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
+
+  val level: Class[_ <: Event] = config.getString("akka.event-handler-level", "DEBUG") match {
+    case "ERROR"   => classOf[Error]
+    case "WARNING" => classOf[Warning]
+    case "INFO"    => classOf[Info]
+    case "DEBUG"   => classOf[Debug]
+    case unknown   => throw new ConfigurationException(
+                    "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
+  }
+
+  def notify(event: => AnyRef) = notifyListeners(event)
+  
+  def notify[T <: Event : ClassManifest](event: => T) {
+    if (classManifest[T].erasure.asInstanceOf[Class[_ <: Event]] == level) notifyListeners(event)
+  }
+
+  def error(cause: Throwable, instance: AnyRef, message: => String) = {
+    if (level == classOf[Error]) notifyListeners(Error(cause, instance, message))    
+  }
+
+  def warning(instance: AnyRef, message: => String) = {
+    if (level == classOf[Warning]) notifyListeners(Warning(instance, message))    
+  }
+
+  def info(instance: AnyRef, message: => String) = {
+    if (level == classOf[Info]) notifyListeners(Info(instance, message))    
+  }
+  
+  def debug(instance: AnyRef, message: => String) = {
+    if (level == classOf[Debug]) notifyListeners(Debug(instance, message))    
+  }
 
   def formattedTimestamp = DateFormat.getInstance.format(new Date)
   
@@ -162,7 +198,8 @@ object EventHandler extends ListenerManagement {
           event.thread.getName,
           instance.getClass.getSimpleName,
           message))
-      case _ => {} 
+      case event => 
+        println(generic.format(formattedTimestamp, event.toString))
     }
   }
 
@@ -232,9 +269,7 @@ object Actor extends ListenerManagement {
   type Receive = PartialFunction[Any, Unit]
 
   private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
-
-
-
+  
    /**
    *  Creates an ActorRef out of the Actor with type T.
    * <pre>

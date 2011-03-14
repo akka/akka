@@ -36,7 +36,7 @@ trait Servlet30Context extends AsyncListener {
     }
     catch {
       case ex: IllegalStateException =>
-        EventHandler notifyListeners EventHandler.Error(ex, this)
+        EventHandler notify EventHandler.Error(ex, this)
         false
     }
   }
