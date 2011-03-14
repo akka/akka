@@ -927,7 +927,8 @@ class RemoteServerHandler(
     val (argClasses, args) = MessageSerializer.deserialize(request.getMessage).asInstanceOf[Tuple2[Array[Class[_]],Array[AnyRef]]]
 
     try {
-      val messageReceiver = typedActor.getClass.getDeclaredMethod(typedActorInfo.getMethod, argClasses: _*)
+      val messageReceiver = ReflectiveAccess.resolveMethod(typedActor.getClass, typedActorInfo.getMethod, argClasses)
+
       if (request.getOneWay) messageReceiver.invoke(typedActor, args: _*)
       else {
         //Sends the response
