@@ -73,7 +73,7 @@ trait DefaultActorPool extends ActorPool { this: Actor =>
           case None =>
             delegate ! msg
           case Some(future) =>
-            future completeWith (delegate.!!!(msg, TimeUnit.NANOSECONDS.toMillis(future.timeoutInNanos)))
+            delegate.!!!(msg, TimeUnit.NANOSECONDS.toMillis(future.timeoutInNanos)).onComplete( future.completeWith(_) )
         }
       }
   }
