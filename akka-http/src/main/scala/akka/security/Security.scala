@@ -369,7 +369,7 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] {
         Some(UserInfo(user, null, rolesFor(user)))
       } catch {
         case e: PrivilegedActionException => {
-          EventHandler notifyListeners EventHandler.Error(e, this)
+          EventHandler notify EventHandler.Error(e, this)
           None
         }
       }

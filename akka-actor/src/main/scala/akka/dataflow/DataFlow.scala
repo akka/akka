@@ -148,7 +148,7 @@ object DataFlow {
           (out !! Get).as[T]
         } catch {
           case e: Exception =>
-            EventHandler notifyListeners EventHandler.Error(e, this)
+            EventHandler notify EventHandler.Error(e, this)
             out ! Exit
             throw e
         }

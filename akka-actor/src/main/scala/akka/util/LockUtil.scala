@@ -126,7 +126,7 @@ class Switch(startAsOn: Boolean = false) {
         action
       } catch {
         case t: Throwable =>
-          EventHandler notifyListeners EventHandler.Error(t, this)
+          EventHandler notify EventHandler.Error(t, this)
           switch.compareAndSet(!from, from) //Revert status
           throw t
       }
