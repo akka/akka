@@ -166,4 +166,26 @@ object ReflectiveAccess {
     case e: Exception =>
       None
   }
+
+  def resolveMethod(bottomType: Class[_], methodName: String, methodSignature: Array[Class[_]]): java.lang.reflect.Method = {
+    var typeToResolve = bottomType
+    var targetMethod: java.lang.reflect.Method = null
+    var firstException: NoSuchMethodException = null
+    while((typeToResolve ne null) && (targetMethod eq null)) {
+      try {
+        targetMethod = typeToResolve.getDeclaredMethod(methodName, methodSignature:_*)
+        targetMethod.setAccessible(true)
+      } catch {
+        case e: NoSuchMethodException =>
+          if (firstException eq null)
+            firstException = e
+          typeToResolve = typeToResolve.getSuperclass
+      }
+    }
+
+    if((targetMethod eq null) && (firstException ne null))
+      throw firstException
+
+    targetMethod
+  }
 }
