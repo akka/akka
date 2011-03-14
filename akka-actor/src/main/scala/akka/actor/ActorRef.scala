@@ -824,7 +824,7 @@ class LocalActorRef private[akka] (
         }
       } catch {
         case e: Throwable =>
-          EventHandler notifyListeners EventHandler.Error(e, this, messageHandle.message.toString)
+          EventHandler notify EventHandler.Error(e, this, messageHandle.message.toString)
           throw e
       }
     }
@@ -987,7 +987,7 @@ class LocalActorRef private[akka] (
   }
 
   private def handleExceptionInDispatch(reason: Throwable, message: Any) = {
-    EventHandler notifyListeners EventHandler.Error(reason, this, message.toString)
+    EventHandler notify EventHandler.Error(reason, this, message.toString)
     
     //Prevent any further messages to be processed until the actor has been restarted
     dispatcher.suspend(this)

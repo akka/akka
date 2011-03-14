@@ -102,7 +102,7 @@ class ExecutorBasedEventDrivenDispatcher(
     try executorService.get() execute invocation
     catch {
       case e: RejectedExecutionException =>
-        EventHandler notifyListeners EventHandler.Warning(this, e.toString)
+        EventHandler notify EventHandler.Warning(this, e.toString)
         throw e
     }
   }
@@ -141,7 +141,7 @@ class ExecutorBasedEventDrivenDispatcher(
           executorService.get() execute mbox
         } catch {
           case e: RejectedExecutionException =>
-            EventHandler notifyListeners EventHandler.Warning(this, e.toString)
+            EventHandler notify EventHandler.Warning(this, e.toString)
             mbox.dispatcherLock.unlock()
             throw e
         }

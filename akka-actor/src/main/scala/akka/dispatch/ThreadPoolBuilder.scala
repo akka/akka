@@ -208,10 +208,10 @@ class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extend
       })
     } catch {
       case e: RejectedExecutionException =>
-        EventHandler notifyListeners EventHandler.Warning(this, e.toString)
+        EventHandler notify EventHandler.Warning(this, e.toString)
         semaphore.release
       case e: Throwable =>
-        EventHandler notifyListeners EventHandler.Error(e, this)
+        EventHandler notify EventHandler.Error(e, this)
         throw e
     }
   }

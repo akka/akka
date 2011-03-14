@@ -90,7 +90,7 @@ object Futures {
               result completeWithResult r
             } catch {
               case e: Exception => 
-                EventHandler notifyListeners EventHandler.Error(e, this)
+                EventHandler notify EventHandler.Error(e, this)
                 result completeWithException e
             }
           }
@@ -258,7 +258,7 @@ sealed trait Future[T] {
             Right(f(v.right.get))
           } catch {
             case e: Exception => 
-              EventHandler notifyListeners EventHandler.Error(e, this)
+              EventHandler notify EventHandler.Error(e, this)
               Left(e)
           })
         }
@@ -286,7 +286,7 @@ sealed trait Future[T] {
             f(v.right.get) onComplete (fa.completeWith(_))
           } catch {
             case e: Exception => 
-              EventHandler notifyListeners EventHandler.Error(e, this)
+              EventHandler notify EventHandler.Error(e, this)
               fa completeWithException e
           }
         }
@@ -316,7 +316,7 @@ sealed trait Future[T] {
             else Left(new MatchError(r))
           } catch {
             case e: Exception => 
-              EventHandler notifyListeners EventHandler.Error(e, this)
+              EventHandler notify EventHandler.Error(e, this)
               Left(e)
           })
         }

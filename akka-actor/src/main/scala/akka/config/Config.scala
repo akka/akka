@@ -77,7 +77,7 @@ object Config {
       }
     } catch {
       case e =>
-        EventHandler notifyListeners EventHandler.Error(e, this)
+        EventHandler notify EventHandler.Error(e, this)
         throw e
     }
   }

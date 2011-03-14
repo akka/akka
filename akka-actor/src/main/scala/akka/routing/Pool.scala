@@ -84,7 +84,7 @@ trait DefaultActorPool extends ActorPool
                                                                 future completeWithResult (delegate !! msg).getOrElse(None)
                                                         } catch {
                                                                 case e => 
-                                                                  EventHandler notifyListeners EventHandler.Error(e, this)
+                                                                  EventHandler notify EventHandler.Error(e, this)
                                                                   future completeWithException e
                                                         }
                                                 }
