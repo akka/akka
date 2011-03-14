@@ -921,10 +921,16 @@ private[akka] abstract class ActorAspect {
     val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     val isOneWay = TypedActor.isOneWay(methodRtti)
 
-    //val (message: Array[AnyRef], isEscaped) = escapeArguments(methodRtti.getParameterValues)
-    val message: Tuple2[Array[Class[_]],Array[AnyRef]] = {
-      ((methodRtti.getParameterTypes, methodRtti.getParameterValues))
-    }
+    def extractOwnerTypeHint(s: String) =
+      s.indexOf("$$ProxiedByAW") match {
+        case -1 => s
+        case x => s.substring(0,x)
+      }
+    //FIXME: Add ownerTypeHint and parameter types to the TypedActorInfo?
+    val message: Tuple3[String, Array[Class[_]], Array[AnyRef]] =
+      ((extractOwnerTypeHint(methodRtti.getMethod.getDeclaringClass.getName),
+        methodRtti.getParameterTypes,
+        methodRtti.getParameterValues))
 
     val future = Actor.remote.send[AnyRef](
       message, None, None, remoteAddress.get,
@@ -944,18 +950,6 @@ private[akka] abstract class ActorAspect {
       } else throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
     }
   }
-
-  /*private def escapeArguments(args: Array[AnyRef]): Tuple2[Array[AnyRef], Boolean] = {
-    var isEscaped = false
-    val escapedArgs = for (arg <- args) yield {
-      val clazz = arg.getClass
-      if (clazz.getName.contains(TypedActor.AW_PROXY_PREFIX)) {
-        isEscaped = true
-        TypedActor.AW_PROXY_PREFIX + clazz.getSuperclass.getName
-      } else arg
-    }
-    (escapedArgs, isEscaped)
-  }*/
 
   protected def initialize(joinPoint: JoinPoint) {
     isInitialized.switchOn {

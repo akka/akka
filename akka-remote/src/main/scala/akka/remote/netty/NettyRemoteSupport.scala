@@ -924,10 +924,41 @@ class RemoteServerHandler(
     val typedActorInfo = actorInfo.getTypedActorInfo
 
     val typedActor = createTypedActor(actorInfo, channel)
-    val (argClasses, args) = MessageSerializer.deserialize(request.getMessage).asInstanceOf[Tuple2[Array[Class[_]],Array[AnyRef]]]
+    //FIXME: Add ownerTypeHint and parameter types to the TypedActorInfo?
+    val (ownerTypeHint, argClasses, args) = MessageSerializer.deserialize(request.getMessage).asInstanceOf[Tuple3[String,Array[Class[_]],Array[AnyRef]]]
+
+    def resolveMethod(bottomType: Class[_], typeHint: String, methodName: String, methodSignature: Array[Class[_]]): java.lang.reflect.Method = {
+      var typeToResolve = bottomType
+      var targetMethod: java.lang.reflect.Method = null
+      var firstException: NoSuchMethodException = null
+      while((typeToResolve ne null) && (targetMethod eq null)) {
+
+        if ((typeHint eq null) || typeToResolve.getName.startsWith(typeHint)) {
+          try {
+            targetMethod = typeToResolve.getDeclaredMethod(methodName, methodSignature:_*)
+            targetMethod.setAccessible(true)
+          } catch {
+            case e: NoSuchMethodException =>
+              if (firstException eq null)
+                firstException = e
+
+          }
+        }
+
+        typeToResolve = typeToResolve.getSuperclass
+      }
+
+      if((targetMethod eq null) && (firstException ne null))
+        throw firstException
+
+      targetMethod
+  }
 
     try {
-      val messageReceiver = ReflectiveAccess.resolveMethod(typedActor.getClass, typedActorInfo.getMethod, argClasses)
+
+      println("%s(%s) = %s for %s" format(ownerTypeHint, argClasses.map(_.getName).mkString(", "), args.mkString(", "), typedActor.getClass.getName))
+
+      val messageReceiver = resolveMethod(typedActor.getClass, ownerTypeHint, typedActorInfo.getMethod, argClasses)
 
       if (request.getOneWay) messageReceiver.invoke(typedActor, args: _*)
       else {
