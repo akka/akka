@@ -955,9 +955,6 @@ class RemoteServerHandler(
   }
 
     try {
-
-      println("%s(%s) = %s for %s" format(ownerTypeHint, argClasses.map(_.getName).mkString(", "), args.mkString(", "), typedActor.getClass.getName))
-
       val messageReceiver = resolveMethod(typedActor.getClass, ownerTypeHint, typedActorInfo.getMethod, argClasses)
 
       if (request.getOneWay) messageReceiver.invoke(typedActor, args: _*)
