@@ -442,7 +442,7 @@ object TypedActor {
   val ZERO_ITEM_OBJECT_ARRAY = Array[Object]()
 
   val AKKA_CAMEL_ROUTING_SCHEME = "akka".intern
-  private[actor] val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
+  val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
 
   /**
    * Factory method for typed actor.
@@ -922,9 +922,9 @@ private[akka] abstract class ActorAspect {
     val isOneWay = TypedActor.isOneWay(methodRtti)
 
     def extractOwnerTypeHint(s: String) =
-      s.indexOf("$$ProxiedByAW") match {
+      s.indexOf(TypedActor.AW_PROXY_PREFIX) match {
         case -1 => s
-        case x => s.substring(0,x)
+        case x => s.substring(0,x + TypedActor.AW_PROXY_PREFIX.length)
       }
     //FIXME: Add ownerTypeHint and parameter types to the TypedActorInfo?
     val message: Tuple3[String, Array[Class[_]], Array[AnyRef]] =
