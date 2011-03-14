@@ -151,12 +151,10 @@ object ReflectiveAccess {
     instance.setAccessible(true)
     Option(instance.get(null).asInstanceOf[T])
   } catch {
-    case e: ClassNotFoundException => {
+    case e: ClassNotFoundException =>
       None
-    }
-    case ei: ExceptionInInitializerError => {
+    case ei: ExceptionInInitializerError =>
       throw ei
-    }
   }
 
   def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Option[Class[T]] = try {
@@ -165,27 +163,5 @@ object ReflectiveAccess {
   } catch {
     case e: Exception =>
       None
-  }
-
-  def resolveMethod(bottomType: Class[_], methodName: String, methodSignature: Array[Class[_]]): java.lang.reflect.Method = {
-    var typeToResolve = bottomType
-    var targetMethod: java.lang.reflect.Method = null
-    var firstException: NoSuchMethodException = null
-    while((typeToResolve ne null) && (targetMethod eq null)) {
-      try {
-        targetMethod = typeToResolve.getDeclaredMethod(methodName, methodSignature:_*)
-        targetMethod.setAccessible(true)
-      } catch {
-        case e: NoSuchMethodException =>
-          if (firstException eq null)
-            firstException = e
-          typeToResolve = typeToResolve.getSuperclass
-      }
-    }
-
-    if((targetMethod eq null) && (firstException ne null))
-      throw firstException
-
-    targetMethod
   }
 }
