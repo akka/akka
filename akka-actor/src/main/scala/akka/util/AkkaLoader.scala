@@ -2,11 +2,10 @@
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.servlet
+package akka.util
 
 import akka.config.Config
 import akka.actor.Actor
-import akka.util. {Switch, Bootable}
 
 /*
  * This class is responsible for booting up a stack of bundles and then shutting them down

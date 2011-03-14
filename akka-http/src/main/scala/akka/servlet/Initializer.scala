@@ -7,7 +7,7 @@ package akka.servlet
 import akka.remote.BootableRemoteActorService
 import akka.actor.BootableActorLoaderService
 import akka.config.Config
-import akka.util.Bootable
+import akka.util.{ Bootable, AkkaLoader }
 
 import javax.servlet.{ServletContextListener, ServletContextEvent}
 
