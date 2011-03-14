@@ -123,6 +123,7 @@ object EventHandler extends ListenerManagement {
   val warning = "[WARN]  [%s] [%s] [%s] %s".intern
   val info    = "[INFO]  [%s] [%s] [%s] %s".intern
   val debug   = "[DEBUG] [%s] [%s] [%s] %s".intern
+  val generic = "[GENERIC] [%s] [%s]".intern
   val ID      = "default:error:handler".intern
 
   val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
@@ -136,6 +137,8 @@ object EventHandler extends ListenerManagement {
                     "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
   }
 
+  def notify(event: => AnyRef) = notifyListeners(event)
+  
   def notify[T <: Event : ClassManifest](event: => T) {
     if (classManifest[T].erasure.asInstanceOf[Class[_ <: Event]] == level) notifyListeners(event)
   }
@@ -195,7 +198,8 @@ object EventHandler extends ListenerManagement {
           event.thread.getName,
           instance.getClass.getSimpleName,
           message))
-      case _ => {} 
+      case event => 
+        println(generic.format(formattedTimestamp, event.toString))
     }
   }
 
@@ -265,9 +269,7 @@ object Actor extends ListenerManagement {
   type Receive = PartialFunction[Any, Unit]
 
   private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
-
-
-
+  
    /**
    *  Creates an ActorRef out of the Actor with type T.
    * <pre>
