@@ -4,9 +4,9 @@
 
 package akka.actor
 
-import org.scalatest.Spec
+import org.scalatest.{ Spec, WordSpec }
 import org.scalatest.Assertions
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.matchers.{ ShouldMatchers, MustMatchers }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
