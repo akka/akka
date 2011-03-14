@@ -389,7 +389,7 @@ trait RequestMethod {
           }
         } catch {
           case io: Exception =>
-            EventHandler notifyListeners EventHandler.Error(io, this)
+            EventHandler notify EventHandler.Error(io, this)
             false
         }
     }
@@ -408,7 +408,7 @@ trait RequestMethod {
           }
         } catch {
           case io: IOException => 
-            EventHandler notifyListeners EventHandler.Error(io, this)
+            EventHandler notify EventHandler.Error(io, this)
         }
       }
 
