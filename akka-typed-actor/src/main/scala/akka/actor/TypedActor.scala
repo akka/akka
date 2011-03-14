@@ -857,8 +857,8 @@ private[akka] sealed class TypedActorAspect extends ActorAspect {
  * Base class for TypedActorAspect and ServerManagedTypedActorAspect to reduce code duplication.
  */
 private[akka] abstract class ActorAspect {
-  protected val isInitialized = new AtomicBoolean(false)
-  protected val isStopped = new AtomicBoolean(false)
+  protected val isInitialized = new Switch(false)
+  protected val isStopped = new Switch(false)
   protected var interfaceClass: Class[_] = _
   protected var typedActor: TypedActor = _
   protected var actorRef: ActorRef = _
@@ -875,8 +875,8 @@ private[akka] abstract class ActorAspect {
 
     typedActor.context._sender = senderProxy
 
-    if (!isStopped.get && !actorRef.isRunning) {
-      if (isStopped.compareAndSet(false,true)) {
+    if (!isStopped.isOn && !actorRef.isRunning) {
+      isStopped switchOn {
         val proxy = TypedActor.proxyFor(actorRef)
         if (proxy ne null)
         TypedActor.stop(proxy)
@@ -901,7 +901,6 @@ private[akka] abstract class ActorAspect {
     } else if (isOneWay) {
       actorRef.!(joinPoint)(senderActorRef)
       null.asInstanceOf[AnyRef]
-
     } else if (TypedActor.returnsFuture_?(methodRtti)) {
       actorRef.!!!(joinPoint, timeout)(senderActorRef)
     } else if (TypedActor.returnsOption_?(methodRtti)) {
@@ -922,7 +921,10 @@ private[akka] abstract class ActorAspect {
     val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     val isOneWay = TypedActor.isOneWay(methodRtti)
 
-    val (message: Array[AnyRef], isEscaped) = escapeArguments(methodRtti.getParameterValues)
+    //val (message: Array[AnyRef], isEscaped) = escapeArguments(methodRtti.getParameterValues)
+    val message: Tuple2[Array[Class[_]],Array[AnyRef]] = {
+      ((methodRtti.getParameterTypes, methodRtti.getParameterValues))
+    }
 
     val future = Actor.remote.send[AnyRef](
       message, None, None, remoteAddress.get,
@@ -936,18 +938,14 @@ private[akka] abstract class ActorAspect {
     else {
       if (future.isDefined) {
         future.get.await
-        val result = getResultOrThrowException(future.get)
+        val result = future.get.resultOrException
         if (result.isDefined) result.get
         else throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
       } else throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
     }
   }
 
-  private def getResultOrThrowException[T](future: Future[T]): Option[T] =
-    if (future.exception.isDefined) throw future.exception.get
-    else future.result
-
-  private def escapeArguments(args: Array[AnyRef]): Tuple2[Array[AnyRef], Boolean] = {
+  /*private def escapeArguments(args: Array[AnyRef]): Tuple2[Array[AnyRef], Boolean] = {
     var isEscaped = false
     val escapedArgs = for (arg <- args) yield {
       val clazz = arg.getClass
@@ -957,10 +955,10 @@ private[akka] abstract class ActorAspect {
       } else arg
     }
     (escapedArgs, isEscaped)
-  }
+  }*/
 
   protected def initialize(joinPoint: JoinPoint) {
-    if(isInitialized.compareAndSet(false, true)) {
+    isInitialized.switchOn {
       val init = AspectInitRegistry.initFor(joinPoint.getThis)
       interfaceClass = init.interfaceClass
       typedActor = init.targetInstance
