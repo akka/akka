@@ -119,12 +119,12 @@ object EventHandler extends ListenerManagement {
   case class Info(instance: AnyRef, message: String = "") extends Event
   case class Debug(instance: AnyRef, message: String = "") extends Event
   
-  val error   = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
-  val warning = "[WARN]  [%s] [%s] [%s] %s".intern
-  val info    = "[INFO]  [%s] [%s] [%s] %s".intern
-  val debug   = "[DEBUG] [%s] [%s] [%s] %s".intern
+  val error   = "[ERROR]   [%s] [%s] [%s] %s\n%s".intern
+  val warning = "[WARN]    [%s] [%s] [%s] %s".intern
+  val info    = "[INFO]    [%s] [%s] [%s] %s".intern
+  val debug   = "[DEBUG]   [%s] [%s] [%s] %s".intern
   val generic = "[GENERIC] [%s] [%s]".intern
-  val ID      = "default:error:handler".intern
+  val ID      = "event:handler".intern
 
   val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
 

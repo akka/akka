@@ -16,9 +16,9 @@ import akka.actor._
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 final case class MessageInvocation(val receiver: ActorRef,
-                              val message: Any,
-                              val sender: Option[ActorRef],
-                              val senderFuture: Option[CompletableFuture[Any]]) {
+                                   val message: Any,
+                                   val sender: Option[ActorRef],
+                                   val senderFuture: Option[CompletableFuture[Any]]) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
 
   def invoke = try {
