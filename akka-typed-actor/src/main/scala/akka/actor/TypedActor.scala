@@ -114,7 +114,7 @@ import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
 abstract class TypedActor extends Actor with Proxyable {
   val DELEGATE_FIELD_NAME = "DELEGATE_0".intern
 
-  @volatile private[actor] var proxy: AnyRef = _
+  @volatile private[akka] var proxy: AnyRef = _
   @volatile private var proxyDelegate: Field = _
 
   /**
@@ -362,10 +362,12 @@ object TypedActorConfiguration {
     new TypedActorConfiguration().timeout(Duration(timeout, "millis"))
   }
 
+  @deprecated("Will be removed after 1.1")
   def apply(host: String, port: Int) : TypedActorConfiguration = {
     new TypedActorConfiguration().makeRemote(host, port)
   }
 
+  @deprecated("Will be removed after 1.1")
   def apply(host: String, port: Int, timeout: Long) : TypedActorConfiguration = {
     new TypedActorConfiguration().makeRemote(host, port).timeout(Duration(timeout, "millis"))
   }
@@ -395,8 +397,10 @@ final class TypedActorConfiguration {
     this
   }
 
+  @deprecated("Will be removed after 1.1")
   def makeRemote(hostname: String, port: Int): TypedActorConfiguration = makeRemote(new InetSocketAddress(hostname, port))
 
+  @deprecated("Will be removed after 1.1")
   def makeRemote(remoteAddress: InetSocketAddress): TypedActorConfiguration = {
     _host = Some(remoteAddress)
     this
@@ -507,6 +511,7 @@ object TypedActor {
    * @param host hostanme of the remote server
    * @param port port of the remote server
    */
+  @deprecated("Will be removed after 1.1")
   def newRemoteInstance[T](intfClass: Class[T], targetClass: Class[_], timeout: Long, hostname: String, port: Int): T = {
     newInstance(intfClass, targetClass, TypedActorConfiguration(hostname, port, timeout))
   }
@@ -519,6 +524,7 @@ object TypedActor {
    * @param host hostanme of the remote server
    * @param port port of the remote server
    */
+  @deprecated("Will be removed after 1.1")
   def newRemoteInstance[T](intfClass: Class[T], factory: => AnyRef, timeout: Long, hostname: String, port: Int): T = {
     newInstance(intfClass, factory, TypedActorConfiguration(hostname, port, timeout))
   }
@@ -535,6 +541,7 @@ object TypedActor {
   /**
    * Creates an ActorRef, can be local only or client-managed-remote
    */
+  @deprecated("Will be removed after 1.1")
   private[akka] def createActorRef(typedActor: => TypedActor, config: TypedActorConfiguration): ActorRef = {
     config match {
       case null => actorOf(typedActor)
@@ -610,12 +617,14 @@ object TypedActor {
   /**
    * Java API.
    */
+  @deprecated("Will be removed after 1.1")
   def newRemoteInstance[T](intfClass: Class[T], factory: TypedActorFactory, hostname: String, port: Int) : T =
     newRemoteInstance(intfClass, factory.create, hostname, port)
 
   /**
    * Java API.
    */
+  @deprecated("Will be removed after 1.1")
   def newRemoteInstance[T](intfClass: Class[T], factory: TypedActorFactory, timeout: Long, hostname: String, port: Int) : T =
     newRemoteInstance(intfClass, factory.create, timeout, hostname, port)
 

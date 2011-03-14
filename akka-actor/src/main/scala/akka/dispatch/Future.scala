@@ -7,7 +7,7 @@ package akka.dispatch
 import akka.AkkaException
 import akka.actor.{Actor, EventHandler}
 import akka.routing.Dispatcher
-import akka.japi.Procedure
+import akka.japi.{ Procedure, Function => JFunc }
 
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent. {ConcurrentLinkedQueue, TimeUnit, Callable}
@@ -144,7 +144,7 @@ object Future {
   }
 }
 
-sealed trait Future[T] {
+sealed trait Future[+T] {
   /**
    * Blocks the current thread until the Future has been completed or the
    * timeout has expired. In the case of the timeout expiring a
@@ -238,6 +238,37 @@ sealed trait Future[T] {
       val r = optr.get
       if (pf.isDefinedAt(r)) pf(r)
     }
+  }
+
+  /**
+   * Creates a new Future by applying a PartialFunction to the successful
+   * result of this Future if a match is found, or else return a MatchError.
+   * If this Future is completed with an exception then the new Future will
+   * also contain this exception.
+   */
+  final def collect[A](pf: PartialFunction[Any, A]): Future[A] = {
+    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    onComplete { ft =>
+      val optv = ft.value
+      if (optv.isDefined) {
+        val v = optv.get
+        fa complete {
+          if (v.isLeft) v.asInstanceOf[Either[Throwable, A]]
+          else {
+            try {
+              val r = v.right.get
+              if (pf isDefinedAt r) Right(pf(r))
+              else Left(new MatchError(r))
+            } catch {
+              case e: Exception =>
+                EventHandler notifyListeners EventHandler.Error(e, this)
+                Left(e)
+            }
+          }
+        }
+      }
+    }
+    fa
   }
 
   /**
@@ -338,7 +369,15 @@ sealed trait Future[T] {
   }
 
   /* Java API */
-  final def onComplete(proc: Procedure[Future[T]]): Future[T] = onComplete(proc(_))
+  final def onComplete[A >: T](proc: Procedure[Future[A]]): Future[T] = onComplete(proc(_))
+
+  final def map[A >: T, B](f: JFunc[A,B]): Future[B] = map(f(_))
+
+  final def flatMap[A >: T, B](f: JFunc[A,Future[B]]): Future[B] = flatMap(f(_))
+
+  final def foreach[A >: T](proc: Procedure[A]): Unit = foreach(proc(_))
+
+  final def filter[A >: T](p: JFunc[A,Boolean]): Future[T] = filter(p(_))
 
 }
 
