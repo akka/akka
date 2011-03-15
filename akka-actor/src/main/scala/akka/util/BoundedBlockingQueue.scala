@@ -18,7 +18,7 @@ class BoundedBlockingQueue[E <: AnyRef](val maxCapacity: Int, private val backin
       require(maxCapacity > 0)
   }
 
-  protected val lock = new ReentrantLock(true)
+  protected val lock = new ReentrantLock(false)
 
   private val notEmpty = lock.newCondition()
   private val notFull = lock.newCondition()
