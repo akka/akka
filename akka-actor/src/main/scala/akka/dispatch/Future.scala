@@ -386,9 +386,8 @@ trait CompletableFuture[T] extends Future[T] {
   final def completeWithResult(result: T): CompletableFuture[T] = complete(Right(result))
   final def completeWithException(exception: Throwable): CompletableFuture[T] = complete(Left(exception))
   final def completeWith(other: Future[T]): CompletableFuture[T] = {
-    val v = other.value
-    if (v.isDefined) complete(v.get)
-    else this
+    other onComplete { f => complete(f.value.get) }
+    this
   }
 }
 
