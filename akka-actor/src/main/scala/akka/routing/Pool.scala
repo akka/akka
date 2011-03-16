@@ -117,11 +117,10 @@ trait SmallestMailboxSelector {
 
   def select(delegates: Seq[ActorRef]): Tuple2[Iterator[ActorRef], Int] = {
     var set: Seq[ActorRef] = Nil
-    var take = if (partialFill) math.min(selectionCount, delegates.length)
-               else selectionCount
+    var take = if (partialFill) math.min(selectionCount, delegates.length) else selectionCount
 
     while (take > 0) {
-      set = delegates.sortWith((a,b) => a.mailboxSize < b.mailboxSize).take(take) ++ set
+      set = delegates.sortWith(_.mailboxSize < _.mailboxSize).take(take) ++ set //Question, doesn't this risk selecting the same actor multiple times?
       take -= set.size
     }
 
@@ -164,11 +163,7 @@ trait RoundRobinSelector {
  */
 trait FixedSizeCapacitor {
   def limit:Int
-
-  def capacity(delegates: Seq[ActorRef]): Int = (limit - delegates.size) match {
-    case i if i > 0 => i
-    case _ => 0
-  }
+  def capacity(delegates: Seq[ActorRef]): Int = (limit - delegates.size) max 0
 }
 
 /**
@@ -288,13 +283,14 @@ trait RunningMeanBackoff {
     _pressure += pressure
     _capacity += capacity
 
-    if (capacity > 0 && pressure / capacity < backoffThreshold &&  _capacity > 0  && _pressure / _capacity < backoffThreshold)
+    if (capacity > 0 && pressure / capacity < backoffThreshold
+    && _capacity > 0 && _pressure / _capacity < backoffThreshold) //Why does the entire clause need to be true?
       math.floor(-1.0 * backoffRate * (capacity-pressure)).toInt
     else 0
   }
 
-  def backoffReset = {
-    _pressure - 0.0
+  def backoffReset {
+    _pressure = 0.0
     _capacity = 0.0
   }
 }
