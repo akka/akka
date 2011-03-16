@@ -65,17 +65,9 @@ trait DefaultActorPool extends ActorPool { this: Actor =>
       self reply_? Stats(_delegates length)
     case max: MaximumNumberOfRestartsWithinTimeRangeReached =>
       _delegates = _delegates filterNot { _.uuid == max.victim.uuid }
-
     case msg =>
       _capacity()
-      _select() foreach { delegate =>
-        self.senderFuture match {
-          case None =>
-            delegate ! msg
-          case Some(future) =>
-            delegate.!!!(msg, TimeUnit.NANOSECONDS.toMillis(future.timeoutInNanos)).onComplete( future.completeWith(_) )
-        }
-      }
+      _select() foreach { _ forward msg }
   }
 
   private def _capacity() = {
