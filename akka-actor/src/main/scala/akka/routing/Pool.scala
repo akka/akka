@@ -4,7 +4,7 @@
 
 package akka.routing
 
-import akka.actor.{Actor, ActorRef, EventHandler}
+import akka.actor.{Actor, ActorRef, EventHandler, PoisonPill}
 import java.util.concurrent.TimeUnit
 
 /**
@@ -52,10 +52,9 @@ trait DefaultActorPool extends ActorPool { this: Actor =>
   import akka.actor.MaximumNumberOfRestartsWithinTimeRangeReached
 
 
-  protected var _delegates = LinkedList[ActorRef]()
+  protected var _delegates = Vector[ActorRef]()
   private var _lastCapacityChange = 0
   private var _lastSelectorCount = 0
-
 
   override def postStop = _delegates foreach {_ stop}
 
@@ -70,24 +69,29 @@ trait DefaultActorPool extends ActorPool { this: Actor =>
       _select() foreach { _ forward msg }
   }
 
-  private def _capacity() = {
-    _lastCapacityChange = capacity(_delegates)
-    if (_lastCapacityChange > 0) {
-      _delegates ++= {
-        for (i <- 0 until _lastCapacityChange) yield {
+  private def _capacity() {
+    val requestedCapacity = capacity(_delegates)
+    val newDelegates = requestedCapacity match {
+      case qty if qty > 0 =>
+        _delegates ++ { for (i <- 0 until requestedCapacity) yield {
           val delegate = instance()
           self startLink delegate
           delegate
         }
       }
+
+      case qty if qty < 0 =>
+        _delegates.splitAt(_delegates.length + requestedCapacity) match {
+          case (keep, abandon) =>
+            abandon foreach { _ ! PoisonPill }
+            keep
+        }
+
+      case _ => _delegates //No change
     }
-    else if (_lastCapacityChange < 0) {
-      _delegates splitAt(_delegates.length + _lastCapacityChange) match {
-        case (keep, abandon) =>
-          abandon foreach { _.stop }
-          _delegates = keep
-      }
-    }
+
+    _lastCapacityChange = requestedCapacity
+    _delegates = newDelegates
   }
 
   private def _select() = select(_delegates) match {
