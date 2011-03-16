@@ -180,44 +180,52 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     for(a <- List(t1,t2,d1,d2)) a.stop
   }
 
-        // Actor Pool Capacity Tests
-        
-                //
-                // make sure the pool is of the fixed, expected capacity
-                //
-        @Test def testFixedCapacityActorPool = {
+  // Actor Pool Capacity Tests
 
-                val latch = new CountDownLatch(2)
-                val counter = new AtomicInteger(0)
-                class TestPool extends Actor with DefaultActorPool 
-                                                                         with FixedCapacityStrategy
-                                                                         with SmallestMailboxSelector
-                {
-                        def factory = actorOf(new Actor {
-                                def receive = {
-                                        case _ =>
-                                                counter.incrementAndGet
-                                                latch.countDown
-                                }
-                        })
-                        
-                        def limit = 2
-                        def selectionCount = 1
-                        def partialFill = true
-                        def instance = factory
-                        def receive = _route
-                }
-                
-                val pool = actorOf(new TestPool).start
-                pool ! "a"
-                pool ! "b"
-                val done = latch.await(1,TimeUnit.SECONDS)
-                done must be (true)
-                counter.get must be (2)
-                (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (2)
-                
-                pool stop
+  //
+  // make sure the pool is of the fixed, expected capacity
+  //
+  @Test def testFixedCapacityActorPool = {
+    val latch = new CountDownLatch(2)
+    val counter = new AtomicInteger(0)
+    class TestPool extends Actor with DefaultActorPool
+                                 with FixedCapacityStrategy
+                                 with SmallestMailboxSelector
+    {
+      def factory = actorOf(new Actor {
+        def receive = {
+          case _ =>
+            counter.incrementAndGet
+            latch.countDown
+            self reply_? "success"
         }
+      })
+
+      def limit = 2
+      def selectionCount = 1
+      def partialFill = true
+      def instance = factory
+      def receive = _route
+    }
+
+    val successes = new CountDownLatch(2)
+    implicit val successCounterActor = Some(actorOf(new Actor {
+      def receive = {
+        case "success" => successes.countDown
+      }
+    }).start)
+
+    val pool = actorOf(new TestPool).start
+    pool ! "a"
+    pool ! "b"
+
+    latch.await(1,TimeUnit.SECONDS) must be (true)
+    successes.await(1,TimeUnit.SECONDS) must be (true)
+    counter.get must be (2)
+    (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (2)
+
+    pool stop
+  }
         
                 //
                 // make sure the pool starts at the expected lower limit and grows to the upper as needed
