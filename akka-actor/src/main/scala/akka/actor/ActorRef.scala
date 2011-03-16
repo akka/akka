@@ -806,28 +806,31 @@ class LocalActorRef private[akka] (
   /**
    * Callback for the dispatcher. This is the single entry point to the user Actor implementation.
    */
-  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = guard.withGuard {
-    if (!isShutdown) {
-      currentMessage = messageHandle
-      try {
+  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = {
+    guard.lock.lock
+    try {
+      if (!isShutdown) {
+        currentMessage = messageHandle
         try {
-          cancelReceiveTimeout // FIXME: leave this here?
-          actor(messageHandle.message)
-          currentMessage = null // reset current message after successful invocation
+          try {
+            cancelReceiveTimeout // FIXME: leave this here?
+            actor(messageHandle.message)
+            currentMessage = null // reset current message after successful invocation
+          } catch {
+            case e: InterruptedException =>
+              currentMessage = null // received message while actor is shutting down, ignore
+            case e =>
+              handleExceptionInDispatch(e, messageHandle.message)
+          } finally {
+            checkReceiveTimeout // Reschedule receive timeout
+          }
         } catch {
-          case e: InterruptedException => 
-            currentMessage = null // received message while actor is shutting down, ignore
-          case e => 
-            handleExceptionInDispatch(e, messageHandle.message)
-        } finally {
-          checkReceiveTimeout // Reschedule receive timeout
+          case e: Throwable =>
+            EventHandler notify EventHandler.Error(e, this, messageHandle.message.toString)
+            throw e
         }
-      } catch {
-        case e: Throwable =>
-          EventHandler notify EventHandler.Error(e, this, messageHandle.message.toString)
-          throw e
       }
-    }
+    } finally { guard.lock.unlock }
   }
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable) {
