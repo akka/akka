@@ -543,14 +543,21 @@ trait Actor {
    * Is called when a message isn't handled by the current behavior of the actor
    * by default it throws an UnhandledMessageException
    */
-  def unhandled(msg: Any){
+  def unhandled(msg: Any) {
     throw new UnhandledMessageException(msg,self)
   }
 
   /**
    * Is the actor able to handle the message passed in as arguments?
    */
-  def isDefinedAt(message: Any): Boolean = processingBehavior.isDefinedAt(message)
+  def isDefinedAt(message: Any): Boolean = message match { //Same logic as apply(msg) but without the unhandled catch-all
+    case l: AutoReceivedMessage                     => true
+    case msg if self.hotswap.nonEmpty &&
+                self.hotswap.head.isDefinedAt(msg)  => true
+    case msg if self.hotswap.isEmpty &&
+                processingBehavior.isDefinedAt(msg) => true
+    case _                                          => false
+  }
 
   /**
    * Changes tha Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
@@ -577,54 +584,31 @@ trait Actor {
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
-  private[akka] final def apply(msg: Any) = fullBehavior(msg) //TODO: Scala 2.9.0 => processingBehavior.applyOrElse(msg, unhandledMsgFun)
-
-  private final def autoReceiveMessage(msg: AutoReceivedMessage) {
-    msg match {
-      case HotSwap(code,discardOld)  => become(code(self),discardOld)
-      case RevertHotSwap             => unbecome
-      case Exit(dead, reason)        => self.handleTrapExit(dead, reason)
-      case Link(child)               => self.link(child)
-      case Unlink(child)             => self.unlink(child)
-      case UnlinkAndStop(child)      => self.unlink(child); child.stop
-      case Restart(reason)           => throw reason
-      case PoisonPill                => {
-        val f = self.senderFuture
-        if(f.isDefined) {
-          f.get.completeWithException(new ActorKilledException("PoisonPill"))
-        }
-        self.stop
-      }
-
-    }
+  private[akka] final def apply(msg: Any) = msg match { //FIXME Add check for currentMessage eq null throw new BadUSerException?
+    case l: AutoReceivedMessage                     => autoReceiveMessage(l)
+    case msg if self.hotswap.nonEmpty &&
+                self.hotswap.head.isDefinedAt(msg)  => self.hotswap.head.apply(msg)
+    case msg if self.hotswap.isEmpty &&
+                processingBehavior.isDefinedAt(msg) => processingBehavior.apply(msg)
+    case unknown                                    => unhandled(unknown) //This is the only line that differs from processingbehavior
   }
 
-  /*Processingbehavior and fullBehavior are duplicates so make sure changes are done to both */
-  private lazy val processingBehavior: Receive = {
-    val defaultBehavior = receive
-    val actorBehavior: Receive = {
-      case l: AutoReceivedMessage                    => autoReceiveMessage(l)
-      case msg if self.hotswap.nonEmpty &&
-                  self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
-      case msg if self.hotswap.isEmpty   &&
-                  defaultBehavior.isDefinedAt(msg)   => defaultBehavior.apply(msg)
-    }
-    actorBehavior
+  private final def autoReceiveMessage(msg: AutoReceivedMessage): Unit = msg match {
+    case HotSwap(code,discardOld)  => become(code(self),discardOld)
+    case RevertHotSwap             => unbecome
+    case Exit(dead, reason)        => self.handleTrapExit(dead, reason)
+    case Link(child)               => self.link(child)
+    case Unlink(child)             => self.unlink(child)
+    case UnlinkAndStop(child)      => self.unlink(child); child.stop
+    case Restart(reason)           => throw reason
+    case PoisonPill                =>
+      val f = self.senderFuture
+      if(f.isDefined)
+        f.get.completeWithException(new ActorKilledException("PoisonPill"))
+      self.stop
   }
-  
-  //TODO: Scala2.9.0 replace with: val unhandledMsgFun: Any => Unit = unhandled _
-  private lazy val fullBehavior: Receive = {
-    val defaultBehavior = receive
-    val actorBehavior: Receive = {
-      case l: AutoReceivedMessage                    => autoReceiveMessage(l)
-      case msg if self.hotswap.nonEmpty &&
-                  self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
-      case msg if self.hotswap.isEmpty   &&
-                  defaultBehavior.isDefinedAt(msg)   => defaultBehavior.apply(msg)
-      case unknown                                   => unhandled(unknown) //This is the only line that differs from processingbehavior
-    }
-    actorBehavior
-  }
+
+  private lazy val processingBehavior = receive //ProcessingBehavior is the original behavior
 }
 
 private[actor] class AnyOptionAsTypedOption(anyOption: Option[Any]) {
