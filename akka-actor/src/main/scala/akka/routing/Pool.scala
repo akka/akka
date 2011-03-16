@@ -35,9 +35,9 @@ object ActorPool {
  * Defines the nature of an actor pool.
  */
 trait ActorPool {
-  def instance(): ActorRef
-  def capacity(delegates: Seq[ActorRef]): Int
-  def select(delegates: Seq[ActorRef]): Tuple2[Iterator[ActorRef], Int]
+  def instance(): ActorRef //Question, Instance of what?
+  def capacity(delegates: Seq[ActorRef]): Int //Question, What is the semantics of this return value?
+  def select(delegates: Seq[ActorRef]): Tuple2[Iterator[ActorRef], Int] //Question, Why does select return this instead of an ordered Set?
 }
 
 /**
@@ -46,11 +46,9 @@ trait ActorPool {
  *      - routes the incoming message to a selection set of delegate actors
  */
 trait DefaultActorPool extends ActorPool { this: Actor =>
-
   import ActorPool._
   import collection.mutable.LinkedList
   import akka.actor.MaximumNumberOfRestartsWithinTimeRangeReached
-
 
   protected var _delegates = Vector[ActorRef]()
   private var _lastCapacityChange = 0
