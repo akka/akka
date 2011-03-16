@@ -56,7 +56,11 @@ trait DefaultActorPool extends ActorPool { this: Actor =>
   private var _lastCapacityChange = 0
   private var _lastSelectorCount = 0
 
-  override def postStop = _delegates foreach {_ stop}
+  override def postStop = _delegates foreach {
+    delegate => try {
+      delegate ! PoisonPill
+    } catch { case e: Exception => } //Ignore any exceptions here
+  }
 
   protected def _route(): Receive = {
     // for testing...
@@ -65,11 +69,16 @@ trait DefaultActorPool extends ActorPool { this: Actor =>
     case max: MaximumNumberOfRestartsWithinTimeRangeReached =>
       _delegates = _delegates filterNot { _.uuid == max.victim.uuid }
     case msg =>
-      _capacity()
-      _select() foreach { _ forward msg }
+      resizeIfAppropriate()
+
+      select(_delegates) match {
+        case (selectedDelegates, count) =>
+          _lastSelectorCount = count
+          selectedDelegates foreach { _ forward msg }
+      }
   }
 
-  private def _capacity() {
+  private def resizeIfAppropriate() {
     val requestedCapacity = capacity(_delegates)
     val newDelegates = requestedCapacity match {
       case qty if qty > 0 =>
@@ -79,25 +88,17 @@ trait DefaultActorPool extends ActorPool { this: Actor =>
           delegate
         }
       }
-
       case qty if qty < 0 =>
         _delegates.splitAt(_delegates.length + requestedCapacity) match {
           case (keep, abandon) =>
             abandon foreach { _ ! PoisonPill }
             keep
         }
-
       case _ => _delegates //No change
     }
 
     _lastCapacityChange = requestedCapacity
     _delegates = newDelegates
-  }
-
-  private def _select() = select(_delegates) match {
-    case (delegates, count) =>
-      _lastSelectorCount = count
-      delegates
   }
 }
 
