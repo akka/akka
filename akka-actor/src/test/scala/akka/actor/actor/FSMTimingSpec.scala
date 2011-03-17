@@ -1,6 +1,6 @@
 package akka.actor
 
-import akka.util.TestKit
+import akka.testkit.TestKit
 import akka.util.duration._
 
 import org.scalatest.WordSpec
@@ -16,7 +16,7 @@ class FSMTimingSpec
 
   val fsm = Actor.actorOf(new StateMachine(testActor)).start
   fsm ! SubscribeTransitionCallBack(testActor)
-  expectMsg(100 millis, CurrentState(fsm, Initial))
+  expectMsg(200 millis, CurrentState(fsm, Initial))
 
   ignoreMsg {
       case Transition(_, Initial, _) => true
@@ -43,12 +43,11 @@ class FSMTimingSpec
 
     "receive and cancel a repeated timer" in {
       fsm ! TestRepeatedTimer
-      val seq = receiveWhile(550 millis) {
+      val seq = receiveWhile(600 millis) {
         case Tick => Tick
       }
       seq must have length (5)
       within(250 millis) {
-        fsm ! Cancel
         expectMsg(Transition(fsm, TestRepeatedTimer, Initial))
         expectNoMsg
       }
@@ -95,17 +94,17 @@ object FSMTimingSpec {
 
   case class Unhandled(msg : AnyRef)
 
-  class StateMachine(tester : ActorRef) extends Actor with FSM[State, Unit] {
+  class StateMachine(tester : ActorRef) extends Actor with FSM[State, Int] {
     import FSM._
 
-    startWith(Initial, ())
+    startWith(Initial, 0)
     when(Initial) {
       case Ev(TestSingleTimer) =>
         setTimer("tester", Tick, 100 millis, false)
         goto(TestSingleTimer)
       case Ev(TestRepeatedTimer) =>
         setTimer("tester", Tick, 100 millis, true)
-        goto(TestRepeatedTimer)
+        goto(TestRepeatedTimer) using 4
       case Ev(x : FSMTimingSpec.State) => goto(x)
     }
     when(TestStateTimeout, stateTimeout = 100 millis) {
@@ -117,12 +116,14 @@ object FSMTimingSpec {
         goto(Initial)
     }
     when(TestRepeatedTimer) {
-      case Ev(Tick) =>
+      case Event(Tick, remaining) =>
         tester ! Tick
-        stay
-      case Ev(Cancel) =>
-        cancelTimer("tester")
-        goto(Initial)
+        if (remaining == 0) {
+          cancelTimer("tester")
+          goto(Initial)
+        } else {
+          stay using (remaining - 1)
+        }
     }
     when(TestUnhandled) {
       case Ev(SetHandler) =>
