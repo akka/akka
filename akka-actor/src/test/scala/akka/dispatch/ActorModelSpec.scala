@@ -12,7 +12,7 @@ import akka.actor.Actor._
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent. {ConcurrentHashMap, CountDownLatch, TimeUnit}
 import akka.actor.dispatch.ActorModelSpec.MessageDispatcherInterceptor
-import akka.util.Duration
+import akka.util.{Duration, Switch}
 
 object ActorModelSpec {
 
@@ -25,6 +25,8 @@ object ActorModelSpec {
   case class Await(latch: CountDownLatch) extends ActorModelMessage
   case class Meet(acknowledge: CountDownLatch, waitFor: CountDownLatch) extends ActorModelMessage
   case class CountDownNStop(latch: CountDownLatch) extends ActorModelMessage
+  case class Wait(time: Long) extends ActorModelMessage
+  case class WaitAck(time: Long, latch: CountDownLatch) extends ActorModelMessage
   case object Restart extends ActorModelMessage
 
   val Ping = "Ping"
@@ -33,22 +35,32 @@ object ActorModelSpec {
   class DispatcherActor(dispatcher: MessageDispatcherInterceptor) extends Actor {
     self.dispatcher = dispatcher.asInstanceOf[MessageDispatcher]
 
-    def ack { dispatcher.getStats(self).msgsProcessed.incrementAndGet() }
+    private val busy = new Switch(false)
+
+    def ack {
+      if (!busy.switchOn()) {
+        throw new Exception("isolation violated")
+      } else {
+        dispatcher.getStats(self).msgsProcessed.incrementAndGet()
+      }
+    }
 
     override def postRestart(reason: Throwable) {
       dispatcher.getStats(self).restarts.incrementAndGet()
     }
 
     def receive = {
-      case Await(latch)     => ack; latch.await()
-      case Meet(sign, wait) => ack; sign.countDown(); wait.await()
-      case Reply(msg)       => ack; self.reply(msg)
-      case Reply_?(msg)     => ack; self.reply_?(msg)
-      case Forward(to,msg)  => ack; to.forward(msg)
-      case CountDown(latch) => ack; latch.countDown()
-      case Increment(count) => ack; count.incrementAndGet()
-      case CountDownNStop(l)=> ack; l.countDown; self.stop
-      case Restart          => ack; throw new Exception("Restart requested")
+      case Await(latch)     => ack; latch.await(); busy.switchOff()
+      case Meet(sign, wait) => ack; sign.countDown(); wait.await(); busy.switchOff()
+      case Wait(time)       => ack; Thread.sleep(time); busy.switchOff()
+      case WaitAck(time, l) => ack; Thread.sleep(time); l.countDown; busy.switchOff()
+      case Reply(msg)       => ack; self.reply(msg); busy.switchOff()
+      case Reply_?(msg)     => ack; self.reply_?(msg); busy.switchOff()
+      case Forward(to,msg)  => ack; to.forward(msg); busy.switchOff()
+      case CountDown(latch) => ack; latch.countDown(); busy.switchOff()
+      case Increment(count) => ack; count.incrementAndGet(); busy.switchOff()
+      case CountDownNStop(l)=> ack; l.countDown; self.stop; busy.switchOff()
+      case Restart          => ack; busy.switchOff(); throw new Exception("Restart requested")
     }
   }
 
@@ -208,27 +220,41 @@ abstract class ActorModelSpec extends JUnitSuite {
   @Test def dispatcherShouldProcessMessagesOneAtATime {
     implicit val dispatcher = newInterceptedDispatcher
     val a = newTestActor
-    val start,step1,step2,oneAtATime = new CountDownLatch(1)
+    val start,oneAtATime = new CountDownLatch(1)
     a.start
 
     a ! CountDown(start)
     assertCountDown(start,3000, "Should process first message within 3 seconds")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, msgsProcessed = 1)
 
-    a ! Meet(step1,step2)
-    assertCountDown(step1,3000, "Didn't process the Meet message in 3 seocnds")
-    assertRefDefaultZero(a)(registers = 1, msgsReceived = 2, msgsProcessed = 2)
-
+    a ! Wait(1000)
     a ! CountDown(oneAtATime)
-    assertNoCountDown(oneAtATime,500,"Processed message when not allowed to")
-    assertRefDefaultZero(a)(registers = 1, msgsReceived = 3, msgsProcessed = 2)
-
-    step2.countDown()
-    assertCountDown(oneAtATime,500,"Processed message when allowed")
+    // in case of serialization violation, restart would happen instead of count down
+    assertCountDown(oneAtATime,1500,"Processed message when allowed")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 3, msgsProcessed = 3)
 
     a.stop
     assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 3, msgsProcessed = 3)
+  }
+
+  @Test def dispatcherShouldHandleQueueingFromMultipleThreads {
+    implicit val dispatcher = newInterceptedDispatcher
+    val a = newTestActor
+    val counter = new CountDownLatch(200)
+    a.start
+
+    def start = spawn { for (i <- 1 to 20) { a ! WaitAck(1, counter) } }
+    for (i <- 1 to 10) { start }
+    assertCountDown(counter, 3000, "Should process 200 messages")
+    assertRefDefaultZero(a)(registers = 1, msgsReceived = 200, msgsProcessed = 200)
+
+    a.stop
+  }
+
+  def spawn(f : => Unit) = {
+    val thread = new Thread { override def run { f } }
+    thread.start
+    thread
   }
 
   @Test def dispatcherShouldProcessMessagesInParallel: Unit = {
@@ -304,5 +330,6 @@ class ExecutorBasedEventDrivenDispatcherModelTest extends ActorModelSpec {
 }
 
 class ExecutorBasedEventDrivenWorkStealingDispatcherModelTest extends ActorModelSpec {
-  def newInterceptedDispatcher = new ExecutorBasedEventDrivenWorkStealingDispatcher("foo") with MessageDispatcherInterceptor
+  def newInterceptedDispatcher =
+    new ExecutorBasedEventDrivenWorkStealingDispatcher("foo") with MessageDispatcherInterceptor
 }
