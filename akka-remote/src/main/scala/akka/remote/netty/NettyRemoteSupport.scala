@@ -860,7 +860,7 @@ class RemoteServerHandler(
     val actorInfo = request.getActorInfo
 
     val actorRef =
-      try { createActor(actorInfo, channel).start } catch {
+      try { createActor(actorInfo, channel) } catch {
         case e: SecurityException =>
           EventHandler notify EventHandler.Error(e, this)
           write(channel, createErrorReplyMessage(e, request, AkkaActorType.ScalaActor))
@@ -1031,7 +1031,7 @@ class RemoteServerHandler(
             val actorRef = factory()
             actorRef.uuid = parseUuid(uuid) //FIXME is this sensible?
             sessionActors.get(channel).put(id, actorRef)
-            actorRef
+            actorRef.start //Start it where's it's created
         }
       case sessionActor => sessionActor
     }
@@ -1055,7 +1055,7 @@ class RemoteServerHandler(
       actorRef.id = id
       actorRef.timeout = timeout
       server.actorsByUuid.put(actorRef.uuid.toString, actorRef) // register by uuid
-      actorRef
+      actorRef.start //Start it where it's created
     } catch {
       case e: Throwable =>
         EventHandler notify EventHandler.Error(e, this)
