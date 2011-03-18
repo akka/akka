@@ -117,7 +117,7 @@ object EventHandler extends ListenerManagement {
   val DebugLevel = 4
 
   sealed trait Event {
-    val thread: Thread = Thread.currentThread
+    @transient val thread: Thread = Thread.currentThread
   }
   case class Error(cause: Throwable, instance: AnyRef, message: String = "") extends Event
   case class Warning(instance: AnyRef, message: String = "") extends Event
@@ -145,7 +145,7 @@ object EventHandler extends ListenerManagement {
   def notify(event: => AnyRef) = notifyListeners(event)
 
   def notify[T <: Event : ClassManifest](event: => T) {
-    if (classManifest[T].erasure.asInstanceOf[Class[_ <: Event]] == level) notifyListeners(event)
+    if (classManifest[T].erasure.asInstanceOf[Class[_ <: Event]] == level) notifyListeners(event) //WTF?
   }
 
   def error(cause: Throwable, instance: AnyRef, message: => String) = {
