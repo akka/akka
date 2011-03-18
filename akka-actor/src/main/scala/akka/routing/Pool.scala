@@ -4,7 +4,7 @@
 
 package akka.routing
 
-import akka.actor.{Actor, ActorRef, EventHandler, PoisonPill}
+import akka.actor.{Actor, ActorRef, PoisonPill}
 import java.util.concurrent.TimeUnit
 
 /**
