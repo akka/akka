@@ -386,6 +386,9 @@ sealed trait Future[+T] {
 
 }
 
+/**
+ * Essentially this is the Promise (or write-side) of a Future (read-side)
+ */
 trait CompletableFuture[T] extends Future[T] {
   def complete(value: Either[Throwable, T]): CompletableFuture[T]
   final def completeWithResult(result: T): CompletableFuture[T] = complete(Right(result))
@@ -478,15 +481,14 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   def complete(value: Either[Throwable, T]): DefaultCompletableFuture[T] = {
-    var notifyTheseListeners: List[Future[T] => Unit] = Nil
-
     _lock.lock
-    try {
+    val notifyTheseListeners = try {
       if (_value.isEmpty) {
         _value = Some(value)
-        notifyTheseListeners = _listeners
+        val existingListeners = _listeners
         _listeners = Nil
-      }
+        existingListeners
+      } else Nil
     } finally {
       _signal.signalAll
       _lock.unlock
@@ -499,12 +501,12 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   def onComplete(func: Future[T] => Unit): CompletableFuture[T] = {
-    var notifyNow = false
-
     _lock.lock
-    try {
-      if (_value.isEmpty) _listeners ::= func
-      else notifyNow = true
+    val notifyNow = try {
+      if (_value.isEmpty) {
+        _listeners ::= func
+        false
+      } else true
     } finally {
       _lock.unlock
     }
@@ -525,6 +527,10 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis)
 }
 
+/**
+ * An already completed Future is seeded with it's result at creation, is useful for when you are participating in
+ * a Future-composition but you already have a value to contribute.
+ */
 sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T]) extends CompletableFuture[T] {
   val value = Some(suppliedValue)
 
