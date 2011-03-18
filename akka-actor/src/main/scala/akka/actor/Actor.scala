@@ -76,7 +76,7 @@ class ActorTimeoutException        private[akka](message: String) extends AkkaEx
 
 /**
  * Error handler.
- * 
+ *
  * Create, add and remove a listener:
  * <pre>
  * val errorHandlerEventListener = Actor.actorOf(new Actor {
@@ -89,7 +89,7 @@ class ActorTimeoutException        private[akka](message: String) extends AkkaEx
  *     case EventHandler.Debug(instance, message) => ...
  *   }
  * })
- * 
+ *
  * EventHandler.addListener(errorHandlerEventListener)
  * ...
  * EventHandler.removeListener(errorHandlerEventListener)
@@ -111,6 +111,11 @@ object EventHandler extends ListenerManagement {
   import java.util.Date
   import akka.dispatch.Dispatchers
 
+  val ErrorLevel = 1
+  val WarningLevel = 2
+  val InfoLevel = 3
+  val DebugLevel = 4
+
   sealed trait Event {
     val thread: Thread = Thread.currentThread
   }
@@ -118,7 +123,7 @@ object EventHandler extends ListenerManagement {
   case class Warning(instance: AnyRef, message: String = "") extends Event
   case class Info(instance: AnyRef, message: String = "") extends Event
   case class Debug(instance: AnyRef, message: String = "") extends Event
-  
+
   val error   = "[ERROR]   [%s] [%s] [%s] %s\n%s".intern
   val warning = "[WARN]    [%s] [%s] [%s] %s".intern
   val info    = "[INFO]    [%s] [%s] [%s] %s".intern
@@ -128,77 +133,77 @@ object EventHandler extends ListenerManagement {
 
   val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
 
-  val level: Class[_ <: Event] = config.getString("akka.event-handler-level", "DEBUG") match {
-    case "ERROR"   => classOf[Error]
-    case "WARNING" => classOf[Warning]
-    case "INFO"    => classOf[Info]
-    case "DEBUG"   => classOf[Debug]
+  val level: Int = config.getString("akka.event-handler-level", "DEBUG") match {
+    case "ERROR"   => ErrorLevel
+    case "WARNING" => WarningLevel
+    case "INFO"    => InfoLevel
+    case "DEBUG"   => DebugLevel
     case unknown   => throw new ConfigurationException(
                     "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
   }
 
   def notify(event: => AnyRef) = notifyListeners(event)
-  
+
   def notify[T <: Event : ClassManifest](event: => T) {
     if (classManifest[T].erasure.asInstanceOf[Class[_ <: Event]] == level) notifyListeners(event)
   }
 
   def error(cause: Throwable, instance: AnyRef, message: => String) = {
-    if (level == classOf[Error]) notifyListeners(Error(cause, instance, message))    
+    if (level >= ErrorLevel) notifyListeners(Error(cause, instance, message))
   }
 
   def warning(instance: AnyRef, message: => String) = {
-    if (level == classOf[Warning]) notifyListeners(Warning(instance, message))    
+    if (level >= WarningLevel) notifyListeners(Warning(instance, message))
   }
 
   def info(instance: AnyRef, message: => String) = {
-    if (level == classOf[Info]) notifyListeners(Info(instance, message))    
+    if (level >= InfoLevel) notifyListeners(Info(instance, message))
   }
-  
+
   def debug(instance: AnyRef, message: => String) = {
-    if (level == classOf[Debug]) notifyListeners(Debug(instance, message))    
+    if (level >= DebugLevel) notifyListeners(Debug(instance, message))
   }
 
   def formattedTimestamp = DateFormat.getInstance.format(new Date)
-  
+
   def stackTraceFor(e: Throwable) = {
     val sw = new StringWriter
     val pw = new PrintWriter(sw)
     e.printStackTrace(pw)
     sw.toString
   }
-  
+
   class DefaultListener extends Actor {
     self.id = ID
     self.dispatcher = EventHandlerDispatcher
 
     def receive = {
-      case event @ Error(cause, instance, message) => 
+      case event @ Error(cause, instance, message) =>
         println(error.format(
           formattedTimestamp,
           event.thread.getName,
           instance.getClass.getSimpleName,
           message,
           stackTraceFor(cause)))
-      case event @ Warning(instance, message) => 
+      case event @ Warning(instance, message) =>
         println(warning.format(
           formattedTimestamp,
           event.thread.getName,
           instance.getClass.getSimpleName,
           message))
-      case event @ Info(instance, message) => 
+      case event @ Info(instance, message) =>
         println(info.format(
           formattedTimestamp,
           event.thread.getName,
           instance.getClass.getSimpleName,
           message))
-      case event @ Debug(instance, message) => 
+      case event @ Debug(instance, message) =>
         println(debug.format(
           formattedTimestamp,
           event.thread.getName,
           instance.getClass.getSimpleName,
           message))
-      case event => 
+      case event =>
         println(generic.format(formattedTimestamp, event.toString))
     }
   }
@@ -206,12 +211,12 @@ object EventHandler extends ListenerManagement {
   config.getList("akka.event-handlers") foreach { listenerName =>
     try {
       val clazz = Thread.currentThread.getContextClassLoader.loadClass(listenerName).asInstanceOf[Class[_]]
-      addListener(Actor.actorOf(clazz.asInstanceOf[Class[_ <: Actor]]).start)      
+      addListener(Actor.actorOf(clazz.asInstanceOf[Class[_ <: Actor]]).start)
     } catch {
-      case e: Exception => 
+      case e: Exception =>
         e.printStackTrace
         new ConfigurationException(
-          "Event Handler specified in config can't be loaded [" + listenerName + 
+          "Event Handler specified in config can't be loaded [" + listenerName +
           "] due to [" + e.toString + "]")
     }
   }
