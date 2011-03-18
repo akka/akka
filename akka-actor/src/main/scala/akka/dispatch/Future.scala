@@ -117,7 +117,7 @@ object Futures {
         if (seedFound.compareAndSet(false, true)) { //Only the first completed should trigger the fold
           f.value.get match {
             case r: Right[Throwable, T] =>
-              result.completeWith(fold[T,R](r.b, timeout)(futures.filterNot(_ eq f))(op))
+              result.completeWith(fold(r.b, timeout)(futures.filterNot(_ eq f))(op))
             case l: Left[Throwable, T] =>
               result.completeWithException(l.a)
           }
