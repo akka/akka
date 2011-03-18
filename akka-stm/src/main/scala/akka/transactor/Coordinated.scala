@@ -6,7 +6,6 @@ package akka.transactor
 
 import akka.config.Config
 import akka.stm.{Atomic, DefaultTransactionConfig, TransactionFactory}
-import akka.actor.{EventHandler}
 
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.commitbarriers.CountDownCommitBarrier

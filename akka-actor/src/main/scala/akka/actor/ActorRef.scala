@@ -633,7 +633,7 @@ class LocalActorRef private[akka] (
   /**
    * Starts up the actor and its message queue.
    */
-  def start: ActorRef = guard.withGuard {
+  def start(): ActorRef = guard.withGuard {
     if (isShutdown) throw new ActorStartException(
       "Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
@@ -687,11 +687,16 @@ class LocalActorRef private[akka] (
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def link(actorRef: ActorRef) = guard.withGuard {
-    if (actorRef.supervisor.isDefined) throw new IllegalActorStateException(
+  def link(actorRef: ActorRef): Unit = guard.withGuard {
+    val actorRefSupervisor = actorRef.supervisor
+    val hasSupervisorAlready = actorRefSupervisor.isDefined
+    if (hasSupervisorAlready && actorRefSupervisor.get.uuid == uuid) return // we already supervise this guy
+    else if (hasSupervisorAlready) throw new IllegalActorStateException(
       "Actor can only have one supervisor [" + actorRef + "], e.g. link(actor) fails")
-    _linkedActors.put(actorRef.uuid, actorRef)
-    actorRef.supervisor = Some(this)
+    else {
+      _linkedActors.put(actorRef.uuid, actorRef)
+      actorRef.supervisor = Some(this)
+    }
   }
 
   /**
@@ -825,8 +830,8 @@ class LocalActorRef private[akka] (
             checkReceiveTimeout // Reschedule receive timeout
           }
         } catch {
-          case e: Throwable =>
-            EventHandler notify EventHandler.Error(e, this, messageHandle.message.toString)
+          case e =>
+            EventHandler.error(e, this, messageHandle.message.toString)
             throw e
         }
       }
@@ -842,10 +847,8 @@ class LocalActorRef private[akka] (
         dead.restart(reason, maxRetries, within)
 
       case _ =>
-        if (_supervisor.isDefined)
-          notifySupervisorWithMessage(Exit(this, reason))
-        else
-          dead.stop
+        if (_supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
+        else                       dead.stop
     }
   }
 
@@ -880,7 +883,7 @@ class LocalActorRef private[akka] (
   }
 
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
-     def performRestart {
+     def performRestart() {
       val failedActor = actorInstance.get
 
       failedActor match {
@@ -891,20 +894,19 @@ class LocalActorRef private[akka] (
         case _ =>
           failedActor.preRestart(reason)
           val freshActor = newActor
-          setActorSelfFields(failedActor,null) //Only null out the references if we could instantiate the new actor
-          actorInstance.set(freshActor) //Assign it here so if preStart fails, we can null out the sef-refs next call
+          setActorSelfFields(failedActor, null) // Only null out the references if we could instantiate the new actor
+          actorInstance.set(freshActor)         // Assign it here so if preStart fails, we can null out the sef-refs next call
           freshActor.preStart
           freshActor.postRestart(reason)
       }
     }
 
-    def tooManyRestarts {
+    def tooManyRestarts() {
       _supervisor.foreach { sup =>
         // can supervisor handle the notification?
         val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
         if (sup.isDefinedAt(notification)) notifySupervisorWithMessage(notification)
       }
-
       stop
     }
 
@@ -917,12 +919,15 @@ class LocalActorRef private[akka] (
             case Temporary =>
              shutDownTemporaryActor(this)
              true
+
             case _ => // either permanent or none where default is permanent
               val success = try {
                 performRestart
                 true
               } catch {
-                case e => false //An error or exception here should trigger a retry
+                case e => 
+                  EventHandler.error(e, this, "Exception in restart of Actor [%s]".format(toString))
+                  false // an error or exception here should trigger a retry
               } finally {
                 currentMessage = null
               }
@@ -935,27 +940,25 @@ class LocalActorRef private[akka] (
           }
         }
       } else {
-        tooManyRestarts
-        true //Done
+        tooManyRestarts()
+        true // done
       }
 
-      if (success)
-        () //Alles gut
-      else
-        attemptRestart
+      if (success) () // alles gut
+      else attemptRestart()
     }
 
-    attemptRestart() //Tailrecursion
+    attemptRestart() // recur
   }
 
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) = {
     val i = _linkedActors.values.iterator
-    while(i.hasNext) {
+    while (i.hasNext) {
       val actorRef = i.next
       actorRef.lifeCycle match {
         // either permanent or none where default is permanent
         case Temporary => shutDownTemporaryActor(actorRef)
-        case _ => actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
+        case _         => actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
       }
     }
   }
@@ -963,8 +966,7 @@ class LocalActorRef private[akka] (
   protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = guard.withGuard {
     ensureRemotingEnabled
     if (_supervisor.isDefined) {
-      if (homeAddress.isDefined)
-        Actor.remote.registerSupervisorForActor(this)
+      if (homeAddress.isDefined) Actor.remote.registerSupervisorForActor(this)
       Some(_supervisor.get.uuid)
     } else None
   }
@@ -983,14 +985,12 @@ class LocalActorRef private[akka] (
     temporaryActor.stop
     _linkedActors.remove(temporaryActor.uuid) // remove the temporary actor
     // if last temporary actor is gone, then unlink me from supervisor
-    if (_linkedActors.isEmpty)
-      notifySupervisorWithMessage(UnlinkAndStop(this))
-
+    if (_linkedActors.isEmpty) notifySupervisorWithMessage(UnlinkAndStop(this))
     true
   }
 
   private def handleExceptionInDispatch(reason: Throwable, message: Any) = {
-    EventHandler notify EventHandler.Error(reason, this, message.toString)
+    EventHandler.error(reason, this, message.toString)
     
     //Prevent any further messages to be processed until the actor has been restarted
     dispatcher.suspend(this)
@@ -1013,7 +1013,7 @@ class LocalActorRef private[akka] (
         //Scoped stop all linked actors, to avoid leaking the 'i' val
         {
           val i = _linkedActors.values.iterator
-          while(i.hasNext) {
+          while (i.hasNext) {
             i.next.stop
             i.remove
           }
