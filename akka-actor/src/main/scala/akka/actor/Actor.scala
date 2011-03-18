@@ -111,10 +111,10 @@ object EventHandler extends ListenerManagement {
   import java.util.Date
   import akka.dispatch.Dispatchers
 
-  val ErrorLevel = 1
+  val ErrorLevel   = 1
   val WarningLevel = 2
-  val InfoLevel = 3
-  val DebugLevel = 4
+  val InfoLevel    = 3
+  val DebugLevel   = 4
 
   sealed trait Event {
     @transient val thread: Thread = Thread.currentThread
@@ -145,7 +145,7 @@ object EventHandler extends ListenerManagement {
   def notify(event: => AnyRef) = notifyListeners(event)
 
   def notify[T <: Event : ClassManifest](event: => T) {
-    if (classManifest[T].erasure.asInstanceOf[Class[_ <: Event]] == level) notifyListeners(event) //WTF?
+    if (level >= levelFor(classManifest[T].erasure.asInstanceOf[Class[_ <: Event]])) notifyListeners(event)
   }
 
   def error(cause: Throwable, instance: AnyRef, message: => String) = {
@@ -173,6 +173,14 @@ object EventHandler extends ListenerManagement {
     sw.toString
   }
 
+  private def levelFor(eventClass: Class[_ <: Event]) = {
+    if (eventClass.isInstanceOf[Error])        ErrorLevel
+    else if (eventClass.isInstanceOf[Warning]) WarningLevel
+    else if (eventClass.isInstanceOf[Info])    InfoLevel
+    else if (eventClass.isInstanceOf[Debug])   DebugLevel
+    else                                       DebugLevel
+  }
+  
   class DefaultListener extends Actor {
     self.id = ID
     self.dispatcher = EventHandlerDispatcher
