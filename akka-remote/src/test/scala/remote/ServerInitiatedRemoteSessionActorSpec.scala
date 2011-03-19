@@ -67,6 +67,7 @@ class ServerInitiatedRemoteSessionActorSpec extends AkkaRemoteTest {
 
       instantiatedSessionActors must have size (1)
       remote.shutdownClientModule
+      Thread.sleep(1000)
       instantiatedSessionActors must have size (0)
     }
 
