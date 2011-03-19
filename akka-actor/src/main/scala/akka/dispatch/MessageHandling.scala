@@ -36,7 +36,7 @@ final case class FutureInvocation(future: CompletableFuture[Any], function: () =
     Right(function.apply)
   } catch {
     case e: Exception =>
-      EventHandler notify EventHandler.Error(e, this)
+      EventHandler.error(e, this, e.getMessage)
       Left(e)
   })
 }
