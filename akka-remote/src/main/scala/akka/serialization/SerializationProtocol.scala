@@ -138,7 +138,7 @@ object ActorSerialization {
             actorRef.id,
             actorRef.actorClassName,
             actorRef.timeout,
-            Left(m.message),
+            Right(m.message),
             false,
             actorRef.getSender,
             None,
@@ -279,7 +279,7 @@ object RemoteActorSerialization {
       actorId: String,
       actorClassName: String,
       timeout: Long,
-      message: Either[Any, Throwable],
+      message: Either[Throwable, Any],
       isOneWay: Boolean,
       senderOption: Option[ActorRef],
       typedActorInfo: Option[Tuple2[String, String]],
@@ -319,9 +319,9 @@ object RemoteActorSerialization {
         .setOneWay(isOneWay)
 
     message match {
-      case Left(message) =>
+      case Right(message) =>
         messageBuilder.setMessage(MessageSerializer.serialize(message))
-      case Right(exception) =>
+      case Left(exception) =>
         messageBuilder.setException(ExceptionProtocol.newBuilder
             .setClassname(exception.getClass.getName)
             .setMessage(empty(exception.getMessage))

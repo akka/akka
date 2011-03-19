@@ -72,7 +72,7 @@ object Futures {
    */
   def fold[T,R](zero: R, timeout: Long = Actor.TIMEOUT)(futures: Iterable[Future[T]])(foldFun: (R, T) => R): Future[R] = {
     if(futures.isEmpty) {
-      (new DefaultCompletableFuture[R](timeout)) completeWithResult zero
+      new AlreadyCompletedFuture[R](Right(zero))
     } else {
       val result = new DefaultCompletableFuture[R](timeout)
       val results = new ConcurrentLinkedQueue[T]()
@@ -109,7 +109,7 @@ object Futures {
    */
   def reduce[T, R >: T](futures: Iterable[Future[T]], timeout: Long = Actor.TIMEOUT)(op: (R,T) => T): Future[R] = {
     if (futures.isEmpty)
-      (new DefaultCompletableFuture[R](timeout)).completeWithException(new UnsupportedOperationException("empty reduce left"))
+      new AlreadyCompletedFuture[R](Left(new UnsupportedOperationException("empty reduce left")))
     else {
       val result = new DefaultCompletableFuture[R](timeout)
       val seedFound = new AtomicBoolean(false)
@@ -319,7 +319,7 @@ sealed trait Future[+T] {
           fa complete v.asInstanceOf[Either[Throwable, A]]
         else {
           try {
-            f(v.right.get) onComplete (fa.completeWith(_))
+            fa.completeWith(f(v.right.get))
           } catch {
             case e: Exception => 
               EventHandler.error(e, this, e.getMessage)
@@ -386,6 +386,9 @@ sealed trait Future[+T] {
 
 }
 
+/**
+ * Essentially this is the Promise (or write-side) of a Future (read-side)
+ */
 trait CompletableFuture[T] extends Future[T] {
   def complete(value: Either[Throwable, T]): CompletableFuture[T]
   final def completeWithResult(result: T): CompletableFuture[T] = complete(Right(result))
@@ -478,15 +481,14 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   def complete(value: Either[Throwable, T]): DefaultCompletableFuture[T] = {
-    var notifyTheseListeners: List[Future[T] => Unit] = Nil
-
     _lock.lock
-    try {
+    val notifyTheseListeners = try {
       if (_value.isEmpty) {
         _value = Some(value)
-        notifyTheseListeners = _listeners
+        val existingListeners = _listeners
         _listeners = Nil
-      }
+        existingListeners
+      } else Nil
     } finally {
       _signal.signalAll
       _lock.unlock
@@ -499,12 +501,12 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   def onComplete(func: Future[T] => Unit): CompletableFuture[T] = {
-    var notifyNow = false
-
     _lock.lock
-    try {
-      if (_value.isEmpty) _listeners ::= func
-      else notifyNow = true
+    val notifyNow = try {
+      if (_value.isEmpty) {
+        _listeners ::= func
+        false
+      } else true
     } finally {
       _lock.unlock
     }
@@ -515,8 +517,29 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   private def notify(func: Future[T] => Unit) {
-    func(this)
+    try {
+      func(this)
+    } catch {
+      case e: Exception => EventHandler notify EventHandler.Error(e, this)
+    }
   }
 
   private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis)
+}
+
+/**
+ * An already completed Future is seeded with it's result at creation, is useful for when you are participating in
+ * a Future-composition but you already have a value to contribute.
+ */
+sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T]) extends CompletableFuture[T] {
+  val value = Some(suppliedValue)
+
+  def complete(value: Either[Throwable, T]): CompletableFuture[T] = this
+  def onComplete(func: Future[T] => Unit): Future[T] = { func(this); this }
+  def awaitResult: Option[Either[Throwable, T]] = value
+  def resultWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]] = value
+  def await : Future[T] = this
+  def awaitBlocking : Future[T] = this
+  def isExpired: Boolean = false
+  def timeoutInNanos: Long = 0
 }

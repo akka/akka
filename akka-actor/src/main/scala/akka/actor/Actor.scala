@@ -120,7 +120,7 @@ object EventHandler extends ListenerManagement {
   val DebugLevel   = 4
 
   sealed trait Event {
-    val thread: Thread = Thread.currentThread
+    @transient val thread: Thread = Thread.currentThread
   }
   case class Error(cause: Throwable, instance: AnyRef, message: String = "") extends Event
   case class Warning(instance: AnyRef, message: String = "") extends Event
