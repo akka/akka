@@ -34,6 +34,23 @@ private[akka] object ActorRefInternals {
   object SHUTDOWN extends StatusType
 }
 
+/**
+ * Abstraction for unification of sender and senderFuture for later reply
+ */
+abstract class Channel[T] {
+  
+  /**
+   * Sends the specified message to the channel
+   * Scala API
+   */
+  def !(msg: T): Unit
+
+  /**
+   * Sends the specified message to the channel
+   * Java API
+   */
+  def sendOneWay(msg: T): Unit = this.!(msg)
+}
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -966,7 +983,7 @@ class LocalActorRef private[akka] (
   protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = guard.withGuard {
     ensureRemotingEnabled
     if (_supervisor.isDefined) {
-      if (homeAddress.isDefined) Actor.remote.registerSupervisorForActor(this)
+      if (homeAddress.isDefined)  Actor.remote.registerSupervisorForActor(this)
       Some(_supervisor.get.uuid)
     } else None
   }
@@ -1032,7 +1049,7 @@ class LocalActorRef private[akka] (
         val someSelfField = clazz.getDeclaredField("someSelf")
         selfField.setAccessible(true)
         someSelfField.setAccessible(true)
-        selfField.set(actor,value)
+        selfField.set(actor, value)
         someSelfField.set(actor, if (value ne null) Some(value) else null)
         true
       } catch {
@@ -1044,11 +1061,11 @@ class LocalActorRef private[akka] (
         val parent = clazz.getSuperclass
         if (parent eq null)
           throw new IllegalActorStateException(toString + " is not an Actor since it have not mixed in the 'Actor' trait")
-        lookupAndSetSelfFields(parent,actor,value)
+        lookupAndSetSelfFields(parent, actor, value)
       }
     }
 
-    lookupAndSetSelfFields(actor.getClass,actor,value)
+    lookupAndSetSelfFields(actor.getClass, actor, value)
   }
 
   private def initializeActorInstance = {
@@ -1102,7 +1119,11 @@ private[akka] case class RemoteActorRef private[akka] (
     timeout: Long,
     senderOption: Option[ActorRef],
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-    val future = Actor.remote.send[T](message, senderOption, senderFuture, homeAddress.get, timeout, false, this, None, actorType, loader)
+    val future = Actor.remote.send[T](
+      message, senderOption, senderFuture, 
+      homeAddress.get, timeout, 
+      false, this, None, 
+      actorType, loader)
     if (future.isDefined) future.get
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
@@ -1179,7 +1200,9 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    */
   def id: String
 
-  def id_=(id: String): Unit /**
+  def id_=(id: String): Unit 
+  
+  /**
    * User overridable callback/setting.
    * <p/>
    * Defines the life-cycle for a supervised actor.
@@ -1195,11 +1218,11 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    * <p/>
    * Can be one of:
    * <pre>
-   *  faultHandler = AllForOneStrategy(trapExit = List(classOf[Exception]),maxNrOfRetries, withinTimeRange)
+   *  faultHandler = AllForOneStrategy(trapExit = List(classOf[Exception]), maxNrOfRetries, withinTimeRange)
    * </pre>
    * Or:
    * <pre>
-   *  faultHandler = OneForOneStrategy(trapExit = List(classOf[Exception]),maxNrOfRetries, withinTimeRange)
+   *  faultHandler = OneForOneStrategy(trapExit = List(classOf[Exception]), maxNrOfRetries, withinTimeRange)
    * </pre>
    */
   @volatile
@@ -1267,8 +1290,10 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
         future.await
       } catch {
         case e: FutureTimeoutException =>
-          if (isMessageJoinPoint) throw e
-          else None
+          if (isMessageJoinPoint) {
+            EventHandler.error(e, this, e.getMessage)
+            throw e
+          } else None
       }
       future.resultOrException
     } else throw new ActorInitializationException(
@@ -1379,21 +1404,4 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
     ensureRemotingEnabled
     spawnLinkRemote(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], hostname, port, timeout)
   }
-}
-
-/**
- * Abstraction for unification of sender and senderFuture for later reply
- */
-abstract class Channel[T] {
-  /**
-   * Sends the specified message to the channel
-   * Scala API
-   */
-  def !(msg: T): Unit
-
-  /**
-   * Sends the specified message to the channel
-   * Java API
-   */
-  def sendOneWay(msg: T): Unit = this.!(msg)
 }
