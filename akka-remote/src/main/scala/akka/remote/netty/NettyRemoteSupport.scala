@@ -13,7 +13,12 @@ import akka.serialization.RemoteActorSerialization._
 import akka.japi.Creator
 import akka.config.Config._
 import akka.remoteinterface._
-import akka.actor.{EventHandler, Index, ActorInitializationException, LocalActorRef, newUuid, ActorRegistry, Actor, RemoteActorRef, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage, uuidFrom, Uuid, Exit, LifeCycleMessage, ActorType => AkkaActorType}
+import akka.actor.{PoisonPill, EventHandler, Index,
+                   ActorInitializationException, LocalActorRef, newUuid,
+                   ActorRegistry, Actor, RemoteActorRef,
+                   TypedActor, ActorRef, IllegalActorStateException,
+                   RemoteActorSystemMessage, uuidFrom, Uuid,
+                   Exit, LifeCycleMessage, ActorType => AkkaActorType}
 import akka.AkkaException
 import akka.actor.Actor._
 import akka.util._
@@ -194,7 +199,7 @@ abstract class RemoteClient private[akka] (
         actorRef.id,
         actorRef.actorClassName,
         actorRef.timeout,
-        Left(message),
+        Right(message),
         isOneWay,
         senderOption,
         typedActorInfo,
@@ -811,8 +816,10 @@ class RemoteServerHandler(
     // stop all session actors
     for (map <- Option(sessionActors.remove(event.getChannel));
          actor <- asScalaIterable(map.values)) {
-         try { actor.stop } catch { case e: Exception => }
+         try { actor ! PoisonPill } catch { case e: Exception => }
     }
+
+    //FIXME switch approach or use other thread to execute this
     // stop all typed session actors
     for (map <- Option(typedSessionActors.remove(event.getChannel));
          actor <- asScalaIterable(map.values)) {
@@ -887,22 +894,17 @@ class RemoteServerHandler(
           message,
           request.getActorInfo.getTimeout,
           None,
-          Some(new DefaultCompletableFuture[AnyRef](request.getActorInfo.getTimeout).
-            onComplete(f => {
-              val result = f.result
-              val exception = f.exception
-
-              if (exception.isDefined) {
-                write(channel, createErrorReplyMessage(exception.get, request, AkkaActorType.ScalaActor))
-              }
-              else if (result.isDefined) {
-                val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+          Some(new DefaultCompletableFuture[Any](request.getActorInfo.getTimeout).
+            onComplete(_.value.get match {
+              case l: Left[Throwable, Any] => write(channel, createErrorReplyMessage(l.a, request, AkkaActorType.ScalaActor))
+              case r: Right[Throwable, Any] =>
+                 val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
                   Some(actorRef),
                   Right(request.getUuid),
                   actorInfo.getId,
                   actorInfo.getTarget,
                   actorInfo.getTimeout,
-                  Left(result.get),
+                  r,
                   true,
                   Some(actorRef),
                   None,
@@ -913,7 +915,6 @@ class RemoteServerHandler(
                 if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
 
                 write(channel, RemoteEncoder.encode(messageBuilder.build))
-              }
             }
           )
        ))
@@ -958,10 +959,10 @@ class RemoteServerHandler(
     try {
       val messageReceiver = resolveMethod(typedActor.getClass, ownerTypeHint, typedActorInfo.getMethod, argClasses)
 
-      if (request.getOneWay) messageReceiver.invoke(typedActor, args: _*)
+      if (request.getOneWay) messageReceiver.invoke(typedActor, args: _*) //FIXME execute in non-IO thread
       else {
         //Sends the response
-        def sendResponse(result: Either[Any,Throwable]): Unit = try {
+        def sendResponse(result: Either[Throwable,Any]): Unit = try {
           val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
             None,
             Right(request.getUuid),
@@ -983,14 +984,10 @@ class RemoteServerHandler(
             server.notifyListeners(RemoteServerError(e, server))
         }
 
-        messageReceiver.invoke(typedActor, args: _*) match {
-          case f: Future[_] => //If it's a future, we can lift on that to defer the send to when the future is completed
-            f.onComplete( future => {
-              val result: Either[Any,Throwable] =
-                if (future.exception.isDefined) Right(future.exception.get) else Left(future.result.get)
-              sendResponse(result)
-            })
-          case other => sendResponse(Left(other))
+        messageReceiver.invoke(typedActor, args: _*) match { //FIXME execute in non-IO thread
+          //If it's a future, we can lift on that to defer the send to when the future is completed
+          case f: Future[_] => f.onComplete( future => sendResponse(future.value.get) )
+          case other        => sendResponse(Right(other))
         }
       }
     } catch {
@@ -1153,7 +1150,7 @@ class RemoteServerHandler(
       actorInfo.getId,
       actorInfo.getTarget,
       actorInfo.getTimeout,
-      Right(exception),
+      Left(exception),
       true,
       None,
       None,
