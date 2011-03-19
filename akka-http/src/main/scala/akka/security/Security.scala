@@ -23,7 +23,7 @@
 package akka.security
 
 import akka.actor.{Scheduler, Actor, ActorRef, ActorRegistry, IllegalActorStateException}
-import akka.actor.{EventHandler}
+import akka.actor.EventHandler
 import akka.actor.Actor._
 import akka.config.Config
 
@@ -369,7 +369,7 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] {
         Some(UserInfo(user, null, rolesFor(user)))
       } catch {
         case e: PrivilegedActionException => {
-          EventHandler notify EventHandler.Error(e, this)
+          EventHandler.error(e, this, e.getMessage)
           None
         }
       }
