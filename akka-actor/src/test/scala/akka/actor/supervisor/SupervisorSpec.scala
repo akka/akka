@@ -24,7 +24,6 @@ object SupervisorSpec {
 
   class PingPong1Actor extends Actor {
     import self._
-    //dispatcher = Dispatchers.newThreadBasedDispatcher(self)
     def receive = {
       case Ping =>
         messageLog.put("ping")
@@ -34,11 +33,9 @@ object SupervisorSpec {
         oneWayLog.put("oneway")
 
       case Die =>
-        println("******************** GOT DIE 1")
         throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
     override def postRestart(reason: Throwable) {
-      println("******************** restart 1")
       messageLog.put(reason.getMessage)
     }
   }
@@ -50,11 +47,9 @@ object SupervisorSpec {
         messageLog.put("ping")
         reply("pong")
       case Die =>
-        println("******************** GOT DIE 2")
         throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
     override def postRestart(reason: Throwable) {
-      println("******************** restart 2")
       messageLog.put(reason.getMessage)
     }
   }
@@ -66,12 +61,10 @@ object SupervisorSpec {
         messageLog.put("ping")
         reply("pong")
       case Die =>
-        println("******************** GOT DIE 3")
         throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
 
     override def postRestart(reason: Throwable) {
-      println("******************** restart 3")
       messageLog.put(reason.getMessage)
     }
   }
@@ -84,12 +77,10 @@ object SupervisorSpec {
         messageLog.put("ping")
         reply("pong")
       case Die =>
-        println("******************** GOT DIE 3")
         throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
 
     override def postRestart(reason: Throwable) {
-      println("******************** restart temporary")
       messageLog.put(reason.getMessage)
     }
   }
@@ -114,17 +105,6 @@ class SupervisorSpec extends JUnitSuite {
   var pingpong3: ActorRef = _
   var temporaryActor: ActorRef = _
 
-/*
-  @Test def shouldStartServer = {
-    clearMessageLogs
-    val sup = getSingleActorAllForOneSupervisor
-    sup.start
-
-    expect("pong") {
-      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
-    }
-  }
-*/
   @Test def shoulNotRestartProgrammaticallyLinkedTemporaryActor = {
     clearMessageLogs
     val master = actorOf[Master].start

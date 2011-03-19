@@ -36,12 +36,13 @@ import org.jboss.netty.handler.timeout.{ ReadTimeoutHandler, ReadTimeoutExceptio
 import org.jboss.netty.util.{ TimerTask, Timeout, HashedWheelTimer }
 import org.jboss.netty.handler.ssl.SslHandler
 
-import java.net.{ SocketAddress, InetSocketAddress }
-import java.util.concurrent.{ TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap, ConcurrentSkipListSet }
 import scala.collection.mutable.{ HashMap }
 import scala.reflect.BeanProperty
+
+import java.net.{ SocketAddress, InetSocketAddress }
 import java.lang.reflect.InvocationTargetException
-import java.util.concurrent.atomic. {AtomicReference, AtomicLong, AtomicBoolean}
+import java.util.concurrent.{ TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap, ConcurrentSkipListSet }
+import java.util.concurrent.atomic.{AtomicReference, AtomicLong, AtomicBoolean}
 
 object RemoteEncoder {
   def encode(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {
@@ -434,7 +435,7 @@ class ActiveRemoteClientHandler(
       }
     } catch {
       case e: Throwable =>
-        EventHandler notify EventHandler.Error(e, this)
+        EventHandler.error(e, this, e.getMessage)
         client.notifyListeners(RemoteClientError(e, client.module, client.remoteAddress))
         throw e
     }
@@ -483,7 +484,7 @@ class ActiveRemoteClientHandler(
         .newInstance(exception.getMessage).asInstanceOf[Throwable]
     } catch {
       case problem: Throwable =>
-        EventHandler notify EventHandler.Error(problem, this)
+        EventHandler.error(problem, this, problem.getMessage)
         UnparsableException(classname, exception.getMessage)
     }
   }
@@ -563,7 +564,7 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
       serverModule.notifyListeners(RemoteServerShutdown(serverModule))
     } catch {
       case e: Exception => 
-        EventHandler notify EventHandler.Error(e, this)
+        EventHandler.error(e, this, e.getMessage)
     }
   }
 }
@@ -596,7 +597,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
       }
     } catch {
       case e: Exception => 
-        EventHandler notify EventHandler.Error(e, this)
+        EventHandler.error(e, this, e.getMessage)
         notifyListeners(RemoteServerError(e, this))
     }
     this
@@ -869,7 +870,7 @@ class RemoteServerHandler(
     val actorRef =
       try { createActor(actorInfo, channel) } catch {
         case e: SecurityException =>
-          EventHandler notify EventHandler.Error(e, this)
+          EventHandler.error(e, this, e.getMessage)
           write(channel, createErrorReplyMessage(e, request, AkkaActorType.ScalaActor))
           server.notifyListeners(RemoteServerError(e, server))
           return
@@ -979,7 +980,7 @@ class RemoteServerHandler(
           write(channel, RemoteEncoder.encode(messageBuilder.build))
         } catch {
           case e: Exception => 
-            EventHandler notify EventHandler.Error(e, this)
+            EventHandler.error(e, this, e.getMessage)
             server.notifyListeners(RemoteServerError(e, server))
         }
 
@@ -991,11 +992,11 @@ class RemoteServerHandler(
       }
     } catch {
       case e: InvocationTargetException =>
-        EventHandler notify EventHandler.Error(e, this)
+        EventHandler.error(e, this, e.getMessage)
         write(channel, createErrorReplyMessage(e.getCause, request, AkkaActorType.TypedActor))
         server.notifyListeners(RemoteServerError(e, server))
       case e: Exception =>
-        EventHandler notify EventHandler.Error(e, this)
+        EventHandler.error(e, this, e.getMessage)
         write(channel, createErrorReplyMessage(e, request, AkkaActorType.TypedActor))
         server.notifyListeners(RemoteServerError(e, server))
     }
@@ -1055,7 +1056,7 @@ class RemoteServerHandler(
       actorRef.start //Start it where it's created
     } catch {
       case e: Throwable =>
-        EventHandler notify EventHandler.Error(e, this)
+        EventHandler.error(e, this, e.getMessage)
         server.notifyListeners(RemoteServerError(e, server))
         throw e
     }
@@ -1122,7 +1123,7 @@ class RemoteServerHandler(
       newInstance
     } catch {
       case e: Throwable =>
-        EventHandler notify EventHandler.Error(e, this)
+        EventHandler.error(e, this, e.getMessage)
         server.notifyListeners(RemoteServerError(e, server))
         throw e
     }

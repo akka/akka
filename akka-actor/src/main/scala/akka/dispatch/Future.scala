@@ -87,7 +87,7 @@ object Futures {
                 result completeWithResult scala.collection.JavaConversions.asScalaIterable(results).foldLeft(zero)(foldFun)
               } catch {
                 case e: Exception =>
-                  EventHandler notify EventHandler.Error(e, this)
+                  EventHandler.error(e, this, e.getMessage)
                   result completeWithException e
               } finally {
                 results.clear
@@ -266,7 +266,7 @@ sealed trait Future[+T] {
               else Left(new MatchError(r))
             } catch {
               case e: Exception =>
-                EventHandler notifyListeners EventHandler.Error(e, this)
+                EventHandler.error(e, this, e.getMessage)
                 Left(e)
             }
           }
@@ -294,7 +294,7 @@ sealed trait Future[+T] {
             Right(f(v.right.get))
           } catch {
             case e: Exception => 
-              EventHandler notify EventHandler.Error(e, this)
+              EventHandler.error(e, this, e.getMessage)
               Left(e)
           })
         }
@@ -322,7 +322,7 @@ sealed trait Future[+T] {
             fa.completeWith(f(v.right.get))
           } catch {
             case e: Exception => 
-              EventHandler notify EventHandler.Error(e, this)
+              EventHandler.error(e, this, e.getMessage)
               fa completeWithException e
           }
         }
@@ -352,7 +352,7 @@ sealed trait Future[+T] {
             else Left(new MatchError(r))
           } catch {
             case e: Exception => 
-              EventHandler notify EventHandler.Error(e, this)
+              EventHandler.error(e, this, e.getMessage)
               Left(e)
           })
         }

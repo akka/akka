@@ -28,7 +28,9 @@ import akka.japi. {Creator, Procedure}
 /* Marker trait to show which Messages are automatically handled by Akka */
 sealed trait AutoReceivedMessage { self: LifeCycleMessage => }
 
-case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true) extends AutoReceivedMessage with LifeCycleMessage {
+case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true) 
+  extends AutoReceivedMessage with LifeCycleMessage {
+  
   /**
    * Java API
    */
@@ -103,6 +105,7 @@ class ActorTimeoutException        private[akka](message: String) extends AkkaEx
  * <pre>
  * EventHandler.error(exception, this, message.toString)
  * </pre>
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object EventHandler extends ListenerManagement {
@@ -222,7 +225,6 @@ object EventHandler extends ListenerManagement {
       addListener(Actor.actorOf(clazz.asInstanceOf[Class[_ <: Actor]]).start)
     } catch {
       case e: Exception =>
-        e.printStackTrace
         new ConfigurationException(
           "Event Handler specified in config can't be loaded [" + listenerName +
           "] due to [" + e.toString + "]")
@@ -234,7 +236,7 @@ object EventHandler extends ListenerManagement {
  * This message is thrown by default when an Actors behavior doesn't match a message
  */
 case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception {
-  override def getMessage() = "Actor %s does not handle [%s]".format(ref,msg)
+  override def getMessage() = "Actor %s does not handle [%s]".format(ref, msg)
   override def fillInStackTrace() = this //Don't waste cycles generating stack trace
 }
 
@@ -255,7 +257,7 @@ object Actor extends ListenerManagement {
         val tf = classOf[java.lang.Thread].getDeclaredField("subclassAudits")
         tf.setAccessible(true)
         val subclassAudits = tf.get(null).asInstanceOf[java.util.Map[_,_]]
-        subclassAudits.synchronized {subclassAudits.clear}
+        subclassAudits synchronized {subclassAudits.clear}
       }
     }
     Runtime.getRuntime.addShutdownHook(new Thread(hook))
@@ -265,11 +267,11 @@ object Actor extends ListenerManagement {
   val registry = new ActorRegistry
 
   lazy val remote: RemoteSupport = {
-    ReflectiveAccess.
-    Remote.
-    defaultRemoteSupport.
-    map(_()).
-    getOrElse(throw new UnsupportedOperationException("You need to have akka-remote on classpath"))
+    ReflectiveAccess
+      .Remote
+      .defaultRemoteSupport
+      .map(_())
+      .getOrElse(throw new UnsupportedOperationException("You need to have akka-remote.jar on classpath"))
   }
 
   private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
@@ -456,9 +458,8 @@ trait Actor {
       "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
       "\n\tEither use:" +
       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
-      "\n\t\t'val actor = Actor.actorOf(new MyActor(..))', or" +
-      "\n\t\t'val actor = Actor.actor { case msg => .. } }'")
-     optRef.asInstanceOf[Some[ActorRef]].get.id = getClass.getName //FIXME: Is this needed?
+      "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
+     optRef.asInstanceOf[Some[ActorRef]].get.id = getClass.getName  //FIXME: Is this needed?
      optRef.asInstanceOf[Some[ActorRef]]
   }
 
@@ -557,7 +558,7 @@ trait Actor {
    * by default it throws an UnhandledMessageException
    */
   def unhandled(msg: Any) {
-    throw new UnhandledMessageException(msg,self)
+    throw new UnhandledMessageException(msg, self)
   }
 
   /**
@@ -578,19 +579,16 @@ trait Actor {
    * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
    */
   def become(behavior: Receive, discardOld: Boolean = true) {
-    if (discardOld)
-      unbecome
-
+    if (discardOld) unbecome
     self.hotswap = self.hotswap.push(behavior)
   }
 
   /**
    * Reverts the Actor behavior to the previous one in the hotswap stack.
    */
-  def unbecome: Unit = {
+  def unbecome(): Unit = {
     val h = self.hotswap
-    if (h.nonEmpty)
-      self.hotswap = h.pop
+    if (h.nonEmpty) self.hotswap = h.pop
   }
 
   // =========================================
@@ -607,7 +605,7 @@ trait Actor {
   }
 
   private final def autoReceiveMessage(msg: AutoReceivedMessage): Unit = msg match {
-    case HotSwap(code,discardOld)  => become(code(self),discardOld)
+    case HotSwap(code, discardOld) => become(code(self), discardOld)
     case RevertHotSwap             => unbecome
     case Exit(dead, reason)        => self.handleTrapExit(dead, reason)
     case Link(child)               => self.link(child)
@@ -616,8 +614,7 @@ trait Actor {
     case Restart(reason)           => throw reason
     case PoisonPill                =>
       val f = self.senderFuture
-      if(f.isDefined)
-        f.get.completeWithException(new ActorKilledException("PoisonPill"))
+      if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
       self.stop
   }
 

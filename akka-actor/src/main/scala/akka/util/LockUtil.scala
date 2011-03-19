@@ -6,7 +6,7 @@ package akka.util
 
 import java.util.concurrent.locks.{ReentrantReadWriteLock, ReentrantLock}
 import java.util.concurrent.atomic. {AtomicBoolean}
-import akka.actor.{EventHandler}
+import akka.actor.EventHandler
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -120,15 +120,15 @@ class SimpleLock {
 class Switch(startAsOn: Boolean = false) {
   private val switch = new AtomicBoolean(startAsOn)
 
-  protected def transcend(from: Boolean,action: => Unit): Boolean = synchronized {
+  protected def transcend(from: Boolean, action: => Unit): Boolean = synchronized {
     if (switch.compareAndSet(from, !from)) {
       try {
         action
       } catch {
-        case t: Throwable =>
-          EventHandler notify EventHandler.Error(t, this)
-          switch.compareAndSet(!from, from) //Revert status
-          throw t
+        case e: Throwable =>
+          EventHandler.error(e, this, e.getMessage)
+          switch.compareAndSet(!from, from) // revert status
+          throw e
       }
       true
     } else false
