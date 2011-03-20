@@ -856,6 +856,8 @@ class RemoteServerHandler(
     }
 
   private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = {
+    //FIXME we should definitely spawn off this in a thread pool or something,
+    //      potentially using Actor.spawn or something similar
     request.getActorInfo.getActorType match {
       case SCALA_ACTOR => dispatchToActor(request, channel)
       case TYPED_ACTOR => dispatchToTypedActor(request, channel)
