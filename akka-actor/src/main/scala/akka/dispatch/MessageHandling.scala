@@ -35,7 +35,7 @@ final case class FutureInvocation(future: CompletableFuture[Any], function: () =
   def run = future complete (try {
     Right(function.apply)
   } catch {
-    case e: Exception =>
+    case e =>
       EventHandler.error(e, this, e.getMessage)
       Left(e)
   })
@@ -203,6 +203,11 @@ trait MessageDispatcher {
    * Returns the size of the mailbox for the specified actor
    */
   def mailboxSize(actorRef: ActorRef): Int
+
+  /**
+   * Returns the size of the Future queue
+   */
+  def futureQueueSize: Int = futures.size
 }
 
 /**

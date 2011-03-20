@@ -520,7 +520,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     try {
       func(this)
     } catch {
-      case e: Exception => EventHandler notify EventHandler.Error(e, this)
+      case e => EventHandler notify EventHandler.Error(e, this)
     }
   }
 
