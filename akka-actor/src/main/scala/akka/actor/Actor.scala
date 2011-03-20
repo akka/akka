@@ -221,11 +221,12 @@ object EventHandler extends ListenerManagement {
 
   config.getList("akka.event-handlers") foreach { listenerName =>
     try {
-      val clazz = Thread.currentThread.getContextClassLoader.loadClass(listenerName).asInstanceOf[Class[_]]
-      addListener(Actor.actorOf(clazz.asInstanceOf[Class[_ <: Actor]]).start)
+      ReflectiveAccess.getClassFor[Actor](listenerName) map {
+        clazz => addListener(Actor.actorOf(clazz).start)
+      }
     } catch {
       case e: Exception =>
-        new ConfigurationException(
+        throw new ConfigurationException(
           "Event Handler specified in config can't be loaded [" + listenerName +
           "] due to [" + e.toString + "]")
     }

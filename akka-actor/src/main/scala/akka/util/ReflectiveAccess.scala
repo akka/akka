@@ -132,36 +132,45 @@ object ReflectiveAccess {
                         params: Array[Class[_]],
                         args: Array[AnyRef],
                         classloader: ClassLoader = loader): Option[T] = try {
-    assert(fqn ne null)
     assert(params ne null)
     assert(args ne null)
-    val clazz = classloader.loadClass(fqn)
-    val ctor = clazz.getDeclaredConstructor(params: _*)
-    ctor.setAccessible(true)
-    Some(ctor.newInstance(args: _*).asInstanceOf[T])
+    getClassFor(fqn) match {
+      case Some(clazz) =>
+        val ctor = clazz.getDeclaredConstructor(params: _*)
+        ctor.setAccessible(true)
+        Some(ctor.newInstance(args: _*).asInstanceOf[T])
+      case None => None
+    }
   } catch {
     case e: Exception =>
       None
   }
 
   def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Option[T] = try {//Obtains a reference to $MODULE$
-    assert(fqn ne null)
-    val clazz = classloader.loadClass(fqn)
-    val instance = clazz.getDeclaredField("MODULE$")
-    instance.setAccessible(true)
-    Option(instance.get(null).asInstanceOf[T])
+    getClassFor(fqn) match {
+      case Some(clazz) =>
+        val instance = clazz.getDeclaredField("MODULE$")
+        instance.setAccessible(true)
+        Option(instance.get(null).asInstanceOf[T])
+      case None => None
+    }
   } catch {
-    case e: ClassNotFoundException =>
-      None
     case ei: ExceptionInInitializerError =>
       throw ei
   }
 
-  def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Option[Class[T]] = try {
+  def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Option[Class[T]] = {
     assert(fqn ne null)
-    Some(classloader.loadClass(fqn).asInstanceOf[Class[T]])
-  } catch {
-    case e: Exception =>
-      None
+
+    def tryLoad(f: => Class[T]): Option[Class[T]] = try {
+      Option(f)
+    } catch {
+      case cnfe: ClassNotFoundException => None
+    }
+
+    tryLoad(classloader.loadClass(fqn).asInstanceOf[Class[T]]) orElse
+    tryLoad(Thread.currentThread.getContextClassLoader.loadClass(fqn).asInstanceOf[Class[T]])
+    tryLoad(this.getClass.getClassLoader.loadClass(fqn).asInstanceOf[Class[T]]) orElse
+    tryLoad(Class.forName(fqn).asInstanceOf[Class[T]])
   }
 }
