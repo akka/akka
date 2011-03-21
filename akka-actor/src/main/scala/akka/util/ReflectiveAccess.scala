@@ -162,15 +162,22 @@ object ReflectiveAccess {
   def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Option[Class[T]] = {
     assert(fqn ne null)
 
-    def tryLoad(f: => Class[T]): Option[Class[T]] = try {
-      Option(f)
-    } catch {
-      case cnfe: ClassNotFoundException => None
+    val first = try { Option(classloader.loadClass(fqn).asInstanceOf[Class[T]]) } catch { case c: ClassNotFoundException => None }
+
+    if (first.isDefined)
+      first
+    else {
+      val second = try { Option(Thread.currentThread.getContextClassLoader.loadClass(fqn).asInstanceOf[Class[T]]) } catch { case c: ClassNotFoundException => None }
+      if (second.isDefined)
+        second
+      else {
+        val third = try { Option(this.getClass.getClassLoader.loadClass(fqn).asInstanceOf[Class[T]]) } catch { case c: ClassNotFoundException => None }
+        if (third.isDefined)
+          third
+        else
+          try { Option(Class.forName(fqn).asInstanceOf[Class[T]]) } catch { case c: ClassNotFoundException => None } //Last option
+      }
     }
 
-    tryLoad(classloader.loadClass(fqn).asInstanceOf[Class[T]]) orElse
-    tryLoad(Thread.currentThread.getContextClassLoader.loadClass(fqn).asInstanceOf[Class[T]])
-    tryLoad(this.getClass.getClassLoader.loadClass(fqn).asInstanceOf[Class[T]]) orElse
-    tryLoad(Class.forName(fqn).asInstanceOf[Class[T]])
   }
 }
