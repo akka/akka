@@ -300,4 +300,28 @@ class FutureSpec extends JUnitSuite {
     assert(latch.tryAwait(5, TimeUnit.SECONDS))
     actor.stop
   }
+
+  @Test def shouldHandleThrowables {
+    class ThrowableTest(m: String) extends Throwable(m)
+
+    val f1 = Future { throw new ThrowableTest("test") }
+    f1.await
+    intercept[ThrowableTest] { f1.resultOrException }
+
+    val latch = new StandardLatch
+    val f2 = Future { latch.tryAwait(5, TimeUnit.SECONDS); "success" }
+    f2 foreach (_ => throw new ThrowableTest("dispatcher foreach"))
+    f2 receive { case _ => throw new ThrowableTest("dispatcher receive") }
+    val f3 = f2 map (s => s.toUpperCase)
+    latch.open
+    f2.await
+    assert(f2.resultOrException === Some("success"))
+    f2 foreach (_ => throw new ThrowableTest("current thread foreach"))
+    f2 receive { case _ => throw new ThrowableTest("current thread receive") }
+    f3.await
+    assert(f3.resultOrException === Some("SUCCESS"))
+
+    // make sure all futures are completed in dispatcher
+    assert(Dispatchers.defaultGlobalDispatcher.futureQueueSize === 0)
+  }
 }
