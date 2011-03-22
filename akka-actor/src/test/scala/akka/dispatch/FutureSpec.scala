@@ -324,4 +324,34 @@ class FutureSpec extends JUnitSuite {
     // make sure all futures are completed in dispatcher
     assert(Dispatchers.defaultGlobalDispatcher.futureQueueSize === 0)
   }
+
+  @Test def shouldBlockUntilResult {
+    val latch = new StandardLatch
+
+    val f = Future({ latch.await; 5})
+    val f2 = Future({ f() + 5 })
+
+    assert(f2.resultOrException === None)
+    latch.open
+    assert(f2() === 10)
+  }
+
+  @Test def lesslessIsMore {
+    import akka.actor.Actor.spawn
+    val dataflowVar, dataflowVar2 = new DefaultCompletableFuture[Int](Long.MaxValue)
+    val begin, end = new StandardLatch
+    spawn {
+      begin.await
+      dataflowVar2 << dataflowVar
+      end.open
+    }
+
+    spawn {
+      dataflowVar << 5
+    }
+    begin.open
+    end.await
+    assert(dataflowVar2() === 5)
+    assert(dataflowVar.get === 5)
+  }
 }
