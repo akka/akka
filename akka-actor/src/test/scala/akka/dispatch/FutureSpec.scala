@@ -334,6 +334,11 @@ class FutureSpec extends JUnitSuite {
     assert(f2.resultOrException === None)
     latch.open
     assert(f2() === 10)
+
+    val f3 = Future({ Thread.sleep(100); 5}, 10)
+    intercept[FutureTimeoutException] {
+      f3()
+    }
   }
 
   @Test def lesslessIsMore {
