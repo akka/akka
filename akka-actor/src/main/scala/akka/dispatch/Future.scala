@@ -205,10 +205,7 @@ sealed trait Future[+T] {
    * and will throw a java.util.concurrent.TimeoutException if there is no result
    * within the Futures timeout
    */
-  def apply(): T = this.await.resultOrException match {
-    case None => throw new java.util.concurrent.TimeoutException("Future timed out!")
-    case s: Some[T] => s.get
-  }
+  def apply(): T = this.await.resultOrException.get
 
   /**
    * Java API for apply()
