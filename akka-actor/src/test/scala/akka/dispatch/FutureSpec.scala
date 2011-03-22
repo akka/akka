@@ -284,7 +284,7 @@ class FutureSpec extends JUnitSuite {
     }
 
     def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, if(idx >= 5) 5000 else 0 )) }
-    val result = for(f <- futures) yield f.resultWithin(2, TimeUnit.SECONDS)
+    val result = for(f <- futures) yield f.valueWithin(2, TimeUnit.SECONDS)
     val done = result collect { case Some(Right(x)) => x }
     val undone = result collect { case None => None }
     val errors = result collect { case Some(Left(t)) => t }
