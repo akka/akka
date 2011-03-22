@@ -540,6 +540,6 @@ sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T]) exte
   def resultWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]] = value
   def await : Future[T] = this
   def awaitBlocking : Future[T] = this
-  def isExpired: Boolean = false
+  def isExpired: Boolean = true
   def timeoutInNanos: Long = 0
 }
