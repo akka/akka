@@ -19,15 +19,13 @@ import java.net.{InetAddress, UnknownHostException}
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@serializable abstract class AkkaException(message: String) extends RuntimeException(message) {
-  import AkkaException._
+@serializable abstract class AkkaException(message: String) extends {
   val exceptionName = getClass.getName
-
-  val uuid = "%s_%s".format(hostname, newUuid)
-
-  override val toString = "%s\n\t[%s]\n\t%s\n\t%s".format(exceptionName, uuid, message, {
+  val uuid = "%s_%s".format(AkkaException.hostname, newUuid)
+} with RuntimeException(message) {
+  override lazy val toString = "%s\n\t[%s]\n\t%s\n\t%s".format(exceptionName, uuid, message, {
     val sw = new StringWriter
-    printStackTrace(new PrintWriter(sw))
+    this.printStackTrace(new PrintWriter(sw))
     sw.toString
   })
 }
