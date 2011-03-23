@@ -5,7 +5,7 @@
 package akka.config
 
 import akka.AkkaException
-import akka.actor.EventHandler
+import akka.event.EventHandler
 
 import java.net.InetSocketAddress
 import java.lang.reflect.Method

@@ -5,7 +5,8 @@
 package akka.dispatch
 
 import akka.AkkaException
-import akka.actor.{Actor, EventHandler}
+import akka.event.EventHandler
+import akka.actor.Actor
 import akka.routing.Dispatcher
 import akka.japi.{ Procedure, Function => JFunc }
 

@@ -4,7 +4,8 @@
 
 package akka.dispatch
 
-import akka.actor.{ActorRef, IllegalActorStateException, EventHandler}
+import akka.event.EventHandler
+import akka.actor.{ActorRef, IllegalActorStateException}
 import akka.util.{ReflectiveAccess, Switch}
 
 import java.util.Queue

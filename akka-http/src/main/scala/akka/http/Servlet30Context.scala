@@ -7,7 +7,7 @@ package akka.http
 import javax.servlet. {AsyncContext, AsyncListener, AsyncEvent};
 import Types._
 
-import akka.actor.EventHandler
+import akka.event.EventHandler
 
 /**
  * @author Garrick Evans

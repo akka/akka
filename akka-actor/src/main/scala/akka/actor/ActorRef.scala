@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import akka.event.EventHandler
 import akka.dispatch._
 import akka.config.Config._
 import akka.config.Supervision._

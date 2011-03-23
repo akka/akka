@@ -19,6 +19,7 @@ import scala.collection.JavaConversions
 
 import java.util.concurrent._
 
+import akka.event.EventHandler
 import akka.AkkaException
 
 object Scheduler {
