@@ -33,6 +33,7 @@ import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, Lengt
 import org.jboss.netty.handler.codec.compression.{ ZlibDecoder, ZlibEncoder }
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufDecoder, ProtobufEncoder }
 import org.jboss.netty.handler.timeout.{ ReadTimeoutHandler, ReadTimeoutException }
+import org.jboss.netty.handler.execution.{ OrderedMemoryAwareThreadPoolExecutor, ExecutionHandler }
 import org.jboss.netty.util.{ TimerTask, Timeout, HashedWheelTimer }
 import org.jboss.netty.handler.ssl.SslHandler
 
@@ -753,9 +754,17 @@ class RemoteServerPipelineFactory(
       case "zlib"  => (new ZlibEncoder(ZLIB_COMPRESSION_LEVEL) :: Nil, new ZlibDecoder :: Nil)
       case       _ => (Nil, Nil)
     }
-
+    val execution = new ExecutionHandler(
+      new OrderedMemoryAwareThreadPoolExecutor(
+        EXECUTION_POOL_SIZE,
+        MAX_CHANNEL_MEMORY_SIZE,
+        MAX_TOTAL_MEMORY_SIZE,
+        EXECUTION_POOL_KEEPALIVE.length,
+        EXECUTION_POOL_KEEPALIVE.unit
+      )
+    )
     val remoteServer = new RemoteServerHandler(name, openChannels, loader, server)
-    val stages: List[ChannelHandler] = dec ::: lenDec :: protobufDec :: enc ::: lenPrep :: protobufEnc :: remoteServer :: Nil
+    val stages: List[ChannelHandler] = dec ::: lenDec :: protobufDec :: enc ::: lenPrep :: protobufEnc :: execution :: remoteServer :: Nil
     new StaticChannelPipeline(stages: _*)
   }
 }
@@ -856,8 +865,6 @@ class RemoteServerHandler(
     }
 
   private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = {
-    //FIXME we should definitely spawn off this in a thread pool or something,
-    //      potentially using Actor.spawn or something similar
     request.getActorInfo.getActorType match {
       case SCALA_ACTOR => dispatchToActor(request, channel)
       case TYPED_ACTOR => dispatchToTypedActor(request, channel)
