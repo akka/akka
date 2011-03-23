@@ -6,6 +6,7 @@ package akka.dispatch
 
 import java.util.concurrent._
 import atomic. {AtomicInteger, AtomicBoolean, AtomicReference, AtomicLong}
+import akka.event.EventHandler
 import akka.config.Configuration
 import akka.config.Config.TIME_UNIT
 import akka.util.{Duration, Switch, ReentrantGuard, HashCode, ReflectiveAccess}
@@ -43,7 +44,7 @@ final case class FutureInvocation(future: CompletableFuture[Any], function: () =
 
 object MessageDispatcher {
   val UNSCHEDULED = 0
-  val SCHEDULED = 1
+  val SCHEDULED   = 1
   val RESCHEDULED = 2
 
   implicit def defaultGlobalDispatcher = Dispatchers.defaultGlobalDispatcher
@@ -55,10 +56,10 @@ object MessageDispatcher {
 trait MessageDispatcher {
   import MessageDispatcher._
 
-  protected val uuids = new ConcurrentSkipListSet[Uuid]
+  protected val uuids   = new ConcurrentSkipListSet[Uuid]
   protected val futures = new ConcurrentSkipListSet[Uuid]
-  protected val guard = new ReentrantGuard
-  protected val active = new Switch(false)
+  protected val guard   = new ReentrantGuard
+  protected val active  = new Switch(false)
 
   private var shutdownSchedule = UNSCHEDULED //This can be non-volatile since it is protected by guard withGuard
 

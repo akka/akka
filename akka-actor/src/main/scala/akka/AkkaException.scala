@@ -19,7 +19,7 @@ import java.net.{InetAddress, UnknownHostException}
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@serializable abstract class AkkaException(message: String) extends RuntimeException(message) {
+@serializable abstract class AkkaException(message: String = "") extends RuntimeException(message) {
   import AkkaException._
   val exceptionName = getClass.getName
 

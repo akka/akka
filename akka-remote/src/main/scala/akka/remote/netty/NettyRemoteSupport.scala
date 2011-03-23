@@ -13,13 +13,14 @@ import akka.serialization.RemoteActorSerialization._
 import akka.japi.Creator
 import akka.config.Config._
 import akka.remoteinterface._
-import akka.actor.{PoisonPill, EventHandler, Index,
+import akka.actor.{PoisonPill, Index,
                    ActorInitializationException, LocalActorRef, newUuid,
                    ActorRegistry, Actor, RemoteActorRef,
                    TypedActor, ActorRef, IllegalActorStateException,
                    RemoteActorSystemMessage, uuidFrom, Uuid,
                    Exit, LifeCycleMessage, ActorType => AkkaActorType}
 import akka.AkkaException
+import akka.event.EventHandler
 import akka.actor.Actor._
 import akka.util._
 import akka.remote.{MessageSerializer, RemoteClientSettings, RemoteServerSettings}

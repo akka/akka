@@ -6,6 +6,7 @@ package akka.logging.slf4j
 
 import org.slf4j.{Logger => SLFLogger, LoggerFactory => SLFLoggerFactory}
 
+import akka.event.EventHandler
 import akka.actor._
 import Actor._
 
