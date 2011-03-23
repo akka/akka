@@ -243,7 +243,7 @@ class MyStatelessActor extends Actor {
 class MyStatelessActorWithMessagesInMailbox extends Actor {
   def receive = {
     case "hello" =>
-      println("# messages in mailbox " + self.mailboxSize)
+      //println("# messages in mailbox " + self.mailboxSize)
       Thread.sleep(500)
     case "hello-reply" => self.reply("world")
   }
@@ -263,7 +263,7 @@ class MyStatelessActorWithMessagesInMailbox extends Actor {
 class MyActorWithSerializableMessages extends Actor {
   def receive = {
     case MyMessage(s, t) =>
-      println("# messages in mailbox " + self.mailboxSize)
+      //println("# messages in mailbox " + self.mailboxSize)
       Thread.sleep(500)
     case "hello-reply" => self.reply("world")
   }
