@@ -10,6 +10,7 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.model.RouteDefinition
 
 import akka.actor._
+import akka.event.EventHandler
 
 /**
  * Concrete publish requestor that requests publication of consumer actors on <code>ActorRegistered</code>

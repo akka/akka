@@ -7,7 +7,7 @@ package akka.camel
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import org.apache.camel.impl.DefaultCamelContext
 
-import akka.actor.EventHandler
+import akka.event.EventHandler
 import akka.japi.{Option => JOption}
 
 import TypedCamelAccess._
