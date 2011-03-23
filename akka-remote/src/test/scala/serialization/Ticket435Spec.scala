@@ -117,7 +117,7 @@ class MyStatefulActor extends Actor {
 
   def receive = {
     case "hi" =>
-      println("# messages in mailbox " + self.mailboxSize)
+      //println("# messages in mailbox " + self.mailboxSize)
       Thread.sleep(500)
     case "hello" =>
       count = count + 1
