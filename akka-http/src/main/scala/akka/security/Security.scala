@@ -23,7 +23,7 @@
 package akka.security
 
 import akka.actor.{Scheduler, Actor, ActorRef, ActorRegistry, IllegalActorStateException}
-import akka.actor.EventHandler
+import akka.event.EventHandler
 import akka.actor.Actor._
 import akka.config.Config
 
