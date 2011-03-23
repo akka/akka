@@ -27,7 +27,6 @@ class TransactionConfigBuilder {
   var quickRelease: Boolean     = TransactionConfig.QUICK_RELEASE
   var propagation: MPropagation = TransactionConfig.PROPAGATION
   var traceLevel: MTraceLevel   = TransactionConfig.TRACE_LEVEL
-  var hooks: Boolean            = TransactionConfig.HOOKS
 
   def setFamilyName(familyName: String) = { this.familyName = familyName; this }
   def setReadonly(readonly: JBoolean) = { this.readonly = readonly; this }
@@ -41,11 +40,10 @@ class TransactionConfigBuilder {
   def setQuickRelease(quickRelease: Boolean) = { this.quickRelease = quickRelease; this }
   def setPropagation(propagation: MPropagation) = { this.propagation = propagation; this }
   def setTraceLevel(traceLevel: MTraceLevel) = { this.traceLevel = traceLevel; this }
-  def setHooks(hooks: Boolean) = { this.hooks = hooks; this }
 
   def build() = new TransactionConfig(
     familyName, readonly, maxRetries, timeout, trackReads, writeSkew, blockingAllowed,
-    interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
+    interruptible, speculative, quickRelease, propagation, traceLevel)
 }
 
 /**
@@ -64,7 +62,6 @@ class TransactionFactoryBuilder {
   var quickRelease: Boolean     = TransactionConfig.QUICK_RELEASE
   var propagation: MPropagation = TransactionConfig.PROPAGATION
   var traceLevel: MTraceLevel   = TransactionConfig.TRACE_LEVEL
-  var hooks: Boolean            = TransactionConfig.HOOKS
 
   def setFamilyName(familyName: String) = { this.familyName = familyName; this }
   def setReadonly(readonly: JBoolean) = { this.readonly = readonly; this }
@@ -78,12 +75,11 @@ class TransactionFactoryBuilder {
   def setQuickRelease(quickRelease: Boolean) = { this.quickRelease = quickRelease; this }
   def setPropagation(propagation: MPropagation) = { this.propagation = propagation; this }
   def setTraceLevel(traceLevel: MTraceLevel) = { this.traceLevel = traceLevel; this }
-  def setHooks(hooks: Boolean) = { this.hooks = hooks; this }
 
   def build() = {
     val config = new TransactionConfig(
       familyName, readonly, maxRetries, timeout, trackReads, writeSkew, blockingAllowed,
-      interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
+      interruptible, speculative, quickRelease, propagation, traceLevel)
     new TransactionFactory(config)
   }
 }
