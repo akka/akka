@@ -36,7 +36,8 @@ import java.net.InetSocketAddress
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.{ TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap }
 import java.util.concurrent.atomic.{AtomicReference, AtomicBoolean}
-import akka.remote.{RemoteEventHandler, MessageSerializer, RemoteClientSettings, RemoteServerSettings}
+import akka.remoteinterface.{RemoteEventHandler}
+import akka.remote.{MessageSerializer, RemoteClientSettings, RemoteServerSettings}
 
 object RemoteEncoder {
   def encode(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {
@@ -209,12 +210,13 @@ abstract class RemoteClient private[akka] (
 
     if (isRunning) {
       if (request.getOneWay) {
+        txLog.add(request)
         val future = currentChannel.write(RemoteEncoder.encode(request))
         future.awaitUninterruptibly()
         if (!future.isCancelled && !future.isSuccess) {
           notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
           throw future.getCause
-        }
+        } else
         None
       } else {
           val futureResult = if (senderFuture.isDefined) senderFuture.get
@@ -486,11 +488,9 @@ class ActiveRemoteClientHandler(
  * Provides the implementation of the Netty remote support
  */
 class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with NettyRemoteClientModule {
-  //Needed for remote testing and switching on/off under run
-  val optimizeLocal = new AtomicBoolean(true)
 
-  // add the remote client and server listener that pipes the events to the event handler system
-  addListener(Actor.actorOf[RemoteEventHandler].start)
+  // Needed for remote testing and switching on/off under run
+  val optimizeLocal = new AtomicBoolean(true)
 
   def optimizeLocalScoped_?() = optimizeLocal.get
 

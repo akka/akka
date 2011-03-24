@@ -1,12 +1,11 @@
+package akka.remoteinterface
+
 /**
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.remote
-
 import akka.actor.Actor
 import akka.event.EventHandler
-import akka.remoteinterface._
 
 /**
  * Remote client and server event listener that pipes the events to the standard Akka EventHander.
@@ -15,7 +14,6 @@ import akka.remoteinterface._
  */
 class RemoteEventHandler extends Actor {
   import EventHandler._
-  println("((((((((((((((( REMOTE EVENT")
 
   self.id = ID
   self.dispatcher = EventHandlerDispatcher
