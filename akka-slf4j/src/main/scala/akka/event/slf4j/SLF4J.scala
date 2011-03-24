@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.logging.slf4j
+package akka.event.slf4j
 
 import org.slf4j.{Logger => SLFLogger, LoggerFactory => SLFLoggerFactory}
 
@@ -37,17 +37,17 @@ class Slf4jEventHandler extends Actor with Logging {
   self.dispatcher = EventHandlerDispatcher
 
   def receive = {
-    case event @ Error(cause, instance, message) =>
+    case Error(cause, instance, message) =>
       log.error("\n\t[{}]\n\t[{}]\n\t[{}]",
                 Array[AnyRef](instance.getClass.getName, message, stackTraceFor(cause)))
 
-    case event @ Warning(instance, message) =>
+    case Warning(instance, message) =>
       log.warn("\n\t[{}]\n\t[{}]", instance.getClass.getName, message)
 
-    case event @ Info(instance, message) =>
+    case Info(instance, message) =>
       log.info("\n\t[{}]\n\t[{}]", instance.getClass.getName, message)
 
-    case event @ Debug(instance, message) =>
+    case Debug(instance, message) =>
       log.debug("\n\t[{}]\n\t[{}]", instance.getClass.getName, message)
 
     case event => log.debug("\n\t[{}]", event.toString)
