@@ -76,7 +76,7 @@ object EventHandler extends ListenerManagement {
   
   class EventHandlerException extends AkkaException
 
-  val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
+  lazy val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
 
   val level: Int = config.getString("akka.event-handler-level", "DEBUG") match {
     case "ERROR"   => ErrorLevel
