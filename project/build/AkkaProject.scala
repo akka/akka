@@ -184,7 +184,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_stm         = project("akka-stm",         "akka-stm",         new AkkaStmProject(_),        akka_actor)
   lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_stm)
   lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),     akka_typed_actor)
-  lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_remote)
+  lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_actor)
   lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
   lazy val akka_sbt_plugin  = project("akka-sbt-plugin",  "akka-sbt-plugin",  new AkkaSbtPluginProject(_))
   lazy val akka_testkit     = project("akka-testkit",     "akka-testkit",     new AkkaTestkitProject(_),    akka_actor)
@@ -359,6 +359,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jetty            = Dependencies.jetty
     val jersey           = Dependencies.jersey_server
     val jsr311           = Dependencies.jsr311
+    val commons_codec    = Dependencies.commons_codec
 
     // testing
     val junit     = Dependencies.junit
