@@ -34,10 +34,10 @@ import scala.collection.mutable.HashMap
 
 import java.net.InetSocketAddress
 import java.lang.reflect.InvocationTargetException
-import java.util.concurrent.{ TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap }
 import java.util.concurrent.atomic.{AtomicReference, AtomicBoolean}
 import akka.remoteinterface.{RemoteEventHandler}
 import akka.remote.{MessageSerializer, RemoteClientSettings, RemoteServerSettings}
+import java.util.concurrent._
 
 object RemoteEncoder {
   def encode(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {
@@ -157,19 +157,25 @@ abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) {
 
-  val name = this.getClass.getSimpleName + "@" + remoteAddress.getAddress.getHostAddress + "::" + remoteAddress.getPort
+  val name = this.getClass.getSimpleName + "@" +
+             remoteAddress.getAddress.getHostAddress + "::" +
+             remoteAddress.getPort
 
-  protected val futures = new ConcurrentHashMap[Uuid, CompletableFuture[_]]
-  protected val supervisors = new ConcurrentHashMap[Uuid, ActorRef]
-  private[remote] val runSwitch = new Switch()
+  protected val futures         = new ConcurrentHashMap[Uuid, CompletableFuture[_]]
+  protected val supervisors     = new ConcurrentHashMap[Uuid, ActorRef]
+  protected val pendingMessages = new ConcurrentLinkedQueue[(Boolean, Uuid, RemoteMessageProtocol)]
+
+  private[remote] val runSwitch       = new Switch()
   private[remote] val isAuthenticated = new AtomicBoolean(false)
 
   private[remote] def isRunning = runSwitch.isOn
 
   protected def notifyListeners(msg: => Any); Unit
+
   protected def currentChannel: Channel
 
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean
+
   def shutdown: Boolean
 
   /**
@@ -207,41 +213,51 @@ abstract class RemoteClient private[akka] (
   def send[T](
     request: RemoteMessageProtocol,
     senderFuture: Option[CompletableFuture[T]]): Option[CompletableFuture[T]] = {
-
     if (isRunning) {
       if (request.getOneWay) {
-        txLog.add(request)
-        val future = currentChannel.write(RemoteEncoder.encode(request))
-        future.awaitUninterruptibly()
-        if (!future.isCancelled && !future.isSuccess) {
-          notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
-          throw future.getCause
-        } else
+        pendingMessages.add((true, null, request))
+        sendPendingMessages()
         None
       } else {
-          val futureResult = if (senderFuture.isDefined) senderFuture.get
-                             else new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
-          val futureUuid = uuidFrom(request.getUuid.getHigh, request.getUuid.getLow)
-          futures.put(futureUuid, futureResult) //Add this prematurely, remove it if write fails
-          currentChannel.write(RemoteEncoder.encode(request)).addListener(new ChannelFutureListener {
-            def operationComplete(future: ChannelFuture) {
-              if (future.isCancelled) {
-                futures.remove(futureUuid) //Clean this up
-                //We don't care about that right now
-              } else if (!future.isSuccess) {
-                val f = futures.remove(futureUuid) //Clean this up
-                if (f ne null)
-                  f.completeWithException(future.getCause)
-                notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
-              }
-            }
-          })
-          Some(futureResult)
+        val futureResult = if (senderFuture.isDefined) senderFuture.get
+                           else new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
+        val futureUuid = uuidFrom(request.getUuid.getHigh, request.getUuid.getLow)
+        futures.put(futureUuid, futureResult) // Add future prematurely, remove it if write fails
+        pendingMessages.add((false, futureUuid, request))
+        sendPendingMessages()
+        Some(futureResult)
       }
     } else {
       val exception = new RemoteClientException("Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.", module, remoteAddress)
       notifyListeners(RemoteClientError(exception, module, remoteAddress))
       throw exception
+    }
+  }
+
+  private[remote] def sendPendingMessages() = {
+    var pendingMessage = pendingMessages.peek // try to grab first message
+    while (pendingMessage ne null) {
+      val (isOneWay, futureUuid, message) = pendingMessage
+      if (isOneWay) { // sendOneWay
+        val future = currentChannel.write(RemoteEncoder.encode(message))
+        future.awaitUninterruptibly()
+        if (!future.isCancelled && !future.isSuccess) {
+          notifyListeners(RemoteClientWriteFailed(message, future.getCause, module, remoteAddress))
+          throw future.getCause
+        }
+      } else { // sendRequestReply
+        val future = currentChannel.write(RemoteEncoder.encode(message))
+        future.awaitUninterruptibly()
+        if (future.isCancelled) {
+          futures.remove(futureUuid) // Clean up future
+        } else if (!future.isSuccess) {
+          val f = futures.remove(futureUuid) // Clean up future
+          if (f ne null) f.completeWithException(future.getCause)
+          notifyListeners(RemoteClientWriteFailed(message, future.getCause, module, remoteAddress))
+        }
+      }
+      pendingMessages.remove(pendingMessage) // message delivered; remove from tx log
+      pendingMessage = pendingMessages.peek  // try to grab next message
     }
   }
 
@@ -265,6 +281,7 @@ class ActiveRemoteClient private[akka] (
   module: NettyRemoteClientModule, remoteAddress: InetSocketAddress,
   val loader: Option[ClassLoader] = None, notifyListenersFun: (=> Any) => Unit) extends RemoteClient(module, remoteAddress) {
   import RemoteClientSettings._
+
   //FIXME rewrite to a wrapper object (minimize volatile access and maximize encapsulation)
   @volatile private var bootstrap: ClientBootstrap = _
   @volatile private[remote] var connection: ChannelFuture = _
@@ -335,6 +352,7 @@ class ActiveRemoteClient private[akka] (
     bootstrap.releaseExternalResources
     bootstrap = null
     connection = null
+    pendingMessages.clear
   }
 
   private[akka] def isWithinReconnectionTimeWindow: Boolean = {
@@ -449,6 +467,7 @@ class ActiveRemoteClientHandler(
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
+    client.sendPendingMessages() // try to send pending message (still there after client/server crash ard reconnect
     client.notifyListeners(RemoteClientConnected(client.module, client.remoteAddress))
     client.resetReconnectionTimeWindow
   }
@@ -479,7 +498,7 @@ class ActiveRemoteClientHandler(
     } catch {
       case problem: Throwable =>
         EventHandler.error(problem, this, problem.getMessage)
-        UnparsableException(classname, exception.getMessage)
+        UnknownRemoteException(problem, classname, exception.getMessage)
     }
   }
 }
