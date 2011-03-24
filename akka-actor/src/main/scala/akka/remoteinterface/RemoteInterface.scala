@@ -14,6 +14,7 @@ import scala.reflect.BeanProperty
 
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
+import java.io.{PrintWriter, PrintStream}
 
 trait RemoteModule {
   val UUID_PREFIX        = "uuid:"
@@ -113,16 +114,21 @@ case class RemoteServerWriteFailed(
 /**
  * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down.
  */
-class RemoteClientException private[akka] (message: String,
-                                           @BeanProperty val client: RemoteClientModule,
-                                           val remoteAddress: InetSocketAddress) extends AkkaException(message)
+class RemoteClientException private[akka] (
+  message: String,
+  @BeanProperty val client: RemoteClientModule,
+  val remoteAddress: InetSocketAddress) extends AkkaException(message)
 
 /**
- * Returned when a remote exception cannot be instantiated or parsed
+ * Returned when a remote exception sent over the wire cannot be loaded and instantiated
  */
-case class UnparsableException private[akka] (originalClassName: String,
-                                              originalMessage: String) extends AkkaException(originalMessage)
-
+case class UnknownRemoteException private[akka] (cause: Throwable, originalClassName: String, originalMessage: String)
+  extends AkkaException("\nParsingError[%s]\nOriginalException[%s]\nOriginalMessage[%s]"
+                        .format(cause.toString, originalClassName, originalMessage)) {
+  override def printStackTrace                           = cause.printStackTrace
+  override def printStackTrace(printStream: PrintStream) = cause.printStackTrace(printStream)
+  override def printStackTrace(printWriter: PrintWriter) = cause.printStackTrace(printWriter)
+}
 
 abstract class RemoteSupport extends ListenerManagement with RemoteServerModule with RemoteClientModule {
 
