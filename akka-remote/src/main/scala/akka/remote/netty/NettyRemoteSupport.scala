@@ -546,7 +546,7 @@ class ActiveRemoteClientHandler(
     } catch {
       case problem: Throwable =>
         EventHandler.error(problem, this, problem.getMessage)
-        UnknownRemoteException(problem, classname, exception.getMessage)
+        CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorException(problem, classname, exception.getMessage)
     }
   }
 }
