@@ -458,8 +458,8 @@ trait Actor {
     case Restart(reason)           => throw reason
     case PoisonPill                =>
       val f = self.senderFuture
-      if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
       self.stop
+      if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
   }
 
   private lazy val processingBehavior = receive //ProcessingBehavior is the original behavior
