@@ -158,8 +158,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile" //New BSD
 
-    lazy val sjson      = "net.debasishg" % "sjson_2.8.1" % "0.9.1" % "compile" //ApacheV2
-    lazy val sjson_test = "net.debasishg" % "sjson_2.8.1" % "0.9.1" % "test" //ApacheV2
+    lazy val sjson      = "net.debasishg" % "sjson_2.8.1" % "0.10" % "compile" //ApacheV2
+    lazy val sjson_test = "net.debasishg" % "sjson_2.8.1" % "0.10" % "test" //ApacheV2
 
     lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % "1.6.0"
     lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.24"
