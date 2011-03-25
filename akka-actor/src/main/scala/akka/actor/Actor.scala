@@ -408,13 +408,16 @@ trait Actor {
   /**
    * Is the actor able to handle the message passed in as arguments?
    */
-  def isDefinedAt(message: Any): Boolean = message match { //Same logic as apply(msg) but without the unhandled catch-all
-    case l: AutoReceivedMessage                     => true
-    case msg if self.hotswap.nonEmpty &&
-                self.hotswap.head.isDefinedAt(msg)  => true
-    case msg if self.hotswap.isEmpty &&
-                processingBehavior.isDefinedAt(msg) => true
-    case _                                          => false
+  def isDefinedAt(message: Any): Boolean = {
+    val behaviorStack = self.hotswap
+    message match { //Same logic as apply(msg) but without the unhandled catch-all
+      case l: AutoReceivedMessage           => true
+      case msg if behaviorStack.nonEmpty &&
+        behaviorStack.head.isDefinedAt(msg) => true
+      case msg if behaviorStack.isEmpty &&
+        processingBehavior.isDefinedAt(msg) => true
+      case _                                => false
+    }
   }
 
   /**
@@ -439,13 +442,16 @@ trait Actor {
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
-  private[akka] final def apply(msg: Any) = msg match { //FIXME Add check for currentMessage eq null throw new BadUSerException?
-    case l: AutoReceivedMessage                     => autoReceiveMessage(l)
-    case msg if self.hotswap.nonEmpty &&
-                self.hotswap.head.isDefinedAt(msg)  => self.hotswap.head.apply(msg)
-    case msg if self.hotswap.isEmpty &&
-                processingBehavior.isDefinedAt(msg) => processingBehavior.apply(msg)
-    case unknown                                    => unhandled(unknown) //This is the only line that differs from processingbehavior
+  private[akka] final def apply(msg: Any) = {
+    val behaviorStack = self.hotswap
+    msg match { //FIXME Add check for currentMessage eq null throw new BadUSerException?
+      case l: AutoReceivedMessage           => autoReceiveMessage(l)
+      case msg if behaviorStack.nonEmpty &&
+        behaviorStack.head.isDefinedAt(msg) => behaviorStack.head.apply(msg)
+      case msg if behaviorStack.isEmpty &&
+        processingBehavior.isDefinedAt(msg) => processingBehavior.apply(msg)
+      case unknown                          => unhandled(unknown) //This is the only line that differs from processingbehavior
+    }
   }
 
   private final def autoReceiveMessage(msg: AutoReceivedMessage): Unit = msg match {
