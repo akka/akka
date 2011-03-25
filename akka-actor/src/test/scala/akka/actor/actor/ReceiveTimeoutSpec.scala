@@ -77,8 +77,8 @@ class ReceiveTimeoutSpec extends JUnitSuite {
       protected def receive = {
         case Tick => ()
         case ReceiveTimeout =>
-          timeoutLatch.open
           count.incrementAndGet
+          timeoutLatch.open
           self.receiveTimeout = None
       }
     }).start
