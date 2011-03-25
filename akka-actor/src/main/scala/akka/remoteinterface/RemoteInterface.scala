@@ -122,7 +122,7 @@ class RemoteClientException private[akka] (
 /**
  * Returned when a remote exception sent over the wire cannot be loaded and instantiated
  */
-case class UnknownRemoteException private[akka] (cause: Throwable, originalClassName: String, originalMessage: String)
+case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorException private[akka] (cause: Throwable, originalClassName: String, originalMessage: String)
   extends AkkaException("\nParsingError[%s]\nOriginalException[%s]\nOriginalMessage[%s]"
                         .format(cause.toString, originalClassName, originalMessage)) {
   override def printStackTrace                           = cause.printStackTrace
