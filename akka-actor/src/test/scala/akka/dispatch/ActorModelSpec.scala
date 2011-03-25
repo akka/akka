@@ -105,8 +105,8 @@ object ActorModelSpec {
     }
 
     private[akka] abstract override def dispatch(invocation: MessageInvocation) {
-      super.dispatch(invocation)
       getStats(invocation.receiver).msgsReceived.incrementAndGet()
+      super.dispatch(invocation)
     }
 
     private[akka] abstract override def start {
