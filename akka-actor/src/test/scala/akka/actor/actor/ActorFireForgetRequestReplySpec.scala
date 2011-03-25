@@ -8,6 +8,8 @@ import org.junit.Test
 import akka.dispatch.Dispatchers
 import Actor._
 
+import akka.Testing
+
 object ActorFireForgetRequestReplySpec {
   class ReplyActor extends Actor {
 
@@ -85,7 +87,7 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
     actor ! "Die"
     try { state.finished.await(10L, TimeUnit.SECONDS) }
     catch { case e: TimeoutException => fail("Never got the message") }
-    Thread.sleep(100)
+    Thread.sleep(Testing.time(500))
     assert(actor.isShutdown)
   }
 }
