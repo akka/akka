@@ -1,13 +1,13 @@
 package akka.actor.remote
 
-import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import akka.remote.netty.NettyRemoteSupport
 import akka.actor. {Actor, ActorRegistry}
 import java.util.concurrent. {TimeUnit, CountDownLatch}
+import org.scalatest.{Spec, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach}
+import java.util.concurrent.atomic.AtomicBoolean
 
 object AkkaRemoteTest {
   class ReplyHandlerActor(latch: CountDownLatch, expect: String) extends Actor {
@@ -59,4 +59,89 @@ class AkkaRemoteTest extends
   /* Utilities */
 
   def replyHandler(latch: CountDownLatch, expect: String) = Some(Actor.actorOf(new ReplyHandlerActor(latch, expect)).start)
+}
+
+trait NetworkFailureTest { self: WordSpec =>
+  import akka.actor.Actor._
+  import akka.util.Duration
+
+  val BYTES_PER_SECOND = "60KByte/s"
+  val DELAY_MILLIS     = "350ms"
+  val PORT_RANGE       = "1024-65535"
+
+  def replyWithTcpResetFor(duration: Duration, dead: AtomicBoolean) = {
+    spawn {
+      try {
+        enableTcpReset()
+        println("===>>> Reply with [TCP RST] for [" + duration + "]")
+        Thread.sleep(duration.toMillis)
+        restoreIP
+      } catch {
+        case e =>
+          dead.set(true)
+          e.printStackTrace
+      }
+    }
+  }
+
+  def throttleNetworkFor(duration: Duration, dead: AtomicBoolean) = {
+    spawn {
+      try {
+        enableNetworkThrottling()
+        println("===>>> Throttling network with [" + BYTES_PER_SECOND + ", " + DELAY_MILLIS + "] for [" + duration + "]")
+        Thread.sleep(duration.toMillis)
+        restoreIP
+      } catch {
+        case e =>
+          dead.set(true)
+          e.printStackTrace
+      }
+    }
+  }
+
+  def dropNetworkFor(duration: Duration, dead: AtomicBoolean) = {
+    spawn {
+      try {
+        enableNetworkDrop()
+        println("===>>> Blocking network [TCP DENY] for [" + duration + "]")
+        Thread.sleep(duration.toMillis)
+        restoreIP
+      } catch {
+        case e =>
+          dead.set(true)
+          e.printStackTrace
+      }
+    }
+  }
+
+  def sleepFor(duration: Duration) = {
+    println("===>>> Sleeping for [" + duration + "]")
+    Thread sleep (duration.toMillis)
+  }
+
+  def enableNetworkThrottling() = {
+    restoreIP()
+    assert(new ProcessBuilder("ipfw", "add", "pipe", "1", "ip", "from", "any", "to", "any").start.waitFor == 0)
+    assert(new ProcessBuilder("ipfw", "add", "pipe", "2", "ip", "from", "any", "to", "any").start.waitFor == 0)
+    assert(new ProcessBuilder("ipfw", "pipe", "1", "config", "bw", BYTES_PER_SECOND, "delay", DELAY_MILLIS).start.waitFor == 0)
+    assert(new ProcessBuilder("ipfw", "pipe", "2", "config", "bw", BYTES_PER_SECOND, "delay", DELAY_MILLIS).start.waitFor == 0)
+  }
+
+  def enableNetworkDrop() = {
+    restoreIP()
+    assert(new ProcessBuilder("ipfw", "add", "1", "deny", "tcp", "from", "any", "to", "any", PORT_RANGE).start.waitFor == 0)
+  }
+
+  def enableTcpReset() = {
+    restoreIP()
+    assert(new ProcessBuilder("ipfw", "add", "1", "reset", "tcp", "from", "any", "to", "any", PORT_RANGE).start.waitFor == 0)
+  }
+
+  def restoreIP() = {
+    println("===>>> Restoring network")
+    assert(new ProcessBuilder("ipfw", "del", "pipe", "1").start.waitFor == 0)
+    assert(new ProcessBuilder("ipfw", "del", "pipe", "2").start.waitFor == 0)
+    assert(new ProcessBuilder("ipfw", "flush").start.waitFor == 0)
+    assert(new ProcessBuilder("ipfw", "pipe", "flush").start.waitFor == 0)
+  }
 }
