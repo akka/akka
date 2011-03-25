@@ -260,11 +260,23 @@ class RestartStrategySpec extends JUnitSuite {
 
     // now crash again... should not restart
     slave ! Crash
-    slave ! Ping
+
+    // may not be running
+    try {
+      slave ! Ping
+    } catch {
+      case e: ActorInitializationException => ()
+    }
 
     assert(countDownLatch.await(1, TimeUnit.SECONDS))
 
-    slave ! Crash
+    // may not be running
+    try {
+      slave ! Crash
+    } catch {
+      case e: ActorInitializationException => ()
+    }
+
     assert(stopLatch.tryAwait(1, TimeUnit.SECONDS))
 
     assert(maxNoOfRestartsLatch.tryAwait(1,TimeUnit.SECONDS))
