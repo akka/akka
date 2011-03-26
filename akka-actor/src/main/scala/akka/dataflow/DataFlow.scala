@@ -7,7 +7,8 @@ package akka.dataflow
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 
-import akka.actor.{Actor, ActorRef, EventHandler}
+import akka.event.EventHandler
+import akka.actor.{Actor, ActorRef}
 import akka.actor.Actor._
 import akka.dispatch.CompletableFuture
 import akka.AkkaException
@@ -65,6 +66,7 @@ object DataFlow {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
+  @deprecated("Superceeded by Future and CompletableFuture as of 1.1")
   sealed class DataFlowVariable[T <: Any](timeoutMs: Long) {
     import DataFlowVariable._
 

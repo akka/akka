@@ -44,4 +44,24 @@ object RemoteServerSettings {
   }
 
   val BACKLOG = config.getInt("akka.remote.server.backlog", 4096)
+
+  val EXECUTION_POOL_KEEPALIVE = Duration(config.getInt("akka.remote.server.execution-pool-keepalive", 60), TIME_UNIT)
+
+  val EXECUTION_POOL_SIZE = {
+    val sz = config.getInt("akka.remote.server.execution-pool-size",16)
+    if (sz < 1) throw new IllegalArgumentException("akka.remote.server.execution-pool-size is less than 1")
+    sz
+  }
+
+  val MAX_CHANNEL_MEMORY_SIZE = {
+    val sz = config.getInt("akka.remote.server.max-channel-memory-size", 0)
+    if (sz < 0) throw new IllegalArgumentException("akka.remote.server.max-channel-memory-size is less than 0")
+    sz
+  }
+
+  val MAX_TOTAL_MEMORY_SIZE = {
+    val sz = config.getInt("akka.remote.server.max-total-memory-size", 0)
+    if (sz < 0) throw new IllegalArgumentException("akka.remote.server.max-total-memory-size is less than 0")
+    sz
+  }
 }

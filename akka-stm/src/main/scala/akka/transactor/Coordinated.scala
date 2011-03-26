@@ -129,7 +129,6 @@ class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
   def atomic[T](factory: TransactionFactory)(body: => T): T = {
     factory.boilerplate.execute(new TransactionalCallable[T]() {
       def call(mtx: MultiverseTransaction): T = {
-        factory.addHooks
         val result = body
         val timeout = factory.config.timeout
         barrier.tryJoinCommit(mtx, timeout.length, timeout.unit)

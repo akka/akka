@@ -77,163 +77,6 @@ class ActorInitializationException private[akka](message: String) extends AkkaEx
 class ActorTimeoutException        private[akka](message: String) extends AkkaException(message)
 
 /**
- * Error handler.
- *
- * Create, add and remove a listener:
- * <pre>
- * val errorHandlerEventListener = Actor.actorOf(new Actor {
- *   self.dispatcher = EventHandler.EventHandlerDispatcher
- *
- *   def receive = {
- *     case EventHandler.Error(cause, instance, message) => ...
- *     case EventHandler.Warning(instance, message) => ...
- *     case EventHandler.Info(instance, message) => ...
- *     case EventHandler.Debug(instance, message) => ...
- *   }
- * })
- *
- * EventHandler.addListener(errorHandlerEventListener)
- * ...
- * EventHandler.removeListener(errorHandlerEventListener)
- * </pre>
- *
- * Log an error event:
- * <pre>
- * EventHandler.notify(EventHandler.Error(exception, this, message.toString))
- * </pre>
- * Or use the direct methods (better performance):
- * <pre>
- * EventHandler.error(exception, this, message.toString)
- * </pre>
- * 
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object EventHandler extends ListenerManagement {
-  import java.io.{StringWriter, PrintWriter}
-  import java.text.DateFormat
-  import java.util.Date
-  import akka.dispatch.Dispatchers
-
-  val ErrorLevel   = 1
-  val WarningLevel = 2
-  val InfoLevel    = 3
-  val DebugLevel   = 4
-
-  sealed trait Event {
-    @transient val thread: Thread = Thread.currentThread
-  }
-  case class Error(cause: Throwable, instance: AnyRef, message: String = "") extends Event
-  case class Warning(instance: AnyRef, message: String = "") extends Event
-  case class Info(instance: AnyRef, message: String = "") extends Event
-  case class Debug(instance: AnyRef, message: String = "") extends Event
-
-  val error   = "[ERROR]   [%s] [%s] [%s] %s\n%s".intern
-  val warning = "[WARN]    [%s] [%s] [%s] %s".intern
-  val info    = "[INFO]    [%s] [%s] [%s] %s".intern
-  val debug   = "[DEBUG]   [%s] [%s] [%s] %s".intern
-  val generic = "[GENERIC] [%s] [%s]".intern
-  val ID      = "event:handler".intern
-
-  val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
-
-  val level: Int = config.getString("akka.event-handler-level", "DEBUG") match {
-    case "ERROR"   => ErrorLevel
-    case "WARNING" => WarningLevel
-    case "INFO"    => InfoLevel
-    case "DEBUG"   => DebugLevel
-    case unknown   => throw new ConfigurationException(
-                    "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
-  }
-
-  def notify(event: => AnyRef) = notifyListeners(event)
-
-  def notify[T <: Event : ClassManifest](event: => T) {
-    if (level >= levelFor(classManifest[T].erasure.asInstanceOf[Class[_ <: Event]])) notifyListeners(event)
-  }
-
-  def error(cause: Throwable, instance: AnyRef, message: => String) = {
-    if (level >= ErrorLevel) notifyListeners(Error(cause, instance, message))
-  }
-
-  def warning(instance: AnyRef, message: => String) = {
-    if (level >= WarningLevel) notifyListeners(Warning(instance, message))
-  }
-
-  def info(instance: AnyRef, message: => String) = {
-    if (level >= InfoLevel) notifyListeners(Info(instance, message))
-  }
-
-  def debug(instance: AnyRef, message: => String) = {
-    if (level >= DebugLevel) notifyListeners(Debug(instance, message))
-  }
-
-  def formattedTimestamp = DateFormat.getInstance.format(new Date)
-
-  def stackTraceFor(e: Throwable) = {
-    val sw = new StringWriter
-    val pw = new PrintWriter(sw)
-    e.printStackTrace(pw)
-    sw.toString
-  }
-
-  private def levelFor(eventClass: Class[_ <: Event]) = {
-    if (eventClass.isInstanceOf[Error])        ErrorLevel
-    else if (eventClass.isInstanceOf[Warning]) WarningLevel
-    else if (eventClass.isInstanceOf[Info])    InfoLevel
-    else if (eventClass.isInstanceOf[Debug])   DebugLevel
-    else                                       DebugLevel
-  }
-  
-  class DefaultListener extends Actor {
-    self.id = ID
-    self.dispatcher = EventHandlerDispatcher
-
-    def receive = {
-      case event @ Error(cause, instance, message) =>
-        println(error.format(
-          formattedTimestamp,
-          event.thread.getName,
-          instance.getClass.getSimpleName,
-          message,
-          stackTraceFor(cause)))
-      case event @ Warning(instance, message) =>
-        println(warning.format(
-          formattedTimestamp,
-          event.thread.getName,
-          instance.getClass.getSimpleName,
-          message))
-      case event @ Info(instance, message) =>
-        println(info.format(
-          formattedTimestamp,
-          event.thread.getName,
-          instance.getClass.getSimpleName,
-          message))
-      case event @ Debug(instance, message) =>
-        println(debug.format(
-          formattedTimestamp,
-          event.thread.getName,
-          instance.getClass.getSimpleName,
-          message))
-      case event =>
-        println(generic.format(formattedTimestamp, event.toString))
-    }
-  }
-
-  config.getList("akka.event-handlers") foreach { listenerName =>
-    try {
-      ReflectiveAccess.getClassFor[Actor](listenerName) map {
-        clazz => addListener(Actor.actorOf(clazz).start)
-      }
-    } catch {
-      case e: Exception =>
-        throw new ConfigurationException(
-          "Event Handler specified in config can't be loaded [" + listenerName +
-          "] due to [" + e.toString + "]")
-    }
-  }
-}
-
-/**
  * This message is thrown by default when an Actors behavior doesn't match a message
  */
 case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception {
@@ -565,13 +408,16 @@ trait Actor {
   /**
    * Is the actor able to handle the message passed in as arguments?
    */
-  def isDefinedAt(message: Any): Boolean = message match { //Same logic as apply(msg) but without the unhandled catch-all
-    case l: AutoReceivedMessage                     => true
-    case msg if self.hotswap.nonEmpty &&
-                self.hotswap.head.isDefinedAt(msg)  => true
-    case msg if self.hotswap.isEmpty &&
-                processingBehavior.isDefinedAt(msg) => true
-    case _                                          => false
+  def isDefinedAt(message: Any): Boolean = {
+    val behaviorStack = self.hotswap
+    message match { //Same logic as apply(msg) but without the unhandled catch-all
+      case l: AutoReceivedMessage           => true
+      case msg if behaviorStack.nonEmpty &&
+        behaviorStack.head.isDefinedAt(msg) => true
+      case msg if behaviorStack.isEmpty &&
+        processingBehavior.isDefinedAt(msg) => true
+      case _                                => false
+    }
   }
 
   /**
@@ -596,13 +442,16 @@ trait Actor {
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
-  private[akka] final def apply(msg: Any) = msg match { //FIXME Add check for currentMessage eq null throw new BadUSerException?
-    case l: AutoReceivedMessage                     => autoReceiveMessage(l)
-    case msg if self.hotswap.nonEmpty &&
-                self.hotswap.head.isDefinedAt(msg)  => self.hotswap.head.apply(msg)
-    case msg if self.hotswap.isEmpty &&
-                processingBehavior.isDefinedAt(msg) => processingBehavior.apply(msg)
-    case unknown                                    => unhandled(unknown) //This is the only line that differs from processingbehavior
+  private[akka] final def apply(msg: Any) = {
+    val behaviorStack = self.hotswap
+    msg match { //FIXME Add check for currentMessage eq null throw new BadUSerException?
+      case l: AutoReceivedMessage           => autoReceiveMessage(l)
+      case msg if behaviorStack.nonEmpty &&
+        behaviorStack.head.isDefinedAt(msg) => behaviorStack.head.apply(msg)
+      case msg if behaviorStack.isEmpty &&
+        processingBehavior.isDefinedAt(msg) => processingBehavior.apply(msg)
+      case unknown                          => unhandled(unknown) //This is the only line that differs from processingbehavior
+    }
   }
 
   private final def autoReceiveMessage(msg: AutoReceivedMessage): Unit = msg match {
@@ -615,8 +464,8 @@ trait Actor {
     case Restart(reason)           => throw reason
     case PoisonPill                =>
       val f = self.senderFuture
-      if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
       self.stop
+      if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
   }
 
   private lazy val processingBehavior = receive //ProcessingBehavior is the original behavior

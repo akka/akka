@@ -32,7 +32,6 @@ object TransactionConfig {
   val QUICK_RELEASE    = config.getBool("akka.stm.quick-release", true)
   val PROPAGATION      = propagation(config.getString("akka.stm.propagation", "requires"))
   val TRACE_LEVEL      = traceLevel(config.getString("akka.stm.trace-level", "none"))
-  val HOOKS            = config.getBool("akka.stm.hooks", true)
 
   val DefaultTimeout = Duration(TIMEOUT, TIME_UNIT)
 
@@ -65,7 +64,6 @@ object TransactionConfig {
    * @param quickRelease     Whether locks should be released as quickly as possible (before whole commit).
    * @param propagation      For controlling how nested transactions behave.
    * @param traceLevel       Transaction trace level.
-   * @param hooks            Whether hooks for persistence modules and JTA should be added to the transaction.
    */
   def apply(familyName: String        = FAMILY_NAME,
             readonly: JBoolean        = READONLY,
@@ -78,10 +76,9 @@ object TransactionConfig {
             speculative: Boolean      = SPECULATIVE,
             quickRelease: Boolean     = QUICK_RELEASE,
             propagation: MPropagation = PROPAGATION,
-            traceLevel: MTraceLevel   = TRACE_LEVEL,
-            hooks: Boolean            = HOOKS) = {
+            traceLevel: MTraceLevel   = TRACE_LEVEL) = {
     new TransactionConfig(familyName, readonly, maxRetries, timeout, trackReads, writeSkew, blockingAllowed,
-                          interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
+                          interruptible, speculative, quickRelease, propagation, traceLevel)
   }
 }
 
@@ -100,7 +97,6 @@ object TransactionConfig {
  * <p>quickRelease    - Whether locks should be released as quickly as possible (before whole commit).
  * <p>propagation     - For controlling how nested transactions behave.
  * <p>traceLevel      - Transaction trace level.
- * <p>hooks           - Whether hooks for persistence modules and JTA should be added to the transaction.
  */
 class TransactionConfig(val familyName: String        = TransactionConfig.FAMILY_NAME,
                         val readonly: JBoolean        = TransactionConfig.READONLY,
@@ -113,8 +109,7 @@ class TransactionConfig(val familyName: String        = TransactionConfig.FAMILY
                         val speculative: Boolean      = TransactionConfig.SPECULATIVE,
                         val quickRelease: Boolean     = TransactionConfig.QUICK_RELEASE,
                         val propagation: MPropagation = TransactionConfig.PROPAGATION,
-                        val traceLevel: MTraceLevel   = TransactionConfig.TRACE_LEVEL,
-                        val hooks: Boolean            = TransactionConfig.HOOKS)
+                        val traceLevel: MTraceLevel   = TransactionConfig.TRACE_LEVEL)
 
 object DefaultTransactionConfig extends TransactionConfig
 
@@ -137,11 +132,10 @@ object TransactionFactory {
             speculative: Boolean      = TransactionConfig.SPECULATIVE,
             quickRelease: Boolean     = TransactionConfig.QUICK_RELEASE,
             propagation: MPropagation = TransactionConfig.PROPAGATION,
-            traceLevel: MTraceLevel   = TransactionConfig.TRACE_LEVEL,
-            hooks: Boolean            = TransactionConfig.HOOKS) = {
+            traceLevel: MTraceLevel   = TransactionConfig.TRACE_LEVEL) = {
     val config = new TransactionConfig(
       familyName, readonly, maxRetries, timeout, trackReads, writeSkew, blockingAllowed,
-      interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
+      interruptible, speculative, quickRelease, propagation, traceLevel)
     new TransactionFactory(config)
   }
 }
@@ -199,8 +193,6 @@ class TransactionFactory(
   }
 
   val boilerplate = new TransactionBoilerplate(factory)
-
-  def addHooks = if (config.hooks) Transaction.attach
 }
 
 /**

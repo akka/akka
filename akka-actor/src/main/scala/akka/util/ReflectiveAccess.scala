@@ -11,6 +11,7 @@ import akka.AkkaException
 import java.net.InetSocketAddress
 import akka.remoteinterface.RemoteSupport
 import akka.actor._
+import akka.event.EventHandler
 
 /**
  * Helper class for reflective access to different modules in order to allow optional loading of modules.
@@ -33,25 +34,34 @@ object ReflectiveAccess {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object Remote {
-    val TRANSPORT = Config.config.getString("akka.remote.layer","akka.remote.netty.NettyRemoteSupport")
+    val TRANSPORT = Config.config.getString("akka.remote.layer", "akka.remote.netty.NettyRemoteSupport")
 
     private[akka] val configDefaultAddress =
       new InetSocketAddress(Config.config.getString("akka.remote.server.hostname", "localhost"),
                             Config.config.getInt("akka.remote.server.port", 2552))
 
-
     lazy val isEnabled = remoteSupportClass.isDefined
 
-    def ensureEnabled = if (!isEnabled) throw new ModuleNotAvailableException(
-      "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
-
+    def ensureEnabled = if (!isEnabled) {
+      val e = new ModuleNotAvailableException(
+        "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
+      EventHandler.warning(this, e.toString)
+      throw e
+    }
     val remoteSupportClass: Option[Class[_ <: RemoteSupport]] = getClassFor(TRANSPORT)
 
-    protected[akka] val defaultRemoteSupport: Option[() => RemoteSupport] = remoteSupportClass map {
-      remoteClass => () => createInstance[RemoteSupport](remoteClass,Array[Class[_]](),Array[AnyRef]()).
-                           getOrElse(throw new ModuleNotAvailableException("Can't instantiate "+
-                                                        remoteClass.getName+
-                                                        ", make sure that akka-remote.jar is on the classpath"))
+    protected[akka] val defaultRemoteSupport: Option[() => RemoteSupport] = 
+      remoteSupportClass map { remoteClass => 
+        () => createInstance[RemoteSupport](
+          remoteClass,
+          Array[Class[_]](),
+          Array[AnyRef]()
+        ) getOrElse {
+          val e = new ModuleNotAvailableException(
+            "Can't instantiate [%s] - make sure that akka-remote.jar is on the classpath".format(remoteClass.getName))
+          EventHandler.warning(this, e.toString)
+          throw e
+        }
     }
   }
 
@@ -125,6 +135,7 @@ object ReflectiveAccess {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e: Exception =>
+      EventHandler.warning(this, e.toString)
       None
   }
 
@@ -143,6 +154,7 @@ object ReflectiveAccess {
     }
   } catch {
     case e: Exception =>
+      EventHandler.warning(this, e.toString)
       None
   }
 
@@ -155,33 +167,58 @@ object ReflectiveAccess {
       case None => None
     }
   } catch {
-    case ei: ExceptionInInitializerError =>
-      throw ei
+    case e: ExceptionInInitializerError =>
+      EventHandler.warning(this, e.toString)
+      throw e
   }
 
   def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Option[Class[T]] = {
     assert(fqn ne null)
 
-    val first = try { Option(classloader.loadClass(fqn).asInstanceOf[Class[T]]) } catch { case c: ClassNotFoundException => None } //First, use the specified CL
+    // First, use the specified CL
+    val first = try { 
+      Option(classloader.loadClass(fqn).asInstanceOf[Class[T]]) 
+    } catch { 
+      case c: ClassNotFoundException => 
+        EventHandler.warning(this, c.toString)
+        None 
+    } 
 
-    if (first.isDefined)
-      first
-    else { //Second option is to use the ContextClassLoader
-      val second = try { Option(Thread.currentThread.getContextClassLoader.loadClass(fqn).asInstanceOf[Class[T]]) } catch { case c: ClassNotFoundException => None }
-      if (second.isDefined)
-        second
+    if (first.isDefined) first
+    else { 
+      // Second option is to use the ContextClassLoader
+      val second = try { 
+        Option(Thread.currentThread.getContextClassLoader.loadClass(fqn).asInstanceOf[Class[T]]) 
+      } catch { 
+        case c: ClassNotFoundException => 
+          EventHandler.warning(this, c.toString)
+          None 
+      }
+
+      if (second.isDefined) second
       else {
         val third = try {
-          if(classloader ne loader) Option(loader.loadClass(fqn).asInstanceOf[Class[T]]) //Don't try to use "loader" if we got the default "classloader" parameter
+           // Don't try to use "loader" if we got the default "classloader" parameter
+           if (classloader ne loader) Option(loader.loadClass(fqn).asInstanceOf[Class[T]])
           else None
-        } catch { case c: ClassNotFoundException => None }
+        } catch { 
+          case c: ClassNotFoundException => 
+            EventHandler.warning(this, c.toString)
+            None 
+        }
 
-        if (third.isDefined)
-          third
-        else
-          try { Option(Class.forName(fqn).asInstanceOf[Class[T]]) } catch { case c: ClassNotFoundException => None } //Last option is Class.forName
+        if (third.isDefined) third
+        else {
+          // Last option is Class.forName
+          try { 
+            Option(Class.forName(fqn).asInstanceOf[Class[T]])
+          } catch { 
+            case c: ClassNotFoundException => 
+              EventHandler.warning(this, c.toString)
+              None 
+          } 
+        }
       }
     }
-
   }
 }

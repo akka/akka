@@ -5,7 +5,7 @@
 package akka.http
 
 import akka.actor.{ActorRegistry, ActorRef, Actor}
-import akka.actor.EventHandler
+import akka.event.EventHandler
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import javax.servlet.http.HttpServlet

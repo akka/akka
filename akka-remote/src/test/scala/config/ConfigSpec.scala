@@ -36,6 +36,10 @@ class ConfigSpec extends WordSpec with MustMatchers {
       getBool("akka.remote.ssl.debug") must equal(None)
       getBool("akka.remote.ssl.service") must equal(None)
       getInt("akka.remote.zlib-compression-level") must equal(Some(6))
+      getInt("akka.remote.server.execution-pool-size") must equal(Some(16))
+      getInt("akka.remote.server.execution-pool-keepalive") must equal(Some(60))
+      getInt("akka.remote.server.max-channel-memory-size") must equal(Some(0))
+      getInt("akka.remote.server.max-total-memory-size") must equal(Some(0))
     }
   }
 }

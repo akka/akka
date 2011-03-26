@@ -13,13 +13,14 @@ import akka.serialization.RemoteActorSerialization._
 import akka.japi.Creator
 import akka.config.Config._
 import akka.remoteinterface._
-import akka.actor.{PoisonPill, EventHandler, Index,
+import akka.actor.{PoisonPill, Index,
                    ActorInitializationException, LocalActorRef, newUuid,
                    ActorRegistry, Actor, RemoteActorRef,
                    TypedActor, ActorRef, IllegalActorStateException,
                    RemoteActorSystemMessage, uuidFrom, Uuid,
                    Exit, LifeCycleMessage, ActorType => AkkaActorType}
 import akka.AkkaException
+import akka.event.EventHandler
 import akka.actor.Actor._
 import akka.util._
 import akka.remote.{MessageSerializer, RemoteClientSettings, RemoteServerSettings}
@@ -33,6 +34,7 @@ import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, Lengt
 import org.jboss.netty.handler.codec.compression.{ ZlibDecoder, ZlibEncoder }
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufDecoder, ProtobufEncoder }
 import org.jboss.netty.handler.timeout.{ ReadTimeoutHandler, ReadTimeoutException }
+import org.jboss.netty.handler.execution.{ OrderedMemoryAwareThreadPoolExecutor, ExecutionHandler }
 import org.jboss.netty.util.{ TimerTask, Timeout, HashedWheelTimer }
 import org.jboss.netty.handler.ssl.SslHandler
 
@@ -80,8 +82,6 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
 
   private[akka] def withClientFor[T](
     address: InetSocketAddress, loader: Option[ClassLoader])(fun: RemoteClient => T): T = {
-    loader.foreach(MessageSerializer.setClassLoader(_))//TODO: REVISIT: THIS SMELLS FUNNY
-
     val key = Address(address)
     lock.readLock.lock
     try {
@@ -216,15 +216,13 @@ abstract class RemoteClient private[akka] (
   senderFuture: Option[CompletableFuture[T]]): Option[CompletableFuture[T]] = {
     if (isRunning) {
       if (request.getOneWay) {
-        currentChannel.write(RemoteEncoder.encode(request)).addListener(new ChannelFutureListener {
-          def operationComplete(future: ChannelFuture) {
-            if (future.isCancelled) {
-                //We don't care about that right now
-            } else if (!future.isSuccess) {
-              notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
-            }
-          }
-        })
+        val future = currentChannel.write(RemoteEncoder.encode(request))
+        future.awaitUninterruptibly()
+        if (!future.isCancelled && !future.isSuccess) {
+          notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
+          throw future.getCause
+        }
+
         None
       } else {
           val futureResult = if (senderFuture.isDefined) senderFuture.get
@@ -237,7 +235,9 @@ abstract class RemoteClient private[akka] (
                 futures.remove(futureUuid) //Clean this up
                 //We don't care about that right now
               } else if (!future.isSuccess) {
-                futures.remove(futureUuid) //Clean this up
+                val f = futures.remove(futureUuid) //Clean this up
+                if (f ne null)
+                  f.completeWithException(future.getCause)
                 notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
               }
             }
@@ -753,9 +753,17 @@ class RemoteServerPipelineFactory(
       case "zlib"  => (new ZlibEncoder(ZLIB_COMPRESSION_LEVEL) :: Nil, new ZlibDecoder :: Nil)
       case       _ => (Nil, Nil)
     }
-
+    val execution = new ExecutionHandler(
+      new OrderedMemoryAwareThreadPoolExecutor(
+        EXECUTION_POOL_SIZE,
+        MAX_CHANNEL_MEMORY_SIZE,
+        MAX_TOTAL_MEMORY_SIZE,
+        EXECUTION_POOL_KEEPALIVE.length,
+        EXECUTION_POOL_KEEPALIVE.unit
+      )
+    )
     val remoteServer = new RemoteServerHandler(name, openChannels, loader, server)
-    val stages: List[ChannelHandler] = dec ::: lenDec :: protobufDec :: enc ::: lenPrep :: protobufEnc :: remoteServer :: Nil
+    val stages: List[ChannelHandler] = dec ::: lenDec :: protobufDec :: enc ::: lenPrep :: protobufEnc :: execution :: remoteServer :: Nil
     new StaticChannelPipeline(stages: _*)
   }
 }
@@ -856,8 +864,6 @@ class RemoteServerHandler(
     }
 
   private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = {
-    //FIXME we should definitely spawn off this in a thread pool or something,
-    //      potentially using Actor.spawn or something similar
     request.getActorInfo.getActorType match {
       case SCALA_ACTOR => dispatchToActor(request, channel)
       case TYPED_ACTOR => dispatchToTypedActor(request, channel)

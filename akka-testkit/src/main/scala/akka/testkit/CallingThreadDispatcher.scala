@@ -1,6 +1,7 @@
 package akka.testkit
 
-import akka.actor.{ActorRef, EventHandler}
+import akka.event.EventHandler
+import akka.actor.ActorRef
 import akka.dispatch.{MessageDispatcher, MessageInvocation, FutureInvocation}
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList

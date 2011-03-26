@@ -70,16 +70,16 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   object Repositories {
-    lazy val LocalMavenRepo       = MavenRepository("Local Maven Repo", (Path.userHome / ".m2" / "repository").asURL.toString)
-    lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://akka.io/repository")
-    lazy val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
-    lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
-    lazy val JBossRepo            = MavenRepository("JBoss Repo", "http://repository.jboss.org/nexus/content/groups/public/")
-    lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
-    lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
-    lazy val GlassfishRepo        = MavenRepository("Glassfish Repo", "http://download.java.net/maven/glassfish")
-    lazy val ScalaToolsRelRepo    = MavenRepository("Scala Tools Releases Repo", "http://scala-tools.org/repo-releases")
-    lazy val DatabinderRepo       = MavenRepository("Databinder Repo", "http://databinder.net/repo")
+    lazy val LocalMavenRepo         = MavenRepository("Local Maven Repo", (Path.userHome / ".m2" / "repository").asURL.toString)
+    lazy val AkkaRepo               = MavenRepository("Akka Repository", "http://akka.io/repository")
+    lazy val CodehausRepo           = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
+    lazy val GuiceyFruitRepo        = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
+    lazy val JBossRepo              = MavenRepository("JBoss Repo", "http://repository.jboss.org/nexus/content/groups/public/")
+    lazy val JavaNetRepo            = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
+    lazy val SonatypeSnapshotRepo   = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
+    lazy val GlassfishRepo          = MavenRepository("Glassfish Repo", "http://download.java.net/maven/glassfish")
+    lazy val ScalaToolsRelRepo      = MavenRepository("Scala Tools Releases Repo", "http://scala-tools.org/repo-releases")
+    lazy val DatabinderRepo         = MavenRepository("Databinder Repo", "http://databinder.net/repo")
     lazy val ScalaToolsSnapshotRepo = MavenRepository("Scala-Tools Snapshot Repo", "http://scala-tools.org/repo-snapshots")
   }
 
@@ -118,6 +118,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val SCALATEST_VERSION     = "1.4-SNAPSHOT"
   lazy val JETTY_VERSION         = "7.2.2.v20101205"
   lazy val JAVAX_SERVLET_VERSION = "3.0"
+  lazy val SLF4J_VERSION         = "1.6.0"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
@@ -157,8 +158,11 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile" //New BSD
 
-    lazy val sjson      = "net.debasishg" % "sjson_2.8.1" % "0.9.1" % "compile" //ApacheV2
-    lazy val sjson_test = "net.debasishg" % "sjson_2.8.1" % "0.9.1" % "test" //ApacheV2
+    lazy val sjson      = "net.debasishg" % "sjson_2.8.1" % "0.10" % "compile" //ApacheV2
+    lazy val sjson_test = "net.debasishg" % "sjson_2.8.1" % "0.10" % "test" //ApacheV2
+
+    lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % "1.6.0"
+    lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.24"
 
     // Test
 
@@ -177,13 +181,14 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val akka_actor       = project("akka-actor",       "akka-actor",       new AkkaActorProject(_))
-  lazy val akka_testkit     = project("akka-testkit",     "akka-testkit",     new AkkaTestkitProject(_),    akka_actor)
   lazy val akka_stm         = project("akka-stm",         "akka-stm",         new AkkaStmProject(_),        akka_actor)
   lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_stm)
   lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),     akka_typed_actor)
-  lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_remote)
+  lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_actor)
   lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
   lazy val akka_sbt_plugin  = project("akka-sbt-plugin",  "akka-sbt-plugin",  new AkkaSbtPluginProject(_))
+  lazy val akka_testkit     = project("akka-testkit",     "akka-testkit",     new AkkaTestkitProject(_),    akka_actor)
+  lazy val akka_slf4j       = project("akka-slf4j",       "akka-slf4j",       new AkkaSlf4jProject(_),      akka_actor)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Miscellaneous
@@ -297,12 +302,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-testkit subproject
-  // -------------------------------------------------------------------------------------------------------------------
-
-  class AkkaTestkitProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
-
-  // -------------------------------------------------------------------------------------------------------------------
   // akka-stm subproject
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -360,6 +359,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jetty            = Dependencies.jetty
     val jersey           = Dependencies.jersey_server
     val jsr311           = Dependencies.jsr311
+    val commons_codec    = Dependencies.commons_codec
 
     // testing
     val junit     = Dependencies.junit
@@ -418,6 +418,20 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
       publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
     }
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-testkit subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaTestkitProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-slf4j subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaSlf4jProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val sjson   = Dependencies.slf4j
   }
 
   // -------------------------------------------------------------------------------------------------------------------
