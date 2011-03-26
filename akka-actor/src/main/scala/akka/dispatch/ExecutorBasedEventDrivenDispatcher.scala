@@ -4,7 +4,8 @@
 
 package akka.dispatch
 
-import akka.actor.{ActorRef, IllegalActorStateException, EventHandler}
+import akka.event.EventHandler
+import akka.actor.{ActorRef, IllegalActorStateException}
 import akka.util.{ReflectiveAccess, Switch}
 
 import java.util.Queue
@@ -87,7 +88,7 @@ class ExecutorBasedEventDrivenDispatcher(
   def this(_name: String) =
     this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 
-  val name        = "akka:event-driven:dispatcher:" + _name
+  val name = "akka:event-driven:dispatcher:" + _name
 
   private[akka] val threadFactory = new MonitorableThreadFactory(name)
   private[akka] val executorService = new AtomicReference[ExecutorService](config.createLazyExecutorService(threadFactory))
@@ -208,20 +209,18 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
         else { //But otherwise, if we are throttled, we need to do some book-keeping
           var processedMessages = 0
           val isDeadlineEnabled = dispatcher.throughputDeadlineTime > 0
-          val deadlineNs = if (isDeadlineEnabled) System.nanoTime + TimeUnit.MILLISECONDS.toNanos(dispatcher.throughputDeadlineTime) else 0
+          val deadlineNs = if (isDeadlineEnabled) System.nanoTime + TimeUnit.MILLISECONDS.toNanos(dispatcher.throughputDeadlineTime) 
+                           else 0
           do {
             nextMessage.invoke
-
             nextMessage =
               if (self.suspended.locked) {
-                null //If we are suspended, abort
-              }
-              else { //If we aren't suspended, we need to make sure we're not overstepping our boundaries
+                null // If we are suspended, abort
+              } else { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
                 processedMessages += 1
                 if ((processedMessages >= dispatcher.throughput) || (isDeadlineEnabled && System.nanoTime >= deadlineNs)) // If we're throttled, break out
                   null //We reached our boundaries, abort
-                else
-                  self.dequeue //Dequeue the next message
+                else self.dequeue //Dequeue the next message
               }
           } while (nextMessage ne null)
         }

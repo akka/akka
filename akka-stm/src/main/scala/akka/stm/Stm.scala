@@ -48,10 +48,7 @@ trait Stm {
 
   def atomic[T](factory: TransactionFactory)(body: => T): T = {
     factory.boilerplate.execute(new TransactionalCallable[T]() {
-      def call(mtx: MultiverseTransaction): T = {
-        factory.addHooks
-        body
-      }
+      def call(mtx: MultiverseTransaction): T = body
     })
   }
 }

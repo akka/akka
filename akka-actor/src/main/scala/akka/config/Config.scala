@@ -5,10 +5,6 @@
 package akka.config
 
 import akka.AkkaException
-import akka.actor.EventHandler
-
-import java.net.InetSocketAddress
-import java.lang.reflect.Method
 
 class ConfigurationException(message: String) extends AkkaException(message)
 class ModuleNotAvailableException(message: String) extends AkkaException(message)
@@ -35,10 +31,8 @@ object Config {
     envHome orElse systemHome
   }
 
-  val config = {
-
+  val config: Configuration = try {
     val confName = {
-
       val envConf = System.getenv("AKKA_MODE") match {
         case null | "" => None
         case value     => Some(value)
@@ -52,7 +46,7 @@ object Config {
       (envConf orElse systemConf).map("akka." + _ + ".conf").getOrElse("akka.conf")
     }
 
-    try {
+    val newInstance =
       if (System.getProperty("akka.config", "") != "") {
         val configFile = System.getProperty("akka.config", "")
         println("Loading config from -Dakka.config=" + configFile)
@@ -75,17 +69,22 @@ object Config {
           "\nUsing default values everywhere.")
         Configuration.fromString("akka {}") // default empty config
       }
-    } catch {
-      case e =>
-        EventHandler.error(e, this, e.getMessage)
-        throw e
-    }
+
+    val configVersion = newInstance.getString("akka.version", VERSION)
+    if (configVersion != VERSION)
+      throw new ConfigurationException(
+        "Akka JAR version [" + VERSION + "] is different than the provided config version [" + configVersion + "]")
+
+    newInstance
+  } catch {
+    case e =>
+      System.err.println("Couldn't parse config, fatal error.")
+      e.printStackTrace(System.err)
+      System.exit(-1)
+      throw e
   }
 
   val CONFIG_VERSION = config.getString("akka.version", VERSION)
-
-  if (VERSION != CONFIG_VERSION) throw new ConfigurationException(
-    "Akka JAR version [" + VERSION + "] is different than the provided config version [" + CONFIG_VERSION + "]")
 
   val TIME_UNIT = config.getString("akka.time-unit", "seconds")
 

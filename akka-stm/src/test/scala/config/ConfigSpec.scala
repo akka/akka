@@ -20,9 +20,7 @@ class ConfigSpec extends WordSpec with MustMatchers {
 
       getBool("akka.stm.blocking-allowed") must equal(Some(false))
       getBool("akka.stm.fair") must equal(Some(true))
-      getBool("akka.stm.hooks") must equal(Some(true))
       getBool("akka.stm.interruptible") must equal(Some(false))
-      getBool("akka.stm.jta-aware") must equal(Some(false))
       getInt("akka.stm.max-retries") must equal(Some(1000))
       getString("akka.stm.propagation") must equal(Some("requires"))
       getBool("akka.stm.quick-release") must equal(Some(true))

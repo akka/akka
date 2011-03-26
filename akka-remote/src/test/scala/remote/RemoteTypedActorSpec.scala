@@ -10,6 +10,8 @@ import akka.actor._
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
 import akka.config. {RemoteAddress, Config, TypedActorConfigurator}
 
+import akka.Testing
+
 object RemoteTypedActorLog {
   val messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
   val oneWayLog = new LinkedBlockingQueue[String]
@@ -37,13 +39,13 @@ class RemoteTypedActorSpec extends AkkaRemoteTest {
           classOf[RemoteTypedActorOne],
           classOf[RemoteTypedActorOneImpl],
           Permanent,
-          10000,
+          Testing.time(10000),
           RemoteAddress(host,port)),
         new SuperviseTypedActor(
           classOf[RemoteTypedActorTwo],
           classOf[RemoteTypedActorTwoImpl],
           Permanent,
-          10000,
+          Testing.time(10000),
           RemoteAddress(host,port))
       ).toArray).supervise
   }

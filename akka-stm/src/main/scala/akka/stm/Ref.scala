@@ -9,6 +9,13 @@ import akka.actor.{newUuid, Uuid}
 import org.multiverse.transactional.refs.BasicRef
 
 /**
+ * Common trait for all the transactional objects.
+ */
+@serializable trait Transactional {
+  val uuid: String
+}
+
+/**
  * Transactional managed reference. See the companion class for more information.
  */
 object Ref {

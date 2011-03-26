@@ -277,14 +277,17 @@ class FutureSpec extends JUnitSuite {
   }
 
   @Test def resultWithinShouldNotThrowExceptions {
+    val latch = new StandardLatch
+
     val actors = (1 to 10).toList map { _ =>
       actorOf(new Actor {
-        def receive = { case (add: Int, wait: Int) => Thread.sleep(wait); self reply_? add }
+        def receive = { case (add: Int, wait: Boolean, latch: StandardLatch) => if (wait) latch.await; self reply_? add }
       }).start
     }
 
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, if(idx >= 5) 5000 else 0 )) }
-    val result = for(f <- futures) yield f.resultWithin(2, TimeUnit.SECONDS)
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx >= 5, latch)) }
+    val result = for(f <- futures) yield f.valueWithin(2, TimeUnit.SECONDS)
+    latch.open
     val done = result collect { case Some(Right(x)) => x }
     val undone = result collect { case None => None }
     val errors = result collect { case Some(Left(t)) => t }
@@ -323,5 +326,40 @@ class FutureSpec extends JUnitSuite {
 
     // make sure all futures are completed in dispatcher
     assert(Dispatchers.defaultGlobalDispatcher.futureQueueSize === 0)
+  }
+
+  @Test def shouldBlockUntilResult {
+    val latch = new StandardLatch
+
+    val f = Future({ latch.await; 5})
+    val f2 = Future({ f() + 5 })
+
+    assert(f2.resultOrException === None)
+    latch.open
+    assert(f2() === 10)
+
+    val f3 = Future({ Thread.sleep(100); 5}, 10)
+    intercept[FutureTimeoutException] {
+      f3()
+    }
+  }
+
+  @Test def lesslessIsMore {
+    import akka.actor.Actor.spawn
+    val dataflowVar, dataflowVar2 = new DefaultCompletableFuture[Int](Long.MaxValue)
+    val begin, end = new StandardLatch
+    spawn {
+      begin.await
+      dataflowVar2 << dataflowVar
+      end.open
+    }
+
+    spawn {
+      dataflowVar << 5
+    }
+    begin.open
+    end.await
+    assert(dataflowVar2() === 5)
+    assert(dataflowVar.get === 5)
   }
 }

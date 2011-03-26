@@ -10,7 +10,7 @@ import atomic.{AtomicLong, AtomicInteger}
 import ThreadPoolExecutor.CallerRunsPolicy
 
 import akka.util.Duration
-import akka.actor.EventHandler
+import akka.event.EventHandler
 
 object ThreadPoolConfig {
   type Bounds = Int
