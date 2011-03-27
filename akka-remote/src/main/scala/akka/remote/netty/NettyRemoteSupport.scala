@@ -82,6 +82,7 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
 
   private[akka] def withClientFor[T](
     address: InetSocketAddress, loader: Option[ClassLoader])(fun: RemoteClient => T): T = {
+    loader.foreach(MessageSerializer.setClassLoader(_))
     val key = Address(address)
     lock.readLock.lock
     try {
