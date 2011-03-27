@@ -370,7 +370,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Examples
   // -------------------------------------------------------------------------------------------------------------------
 
-  /** FIXME SPDE doesn't exist for 2.9.0-SNAPSHOT
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
     override def disableCrossPaths = true
     override def spdeSourcePath = mainSourcePath / "spde"
@@ -385,7 +384,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
       publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
     }
-  }*/
+  }
 
   class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
@@ -394,9 +393,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
     override def disableCrossPaths = true
 
-    //FIXME ANts is disabled due to unavailable for 2.9.0-SNAPSHOT
-   // lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
-    //  new AkkaSampleAntsProject(_), akka_stm)
+    lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
+      new AkkaSampleAntsProject(_), akka_stm)
     lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
       new AkkaSampleFSMProject(_), akka_actor)
     lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
