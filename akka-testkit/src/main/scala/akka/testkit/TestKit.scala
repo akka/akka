@@ -157,7 +157,7 @@ trait TestKit {
     val prev_end = end
     end = start + max_diff
 
-    val ret = f
+    val ret = try f finally end = prev_end
 
     val diff = now - start
     assert (min <= diff, "block took "+format(min.unit, diff)+", should at least have been "+min)
@@ -170,7 +170,6 @@ trait TestKit {
       lastSoftTimeout -= 5.millis
     }
 
-    end = prev_end
     ret
   }
 
