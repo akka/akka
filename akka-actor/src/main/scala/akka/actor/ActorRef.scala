@@ -6,18 +6,14 @@ package akka.actor
 
 import akka.event.EventHandler
 import akka.dispatch._
-import akka.config.Config._
 import akka.config.Supervision._
-import akka.AkkaException
 import akka.util._
 import ReflectiveAccess._
 
 import java.net.InetSocketAddress
-import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
-import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ ScheduledFuture, ConcurrentHashMap, TimeUnit }
 import java.util.{ Map => JMap }
-import java.lang.reflect.Field
 
 import scala.reflect.BeanProperty
 import scala.collection.immutable.Stack
@@ -39,7 +35,7 @@ private[akka] object ActorRefInternals {
  * Abstraction for unification of sender and senderFuture for later reply
  */
 abstract class Channel[T] {
-  
+
   /**
    * Sends the specified message to the channel
    * Scala API
@@ -943,7 +939,7 @@ class LocalActorRef private[akka] (
                 performRestart
                 true
               } catch {
-                case e => 
+                case e =>
                   EventHandler.error(e, this, "Exception in restart of Actor [%s]".format(toString))
                   false // an error or exception here should trigger a retry
               } finally {
@@ -1009,7 +1005,7 @@ class LocalActorRef private[akka] (
 
   private def handleExceptionInDispatch(reason: Throwable, message: Any) = {
     EventHandler.error(reason, this, message.toString)
-    
+
     //Prevent any further messages to be processed until the actor has been restarted
     dispatcher.suspend(this)
 
@@ -1121,9 +1117,9 @@ private[akka] case class RemoteActorRef private[akka] (
     senderOption: Option[ActorRef],
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
     val future = Actor.remote.send[T](
-      message, senderOption, senderFuture, 
-      homeAddress.get, timeout, 
-      false, this, None, 
+      message, senderOption, senderFuture,
+      homeAddress.get, timeout,
+      false, this, None,
       actorType, loader)
     if (future.isDefined) future.get
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
@@ -1201,8 +1197,8 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    */
   def id: String
 
-  def id_=(id: String): Unit 
-  
+  def id_=(id: String): Unit
+
   /**
    * User overridable callback/setting.
    * <p/>
