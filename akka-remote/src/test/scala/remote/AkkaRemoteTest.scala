@@ -65,9 +65,12 @@ trait NetworkFailureTest { self: WordSpec =>
   import akka.actor.Actor._
   import akka.util.Duration
 
+  // override is subclass if needed
   val BYTES_PER_SECOND = "60KByte/s"
   val DELAY_MILLIS     = "350ms"
   val PORT_RANGE       = "1024-65535"
+
+  // FIXME add support for TCP FIN by hooking into Netty and do socket.close
 
   def replyWithTcpResetFor(duration: Duration, dead: AtomicBoolean) = {
     spawn {

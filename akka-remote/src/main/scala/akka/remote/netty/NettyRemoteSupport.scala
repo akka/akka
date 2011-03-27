@@ -16,6 +16,7 @@ import akka.actor.{PoisonPill, Index, LocalActorRef, Actor, RemoteActorRef,
                    RemoteActorSystemMessage, uuidFrom, Uuid,
                    Exit, LifeCycleMessage, ActorType => AkkaActorType}
 import akka.actor.Actor._
+import akka.config.Config._
 import akka.util._
 import akka.event.EventHandler
 
@@ -149,13 +150,15 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
 }
 
 /**
- * This is the abstract baseclass for netty remote clients,
- * currently there's only an ActiveRemoteClient, but otehrs could be feasible, like a PassiveRemoteClient that
+ * This is the abstract baseclass for netty remote clients, currently there's only an
+ * ActiveRemoteClient, but otehrs could be feasible, like a PassiveRemoteClient that
  * reuses an already established connection.
  */
 abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) {
+
+  val useTransactionLog = config.getBool("akka.remote.resend-on-failure", true)
 
   val name = this.getClass.getSimpleName + "@" +
              remoteAddress.getAddress.getHostAddress + "::" +
@@ -237,9 +240,10 @@ abstract class RemoteClient private[akka] (
           }
         } catch {
           case e: Throwable =>
-            pendingRequests.add((true, null, request)) // add the request to the tx log after a failing send
+            // add the request to the tx log after a failing send
             notifyListeners(RemoteClientError(e, module, remoteAddress))
-            throw e
+            if (useTransactionLog) pendingRequests.add((true, null, request))
+            else throw e
         }
         None
       } else {
@@ -249,10 +253,13 @@ abstract class RemoteClient private[akka] (
         futures.put(futureUuid, futureResult) // Add future prematurely, remove it if write fails
 
         def handleRequestReplyError(future: ChannelFuture) = {
-          pendingRequests.add((false, futureUuid, request)) // Add the request to the tx log after a failing send
-          val f = futures.remove(futureUuid)                // Clean up future
-          if (f ne null) f.completeWithException(future.getCause)
           notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
+          if (useTransactionLog) {
+            pendingRequests.add((false, futureUuid, request)) // Add the request to the tx log after a failing send
+          } else {
+            val f = futures.remove(futureUuid)                // Clean up future
+            if (f ne null) f.completeWithException(future.getCause)
+          }
         }
 
         var future: ChannelFuture = null
@@ -509,7 +516,7 @@ class ActiveRemoteClientHandler(
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     try {
-      client.sendPendingRequests() // try to send pending requests (still there after client/server crash ard reconnect
+      if (client.useTransactionLog) client.sendPendingRequests() // try to send pending requests (still there after client/server crash ard reconnect
       client.notifyListeners(RemoteClientConnected(client.module, client.remoteAddress))
       client.resetReconnectionTimeWindow
     } catch {
@@ -625,7 +632,7 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
       bootstrap.releaseExternalResources
       serverModule.notifyListeners(RemoteServerShutdown(serverModule))
     } catch {
-      case e: Exception => 
+      case e: Exception =>
         EventHandler.error(e, this, e.getMessage)
     }
   }
@@ -658,7 +665,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
         currentServer.set(Some(new NettyRemoteServer(this, _hostname, _port, loader)))
       }
     } catch {
-      case e: Exception => 
+      case e: Exception =>
         EventHandler.error(e, this, e.getMessage)
         notifyListeners(RemoteServerError(e, this))
     }
@@ -1049,7 +1056,7 @@ class RemoteServerHandler(
 
           write(channel, RemoteEncoder.encode(messageBuilder.build))
         } catch {
-          case e: Exception => 
+          case e: Exception =>
             EventHandler.error(e, this, e.getMessage)
             server.notifyListeners(RemoteServerError(e, server))
         }
