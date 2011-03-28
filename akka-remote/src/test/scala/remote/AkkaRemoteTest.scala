@@ -124,27 +124,32 @@ trait NetworkFailureTest { self: WordSpec =>
 
   def enableNetworkThrottling() = {
     restoreIP()
-    assert(new ProcessBuilder("ipfw", "add", "pipe", "1", "ip", "from", "any", "to", "any").start.waitFor == 0)
-    assert(new ProcessBuilder("ipfw", "add", "pipe", "2", "ip", "from", "any", "to", "any").start.waitFor == 0)
-    assert(new ProcessBuilder("ipfw", "pipe", "1", "config", "bw", BYTES_PER_SECOND, "delay", DELAY_MILLIS).start.waitFor == 0)
-    assert(new ProcessBuilder("ipfw", "pipe", "2", "config", "bw", BYTES_PER_SECOND, "delay", DELAY_MILLIS).start.waitFor == 0)
+    assert(new ProcessBuilder("sudo", "ipfw", "add", "pipe", "1", "ip", "from", "any", "to", "any").start.waitFor == 0)
+    assert(new ProcessBuilder("sudo", "ipfw", "add", "pipe", "2", "ip", "from", "any", "to", "any").start.waitFor == 0)
+    assert(new ProcessBuilder("sudo", "ipfw", "pipe", "1", "config", "bw", BYTES_PER_SECOND, "delay", DELAY_MILLIS).start.waitFor == 0)
+    assert(new ProcessBuilder("sudo", "ipfw", "pipe", "2", "config", "bw", BYTES_PER_SECOND, "delay", DELAY_MILLIS).start.waitFor == 0)
   }
 
   def enableNetworkDrop() = {
     restoreIP()
-    assert(new ProcessBuilder("ipfw", "add", "1", "deny", "tcp", "from", "any", "to", "any", PORT_RANGE).start.waitFor == 0)
+    assert(new ProcessBuilder("sudo", "ipfw", "add", "1", "deny", "tcp", "from", "any", "to", "any", PORT_RANGE).start.waitFor == 0)
   }
 
   def enableTcpReset() = {
     restoreIP()
-    assert(new ProcessBuilder("ipfw", "add", "1", "reset", "tcp", "from", "any", "to", "any", PORT_RANGE).start.waitFor == 0)
+    assert(new ProcessBuilder("sudo", "ipfw", "add", "1", "reset", "tcp", "from", "any", "to", "any", PORT_RANGE).start.waitFor == 0)
   }
 
   def restoreIP() = {
     println("===>>> Restoring network")
-    assert(new ProcessBuilder("ipfw", "del", "pipe", "1").start.waitFor == 0)
-    assert(new ProcessBuilder("ipfw", "del", "pipe", "2").start.waitFor == 0)
-    assert(new ProcessBuilder("ipfw", "flush").start.waitFor == 0)
-    assert(new ProcessBuilder("ipfw", "pipe", "flush").start.waitFor == 0)
+    assert(new ProcessBuilder("sudo", "ipfw", "del", "pipe", "1").start.waitFor == 0)
+    assert(new ProcessBuilder("sudo", "ipfw", "del", "pipe", "2").start.waitFor == 0)
+    assert(new ProcessBuilder("sudo", "ipfw", "flush").start.waitFor == 0)
+    assert(new ProcessBuilder("sudo", "ipfw", "pipe", "flush").start.waitFor == 0)
+  }
+
+  def validateSudo() = {
+    println("===>>> Validating sudo")
+    assert(new ProcessBuilder("sudo", "-v").start.waitFor == 0)
   }
 }

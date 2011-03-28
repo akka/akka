@@ -56,6 +56,7 @@ class RemoteErrorHandlingNetworkTest extends AkkaRemoteTest with NetworkFailureT
   "Remote actors" should {
 
     "be able to recover from network drop without loosing any messages" in {
+      validateSudo()
       val latch = new CountDownLatch(10)
       implicit val sender = replyHandler(latch, "Pong")
       val service = actorOf[RemoteActorSpecActorUnidirectional]
@@ -79,6 +80,7 @@ class RemoteErrorHandlingNetworkTest extends AkkaRemoteTest with NetworkFailureT
     }
 
     "be able to recover from TCP RESET without loosing any messages" in {
+      validateSudo()
       val latch = new CountDownLatch(10)
       implicit val sender = replyHandler(latch, "Pong")
       val service = actorOf[RemoteActorSpecActorUnidirectional]
