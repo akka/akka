@@ -346,7 +346,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val junit     = Dependencies.junit
     val scalatest = Dependencies.scalatest
 
-    override def testOptions = createTestFilter( _.endsWith("Spec"))
+    lazy val networkTestsEnabled = systemOptional[Boolean]("akka.test.network", false)
+
+    override def testOptions = super.testOptions ++ {
+      if (!networkTestsEnabled.value) Seq(TestFilter(test => !test.endsWith("NetworkTest")))
+      else Seq.empty
+    }
+
     override def bndImportPackage = "javax.transaction;version=1.1" :: super.bndImportPackage.toList
   }
 

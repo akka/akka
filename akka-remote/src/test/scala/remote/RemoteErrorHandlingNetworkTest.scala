@@ -7,7 +7,7 @@ import akka.actor.{ActorRef, Actor}
 import akka.util.duration._
 import java.util.concurrent.atomic.AtomicBoolean
 
-object RemoteErrorHandlingTest {
+object RemoteErrorHandlingNetworkTest {
   case class Send(actor: ActorRef)
 
   class RemoteActorSpecActorUnidirectional extends Actor {
@@ -50,8 +50,8 @@ object RemoteErrorHandlingTest {
   }
 }
 
-class RemoteErrorHandlingTest extends AkkaRemoteTest with NetworkFailureTest {
-  import RemoteErrorHandlingTest._
+class RemoteErrorHandlingNetworkTest extends AkkaRemoteTest with NetworkFailureTest {
+  import RemoteErrorHandlingNetworkTest._
 
   "Remote actors" should {
 
