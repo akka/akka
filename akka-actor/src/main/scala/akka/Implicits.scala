@@ -14,7 +14,10 @@ package object actor {
     ref.asInstanceOf[ActorRef]
 
   type Uuid = com.eaio.uuid.UUID
+
   def newUuid(): Uuid = new Uuid()
-  def uuidFrom(time: Long, clockSeqAndNode: Long): Uuid = new Uuid(time,clockSeqAndNode)
+
+  def uuidFrom(time: Long, clockSeqAndNode: Long): Uuid = new Uuid(time, clockSeqAndNode)
+
   def uuidFrom(uuid: String): Uuid = new Uuid(uuid)
 }
