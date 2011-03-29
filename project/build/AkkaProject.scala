@@ -126,7 +126,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     // Compile
     lazy val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile" //Public domain
 
-    lazy val aspectwerkz = "org.codehaus.aspectwerkz" % "aspectwerkz" % "2.2.3" % "compile" //LGPL 2.1
+    lazy val aspectwerkz = "org.codehaus.aspectwerkz" % "aspectwerkz" % "2.2.3" % "compile" //ApacheV2
 
     lazy val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile" //ApacheV2
 
