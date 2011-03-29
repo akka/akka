@@ -25,7 +25,7 @@ import akka.AkkaException
  *     case EventHandler.Warning(instance, message)      => ...
  *     case EventHandler.Info(instance, message)         => ...
  *     case EventHandler.Debug(instance, message)        => ...
- *     case genericEvent                                 => ... 
+ *     case genericEvent                                 => ...
  *   }
  * })
  *
@@ -35,7 +35,7 @@ import akka.AkkaException
  * </pre>
  * <p/>
  * However best is probably to register the listener in the 'akka.conf'
- * configuration file. 
+ * configuration file.
  * <p/>
  * Log an error event:
  * <pre>
@@ -45,7 +45,7 @@ import akka.AkkaException
  * <pre>
  * EventHandler.error(exception, this, message.toString)
  * </pre>
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object EventHandler extends ListenerManagement {
@@ -73,7 +73,7 @@ object EventHandler extends ListenerManagement {
   val debug   = "[DEBUG]   [%s] [%s] [%s] %s".intern
   val generic = "[GENERIC] [%s] [%s]".intern
   val ID      = "event:handler".intern
-  
+
   class EventHandlerException extends AkkaException
 
   lazy val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
@@ -129,7 +129,7 @@ object EventHandler extends ListenerManagement {
     else if (eventClass.isInstanceOf[Debug])   DebugLevel
     else                                       DebugLevel
   }
-  
+
   class DefaultListener extends Actor {
     self.id = ID
     self.dispatcher = EventHandlerDispatcher
