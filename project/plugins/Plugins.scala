@@ -8,7 +8,6 @@ class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
   object Repositories {
     lazy val AquteRepo      = "aQute Maven Repository" at "http://www.aqute.biz/repo"
     lazy val DatabinderRepo = "Databinder Repository" at "http://databinder.net/repo"
-    lazy val EmbeddedRepo   = "Embedded Repo" at (info.projectPath / "embedded-repo").asURL.toString
   }
 
   // -------------------------------------------------------------------------------------------------------------------
