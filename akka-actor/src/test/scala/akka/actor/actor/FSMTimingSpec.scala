@@ -2,6 +2,7 @@ package akka.actor
 
 import akka.testkit.TestKit
 import akka.util.duration._
+import akka.Testing
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
@@ -16,7 +17,7 @@ class FSMTimingSpec
 
   val fsm = Actor.actorOf(new StateMachine(testActor)).start
   fsm ! SubscribeTransitionCallBack(testActor)
-  expectMsg(200 millis, CurrentState(fsm, Initial))
+  expectMsg(Testing.time(200).millis, CurrentState(fsm, Initial))
 
   ignoreMsg {
       case Transition(_, Initial, _) => true
