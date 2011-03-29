@@ -19,9 +19,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   val scalaCompileSettings =
     Seq("-deprecation",
         "-Xmigration",
-        //"-Xcheckinit", //Only use occasionally, should never be used for production jars
-        "-optimise",
-        "-Xwarninit",
+        //"-optimise",
         "-encoding", "utf8")
 
   val javaCompileSettings = Seq("-Xlint:unchecked")
