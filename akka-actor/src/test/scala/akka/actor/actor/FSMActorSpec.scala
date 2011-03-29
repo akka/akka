@@ -14,6 +14,8 @@ import java.util.concurrent.TimeUnit
 
 import akka.util.duration._
 
+import akka.Testing
+
 object FSMActorSpec {
 
 
@@ -100,7 +102,7 @@ class FSMActorSpec extends JUnitSuite {
   def unlockTheLock = {
 
     // lock that locked after being open for 1 sec
-    val lock = Actor.actorOf(new Lock("33221", (1, TimeUnit.SECONDS))).start
+    val lock = Actor.actorOf(new Lock("33221", (Testing.time(1), TimeUnit.SECONDS))).start
 
     val transitionTester = Actor.actorOf(new Actor { def receive = {
       case Transition(_, _, _) => transitionCallBackLatch.open
@@ -108,7 +110,7 @@ class FSMActorSpec extends JUnitSuite {
     }}).start
 
     lock ! SubscribeTransitionCallBack(transitionTester)
-    assert(initialStateLatch.tryAwait(1, TimeUnit.SECONDS))
+    assert(initialStateLatch.tryAwait(Testing.time(1), TimeUnit.SECONDS))
 
     lock ! '3'
     lock ! '3'
@@ -116,14 +118,14 @@ class FSMActorSpec extends JUnitSuite {
     lock ! '2'
     lock ! '1'
 
-    assert(unlockedLatch.tryAwait(1, TimeUnit.SECONDS))
-    assert(transitionLatch.tryAwait(1, TimeUnit.SECONDS))
-    assert(transitionCallBackLatch.tryAwait(1, TimeUnit.SECONDS))
-    assert(lockedLatch.tryAwait(2, TimeUnit.SECONDS))
+    assert(unlockedLatch.tryAwait(Testing.time(1), TimeUnit.SECONDS))
+    assert(transitionLatch.tryAwait(Testing.time(1), TimeUnit.SECONDS))
+    assert(transitionCallBackLatch.tryAwait(Testing.time(1), TimeUnit.SECONDS))
+    assert(lockedLatch.tryAwait(Testing.time(2), TimeUnit.SECONDS))
 
 
     lock ! "not_handled"
-    assert(unhandledLatch.tryAwait(2, TimeUnit.SECONDS))
+    assert(unhandledLatch.tryAwait(Testing.time(2), TimeUnit.SECONDS))
 
     val answerLatch = new StandardLatch
     object Hello
@@ -136,9 +138,9 @@ class FSMActorSpec extends JUnitSuite {
       }
     }).start
     tester ! Hello
-    assert(answerLatch.tryAwait(2, TimeUnit.SECONDS))
+    assert(answerLatch.tryAwait(Testing.time(2), TimeUnit.SECONDS))
 
     tester ! Bye
-    assert(terminatedLatch.tryAwait(2, TimeUnit.SECONDS))
+    assert(terminatedLatch.tryAwait(Testing.time(2), TimeUnit.SECONDS))
   }
 }
