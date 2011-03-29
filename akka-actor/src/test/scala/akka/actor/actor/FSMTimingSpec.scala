@@ -26,7 +26,7 @@ class FSMTimingSpec
   "A Finite State Machine" must {
 
     "receive StateTimeout" in {
-      within (50 millis, 150 millis) {
+      within (Testing.time(50).millis, Testing.time(150).millis) {
         fsm ! TestStateTimeout
         expectMsg(Transition(fsm, TestStateTimeout, Initial))
         expectNoMsg
@@ -34,7 +34,7 @@ class FSMTimingSpec
     }
 
     "receive single-shot timer" in {
-      within (50 millis, 150 millis) {
+      within (Testing.time(50).millis, Testing.time(150).millis) {
         fsm ! TestSingleTimer
         expectMsg(Tick)
         expectMsg(Transition(fsm, TestSingleTimer, Initial))
@@ -48,7 +48,7 @@ class FSMTimingSpec
         case Tick => Tick
       }
       seq must have length (5)
-      within(250 millis) {
+      within(Testing.time(250) millis) {
         expectMsg(Transition(fsm, TestRepeatedTimer, Initial))
         expectNoMsg
       }
@@ -56,21 +56,21 @@ class FSMTimingSpec
 
     "notify unhandled messages" in {
       fsm ! TestUnhandled
-      within(100 millis) {
+      within(Testing.time(100) millis) {
         fsm ! Tick
         expectNoMsg
       }
-      within(100 millis) {
+      within(Testing.time(100) millis) {
         fsm ! SetHandler
         fsm ! Tick
         expectMsg(Unhandled(Tick))
         expectNoMsg
       }
-      within(100 millis) {
+      within(Testing.time(100) millis) {
         fsm ! Unhandled("test")
         expectNoMsg
       }
-      within(100 millis) {
+      within(Testing.time(100) millis) {
         fsm ! Cancel
         expectMsg(Transition(fsm, TestUnhandled, Initial))
       }
