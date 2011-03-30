@@ -8,7 +8,7 @@ import org.junit.runner.RunWith
 
 import akka.serialization.Serializer.ScalaJSON
 //TODO: FIXME WHY IS THIS COMMENTED OUT?
-/*
+
 object Protocols {
   import sjson.json.DefaultProtocol._
   case class Shop(store: String, item: String, price: Int)
@@ -51,4 +51,3 @@ class ScalaJSONSerializerSpec extends
     }
   }
 }
-*/

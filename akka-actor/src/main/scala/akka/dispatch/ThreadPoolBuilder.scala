@@ -160,12 +160,11 @@ class MonitorableThreadFactory(val name: String) extends ThreadFactory {
  */
 object MonitorableThread {
   val DEFAULT_NAME = "MonitorableThread"
-  val created = new AtomicInteger
-  val alive = new AtomicInteger
-  @volatile var debugLifecycle = false
-}
 
-// FIXME fix the issues with using the monitoring in MonitorableThread
+  // FIXME use MonitorableThread.created and MonitorableThread.alive in monitoring
+  val created      = new AtomicInteger
+  val alive        = new AtomicInteger
+}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -178,7 +177,6 @@ class MonitorableThread(runnable: Runnable, name: String)
   })
 
   override def run = {
-    val debug = MonitorableThread.debugLifecycle
     try {
       MonitorableThread.alive.incrementAndGet
       super.run

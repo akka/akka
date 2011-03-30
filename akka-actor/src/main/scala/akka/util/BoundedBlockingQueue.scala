@@ -1,11 +1,15 @@
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package akka.util
 
 import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ TimeUnit, BlockingQueue }
 import java.util.{ AbstractQueue, Queue, Collection, Iterator }
 
-class BoundedBlockingQueue[E <: AnyRef](val maxCapacity: Int, private val backing: Queue[E]) extends AbstractQueue[E] with BlockingQueue[E] {
+class BoundedBlockingQueue[E <: AnyRef](
+  val maxCapacity: Int, private val backing: Queue[E]) extends AbstractQueue[E] with BlockingQueue[E] {
 
   backing match {
     case null => throw new IllegalArgumentException("Backing Queue may not be null")
@@ -32,7 +36,7 @@ class BoundedBlockingQueue[E <: AnyRef](val maxCapacity: Int, private val backin
       require(backing.offer(e))
       notEmpty.signal()
     } finally {
-        lock.unlock()
+      lock.unlock()
     }
   }
 

@@ -214,7 +214,7 @@ abstract class RemoteClient private[akka] (
     isOneWay: Boolean,
     actorRef: ActorRef,
     typedActorInfo: Option[Tuple2[String, String]],
-    actorType: AkkaActorType): Option[CompletableFuture[T]] = synchronized { //TODO: find better strategy to prevent race
+    actorType: AkkaActorType): Option[CompletableFuture[T]] = synchronized { // FIXME: find better strategy to prevent race
 
     send(createRemoteMessageProtocolBuilder(
         Some(actorRef),
@@ -1016,9 +1016,15 @@ class RemoteServerHandler(
 
     val typedActor = createTypedActor(actorInfo, channel)
     //FIXME: Add ownerTypeHint and parameter types to the TypedActorInfo?
-    val (ownerTypeHint, argClasses, args) = MessageSerializer.deserialize(request.getMessage).asInstanceOf[Tuple3[String,Array[Class[_]],Array[AnyRef]]]
+    val (ownerTypeHint, argClasses, args) =
+      MessageSerializer
+          .deserialize(request.getMessage)
+          .asInstanceOf[Tuple3[String,Array[Class[_]],Array[AnyRef]]]
 
-    def resolveMethod(bottomType: Class[_], typeHint: String, methodName: String, methodSignature: Array[Class[_]]): java.lang.reflect.Method = {
+    def resolveMethod(bottomType: Class[_],
+                      typeHint: String,
+                      methodName: String,
+                      methodSignature: Array[Class[_]]): java.lang.reflect.Method = {
       var typeToResolve = bottomType
       var targetMethod: java.lang.reflect.Method = null
       var firstException: NoSuchMethodException = null
