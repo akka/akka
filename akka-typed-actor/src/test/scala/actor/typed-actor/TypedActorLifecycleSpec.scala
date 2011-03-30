@@ -12,6 +12,8 @@ import akka.config.Supervision._
 import java.util.concurrent.CountDownLatch
 import akka.config.TypedActorConfigurator
 
+import akka.Testing
+
 /**
  * @author Martin Krasser
  */
@@ -95,7 +97,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
     }
 
     it("should be stopped when supervision cannot handle the problem in") {
-      val actorSupervision = new SuperviseTypedActor(classOf[TypedActorFailer],classOf[TypedActorFailerImpl],permanent(),30000)
+      val actorSupervision = new SuperviseTypedActor(classOf[TypedActorFailer],classOf[TypedActorFailerImpl],permanent(), Testing.time(30000))
       val conf = new TypedActorConfigurator().configure(OneForOneStrategy(Nil, 3, 500000), Array(actorSupervision)).inject.supervise
       try {
         val first = conf.getInstance(classOf[TypedActorFailer])
@@ -121,7 +123,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
     }
 
     it("should be restarted when supervision handles the problem in") {
-     val actorSupervision = new SuperviseTypedActor(classOf[TypedActorFailer],classOf[TypedActorFailerImpl],permanent(),30000)
+     val actorSupervision = new SuperviseTypedActor(classOf[TypedActorFailer],classOf[TypedActorFailerImpl],permanent(), Testing.time(30000))
      val conf = new TypedActorConfigurator().configure(OneForOneStrategy(classOf[Throwable] :: Nil, 3, 500000), Array(actorSupervision)).inject.supervise
      try {
        val first = conf.getInstance(classOf[TypedActorFailer])
