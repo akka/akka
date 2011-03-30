@@ -132,7 +132,6 @@ class FutureSpec extends JUnitSuite {
     actor.stop
   }
 
-  // FIXME: implement Futures.awaitEither, and uncomment these two tests
   @Test def shouldFutureAwaitEitherLeft = {
     val actor1 = actorOf[TestActor].start
     val actor2 = actorOf[TestActor].start

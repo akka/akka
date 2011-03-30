@@ -902,7 +902,6 @@ class LocalActorRef private[akka] (
 
       failedActor match {
         case p: Proxyable =>
-          //p.swapProxiedActor(freshActor) //TODO: broken
           failedActor.preRestart(reason)
           failedActor.postRestart(reason)
         case _ =>

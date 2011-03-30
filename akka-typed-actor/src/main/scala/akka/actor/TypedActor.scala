@@ -364,7 +364,7 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   /**
     * Returns the home address and port for this actor.
     */
-  def homeAddress: InetSocketAddress = actorRef.homeAddress.getOrElse(null)//TODO: REVISIT: Sensible to return null?
+  def homeAddress: InetSocketAddress = actorRef.homeAddress.getOrElse(null)
 }
 
 object TypedActorConfiguration {
