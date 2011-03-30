@@ -57,7 +57,7 @@ object Futures {
   }
 
   /**
-   * Java API
+   * Java API.
    * Returns a Future to the result of the first future in the list that is completed
    */
   def firstCompletedOf[T <: AnyRef](futures: java.lang.Iterable[Future[T]], timeout: Long): Future[T] =
@@ -68,6 +68,10 @@ object Futures {
    * The fold is performed on the thread where the last future is completed,
    * the result will be the first failure of any of the futures, or any failure in the actual fold,
    * or the result of the fold.
+   * Example:
+   * <pre>
+   *   val result = Futures.fold(0)(futures)(_ + _).await.result
+   * </pre>
    */
   def fold[T,R](zero: R, timeout: Long = Actor.TIMEOUT)(futures: Iterable[Future[T]])(foldFun: (R, T) => R): Future[R] = {
     if(futures.isEmpty) {
@@ -115,6 +119,10 @@ object Futures {
 
   /**
    * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
+   * Example:
+   * <pre>
+   *   val result = Futures.reduce(futures)(_ + _).await.result
+   * </pre>
    */
   def reduce[T, R >: T](futures: Iterable[Future[T]], timeout: Long = Actor.TIMEOUT)(op: (R,T) => T): Future[R] = {
     if (futures.isEmpty)
@@ -138,7 +146,7 @@ object Futures {
   }
 
   /**
-   * Java API
+   * Java API.
    * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
    */
   def reduce[T <: AnyRef, R >: T](futures: java.lang.Iterable[Future[T]], timeout: Long, fun: akka.japi.Function2[R, T, T]): Future[R] =
@@ -147,18 +155,25 @@ object Futures {
   import scala.collection.mutable.Builder
   import scala.collection.generic.CanBuildFrom
 
+  /**
+   * FIXME document Futures.sequence
+   */
   def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]], timeout: Long = Actor.TIMEOUT)(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]]): Future[M[A]] =
     in.foldLeft(new DefaultCompletableFuture[Builder[A, M[A]]](timeout).completeWithResult(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) => for (r <- fr; a <- fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
 
+  /**
+   * FIXME document Futures.traverse
+   */
   def traverse[A, B, M[_] <: Traversable[_]](in: M[A], timeout: Long = Actor.TIMEOUT)(fn: A => Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]]): Future[M[B]] =
     in.foldLeft(new DefaultCompletableFuture[Builder[B, M[B]]](timeout).completeWithResult(cbf(in)): Future[Builder[B, M[B]]]) { (fr, a) =>
       val fb = fn(a.asInstanceOf[A])
       for (r <- fr; b <-fb) yield (r += b)
     }.map(_.result)
 
-  //Deprecations
-
-
+  // =====================================
+  // Deprecations
+  // =====================================
+  
   /**
    * (Blocking!)
    */
@@ -299,6 +314,12 @@ sealed trait Future[+T] {
   /**
    * When the future is compeleted with a valid result, apply the provided
    * PartialFunction to the result.
+   * <pre>
+   *   val result = future receive {
+   *     case Foo => "foo"
+   *     case Bar => "bar"
+   *   }.await.result
+   * </pre>
    */
   final def receive(pf: PartialFunction[Any, Unit]): Future[T] = onComplete { f =>
     val optr = f.result
@@ -313,6 +334,14 @@ sealed trait Future[+T] {
    * result of this Future if a match is found, or else return a MatchError.
    * If this Future is completed with an exception then the new Future will
    * also contain this exception.
+   * Example:
+   * <pre>
+   * val future1 = for {
+   *   a <- actor !!! Req("Hello") collect { case Res(x: Int)    => x }
+   *   b <- actor !!! Req(a)       collect { case Res(x: String) => x }
+   *   c <- actor !!! Req(7)       collect { case Res(x: String) => x }
+   * } yield b + "-" + c
+   * </pre>
    */
   final def collect[A](pf: PartialFunction[Any, A]): Future[A] = {
     val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
@@ -343,6 +372,14 @@ sealed trait Future[+T] {
    * Creates a new Future by applying a function to the successful result of
    * this Future. If this Future is completed with an exception then the new
    * Future will also contain this exception.
+   * Example:
+   * <pre>
+   * val future1 = for {
+   *   a: Int    <- actor !!! "Hello" // returns 5
+   *   b: String <- actor !!! a       // returns "10"
+   *   c: String <- actor !!! 7       // returns "14"
+   * } yield b + "-" + c
+   * </pre>
    */
   final def map[A](f: T => A): Future[A] = {
     val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
@@ -371,6 +408,14 @@ sealed trait Future[+T] {
    * this Future, and returns the result of the function as the new Future.
    * If this Future is completed with an exception then the new Future will
    * also contain this exception.
+   * Example:
+   * <pre>
+   * val future1 = for {
+   *   a: Int    <- actor !!! "Hello" // returns 5
+   *   b: String <- actor !!! a       // returns "10"
+   *   c: String <- actor !!! 7       // returns "14"
+   * } yield b + "-" + c
+   * </pre>
    */
   final def flatMap[A](f: T => Future[A]): Future[A] = {
     val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
@@ -425,7 +470,7 @@ sealed trait Future[+T] {
   }
 
   /**
-   *   Returns the current result, throws the exception is one has been raised, else returns None
+   * Returns the current result, throws the exception is one has been raised, else returns None
    */
   final def resultOrException: Option[T] = {
     val v = value
@@ -450,31 +495,31 @@ sealed trait Future[+T] {
 }
 
 /**
- * Essentially this is the Promise (or write-side) of a Future (read-side)
+ * Essentially this is the Promise (or write-side) of a Future (read-side).
  */
 trait CompletableFuture[T] extends Future[T] {
   /**
-   * Completes this Future with the specified result, if not already completed,
-   * returns this
+   * Completes this Future with the specified result, if not already completed.
+   * @return this
    */
   def complete(value: Either[Throwable, T]): CompletableFuture[T]
 
   /**
-   * Completes this Future with the specified result, if not already completed,
-   * returns this
+   * Completes this Future with the specified result, if not already completed.
+   * @return this
    */
   final def completeWithResult(result: T): CompletableFuture[T] = complete(Right(result))
 
   /**
-   * Completes this Future with the specified exception, if not already completed,
-   * returns this
+   * Completes this Future with the specified exception, if not already completed.
+   * @return this
    */
   final def completeWithException(exception: Throwable): CompletableFuture[T] = complete(Left(exception))
 
   /**
    * Completes this Future with the specified other Future, when that Future is completed,
-   * unless this Future has already been completed
-   * returns this
+   * unless this Future has already been completed.
+   * @return this.
    */
   final def completeWith(other: Future[T]): CompletableFuture[T] = {
     other onComplete { f => complete(f.value.get) }
@@ -482,18 +527,18 @@ trait CompletableFuture[T] extends Future[T] {
   }
 
   /**
-   * Alias for complete(Right(value))
+   * Alias for complete(Right(value)).
    */
   final def << (value: T): CompletableFuture[T] = complete(Right(value))
 
   /**
-   * Alias for completeWith(other)
+   * Alias for completeWith(other).
    */
   final def << (other : Future[T]): CompletableFuture[T] = completeWith(other)
 }
 
 /**
- * Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
+ * The default concrete Future implementation.
  */
 class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends CompletableFuture[T] {
 
