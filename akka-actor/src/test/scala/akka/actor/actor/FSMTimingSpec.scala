@@ -2,7 +2,6 @@ package akka.actor
 
 import akka.testkit.TestKit
 import akka.util.duration._
-import akka.Testing
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
@@ -17,7 +16,7 @@ class FSMTimingSpec
 
   val fsm = Actor.actorOf(new StateMachine(testActor)).start
   fsm ! SubscribeTransitionCallBack(testActor)
-  expectMsg(Testing.time(200).millis, CurrentState(fsm, Initial))
+  expectMsg(200 millis, CurrentState(fsm, Initial))
 
   ignoreMsg {
       case Transition(_, Initial, _) => true
@@ -26,7 +25,7 @@ class FSMTimingSpec
   "A Finite State Machine" must {
 
     "receive StateTimeout" in {
-      within (Testing.time(50).millis, Testing.time(150).millis) {
+      within (50 millis, 150 millis) {
         fsm ! TestStateTimeout
         expectMsg(Transition(fsm, TestStateTimeout, Initial))
         expectNoMsg
@@ -34,7 +33,7 @@ class FSMTimingSpec
     }
 
     "receive single-shot timer" in {
-      within (Testing.time(50).millis, Testing.time(150).millis) {
+      within (50 millis, 150 millis) {
         fsm ! TestSingleTimer
         expectMsg(Tick)
         expectMsg(Transition(fsm, TestSingleTimer, Initial))
@@ -48,7 +47,7 @@ class FSMTimingSpec
         case Tick => Tick
       }
       seq must have length (5)
-      within(Testing.time(250) millis) {
+      within(250 millis) {
         expectMsg(Transition(fsm, TestRepeatedTimer, Initial))
         expectNoMsg
       }
@@ -56,21 +55,21 @@ class FSMTimingSpec
 
     "notify unhandled messages" in {
       fsm ! TestUnhandled
-      within(Testing.time(100) millis) {
+      within(100 millis) {
         fsm ! Tick
         expectNoMsg
       }
-      within(Testing.time(100) millis) {
+      within(100 millis) {
         fsm ! SetHandler
         fsm ! Tick
         expectMsg(Unhandled(Tick))
         expectNoMsg
       }
-      within(Testing.time(100) millis) {
+      within(100 millis) {
         fsm ! Unhandled("test")
         expectNoMsg
       }
-      within(Testing.time(100) millis) {
+      within(100 millis) {
         fsm ! Cancel
         expectMsg(Transition(fsm, TestUnhandled, Initial))
       }

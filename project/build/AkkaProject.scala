@@ -465,8 +465,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   def akkaArtifacts = descendents(info.projectPath / "dist", "*-" + version + ".jar")
-  lazy val integrationTestsEnabled = systemOptional[Boolean]("integration.tests",false)
-  lazy val stressTestsEnabled = systemOptional[Boolean]("stress.tests",false)
 
   // ------------------------------------------------------------
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) 
@@ -485,20 +483,14 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def packageToPublishActions = super.packageToPublishActions ++ Seq(this.packageDocs, this.packageSrc)
     override def pomPostProcess(node: scala.xml.Node): scala.xml.Node = mcPom(AkkaParentProject.this.moduleConfigurations)(super.pomPostProcess(node))
 
-    /**
-     * Used for testOptions, possibility to enable the running of integration and or stresstests
-     *
-     * To enable set true and disable set false
-     * set integration.tests true
-     * set stress.tests true
-     */
-    def createTestFilter(defaultTests: (String) => Boolean) = { TestFilter({
-        case s: String if defaultTests(s) => true
-        case s: String if integrationTestsEnabled.value => s.endsWith("TestIntegration")
-        case s: String if stressTestsEnabled.value      => s.endsWith("TestStress")
-        case _ => false
-      }) :: Nil
+    lazy val excludeTestsProperty = systemOptional[String]("akka.test.exclude", "")
+
+    def excludeTests = {
+      val exclude = excludeTestsProperty.value
+      if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
     }
+
+    override def testOptions = super.testOptions ++ excludeTests.map(exclude => TestFilter(test => !test.contains(exclude)))
 
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
