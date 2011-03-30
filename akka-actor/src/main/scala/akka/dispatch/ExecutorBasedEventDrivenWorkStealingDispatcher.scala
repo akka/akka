@@ -78,12 +78,12 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
 
   override private[akka] def dispatch(invocation: MessageInvocation) = {
     val mbox = getMailbox(invocation.receiver)
-    if (mbox.dispatcherLock.locked && attemptDonationOf(invocation, mbox)) {
+    /*if (!mbox.isEmpty && attemptDonationOf(invocation, mbox)) {
       //We were busy and we got to donate the message to some other lucky guy, we're done here
-    } else {
+    } else {*/
       mbox enqueue invocation
       registerForExecution(mbox)
-    }
+    //}
   }
 
   override private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
@@ -110,13 +110,13 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   /**
    * Returns true if the donation succeeded or false otherwise
    */
-  protected def attemptDonationOf(message: MessageInvocation, donorMbox: MessageQueue with ExecutableMailbox): Boolean = {
+  /*protected def attemptDonationOf(message: MessageInvocation, donorMbox: MessageQueue with ExecutableMailbox): Boolean = {
     val actors = members // copy to prevent concurrent modifications having any impact
     doFindDonorRecipient(donorMbox, actors, System.identityHashCode(message) % actors.size) match {
       case null => false
       case recipient => donate(message, recipient)
     }
-  }
+  }*/
 
   /**
    * Rewrites the message and adds that message to the recipients mailbox
