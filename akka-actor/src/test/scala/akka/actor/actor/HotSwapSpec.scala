@@ -14,7 +14,7 @@ import Actor._
 
 class HotSwapSpec extends WordSpec with MustMatchers {
 
-  "An Actor" should {
+  "An Actor" must {
 
     "be able to hotswap its behavior with HotSwap(..)" in {
       val barrier = TestBarrier(2)

@@ -73,7 +73,7 @@ object ActorRefSpec {
 class ActorRefSpec extends WordSpec with MustMatchers {
   import ActorRefSpec._
 
-  "An ActorRef" should {
+  "An ActorRef" must {
     
     "support reply via channel" in {
       val serverRef = Actor.actorOf[ReplyActor].start

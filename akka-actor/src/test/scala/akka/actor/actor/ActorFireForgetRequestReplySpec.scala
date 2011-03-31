@@ -67,7 +67,7 @@ class ActorFireForgetRequestReplySpec extends WordSpec with MustMatchers with Be
     state.finished.reset
   }   
       
-  "An Actor" should {
+  "An Actor" must {
 
     "reply to bang message using reply" in {  
       val replyActor = actorOf[ReplyActor].start
