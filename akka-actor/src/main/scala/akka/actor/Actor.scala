@@ -28,9 +28,9 @@ import akka.japi. {Creator, Procedure}
 /* Marker trait to show which Messages are automatically handled by Akka */
 sealed trait AutoReceivedMessage { self: LifeCycleMessage => }
 
-case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true) 
+case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true)
   extends AutoReceivedMessage with LifeCycleMessage {
-  
+
   /**
    * Java API
    */
@@ -75,6 +75,7 @@ class IllegalActorStateException   private[akka](message: String) extends AkkaEx
 class ActorKilledException         private[akka](message: String) extends AkkaException(message)
 class ActorInitializationException private[akka](message: String) extends AkkaException(message)
 class ActorTimeoutException        private[akka](message: String) extends AkkaException(message)
+class InvalidMessageException      private[akka](message: String) extends AkkaException(message)
 
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message
@@ -90,7 +91,7 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor extends ListenerManagement {
-  
+
   /**
    * Add shutdown cleanups
    */
@@ -128,7 +129,7 @@ object Actor extends ListenerManagement {
   type Receive = PartialFunction[Any, Unit]
 
   private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
-  
+
    /**
    *  Creates an ActorRef out of the Actor with type T.
    * <pre>
@@ -443,8 +444,10 @@ trait Actor {
   // =========================================
 
   private[akka] final def apply(msg: Any) = {
+    if (msg.isInstanceOf[AnyRef] && (msg.asInstanceOf[AnyRef] eq null))
+      throw new InvalidMessageException("Message from [" + self.sender + "] to [" + self.toString + "] is null")
     val behaviorStack = self.hotswap
-    msg match { //FIXME Add check for currentMessage eq null throw new BadUSerException?
+    msg match {
       case l: AutoReceivedMessage           => autoReceiveMessage(l)
       case msg if behaviorStack.nonEmpty &&
         behaviorStack.head.isDefinedAt(msg) => behaviorStack.head.apply(msg)

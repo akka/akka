@@ -17,9 +17,9 @@ import org.codehaus.aspectwerkz.proxy.Proxy
 import org.codehaus.aspectwerkz.annotation.{Aspect, Around}
 
 import java.net.InetSocketAddress
-import java.util.concurrent.atomic.AtomicBoolean
-import scala.reflect.BeanProperty
 import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
+
+import scala.reflect.BeanProperty
 
 /**
  * TypedActor is a type-safe actor made out of a POJO with interface.
@@ -36,7 +36,7 @@ import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
  * class TestActorImpl extends TypedActor implements TestActor {
  *
  *   public void hit(int count) {
- *     Pong pong = (Pong) getContext().getSender();
+ *     Pong pong = (Pong) context().sender();
  *     pong.hit(count++);
  *   }
  *
@@ -124,15 +124,15 @@ abstract class TypedActor extends Actor with Proxyable {
    * This class does not contain static information but is updated by the runtime system
    * at runtime.
    * <p/>
-   * You can get a hold of the context using either the 'getContext()' or 'context'
-   * methods from the 'TypedActor' base class.
+   * You can get a hold of the context using the 'context()'
+   * method from the 'TypedActor' base class.
    * <p/>
    *
    * Here is an example of usage (in Java):
    * <pre>
    * class PingImpl extends TypedActor implements Ping {
    *   public void hit(int count) {
-   *     Pong pong = (Pong) getContext().getSender();
+   *     Pong pong = (Pong) context().sender();
    *     pong.hit(count++);
    *   }
    * }
@@ -148,7 +148,12 @@ abstract class TypedActor extends Actor with Proxyable {
    * }
    * </pre>
    */
-  @BeanProperty val context: TypedActorContext = new TypedActorContext(self)
+  val context: TypedActorContext = new TypedActorContext(self)
+
+  /**
+   * @deprecated 'getContext()' is deprecated use 'context()'
+   */
+  def getContext: TypedActorContext = context
 
   /**
    * This method is used to resolve the Future for TypedActor methods that are defined to return a
@@ -180,15 +185,16 @@ abstract class TypedActor extends Actor with Proxyable {
     case joinPoint: JoinPoint =>
       SenderContextInfo.senderActorRef.value = self
       SenderContextInfo.senderProxy.value    = proxy
-
       if (Actor.SERIALIZE_MESSAGES)       serializeArguments(joinPoint)
       if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
       else                                self.reply(joinPoint.proceed)
+
     case coordinated @ Coordinated(joinPoint: JoinPoint) =>
       SenderContextInfo.senderActorRef.value = self
       SenderContextInfo.senderProxy.value = proxy
       if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
       coordinated atomic { joinPoint.proceed }
+
     case Link(proxy)   => self.link(proxy)
     case Unlink(proxy) => self.unlink(proxy)
     case unexpected    => throw new IllegalActorStateException(
@@ -255,7 +261,7 @@ abstract class TypedActor extends Actor with Proxyable {
  * <pre>
  * class PingImpl extends TypedActor implements Ping {
  *   public void hit(int count) {
- *     Pong pong = (Pong) getContext().getSender();
+ *     Pong pong = (Pong) context().sender();
  *     pong.hit(count++);
  *   }
  * }
@@ -277,7 +283,8 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   private[akka] var _sender: AnyRef = _
 
   /**
-5  * Returns the uuid for the actor.
+   * Returns the uuid for the actor.
+   * @deprecated use 'uuid()'
    */
   def getUuid() = actorRef.uuid
 
@@ -287,31 +294,39 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   def uuid = actorRef.uuid
 
   def timeout = actorRef.timeout
+
+  /**
+   * @deprecated use 'timeout()'
+   */
   def getTimout = timeout
   def setTimout(timeout: Long) = actorRef.timeout = timeout
 
   def id =  actorRef.id
+
+  /**
+   * @deprecated use 'id()'
+   */
   def getId = id
   def setId(id: String) = actorRef.id = id
 
   def receiveTimeout = actorRef.receiveTimeout
+
+  /**
+   * @deprecated use 'receiveTimeout()'
+   */
   def getReceiveTimeout = receiveTimeout
   def setReceiveTimeout(timeout: Long) = actorRef.setReceiveTimeout(timeout)
 
-  /**
-   * Is the actor running?
-   */
+  def mailboxSize = actorRef.mailboxSize
+
+  def dispatcher = actorRef.getDispatcher
+
+  def lifeCycle = actorRef.getLifeCycle
+
   def isRunning: Boolean = actorRef.isRunning
-
-  /**
-   * Is the actor shut down?
-   */
   def isShutdown: Boolean = actorRef.isShutdown
-
-  /**
-   * Is the actor ever started?
-   */
   def isUnstarted: Boolean = actorRef.isUnstarted
+  def isBeingRestarted: Boolean = actorRef.isBeingRestarted
 
   /**
    * Returns the current sender reference.
@@ -349,7 +364,7 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   /**
     * Returns the home address and port for this actor.
     */
-  def homeAddress: InetSocketAddress = actorRef.homeAddress.getOrElse(null)//TODO: REVISIT: Sensible to return null?
+  def homeAddress: InetSocketAddress = actorRef.homeAddress.getOrElse(null)
 }
 
 object TypedActorConfiguration {
@@ -449,7 +464,7 @@ object TypedActor {
    * @param intfClass interface the typed actor implements
    * @param targetClass implementation class of the typed actor
    */
-  def newInstance[T](intfClass: Class[T], targetClass: Class[_]): T = 
+  def newInstance[T](intfClass: Class[T], targetClass: Class[_]): T =
     newInstance(intfClass, targetClass, TypedActorConfiguration())
 
   /**

@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent. {ConcurrentHashMap, CountDownLatch, TimeUnit}
 import akka.actor.dispatch.ActorModelSpec.MessageDispatcherInterceptor
 import akka.util.{Duration, Switch}
+import akka.Testing
 
 object ActorModelSpec {
 
@@ -224,13 +225,13 @@ abstract class ActorModelSpec extends JUnitSuite {
     a.start
 
     a ! CountDown(start)
-    assertCountDown(start,3000, "Should process first message within 3 seconds")
+    assertCountDown(start, Testing.time(3000), "Should process first message within 3 seconds")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, msgsProcessed = 1)
 
     a ! Wait(1000)
     a ! CountDown(oneAtATime)
     // in case of serialization violation, restart would happen instead of count down
-    assertCountDown(oneAtATime,1500,"Processed message when allowed")
+    assertCountDown(oneAtATime, Testing.time(1500) ,"Processed message when allowed")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 3, msgsProcessed = 3)
 
     a.stop
@@ -245,7 +246,7 @@ abstract class ActorModelSpec extends JUnitSuite {
 
     def start = spawn { for (i <- 1 to 20) { a ! WaitAck(1, counter) } }
     for (i <- 1 to 10) { start }
-    assertCountDown(counter, 3000, "Should process 200 messages")
+    assertCountDown(counter, Testing.time(3000), "Should process 200 messages")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 200, msgsProcessed = 200)
 
     a.stop
@@ -263,10 +264,10 @@ abstract class ActorModelSpec extends JUnitSuite {
     val aStart,aStop,bParallel = new CountDownLatch(1)
 
     a ! Meet(aStart,aStop)
-    assertCountDown(aStart,3000, "Should process first message within 3 seconds")
+    assertCountDown(aStart, Testing.time(3000), "Should process first message within 3 seconds")
 
     b ! CountDown(bParallel)
-    assertCountDown(bParallel, 3000, "Should process other actors in parallel")
+    assertCountDown(bParallel, Testing.time(3000), "Should process other actors in parallel")
 
     aStop.countDown()
     a.stop
@@ -281,7 +282,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     val done = new CountDownLatch(1)
     a ! Restart
     a ! CountDown(done)
-    assertCountDown(done, 3000, "Should be suspended+resumed and done with next message within 3 seconds")
+    assertCountDown(done, Testing.time(3000), "Should be suspended+resumed and done with next message within 3 seconds")
     a.stop
     assertRefDefaultZero(a)(registers = 1,unregisters = 1, msgsReceived = 2,
       msgsProcessed = 2, suspensions = 1, resumes = 1)
@@ -297,7 +298,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, suspensions = 1)
 
     dispatcher.resume(a)
-    assertCountDown(done, 3000, "Should resume processing of messages when resumed")
+    assertCountDown(done, Testing.time(3000), "Should resume processing of messages when resumed")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, msgsProcessed = 1,
       suspensions = 1, resumes = 1)
 
@@ -314,7 +315,7 @@ abstract class ActorModelSpec extends JUnitSuite {
       (1 to num) foreach {
         _ => newTestActor.start ! cachedMessage
       }
-      assertCountDown(cachedMessage.latch,10000, "Should process " + num + " countdowns")
+      assertCountDown(cachedMessage.latch, Testing.time(10000), "Should process " + num + " countdowns")
     }
     for(run <- 1 to 3) {
       flood(10000)

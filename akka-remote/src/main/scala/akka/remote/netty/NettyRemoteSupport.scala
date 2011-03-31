@@ -39,6 +39,9 @@ import java.net.InetSocketAddress
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.{AtomicReference, AtomicBoolean}
 import java.util.concurrent._
+import akka.AkkaException
+
+class RemoteClientMessageBufferException(message: String) extends AkkaException(message)
 
 object RemoteEncoder {
   def encode(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {
@@ -159,7 +162,8 @@ abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) {
 
-  val useTransactionLog = config.getBool("akka.remote.retry-message-send-on-failure", true)
+  val useTransactionLog      = config.getBool("akka.remote.client.buffering.retry-message-send-on-failure", true)
+  val transactionLogCapacity = config.getInt("akka.remote.client.buffering.capacity", -1)
 
   val name = this.getClass.getSimpleName + "@" +
              remoteAddress.getAddress.getHostAddress + "::" +
@@ -167,7 +171,10 @@ abstract class RemoteClient private[akka] (
 
   protected val futures         = new ConcurrentHashMap[Uuid, CompletableFuture[_]]
   protected val supervisors     = new ConcurrentHashMap[Uuid, ActorRef]
-  protected val pendingRequests = new ConcurrentLinkedQueue[(Boolean, Uuid, RemoteMessageProtocol)]
+  protected val pendingRequests = {
+    if (transactionLogCapacity < 0) new ConcurrentLinkedQueue[(Boolean, Uuid, RemoteMessageProtocol)]
+    else                            new LinkedBlockingQueue[(Boolean, Uuid, RemoteMessageProtocol)](transactionLogCapacity)
+  }
 
   private[remote] val runSwitch       = new Switch()
   private[remote] val isAuthenticated = new AtomicBoolean(false)
@@ -207,7 +214,7 @@ abstract class RemoteClient private[akka] (
     isOneWay: Boolean,
     actorRef: ActorRef,
     typedActorInfo: Option[Tuple2[String, String]],
-    actorType: AkkaActorType): Option[CompletableFuture[T]] = synchronized { //TODO: find better strategy to prevent race
+    actorType: AkkaActorType): Option[CompletableFuture[T]] = synchronized { // FIXME: find better strategy to prevent race
 
     send(createRemoteMessageProtocolBuilder(
         Some(actorRef),
@@ -243,7 +250,10 @@ abstract class RemoteClient private[akka] (
           case e: Throwable =>
             // add the request to the tx log after a failing send
             notifyListeners(RemoteClientError(e, module, remoteAddress))
-            if (useTransactionLog) pendingRequests.add((true, null, request))
+            if (useTransactionLog) {
+              if (!pendingRequests.offer((true, null, request)))
+                throw new RemoteClientMessageBufferException("Buffer limit [" + transactionLogCapacity + "] reached")
+            }
             else throw e
         }
         None
@@ -256,7 +266,8 @@ abstract class RemoteClient private[akka] (
         def handleRequestReplyError(future: ChannelFuture) = {
           notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
           if (useTransactionLog) {
-            pendingRequests.add((false, futureUuid, request)) // Add the request to the tx log after a failing send
+            if (!pendingRequests.offer((false, futureUuid, request))) // Add the request to the tx log after a failing send
+              throw new RemoteClientMessageBufferException("Buffer limit [" + transactionLogCapacity + "] reached")
           } else {
             val f = futures.remove(futureUuid)                // Clean up future
             if (f ne null) f.completeWithException(future.getCause)
@@ -1005,9 +1016,15 @@ class RemoteServerHandler(
 
     val typedActor = createTypedActor(actorInfo, channel)
     //FIXME: Add ownerTypeHint and parameter types to the TypedActorInfo?
-    val (ownerTypeHint, argClasses, args) = MessageSerializer.deserialize(request.getMessage).asInstanceOf[Tuple3[String,Array[Class[_]],Array[AnyRef]]]
+    val (ownerTypeHint, argClasses, args) =
+      MessageSerializer
+          .deserialize(request.getMessage)
+          .asInstanceOf[Tuple3[String,Array[Class[_]],Array[AnyRef]]]
 
-    def resolveMethod(bottomType: Class[_], typeHint: String, methodName: String, methodSignature: Array[Class[_]]): java.lang.reflect.Method = {
+    def resolveMethod(bottomType: Class[_],
+                      typeHint: String,
+                      methodName: String,
+                      methodSignature: Array[Class[_]]): java.lang.reflect.Method = {
       var typeToResolve = bottomType
       var targetMethod: java.lang.reflect.Method = null
       var firstException: NoSuchMethodException = null
