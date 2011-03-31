@@ -94,7 +94,7 @@ object FSMActorSpec {
 class FSMActorSpec extends WordSpec with MustMatchers {
   import FSMActorSpec._
 
-  "An FSM Actor" should {
+  "An FSM Actor" must {
 
     "unlock the lock" in {
       

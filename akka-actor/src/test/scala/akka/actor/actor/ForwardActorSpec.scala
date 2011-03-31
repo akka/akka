@@ -65,7 +65,7 @@ object ForwardActorSpec {
 class ForwardActorSpec extends WordSpec with MustMatchers {
   import ForwardActorSpec._
 
-  "A Forward Actor" should {
+  "A Forward Actor" must {
     "forward actor reference when invoking forward on bang" in {
       val senderActor = actorOf[BangSenderActor]
       val latch = senderActor.actor.asInstanceOf[BangSenderActor]

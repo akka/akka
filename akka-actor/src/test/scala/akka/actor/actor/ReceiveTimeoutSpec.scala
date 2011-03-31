@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
   import Actor._
 
-  "An actor with receive timeout" should {
+  "An actor with receive timeout" must {
 
     "get timeout" in {
       val timeoutLatch = TestLatch()
