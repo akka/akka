@@ -468,7 +468,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     val pool2 = actorOf(new TestPool2).start
     pool2 ! "a"
     pool2 ! "b"
-    done = latch.await(1,TimeUnit.SECONDS)
+    done = latch.await(1, TimeUnit.SECONDS)
     done must be (true)
     delegates.size must be (2)
     pool2 stop

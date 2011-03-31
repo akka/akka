@@ -1,10 +1,17 @@
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package akka.actor
 
-import java.util.concurrent.{TimeUnit, CountDownLatch}
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
+
+import akka.testing._
+import akka.util.duration._
 
 import Actor._
+
 
 object ForwardActorSpec {
   object ForwardState {
@@ -12,7 +19,7 @@ object ForwardActorSpec {
   }
 
   class ReceiverActor extends Actor {
-    val latch = new CountDownLatch(1)
+    val latch = TestLatch()
     def receive = {
       case "SendBang" => {
         ForwardState.sender = self.sender
@@ -42,7 +49,7 @@ object ForwardActorSpec {
   }
 
   class BangBangSenderActor extends Actor {
-    val latch = new CountDownLatch(1)
+    val latch = TestLatch()
     val forwardActor = actorOf[ForwardActor]
     forwardActor.start
     (forwardActor !! "SendBangBang") match {
@@ -55,27 +62,27 @@ object ForwardActorSpec {
   }
 }
 
-class ForwardActorSpec extends JUnitSuite {
+class ForwardActorSpec extends WordSpec with MustMatchers {
   import ForwardActorSpec._
 
-  @Test
-  def shouldForwardActorReferenceWhenInvokingForwardOnBang {
-    val senderActor = actorOf[BangSenderActor]
-    val latch = senderActor.actor.asInstanceOf[BangSenderActor]
+  "A Forward Actor" should {
+    "forward actor reference when invoking forward on bang" in {
+      val senderActor = actorOf[BangSenderActor]
+      val latch = senderActor.actor.asInstanceOf[BangSenderActor]
       .forwardActor.actor.asInstanceOf[ForwardActor]
       .receiverActor.actor.asInstanceOf[ReceiverActor]
       .latch
-    senderActor.start
-    assert(latch.await(1L, TimeUnit.SECONDS))
-    assert(ForwardState.sender ne null)
-    assert(senderActor.toString === ForwardState.sender.get.toString)
-  }
+      senderActor.start
+      latch.await
+      ForwardState.sender must not be (null)
+      senderActor.toString must be (ForwardState.sender.get.toString)
+    }
 
-  @Test
-  def shouldForwardActorReferenceWhenInvokingForwardOnBangBang {
-    val senderActor = actorOf[BangBangSenderActor]
-    senderActor.start
-    val latch = senderActor.actor.asInstanceOf[BangBangSenderActor].latch
-    assert(latch.await(1L, TimeUnit.SECONDS))
+    "forward actor reference when invoking forward on bang bang" in {
+      val senderActor = actorOf[BangBangSenderActor]
+      senderActor.start
+      val latch = senderActor.actor.asInstanceOf[BangBangSenderActor].latch
+      latch.await
+    }
   }
 }
