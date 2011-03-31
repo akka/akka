@@ -16,8 +16,6 @@ class ConfigSpec extends WordSpec with MustMatchers {
     "contain all configuration properties for akka-stm that are used in code with their correct defaults" in {
       import Config.config._
 
-      getInt("akka.storage.max-retries") must equal(Some(10))
-
       getBool("akka.stm.blocking-allowed") must equal(Some(false))
       getBool("akka.stm.fair") must equal(Some(true))
       getBool("akka.stm.interruptible") must equal(Some(false))
