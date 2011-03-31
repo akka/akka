@@ -1,17 +1,23 @@
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package akka.actor
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
+
+import akka.testing._
+
 import Actor._
 
-import java.util.concurrent.CyclicBarrier
 
 class HotSwapSpec extends WordSpec with MustMatchers {
 
   "An Actor" should {
 
     "be able to hotswap its behavior with HotSwap(..)" in {
-      val barrier = new CyclicBarrier(2)
+      val barrier = TestBarrier(2)
       @volatile var _log = ""
       val a = actorOf( new Actor {
         def receive = { case _ => _log += "default" }
@@ -27,7 +33,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
     }
 
     "be able to hotswap its behavior with become(..)" in {
-      val barrier = new CyclicBarrier(2)
+      val barrier = TestBarrier(2)
       @volatile var _log = ""
       val a = actorOf(new Actor {
         def receive = {
@@ -55,7 +61,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
     }
 
     "be able to revert hotswap its behavior with RevertHotSwap(..)" in {
-      val barrier = new CyclicBarrier(2)
+      val barrier = TestBarrier(2)
       @volatile var _log = ""
       val a = actorOf( new Actor {
         def receive = {
@@ -100,7 +106,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
     }
 
     "be able to revert hotswap its behavior with unbecome" in {
-      val barrier = new CyclicBarrier(2)
+      val barrier = TestBarrier(2)
       @volatile var _log = ""
       val a = actorOf(new Actor {
         def receive = {

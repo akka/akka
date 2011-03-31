@@ -4,19 +4,20 @@
 
 package akka.actor
 
-import org.scalatest.Spec
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
+
+import akka.testing._
+import akka.util.duration._
+import akka.testing.Testing.sleepFor
 
 import akka.actor._
 import akka.dispatch.Future
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+
 
 object ActorRefSpec {
 
-  var latch = new CountDownLatch(4)
+  val latch = TestLatch(4)
 
   class ReplyActor extends Actor {
     var replyTo: Channel[Any] = null
@@ -49,7 +50,7 @@ object ActorRefSpec {
     }
 
     private def work {
-      Thread.sleep(1000)
+      sleepFor(1 second)
     }
   }
 
@@ -69,16 +70,12 @@ object ActorRefSpec {
   }
 }
 
-@RunWith(classOf[JUnitRunner])
-class ActorRefSpec extends
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterAll {
-
+class ActorRefSpec extends WordSpec with MustMatchers {
   import ActorRefSpec._
 
-  describe("ActorRef") {
-    it("should support to reply via channel") {
+  "An ActorRef" should {
+    
+    "support reply via channel" in {
       val serverRef = Actor.actorOf[ReplyActor].start
       val clientRef = Actor.actorOf(new SenderActor(serverRef)).start
 
@@ -86,18 +83,23 @@ class ActorRefSpec extends
       clientRef ! "simple"
       clientRef ! "simple"
       clientRef ! "simple"
-      assert(latch.await(4L, TimeUnit.SECONDS))
-      latch = new CountDownLatch(4)
+
+      latch.await
+
+      latch.reset
+
       clientRef ! "complex2"
       clientRef ! "simple"
       clientRef ! "simple"
       clientRef ! "simple"
-      assert(latch.await(4L, TimeUnit.SECONDS))
+
+      latch.await
+
       clientRef.stop
       serverRef.stop
     }
 
-    it("should stop when sent a poison pill") {
+    "stop when sent a poison pill" in {
       val ref = Actor.actorOf(
         new Actor {
           def receive = {
@@ -115,11 +117,11 @@ class ActorRefSpec extends
         fail("shouldn't get here")
       }
 
-      assert(ffive.resultOrException.get == "five")
-      assert(fnull.resultOrException.get == "null")
+      ffive.resultOrException.get must be ("five")
+      fnull.resultOrException.get must be ("null")
 
-      assert(ref.isRunning == false)
-      assert(ref.isShutdown == true)
+      ref.isRunning must be (false)
+      ref.isShutdown must be (true)
     }
   }
 }
