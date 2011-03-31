@@ -1,108 +1,120 @@
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package akka.actor
 
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
 
-import java.util.concurrent.TimeUnit
-import org.multiverse.api.latches.StandardLatch
+import akka.testing._
+import akka.util.duration._
+
 import Actor._
 import java.util.concurrent.atomic.AtomicInteger
 
-class ReceiveTimeoutSpec extends JUnitSuite {
 
-  @Test def receiveShouldGetTimeout= {
+class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
+  import Actor._
 
-    val timeoutLatch = new StandardLatch
+  "An actor with receive timeout" must {
 
-    val timeoutActor = actorOf(new Actor {
-      self.receiveTimeout = Some(500L)
+    "get timeout" in {
+      val timeoutLatch = TestLatch()
 
-      protected def receive = {
-        case ReceiveTimeout => timeoutLatch.open
-      }
-    }).start
+      val timeoutActor = actorOf(new Actor {
+        self.receiveTimeout = Some(500L)
 
-    assert(timeoutLatch.tryAwait(3, TimeUnit.SECONDS))
-    timeoutActor.stop
-  }
+        protected def receive = {
+          case ReceiveTimeout => timeoutLatch.open
+        }
+      }).start
 
-  @Test def swappedReceiveShouldAlsoGetTimout = {
-    val timeoutLatch = new StandardLatch
+      timeoutLatch.await
+      timeoutActor.stop
+    }
 
-    val timeoutActor = actorOf(new Actor {
-      self.receiveTimeout = Some(500L)
+    "get timeout when swapped" in {
+      val timeoutLatch = TestLatch()
 
-      protected def receive = {
-        case ReceiveTimeout => timeoutLatch.open
-      }
-    }).start
+      val timeoutActor = actorOf(new Actor {
+        self.receiveTimeout = Some(500L)
 
-    // after max 1 second the timeout should already been sent
-    assert(timeoutLatch.tryAwait(3, TimeUnit.SECONDS))
+        protected def receive = {
+          case ReceiveTimeout => timeoutLatch.open
+        }
+      }).start
 
-    val swappedLatch = new StandardLatch
-    timeoutActor ! HotSwap(self => {
-      case ReceiveTimeout => swappedLatch.open
-    })
+      timeoutLatch.await
 
-    assert(swappedLatch.tryAwait(3, TimeUnit.SECONDS))
-    timeoutActor.stop
-  }
+      val swappedLatch = TestLatch()
 
-  @Test def timeoutShouldBeRescheduledAfterRegularReceive = {
+      timeoutActor ! HotSwap(self => {
+        case ReceiveTimeout => swappedLatch.open
+       })
 
-    val timeoutLatch = new StandardLatch
-    case object Tick
-    val timeoutActor = actorOf(new Actor {
-      self.receiveTimeout = Some(500L)
+      swappedLatch.await
+      timeoutActor.stop
+    }
+    
+    "reschedule timeout after regular receive" in {
+      val timeoutLatch = TestLatch()
+      case object Tick
 
-      protected def receive = {
-        case Tick => ()
-        case ReceiveTimeout => timeoutLatch.open
-      }
-    }).start
-    timeoutActor ! Tick
+      val timeoutActor = actorOf(new Actor {
+        self.receiveTimeout = Some(500L)
 
-    assert(timeoutLatch.tryAwait(2, TimeUnit.SECONDS) == true)
-    timeoutActor.stop
-  }
+        protected def receive = {
+          case Tick => ()
+            case ReceiveTimeout => timeoutLatch.open
+        }
+      }).start
 
-  @Test def timeoutShouldBeTurnedOffIfDesired = {
-    val count = new AtomicInteger(0)
-    val timeoutLatch = new StandardLatch
-    case object Tick
-    val timeoutActor = actorOf(new Actor {
-      self.receiveTimeout = Some(500L)
+      timeoutActor ! Tick
 
-      protected def receive = {
-        case Tick => ()
-        case ReceiveTimeout =>
-          count.incrementAndGet
-          timeoutLatch.open
-          self.receiveTimeout = None
-      }
-    }).start
-    timeoutActor ! Tick
+      timeoutLatch.await
+      timeoutActor.stop
+    }
 
-    assert(timeoutLatch.tryAwait(2, TimeUnit.SECONDS) == true)
-    assert(count.get === 1)
-    timeoutActor.stop
-  }
+    "be able to turn off timeout if desired" in {
+      val count = new AtomicInteger(0)
+      val timeoutLatch = TestLatch()
+      case object Tick
 
-  @Test def timeoutShouldNotBeSentWhenNotSpecified = {
-    val timeoutLatch = new StandardLatch
-    val timeoutActor = actorOf(new Actor {
+      val timeoutActor = actorOf(new Actor {
+        self.receiveTimeout = Some(500L)
 
-      protected def receive = {
-        case ReceiveTimeout => timeoutLatch.open
-      }
-    }).start
+        protected def receive = {
+          case Tick => ()
+          case ReceiveTimeout =>
+            count.incrementAndGet
+            timeoutLatch.open
+            self.receiveTimeout = None
+        }
+      }).start
 
-    assert(timeoutLatch.tryAwait(1, TimeUnit.SECONDS) == false)
-    timeoutActor.stop
-  }
+      timeoutActor ! Tick
 
-  @Test def ActorsReceiveTimeoutShouldBeReceiveTimeout {
-    assert(akka.actor.Actors.receiveTimeout() eq ReceiveTimeout)
+      timeoutLatch.await
+      count.get must be (1)
+      timeoutActor.stop
+    }
+
+    "not receive timeout message when not specified" in {
+      val timeoutLatch = TestLatch()
+
+      val timeoutActor = actorOf(new Actor {
+        protected def receive = {
+          case ReceiveTimeout => timeoutLatch.open
+        }
+      }).start
+
+      timeoutLatch.awaitTimeout(1 second) // timeout expected
+      timeoutActor.stop
+    }
+
+    "have ReceiveTimeout eq to Actors ReceiveTimeout" in {
+      akka.actor.Actors.receiveTimeout() must be theSameInstanceAs (ReceiveTimeout)
+    }
   }
 }

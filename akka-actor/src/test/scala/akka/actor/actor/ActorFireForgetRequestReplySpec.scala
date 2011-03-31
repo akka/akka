@@ -1,18 +1,25 @@
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package akka.actor
 
-import java.util.concurrent.{TimeUnit, CyclicBarrier, TimeoutException}
-import akka.config.Supervision._
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
+import org.scalatest.BeforeAndAfterEach
 
-import akka.dispatch.Dispatchers
+import akka.testing._
+import akka.testing.Testing.sleepFor
+import akka.util.duration._
+
 import Actor._
+import akka.config.Supervision._
+import akka.dispatch.Dispatchers
 
-import akka.Testing
 
 object ActorFireForgetRequestReplySpec {
-  class ReplyActor extends Actor {
 
+  class ReplyActor extends Actor {
     def receive = {
       case "Send" =>
         self.reply("Reply")
@@ -32,7 +39,6 @@ object ActorFireForgetRequestReplySpec {
   }
 
   class SenderActor(replyActor: ActorRef) extends Actor {
-
     def receive = {
       case "Init" =>
         replyActor ! "Send"
@@ -50,44 +56,42 @@ object ActorFireForgetRequestReplySpec {
 
   object state {
     var s = "NIL"
-    val finished = new CyclicBarrier(2)
+    val finished = TestBarrier(2)
   }
 }
 
-class ActorFireForgetRequestReplySpec extends JUnitSuite {
+class ActorFireForgetRequestReplySpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
   import ActorFireForgetRequestReplySpec._
 
-  @Test
-  def shouldReplyToBangMessageUsingReply = {
+  override def beforeEach() = {
     state.finished.reset
-    val replyActor = actorOf[ReplyActor].start
-    val senderActor = actorOf(new SenderActor(replyActor)).start
-    senderActor ! "Init"
-    try { state.finished.await(1L, TimeUnit.SECONDS) }
-    catch { case e: TimeoutException => fail("Never got the message") }
-    assert("Reply" === state.s)
-  }
+  }   
+      
+  "An Actor" must {
 
-  @Test
-  def shouldReplyToBangMessageUsingImplicitSender = {
-    state.finished.reset
-    val replyActor = actorOf[ReplyActor].start
-    val senderActor = actorOf(new SenderActor(replyActor)).start
-    senderActor ! "InitImplicit"
-    try { state.finished.await(1L, TimeUnit.SECONDS) }
-    catch { case e: TimeoutException => fail("Never got the message") }
-    assert("ReplyImplicit" === state.s)
-  }
+    "reply to bang message using reply" in {  
+      val replyActor = actorOf[ReplyActor].start
+      val senderActor = actorOf(new SenderActor(replyActor)).start
+      senderActor ! "Init"
+      state.finished.await
+      state.s must be ("Reply")
+    }
 
-  @Test
-  def shouldShutdownCrashedTemporaryActor = {
-    state.finished.reset
-    val actor = actorOf[CrashingTemporaryActor].start
-    assert(actor.isRunning)
-    actor ! "Die"
-    try { state.finished.await(10L, TimeUnit.SECONDS) }
-    catch { case e: TimeoutException => fail("Never got the message") }
-    Thread.sleep(Testing.time(500))
-    assert(actor.isShutdown)
+    "reply to bang message using implicit sender" in {
+      val replyActor = actorOf[ReplyActor].start
+      val senderActor = actorOf(new SenderActor(replyActor)).start
+      senderActor ! "InitImplicit"
+      state.finished.await
+      state.s must be ("ReplyImplicit")
+    }
+
+    "should shutdown crashed temporary actor" in {
+      val actor = actorOf[CrashingTemporaryActor].start
+      actor.isRunning must be (true)
+      actor ! "Die"
+      state.finished.await
+      sleepFor(1 second)
+      actor.isShutdown must be (true)
+    }
   }
 }

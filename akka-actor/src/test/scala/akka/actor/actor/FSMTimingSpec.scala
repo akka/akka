@@ -1,16 +1,13 @@
 package akka.actor
 
-import akka.testkit.TestKit
-import akka.util.duration._
-
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
-class FSMTimingSpec
-    extends WordSpec
-    with MustMatchers
-    with TestKit {
+import akka.testkit.TestKit
+import akka.util.duration._
 
+
+class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
   import FSMTimingSpec._
   import FSM._
 
@@ -140,4 +137,3 @@ object FSMTimingSpec {
 
 }
 
-// vim: set ts=2 sw=2 et:
