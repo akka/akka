@@ -2,7 +2,9 @@
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka
+package akka.testing
+
+import akka.util.Duration
 
 /**
  * Multiplying numbers used in test timeouts by a factor, set by system property.
@@ -18,8 +20,10 @@ object Testing {
     }
   }
 
-  def time(t: Int): Int = (timeFactor * t).toInt
-  def time(t: Long): Long = (timeFactor * t).toLong
-  def time(t: Float): Float = (timeFactor * t).toFloat
-  def time(t: Double): Double = timeFactor * t
+  def testTime(t: Int): Int = (timeFactor * t).toInt
+  def testTime(t: Long): Long = (timeFactor * t).toLong
+  def testTime(t: Float): Float = (timeFactor * t).toFloat
+  def testTime(t: Double): Double = timeFactor * t
+
+  def sleepFor(duration: Duration) = Thread.sleep(testTime(duration.toMillis))
 }

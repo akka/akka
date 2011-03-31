@@ -4,34 +4,31 @@
 
 package akka.actor
 
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
+
+import akka.testing._
+
 import FSM._
-
-import org.multiverse.api.latches.StandardLatch
-
-import java.util.concurrent.TimeUnit
-
+import akka.util.Duration
 import akka.util.duration._
 
-import akka.Testing
 
 object FSMActorSpec {
 
-
-  val unlockedLatch = new StandardLatch
-  val lockedLatch = new StandardLatch
-  val unhandledLatch = new StandardLatch
-  val terminatedLatch = new StandardLatch
-  val transitionLatch = new StandardLatch
-  val initialStateLatch = new StandardLatch
-  val transitionCallBackLatch = new StandardLatch
+  val unlockedLatch = TestLatch()
+  val lockedLatch = TestLatch()
+  val unhandledLatch = TestLatch()
+  val terminatedLatch = TestLatch()
+  val transitionLatch = TestLatch()
+  val initialStateLatch = TestLatch()
+  val transitionCallBackLatch = TestLatch()
 
   sealed trait LockState
   case object Locked extends LockState
   case object Open extends LockState
 
-  class Lock(code: String, timeout: (Long, TimeUnit)) extends Actor with FSM[LockState, CodeState] {
+  class Lock(code: String, timeout: Duration) extends Actor with FSM[LockState, CodeState] {
 
     startWith(Locked, CodeState("", code))
     
@@ -94,53 +91,53 @@ object FSMActorSpec {
   case class CodeState(soFar: String, code: String)
 }
 
-class FSMActorSpec extends JUnitSuite {
+class FSMActorSpec extends WordSpec with MustMatchers {
   import FSMActorSpec._
 
+  "An FSM Actor" must {
 
-  @Test
-  def unlockTheLock = {
+    "unlock the lock" in {
+      
+      // lock that locked after being open for 1 sec
+      val lock = Actor.actorOf(new Lock("33221", 1 second)).start
 
-    // lock that locked after being open for 1 sec
-    val lock = Actor.actorOf(new Lock("33221", (Testing.time(1), TimeUnit.SECONDS))).start
+      val transitionTester = Actor.actorOf(new Actor { def receive = {
+        case Transition(_, _, _) => transitionCallBackLatch.open
+        case CurrentState(_, Locked) => initialStateLatch.open
+      }}).start
 
-    val transitionTester = Actor.actorOf(new Actor { def receive = {
-      case Transition(_, _, _) => transitionCallBackLatch.open
-      case CurrentState(_, Locked) => initialStateLatch.open
-    }}).start
+      lock ! SubscribeTransitionCallBack(transitionTester)
+      initialStateLatch.await
 
-    lock ! SubscribeTransitionCallBack(transitionTester)
-    assert(initialStateLatch.tryAwait(Testing.time(1), TimeUnit.SECONDS))
+      lock ! '3'
+      lock ! '3'
+      lock ! '2'
+      lock ! '2'
+      lock ! '1'
 
-    lock ! '3'
-    lock ! '3'
-    lock ! '2'
-    lock ! '2'
-    lock ! '1'
+      unlockedLatch.await
+      transitionLatch.await
+      transitionCallBackLatch.await
+      lockedLatch.await
 
-    assert(unlockedLatch.tryAwait(Testing.time(1), TimeUnit.SECONDS))
-    assert(transitionLatch.tryAwait(Testing.time(1), TimeUnit.SECONDS))
-    assert(transitionCallBackLatch.tryAwait(Testing.time(1), TimeUnit.SECONDS))
-    assert(lockedLatch.tryAwait(Testing.time(2), TimeUnit.SECONDS))
+      lock ! "not_handled"
+      unhandledLatch.await
 
+      val answerLatch = TestLatch()
+      object Hello
+      object Bye
+      val tester = Actor.actorOf(new Actor {
+        protected def receive = {
+          case Hello => lock ! "hello"
+          case "world" => answerLatch.open
+          case Bye => lock ! "bye"
+        }
+      }).start
+      tester ! Hello
+      answerLatch.await
 
-    lock ! "not_handled"
-    assert(unhandledLatch.tryAwait(Testing.time(2), TimeUnit.SECONDS))
-
-    val answerLatch = new StandardLatch
-    object Hello
-    object Bye
-    val tester = Actor.actorOf(new Actor {
-      protected def receive = {
-        case Hello => lock ! "hello"
-        case "world" => answerLatch.open
-        case Bye => lock ! "bye"
-      }
-    }).start
-    tester ! Hello
-    assert(answerLatch.tryAwait(Testing.time(2), TimeUnit.SECONDS))
-
-    tester ! Bye
-    assert(terminatedLatch.tryAwait(Testing.time(2), TimeUnit.SECONDS))
+      tester ! Bye
+      terminatedLatch.await
+    }
   }
 }
