@@ -45,3 +45,4 @@ run-codefellow
 multiverse.log
 .eprj
 .*.swp
+akka-tutorials/akka-tutorial-pi-sbt/project/boot/

@@ -9,6 +9,9 @@ import akka.actor.Actor._
 
 object Routing {
 
+  sealed trait RoutingMessage
+  case class Broadcast(message: Any) extends RoutingMessage
+
   type PF[A, B] = PartialFunction[A, B]
 
   /**
@@ -31,7 +34,7 @@ object Routing {
   /**
    * Creates a LoadBalancer from the thunk-supplied InfiniteIterator.
    */
-   def loadBalancerActor(actors: => InfiniteIterator[ActorRef]): ActorRef =
+  def loadBalancerActor(actors: => InfiniteIterator[ActorRef]): ActorRef =
     actorOf(new Actor with LoadBalancer {
       val seq = actors
     }).start
@@ -39,7 +42,7 @@ object Routing {
   /**
    * Creates a Dispatcher given a routing and a message-transforming function.
    */
-   def dispatcherActor(routing: PF[Any, ActorRef], msgTransformer: (Any) => Any): ActorRef =
+  def dispatcherActor(routing: PF[Any, ActorRef], msgTransformer: (Any) => Any): ActorRef =
     actorOf(new Actor with Dispatcher {
       override def transform(msg: Any) = msgTransformer(msg)
       def routes = routing
@@ -48,7 +51,7 @@ object Routing {
   /**
    * Creates a Dispatcher given a routing.
    */
-   def dispatcherActor(routing: PF[Any, ActorRef]): ActorRef = actorOf(new Actor with Dispatcher {
+  def dispatcherActor(routing: PF[Any, ActorRef]): ActorRef = actorOf(new Actor with Dispatcher {
     def routes = routing
   }).start
 
