@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.io.{PrintWriter, PrintStream}
 
 trait RemoteModule {
-  val UUID_PREFIX        = "uuid:"
+  val UUID_PREFIX = "uuid:".intern
 
   def optimizeLocalScoped_?(): Boolean //Apply optimizations for remote operations in local scope
   protected[akka] def notifyListeners(message: => Any): Unit
@@ -84,7 +84,6 @@ case class RemoteClientWriteFailed(
   @BeanProperty client: RemoteClientModule,
   @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 
-
 /**
  *  Life-cycle events for RemoteServer.
  */
@@ -120,7 +119,12 @@ class RemoteClientException private[akka] (
   val remoteAddress: InetSocketAddress) extends AkkaException(message)
 
 /**
- * Returned when a remote exception sent over the wire cannot be loaded and instantiated
+ * Thrown when the remote server actor dispatching fails for some reason.
+ */
+class RemoteServerException private[akka] (message: String) extends AkkaException(message)
+
+/**
+ * Thrown when a remote exception sent over the wire cannot be loaded and instantiated
  */
 case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorException private[akka] (cause: Throwable, originalClassName: String, originalMessage: String)
   extends AkkaException("\nParsingError[%s]\nOriginalException[%s]\nOriginalMessage[%s]"
@@ -140,6 +144,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   }
 
   def shutdown {
+    eventHandler.stop
     removeListener(eventHandler)
     this.shutdownClientModule
     this.shutdownServerModule
