@@ -6,7 +6,6 @@ package akka.util
 
 import akka.dispatch.{Future, CompletableFuture, MessageInvocation}
 import akka.config.{Config, ModuleNotAvailableException}
-import akka.AkkaException
 
 import java.net.InetSocketAddress
 import akka.remoteinterface.RemoteSupport
@@ -45,13 +44,13 @@ object ReflectiveAccess {
     def ensureEnabled = if (!isEnabled) {
       val e = new ModuleNotAvailableException(
         "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
-      EventHandler.warning(this, e.toString)
+      EventHandler.debug(this, e.toString)
       throw e
     }
     val remoteSupportClass: Option[Class[_ <: RemoteSupport]] = getClassFor(TRANSPORT)
 
-    protected[akka] val defaultRemoteSupport: Option[() => RemoteSupport] = 
-      remoteSupportClass map { remoteClass => 
+    protected[akka] val defaultRemoteSupport: Option[() => RemoteSupport] =
+      remoteSupportClass map { remoteClass =>
         () => createInstance[RemoteSupport](
           remoteClass,
           Array[Class[_]](),
@@ -59,7 +58,7 @@ object ReflectiveAccess {
         ) getOrElse {
           val e = new ModuleNotAvailableException(
             "Can't instantiate [%s] - make sure that akka-remote.jar is on the classpath".format(remoteClass.getName))
-          EventHandler.warning(this, e.toString)
+          EventHandler.debug(this, e.toString)
           throw e
         }
     }
@@ -135,7 +134,7 @@ object ReflectiveAccess {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e: Exception =>
-      EventHandler.warning(this, e.toString)
+      EventHandler.debug(this, e.toString)
       None
   }
 
@@ -154,7 +153,7 @@ object ReflectiveAccess {
     }
   } catch {
     case e: Exception =>
-      EventHandler.warning(this, e.toString)
+      EventHandler.debug(this, e.toString)
       None
   }
 
@@ -168,7 +167,7 @@ object ReflectiveAccess {
     }
   } catch {
     case e: ExceptionInInitializerError =>
-      EventHandler.warning(this, e.toString)
+      EventHandler.debug(this, e.toString)
       throw e
   }
 
@@ -176,23 +175,23 @@ object ReflectiveAccess {
     assert(fqn ne null)
 
     // First, use the specified CL
-    val first = try { 
-      Option(classloader.loadClass(fqn).asInstanceOf[Class[T]]) 
-    } catch { 
-      case c: ClassNotFoundException => 
-        EventHandler.warning(this, c.toString)
-        None 
-    } 
+    val first = try {
+      Option(classloader.loadClass(fqn).asInstanceOf[Class[T]])
+    } catch {
+      case c: ClassNotFoundException =>
+        EventHandler.debug(this, c.toString)
+        None
+    }
 
     if (first.isDefined) first
-    else { 
+    else {
       // Second option is to use the ContextClassLoader
-      val second = try { 
-        Option(Thread.currentThread.getContextClassLoader.loadClass(fqn).asInstanceOf[Class[T]]) 
-      } catch { 
-        case c: ClassNotFoundException => 
-          EventHandler.warning(this, c.toString)
-          None 
+      val second = try {
+        Option(Thread.currentThread.getContextClassLoader.loadClass(fqn).asInstanceOf[Class[T]])
+      } catch {
+        case c: ClassNotFoundException =>
+          EventHandler.debug(this, c.toString)
+          None
       }
 
       if (second.isDefined) second
@@ -201,22 +200,22 @@ object ReflectiveAccess {
            // Don't try to use "loader" if we got the default "classloader" parameter
            if (classloader ne loader) Option(loader.loadClass(fqn).asInstanceOf[Class[T]])
           else None
-        } catch { 
-          case c: ClassNotFoundException => 
-            EventHandler.warning(this, c.toString)
-            None 
+        } catch {
+          case c: ClassNotFoundException =>
+            EventHandler.debug(this, c.toString)
+            None
         }
 
         if (third.isDefined) third
         else {
           // Last option is Class.forName
-          try { 
+          try {
             Option(Class.forName(fqn).asInstanceOf[Class[T]])
-          } catch { 
-            case c: ClassNotFoundException => 
-              EventHandler.warning(this, c.toString)
-              None 
-          } 
+          } catch {
+            case c: ClassNotFoundException =>
+              EventHandler.debug(this, c.toString)
+              None
+          }
         }
       }
     }
