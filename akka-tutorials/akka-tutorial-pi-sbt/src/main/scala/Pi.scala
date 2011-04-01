@@ -14,29 +14,48 @@ import akka.dispatch.Dispatchers
 import System.{currentTimeMillis => now}
 import java.util.concurrent.CountDownLatch
 
-object Main extends App {
-  Pi.calculate
-}
-
+/**
+ * Sample for Akka, SBT an Scala tutorial.
+ * <p/>
+ * Calculates Pi.
+ * <p/>
+ * Run it in SBT:
+ * <pre>
+ *   $ sbt
+ *   > update
+ *   > console
+ *   > akka.tutorial.sbt.pi.Pi.calculate
+ *   > ...
+ *   > :quit
+ * </pre>
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 object Pi  {
   val nrOfWorkers  = 4
   val nrOfMessages = 10000
   val nrOfElements = 10000
 
+  // ====================
   // ===== Messages =====
+  // ====================
   sealed trait PiMessage
   case class Calculate(nrOfMessages: Int, nrOfElements: Int) extends PiMessage
   case class Work(arg: Int, fun: (Int) => Double) extends PiMessage
   case class Result(value: Double) extends PiMessage
 
+  // ==================
   // ===== Worker =====
+  // ==================
   class Worker extends Actor {
     def receive = {
       case Work(arg, fun) => self reply Result(fun(arg))
     }
   }
 
+  // ==================
   // ===== Master =====
+  // ==================
   class Master(latch: CountDownLatch) extends Actor {
     var pi: Double = _
     var nrOfResults: Int = _
@@ -59,6 +78,7 @@ object Pi  {
       results.sum
     }
 
+    // message handler
     def receive = {
       case Calculate(nrOfMessages, nrOfElements) =>
         // schedule work
@@ -68,6 +88,7 @@ object Pi  {
         router ! Broadcast(PoisonPill)
 
       case Result(value) =>
+        // handle result from the worker
         pi += value
         nrOfResults += 1
         if (nrOfResults == nrOfMessages) self.stop
@@ -76,12 +97,17 @@ object Pi  {
     override def preStart = start = now
 
     override def postStop = {
+      // tell the world that the calculation is complete
       EventHandler.info(this, "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
       latch.countDown
     }
   }
 
+  // ==================
+  // ===== Run it =====
+  // ==================
   def calculate = {
+    // this latch is only plumbing to know when the calculation is completed
     val latch = new CountDownLatch(1)
 
     // create the master
@@ -95,3 +121,7 @@ object Pi  {
   }
 }
 
+// To be able to run it as a main application
+object Main extends App {
+  Pi.calculate
+}
