@@ -63,8 +63,8 @@ object Pi  {
 
     // create the workers
     val workers = {
-      val ws = new Array[ActorRef](nrOfWorkers)
-      for (i <- 0 until nrOfWorkers) ws(i) = actorOf[Worker].start
+      var ws = Vector[ActorRef]()
+      for (i <- 0 until nrOfWorkers) ws = ws :+ actorOf[Worker].start
       ws
     }
 
