@@ -56,6 +56,8 @@ case class UnlinkAndStop(child: ActorRef) extends AutoReceivedMessage with LifeC
 
 case object PoisonPill extends AutoReceivedMessage with LifeCycleMessage
 
+case object Kill extends AutoReceivedMessage with LifeCycleMessage
+
 case object ReceiveTimeout extends LifeCycleMessage
 
 case class MaximumNumberOfRestartsWithinTimeRangeReached(
@@ -457,6 +459,7 @@ trait Actor {
     case Unlink(child)             => self.unlink(child)
     case UnlinkAndStop(child)      => self.unlink(child); child.stop
     case Restart(reason)           => throw reason
+    case Kill                      => throw new ActorKilledException("Kill")
     case PoisonPill                =>
       val f = self.senderFuture
       self.stop

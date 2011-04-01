@@ -10,10 +10,10 @@ import org.scalatest.matchers.MustMatchers
 import akka.testing._
 import akka.util.duration._
 import akka.testing.Testing.sleepFor
-
+import akka.config.Supervision.{OneForOneStrategy}
 import akka.actor._
 import akka.dispatch.Future
-
+import java.util.concurrent.{TimeUnit, CountDownLatch}
 
 object ActorRefSpec {
 
@@ -122,6 +122,29 @@ class ActorRefSpec extends WordSpec with MustMatchers {
 
       ref.isRunning must be (false)
       ref.isShutdown must be (true)
+    }
+
+    "restart when Kill:ed" in {
+      val latch = new CountDownLatch(2)
+
+      val boss = Actor.actorOf(new Actor{
+        self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), scala.Some(2), scala.Some(1000))
+
+        val ref = Actor.actorOf(
+          new Actor {
+            def receive = { case _ => }
+            override def preRestart(reason: Throwable) = latch.countDown
+            override def postRestart(reason: Throwable) = latch.countDown
+          }
+        ).start
+
+        self link ref
+
+        protected def receive = { case "sendKill" => ref ! Kill }
+      }).start
+
+      boss ! "sendKill"
+      latch.await(5, TimeUnit.SECONDS) must be === true
     }
   }
 }
