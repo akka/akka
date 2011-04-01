@@ -10,12 +10,14 @@ import scala.collection.JavaConversions._
 /**
  * An Iterator that is either always empty or yields an infinite number of Ts.
  */
-trait InfiniteIterator[T] extends Iterator[T]
+trait InfiniteIterator[T] extends Iterator[T] {
+  val items: Seq[T]
+}
 
 /**
  * CyclicIterator is a round-robin style InfiniteIterator that cycles the supplied List.
  */
-case class CyclicIterator[T](items: Seq[T]) extends InfiniteIterator[T] {
+case class CyclicIterator[T](val items: Seq[T]) extends InfiniteIterator[T] {
   def this(items: java.util.List[T]) = this(items.toSeq)
 
   @volatile private[this] var current: Seq[T] = items
@@ -29,14 +31,13 @@ case class CyclicIterator[T](items: Seq[T]) extends InfiniteIterator[T] {
   }
 
   override def exists(f: T => Boolean): Boolean = items.exists(f)
-
 }
 
 /**
  * This InfiniteIterator always returns the Actor that has the currently smallest mailbox
  * useful for work-stealing.
  */
-case class SmallestMailboxFirstIterator(items : Seq[ActorRef]) extends InfiniteIterator[ActorRef] {
+case class SmallestMailboxFirstIterator(val items : Seq[ActorRef]) extends InfiniteIterator[ActorRef] {
   def this(items: java.util.List[ActorRef]) = this(items.toSeq)
   def hasNext = items != Nil
 
