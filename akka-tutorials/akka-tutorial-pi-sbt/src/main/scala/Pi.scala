@@ -38,7 +38,7 @@ object Main extends App {
 object Pi  {
   val nrOfWorkers              = 4
   val nrOfMessages             = 10000
-  val lengthOfCalculationRange = 10000
+  val nrOfElements = 10000
 
   // ===== Messages =====
   sealed trait PiMessage
@@ -53,48 +53,59 @@ object Pi  {
   }
 
   // ===== Master =====
-  class Master(nrOfMessages: Int, latch: CountDownLatch) extends Actor {
+  class Master(latch: CountDownLatch) extends Actor {
     var pi: Double = _
-    var count: Int = _
+    var nrOfResults: Int = _
     var start: Long = _
 
+    // create the workers
+    val workers = {
+      val ws = new Array[ActorRef](nrOfWorkers)
+      for (i <- 0 until nrOfWorkers) ws(i) = actorOf[Worker].start
+      ws
+    }
+
+    // wrap them with a load-balancing router
+    val router = Routing.loadBalancerActor(CyclicIterator(workers)).start
+
     def receive = {
+      case Calculate(nrOfMessages, nrOfElements) =>
+        // define the work
+        val fun = (i: Int) => {
+          val range = (i * nrOfElements) to ((i + 1) * nrOfElements - 1)
+          val results = for (j <- range) yield (4 * math.pow(-1, j) / (2 * j + 1))
+          results.sum
+        }
+        // schedule work
+        for (arg <- 0 until nrOfMessages) router ! Work(arg, fun)
+
+        // send a PoisonPill to all workers telling them to shut down themselves
+        router broadcast PoisonPill
+
       case Result(value) =>
         pi += value
-        count += 1
-        if (count == nrOfMessages) self.stop
+        nrOfResults += 1
+        if (nrOfResults == nrOfMessages) self.stop
     }
 
     override def preStart = start = now
 
     override def postStop = {
       EventHandler.info(this, "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
-      Actor.registry.shutdownAll // shut down all workers
-      latch.countDown
+      latch.nrOfResultsDown
     }
   }
 
   def calculate = {
-    val latch = new CountDownLatch(1)
+    val latch = new nrOfResultsDownLatch(1)
 
     // create the master
-    val master = actorOf(new Master(nrOfMessages, latch)).start
+    val master = actorOf(new Master(latch)).start
 
-    // the master ref is also the 'implicit sender' that the workers should reply to
-    implicit val replyTo = Option(master)
+    // start the calculation
+    master ! Calculate(nrOfMessages, nrOfElements)
 
-    // create the workers
-    val workers = new Array[ActorRef](nrOfWorkers)
-    for (i <- 0 until nrOfWorkers) workers(i) = actorOf[Worker].start
-
-    // wrap them with a load-balancing router
-    val router = Routing.loadBalancerActor(CyclicIterator(workers)).start
-
-    val fun = (x: Int) => (for (k <- (x * lengthOfCalculationRange) to ((x + 1) * lengthOfCalculationRange - 1)) yield (4 * math.pow(-1, k) / (2 * k + 1))).sum
-
-    // schedule work
-    for (arg <- 0 until nrOfMessages) router ! Work(arg, fun)
-
+    // wait for master to shut down
     latch.await
   }
 }
