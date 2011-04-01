@@ -435,7 +435,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   def allArtifacts = {
     Path.fromFile(buildScalaInstance.libraryJar) +++
-    (removeDupEntries(runClasspath filter ClasspathUtilities.isArchive) ---
+    (removeDupEntries(runClasspath filter ClasspathUtilities.isArchive) +++
     ((outputPath ##) / defaultJarName) +++
     mainResources +++
     mainDependencies.scalaJars +++
