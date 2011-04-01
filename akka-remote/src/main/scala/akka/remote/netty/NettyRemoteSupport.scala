@@ -1049,7 +1049,7 @@ class RemoteServerHandler(
         throw firstException
 
       targetMethod
-  }
+    }
 
     try {
       val messageReceiver = resolveMethod(typedActor.getClass, ownerTypeHint, typedActorInfo.getMethod, argClasses)
@@ -1230,7 +1230,14 @@ class RemoteServerHandler(
     server.findTypedActorByIdOrUuid(actorInfo.getId, parseUuid(uuid).toString) match {
       case null => // the actor has not been registered globally. See if we have it in the session
         createTypedSessionActor(actorInfo, channel) match {
-          case null => createClientManagedTypedActor(actorInfo) //Maybe client managed actor?
+          case null => 
+            // FIXME this is broken, if a user tries to get a server-managed typed actor and that is not registered then a client-managed typed actor is created, but just throwing an exception here causes client-managed typed actors to fail
+          
+/*            val e = new RemoteServerException("Can't load remote Typed Actor for [" + actorInfo.getId + "]")
+            EventHandler.error(e, this, e.getMessage)
+            server.notifyListeners(RemoteServerError(e, server))
+            throw e            
+*/          createClientManagedTypedActor(actorInfo) // client-managed actor
           case sessionActor => sessionActor
         }
       case typedActor => typedActor
