@@ -183,7 +183,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),     akka_typed_actor)
   lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_actor)
   lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
-  lazy val akka_sbt_plugin  = project("akka-sbt-plugin",  "akka-sbt-plugin",  new AkkaSbtPluginProject(_))
   lazy val akka_testkit     = project("akka-testkit",     "akka-testkit",     new AkkaTestkitProject(_),    akka_actor)
   lazy val akka_slf4j       = project("akka-slf4j",       "akka-slf4j",       new AkkaSlf4jProject(_),      akka_actor)
 
@@ -218,7 +217,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   override def artifacts = Set(Artifact(artifactID, "pom", "pom"))
 
   override def deliverProjectDependencies =
-    super.deliverProjectDependencies.toList - akka_samples.projectID - akka_sbt_plugin.projectID
+    super.deliverProjectDependencies.toList - akka_samples.projectID
 
   // val sourceArtifact = Artifact(artifactID, "src", "jar", Some("sources"), Nil, None)
   // val docsArtifact   = Artifact(artifactID, "doc", "jar", Some("docs"), Nil, None)
@@ -412,17 +411,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-sbt-plugin subproject
-  // -------------------------------------------------------------------------------------------------------------------
-
-  class AkkaSbtPluginProject(info: ProjectInfo) extends PluginProject(info) {
-    lazy val publishRelease = {
-      val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
-      publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
-    }
-  }
-
-  // -------------------------------------------------------------------------------------------------------------------
   // akka-testkit subproject
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -447,8 +435,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   def allArtifacts = {
     Path.fromFile(buildScalaInstance.libraryJar) +++
-    (removeDupEntries(runClasspath filter ClasspathUtilities.isArchive) ---
-    (akka_sbt_plugin.runClasspath filter ClasspathUtilities.isArchive) +++
+    (removeDupEntries(runClasspath filter ClasspathUtilities.isArchive) +++
     ((outputPath ##) / defaultJarName) +++
     mainResources +++
     mainDependencies.scalaJars +++
