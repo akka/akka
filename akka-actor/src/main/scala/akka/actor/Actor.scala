@@ -6,14 +6,9 @@ package akka.actor
 
 import akka.dispatch._
 import akka.config.Config._
-import akka.config.Supervision._
-import akka.config.ConfigurationException
 import akka.util.Helpers.{narrow, narrowSilently}
 import akka.util.ListenerManagement
 import akka.AkkaException
-
-import java.util.concurrent.TimeUnit
-import java.net.InetSocketAddress
 
 import scala.reflect.BeanProperty
 import akka.util. {ReflectiveAccess, Duration}
@@ -277,9 +272,6 @@ object Actor extends ListenerManagement {
  * }
  * </pre>
  *
- * <p/>
- * The Actor trait also has a 'log' member field that can be used for logging within the Actor.
- *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor {
@@ -353,7 +345,7 @@ trait Actor {
    * <p/>
    * Example code:
    * <pre>
-   *   def receive =  {
+   *   def receive = {
    *     case Ping =&gt;
    *       println("got a 'Ping' message")
    *       self.reply("pong")
