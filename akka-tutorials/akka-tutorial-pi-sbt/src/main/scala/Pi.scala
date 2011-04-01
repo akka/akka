@@ -74,8 +74,7 @@ object Pi  {
     // define the work
     val algorithm = (i: Int) => {
       val range = (i * nrOfElements) to ((i + 1) * nrOfElements - 1)
-      val results = for (j <- range) yield (4 * math.pow(-1, j) / (2 * j + 1))
-      results.sum
+      range map (j => 4 * math.pow(-1, j) / (2 * j + 1)) sum
     }
 
     // message handler
