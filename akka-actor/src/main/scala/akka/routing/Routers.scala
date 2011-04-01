@@ -39,8 +39,7 @@ abstract class UntypedDispatcher extends UntypedActor {
   @throws(classOf[Exception])
   def onReceive(msg: Any): Unit = {
     val r = route(msg)
-    if(r eq null)
-      throw new IllegalStateException("No route for " + msg + " defined!")
+    if (r eq null) throw new IllegalStateException("No route for " + msg + " defined!")
     if (isSenderDefined) r.forward(transform(msg))(someSelf)
     else r.!(transform(msg))(None)
   }
