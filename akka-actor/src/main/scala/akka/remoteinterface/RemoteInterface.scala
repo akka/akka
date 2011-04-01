@@ -144,6 +144,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   }
 
   def shutdown {
+    eventHandler.stop
     removeListener(eventHandler)
     this.shutdownClientModule
     this.shutdownServerModule
