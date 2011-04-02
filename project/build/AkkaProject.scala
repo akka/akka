@@ -185,6 +185,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
   lazy val akka_testkit     = project("akka-testkit",     "akka-testkit",     new AkkaTestkitProject(_),    akka_actor)
   lazy val akka_slf4j       = project("akka-slf4j",       "akka-slf4j",       new AkkaSlf4jProject(_),      akka_actor)
+  lazy val akka_tutorials   = project("akka-tutorials",   "akka-tutorials",   new AkkaTutorialsParentProject(_),      akka_actor)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Miscellaneous
@@ -403,6 +404,24 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSampleFSMProject(_), akka_actor)
     lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
       new AkkaSampleRemoteProject(_), akka_remote)
+
+    lazy val publishRelease = {
+      val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
+      publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
+    }
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Tutorials
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaTutorialPiSbtProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+
+  class AkkaTutorialsParentProject(info: ProjectInfo) extends ParentProject(info) {
+    override def disableCrossPaths = true
+
+    lazy val akka_tutorial_pi_sbt = project("akka-tutorial-pi-sbt", "akka-tutorial-pi-sbt",
+      new AkkaTutorialPiSbtProject(_), akka_actor)
 
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
