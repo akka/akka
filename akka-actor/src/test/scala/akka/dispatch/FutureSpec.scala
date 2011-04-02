@@ -305,6 +305,24 @@ class FutureSpec extends JUnitSuite {
     actor.stop
   }
 
+  @Test def shouldTraverseFutures {
+    val oddActor = actorOf(new Actor {
+      var counter = 1
+      def receive = {
+        case 'GetNext =>
+          self reply counter
+          counter += 2
+      }
+    }).start
+
+    val oddFutures: List[Future[Int]] = List.fill(100)(oddActor !!! 'GetNext)
+    assert(Futures.sequence(oddFutures).get.sum === 10000)
+    oddActor.stop
+
+    val list = (1 to 100).toList
+    assert(Futures.traverse(list)(x => Future(x * 2 - 1)).get.sum === 10000)
+  }
+
   @Test def shouldHandleThrowables {
     class ThrowableTest(m: String) extends Throwable(m)
 
