@@ -88,14 +88,16 @@ class FutureSpec extends JUnitSuite {
       }
     }).start
 
+    val future0 = actor !!! "Hello"
+
     val future1 = for {
-      a: Int    <- actor !!! "Hello" // returns 5
+      a: Int    <- future0           // returns 5
       b: String <- actor !!! a       // returns "10"
       c: String <- actor !!! 7       // returns "14"
     } yield b + "-" + c
 
     val future2 = for {
-      a: Int    <- actor !!! "Hello"
+      a: Int    <- future0
       b: Int    <- actor !!! a
       c: String <- actor !!! 7
     } yield b + "-" + c
