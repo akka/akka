@@ -4,15 +4,13 @@
 
 package akka.tutorial.sbt.pi
 
-import akka.actor.{Actor, ActorRef, PoisonPill}
-import Actor._
+import akka.actor.Actor._
 import akka.routing.{Routing, CyclicIterator}
 import Routing._
 import akka.event.EventHandler
-import akka.dispatch.Dispatchers
-
 import System.{currentTimeMillis => now}
-import java.util.concurrent.CountDownLatch
+import akka.actor.{Channel, Actor, PoisonPill}
+import akka.dispatch.Future
 
 /**
  * Sample for Akka, SBT an Scala tutorial.
@@ -31,7 +29,7 @@ import java.util.concurrent.CountDownLatch
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Pi  {
+object Pi2  {
 
   // ====================
   // ===== Messages =====
@@ -60,10 +58,9 @@ object Pi  {
   // ==================
   // ===== Master =====
   // ==================
-  class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch) extends Actor {
+  case class Master(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) extends Actor {
     var pi: Double = _
     var nrOfResults: Int = _
-    var start: Long = _
 
     // create the workers
     val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start)
@@ -71,52 +68,64 @@ object Pi  {
     // wrap them with a load-balancing router
     val router = Routing.loadBalancerActor(CyclicIterator(workers)).start
 
-    // message handler
-    def receive = {
+    // phase 1, can accept a Calculate message
+    def scatter: Receive = {
       case Calculate =>
         // schedule work
         for (arg <- 0 until nrOfMessages) router ! Work(arg, nrOfElements)
 
-        // send a PoisonPill to all workers telling them to shut down themselves
-        router ! Broadcast(PoisonPill)
+        //Assume the gathering behavior
+        this become gather(self.channel)
+    }
 
-        // send a PoisonPill to the router, telling him to shut himself down
-        router ! PoisonPill
-
+    // phase 2, aggregate the results of the Calculation
+    def gather(recipient: Channel[Any]): Receive = {
       case Result(value) =>
         // handle result from the worker
         pi += value
         nrOfResults += 1
-        if (nrOfResults == nrOfMessages) self.stop
+        if (nrOfResults == nrOfMessages) {
+          // send the pi result back to the guy who started the calculation
+          recipient ! pi
+          // shut ourselves down, we're done
+          self.stop
+        }
     }
 
-    override def preStart = start = now
+    // message handler starts at the scattering behavior
+    def receive = scatter
 
-    override def postStop = {
-      // tell the world that the calculation is complete
-      EventHandler.info(this, "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
-      latch.countDown
+    // when we are stopped, stop our team of workers and our router
+    override def postStop {
+      // send a PoisonPill to all workers telling them to shut down themselves
+      router ! Broadcast(PoisonPill)
+      // send a PoisonPill to the router, telling him to shut himself down
+      router ! PoisonPill
     }
   }
 
   // ==================
   // ===== Run it =====
   // ==================
-  def calculate = {
-    val nrOfWorkers  = 4
-    val nrOfMessages = 10000
-    val nrOfElements = 10000
-
-    // this latch is only plumbing to know when the calculation is completed
-    val latch = new CountDownLatch(1)
-
+  def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
     // create the master
-    val master = actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start
+    val master = actorOf(new Master(nrOfWorkers, nrOfElements, nrOfMessages)).start
 
-    // start the calculation
-    master ! Calculate
+    //start the calculation
+    val start = now
 
-    // wait for master to shut down
-    latch.await
+    //send calculate message
+    master.!!![Double](Calculate, timeout = 60000).
+      await.resultOrException match {//wait for the result, with a 60 seconds timeout
+        case Some(pi) =>
+          EventHandler.info(this, "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
+        case None =>
+          EventHandler.error(this, "Pi calculation did not complete within the timeout.")
+      }
   }
+}
+
+// To be able to run it as a main application
+object Main extends App {
+  Pi2.calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
 }
