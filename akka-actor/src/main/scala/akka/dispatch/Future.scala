@@ -156,13 +156,19 @@ object Futures {
   import scala.collection.generic.CanBuildFrom
 
   /**
-   * FIXME document Futures.sequence
+   * Simple version of Futures.traverse. Transforms a Traversable[Future[A]] into a Future[Traversable[A]].
+   * Useful for reducing many Futures into a single Future.
    */
   def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]], timeout: Long = Actor.TIMEOUT)(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]]): Future[M[A]] =
     in.foldLeft(new DefaultCompletableFuture[Builder[A, M[A]]](timeout).completeWithResult(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) => for (r <- fr; a <- fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
 
   /**
-   * FIXME document Futures.traverse
+   * Transforms a Traversable[A] into a Future[Traversable[B]] using the provided Function A => Future[B].
+   * This is useful for performing a parallel map. For example, to apply a function to all items of a list
+   * in parallel:
+   * <pre>
+   * val myFutureList = Futures.traverse(myList)(x => Future(myFunc(x)))
+   * </pre>
    */
   def traverse[A, B, M[_] <: Traversable[_]](in: M[A], timeout: Long = Actor.TIMEOUT)(fn: A => Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]]): Future[M[B]] =
     in.foldLeft(new DefaultCompletableFuture[Builder[B, M[B]]](timeout).completeWithResult(cbf(in)): Future[Builder[B, M[B]]]) { (fr, a) =>
