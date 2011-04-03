@@ -95,7 +95,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
     }
 
     it("should be stopped when supervision cannot handle the problem in") {
-      val actorSupervision = new SuperviseTypedActor(classOf[TypedActorFailer],classOf[TypedActorFailerImpl],permanent(), 30000)
+      val actorSupervision = new SuperviseTypedActor(classOf[TypedActorFailer], classOf[TypedActorFailerImpl], permanent(), 30000)
       val conf = new TypedActorConfigurator().configure(OneForOneStrategy(Nil, 3, 500000), Array(actorSupervision)).inject.supervise
       try {
         val first = conf.getInstance(classOf[TypedActorFailer])
@@ -105,8 +105,11 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
         } catch {
           case r: RuntimeException if r.getMessage == "expected" => //expected
         }
-        val second = conf.getInstance(classOf[TypedActorFailer])
 
+        // allow some time for the actor to be stopped
+        Thread.sleep(3000)
+
+        val second = conf.getInstance(classOf[TypedActorFailer])
         first should be (second)
 
         try {
