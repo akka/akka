@@ -939,6 +939,7 @@ private[akka] abstract class ActorAspect {
   protected def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
     val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     val isOneWay = TypedActor.isOneWay(methodRtti)
+    val senderActorRef = Option(SenderContextInfo.senderActorRef.value)
 
     def extractOwnerTypeHint(s: String) =
       s.indexOf(TypedActor.AW_PROXY_PREFIX) match {
@@ -951,8 +952,11 @@ private[akka] abstract class ActorAspect {
         methodRtti.getParameterTypes,
         methodRtti.getParameterValues))
 
+    //FIXME send the interface name of the senderProxy in the TypedActorContext and assemble a context.sender with that interface on the server
+    //val senderProxy = Option(SenderContextInfo.senderProxy.value)
+
     val future = Actor.remote.send[AnyRef](
-      message, None, None, remoteAddress.get,
+      message, senderActorRef, None, remoteAddress.get,
       timeout, isOneWay, actorRef,
       Some((interfaceClass.getName, methodRtti.getMethod.getName)),
       ActorType.TypedActor,
@@ -962,10 +966,10 @@ private[akka] abstract class ActorAspect {
     else if (TypedActor.returnsFuture_?(methodRtti)) future.get
     else {
       if (future.isDefined) {
-        future.get.await
-        val result = future.get.resultOrException
-        if (result.isDefined) result.get
-        else throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
+        future.get.await.resultOrException match {
+          case s: Some[AnyRef] => s.get
+          case None => throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
+        }
       } else throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
     }
   }
