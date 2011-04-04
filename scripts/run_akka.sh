@@ -1,6 +1,6 @@
 #!/bin/bash
 cd $AKKA_HOME
-VERSION=1.1-M1
+VERSION=1.1-SNAPSHOT
 TARGET_DIR=dist/$VERSION/$1
 shift 1
 VMARGS=$@
