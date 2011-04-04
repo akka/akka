@@ -183,17 +183,21 @@ abstract class TypedActor extends Actor with Proxyable {
 
   def receive = {
     case joinPoint: JoinPoint =>
-      SenderContextInfo.senderActorRef.value = self
-      SenderContextInfo.senderProxy.value    = proxy
-      if (Actor.SERIALIZE_MESSAGES)       serializeArguments(joinPoint)
-      if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
-      else                                self.reply(joinPoint.proceed)
+      SenderContextInfo.senderActorRef.withValue(self) {
+        SenderContextInfo.senderProxy.withValue(proxy) {
+          if (Actor.SERIALIZE_MESSAGES)       serializeArguments(joinPoint)
+          if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
+          else                                self.reply(joinPoint.proceed)
+        }
+      }
 
     case coordinated @ Coordinated(joinPoint: JoinPoint) =>
-      SenderContextInfo.senderActorRef.value = self
-      SenderContextInfo.senderProxy.value = proxy
-      if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
-      coordinated atomic { joinPoint.proceed }
+      SenderContextInfo.senderActorRef.withValue(self) {
+        SenderContextInfo.senderProxy.withValue(proxy) {
+          if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
+          coordinated atomic { joinPoint.proceed }
+        }
+      }
 
     case Link(proxy)   => self.link(proxy)
     case Unlink(proxy) => self.unlink(proxy)
@@ -884,8 +888,8 @@ private[akka] abstract class ActorAspect {
   protected def localDispatch(joinPoint: JoinPoint): AnyRef = {
     val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     val isOneWay = TypedActor.isOneWay(methodRtti)
-    val senderActorRef = Some(SenderContextInfo.senderActorRef.value)
-    val senderProxy = Some(SenderContextInfo.senderProxy.value)
+    val senderActorRef = Option(SenderContextInfo.senderActorRef.value)
+    val senderProxy = Option(SenderContextInfo.senderProxy.value)
     val isCoordinated = TypedActor.isCoordinated(methodRtti)
 
     typedActor.context._sender = senderProxy
