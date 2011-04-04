@@ -43,6 +43,14 @@ object FSM {
   }
 
   /*
+   * This extractor is just convenience for matching a (S, S) pair, including a
+   * reminder what the new state is.
+   */
+  object -> {
+    def unapply[S](in : (S, S)) = Some(in)
+  }
+
+  /*
   * With these implicits in scope, you can write "5 seconds" anywhere a
   * Duration or Option[Duration] is expected. This is conveniently true
   * for derived classes.
@@ -119,7 +127,7 @@ trait FSM[S, D] {
 
   type StateFunction = scala.PartialFunction[Event[D], State]
   type Timeout = Option[Duration]
-  type TransitionHandler = (S, S) => Unit
+  type TransitionHandler = PartialFunction[(S, S), Unit]
 
   /* DSL */
 
@@ -242,7 +250,7 @@ trait FSM[S, D] {
    * staying in the same state.
    */
   protected final def onTransition(transitionHandler: TransitionHandler) = {
-    transitionEvent = transitionHandler
+    transitionEvent :+= transitionHandler
   }
 
   /**
@@ -300,7 +308,10 @@ trait FSM[S, D] {
     case StopEvent(reason, _, _) =>
   }
 
-  private var transitionEvent: TransitionHandler = (from, to) => {
+  private var transitionEvent: List[TransitionHandler] = Nil
+  private def handleTransition(prev : S, next : S) {
+    val tuple = (prev, next)
+    for (te <- transitionEvent) { if (te.isDefinedAt(tuple)) te(tuple) }
   }
 
   override final protected def receive: Receive = {
@@ -351,7 +362,7 @@ trait FSM[S, D] {
       terminate(Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
       if (currentState.stateName != nextState.stateName) {
-        transitionEvent.apply(currentState.stateName, nextState.stateName)
+        handleTransition(currentState.stateName, nextState.stateName)
         if (!transitionCallBackList.isEmpty) {
           val transition = Transition(self, currentState.stateName, nextState.stateName)
           transitionCallBackList.foreach(_ ! transition)
