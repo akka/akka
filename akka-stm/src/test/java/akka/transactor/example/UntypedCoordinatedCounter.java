@@ -7,7 +7,7 @@ import akka.actor.UntypedActor;
 import akka.stm.Ref;
 
 public class UntypedCoordinatedCounter extends UntypedActor {
-    private Ref<Integer> count = new Ref(0);
+    private Ref<Integer> count = new Ref<Integer>(0);
 
     private void increment() {
         System.out.println("incrementing");

@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 public class UntypedCoordinatedCounter extends UntypedActor {
     private String name;
-    private Ref<Integer> count = new Ref(0);
+    private Ref<Integer> count = new Ref<Integer>(0);
     private TransactionFactory txFactory = new TransactionFactoryBuilder()
         .setTimeout(new FiniteDuration(3, TimeUnit.SECONDS))
         .build();
