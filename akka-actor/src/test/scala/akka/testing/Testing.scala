@@ -25,5 +25,9 @@ object Testing {
   def testTime(t: Float): Float = (timeFactor * t).toFloat
   def testTime(t: Double): Double = timeFactor * t
 
+  def testSeconds(duration: Duration) = testTime(duration.toSeconds)
+  def testMillis(duration: Duration) = testTime(duration.toMillis)
+  def testNanos(duration: Duration) = testTime(duration.toNanos)
+
   def sleepFor(duration: Duration) = Thread.sleep(testTime(duration.toMillis))
 }

@@ -12,6 +12,10 @@ import akka.config.Supervision._
 import java.util.concurrent.CountDownLatch
 import akka.config.TypedActorConfigurator
 
+import akka.testing._
+import akka.util.duration._
+
+
 /**
  * @author Martin Krasser
  */
@@ -107,7 +111,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
         }
 
         // allow some time for the actor to be stopped
-        Thread.sleep(3000)
+        Testing.sleepFor(3 seconds)
 
         val second = conf.getInstance(classOf[TypedActorFailer])
         first should be (second)
