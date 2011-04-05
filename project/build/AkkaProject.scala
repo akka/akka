@@ -416,13 +416,18 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Tutorials
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaTutorialPiSbtProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+  class AkkaTutorialFirstProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+
+  class AkkaTutorialSecondProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
   class AkkaTutorialsParentProject(info: ProjectInfo) extends ParentProject(info) {
     override def disableCrossPaths = true
 
-    lazy val akka_tutorial_pi_sbt = project("akka-tutorial-pi-sbt", "akka-tutorial-pi-sbt",
-      new AkkaTutorialPiSbtProject(_), akka_actor)
+    lazy val akka_tutorial_first = project("akka-tutorial-first", "akka-tutorial-first",
+      new AkkaTutorialFirstProject(_), akka_actor)
+
+    lazy val akka_tutorial_second = project("akka-tutorial-second", "akka-tutorial-second",
+      new AkkaTutorialSecondProject(_), akka_actor)
 
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
@@ -474,7 +479,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   def akkaArtifacts = descendents(info.projectPath / "dist", "*-" + version + ".jar")
 
   // ------------------------------------------------------------
-  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) 
+  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info)
     with DeployProject with OSGiProject with McPom {
     override def disableCrossPaths = true
 
@@ -543,12 +548,12 @@ trait McPom { self: DefaultProject =>
       case u                   => u + "/"
     }
 
-    val oldRepos = 
-      (node \\ "project" \ "repositories" \ "repository").map { n => 
+    val oldRepos =
+      (node \\ "project" \ "repositories" \ "repository").map { n =>
         cleanUrl((n \ "url").text) -> (n \ "name").text
       }.toList
 
-    val newRepos = 
+    val newRepos =
       mcs.filter(_.resolver.isInstanceOf[MavenRepository]).map { m =>
         val r = m.resolver.asInstanceOf[MavenRepository]
         cleanUrl(r.root) -> r.name

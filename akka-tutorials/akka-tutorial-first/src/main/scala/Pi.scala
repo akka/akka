@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.tutorial.sbt.pi
+package akka.tutorial.scala.first
 
 import akka.actor.{Actor, ActorRef, PoisonPill}
 import Actor._
@@ -14,23 +14,34 @@ import System.{currentTimeMillis => now}
 import java.util.concurrent.CountDownLatch
 
 /**
- * Sample for Akka, SBT an Scala tutorial.
+ * First part in Akka tutorial.
  * <p/>
  * Calculates Pi.
+ * <p/>
+ * Run on command line:
+ * <pre>
+ *   $ cd akka-1.1
+ *   $ export AKKA_HOME=`pwd`
+ *   $ scalac -cp dist/akka-actor-1.1-SNAPSHOT.jar Pi.scala
+ *   $ java -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.scala.first.Pi
+ *   $ ...
+ * </pre>
  * <p/>
  * Run it in SBT:
  * <pre>
  *   $ sbt
  *   > update
  *   > console
- *   > akka.tutorial.sbt.pi.Pi.calculate
+ *   > akka.tutorial.scala.first.Pi.calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
  *   > ...
  *   > :quit
  * </pre>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Pi  {
+object Pi extends App {
+
+  calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
 
   // ====================
   // ===== Messages =====
@@ -47,7 +58,10 @@ object Pi  {
     // define the work
     val calculatePiFor = (arg: Int, nrOfElements: Int) => {
       val range = (arg * nrOfElements) to ((arg + 1) * nrOfElements - 1)
-      range map (j => 4 * math.pow(-1, j) / (2 * j + 1)) sum
+      var acc = 0.0D
+      range foreach (i => acc += 4 * math.pow(-1, i) / (2 * i + 1))
+      acc
+      //range map (j => 4 * math.pow(-1, j) / (2 * j + 1)) sum
     }
 
     def receive = {
@@ -101,10 +115,7 @@ object Pi  {
   // ==================
   // ===== Run it =====
   // ==================
-  def calculate = {
-    val nrOfWorkers  = 4
-    val nrOfMessages = 10000
-    val nrOfElements = 10000
+  def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
 
     // this latch is only plumbing to know when the calculation is completed
     val latch = new CountDownLatch(1)
