@@ -183,17 +183,21 @@ abstract class TypedActor extends Actor with Proxyable {
 
   def receive = {
     case joinPoint: JoinPoint =>
-      SenderContextInfo.senderActorRef.value = self
-      SenderContextInfo.senderProxy.value    = proxy
-      if (Actor.SERIALIZE_MESSAGES)       serializeArguments(joinPoint)
-      if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
-      else                                self.reply(joinPoint.proceed)
+      SenderContextInfo.senderActorRef.withValue(self) {
+        SenderContextInfo.senderProxy.withValue(proxy) {
+          if (Actor.SERIALIZE_MESSAGES)       serializeArguments(joinPoint)
+          if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
+          else                                self.reply(joinPoint.proceed)
+        }
+      }
 
     case coordinated @ Coordinated(joinPoint: JoinPoint) =>
-      SenderContextInfo.senderActorRef.value = self
-      SenderContextInfo.senderProxy.value = proxy
-      if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
-      coordinated atomic { joinPoint.proceed }
+      SenderContextInfo.senderActorRef.withValue(self) {
+        SenderContextInfo.senderProxy.withValue(proxy) {
+          if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
+          coordinated atomic { joinPoint.proceed }
+        }
+      }
 
     case Link(proxy)   => self.link(proxy)
     case Unlink(proxy) => self.unlink(proxy)
@@ -884,8 +888,8 @@ private[akka] abstract class ActorAspect {
   protected def localDispatch(joinPoint: JoinPoint): AnyRef = {
     val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     val isOneWay = TypedActor.isOneWay(methodRtti)
-    val senderActorRef = Some(SenderContextInfo.senderActorRef.value)
-    val senderProxy = Some(SenderContextInfo.senderProxy.value)
+    val senderActorRef = Option(SenderContextInfo.senderActorRef.value)
+    val senderProxy = Option(SenderContextInfo.senderProxy.value)
     val isCoordinated = TypedActor.isCoordinated(methodRtti)
 
     typedActor.context._sender = senderProxy
@@ -935,6 +939,7 @@ private[akka] abstract class ActorAspect {
   protected def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
     val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     val isOneWay = TypedActor.isOneWay(methodRtti)
+    val senderActorRef = Option(SenderContextInfo.senderActorRef.value)
 
     def extractOwnerTypeHint(s: String) =
       s.indexOf(TypedActor.AW_PROXY_PREFIX) match {
@@ -947,8 +952,11 @@ private[akka] abstract class ActorAspect {
         methodRtti.getParameterTypes,
         methodRtti.getParameterValues))
 
+    //FIXME send the interface name of the senderProxy in the TypedActorContext and assemble a context.sender with that interface on the server
+    //val senderProxy = Option(SenderContextInfo.senderProxy.value)
+
     val future = Actor.remote.send[AnyRef](
-      message, None, None, remoteAddress.get,
+      message, senderActorRef, None, remoteAddress.get,
       timeout, isOneWay, actorRef,
       Some((interfaceClass.getName, methodRtti.getMethod.getName)),
       ActorType.TypedActor,
