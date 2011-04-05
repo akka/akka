@@ -966,10 +966,10 @@ private[akka] abstract class ActorAspect {
     else if (TypedActor.returnsFuture_?(methodRtti)) future.get
     else {
       if (future.isDefined) {
-        future.get.await.resultOrException match {
-          case s: Some[AnyRef] => s.get
-          case None => throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
-        }
+        future.get.await
+        val result = future.get.resultOrException
+        if (result.isDefined) result.get
+        else throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
       } else throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
     }
   }
