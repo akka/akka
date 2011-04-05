@@ -70,7 +70,6 @@ public class Actors {
         return Actor$.MODULE$.actorOf(type);
     }
 
-
     /**
      * The message that is sent when an Actor gets a receive timeout.
      * <pre>
@@ -82,5 +81,28 @@ public class Actors {
      */
     public final static ReceiveTimeout$ receiveTimeout() {
         return ReceiveTimeout$.MODULE$;
+    }
+
+    /**
+     * The message that when sent to an Actor kills it by throwing an exception.
+     * <pre>
+     *  actor.sendOneWay(kill());
+     * </pre>
+     * @return the single instance of Kill
+     */
+    public final static Kill$ kill() {
+        return Kill$.MODULE$;
+    }
+
+
+    /**
+     * The message that when sent to an Actor shuts it down by calling 'stop'.
+     * <pre>
+     *  actor.sendOneWay(poisonPill());
+     * </pre>
+     * @return the single instance of PoisonPill
+     */
+    public final static PoisonPill$ poisonPill() {
+        return PoisonPill$.MODULE$;
     }
 }
