@@ -8,7 +8,6 @@ import akka.actor.{Actor, ActorRef, PoisonPill}
 import Actor._
 import akka.routing.{Routing, CyclicIterator}
 import Routing._
-import akka.event.EventHandler
 import akka.dispatch.Dispatchers
 
 import System.{currentTimeMillis => now}
@@ -94,7 +93,7 @@ object Pi  {
 
     override def postStop = {
       // tell the world that the calculation is complete
-      EventHandler.info(this, "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
+      println("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
       latch.countDown
     }
   }
