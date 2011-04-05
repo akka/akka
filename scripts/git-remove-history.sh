@@ -1,4 +1,15 @@
 #!/bin/bash
+
+cat <<'EOT'
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ This command rewrites GIT history like git-rebase. Beware never to rewrite   @
+@ trees which are already published, as that would deeply upset all cloning    @
+@ repos. For more details see 'git help rebase'. Tread carefully!              @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+EOT
+read -p "I know what I am doing: " answer
+test "$answer" = yes || exit 1
+
 set -o errexit
  
 # Author: David Underhill
@@ -7,7 +18,7 @@ set -o errexit
 # you want to delete, e.g., git-delete-history path1 path2
  
 if [ $# -eq 0 ]; then
-    exit 0are still
+    exit 0
 fi
  
 # make sure we're at the root of git repo
