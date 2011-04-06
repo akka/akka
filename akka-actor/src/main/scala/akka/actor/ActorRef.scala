@@ -450,6 +450,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * <p/>
    * To be invoked from within the actor itself.
    */
+  @deprecated("Will be removed after 1.1, use Actor.actorOf instead")
   def spawn(clazz: Class[_ <: Actor]): ActorRef
 
   /**
@@ -457,6 +458,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * <p/>
    * To be invoked from within the actor itself.
    */
+  @deprecated("Will be removed after 1.1, client managed actors will be removed")
   def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef
 
   /**
@@ -464,6 +466,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * <p/>
    * To be invoked from within the actor itself.
    */
+  @deprecated("Will be removed after 1.1, use use Actor.remote.actorOf instead and then link on success")
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef
 
   /**
@@ -471,6 +474,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * <p/>
    * To be invoked from within the actor itself.
    */
+  @deprecated("Will be removed after 1.1, client managed actors will be removed")
   def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef
 
   /**
