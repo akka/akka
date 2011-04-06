@@ -451,6 +451,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * <p/>
    * To be invoked from within the actor itself.
    */
+  @deprecated("Will be removed after 1.1, use Actor.actorOf instead")
   def spawn(clazz: Class[_ <: Actor]): ActorRef
 
   /**
@@ -458,6 +459,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * <p/>
    * To be invoked from within the actor itself.
    */
+  @deprecated("Will be removed after 1.1, client managed actors will be removed")
   def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef
 
   /**
@@ -465,6 +467,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * <p/>
    * To be invoked from within the actor itself.
    */
+  @deprecated("Will be removed after 1.1, use use Actor.remote.actorOf instead and then link on success")
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef
 
   /**
@@ -472,6 +475,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * <p/>
    * To be invoked from within the actor itself.
    */
+  @deprecated("Will be removed after 1.1, client managed actors will be removed")
   def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef
 
   /**
@@ -1014,9 +1018,14 @@ class LocalActorRef private[akka] (
   // ========= PRIVATE FUNCTIONS =========
 
   private[this] def newActor: Actor = {
-    val a = Actor.actorRefInCreation.withValue(Some(this)) { actorFactory() }
-    if (a eq null) throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
-    a
+    try {
+      Actor.actorRefInCreation.value = Some(this)
+      val a = actorFactory()
+      if (a eq null) throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
+      a
+    } finally {
+      Actor.actorRefInCreation.value = None
+    }
   }
 
   private def shutDownTemporaryActor(temporaryActor: ActorRef) {
