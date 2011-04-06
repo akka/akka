@@ -329,7 +329,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * @see sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the Actors default timeout (setTimeout()) and omits the sender
    */
-  def sendRequestReplyFuture(message: AnyRef): Future[_] = sendRequestReplyFuture(message, timeout, null)
+  def sendRequestReplyFuture[T](message: AnyRef): Future[T] = sendRequestReplyFuture(message, timeout, null).asInstanceOf[Future[T]]
 
   /**
    * Akka Java API
@@ -507,6 +507,30 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * please note that the backing map is thread-safe but not immutable
    */
   def getLinkedActors(): JMap[Uuid, ActorRef] = linkedActors
+
+  /**
+   * Abstraction for unification of sender and senderFuture for later reply
+   */
+  def channel: Channel[Any] = {
+    if (senderFuture.isDefined) {
+      new Channel[Any] {
+        val future = senderFuture.get
+        def !(msg: Any) = future completeWithResult msg
+      }
+    } else if (sender.isDefined) {
+      val someSelf = Some(this)
+      new Channel[Any] {
+        val client = sender.get
+        def !(msg: Any) = client.!(msg)(someSelf)
+      }
+    } else throw new IllegalActorStateException("No channel available")
+  }
+
+  /**
+   * Java API.
+   * Abstraction for unification of sender and senderFuture for later reply
+   */
+  def getChannel: Channel[Any] = channel
 
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit
 
@@ -1353,24 +1377,6 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
       sender.get.!(message)(Some(this))
       true
     } else false
-  }
-
-  /**
-   * Abstraction for unification of sender and senderFuture for later reply
-   */
-  def channel: Channel[Any] = {
-    if (senderFuture.isDefined) {
-      new Channel[Any] {
-        val future = senderFuture.get
-        def !(msg: Any) = future completeWithResult msg
-      }
-    } else if (sender.isDefined) {
-      val someSelf = Some(this)
-      new Channel[Any] {
-        val client = sender.get
-        def !(msg: Any) = client.!(msg)(someSelf)
-      }
-    } else throw new IllegalActorStateException("No channel available")
   }
 
   /**
