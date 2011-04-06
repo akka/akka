@@ -165,10 +165,14 @@ object EventHandler extends ListenerManagement {
     }
   }
 
-  config.getList("akka.event-handlers") foreach { listenerName =>
+  val defaultListeners = config.getList("akka.event-handlers") match {
+    case Nil       => "akka.event.EventHandler$DefaultListener" :: Nil
+    case listeners => listeners
+  }
+  defaultListeners foreach { listenerName =>
     try {
-      ReflectiveAccess.getClassFor[Actor](listenerName) map {
-        clazz => addListener(Actor.actorOf(clazz).start)
+      ReflectiveAccess.getClassFor[Actor](listenerName) map { clazz =>
+        addListener(Actor.actorOf(clazz).start)
       }
     } catch {
       case e: Exception =>
