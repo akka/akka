@@ -56,12 +56,21 @@ import akka.japi.{Creator, Procedure}
  */
 abstract class UntypedActor extends Actor {
 
-  def getContext(): ActorRef = self
-  def context(): ActorRef    = self
+  /**
+   * To be implemented by concrete UntypedActor. Defines the message handler.
+   */
+  @throws(classOf[Exception])
+  def onReceive(message: Any): Unit
 
-  final protected def receive = {
-    case msg => onReceive(msg)
-  }
+  /**
+   * Returns the 'self' reference with the API.
+   */
+  def getContext(): ActorRef = self
+
+  /**
+   * Returns the 'self' reference with the API.
+   */
+  def context(): ActorRef    = self
 
   /**
    * Java API for become
@@ -74,8 +83,47 @@ abstract class UntypedActor extends Actor {
   def become(behavior: Procedure[Any], discardOld: Boolean): Unit =
     super.become({ case msg => behavior.apply(msg) }, discardOld)
 
-  @throws(classOf[Exception])
-  def onReceive(message: Any): Unit
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called when an Actor is started by invoking 'actor.start'.
+   */
+  override def preStart {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called when 'actor.stop' is invoked.
+   */
+  override def postStop {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called on a crashed Actor right BEFORE it is restarted to allow clean up of resources before Actor is terminated.
+   */
+  override def preRestart(reason: Throwable) {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
+   */
+  override def postRestart(reason: Throwable) {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called when a message isn't handled by the current behavior of the actor
+   * by default it throws an UnhandledMessageException
+   */
+  override def unhandled(msg: Any) {
+    throw new UnhandledMessageException(msg, self)
+  }
+
+  final protected def receive = {
+    case msg => onReceive(msg)
+  }
 }
 
 /**
