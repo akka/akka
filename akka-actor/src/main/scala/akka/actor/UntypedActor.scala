@@ -4,13 +4,7 @@
 
 package akka.actor
 
-import akka.dispatch._
-import akka.config.Supervision._
 import akka.japi.{Creator, Procedure}
-
-import java.net.InetSocketAddress
-
-import scala.reflect.BeanProperty
 
 /**
  * Subclass this abstract class to create a MDB-style untyped actor.
@@ -63,6 +57,7 @@ import scala.reflect.BeanProperty
 abstract class UntypedActor extends Actor {
 
   def getContext(): ActorRef = self
+  def context(): ActorRef    = self
 
   final protected def receive = {
     case msg => onReceive(msg)

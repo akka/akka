@@ -13,6 +13,8 @@ import akka.dispatch.Dispatchers
 import System.{currentTimeMillis => now}
 import java.util.concurrent.CountDownLatch
 
+import scala.annotation.tailrec
+
 /**
  * First part in Akka tutorial.
  * <p/>
@@ -57,6 +59,7 @@ object Pi extends App {
   class Worker() extends Actor {
     // define the work
 
+/*
     // FIXME tail-recursive fun instead
     val calculatePiFor = (arg: Int, nrOfElements: Int) => {
       val range = (arg * nrOfElements) to ((arg + 1) * nrOfElements - 1)
@@ -65,6 +68,15 @@ object Pi extends App {
       acc
       // Use this for more functional style but is twice as slow
       // range.foldLeft(0.0D)( (acc, i) =>  acc + 4 * math.pow(-1, i) / (2 * i + 1) )
+    }
+*/
+    def calculatePiFor(arg: Int, nrOfElements: Int): Double = {
+      val end = (arg + 1) * nrOfElements - 1
+      @tailrec def doCalculatePiFor(cursor: Int, acc: Double): Double = {
+        if (end == cursor) acc
+        else doCalculatePiFor(cursor + 1, acc + (4 * math.pow(-1, cursor) / (2 * cursor + 1)))
+      }
+      doCalculatePiFor(arg * nrOfElements, 0.0D)
     }
 
     def receive = {
