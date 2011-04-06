@@ -16,8 +16,10 @@ import scala.Option;
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
+import akka.dispatch.CompletableFuture;
 import akka.dispatch.Future;
 import akka.event.EventHandler;
+import akka.japi.Procedure;
 import akka.routing.CyclicIterator;
 import akka.routing.InfiniteIterator;
 import akka.routing.Routing.Broadcast;
@@ -147,35 +149,48 @@ public class Pi {
         }
       }).start();
     }
-
+    
+    @Override
+    public void preStart() {
+      become(scatter);
+    }
+    
     // message handler
     public void onReceive(Object message) {
-
-      if (message instanceof Calculate) {
+      throw new IllegalStateException("Should be gatter or scatter");
+    }
+    
+    private final Procedure<Object> scatter = new Procedure<Object>() {
+      public void apply(Object msg) {
         // schedule work
         for (int arg = 0; arg < nrOfMessages; arg++) {
           router.sendOneWay(new Work(arg, nrOfElements), getContext());
         }
-
-      } else if (message instanceof Result) {
-
-        // handle result from the worker
-        Result result = (Result) message;
-        pi += result.getValue();
-        nrOfResults += 1;
-        if (nrOfResults == nrOfMessages) {
-          System.out.println("# DONE");
-          // send the pi result back to the guy who started the calculation
-          // TODO wrong docs, channel() not there
-//          getContext().channel()
-          getContext().replyUnsafe(pi);
-//          getContext().getSender().get().sendOneWay(pi, getContext());
-//          getContext().getSenderFuture().get().completeWithResult(pi);
-          // shut ourselves down, we're done
-          getContext().stop();
+        
+        // TODO would like to use channel instead, wrong docs, channel() not there
+        // getContext().channel()
+        CompletableFuture<Object> resultFuture = getContext().getSenderFuture().get();
+        // Assume the gathering behavior
+        become(gatter(resultFuture));
+      }
+    }; 
+    
+    private Procedure<Object> gatter(final CompletableFuture<Object> resultFuture) {
+      return new Procedure<Object>() {
+        public void apply(Object msg) {
+          // handle result from the worker
+          Result result = (Result) msg;
+          pi += result.getValue();
+          nrOfResults += 1;
+          if (nrOfResults == nrOfMessages) {
+            System.out.println("# DONE");
+            // send the pi result back to the guy who started the calculation
+            resultFuture.completeWithResult(pi);
+            // shut ourselves down, we're done
+            getContext().stop();
+          }
         }
-
-      } else throw new IllegalArgumentException("Unknown message [" + message + "]");
+      }; 
     }
 
     @Override
@@ -184,7 +199,6 @@ public class Pi {
       router.sendOneWay(new Broadcast(poisonPill()));
       // send a PoisonPill to the router, telling him to shut himself down
       router.sendOneWay(poisonPill());
-      
     }
   }
 
@@ -204,8 +218,7 @@ public class Pi {
     long start = currentTimeMillis();
 
     // send calculate message
-    // TODO 60000
-    long timeout = 10000;
+    long timeout = 60000;
     Future<Double> replyFuture = (Future<Double>) master.sendRequestReplyFuture(new Calculate(), timeout, null);
     Option<Double> result = replyFuture.await().resultOrException();
     if (result.isDefined()) {
