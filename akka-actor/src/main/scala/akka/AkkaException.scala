@@ -5,25 +5,33 @@
 package akka
 
 import akka.actor.newUuid
-
-import java.io.{StringWriter, PrintWriter}
 import java.net.{InetAddress, UnknownHostException}
 
 /**
  * Akka base Exception. Each Exception gets:
  * <ul>
- *   <li>a UUID for tracking purposes</li>
- *   <li>a message including exception name, uuid, original message and the stacktrace</li>
- *   <li>a method 'log' that will log the exception once and only once</li>
+ *   <li>a uuid for tracking purposes</li>
+ *   <li>toString that includes exception name, message, uuid, and the stacktrace</li>
  * </ul>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@serializable abstract class AkkaException(message: String = "") extends {
-  val exceptionName = getClass.getName
+class AkkaException(message: String = "") extends RuntimeException(message) with Serializable {
   val uuid = "%s_%s".format(AkkaException.hostname, newUuid)
-} with RuntimeException(message) {
-  override lazy val toString = "%s\n\t[%s]\n\t%s".format(exceptionName, uuid, message)
+
+  override lazy val toString = {
+    val name = getClass.getName
+    val trace = stackTraceToString
+    "%s: %s\n[%s]\n%s".format(name, message, uuid, trace)
+  }
+
+  def stackTraceToString = {
+    val trace = getStackTrace
+    val sb = new StringBuffer
+    for (i <- 0 until trace.length)
+      sb.append("\tat %s\n" format trace(i))   
+    sb.toString
+  }
 }
 
 object AkkaException {
