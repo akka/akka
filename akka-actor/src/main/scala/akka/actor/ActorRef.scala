@@ -1017,9 +1017,14 @@ class LocalActorRef private[akka] (
   // ========= PRIVATE FUNCTIONS =========
 
   private[this] def newActor: Actor = {
-    val a = Actor.actorRefInCreation.withValue(Some(this)) { actorFactory() }
-    if (a eq null) throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
-    a
+    try {
+      Actor.actorRefInCreation.value = Some(this)
+      val a = actorFactory()
+      if (a eq null) throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
+      a
+    } finally {
+      Actor.actorRefInCreation.value = None
+    }
   }
 
   private def shutDownTemporaryActor(temporaryActor: ActorRef) {

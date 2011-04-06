@@ -74,6 +74,33 @@ class ActorRefSpec extends WordSpec with MustMatchers {
   import ActorRefSpec._
 
   "An ActorRef" must {
+
+    "not allow Actors to be created outside of an actorOf" in {
+      intercept[akka.actor.ActorInitializationException] {
+        new Actor { def receive = { case _ => } }
+        fail("shouldn't get here")
+      }
+
+      intercept[akka.actor.ActorInitializationException] {
+        val a = Actor.actorOf(new Actor {
+          val nested = new Actor { def receive = { case _ => } }
+          def receive = { case _ => }
+        }).start
+        fail("shouldn't get here")
+      }
+    }
+
+    "support nested actorOfs" in {
+      val a = Actor.actorOf(new Actor {
+        val nested = Actor.actorOf(new Actor { def receive = { case _ => } }).start
+        def receive = { case _ => self reply nested }
+      }).start
+
+      val nested = (a !! "any").get.asInstanceOf[ActorRef]
+      a must not be null
+      nested must not be null
+      (a ne nested) must be === true
+    }
     
     "support reply via channel" in {
       val serverRef = Actor.actorOf[ReplyActor].start
