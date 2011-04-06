@@ -149,32 +149,32 @@ public class Pi {
         }
       }).start();
     }
-    
+
     @Override
     public void preStart() {
       become(scatter);
     }
-    
+
     // message handler
     public void onReceive(Object message) {
       throw new IllegalStateException("Should be gatter or scatter");
     }
-    
+
     private final Procedure<Object> scatter = new Procedure<Object>() {
       public void apply(Object msg) {
         // schedule work
         for (int arg = 0; arg < nrOfMessages; arg++) {
           router.sendOneWay(new Work(arg, nrOfElements), getContext());
         }
-        
+
         // TODO would like to use channel instead, wrong docs, channel() not there
         // getContext().channel()
         CompletableFuture<Object> resultFuture = getContext().getSenderFuture().get();
         // Assume the gathering behavior
         become(gatter(resultFuture));
       }
-    }; 
-    
+    };
+
     private Procedure<Object> gatter(final CompletableFuture<Object> resultFuture) {
       return new Procedure<Object>() {
         public void apply(Object msg) {
@@ -190,7 +190,7 @@ public class Pi {
             getContext().stop();
           }
         }
-      }; 
+      };
     }
 
     @Override
@@ -213,13 +213,13 @@ public class Pi {
         return new Master(nrOfWorkers, nrOfMessages, nrOfElements);
       }
     }).start();
-    
+
     // start the calculation
     long start = currentTimeMillis();
 
     // send calculate message
     long timeout = 60000;
-    Future<Double> replyFuture = (Future<Double>) master.sendRequestReplyFuture(new Calculate(), timeout, null);
+    Future<Double> replyFuture = master.sendRequestReplyFuture(new Calculate(), timeout, null);
     Option<Double> result = replyFuture.await().resultOrException();
     if (result.isDefined()) {
       double pi = result.get();
@@ -231,6 +231,6 @@ public class Pi {
 //      EventHandler.error(this, "Pi calculation did not complete within the timeout.");
       System.out.println("Pi calculation did not complete within the timeout.");
     }
-    
+
   }
 }
