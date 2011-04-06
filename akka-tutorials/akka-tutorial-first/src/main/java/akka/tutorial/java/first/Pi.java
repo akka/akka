@@ -10,8 +10,6 @@ import static akka.actor.Actors.*;
 import akka.routing.*;
 import static akka.routing.Routing.Broadcast;
 
-import akka.dispatch.Dispatchers;
-
 import static java.util.Arrays.asList;
 import java.util.concurrent.CountDownLatch;
 

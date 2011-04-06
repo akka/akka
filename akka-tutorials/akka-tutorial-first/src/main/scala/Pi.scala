@@ -56,12 +56,15 @@ object Pi extends App {
   // ==================
   class Worker() extends Actor {
     // define the work
+
+    // FIXME tail-recursive fun instead
     val calculatePiFor = (arg: Int, nrOfElements: Int) => {
       val range = (arg * nrOfElements) to ((arg + 1) * nrOfElements - 1)
       var acc = 0.0D
       range foreach (i => acc += 4 * math.pow(-1, i) / (2 * i + 1))
       acc
-      //range map (j => 4 * math.pow(-1, j) / (2 * j + 1)) sum
+      // Use this for more functional style but is twice as slow
+      // range.foldLeft(0.0D)( (acc, i) =>  acc + 4 * math.pow(-1, i) / (2 * i + 1) )
     }
 
     def receive = {
