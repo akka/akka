@@ -116,18 +116,18 @@ class ExecutorBasedEventDrivenDispatcher(
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
   def createMailbox(actorRef: ActorRef): AnyRef = mailboxType match {
-    case b: UnboundedMailbox if b.blocking =>
-      new DefaultUnboundedMessageQueue(true) with ExecutableMailbox {
-        final def dispatcher = ExecutorBasedEventDrivenDispatcher.this
+    case b: UnboundedMailbox =>
+      if (b.blocking) {
+        new DefaultUnboundedMessageQueue(true) with ExecutableMailbox {
+          final def dispatcher = ExecutorBasedEventDrivenDispatcher.this
+        }
+      } else { //If we have an unbounded, non-blocking mailbox, we can go lockless
+        new ConcurrentLinkedQueue[MessageInvocation] with MessageQueue with ExecutableMailbox {
+          final def dispatcher = ExecutorBasedEventDrivenDispatcher.this
+          final def enqueue(m: MessageInvocation) = this.add(m)
+          final def dequeue(): MessageInvocation = this.poll()
+        }
       }
-
-    case b: UnboundedMailbox if !b.blocking => //If we have an unbounded, non-blocking mailbox, we can go lockless
-      new ConcurrentLinkedQueue[MessageInvocation] with MessageQueue with ExecutableMailbox {
-        final def dispatcher = ExecutorBasedEventDrivenDispatcher.this
-        final def enqueue(m: MessageInvocation) = this.add(m)
-        final def dequeue(): MessageInvocation = this.poll()
-      }
-
     case b: BoundedMailbox =>
       new DefaultBoundedMessageQueue(b.capacity, b.pushTimeOut, b.blocking) with ExecutableMailbox {
         final def dispatcher = ExecutorBasedEventDrivenDispatcher.this

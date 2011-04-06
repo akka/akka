@@ -4,13 +4,18 @@
 
 package akka.tutorial.java.first;
 
-import akka.actor.*;
-import static akka.actor.Actors.*;
-
-import akka.routing.*;
-import static akka.routing.Routing.Broadcast;
-
+import static akka.actor.Actors.actorOf;
+import static akka.actor.Actors.poisonPill;
 import static java.util.Arrays.asList;
+
+import akka.actor.ActorRef;
+import akka.actor.UntypedActor;
+import akka.actor.UntypedActorFactory;
+import akka.routing.CyclicIterator;
+import akka.routing.InfiniteIterator;
+import akka.routing.Routing.Broadcast;
+import akka.routing.UntypedLoadBalancer;
+
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -80,7 +85,7 @@ public class Pi {
 
     // define the work
     private double calculatePiFor(int arg, int nrOfElements) {
-      double acc = 0.0D;
+      double acc = 0.0;
       for (int i = arg * nrOfElements; i <= ((arg + 1) * nrOfElements - 1); i++) {
         acc += 4 * Math.pow(-1, i) / (2 * i + 1);
       }
@@ -90,7 +95,7 @@ public class Pi {
     // message handler
     public void onReceive(Object message) {
       if (message instanceof Work) {
-        Work work = (Work)message;
+        Work work = (Work) message;
         getContext().replyUnsafe(new Result(calculatePiFor(work.getArg(), work.getNrOfElements()))); // perform the work
       } else throw new IllegalArgumentException("Unknown message [" + message + "]");
     }
@@ -100,7 +105,6 @@ public class Pi {
   // ===== Master =====
   // ==================
   static class Master extends UntypedActor {
-    private final int nrOfWorkers;
     private final int nrOfMessages;
     private final int nrOfElements;
     private final CountDownLatch latch;
@@ -124,7 +128,6 @@ public class Pi {
     }
 
     public Master(int nrOfWorkers, int nrOfMessages, int nrOfElements, CountDownLatch latch) {
-      this.nrOfWorkers = nrOfWorkers;
       this.nrOfMessages = nrOfMessages;
       this.nrOfElements = nrOfElements;
       this.latch = latch;
@@ -161,7 +164,7 @@ public class Pi {
       } else if (message instanceof Result) {
 
         // handle result from the worker
-        Result result = (Result)message;
+        Result result = (Result) message;
         pi += result.getValue();
         nrOfResults += 1;
         if (nrOfResults == nrOfMessages) getContext().stop();
