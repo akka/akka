@@ -95,14 +95,14 @@ class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
 
     "shouldSendBangBangMessageAndReceiveReply" in {
       val actor = remote.actorOf[RemoteActorSpecActorBidirectional](host,port).start
-      val result = actor !! "Hello"
+      val result = actor !! ("Hello", 10000)
       "World" must equal (result.get.asInstanceOf[String])
       actor.stop
     }
 
     "shouldSendBangBangMessageAndReceiveReplyConcurrently" in {
       val actors = (1 to 10).map(num => { remote.actorOf[RemoteActorSpecActorBidirectional](host,port).start }).toList
-      actors.map(_ !!! "Hello") foreach { future =>
+      actors.map(_ !!! ("Hello", 10000)) foreach { future =>
         "World" must equal (future.await.result.asInstanceOf[Option[String]].get)
       }
       actors.foreach(_.stop)
