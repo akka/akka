@@ -179,12 +179,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val akka_actor       = project("akka-actor",       "akka-actor",       new AkkaActorProject(_))
+  lazy val akka_testkit     = project("akka-testkit",     "akka-testkit",     new AkkaTestkitProject(_),    akka_actor)
+  lazy val akka_actor_tests = project("akka-actor-tests", "akka-actor-tests", new AkkaActorTestsProject(_), akka_testkit)
   lazy val akka_stm         = project("akka-stm",         "akka-stm",         new AkkaStmProject(_),        akka_actor)
-  lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_stm)
+  lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_stm, akka_actor_tests)
   lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),     akka_typed_actor)
   lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_actor)
   lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
-  lazy val akka_testkit     = project("akka-testkit",     "akka-testkit",     new AkkaTestkitProject(_),    akka_actor)
   lazy val akka_slf4j       = project("akka-slf4j",       "akka-slf4j",       new AkkaSlf4jProject(_),      akka_actor)
   lazy val akka_tutorials   = project("akka-tutorials",   "akka-tutorials",   new AkkaTutorialsParentProject(_),      akka_actor)
 
@@ -287,16 +288,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    // testing
-    val junit           = Dependencies.junit
-    val scalatest       = Dependencies.scalatest
-    val multiverse_test = Dependencies.multiverse_test // StandardLatch
-
     override def bndExportPackage = super.bndExportPackage ++ Seq("com.eaio.*;version=3.2")
-
-    // some tests depend on testkit, so include that and make sure it's compiled
-    override def testClasspath = super.testClasspath +++ akka_testkit.path("target") / "classes"
-    override def testCompileAction = super.testCompileAction dependsOn (akka_testkit.compile)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -436,6 +428,17 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaTestkitProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
 
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-actor-tests subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaActorTestsProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    // testing
+    val junit           = Dependencies.junit
+    val scalatest       = Dependencies.scalatest
+    val multiverse_test = Dependencies.multiverse_test // StandardLatch
+  }
+  
   // -------------------------------------------------------------------------------------------------------------------
   // akka-slf4j subproject
   // -------------------------------------------------------------------------------------------------------------------
