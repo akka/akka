@@ -13,12 +13,16 @@ There are two variations of this first tutorial:
 
 Since they are so similar we will present them both in this tutorial. The sample application that we will create is using actors to calculate the value of Pi. Is using an algorithm that is easily parallelizable and therefore suits the actor model very well, but is generic enough to suit as a starting point for all kinds of Master/Worker style problems.
 
-http://www.earldouglas.com/system/files/pi-series.png
+Here is the formula for the algorithm we will use:
+
+.. image:: pi-formula.png
 
 In this particular algorithm the master splits the series into chunks which are sent out to each worker actor to be processed, when each worker has processed its chunk it sends a result back to the master which aggregates to total result.
 
 Downloading and installing Akka
 -------------------------------
+
+This tutorial assumes that you have Jave 1.6 or later installed on you machine and ``java`` on your ``PATH``.
 
 The first thing we need to do is to download Akka. Let's get the 1.1 distribution from `http://akka.io/downloads <http://akka.io/downloads/>`_. Once you have downloaded the distribution unzip it in the folder you would like to have Akka installed in, in my case I choose to install it in ``/Users/jboner/tools/``, simply by unzipping it to this directory.
 
@@ -46,6 +50,44 @@ If we now take a look at what we have in this distribution, looks like this::
 - In the ``deploy`` directory we have all the sample JARs.
 - In the ``scripts`` directory we have scripts for running Akka.
 - Finallly the ``scala-library.jar`` is the JAR for the latest Scala distribution that Akka depends on.
+
+Downloading and installing Scala
+--------------------------------
+
+If you want to be able to build and run the tutorial sample from the command line then you have to install the Scala distribution. If you prefer to use SBT to build and run the sample then you need can skip this section and jump to the next one.
+
+Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0 final release. If you pick the ``tgz`` or ``zip`` distributions then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
+
+You also need to make sure that the ``scala-2.9.0/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
+
+    $ export PATH=$PATH:scala-2.9.0/bin
+
+Now you can test you installation by invoking and see the printout::
+
+    $ scala -version
+    Scala code runner version 2.9.0.final -- Copyright 2002-2011, LAMP/EPFL
+
+Looks like we are all good. Finally let's create a source file ``Pi.scala`` for the tutorial and put it in the root of the Akka distribution in the ``tutorial`` directory (you have to create it first).
+
+
+Downloading and installing SBT
+------------------------------
+
+SBT, short for Simple Build Tool is an excellent build system written in Scala. It the preferred way of building software in Scala. If you want to use SBT for this tutorial then follow the following instructions, if not you can skip this section.
+
+To install SBT and create a project for this tutorial it is easiest to follow the instructions on `this page <http://code.google.com/p/simple-build-tool/wiki/Setup>`_. The preferred SBT version to install is ``0.7.6``.
+
+If you have created an SBT project then create a source file for the tutorial and put it in ``src/main/scala/Pi.scala``.
+
+Now we need to make our project an Akka project. You can add the dependencies manually, but the easiest way is to use Akka's SBT Plugin.
+
+TODO: write up about Akka's SBT Plugin
+
+Now you need to make SBT download all dependencies it needs. That is done by invoking::
+
+    $ sbt update
+
+SBT itself needs a whole bunch of dependencies but our project will only need one; ``akka-actor-1.1.jar``. SBT downloads that as well.
 
 Creating the messages
 ---------------------
@@ -80,7 +122,7 @@ Now we can create the worker actor.  This is done by mixing in the ``Actor`` tra
 
 As you can see we have now created an ``Actor`` with a ``receive`` method that as a handler for the ``Work`` message. In this handler we invoke the ``calculatePiFor(..)`` method, wraps the result in a ``Result`` message and sends it back to the original sender using ``self.reply``. In Akka the sender reference is implicitly passed along with the message so that the receiver can always reply or store away the sender reference use.
 
-The only thing missing in our ``Worker`` actor is the implementation on the ````calculatePiFor(..)`` method. There are many ways we can implement this algorithm in Scala, now let's try to balance functional programming with efficiency and use a tail recursive function::
+The only thing missing in our ``Worker`` actor is the implementation on the ``calculatePiFor(..)`` method. There are many ways we can implement this algorithm in Scala, now let's try to balance functional programming with efficiency and use a tail recursive function::
 
     def calculatePiFor(arg: Int, nrOfElements: Int): Double = {
       val end = (arg + 1) * nrOfElements - 1
@@ -325,23 +367,57 @@ But before we package it up and run it, let's take a look at the full code now, 
 Run it as a command line application
 ------------------------------------
 
-In order to run it as a stand-alone application you first need to copy the full code snippet above and put it into a file ``Pi.scala`` which you save in, for example, the ``$AKKA_HOME/tutorial`` directory (create the ``tutorial`` folder if it doesn't exist)::
+If you have not typed (or copied) in the code for the tutorial in the ``$AKKA_HOME/tutorial/Pi.scala`` then now is the time. When that is done open up a shell and step in to the Akka distribution (``cd $AKKA_HOME``).
 
-    $ cd akka-1.1
-    $ export AKKA_HOME=`pwd`
+First we need to compile the source file. That is done with Scala's compiler ``scalac``. Our application depends on the ``akka-actor-1.1.jar`` JAR file, so let's add that to the compiler classpath when we compile the source::
+
     $ scalac -cp dist/akka-actor-1.1.jar tutorial/Pi.scala
+
+When we have compiled the source file we are ready to run the application. This is done with ``java`` but yet again we need to add the ``akka-actor-1.1.jar`` JAR file to the classpath, this time we also need to add the Scala runtime library ``scala-library.jar`` and the classes we compiled ourselves to the classpath::
+
     $ java -cp dist/akka-actor-1.1.jar:scala-library.jar:tutorial akka.tutorial.scala.first.Pi
-    $ ...
+    AKKA_HOME is defined as [/Users/jboner/src/akka-stuff/akka-core], loading config from \
+      [/Users/jboner/src/akka-stuff/akka-core/config/akka.conf].
+
+    Pi estimate:        3.1435501812459323
+    Calculation time:   858 millis
+
+Yipee! It is working.
 
 Run it inside SBT
 -----------------
 
-Run::
+If you have based the tutorial on SBT then you can run the application directly inside SBT. First you need to compile the project::
 
     $ sbt
     > update
+    ...
+    > compile
+    ...
+
+When this in done we can start up a Scala REPL (console/interpreter) directly inside SBT with our dependencies and classes on the classpath::
+
     > console
-    > akka.tutorial.scala.first.Pi.calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
-    > ...
+    ...
+    scala>
+
+In this REPL we can now evaluate Scala code. For example run our application::
+
+    scala> akka.tutorial.scala.first.Pi.calculate(
+         | nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
+    AKKA_HOME is defined as [/Users/jboner/src/akka-stuff/akka-core], loading config from \
+      [/Users/jboner/src/akka-stuff/akka-core/config/akka.conf].
+
+    Pi estimate:        3.1435501812459323
+    Calculation time:   942 millis
+
+See it complete the calculation and print out the result. When that is done we can exit the REPL::
+
     > :quit
 
+Yipee! It is working.
+
+Conclusion
+----------
+
+TODO
