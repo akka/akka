@@ -44,7 +44,7 @@ trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
  * }
  * </pre>
  */
-@serializable trait StatelessActorFormat[T <: Actor] extends Format[T] {
+trait StatelessActorFormat[T <: Actor] extends Format[T] with scala.Serializable{
   def fromBinary(bytes: Array[Byte], act: T) = act
 
   def toBinary(ac: T) = Array.empty[Byte]
@@ -64,7 +64,7 @@ trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
  * }
  * </pre>
  */
-@serializable trait SerializerBasedActorFormat[T <: Actor] extends Format[T] {
+trait SerializerBasedActorFormat[T <: Actor] extends Format[T] with scala.Serializable {
   val serializer: Serializer
 
   def fromBinary(bytes: Array[Byte], act: T) = serializer.fromBinary(bytes, Some(act.self.actorClass)).asInstanceOf[T]
@@ -205,10 +205,11 @@ object ActorSerialization {
       else actorClass.newInstance.asInstanceOf[Actor]
     }
 
+    /* TODO Can we remove originalAddress from the protocol?
     val homeAddress = {
       val address = protocol.getOriginalAddress
       Some(new InetSocketAddress(address.getHostname, address.getPort))
-    }
+    }*/
 
     val ar = new LocalActorRef(
       uuidFrom(protocol.getUuid.getHigh, protocol.getUuid.getLow),
@@ -218,8 +219,7 @@ object ActorSerialization {
       lifeCycle,
       supervisor,
       hotswap,
-      factory,
-      homeAddress)
+      factory)
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
     messages.foreach(message => ar ! MessageSerializer.deserialize(message.getMessage))

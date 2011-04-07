@@ -101,32 +101,18 @@ object Supervision {
                   val target: Class[_],
                   val lifeCycle: LifeCycle,
                   val timeout: Long,
-                  _dispatcher: MessageDispatcher, // optional
-                  _remoteAddress: RemoteAddress   // optional
+                  _dispatcher: MessageDispatcher // optional
           ) extends Server {
     val intf: Option[Class[_]] = Option(_intf)
     val dispatcher: Option[MessageDispatcher] = Option(_dispatcher)
-    val remoteAddress: Option[RemoteAddress] = Option(_remoteAddress)
 
     def this(target: Class[_], lifeCycle: LifeCycle, timeout: Long) =
-      this(null: Class[_], target, lifeCycle, timeout, null: MessageDispatcher, null: RemoteAddress)
+      this(null: Class[_], target, lifeCycle, timeout, null: MessageDispatcher)
 
     def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Long) =
-      this(intf, target, lifeCycle, timeout, null: MessageDispatcher, null: RemoteAddress)
-
-    def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Long, dispatcher: MessageDispatcher) =
-      this(intf, target, lifeCycle, timeout, dispatcher, null: RemoteAddress)
+      this(intf, target, lifeCycle, timeout, null: MessageDispatcher)
 
     def this(target: Class[_], lifeCycle: LifeCycle, timeout: Long, dispatcher: MessageDispatcher) =
-      this(null: Class[_], target, lifeCycle, timeout, dispatcher, null: RemoteAddress)
-
-    def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Long, remoteAddress: RemoteAddress) =
-      this(intf, target, lifeCycle, timeout, null: MessageDispatcher, remoteAddress)
-
-    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Long, remoteAddress: RemoteAddress) =
-      this(null: Class[_], target, lifeCycle, timeout, null: MessageDispatcher, remoteAddress)
-
-    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Long, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
-      this(null: Class[_], target, lifeCycle, timeout, dispatcher, remoteAddress)
+      this(null: Class[_], target, lifeCycle, timeout, dispatcher)
   }
 }

@@ -175,36 +175,6 @@ object Futures {
       val fb = fn(a.asInstanceOf[A])
       for (r <- fr; b <-fb) yield (r += b)
     }.map(_.result)
-
-  // =====================================
-  // Deprecations
-  // =====================================
-  
-  /**
-   * (Blocking!)
-   */
-  @deprecated("Will be removed after 1.1, if you must block, use: futures.foreach(_.await)")
-  def awaitAll(futures: List[Future[_]]): Unit = futures.foreach(_.await)
-
-  /**
-   *  Returns the First Future that is completed (blocking!)
-   */
-  @deprecated("Will be removed after 1.1, if you must block, use: firstCompletedOf(futures).await")
-  def awaitOne(futures: List[Future[_]], timeout: Long = Long.MaxValue): Future[_] = firstCompletedOf[Any](futures, timeout).await
-
-
-  /**
-   * Applies the supplied function to the specified collection of Futures after awaiting each future to be completed
-   */
-  @deprecated("Will be removed after 1.1, if you must block, use: futures map { f => fun(f.await) }")
-  def awaitMap[A,B](in: Traversable[Future[A]])(fun: (Future[A]) => B): Traversable[B] =
-    in map { f => fun(f.await) }
-
-  /**
-   * Returns Future.resultOrException of the first completed of the 2 Futures provided (blocking!)
-   */
-  @deprecated("Will be removed after 1.1, if you must block, use: firstCompletedOf(List(f1,f2)).await.resultOrException")
-  def awaitEither[T](f1: Future[T], f2: Future[T]): Option[T] = firstCompletedOf[T](List(f1,f2)).await.resultOrException
 }
 
 object Future {

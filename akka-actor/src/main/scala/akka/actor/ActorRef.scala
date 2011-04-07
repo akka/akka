@@ -447,38 +447,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   def startLink(actorRef: ActorRef): Unit
 
   /**
-   * Atomically create (from actor class) and start an actor.
-   * <p/>
-   * To be invoked from within the actor itself.
-   */
-  @deprecated("Will be removed after 1.1, use Actor.actorOf instead")
-  def spawn(clazz: Class[_ <: Actor]): ActorRef
-
-  /**
-   * Atomically create (from actor class), make it remote and start an actor.
-   * <p/>
-   * To be invoked from within the actor itself.
-   */
-  @deprecated("Will be removed after 1.1, client managed actors will be removed")
-  def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef
-
-  /**
-   * Atomically create (from actor class), link and start an actor.
-   * <p/>
-   * To be invoked from within the actor itself.
-   */
-  @deprecated("Will be removed after 1.1, use use Actor.remote.actorOf instead and then link on success")
-  def spawnLink(clazz: Class[_ <: Actor]): ActorRef
-
-  /**
-   * Atomically create (from actor class), make it remote, link and start an actor.
-   * <p/>
-   * To be invoked from within the actor itself.
-   */
-  @deprecated("Will be removed after 1.1, client managed actors will be removed")
-  def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef
-
-  /**
    * Returns the mailbox size.
    */
   def mailboxSize = dispatcher.mailboxSize(this)
@@ -593,10 +561,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class LocalActorRef private[akka] (
-  private[this] val actorFactory: () => Actor,
-  val homeAddress: Option[InetSocketAddress],
-  val clientManaged: Boolean = false)
+class LocalActorRef private[akka] (private[this] val actorFactory: () => Actor)
   extends ActorRef with ScalaActorRef {
 
   @volatile
@@ -626,9 +591,8 @@ class LocalActorRef private[akka] (
     __lifeCycle: LifeCycle,
     __supervisor: Option[ActorRef],
     __hotswap: Stack[PartialFunction[Any, Unit]],
-    __factory: () => Actor,
-    __homeAddress: Option[InetSocketAddress]) = {
-    this(__factory, __homeAddress)
+    __factory: () => Actor) = {
+    this(__factory)
     _uuid = __uuid
     id = __id
     timeout = __timeout
@@ -639,11 +603,6 @@ class LocalActorRef private[akka] (
     setActorSelfFields(actor,this)
     start
   }
-
-  /**
-   * Returns whether this actor ref is client-managed remote or not
-   */
-  private[akka] final def isClientManaged_? = clientManaged && homeAddress.isDefined && isRemotingEnabled
 
   // ========= PUBLIC FUNCTIONS =========
 
@@ -656,6 +615,8 @@ class LocalActorRef private[akka] (
    * Returns the class name for the Actor instance that is managed by the ActorRef.
    */
   def actorClassName: String = actorClass.getName
+
+  final def homeAddress: Option[InetSocketAddress] = None
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
@@ -688,9 +649,6 @@ class LocalActorRef private[akka] (
       if ((actorInstance ne null) && (actorInstance.get ne null))
         initializeActorInstance
 
-      if (isClientManaged_?)
-        Actor.remote.registerClientManagedActor(homeAddress.get.getAddress.getHostAddress, homeAddress.get.getPort, uuid)
-
       checkReceiveTimeout //Schedule the initial Receive timeout
     }
     this
@@ -710,11 +668,9 @@ class LocalActorRef private[akka] (
       } finally {
         currentMessage = null
         Actor.registry.unregister(this)
-        if (isRemotingEnabled) {
-          if (isClientManaged_?)
-            Actor.remote.unregisterClientManagedActor(homeAddress.get.getAddress.getHostAddress, homeAddress.get.getPort, uuid)
+        if (isRemotingEnabled)
           Actor.remote.unregister(this)
-        }
+
         setActorSelfFields(actorInstance.get,null)
       }
     } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
@@ -765,52 +721,6 @@ class LocalActorRef private[akka] (
   }
 
   /**
-   * Atomically create (from actor class) and start an actor.
-   * <p/>
-   * To be invoked from within the actor itself.
-   */
-  def spawn(clazz: Class[_ <: Actor]): ActorRef =
-    Actor.actorOf(clazz).start
-
-  /**
-   * Atomically create (from actor class), start and make an actor remote.
-   * <p/>
-   * To be invoked from within the actor itself.
-   */
-  def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long = Actor.TIMEOUT): ActorRef = {
-    ensureRemotingEnabled
-    val ref = Actor.remote.actorOf(clazz, hostname, port)
-    ref.timeout = timeout
-    ref.start
-  }
-
-  /**
-   * Atomically create (from actor class), start and link an actor.
-   * <p/>
-   * To be invoked from within the actor itself.
-   */
-  def spawnLink(clazz: Class[_ <: Actor]): ActorRef = {
-    val actor = spawn(clazz)
-    link(actor)
-    actor.start
-    actor
-  }
-
-  /**
-   * Atomically create (from actor class), start, link and make an actor remote.
-   * <p/>
-   * To be invoked from within the actor itself.
-   */
-  def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long = Actor.TIMEOUT): ActorRef = {
-    ensureRemotingEnabled
-    val actor = Actor.remote.actorOf(clazz, hostname, port)
-    actor.timeout = timeout
-    link(actor)
-    actor.start
-    actor
-  }
-
-  /**
    * Returns the mailbox.
    */
   def mailbox: AnyRef = _mailbox
@@ -827,10 +737,6 @@ class LocalActorRef private[akka] (
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = _supervisor = sup
 
   protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
-    if (isClientManaged_?) {
-      Actor.remote.send[Any](
-        message, senderOption, None, homeAddress.get, timeout, true, this, None, ActorType.ScalaActor, None)
-    } else
       dispatcher dispatchMessage new MessageInvocation(this, message, senderOption, None)
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
@@ -838,17 +744,10 @@ class LocalActorRef private[akka] (
     timeout: Long,
     senderOption: Option[ActorRef],
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-      if (isClientManaged_?) {
-      val future = Actor.remote.send[T](
-        message, senderOption, senderFuture, homeAddress.get, timeout, false, this, None, ActorType.ScalaActor, None)
-      if (future.isDefined) future.get
-      else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
-    } else {
-      val future = if (senderFuture.isDefined) senderFuture else Some(new DefaultCompletableFuture[T](timeout))
-      dispatcher dispatchMessage new MessageInvocation(
-        this, message, senderOption, future.asInstanceOf[Some[CompletableFuture[Any]]])
-      future.get
-    }
+    val future = if (senderFuture.isDefined) senderFuture else Some(new DefaultCompletableFuture[T](timeout))
+    dispatcher dispatchMessage new MessageInvocation(
+      this, message, senderOption, future.asInstanceOf[Some[CompletableFuture[Any]]])
+    future.get
   }
 
   /**
@@ -1004,11 +903,10 @@ class LocalActorRef private[akka] (
       }
     }
   }
-
+  //TODO KEEP THIS?
   protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = guard.withGuard {
     ensureRemotingEnabled
     if (_supervisor.isDefined) {
-      if (homeAddress.isDefined)  Actor.remote.registerSupervisorForActor(this)
       Some(_supervisor.get.uuid)
     } else None
   }
@@ -1179,10 +1077,6 @@ private[akka] case class RemoteActorRef private[akka] (
   def link(actorRef: ActorRef): Unit = unsupported
   def unlink(actorRef: ActorRef): Unit = unsupported
   def startLink(actorRef: ActorRef): Unit = unsupported
-  def spawn(clazz: Class[_ <: Actor]): ActorRef = unsupported
-  def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef = unsupported
-  def spawnLink(clazz: Class[_ <: Actor]): ActorRef = unsupported
-  def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef = unsupported
   def supervisor: Option[ActorRef] = unsupported
   def linkedActors: JMap[Uuid, ActorRef] = unsupported
   protected[akka] def mailbox: AnyRef = unsupported
@@ -1387,33 +1281,5 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
       sender.get.!(message)(Some(this))
       true
     } else false
-  }
-
-  /**
-   * Atomically create (from actor class) and start an actor.
-   */
-  def spawn[T <: Actor: Manifest]: ActorRef =
-    spawn(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
-
-  /**
-   * Atomically create (from actor class), start and make an actor remote.
-   */
-  def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int, timeout: Long): ActorRef = {
-    ensureRemotingEnabled
-    spawnRemote(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], hostname, port, timeout)
-  }
-
-  /**
-   * Atomically create (from actor class), start and link an actor.
-   */
-  def spawnLink[T <: Actor: Manifest]: ActorRef =
-    spawnLink(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
-
-  /**
-   * Atomically create (from actor class), start, link and make an actor remote.
-   */
-  def spawnLinkRemote[T <: Actor: Manifest](hostname: String, port: Int, timeout: Long): ActorRef = {
-    ensureRemotingEnabled
-    spawnLinkRemote(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], hostname, port, timeout)
   }
 }

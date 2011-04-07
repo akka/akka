@@ -377,18 +377,12 @@ object TypedActorConfiguration {
     new TypedActorConfiguration()
   }
 
-  def apply(timeout: Long) : TypedActorConfiguration = {
-    new TypedActorConfiguration().timeout(Duration(timeout, "millis"))
+  def apply(timeoutMillis: Long) : TypedActorConfiguration = {
+    new TypedActorConfiguration().timeout(Duration(timeoutMillis, "millis"))
   }
 
-  @deprecated("Will be removed after 1.1")
-  def apply(host: String, port: Int) : TypedActorConfiguration = {
-    new TypedActorConfiguration().makeRemote(host, port)
-  }
-
-  @deprecated("Will be removed after 1.1")
-  def apply(host: String, port: Int, timeout: Long) : TypedActorConfiguration = {
-    new TypedActorConfiguration().makeRemote(host, port).timeout(Duration(timeout, "millis"))
+  def apply(timeout: Duration) : TypedActorConfiguration = {
+    new TypedActorConfiguration().timeout(timeout)
   }
 }
 
@@ -399,7 +393,6 @@ object TypedActorConfiguration {
  */
 final class TypedActorConfiguration {
   private[akka] var _timeout: Long = Actor.TIMEOUT
-  private[akka] var _host: Option[InetSocketAddress] = None
   private[akka] var _messageDispatcher: Option[MessageDispatcher] = None
   private[akka] var _threadBasedDispatcher: Option[Boolean] = None
   private[akka] var _id: Option[String] = None
@@ -413,15 +406,6 @@ final class TypedActorConfiguration {
   def id = _id
   def id(id: String): TypedActorConfiguration = {
     _id = Option(id)
-    this
-  }
-
-  @deprecated("Will be removed after 1.1")
-  def makeRemote(hostname: String, port: Int): TypedActorConfiguration = makeRemote(new InetSocketAddress(hostname, port))
-
-  @deprecated("Will be removed after 1.1")
-  def makeRemote(remoteAddress: InetSocketAddress): TypedActorConfiguration = {
-    _host = Some(remoteAddress)
     this
   }
 
@@ -481,28 +465,6 @@ object TypedActor {
   }
 
   /**
-   * Factory method for remote typed actor.
-   * @param intfClass interface the typed actor implements
-   * @param targetClass implementation class of the typed actor
-   * @param host hostanme of the remote server
-   * @param port port of the remote server
-   */
-  def newRemoteInstance[T](intfClass: Class[T], targetClass: Class[_], hostname: String, port: Int): T = {
-    newInstance(intfClass, targetClass, TypedActorConfiguration(hostname, port))
-  }
-
-  /**
-   * Factory method for remote typed actor.
-   * @param intfClass interface the typed actor implements
-   * @param factory factory method that constructs the typed actor
-   * @param host hostanme of the remote server
-   * @param port port of the remote server
-   */
-  def newRemoteInstance[T](intfClass: Class[T], factory: => AnyRef, hostname: String, port: Int): T = {
-    newInstance(intfClass, factory, TypedActorConfiguration(hostname, port))
-  }
-
-  /**
    * Factory method for typed actor.
    * @param intfClass interface the typed actor implements
    * @param targetClass implementation class of the typed actor
@@ -523,52 +485,13 @@ object TypedActor {
   }
 
   /**
-   * Factory method for remote typed actor.
-   * @param intfClass interface the typed actor implements
-   * @param targetClass implementation class of the typed actor
-   * @paramm timeout timeout for future
-   * @param host hostanme of the remote server
-   * @param port port of the remote server
-   */
-  @deprecated("Will be removed after 1.1")
-  def newRemoteInstance[T](intfClass: Class[T], targetClass: Class[_], timeout: Long, hostname: String, port: Int): T = {
-    newInstance(intfClass, targetClass, TypedActorConfiguration(hostname, port, timeout))
-  }
-
-  /**
-   * Factory method for remote typed actor.
-   * @param intfClass interface the typed actor implements
-   * @param factory factory method that constructs the typed actor
-   * @paramm timeout timeout for future
-   * @param host hostanme of the remote server
-   * @param port port of the remote server
-   */
-  @deprecated("Will be removed after 1.1")
-  def newRemoteInstance[T](intfClass: Class[T], factory: => AnyRef, timeout: Long, hostname: String, port: Int): T = {
-    newInstance(intfClass, factory, TypedActorConfiguration(hostname, port, timeout))
-  }
-
-  /**
    * Factory method for typed actor.
    * @param intfClass interface the typed actor implements
    * @param factory factory method that constructs the typed actor
    * @paramm config configuration object fo the typed actor
    */
   def newInstance[T](intfClass: Class[T], factory: => AnyRef, config: TypedActorConfiguration): T =
-    newInstance(intfClass, createActorRef(newTypedActor(factory),config), config)
-
-  /**
-   * Creates an ActorRef, can be local only or client-managed-remote
-   */
-  @deprecated("Will be removed after 1.1")
-  private[akka] def createActorRef(typedActor: => TypedActor, config: TypedActorConfiguration): ActorRef = {
-    config match {
-      case null => actorOf(typedActor)
-      case c: TypedActorConfiguration if (c._host.isDefined) =>
-        Actor.remote.actorOf(typedActor, c._host.get.getAddress.getHostAddress, c._host.get.getPort)
-      case _ => actorOf(typedActor)
-    }
-  }
+    newInstance(intfClass, actorOf(newTypedActor(factory)), config)
 
   /**
    *  Factory method for typed actor.
@@ -577,7 +500,7 @@ object TypedActor {
    * @paramm config configuration object fo the typed actor
    */
   def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T =
-    newInstance(intfClass, createActorRef(newTypedActor(targetClass),config), config)
+    newInstance(intfClass, actorOf(newTypedActor(targetClass)), config)
 
   private[akka] def newInstance[T](intfClass: Class[T], actorRef: ActorRef): T = {
     if (!actorRef.actorInstance.get.isInstanceOf[TypedActor]) throw new IllegalArgumentException("ActorRef is not a ref to a typed actor")
@@ -585,11 +508,8 @@ object TypedActor {
   }
 
   private[akka] def newInstance[T](intfClass: Class[T], targetClass: Class[_],
-                                   remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    val config = TypedActorConfiguration(timeout)
-    if (remoteAddress.isDefined) config.makeRemote(remoteAddress.get)
-    newInstance(intfClass, targetClass, config)
-  }
+                                   remoteAddress: Option[InetSocketAddress], timeout: Long): T =
+    newInstance(intfClass, targetClass, TypedActorConfiguration(timeout))
 
   private def newInstance[T](intfClass: Class[T], actorRef: ActorRef, config: TypedActorConfiguration) : T = {
     val typedActor = actorRef.actorInstance.get.asInstanceOf[TypedActor]
@@ -601,13 +521,7 @@ object TypedActor {
 
     actorRef.timeout = config.timeout
 
-    val remoteAddress = actorRef match {
-      case remote: RemoteActorRef => remote.homeAddress
-      case local: LocalActorRef if local.clientManaged => local.homeAddress
-      case _ => None
-    }
-
-    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, remoteAddress, actorRef.timeout))
+    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, actorRef.homeAddress, actorRef.timeout))
     actorRef.start
     proxy.asInstanceOf[T]
   }
@@ -632,20 +546,6 @@ object TypedActor {
    */
   def newInstance[T](intfClass: Class[T], factory: TypedActorFactory) : T =
     newInstance(intfClass, factory.create)
-
-  /**
-   * Java API.
-   */
-  @deprecated("Will be removed after 1.1")
-  def newRemoteInstance[T](intfClass: Class[T], factory: TypedActorFactory, hostname: String, port: Int) : T =
-    newRemoteInstance(intfClass, factory.create, hostname, port)
-
-  /**
-   * Java API.
-   */
-  @deprecated("Will be removed after 1.1")
-  def newRemoteInstance[T](intfClass: Class[T], factory: TypedActorFactory, timeout: Long, hostname: String, port: Int) : T =
-    newRemoteInstance(intfClass, factory.create, timeout, hostname, port)
 
   /**
    * Java API.

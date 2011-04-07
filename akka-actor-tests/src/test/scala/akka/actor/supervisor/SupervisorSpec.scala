@@ -60,7 +60,11 @@ object SupervisorSpec {
   class Master extends Actor {
     self.faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, testMillis(1 second).toInt)
 
-    val temp = self.spawnLink[TemporaryActor]
+    val temp = {
+      val a = actorOf[TemporaryActor]
+      self link a
+      a.start
+    }
 
     override def receive = {
       case Die => temp !! (Die, TimeoutMillis)

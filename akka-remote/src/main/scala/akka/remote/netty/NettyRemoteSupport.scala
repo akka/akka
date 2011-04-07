@@ -591,19 +591,6 @@ class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with
 
     RemoteActorRef(serviceId, className, host, port, timeout, loader)
   }
-
-  def clientManagedActorOf(factory: () => Actor, host: String, port: Int): ActorRef = {
-
-    if (optimizeLocalScoped_?) {
-      val home = this.address
-      if ((host == home.getAddress.getHostAddress || host == home.getHostName) && port == home.getPort)//TODO: switch to InetSocketAddress.equals?
-        return new LocalActorRef(factory, None) // Code is much simpler with return
-    }
-
-    val ref = new LocalActorRef(factory, Some(new InetSocketAddress(host, port)), clientManaged = true)
-    //ref.timeout = timeout //removed because setting default timeout should be done after construction
-    ref
-  }
 }
 
 class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String, val port: Int, val loader: Option[ClassLoader]) {
