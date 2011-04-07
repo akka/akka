@@ -132,15 +132,6 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
     remoteClients.foreach({ case (addr, client) => client.shutdown })
     remoteClients.clear
   }
-
-  def registerClientManagedActor(hostname: String, port: Int, uuid: Uuid) = {
-    remoteActors.put(Address(hostname, port), uuid)
-  }
-
-  private[akka] def unregisterClientManagedActor(hostname: String, port: Int, uuid: Uuid) = {
-    remoteActors.remove(Address(hostname,port), uuid)
-    //TODO: should the connection be closed when the last actor deregisters?
-  }
 }
 
 /**
@@ -1082,34 +1073,6 @@ class RemoteServerHandler(
     }
   }
 
-
-  private def createClientManagedActor(actorInfo: ActorInfoProtocol): ActorRef = {
-    val uuid = actorInfo.getUuid
-    val id = actorInfo.getId
-    val timeout = actorInfo.getTimeout
-    val name = actorInfo.getTarget
-
-    try {
-      if (UNTRUSTED_MODE) throw new SecurityException(
-        "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
-
-      val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
-                  else Class.forName(name)
-      val actorRef = Actor.actorOf(clazz.asInstanceOf[Class[_ <: Actor]])
-      actorRef.uuid = parseUuid(uuid)
-      actorRef.id = id
-      actorRef.timeout = timeout
-      server.actorsByUuid.put(actorRef.uuid.toString, actorRef) // register by uuid
-      actorRef.start //Start it where it's created
-    } catch {
-      case e: Throwable =>
-        EventHandler.error(e, this, e.getMessage)
-        server.notifyListeners(RemoteServerError(e, server))
-        throw e
-    }
-
-  }
-
   /**
    * Creates a new instance of the actor with name, uuid and timeout specified as arguments.
    *
@@ -1122,11 +1085,8 @@ class RemoteServerHandler(
     val id = actorInfo.getId
 
     server.findActorByIdOrUuid(id, parseUuid(uuid).toString) match {
-      case null => // the actor has not been registered globally. See if we have it in the session
-        createSessionActor(actorInfo, channel) match {
-          case null => createClientManagedActor(actorInfo) // maybe it is a client managed actor
-          case sessionActor => sessionActor
-        }
+        // the actor has not been registered globally. See if we have it in the session
+      case null     => createSessionActor(actorInfo, channel)
       case actorRef => actorRef
     }
   }
@@ -1149,49 +1109,12 @@ class RemoteServerHandler(
     }
   }
 
-  private def createClientManagedTypedActor(actorInfo: ActorInfoProtocol) = {
-    val typedActorInfo = actorInfo.getTypedActorInfo
-    val interfaceClassname = typedActorInfo.getInterface
-    val targetClassname = actorInfo.getTarget
-    val uuid = actorInfo.getUuid
-
-    try {
-      if (UNTRUSTED_MODE) throw new SecurityException(
-        "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
-
-      val (interfaceClass, targetClass) =
-        if (applicationLoader.isDefined) (applicationLoader.get.loadClass(interfaceClassname),
-                                          applicationLoader.get.loadClass(targetClassname))
-        else (Class.forName(interfaceClassname), Class.forName(targetClassname))
-
-      val newInstance = TypedActor.newInstance(
-        interfaceClass, targetClass.asInstanceOf[Class[_ <: TypedActor]], actorInfo.getTimeout).asInstanceOf[AnyRef]
-      server.typedActors.put(parseUuid(uuid).toString, newInstance) // register by uuid
-      newInstance
-    } catch {
-      case e: Throwable =>
-        EventHandler.error(e, this, e.getMessage)
-        server.notifyListeners(RemoteServerError(e, server))
-        throw e
-    }
-  }
-
   private def createTypedActor(actorInfo: ActorInfoProtocol, channel: Channel): AnyRef = {
     val uuid = actorInfo.getUuid
 
     server.findTypedActorByIdOrUuid(actorInfo.getId, parseUuid(uuid).toString) match {
-      case null => // the actor has not been registered globally. See if we have it in the session
-        createTypedSessionActor(actorInfo, channel) match {
-          case null => 
-            // FIXME this is broken, if a user tries to get a server-managed typed actor and that is not registered then a client-managed typed actor is created, but just throwing an exception here causes client-managed typed actors to fail
-          
-/*            val e = new RemoteServerException("Can't load remote Typed Actor for [" + actorInfo.getId + "]")
-            EventHandler.error(e, this, e.getMessage)
-            server.notifyListeners(RemoteServerError(e, server))
-            throw e            
-*/          createClientManagedTypedActor(actorInfo) // client-managed actor
-          case sessionActor => sessionActor
-        }
+        // the actor has not been registered globally. See if we have it in the session
+      case null => createTypedSessionActor(actorInfo, channel)
       case typedActor => typedActor
     }
   }
