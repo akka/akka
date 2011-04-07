@@ -94,10 +94,15 @@ object EventHandler extends ListenerManagement {
                     "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
   }
 
-  def notify(event: Any) { notifyListeners(event) }
+  def notify(event: Any) {
+    if (event.isInstanceOf[Event]) {
+      if (level >= event.asInstanceOf[Event].level) notifyListeners(event)
+    } else
+      notifyListeners(event)
+  }
 
-  def notify(event: Event) {
-    if (level >= event.level) notifyListeners(event)
+  def notify[T <: Event : ClassManifest](event: => T) {
+    if (level >= levelFor(classManifest[T].erasure.asInstanceOf[Class[_ <: Event]])) notifyListeners(event)
   }
 
   def error(cause: Throwable, instance: AnyRef, message: => String) {
@@ -147,6 +152,14 @@ object EventHandler extends ListenerManagement {
     val pw = new PrintWriter(sw)
     e.printStackTrace(pw)
     sw.toString
+  }
+
+  private def levelFor(eventClass: Class[_ <: Event]) = {
+    if (eventClass.isInstanceOf[Error])        ErrorLevel
+    else if (eventClass.isInstanceOf[Warning]) WarningLevel
+    else if (eventClass.isInstanceOf[Info])    InfoLevel
+    else if (eventClass.isInstanceOf[Debug])   DebugLevel
+    else                                       DebugLevel
   }
 
   class DefaultListener extends Actor {
