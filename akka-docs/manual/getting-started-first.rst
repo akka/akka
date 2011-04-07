@@ -11,7 +11,11 @@ There are two variations of this first tutorial:
 - creating a standalone project and run it from the command line
 - creating a SBT (Simple Build Tool) project and running it from within SBT
 
-Since they are so similar we will present them both in this tutorial. The sample application that we will create is using actors to calculate the value of Pi. Is using an algorithm that is easily parallelizable and therefore suits the actor model very well, but is generic enough to suit as a starting point for all kinds of Master/Worker style problems.
+Since they are so similar we will present them both in this tutorial.
+
+The sample application that we will create is using actors to calculate the value of Pi. Calculating Pi is a CPU intensive operation and we will utilize Akka Actors to write a concurrent solution that scales out to multi-core processors. This sample will be extended in future tutorials to use Akka Remote Actors to scale out on multiple machines in a cluster.
+
+We will be using an algorithm that is what is called "embarrassingly parallel" which just means that each job is completely isolated and not coupled with any other job. Since this algorithm is so parallelizable it suits the actor model very well.
 
 Here is the formula for the algorithm we will use:
 
@@ -19,10 +23,13 @@ Here is the formula for the algorithm we will use:
 
 In this particular algorithm the master splits the series into chunks which are sent out to each worker actor to be processed, when each worker has processed its chunk it sends a result back to the master which aggregates to total result.
 
+Prerequisite
+------------
+
+This tutorial assumes that you have Jave 1.6 or later installed on you machine and ``java`` on your ``PATH``. I also need to know how to run commands in a shell (ZSH, Bash, DOS etc.) and a decent text editor or IDE to type in the Scala code in.
+
 Downloading and installing Akka
 -------------------------------
-
-This tutorial assumes that you have Jave 1.6 or later installed on you machine and ``java`` on your ``PATH``.
 
 The first thing we need to do is to download Akka. Let's get the 1.1 distribution from `http://akka.io/downloads <http://akka.io/downloads/>`_. Once you have downloaded the distribution unzip it in the folder you would like to have Akka installed in, in my case I choose to install it in ``/Users/jboner/tools/``, simply by unzipping it to this directory.
 
@@ -51,6 +58,28 @@ If we now take a look at what we have in this distribution, looks like this::
 - In the ``scripts`` directory we have scripts for running Akka.
 - Finallly the ``scala-library.jar`` is the JAR for the latest Scala distribution that Akka depends on.
 
+The only JAR we will need for this tutorial (apart from the ``scala-library.jar`` JAR) is the ``akka-actor-1.1.jar`` JAR in the ``dist`` directory. This is a self-contained JAR with zero dependencies and contains the everything we need to write a system using Actors.
+
+Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
+
+- ``akka-actor-1.1.jar`` -- Standard Actors
+- ``akka-typed-actor-1.1.jar`` -- Typed Actors
+- ``akka-remote-1.1.jar`` -- Remote Actors
+- ``akka-stm-1.1.jar`` -- STM (Software Transactional Memory) and transactional datastructures
+- ``akka-http-1.1.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
+- ``akka-slf4j-1.1.jar`` -- SLF4J Event Handler Listener
+- ``akka-testkit-1.1.jar`` -- Toolkit for testing Actors
+
+We also have Akka Modules containing add-on modules for the core of Akka. You can download the Akka Modules distribution from TODO. It contains Akka core as well. We will not be needing any modules there today but for your information the module JARs are these:
+
+- ``akka-kernel-1.1.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
+- ``akka-amqp-1.1.jar`` -- AMQP integration
+- ``akka-camel-1.1.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+- ``akka-camel-typed-1.1.jar`` -- Apache Camel Typed Actors integration
+- ``akka-scalaz-1.1.jar`` -- Support for the Scalaz library
+- ``akka-spring-1.1.jar`` -- Spring framework integration
+- ``akka-osgi-dependencies-bundle-1.1.jar`` -- OSGi support
+
 Downloading and installing Scala
 --------------------------------
 
@@ -69,17 +98,18 @@ Now you can test you installation by invoking and see the printout::
 
 Looks like we are all good. Finally let's create a source file ``Pi.scala`` for the tutorial and put it in the root of the Akka distribution in the ``tutorial`` directory (you have to create it first).
 
+Some tools requires you to set the ``SCALA_HOME`` environment variable to the root of the Scala distribution, however Akka does not require that.
 
 Downloading and installing SBT
 ------------------------------
 
-SBT, short for Simple Build Tool is an excellent build system written in Scala. It the preferred way of building software in Scala. If you want to use SBT for this tutorial then follow the following instructions, if not you can skip this section.
+SBT, short for 'Simple Build Tool' is an excellent build system written in Scala. You are using Scala to write the build scripts which gives you a lot of power. It has a plugin architecture with many plugins available, something that we will take advantage of soon. SBT is the preferred way of building software in Scala. If you want to use SBT for this tutorial then follow the following instructions, if not you can skip this section.
 
 To install SBT and create a project for this tutorial it is easiest to follow the instructions on `this page <http://code.google.com/p/simple-build-tool/wiki/Setup>`_. The preferred SBT version to install is ``0.7.6``.
 
-If you have created an SBT project then create a source file for the tutorial and put it in ``src/main/scala/Pi.scala``.
+If you have created an SBT project then step into the newly created SBT project, create a source file ``Pi.scala`` for the tutorial sample and put it in the ``src/main/scala/`` directory.
 
-Now we need to make our project an Akka project. You can add the dependencies manually, but the easiest way is to use Akka's SBT Plugin.
+So far we only have a standard Scala project but now we need to make our project an Akka project. You could add the dependencies manually to the build script, but the easiest way is to use Akka's SBT Plugin.
 
 TODO: write up about Akka's SBT Plugin
 
@@ -155,7 +185,7 @@ As you can see we are using the ``actorOf`` factory method to create actors, thi
 Now we have a routes are representing all our workers in a single abstraction. If you paid attention to the code above to see that we were using the ``nrOfWorkers`` variable. This variable and others we have to pass to the ``Master`` actor in its constructor. So now let's create the master actor. We had to pass in three integer variables needed:
 
 - ``nrOfWorkers`` -- defining how many workers we should start up
-- ``nrOfMessages`` -- defining how many numebr chunks should send out to the workers
+- ``nrOfMessages`` -- defining how many number chunks should send out to the workers
 - ``nrOfElements`` -- defining how big the number chunks sent to each worker should be
 
 Let's not write the master actor::
@@ -190,7 +220,7 @@ Couple of things are worth explaining further.
 
 First, we are passing in a ``java.util.concurrent.CountDownLatch`` to the ``Master`` actor. This latch is only used for plumbing, to have a simple way letting the outside world knowing when the master can deliver the result and shut down. In more idiomatic Akka code, as we will see in part two of this tutorial series, we would not use a latch.
 
-Second, we are adding a couple of lifecycle callback methods; ``preStart`` and ``postStop``. In the ``preStart`` callback we are recording the time when the actor is started and in the ``postStop`` callback we are printing out the result (the approximation of Pi) and the time it took to calculate it. In this call but we also invoke ``latch.countDown`` to tell the outside world that we are done.
+Second, we are adding a couple of life-cycle callback methods; ``preStart`` and ``postStop``. In the ``preStart`` callback we are recording the time when the actor is started and in the ``postStop`` callback we are printing out the result (the approximation of Pi) and the time it took to calculate it. In this call but we also invoke ``latch.countDown`` to tell the outside world that we are done.
 
 But we are not done yet. We are missing the message handler for the ``Master`` actor. This message handler needs to be able to react to two different messages:
 
@@ -382,7 +412,7 @@ When we have compiled the source file we are ready to run the application. This 
     Pi estimate:        3.1435501812459323
     Calculation time:   858 millis
 
-Yipee! It is working.
+Yippee! It is working.
 
 Run it inside SBT
 -----------------
@@ -415,9 +445,13 @@ See it complete the calculation and print out the result. When that is done we c
 
     > :quit
 
-Yipee! It is working.
+Yippee! It is working.
 
 Conclusion
 ----------
 
-TODO
+Now we have learned how to create our first Akka project utilizing Akka's actors to speed up a computation intensive problem by scaling out on multi-core processors (also known as scaling up). We have also learned how to compile and run an Akka project utilizing either the tools on the command line or the SBT build system.
+
+Now we are ready to take on more advanced problems. In the next tutorial we will build upon this one, refactor it into more idiomatic Akka and Scala code and introduce a few new concepts and abstractions. Whenever you feel ready, join my in the `Getting Started Tutorial: Second Chapter <TODO>`_.
+
+Happy hakking.
