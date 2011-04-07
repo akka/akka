@@ -508,26 +508,26 @@ trait CompletableFuture[T] extends Future[T] {
    * Completes this Future with the specified result, if not already completed.
    * @return this
    */
-  def complete(value: Either[Throwable, T]): CompletableFuture[T]
+  def complete(value: Either[Throwable, T]): Future[T]
 
   /**
    * Completes this Future with the specified result, if not already completed.
    * @return this
    */
-  final def completeWithResult(result: T): CompletableFuture[T] = complete(Right(result))
+  final def completeWithResult(result: T): Future[T] = complete(Right(result))
 
   /**
    * Completes this Future with the specified exception, if not already completed.
    * @return this
    */
-  final def completeWithException(exception: Throwable): CompletableFuture[T] = complete(Left(exception))
+  final def completeWithException(exception: Throwable): Future[T] = complete(Left(exception))
 
   /**
    * Completes this Future with the specified other Future, when that Future is completed,
    * unless this Future has already been completed.
    * @return this.
    */
-  final def completeWith(other: Future[T]): CompletableFuture[T] = {
+  final def completeWith(other: Future[T]): Future[T] = {
     other onComplete { f => complete(f.value.get) }
     this
   }
@@ -535,12 +535,12 @@ trait CompletableFuture[T] extends Future[T] {
   /**
    * Alias for complete(Right(value)).
    */
-  final def << (value: T): CompletableFuture[T] = complete(Right(value))
+  final def << (value: T): Future[T] = complete(Right(value))
 
   /**
    * Alias for completeWith(other).
    */
-  final def << (other : Future[T]): CompletableFuture[T] = completeWith(other)
+  final def << (other : Future[T]): Future[T] = completeWith(other)
 }
 
 /**
