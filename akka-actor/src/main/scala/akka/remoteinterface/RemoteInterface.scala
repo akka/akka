@@ -400,14 +400,4 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
                               typedActorInfo: Option[Tuple2[String, String]],
                               actorType: ActorType,
                               loader: Option[ClassLoader]): Option[CompletableFuture[T]]
-
-  private[akka] def registerSupervisorForActor(actorRef: ActorRef): ActorRef
-
-  private[akka] def deregisterSupervisorForActor(actorRef: ActorRef): ActorRef
-
-  @deprecated("Will be removed after 1.1")
-  private[akka] def registerClientManagedActor(hostname: String, port: Int, uuid: Uuid): Unit
-
-  @deprecated("Will be removed after 1.1")
-  private[akka] def unregisterClientManagedActor(hostname: String, port: Int, uuid: Uuid): Unit
 }

@@ -119,16 +119,6 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
     }
   }
 
-  private[akka] def registerSupervisorForActor(actorRef: ActorRef): ActorRef =
-    withClientFor(actorRef.homeAddress.get, None)(_.registerSupervisorForActor(actorRef))
-
-  private[akka] def deregisterSupervisorForActor(actorRef: ActorRef): ActorRef = lock withReadGuard {
-    remoteClients.get(Address(actorRef.homeAddress.get)) match {
-      case s: Some[RemoteClient] => s.get.deregisterSupervisorForActor(actorRef)
-      case None => actorRef
-    }
-  }
-
   /**
    * Clean-up all open connections.
    */
@@ -170,7 +160,6 @@ abstract class RemoteClient private[akka] (
              remoteAddress.getPort
 
   protected val futures         = new ConcurrentHashMap[Uuid, CompletableFuture[_]]
-  protected val supervisors     = new ConcurrentHashMap[Uuid, ActorRef]
   protected val pendingRequests = {
     if (transactionLogCapacity < 0) new ConcurrentLinkedQueue[(Boolean, Uuid, RemoteMessageProtocol)]
     else                            new LinkedBlockingQueue[(Boolean, Uuid, RemoteMessageProtocol)](transactionLogCapacity)
@@ -320,16 +309,6 @@ abstract class RemoteClient private[akka] (
       pendingRequest = pendingRequests.peek  // try to grab next message
     }
   }
-
-  private[akka] def registerSupervisorForActor(actorRef: ActorRef): ActorRef =
-    if (!actorRef.supervisor.isDefined) throw new IllegalActorStateException(
-      "Can't register supervisor for " + actorRef + " since it is not under supervision")
-    else supervisors.putIfAbsent(actorRef.supervisor.get.uuid, actorRef)
-
-  private[akka] def deregisterSupervisorForActor(actorRef: ActorRef): ActorRef =
-    if (!actorRef.supervisor.isDefined) throw new IllegalActorStateException(
-      "Can't unregister supervisor for " + actorRef + " since it is not under supervision")
-    else supervisors.remove(actorRef.supervisor.get.uuid)
 }
 
 /**
@@ -358,7 +337,7 @@ class ActiveRemoteClient private[akka] (
       timer = new HashedWheelTimer
 
       bootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool))
-      bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, futures, supervisors, bootstrap, remoteAddress, timer, this))
+      bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, futures, bootstrap, remoteAddress, timer, this))
       bootstrap.setOption("tcpNoDelay", true)
       bootstrap.setOption("keepAlive", true)
 
@@ -433,7 +412,6 @@ class ActiveRemoteClient private[akka] (
 class ActiveRemoteClientPipelineFactory(
   name: String,
   futures: ConcurrentMap[Uuid, CompletableFuture[_]],
-  supervisors: ConcurrentMap[Uuid, ActorRef],
   bootstrap: ClientBootstrap,
   remoteAddress: InetSocketAddress,
   timer: HashedWheelTimer,
@@ -450,7 +428,7 @@ class ActiveRemoteClientPipelineFactory(
       case        _ => (Nil,Nil)
     }
 
-    val remoteClient = new ActiveRemoteClientHandler(name, futures, supervisors, bootstrap, remoteAddress, timer, client)
+    val remoteClient = new ActiveRemoteClientHandler(name, futures, bootstrap, remoteAddress, timer, client)
     val stages: List[ChannelHandler] = timeout :: dec ::: lenDec :: protobufDec :: enc ::: lenPrep :: protobufEnc :: remoteClient :: Nil
     new StaticChannelPipeline(stages: _*)
   }
@@ -463,7 +441,6 @@ class ActiveRemoteClientPipelineFactory(
 class ActiveRemoteClientHandler(
   val name: String,
   val futures: ConcurrentMap[Uuid, CompletableFuture[_]],
-  val supervisors: ConcurrentMap[Uuid, ActorRef],
   val bootstrap: ClientBootstrap,
   val remoteAddress: InetSocketAddress,
   val timer: HashedWheelTimer,
@@ -488,19 +465,7 @@ class ActiveRemoteClientHandler(
             val message = MessageSerializer.deserialize(reply.getMessage)
             future.completeWithResult(message)
           } else {
-            val exception = parseException(reply, client.loader)
-
-            if (reply.hasSupervisorUuid()) {
-              val supervisorUuid = uuidFrom(reply.getSupervisorUuid.getHigh, reply.getSupervisorUuid.getLow)
-              if (!supervisors.containsKey(supervisorUuid)) throw new IllegalActorStateException(
-                "Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
-              val supervisedActor = supervisors.get(supervisorUuid)
-              if (!supervisedActor.supervisor.isDefined) throw new IllegalActorStateException(
-                "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
-              else supervisedActor.supervisor.get ! Exit(supervisedActor, exception)
-            }
-
-            future.completeWithException(exception)
+            future.completeWithException(parseException(reply, client.loader))
           }
         case other =>
           throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.module, client.remoteAddress)
@@ -891,14 +856,14 @@ class RemoteServerHandler(
 
     // stop all session actors
     for (map <- Option(sessionActors.remove(event.getChannel));
-         actor <- asScalaIterable(map.values)) {
+         actor <- collectionAsScalaIterable(map.values)) {
          try { actor ! PoisonPill } catch { case e: Exception => }
     }
 
     //FIXME switch approach or use other thread to execute this
     // stop all typed session actors
     for (map <- Option(typedSessionActors.remove(event.getChannel));
-         actor <- asScalaIterable(map.values)) {
+         actor <- collectionAsScalaIterable(map.values)) {
          try { TypedActor.stop(actor) } catch { case e: Exception => }
     }
 

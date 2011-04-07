@@ -189,7 +189,7 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
 
       while(!testDone()) {
         if (latch.await(200, TimeUnit.MILLISECONDS))
-          error("Test didn't complete within 100 cycles")
+          sys.error("Test didn't complete within 100 cycles")
         else
           latch.countDown
       }

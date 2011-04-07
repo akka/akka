@@ -61,7 +61,7 @@ object Futures {
    * Returns a Future to the result of the first future in the list that is completed
    */
   def firstCompletedOf[T <: AnyRef](futures: java.lang.Iterable[Future[T]], timeout: Long): Future[T] =
-    firstCompletedOf(scala.collection.JavaConversions.asScalaIterable(futures),timeout)
+    firstCompletedOf(scala.collection.JavaConversions.iterableAsScalaIterable(futures),timeout)
 
   /**
    * A non-blocking fold over the specified futures.
@@ -87,7 +87,7 @@ object Futures {
             results add r.b
             if (results.size == allDone) { //Only one thread can get here
               try {
-                result completeWithResult scala.collection.JavaConversions.asScalaIterable(results).foldLeft(zero)(foldFun)
+                result completeWithResult scala.collection.JavaConversions.collectionAsScalaIterable(results).foldLeft(zero)(foldFun)
               } catch {
                 case e: Exception =>
                   EventHandler.error(e, this, e.getMessage)
@@ -115,7 +115,7 @@ object Futures {
    * or the result of the fold.
    */
   def fold[T <: AnyRef, R <: AnyRef](zero: R, timeout: Long, futures: java.lang.Iterable[Future[T]], fun: akka.japi.Function2[R, T, R]): Future[R] =
-    fold(zero, timeout)(scala.collection.JavaConversions.asScalaIterable(futures))( fun.apply _ )
+    fold(zero, timeout)(scala.collection.JavaConversions.iterableAsScalaIterable(futures))( fun.apply _ )
 
   /**
    * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
@@ -150,7 +150,7 @@ object Futures {
    * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
    */
   def reduce[T <: AnyRef, R >: T](futures: java.lang.Iterable[Future[T]], timeout: Long, fun: akka.japi.Function2[R, T, T]): Future[R] =
-    reduce(scala.collection.JavaConversions.asScalaIterable(futures), timeout)(fun.apply _)
+    reduce(scala.collection.JavaConversions.iterableAsScalaIterable(futures), timeout)(fun.apply _)
 
   import scala.collection.mutable.Builder
   import scala.collection.generic.CanBuildFrom
