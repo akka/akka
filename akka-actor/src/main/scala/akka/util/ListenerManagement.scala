@@ -50,13 +50,12 @@ trait ListenerManagement {
    */
   def hasListener(listener: ActorRef): Boolean = listeners.contains(listener)
 
-  protected[akka] def notifyListeners(message: => Any) {
+  protected[akka] def notifyListeners(message: Any) {
     if (hasListeners) {
-      val msg = message
       val iterator = listeners.iterator
       while (iterator.hasNext) {
         val listener = iterator.next
-        if (listener.isRunning) listener ! msg
+        if (listener.isRunning) listener ! message
       }
     }
   }
