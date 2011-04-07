@@ -26,12 +26,14 @@ In this particular algorithm the master splits the series into chunks which are 
 Prerequisite
 ------------
 
-This tutorial assumes that you have Jave 1.6 or later installed on you machine and ``java`` on your ``PATH``. I also need to know how to run commands in a shell (ZSH, Bash, DOS etc.) and a decent text editor or IDE to type in the Scala code in.
+This tutorial assumes that you have Jave 1.6 or later installed on you machine and ``java`` on your ``PATH``. You also need to know how to run commands in a shell (ZSH, Bash, DOS etc.) and a decent text editor or IDE to type in the Scala code in.
 
 Downloading and installing Akka
 -------------------------------
 
-The first thing we need to do is to download Akka. Let's get the 1.1 distribution from `http://akka.io/downloads <http://akka.io/downloads/>`_. Once you have downloaded the distribution unzip it in the folder you would like to have Akka installed in, in my case I choose to install it in ``/Users/jboner/tools/``, simply by unzipping it to this directory.
+If you want to be able to build and run the tutorial sample from the command line then you have to download Akka. If you prefer to use SBT to build and run the sample then you can skip this section and jump to the next one.
+
+Let's get the 1.1 distribution from `http://akka.io/downloads <http://akka.io/downloads/>`_. Once you have downloaded the distribution unzip it in the folder you would like to have Akka installed in, in my case I choose to install it in ``/Users/jboner/tools/``, simply by unzipping it to this directory.
 
 You need to do one more thing in order to install Akka properly and that is to set the ``AKKA_HOME`` environment variable to the root of the distribution. In my case I'm opening up a shell and navigating down to the distribution and setting the ``AKKA_HOME`` variable::
 
@@ -58,7 +60,7 @@ If we now take a look at what we have in this distribution, looks like this::
 - In the ``scripts`` directory we have scripts for running Akka.
 - Finallly the ``scala-library.jar`` is the JAR for the latest Scala distribution that Akka depends on.
 
-The only JAR we will need for this tutorial (apart from the ``scala-library.jar`` JAR) is the ``akka-actor-1.1.jar`` JAR in the ``dist`` directory. This is a self-contained JAR with zero dependencies and contains the everything we need to write a system using Actors.
+The only JAR we will need for this tutorial (apart from the ``scala-library.jar`` JAR) is the ``akka-actor-1.1.jar`` JAR in the ``dist`` directory. This is a self-contained JAR with zero dependencies and contains everything we need to write a system using Actors.
 
 Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
 
@@ -83,7 +85,7 @@ We also have Akka Modules containing add-on modules for the core of Akka. You ca
 Downloading and installing Scala
 --------------------------------
 
-If you want to be able to build and run the tutorial sample from the command line then you have to install the Scala distribution. If you prefer to use SBT to build and run the sample then you need can skip this section and jump to the next one.
+If you want to be able to build and run the tutorial sample from the command line then you have to install the Scala distribution. If you prefer to use SBT to build and run the sample then you can skip this section and jump to the next one.
 
 Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0 final release. If you pick the ``tgz`` or ``zip`` distributions then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
 
@@ -182,13 +184,13 @@ As you can see we are using the ``actorOf`` factory method to create actors, thi
 
     import akka.actor.Actor._
 
-Now we have a routes are representing all our workers in a single abstraction. If you paid attention to the code above to see that we were using the ``nrOfWorkers`` variable. This variable and others we have to pass to the ``Master`` actor in its constructor. So now let's create the master actor. We had to pass in three integer variables needed:
+Now we have a router that is representing all our workers in a single abstraction. If you paid attention to the code above to see that we were using the ``nrOfWorkers`` variable. This variable and others we have to pass to the ``Master`` actor in its constructor. So now let's create the master actor. We had to pass in three integer variables needed:
 
 - ``nrOfWorkers`` -- defining how many workers we should start up
 - ``nrOfMessages`` -- defining how many number chunks should send out to the workers
 - ``nrOfElements`` -- defining how big the number chunks sent to each worker should be
 
-Let's not write the master actor::
+Let's now write the master actor::
 
     class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
       extends Actor {
@@ -218,16 +220,16 @@ Let's not write the master actor::
 
 Couple of things are worth explaining further.
 
-First, we are passing in a ``java.util.concurrent.CountDownLatch`` to the ``Master`` actor. This latch is only used for plumbing, to have a simple way letting the outside world knowing when the master can deliver the result and shut down. In more idiomatic Akka code, as we will see in part two of this tutorial series, we would not use a latch.
+First, we are passing in a ``java.util.concurrent.CountDownLatch`` to the ``Master`` actor. This latch is only used for plumbing, to have a simple way of letting the outside world knowing when the master can deliver the result and shut down. In more idiomatic Akka code, as we will see in part two of this tutorial series, we would not use a latch.
 
-Second, we are adding a couple of life-cycle callback methods; ``preStart`` and ``postStop``. In the ``preStart`` callback we are recording the time when the actor is started and in the ``postStop`` callback we are printing out the result (the approximation of Pi) and the time it took to calculate it. In this call but we also invoke ``latch.countDown`` to tell the outside world that we are done.
+Second, we are adding a couple of life-cycle callback methods; ``preStart`` and ``postStop``. In the ``preStart`` callback we are recording the time when the actor is started and in the ``postStop`` callback we are printing out the result (the approximation of Pi) and the time it took to calculate it. In this call we also invoke ``latch.countDown`` to tell the outside world that we are done.
 
 But we are not done yet. We are missing the message handler for the ``Master`` actor. This message handler needs to be able to react to two different messages:
 
 - ``Calculate`` -- which should start the calculation
 - ``Result`` -- which should aggregate the different results
 
-The ``Calculate`` handler is sending out work to all the ``Worker`` actors and after doing that also sends a ``Broadcast(PoisonPill)`` message to the router, this will make the route or send out the ``PoisonPill`` message to all the actors in this representing (in our case all the ``Worker`` actors). The ``PoisonPill`` is a special kind of message that tells the receiver to shut himself down using the normal shutdown; ``self.stop``. Then we also send a ``PoisonPill`` to the router itself (since it's also an actor that we want to shut down).
+The ``Calculate`` handler is sending out work to all the ``Worker`` actors and after doing that it also sends a ``Broadcast(PoisonPill)`` message to the router, which will send out the ``PoisonPill`` message to all the actors it is representing (in our case all the ``Worker`` actors). The ``PoisonPill`` is a special kind of message that tells the receiver to shut himself down using the normal shutdown; ``self.stop``. Then we also send a ``PoisonPill`` to the router itself (since it's also an actor that we want to shut down).
 
 The ``Result`` handler is simpler, here we just get the value  from the ``Result`` message and aggregate it to our ``pi`` member variable. We also keep track of how many results we have received back and if it matches the number of tasks sent out the ``Master`` actor considers itself done and shuts himself down.
 
@@ -255,7 +257,7 @@ Now, let's capture this in code::
 Bootstrap the calculation
 -------------------------
 
-Now the only thing that is left to implement his the runner that should bootstrap and run his calculation for us. We do that by creating an object that we call ``Pi``, here we can extend the ``App`` trait in Scala which means that we will be able to run this as an application directly from the command line. The ``Pi`` object is a perfect container module for our actors and messages, so let's put them all there. We also create a method ``calculate`` in which we start up the ``Master`` actor and waits for it to finish::
+Now the only thing that is left to implement is the runner that should bootstrap and run his calculation for us. We do that by creating an object that we call ``Pi``, here we can extend the ``App`` trait in Scala which means that we will be able to run this as an application directly from the command line. The ``Pi`` object is a perfect container module for our actors and messages, so let's put them all there. We also create a method ``calculate`` in which we start up the ``Master`` actor and waits for it to finish::
 
     object Pi extends App {
 
@@ -452,6 +454,6 @@ Conclusion
 
 Now we have learned how to create our first Akka project utilizing Akka's actors to speed up a computation intensive problem by scaling out on multi-core processors (also known as scaling up). We have also learned how to compile and run an Akka project utilizing either the tools on the command line or the SBT build system.
 
-Now we are ready to take on more advanced problems. In the next tutorial we will build upon this one, refactor it into more idiomatic Akka and Scala code and introduce a few new concepts and abstractions. Whenever you feel ready, join my in the `Getting Started Tutorial: Second Chapter <TODO>`_.
+Now we are ready to take on more advanced problems. In the next tutorial we will build upon this one, refactor it into more idiomatic Akka and Scala code and introduce a few new concepts and abstractions. Whenever you feel ready, join me in the `Getting Started Tutorial: Second Chapter <TODO>`_.
 
 Happy hakking.
