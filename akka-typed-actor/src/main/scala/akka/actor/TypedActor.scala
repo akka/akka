@@ -487,6 +487,7 @@ object TypedActor {
    * @param host hostanme of the remote server
    * @param port port of the remote server
    */
+  @deprecated("Will be removed after 1.1")
   def newRemoteInstance[T](intfClass: Class[T], targetClass: Class[_], hostname: String, port: Int): T = {
     newInstance(intfClass, targetClass, TypedActorConfiguration(hostname, port))
   }
@@ -498,6 +499,7 @@ object TypedActor {
    * @param host hostanme of the remote server
    * @param port port of the remote server
    */
+  @deprecated("Will be removed after 1.1")
   def newRemoteInstance[T](intfClass: Class[T], factory: => AnyRef, hostname: String, port: Int): T = {
     newInstance(intfClass, factory, TypedActorConfiguration(hostname, port))
   }
