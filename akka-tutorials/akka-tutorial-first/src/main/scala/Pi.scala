@@ -56,7 +56,7 @@ object Pi extends App {
   // ==================
   // ===== Worker =====
   // ==================
-  class Worker() extends Actor {
+  class Worker extends Actor {
     // define the work
 
 /*

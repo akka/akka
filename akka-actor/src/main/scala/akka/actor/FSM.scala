@@ -43,6 +43,14 @@ object FSM {
   }
 
   /*
+   * This extractor is just convenience for matching a (S, S) pair, including a
+   * reminder what the new state is.
+   */
+  object -> {
+    def unapply[S](in : (S, S)) = Some(in)
+  }
+
+  /*
   * With these implicits in scope, you can write "5 seconds" anywhere a
   * Duration or Option[Duration] is expected. This is conveniently true
   * for derived classes.
@@ -90,6 +98,23 @@ object FSM {
  * Each of the above also supports the method <code>replying(AnyRef)</code> for
  * sending a reply before changing state.
  *
+ * While changing state, custom handlers may be invoked which are registered
+ * using <code>onTransition</code>. This is meant to enable concentrating
+ * different concerns in different places; you may choose to use
+ * <code>when</code> for describing the properties of a state, including of
+ * course initiating transitions, but you can describe the transitions using
+ * <code>onTransision</code> to avoid having to duplicate that code among
+ * multiple paths which lead to a transition:
+ *
+ * <pre>
+ * onTransition {
+ *   case Active -&gt; _ =&gt; cancelTimer("activeTimer")
+ * }
+ * </pre>
+ *
+ * Multiple such blocks are supported and all of them will be called, not only
+ * the first matching one.
+ *
  * Another feature is that other actors may subscribe for transition events by
  * sending a <code>SubscribeTransitionCallback</code> message to this actor;
  * use <code>UnsubscribeTransitionCallback</code> before stopping the other
@@ -119,7 +144,7 @@ trait FSM[S, D] {
 
   type StateFunction = scala.PartialFunction[Event[D], State]
   type Timeout = Option[Duration]
-  type TransitionHandler = (S, S) => Unit
+  type TransitionHandler = PartialFunction[(S, S), Unit]
 
   /* DSL */
 
@@ -239,11 +264,42 @@ trait FSM[S, D] {
 
   /**
    * Set handler which is called upon each state transition, i.e. not when
-   * staying in the same state.
+   * staying in the same state. This may use the pair extractor defined in the
+   * FSM companion object like so:
+   *
+   * <pre>
+   * onTransition {
+   *   case Old -&gt; New =&gt; doSomething
+   * }
+   * </pre>
+   *
+   * It is also possible to supply a 2-ary function object:
+   *
+   * <pre>
+   * onTransition(handler _)
+   *
+   * private def handler(from: S, to: S) { ... }
+   * </pre>
+   *
+   * The underscore is unfortunately necessary to enable the nicer syntax shown
+   * above (it uses the implicit conversion total2pf under the hood).
+   *
+   * <b>Multiple handlers may be installed, and every one of them will be
+   * called, not only the first one matching.</b>
    */
-  protected final def onTransition(transitionHandler: TransitionHandler) = {
-    transitionEvent = transitionHandler
+  protected final def onTransition(transitionHandler: TransitionHandler) {
+    transitionEvent :+= transitionHandler
   }
+
+  /**
+   * Convenience wrapper for using a total function instead of a partial
+   * function literal. To be used with onTransition.
+   */
+  implicit protected final def total2pf(transitionHandler: (S, S) => Unit) =
+    new PartialFunction[(S, S), Unit] {
+      def isDefinedAt(in : (S, S)) = true
+      def apply(in : (S, S)) { transitionHandler(in._1, in._2) }
+    }
 
   /**
    * Set handler which is called upon termination of this FSM actor.
@@ -300,7 +356,10 @@ trait FSM[S, D] {
     case StopEvent(reason, _, _) =>
   }
 
-  private var transitionEvent: TransitionHandler = (from, to) => {
+  private var transitionEvent: List[TransitionHandler] = Nil
+  private def handleTransition(prev : S, next : S) {
+    val tuple = (prev, next)
+    for (te <- transitionEvent) { if (te.isDefinedAt(tuple)) te(tuple) }
   }
 
   override final protected def receive: Receive = {
@@ -351,7 +410,7 @@ trait FSM[S, D] {
       terminate(Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
       if (currentState.stateName != nextState.stateName) {
-        transitionEvent.apply(currentState.stateName, nextState.stateName)
+        handleTransition(currentState.stateName, nextState.stateName)
         if (!transitionCallBackList.isEmpty) {
           val transition = Transition(self, currentState.stateName, nextState.stateName)
           transitionCallBackList.foreach(_ ! transition)
