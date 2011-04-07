@@ -68,6 +68,13 @@ object FSMActorSpec {
       case Locked -> Open => transitionLatch.open
     }
 
+    // verify that old-style does still compile
+    onTransition (transitionHandler _)
+
+    def transitionHandler(from: LockState, to: LockState) = {
+      // dummy
+    }
+
     onTermination {
       case StopEvent(Shutdown, Locked, _) =>
         // stop is called from lockstate with shutdown as reason...
