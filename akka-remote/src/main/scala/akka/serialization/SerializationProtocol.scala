@@ -335,7 +335,8 @@ object RemoteActorSerialization {
 
     secureCookie.foreach(messageBuilder.setCookie(_))
 
-    actorRef.foreach { ref =>
+    /* TODO invent new supervision strategy
+      actorRef.foreach { ref =>
       ref.registerSupervisorAsRemoteActor.foreach { id =>
         messageBuilder.setSupervisorUuid(
           UuidProtocol.newBuilder
@@ -343,7 +344,7 @@ object RemoteActorSerialization {
               .setLow(id.getClockSeqAndNode)
               .build)
       }
-    }
+    } */
 
     if( senderOption.isDefined)
       messageBuilder.setSender(toRemoteActorRefProtocol(senderOption.get))

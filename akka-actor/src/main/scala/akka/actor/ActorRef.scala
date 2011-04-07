@@ -530,8 +530,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
 
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit
 
-  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid]
-
   override def hashCode: Int = HashCode.hash(HashCode.SEED, uuid)
 
   override def equals(that: Any): Boolean = {
@@ -903,13 +901,6 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () => Actor)
       }
     }
   }
-  //TODO KEEP THIS?
-  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = guard.withGuard {
-    ensureRemotingEnabled
-    if (_supervisor.isDefined) {
-      Some(_supervisor.get.uuid)
-    } else None
-  }
 
   def linkedActors: JMap[Uuid, ActorRef] = java.util.Collections.unmodifiableMap(_linkedActors)
 
@@ -1067,8 +1058,6 @@ private[akka] case class RemoteActorRef private[akka] (
       postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
     }
   }
-
-  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = None
 
   // ==== NOT SUPPORTED ====
   def actorClass: Class[_ <: Actor] = unsupported
