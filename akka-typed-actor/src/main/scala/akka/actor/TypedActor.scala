@@ -846,19 +846,19 @@ private[akka] abstract class ActorAspect {
         case -1 => s
         case x => s.substring(0,x + TypedActor.AW_PROXY_PREFIX.length)
       }
-    //FIXME: Add ownerTypeHint and parameter types to the TypedActorInfo?
+    //TODO: Add ownerTypeHint and parameter types to the TypedActorInfo?
     val message: Tuple3[String, Array[Class[_]], Array[AnyRef]] =
       ((extractOwnerTypeHint(methodRtti.getMethod.getDeclaringClass.getName),
         methodRtti.getParameterTypes,
         methodRtti.getParameterValues))
 
-    //FIXME send the interface name of the senderProxy in the TypedActorContext and assemble a context.sender with that interface on the server
+    //TODO send the interface name of the senderProxy in the TypedActorContext and assemble a context.sender with that interface on the server
     //val senderProxy = Option(SenderContextInfo.senderProxy.value)
 
     val future = Actor.remote.send[AnyRef](
       message, senderActorRef, None, remoteAddress.get,
       timeout, isOneWay, actorRef,
-      Some((interfaceClass.getName, methodRtti.getMethod.getName)),
+      Some((interfaceClass.getName, methodRtti.getMethod.getName)), //TODO Include the interface of the senderProxy here somehow
       ActorType.TypedActor,
       None) //TODO: REVISIT: Use another classloader?
 

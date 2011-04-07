@@ -842,7 +842,6 @@ class RemoteServerHandler(
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    import scala.collection.JavaConversions.asScalaIterable
     val clientAddress = getClientAddress(ctx)
 
     // stop all session actors
@@ -956,6 +955,14 @@ class RemoteServerHandler(
   private def dispatchToTypedActor(request: RemoteMessageProtocol, channel: Channel) = {
     val actorInfo = request.getActorInfo
     val typedActorInfo = actorInfo.getTypedActorInfo
+    /* TODO Implement sender references for remote TypedActor calls
+    if (request.hasSender) {
+      val iface = //TODO extrace the senderProxy interface from the request, load it as a class using the application loader
+      val ref = RemoteActorSerialization.fromProtobufToRemoteActorRef(request.getSender, applicationLoader)
+      val senderTA = TypedActor.createProxyForRemoteActorRef[AnyRef](iface, ref)
+      Some()
+    } else None
+    */
 
     val typedActor = createTypedActor(actorInfo, channel)
     //FIXME: Add ownerTypeHint and parameter types to the TypedActorInfo?
@@ -996,7 +1003,8 @@ class RemoteServerHandler(
 
     try {
       val messageReceiver = resolveMethod(typedActor.getClass, ownerTypeHint, typedActorInfo.getMethod, argClasses)
-
+      //TODO SenderContextInfo.senderActorRef.value = sender
+      //TODO SenderContextInfo.senderProxy.value = senderProxy
       if (request.getOneWay) messageReceiver.invoke(typedActor, args: _*) //FIXME execute in non-IO thread
       else {
         //Sends the response
@@ -1022,21 +1030,23 @@ class RemoteServerHandler(
             server.notifyListeners(RemoteServerError(e, server))
         }
 
-        messageReceiver.invoke(typedActor, args: _*) match { //FIXME execute in non-IO thread
+        messageReceiver.invoke(typedActor, args: _*) match { //TODO execute in non-IO thread
           //If it's a future, we can lift on that to defer the send to when the future is completed
           case f: Future[_] => f.onComplete( future => sendResponse(future.value.get) )
           case other        => sendResponse(Right(other))
         }
       }
     } catch {
-      case e: InvocationTargetException =>
-        EventHandler.error(e, this, e.getMessage)
-        write(channel, createErrorReplyMessage(e.getCause, request, AkkaActorType.TypedActor))
-        server.notifyListeners(RemoteServerError(e, server))
       case e: Exception =>
         EventHandler.error(e, this, e.getMessage)
-        write(channel, createErrorReplyMessage(e, request, AkkaActorType.TypedActor))
+        write(channel, createErrorReplyMessage(e match {
+          case e: InvocationTargetException => e.getCause
+          case e => e
+        }, request, AkkaActorType.TypedActor))
         server.notifyListeners(RemoteServerError(e, server))
+    } finally {
+      //TODO SenderContextInfo.senderActorRef.value = None ?
+      //TODO SenderContextInfo.senderProxy.value = None ?
     }
   }
 
