@@ -64,10 +64,15 @@ object FSMActorSpec {
       }
     }
 
-    onTransition(transitionHandler)
+    onTransition {
+      case Locked -> Open => transitionLatch.open
+    }
+
+    // verify that old-style does still compile
+    onTransition (transitionHandler _)
 
     def transitionHandler(from: LockState, to: LockState) = {
-      if (from == Locked && to == Open) transitionLatch.open
+      // dummy
     }
 
     onTermination {
