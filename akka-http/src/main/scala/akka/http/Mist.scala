@@ -6,6 +6,7 @@ package akka.http
 
 import akka.actor.{ActorRef, Actor}
 import akka.event.EventHandler
+import akka.config.ConfigurationException
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import javax.servlet.http.HttpServlet
@@ -70,7 +71,8 @@ trait Mist {
   /**
    * The root endpoint actor
    */
-  protected val _root = Actor.registry.actorsFor(RootActorID).head
+  protected val _root = Actor.registry.actorFor(RootActorID).getOrElse(
+    throw new ConfigurationException("akka.http.root-actor-id configuration option does not have a valid actor address [" + RootActorID + "]"))
 
   /**
    * Server-specific method factory
