@@ -249,7 +249,7 @@ class MyStatelessActorWithMessagesInMailbox extends Actor {
   }
 }
 
-class MyJavaSerializableActor extends Actor with Serializable {
+class MyJavaSerializableActor extends Actor with scala.Serializable {
   var count = 0
   self.receiveTimeout = Some(1000)
 
