@@ -206,8 +206,8 @@ class NestingQueue {
   def pop = q.poll
 
   @volatile private var active = false
-  def enter { if (active) error("already active") else active = true }
-  def leave { if (!active) error("not active") else active = false }
+  def enter { if (active) sys.error("already active") else active = true }
+  def leave { if (!active) sys.error("not active") else active = false }
   def isActive = active
 }
 
