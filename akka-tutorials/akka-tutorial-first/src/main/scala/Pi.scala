@@ -62,7 +62,7 @@ object Pi extends App {
 /*
     // FIXME tail-recursive fun instead
     val calculatePiFor = (arg: Int, nrOfElements: Int) => {
-      val range = (arg * nrOfElements) to ((arg + 1) * nrOfElements - 1)
+      val range = (arg * nrOfElements) until ((arg + 1) * nrOfElements)
       var acc = 0.0D
       range foreach (i => acc += 4 * math.pow(-1, i) / (2 * i + 1))
       acc
@@ -71,9 +71,9 @@ object Pi extends App {
     }
 */
     def calculatePiFor(arg: Int, nrOfElements: Int): Double = {
-      val end = (arg + 1) * nrOfElements - 1
+      val end = (arg + 1) * nrOfElements
       @tailrec def doCalculatePiFor(cursor: Int, acc: Double): Double = {
-        if (cursor > end) acc
+        if (cursor == end) acc
         else doCalculatePiFor(cursor + 1, acc + (4 * math.pow(-1, cursor) / (2 * cursor + 1)))
       }
       doCalculatePiFor(arg * nrOfElements, 0.0D)
