@@ -14,6 +14,7 @@ import scala.reflect.BeanProperty
 import akka.util. {ReflectiveAccess, Duration}
 import akka.remoteinterface.RemoteSupport
 import akka.japi. {Creator, Procedure}
+import com.eaio.uuid.UUID
 
 /**
  * Life-cycle messages for the Actors
@@ -110,7 +111,7 @@ object Actor extends ListenerManagement {
 
   lazy val remote: RemoteSupport = {
     ReflectiveAccess
-      .Remote
+      .RemoteModule
       .defaultRemoteSupport
       .map(_())
       .getOrElse(throw new UnsupportedOperationException("You need to have akka-remote.jar on classpath"))
@@ -141,7 +142,11 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf[MyActor].start
    * </pre>
    */
-  def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+  def actorOf[T <: Actor : Manifest](address: String): ActorRef =
+    actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], address)
+
+  def actorOf[T <: Actor : Manifest]: ActorRef =
+    actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], (new UUID).toString)
 
   /**
    * Creates an ActorRef out of the Actor of the specified Class.
@@ -157,7 +162,7 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf(classOf[MyActor]).start
    * </pre>
    */
-  def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(() => {
+  def actorOf(clazz: Class[_ <: Actor], address: String): ActorRef = new LocalActorRef(() => {
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
     createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
       throw new ActorInitializationException(
@@ -165,7 +170,9 @@ object Actor extends ListenerManagement {
         "\nMake sure Actor is NOT defined inside a class/trait," +
         "\nif so put it outside the class/trait, f.e. in a companion object," +
         "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
-  }, None)
+  }, None, false, address)
+
+  def actorOf(clazz: Class[_ <: Actor]): ActorRef = actorOf(clazz, (new UUID).toString)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -185,7 +192,9 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf(new MyActor).start
    * </pre>
    */
-  def actorOf(factory: => Actor): ActorRef = new LocalActorRef(() => factory, None)
+  def actorOf(factory: => Actor, address: String): ActorRef = new LocalActorRef(() => factory, None, false, address)
+
+  def actorOf(factory: => Actor): ActorRef = actorOf(factory, (new UUID).toString)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
@@ -195,7 +204,17 @@ object Actor extends ListenerManagement {
    * This function should <b>NOT</b> be used for remote actors.
    * JAVA API
    */
-  def actorOf(creator: Creator[Actor]): ActorRef = new LocalActorRef(() => creator.create, None)
+  def actorOf(creator: Creator[Actor], address: String): ActorRef = new LocalActorRef(() => creator.create, None, false, address)
+
+  /**
+   * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
+   * that creates the Actor. Please note that this function can be invoked multiple
+   * times if for example the Actor is supervised and needs to be restarted.
+   * <p/>
+   * This function should <b>NOT</b> be used for remote actors.
+   * JAVA API
+   */
+  def actorOf(creator: Creator[Actor]): ActorRef = actorOf(creator, (new UUID).toString)
 
   /**
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when

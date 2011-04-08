@@ -53,7 +53,7 @@ object RemoteErrorHandlingNetworkTest {
 class RemoteErrorHandlingNetworkTest extends AkkaRemoteTest with NetworkFailureTest {
   import RemoteErrorHandlingNetworkTest._
 
-  "Remote actors" should {
+  "RemoteModule actors" should {
 
     "be able to recover from network drop without loosing any messages" in {
       validateSudo()

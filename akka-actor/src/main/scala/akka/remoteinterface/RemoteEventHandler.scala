@@ -8,7 +8,7 @@ import akka.actor.Actor
 import akka.event.EventHandler
 
 /**
- * Remote client and server event listener that pipes the events to the standard Akka EventHander.
+ * RemoteModule client and server event listener that pipes the events to the standard Akka EventHander.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */

@@ -37,7 +37,7 @@ import akka.japi.{Creator, Procedure}
  *
  *        } else if (msg.equals("ForwardMessage")) {
  *          // Retreive an actor from the ActorRegistry by ID and get an ActorRef back
- *          ActorRef actorRef = Actor.registry.actorsFor("some-actor-id").head();
+ *          ActorRef actorRef = Actor.registry.local.actorsFor("some-actor-id").head();
  *
  *        } else throw new IllegalArgumentException("Unknown message: " + message);
  *      } else throw new IllegalArgumentException("Unknown message: " + message);

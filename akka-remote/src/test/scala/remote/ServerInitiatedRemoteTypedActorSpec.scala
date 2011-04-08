@@ -39,10 +39,10 @@ class ServerInitiatedRemoteTypedActorSpec extends AkkaRemoteTest {
 
     "should not recreate registered actors" in {
       val actor = createRemoteActorRef
-      val numberOfActorsInRegistry = Actor.registry.actors.length
+      val numberOfActorsInRegistry = Actor.registry.local.actors.length
       actor.oneWay
       oneWayLog.poll(5, TimeUnit.SECONDS) must equal ("oneway")
-      numberOfActorsInRegistry must be (Actor.registry.actors.length)
+      numberOfActorsInRegistry must be (Actor.registry.local.actors.length)
     }
 
     "should support multiple variants to get the actor from client side" in {

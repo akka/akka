@@ -72,7 +72,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
 /*
     it("should be able to join streams") {
       import DataFlow._
-      Actor.registry.shutdownAll
+      Actor.registry.local.shutdownAll
 
       def ints(n: Int, max: Int, stream: DataFlowStream[Int]): Unit = if (n != max) {
         stream <<< n
@@ -139,7 +139,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
   /*  it("should be able to conditionally set variables") {
 
       import DataFlow._
-      Actor.registry.shutdownAll
+      Actor.registry.local.shutdownAll
 
       val latch  = new CountDownLatch(1)
       val x, y, z, v = new DataFlowVariable[Int]

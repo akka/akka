@@ -12,7 +12,7 @@ class SchedulerSpec extends JUnitSuite {
   def withCleanEndState(action: => Unit) {
     action
     Scheduler.restart
-    Actor.registry.shutdownAll
+    Actor.registry.local.shutdownAll
   }
 
 
@@ -62,10 +62,10 @@ class SchedulerSpec extends JUnitSuite {
     val actor = actorOf(new Actor {
       def receive = { case Ping => ticks.countDown }
     }).start
-    val numActors = Actor.registry.actors.length
+    val numActors = Actor.registry.local.actors.length
     (1 to 1000).foreach( _ => Scheduler.scheduleOnce(actor,Ping,1,TimeUnit.MILLISECONDS) )
     assert(ticks.await(10,TimeUnit.SECONDS))
-    assert(Actor.registry.actors.length === numActors)
+    assert(Actor.registry.local.actors.length === numActors)
   }
 
   /**

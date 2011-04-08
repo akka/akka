@@ -710,7 +710,7 @@ object TypedActor {
    * Get the underlying typed actor for the given Typed Actor.
    */
   def actorFor(proxy: AnyRef): Option[ActorRef] =
-    Actor.registry find {
+    Actor.registry.local find {
       case a if a.actor.isInstanceOf[TypedActor] && a.actor.asInstanceOf[TypedActor].proxy == proxy =>
       a
     }
@@ -728,6 +728,12 @@ object TypedActor {
 
   /**
    * Links an other Typed Actor to this Typed Actor.
+   *
+   * Example linking another typed actor from within a typed actor:
+   * <pre>
+   *   TypedActor.link(getContext(), child);
+   * </pre>
+   *
    * @param supervisor the supervisor Typed Actor
    * @param supervised the Typed Actor to link
    */
@@ -741,6 +747,12 @@ object TypedActor {
 
   /**
    * Links an other Typed Actor to this Typed Actor and sets the fault handling for the supervisor.
+   *
+   * Example linking another typed actor from within a typed actor:
+   * <pre>
+   *   TypedActor.link(getContext(), child, faultHandler);
+   * </pre>
+   *
    * @param supervisor the supervisor Typed Actor
    * @param supervised the Typed Actor to link
    * @param handler fault handling strategy
@@ -758,6 +770,12 @@ object TypedActor {
 
   /**
    * Unlink the supervised Typed Actor from the supervisor.
+   *
+   * Example unlinking another typed actor from within a typed actor:
+   * <pre>
+   *   TypedActor.unlink(getContext(), child);
+   * </pre>
+   *
    * @param supervisor the supervisor Typed Actor
    * @param supervised the Typed Actor to unlink
    */

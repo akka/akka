@@ -68,7 +68,7 @@ class TypedActorSpec extends
   }
 
   override def afterEach() {
-    Actor.registry.shutdownAll
+    Actor.registry.local.shutdownAll
   }
 
   describe("TypedActor") {
@@ -120,67 +120,48 @@ class TypedActorSpec extends
     it("should support finding a typed actor by uuid ") {
       val typedActorRef = TypedActor.actorFor(simplePojo).get
       val uuid = typedActorRef.uuid
-      assert(Actor.registry.typedActorFor(newUuid()) === None)
-      assert(Actor.registry.typedActorFor(uuid).isDefined)
-      assert(Actor.registry.typedActorFor(uuid).get === simplePojo)
+      assert(Actor.registry.local.typedActorFor(newUuid()) === None)
+      assert(Actor.registry.local.typedActorFor(uuid).isDefined)
+      assert(Actor.registry.local.typedActorFor(uuid).get === simplePojo)
     }
 
-    it("should support finding typed actors by id ") {
-      val typedActors = Actor.registry.typedActorsFor("my-custom-id")
-      assert(typedActors.length === 1)
-      assert(typedActors.contains(pojo))
-
-      // creating untyped actor with same custom id
-      val actorRef = Actor.actorOf[MyActor].start
-      val typedActors2 = Actor.registry.typedActorsFor("my-custom-id")
-      assert(typedActors2.length === 1)
-      assert(typedActors2.contains(pojo))
-      actorRef.stop
+    it("should support finding a typed actor by address ") {
+      val typedActorRef = TypedActor.actorFor(simplePojo).get
+      val address = typedActorRef.address
+      assert(Actor.registry.local.typedActorFor(newUuid().toString) === None)
+      assert(Actor.registry.local.typedActorFor(address).isDefined)
+      assert(Actor.registry.local.typedActorFor(address).get === simplePojo)
     }
 
     it("should support to filter typed actors") {
-      val actors = Actor.registry.filterTypedActors(ta => ta.isInstanceOf[MyTypedActor])
+      val actors = Actor.registry.local.filterTypedActors(ta => ta.isInstanceOf[MyTypedActor])
       assert(actors.length === 1)
       assert(actors.contains(pojo))
-    }
-
-    it("should support to find typed actors by class") {
-      val actors = Actor.registry.typedActorsFor(classOf[MyTypedActorImpl])
-      assert(actors.length === 1)
-      assert(actors.contains(pojo))
-      assert(Actor.registry.typedActorsFor(classOf[MyActor]).isEmpty)
     }
 
     it("should support to get all typed actors") {
-      val actors = Actor.registry.typedActors
+      val actors = Actor.registry.local.typedActors
       assert(actors.length === 2)
       assert(actors.contains(pojo))
       assert(actors.contains(simplePojo))
     }
 
-    it("should support to find typed actors by manifest") {
-      val actors = Actor.registry.typedActorsFor[MyTypedActorImpl]
-      assert(actors.length === 1)
-      assert(actors.contains(pojo))
-      assert(Actor.registry.typedActorsFor[MyActor].isEmpty)
-    }
-
     it("should support foreach for typed actors") {
       val actorRef = Actor.actorOf[MyActor].start
-      assert(Actor.registry.actors.size === 3)
-      assert(Actor.registry.typedActors.size === 2)
-      Actor.registry.foreachTypedActor(TypedActor.stop(_))
-      assert(Actor.registry.actors.size === 1)
-      assert(Actor.registry.typedActors.size === 0)
+      assert(Actor.registry.local.actors.size === 3)
+      assert(Actor.registry.local.typedActors.size === 2)
+      Actor.registry.local.foreachTypedActor(TypedActor.stop(_))
+      assert(Actor.registry.local.actors.size === 1)
+      assert(Actor.registry.local.typedActors.size === 0)
     }
 
     it("should shutdown all typed and untyped actors") {
       val actorRef = Actor.actorOf[MyActor].start
-      assert(Actor.registry.actors.size === 3)
-      assert(Actor.registry.typedActors.size === 2)
-      Actor.registry.shutdownAll()
-      assert(Actor.registry.actors.size === 0)
-      assert(Actor.registry.typedActors.size === 0)
+      assert(Actor.registry.local.actors.size === 3)
+      assert(Actor.registry.local.typedActors.size === 2)
+      Actor.registry.local.shutdownAll()
+      assert(Actor.registry.local.actors.size === 0)
+      assert(Actor.registry.local.typedActors.size === 0)
     }
   }
 }

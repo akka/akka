@@ -142,7 +142,7 @@ trait MessageDispatcher {
     val i = uuids.iterator
     while (i.hasNext()) {
       val uuid = i.next()
-      Actor.registry.actorFor(uuid) match {
+      Actor.registry.local.actorFor(uuid) match {
         case Some(actor) => actor.stop
         case None        => {}
       }

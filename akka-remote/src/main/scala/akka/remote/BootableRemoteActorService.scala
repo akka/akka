@@ -18,7 +18,7 @@ trait BootableRemoteActorService extends Bootable {
 
   protected lazy val remoteServerThread = new Thread(new Runnable() {
     def run = Actor.remote.start(self.applicationLoader.getOrElse(null)) //Use config host/port
-  }, "Akka Remote Service")
+  }, "Akka RemoteModule Service")
 
   def startRemoteService = remoteServerThread.start
 

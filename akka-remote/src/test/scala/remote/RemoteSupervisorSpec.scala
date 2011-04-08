@@ -77,7 +77,7 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
 
   import Log._
 
-  "Remote supervision" should {
+  "RemoteModule supervision" should {
 
     "start server" in {
       Log.messageLog.clear

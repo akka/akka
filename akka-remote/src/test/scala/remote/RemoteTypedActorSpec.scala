@@ -57,7 +57,7 @@ class RemoteTypedActorSpec extends AkkaRemoteTest {
     Thread.sleep(1000)
   }
 
-  "Remote Typed Actor " should {
+  "RemoteModule Typed Actor " should {
 
     /*"receives one-way message" in {
       val ta = conf.getInstance(classOf[RemoteTypedActorOne])

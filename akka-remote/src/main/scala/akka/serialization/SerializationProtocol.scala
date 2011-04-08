@@ -157,11 +157,11 @@ object ActorSerialization {
   }
 
   private def fromBinaryToLocalActorRef[T <: Actor](
-    bytes: Array[Byte], 
-    homeAddress: Option[InetSocketAddress], 
+    bytes: Array[Byte],
+    homeAddress: Option[InetSocketAddress],
     format: Format[T]): ActorRef = {
     val builder = SerializedActorRefProtocol.newBuilder.mergeFrom(bytes)
-    homeAddress.foreach { addr => 
+    homeAddress.foreach { addr =>
       val addressProtocol = AddressProtocol.newBuilder.setHostname(addr.getAddress.getHostAddress).setPort(addr.getPort).build
       builder.setOriginalAddress(addressProtocol)
     }
@@ -219,7 +219,8 @@ object ActorSerialization {
       supervisor,
       hotswap,
       factory,
-      homeAddress)
+      homeAddress,
+      "address") // FIXME grab real address and use that
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
     messages.foreach(message => ar ! MessageSerializer.deserialize(message.getMessage))

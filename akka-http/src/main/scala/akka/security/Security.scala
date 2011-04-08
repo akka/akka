@@ -22,10 +22,10 @@
 
 package akka.security
 
-import akka.actor.{Scheduler, Actor, ActorRef, ActorRegistry, IllegalActorStateException}
+import akka.actor.{Scheduler, Actor, ActorRef, IllegalActorStateException}
 import akka.event.EventHandler
 import akka.actor.Actor._
-import akka.config.Config
+import akka.config.{Config, ConfigurationException}
 
 import com.sun.jersey.api.model.AbstractMethod
 import com.sun.jersey.spi.container.{ResourceFilterFactory, ContainerRequest, ContainerRequestFilter, ContainerResponse, ContainerResponseFilter, ResourceFilter}
@@ -109,7 +109,9 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory {
    * Currently we always take the first, since there usually should be at most one authentication actor, but a round-robin
    * strategy could be implemented in the future
    */
-  def authenticator: ActorRef = Actor.registry.actorsFor(authenticatorFQN).head
+  def authenticator: ActorRef = Actor.registry.actorFor(authenticatorFQN)
+      .getOrElse(throw new ConfigurationException(
+        "akka.http.authenticator configuration option does not have a valid actor address [" + authenticatorFQN + "]"))
 
   def mkFilter(roles: Option[List[String]]): java.util.List[ResourceFilter] =
     java.util.Collections.singletonList(new Filter(authenticator, roles))

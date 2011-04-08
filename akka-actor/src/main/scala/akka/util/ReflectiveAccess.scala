@@ -21,18 +21,71 @@ object ReflectiveAccess {
 
   val loader = getClass.getClassLoader
 
-  def isRemotingEnabled   = Remote.isEnabled
+  lazy val isRemotingEnabled   = RemoteModule.isEnabled
   lazy val isTypedActorEnabled = TypedActorModule.isEnabled
+  lazy val isClusterEnabled    = ClusterModule.isEnabled
 
-  def ensureRemotingEnabled   = Remote.ensureEnabled
-  def ensureTypedActorEnabled = TypedActorModule.ensureEnabled
+  def ensureClusterEnabled     = ClusterModule.ensureEnabled
+  def ensureRemotingEnabled    = RemoteModule.ensureEnabled
+  def ensureTypedActorEnabled  = TypedActorModule.ensureEnabled
+
+  /**
+   * Reflective access to the Cluster module.
+   *
+   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+   */
+  object ClusterModule {
+    lazy val isEnabled = clusterObjectInstance.isDefined
+
+    def ensureEnabled = if (!isEnabled) {
+      val e = new ModuleNotAvailableException(
+        "Can't load the cluster module, make sure that akka-cluster.jar is on the classpath")
+      EventHandler.debug(this, e.toString)
+      throw e
+    }
+
+    lazy val clusterObjectInstance: Option[Cluster] = getObjectFor("akka.cloud.cluster.Cluster$")
+
+    lazy val serializerClass: Option[Class[_]] = getClassFor("akka.serialization.Serializer")
+
+    lazy val node: ClusterNode = {
+      ensureEnabled
+      clusterObjectInstance.get.newNode()
+    }
+
+    type ClusterNode = {
+      def nrOfActors: Int
+      def store[T <: Actor](address: String, actorRef: ActorRef): Unit
+//        (implicit format: Format[T])
+      def remove(address: String): Unit
+      def use(address: String): Option[ActorRef]
+    }
+
+    type Cluster = {
+      def newNode(
+        //nodeAddress: NodeAddress,
+        //zkServerAddresses: String,
+        //serializer: ZkSerializer
+        ): ClusterNode
+    }
+
+    type Mailbox = {
+      def enqueue(message: MessageInvocation)
+      def dequeue: MessageInvocation
+    }
+
+    type Serializer = {
+      def toBinary(obj: AnyRef): Array[Byte]
+      def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
+    }
+  }
 
   /**
    * Reflective access to the RemoteClient module.
    *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  object Remote {
+  object RemoteModule {
     val TRANSPORT = Config.config.getString("akka.remote.layer", "akka.remote.netty.NettyRemoteSupport")
 
     private[akka] val configDefaultAddress =
@@ -47,6 +100,7 @@ object ReflectiveAccess {
       EventHandler.debug(this, e.toString)
       throw e
     }
+
     val remoteSupportClass: Option[Class[_ <: RemoteSupport]] = getClassFor(TRANSPORT)
 
     protected[akka] val defaultRemoteSupport: Option[() => RemoteSupport] =
@@ -94,30 +148,6 @@ object ReflectiveAccess {
       }
       typedActorObjectInstance.get.isJoinPoint(message)
     }
-  }
-
-  object AkkaCloudModule {
-
-    type Mailbox = {
-      def enqueue(message: MessageInvocation)
-      def dequeue: MessageInvocation
-    }
-
-    type Serializer = {
-      def toBinary(obj: AnyRef): Array[Byte]
-      def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
-    }
-
-    lazy val isEnabled = clusterObjectInstance.isDefined
-
-    val clusterObjectInstance: Option[AnyRef] =
-      getObjectFor("akka.cloud.cluster.Cluster$")
-
-    val serializerClass: Option[Class[_]] =
-      getClassFor("akka.serialization.Serializer")
-
-    def ensureEnabled = if (!isEnabled) throw new ModuleNotAvailableException(
-      "Feature is only available in Akka Cloud")
   }
 
   val noParams = Array[Class[_]]()

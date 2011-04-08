@@ -107,6 +107,13 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   var id: String = _uuid.toString
 
   /**
+   * FIXME Document
+   */
+  @BeanProperty
+  @volatile
+  var address: String = _uuid.toString // FIXME set 'address' in ActorRef and make 'val'
+
+  /**
    * User overridable callback/setting.
    * <p/>
    * Defines the default timeout for '!!' and '!!!' invocations,
@@ -596,8 +603,10 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
 class LocalActorRef private[akka] (
   private[this] val actorFactory: () => Actor,
   val homeAddress: Option[InetSocketAddress],
-  val clientManaged: Boolean = false)
+  val clientManaged: Boolean,
+  _address: String)
   extends ActorRef with ScalaActorRef {
+  this.address = _address
 
   @volatile
   private[akka] lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
@@ -627,8 +636,9 @@ class LocalActorRef private[akka] (
     __supervisor: Option[ActorRef],
     __hotswap: Stack[PartialFunction[Any, Unit]],
     __factory: () => Actor,
-    __homeAddress: Option[InetSocketAddress]) = {
-    this(__factory, __homeAddress)
+    __homeAddress: Option[InetSocketAddress],
+    __address: String) = {
+    this(__factory, __homeAddress, false, __address)
     _uuid = __uuid
     id = __id
     timeout = __timeout
@@ -1207,6 +1217,8 @@ private[akka] case class RemoteActorRef private[akka] (
  * //superclass, which ActorRefShared is.
  */
 trait ActorRefShared {
+  def address: String
+
   /**
    * Returns the uuid for the actor.
    */
@@ -1231,6 +1243,10 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
   def id: String
 
   def id_=(id: String): Unit
+
+  def address: String
+
+  def address_=(address: String): Unit
 
   /**
    * User overridable callback/setting.

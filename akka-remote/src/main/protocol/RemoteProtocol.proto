@@ -51,10 +51,9 @@ enum CommandType {
  * on the original node.
  */
 message RemoteActorRefProtocol {
-  required string classOrServiceName = 1;
+  required string address = 1;
   required string actorClassname = 2;
-  required AddressProtocol homeAddress = 3;
-  optional uint64 timeout = 4;
+  optional uint64 timeout = 3;
 }
 
 /**
@@ -68,22 +67,21 @@ message RemoteTypedActorRefProtocol {
 
 /**
  * Defines a fully serialized remote ActorRef (with serialized Actor instance)
- * that is about to be instantiated on the remote node. It is fully disconnected 
+ * that is about to be instantiated on the remote node. It is fully disconnected
  * from its original host.
  */
 message SerializedActorRefProtocol {
   required UuidProtocol uuid = 1;
-  required string id = 2;
+  required string address = 2;
   required string actorClassname = 3;
-  required AddressProtocol originalAddress  = 4;
-  optional bytes actorInstance = 5;
-  optional string serializerClassname = 6;
-  optional uint64 timeout = 7;
-  optional uint64 receiveTimeout = 8;
-  optional LifeCycleProtocol lifeCycle = 9;
-  optional RemoteActorRefProtocol supervisor = 10;
-  optional bytes hotswapStack = 11;
-  repeated RemoteMessageProtocol messages = 12;
+  optional bytes actorInstance = 4;
+  optional string serializerClassname = 5;
+  optional uint64 timeout = 6;
+  optional uint64 receiveTimeout = 7;
+  optional LifeCycleProtocol lifeCycle = 8;
+  optional RemoteActorRefProtocol supervisor = 9;
+  optional bytes hotswapStack = 10;
+  repeated RemoteMessageProtocol messages = 11;
 }
 
 /**
@@ -114,7 +112,7 @@ message ActorInfoProtocol {
   required uint64 timeout = 3;
   required ActorType actorType = 4;
   optional TypedActorInfoProtocol typedActorInfo = 5;
-  optional string id = 6;
+  optional string address = 6;
 }
 
 /**

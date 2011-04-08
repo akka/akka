@@ -287,7 +287,7 @@ abstract class RemoteClient private[akka] (
         Some(futureResult)
       }
     } else {
-      val exception = new RemoteClientException("Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.", module, remoteAddress)
+      val exception = new RemoteClientException("RemoteModule client is not running, make sure you have invoked 'RemoteClient.connect' before using it.", module, remoteAddress)
       notifyListeners(RemoteClientError(exception, module, remoteAddress))
       throw exception
     }
@@ -597,10 +597,10 @@ class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with
     if (optimizeLocalScoped_?) {
       val home = this.address
       if ((host == home.getAddress.getHostAddress || host == home.getHostName) && port == home.getPort)//TODO: switch to InetSocketAddress.equals?
-        return new LocalActorRef(factory, None) // Code is much simpler with return
+        return new LocalActorRef(factory, None, false, "todo") // Code is much simpler with return
     }
 
-    val ref = new LocalActorRef(factory, Some(new InetSocketAddress(host, port)), clientManaged = true)
+    val ref = new LocalActorRef(factory, Some(new InetSocketAddress(host, port)), true, "todo")
     //ref.timeout = timeout //removed because setting default timeout should be done after construction
     ref
   }
@@ -657,13 +657,13 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
 
   def address = currentServer.get match {
     case s: Some[NettyRemoteServer] => s.get.address
-    case None    => ReflectiveAccess.Remote.configDefaultAddress
+    case None    => ReflectiveAccess.RemoteModule.configDefaultAddress
   }
 
   def name = currentServer.get match {
     case s: Some[NettyRemoteServer] => s.get.name
     case None    =>
-       val a = ReflectiveAccess.Remote.configDefaultAddress
+       val a = ReflectiveAccess.RemoteModule.configDefaultAddress
       "NettyRemoteServer@" + a.getAddress.getHostAddress + ":" + a.getPort
   }
 
@@ -713,7 +713,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
   }
 
   /**
-   * Register Remote Actor by a specific 'id' passed as argument.
+   * Register RemoteModule Actor by a specific 'id' passed as argument.
    * <p/>
    * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself.
    */
@@ -734,7 +734,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
   }
 
   /**
-   * Register Remote Session Actor by a specific 'id' passed as argument.
+   * Register RemoteModule Session Actor by a specific 'id' passed as argument.
    * <p/>
    * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself.
    */
@@ -758,7 +758,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
   }
 
   /**
-   * Unregister Remote Actor that is registered using its 'id' field (not custom ID).
+   * Unregister RemoteModule Actor that is registered using its 'id' field (not custom ID).
    */
   def unregister(actorRef: ActorRef): Unit = guard withGuard {
     if (_isRunning.isOn) {
@@ -768,7 +768,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
   }
 
   /**
-   * Unregister Remote Actor by specific 'id'.
+   * Unregister RemoteModule Actor by specific 'id'.
    * <p/>
    * NOTE: You need to call this method if you have registered an actor by a custom ID.
    */
@@ -784,7 +784,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
   }
 
   /**
-   * Unregister Remote Actor by specific 'id'.
+   * Unregister RemoteModule Actor by specific 'id'.
    * <p/>
    * NOTE: You need to call this method if you have registered an actor by a custom ID.
    */
@@ -795,7 +795,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
   }
 
   /**
-   * Unregister Remote Typed Actor by specific 'id'.
+   * Unregister RemoteModule Typed Actor by specific 'id'.
    * <p/>
    * NOTE: You need to call this method if you have registered an actor by a custom ID.
    */
@@ -807,7 +807,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
   }
 
   /**
-  * Unregister Remote Typed Actor by specific 'id'.
+  * Unregister RemoteModule Typed Actor by specific 'id'.
   * <p/>
   * NOTE: You need to call this method if you have registered an actor by a custom ID.
   */
@@ -972,10 +972,10 @@ class RemoteServerHandler(
 
     message match { // first match on system messages
       case RemoteActorSystemMessage.Stop =>
-        if (UNTRUSTED_MODE) throw new SecurityException("Remote server is operating is untrusted mode, can not stop the actor")
+        if (UNTRUSTED_MODE) throw new SecurityException("RemoteModule server is operating is untrusted mode, can not stop the actor")
         else actorRef.stop
       case _: LifeCycleMessage if (UNTRUSTED_MODE) =>
-        throw new SecurityException("Remote server is operating is untrusted mode, can not pass on a LifeCycleMessage to the remote actor")
+        throw new SecurityException("RemoteModule server is operating is untrusted mode, can not pass on a LifeCycleMessage to the remote actor")
 
       case _ =>     // then match on user defined messages
         if (request.getOneWay) actorRef.!(message)(sender)
@@ -1139,7 +1139,7 @@ class RemoteServerHandler(
 
     try {
       if (UNTRUSTED_MODE) throw new SecurityException(
-        "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
+        "RemoteModule server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
 
       val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
                   else Class.forName(name)
@@ -1205,7 +1205,7 @@ class RemoteServerHandler(
 
     try {
       if (UNTRUSTED_MODE) throw new SecurityException(
-        "Remote server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
+        "RemoteModule server is operating is untrusted mode, can not create remote actors on behalf of the remote client")
 
       val (interfaceClass, targetClass) =
         if (applicationLoader.isDefined) (applicationLoader.get.loadClass(interfaceClassname),
@@ -1230,13 +1230,13 @@ class RemoteServerHandler(
     server.findTypedActorByIdOrUuid(actorInfo.getId, parseUuid(uuid).toString) match {
       case null => // the actor has not been registered globally. See if we have it in the session
         createTypedSessionActor(actorInfo, channel) match {
-          case null => 
+          case null =>
             // FIXME this is broken, if a user tries to get a server-managed typed actor and that is not registered then a client-managed typed actor is created, but just throwing an exception here causes client-managed typed actors to fail
-          
+
 /*            val e = new RemoteServerException("Can't load remote Typed Actor for [" + actorInfo.getId + "]")
             EventHandler.error(e, this, e.getMessage)
             server.notifyListeners(RemoteServerError(e, server))
-            throw e            
+            throw e
 */          createClientManagedTypedActor(actorInfo) // client-managed actor
           case sessionActor => sessionActor
         }
