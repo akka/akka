@@ -904,14 +904,14 @@ class RemoteServerHandler(
 
     // stop all session actors
     for (map <- Option(sessionActors.remove(event.getChannel));
-         actor <- asScalaIterable(map.values)) {
+         actor <- collectionAsScalaIterable(map.values)) {
          try { actor ! PoisonPill } catch { case e: Exception => }
     }
 
     //FIXME switch approach or use other thread to execute this
     // stop all typed session actors
     for (map <- Option(typedSessionActors.remove(event.getChannel));
-         actor <- asScalaIterable(map.values)) {
+         actor <- collectionAsScalaIterable(map.values)) {
          try { TypedActor.stop(actor) } catch { case e: Exception => }
     }
 
