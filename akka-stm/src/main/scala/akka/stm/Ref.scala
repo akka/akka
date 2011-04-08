@@ -11,7 +11,7 @@ import org.multiverse.transactional.refs.BasicRef
 /**
  * Common trait for all the transactional objects.
  */
-@serializable trait Transactional {
+trait Transactional extends Serializable {
   val uuid: String
 }
 

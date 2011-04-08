@@ -17,7 +17,7 @@ import sjson.json.{Serializer => SJSONSerializer}
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@serializable trait Serializer {
+trait Serializer extends scala.Serializable {
   @volatile var classLoader: Option[ClassLoader] = None
   def deepClone(obj: AnyRef): AnyRef = fromBinary(toBinary(obj), Some(obj.getClass))
 

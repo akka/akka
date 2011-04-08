@@ -18,7 +18,7 @@ import akka.japi. {Creator, Procedure}
 /**
  * Life-cycle messages for the Actors
  */
-@serializable sealed trait LifeCycleMessage
+sealed trait LifeCycleMessage extends Serializable
 
 /* Marker trait to show which Messages are automatically handled by Akka */
 sealed trait AutoReceivedMessage { self: LifeCycleMessage => }
