@@ -106,14 +106,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     val implementationClass = component.target
     val timeout = component.timeout
 
-    val (remoteAddress,actorRef) =
-      component.remoteAddress match {
-        case Some(a) =>
-          (Some(new InetSocketAddress(a.hostname, a.port)),
-           Actor.remote.actorOf(TypedActor.newTypedActor(implementationClass), a.hostname, a.port))
-        case None =>
-          (None, Actor.actorOf(TypedActor.newTypedActor(implementationClass)))
-    }
+    val actorRef = Actor.actorOf(TypedActor.newTypedActor(implementationClass))
 
     actorRef.timeout = timeout
     if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
@@ -123,7 +116,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
 
     AspectInitRegistry.register(
       proxy,
-      AspectInit(interfaceClass, typedActor, actorRef, remoteAddress, timeout))
+      AspectInit(interfaceClass, typedActor, actorRef, timeout))
     typedActor.initialize(proxy)
     actorRef.start
 

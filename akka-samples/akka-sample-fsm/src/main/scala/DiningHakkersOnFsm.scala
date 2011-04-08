@@ -31,7 +31,6 @@ case class TakenBy(hakker: Option[ActorRef])
  * A chopstick is an actor, it can be taken, and put back
  */
 class Chopstick(name: String) extends Actor with FSM[ChopstickState, TakenBy] {
-  self.id = name
 
   // A chopstick begins its existence as available and taken by no one
   startWith(Available, TakenBy(None))
@@ -82,7 +81,6 @@ case class TakenChopsticks(left: Option[ActorRef], right: Option[ActorRef])
  * A fsm hakker is an awesome dude or dudette who either thinks about hacking or has to eat ;-)
  */
 class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor with FSM[FSMHakkerState, TakenChopsticks] {
-  self.id = name
 
   //All hakkers start waiting
   startWith(Waiting, TakenChopsticks(None, None))
@@ -128,7 +126,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
   }
 
   private def startEating(left: ActorRef, right: ActorRef): State = {
-    println("%s has picked up %s and %s, and starts to eat", name, left.id, right.id)
+    println("%s has picked up %s and %s, and starts to eat", name, left.address, right.address)
     goto(Eating) using TakenChopsticks(Some(left), Some(right)) forMax (5 seconds)
   }
 

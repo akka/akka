@@ -22,7 +22,6 @@ object Think extends DiningHakkerMessage
  * A Chopstick is an actor, it can be taken, and put back
  */
 class Chopstick(name: String) extends Actor {
-  self.id = name
 
   //When a Chopstick is taken by a hakker
   //It will refuse to be taken by other hakkers
@@ -49,7 +48,6 @@ class Chopstick(name: String) extends Actor {
  * A hakker is an awesome dude or dudett who either thinks about hacking or has to eat ;-)
  */
 class Hakker(name: String,left: ActorRef, right: ActorRef) extends Actor {
-  self.id = name
 
   //When a hakker is thinking it can become hungry
   //and try to pick up its chopsticks and eat
@@ -78,7 +76,7 @@ class Hakker(name: String,left: ActorRef, right: ActorRef) extends Actor {
   //back to think about how he should obtain his chopsticks :-)
   def waiting_for(chopstickToWaitFor: ActorRef, otherChopstick: ActorRef): Receive = {
     case Taken(`chopstickToWaitFor`) =>
-      println("%s has picked up %s and %s, and starts to eat",name,left.id,right.id)
+      println("%s has picked up %s and %s, and starts to eat",name,left.address,right.address)
       become(eating)
       Scheduler.scheduleOnce(self,Think,5,TimeUnit.SECONDS)
 

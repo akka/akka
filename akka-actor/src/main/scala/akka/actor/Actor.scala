@@ -19,7 +19,7 @@ import com.eaio.uuid.UUID
 /**
  * Life-cycle messages for the Actors
  */
-@serializable sealed trait LifeCycleMessage
+sealed trait LifeCycleMessage extends Serializable
 
 /* Marker trait to show which Messages are automatically handled by Akka */
 sealed trait AutoReceivedMessage { self: LifeCycleMessage => }
@@ -40,7 +40,7 @@ case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true)
   /**
    *  Java API with default non-stacking behavior
    */
-  def this(code: akka.japi.Function[ActorRef,Procedure[Any]]) = this(code, true)
+  def this(code: akka.japi.Function[ActorRef, Procedure[Any]]) = this(code, true)
 }
 
 case object RevertHotSwap extends AutoReceivedMessage with LifeCycleMessage
@@ -145,6 +145,9 @@ object Actor extends ListenerManagement {
   def actorOf[T <: Actor : Manifest](address: String): ActorRef =
     actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], address)
 
+  /**
+   * FIXME document
+   */
   def actorOf[T <: Actor : Manifest]: ActorRef =
     actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], (new UUID).toString)
 
@@ -170,8 +173,11 @@ object Actor extends ListenerManagement {
         "\nMake sure Actor is NOT defined inside a class/trait," +
         "\nif so put it outside the class/trait, f.e. in a companion object," +
         "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
-  }, None, false, address)
+  }, address)
 
+  /**
+   * FIXME document
+   */
   def actorOf(clazz: Class[_ <: Actor]): ActorRef = actorOf(clazz, (new UUID).toString)
 
   /**
@@ -192,8 +198,11 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf(new MyActor).start
    * </pre>
    */
-  def actorOf(factory: => Actor, address: String): ActorRef = new LocalActorRef(() => factory, None, false, address)
+  def actorOf(factory: => Actor, address: String): ActorRef = new LocalActorRef(() => factory, address)
 
+  /**
+   * FIXME document
+   */
   def actorOf(factory: => Actor): ActorRef = actorOf(factory, (new UUID).toString)
 
   /**
@@ -204,7 +213,7 @@ object Actor extends ListenerManagement {
    * This function should <b>NOT</b> be used for remote actors.
    * JAVA API
    */
-  def actorOf(creator: Creator[Actor], address: String): ActorRef = new LocalActorRef(() => creator.create, None, false, address)
+  def actorOf(creator: Creator[Actor], address: String): ActorRef = new LocalActorRef(() => creator.create, address)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
@@ -264,8 +273,7 @@ object Actor extends ListenerManagement {
  * <p/>
  * Here you find functions like:
  *   - !, !!, !!! and forward
- *   - link, unlink, startLink, spawnLink etc
- *   - makeRemote etc.
+ *   - link, unlink, startLink etc
  *   - start, stop
  *   - etc.
  *
@@ -288,7 +296,6 @@ object Actor extends ListenerManagement {
  *   import self._
  *   id = ...
  *   dispatcher = ...
- *   spawnLink[OtherActor]
  *   ...
  * }
  * </pre>
@@ -318,7 +325,6 @@ trait Actor {
       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
      Actor.actorRefInCreation.value = None
-     optRef.asInstanceOf[Some[ActorRef]].get.id = getClass.getName  //FIXME: Is this needed?
      optRef.asInstanceOf[Some[ActorRef]]
   }
 

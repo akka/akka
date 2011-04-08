@@ -93,8 +93,7 @@ case class SupervisorFactory(val config: SupervisorConfig) {
  * <p/>
  * The supervisor class is only used for the configuration system when configuring supervisor
  * hierarchies declaratively. Should not be used as part of the regular programming API. Instead
- * wire the children together using 'link', 'spawnLink' etc. and set the 'trapExit' flag in the
- * children that should trap error signals and trigger restart.
+ * wire the children together using 'link', 'startLink' etc.
  * <p/>
  * See the ScalaDoc for the SupervisorFactory for an example on how to declaratively wire up children.
  *

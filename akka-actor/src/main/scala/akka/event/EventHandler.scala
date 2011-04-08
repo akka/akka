@@ -74,16 +74,16 @@ object EventHandler extends ListenerManagement {
     override val level = DebugLevel
   }
 
-  val error   = "[ERROR]   [%s] [%s] [%s] %s\n%s".intern
-  val warning = "[WARN]    [%s] [%s] [%s] %s".intern
-  val info    = "[INFO]    [%s] [%s] [%s] %s".intern
-  val debug   = "[DEBUG]   [%s] [%s] [%s] %s".intern
+  val error   = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
+  val warning = "[WARN] [%s] [%s] [%s] %s".intern
+  val info    = "[INFO] [%s] [%s] [%s] %s".intern
+  val debug   = "[DEBUG] [%s] [%s] [%s] %s".intern
   val generic = "[GENERIC] [%s] [%s]".intern
-  val ID      = "event:handler".intern
+  val ADDRESS      = "event:handler".intern
 
   class EventHandlerException extends AkkaException
 
-  lazy val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
+  lazy val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ADDRESS).build
 
   val level: Int = config.getString("akka.event-handler-level", "DEBUG") match {
     case "ERROR"   => ErrorLevel
@@ -150,7 +150,7 @@ object EventHandler extends ListenerManagement {
   }
 
   class DefaultListener extends Actor {
-    self.id = ID
+    self.address = ADDRESS
     self.dispatcher = EventHandlerDispatcher
 
     def receive = {

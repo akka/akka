@@ -61,7 +61,7 @@ object Futures {
    * Returns a Future to the result of the first future in the list that is completed
    */
   def firstCompletedOf[T <: AnyRef](futures: java.lang.Iterable[Future[T]], timeout: Long): Future[T] =
-    firstCompletedOf(scala.collection.JavaConversions.asScalaIterable(futures),timeout)
+    firstCompletedOf(scala.collection.JavaConversions.iterableAsScalaIterable(futures),timeout)
 
   /**
    * A non-blocking fold over the specified futures.
@@ -87,7 +87,7 @@ object Futures {
             results add r.b
             if (results.size == allDone) { //Only one thread can get here
               try {
-                result completeWithResult scala.collection.JavaConversions.asScalaIterable(results).foldLeft(zero)(foldFun)
+                result completeWithResult scala.collection.JavaConversions.collectionAsScalaIterable(results).foldLeft(zero)(foldFun)
               } catch {
                 case e: Exception =>
                   EventHandler.error(e, this, e.getMessage)
@@ -115,7 +115,7 @@ object Futures {
    * or the result of the fold.
    */
   def fold[T <: AnyRef, R <: AnyRef](zero: R, timeout: Long, futures: java.lang.Iterable[Future[T]], fun: akka.japi.Function2[R, T, R]): Future[R] =
-    fold(zero, timeout)(scala.collection.JavaConversions.asScalaIterable(futures))( fun.apply _ )
+    fold(zero, timeout)(scala.collection.JavaConversions.iterableAsScalaIterable(futures))( fun.apply _ )
 
   /**
    * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
@@ -150,7 +150,7 @@ object Futures {
    * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
    */
   def reduce[T <: AnyRef, R >: T](futures: java.lang.Iterable[Future[T]], timeout: Long, fun: akka.japi.Function2[R, T, T]): Future[R] =
-    reduce(scala.collection.JavaConversions.asScalaIterable(futures), timeout)(fun.apply _)
+    reduce(scala.collection.JavaConversions.iterableAsScalaIterable(futures), timeout)(fun.apply _)
 
   import scala.collection.mutable.Builder
   import scala.collection.generic.CanBuildFrom
@@ -175,36 +175,6 @@ object Futures {
       val fb = fn(a.asInstanceOf[A])
       for (r <- fr; b <-fb) yield (r += b)
     }.map(_.result)
-
-  // =====================================
-  // Deprecations
-  // =====================================
-  
-  /**
-   * (Blocking!)
-   */
-  @deprecated("Will be removed after 1.1, if you must block, use: futures.foreach(_.await)")
-  def awaitAll(futures: List[Future[_]]): Unit = futures.foreach(_.await)
-
-  /**
-   *  Returns the First Future that is completed (blocking!)
-   */
-  @deprecated("Will be removed after 1.1, if you must block, use: firstCompletedOf(futures).await")
-  def awaitOne(futures: List[Future[_]], timeout: Long = Long.MaxValue): Future[_] = firstCompletedOf[Any](futures, timeout).await
-
-
-  /**
-   * Applies the supplied function to the specified collection of Futures after awaiting each future to be completed
-   */
-  @deprecated("Will be removed after 1.1, if you must block, use: futures map { f => fun(f.await) }")
-  def awaitMap[A,B](in: Traversable[Future[A]])(fun: (Future[A]) => B): Traversable[B] =
-    in map { f => fun(f.await) }
-
-  /**
-   * Returns Future.resultOrException of the first completed of the 2 Futures provided (blocking!)
-   */
-  @deprecated("Will be removed after 1.1, if you must block, use: firstCompletedOf(List(f1,f2)).await.resultOrException")
-  def awaitEither[T](f1: Future[T], f2: Future[T]): Option[T] = firstCompletedOf[T](List(f1,f2)).await.resultOrException
 }
 
 object Future {
@@ -508,26 +478,26 @@ trait CompletableFuture[T] extends Future[T] {
    * Completes this Future with the specified result, if not already completed.
    * @return this
    */
-  def complete(value: Either[Throwable, T]): CompletableFuture[T]
+  def complete(value: Either[Throwable, T]): Future[T]
 
   /**
    * Completes this Future with the specified result, if not already completed.
    * @return this
    */
-  final def completeWithResult(result: T): CompletableFuture[T] = complete(Right(result))
+  final def completeWithResult(result: T): Future[T] = complete(Right(result))
 
   /**
    * Completes this Future with the specified exception, if not already completed.
    * @return this
    */
-  final def completeWithException(exception: Throwable): CompletableFuture[T] = complete(Left(exception))
+  final def completeWithException(exception: Throwable): Future[T] = complete(Left(exception))
 
   /**
    * Completes this Future with the specified other Future, when that Future is completed,
    * unless this Future has already been completed.
    * @return this.
    */
-  final def completeWith(other: Future[T]): CompletableFuture[T] = {
+  final def completeWith(other: Future[T]): Future[T] = {
     other onComplete { f => complete(f.value.get) }
     this
   }
@@ -535,12 +505,12 @@ trait CompletableFuture[T] extends Future[T] {
   /**
    * Alias for complete(Right(value)).
    */
-  final def << (value: T): CompletableFuture[T] = complete(Right(value))
+  final def << (value: T): Future[T] = complete(Right(value))
 
   /**
    * Alias for completeWith(other).
    */
-  final def << (other : Future[T]): CompletableFuture[T] = completeWith(other)
+  final def << (other : Future[T]): Future[T] = completeWith(other)
 }
 
 /**

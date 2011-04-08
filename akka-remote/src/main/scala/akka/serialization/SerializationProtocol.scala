@@ -44,7 +44,7 @@ trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
  * }
  * </pre>
  */
-@serializable trait StatelessActorFormat[T <: Actor] extends Format[T] {
+trait StatelessActorFormat[T <: Actor] extends Format[T] with scala.Serializable{
   def fromBinary(bytes: Array[Byte], act: T) = act
 
   def toBinary(ac: T) = Array.empty[Byte]
@@ -64,7 +64,7 @@ trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
  * }
  * </pre>
  */
-@serializable trait SerializerBasedActorFormat[T <: Actor] extends Format[T] {
+trait SerializerBasedActorFormat[T <: Actor] extends Format[T] with scala.Serializable {
   val serializer: Serializer
 
   def fromBinary(bytes: Array[Byte], act: T) = serializer.fromBinary(bytes, Some(act.self.actorClass)).asInstanceOf[T]
@@ -114,11 +114,9 @@ object ActorSerialization {
 
     val builder = SerializedActorRefProtocol.newBuilder
       .setUuid(UuidProtocol.newBuilder.setHigh(actorRef.uuid.getTime).setLow(actorRef.uuid.getClockSeqAndNode).build)
-      .setId(actorRef.id)
+      .setAddress(actorRef.address)
       .setActorClassname(actorRef.actorClass.getName)
-      .setOriginalAddress(toAddressProtocol(actorRef))
       .setTimeout(actorRef.timeout)
-
 
     if (serializeMailBox == true) {
       val messages =
@@ -135,7 +133,7 @@ object ActorSerialization {
           RemoteActorSerialization.createRemoteMessageProtocolBuilder(
             Some(actorRef),
             Left(actorRef.uuid),
-            actorRef.id,
+            actorRef.address,
             actorRef.actorClassName,
             actorRef.timeout,
             Right(m.message),
@@ -161,10 +159,6 @@ object ActorSerialization {
     homeAddress: Option[InetSocketAddress],
     format: Format[T]): ActorRef = {
     val builder = SerializedActorRefProtocol.newBuilder.mergeFrom(bytes)
-    homeAddress.foreach { addr =>
-      val addressProtocol = AddressProtocol.newBuilder.setHostname(addr.getAddress.getHostAddress).setPort(addr.getPort).build
-      builder.setOriginalAddress(addressProtocol)
-    }
     fromProtobufToLocalActorRef(builder.build, format, None)
   }
 
@@ -181,7 +175,7 @@ object ActorSerialization {
       protocol.getLifeCycle.getLifeCycle match {
         case LifeCycleType.PERMANENT => Permanent
         case LifeCycleType.TEMPORARY => Temporary
-        case unknown => throw new IllegalActorStateException("LifeCycle type is not valid: " + unknown)
+        case unknown => throw new IllegalActorStateException("LifeCycle type is not valid [" + unknown + "]")
       }
     } else UndefinedLifeCycle
 
@@ -205,21 +199,15 @@ object ActorSerialization {
       else actorClass.newInstance.asInstanceOf[Actor]
     }
 
-    val homeAddress = {
-      val address = protocol.getOriginalAddress
-      Some(new InetSocketAddress(address.getHostname, address.getPort))
-    }
-
     val ar = new LocalActorRef(
       uuidFrom(protocol.getUuid.getHigh, protocol.getUuid.getLow),
-      protocol.getId,
+      protocol.getAddress,
       if (protocol.hasTimeout) protocol.getTimeout else Actor.TIMEOUT,
       if (protocol.hasReceiveTimeout) Some(protocol.getReceiveTimeout) else None,
       lifeCycle,
       supervisor,
       hotswap,
       factory,
-      homeAddress,
       "address") // FIXME grab real address and use that
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
@@ -249,10 +237,8 @@ object RemoteActorSerialization {
    */
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
     val ref = RemoteActorRef(
-      protocol.getClassOrServiceName,
+      protocol.getAddress,
       protocol.getActorClassname,
-      protocol.getHomeAddress.getHostname,
-      protocol.getHomeAddress.getPort,
       protocol.getTimeout,
       loader)
     ref
@@ -277,7 +263,7 @@ object RemoteActorSerialization {
   def createRemoteMessageProtocolBuilder(
       actorRef: Option[ActorRef],
       replyUuid: Either[Uuid, UuidProtocol],
-      actorId: String,
+      actorAddress: String,
       actorClassName: String,
       timeout: Long,
       message: Either[Throwable, Any],
@@ -294,7 +280,7 @@ object RemoteActorSerialization {
 
     val actorInfoBuilder = ActorInfoProtocol.newBuilder
         .setUuid(uuidProtocol)
-        .setId(actorId)
+        .setAddress(actorAddress)
         .setTarget(actorClassName)
         .setTimeout(timeout)
 
@@ -336,7 +322,8 @@ object RemoteActorSerialization {
 
     secureCookie.foreach(messageBuilder.setCookie(_))
 
-    actorRef.foreach { ref =>
+    /* TODO invent new supervision strategy
+      actorRef.foreach { ref =>
       ref.registerSupervisorAsRemoteActor.foreach { id =>
         messageBuilder.setSupervisorUuid(
           UuidProtocol.newBuilder
@@ -344,7 +331,7 @@ object RemoteActorSerialization {
               .setLow(id.getClockSeqAndNode)
               .build)
       }
-    }
+    } */
 
     if( senderOption.isDefined)
       messageBuilder.setSender(toRemoteActorRefProtocol(senderOption.get))
