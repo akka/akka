@@ -156,6 +156,34 @@ abstract class TypedActor extends Actor with Proxyable {
   def getContext: TypedActorContext = context
 
   /**
+   * User overridable callback.
+   * <p/>
+   * Is called when an Actor is started by invoking 'actor.start'.
+   */
+  override def preStart {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called when 'actor.stop' is invoked.
+   */
+  override def postStop {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called on a crashed Actor right BEFORE it is restarted to allow clean up of resources before Actor is terminated.
+   */
+  override def preRestart(reason: Throwable) {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
+   */
+  override def postRestart(reason: Throwable) {}
+
+  /**
    * This method is used to resolve the Future for TypedActor methods that are defined to return a
    * {@link akka.actor.dispatch.Future }.
    * <p/>
