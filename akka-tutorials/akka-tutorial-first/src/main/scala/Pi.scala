@@ -73,7 +73,7 @@ object Pi extends App {
     def calculatePiFor(arg: Int, nrOfElements: Int): Double = {
       val end = (arg + 1) * nrOfElements - 1
       @tailrec def doCalculatePiFor(cursor: Int, acc: Double): Double = {
-        if (end == cursor) acc
+        if (cursor > end) acc
         else doCalculatePiFor(cursor + 1, acc + (4 * math.pow(-1, cursor) / (2 * cursor + 1)))
       }
       doCalculatePiFor(arg * nrOfElements, 0.0D)
