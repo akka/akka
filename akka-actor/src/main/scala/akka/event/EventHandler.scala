@@ -145,6 +145,10 @@ object EventHandler extends ListenerManagement {
     if (level >= DebugLevel) notifyListeners(Debug(instance, message))
   }
 
+  def isInfoEnabled = level >= InfoLevel
+
+  def isDebugEnabled = level >= DebugLevel
+
   def formattedTimestamp = DateFormat.getInstance.format(new Date)
 
   def stackTraceFor(e: Throwable) = {
