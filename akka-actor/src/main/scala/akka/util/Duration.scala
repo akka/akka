@@ -37,7 +37,7 @@ object Duration {
    * Construct a Duration by parsing a String. In case of a format error, a
    * RuntimeException is thrown. See `unapply(String)` for more information.
    */
-  def apply(s : String) : Duration = unapply(s) getOrElse error("format error")
+  def apply(s : String) : Duration = unapply(s) getOrElse sys.error("format error")
 
   /**
    * Deconstruct a Duration into length and unit if it is finite.
@@ -77,7 +77,7 @@ object Duration {
       if ( ms ne null) Some(Duration(JDouble.parseDouble(length), MILLISECONDS)) else
       if (mus ne null) Some(Duration(JDouble.parseDouble(length), MICROSECONDS)) else
       if ( ns ne null) Some(Duration(JDouble.parseDouble(length), NANOSECONDS)) else
-      error("made some error in regex (should not be possible)")
+      sys.error("made some error in regex (should not be possible)")
     case REinf() => Some(Inf)
     case REminf() => Some(MinusInf)
     case _ => None
