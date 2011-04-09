@@ -72,7 +72,7 @@ Akka is very modular and has many JARs for containing different features. The co
 - ``akka-actor-1.1.jar`` -- Standard Actors
 - ``akka-typed-actor-1.1.jar`` -- Typed Actors
 - ``akka-remote-1.1.jar`` -- Remote Actors
-- ``akka-stm-1.1.jar`` -- STM (Software Transactional Memory) and transactional datastructures
+- ``akka-stm-1.1.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
 - ``akka-http-1.1.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
 - ``akka-slf4j-1.1.jar`` -- SLF4J Event Handler Listener
 - ``akka-testkit-1.1.jar`` -- Toolkit for testing Actors
@@ -277,7 +277,7 @@ Let's now write the master actor::
 
 Couple of things are worth explaining further.
 
-First, we are passing in a ``java.util.concurrent.CountDownLatch`` to the ``Master`` actor. This latch is only used for plumbing, to have a simple way of letting the outside world knowing when the master can deliver the result and shut down. In more idiomatic Akka code, as we will see in part two of this tutorial series, we would not use a latch.
+First, we are passing in a ``java.util.concurrent.CountDownLatch`` to the ``Master`` actor. This latch is only used for doing plumbing (in this specific tutorial), to have a simple way of letting the outside world knowing when the master can deliver the result and shut down. In more idiomatic Akka code, as we will see in part two of this tutorial series, we would not use a latch but other abstractions and functions like ``Channel``, ``Future`` and ``!!!`` to achive the same thing in a non-blocking way. But for simplicity let's stick to a ``CountDownLatch`` for now.
 
 Second, we are adding a couple of life-cycle callback methods; ``preStart`` and ``postStop``. In the ``preStart`` callback we are recording the time when the actor is started and in the ``postStop`` callback we are printing out the result (the approximation of Pi) and the time it took to calculate it. In this call we also invoke ``latch.countDown`` to tell the outside world that we are done.
 
@@ -340,7 +340,7 @@ Now the only thing that is left to implement is the runner that should bootstrap
 
 That's it. Now we are done.
 
-But before we package it up and run it, let's take a look at the full code now, with package declaration, imports and all of::
+But before we package it up and run it, let's take a look at the full code now, with package declaration, imports and all::
 
     package akka.tutorial.scala.first
 
