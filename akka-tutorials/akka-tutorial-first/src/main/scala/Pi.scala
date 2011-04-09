@@ -13,8 +13,6 @@ import akka.dispatch.Dispatchers
 import System.{currentTimeMillis => now}
 import java.util.concurrent.CountDownLatch
 
-import scala.annotation.tailrec
-
 /**
  * First part in Akka tutorial.
  * <p/>
@@ -57,26 +55,13 @@ object Pi extends App {
   // ===== Worker =====
   // ==================
   class Worker extends Actor {
-    // define the work
 
-/*
-    // FIXME tail-recursive fun instead
-    val calculatePiFor = (arg: Int, nrOfElements: Int) => {
-      val range = (arg * nrOfElements) until ((arg + 1) * nrOfElements)
-      var acc = 0.0D
-      range foreach (i => acc += 4 * math.pow(-1, i) / (2 * i + 1))
+    // define the work
+    def calculatePiFor(start: Int, elems: Int): Double = {
+      var acc = 0.0
+      for (i <- start until (start + elems))
+        acc += 4 * math.pow(-1, i) / (2 * i + 1)
       acc
-      // Use this for more functional style but is twice as slow
-      // range.foldLeft(0.0D)( (acc, i) =>  acc + 4 * math.pow(-1, i) / (2 * i + 1) )
-    }
-*/
-    def calculatePiFor(arg: Int, nrOfElements: Int): Double = {
-      val end = (arg + 1) * nrOfElements
-      @tailrec def doCalculatePiFor(cursor: Int, acc: Double): Double = {
-        if (cursor == end) acc
-        else doCalculatePiFor(cursor + 1, acc + (4 * math.pow(-1, cursor) / (2 * cursor + 1)))
-      }
-      doCalculatePiFor(arg * nrOfElements, 0.0D)
     }
 
     def receive = {
@@ -88,7 +73,9 @@ object Pi extends App {
   // ==================
   // ===== Master =====
   // ==================
-  class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch) extends Actor {
+  class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
+    extends Actor {
+
     var pi: Double = _
     var nrOfResults: Int = _
     var start: Long = _
@@ -103,7 +90,8 @@ object Pi extends App {
     def receive = {
       case Calculate =>
         // schedule work
-        for (arg <- 0 until nrOfMessages) router ! Work(arg, nrOfElements)
+        //for (arg <- 0 until nrOfMessages) router ! Work(arg, nrOfElements)
+        for (i <- 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
 
         // send a PoisonPill to all workers telling them to shut down themselves
         router ! Broadcast(PoisonPill)

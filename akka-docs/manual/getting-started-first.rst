@@ -23,8 +23,13 @@ Here is the formula for the algorithm we will use:
 
 In this particular algorithm the master splits the series into chunks which are sent out to each worker actor to be processed, when each worker has processed its chunk it sends a result back to the master which aggregates to total result.
 
-Prerequisite
-------------
+Tutorial source code
+--------------------
+
+If you want don't want to type in the code and/or set up an SBT project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here <https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first>`_, with the actual source code `here <https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala>`_.
+
+Prerequisites
+-------------
 
 This tutorial assumes that you have Jave 1.6 or later installed on you machine and ``java`` on your ``PATH``. You also need to know how to run commands in a shell (ZSH, Bash, DOS etc.) and a decent text editor or IDE to type in the Scala code in.
 
@@ -33,7 +38,7 @@ Downloading and installing Akka
 
 If you want to be able to build and run the tutorial sample from the command line then you have to download Akka. If you prefer to use SBT to build and run the sample then you can skip this section and jump to the next one.
 
-Let's get the 1.1 distribution from `http://akka.io/downloads <http://akka.io/downloads/>`_. Once you have downloaded the distribution unzip it in the folder you would like to have Akka installed in, in my case I choose to install it in ``/Users/jboner/tools/``, simply by unzipping it to this directory.
+Let's get the ``akka-1.1`` distribution of Akka core (not Akka Modules) from `http://akka.io/downloads <http://akka.io/downloads/>`_. Once you have downloaded the distribution unzip it in the folder you would like to have Akka installed in, in my case I choose to install it in ``/Users/jboner/tools/``, simply by unzipping it to this directory.
 
 You need to do one more thing in order to install Akka properly and that is to set the ``AKKA_HOME`` environment variable to the root of the distribution. In my case I'm opening up a shell and navigating down to the distribution and setting the ``AKKA_HOME`` variable::
 
@@ -89,9 +94,9 @@ If you want to be able to build and run the tutorial sample from the command lin
 
 Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0 final release. If you pick the ``tgz`` or ``zip`` distributions then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
 
-You also need to make sure that the ``scala-2.9.0/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
+You also need to make sure that the ``scala-2.9.0-final/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
 
-    $ export PATH=$PATH:scala-2.9.0/bin
+    $ export PATH=$PATH:scala-2.9.0-final/bin
 
 Now you can test you installation by invoking and see the printout::
 
@@ -105,26 +110,84 @@ Some tools requires you to set the ``SCALA_HOME`` environment variable to the ro
 Downloading and installing SBT
 ------------------------------
 
-SBT, short for 'Simple Build Tool' is an excellent build system written in Scala. You are using Scala to write the build scripts which gives you a lot of power. It has a plugin architecture with many plugins available, something that we will take advantage of soon. SBT is the preferred way of building software in Scala. If you want to use SBT for this tutorial then follow the following instructions, if not you can skip this section.
+SBT, short for 'Simple Build Tool' is an excellent build system written in Scala. You are using Scala to write the build scripts which gives you a lot of power. It has a plugin architecture with many plugins available, something that we will take advantage of soon. SBT is the preferred way of building software in Scala. If you want to use SBT for this tutorial then follow the following instructions, if not you can skip this section and the next.
 
 To install SBT and create a project for this tutorial it is easiest to follow the instructions on `this page <http://code.google.com/p/simple-build-tool/wiki/Setup>`_. The preferred SBT version to install is ``0.7.6``.
 
-If you have created an SBT project then step into the newly created SBT project, create a source file ``Pi.scala`` for the tutorial sample and put it in the ``src/main/scala/`` directory.
+If you have created an SBT project then step into the newly created SBT project, create a source file ``Pi.scala`` for the tutorial sample and put it in the ``src/main/scala`` directory.
 
-So far we only have a standard Scala project but now we need to make our project an Akka project. You could add the dependencies manually to the build script, but the easiest way is to use Akka's SBT Plugin.
+So far we only have a standard Scala project but now we need to make our project an Akka project. You could add the dependencies manually to the build script, but the easiest way is to use Akka's SBT Plugin, covered in the next section.
 
-TODO: write up about Akka's SBT Plugin
+Creating an Akka SBT project
+----------------------------
 
-Now you need to make SBT download all dependencies it needs. That is done by invoking::
+If you have not already done so, now is the time to create an SBT project for our tutorial. You do that by stepping into the directory you want to create your project in and invoking the ``sbt`` command answering the questions for setting up your project (just pressing ENTER will choose the default in square brackets)::
+
+    $ sbt
+    Project does not exist, create new project? (y/N/s) y
+    Name: Tutorial 1
+    Organization: Hakkers Inc
+    Version [1.0]:
+    Scala version [2.9.0]:
+    sbt version [0.7.6]:
+
+Now we have the basis for an SBT project. Akka has an SBT Plugin that makes it very easy to use Akka is an SBT-based project so let's use that.
+
+To use the plugin, first add a plugin definition to your SBT project by creating a ``Plugins.scala`` file in the ``project/plugins`` directory containing::
+
+    import sbt._
+
+    class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
+      val akkaRepo   = "Akka Repo" at "http://akka.io/repository"
+      val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "1.1"
+    }
+
+Now we need to create a project definition using our Akka SBT plugin. We do that by creating a ``Project.scala`` file in the ``build`` directory containing::
+
+    class TutorialOneProject(info: ProjectInfo) extends DefaultProject(info) with AkkaProject
+
+The magic is in mixing in the ``AkkaProject`` trait.
+
+Not needed in this tutorial, but if you would like to use additional Akka modules than ``akka-actor`` then you can add these as "module configurations" in the project file. Here is an example adding ``akka-remote`` and ``akka-stm``::
+
+    class AkkaSampleProject(info: ProjectInfo) extends DefaultProject(info) with AkkaProject {
+      val akkaSTM    = akkaModule("stm")
+      val akkaRemote = akkaModule("remote")
+    }
+
+So, now we are all set. Just one final thing to do; make SBT download all dependencies it needs. That is done by invoking::
 
     $ sbt update
 
 SBT itself needs a whole bunch of dependencies but our project will only need one; ``akka-actor-1.1.jar``. SBT downloads that as well.
 
+Imports needed for the tutorial code
+------------------------------------
+
+Now let's start hacking.
+
+We start by creating a ``Pi.scala`` file and add these import statements at the top of the file::
+
+    package akka.tutorial.scala.first
+
+    import akka.actor.{Actor, ActorRef, PoisonPill}
+    import Actor._
+    import akka.routing.{Routing, CyclicIterator}
+    import Routing._
+    import akka.dispatch.Dispatchers
+
+    import java.util.concurrent.CountDownLatch
+
+If you are using SBT in this tutorial then create the file in the ``src/main/scala`` directory.
+
+If you are using the command line tools then just create the file wherever you want, I will create it in a directory called ``tutorial`` the root of the Akka distribution, e.g. in ``$AKKA_HOME/tutorial/Pi.scala``.
+
 Creating the messages
 ---------------------
 
-First we need to create the messages is that we want to have flowing in the system. Let's create three different messages:
+The design we are aiming for is to have one ``Master`` actor initiating the computation, creating a set of ``Worker`` actors. Then it splits up the work into discrete chunks, sends out these work chunks to the different workers in a round-robin fashion. The master then waits until all the workers have completed all the work and sent back the result for aggregation. When computation is completed the master prints out the result,  shuts down all workers an then himself.
+
+With this in mind, let's now create the messages that we want to have flowing in the system. We need three different messages:
 
 - ``Calculate`` -- starts the calculation
 - ``Work`` -- contains the work assignment
@@ -154,20 +217,14 @@ Now we can create the worker actor.  This is done by mixing in the ``Actor`` tra
 
 As you can see we have now created an ``Actor`` with a ``receive`` method that as a handler for the ``Work`` message. In this handler we invoke the ``calculatePiFor(..)`` method, wraps the result in a ``Result`` message and sends it back to the original sender using ``self.reply``. In Akka the sender reference is implicitly passed along with the message so that the receiver can always reply or store away the sender reference use.
 
-The only thing missing in our ``Worker`` actor is the implementation on the ``calculatePiFor(..)`` method. There are many ways we can implement this algorithm in Scala, now let's try to balance functional programming with efficiency and use a tail recursive function::
+The only thing missing in our ``Worker`` actor is the implementation on the ``calculatePiFor(..)`` method. There are many ways we can implement this algorithm in Scala, in this introductory tutorial we have chosen an imperative style using a for comprehension and an accumulator::
 
-    def calculatePiFor(arg: Int, nrOfElements: Int): Double = {
-      val end = (arg + 1) * nrOfElements - 1
-
-      @tailrec def doCalculatePiFor(cursor: Int, acc: Double): Double = {
-        if (end == cursor) acc
-        else doCalculatePiFor(cursor + 1, acc + (4 * math.pow(-1, cursor) / (2 * cursor + 1)))
-      }
-
-      doCalculatePiFor(arg * nrOfElements, 0.0D)
+    def calculatePiFor(start: Int, elems: Int): Double = {
+      var acc = 0.0
+      for (i <- start until (start + elems))
+        acc += 4 * math.pow(-1, i) / (2 * i + 1)
+      acc
     }
-
-Here we use the classic trick with a local nested method to make sure that the compiler can perform a tail call optimization. We can ensure that the compiler will be able to do that by annotate tail recursive function with ``@tailrec``, with this annotation the compiler will emit an error if it can optimize it. With this implementation the calculation is really fast.
 
 Creating the master
 -------------------
@@ -207,13 +264,13 @@ Let's now write the master actor::
 
       def receive = { ... }
 
-      override def preStart = start = now
+      override def preStart = start = System.currentTimeMillis
 
       override def postStop = {
         // tell the world that the calculation is complete
         println(
           "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
-          .format(pi, (now - start)))
+          .format(pi, (System.currentTimeMillis - start)))
         latch.countDown
       }
     }
@@ -239,7 +296,7 @@ Now, let's capture this in code::
     def receive = {
       case Calculate =>
         // schedule work
-        for (arg <- 0 until nrOfMessages) router ! Work(arg, nrOfElements)
+        for (i <- 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
 
         // send a PoisonPill to all workers telling them to shut down themselves
         router ! Broadcast(PoisonPill)
@@ -293,10 +350,7 @@ But before we package it up and run it, let's take a look at the full code now, 
     import Routing._
     import akka.dispatch.Dispatchers
 
-    import System.{currentTimeMillis => now}
     import java.util.concurrent.CountDownLatch
-
-    import scala.annotation.tailrec
 
     object Pi extends App {
 
@@ -316,13 +370,11 @@ But before we package it up and run it, let's take a look at the full code now, 
       class Worker extends Actor {
 
         // define the work
-        def calculatePiFor(arg: Int, nrOfElements: Int): Double = {
-          val end = (arg + 1) * nrOfElements - 1
-          @tailrec def doCalculatePiFor(cursor: Int, acc: Double): Double = {
-            if (end == cursor) acc
-            else doCalculatePiFor(cursor + 1, acc + (4 * math.pow(-1, cursor) / (2 * cursor + 1)))
-          }
-          doCalculatePiFor(arg * nrOfElements, 0.0D)
+        def calculatePiFor(start: Int, elems: Int): Double = {
+          var acc = 0.0
+          for (i <- start until (start + elems))
+            acc += 4 * math.pow(-1, i) / (2 * i + 1)
+          acc
         }
 
         def receive = {
@@ -351,7 +403,7 @@ But before we package it up and run it, let's take a look at the full code now, 
         def receive = {
           case Calculate =>
             // schedule work
-            for (arg <- 0 until nrOfMessages) router ! Work(arg, nrOfElements)
+            for (i <- 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
 
             // send a PoisonPill to all workers telling them to shut down themselves
             router ! Broadcast(PoisonPill)
@@ -366,13 +418,13 @@ But before we package it up and run it, let's take a look at the full code now, 
             if (nrOfResults == nrOfMessages) self.stop
         }
 
-        override def preStart = start = now
+        override def preStart = start = System.currentTimeMillis
 
         override def postStop = {
           // tell the world that the calculation is complete
           println(
             "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
-            .format(pi, (now - start)))
+            .format(pi, (System.currentTimeMillis - start)))
           latch.countDown
         }
       }
