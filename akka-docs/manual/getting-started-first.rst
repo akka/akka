@@ -161,10 +161,10 @@ So, now we are all set. Just one final thing to do; make SBT download all depend
 
 SBT itself needs a whole bunch of dependencies but our project will only need one; ``akka-actor-1.1.jar``. SBT downloads that as well.
 
-Imports needed for the tutorial code
-------------------------------------
+Start writing the code
+----------------------
 
-Now let's start hacking.
+Now it's about time that we start hacking.
 
 We start by creating a ``Pi.scala`` file and add these import statements at the top of the file::
 
