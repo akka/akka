@@ -2,7 +2,7 @@ Articles & Presentations
 ========================
 
 Videos
-======
+------
 
 `Functional Programming eXchange - March 2011 <http://skillsmatter.com/podcast/scala/simpler-scalability-fault-tolerance-concurrency-remoting-through-actors>`_
 
@@ -17,7 +17,7 @@ Videos
 `Akka talk at Scala Days - March 2010 <http://days2010.scala-lang.org/node/138/162>`_
 
 Articles
-========
+--------
 
 `Remote Actor Class Loading with Akka <https://www.earldouglas.com/remote-actor-class-loading-with-akka>`_
 
@@ -88,13 +88,13 @@ Articles
 `Enterprise scala actors: introducing the Akka framework <http://blog.xebia.com/2009/10/22/scala-actors-for-the-enterprise-introducing-the-akka-framework/>`_
 
 Books
-=====
+-----
 
 `Akka and Camel <http://www.manning.com/ibsen/appEsample.pdf>`_ (appendix E of `Camel in Action <http://www.manning.com/ibsen/>`_)
 `Ett första steg i Scala <http://www.studentlitteratur.se/o.o.i.s?id=2474&artnr=33847-01&csid=66&mp=4918>`_ (Kapitel "Aktörer och Akka") (en. "A first step in Scala", chapter "Actors and Akka", book in Swedish)
 
 Presentations
-=============
+-------------
 
 `Slides from Akka talk at Scala Days 2010, good short intro to Akka <http://www.slideshare.net/jboner/akka-scala-days-2010>`_
 
@@ -105,14 +105,14 @@ Presentations
 `<https://github.com/deanwampler/Presentations/tree/master/akka-intro/>`_
 
 Podcasts
-========
+--------
 
 `Episode 16 – Scala and Akka an Interview with Jonas Boner <http://basementcoders.com/?p=711>`_
 
 `Jonas Boner on the Akka framework, Scala, and highly scalable applications <http://techcast.chariotsolutions.com/index.php?post_id=557314>`_
 
 Interviews
-==========
+----------
 
 `JetBrains/DZone interview: Talking about Akka, Scala and life with Jonas Bonér <http://jetbrains.dzone.com/articles/talking-about-akka-scala-and>`_
 

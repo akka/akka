@@ -6,7 +6,7 @@ Module stability: **IN PROGRESS**
 Akka supports a Cluster Membership through a `JGroups <http://www.jgroups.org/>`_ based implementation. JGroups is is a `P2P <http://en.wikipedia.org/wiki/Peer-to-peer>`_ clustering API
 
 Configuration
-=============
+-------------
 
 The cluster is configured in 'akka.conf' by adding the Fully Qualified Name (FQN) of the actor class and serializer:
 
@@ -18,15 +18,15 @@ The cluster is configured in 'akka.conf' by adding the Fully Qualified Name (FQN
       name = "default"                                  # The name of the cluster
       serializer = "akka.serialization.Serializer$Java" # FQN of the serializer class
     }
-   }
+  }
 
 How to join the cluster
-=======================
+-----------------------
 
 The node joins the cluster when the 'RemoteNode' and/or 'RemoteServer' servers are started.
 
 Cluster API
-===========
+-----------
 
 Interaction with the cluster is done through the 'akka.remote.Cluster' object.
 
@@ -80,11 +80,10 @@ Here is an example:
 
 Here is another example:
 
-`<code format="scala">`_
-Cluster.lookup({
-  case remoteAddress @ RemoteAddress(_,_) => remoteAddress
-}) match {
-  case Some(remoteAddress) => spawnAllRemoteActors(remoteAddress)
-  case None =>                handleNoRemoteNodeFound
-}
-`<code>`_
+.. code-block:: scala
+  Cluster.lookup({
+    case remoteAddress @ RemoteAddress(_,_) => remoteAddress
+  }) match {
+    case Some(remoteAddress) => spawnAllRemoteActors(remoteAddress)
+    case None =>                handleNoRemoteNodeFound
+  }

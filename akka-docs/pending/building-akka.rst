@@ -4,7 +4,7 @@ Building Akka
 This page describes how to build and run Akka from the latest source code.
 
 Get the source code
-===================
+-------------------
 
 Akka uses `Git <http://git-scm.com>`_ and is hosted at `Github <http://github.com>`_.
 
@@ -26,7 +26,7 @@ If you have already cloned the repositories previously then you can update the c
   git pull origin master
 
 SBT - Simple Build Tool
-=======================
+-----------------------
 
 Akka is using the excellent `SBT <http://code.google.com/p/simple-build-tool>`_ build system. So the first thing you have to do is to download and install SBT. You can read more about how to do that `here <http://code.google.com/p/simple-build-tool/wiki/Setup>`_ .
 
@@ -37,7 +37,7 @@ The Akka SBT build file is ``project/build/AkkaProject.scala`` with some propert
 ----
 
 Building Akka
-=============
+-------------
 
 First make sure that you are in the akka code directory:
 
@@ -46,7 +46,7 @@ First make sure that you are in the akka code directory:
   cd akka
 
 Fetching dependencies
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 SBT does not fetch dependencies automatically. You need to manually do this with the ``update`` command:
 
@@ -59,7 +59,7 @@ Once finished, all the dependencies for Akka will be in the ``lib_managed`` dire
 *Note: you only need to run {{update}} the first time you are building the code, or when the dependencies have changed.*
 
 Building
---------
+^^^^^^^^
 
 To compile all the Akka core modules use the ``compile`` command:
 
@@ -76,7 +76,7 @@ You can run all tests with the ``test`` command:
 If compiling and testing are successful then you have everything working for the latest Akka development version.
 
 Publish to local Ivy repository
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you want to deploy the artifacts to your local Ivy repository (for example, to use from an SBT project) use the ``publish-local`` command:
 
@@ -85,7 +85,7 @@ If you want to deploy the artifacts to your local Ivy repository (for example, t
   sbt publish-local
 
 Publish to local Maven repository
----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you want to deploy the artifacts to your local Maven repository use:
 
@@ -94,7 +94,7 @@ If you want to deploy the artifacts to your local Maven repository use:
   sbt publish-local publish
 
 SBT interactive mode
---------------------
+^^^^^^^^^^^^^^^^^^^^
 
 Note that in the examples above we are calling ``sbt compile`` and ``sbt test`` and so on. SBT also has an interactive mode. If you just run ``sbt`` you enter the interactive SBT prompt and can enter the commands directly. This saves starting up a new JVM instance for each command and can be much faster and more convenient.
 
@@ -118,7 +118,7 @@ For example, building Akka as above is more commonly done like this:
   ...
 
 SBT batch mode
---------------
+^^^^^^^^^^^^^^
 
 It's also possible to combine commands in a single call. For example, updating, testing, and publishing Akka to the local Ivy repository can be done with:
 
@@ -129,7 +129,7 @@ It's also possible to combine commands in a single call. For example, updating, 
 ----
 
 Building Akka Modules
-=====================
+---------------------
 
 To build Akka Modules first build and publish Akka to your local Ivy repository as described above. Or using:
 
@@ -146,7 +146,7 @@ Then you can build Akka Modules using the same steps as building Akka. First upd
   sbt update publish-local
 
 Microkernel distribution
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 To build the Akka Modules microkernel (the same as the Akka Modules distribution download) use the ``dist`` command:
 
@@ -170,10 +170,10 @@ The microkernel will boot up and install the sample applications that reside in 
 ----
 
 Scripts
-=======
+-------
 
 Linux/Unix init script
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^
 
 Here is a Linux/Unix init script that can be very useful:
 
@@ -182,7 +182,7 @@ Here is a Linux/Unix init script that can be very useful:
 Copy and modify as needed.
 
 Simple startup shell script
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This little script might help a bit. Just make sure you have the Akka distribution in the '$AKKA_HOME/dist' directory and then invoke this script to start up the kernel. The distribution is created in the './dist' dir for you if you invoke 'sbt dist'.
 
@@ -193,7 +193,7 @@ Copy and modify as needed.
 ----
 
 Dependencies
-============
+------------
 
 If you are managing dependencies by hand you can find out what all the compile dependencies are for each module by looking in the ``lib_managed/compile`` directories. For example, you can run this to create a listing of dependencies (providing you have the source code and have run ``sbt update``):
 

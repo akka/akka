@@ -2,10 +2,9 @@ Dataflow Concurrency (Scala)
 ============================
 
 Description
-===========
+-----------
 
-IMPORTANT: As of Akka 1.1, Akka Future, CompletableFuture and DefaultCompletableFuture have all the functionality of DataFlowVariables, they also support non-blocking composition and advanced features like fold and reduce, Akka DataFlowVariable is therefor deprecated and will probably resurface in the following release as a DSL on top of Futures.
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+**IMPORTANT: As of Akka 1.1, Akka Future, CompletableFuture and DefaultCompletableFuture have all the functionality of DataFlowVariables, they also support non-blocking composition and advanced features like fold and reduce, Akka DataFlowVariable is therefor deprecated and will probably resurface in the following release as a DSL on top of Futures.**
 
 Akka implements `Oz-style dataflow concurrency <http://www.mozart-oz.org/documentation/tutorial/node8.html#chapter.concurrency>`_ through dataflow (single assignment) variables and lightweight (event-based) processes/threads.
 
@@ -14,6 +13,7 @@ Dataflow concurrency is deterministic. This means that it will always behave the
 The best way to learn how to program with dataflow variables is to read the fantastic book `Concepts, Techniques, and Models of Computer Programming <http://www.info.ucl.ac.be/%7Epvr/book.html>`_. By Peter Van Roy and Seif Haridi.
 
 The documentation is not as complete as it should be, something we will improve shortly. For now, besides above listed resources on dataflow concurrency, I recommend you to read the documentation for the GPars implementation, which is heavily influenced by the Akka implementation:
+
 * `<http://gpars.codehaus.org/Dataflow>`_
 * `<http://www.gpars.org/guide/guide/7.%20Dataflow%20Concurrency.html>`_
 
@@ -68,7 +68,7 @@ You can also set the thread to a reference to be able to control its life-cycle:
   t ! 'exit // shut down the thread
 
 Examples
-========
+--------
 
 Most of these examples are taken from the `Oz wikipedia page <http://en.wikipedia.org/wiki/Oz_%28programming_language%29>`_
 
@@ -96,7 +96,7 @@ Note: Do not try to run the Oz version, it is only there for reference.
 3. Have fun.
 
 Simple DataFlowVariable example
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This example is from Oz wikipedia page: http://en.wikipedia.org/wiki/Oz_(programming_language).
 Sort of the "Hello World" of dataflow concurrency.
@@ -128,7 +128,7 @@ Example in Akka:
   thread { y << 2 }
 
 Example of using DataFlowVariable with recursion
-------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Using DataFlowVariable and recursion to calculate sum.
 
@@ -178,56 +178,55 @@ Example in Akka:
   thread { println("List of sums: " + y()) }
 
 Example on life-cycle management of DataFlowVariables
------------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Shows how to shutdown dataflow variables and bind threads to values to be able to interact with them (exit etc.).
 
 Example in Akka:
 
-`<code format="scala">`_
-import  akka.dataflow.DataFlow._
+.. code-block:: scala
+  import  akka.dataflow.DataFlow._
 
-// create four 'Int' data flow variables
-val x, y, z, v = new DataFlowVariable[Int]
+  // create four 'Int' data flow variables
+  val x, y, z, v = new DataFlowVariable[Int]
 
-val main = thread {
-  println("Thread 'main'")
+  val main = thread {
+    println("Thread 'main'")
 
-  x << 1
-  println("'x' set to: " + x())
+    x << 1
+    println("'x' set to: " + x())
 
-  println("Waiting for 'y' to be set...")
+    println("Waiting for 'y' to be set...")
 
-  if (x() > y()) {
-    z << x
-    println("'z' set to 'x': " + z())
-  } else {
-    z << y
-    println("'z' set to 'y': " + z())
+    if (x() > y()) {
+      z << x
+      println("'z' set to 'x': " + z())
+    } else {
+      z << y
+      println("'z' set to 'y': " + z())
+    }
+
+    // main completed, shut down the data flow variables
+    x.shutdown
+    y.shutdown
+    z.shutdown
+    v.shutdown
   }
 
-  // main completed, shut down the data flow variables
-  x.shutdown
-  y.shutdown
-  z.shutdown
-  v.shutdown
-}
+  val setY = thread {
+    println("Thread 'setY', sleeping...")
+    Thread.sleep(5000)
+    y << 2
+    println("'y' set to: " + y())
+  }
 
-val setY = thread {
-  println("Thread 'setY', sleeping...")
-  Thread.sleep(5000)
-  y << 2
-  println("'y' set to: " + y())
-}
+  val setV = thread {
+    println("Thread 'setV'")
+    v << y
+    println("'v' set to 'y': " + v())
+  }
 
-val setV = thread {
-  println("Thread 'setV'")
-  v << y
-  println("'v' set to 'y': " + v())
-}
-
-// shut down the threads
-main ! 'exit
-setY ! 'exit
-setV ! 'exit
-`<code>`_
+  // shut down the threads
+  main ! 'exit
+  setY ! 'exit
+  setV ! 'exit

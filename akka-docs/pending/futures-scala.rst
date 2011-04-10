@@ -4,14 +4,14 @@ Futures (Scala)
 Introduction
 ------------
 
-In Akka, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a data structure used to retrieve the result of some concurrent operation. This operation is usually performed by an `Actor <futures-scala#use-actor>`_ or by the Dispatcher `directly <futures-scala#use-direct>`_. This result can be accessed synchronously (blocking) or asynchronously (non-blocking).
+In Akka, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a data structure used to retrieve the result of some concurrent operation. This operation is usually performed by an ``Actor`` or by the ``Dispatcher`` directly. This result can be accessed synchronously (blocking) or asynchronously (non-blocking).
 
 Use with Actors
 ---------------
 
-There are generally two ways of getting a reply from an Actor: the first is by a sent message (`actor ! msg <actors-scala#fire-forget>`_), which only works if the original sender was an Actor) and the second is through a Future.
+There are generally two ways of getting a reply from an ``Actor``: the first is by a sent message (``actor ! msg``), which only works if the original sender was an ``Actor``) and the second is through a ``Future``.
 
-Using an Actor's '!!!' method to send a message will return a Future. To wait for and retreive the actual result the simplest method is:
+Using an ``Actor``\'s ``!!!`` method to send a message will return a Future. To wait for and retreive the actual result the simplest method is:
 
 .. code-block:: scala
 
@@ -20,12 +20,12 @@ Using an Actor's '!!!' method to send a message will return a Future. To wait fo
   // or more simply
   val result: Any = future()
 
-This will cause the current thread to block and wait for the Actor to 'complete' the Future with it's reply. Due to the dynamic nature of Akka's Actors this result will be untyped and will default to 'Nothing'. The safest way to deal with this is to cast the result to an Any as is shown in the above example. You can also use the expected result type instead of Any, but if an unexpected type were to be returned you will get a ClassCastException. For more elegant ways to deal with this and to use the result without blocking refer to `Functional Futures <futures-scala#functional>`_.
+This will cause the current thread to block and wait for the ``Actor`` to 'complete' the ``Future`` with it's reply. Due to the dynamic nature of Akka's ``Actor``\s this result will be untyped and will default to ``Nothing``. The safest way to deal with this is to cast the result to an ``Any`` as is shown in the above example. You can also use the expected result type instead of ``Any``, but if an unexpected type were to be returned you will get a ``ClassCastException``. For more elegant ways to deal with this and to use the result without blocking refer to `Functional Futures`_.
 
 Use Directly
 ------------
 
-A common use case within Akka is to have some computation performed concurrently without needing the extra utility of an Actor. If you find yourself creating a pool of Actors for the sole reason of performing a calculation in parallel, there is an easier (and faster) way:
+A common use case within Akka is to have some computation performed concurrently without needing the extra utility of an ``Actor``. If you find yourself creating a pool of ``Actor``\s for the sole reason of performing a calculation in parallel, there is an easier (and faster) way:
 
 .. code-block:: scala
 
@@ -36,17 +36,17 @@ A common use case within Akka is to have some computation performed concurrently
   }
   val result = future()
 
-In the above code the block passed to Future will be executed by the default `Dispatcher <dispatchers-scala>`_, with the return value of the block used to complete the Future (in this case, the result would be the string: "HelloWorld"). Unlike a Future that is returned from an Actor, this Future is properly typed, and we also avoid the overhead of managing an Actor.
+In the above code the block passed to ``Future`` will be executed by the default ``Dispatcher``, with the return value of the block used to complete the ``Future`` (in this case, the result would be the string: "HelloWorld"). Unlike a ``Future`` that is returned from an ``Actor``, this ``Future`` is properly typed, and we also avoid the overhead of managing an ``Actor``.
 
 Functional Futures
 ------------------
 
-A recent addition to Akka's Future is several monadic methods that are very similar to the ones used by Scala's collections. These allow you to create 'pipelines' or 'streams' that the result will travel through.
+A recent addition to Akka's ``Future`` is several monadic methods that are very similar to the ones used by Scala's collections. These allow you to create 'pipelines' or 'streams' that the result will travel through.
 
 Future is a Monad
 ^^^^^^^^^^^^^^^^^
 
-The first method for working with Future functionally is 'map'. This method takes a Function which performs some operation on the result of the Future, and returning a new result. The return value of the 'map' method is another Future that will contain the new result:
+The first method for working with ``Future`` functionally is ``map``. This method takes a ``Function`` which performs some operation on the result of the ``Future``, and returning a new result. The return value of the ``map`` method is another ``Future`` that will contain the new result:
 
 .. code-block:: scala
 

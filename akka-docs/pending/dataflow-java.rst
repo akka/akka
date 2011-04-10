@@ -2,10 +2,9 @@ Dataflow Concurrency (Java)
 ===========================
 
 Introduction
-============
+------------
 
-IMPORTANT: As of Akka 1.1, Akka Future, CompletableFuture and DefaultCompletableFuture have all the functionality of DataFlowVariables, they also support non-blocking composition and advanced features like fold and reduce, Akka DataFlowVariable is therefor deprecated and will probably resurface in the following release as a DSL on top of Futures.
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+**IMPORTANT: As of Akka 1.1, Akka Future, CompletableFuture and DefaultCompletableFuture have all the functionality of DataFlowVariables, they also support non-blocking composition and advanced features like fold and reduce, Akka DataFlowVariable is therefor deprecated and will probably resurface in the following release as a DSL on top of Futures.**
 
 Akka implements `Oz-style dataflow concurrency <http://www.mozart-oz.org/documentation/tutorial/node8.html#chapter.concurrency>`_ through dataflow (single assignment) variables and lightweight (event-based) processes/threads.
 
@@ -80,12 +79,12 @@ You can also set the thread to a reference to be able to control its life-cycle:
   t.sendOneWay(new Exit()); // shut down the thread
 
 Examples
-========
+--------
 
 Most of these examples are taken from the `Oz wikipedia page <http://en.wikipedia.org/wiki/Oz_%28programming_language%29>`_
 
 Simple DataFlowVariable example
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This example is from Oz wikipedia page: http://en.wikipedia.org/wiki/Oz_(programming_language).
 Sort of the "Hello World" of dataflow concurrency.
@@ -132,60 +131,59 @@ Example in Akka:
   });
 
 Example on life-cycle management of DataFlowVariables
------------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Shows how to shutdown dataflow variables and bind threads to values to be able to interact with them (exit etc.).
 
 Example in Akka:
 
-`<code format="java">`_
-import static akka.dataflow.DataFlow.*;
-import akka.japi.Effect;
+.. code-block:: java
+  import static akka.dataflow.DataFlow.*;
+  import akka.japi.Effect;
 
-// create four 'int' data flow variables
-DataFlowVariable<int> x = new DataFlowVariable<int>();
-DataFlowVariable<int> y = new DataFlowVariable<int>();
-DataFlowVariable<int> z = new DataFlowVariable<int>();
-DataFlowVariable<int> v = new DataFlowVariable<int>();
+  // create four 'int' data flow variables
+  DataFlowVariable<int> x = new DataFlowVariable<int>();
+  DataFlowVariable<int> y = new DataFlowVariable<int>();
+  DataFlowVariable<int> z = new DataFlowVariable<int>();
+  DataFlowVariable<int> v = new DataFlowVariable<int>();
 
-ActorRef main = thread(new Effect() {
-  public void apply() {
-    System.out.println("Thread 'main'")
-    if (x.get() > y.get()) {
-      z.set(x);
-      System.out.println("'z' set to 'x': " + z.get());
-    } else {
-      z.set(y);
-      System.out.println("'z' set to 'y': " + z.get());
+  ActorRef main = thread(new Effect() {
+    public void apply() {
+      System.out.println("Thread 'main'")
+      if (x.get() > y.get()) {
+        z.set(x);
+        System.out.println("'z' set to 'x': " + z.get());
+      } else {
+        z.set(y);
+        System.out.println("'z' set to 'y': " + z.get());
+      }
+
+      // main completed, shut down the data flow variables
+      x.shutdown();
+      y.shutdown();
+      z.shutdown();
+      v.shutdown();
     }
+  });
 
-    // main completed, shut down the data flow variables
-    x.shutdown();
-    y.shutdown();
-    z.shutdown();
-    v.shutdown();
-  }
-});
+  ActorRef setY = thread(new Effect() {
+    public void apply() {
+      System.out.println("Thread 'setY', sleeping...");
+      Thread.sleep(5000);
+      y.set(2);
+      System.out.println("'y' set to: " + y.get());
+    }
+  });
 
-ActorRef setY = thread(new Effect() {
-  public void apply() {
-    System.out.println("Thread 'setY', sleeping...");
-    Thread.sleep(5000);
-    y.set(2);
-    System.out.println("'y' set to: " + y.get());
-  }
-});
+  ActorRef setV = thread(new Effect() {
+    public void apply() {
+      System.out.println("Thread 'setV'");
+      y.set(2);
+      System.out.println("'v' set to y: " + v.get());
+    }
+  });
 
-ActorRef setV = thread(new Effect() {
-  public void apply() {
-    System.out.println("Thread 'setV'");
-    y.set(2);
-    System.out.println("'v' set to y: " + v.get());
-  }
-});
-
-// shut down the threads
-main.sendOneWay(new Exit());
-setY.sendOneWay(new Exit());
-setV.sendOneWay(new Exit());
-`<code>`_
+  // shut down the threads
+  main.sendOneWay(new Exit());
+  setY.sendOneWay(new Exit());
+  setV.sendOneWay(new Exit());

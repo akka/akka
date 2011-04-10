@@ -6,7 +6,7 @@ Module stability: **SOLID**
 The "let it crash" approach to fault/error handling, implemented by linking actors, is very different to what Java and most non-concurrency oriented languages/frameworks have adopted. It’s a way of dealing with failure that is designed for concurrent and distributed systems.
 
 Concurrency
-^^^^^^^^^^^
+-----------
 
 Throwing an exception in concurrent code (let’s assume we are using non-linked actors), will just simply blow up the thread that currently executes the actor.
 
@@ -24,14 +24,14 @@ This is very useful when you have thousands of concurrent actors. Some actors mi
 It encourages non-defensive programming. Don’t try to prevent things from go wrong, because they will, whether you want it or not. Instead; expect failure as a natural state in the life-cycle of your app, crash early and let someone else (that sees the whole picture), deal with it.
 
 Distributed actors
-^^^^^^^^^^^^^^^^^^
+------------------
 
 You can’t build a fault-tolerant system with just one single box - you need at least two. Also, you (usually) need to know if one box is down and/or the service you are talking to on the other box is down. Here actor supervision/linking is a critical tool for not only monitoring the health of remote services, but to actually manage the service, do something about the problem if the actor or node is down. Such as restarting actors on the same node or on another node.
 
 In short, it is a very different way of thinking, but a way that is very useful (if not critical) to building fault-tolerant highly concurrent and distributed applications, which is as valid if you are writing applications for the JVM or the Erlang VM (the origin of the idea of "let-it-crash" and actor supervision).
 
 Supervision
-===========
+-----------
 
 Supervisor hierarchies originate from `Erlang’s OTP framework <http://www.erlang.org/doc/design_principles/sup_princ.html#5>`_.
 
@@ -45,20 +45,17 @@ OneForOne
 The OneForOne fault handler will restart only the component that has crashed.
 `<image:http://www.erlang.org/doc/design_principles/sup4.gif>`_
 
-^
-
 AllForOne
 ^^^^^^^^^
 
 The AllForOne fault handler will restart all the components that the supervisor is managing, including the one that have crashed. This strategy should be used when you have a certain set of components that are coupled in some way that if one is crashing they all need to be reset to a stable state before continuing.
 `<image:http://www.erlang.org/doc/design_principles/sup5.gif>`_
 
-^
-
 Restart callbacks
 ^^^^^^^^^^^^^^^^^
 
 There are two different callbacks that an UntypedActor or TypedActor can hook in to:
+
 * Pre restart
 * Post restart
 
@@ -68,8 +65,10 @@ Defining a supervisor's restart strategy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Both the Typed Actor supervisor configuration and the Actor supervisor configuration take a ‘FaultHandlingStrategy’ instance which defines the fault management. The different strategies are:
+
 * AllForOne
 * OneForOne
+
 These have the semantics outlined in the section above.
 
 Here is an example of how to define a restart strategy:
@@ -86,6 +85,7 @@ Defining actor life-cycle
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The other common configuration element is the ‘LifeCycle’ which defines the life-cycle. The supervised actor can define one of two different life-cycle configurations:
+
 * Permanent: which means that the actor will always be restarted.
 * Temporary: which means that the actor will **not** be restarted, but it will be shut down through the regular shutdown process so the 'postStop' callback function will called.
 
@@ -223,10 +223,11 @@ If a linked Actor is failing and throws an exception then an ‘new Exit(deadAct
 The supervising Actor also needs to define a fault handler that defines the restart strategy the Actor should accommodate when it traps an ‘Exit’ message. This is done by setting the ‘setFaultHandler’ method.
 
 The different options are:
+
 * AllForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
-** trapExit is an Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
+  * trapExit is an Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
 * OneForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
-** trapExit is an Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
+  * trapExit is an Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
 
 Here is an example:
 
@@ -334,6 +335,7 @@ If you remember, when you define the 'RestartStrategy' you also defined maximum 
 Now, what happens if this limit is reached?
 
 What will happen is that the failing actor will send a system message to its supervisor called 'MaximumNumberOfRestartsWithinTimeRangeReached' with the following these properties:
+
 * victim: ActorRef
 * maxNrOfRetries: int
 * withinTimeRange: int
@@ -368,8 +370,6 @@ You will also get this log warning similar to this:
   WAR [20100715-14:05:25.821] actor:     Last exception causing restart was [akka.actor.SupervisorHierarchySpec$FireWorkerException: Fire the worker!].
 
 If you don't define a message handler for this message then you don't get an error but the message is simply not sent to the supervisor. Instead you will get a log warning.
-
--
 
 Supervising Typed Actors
 ------------------------
@@ -408,8 +408,6 @@ Then you can retrieve the Typed Actor as follows:
 .. code-block:: java
 
   Foo foo = (Foo) manager.getInstance(Foo.class);
-
-^
 
 Restart callbacks
 ^^^^^^^^^^^^^^^^^
@@ -450,17 +448,16 @@ If the parent TypedActor (supervisor) wants to be able to do handle failing chil
 
 For convenience there is an overloaded link that takes trapExit and faultHandler for the supervisor as arguments. Here is an example:
 
-`<code format="java5">`_
-import static akka.actor.TypedActor.*;
-import static akka.config.Supervision.*;
+.. code-block:: java
+  import static akka.actor.TypedActor.*;
+  import static akka.config.Supervision.*;
 
-foo = newInstance(Foo.class, FooImpl.class, 1000);
-bar = newInstance(Bar.class, BarImpl.class, 1000);
+  foo = newInstance(Foo.class, FooImpl.class, 1000);
+  bar = newInstance(Bar.class, BarImpl.class, 1000);
 
-link(foo, bar, new AllForOneStrategy(new Class[]{IOException.class}, 3, 2000));
+  link(foo, bar, new AllForOneStrategy(new Class[]{IOException.class}, 3, 2000));
 
-// alternative: chaining
-bar = faultHandler(foo, new AllForOneStrategy(new Class[]{IOException.class}, 3, 2000)).newInstance(Bar.class, 1000);
+  // alternative: chaining
+  bar = faultHandler(foo, new AllForOneStrategy(new Class[]{IOException.class}, 3, 2000)).newInstance(Bar.class, 1000);
 
-link(foo, bar);
-`<code>`_
+  link(foo, bar);
