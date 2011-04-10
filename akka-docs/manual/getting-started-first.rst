@@ -203,7 +203,7 @@ Messages sent to actors should always be immutable to avoid sharing mutable stat
 
     case object Calculate extends PiMessage
 
-    case class Work(arg: Int, nrOfElements: Int) extends PiMessage
+    case class Work(start: Int, nrOfElements: Int) extends PiMessage
 
     case class Result(value: Double) extends PiMessage
 
@@ -214,8 +214,8 @@ Now we can create the worker actor.  This is done by mixing in the ``Actor`` tra
 
     class Worker extends Actor {
       def receive = {
-        case Work(arg, nrOfElements) =>
-          self reply Result(calculatePiFor(arg, nrOfElements)) // perform the work
+        case Work(start, nrOfElements) =>
+          self reply Result(calculatePiFor(start, nrOfElements)) // perform the work
       }
     }
 
@@ -223,9 +223,9 @@ As you can see we have now created an ``Actor`` with a ``receive`` method as a h
 
 The only thing missing in our ``Worker`` actor is the implementation on the ``calculatePiFor(..)`` method. There are many ways we can implement this algorithm in Scala, in this introductory tutorial we have chosen an imperative style using a for comprehension and an accumulator::
 
-    def calculatePiFor(start: Int, elems: Int): Double = {
+    def calculatePiFor(start: Int, nrOfElements: Int): Double = {
       var acc = 0.0
-      for (i <- start until (start + elems))
+      for (i <- start until (start + nrOfElements))
         acc += 4 * math.pow(-1, i) / (2 * i + 1)
       acc
     }
@@ -268,14 +268,14 @@ Let's now write the master actor::
 
       def receive = { ... }
 
-      override def preStart = start = System.currentTimeMillis
+      override def preStart {
+        start = now
+      }
 
-      override def postStop = {
+      override def postStop {
         // tell the world that the calculation is complete
-        println(
-          "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
-          .format(pi, (System.currentTimeMillis - start)))
-        latch.countDown
+        println("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
+        latch.countDown()
       }
     }
 
@@ -312,7 +312,7 @@ Now, let's capture this in code::
         // handle result from the worker
         pi += value
         nrOfResults += 1
-        if (nrOfResults == nrOfMessages) self.stop
+        if (nrOfResults == nrOfMessages) self.stop()
     }
 
 Bootstrap the calculation
@@ -338,7 +338,7 @@ Now the only thing that is left to implement is the runner that should bootstrap
         master ! Calculate
 
         // wait for master to shut down
-        latch.await
+        latch.await()
       }
     }
 
@@ -348,12 +348,12 @@ But before we package it up and run it, let's take a look at the full code now, 
 
     package akka.tutorial.scala.first
 
-    import akka.actor.{Actor, ActorRef, PoisonPill}
+    import akka.actor.{Actor, PoisonPill}
     import Actor._
     import akka.routing.{Routing, CyclicIterator}
     import Routing._
-    import akka.dispatch.Dispatchers
 
+    import System.{currentTimeMillis => now}
     import java.util.concurrent.CountDownLatch
 
     object Pi extends App {
@@ -365,7 +365,7 @@ But before we package it up and run it, let's take a look at the full code now, 
       // ====================
       sealed trait PiMessage
       case object Calculate extends PiMessage
-      case class Work(arg: Int, nrOfElements: Int) extends PiMessage
+      case class Work(start: Int, nrOfElements: Int) extends PiMessage
       case class Result(value: Double) extends PiMessage
 
       // ==================
@@ -374,16 +374,16 @@ But before we package it up and run it, let's take a look at the full code now, 
       class Worker extends Actor {
 
         // define the work
-        def calculatePiFor(start: Int, elems: Int): Double = {
+        def calculatePiFor(start: Int, nrOfElements: Int): Double = {
           var acc = 0.0
-          for (i <- start until (start + elems))
+          for (i <- start until (start + nrOfElements))
             acc += 4 * math.pow(-1, i) / (2 * i + 1)
           acc
         }
 
         def receive = {
-          case Work(arg, nrOfElements) =>
-            self reply Result(calculatePiFor(arg, nrOfElements)) // perform the work
+          case Work(start, nrOfElements) =>
+            self reply Result(calculatePiFor(start, nrOfElements)) // perform the work
         }
       }
 
@@ -407,6 +407,7 @@ But before we package it up and run it, let's take a look at the full code now, 
         def receive = {
           case Calculate =>
             // schedule work
+            //for (arg <- 0 until nrOfMessages) router ! Work(arg, nrOfElements)
             for (i <- 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
 
             // send a PoisonPill to all workers telling them to shut down themselves
@@ -419,17 +420,17 @@ But before we package it up and run it, let's take a look at the full code now, 
             // handle result from the worker
             pi += value
             nrOfResults += 1
-            if (nrOfResults == nrOfMessages) self.stop
+            if (nrOfResults == nrOfMessages) self.stop()
         }
 
-        override def preStart = start = System.currentTimeMillis
+        override def preStart {
+          start = now
+        }
 
-        override def postStop = {
+        override def postStop {
           // tell the world that the calculation is complete
-          println(
-            "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
-            .format(pi, (System.currentTimeMillis - start)))
-          latch.countDown
+          println("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
+          latch.countDown()
         }
       }
 
@@ -448,7 +449,7 @@ But before we package it up and run it, let's take a look at the full code now, 
         master ! Calculate
 
         // wait for master to shut down
-        latch.await
+        latch.await()
       }
     }
 

@@ -4,11 +4,10 @@
 
 package akka.tutorial.scala.first
 
-import akka.actor.{Actor, ActorRef, PoisonPill}
+import akka.actor.{Actor, PoisonPill}
 import Actor._
 import akka.routing.{Routing, CyclicIterator}
 import Routing._
-import akka.dispatch.Dispatchers
 
 import System.{currentTimeMillis => now}
 import java.util.concurrent.CountDownLatch
@@ -48,7 +47,7 @@ object Pi extends App {
   // ====================
   sealed trait PiMessage
   case object Calculate extends PiMessage
-  case class Work(arg: Int, nrOfElements: Int) extends PiMessage
+  case class Work(start: Int, nrOfElements: Int) extends PiMessage
   case class Result(value: Double) extends PiMessage
 
   // ==================
@@ -57,16 +56,16 @@ object Pi extends App {
   class Worker extends Actor {
 
     // define the work
-    def calculatePiFor(start: Int, elems: Int): Double = {
+    def calculatePiFor(start: Int, nrOfElements: Int): Double = {
       var acc = 0.0
-      for (i <- start until (start + elems))
+      for (i <- start until (start + nrOfElements))
         acc += 4 * math.pow(-1, i) / (2 * i + 1)
       acc
     }
 
     def receive = {
-      case Work(arg, nrOfElements) =>
-        self reply Result(calculatePiFor(arg, nrOfElements)) // perform the work
+      case Work(start, nrOfElements) =>
+        self reply Result(calculatePiFor(start, nrOfElements)) // perform the work
     }
   }
 
@@ -103,15 +102,17 @@ object Pi extends App {
         // handle result from the worker
         pi += value
         nrOfResults += 1
-        if (nrOfResults == nrOfMessages) self.stop
+        if (nrOfResults == nrOfMessages) self.stop()
     }
 
-    override def preStart = start = now
+    override def preStart {
+      start = now
+    }
 
-    override def postStop = {
+    override def postStop {
       // tell the world that the calculation is complete
       println("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
-      latch.countDown
+      latch.countDown()
     }
   }
 
@@ -130,6 +131,6 @@ object Pi extends App {
     master ! Calculate
 
     // wait for master to shut down
-    latch.await
+    latch.await()
   }
 }
