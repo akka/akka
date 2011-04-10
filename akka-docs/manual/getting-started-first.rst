@@ -15,7 +15,7 @@ Since they are so similar we will present them both in this tutorial.
 
 The sample application that we will create is using actors to calculate the value of Pi. Calculating Pi is a CPU intensive operation and we will utilize Akka Actors to write a concurrent solution that scales out to multi-core processors. This sample will be extended in future tutorials to use Akka Remote Actors to scale out on multiple machines in a cluster.
 
-We will be using an algorithm that is what is called "embarrassingly parallel" which just means that each job is completely isolated and not coupled with any other job. Since this algorithm is so parallelizable it suits the actor model very well.
+We will be using an algorithm that is called "embarrassingly parallel" which just means that each job is completely isolated and not coupled with any other job. Since this algorithm is so parallelizable it suits the actor model very well.
 
 Here is the formula for the algorithm we will use:
 
@@ -144,7 +144,11 @@ To use the plugin, first add a plugin definition to your SBT project by creating
 
 Now we need to create a project definition using our Akka SBT plugin. We do that by creating a ``Project.scala`` file in the ``build`` directory containing::
 
-    class TutorialOneProject(info: ProjectInfo) extends DefaultProject(info) with AkkaProject
+    import sbt._
+
+    class TutorialOneProject(info: ProjectInfo) extends DefaultProject(info) with AkkaProject {
+      val akkaRepo = "Akka Repo" at "http://akka.io/repository"
+    }
 
 The magic is in mixing in the ``AkkaProject`` trait.
 
@@ -157,7 +161,7 @@ Not needed in this tutorial, but if you would like to use additional Akka module
 
 So, now we are all set. Just one final thing to do; make SBT download all dependencies it needs. That is done by invoking::
 
-    $ sbt update
+    > update
 
 SBT itself needs a whole bunch of dependencies but our project will only need one; ``akka-actor-1.1.jar``. SBT downloads that as well.
 
@@ -180,7 +184,7 @@ We start by creating a ``Pi.scala`` file and add these import statements at the 
 
 If you are using SBT in this tutorial then create the file in the ``src/main/scala`` directory.
 
-If you are using the command line tools then just create the file wherever you want, I will create it in a directory called ``tutorial`` the root of the Akka distribution, e.g. in ``$AKKA_HOME/tutorial/Pi.scala``.
+If you are using the command line tools then just create the file wherever you want. I will create it in a directory called ``tutorial`` at the root of the Akka distribution, e.g. in ``$AKKA_HOME/tutorial/Pi.scala``.
 
 Creating the messages
 ---------------------
@@ -189,9 +193,9 @@ The design we are aiming for is to have one ``Master`` actor initiating the comp
 
 With this in mind, let's now create the messages that we want to have flowing in the system. We need three different messages:
 
-- ``Calculate`` -- starts the calculation
-- ``Work`` -- contains the work assignment
-- ``Result`` -- contains the result from the worker's calculation
+- ``Calculate`` -- sent to the ``Master`` actor to start the calculation
+- ``Work`` -- sent from the ``Master`` actor to the ``Worker`` actors containing the work assignment
+- ``Result`` -- sent from the ``Worker`` actors to the ``Master`` actor containing the result from the worker's calculation
 
 Messages sent to actors should always be immutable to avoid sharing mutable state. In scala we have 'case classes' which make excellent messages. So let's start by creating three messages as case classes.  We also create a common base trait for our messages (that we define as being ``sealed`` in order to prevent creating messages outside our control)::
 
@@ -215,7 +219,7 @@ Now we can create the worker actor.  This is done by mixing in the ``Actor`` tra
       }
     }
 
-As you can see we have now created an ``Actor`` with a ``receive`` method that as a handler for the ``Work`` message. In this handler we invoke the ``calculatePiFor(..)`` method, wraps the result in a ``Result`` message and sends it back to the original sender using ``self.reply``. In Akka the sender reference is implicitly passed along with the message so that the receiver can always reply or store away the sender reference use.
+As you can see we have now created an ``Actor`` with a ``receive`` method as a handler for the ``Work`` message. In this handler we invoke the ``calculatePiFor(..)`` method, wrap the result in a ``Result`` message and send it back to the original sender using ``self.reply``. In Akka the sender reference is implicitly passed along with the message so that the receiver can always reply or store away the sender reference use.
 
 The only thing missing in our ``Worker`` actor is the implementation on the ``calculatePiFor(..)`` method. There are many ways we can implement this algorithm in Scala, in this introductory tutorial we have chosen an imperative style using a for comprehension and an accumulator::
 
@@ -479,25 +483,12 @@ If you have based the tutorial on SBT then you can run the application directly 
     > compile
     ...
 
-When this in done we can start up a Scala REPL (console/interpreter) directly inside SBT with our dependencies and classes on the classpath::
+When this in done we can run our application directly inside SBT::
 
-    > console
+    > run
     ...
-    scala>
-
-In this REPL we can now evaluate Scala code. For example run our application::
-
-    scala> akka.tutorial.scala.first.Pi.calculate(
-         | nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
-    AKKA_HOME is defined as [/Users/jboner/src/akka-stuff/akka-core], loading config from \
-      [/Users/jboner/src/akka-stuff/akka-core/config/akka.conf].
-
     Pi estimate:        3.1435501812459323
     Calculation time:   942 millis
-
-See it complete the calculation and print out the result. When that is done we can exit the REPL::
-
-    > :quit
 
 Yippee! It is working.
 
