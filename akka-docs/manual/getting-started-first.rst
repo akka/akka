@@ -236,10 +236,10 @@ Creating the master
 The master actor is a little bit more involved. In its constructor we need to create the workers (the ``Worker`` actors) and start them. We will also wrap them in a load-balancing router to make it easier to spread out the work evenly between the workers. Let's do that first::
 
     // create the workers
-    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start)
+    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
 
     // wrap them with a load-balancing router
-    val router = Routing.loadBalancerActor(CyclicIterator(workers)).start
+    val router = Routing.loadBalancerActor(CyclicIterator(workers)).start()
 
 As you can see we are using the ``actorOf`` factory method to create actors, this method returns as an ``ActorRef`` which is a reference to our newly created actor.  This method is available in the ``Actor`` object but is usually imported::
 
@@ -261,10 +261,10 @@ Let's now write the master actor::
       var start: Long = _
 
       // create the workers
-      val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start)
+      val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
 
       // wrap them with a load-balancing router
-      val router = Routing.loadBalancerActor(CyclicIterator(workers)).start
+      val router = Routing.loadBalancerActor(CyclicIterator(workers)).start()
 
       def receive = { ... }
 
@@ -332,7 +332,7 @@ Now the only thing that is left to implement is the runner that should bootstrap
         val latch = new CountDownLatch(1)
 
         // create the master
-        val master = actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start
+        val master = actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start()
 
         // start the calculation
         master ! Calculate
@@ -398,10 +398,10 @@ But before we package it up and run it, let's take a look at the full code now, 
         var start: Long = _
 
         // create the workers
-        val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start)
+        val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
 
         // wrap them with a load-balancing router
-        val router = Routing.loadBalancerActor(CyclicIterator(workers)).start
+        val router = Routing.loadBalancerActor(CyclicIterator(workers)).start()
 
         // message handler
         def receive = {
@@ -443,7 +443,7 @@ But before we package it up and run it, let's take a look at the full code now, 
         val latch = new CountDownLatch(1)
 
         // create the master
-        val master = actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start
+        val master = actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start()
 
         // start the calculation
         master ! Calculate
