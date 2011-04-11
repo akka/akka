@@ -26,8 +26,6 @@ Here is an example:
     }
   }
 
-The 'UntypedActor' class inherits from the 'akka.util.Logging' class which defines a logger in the 'log' field that you can use to log. The logging uses SLF4j backed by logback - for more information on how to configure the logger see `Logging <logging>`_.
-
 Creating Actors
 ^^^^^^^^^^^^^^^
 
@@ -35,7 +33,7 @@ Creating an Actor is done using the 'akka.actor.Actors.actorOf' factory method. 
 
 .. code-block:: java
 
-  ActorRef actor = Actors.actorOf(SampleUntypedActor.class);
+  ActorRef myActor = Actors.actorOf(SampleUntypedActor.class);
   myActor.start();
 
 Normally you would want to import the 'actorOf' method like this:
@@ -43,7 +41,7 @@ Normally you would want to import the 'actorOf' method like this:
 .. code-block:: java
 
   import static akka.actor.Actors.*;
-  ActorRef actor = actorOf(SampleUntypedActor.class);
+  ActorRef myActor = actorOf(SampleUntypedActor.class);
 
 To avoid prefix it with 'Actors' every time you use it.
 
@@ -51,7 +49,7 @@ You can also create & start the actor in one statement:
 
 .. code-block:: java
 
-  ActorRef actor = actorOf(SampleUntypedActor.class).start();
+  ActorRef myActor = actorOf(SampleUntypedActor.class).start();
 
 The call to 'actorOf' returns an instance of 'ActorRef'. This is a handle to the 'UntypedActor' instance which you can use to interact with the Actor, like send messages to it etc. more on this shortly. The 'ActorRef' is immutble and has a one to one relationship with the Actor it represents. The 'ActorRef' is also serializable and network-aware. This means that you can serialize it, send it over the wire and use it on a remote host and it will still be representing the same Actor on the original node, across the network.
 
@@ -156,7 +154,7 @@ Using 'sendRequestReplyFuture' will send a message to the receiving Actor asynch
 
 .. code-block:: java
 
-  Future future= actorRef.sendRequestReplyFuture("Hello", getContext(), 1000);
+  Future future = actorRef.sendRequestReplyFuture("Hello", getContext(), 1000);
 
 The 'Future' interface looks like this:
 
@@ -177,7 +175,7 @@ So the normal way of working with futures is something like this:
 
 .. code-block:: java
 
-  Future future= actorRef.sendRequestReplyFuture("Hello", getContext(), 1000);
+  Future future = actorRef.sendRequestReplyFuture("Hello", getContext(), 1000);
   future.await();
   if (future.isCompleted()) {
     Option resultOption = future.result();
@@ -189,13 +187,6 @@ So the normal way of working with futures is something like this:
   }
 
 The 'onComplete' callback can be used to register a callback to get a notification when the Future completes. Gives you a way to avoid blocking.
-
-We also have a utility class 'Futures' that have a couple of convenience methods:
-
-.. code-block:: java
-
-  void awaitAll(Future[] futures);
-  Future awaitOne(Future[] futures)
 
 Forward message
 ^^^^^^^^^^^^^^^
@@ -209,7 +200,7 @@ You can forward a message from one actor to another. This means that the origina
 Receive messages
 ----------------
 
-When an actor receives a message is passed into the 'onReceive' method, this is an abstract method on the 'UntypedActor' base class that needs to be defined.
+When an actor receives a message it is passed into the 'onReceive' method, this is an abstract method on the 'UntypedActor' base class that needs to be defined.
 
 Here is an example:
 
@@ -218,8 +209,10 @@ Here is an example:
   public class SampleUntypedActor extends UntypedActor {
 
     public void onReceive(Object message) throws Exception {
-      if (message instanceof String) log.info("Received String message: %s", message);
-      else throw new IllegalArgumentException("Unknown message: " + message);
+      if (message instanceof String) 
+        EventHandler.info(this, String.format("Received String message: %s", message));
+      else 
+        throw new IllegalArgumentException("Unknown message: " + message);
     }
   }
 
@@ -243,7 +236,7 @@ If you want to send a message back to the original sender of the message you jus
     }
   }
 
-In this case we will a reply back to the Actor that send the message.
+In this case we will a reply back to the Actor that sent the message.
 
 The 'replyUnsafe' method throws an 'IllegalStateException' if unable to determine what to reply to, e.g. the sender has not been passed along with the message when invoking one of 'send*' methods. You can also use the more forgiving 'replySafe' method which returns 'true' if reply was sent, and 'false' if unable to determine what to reply to.
 
@@ -393,6 +386,8 @@ Use it like this:
 
 .. code-block:: java
 
+  import static akka.actor.Actors.*;
+  
   actor.sendOneWay(poisonPill());
 
 Killing an Actor
@@ -403,6 +398,8 @@ You can kill an actor by sending a 'new Kill()' message. This will restart the a
 Use it like this:
 
 .. code-block:: java
+
+  import static akka.actor.Actors.*;
 
   // kill the actor called 'victim'
    victim.sendOneWay(kill());

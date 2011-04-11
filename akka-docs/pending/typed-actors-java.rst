@@ -23,13 +23,15 @@ If you have a POJO with an interface implementation separation like this:
 .. code-block:: java
 
   interface RegistrationService {
-    void register(User user, Credentials cred)
-    User getUserFor(String username)
+    void register(User user, Credentials cred);
+    User getUserFor(String username);
   }
 
 .. code-block:: java
 
-  public class RegistrationServiceImpl implements RegistrationService extends TypedActor {
+  import akka.actor.TypedActor;
+  
+  public class RegistrationServiceImpl extends TypedActor implements RegistrationService {
     public void register(User user, Credentials cred) {
       ... // register user
     }
@@ -69,9 +71,12 @@ Using a configuration object:
 
 .. code-block:: java
 
+  import static java.util.concurrent.TimeUnit.MILLISECONDS;
+  import akka.actor.TypedActorConfiguration;
+  import akka.util.FiniteDuration;
+
   TypedActorConfiguration config = new TypedActorConfiguration()
-      .timeout(3000)
-      .makeTransactionRequired();
+      .timeout(new FiniteDuration(3000, MILLISECONDS));
 
   RegistrationService service = (RegistrationService) TypedActor.newInstance(RegistrationService.class, config);
 
@@ -161,7 +166,7 @@ Here is an example how you can use it to in a 'void' (e.g. fire-forget) method t
   class PingImpl implements Ping extends TypedActor {
 
     public void hit(int count) {
-      Pong pong = (Pong) context.getSender();
+      Pong pong = (Pong) getContext().getSender();
       pong.hit(count++);
     }
   }

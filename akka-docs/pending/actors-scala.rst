@@ -198,7 +198,7 @@ An Actor has to implement the ‘receive’ method to receive messages:
 
   protected def receive: PartialFunction[Any, Unit]
 
-Note: Akka has an alias to the 'PartialFunction[Any, Unit]' type called 'Receive', so you can use this type instead for clarity. But most often you don't need to spell it out.
+Note: Akka has an alias to the 'PartialFunction[Any, Unit]' type called 'Receive' (akka.actor.Actor.Receive), so you can use this type instead for clarity. But most often you don't need to spell it out.
 
 This method should return a PartialFunction, e.g. a ‘match/case’ clause in which the message can be matched against the different case clauses using Scala pattern matching. Here is an example:
 
@@ -263,7 +263,7 @@ If you want to send a message back to the original sender of the message you jus
     val result = process(request)
     self.reply(result)
 
-In this case the 'result' will be send back to the Actor that send the 'request'.
+In this case the 'result' will be send back to the Actor that sent the 'request'.
 
 The 'reply' method throws an 'IllegalStateException' if unable to determine what to reply to, e.g. the sender is not an actor. You can also use the more forgiving 'reply_?' method which returns 'true' if reply was sent, and 'false' if unable to determine what to reply to.
 
@@ -545,24 +545,28 @@ In generic base Actor:
 
 .. code-block:: scala
 
+  import akka.actor.Actor.Receive
+  
   abstract class GenericActor extends Actor {
-
     // to be defined in subclassing actor
-    def specificMessageHandler: PartialFunction[Any, Unit]
-
+    def specificMessageHandler: Receive
+   
     // generic message handler
-    def genericMessageHandler = {
-        ... // generic message handler
+    def genericMessageHandler: Receive = {
+      case event => printf("generic: %s\n", event)
     }
-
+   
     def receive = specificMessageHandler orElse genericMessageHandler
   }
 
 In subclassing Actor:
+
 `<code format="scala">`_
 class SpecificActor extends GenericActor {
   def specificMessageHandler = {
-    ... // specific message handler
+    case event: MyMsg  => printf("specific: %s\n", event.subject)
   }
 }
+  
+case class MyMsg(subject: String)
 `<code>`_
