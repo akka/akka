@@ -11,7 +11,7 @@ You can use the 'akka.event.slf4j.Logging' trait to mix in logging behavior into
 Event Handler
 -------------
 
-This module also includes an SLF4J Event Handler that works with Akka's standar Event Handler. You enabled it in the 'event-handlers' element in akka.conf. Here you can also define the log level.
+This module also includes an SLF4J Event Handler that works with Akka's standard Event Handler. You enabled it in the 'event-handlers' element in akka.conf. Here you can also define the log level.
 
 .. code-block:: ruby
 
