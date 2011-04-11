@@ -3,15 +3,10 @@ SLF4J
 
 This module is available in the 'akka-slf4j.jar'. It has one single dependency; the slf4j-api jar.
 
-Logging trait
--------------
-
-You can use the 'akka.event.slf4j.Logging' trait to mix in logging behavior into your classes and use the 'log' Logger member variable. But the preferred way is to use the event handler (see below).
-
 Event Handler
 -------------
 
-This module also includes an SLF4J Event Handler that works with Akka's standard Event Handler. You enabled it in the 'event-handlers' element in akka.conf. Here you can also define the log level.
+This module includes a SLF4J Event Handler that works with Akka's standard Event Handler. You enabled it in the 'event-handlers' element in akka.conf. Here you can also define the log level.
 
 .. code-block:: ruby
 
