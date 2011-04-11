@@ -10,7 +10,7 @@ If you are using the `Spring Framework <http://springsource.org>`_ then take a l
 Creating Typed Actors
 ---------------------
 
-**IMPORTANT:** The Typed Actors class must have access modifier 'public' and can't be an inner class (unless it is an inner class in an 'object').
+**IMPORTANT:** The Typed Actors class must have access modifier 'public' (which is default) and can't be an inner class (unless it is an inner class in an 'object').
 
 Akka turns POJOs with interface and implementation into asynchronous (Typed) Actors. Akka is using `AspectWerkz’s Proxy <http://blogs.codehaus.org/people/jboner/archives/000914_awproxy_proxy_on_steriods.html>`_ implementation, which is the `most performant <http://docs.codehaus.org/display/AW/AOP+Benchmark>`_ proxy implementation there exists.
 
@@ -21,6 +21,8 @@ Here is an example.
 If you have a POJO with an interface implementation separation like this:
 
 .. code-block:: scala
+
+  import akka.actor.TypedActor
 
   trait RegistrationService {
     def register(user: User, cred: Credentials): Unit
@@ -64,10 +66,12 @@ Configuration factory class
 Using a configuration object:
 
 .. code-block:: scala
+  import akka.actor.TypedActorConfiguration
+  import akka.util.Duration
+  import akka.util.duration._
 
-  val config = new TypedActorConfiguration
-      .timeout(3000)
-      .makeTransactionRequired
+      val config = TypedActorConfiguration()
+        .timeout(3000 millis)
 
   val service = TypedActor.newInstance(classOf[RegistrationService], classOf[RegistrationServiceImpl], config)
 
