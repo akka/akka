@@ -64,6 +64,7 @@ So your listener Actor needs to be able to handle these two messages. Example:
         ActorRegistered event = (ActorRegistered) message;
         EventHandler.info(this, String.format("Actor registered: %s - %s", 
             event.actor().actorClassName(), event.actor().getUuid()));
+          event.actor().actorClassName(), event.actor().getUuid()));
       } else if (message instanceof ActorUnregistered) {
         // ...
       }
