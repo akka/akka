@@ -26,8 +26,6 @@ Here is an example:
     }
   }
 
-The 'UntypedActor' class inherits from the 'akka.util.Logging' class which defines a logger in the 'log' field that you can use to log. The logging uses SLF4j backed by logback - for more information on how to configure the logger see `Logging <logging>`_.
-
 Creating Actors
 ^^^^^^^^^^^^^^^
 
@@ -35,7 +33,7 @@ Creating an Actor is done using the 'akka.actor.Actors.actorOf' factory method. 
 
 .. code-block:: java
 
-  ActorRef actor = Actors.actorOf(SampleUntypedActor.class);
+  ActorRef myActor = Actors.actorOf(SampleUntypedActor.class);
   myActor.start();
 
 Normally you would want to import the 'actorOf' method like this:
@@ -51,7 +49,7 @@ You can also create & start the actor in one statement:
 
 .. code-block:: java
 
-  ActorRef actor = actorOf(SampleUntypedActor.class).start();
+  ActorRef myActor = actorOf(SampleUntypedActor.class).start();
 
 The call to 'actorOf' returns an instance of 'ActorRef'. This is a handle to the 'UntypedActor' instance which you can use to interact with the Actor, like send messages to it etc. more on this shortly. The 'ActorRef' is immutble and has a one to one relationship with the Actor it represents. The 'ActorRef' is also serializable and network-aware. This means that you can serialize it, send it over the wire and use it on a remote host and it will still be representing the same Actor on the original node, across the network.
 
