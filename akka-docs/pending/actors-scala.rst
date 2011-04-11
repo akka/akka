@@ -29,8 +29,8 @@ Here is an example:
 
   class MyActor extends Actor {
     def receive = {
-      case "test" => log.info("received test")
-      case _ => log.info("received unknown message")
+      case "test" => EventHandler.info(this, "received test")
+      case _ => EventHandler.info(this, "received unknown message")
     }
   }
 

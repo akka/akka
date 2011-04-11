@@ -19,8 +19,10 @@ Here is an example:
   public class SampleUntypedActor extends UntypedActor {
 
     public void onReceive(Object message) throws Exception {
-      if (message instanceof String) log.info("Received String message: %s", message);
-      else throw new IllegalArgumentException("Unknown message: " + message);
+      if (message instanceof String) 
+        EventHandler.info(this, String.format("Received String message: %s", message));
+      else 
+        throw new IllegalArgumentException("Unknown message: " + message);
     }
   }
 

@@ -7,8 +7,8 @@ ActorRegistry: Finding Actors
 -----------------------------
 
 Actors can be looked up by using the **akka.actor.Actor.registry: akka.actor.ActorRegistry**. Lookups for actors through this registry can be done by:
-* uuid string – this uses the ‘**uuid**’ field in the Actor class, returns all actor instances with the specified uuid
-* id string – this uses the ‘**id**’ field in the Actor class, which can be set by the user (default is the class name), returns instances of a specific Actor
+* uuid akka.actor.Uuid – this uses the ‘**uuid**’ field in the Actor class, returns the actor reference for the actor with specified uuid, if one exists, otherwise None
+* id string – this uses the ‘**id**’ field in the Actor class, which can be set by the user (default is the class name), returns all actor references to actors with specified id
 * specific actor class - returns an '**Array[Actor]**' with all actors of this exact class
 * parameterized type - returns an '**Array[Actor]**' with all actors that are a subtype of this specific type
 
@@ -19,14 +19,14 @@ Here is a summary of the API for finding actors:
 .. code-block:: scala
 
   def actors: Array[ActorRef]
-  def actorFor(uuid: String): Option[ActorRef]
+  def actorFor(uuid: akka.actor.Uuid): Option[ActorRef]
   def actorsFor(id : String): Array[ActorRef]
   def actorsFor[T <: Actor](implicit manifest: Manifest[T]): Array[ActorRef]
   def actorsFor[T <: Actor](clazz: Class[T]): Array[ActorRef]
 
   // finding typed actors
   def typedActors: Array[AnyRef]
-  def typedActorFor(uuid: Uuid): Option[AnyRef]
+  def typedActorFor(uuid: akka.actor.Uuid): Option[AnyRef]
   def typedActorsFor(id: String): Array[AnyRef]
   def typedActorsFor[T <: AnyRef](implicit manifest: Manifest[T]): Array[AnyRef]
   def typedActorsFor[T <: AnyRef](clazz: Class[T]): Array[AnyRef]
@@ -75,4 +75,24 @@ The messages sent to this Actor are:
   case class ActorRegistered(actor: ActorRef)
   case class ActorUnregistered(actor: ActorRef)
 
-So your listener Actor needs to be able to handle these two messages.
+So your listener Actor needs to be able to handle these two messages. Example:
+
+.. code-block:: java
+class RegistryListener extends Actor {
+  def receive = {
+    case event: ActorRegistered =>
+      EventHandler.info(this, "Actor registered: %s - %s".format( 
+          event.actor.actorClassName, event.actor.uuid))
+    case event: ActorUnregistered =>
+      // ...
+  }
+}
+.. code-block:: java
+The above actor can be added as listener of registry events:
+.. code-block:: java
+import akka.actor._
+import akka.actor.Actor._
+
+   val listener = actorOf[RegistryListener].start
+   registry.addListener(listener)
+.. code-block:: java
