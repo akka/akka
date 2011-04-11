@@ -51,27 +51,27 @@ The messages sent to this Actor are:
 So your listener Actor needs to be able to handle these two messages. Example:
 
 .. code-block:: java
-import akka.actor.ActorRegistered;
-import akka.actor.ActorUnregistered;
-import akka.actor.UntypedActor;
-import akka.event.EventHandler;
+  import akka.actor.ActorRegistered;
+  import akka.actor.ActorUnregistered;
+  import akka.actor.UntypedActor;
+  import akka.event.EventHandler;
 
-public class RegistryListener extends UntypedActor {
-  public void onReceive(Object message) throws Exception {
-    if (message instanceof ActorRegistered) {
-      ActorRegistered event = (ActorRegistered) message;
-      EventHandler.info(this, String.format("Actor registered: %s - %s", 
+  public class RegistryListener extends UntypedActor {
+    public void onReceive(Object message) throws Exception {
+      if (message instanceof ActorRegistered) {
+        ActorRegistered event = (ActorRegistered) message;
+        EventHandler.info(this, String.format("Actor registered: %s - %s", 
           event.actor().actorClassName(), event.actor().getUuid()));
-    } else if (message instanceof ActorUnregistered) {
-      // ...
+      } else if (message instanceof ActorUnregistered) {
+        // ...
+      }
     }
   }
-}
-.. code-block:: java
+
 The above actor can be added as listener of registry events:
 .. code-block:: java
-import static akka.actor.Actors.*;
+  import static akka.actor.Actors.*;
 
   ActorRef listener = actorOf(RegistryListener.class).start();
   registry().addListener(listener);
-.. code-block:: java
+
