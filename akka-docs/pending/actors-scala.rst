@@ -263,7 +263,7 @@ If you want to send a message back to the original sender of the message you jus
     val result = process(request)
     self.reply(result)
 
-In this case the 'result' will be send back to the Actor that send the 'request'.
+In this case the 'result' will be send back to the Actor that sent the 'request'.
 
 The 'reply' method throws an 'IllegalStateException' if unable to determine what to reply to, e.g. the sender is not an actor. You can also use the more forgiving 'reply_?' method which returns 'true' if reply was sent, and 'false' if unable to determine what to reply to.
 
