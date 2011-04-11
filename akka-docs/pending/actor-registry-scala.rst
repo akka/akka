@@ -77,7 +77,13 @@ The messages sent to this Actor are:
 
 So your listener Actor needs to be able to handle these two messages. Example:
 
-.. code-block:: java
+.. code-block:: scala
+import akka.actor.Actor
+import akka.actor.ActorRegistered;
+import akka.actor.ActorUnregistered;
+import akka.actor.UntypedActor;
+import akka.event.EventHandler;
+
 class RegistryListener extends Actor {
   def receive = {
     case event: ActorRegistered =>
@@ -87,12 +93,12 @@ class RegistryListener extends Actor {
       // ...
   }
 }
-.. code-block:: java
+.. code-block:: scala
 The above actor can be added as listener of registry events:
-.. code-block:: java
+.. code-block:: scala
 import akka.actor._
 import akka.actor.Actor._
 
    val listener = actorOf[RegistryListener].start
    registry.addListener(listener)
-.. code-block:: java
+.. code-block:: scala

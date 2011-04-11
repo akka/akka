@@ -51,6 +51,11 @@ The messages sent to this Actor are:
 So your listener Actor needs to be able to handle these two messages. Example:
 
 .. code-block:: java
+import akka.actor.ActorRegistered;
+import akka.actor.ActorUnregistered;
+import akka.actor.UntypedActor;
+import akka.event.EventHandler;
+
 public class RegistryListener extends UntypedActor {
   public void onReceive(Object message) throws Exception {
     if (message instanceof ActorRegistered) {
