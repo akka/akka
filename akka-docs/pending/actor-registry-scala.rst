@@ -7,6 +7,7 @@ ActorRegistry: Finding Actors
 -----------------------------
 
 Actors can be looked up by using the **akka.actor.Actor.registry: akka.actor.ActorRegistry**. Lookups for actors through this registry can be done by:
+
 * uuid akka.actor.Uuid – this uses the ‘**uuid**’ field in the Actor class, returns the actor reference for the actor with specified uuid, if one exists, otherwise None
 * id string – this uses the ‘**id**’ field in the Actor class, which can be set by the user (default is the class name), returns all actor references to actors with specified id
 * specific actor class - returns an '**Array[Actor]**' with all actors of this exact class
@@ -78,27 +79,29 @@ The messages sent to this Actor are:
 So your listener Actor needs to be able to handle these two messages. Example:
 
 .. code-block:: scala
-import akka.actor.Actor
-import akka.actor.ActorRegistered;
-import akka.actor.ActorUnregistered;
-import akka.actor.UntypedActor;
-import akka.event.EventHandler;
 
-class RegistryListener extends Actor {
-  def receive = {
-    case event: ActorRegistered =>
-      EventHandler.info(this, "Actor registered: %s - %s".format( 
+  import akka.actor.Actor
+  import akka.actor.ActorRegistered;
+  import akka.actor.ActorUnregistered;
+  import akka.actor.UntypedActor;
+  import akka.event.EventHandler;
+
+  class RegistryListener extends Actor {
+    def receive = {
+      case event: ActorRegistered =>
+        EventHandler.info(this, "Actor registered: %s - %s".format( 
           event.actor.actorClassName, event.actor.uuid))
-    case event: ActorUnregistered =>
-      // ...
+      case event: ActorUnregistered =>
+        // ...
+    }
   }
-}
-.. code-block:: scala
-The above actor can be added as listener of registry events:
-.. code-block:: scala
-import akka.actor._
-import akka.actor.Actor._
 
-   val listener = actorOf[RegistryListener].start
-   registry.addListener(listener)
+The above actor can be added as listener of registry events:
+
 .. code-block:: scala
+
+  import akka.actor._
+  import akka.actor.Actor._
+
+  val listener = actorOf[RegistryListener].start
+  registry.addListener(listener)

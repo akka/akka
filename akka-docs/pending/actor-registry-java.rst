@@ -7,6 +7,7 @@ ActorRegistry: Finding Actors
 -----------------------------
 
 Actors can be looked up using the 'akka.actor.Actors.registry()' object. Through this registry you can look up actors by:
+
 * uuid com.eaio.uuid.UUID – this uses the ‘uuid’ field in the Actor class, returns the actor reference for the actor with specified uuid, if one exists, otherwise None
 * id string – this uses the ‘id’ field in the Actor class, which can be set by the user (default is the class name), returns all actor references to actors with specified id
 * parameterized type - returns a 'ActorRef[]' with all actors that are a subtype of this specific type
@@ -51,27 +52,29 @@ The messages sent to this Actor are:
 So your listener Actor needs to be able to handle these two messages. Example:
 
 .. code-block:: java
-import akka.actor.ActorRegistered;
-import akka.actor.ActorUnregistered;
-import akka.actor.UntypedActor;
-import akka.event.EventHandler;
 
-public class RegistryListener extends UntypedActor {
-  public void onReceive(Object message) throws Exception {
-    if (message instanceof ActorRegistered) {
-      ActorRegistered event = (ActorRegistered) message;
-      EventHandler.info(this, String.format("Actor registered: %s - %s", 
-          event.actor().actorClassName(), event.actor().getUuid()));
-    } else if (message instanceof ActorUnregistered) {
-      // ...
+  import akka.actor.ActorRegistered;
+  import akka.actor.ActorUnregistered;
+  import akka.actor.UntypedActor;
+  import akka.event.EventHandler;
+
+  public class RegistryListener extends UntypedActor {
+    public void onReceive(Object message) throws Exception {
+      if (message instanceof ActorRegistered) {
+        ActorRegistered event = (ActorRegistered) message;
+        EventHandler.info(this, String.format("Actor registered: %s - %s", 
+            event.actor().actorClassName(), event.actor().getUuid()));
+      } else if (message instanceof ActorUnregistered) {
+        // ...
+      }
     }
   }
-}
-.. code-block:: java
+
 The above actor can be added as listener of registry events:
+
 .. code-block:: java
-import static akka.actor.Actors.*;
+
+  import static akka.actor.Actors.*;
 
   ActorRef listener = actorOf(RegistryListener.class).start();
   registry().addListener(listener);
-.. code-block:: java
