@@ -236,14 +236,6 @@ object PriorityGenerator {
   def apply(priorityFunction: Any => Int): PriorityGenerator = new PriorityGenerator {
     def gen(message: Any): Int = priorityFunction(message)
   }
-
-  /**
-   * Java API
-   * Creates a PriorityGenerator that uses the supplied function as priority generator
-   */
-  def apply(priorityFunction: akka.japi.Function[Any, Int]): PriorityGenerator = new PriorityGenerator {
-    def gen(message: Any): Int = priorityFunction(message)
-  }
 }
 
 /**

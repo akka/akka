@@ -215,6 +215,9 @@ trait MessageDispatcher {
  * Trait to be used for hooking in new dispatchers into Dispatchers.fromConfig
  */
 abstract class MessageDispatcherConfigurator {
+  /**
+   * Returns an instance of MessageDispatcher given a Configuration
+   */
   def configure(config: Configuration): MessageDispatcher
 
   def mailboxType(config: Configuration): MailboxType = {

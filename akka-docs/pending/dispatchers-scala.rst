@@ -45,6 +45,7 @@ There are six different types of message dispatchers:
 
 * Thread-based
 * Event-based
+* Priority event-based
 * Work-stealing
 * HawtDispatch-based event-driven
 
@@ -102,6 +103,65 @@ Setting this to a higher number will increase throughput but lower fairness, and
 If you don't define a the 'throughput' option in the configuration file then the default value of '5' will be used.
 
 Browse the `ScalaDoc <scaladoc>`_ or look at the code for all the options available.
+
+Priority event-based
+^^^^^^^^^^^
+
+Sometimes it's useful to be able to specify priority order of messages, that is done by using PriorityExecutorBasedEventDrivenDispatcher and supply
+a java.util.Comparator[MessageInvocation] or use a akka.dispatch.PriorityGenerator (recommended):
+
+Creating a PriorityExecutorBasedEventDrivenDispatcher using PriorityGenerator in Java:
+
+.. code-block:: scala
+
+  import akka.dispatch._
+  
+  import akka.actor._
+  
+  val gen = PriorityGenerator { // Create a new PriorityGenerator, lower prio means more important
+      case 'highpriority => 0   // 'highpriority messages should be treated first if possible
+      case 'lowpriority  => 100 // 'lowpriority messages should be treated last if possible
+      case otherwise     => 50    // We default to 50
+   }
+  
+   val a = Actor.actorOf( // We create a new Actor that just prints out what it processes
+         new Actor {
+         def receive = {
+           case x => println(x)
+         }
+    })
+  
+    // We create a new Priority dispatcher and seed it with the priority generator
+    a.dispatcher = new PriorityExecutorBasedEventDrivenDispatcher("foo", gen) 
+    a.start // Start the Actor
+
+    a.dispatcher.suspend(a) // Suspening the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
+
+     a ! 'lowpriority
+
+     a ! 'lowpriority
+
+     a ! 'highpriority
+
+     a ! 'pigdog
+
+     a ! 'pigdog2
+
+     a ! 'pigdog3
+
+     a ! 'highpriority
+
+     a.dispatcher.resume(a) // Resuming the actor so it will start treating its messages
+
+Prints:
+
+'highpriority
+'highpriority
+'pigdog
+'pigdog2
+'pigdog3
+'lowpriority
+'lowpriority
 
 Work-stealing event-based
 ^^^^^^^^^^^^^^^^^^^^^^^^^

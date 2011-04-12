@@ -47,6 +47,7 @@ There are six different types of message dispatchers:
 
 * Thread-based
 * Event-based
+* Priority event-based
 * Work-stealing event-based
 * HawtDispatch-based event-driven
 
@@ -126,6 +127,66 @@ Setting this to a higher number will increase throughput but lower fairness, and
 If you don't define a the 'throughput' option in the configuration file then the default value of '5' will be used.
 
 Browse the `ScalaDoc <scaladoc>`_ or look at the code for all the options available.
+
+Priority event-based
+^^^^^^^^^^^
+
+Sometimes it's useful to be able to specify priority order of messages, that is done by using PriorityExecutorBasedEventDrivenDispatcher and supply
+a java.util.Comparator[MessageInvocation] or use a akka.dispatch.PriorityGenerator (recommended):
+
+Creating a PriorityExecutorBasedEventDrivenDispatcher using PriorityGenerator in Java:
+
+.. code-block:: java
+
+  package some.package;
+  
+  import akka.actor.*;
+  import akka.dispatch.*;
+  
+  public class Main {
+      // A simple Actor that just prints the messages it processes
+      public static class MyActor extends UntypedActor {
+      public void onReceive(Object message) throws Exception {
+        System.out.println(message);
+      }
+    }
+
+    public static void main(String[] args) {
+        // Create a new PriorityGenerator, lower prio means more important 
+        PriorityGenerator gen = new PriorityGenerator() {
+          public int gen(Object message) {
+            if (message == "highpriority") return 0;       // "highpriority" messages should be treated first if possible
+            else if (message == "lowpriority") return 100; // "lowpriority" messages should be treated last if possible
+            else return 50; // We default to 50
+          }
+        };
+        // We create an instance of the actor that will print out the messages it processes
+      ActorRef ref = Actors.actorOf(MyActor.class);
+      // We create a new Priority dispatcher and seed it with the priority generator
+      ref.setDispatcher(new PriorityExecutorBasedEventDrivenDispatcher("foo", gen)); 
+
+          ref.start(); // Start the actor
+      ref.getDispatcher().suspend(ref); // Suspening the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
+          ref.sendOneWay("lowpriority");
+          ref.sendOneWay("lowpriority");
+          ref.sendOneWay("highpriority");
+          ref.sendOneWay("pigdog");
+          ref.sendOneWay("pigdog2");
+          ref.sendOneWay("pigdog3");
+          ref.sendOneWay("highpriority");
+      ref.getDispatcher().resume(ref); // Resuming the actor so it will start treating its messages
+    }
+  }
+
+Prints:
+
+highpriority
+highpriority
+pigdog
+pigdog2
+pigdog3
+lowpriority
+lowpriority
 
 Work-stealing event-based
 ^^^^^^^^^^^^^^^^^^^^^^^^^
