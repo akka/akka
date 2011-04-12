@@ -2,7 +2,7 @@ Other Language Bindings
 =======================
 
 JRuby
-=====
+-----
 
 High level concurrency using Akka actors and JRuby.
 
@@ -19,6 +19,6 @@ If you are using STM with JRuby then you need to unwrap the Multiverse control f
   end
 
 Groovy/Groovy++
-===============
+---------------
 
 `<https://gist.github.com/620439>`_
