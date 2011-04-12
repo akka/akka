@@ -407,7 +407,7 @@ You can shut down all Actors in the system by invoking:
 
 .. code-block:: scala
 
-  Actor.registry.shutdownAll
+  Actor.registry.shutdownAll()
 
 
 PoisonPill

@@ -12,7 +12,7 @@ class SchedulerSpec extends JUnitSuite {
   def withCleanEndState(action: => Unit) {
     action
     Scheduler.restart
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
   }
 
 

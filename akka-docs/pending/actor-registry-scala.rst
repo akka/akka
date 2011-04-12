@@ -60,7 +60,7 @@ The ActorRegistry also has a 'shutdownAll' and 'foreach' methods:
 
   def foreach(f: (ActorRef) => Unit)
   def foreachTypedActor(f: (AnyRef) => Unit)
-  def shutdownAll
+  def shutdownAll()
 
 If you need to know when a new Actor is added or removed from the registry, you can use the subscription API. You can register an Actor that should be notified when an event happens in the ActorRegistry:
 

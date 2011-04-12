@@ -33,7 +33,7 @@ class ActorRegistrySpec extends JUnitSuite {
   import ActorRegistrySpec._
 
   @Test def shouldGetActorByIdFromActorRegistry {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     val actor = actorOf[TestActor]
     actor.start()
     val actors = Actor.registry.actorsFor("MyID")
@@ -44,7 +44,7 @@ class ActorRegistrySpec extends JUnitSuite {
   }
 
   @Test def shouldGetActorByUUIDFromActorRegistry {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     val actor = actorOf[TestActor]
     val uuid = actor.uuid
     actor.start()
@@ -55,7 +55,7 @@ class ActorRegistrySpec extends JUnitSuite {
   }
 
   @Test def shouldGetActorByClassFromActorRegistry {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     val actor = actorOf[TestActor]
     actor.start()
     val actors = Actor.registry.actorsFor(classOf[TestActor])
@@ -66,7 +66,7 @@ class ActorRegistrySpec extends JUnitSuite {
   }
 
   @Test def shouldGetActorByManifestFromActorRegistry {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     val actor = actorOf[TestActor]
     actor.start()
     val actors = Actor.registry.actorsFor[TestActor]
@@ -77,7 +77,7 @@ class ActorRegistrySpec extends JUnitSuite {
   }
 
   @Test def shouldFindThingsFromActorRegistry {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     val actor = actorOf[TestActor]
     actor.start()
     val found = Actor.registry.find({ case a: ActorRef if a.actor.isInstanceOf[TestActor] => a })
@@ -88,7 +88,7 @@ class ActorRegistrySpec extends JUnitSuite {
   }
 
   @Test def shouldGetActorsByIdFromActorRegistry {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
     val actor2 = actorOf[TestActor]
@@ -104,7 +104,7 @@ class ActorRegistrySpec extends JUnitSuite {
   }
 
   @Test def shouldGetActorsByClassFromActorRegistry {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
     val actor2 = actorOf[TestActor]
@@ -120,7 +120,7 @@ class ActorRegistrySpec extends JUnitSuite {
   }
 
   @Test def shouldGetActorsByManifestFromActorRegistry {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
     val actor2 = actorOf[TestActor]
@@ -137,7 +137,7 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldGetActorsByMessageFromActorRegistry {
 
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
     val actor2 = actorOf[TestActor2]
@@ -164,7 +164,7 @@ class ActorRegistrySpec extends JUnitSuite {
   }
 
   @Test def shouldGetAllActorsFromActorRegistry {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
     val actor2 = actorOf[TestActor]
@@ -180,7 +180,7 @@ class ActorRegistrySpec extends JUnitSuite {
   }
 
   @Test def shouldGetResponseByAllActorsInActorRegistryWhenInvokingForeach {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
     val actor2 = actorOf[TestActor]
@@ -193,17 +193,17 @@ class ActorRegistrySpec extends JUnitSuite {
   }
 
   @Test def shouldShutdownAllActorsInActorRegistry {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
     val actor2 = actorOf[TestActor]
     actor2.start()
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     assert(Actor.registry.actors.size === 0)
   }
 
   @Test def shouldRemoveUnregisterActorInActorRegistry {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
     val actor2 = actorOf[TestActor]
@@ -216,7 +216,7 @@ class ActorRegistrySpec extends JUnitSuite {
   }
 
   @Test def shouldBeAbleToRegisterActorsConcurrently {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
 
     def mkTestActors = for(i <- (1 to 10).toList;j <- 1 to 3000) yield actorOf( new Actor {
       self.id = i.toString

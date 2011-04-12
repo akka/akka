@@ -205,7 +205,7 @@ To use the Lock you can run a small program like this:
       lock ! '3'
       lock ! '4'
 
-      Actor.registry.shutdownAll
+      Actor.registry.shutdownAll()
       exit
     }
   }

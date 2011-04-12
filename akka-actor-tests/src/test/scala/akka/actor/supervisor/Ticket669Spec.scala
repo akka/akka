@@ -14,7 +14,7 @@ import org.scalatest.matchers.MustMatchers
 class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import Ticket669Spec._
 
-  override def afterAll = Actor.registry.shutdownAll
+  override def afterAll = Actor.registry.shutdownAll()
 
   "A supervised actor with lifecycle PERMANENT" should {
     "be able to reply on failure during preRestart" in {

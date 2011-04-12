@@ -52,7 +52,7 @@ class AkkaRemoteTest extends
 
   override def afterEach() {
     remote.shutdown
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
     super.afterEach
   }
 
