@@ -158,7 +158,7 @@ abstract class TypedActor extends Actor with Proxyable {
   /**
    * User overridable callback.
    * <p/>
-   * Is called when an Actor is started by invoking 'actor.start'.
+   * Is called when an Actor is started by invoking 'actor.start()'.
    */
   override def preStart {}
 
@@ -638,7 +638,7 @@ object TypedActor {
     }
 
     AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, remoteAddress, actorRef.timeout))
-    actorRef.start
+    actorRef.start()
     proxy.asInstanceOf[T]
   }
 
@@ -726,7 +726,7 @@ object TypedActor {
       actorRef.timeout = timeout
       if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
       AspectInitRegistry.register(proxy, AspectInit(targetClass, proxy, actorRef, remoteAddress, timeout))
-      actorRef.start
+      actorRef.start()
       proxy.asInstanceOf[T]
     }
   */

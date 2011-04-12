@@ -78,10 +78,10 @@ object Pi extends App {
     var nrOfResults: Int = _
 
     // create the workers
-    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start)
+    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
 
     // wrap them with a load-balancing router
-    val router = Routing.loadBalancerActor(CyclicIterator(workers)).start
+    val router = Routing.loadBalancerActor(CyclicIterator(workers)).start()
 
     // phase 1, can accept a Calculate message
     def scatter: Receive = {
@@ -124,7 +124,7 @@ object Pi extends App {
   // ==================
   def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
     // create the master
-    val master = actorOf(new Master(nrOfWorkers, nrOfElements, nrOfMessages)).start
+    val master = actorOf(new Master(nrOfWorkers, nrOfElements, nrOfMessages)).start()
 
     //start the calculation
     val start = now

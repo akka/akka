@@ -21,8 +21,8 @@ To use it you can either create a Dispatcher through the **dispatcherActor()** f
 
   //Two actors, one named Pinger and one named Ponger
   //The actor(pf) method creates an anonymous actor and starts it
-  val pinger = actorOf(new Actor { def receive = { case x => println("Pinger: " + x) } }).start
-  val ponger = actorOf(new Actor { def receive = { case x => println("Ponger: " + x) } }).start
+  val pinger = actorOf(new Actor { def receive = { case x => println("Pinger: " + x) } }).start()
+  val ponger = actorOf(new Actor { def receive = { case x => println("Ponger: " + x) } }).start()
 
   //A dispatcher that dispatches Ping messages to the pinger
   //and Pong messages to the ponger
@@ -48,8 +48,8 @@ Or by mixing in akka.patterns.Dispatcher:
 
   class MyDispatcher extends Actor with Dispatcher {
     //Our pinger and ponger actors
-    val pinger = actorOf(new Actor { def receive = { case x => println("Pinger: " + x) } }).start
-    val ponger = actorOf(new Actor { def receive = { case x => println("Ponger: " + x) } }).start
+    val pinger = actorOf(new Actor { def receive = { case x => println("Pinger: " + x) } }).start()
+    val ponger = actorOf(new Actor { def receive = { case x => println("Ponger: " + x) } }).start()
     //When we get a ping, we dispatch to the pinger
     //When we get a pong, we dispatch to the ponger
     def routes = {
@@ -59,7 +59,7 @@ Or by mixing in akka.patterns.Dispatcher:
   }
 
   //Create an instance of our dispatcher, and start it
-  val d = actorOf[MyDispatcher].start
+  val d = actorOf[MyDispatcher].start()
 
   d ! Ping //Prints "Pinger: Ping"
   d ! Pong //Prints "Ponger: Pong"
@@ -85,8 +85,8 @@ Example using the **loadBalancerActor()** factory method:
   //Two actors, one named Pinger and one named Ponger
   //The actor(pf) method creates an anonymous actor and starts it
 
-  val pinger = actorOf(new Actor { def receive = { case x => println("Pinger: " + x) } }).start
-  val ponger = actorOf(new Actor { def receive = { case x => println("Ponger: " + x) } }).start
+  val pinger = actorOf(new Actor { def receive = { case x => println("Pinger: " + x) } }).start()
+  val ponger = actorOf(new Actor { def receive = { case x => println("Ponger: " + x) } }).start()
 
   //A load balancer that given a sequence of actors dispatches them accordingly
   //a CyclicIterator works in a round-robin-fashion
@@ -112,14 +112,14 @@ Or by mixing in akka.routing.LoadBalancer
 
   //A load balancer that balances between a pinger and a ponger
   class MyLoadBalancer extends Actor with LoadBalancer {
-    val pinger = actorOf(new Actor { def receive = { case x => println("Pinger: " + x) } }).start
-    val ponger = actorOf(new Actor { def receive = { case x => println("Ponger: " + x) } }).start
+    val pinger = actorOf(new Actor { def receive = { case x => println("Pinger: " + x) } }).start()
+    val ponger = actorOf(new Actor { def receive = { case x => println("Ponger: " + x) } }).start()
 
     val seq = new CyclicIterator[ActorRef](List(pinger,ponger))
   }
 
   //Create an instance of our loadbalancer, and start it
-  val d = actorOf[MyLoadBalancer].start
+  val d = actorOf[MyLoadBalancer].start()
 
   d ! Pong //Prints "Pinger: Pong"
   d ! Pong //Prints "Ponger: Pong"

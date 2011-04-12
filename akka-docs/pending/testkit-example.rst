@@ -16,14 +16,14 @@ import util.Random
  */
 
 class TestKitUsageSpec extends WordSpec with BeforeAndAfterAll with ShouldMatchers with TestKit {
-  val echoRef = actorOf(new EchoActor).start
-  val forwardRef = actorOf(new ForwardingActor(testActor)).start
-  val filterRef = actorOf(new FilteringActor(testActor)).start
+  val echoRef = actorOf(new EchoActor).start()
+  val forwardRef = actorOf(new ForwardingActor(testActor)).start()
+  val filterRef = actorOf(new FilteringActor(testActor)).start()
   val randomHead = Random.nextInt(6)
   val randomTail = Random.nextInt(10)
   val headList = List().padTo(randomHead, "0")
   val tailList = List().padTo(randomTail, "1")
-  val seqRef = actorOf(new SequencingActor(testActor, headList, tailList)).start
+  val seqRef = actorOf(new SequencingActor(testActor, headList, tailList)).start()
 
   override protected def afterAll(): scala.Unit = {
     stopTestActor

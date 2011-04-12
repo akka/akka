@@ -729,7 +729,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
   private def register[Key](id: Key, actorRef: ActorRef, registry: ConcurrentHashMap[Key, ActorRef]) {
     if (_isRunning.isOn) {
       registry.put(id, actorRef) //TODO change to putIfAbsent
-      if (!actorRef.isRunning) actorRef.start
+      if (!actorRef.isRunning) actorRef.start()
     }
   }
 
@@ -1124,7 +1124,7 @@ class RemoteServerHandler(
             val actorRef = factory()
             actorRef.uuid = parseUuid(uuid) //FIXME is this sensible?
             sessionActors.get(channel).put(id, actorRef)
-            actorRef.start //Start it where's it's created
+            actorRef.start() //Start it where's it's created
         }
       case sessionActor => sessionActor
     }
@@ -1148,7 +1148,7 @@ class RemoteServerHandler(
       actorRef.id = id
       actorRef.timeout = timeout
       server.actorsByUuid.put(actorRef.uuid.toString, actorRef) // register by uuid
-      actorRef.start //Start it where it's created
+      actorRef.start() //Start it where it's created
     } catch {
       case e: Throwable =>
         EventHandler.error(e, this, e.getMessage)

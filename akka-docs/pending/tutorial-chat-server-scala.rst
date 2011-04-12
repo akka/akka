@@ -52,7 +52,7 @@ Here is a little example before we dive into a more interesting one.
   }
 
   val myActor = Actor.actorOf[MyActor]
-  myActor.start
+  myActor.start()
 
 From this call we get a handle to the 'Actor' called 'ActorRef', which we can use to interact with the Actor
 
@@ -260,7 +260,7 @@ The 'shutdownSessions' function simply shuts all the sessions Actors down. That 
       case Login(username) =>
         EventHandler.info(this, "User [%s] has logged in".format(username))
         val session = actorOf(new Session(username, storage))
-        session.start
+        session.start()
         sessions += (username -> session)
 
       case Logout(username) =>
@@ -414,7 +414,7 @@ We have now created the full functionality for the chat server, all nicely decou
    * Class encapsulating the full Chat Service.
    * Start service by invoking:
    * <pre>
-   * val chatService = Actor.actorOf[ChatService].start
+   * val chatService = Actor.actorOf[ChatService].start()
    * </pre>
    */
   class ChatService extends
@@ -505,7 +505,7 @@ Run a sample chat session
 
   import sample.chat._
   import akka.actor.Actor._
-  val chatService = actorOf[ChatService].start
+  val chatService = actorOf[ChatService].start()
 
 3. In the second REPL you get execute:
 

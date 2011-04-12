@@ -40,14 +40,14 @@ object DataFlow {
    * Executes the supplied function in another thread.
    */
   def thread[A <: AnyRef, R <: AnyRef](body: A => R) =
-    actorOf(new ReactiveEventBasedThread(body)).start
+    actorOf(new ReactiveEventBasedThread(body)).start()
 
   /**
    * JavaAPI.
    * Executes the supplied Function in another thread.
    */
   def thread[A <: AnyRef, R <: AnyRef](body: Function[A,R]) =
-    actorOf(new ReactiveEventBasedThread(body.apply)).start
+    actorOf(new ReactiveEventBasedThread(body.apply)).start()
 
   private class ReactiveEventBasedThread[A <: AnyRef, T <: AnyRef](body: A => T)
     extends Actor {
@@ -101,7 +101,7 @@ object DataFlow {
       }
     }
 
-    private[this] val in = actorOf(new In(this)).start
+    private[this] val in = actorOf(new In(this)).start()
 
     /**
      * Sets the value of this variable (if unset) with the value of the supplied variable.
@@ -143,7 +143,7 @@ object DataFlow {
      */
     def apply(): T = {
       value.get getOrElse {
-        val out = actorOf(new Out(this)).start
+        val out = actorOf(new Out(this)).start()
 
         val result = try {
           blockedReaders offer out

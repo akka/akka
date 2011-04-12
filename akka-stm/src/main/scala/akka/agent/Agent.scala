@@ -94,7 +94,7 @@ object Agent {
  */
 class Agent[T](initialValue: T) {
   private[akka] val ref = Ref(initialValue)
-  private[akka] val updater = Actor.actorOf(new AgentUpdater(this)).start
+  private[akka] val updater = Actor.actorOf(new AgentUpdater(this)).start()
 
   /**
    * Read the internal state of the agent.
@@ -135,7 +135,7 @@ class Agent[T](initialValue: T) {
    */
   def sendOff(f: T => T): Unit = send((value: T) => {
     suspend
-    val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this)).start
+    val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this)).start()
     threadBased ! Update(f)
     value
   })

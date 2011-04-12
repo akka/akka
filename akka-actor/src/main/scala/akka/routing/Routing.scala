@@ -37,7 +37,7 @@ object Routing {
   def loadBalancerActor(actors: => InfiniteIterator[ActorRef]): ActorRef =
     actorOf(new Actor with LoadBalancer {
       val seq = actors
-    }).start
+    }).start()
 
   /**
    * Creates a Dispatcher given a routing and a message-transforming function.
@@ -46,14 +46,14 @@ object Routing {
     actorOf(new Actor with Dispatcher {
       override def transform(msg: Any) = msgTransformer(msg)
       def routes = routing
-    }).start
+    }).start()
 
   /**
    * Creates a Dispatcher given a routing.
    */
   def dispatcherActor(routing: PF[Any, ActorRef]): ActorRef = actorOf(new Actor with Dispatcher {
     def routes = routing
-  }).start
+  }).start()
 
   /**
    * Creates an actor that pipes all incoming messages to

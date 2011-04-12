@@ -131,7 +131,7 @@ class TypedActorSpec extends
       assert(typedActors.contains(pojo))
 
       // creating untyped actor with same custom id
-      val actorRef = Actor.actorOf[MyActor].start
+      val actorRef = Actor.actorOf[MyActor].start()
       val typedActors2 = Actor.registry.typedActorsFor("my-custom-id")
       assert(typedActors2.length === 1)
       assert(typedActors2.contains(pojo))
@@ -166,7 +166,7 @@ class TypedActorSpec extends
     }
 
     it("should support foreach for typed actors") {
-      val actorRef = Actor.actorOf[MyActor].start
+      val actorRef = Actor.actorOf[MyActor].start()
       assert(Actor.registry.actors.size === 3)
       assert(Actor.registry.typedActors.size === 2)
       Actor.registry.foreachTypedActor(TypedActor.stop(_))
@@ -175,7 +175,7 @@ class TypedActorSpec extends
     }
 
     it("should shutdown all typed and untyped actors") {
-      val actorRef = Actor.actorOf[MyActor].start
+      val actorRef = Actor.actorOf[MyActor].start()
       assert(Actor.registry.actors.size === 3)
       assert(Actor.registry.typedActors.size === 2)
       Actor.registry.shutdownAll()

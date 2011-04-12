@@ -19,7 +19,7 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   "A supervised actor with lifecycle PERMANENT" should {
     "be able to reply on failure during preRestart" in {
       val latch = new CountDownLatch(1)
-      val sender = Actor.actorOf(new Sender(latch)).start
+      val sender = Actor.actorOf(new Sender(latch)).start()
 
       val supervised = Actor.actorOf[Supervised]
       val supervisor = Supervisor(SupervisorConfig(
@@ -33,7 +33,7 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
 
     "be able to reply on failure during postStop" in {
       val latch = new CountDownLatch(1)
-      val sender = Actor.actorOf(new Sender(latch)).start
+      val sender = Actor.actorOf(new Sender(latch)).start()
 
       val supervised = Actor.actorOf[Supervised]
       val supervisor = Supervisor(SupervisorConfig(

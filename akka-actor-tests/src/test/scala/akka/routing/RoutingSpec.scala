@@ -25,18 +25,18 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
         case `testMsg1` => self.reply(3)
         case `testMsg2` => self.reply(7)
       }
-    } ).start
+    } ).start()
 
     val t2 = actorOf( new Actor() {
           def receive = {
         case `testMsg3` => self.reply(11)
       }
-    }).start
+    }).start()
 
     val d = dispatcherActor {
       case `testMsg1`|`testMsg2` => t1
       case `testMsg3` => t2
-    }.start
+    }.start()
 
     val result = for {
       a <- (d !! (testMsg1, 5000)).as[Int]
@@ -53,8 +53,8 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
   @Test def testLogger = {
     val msgs = new java.util.concurrent.ConcurrentSkipListSet[Any]
     val latch = new CountDownLatch(2)
-    val t1 = actorOf(new Actor { def receive = { case _ => } }).start
-    val l = loggerActor(t1,(x) => { msgs.add(x); latch.countDown }).start
+    val t1 = actorOf(new Actor { def receive = { case _ => } }).start()
+    val l = loggerActor(t1,(x) => { msgs.add(x); latch.countDown }).start()
     val foo : Any = "foo"
     val bar : Any = "bar"
     l ! foo
@@ -76,7 +76,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
           t1ProcessedCount.incrementAndGet
           latch.countDown
       }
-    }).start
+    }).start()
 
     val t2ProcessedCount = new AtomicInteger(0)
     val t2 = actorOf(new Actor {
@@ -84,7 +84,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
         case x => t2ProcessedCount.incrementAndGet
                   latch.countDown
       }
-    }).start
+    }).start()
     val d = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
     for (i <- 1 to 500) d ! i
     val done = latch.await(10,TimeUnit.SECONDS)
@@ -102,7 +102,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
         case "foo" =>  gossip("bar")
       }
     })
-    i.start
+    i.start()
 
     def newListener = actorOf(new Actor {
       def receive = {
@@ -111,7 +111,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
           latch.countDown
         case "foo" => foreachListener.countDown
       }
-    }).start
+    }).start()
 
     val a1 = newListener
     val a2 = newListener
@@ -142,28 +142,28 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
         case `testMsg1` => self.reply(3)
         case `testMsg2` => self.reply(7)
       }
-    } ).start
+    } ).start()
 
     val t2 = actorOf( new Actor() {
       def receive = {
         case `testMsg1` => self.reply(3)
         case `testMsg2` => self.reply(7)
       }
-    } ).start
+    } ).start()
 
     val t3 = actorOf( new Actor() {
       def receive = {
         case `testMsg1` => self.reply(3)
         case `testMsg2` => self.reply(7)
       }
-    } ).start
+    } ).start()
 
     val t4 = actorOf( new Actor() {
       def receive = {
         case `testMsg1` => self.reply(3)
         case `testMsg2` => self.reply(7)
       }
-    } ).start
+    } ).start()
 
     val d1 = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
     val d2 = loadBalancerActor(new CyclicIterator[ActorRef](t3 :: t4 :: Nil))
@@ -213,9 +213,9 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
       def receive = {
         case "success" => successes.countDown
       }
-    }).start)
+    }).start())
 
-    val pool = actorOf(new TestPool).start
+    val pool = actorOf(new TestPool).start()
     pool ! "a"
     pool ! "b"
 
@@ -253,7 +253,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
                                             }
                                           }
                                         })
-                                      }).start
+                                      }).start()
 
     try {
       (for(count <- 1 to 500) yield actorPool.!!![String]("Test", 20000)) foreach {
@@ -299,7 +299,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     //
     // first message should create the minimum number of delgates
     //
-    val pool = actorOf(new TestPool).start
+    val pool = actorOf(new TestPool).start()
     pool ! 1
     (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (2)
 
@@ -370,7 +370,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
       def receive = _route
     }
 
-      val pool = actorOf(new TestPool).start
+      val pool = actorOf(new TestPool).start()
 
       var loops = 0
       def loop(t:Int) = {
@@ -433,7 +433,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
       def receive = _route
     }
 
-    val pool1 = actorOf(new TestPool1).start
+    val pool1 = actorOf(new TestPool1).start()
     pool1 ! "a"
     pool1 ! "b"
     var done = latch.await(1,TimeUnit.SECONDS)
@@ -465,7 +465,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     latch = new CountDownLatch(2)
     delegates clear
 
-    val pool2 = actorOf(new TestPool2).start
+    val pool2 = actorOf(new TestPool2).start()
     pool2 ! "a"
     pool2 ! "b"
     done = latch.await(1, TimeUnit.SECONDS)
@@ -514,7 +514,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     //
     // put some pressure on the pool
     //
-    val pool = actorOf(new TestPool).start
+    val pool = actorOf(new TestPool).start()
     for (m <- 0 to 10) pool ! 250
     Thread.sleep(5)
     val z = (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size

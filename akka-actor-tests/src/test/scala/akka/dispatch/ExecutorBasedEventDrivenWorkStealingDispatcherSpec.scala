@@ -58,8 +58,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
   @Test def fastActorShouldStealWorkFromSlowActor  {
     val finishedCounter = new CountDownLatch(110)
 
-    val slow = actorOf(new DelayableActor("slow", 50, finishedCounter)).start
-    val fast = actorOf(new DelayableActor("fast", 10, finishedCounter)).start
+    val slow = actorOf(new DelayableActor("slow", 50, finishedCounter)).start()
+    val fast = actorOf(new DelayableActor("fast", 10, finishedCounter)).start()
 
     var sentToFast = 0
 
@@ -98,9 +98,9 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     val first = actorOf[FirstActor]
     val second = actorOf[SecondActor]
 
-    first.start
+    first.start()
     intercept[IllegalActorStateException] {
-      second.start
+      second.start()
     }
   }
 
@@ -108,9 +108,9 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     val parent = actorOf[ParentActor]
     val child = actorOf[ChildActor]
 
-    parent.start
+    parent.start()
     intercept[IllegalActorStateException] {
-      child.start
+      child.start()
     }
   }
 }

@@ -20,7 +20,7 @@ trait BootableRemoteActorService extends Bootable {
     def run = Actor.remote.start(self.applicationLoader.getOrElse(null)) //Use config host/port
   }, "Akka Remote Service")
 
-  def startRemoteService = remoteServerThread.start
+  def startRemoteService = remoteServerThread.start()
 
   abstract override def onLoad = {
     if (ReflectiveAccess.isRemotingEnabled && RemoteServerSettings.isRemotingEnabled) {

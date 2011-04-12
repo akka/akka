@@ -104,12 +104,12 @@ class FSMActorSpec extends WordSpec with MustMatchers {
     "unlock the lock" in {
       
       // lock that locked after being open for 1 sec
-      val lock = Actor.actorOf(new Lock("33221", 1 second)).start
+      val lock = Actor.actorOf(new Lock("33221", 1 second)).start()
 
       val transitionTester = Actor.actorOf(new Actor { def receive = {
         case Transition(_, _, _) => transitionCallBackLatch.open
         case CurrentState(_, Locked) => initialStateLatch.open
-      }}).start
+      }}).start()
 
       lock ! SubscribeTransitionCallBack(transitionTester)
       initialStateLatch.await
@@ -137,7 +137,7 @@ class FSMActorSpec extends WordSpec with MustMatchers {
           case "world" => answerLatch.open
           case Bye => lock ! "bye"
         }
-      }).start
+      }).start()
       tester ! Hello
       answerLatch.await
 

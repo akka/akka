@@ -22,7 +22,7 @@ class SchedulerSpec extends JUnitSuite {
     val countDownLatch = new CountDownLatch(3)
     val tickActor = actorOf(new Actor {
       def receive = { case Tick => countDownLatch.countDown }
-    }).start
+    }).start()
     // run every 50 millisec
     Scheduler.schedule(tickActor, Tick, 0, 50, TimeUnit.MILLISECONDS)
 
@@ -42,7 +42,7 @@ class SchedulerSpec extends JUnitSuite {
     val countDownLatch = new CountDownLatch(3)
     val tickActor = actorOf(new Actor {
       def receive = { case Tick => countDownLatch.countDown }
-    }).start
+    }).start()
     // run every 50 millisec
     Scheduler.scheduleOnce(tickActor, Tick, 50, TimeUnit.MILLISECONDS)
     Scheduler.scheduleOnce( () => countDownLatch.countDown, 50, TimeUnit.MILLISECONDS)
@@ -61,7 +61,7 @@ class SchedulerSpec extends JUnitSuite {
     val ticks = new CountDownLatch(1000)
     val actor = actorOf(new Actor {
       def receive = { case Ping => ticks.countDown }
-    }).start
+    }).start()
     val numActors = Actor.registry.actors.length
     (1 to 1000).foreach( _ => Scheduler.scheduleOnce(actor,Ping,1,TimeUnit.MILLISECONDS) )
     assert(ticks.await(10,TimeUnit.SECONDS))
@@ -77,7 +77,7 @@ class SchedulerSpec extends JUnitSuite {
 
     val actor = actorOf(new Actor {
       def receive = { case Ping => ticks.countDown }
-    }).start
+    }).start()
 
     (1 to 10).foreach { i =>
       val future = Scheduler.scheduleOnce(actor,Ping,1,TimeUnit.SECONDS)

@@ -137,7 +137,7 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
 abstract class RemoteSupport extends ListenerManagement with RemoteServerModule with RemoteClientModule {
 
   lazy val eventHandler: ActorRef = {
-    val handler = Actor.actorOf[RemoteEventHandler].start
+    val handler = Actor.actorOf[RemoteEventHandler].start()
     // add the remote client and server listener that pipes the events to the event handler system
     addListener(handler)
     handler
@@ -157,13 +157,13 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    * <pre>
    *   import Actor._
    *   val actor = actorOf(classOf[MyActor],"www.akka.io", 2552)
-   *   actor.start
+   *   actor.start()
    *   actor ! message
    *   actor.stop
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(classOf[MyActor],"www.akka.io", 2552).start
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io", 2552).start()
    * </pre>
    */
   @deprecated("Will be removed after 1.1")
@@ -176,13 +176,13 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    * <pre>
    *   import Actor._
    *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552)
-   *   actor.start
+   *   actor.start()
    *   actor ! message
    *   actor.stop
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552).start
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552).start()
    * </pre>
    */
   @deprecated("Will be removed after 1.1")
@@ -204,13 +204,13 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    * <pre>
    *   import Actor._
    *   val actor = actorOf[MyActor]("www.akka.io",2552)
-   *   actor.start
+   *   actor.start()
    *   actor ! message
    *   actor.stop
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf[MyActor]("www.akka.io",2552).start
+   *   val actor = actorOf[MyActor]("www.akka.io",2552).start()
    * </pre>
    */
   @deprecated("Will be removed after 1.1")

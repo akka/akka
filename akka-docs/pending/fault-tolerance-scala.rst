@@ -336,7 +336,7 @@ Here is an example:
         victimActorRef, maxNrOfRetries, withinTimeRange, lastExceptionCausingRestart) =>
         ... // handle the error situation
     }
-  }).start
+  }).start()
 
 You will also get this log warning similar to this:
 

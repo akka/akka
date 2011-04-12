@@ -25,7 +25,7 @@ class RestartStrategySpec extends JUnitSuite {
     val boss = actorOf(new Actor{
       self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), Some(1000))
       protected def receive = { case _ => () }
-    }).start
+    }).start()
 
     val restartLatch = new StandardLatch
     val secondRestartLatch = new StandardLatch
@@ -80,7 +80,7 @@ class RestartStrategySpec extends JUnitSuite {
     val boss = actorOf(new Actor{
       self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), None, None)
       protected def receive = { case _ => () }
-    }).start
+    }).start()
 
     val countDownLatch = new CountDownLatch(100)
 
@@ -107,7 +107,7 @@ class RestartStrategySpec extends JUnitSuite {
     val boss = actorOf(new Actor{
       self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), Some(500))
       protected def receive = { case _ => () }
-    }).start
+    }).start()
 
     val restartLatch = new StandardLatch
     val secondRestartLatch = new StandardLatch
@@ -168,7 +168,7 @@ class RestartStrategySpec extends JUnitSuite {
     val boss = actorOf(new Actor{
       self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), None)
       protected def receive = { case _ => () }
-    }).start
+    }).start()
 
     val restartLatch = new StandardLatch
     val secondRestartLatch = new StandardLatch
@@ -230,7 +230,7 @@ class RestartStrategySpec extends JUnitSuite {
       protected def receive = {
         case m:MaximumNumberOfRestartsWithinTimeRangeReached => maxNoOfRestartsLatch.open
       }
-    }).start
+    }).start()
 
     val slave = actorOf(new Actor{
 

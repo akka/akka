@@ -208,7 +208,7 @@ object EventHandler extends ListenerManagement {
   defaultListeners foreach { listenerName =>
     try {
       ReflectiveAccess.getClassFor[Actor](listenerName) map { clazz =>
-        addListener(Actor.actorOf(clazz).start)
+        addListener(Actor.actorOf(clazz).start())
       }
     } catch {
       case e: Exception =>

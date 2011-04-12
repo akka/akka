@@ -97,9 +97,9 @@ class FickleFriendsSpec extends WordSpec with MustMatchers {
   val numCounters = 2
 
   def createActors = {
-    def createCounter(i: Int) = Actor.actorOf(new FickleCounter("counter" + i)).start
+    def createCounter(i: Int) = Actor.actorOf(new FickleCounter("counter" + i)).start()
     val counters = (1 to numCounters) map createCounter
-    val coordinator = Actor.actorOf(new Coordinator("coordinator")).start
+    val coordinator = Actor.actorOf(new Coordinator("coordinator")).start()
     (counters, coordinator)
   }
 

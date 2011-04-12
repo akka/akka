@@ -39,7 +39,7 @@ class Ticket435Spec extends
     it("should be able to serialize and deserialize a stateless actor with messages in mailbox") {
       import BinaryFormatMyStatelessActorWithMessagesInMailbox._
 
-      val actor1 = actorOf[MyStatelessActorWithMessagesInMailbox].start
+      val actor1 = actorOf[MyStatelessActorWithMessagesInMailbox].start()
       (actor1 ! "hello")
       (actor1 ! "hello")
       (actor1 ! "hello")
@@ -65,7 +65,7 @@ class Ticket435Spec extends
     it("should serialize the mailbox optionally") {
       import BinaryFormatMyStatelessActorWithMessagesInMailbox._
 
-      val actor1 = actorOf[MyStatelessActorWithMessagesInMailbox].start
+      val actor1 = actorOf[MyStatelessActorWithMessagesInMailbox].start()
       (actor1 ! "hello")
       (actor1 ! "hello")
       (actor1 ! "hello")
@@ -87,7 +87,7 @@ class Ticket435Spec extends
     it("should be able to serialize and deserialize a stateful actor with messages in mailbox") {
       import BinaryFormatMyStatefulActor._
 
-      val actor1 = actorOf[MyStatefulActor].start
+      val actor1 = actorOf[MyStatefulActor].start()
       (actor1 ! "hi")
       (actor1 ! "hi")
       (actor1 ! "hi")

@@ -60,14 +60,14 @@ abstract class Channel[T] {
  *   import Actor._
  *
  *   val actor = actorOf[MyActor]
- *   actor.start
+ *   actor.start()
  *   actor ! message
  *   actor.stop
  * </pre>
  *
  * You can also create and start actors like this:
  * <pre>
- *   val actor = actorOf[MyActor].start
+ *   val actor = actorOf[MyActor].start()
  * </pre>
  *
  * Here is an example on how to create an actor with a non-default constructor.
@@ -75,7 +75,7 @@ abstract class Channel[T] {
  *   import Actor._
  *
  *   val actor = actorOf(new MyActor(...))
- *   actor.start
+ *   actor.start()
  *   actor ! message
  *   actor.stop
  * </pre>
@@ -761,7 +761,7 @@ class LocalActorRef private[akka] (
    */
   def startLink(actorRef: ActorRef): Unit = guard.withGuard {
     link(actorRef)
-    actorRef.start
+    actorRef.start()
   }
 
   /**
@@ -770,7 +770,7 @@ class LocalActorRef private[akka] (
    * To be invoked from within the actor itself.
    */
   def spawn(clazz: Class[_ <: Actor]): ActorRef =
-    Actor.actorOf(clazz).start
+    Actor.actorOf(clazz).start()
 
   /**
    * Atomically create (from actor class), start and make an actor remote.
@@ -781,7 +781,7 @@ class LocalActorRef private[akka] (
     ensureRemotingEnabled
     val ref = Actor.remote.actorOf(clazz, hostname, port)
     ref.timeout = timeout
-    ref.start
+    ref.start()
   }
 
   /**
@@ -792,7 +792,7 @@ class LocalActorRef private[akka] (
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef = {
     val actor = spawn(clazz)
     link(actor)
-    actor.start
+    actor.start()
     actor
   }
 
@@ -806,7 +806,7 @@ class LocalActorRef private[akka] (
     val actor = Actor.remote.actorOf(clazz, hostname, port)
     actor.timeout = timeout
     link(actor)
-    actor.start
+    actor.start()
     actor
   }
 
@@ -1296,7 +1296,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
   def !(message: Any)(implicit sender: Option[ActorRef] = None): Unit = {
     if (isRunning) postMessageToMailbox(message, sender)
     else throw new ActorInitializationException(
-      "Actor has not been started, you need to invoke 'actor.start' before using it")
+      "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
 
   /**
@@ -1327,7 +1327,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
       }
       future.resultOrException
     } else throw new ActorInitializationException(
-      "Actor has not been started, you need to invoke 'actor.start' before using it")
+      "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
 
   /**
@@ -1342,7 +1342,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
   def !!![T](message: Any, timeout: Long = this.timeout)(implicit sender: Option[ActorRef] = None): Future[T] = {
     if (isRunning) postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, sender, None)
     else throw new ActorInitializationException(
-      "Actor has not been started, you need to invoke 'actor.start' before using it")
+      "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
 
   /**
@@ -1356,7 +1356,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
         postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, sender.get.sender, sender.get.senderFuture)
       else
         postMessageToMailbox(message, sender.get.sender)
-    } else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start' before using it")
+    } else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
 
   /**

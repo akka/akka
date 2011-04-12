@@ -263,7 +263,7 @@ Finally, bind the *handleHttpRequest* function of the *Endpoint* trait to the ac
     def hook(uri: String): Boolean = ((uri == ProvideSameActor) || (uri == ProvideNewActor))
     def provide(uri: String): ActorRef = {
       if (uri == ProvideSameActor) same
-      else actorOf[BoringActor].start
+      else actorOf[BoringActor].start()
     }
 
       //
@@ -292,7 +292,7 @@ Finally, bind the *handleHttpRequest* function of the *Endpoint* trait to the ac
     //
     // this will be our "same" actor provided with ProvideSameActor endpoint is hit
     //
-    lazy val same = actorOf[BoringActor].start
+    lazy val same = actorOf[BoringActor].start()
   }
 
 Handling requests
@@ -389,10 +389,10 @@ As noted above, hook functions are non-exclusive. This means multiple actors can
     //  Try with/without a header named "Test-Token"
     //  Try with/without a form parameter named "Data"
     def hookMultiActionA(uri: String): Boolean = uri startsWith Multi
-    def provideMultiActionA(uri: String): ActorRef = actorOf(new ActionAActor(complete)).start
+    def provideMultiActionA(uri: String): ActorRef = actorOf(new ActionAActor(complete)).start()
 
     def hookMultiActionB(uri: String): Boolean = uri startsWith Multi
-    def provideMultiActionB(uri: String): ActorRef = actorOf(new ActionBActor(complete)).start
+    def provideMultiActionB(uri: String): ActorRef = actorOf(new ActionBActor(complete)).start()
 
       //
       // this is where you want attach your endpoint hooks
@@ -421,7 +421,7 @@ As noted above, hook functions are non-exclusive. This means multiple actors can
     //
     // this guy completes requests after other actions have occured
     //
-    lazy val complete = actorOf[ActionCompleteActor].start
+    lazy val complete = actorOf[ActionCompleteActor].start()
   }
 
   class ActionAActor(complete:ActorRef) extends Actor {

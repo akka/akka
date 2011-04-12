@@ -36,9 +36,9 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
     "be able to kill the middle actor and see itself and its child restarted" in {
       log = "INIT"
 
-      val lastActor   = actorOf(new Chainer("lastActor")).start
-      val middleActor = actorOf(new Chainer("middleActor", Some(lastActor))).start
-      val headActor   = actorOf(new Chainer("headActor",   Some(middleActor))).start
+      val lastActor   = actorOf(new Chainer("lastActor")).start()
+      val middleActor = actorOf(new Chainer("middleActor", Some(lastActor))).start()
+      val headActor   = actorOf(new Chainer("headActor",   Some(middleActor))).start()
       
       middleActor ! Die
       sleepFor(500 millis)

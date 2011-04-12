@@ -25,11 +25,11 @@ object ActorRefSpec {
     def receive = {
       case "complexRequest" => {
         replyTo = self.channel
-        val worker = Actor.actorOf[WorkerActor].start
+        val worker = Actor.actorOf[WorkerActor].start()
         worker ! "work"
       }
       case "complexRequest2" =>
-        val worker = Actor.actorOf[WorkerActor].start
+        val worker = Actor.actorOf[WorkerActor].start()
         worker ! self.channel
       case "workDone" => replyTo ! "complexReply"
       case "simpleRequest" => self.reply("simpleReply")
@@ -85,16 +85,16 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         val a = Actor.actorOf(new Actor {
           val nested = new Actor { def receive = { case _ => } }
           def receive = { case _ => }
-        }).start
+        }).start()
         fail("shouldn't get here")
       }
     }
 
     "support nested actorOfs" in {
       val a = Actor.actorOf(new Actor {
-        val nested = Actor.actorOf(new Actor { def receive = { case _ => } }).start
+        val nested = Actor.actorOf(new Actor { def receive = { case _ => } }).start()
         def receive = { case _ => self reply nested }
-      }).start
+      }).start()
 
       val nested = (a !! "any").get.asInstanceOf[ActorRef]
       a must not be null
@@ -103,8 +103,8 @@ class ActorRefSpec extends WordSpec with MustMatchers {
     }
     
     "support reply via channel" in {
-      val serverRef = Actor.actorOf[ReplyActor].start
-      val clientRef = Actor.actorOf(new SenderActor(serverRef)).start
+      val serverRef = Actor.actorOf[ReplyActor].start()
+      val clientRef = Actor.actorOf(new SenderActor(serverRef)).start()
 
       clientRef ! "complex"
       clientRef ! "simple"
@@ -134,7 +134,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
             case null => self reply_? "null"
           }
         }
-      ).start
+      ).start()
 
       val ffive: Future[String] = ref !!! 5
       val fnull: Future[String] = ref !!! null
@@ -163,12 +163,12 @@ class ActorRefSpec extends WordSpec with MustMatchers {
             override def preRestart(reason: Throwable) = latch.countDown
             override def postRestart(reason: Throwable) = latch.countDown
           }
-        ).start
+        ).start()
 
         self link ref
 
         protected def receive = { case "sendKill" => ref ! Kill }
-      }).start
+      }).start()
 
       boss ! "sendKill"
       latch.await(5, TimeUnit.SECONDS) must be === true

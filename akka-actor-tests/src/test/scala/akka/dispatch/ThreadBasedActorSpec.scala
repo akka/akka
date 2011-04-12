@@ -33,28 +33,28 @@ class ThreadBasedActorSpec extends JUnitSuite {
       def receive = {
         case "OneWay" => oneWay.countDown
       }
-    }).start
+    }).start()
     val result = actor ! "OneWay"
     assert(oneWay.await(1, TimeUnit.SECONDS))
     actor.stop
   }
 
   @Test def shouldSendReplySync = {
-    val actor = actorOf[TestActor].start
+    val actor = actorOf[TestActor].start()
     val result = (actor !! ("Hello", 10000)).as[String]
     assert("World" === result.get)
     actor.stop
   }
 
   @Test def shouldSendReplyAsync = {
-    val actor = actorOf[TestActor].start
+    val actor = actorOf[TestActor].start()
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
     actor.stop
   }
 
   @Test def shouldSendReceiveException = {
-    val actor = actorOf[TestActor].start
+    val actor = actorOf[TestActor].start()
     try {
       actor !! "Failure"
       fail("Should have thrown an exception")

@@ -11,7 +11,7 @@ class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
   import FSMTimingSpec._
   import FSM._
 
-  val fsm = Actor.actorOf(new StateMachine(testActor)).start
+  val fsm = Actor.actorOf(new StateMachine(testActor)).start()
   fsm ! SubscribeTransitionCallBack(testActor)
   expectMsg(200 millis, CurrentState(fsm, Initial))
 

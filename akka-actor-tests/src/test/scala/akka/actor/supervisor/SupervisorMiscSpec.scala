@@ -23,7 +23,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
           case "kill" => throw new Exception("killed")
           case _ => println("received unknown message")
         }
-      }).start
+      }).start()
 
       val actor2 = Actor.actorOf(new Actor {
         self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
@@ -33,7 +33,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
           case "kill" => throw new Exception("killed")
           case _ => println("received unknown message")
         }
-      }).start
+      }).start()
 
       val actor3 = Actor.actorOf(new Actor {
         self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("test").build
@@ -43,7 +43,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
           case "kill" => throw new Exception("killed")
           case _ => println("received unknown message")
         }
-      }).start
+      }).start()
 
       val actor4 = Actor.actorOf(new Actor {
         self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
@@ -53,7 +53,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
           case "kill" => throw new Exception("killed")
           case _ => println("received unknown message")
         }
-      }).start
+      }).start()
 
       val sup = Supervisor(
         SupervisorConfig(

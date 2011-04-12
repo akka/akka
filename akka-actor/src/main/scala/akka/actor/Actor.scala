@@ -132,13 +132,13 @@ object Actor extends ListenerManagement {
    * <pre>
    *   import Actor._
    *   val actor = actorOf[MyActor]
-   *   actor.start
+   *   actor.start()
    *   actor ! message
    *   actor.stop
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf[MyActor].start
+   *   val actor = actorOf[MyActor].start()
    * </pre>
    */
   def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
@@ -148,13 +148,13 @@ object Actor extends ListenerManagement {
    * <pre>
    *   import Actor._
    *   val actor = actorOf(classOf[MyActor])
-   *   actor.start
+   *   actor.start()
    *   actor ! message
    *   actor.stop
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(classOf[MyActor]).start
+   *   val actor = actorOf(classOf[MyActor]).start()
    * </pre>
    */
   def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(() => {
@@ -176,13 +176,13 @@ object Actor extends ListenerManagement {
    * <pre>
    *   import Actor._
    *   val actor = actorOf(new MyActor)
-   *   actor.start
+   *   actor.start()
    *   actor ! message
    *   actor.stop
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(new MyActor).start
+   *   val actor = actorOf(new MyActor).start()
    * </pre>
    */
   def actorOf(factory: => Actor): ActorRef = new LocalActorRef(() => factory, None)
@@ -219,7 +219,7 @@ object Actor extends ListenerManagement {
       def receive = {
         case Spawn => try { body } finally { self.stop }
       }
-    }).start ! Spawn
+    }).start() ! Spawn
   }
   /**
    * Implicitly converts the given Option[Any] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
@@ -366,7 +366,7 @@ trait Actor {
   /**
    * User overridable callback.
    * <p/>
-   * Is called when an Actor is started by invoking 'actor.start'.
+   * Is called when an Actor is started by invoking 'actor.start()'.
    */
   def preStart {}
 

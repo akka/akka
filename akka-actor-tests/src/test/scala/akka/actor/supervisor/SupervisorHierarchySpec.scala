@@ -40,7 +40,7 @@ class SupervisorHierarchySpec extends JUnitSuite {
       self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), 5, 1000)
 
       protected def receive = { case _ => () }
-    }).start
+    }).start()
 
     val manager = actorOf(new CountDownActor(countDown))
     boss.startLink(manager)
@@ -67,7 +67,7 @@ class SupervisorHierarchySpec extends JUnitSuite {
         case MaximumNumberOfRestartsWithinTimeRangeReached(_, _, _, _) =>
           countDown.countDown
       }
-    }).start
+    }).start()
     boss.startLink(crasher)
 
     crasher ! Exit(crasher, new FireWorkerException("Fire the worker!"))

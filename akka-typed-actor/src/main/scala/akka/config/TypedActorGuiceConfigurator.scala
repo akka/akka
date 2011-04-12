@@ -125,7 +125,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
       proxy,
       AspectInit(interfaceClass, typedActor, actorRef, remoteAddress, timeout))
     typedActor.initialize(proxy)
-    actorRef.start
+    actorRef.start()
 
     supervised ::= Supervise(actorRef, component.lifeCycle)
 

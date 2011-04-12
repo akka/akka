@@ -95,7 +95,7 @@ abstract class MailboxSpec extends
           case e: Throwable => result.completeWithException(e)
         }
       })
-      t.start
+      t.start()
       result
     }
 

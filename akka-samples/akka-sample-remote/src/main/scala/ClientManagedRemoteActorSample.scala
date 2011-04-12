@@ -26,7 +26,7 @@ object ClientManagedRemoteActorServer {
 object ClientManagedRemoteActorClient {
 
   def run = {
-    val actor = remote.actorOf[RemoteHelloWorldActor]("localhost",2552).start
+    val actor = remote.actorOf[RemoteHelloWorldActor]("localhost",2552).start()
     val result = actor !! "Hello"
   }
 

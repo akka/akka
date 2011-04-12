@@ -32,7 +32,7 @@ Here is how to start up the RemoteNode and specify the hostname and port in the 
 
   import akka.actor.Actor._
 
-  remote.start
+  remote.start()
 
   // Specify the classloader to use to load the remote class (actor)
   remote.start(classLoader)
@@ -593,7 +593,7 @@ So a simple listener actor can look like this:
       case RemoteClientWriteFailed(request, cause, client, address) => ... // act upon write failure
       case _ => //ignore other
     }
-  }).start
+  }).start()
 
 Registration and de-registration can be done like this:
 
@@ -647,7 +647,7 @@ So a simple listener actor can look like this:
       case RemoteServerClientClosed(server, clientAddress)       => ... // act upon client connection close
       case RemoteServerWriteFailed(request, casue, server, clientAddress) => ... // act upon server write failure
     }
-  }).start
+  }).start()
 
 Registration and de-registration can be done like this:
 

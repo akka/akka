@@ -28,7 +28,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
         protected def receive = {
           case ReceiveTimeout => timeoutLatch.open
         }
-      }).start
+      }).start()
 
       timeoutLatch.await
       timeoutActor.stop
@@ -43,7 +43,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
         protected def receive = {
           case ReceiveTimeout => timeoutLatch.open
         }
-      }).start
+      }).start()
 
       timeoutLatch.await
 
@@ -68,7 +68,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
           case Tick => ()
             case ReceiveTimeout => timeoutLatch.open
         }
-      }).start
+      }).start()
 
       timeoutActor ! Tick
 
@@ -91,7 +91,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
             timeoutLatch.open
             self.receiveTimeout = None
         }
-      }).start
+      }).start()
 
       timeoutActor ! Tick
 
@@ -107,7 +107,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
         protected def receive = {
           case ReceiveTimeout => timeoutLatch.open
         }
-      }).start
+      }).start()
 
       timeoutLatch.awaitTimeout(1 second) // timeout expected
       timeoutActor.stop

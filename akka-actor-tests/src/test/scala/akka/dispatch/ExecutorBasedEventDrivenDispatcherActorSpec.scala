@@ -35,28 +35,28 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
   private val unit = TimeUnit.MILLISECONDS
 
   @Test def shouldSendOneWay = {
-    val actor = actorOf[OneWayTestActor].start
+    val actor = actorOf[OneWayTestActor].start()
     val result = actor ! "OneWay"
     assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
     actor.stop
   }
 
   @Test def shouldSendReplySync = {
-    val actor = actorOf[TestActor].start
+    val actor = actorOf[TestActor].start()
     val result = (actor !! ("Hello", 10000)).as[String]
     assert("World" === result.get)
     actor.stop
   }
 
   @Test def shouldSendReplyAsync = {
-    val actor = actorOf[TestActor].start
+    val actor = actorOf[TestActor].start()
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
     actor.stop
   }
 
   @Test def shouldSendReceiveException = {
-    val actor = actorOf[TestActor].start
+    val actor = actorOf[TestActor].start()
     try {
       actor !! "Failure"
       fail("Should have thrown an exception")
@@ -80,7 +80,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
                    new Actor {
                      self.dispatcher = throughputDispatcher
                      def receive = { case "sabotage" => works.set(false)  }
-                   }).start
+                   }).start()
 
    val slowOne = actorOf(
                    new Actor {
@@ -89,7 +89,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
                        case "hogexecutor" => start.await
                        case "ping"        => if (works.get) latch.countDown
                      }
-                   }).start
+                   }).start()
 
    slowOne ! "hogexecutor"
    (1 to 100) foreach { _ => slowOne ! "ping"}
@@ -116,7 +116,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
                    new Actor {
                      self.dispatcher = throughputDispatcher
                      def receive = { case "ping" => if(works.get) latch.countDown; self.stop  }
-                   }).start
+                   }).start()
 
    val slowOne = actorOf(
                    new Actor {
@@ -125,7 +125,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
                        case "hogexecutor" => ready.countDown; start.await
                        case "ping"        => works.set(false); self.stop
                      }
-                   }).start
+                   }).start()
 
    slowOne ! "hogexecutor"
    slowOne ! "ping"

@@ -36,7 +36,7 @@ class PriorityDispatcherSpec extends WordSpec with MustMatchers {
           case i: Int      => acc = i :: acc
           case 'Result     => self reply_? acc
         }
-      }).start
+      }).start()
 
       dispatcher.suspend(actor) //Make sure the actor isn't treating any messages, let it buffer the incoming messages
 

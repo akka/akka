@@ -109,7 +109,7 @@ class RemoteErrorHandlingNetworkTest extends AkkaRemoteTest with NetworkFailureT
       val actor = remote.actorFor(
         "akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional", timeout, host, port)
       val latch = new CountDownLatch(1)
-      val sender = actorOf( new RemoteActorSpecActorAsyncSender(latch) ).start
+      val sender = actorOf( new RemoteActorSpecActorAsyncSender(latch) ).start()
       sender ! Send(actor)
       latch.await(1, TimeUnit.SECONDS) must be (true)
     }

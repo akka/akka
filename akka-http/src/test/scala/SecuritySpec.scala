@@ -34,7 +34,7 @@ class BasicAuthenticatorSpec extends junit.framework.TestCase
   import BasicAuthenticatorSpec._
 
   val authenticator = actorOf[BasicAuthenticator]
-  authenticator.start
+  authenticator.start()
 
   @Test def testChallenge = {
     val req = mock[ContainerRequest]

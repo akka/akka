@@ -32,7 +32,7 @@ object ForwardActorSpec {
 
   class ForwardActor extends Actor {
     val receiverActor = actorOf[ReceiverActor]
-    receiverActor.start
+    receiverActor.start()
     def receive = {
       case "SendBang" => receiverActor.forward("SendBang")
       case "SendBangBang" => receiverActor.forward("SendBangBang")
@@ -41,7 +41,7 @@ object ForwardActorSpec {
 
   class BangSenderActor extends Actor {
     val forwardActor = actorOf[ForwardActor]
-    forwardActor.start
+    forwardActor.start()
     forwardActor ! "SendBang"
     def receive = {
       case _ => {}
@@ -51,7 +51,7 @@ object ForwardActorSpec {
   class BangBangSenderActor extends Actor {
     val latch = TestLatch()
     val forwardActor = actorOf[ForwardActor]
-    forwardActor.start
+    forwardActor.start()
     (forwardActor !! "SendBangBang") match {
       case Some(_) => latch.countDown
       case None => {}
@@ -72,7 +72,7 @@ class ForwardActorSpec extends WordSpec with MustMatchers {
       .forwardActor.actor.asInstanceOf[ForwardActor]
       .receiverActor.actor.asInstanceOf[ReceiverActor]
       .latch
-      senderActor.start
+      senderActor.start()
       latch.await
       ForwardState.sender must not be (null)
       senderActor.toString must be (ForwardState.sender.get.toString)
@@ -80,7 +80,7 @@ class ForwardActorSpec extends WordSpec with MustMatchers {
 
     "forward actor reference when invoking forward on bang bang" in {
       val senderActor = actorOf[BangBangSenderActor]
-      senderActor.start
+      senderActor.start()
       val latch = senderActor.actor.asInstanceOf[BangBangSenderActor].latch
       latch.await
     }

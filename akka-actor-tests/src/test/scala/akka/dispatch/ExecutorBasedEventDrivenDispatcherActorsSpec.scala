@@ -37,8 +37,8 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
   @Test def slowActorShouldntBlockFastActor {
     val sFinished = new CountDownLatch(50)
     val fFinished = new CountDownLatch(10)
-    val s = actorOf(new SlowActor(sFinished)).start
-    val f = actorOf(new FastActor(fFinished)).start
+    val s = actorOf(new SlowActor(sFinished)).start()
+    val f = actorOf(new FastActor(fFinished)).start()
 
     // send a lot of stuff to s
     for (i <- 1 to 50) {

@@ -41,7 +41,7 @@ Creating Actors
 .. code-block:: scala
 
   val myActor = Actor.actorOf[MyActor]
-  myActor.start
+  myActor.start()
 
 Normally you would want to import the ``actorOf`` method like this:
 
@@ -57,7 +57,7 @@ You can also start it in the same statement:
 
 .. code-block:: scala
 
-  val myActor = actorOf[MyActor].start
+  val myActor = actorOf[MyActor].start()
 
 The call to ``actorOf`` returns an instance of ``ActorRef``. This is a handle to the ``Actor`` instance which you can use to interact with the ``Actor``. The ``ActorRef`` is immutable and has a one to one relationship with the Actor it represents. The ``ActorRef`` is also serializable and network-aware. This means that you can serialize it, send it over the wire and use it on a remote host and it will still be representing the same Actor on the original node, across the network.
 
@@ -70,7 +70,7 @@ Here is an example:
 
 .. code-block:: scala
 
-  val a = actorOf(new MyActor(..)).start // allows passing in arguments into the MyActor constructor
+  val a = actorOf(new MyActor(..)).start() // allows passing in arguments into the MyActor constructor
 
 Running a block of code asynchronously
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -370,13 +370,13 @@ Actors are started by invoking the ``start`` method.
 .. code-block:: scala
 
   val actor = actorOf[MyActor]
-  actor.start
+  actor.start()
 
 You can create and start the ``Actor`` in a oneliner like this:
 
 .. code-block:: scala
 
-  val actor = actorOf[MyActor].start
+  val actor = actorOf[MyActor].start()
 
 When you start the ``Actor`` then it will automatically call the ``def preStart`` callback method on the ``Actor`` trait. This is an excellent place to add initialization code for the actor.
 
@@ -478,7 +478,7 @@ Here is another little cute example of ``become`` and ``unbecome`` in action:
    }
   }
 
-  val swap = actorOf[Swapper].start
+  val swap = actorOf[Swapper].start()
 
   swap ! Swap // prints Hi
   swap ! Swap // prints Ho

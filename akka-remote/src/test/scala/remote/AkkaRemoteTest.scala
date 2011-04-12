@@ -58,7 +58,7 @@ class AkkaRemoteTest extends
 
   /* Utilities */
 
-  def replyHandler(latch: CountDownLatch, expect: String) = Some(Actor.actorOf(new ReplyHandlerActor(latch, expect)).start)
+  def replyHandler(latch: CountDownLatch, expect: String) = Some(Actor.actorOf(new ReplyHandlerActor(latch, expect)).start())
 }
 
 trait NetworkFailureTest { self: WordSpec =>

@@ -198,7 +198,7 @@ To use the Lock you can run a small program like this:
 
     def main(args: Array[String]) {
 
-      val lock = Actor.actorOf(new Lock("1234")).start
+      val lock = Actor.actorOf(new Lock("1234")).start()
 
       lock ! '1'
       lock ! '2'
