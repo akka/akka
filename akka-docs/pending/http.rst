@@ -3,8 +3,6 @@ HTTP
 
 Module stability: **SOLID**
 
-=
-
 When using Akkas embedded servlet container:
 --------------------------------------------
 
@@ -137,27 +135,23 @@ If you want to use akka-camel or any other modules that have their own "Bootable
        loader.boot(true, new BootableActorLoaderService with BootableRemoteActorService with CamelService) //<--- Important
    }
 
--
-
 Java API: Typed Actors
 ----------------------
 
-Click `here <https://github.com/jboner/akka-modules/tree/master/akka-samples/akka-sample-rest-java/src/main/java/sample/rest/java>`_ to look at a sample module for REST services with Actors in Java
-
--
+`Sample module for REST services with Actors in Java <https://github.com/jboner/akka-modules/tree/master/akka-samples/akka-sample-rest-java/src/main/java/sample/rest/java>`_
 
 Scala API: Actors
 -----------------
 
-Click `here <https://github.com/jboner/akka-modules/blob/master/akka-samples/akka-sample-rest-scala/src/main/scala/SimpleService.scala>`_ to look at a sample module for REST services with Actors in Scala
+`Sample module for REST services with Actors in Scala <https://github.com/jboner/akka-modules/blob/master/akka-samples/akka-sample-rest-scala/src/main/scala/SimpleService.scala>`_
 
 Using Akka with the Pinky REST/MVC framework
-============================================
+--------------------------------------------
 
 Pinky has a slick Akka integration. Read more `here <http://wiki.github.com/pk11/pinky/release-13>`_
 
 jetty-run in SBT
-================
+----------------
 
 If you want to use jetty-run in SBT you need to exclude the version of Jetty that is bundled in akka-http:
 
@@ -171,19 +165,19 @@ If you want to use jetty-run in SBT you need to exclude the version of Jetty tha
     </dependencies>
 
 Mist - Lightweight Asynchronous HTTP
-====================================
+------------------------------------
 
 The *Mist* layer was developed to provide a direct connection between the servlet container and Akka actors with the goal of handling the incoming HTTP request as quickly as possible in an asynchronous manner. The motivation came from the simple desire to treat REST calls as completable futures, that is, effectively passing the request along an actor message chain to be resumed at the earliest possible time. The primary constraint was to not block any existing threads and secondarily, not create additional ones. Mist is very simple and works both with Jetty Continuations as well as with Servlet API 3.0 (tested using Jetty-8.0.0.M1). When the servlet handles a request, a message is created typed to represent the method (e.g. Get, Post, etc.), the request is suspended and the message is sent (fire-and-forget) to the *root endpoint* actor. That's it. There are no POJOs required to host the service endpoints and the request is treated as any other. The message can be resumed (completed) using a number of helper methods that set the proper HTTP response status code.
 
 Complete runnable example can be found here: `<https://github.com/buka/akka-mist-sample>`_
 
 Endpoints
----------
+^^^^^^^^^
 
 Endpoints are actors that handle request messages. Minimally there must be an instance of the *RootEndpoint* and then at least one more (to implement your services).
 
 Preparations
-------------
+^^^^^^^^^^^^
 
 In order to use Mist you have to register the MistServlet in *web.xml* or do the analogous for the embedded server if running in Akka Micrkernel:
 
@@ -210,10 +204,10 @@ Then you also have to add the following dependencies to your SBT build definitio
 Attention: You have to use SBT 0.7.5.RC0 or higher in order to be able to work with that Jetty version.
 
 An Example
-----------
+^^^^^^^^^^
 
 Startup
-^^^^^^^
+*******
 
 In this example, we'll use the built-in *RootEndpoint* class and implement our own service from that. Here the services are started in the boot loader and attached to the top level supervisor.
 
@@ -302,7 +296,7 @@ Finally, bind the *handleHttpRequest* function of the *Endpoint* trait to the ac
   }
 
 Handling requests
-^^^^^^^^^^^^^^^^^
+*****************
 
 Messages are handled just as any other that are received by your actor. The servlet requests and response are not hidden and can be accessed directly as shown below.
 
@@ -369,7 +363,7 @@ Messages are handled just as any other that are received by your actor. The serv
 Messages will expire according to the default timeout (specified in akka.conf). Individual messages can also be updated using the *timeout* method. One thing that may seem unexpected is that when an expired request returns to the caller, it will have a status code of OK (200). Mist will add an HTTP header to such responses to help clients, if applicable. By default, the header will be named "Async-Timeout" with a value of "expired" - both of which are configurable.
 
 Another Example - multiplexing handlers
----------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 As noted above, hook functions are non-exclusive. This means multiple actors can handle the same request if desired. In this next example, the hook functions are identical (yes, the same one could have been reused) and new instances of both A and B actors will be created to handle the Post. A third mediator is inserted to coordinate the results of these actions and respond to the caller.
 
@@ -513,15 +507,15 @@ As noted above, hook functions are non-exclusive. This means multiple actors can
   }
 
 Examples
---------
+^^^^^^^^
 
 Using the Akka Mist module with OAuth
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+*************************************
 
 `<https://gist.github.com/759501>`_
 
 Using the Akka Mist module with the Facebook Graph API and WebGL
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+****************************************************************
 
 Example project using Akka Mist with the Facebook Graph API and WebGL
 `<https://github.com/buka/fbgl1>`_
