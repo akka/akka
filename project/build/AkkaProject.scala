@@ -299,6 +299,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     // testing
     val junit     = Dependencies.junit
     val scalatest = Dependencies.scalatest
+
+    override def deliverProjectDependencies =
+      super.deliverProjectDependencies.toList - akka_actor_tests.projectID ++ Seq(akka_actor_tests.projectID % "test")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
