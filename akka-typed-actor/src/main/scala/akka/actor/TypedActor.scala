@@ -360,6 +360,9 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   def isUnstarted: Boolean = actorRef.isUnstarted
   def isBeingRestarted: Boolean = actorRef.isBeingRestarted
 
+  def getSelfAs[T <: AnyRef](): T = TypedActor.proxyFor(actorRef).get.asInstanceOf[T]
+  def getSelf(): AnyRef = getSelfAs[AnyRef]
+
   /**
    * Returns the current sender reference.
    * Scala style getter.
