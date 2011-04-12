@@ -473,7 +473,7 @@ Here is another little cute example of ``become`` and ``unbecome`` in action:
        become {
          case Swap =>
            println("Ho")
-           unbecome // resets the latest 'become' (just for fun)
+           unbecome() // resets the latest 'become' (just for fun)
        }
    }
   }
@@ -511,7 +511,7 @@ Revert the Actor body using the ``unbecome`` method:
 .. code-block:: scala
 
   def receive: Receive = {
-    case "revert" => unbecome
+    case "revert" => unbecome()
   }
 
 Killing an Actor

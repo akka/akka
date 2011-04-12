@@ -422,7 +422,7 @@ trait Actor {
    * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
    */
   def become(behavior: Receive, discardOld: Boolean = true) {
-    if (discardOld) unbecome
+    if (discardOld) unbecome()
     self.hotswap = self.hotswap.push(behavior)
   }
 
@@ -454,7 +454,7 @@ trait Actor {
 
   private final def autoReceiveMessage(msg: AutoReceivedMessage): Unit = msg match {
     case HotSwap(code, discardOld) => become(code(self), discardOld)
-    case RevertHotSwap             => unbecome
+    case RevertHotSwap             => unbecome()
     case Exit(dead, reason)        => self.handleTrapExit(dead, reason)
     case Link(child)               => self.link(child)
     case Unlink(child)             => self.unlink(child)

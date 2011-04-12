@@ -119,7 +119,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
                 _log += "swapped"
                 barrier.await
               case "revert" =>
-                unbecome
+                unbecome()
             })
             barrier.await
         }
