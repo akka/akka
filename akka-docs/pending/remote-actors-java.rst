@@ -104,8 +104,8 @@ You can configure it like this:
   akka {
     remote {
       client {
-        reconnect-delay = 5            # in millis (5 sec default)
-        read-timeout = 10              # in millis (10 sec default)
+        reconnect-delay = 5            # in seconds (5 sec default)
+        read-timeout = 10              # in seconds (10 sec default)
         reconnection-time-window = 600 # the maximum time window that a client should try to reconnect for
       }
     }
