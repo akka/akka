@@ -6,14 +6,16 @@ package akka.actor
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
+import akka.util.duration._
+import akka.testing.Testing.sleepFor
 import akka.dispatch.Dispatchers
 import akka.config.Supervision.{SupervisorConfig, OneForOneStrategy, Supervise, Permanent}
 import Actor._
 
-class SupervisorTreeSpec extends WordSpec with MustMatchers {
-  
+class SupervisorTreeSpec extends WordSpec with MustMatchers {  
   var log = ""
   case object Die
+
   class Chainer(myId: String, a: Option[ActorRef] = None) extends Actor {
     self.id = myId
     self.lifeCycle = Permanent
@@ -29,7 +31,7 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
     }
   }
 
-  "In a 3 levels deep supervisor tree (linked in the constructor) we" should {
+  "In a 3 levels deep supervisor tree (linked in the constructor) we" must {
 
     "be able to kill the middle actor and see itself and its child restarted" in {
       log = "INIT"
@@ -39,7 +41,7 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
       val headActor   = actorOf(new Chainer("headActor",   Some(middleActor))).start
       
       middleActor ! Die
-      Thread.sleep(100)
+      sleepFor(500 millis)
       log must equal ("INITmiddleActorlastActor")
     }
   }
