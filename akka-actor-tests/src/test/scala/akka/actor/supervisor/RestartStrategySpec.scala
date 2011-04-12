@@ -36,7 +36,7 @@ class RestartStrategySpec extends JUnitSuite {
     val slave = actorOf(new Actor{
 
       protected def receive = {
-        case Ping => countDownLatch.countDown
+        case Ping => countDownLatch.countDown()
         case Crash => throw new Exception("Crashing...")
       }
       override def postRestart(reason: Throwable) = {
@@ -91,7 +91,7 @@ class RestartStrategySpec extends JUnitSuite {
       }
 
       override def postRestart(reason: Throwable) = {
-        countDownLatch.countDown
+        countDownLatch.countDown()
       }
     })
 
@@ -179,7 +179,7 @@ class RestartStrategySpec extends JUnitSuite {
     val slave = actorOf(new Actor{
 
       protected def receive = {
-        case Ping => countDownLatch.countDown
+        case Ping => countDownLatch.countDown()
         case Crash => throw new Exception("Crashing...")
       }
       override def postRestart(reason: Throwable) = {
@@ -235,7 +235,7 @@ class RestartStrategySpec extends JUnitSuite {
     val slave = actorOf(new Actor{
 
       protected def receive = {
-        case Ping => countDownLatch.countDown
+        case Ping => countDownLatch.countDown()
         case Crash => throw new Exception("Crashing...")
       }
 

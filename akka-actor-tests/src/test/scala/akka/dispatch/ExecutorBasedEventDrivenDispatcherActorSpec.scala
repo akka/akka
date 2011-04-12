@@ -25,7 +25,7 @@ object ExecutorBasedEventDrivenDispatcherActorSpec {
   class OneWayTestActor extends Actor {
     self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(self.uuid.toString).build
     def receive = {
-      case "OneWay" => OneWayTestActor.oneWay.countDown
+      case "OneWay" => OneWayTestActor.oneWay.countDown()
     }
   }
 }
@@ -87,14 +87,14 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
                      self.dispatcher = throughputDispatcher
                      def receive = {
                        case "hogexecutor" => start.await
-                       case "ping"        => if (works.get) latch.countDown
+                       case "ping"        => if (works.get) latch.countDown()
                      }
                    }).start()
 
    slowOne ! "hogexecutor"
    (1 to 100) foreach { _ => slowOne ! "ping"}
    fastOne ! "sabotage"
-   start.countDown
+   start.countDown()
    val result = latch.await(3,TimeUnit.SECONDS)
    fastOne.stop()
    slowOne.stop()
@@ -115,14 +115,14 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
    val fastOne = actorOf(
                    new Actor {
                      self.dispatcher = throughputDispatcher
-                     def receive = { case "ping" => if(works.get) latch.countDown; self.stop()  }
+                     def receive = { case "ping" => if(works.get) latch.countDown(); self.stop()  }
                    }).start()
 
    val slowOne = actorOf(
                    new Actor {
                      self.dispatcher = throughputDispatcher
                      def receive = {
-                       case "hogexecutor" => ready.countDown; start.await
+                       case "hogexecutor" => ready.countDown(); start.await
                        case "ping"        => works.set(false); self.stop()
                      }
                    }).start()
@@ -132,7 +132,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
    fastOne ! "ping"
    assert(ready.await(2,TimeUnit.SECONDS) === true)
    Thread.sleep(deadlineMs+10) // wait just a bit more than the deadline
-   start.countDown
+   start.countDown()
    assert(latch.await(2,TimeUnit.SECONDS) === true)
  }
 }

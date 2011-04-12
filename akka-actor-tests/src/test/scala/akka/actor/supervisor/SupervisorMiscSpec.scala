@@ -17,7 +17,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
 
       val actor1 = Actor.actorOf(new Actor {
         self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
-        override def postRestart(cause: Throwable) {countDownLatch.countDown}
+        override def postRestart(cause: Throwable) {countDownLatch.countDown()}
 
         protected def receive = {
           case "kill" => throw new Exception("killed")
@@ -27,7 +27,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
 
       val actor2 = Actor.actorOf(new Actor {
         self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
-        override def postRestart(cause: Throwable) {countDownLatch.countDown}
+        override def postRestart(cause: Throwable) {countDownLatch.countDown()}
 
         protected def receive = {
           case "kill" => throw new Exception("killed")
@@ -37,7 +37,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
 
       val actor3 = Actor.actorOf(new Actor {
         self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("test").build
-        override def postRestart(cause: Throwable) {countDownLatch.countDown}
+        override def postRestart(cause: Throwable) {countDownLatch.countDown()}
 
         protected def receive = {
           case "kill" => throw new Exception("killed")
@@ -47,7 +47,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
 
       val actor4 = Actor.actorOf(new Actor {
         self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
-        override def postRestart(cause: Throwable) {countDownLatch.countDown}
+        override def postRestart(cause: Throwable) {countDownLatch.countDown()}
 
         protected def receive = {
           case "kill" => throw new Exception("killed")

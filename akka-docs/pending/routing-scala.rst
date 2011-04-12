@@ -222,7 +222,7 @@ Examples
      def factory = actorOf(new Actor {def receive = {case n:Int =>
                                                      Thread.sleep(n)
                                                      counter.incrementAndGet
-                                                     latch.countDown}})
+                                                     latch.countDown()}})
 
      def lowerBound = 2
      def upperBound = 4
@@ -246,7 +246,7 @@ Examples
 
     def factory = actorOf(new Actor {def receive = {case n:Int =>
                                                     Thread.sleep(n)
-                                                    latch.countDown}})
+                                                    latch.countDown()}})
 
     def lowerBound = 1
     def upperBound = 5

@@ -25,7 +25,7 @@ object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
       case x: Int => {
         Thread.sleep(delay)
         invocationCount += 1
-        finishedCounter.countDown
+        finishedCounter.countDown()
       }
     }
   }

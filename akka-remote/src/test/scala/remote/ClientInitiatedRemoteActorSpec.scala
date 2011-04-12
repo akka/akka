@@ -21,7 +21,7 @@ class RemoteActorSpecActorUnidirectional extends Actor {
 
   def receive = {
     case "OneWay" =>
-      RemoteActorSpecActorUnidirectional.latch.countDown
+      RemoteActorSpecActorUnidirectional.latch.countDown()
   }
 }
 
@@ -42,7 +42,7 @@ class SendOneWayAndReplyReceiverActor extends Actor {
 
 class CountDownActor(latch: CountDownLatch) extends Actor {
   def receive = {
-    case "World" => latch.countDown
+    case "World" => latch.countDown()
   }
 }
 /*
@@ -59,7 +59,7 @@ class SendOneWayAndReplySenderActor extends Actor {
   def receive = {
     case msg: AnyRef =>
       state = Some(msg)
-      SendOneWayAndReplySenderActor.latch.countDown
+      SendOneWayAndReplySenderActor.latch.countDown()
   }
 }*/
 

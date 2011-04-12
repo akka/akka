@@ -54,7 +54,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     val msgs = new java.util.concurrent.ConcurrentSkipListSet[Any]
     val latch = new CountDownLatch(2)
     val t1 = actorOf(new Actor { def receive = { case _ => } }).start()
-    val l = loggerActor(t1,(x) => { msgs.add(x); latch.countDown }).start()
+    val l = loggerActor(t1,(x) => { msgs.add(x); latch.countDown() }).start()
     val foo : Any = "foo"
     val bar : Any = "bar"
     l ! foo
@@ -74,7 +74,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
         case x =>
           Thread.sleep(50) // slow actor
           t1ProcessedCount.incrementAndGet
-          latch.countDown
+          latch.countDown()
       }
     }).start()
 
@@ -82,7 +82,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     val t2 = actorOf(new Actor {
       def receive = {
         case x => t2ProcessedCount.incrementAndGet
-                  latch.countDown
+                  latch.countDown()
       }
     }).start()
     val d = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
@@ -108,8 +108,8 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
       def receive = {
         case "bar" =>
           num.incrementAndGet
-          latch.countDown
-        case "foo" => foreachListener.countDown
+          latch.countDown()
+        case "foo" => foreachListener.countDown()
       }
     }).start()
 
@@ -196,7 +196,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
         def receive = {
           case _ =>
             counter.incrementAndGet
-            latch.countDown
+            latch.countDown()
             self reply_? "success"
         }
       })
@@ -211,7 +211,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     val successes = new CountDownLatch(2)
     implicit val successCounterActor = Some(actorOf(new Actor {
       def receive = {
-        case "success" => successes.countDown
+        case "success" => successes.countDown()
       }
     }).start())
 
@@ -283,7 +283,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
           case n:Int =>
             Thread.sleep(n)
             counter.incrementAndGet
-            latch.countDown
+            latch.countDown()
         }
       })
 
@@ -356,7 +356,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
           case n:Int =>
             Thread.sleep(n)
             counter.incrementAndGet
-            latch.countDown
+            latch.countDown()
         }
       })
 
@@ -421,7 +421,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
         def receive = {
           case _ =>
             delegates put(self.uuid.toString, "")
-            latch.countDown
+            latch.countDown()
         }
       })
 
@@ -450,7 +450,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
         def receive = {
           case _ =>
             delegates put(self.uuid.toString, "")
-            latch.countDown
+            latch.countDown()
         }
       })
 
@@ -494,7 +494,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
         def receive = {
           case n:Int =>
             Thread.sleep(n)
-            latch.countDown
+            latch.countDown()
         }
       })
 

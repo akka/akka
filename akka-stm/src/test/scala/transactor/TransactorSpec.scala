@@ -37,8 +37,8 @@ object TransactorIncrement {
     def atomically = {
       case Increment(friends, latch) => {
         increment
-        deferred { latch.countDown }
-        compensating { latch.countDown }
+        deferred { latch.countDown() }
+        compensating { latch.countDown() }
       }
     }
 
@@ -65,7 +65,7 @@ object SimpleTransactor {
     def atomically = {
       case Set(ref, value, latch) => {
         ref.set(value)
-        latch.countDown
+        latch.countDown()
       }
     }
   }

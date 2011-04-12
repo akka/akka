@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 object AkkaRemoteTest {
   class ReplyHandlerActor(latch: CountDownLatch, expect: String) extends Actor {
     def receive = {
-      case x: String if x == expect => latch.countDown
+      case x: String if x == expect => latch.countDown()
     }
   }
 }

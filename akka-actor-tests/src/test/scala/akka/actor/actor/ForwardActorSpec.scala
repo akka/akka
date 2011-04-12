@@ -23,7 +23,7 @@ object ForwardActorSpec {
     def receive = {
       case "SendBang" => {
         ForwardState.sender = self.sender
-        latch.countDown
+        latch.countDown()
       }
       case "SendBangBang" => self.reply("SendBangBang")
     }
@@ -53,7 +53,7 @@ object ForwardActorSpec {
     val forwardActor = actorOf[ForwardActor]
     forwardActor.start()
     (forwardActor !! "SendBangBang") match {
-      case Some(_) => latch.countDown
+      case Some(_) => latch.countDown()
       case None => {}
     }
     def receive = {

@@ -50,8 +50,8 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
 object Ticket669Spec {
   class Sender(latch: CountDownLatch) extends Actor {
     def receive = {
-      case "failure1" => latch.countDown
-      case "failure2" => latch.countDown
+      case "failure1" => latch.countDown()
+      case "failure2" => latch.countDown()
       case _        => { }
     }
   }

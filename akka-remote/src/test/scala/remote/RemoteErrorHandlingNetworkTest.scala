@@ -45,7 +45,7 @@ object RemoteErrorHandlingNetworkTest {
     def receive = {
       case Send(actor: ActorRef) =>
         actor ! "Hello"
-      case "World" => latch.countDown
+      case "World" => latch.countDown()
     }
   }
 }

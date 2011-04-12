@@ -29,7 +29,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
         thread {
           z << x() + y()
           result.set(z())
-          latch.countDown
+          latch.countDown()
         }
         thread { x << 40 }
         thread { y << 2 }
@@ -62,7 +62,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
 
         thread { z << y()
           result.set(z())
-          latch.countDown
+          latch.countDown()
         }
 
         latch.await(10,TimeUnit.SECONDS) should equal (true)
@@ -93,7 +93,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
       val t2 = thread {
         Thread.sleep(1000)
         result.set(producer.map(x => x * x).foldLeft(0)(_ + _))
-        latch.countDown
+        latch.countDown()
       }
 
       latch.await(3,TimeUnit.SECONDS) should equal (true)
@@ -123,7 +123,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
         val x = stream()
 
         if(result.addAndGet(x) == 166666500)
-          latch.countDown
+          latch.countDown()
 
         recurseSum(stream)
       }
@@ -147,7 +147,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
       val main = thread {
         x << 1
         z << Math.max(x(),y())
-        latch.countDown
+        latch.countDown()
       }
 
       val setY = thread {

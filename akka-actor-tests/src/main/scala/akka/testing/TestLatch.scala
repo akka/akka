@@ -27,9 +27,9 @@ object TestLatch {
 class TestLatch(count: Int = 1) {
   private var latch = new CountDownLatch(count)
 
-  def countDown = latch.countDown
+  def countDown() = latch.countDown()
 
-  def open = countDown
+  def open() = countDown()
 
   def await(): Boolean = await(TestLatch.DefaultTimeout)
 
@@ -50,6 +50,6 @@ class TestLatch(count: Int = 1) {
     opened
   }
 
-  def reset = latch = new CountDownLatch(count)
+  def reset() = latch = new CountDownLatch(count)
 }
 

@@ -17,7 +17,7 @@ object SupervisorHierarchySpec {
 
   class CountDownActor(countDown: CountDownLatch) extends Actor {
     protected def receive = { case _ => () }
-    override def postRestart(reason: Throwable) = countDown.countDown
+    override def postRestart(reason: Throwable) = countDown.countDown()
   }
 
   class CrasherActor extends Actor {
@@ -65,7 +65,7 @@ class SupervisorHierarchySpec extends JUnitSuite {
       self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), 1, 5000)
       protected def receive = {
         case MaximumNumberOfRestartsWithinTimeRangeReached(_, _, _, _) =>
-          countDown.countDown
+          countDown.countDown()
       }
     }).start()
     boss.startLink(crasher)

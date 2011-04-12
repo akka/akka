@@ -19,7 +19,7 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
     def receive = {
       case x: Int => {
         Thread.sleep(50) // slow actor
-        finishedCounter.countDown
+        finishedCounter.countDown()
       }
     }
   }
@@ -29,7 +29,7 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
 
     def receive = {
       case x: Int => {
-        finishedCounter.countDown
+        finishedCounter.countDown()
       }
     }
   }

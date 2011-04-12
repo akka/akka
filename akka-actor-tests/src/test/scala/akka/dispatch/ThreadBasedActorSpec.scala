@@ -31,7 +31,7 @@ class ThreadBasedActorSpec extends JUnitSuite {
     val actor = actorOf(new Actor {
       self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
       def receive = {
-        case "OneWay" => oneWay.countDown
+        case "OneWay" => oneWay.countDown()
       }
     }).start()
     val result = actor ! "OneWay"

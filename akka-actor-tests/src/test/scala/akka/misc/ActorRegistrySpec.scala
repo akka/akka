@@ -231,7 +231,7 @@ class ActorRegistrySpec extends JUnitSuite {
       override def run {
         barrier.await
         actors foreach { _.start() }
-        latch.countDown
+        latch.countDown()
       }
     }
     val a1,a2,a3 = mkTestActors

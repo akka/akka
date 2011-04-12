@@ -42,7 +42,7 @@ object FickleFriends {
               increment
               deferred {
                 success = true
-                latch.countDown
+                latch.countDown()
               }
             }
           } catch {

@@ -964,7 +964,7 @@ class LocalActorRef private[akka] (
 
             case _ => // either permanent or none where default is permanent
               val success = try {
-                performRestart
+                performRestart()
                 true
               } catch {
                 case e =>

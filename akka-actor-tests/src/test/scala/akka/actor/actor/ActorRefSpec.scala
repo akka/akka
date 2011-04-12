@@ -61,10 +61,10 @@ object ActorRefSpec {
       case "complex2" => replyActor ! "complexRequest2"
       case "simple" => replyActor ! "simpleRequest"
       case "complexReply" => {
-        latch.countDown
+        latch.countDown()
       }
       case "simpleReply" => {
-        latch.countDown
+        latch.countDown()
       }
     }
   }
@@ -160,8 +160,8 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         val ref = Actor.actorOf(
           new Actor {
             def receive = { case _ => }
-            override def preRestart(reason: Throwable) = latch.countDown
-            override def postRestart(reason: Throwable) = latch.countDown
+            override def preRestart(reason: Throwable) = latch.countDown()
+            override def postRestart(reason: Throwable) = latch.countDown()
           }
         ).start()
 
