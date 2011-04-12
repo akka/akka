@@ -9,7 +9,7 @@ Agents provide asynchronous change of individual locations. Agents are bound to 
 
 While updates to Agents are asynchronous, the state of an Agent is always immediately available for reading by any thread (using ``get`` or ``apply``) without any messages.
 
-Agents are reactive. The update actions of all Agents get interleaved amongst threads in a thread pool. At any point in time, at most one ''send'' action for each Agent is being executed. Actions dispatched to an agent from another thread will occur in the order they were sent, potentially interleaved with actions dispatched to the same agent from other sources.
+Agents are reactive. The update actions of all Agents get interleaved amongst threads in a thread pool. At any point in time, at most one ``send`` action for each Agent is being executed. Actions dispatched to an agent from another thread will occur in the order they were sent, potentially interleaved with actions dispatched to the same agent from other sources.
 
 If an Agent is used within an enclosing transaction, then it will participate in that transaction. Agents are integrated with the STM - any dispatches made in a transaction are held until that transaction commits, and are discarded if it is retried or aborted.
 
@@ -69,7 +69,7 @@ Reading an Agent's current value does not involve any message passing and happen
 Awaiting an Agent's value
 -------------------------
 
-It is also possible to read the value after all currently queued ``send``s have completed. You can do this with ``await``:
+It is also possible to read the value after all currently queued ``send``\s have completed. You can do this with ``await``:
 
 .. code-block:: scala
 
@@ -95,27 +95,27 @@ Agents are also monadic, allowing you to compose operations using for-comprehens
 
 Example of a monadic usage:
 
-`<code format="scala">`_
-val agent1 = Agent(3)
-val agent2 = Agent(5)
+.. code-block:: scala
 
-// uses foreach
-for (value <- agent1) {
-  result = value + 1
-}
+  val agent1 = Agent(3)
+  val agent2 = Agent(5)
 
-// uses map
-val agent3 =
-  for (value <- agent1) yield value + 1
+  // uses foreach
+  for (value <- agent1) {
+    result = value + 1
+  }
 
-// uses flatMap
-val agent4 = for {
-  value1 <- agent1
-  value2 <- agent2
-} yield value1 + value2
+  // uses map
+  val agent3 =
+    for (value <- agent1) yield value + 1
 
-agent1.close
-agent2.close
-agent3.close
-agent4.close
-`<code>`_
+  // uses flatMap
+  val agent4 = for {
+    value1 <- agent1
+    value2 <- agent2
+  } yield value1 + value2
+
+  agent1.close
+  agent2.close
+  agent3.close
+  agent4.close
