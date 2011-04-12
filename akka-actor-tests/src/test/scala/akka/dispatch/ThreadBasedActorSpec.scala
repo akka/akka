@@ -36,21 +36,21 @@ class ThreadBasedActorSpec extends JUnitSuite {
     }).start()
     val result = actor ! "OneWay"
     assert(oneWay.await(1, TimeUnit.SECONDS))
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldSendReplySync = {
     val actor = actorOf[TestActor].start()
     val result = (actor !! ("Hello", 10000)).as[String]
     assert("World" === result.get)
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldSendReplyAsync = {
     val actor = actorOf[TestActor].start()
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldSendReceiveException = {
@@ -62,6 +62,6 @@ class ThreadBasedActorSpec extends JUnitSuite {
       case e =>
         assert("Expected exception; to test fault-tolerance" === e.getMessage())
     }
-    actor.stop
+    actor.stop()
   }
 }

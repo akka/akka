@@ -135,7 +135,7 @@ class TypedActorSpec extends
       val typedActors2 = Actor.registry.typedActorsFor("my-custom-id")
       assert(typedActors2.length === 1)
       assert(typedActors2.contains(pojo))
-      actorRef.stop
+      actorRef.stop()
     }
 
     it("should support to filter typed actors") {

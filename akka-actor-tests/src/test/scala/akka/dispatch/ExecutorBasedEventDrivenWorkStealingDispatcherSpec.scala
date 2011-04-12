@@ -90,8 +90,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     fast.actor.asInstanceOf[DelayableActor].invocationCount must be > sentToFast
     fast.actor.asInstanceOf[DelayableActor].invocationCount must be >
     (slow.actor.asInstanceOf[DelayableActor].invocationCount)
-    slow.stop
-    fast.stop
+    slow.stop()
+    fast.stop()
   }
 
   @Test def canNotUseActorsOfDifferentTypesInSameDispatcher(): Unit = {

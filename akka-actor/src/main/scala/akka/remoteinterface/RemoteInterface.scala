@@ -144,7 +144,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   }
 
   def shutdown {
-    eventHandler.stop
+    eventHandler.stop()
     removeListener(eventHandler)
     this.shutdownClientModule
     this.shutdownServerModule
@@ -159,7 +159,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    *   val actor = actorOf(classOf[MyActor],"www.akka.io", 2552)
    *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
@@ -178,7 +178,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552)
    *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
@@ -206,7 +206,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    *   val actor = actorOf[MyActor]("www.akka.io",2552)
    *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>

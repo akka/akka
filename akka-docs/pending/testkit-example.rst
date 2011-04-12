@@ -27,10 +27,10 @@ class TestKitUsageSpec extends WordSpec with BeforeAndAfterAll with ShouldMatche
 
   override protected def afterAll(): scala.Unit = {
     stopTestActor
-    echoRef.stop
-    forwardRef.stop
-    filterRef.stop
-    seqRef.stop
+    echoRef.stop()
+    forwardRef.stop()
+    filterRef.stop()
+    seqRef.stop()
   }
 
   "An EchoActor" should {

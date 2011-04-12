@@ -134,7 +134,7 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf[MyActor]
    *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
@@ -150,7 +150,7 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf(classOf[MyActor])
    *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
@@ -178,7 +178,7 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf(new MyActor)
    *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
@@ -217,7 +217,7 @@ object Actor extends ListenerManagement {
     actorOf(new Actor() {
       self.dispatcher = dispatcher
       def receive = {
-        case Spawn => try { body } finally { self.stop }
+        case Spawn => try { body } finally { self.stop() }
       }
     }).start() ! Spawn
   }
@@ -373,7 +373,7 @@ trait Actor {
   /**
    * User overridable callback.
    * <p/>
-   * Is called when 'actor.stop' is invoked.
+   * Is called when 'actor.stop()' is invoked.
    */
   def postStop {}
 
@@ -458,12 +458,12 @@ trait Actor {
     case Exit(dead, reason)        => self.handleTrapExit(dead, reason)
     case Link(child)               => self.link(child)
     case Unlink(child)             => self.unlink(child)
-    case UnlinkAndStop(child)      => self.unlink(child); child.stop
+    case UnlinkAndStop(child)      => self.unlink(child); child.stop()
     case Restart(reason)           => throw reason
     case Kill                      => throw new ActorKilledException("Kill")
     case PoisonPill                =>
       val f = self.senderFuture
-      self.stop
+      self.stop()
       if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
   }
 

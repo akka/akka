@@ -94,8 +94,8 @@ class TransactorSpec extends WordSpec with MustMatchers {
       for (counter <- counters) {
         (counter !! GetCount).get must be === 1
       }
-      counters foreach (_.stop)
-      failer.stop
+      counters foreach (_.stop())
+      failer.stop()
     }
 
     "increment no counters with a failing transaction" in {
@@ -106,8 +106,8 @@ class TransactorSpec extends WordSpec with MustMatchers {
       for (counter <- counters) {
         (counter !! GetCount).get must be === 0
       }
-      counters foreach (_.stop)
-      failer.stop
+      counters foreach (_.stop())
+      failer.stop()
     }
   }
 
@@ -120,7 +120,7 @@ class TransactorSpec extends WordSpec with MustMatchers {
       latch.await(timeout.length, timeout.unit)
       val value = atomic { ref.get }
       value must be === 5
-      transactor.stop
+      transactor.stop()
     }
   }
 }

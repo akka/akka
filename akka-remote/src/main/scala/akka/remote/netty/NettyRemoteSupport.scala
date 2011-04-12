@@ -405,7 +405,7 @@ class ActiveRemoteClient private[akka] (
   //Please note that this method does _not_ remove the ARC from the NettyRemoteClientModule's map of clients
   def shutdown = runSwitch switchOff {
     notifyListeners(RemoteClientShutdown(module, remoteAddress))
-    timer.stop
+    timer.stop()
     timer = null
     openChannels.close.awaitUninterruptibly
     openChannels = null
@@ -973,7 +973,7 @@ class RemoteServerHandler(
     message match { // first match on system messages
       case RemoteActorSystemMessage.Stop =>
         if (UNTRUSTED_MODE) throw new SecurityException("Remote server is operating is untrusted mode, can not stop the actor")
-        else actorRef.stop
+        else actorRef.stop()
       case _: LifeCycleMessage if (UNTRUSTED_MODE) =>
         throw new SecurityException("Remote server is operating is untrusted mode, can not pass on a LifeCycleMessage to the remote actor")
 

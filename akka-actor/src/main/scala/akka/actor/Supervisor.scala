@@ -114,7 +114,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
     this
   }
 
-  def shutdown(): Unit = supervisor.stop
+  def shutdown(): Unit = supervisor.stop()
 
   def link(child: ActorRef) = supervisor.link(child)
 
@@ -163,7 +163,7 @@ final class SupervisorActor private[akka] (handler: FaultHandlingStrategy) exten
     val i = self.linkedActors.values.iterator
     while(i.hasNext) {
       val ref = i.next
-      ref.stop
+      ref.stop()
       self.unlink(ref)
     }
   }

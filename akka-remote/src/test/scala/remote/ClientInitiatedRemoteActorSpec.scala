@@ -80,7 +80,7 @@ class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
       clientManaged.getClass must be (classOf[LocalActorRef])
       clientManaged ! "OneWay"
       RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS) must be (true)
-      clientManaged.stop
+      clientManaged.stop()
     }
 
     "shouldSendOneWayAndReceiveReply" in {
@@ -97,7 +97,7 @@ class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
       val actor = remote.actorOf[RemoteActorSpecActorBidirectional](host,port).start()
       val result = actor !! ("Hello", 10000)
       "World" must equal (result.get.asInstanceOf[String])
-      actor.stop
+      actor.stop()
     }
 
     "shouldSendBangBangMessageAndReceiveReplyConcurrently" in {
@@ -105,7 +105,7 @@ class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
       actors.map(_ !!! ("Hello", 10000)) foreach { future =>
         "World" must equal (future.await.result.asInstanceOf[Option[String]].get)
       }
-      actors.foreach(_.stop)
+      actors.foreach(_.stop())
     }
 
     "shouldRegisterActorByUuid" in {
@@ -122,8 +122,8 @@ class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
 
       (actor2 !! "test").get must equal ("default-test")
 
-      actor1.stop
-      actor2.stop
+      actor1.stop()
+      actor2.stop()
     }
 
     "shouldSendAndReceiveRemoteException" in {
@@ -136,7 +136,7 @@ class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
       } catch {
         case e: ExpectedRemoteProblem =>
       }
-      actor.stop
+      actor.stop()
     }
   }
 }

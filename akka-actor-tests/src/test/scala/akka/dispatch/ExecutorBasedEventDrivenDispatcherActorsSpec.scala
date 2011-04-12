@@ -55,7 +55,7 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
     assert(sFinished.getCount > 0)
     sFinished.await
     assert(sFinished.getCount === 0)
-    f.stop
-    s.stop
+    f.stop()
+    s.stop()
   }
 }

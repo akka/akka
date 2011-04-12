@@ -362,7 +362,7 @@ Here is an example of using ``retry`` to block until an account has enough money
   atomic { account2.get }
   // -> 600.0
 
-  transferer.stop
+  transferer.stop()
 
 Alternative blocking transactions
 ---------------------------------
@@ -414,7 +414,7 @@ You can also have two alternative blocking transactions, one of which can succee
   // INFO Brancher: not enough on left - retrying
   // INFO Brancher: going right
 
-  brancher.stop
+  brancher.stop()
 
 ----
 

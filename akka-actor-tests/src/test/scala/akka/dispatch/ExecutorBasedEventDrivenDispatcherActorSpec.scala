@@ -38,21 +38,21 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
     val actor = actorOf[OneWayTestActor].start()
     val result = actor ! "OneWay"
     assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldSendReplySync = {
     val actor = actorOf[TestActor].start()
     val result = (actor !! ("Hello", 10000)).as[String]
     assert("World" === result.get)
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldSendReplyAsync = {
     val actor = actorOf[TestActor].start()
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldSendReceiveException = {
@@ -64,7 +64,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
       case e =>
         assert("Expected exception; to test fault-tolerance" === e.getMessage())
     }
-    actor.stop
+    actor.stop()
   }
 
  @Test def shouldRespectThroughput {
@@ -96,8 +96,8 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
    fastOne ! "sabotage"
    start.countDown
    val result = latch.await(3,TimeUnit.SECONDS)
-   fastOne.stop
-   slowOne.stop
+   fastOne.stop()
+   slowOne.stop()
    assert(result === true)
  }
 
@@ -115,7 +115,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
    val fastOne = actorOf(
                    new Actor {
                      self.dispatcher = throughputDispatcher
-                     def receive = { case "ping" => if(works.get) latch.countDown; self.stop  }
+                     def receive = { case "ping" => if(works.get) latch.countDown; self.stop()  }
                    }).start()
 
    val slowOne = actorOf(
@@ -123,7 +123,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
                      self.dispatcher = throughputDispatcher
                      def receive = {
                        case "hogexecutor" => ready.countDown; start.await
-                       case "ping"        => works.set(false); self.stop
+                       case "ping"        => works.set(false); self.stop()
                      }
                    }).start()
 

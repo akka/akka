@@ -18,7 +18,7 @@ class CallingThreadDispatcherModelSpec extends ActorModelSpec {
       (1 to num) foreach {
         _ => newTestActor.start() ! cachedMessage
       }
-      keeper.stop
+      keeper.stop()
       assertCountDown(cachedMessage.latch,10000, "Should process " + num + " countdowns")
     }
     for(run <- 1 to 3) {

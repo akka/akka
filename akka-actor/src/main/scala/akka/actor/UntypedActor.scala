@@ -93,7 +93,7 @@ abstract class UntypedActor extends Actor {
   /**
    * User overridable callback.
    * <p/>
-   * Is called when 'actor.stop' is invoked.
+   * Is called when 'actor.stop()' is invoked.
    */
   override def postStop {}
 

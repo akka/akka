@@ -88,7 +88,7 @@ object Chameneos {
         sumMeetings += i
         if (numFaded == numChameneos) {
           Chameneos.end = System.currentTimeMillis
-          self.stop
+          self.stop()
         }
 
       case msg @ Meet(a, c) =>

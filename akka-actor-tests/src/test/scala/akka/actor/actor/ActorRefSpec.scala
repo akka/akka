@@ -41,7 +41,7 @@ object ActorRefSpec {
       case "work" => {
         work
         self.reply("workDone")
-        self.stop
+        self.stop()
       }
       case replyTo: Channel[Any] => {
         work
@@ -122,8 +122,8 @@ class ActorRefSpec extends WordSpec with MustMatchers {
 
       latch.await
 
-      clientRef.stop
-      serverRef.stop
+      clientRef.stop()
+      serverRef.stop()
     }
 
     "stop when sent a poison pill" in {

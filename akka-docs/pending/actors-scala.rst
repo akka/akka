@@ -393,7 +393,7 @@ Actors are stopped by invoking the ``stop`` method.
 
 .. code-block:: scala
 
-  actor.stop
+  actor.stop()
 
 When stop is called then a call to the ``def postStop`` callback method will take place. The ``Actor`` can use this callback to implement shutdown behavior.
 

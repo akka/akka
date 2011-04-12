@@ -47,7 +47,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     result.isDefined must be (true)
     result.get must be(21)
 
-    for(a <- List(t1,t2,d)) a.stop
+    for(a <- List(t1,t2,d)) a.stop()
   }
 
   @Test def testLogger = {
@@ -62,8 +62,8 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     val done = latch.await(5,TimeUnit.SECONDS)
     done must be (true)
     msgs must ( have size (2) and contain (foo) and contain (bar) )
-    t1.stop
-    l.stop
+    t1.stop()
+    l.stop()
   }
 
   @Test def testSmallestMailboxFirstDispatcher = {
@@ -90,7 +90,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     val done = latch.await(10,TimeUnit.SECONDS)
     done must be (true)
     t1ProcessedCount.get must be < (t2ProcessedCount.get) // because t1 is much slower and thus has a bigger mailbox all the time
-    for(a <- List(t1,t2,d)) a.stop
+    for(a <- List(t1,t2,d)) a.stop()
   }
 
   @Test def testListener = {
@@ -129,7 +129,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     num.get must be (2)
     val withListeners = foreachListener.await(5,TimeUnit.SECONDS)
     withListeners must be (true)
-    for(a <- List(i,a1,a2,a3)) a.stop
+    for(a <- List(i,a1,a2,a3)) a.stop()
   }
 
   @Test def testIsDefinedAt = {
@@ -177,7 +177,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     d2.isDefinedAt(testMsg1) must be (true)
     d2.isDefinedAt(testMsg3) must be (false)
 
-    for(a <- List(t1,t2,d1,d2)) a.stop
+    for(a <- List(t1,t2,d1,d2)) a.stop()
   }
 
   // Actor Pool Capacity Tests
@@ -260,7 +260,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
         _.await.resultOrException.get must be ("Response")
       }
     } finally {
-      actorPool.stop
+      actorPool.stop()
     }
   }
         

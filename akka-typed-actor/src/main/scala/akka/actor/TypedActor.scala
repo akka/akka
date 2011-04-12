@@ -165,7 +165,7 @@ abstract class TypedActor extends Actor with Proxyable {
   /**
    * User overridable callback.
    * <p/>
-   * Is called when 'actor.stop' is invoked.
+   * Is called when 'actor.stop()' is invoked.
    */
   override def postStop {}
 
@@ -1050,7 +1050,7 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
     val init = if (proxy ne null) initializations.remove(proxy) else null
     if (init ne null) {
       notifyListeners(AspectInitUnregistered(proxy, init))
-      init.actorRef.stop
+      init.actorRef.stop()
     }
     init
   }

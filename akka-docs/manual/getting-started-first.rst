@@ -290,7 +290,7 @@ But we are not done yet. We are missing the message handler for the ``Master`` a
 - ``Calculate`` -- which should start the calculation
 - ``Result`` -- which should aggregate the different results
 
-The ``Calculate`` handler is sending out work to all the ``Worker`` actors and after doing that it also sends a ``Broadcast(PoisonPill)`` message to the router, which will send out the ``PoisonPill`` message to all the actors it is representing (in our case all the ``Worker`` actors). The ``PoisonPill`` is a special kind of message that tells the receiver to shut himself down using the normal shutdown; ``self.stop``. Then we also send a ``PoisonPill`` to the router itself (since it's also an actor that we want to shut down).
+The ``Calculate`` handler is sending out work to all the ``Worker`` actors and after doing that it also sends a ``Broadcast(PoisonPill)`` message to the router, which will send out the ``PoisonPill`` message to all the actors it is representing (in our case all the ``Worker`` actors). The ``PoisonPill`` is a special kind of message that tells the receiver to shut himself down using the normal shutdown; ``self.stop()``. Then we also send a ``PoisonPill`` to the router itself (since it's also an actor that we want to shut down).
 
 The ``Result`` handler is simpler, here we just get the value  from the ``Result`` message and aggregate it to our ``pi`` member variable. We also keep track of how many results we have received back and if it matches the number of tasks sent out the ``Master`` actor considers itself done and shuts himself down.
 

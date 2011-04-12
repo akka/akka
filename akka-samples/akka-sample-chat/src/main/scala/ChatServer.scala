@@ -131,12 +131,12 @@
       case Logout(username) =>
         EventHandler.info(this, "User [%s] has logged out".format(username))
         val session = sessions(username)
-        session.stop
+        session.stop()
         sessions -= username
     }
 
     protected def shutdownSessions =
-      sessions.foreach { case (_, session) => session.stop }
+      sessions.foreach { case (_, session) => session.stop() }
   }
 
   /**
@@ -190,7 +190,7 @@
       EventHandler.info(this, "Chat server is shutting down...")
       shutdownSessions
       self.unlink(storage)
-      storage.stop
+      storage.stop()
     }
   }
 

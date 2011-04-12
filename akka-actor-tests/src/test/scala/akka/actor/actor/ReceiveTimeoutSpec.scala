@@ -31,7 +31,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
       }).start()
 
       timeoutLatch.await
-      timeoutActor.stop
+      timeoutActor.stop()
     }
 
     "get timeout when swapped" in {
@@ -54,7 +54,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
        })
 
       swappedLatch.await
-      timeoutActor.stop
+      timeoutActor.stop()
     }
     
     "reschedule timeout after regular receive" in {
@@ -73,7 +73,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
       timeoutActor ! Tick
 
       timeoutLatch.await
-      timeoutActor.stop
+      timeoutActor.stop()
     }
 
     "be able to turn off timeout if desired" in {
@@ -97,7 +97,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
 
       timeoutLatch.await
       count.get must be (1)
-      timeoutActor.stop
+      timeoutActor.stop()
     }
 
     "not receive timeout message when not specified" in {
@@ -110,7 +110,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
       }).start()
 
       timeoutLatch.awaitTimeout(1 second) // timeout expected
-      timeoutActor.stop
+      timeoutActor.stop()
     }
 
     "have ReceiveTimeout eq to Actors ReceiveTimeout" in {

@@ -62,7 +62,7 @@ abstract class Channel[T] {
  *   val actor = actorOf[MyActor]
  *   actor.start()
  *   actor ! message
- *   actor.stop
+ *   actor.stop()
  * </pre>
  *
  * You can also create and start actors like this:
@@ -77,7 +77,7 @@ abstract class Channel[T] {
  *   val actor = actorOf(new MyActor(...))
  *   actor.start()
  *   actor ! message
- *   actor.stop
+ *   actor.stop()
  * </pre>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -891,7 +891,7 @@ class LocalActorRef private[akka] (
 
       case _ =>
         if (_supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
-        else                       dead.stop
+        else                       dead.stop()
     }
   }
 
@@ -1029,7 +1029,7 @@ class LocalActorRef private[akka] (
   }
 
   private def shutDownTemporaryActor(temporaryActor: ActorRef) {
-    temporaryActor.stop
+    temporaryActor.stop()
     _linkedActors.remove(temporaryActor.uuid) // remove the temporary actor
     // if last temporary actor is gone, then unlink me from supervisor
     if (_linkedActors.isEmpty) notifySupervisorWithMessage(UnlinkAndStop(this))
@@ -1061,7 +1061,7 @@ class LocalActorRef private[akka] (
         {
           val i = _linkedActors.values.iterator
           while (i.hasNext) {
-            i.next.stop
+            i.next.stop()
             i.remove
           }
         }

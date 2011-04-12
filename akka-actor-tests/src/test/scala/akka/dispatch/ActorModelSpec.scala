@@ -60,7 +60,7 @@ object ActorModelSpec {
       case Forward(to,msg)  => ack; to.forward(msg); busy.switchOff()
       case CountDown(latch) => ack; latch.countDown(); busy.switchOff()
       case Increment(count) => ack; count.incrementAndGet(); busy.switchOff()
-      case CountDownNStop(l)=> ack; l.countDown; self.stop; busy.switchOff()
+      case CountDownNStop(l)=> ack; l.countDown; self.stop(); busy.switchOff()
       case Restart          => ack; busy.switchOff(); throw new Exception("Restart requested")
     }
   }
@@ -204,7 +204,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     assertDispatcher(dispatcher)(starts = 0, stops = 0)
     a.start()
     assertDispatcher(dispatcher)(starts = 1, stops = 0)
-    a.stop
+    a.stop()
     await(dispatcher.stops.get == 1)(withinMs = dispatcher.timeoutMs * 5)
     assertDispatcher(dispatcher)(starts = 1, stops = 1)
     assertRef(a,dispatcher)(
@@ -234,7 +234,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     assertCountDown(oneAtATime, Testing.testTime(1500) ,"Processed message when allowed")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 3, msgsProcessed = 3)
 
-    a.stop
+    a.stop()
     assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 3, msgsProcessed = 3)
   }
 
@@ -249,7 +249,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     assertCountDown(counter, Testing.testTime(3000), "Should process 200 messages")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 200, msgsProcessed = 200)
 
-    a.stop
+    a.stop()
   }
 
   def spawn(f : => Unit) = {
@@ -270,8 +270,8 @@ abstract class ActorModelSpec extends JUnitSuite {
     assertCountDown(bParallel, Testing.testTime(3000), "Should process other actors in parallel")
 
     aStop.countDown()
-    a.stop
-    b.stop
+    a.stop()
+    b.stop()
     assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
     assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
   }
@@ -283,7 +283,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     a ! Restart
     a ! CountDown(done)
     assertCountDown(done, Testing.testTime(3000), "Should be suspended+resumed and done with next message within 3 seconds")
-    a.stop
+    a.stop()
     assertRefDefaultZero(a)(registers = 1,unregisters = 1, msgsReceived = 2,
       msgsProcessed = 2, suspensions = 1, resumes = 1)
   }
@@ -302,7 +302,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, msgsProcessed = 1,
       suspensions = 1, resumes = 1)
 
-    a.stop
+    a.stop()
     assertRefDefaultZero(a)(registers = 1,unregisters = 1, msgsReceived = 1, msgsProcessed = 1,
       suspensions = 1, resumes = 1)
   }

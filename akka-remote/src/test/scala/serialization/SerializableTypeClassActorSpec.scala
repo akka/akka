@@ -115,8 +115,8 @@ class SerializableTypeClassActorSpec extends
       (actor2 !! "hello").getOrElse("_") should equal("world 3")
 
       actor2.receiveTimeout should equal (Some(1000))
-      actor1.stop
-      actor2.stop
+      actor1.stop()
+      actor2.stop()
     }
 
     it("should be able to serialize and deserialize a MyStatelessActorWithMessagesInMailbox") {

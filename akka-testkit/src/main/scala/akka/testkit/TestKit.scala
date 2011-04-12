@@ -98,7 +98,7 @@ trait TestKit {
    * Stop test actor. Should be done at the end of the test unless relying on
    * test actor timeout.
    */
-  def stopTestActor { testActor.stop }
+  def stopTestActor { testActor.stop() }
 
   /**
    * Set test actor timeout. By default, the test actor shuts itself down

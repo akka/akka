@@ -103,7 +103,7 @@ object Pi extends App {
           // send the pi result back to the guy who started the calculation
           recipient ! pi
           // shut ourselves down, we're done
-          self.stop
+          self.stop()
         }
     }
 

@@ -192,7 +192,7 @@ There are two ways you can define an Actor to be a supervisor; declaratively and
 
 The last thing we have to do to supervise Actors (in our example the storage Actor) is to 'link' the Actor. Invoking 'link(actor)' will create a link between the Actor passed as argument into 'link' and ourselves. This means that we will now get a notification if the linked Actor is crashing and if the cause of the crash, the exception, matches one of the exceptions in our 'trapExit' list then the crashed Actor is restarted according the the fault handling strategy defined in our 'faultHandler'. We also have the 'unlink(actor)' function which disconnects the linked Actor from the supervisor.
 
-In our example we are using a method called 'spawnLink(actor)' which creates, starts and links the Actor in an atomic operation. The linking and unlinking is done in 'preStart' and 'postStop' callback methods which are invoked by the runtime when the Actor is started and shut down (shutting down is done by invoking 'actor.stop'). In these methods we initialize our Actor, by starting and linking the storage Actor and clean up after ourselves by shutting down all the user session Actors and the storage Actor.
+In our example we are using a method called 'spawnLink(actor)' which creates, starts and links the Actor in an atomic operation. The linking and unlinking is done in 'preStart' and 'postStop' callback methods which are invoked by the runtime when the Actor is started and shut down (shutting down is done by invoking 'actor.stop()'). In these methods we initialize our Actor, by starting and linking the storage Actor and clean up after ourselves by shutting down all the user session Actors and the storage Actor.
 
 That is it. Now we have implemented the supervising part of the fault-tolerance for the storage Actor. But before we dive into the 'ChatServer' code there are some more things worth mentioning about its implementation.
 
@@ -225,7 +225,7 @@ I'll try to show you how we can make use Scala's mixins to decouple the Actor im
       EventHandler.info(this, "Chat server is shutting down...")
       shutdownSessions
       self.unlink(storage)
-      storage.stop
+      storage.stop()
     }
   }
 
@@ -266,12 +266,12 @@ The 'shutdownSessions' function simply shuts all the sessions Actors down. That 
       case Logout(username) =>
         EventHandler.info(this, "User [%s] has logged out".format(username))
         val session = sessions(username)
-        session.stop
+        session.stop()
         sessions -= username
     }
 
     protected def shutdownSessions =
-      sessions.foreach { case (_, session) => session.stop }
+      sessions.foreach { case (_, session) => session.stop() }
   }
 
 Chat message management

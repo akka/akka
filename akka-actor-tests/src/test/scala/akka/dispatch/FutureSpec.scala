@@ -43,7 +43,7 @@ class FutureSpec extends JUnitSuite {
     future.await
     assert(future.result.isDefined)
     assert("World" === future.result.get)
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldActorReplyExceptionThroughExplicitFuture {
@@ -53,7 +53,7 @@ class FutureSpec extends JUnitSuite {
     future.await
     assert(future.exception.isDefined)
     assert("Expected exception; to test fault-tolerance" === future.exception.get.getMessage)
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldFutureCompose {
@@ -65,8 +65,8 @@ class FutureSpec extends JUnitSuite {
     assert(Some(Right("WORLD")) === future1.await.value)
     assert(Some(Right("WORLD")) === future2.await.value)
     intercept[ClassCastException] { future3.await.resultOrException }
-    actor1.stop
-    actor2.stop
+    actor1.stop()
+    actor2.stop()
   }
 
   @Test def shouldFutureComposePatternMatch {
@@ -76,8 +76,8 @@ class FutureSpec extends JUnitSuite {
     val future2 = actor1 !!! "Hello" collect { case (n: Int) => n } flatMap (actor2 !!! _)
     assert(Some(Right("WORLD")) === future1.await.value)
     intercept[MatchError] { future2.await.resultOrException }
-    actor1.stop
-    actor2.stop
+    actor1.stop()
+    actor2.stop()
   }
 
   @Test def shouldFutureForComprehension {
@@ -104,7 +104,7 @@ class FutureSpec extends JUnitSuite {
 
     assert(Some(Right("10-14")) === future1.await.value)
     intercept[ClassCastException] { future2.await.resultOrException }
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldFutureForComprehensionPatternMatch {
@@ -131,7 +131,7 @@ class FutureSpec extends JUnitSuite {
 
     assert(Some(Right("10-14")) === future1.await.value)
     intercept[MatchError] { future2.await.resultOrException }
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldFutureAwaitEitherLeft = {
@@ -142,8 +142,8 @@ class FutureSpec extends JUnitSuite {
     val result = Futures.awaitEither(future1, future2)
     assert(result.isDefined)
     assert("World" === result.get)
-    actor1.stop
-    actor2.stop
+    actor1.stop()
+    actor2.stop()
   }
 
   @Test def shouldFutureAwaitEitherRight = {
@@ -154,8 +154,8 @@ class FutureSpec extends JUnitSuite {
     val result = Futures.awaitEither(future1, future2)
     assert(result.isDefined)
     assert("World" === result.get)
-    actor1.stop
-    actor2.stop
+    actor1.stop()
+    actor2.stop()
   }
 
   @Test def shouldFutureAwaitOneLeft = {
@@ -166,8 +166,8 @@ class FutureSpec extends JUnitSuite {
     val result = Futures.awaitOne(List(future1, future2))
     assert(result.result.isDefined)
     assert("World" === result.result.get)
-    actor1.stop
-    actor2.stop
+    actor1.stop()
+    actor2.stop()
   }
 
   @Test def shouldFutureAwaitOneRight = {
@@ -178,8 +178,8 @@ class FutureSpec extends JUnitSuite {
     val result = Futures.awaitOne(List(future1, future2))
     assert(result.result.isDefined)
     assert("World" === result.result.get)
-    actor1.stop
-    actor2.stop
+    actor1.stop()
+    actor2.stop()
   }
 
   @Test def shouldFutureAwaitAll = {
@@ -192,8 +192,8 @@ class FutureSpec extends JUnitSuite {
     assert("World" === future1.result.get)
     assert(future2.result.isDefined)
     assert("World" === future2.result.get)
-    actor1.stop
-    actor2.stop
+    actor1.stop()
+    actor2.stop()
   }
 
   @Test def shouldFuturesAwaitMapHandleEmptySequence {
@@ -302,7 +302,7 @@ class FutureSpec extends JUnitSuite {
     val actor = actorOf[TestActor].start()
     actor !!! "Hello" receive { case "World" => latch.open }
     assert(latch.tryAwait(5, TimeUnit.SECONDS))
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldTraverseFutures {
@@ -317,7 +317,7 @@ class FutureSpec extends JUnitSuite {
 
     val oddFutures: List[Future[Int]] = List.fill(100)(oddActor !!! 'GetNext)
     assert(Futures.sequence(oddFutures).get.sum === 10000)
-    oddActor.stop
+    oddActor.stop()
 
     val list = (1 to 100).toList
     assert(Futures.traverse(list)(x => Future(x * 2 - 1)).get.sum === 10000)

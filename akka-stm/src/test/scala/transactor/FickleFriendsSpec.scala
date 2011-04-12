@@ -113,8 +113,8 @@ class FickleFriendsSpec extends WordSpec with MustMatchers {
       for (counter <- counters) {
         (counter !! GetCount).get must be === 1
       }
-      counters foreach (_.stop)
-      coordinator.stop
+      counters foreach (_.stop())
+      coordinator.stop()
     }
   }
 }

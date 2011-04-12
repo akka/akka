@@ -37,7 +37,7 @@ trait ListenerManagement {
    */
   def removeListener(listener: ActorRef) {
     listeners remove listener
-    if (manageLifeCycleOfListeners) listener.stop
+    if (manageLifeCycleOfListeners) listener.stop()
   }
 
   /*

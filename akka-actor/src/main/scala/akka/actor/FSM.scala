@@ -433,7 +433,7 @@ trait FSM[S, D] {
 
   private def terminate(reason: Reason) = {
     terminateEvent.apply(StopEvent(reason, currentState.stateName, currentState.stateData))
-    self.stop
+    self.stop()
   }
 
   case class Event[D](event: Any, stateData: D)
