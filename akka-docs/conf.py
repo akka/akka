@@ -16,8 +16,8 @@ exclude_patterns = ['_build']
 
 project = u'Akka'
 copyright = u'2009-2011, Scalable Solutions AB'
-version = '1.0'
-release = '1.0'
+version = '1.1'
+release = '1.1'
 
 pygments_style = 'akka'
 highlight_language = 'scala'
