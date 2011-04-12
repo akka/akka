@@ -2,7 +2,7 @@ Companies and Open Source projects using Akka
 =============================================
 
 Production Users
-================
+****************
 
 These are some of the production Akka users that are able to talk about their use publicly.
 
@@ -52,12 +52,12 @@ Tapad
 
 *Take for instance the process backing a page view with ads served by a real-time ad exchange auction (somewhat simplified):*
 
-*1. A user opens a site (or app) which has ads in it.*
-*2. As the page / app loads, the ad serving components fires off a request to the ad exchange (this might just be due to an image tag on the page).*
-*3. The ad exchange enriches the request with any information about the current user (tracking cookies are often employed for this) and and display context information (“news article about parenting”, “blog about food” etc).*
-*4. The ad exchange forwards the enriched request to all bidders registered with the ad exchange.*
-*5. The bidders consider the provided user information and responds with what price they are willing to pay for this particular ad slot.*
-*6. The ad exchange picks the highest bidder and ensures that the winning bidder’s ad is shown to to user.*
+1. *A user opens a site (or app) which has ads in it.*
+2. *As the page / app loads, the ad serving components fires off a request to the ad exchange (this might just be due to an image tag on the page).*
+3. *The ad exchange enriches the request with any information about the current user (tracking cookies are often employed for this) and and display context information (“news article about parenting”, “blog about food” etc).*
+4. *The ad exchange forwards the enriched request to all bidders registered with the ad exchange.*
+5. *The bidders consider the provided user information and responds with what price they are willing to pay for this particular ad slot.*
+6. *The ad exchange picks the highest bidder and ensures that the winning bidder’s ad is shown to to user.*
 
 *Any latency in this process directly influences user experience latency, so this has to happen really fast. All-in-all, the total time should not exceed about 100ms and most ad exchanges allow bidders to spend about 60ms (including network time) to return their bids. That leaves the ad exchange with less than 40ms to facilitate the auction. At Tapad, this happens billions of times per month / tens of thousands of times per second.*
 
@@ -105,11 +105,9 @@ Says.US
 LShift
 ------
 
-*"Diffa is an open source data analysis tool that automatically establishes data differences between two or more real-time systems.*
-
-*Diffa will help you compare local or distributed systems for data consistency, without having to stop them running or implement manual cross-system comparisons. The interface provides you with simple visual summary of any consistency breaks and tools to investigate the issues.*
-
-*Diffa is the ideal tool to use to investigate where or when inconsistencies are occuring, or simply to provide confidence that your systems are running in perfect sync. It can be used operationally as an early warning system, in deployment for release verification, or in development with other enterprise diagnosis tools to help troubleshoot faults."*
+* *"Diffa is an open source data analysis tool that automatically establishes data differences between two or more real-time systems.*
+* Diffa will help you compare local or distributed systems for data consistency, without having to stop them running or implement manual cross-system comparisons. The interface provides you with simple visual summary of any consistency breaks and tools to investigate the issues.*
+* Diffa is the ideal tool to use to investigate where or when inconsistencies are occuring, or simply to provide confidence that your systems are running in perfect sync. It can be used operationally as an early warning system, in deployment for release verification, or in development with other enterprise diagnosis tools to help troubleshoot faults."*
 
 `<http://diffa.lshift.net/>`_
 
@@ -128,7 +126,7 @@ Rocket Pack Platform
 `<http://rocketpack.fi/platform/>`_
 
 Open Source Projects using Akka
-===============================
+*******************************
 
 Redis client
 ------------
@@ -162,10 +160,11 @@ This project provides an org.apache.wicket.pageStore.IDataStore implementation t
 Spray
 -----
 
-//"spray is a lightweight Scala framework for building RESTful web services on top of Akka actors and Akka Mist. It sports the following main features:
-* Completely asynchronous, non-blocking, actor-based request processing for efficiently handling very high numbers of concurrent connections
-* Powerful, flexible and extensible internal Scala DSL for declaratively defining your web service behavior
-* Immutable model of the HTTP protocol, decoupled from the underlying servlet container
-* Full testability of your REST services, without the need to fire up containers or actors"//
+*"spray is a lightweight Scala framework for building RESTful web services on top of Akka actors and Akka Mist. It sports the following main features:*
+
+* *Completely asynchronous, non-blocking, actor-based request processing for efficiently handling very high numbers of concurrent connections*
+* *Powerful, flexible and extensible internal Scala DSL for declaratively defining your web service behavior*
+* *Immutable model of the HTTP protocol, decoupled from the underlying servlet container*
+* *Full testability of your REST services, without the need to fire up containers or actors"*
 
 `<https://github.com/spray/spray/wiki>`_
