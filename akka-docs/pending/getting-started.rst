@@ -6,18 +6,20 @@ There are several ways to download Akka. You can download the full distribution 
 A list of each of the Akka module JARs dependencies can be found `here <http://doc.akka.io/building-akka#Dependencies>`_.
 
 Using a release distribution
-============================
+----------------------------
 
 Akka is split up into two different parts:
+
 * Akka - The core modules. Reflects all the sections under 'Scala API' and 'Java API' in the navigation bar.
 * Akka Modules - The microkernel and add-on modules. Reflects all the sections under 'Add-on modules' in the navigation bar.
 
 Download the release you need (Akka core or Akka Modules) from `<http://akka.io/downloads>`_ and unzip it.
 
 Microkernel
------------
+^^^^^^^^^^^
 
 The Akka Modules distribution includes the mircokernel. To run the microkernel:
+
 * Set the AKKA_HOME environment variable to the root of the Akka distribution.
 * Run ``java -jar akka-modules-1.0.jar``. This will boot up the microkernel and deploy all samples applications from './deploy' dir.
 
@@ -32,12 +34,12 @@ For example (bash shell):
 Now you can continue with reading the `tutorial <tutorial-chat-server>`_ and try to build the tutorial sample project step by step. This can be a good starting point before diving into the reference documentation which can be navigated in the left sidebar.
 
 Using a build tool
-==================
+------------------
 
 Akka can be used with build tools that support Maven repositories. The Akka Maven repository can be found at `<http://akka.io/repository>`_.
 
 Using Akka with Maven
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 If you want to use Akka with Maven then you need to add this repository to your ``pom.xml``:
 
@@ -60,7 +62,7 @@ Then you can add the Akka dependencies. For example, here is the dependency for 
   </dependency>
 
 Using Akka with SBT
--------------------
+^^^^^^^^^^^^^^^^^^^
 
 Akka has an SBT plugin which makes it very easy to get started with Akka and SBT.
 
@@ -105,7 +107,7 @@ If you also want to include other Akka modules there is a convenience method: ``
   val akkaRedis = akkaModule("persistence-redis")
 
 Build from sources
-==================
+------------------
 
 Akka uses Git and is hosted at `Github <http://github.com>`_.
 
@@ -115,7 +117,7 @@ Akka uses Git and is hosted at `Github <http://github.com>`_.
 Continue reading the page on `how to build and run Akka <building-akka>`_
 
 Need help?
-==========
+----------
 
 If you have questions you can get help on the `Akka Mailing List <http://groups.google.com/group/akka-user>`_.
 
