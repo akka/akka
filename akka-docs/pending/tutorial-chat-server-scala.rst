@@ -2,9 +2,9 @@ Tutorial: write a scalable, fault-tolerant, persistent network chat server and c
 =============================================================================================
 
 Introduction
-============
+------------
 
-*The source code for this tutorial can be found [[https:*github.com/jboner/akka/blob/master/akka-samples/akka-sample-chat/src/main/scala/ChatServer.scala|here]].//
+`Tutorial source code <https://github.com/jboner/akka/blob/master/akka-samples/akka-sample-chat/src/main/scala/ChatServer.scala>`_.
 
 Writing correct concurrent, fault-tolerant and scalable applications is too hard. Most of the time it's because we are using the wrong tools and the wrong level of abstraction.
 
@@ -23,14 +23,14 @@ In this article we will introduce you to Akka and see how we can utilize it to b
 But first let's take a step back and discuss what Actors really are and what they are useful for.
 
 Actors
-======
+------
 
 `The Actor Model <http://en.wikipedia.org/wiki/Actor_model>`_ provides a higher level of abstraction for writing concurrent and distributed systems. It alleviates the developer from having to deal with explicit locking and thread management. It makes it easier to write correct concurrent and parallel systems. Actors are really nothing new, they were defined in the 1963 paper by Carl Hewitt and have been popularized by the Erlang language which emerged in the mid 80s. It has been used by for example at Ericsson with great success to build highly concurrent and extremely reliable (99.9999999 % availability - 31 ms/year downtime) telecom systems.
 
 Actors encapsulate state and behavior into a lightweight process/thread. In a sense they are like OO objects but with a major semantic difference; they *do not* share state with any other Actor. Each Actor has its own view of the world and can only have impact on other Actors by sending messages to them. Messages are sent asynchronously and non-blocking in a so-called "fire-and-forget" manner where the Actor sends off a message to some other Actor and then do not wait for a reply but goes off doing other things or are suspended by the runtime. Each Actor has a mailbox (ordered message queue) in which incoming messages are processed one by one. Since all processing is done asynchronously and Actors do not block and consume any resources while waiting for messages, Actors tend to give very good concurrency and scalability characteristics and are excellent for building event-based systems.
 
 Creating Actors
-===============
+---------------
 
 Akka has both a `Scala API <actors>`_ and a `Java API <active-objects>`_. In this article we will only look at the Scala API since that is the most expressive one. The article assumes some basic Scala knowledge, but even if you don't know Scala I don't think it will not be too hard to follow along anyway.
 
@@ -75,7 +75,7 @@ Messages are sent using the '!' operator:
   myActor ! "test"
 
 Sample application
-==================
+------------------
 
 We will try to write a simple chat/IM system. It is client-server based and uses remote Actors to implement remote clients. Even if it is not likely that you will ever write a chat system I think that it can be a useful exercise since it uses patterns and idioms found in many other use-cases and domains.
 
@@ -84,7 +84,7 @@ We will use many of the features of Akka along the way. In particular; Actors, f
 But let's start by defining the messages that will flow in our system.
 
 Creating messages
-=================
+-----------------
 
 It is very important that all messages that will be sent around in the system are immutable. The Actor model relies on the simple fact that no state is shared between Actors and the only way to guarantee that is to make sure we don't pass mutable state around as part of the messages.
 
@@ -104,7 +104,7 @@ Let's now start by creating the messages that will flow in our system.
 As you can see with these messages we can log in and out, send a chat message and ask for and get a reply with all the messages in the chat log so far.
 
 Client: Sending messages
-========================
+------------------------
 
 Our client wraps each message send in a function, making it a bit easier to use. Here we assume that we have a reference to the chat service so we can communicate with it by sending messages. Messages are sent with the '!' operator (pronounced "bang"). This sends a message of asynchronously and do not wait for a reply.
 
@@ -124,7 +124,7 @@ Sometimes however, there is a need for sequential logic, sending a message and w
 As you can see, we are using the 'Actor.remote.actorFor' to lookup the chat server on the remote node. From this call we will get a handle to the remote instance and can use it as it is local.
 
 Session: Receiving messages
-===========================
+---------------------------
 
 Now we are done with the client side and let's dig into the server code. We start by creating a user session. The session is an Actor and is defined by extending the 'Actor' trait. This trait has one abstract method that we have to define; 'receive' which implements the message handler for the Actor.
 
@@ -151,13 +151,14 @@ If you look closely (in the code below) you will see that when passing on the 'G
   }
 
 Let it crash: Implementing fault-tolerance
-==========================================
+------------------------------------------
 
 Akka's `approach to fault-tolerance <fault-tolerance>`_; the "let it crash" model, is implemented by linking Actors. It is very different to what Java and most non-concurrency oriented languages/frameworks have adopted. It’s a way of dealing with failure that is designed for concurrent and distributed systems.
 
 If we look at concurrency first. Now let’s assume we are using non-linked Actors. Throwing an exception in concurrent code, will just simply blow up the thread that currently executes the Actor. There is no way to find out that things went wrong (apart from see the stack trace in the log). There is nothing you can do about it. Here linked Actors provide a clean way of both getting notification of the error so you know what happened, as well as the Actor that crashed, so you can do something about it.
 
 Linking Actors allow you to create sets of Actors where you can be sure that either:
+
 * All are dead
 * All are alive
 
@@ -170,7 +171,7 @@ Now let’s look at distributed Actors. As you probably know, you can’t build 
 To sum things up, it is a very different way of thinking but a way that is very useful (if not critical) to building fault-tolerant highly concurrent and distributed applications.
 
 Supervisor hierarchies
-======================
+----------------------
 
 A supervisor is a regular Actor that is responsible for starting, stopping and monitoring its child Actors. The basic idea of a supervisor is that it should keep its child Actors alive by restarting them when necessary. This makes for a completely different view on how to write fault-tolerant servers. Instead of trying all things possible to prevent an error from happening, this approach embraces failure. It shifts the view to look at errors as something natural and something that will happen and instead of trying to prevent it; embrace it. Just "let it crash" and reset the service to a stable state through restart.
 
@@ -182,7 +183,7 @@ Akka has two different restart strategies; All-For-One and One-For-One.
 The latter strategy should be used when you have a certain set of components that are coupled in some way that if one is crashing they all need to be reset to a stable state before continuing.
 
 Chat server: Supervision, Traits and more
-=========================================
+-----------------------------------------
 
 There are two ways you can define an Actor to be a supervisor; declaratively and dynamically. In this example we use the dynamic approach. There are two things we have to do:
 
@@ -233,7 +234,7 @@ If you look at the 'receive' message handler function you can see that we have d
 Chaining partial functions like this is a great way of composing functionality in Actors. You can for example put define one default message handle handling generic messages in the base Actor and then let deriving Actors extend that functionality by defining additional message handlers. There is a section on how that is done `here <actors>`_.
 
 Session management
-==================
+------------------
 
 The session management is defined in the 'SessionManagement' trait in which we implement the two abstract methods in the 'ChatServer'; 'sessionManagement' and 'shutdownSessions'.
 
@@ -274,7 +275,7 @@ The 'shutdownSessions' function simply shuts all the sessions Actors down. That 
   }
 
 Chat message management
-=======================
+-----------------------
 
 Chat message management is implemented by the 'ChatManagement' trait. It has an abstract 'HashMap' session member field with all the sessions. Since it is abstract it needs to be mixed in with someone that can provide this reference. If this dependency is not resolved when composing the final component, you will get a compilation error.
 
@@ -308,7 +309,7 @@ It implements the 'chatManagement' function which responds to two different mess
 Using an Actor as a message broker, as in this example, is a very common pattern with many variations; load-balancing, master/worker, map/reduce, replication, logging etc. It becomes even more useful with remote Actors when we can use it to route messages to different nodes.
 
 STM and Transactors
-===================
+-------------------
 
 Actors are excellent for solving problems where you have many independent processes that can work in isolation and only interact with other Actors through message passing. This model fits many problems. But the Actor model is unfortunately a terrible model for implementing truly shared state. E.g. when you need to have consensus and a stable view of state across many components. The classic example is the bank account where clients can deposit and withdraw, in which each operation needs to be atomic. For detailed discussion on the topic see this `presentation <http://www.slideshare.net/jboner/state-youre-doing-it-wrong-javaone-2009>`_.
 
@@ -325,7 +326,7 @@ What you get is transactional memory in which multiple Actors are allowed to rea
 In database terms STM gives you 'ACI' semantics; 'Atomicity', 'Consistency' and 'Isolation'. The 'D' in 'ACID'; 'Durability', you can't get with an STM since it is in memory. This however is addressed by the persistence module in Akka.
 
 Persistence: Storing the chat log
-=================================
+---------------------------------
 
 Akka modules provides the possibility of taking the transactional data structures we discussed above and making them persistent. It is an extension to the STM which guarantees that it has the same semantics.
 
@@ -340,7 +341,7 @@ They all implement persistent 'Map', 'Vector' and 'Ref'. Which can be created an
   val ref =    MongoStorage.newRef(id)
 
 Chat storage: Backed with simple in-memory
-==========================================
+------------------------------------------
 
 To keep it simple we implement the persistent storage, with a in-memory Vector, i.e. it will not be persistent. We start by creating a 'ChatStorage' trait allowing us to have multiple different storage backend. For example one in-memory and one persistent.
 
@@ -403,7 +404,7 @@ The last thing we need to do in terms of persistence is to create a 'MemoryChatS
   }
 
 Composing the full Chat Service
-===============================
+-------------------------------
 
 We have now created the full functionality for the chat server, all nicely decoupled into isolated and well-defined traits. Now let's bring all these traits together and compose the complete concrete 'ChatService'.
 
@@ -428,7 +429,7 @@ We have now created the full functionality for the chat server, all nicely decou
   }
 
 Creating a remote server service
-================================
+--------------------------------
 
 As you can see in the section above, we are overriding the Actor's 'start' method and are starting up a remote server node by invoking 'remote.start("localhost", 2552)'. This starts up the remote node on address "localhost" and port 2552 which means that it accepts incoming messages on this address. Then we register the ChatService actor in the remote node by invoking 'remote.register("chat:service", self)'. This means that the ChatService will be available to other actors on this specific id, address and port.
 
@@ -437,7 +438,7 @@ That's it. Were done. Now we have a, very simple, but scalable, fault-tolerant, 
 Let's use it.
 
 Sample client chat session
-==========================
+--------------------------
 
 Now let's create a simple test runner that logs in posts some messages and logs out.
 
@@ -469,21 +470,21 @@ Now let's create a simple test runner that logs in posts some messages and logs 
   }
 
 Sample code
-===========
+-----------
 
 All this code is available as part of the Akka distribution. It resides in the './akka-samples/akka-sample-chat' module and have a 'README' file explaining how to run it.
 
 Or if you rather browse it `online <https://github.com/jboner/akka/blob/master/akka-samples/akka-sample-chat/>`_.
 
 Run it
-======
+------
 
 Download and build Akka
 
-# Check out Akka from `<http://github.com/jboner/akka>`_
-# Set 'AKKA_HOME' environment variable to the root of the Akka distribution.
-# Open up a shell and step into the Akka distribution root folder.
-# Build Akka by invoking:
+#. Check out Akka from `<http://github.com/jboner/akka>`_
+#. Set 'AKKA_HOME' environment variable to the root of the Akka distribution.
+#. Open up a shell and step into the Akka distribution root folder.
+#. Build Akka by invoking:
 
 ::
 
@@ -493,23 +494,38 @@ Download and build Akka
 Run a sample chat session
 
 1. Fire up two shells. For each of them:
-- Step down into to the root of the Akka distribution.
-- Set 'export AKKA_HOME=<root of distribution>.
-- Run 'sbt console' to start up a REPL (interpreter).
+
+  - Step down into to the root of the Akka distribution.
+  - Set 'export AKKA_HOME=<root of distribution>.
+  - Run 'sbt console' to start up a REPL (interpreter).
+
 2. In the first REPL you get execute:
-- scala> import sample.chat._
-- scala> import akka.actor.Actor._
-- scala> val chatService = actorOf[ChatService].start
+
+.. code-block:: scala
+
+  import sample.chat._
+  import akka.actor.Actor._
+  val chatService = actorOf[ChatService].start
+
 3. In the second REPL you get execute:
-- scala> import sample.chat._
-- scala> ClientRunner.run
+
+.. code-block:: scala
+
+  import sample.chat._
+  ClientRunner.run
+
 4. See the chat simulation run.
+
 5. Run it again to see full speed after first initialization.
+
 6. In the client REPL, or in a new REPL, you can also create your own client
-- scala> import sample.chat._
-- scala> val myClient = new ChatClient("<your name>")
-- scala> myClient.login
-- scala> myClient.post("Can I join?")
-- scala> println("CHAT LOG:\n\t" + myClient.chatLog.log.mkString("\n\t"))
+
+.. code-block:: scala
+
+  import sample.chat._
+  val myClient = new ChatClient("<your name>")
+  myClient.login
+  myClient.post("Can I join?")
+  println("CHAT LOG:\n\t" + myClient.chatLog.log.mkString("\n\t"))
 
 That's it. Have fun.
