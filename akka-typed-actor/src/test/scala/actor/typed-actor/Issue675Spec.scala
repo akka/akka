@@ -38,7 +38,7 @@ class Issue675Spec extends
   BeforeAndAfterEach {
 
   override def afterEach() {
-    Actor.registry.shutdownAll
+    Actor.registry.shutdownAll()
   }
 
   describe("TypedActor preStart method") {

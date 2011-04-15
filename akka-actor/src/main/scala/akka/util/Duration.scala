@@ -37,7 +37,7 @@ object Duration {
    * Construct a Duration by parsing a String. In case of a format error, a
    * RuntimeException is thrown. See `unapply(String)` for more information.
    */
-  def apply(s : String) : Duration = unapply(s) getOrElse error("format error")
+  def apply(s : String) : Duration = unapply(s) getOrElse sys.error("format error")
 
   /**
    * Deconstruct a Duration into length and unit if it is finite.
@@ -77,7 +77,7 @@ object Duration {
       if ( ms ne null) Some(Duration(JDouble.parseDouble(length), MILLISECONDS)) else
       if (mus ne null) Some(Duration(JDouble.parseDouble(length), MICROSECONDS)) else
       if ( ns ne null) Some(Duration(JDouble.parseDouble(length), NANOSECONDS)) else
-      error("made some error in regex (should not be possible)")
+      sys.error("made some error in regex (should not be possible)")
     case REinf() => Some(Inf)
     case REminf() => Some(MinusInf)
     case _ => None
@@ -315,26 +315,6 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     toNanos == other.asInstanceOf[FiniteDuration].toNanos
 
   override def hashCode = toNanos.asInstanceOf[Int]
-}
-
-package object duration {
-  implicit def intToDurationInt(n: Int) = new DurationInt(n)
-  implicit def longToDurationLong(n: Long) = new DurationLong(n)
-  implicit def doubleToDurationDouble(d: Double) = new DurationDouble(d)
-
-  implicit def pairIntToDuration(p : (Int, TimeUnit)) = Duration(p._1, p._2)
-  implicit def pairLongToDuration(p : (Long, TimeUnit)) = Duration(p._1, p._2)
-  implicit def durationToPair(d : Duration) = (d.length, d.unit)
-
-  implicit def intMult(i : Int) = new {
-    def *(d : Duration) = d * i
-  }
-  implicit def longMult(l : Long) = new {
-    def *(d : Duration) = d * l
-  }
-  implicit def doubleMult(f : Double) = new {
-    def *(d : Duration) = d * f
-  }
 }
 
 class DurationInt(n: Int) {

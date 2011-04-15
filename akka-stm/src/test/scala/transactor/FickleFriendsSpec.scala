@@ -42,7 +42,7 @@ object FickleFriends {
               increment
               deferred {
                 success = true
-                latch.countDown
+                latch.countDown()
               }
             }
           } catch {
@@ -97,9 +97,9 @@ class FickleFriendsSpec extends WordSpec with MustMatchers {
   val numCounters = 2
 
   def createActors = {
-    def createCounter(i: Int) = Actor.actorOf(new FickleCounter("counter" + i)).start
+    def createCounter(i: Int) = Actor.actorOf(new FickleCounter("counter" + i)).start()
     val counters = (1 to numCounters) map createCounter
-    val coordinator = Actor.actorOf(new Coordinator("coordinator")).start
+    val coordinator = Actor.actorOf(new Coordinator("coordinator")).start()
     (counters, coordinator)
   }
 
@@ -113,8 +113,8 @@ class FickleFriendsSpec extends WordSpec with MustMatchers {
       for (counter <- counters) {
         (counter !! GetCount).get must be === 1
       }
-      counters foreach (_.stop)
-      coordinator.stop
+      counters foreach (_.stop())
+      coordinator.stop()
     }
   }
 }

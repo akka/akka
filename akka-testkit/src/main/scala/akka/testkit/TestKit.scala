@@ -46,7 +46,7 @@ class TestActor(queue : BlockingDeque[AnyRef]) extends Actor with FSM[Int, TestA
  *
  * <pre>
  * class Test extends TestKit {
- *     val test = actorOf[SomeActor].start
+ *     val test = actorOf[SomeActor].start()
  *
  *     within (1 second) {
  *       test ! SomeWork
@@ -77,7 +77,7 @@ trait TestKit {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  protected val testActor = actorOf(new TestActor(queue)).start
+  protected val testActor = actorOf(new TestActor(queue)).start()
 
   /**
    * Implicit sender reference so that replies are possible for messages sent
@@ -98,7 +98,7 @@ trait TestKit {
    * Stop test actor. Should be done at the end of the test unless relying on
    * test actor timeout.
    */
-  def stopTestActor { testActor.stop }
+  def stopTestActor { testActor.stop() }
 
   /**
    * Set test actor timeout. By default, the test actor shuts itself down

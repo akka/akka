@@ -5,46 +5,43 @@
 package akka.remote.netty
 
 import akka.dispatch.{DefaultCompletableFuture, CompletableFuture, Future}
+import akka.remote.{MessageSerializer, RemoteClientSettings, RemoteServerSettings}
 import akka.remote.protocol.RemoteProtocol._
 import akka.remote.protocol.RemoteProtocol.ActorType._
-import akka.config.ConfigurationException
 import akka.serialization.RemoteActorSerialization
 import akka.serialization.RemoteActorSerialization._
-import akka.japi.Creator
-import akka.config.Config._
 import akka.remoteinterface._
-import akka.actor.{PoisonPill, Index,
-                   ActorInitializationException, LocalActorRef, newUuid,
-                   ActorRegistry, Actor, RemoteActorRef,
+import akka.actor.{PoisonPill, Index, LocalActorRef, Actor, RemoteActorRef,
                    TypedActor, ActorRef, IllegalActorStateException,
                    RemoteActorSystemMessage, uuidFrom, Uuid,
                    Exit, LifeCycleMessage, ActorType => AkkaActorType}
-import akka.AkkaException
-import akka.event.EventHandler
 import akka.actor.Actor._
+import akka.config.Config._
 import akka.util._
-import akka.remote.{MessageSerializer, RemoteClientSettings, RemoteServerSettings}
+import akka.event.EventHandler
 
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{DefaultChannelGroup,ChannelGroup,ChannelGroupFuture}
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
-import org.jboss.netty.bootstrap.{ServerBootstrap,ClientBootstrap}
+import org.jboss.netty.bootstrap.{ServerBootstrap, ClientBootstrap}
 import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, LengthFieldPrepender }
 import org.jboss.netty.handler.codec.compression.{ ZlibDecoder, ZlibEncoder }
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufDecoder, ProtobufEncoder }
 import org.jboss.netty.handler.timeout.{ ReadTimeoutHandler, ReadTimeoutException }
 import org.jboss.netty.handler.execution.{ OrderedMemoryAwareThreadPoolExecutor, ExecutionHandler }
 import org.jboss.netty.util.{ TimerTask, Timeout, HashedWheelTimer }
-import org.jboss.netty.handler.ssl.SslHandler
 
-import scala.collection.mutable.{ HashMap }
-import scala.reflect.BeanProperty
+import scala.collection.mutable.HashMap
+import scala.collection.JavaConversions._
 
-import java.net.{ SocketAddress, InetSocketAddress }
+import java.net.InetSocketAddress
 import java.lang.reflect.InvocationTargetException
-import java.util.concurrent.{ TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap, ConcurrentSkipListSet }
-import java.util.concurrent.atomic.{AtomicReference, AtomicLong, AtomicBoolean}
+import java.util.concurrent.atomic.{AtomicReference, AtomicBoolean}
+import java.util.concurrent._
+import akka.AkkaException
+
+class RemoteClientMessageBufferException(message: String) extends AkkaException(message)
 
 object RemoteEncoder {
   def encode(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {
@@ -157,28 +154,53 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
 }
 
 /**
- * This is the abstract baseclass for netty remote clients,
- * currently there's only an ActiveRemoteClient, but otehrs could be feasible, like a PassiveRemoteClient that
+ * This is the abstract baseclass for netty remote clients, currently there's only an
+ * ActiveRemoteClient, but otehrs could be feasible, like a PassiveRemoteClient that
  * reuses an already established connection.
  */
 abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) {
 
-  val name = this.getClass.getSimpleName + "@" + remoteAddress.getAddress.getHostAddress + "::" + remoteAddress.getPort
+  val useTransactionLog      = config.getBool("akka.remote.client.buffering.retry-message-send-on-failure", true)
+  val transactionLogCapacity = config.getInt("akka.remote.client.buffering.capacity", -1)
 
-  protected val futures = new ConcurrentHashMap[Uuid, CompletableFuture[_]]
-  protected val supervisors = new ConcurrentHashMap[Uuid, ActorRef]
-  private[remote] val runSwitch = new Switch()
+  val name = this.getClass.getSimpleName + "@" +
+             remoteAddress.getAddress.getHostAddress + "::" +
+             remoteAddress.getPort
+
+  protected val futures         = new ConcurrentHashMap[Uuid, CompletableFuture[_]]
+  protected val supervisors     = new ConcurrentHashMap[Uuid, ActorRef]
+  protected val pendingRequests = {
+    if (transactionLogCapacity < 0) new ConcurrentLinkedQueue[(Boolean, Uuid, RemoteMessageProtocol)]
+    else                            new LinkedBlockingQueue[(Boolean, Uuid, RemoteMessageProtocol)](transactionLogCapacity)
+  }
+
+  private[remote] val runSwitch       = new Switch()
   private[remote] val isAuthenticated = new AtomicBoolean(false)
 
   private[remote] def isRunning = runSwitch.isOn
 
   protected def notifyListeners(msg: => Any); Unit
+
   protected def currentChannel: Channel
 
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean
+
   def shutdown: Boolean
+
+  /**
+   * Returns an array with the current pending messages not yet delivered.
+   */
+  def pendingMessages: Array[Any] = {
+    var messages = Vector[Any]()
+    val iter = pendingRequests.iterator
+    while (iter.hasNext) {
+      val (_, _, message) = iter.next
+      messages = messages :+ MessageSerializer.deserialize(message.getMessage)
+    }
+    messages.toArray
+  }
 
   /**
    * Converts the message to the wireprotocol and sends the message across the wire
@@ -192,7 +214,7 @@ abstract class RemoteClient private[akka] (
     isOneWay: Boolean,
     actorRef: ActorRef,
     typedActorInfo: Option[Tuple2[String, String]],
-    actorType: AkkaActorType): Option[CompletableFuture[T]] = synchronized { //TODO: find better strategy to prevent race
+    actorType: AkkaActorType): Option[CompletableFuture[T]] = synchronized { // FIXME: find better strategy to prevent race
 
     send(createRemoteMessageProtocolBuilder(
         Some(actorRef),
@@ -213,42 +235,89 @@ abstract class RemoteClient private[akka] (
    * Sends the message across the wire
    */
   def send[T](
-  request: RemoteMessageProtocol,
-  senderFuture: Option[CompletableFuture[T]]): Option[CompletableFuture[T]] = {
+    request: RemoteMessageProtocol,
+    senderFuture: Option[CompletableFuture[T]]): Option[CompletableFuture[T]] = {
     if (isRunning) {
       if (request.getOneWay) {
-        val future = currentChannel.write(RemoteEncoder.encode(request))
-        future.awaitUninterruptibly()
-        if (!future.isCancelled && !future.isSuccess) {
-          notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
-          throw future.getCause
+        try {
+          val future = currentChannel.write(RemoteEncoder.encode(request))
+          future.awaitUninterruptibly()
+          if (!future.isCancelled && !future.isSuccess) {
+            notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
+            throw future.getCause
+          }
+        } catch {
+          case e: Throwable =>
+            // add the request to the tx log after a failing send
+            notifyListeners(RemoteClientError(e, module, remoteAddress))
+            if (useTransactionLog) {
+              if (!pendingRequests.offer((true, null, request)))
+                throw new RemoteClientMessageBufferException("Buffer limit [" + transactionLogCapacity + "] reached")
+            }
+            else throw e
         }
-
         None
       } else {
-          val futureResult = if (senderFuture.isDefined) senderFuture.get
-                             else new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
-          val futureUuid = uuidFrom(request.getUuid.getHigh, request.getUuid.getLow)
-          futures.put(futureUuid, futureResult) //Add this prematurely, remove it if write fails
-          currentChannel.write(RemoteEncoder.encode(request)).addListener(new ChannelFutureListener {
-            def operationComplete(future: ChannelFuture) {
-              if (future.isCancelled) {
-                futures.remove(futureUuid) //Clean this up
-                //We don't care about that right now
-              } else if (!future.isSuccess) {
-                val f = futures.remove(futureUuid) //Clean this up
-                if (f ne null)
-                  f.completeWithException(future.getCause)
-                notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
-              }
-            }
-          })
-          Some(futureResult)
+        val futureResult = if (senderFuture.isDefined) senderFuture.get
+                           else new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
+        val futureUuid = uuidFrom(request.getUuid.getHigh, request.getUuid.getLow)
+        futures.put(futureUuid, futureResult) // Add future prematurely, remove it if write fails
+
+        def handleRequestReplyError(future: ChannelFuture) = {
+          notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
+          if (useTransactionLog) {
+            if (!pendingRequests.offer((false, futureUuid, request))) // Add the request to the tx log after a failing send
+              throw new RemoteClientMessageBufferException("Buffer limit [" + transactionLogCapacity + "] reached")
+          } else {
+            val f = futures.remove(futureUuid)                // Clean up future
+            if (f ne null) f.completeWithException(future.getCause)
+          }
+        }
+
+        var future: ChannelFuture = null
+        try {
+          // try to send the original one
+          future = currentChannel.write(RemoteEncoder.encode(request))
+          future.awaitUninterruptibly()
+          if (future.isCancelled)     futures.remove(futureUuid)  // Clean up future
+          else if (!future.isSuccess) handleRequestReplyError(future)
+        } catch {
+          case e: Exception => handleRequestReplyError(future)
+        }
+        Some(futureResult)
       }
     } else {
       val exception = new RemoteClientException("Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.", module, remoteAddress)
       notifyListeners(RemoteClientError(exception, module, remoteAddress))
       throw exception
+    }
+  }
+
+  private[remote] def sendPendingRequests() = pendingRequests synchronized { // ensure only one thread at a time can flush the log
+    val nrOfMessages = pendingRequests.size
+    if (nrOfMessages > 0) EventHandler.info(this, "Resending [%s] previously failed messages after remote client reconnect" format nrOfMessages)
+    var pendingRequest = pendingRequests.peek
+    while (pendingRequest ne null) {
+      val (isOneWay, futureUuid, message) = pendingRequest
+      if (isOneWay) { // sendOneWay
+        val future = currentChannel.write(RemoteEncoder.encode(message))
+        future.awaitUninterruptibly()
+        if (!future.isCancelled && !future.isSuccess) {
+          notifyListeners(RemoteClientWriteFailed(message, future.getCause, module, remoteAddress))
+          throw future.getCause
+        }
+      } else { // sendRequestReply
+        val future = currentChannel.write(RemoteEncoder.encode(message))
+        future.awaitUninterruptibly()
+        if (future.isCancelled) futures.remove(futureUuid) // Clean up future
+        else if (!future.isSuccess) {
+          val f = futures.remove(futureUuid) // Clean up future
+          if (f ne null) f.completeWithException(future.getCause)
+          notifyListeners(RemoteClientWriteFailed(message, future.getCause, module, remoteAddress))
+        }
+      }
+      pendingRequests.remove(pendingRequest)
+      pendingRequest = pendingRequests.peek  // try to grab next message
     }
   }
 
@@ -272,6 +341,7 @@ class ActiveRemoteClient private[akka] (
   module: NettyRemoteClientModule, remoteAddress: InetSocketAddress,
   val loader: Option[ClassLoader] = None, notifyListenersFun: (=> Any) => Unit) extends RemoteClient(module, remoteAddress) {
   import RemoteClientSettings._
+
   //FIXME rewrite to a wrapper object (minimize volatile access and maximize encapsulation)
   @volatile private var bootstrap: ClientBootstrap = _
   @volatile private[remote] var connection: ChannelFuture = _
@@ -335,13 +405,14 @@ class ActiveRemoteClient private[akka] (
   //Please note that this method does _not_ remove the ARC from the NettyRemoteClientModule's map of clients
   def shutdown = runSwitch switchOff {
     notifyListeners(RemoteClientShutdown(module, remoteAddress))
-    timer.stop
+    timer.stop()
     timer = null
     openChannels.close.awaitUninterruptibly
     openChannels = null
     bootstrap.releaseExternalResources
     bootstrap = null
     connection = null
+    pendingRequests.clear
   }
 
   private[akka] def isWithinReconnectionTimeWindow: Boolean = {
@@ -456,8 +527,16 @@ class ActiveRemoteClientHandler(
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    client.notifyListeners(RemoteClientConnected(client.module, client.remoteAddress))
-    client.resetReconnectionTimeWindow
+    try {
+      if (client.useTransactionLog) client.sendPendingRequests() // try to send pending requests (still there after client/server crash ard reconnect
+      client.notifyListeners(RemoteClientConnected(client.module, client.remoteAddress))
+      client.resetReconnectionTimeWindow
+    } catch {
+      case e: Throwable =>
+        EventHandler.error(e, this, e.getMessage)
+        client.notifyListeners(RemoteClientError(e, client.module, client.remoteAddress))
+        throw e
+    }
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
@@ -486,7 +565,7 @@ class ActiveRemoteClientHandler(
     } catch {
       case problem: Throwable =>
         EventHandler.error(problem, this, problem.getMessage)
-        UnparsableException(classname, exception.getMessage)
+        CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorException(problem, classname, exception.getMessage)
     }
   }
 }
@@ -495,7 +574,8 @@ class ActiveRemoteClientHandler(
  * Provides the implementation of the Netty remote support
  */
 class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with NettyRemoteClientModule {
-  //Needed for remote testing and switching on/off under run
+
+  // Needed for remote testing and switching on/off under run
   val optimizeLocal = new AtomicBoolean(true)
 
   def optimizeLocalScoped_?() = optimizeLocal.get
@@ -564,7 +644,7 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
       bootstrap.releaseExternalResources
       serverModule.notifyListeners(RemoteServerShutdown(serverModule))
     } catch {
-      case e: Exception => 
+      case e: Exception =>
         EventHandler.error(e, this, e.getMessage)
     }
   }
@@ -597,7 +677,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
         currentServer.set(Some(new NettyRemoteServer(this, _hostname, _port, loader)))
       }
     } catch {
-      case e: Exception => 
+      case e: Exception =>
         EventHandler.error(e, this, e.getMessage)
         notifyListeners(RemoteServerError(e, this))
     }
@@ -649,7 +729,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
   private def register[Key](id: Key, actorRef: ActorRef, registry: ConcurrentHashMap[Key, ActorRef]) {
     if (_isRunning.isOn) {
       registry.put(id, actorRef) //TODO change to putIfAbsent
-      if (!actorRef.isRunning) actorRef.start
+      if (!actorRef.isRunning) actorRef.start()
     }
   }
 
@@ -824,14 +904,14 @@ class RemoteServerHandler(
 
     // stop all session actors
     for (map <- Option(sessionActors.remove(event.getChannel));
-         actor <- asScalaIterable(map.values)) {
+         actor <- collectionAsScalaIterable(map.values)) {
          try { actor ! PoisonPill } catch { case e: Exception => }
     }
 
     //FIXME switch approach or use other thread to execute this
     // stop all typed session actors
     for (map <- Option(typedSessionActors.remove(event.getChannel));
-         actor <- asScalaIterable(map.values)) {
+         actor <- collectionAsScalaIterable(map.values)) {
          try { TypedActor.stop(actor) } catch { case e: Exception => }
     }
 
@@ -893,7 +973,7 @@ class RemoteServerHandler(
     message match { // first match on system messages
       case RemoteActorSystemMessage.Stop =>
         if (UNTRUSTED_MODE) throw new SecurityException("Remote server is operating is untrusted mode, can not stop the actor")
-        else actorRef.stop
+        else actorRef.stop()
       case _: LifeCycleMessage if (UNTRUSTED_MODE) =>
         throw new SecurityException("Remote server is operating is untrusted mode, can not pass on a LifeCycleMessage to the remote actor")
 
@@ -936,9 +1016,15 @@ class RemoteServerHandler(
 
     val typedActor = createTypedActor(actorInfo, channel)
     //FIXME: Add ownerTypeHint and parameter types to the TypedActorInfo?
-    val (ownerTypeHint, argClasses, args) = MessageSerializer.deserialize(request.getMessage).asInstanceOf[Tuple3[String,Array[Class[_]],Array[AnyRef]]]
+    val (ownerTypeHint, argClasses, args) =
+      MessageSerializer
+          .deserialize(request.getMessage)
+          .asInstanceOf[Tuple3[String,Array[Class[_]],Array[AnyRef]]]
 
-    def resolveMethod(bottomType: Class[_], typeHint: String, methodName: String, methodSignature: Array[Class[_]]): java.lang.reflect.Method = {
+    def resolveMethod(bottomType: Class[_],
+                      typeHint: String,
+                      methodName: String,
+                      methodSignature: Array[Class[_]]): java.lang.reflect.Method = {
       var typeToResolve = bottomType
       var targetMethod: java.lang.reflect.Method = null
       var firstException: NoSuchMethodException = null
@@ -963,7 +1049,7 @@ class RemoteServerHandler(
         throw firstException
 
       targetMethod
-  }
+    }
 
     try {
       val messageReceiver = resolveMethod(typedActor.getClass, ownerTypeHint, typedActorInfo.getMethod, argClasses)
@@ -988,7 +1074,7 @@ class RemoteServerHandler(
 
           write(channel, RemoteEncoder.encode(messageBuilder.build))
         } catch {
-          case e: Exception => 
+          case e: Exception =>
             EventHandler.error(e, this, e.getMessage)
             server.notifyListeners(RemoteServerError(e, server))
         }
@@ -1038,7 +1124,7 @@ class RemoteServerHandler(
             val actorRef = factory()
             actorRef.uuid = parseUuid(uuid) //FIXME is this sensible?
             sessionActors.get(channel).put(id, actorRef)
-            actorRef.start //Start it where's it's created
+            actorRef.start() //Start it where's it's created
         }
       case sessionActor => sessionActor
     }
@@ -1062,7 +1148,7 @@ class RemoteServerHandler(
       actorRef.id = id
       actorRef.timeout = timeout
       server.actorsByUuid.put(actorRef.uuid.toString, actorRef) // register by uuid
-      actorRef.start //Start it where it's created
+      actorRef.start() //Start it where it's created
     } catch {
       case e: Throwable =>
         EventHandler.error(e, this, e.getMessage)
@@ -1144,7 +1230,14 @@ class RemoteServerHandler(
     server.findTypedActorByIdOrUuid(actorInfo.getId, parseUuid(uuid).toString) match {
       case null => // the actor has not been registered globally. See if we have it in the session
         createTypedSessionActor(actorInfo, channel) match {
-          case null => createClientManagedTypedActor(actorInfo) //Maybe client managed actor?
+          case null => 
+            // FIXME this is broken, if a user tries to get a server-managed typed actor and that is not registered then a client-managed typed actor is created, but just throwing an exception here causes client-managed typed actors to fail
+          
+/*            val e = new RemoteServerException("Can't load remote Typed Actor for [" + actorInfo.getId + "]")
+            EventHandler.error(e, this, e.getMessage)
+            server.notifyListeners(RemoteServerError(e, server))
+            throw e            
+*/          createClientManagedTypedActor(actorInfo) // client-managed actor
           case sessionActor => sessionActor
         }
       case typedActor => typedActor

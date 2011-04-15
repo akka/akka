@@ -31,7 +31,6 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
   private var components: List[SuperviseTypedActor] = _
   private var supervised: List[Supervise] = Nil
   private var bindings: List[DependencyBinding] = Nil
-  private var configRegistry = new HashMap[Class[_], SuperviseTypedActor] // TODO is configRegistry needed?
   private var typedActorRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, SuperviseTypedActor]]
   private var modules = new java.util.ArrayList[Module]
   private var methodToUriRegistry = new HashMap[Method, String]
@@ -126,7 +125,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
       proxy,
       AspectInit(interfaceClass, typedActor, actorRef, remoteAddress, timeout))
     typedActor.initialize(proxy)
-    actorRef.start
+    actorRef.start()
 
     supervised ::= Supervise(actorRef, component.lifeCycle)
 
@@ -167,7 +166,6 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
 
   def reset = synchronized {
     modules = new java.util.ArrayList[Module]
-    configRegistry = new HashMap[Class[_], SuperviseTypedActor]
     typedActorRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, SuperviseTypedActor]]
     methodToUriRegistry = new HashMap[Method, String]
     injector = null

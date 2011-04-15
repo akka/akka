@@ -14,7 +14,7 @@ class ActorObjectUtilFunctionsSpec extends junit.framework.TestCase with Suite w
     val latch = new CountDownLatch(1)
 
     spawn {
-      latch.countDown
+      latch.countDown()
     }
 
     val done = latch.await(10,TimeUnit.SECONDS)

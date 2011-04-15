@@ -16,7 +16,7 @@ class ActorRefService(latch: CountDownLatch) extends Actor {
     case RecvActorRef(bytes) =>
       val ref = RemoteActorSerialization.fromBinaryToRemoteActorRef(bytes)
       ref ! "hello"
-    case "hello" => latch.countDown
+    case "hello" => latch.countDown()
   }
 }
 

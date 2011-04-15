@@ -6,14 +6,9 @@ package akka.actor
 
 import akka.dispatch._
 import akka.config.Config._
-import akka.config.Supervision._
-import akka.config.ConfigurationException
 import akka.util.Helpers.{narrow, narrowSilently}
 import akka.util.ListenerManagement
 import akka.AkkaException
-
-import java.util.concurrent.TimeUnit
-import java.net.InetSocketAddress
 
 import scala.reflect.BeanProperty
 import akka.util. {ReflectiveAccess, Duration}
@@ -23,14 +18,14 @@ import akka.japi. {Creator, Procedure}
 /**
  * Life-cycle messages for the Actors
  */
-@serializable sealed trait LifeCycleMessage
+sealed trait LifeCycleMessage extends Serializable
 
 /* Marker trait to show which Messages are automatically handled by Akka */
 sealed trait AutoReceivedMessage { self: LifeCycleMessage => }
 
-case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true) 
+case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true)
   extends AutoReceivedMessage with LifeCycleMessage {
-  
+
   /**
    * Java API
    */
@@ -61,6 +56,8 @@ case class UnlinkAndStop(child: ActorRef) extends AutoReceivedMessage with LifeC
 
 case object PoisonPill extends AutoReceivedMessage with LifeCycleMessage
 
+case object Kill extends AutoReceivedMessage with LifeCycleMessage
+
 case object ReceiveTimeout extends LifeCycleMessage
 
 case class MaximumNumberOfRestartsWithinTimeRangeReached(
@@ -75,6 +72,7 @@ class IllegalActorStateException   private[akka](message: String) extends AkkaEx
 class ActorKilledException         private[akka](message: String) extends AkkaException(message)
 class ActorInitializationException private[akka](message: String) extends AkkaException(message)
 class ActorTimeoutException        private[akka](message: String) extends AkkaException(message)
+class InvalidMessageException      private[akka](message: String) extends AkkaException(message)
 
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message
@@ -90,7 +88,7 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor extends ListenerManagement {
-  
+
   /**
    * Add shutdown cleanups
    */
@@ -128,19 +126,19 @@ object Actor extends ListenerManagement {
   type Receive = PartialFunction[Any, Unit]
 
   private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
-  
+
    /**
    *  Creates an ActorRef out of the Actor with type T.
    * <pre>
    *   import Actor._
    *   val actor = actorOf[MyActor]
-   *   actor.start
+   *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf[MyActor].start
+   *   val actor = actorOf[MyActor].start()
    * </pre>
    */
   def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
@@ -150,13 +148,13 @@ object Actor extends ListenerManagement {
    * <pre>
    *   import Actor._
    *   val actor = actorOf(classOf[MyActor])
-   *   actor.start
+   *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(classOf[MyActor]).start
+   *   val actor = actorOf(classOf[MyActor]).start()
    * </pre>
    */
   def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(() => {
@@ -178,13 +176,13 @@ object Actor extends ListenerManagement {
    * <pre>
    *   import Actor._
    *   val actor = actorOf(new MyActor)
-   *   actor.start
+   *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(new MyActor).start
+   *   val actor = actorOf(new MyActor).start()
    * </pre>
    */
   def actorOf(factory: => Actor): ActorRef = new LocalActorRef(() => factory, None)
@@ -219,9 +217,9 @@ object Actor extends ListenerManagement {
     actorOf(new Actor() {
       self.dispatcher = dispatcher
       def receive = {
-        case Spawn => try { body } finally { self.stop }
+        case Spawn => try { body } finally { self.stop() }
       }
-    }).start ! Spawn
+    }).start() ! Spawn
   }
   /**
    * Implicitly converts the given Option[Any] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
@@ -276,9 +274,6 @@ object Actor extends ListenerManagement {
  * }
  * </pre>
  *
- * <p/>
- * The Actor trait also has a 'log' member field that can be used for logging within the Actor.
- *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor {
@@ -303,6 +298,7 @@ trait Actor {
       "\n\tEither use:" +
       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
+     Actor.actorRefInCreation.value = None
      optRef.asInstanceOf[Some[ActorRef]].get.id = getClass.getName  //FIXME: Is this needed?
      optRef.asInstanceOf[Some[ActorRef]]
   }
@@ -352,7 +348,7 @@ trait Actor {
    * <p/>
    * Example code:
    * <pre>
-   *   def receive =  {
+   *   def receive = {
    *     case Ping =&gt;
    *       println("got a 'Ping' message")
    *       self.reply("pong")
@@ -370,14 +366,14 @@ trait Actor {
   /**
    * User overridable callback.
    * <p/>
-   * Is called when an Actor is started by invoking 'actor.start'.
+   * Is called when an Actor is started by invoking 'actor.start()'.
    */
   def preStart {}
 
   /**
    * User overridable callback.
    * <p/>
-   * Is called when 'actor.stop' is invoked.
+   * Is called when 'actor.stop()' is invoked.
    */
   def postStop {}
 
@@ -426,7 +422,7 @@ trait Actor {
    * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
    */
   def become(behavior: Receive, discardOld: Boolean = true) {
-    if (discardOld) unbecome
+    if (discardOld) unbecome()
     self.hotswap = self.hotswap.push(behavior)
   }
 
@@ -443,8 +439,10 @@ trait Actor {
   // =========================================
 
   private[akka] final def apply(msg: Any) = {
+    if (msg.isInstanceOf[AnyRef] && (msg.asInstanceOf[AnyRef] eq null))
+      throw new InvalidMessageException("Message from [" + self.sender + "] to [" + self.toString + "] is null")
     val behaviorStack = self.hotswap
-    msg match { //FIXME Add check for currentMessage eq null throw new BadUSerException?
+    msg match {
       case l: AutoReceivedMessage           => autoReceiveMessage(l)
       case msg if behaviorStack.nonEmpty &&
         behaviorStack.head.isDefinedAt(msg) => behaviorStack.head.apply(msg)
@@ -456,15 +454,16 @@ trait Actor {
 
   private final def autoReceiveMessage(msg: AutoReceivedMessage): Unit = msg match {
     case HotSwap(code, discardOld) => become(code(self), discardOld)
-    case RevertHotSwap             => unbecome
+    case RevertHotSwap             => unbecome()
     case Exit(dead, reason)        => self.handleTrapExit(dead, reason)
     case Link(child)               => self.link(child)
     case Unlink(child)             => self.unlink(child)
-    case UnlinkAndStop(child)      => self.unlink(child); child.stop
+    case UnlinkAndStop(child)      => self.unlink(child); child.stop()
     case Restart(reason)           => throw reason
+    case Kill                      => throw new ActorKilledException("Kill")
     case PoisonPill                =>
       val f = self.senderFuture
-      self.stop
+      self.stop()
       if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
   }
 

@@ -37,8 +37,8 @@ object TransactorIncrement {
     def atomically = {
       case Increment(friends, latch) => {
         increment
-        deferred { latch.countDown }
-        compensating { latch.countDown }
+        deferred { latch.countDown() }
+        compensating { latch.countDown() }
       }
     }
 
@@ -65,7 +65,7 @@ object SimpleTransactor {
     def atomically = {
       case Set(ref, value, latch) => {
         ref.set(value)
-        latch.countDown
+        latch.countDown()
       }
     }
   }
@@ -79,9 +79,9 @@ class TransactorSpec extends WordSpec with MustMatchers {
   val timeout = 5 seconds
 
   def createTransactors = {
-    def createCounter(i: Int) = Actor.actorOf(new Counter("counter" + i)).start
+    def createCounter(i: Int) = Actor.actorOf(new Counter("counter" + i)).start()
     val counters = (1 to numCounters) map createCounter
-    val failer = Actor.actorOf(new Failer).start
+    val failer = Actor.actorOf(new Failer).start()
     (counters, failer)
   }
 
@@ -94,8 +94,8 @@ class TransactorSpec extends WordSpec with MustMatchers {
       for (counter <- counters) {
         (counter !! GetCount).get must be === 1
       }
-      counters foreach (_.stop)
-      failer.stop
+      counters foreach (_.stop())
+      failer.stop()
     }
 
     "increment no counters with a failing transaction" in {
@@ -106,21 +106,21 @@ class TransactorSpec extends WordSpec with MustMatchers {
       for (counter <- counters) {
         (counter !! GetCount).get must be === 0
       }
-      counters foreach (_.stop)
-      failer.stop
+      counters foreach (_.stop())
+      failer.stop()
     }
   }
 
   "Transactor" should {
     "be usable without overriding normally" in {
-      val transactor = Actor.actorOf(new Setter).start
+      val transactor = Actor.actorOf(new Setter).start()
       val ref = Ref(0)
       val latch = new CountDownLatch(1)
       transactor ! Set(ref, 5, latch)
       latch.await(timeout.length, timeout.unit)
       val value = atomic { ref.get }
       value must be === 5
-      transactor.stop
+      transactor.stop()
     }
   }
 }

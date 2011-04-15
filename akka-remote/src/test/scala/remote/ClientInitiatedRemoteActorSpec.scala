@@ -21,7 +21,7 @@ class RemoteActorSpecActorUnidirectional extends Actor {
 
   def receive = {
     case "OneWay" =>
-      RemoteActorSpecActorUnidirectional.latch.countDown
+      RemoteActorSpecActorUnidirectional.latch.countDown()
   }
 }
 
@@ -42,7 +42,7 @@ class SendOneWayAndReplyReceiverActor extends Actor {
 
 class CountDownActor(latch: CountDownLatch) extends Actor {
   def receive = {
-    case "World" => latch.countDown
+    case "World" => latch.countDown()
   }
 }
 /*
@@ -59,7 +59,7 @@ class SendOneWayAndReplySenderActor extends Actor {
   def receive = {
     case msg: AnyRef =>
       state = Some(msg)
-      SendOneWayAndReplySenderActor.latch.countDown
+      SendOneWayAndReplySenderActor.latch.countDown()
   }
 }*/
 
@@ -75,18 +75,18 @@ class MyActorCustomConstructor extends Actor {
 class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
   "ClientInitiatedRemoteActor" should {
    "shouldSendOneWay" in {
-      val clientManaged = remote.actorOf[RemoteActorSpecActorUnidirectional](host,port).start
+      val clientManaged = remote.actorOf[RemoteActorSpecActorUnidirectional](host,port).start()
       clientManaged must not be null
       clientManaged.getClass must be (classOf[LocalActorRef])
       clientManaged ! "OneWay"
       RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS) must be (true)
-      clientManaged.stop
+      clientManaged.stop()
     }
 
     "shouldSendOneWayAndReceiveReply" in {
       val latch = new CountDownLatch(1)
-      val actor = remote.actorOf[SendOneWayAndReplyReceiverActor](host,port).start
-      implicit val sender = Some(actorOf(new CountDownActor(latch)).start)
+      val actor = remote.actorOf[SendOneWayAndReplyReceiverActor](host,port).start()
+      implicit val sender = Some(actorOf(new CountDownActor(latch)).start())
 
       actor ! "Hello"
 
@@ -94,23 +94,23 @@ class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
     }
 
     "shouldSendBangBangMessageAndReceiveReply" in {
-      val actor = remote.actorOf[RemoteActorSpecActorBidirectional](host,port).start
-      val result = actor !! "Hello"
+      val actor = remote.actorOf[RemoteActorSpecActorBidirectional](host,port).start()
+      val result = actor !! ("Hello", 10000)
       "World" must equal (result.get.asInstanceOf[String])
-      actor.stop
+      actor.stop()
     }
 
     "shouldSendBangBangMessageAndReceiveReplyConcurrently" in {
-      val actors = (1 to 10).map(num => { remote.actorOf[RemoteActorSpecActorBidirectional](host,port).start }).toList
-      actors.map(_ !!! "Hello") foreach { future =>
+      val actors = (1 to 10).map(num => { remote.actorOf[RemoteActorSpecActorBidirectional](host,port).start() }).toList
+      actors.map(_ !!! ("Hello", 10000)) foreach { future =>
         "World" must equal (future.await.result.asInstanceOf[Option[String]].get)
       }
-      actors.foreach(_.stop)
+      actors.foreach(_.stop())
     }
 
     "shouldRegisterActorByUuid" in {
-      val actor1 = remote.actorOf[MyActorCustomConstructor](host, port).start
-      val actor2 = remote.actorOf[MyActorCustomConstructor](host, port).start
+      val actor1 = remote.actorOf[MyActorCustomConstructor](host, port).start()
+      val actor2 = remote.actorOf[MyActorCustomConstructor](host, port).start()
 
       actor1 ! "incrPrefix"
 
@@ -122,13 +122,13 @@ class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
 
       (actor2 !! "test").get must equal ("default-test")
 
-      actor1.stop
-      actor2.stop
+      actor1.stop()
+      actor2.stop()
     }
 
     "shouldSendAndReceiveRemoteException" in {
 
-      val actor = remote.actorOf[RemoteActorSpecActorBidirectional](host, port).start
+      val actor = remote.actorOf[RemoteActorSpecActorBidirectional](host, port).start()
       try {
         implicit val timeout = 500000000L
         val f = (actor !!! "Failure").await.resultOrException
@@ -136,7 +136,7 @@ class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
       } catch {
         case e: ExpectedRemoteProblem =>
       }
-      actor.stop
+      actor.stop()
     }
   }
 }

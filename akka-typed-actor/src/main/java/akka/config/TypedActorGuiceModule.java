@@ -26,7 +26,10 @@ public class TypedActorGuiceModule extends AbstractModule {
       final DependencyBinding db = bindings.get(i);
       //if (db.getInterface() ne null) bind((Class) db.getInterface()).to((Class) db.getTarget()).in(Singleton.class);
       //else
-      this.bind(db.getInterface()).toInstance(db.getTarget());
+
+      @SuppressWarnings("unchecked")
+      Class<Object> intf = db.getInterface();
+      this.bind(intf).toInstance(db.getTarget());
     }
   }
 }

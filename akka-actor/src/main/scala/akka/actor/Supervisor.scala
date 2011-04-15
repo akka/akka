@@ -106,7 +106,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
   private val _childActors = new ConcurrentHashMap[String, List[ActorRef]]
   private val _childSupervisors = new CopyOnWriteArrayList[Supervisor]
 
-  private[akka] val supervisor = actorOf(new SupervisorActor(handler)).start
+  private[akka] val supervisor = actorOf(new SupervisorActor(handler)).start()
 
   def uuid = supervisor.uuid
 
@@ -114,7 +114,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
     this
   }
 
-  def shutdown(): Unit = supervisor.stop
+  def shutdown(): Unit = supervisor.stop()
 
   def link(child: ActorRef) = supervisor.link(child)
 
@@ -131,7 +131,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
       servers.map(server =>
         server match {
           case Supervise(actorRef, lifeCycle, registerAsRemoteService) =>
-            actorRef.start
+            actorRef.start()
             val className = actorRef.actor.getClass.getName
             val currentActors = {
               val list = _childActors.get(className)
@@ -163,7 +163,7 @@ final class SupervisorActor private[akka] (handler: FaultHandlingStrategy) exten
     val i = self.linkedActors.values.iterator
     while(i.hasNext) {
       val ref = i.next
-      ref.stop
+      ref.stop()
       self.unlink(ref)
     }
   }

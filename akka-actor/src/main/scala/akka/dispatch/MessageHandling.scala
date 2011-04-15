@@ -143,7 +143,7 @@ trait MessageDispatcher {
     while (i.hasNext()) {
       val uuid = i.next()
       Actor.registry.actorFor(uuid) match {
-        case Some(actor) => actor.stop
+        case Some(actor) => actor.stop()
         case None        => {}
       }
     }
@@ -215,12 +215,15 @@ trait MessageDispatcher {
  * Trait to be used for hooking in new dispatchers into Dispatchers.fromConfig
  */
 abstract class MessageDispatcherConfigurator {
+  /**
+   * Returns an instance of MessageDispatcher given a Configuration
+   */
   def configure(config: Configuration): MessageDispatcher
 
   def mailboxType(config: Configuration): MailboxType = {
     val capacity = config.getInt("mailbox-capacity", Dispatchers.MAILBOX_CAPACITY)
     // FIXME how do we read in isBlocking for mailbox? Now set to 'false'.
-    if (capacity < 0) UnboundedMailbox()
+    if (capacity < 1) UnboundedMailbox()
     else BoundedMailbox(false, capacity, Duration(config.getInt("mailbox-push-timeout-time", Dispatchers.MAILBOX_PUSH_TIME_OUT.toMillis.toInt), TIME_UNIT))
   }
 

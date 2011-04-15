@@ -43,37 +43,37 @@ class UntypedActorSerializationSpec extends
 
   describe("Serializable untyped actor") {
     it("should be able to serialize and de-serialize a stateful untyped actor") {
-      val actor1 = Actors.actorOf(classOf[MyUntypedActor]).start
+      val actor1 = Actors.actorOf(classOf[MyUntypedActor]).start()
       actor1.sendRequestReply("hello") should equal("world 1")
       actor1.sendRequestReply("debasish") should equal("hello debasish 2")
 
       val f = new MyUntypedActorFormat
       val bytes = toBinaryJ(actor1, f)
       val actor2 = fromBinaryJ(bytes, f)
-      actor2.start
+      actor2.start()
       actor2.sendRequestReply("hello") should equal("world 3")
     }
 
     it("should be able to serialize and de-serialize a stateful actor with compound state") {
-      val actor1 = actorOf[MyUntypedActorWithDualCounter].start
+      val actor1 = actorOf[MyUntypedActorWithDualCounter].start()
       actor1.sendRequestReply("hello") should equal("world 1 1")
       actor1.sendRequestReply("hello") should equal("world 2 2")
 
       val f = new MyUntypedActorWithDualCounterFormat
       val bytes = toBinaryJ(actor1, f)
       val actor2 = fromBinaryJ(bytes, f)
-      actor2.start
+      actor2.start()
       actor2.sendRequestReply("hello") should equal("world 3 3")
     }
 
     it("should be able to serialize and de-serialize a stateless actor") {
-      val actor1 = actorOf[MyUntypedStatelessActor].start
+      val actor1 = actorOf[MyUntypedStatelessActor].start()
       actor1.sendRequestReply("hello") should equal("world")
       actor1.sendRequestReply("hello") should equal("world")
 
       val bytes = toBinaryJ(actor1, MyUntypedStatelessActorFormat)
       val actor2 = fromBinaryJ(bytes, MyUntypedStatelessActorFormat)
-      actor2.start
+      actor2.start()
       actor2.sendRequestReply("hello") should equal("world")
     }
   }

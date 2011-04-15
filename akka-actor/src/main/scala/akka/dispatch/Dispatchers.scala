@@ -54,7 +54,7 @@ object Dispatchers {
   val MAILBOX_PUSH_TIME_OUT           = Duration(config.getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time", 10), TIME_UNIT)
   val THROUGHPUT_DEADLINE_TIME        = Duration(config.getInt("akka.actor.throughput-deadline-time",-1), TIME_UNIT)
   val THROUGHPUT_DEADLINE_TIME_MILLIS = THROUGHPUT_DEADLINE_TIME.toMillis.toInt
-  val MAILBOX_TYPE: MailboxType       = if (MAILBOX_CAPACITY < 0) UnboundedMailbox() else BoundedMailbox()
+  val MAILBOX_TYPE: MailboxType       = if (MAILBOX_CAPACITY < 1) UnboundedMailbox() else BoundedMailbox()
 
   lazy val defaultGlobalDispatcher = {
     config.getSection("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalExecutorBasedEventDrivenDispatcher)

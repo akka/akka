@@ -261,9 +261,9 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
         val actorRef = elements.nextElement
         val proxy = typedActorFor(actorRef)
         if (proxy.isDefined) TypedActorModule.typedActorObjectInstance.get.stop(proxy.get)
-        else actorRef.stop
+        else actorRef.stop()
       }
-    } else foreach(_.stop)
+    } else foreach(_.stop())
     if (Remote.isEnabled) {
       Actor.remote.clear //TODO: REVISIT: Should this be here?
     }

@@ -17,9 +17,9 @@ import org.codehaus.aspectwerkz.proxy.Proxy
 import org.codehaus.aspectwerkz.annotation.{Aspect, Around}
 
 import java.net.InetSocketAddress
-import java.util.concurrent.atomic.AtomicBoolean
-import scala.reflect.BeanProperty
 import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
+
+import scala.reflect.BeanProperty
 
 /**
  * TypedActor is a type-safe actor made out of a POJO with interface.
@@ -36,7 +36,7 @@ import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
  * class TestActorImpl extends TypedActor implements TestActor {
  *
  *   public void hit(int count) {
- *     Pong pong = (Pong) getContext().getSender();
+ *     Pong pong = (Pong) context().sender();
  *     pong.hit(count++);
  *   }
  *
@@ -124,15 +124,15 @@ abstract class TypedActor extends Actor with Proxyable {
    * This class does not contain static information but is updated by the runtime system
    * at runtime.
    * <p/>
-   * You can get a hold of the context using either the 'getContext()' or 'context'
-   * methods from the 'TypedActor' base class.
+   * You can get a hold of the context using the 'context()'
+   * method from the 'TypedActor' base class.
    * <p/>
    *
    * Here is an example of usage (in Java):
    * <pre>
    * class PingImpl extends TypedActor implements Ping {
    *   public void hit(int count) {
-   *     Pong pong = (Pong) getContext().getSender();
+   *     Pong pong = (Pong) context().sender();
    *     pong.hit(count++);
    *   }
    * }
@@ -148,7 +148,40 @@ abstract class TypedActor extends Actor with Proxyable {
    * }
    * </pre>
    */
-  @BeanProperty val context: TypedActorContext = new TypedActorContext(self)
+  val context: TypedActorContext = new TypedActorContext(self)
+
+  /**
+   * @deprecated 'getContext()' is deprecated use 'context()'
+   */
+  def getContext: TypedActorContext = context
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called when an Actor is started by invoking 'actor.start()'.
+   */
+  override def preStart {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called when 'actor.stop()' is invoked.
+   */
+  override def postStop {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called on a crashed Actor right BEFORE it is restarted to allow clean up of resources before Actor is terminated.
+   */
+  override def preRestart(reason: Throwable) {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
+   */
+  override def postRestart(reason: Throwable) {}
 
   /**
    * This method is used to resolve the Future for TypedActor methods that are defined to return a
@@ -178,17 +211,22 @@ abstract class TypedActor extends Actor with Proxyable {
 
   def receive = {
     case joinPoint: JoinPoint =>
-      SenderContextInfo.senderActorRef.value = self
-      SenderContextInfo.senderProxy.value    = proxy
+      SenderContextInfo.senderActorRef.withValue(self) {
+        SenderContextInfo.senderProxy.withValue(proxy) {
+          if (Actor.SERIALIZE_MESSAGES)       serializeArguments(joinPoint)
+          if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
+          else                                self.reply(joinPoint.proceed)
+        }
+      }
 
-      if (Actor.SERIALIZE_MESSAGES)       serializeArguments(joinPoint)
-      if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
-      else                                self.reply(joinPoint.proceed)
     case coordinated @ Coordinated(joinPoint: JoinPoint) =>
-      SenderContextInfo.senderActorRef.value = self
-      SenderContextInfo.senderProxy.value = proxy
-      if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
-      coordinated atomic { joinPoint.proceed }
+      SenderContextInfo.senderActorRef.withValue(self) {
+        SenderContextInfo.senderProxy.withValue(proxy) {
+          if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
+          coordinated atomic { joinPoint.proceed }
+        }
+      }
+
     case Link(proxy)   => self.link(proxy)
     case Unlink(proxy) => self.unlink(proxy)
     case unexpected    => throw new IllegalActorStateException(
@@ -255,7 +293,7 @@ abstract class TypedActor extends Actor with Proxyable {
  * <pre>
  * class PingImpl extends TypedActor implements Ping {
  *   public void hit(int count) {
- *     Pong pong = (Pong) getContext().getSender();
+ *     Pong pong = (Pong) context().sender();
  *     pong.hit(count++);
  *   }
  * }
@@ -277,7 +315,8 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   private[akka] var _sender: AnyRef = _
 
   /**
-5  * Returns the uuid for the actor.
+   * Returns the uuid for the actor.
+   * @deprecated use 'uuid()'
    */
   def getUuid() = actorRef.uuid
 
@@ -287,31 +326,42 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   def uuid = actorRef.uuid
 
   def timeout = actorRef.timeout
+
+  /**
+   * @deprecated use 'timeout()'
+   */
   def getTimout = timeout
   def setTimout(timeout: Long) = actorRef.timeout = timeout
 
   def id =  actorRef.id
+
+  /**
+   * @deprecated use 'id()'
+   */
   def getId = id
   def setId(id: String) = actorRef.id = id
 
   def receiveTimeout = actorRef.receiveTimeout
+
+  /**
+   * @deprecated use 'receiveTimeout()'
+   */
   def getReceiveTimeout = receiveTimeout
   def setReceiveTimeout(timeout: Long) = actorRef.setReceiveTimeout(timeout)
 
-  /**
-   * Is the actor running?
-   */
+  def mailboxSize = actorRef.mailboxSize
+
+  def dispatcher = actorRef.getDispatcher
+
+  def lifeCycle = actorRef.getLifeCycle
+
   def isRunning: Boolean = actorRef.isRunning
-
-  /**
-   * Is the actor shut down?
-   */
   def isShutdown: Boolean = actorRef.isShutdown
-
-  /**
-   * Is the actor ever started?
-   */
   def isUnstarted: Boolean = actorRef.isUnstarted
+  def isBeingRestarted: Boolean = actorRef.isBeingRestarted
+
+  def getSelfAs[T <: AnyRef](): T = TypedActor.proxyFor(actorRef).get.asInstanceOf[T]
+  def getSelf(): AnyRef = getSelfAs[AnyRef]
 
   /**
    * Returns the current sender reference.
@@ -349,7 +399,7 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   /**
     * Returns the home address and port for this actor.
     */
-  def homeAddress: InetSocketAddress = actorRef.homeAddress.getOrElse(null)//TODO: REVISIT: Sensible to return null?
+  def homeAddress: InetSocketAddress = actorRef.homeAddress.getOrElse(null)
 }
 
 object TypedActorConfiguration {
@@ -449,7 +499,7 @@ object TypedActor {
    * @param intfClass interface the typed actor implements
    * @param targetClass implementation class of the typed actor
    */
-  def newInstance[T](intfClass: Class[T], targetClass: Class[_]): T = 
+  def newInstance[T](intfClass: Class[T], targetClass: Class[_]): T =
     newInstance(intfClass, targetClass, TypedActorConfiguration())
 
   /**
@@ -468,6 +518,7 @@ object TypedActor {
    * @param host hostanme of the remote server
    * @param port port of the remote server
    */
+  @deprecated("Will be removed after 1.1")
   def newRemoteInstance[T](intfClass: Class[T], targetClass: Class[_], hostname: String, port: Int): T = {
     newInstance(intfClass, targetClass, TypedActorConfiguration(hostname, port))
   }
@@ -479,6 +530,7 @@ object TypedActor {
    * @param host hostanme of the remote server
    * @param port port of the remote server
    */
+  @deprecated("Will be removed after 1.1")
   def newRemoteInstance[T](intfClass: Class[T], factory: => AnyRef, hostname: String, port: Int): T = {
     newInstance(intfClass, factory, TypedActorConfiguration(hostname, port))
   }
@@ -589,7 +641,7 @@ object TypedActor {
     }
 
     AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, remoteAddress, actorRef.timeout))
-    actorRef.start
+    actorRef.start()
     proxy.asInstanceOf[T]
   }
 
@@ -677,7 +729,7 @@ object TypedActor {
       actorRef.timeout = timeout
       if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
       AspectInitRegistry.register(proxy, AspectInit(targetClass, proxy, actorRef, remoteAddress, timeout))
-      actorRef.start
+      actorRef.start()
       proxy.asInstanceOf[T]
     }
   */
@@ -869,8 +921,8 @@ private[akka] abstract class ActorAspect {
   protected def localDispatch(joinPoint: JoinPoint): AnyRef = {
     val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     val isOneWay = TypedActor.isOneWay(methodRtti)
-    val senderActorRef = Some(SenderContextInfo.senderActorRef.value)
-    val senderProxy = Some(SenderContextInfo.senderProxy.value)
+    val senderActorRef = Option(SenderContextInfo.senderActorRef.value)
+    val senderProxy = Option(SenderContextInfo.senderProxy.value)
     val isCoordinated = TypedActor.isCoordinated(methodRtti)
 
     typedActor.context._sender = senderProxy
@@ -920,6 +972,7 @@ private[akka] abstract class ActorAspect {
   protected def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
     val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     val isOneWay = TypedActor.isOneWay(methodRtti)
+    val senderActorRef = Option(SenderContextInfo.senderActorRef.value)
 
     def extractOwnerTypeHint(s: String) =
       s.indexOf(TypedActor.AW_PROXY_PREFIX) match {
@@ -932,8 +985,11 @@ private[akka] abstract class ActorAspect {
         methodRtti.getParameterTypes,
         methodRtti.getParameterValues))
 
+    //FIXME send the interface name of the senderProxy in the TypedActorContext and assemble a context.sender with that interface on the server
+    //val senderProxy = Option(SenderContextInfo.senderProxy.value)
+
     val future = Actor.remote.send[AnyRef](
-      message, None, None, remoteAddress.get,
+      message, senderActorRef, None, remoteAddress.get,
       timeout, isOneWay, actorRef,
       Some((interfaceClass.getName, methodRtti.getMethod.getName)),
       ActorType.TypedActor,
@@ -997,7 +1053,7 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
     val init = if (proxy ne null) initializations.remove(proxy) else null
     if (init ne null) {
       notifyListeners(AspectInitUnregistered(proxy, init))
-      init.actorRef.stop
+      init.actorRef.stop()
     }
     init
   }

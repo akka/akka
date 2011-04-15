@@ -5,8 +5,6 @@
 package akka.event
 
 import akka.actor._
-import Actor._
-import akka.dispatch._
 import akka.config.Config._
 import akka.config.ConfigurationException
 import akka.util.{ListenerManagement, ReflectiveAccess}
@@ -25,7 +23,7 @@ import akka.AkkaException
  *     case EventHandler.Warning(instance, message)      => ...
  *     case EventHandler.Info(instance, message)         => ...
  *     case EventHandler.Debug(instance, message)        => ...
- *     case genericEvent                                 => ... 
+ *     case genericEvent                                 => ...
  *   }
  * })
  *
@@ -35,17 +33,17 @@ import akka.AkkaException
  * </pre>
  * <p/>
  * However best is probably to register the listener in the 'akka.conf'
- * configuration file. 
+ * configuration file.
  * <p/>
  * Log an error event:
  * <pre>
- * EventHandler.notify(EventHandler.Error(exception, this, message.toString))
+ * EventHandler.notify(EventHandler.Error(exception, this, message))
  * </pre>
  * Or use the direct methods (better performance):
  * <pre>
- * EventHandler.error(exception, this, message.toString)
+ * EventHandler.error(exception, this, message)
  * </pre>
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object EventHandler extends ListenerManagement {
@@ -61,11 +59,20 @@ object EventHandler extends ListenerManagement {
 
   sealed trait Event {
     @transient val thread: Thread = Thread.currentThread
+    val level: Int
   }
-  case class Error(cause: Throwable, instance: AnyRef, message: String = "") extends Event
-  case class Warning(instance: AnyRef, message: String = "") extends Event
-  case class Info(instance: AnyRef, message: String = "") extends Event
-  case class Debug(instance: AnyRef, message: String = "") extends Event
+  case class Error(cause: Throwable, instance: AnyRef, message: Any = "") extends Event {
+    override val level = ErrorLevel
+  }
+  case class Warning(instance: AnyRef, message: Any = "") extends Event {
+    override val level = WarningLevel
+  }
+  case class Info(instance: AnyRef, message: Any = "") extends Event {
+    override val level = InfoLevel
+  }
+  case class Debug(instance: AnyRef, message: Any = "") extends Event {
+    override val level = DebugLevel
+  }
 
   val error   = "[ERROR]   [%s] [%s] [%s] %s\n%s".intern
   val warning = "[WARN]    [%s] [%s] [%s] %s".intern
@@ -73,7 +80,7 @@ object EventHandler extends ListenerManagement {
   val debug   = "[DEBUG]   [%s] [%s] [%s] %s".intern
   val generic = "[GENERIC] [%s] [%s]".intern
   val ID      = "event:handler".intern
-  
+
   class EventHandlerException extends AkkaException
 
   lazy val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
@@ -87,31 +94,60 @@ object EventHandler extends ListenerManagement {
                     "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
   }
 
-  def notify(event: => AnyRef) = notifyListeners(event)
+  def notify(event: Any) {
+    if (event.isInstanceOf[Event]) {
+      if (level >= event.asInstanceOf[Event].level) notifyListeners(event)
+    } else
+      notifyListeners(event)
+  }
 
   def notify[T <: Event : ClassManifest](event: => T) {
     if (level >= levelFor(classManifest[T].erasure.asInstanceOf[Class[_ <: Event]])) notifyListeners(event)
   }
 
-  def error(cause: Throwable, instance: AnyRef, message: => String) = {
+  def error(cause: Throwable, instance: AnyRef, message: => String) {
     if (level >= ErrorLevel) notifyListeners(Error(cause, instance, message))
   }
 
-  def error(instance: AnyRef, message: => String) = {
+  def error(cause: Throwable, instance: AnyRef, message: Any) {
+    if (level >= ErrorLevel) notifyListeners(Error(cause, instance, message))
+  }
+
+  def error(instance: AnyRef, message: => String) {
     if (level >= ErrorLevel) notifyListeners(Error(new EventHandlerException, instance, message))
   }
 
-  def warning(instance: AnyRef, message: => String) = {
+  def error(instance: AnyRef, message: Any) {
+    if (level >= ErrorLevel) notifyListeners(Error(new EventHandlerException, instance, message))
+  }
+
+  def warning(instance: AnyRef, message: => String) {
     if (level >= WarningLevel) notifyListeners(Warning(instance, message))
   }
 
-  def info(instance: AnyRef, message: => String) = {
+  def warning(instance: AnyRef, message: Any) {
+    if (level >= WarningLevel) notifyListeners(Warning(instance, message))
+  }
+
+  def info(instance: AnyRef, message: => String) {
     if (level >= InfoLevel) notifyListeners(Info(instance, message))
   }
 
-  def debug(instance: AnyRef, message: => String) = {
+  def info(instance: AnyRef, message: Any) {
+    if (level >= InfoLevel) notifyListeners(Info(instance, message))
+  }
+
+  def debug(instance: AnyRef, message: => String) {
     if (level >= DebugLevel) notifyListeners(Debug(instance, message))
   }
+
+  def debug(instance: AnyRef, message: Any) {
+    if (level >= DebugLevel) notifyListeners(Debug(instance, message))
+  }
+
+  def isInfoEnabled = level >= InfoLevel
+
+  def isDebugEnabled = level >= DebugLevel
 
   def formattedTimestamp = DateFormat.getInstance.format(new Date)
 
@@ -129,7 +165,7 @@ object EventHandler extends ListenerManagement {
     else if (eventClass.isInstanceOf[Debug])   DebugLevel
     else                                       DebugLevel
   }
-  
+
   class DefaultListener extends Actor {
     self.id = ID
     self.dispatcher = EventHandlerDispatcher
@@ -165,10 +201,14 @@ object EventHandler extends ListenerManagement {
     }
   }
 
-  config.getList("akka.event-handlers") foreach { listenerName =>
+  val defaultListeners = config.getList("akka.event-handlers") match {
+    case Nil       => "akka.event.EventHandler$DefaultListener" :: Nil
+    case listeners => listeners
+  }
+  defaultListeners foreach { listenerName =>
     try {
-      ReflectiveAccess.getClassFor[Actor](listenerName) map {
-        clazz => addListener(Actor.actorOf(clazz).start)
+      ReflectiveAccess.getClassFor[Actor](listenerName) map { clazz =>
+        addListener(Actor.actorOf(clazz).start())
       }
     } catch {
       case e: Exception =>

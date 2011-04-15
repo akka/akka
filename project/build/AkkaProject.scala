@@ -18,10 +18,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   val scalaCompileSettings =
     Seq("-deprecation",
-        "-Xmigration",
-        //"-Xcheckinit",
-        //"-optimise",
-        "-Xwarninit",
+        //"-Xmigration",
+        "-optimise",
         "-encoding", "utf8")
 
   val javaCompileSettings = Seq("-Xlint:unchecked")
@@ -98,14 +96,14 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
-  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsRelRepo)
+  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshotRepo)
   lazy val spdeModuleConfig        = ModuleConfiguration("us.technically.spde", DatabinderRepo)
   lazy val processingModuleConfig  = ModuleConfiguration("org.processing", DatabinderRepo)
-  lazy val scalaModuleConfig       = ModuleConfiguration("org.scala-lang", ScalaToolsSnapshotRepo)
   lazy val sjsonModuleConfig       = ModuleConfiguration("net.debasishg", ScalaToolsRelRepo)
   lazy val lzfModuleConfig         = ModuleConfiguration("voldemort.store.compress", "h2-lzf", AkkaRepo)
   lazy val vscaladocModuleConfig   = ModuleConfiguration("org.scala-tools", "vscaladoc", "1.1-md-3", AkkaRepo)
   lazy val aspectWerkzModuleConfig = ModuleConfiguration("org.codehaus.aspectwerkz", "aspectwerkz", "2.2.3", AkkaRepo)
+  lazy val objenesisModuleConfig   = ModuleConfiguration("org.objenesis", sbt.DefaultMavenRepository)
   lazy val localMavenRepo          = LocalMavenRepo // Second exception, also fast! ;-)
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -115,7 +113,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val JACKSON_VERSION       = "1.7.1"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.2"
-  lazy val SCALATEST_VERSION     = "1.3"
+  lazy val SCALATEST_VERSION     = "1.4-SNAPSHOT"
   lazy val JETTY_VERSION         = "7.2.2.v20101205"
   lazy val JAVAX_SERVLET_VERSION = "3.0"
   lazy val SLF4J_VERSION         = "1.6.0"
@@ -129,7 +127,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     // Compile
     lazy val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile" //Public domain
 
-    lazy val aspectwerkz = "org.codehaus.aspectwerkz" % "aspectwerkz" % "2.2.3" % "compile" //LGPL 2.1
+    lazy val aspectwerkz = "org.codehaus.aspectwerkz" % "aspectwerkz" % "2.2.3" % "compile" //ApacheV2
 
     lazy val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile" //ApacheV2
 
@@ -158,8 +156,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile" //New BSD
 
-    lazy val sjson      = "net.debasishg" % "sjson_2.8.1" % "0.10" % "compile" //ApacheV2
-    lazy val sjson_test = "net.debasishg" % "sjson_2.8.1" % "0.10" % "test" //ApacheV2
+    lazy val sjson      = "net.debasishg" % "sjson_2.9.0.RC1" % "0.11" % "compile" //ApacheV2
+    lazy val sjson_test = "net.debasishg" % "sjson_2.9.0.RC1" % "0.11" % "test" //ApacheV2
 
     lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % "1.6.0"
     lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.24"
@@ -181,18 +179,20 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val akka_actor       = project("akka-actor",       "akka-actor",       new AkkaActorProject(_))
+  lazy val akka_testkit     = project("akka-testkit",     "akka-testkit",     new AkkaTestkitProject(_),    akka_actor)
+  lazy val akka_actor_tests = project("akka-actor-tests", "akka-actor-tests", new AkkaActorTestsProject(_), akka_testkit)
   lazy val akka_stm         = project("akka-stm",         "akka-stm",         new AkkaStmProject(_),        akka_actor)
-  lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_stm)
+  lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_stm, akka_actor_tests)
   lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),     akka_typed_actor)
   lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_actor)
   lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
-  lazy val akka_sbt_plugin  = project("akka-sbt-plugin",  "akka-sbt-plugin",  new AkkaSbtPluginProject(_))
-  lazy val akka_testkit     = project("akka-testkit",     "akka-testkit",     new AkkaTestkitProject(_),    akka_actor)
   lazy val akka_slf4j       = project("akka-slf4j",       "akka-slf4j",       new AkkaSlf4jProject(_),      akka_actor)
+  lazy val akka_tutorials   = project("akka-tutorials",   "akka-tutorials",   new AkkaTutorialsParentProject(_),      akka_actor)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Miscellaneous
   // -------------------------------------------------------------------------------------------------------------------
+
   override def disableCrossPaths = true
 
   override def packageOptions =
@@ -209,31 +209,26 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     (super.fullClasspath(config) ** "slf4j*1.5.11.jar")
   }
 
-//  override def runClasspath = super.runClasspath +++ "config"
-
   // ------------------------------------------------------------
-  // publishing
+  // Publishing
+  // ------------------------------------------------------------
+
   override def managedStyle = ManagedStyle.Maven
 
-  //override def defaultPublishRepository = Some(Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile))
-  val publishTo = Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile)
+  lazy val akkaPublishRepository = systemOptional[String]("akka.publish.repository", "default")
+  lazy val akkaPublishCredentials = systemOptional[String]("akka.publish.credentials", "none")
 
-  override def artifacts = Set(Artifact(artifactID, "pom", "pom"))
+  if (akkaPublishCredentials.value != "none") Credentials(akkaPublishCredentials.value, log)
 
-  override def deliverProjectDependencies =
-    super.deliverProjectDependencies.toList - akka_samples.projectID - akka_sbt_plugin.projectID
+  def publishToRepository = {
+    val repoUrl = akkaPublishRepository.value
+    if (repoUrl != "default") Resolver.url("Akka Publish Repository", new java.net.URL(repoUrl))
+    else Resolver.file("Local Maven Repository", Path.userHome / ".m2" / "repository" asFile)
+  }
 
-  // val sourceArtifact = Artifact(artifactID, "src", "jar", Some("sources"), Nil, None)
-  // val docsArtifact   = Artifact(artifactID, "doc", "jar", Some("docs"), Nil, None)
+  val publishTo = publishToRepository
 
-  // Credentials(Path.userHome / ".akka_publish_credentials", log)
-
-  // override def documentOptions = encodingUtf8.map(SimpleDocOption(_))
-  // override def packageDocsJar = defaultJarPath("-docs.jar")
-  // override def packageSrcJar= defaultJarPath("-sources.jar")
-  // override def packageToPublishActions = super.packageToPublishActions ++ Seq(packageDocs, packageSrc)
-
-  override def pomExtra =
+  override def pomExtra = {
     <inceptionYear>2009</inceptionYear>
     <url>http://akka.io</url>
     <organization>
@@ -247,27 +242,15 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         <distribution>repo</distribution>
       </license>
     </licenses>
+  }
 
-  // publish to local mvn
-  import Process._
-  lazy val publishLocalMvn = runMvnInstall
-  def runMvnInstall = task {
-    for (absPath <- akkaArtifacts.getPaths) {
-      val artifactRE = """(.*)/dist/(.*)-(\d.*)\.jar""".r
-      val artifactRE(path, artifactId, artifactVersion) = absPath
-      val command = "mvn install:install-file" +
-                    " -Dfile=" + absPath +
-                    " -DgroupId=se.scalablesolutions.akka" +
-                    " -DartifactId=" + artifactId +
-                    " -Dversion=" + version +
-                    " -Dpackaging=jar -DgeneratePom=true"
-      command ! log
-    }
-    None
-  } dependsOn(dist) describedAs("Run mvn install for artifacts in dist.")
+  override def artifacts = Set(Artifact(artifactID, "pom", "pom"))
 
+  override def deliverProjectDependencies = super.deliverProjectDependencies.toList - akka_samples.projectID - akka_tutorials.projectID
 
+  // ------------------------------------------------------------  
   // Build release
+  // ------------------------------------------------------------
 
   val localReleasePath = outputPath / "release" / version.toString
   val localReleaseRepository = Resolver.file("Local Release", localReleasePath / "repository" asFile)
@@ -289,16 +272,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    // testing
-    val junit           = Dependencies.junit
-    val scalatest       = Dependencies.scalatest
-    val multiverse_test = Dependencies.multiverse_test // StandardLatch
-
     override def bndExportPackage = super.bndExportPackage ++ Seq("com.eaio.*;version=3.2")
-
-    // some tests depend on testkit, so include that and make sure it's compiled
-    override def testClasspath = super.testClasspath +++ akka_testkit.path("target") / "classes"
-    override def testCompileAction = super.testCompileAction dependsOn (akka_testkit.compile)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -325,6 +299,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     // testing
     val junit     = Dependencies.junit
     val scalatest = Dependencies.scalatest
+
+    override def deliverProjectDependencies =
+      super.deliverProjectDependencies.toList - akka_actor_tests.projectID ++ Seq(akka_actor_tests.projectID % "test")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -345,6 +322,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     // testing
     val junit     = Dependencies.junit
     val scalatest = Dependencies.scalatest
+
+    lazy val networkTestsEnabled = systemOptional[Boolean]("akka.test.network", false)
+
+    override def testOptions = super.testOptions ++ {
+      if (!networkTestsEnabled.value) Seq(TestFilter(test => !test.endsWith("NetworkTest")))
+      else Seq.empty
+    }
 
     override def bndImportPackage = "javax.transaction;version=1.1" :: super.bndImportPackage.toList
   }
@@ -371,7 +355,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Examples
   // -------------------------------------------------------------------------------------------------------------------
 
-  /** FIXME SPDE doesn't exist for 2.9.0-SNAPSHOT
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
     override def disableCrossPaths = true
     override def spdeSourcePath = mainSourcePath / "spde"
@@ -386,22 +369,25 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
       publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
     }
-  }*/
+  }
 
   class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+
+  class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
   class AkkaSampleFSMProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
     override def disableCrossPaths = true
 
-    //FIXME ANts is disabled due to unavailable for 2.9.0-SNAPSHOT
-   // lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
-    //  new AkkaSampleAntsProject(_), akka_stm)
+    lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
+      new AkkaSampleAntsProject(_), akka_stm)
     lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
       new AkkaSampleFSMProject(_), akka_actor)
     lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
       new AkkaSampleRemoteProject(_), akka_remote)
+    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
+      new AkkaSampleChatProject(_), akka_remote)
 
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
@@ -410,10 +396,22 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-sbt-plugin subproject
+  // Tutorials
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaSbtPluginProject(info: ProjectInfo) extends PluginProject(info) {
+  class AkkaTutorialFirstProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+
+  class AkkaTutorialSecondProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+
+  class AkkaTutorialsParentProject(info: ProjectInfo) extends ParentProject(info) {
+    override def disableCrossPaths = true
+
+    lazy val akka_tutorial_first = project("akka-tutorial-first", "akka-tutorial-first",
+      new AkkaTutorialFirstProject(_), akka_actor)
+
+    lazy val akka_tutorial_second = project("akka-tutorial-second", "akka-tutorial-second",
+      new AkkaTutorialSecondProject(_), akka_actor)
+
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
       publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
@@ -426,6 +424,17 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaTestkitProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
 
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-actor-tests subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaActorTestsProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    // testing
+    val junit           = Dependencies.junit
+    val scalatest       = Dependencies.scalatest
+    val multiverse_test = Dependencies.multiverse_test // StandardLatch
+  }
+  
   // -------------------------------------------------------------------------------------------------------------------
   // akka-slf4j subproject
   // -------------------------------------------------------------------------------------------------------------------
@@ -445,8 +454,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   def allArtifacts = {
     Path.fromFile(buildScalaInstance.libraryJar) +++
-    (removeDupEntries(runClasspath filter ClasspathUtilities.isArchive) ---
-    (akka_sbt_plugin.runClasspath filter ClasspathUtilities.isArchive) +++
+    (removeDupEntries(runClasspath filter ClasspathUtilities.isArchive) +++
     ((outputPath ##) / defaultJarName) +++
     mainResources +++
     mainDependencies.scalaJars +++
@@ -463,11 +471,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   def akkaArtifacts = descendents(info.projectPath / "dist", "*-" + version + ".jar")
-  lazy val integrationTestsEnabled = systemOptional[Boolean]("integration.tests",false)
-  lazy val stressTestsEnabled = systemOptional[Boolean]("stress.tests",false)
 
   // ------------------------------------------------------------
-  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) 
+  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info)
     with DeployProject with OSGiProject with McPom {
     override def disableCrossPaths = true
 
@@ -483,20 +489,14 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def packageToPublishActions = super.packageToPublishActions ++ Seq(this.packageDocs, this.packageSrc)
     override def pomPostProcess(node: scala.xml.Node): scala.xml.Node = mcPom(AkkaParentProject.this.moduleConfigurations)(super.pomPostProcess(node))
 
-    /**
-     * Used for testOptions, possibility to enable the running of integration and or stresstests
-     *
-     * To enable set true and disable set false
-     * set integration.tests true
-     * set stress.tests true
-     */
-    def createTestFilter(defaultTests: (String) => Boolean) = { TestFilter({
-        case s: String if defaultTests(s) => true
-        case s: String if integrationTestsEnabled.value => s.endsWith("TestIntegration")
-        case s: String if stressTestsEnabled.value      => s.endsWith("TestStress")
-        case _ => false
-      }) :: Nil
+    lazy val excludeTestsProperty = systemOptional[String]("akka.test.exclude", "")
+
+    def excludeTests = {
+      val exclude = excludeTestsProperty.value
+      if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
     }
+
+    override def testOptions = super.testOptions ++ excludeTests.map(exclude => TestFilter(test => !test.contains(exclude)))
 
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
@@ -542,12 +542,12 @@ trait McPom { self: DefaultProject =>
       case u                   => u + "/"
     }
 
-    val oldRepos = 
-      (node \\ "project" \ "repositories" \ "repository").map { n => 
+    val oldRepos =
+      (node \\ "project" \ "repositories" \ "repository").map { n =>
         cleanUrl((n \ "url").text) -> (n \ "name").text
       }.toList
 
-    val newRepos = 
+    val newRepos =
       mcs.filter(_.resolver.isInstanceOf[MavenRepository]).map { m =>
         val r = m.resolver.asInstanceOf[MavenRepository]
         cleanUrl(r.root) -> r.name

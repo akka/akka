@@ -12,6 +12,10 @@ import akka.config.Supervision._
 import java.util.concurrent.CountDownLatch
 import akka.config.TypedActorConfigurator
 
+import akka.testing._
+import akka.util.duration._
+
+
 /**
  * @author Martin Krasser
  */
@@ -95,7 +99,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
     }
 
     it("should be stopped when supervision cannot handle the problem in") {
-      val actorSupervision = new SuperviseTypedActor(classOf[TypedActorFailer],classOf[TypedActorFailerImpl],permanent(),30000)
+      val actorSupervision = new SuperviseTypedActor(classOf[TypedActorFailer], classOf[TypedActorFailerImpl], permanent(), 30000)
       val conf = new TypedActorConfigurator().configure(OneForOneStrategy(Nil, 3, 500000), Array(actorSupervision)).inject.supervise
       try {
         val first = conf.getInstance(classOf[TypedActorFailer])
@@ -105,15 +109,18 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
         } catch {
           case r: RuntimeException if r.getMessage == "expected" => //expected
         }
-        val second = conf.getInstance(classOf[TypedActorFailer])
 
+        // allow some time for the actor to be stopped
+        Testing.sleepFor(3 seconds)
+
+        val second = conf.getInstance(classOf[TypedActorFailer])
         first should be (second)
 
         try {
           second.fail
           fail("shouldn't get here")
         } catch {
-          case r: ActorInitializationException if r.getMessage == "Actor has not been started, you need to invoke 'actor.start' before using it" => //expected
+          case r: ActorInitializationException if r.getMessage == "Actor has not been started, you need to invoke 'actor.start()' before using it" => //expected
         }
       } finally {
         conf.stop
@@ -121,7 +128,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
     }
 
     it("should be restarted when supervision handles the problem in") {
-     val actorSupervision = new SuperviseTypedActor(classOf[TypedActorFailer],classOf[TypedActorFailerImpl],permanent(),30000)
+     val actorSupervision = new SuperviseTypedActor(classOf[TypedActorFailer],classOf[TypedActorFailerImpl],permanent(), 30000)
      val conf = new TypedActorConfigurator().configure(OneForOneStrategy(classOf[Throwable] :: Nil, 3, 500000), Array(actorSupervision)).inject.supervise
      try {
        val first = conf.getInstance(classOf[TypedActorFailer])

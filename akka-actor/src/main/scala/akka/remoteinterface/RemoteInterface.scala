@@ -5,21 +5,22 @@
 package akka.remoteinterface
 
 import akka.japi.Creator
-import java.net.InetSocketAddress
 import akka.actor._
 import akka.util._
 import akka.dispatch.CompletableFuture
-import akka.config.Config.{config, TIME_UNIT}
-import java.util.concurrent.ConcurrentHashMap
 import akka.AkkaException
-import reflect.BeanProperty
+
+import scala.reflect.BeanProperty
+
+import java.net.InetSocketAddress
+import java.util.concurrent.ConcurrentHashMap
+import java.io.{PrintWriter, PrintStream}
 
 trait RemoteModule {
-  val UUID_PREFIX        = "uuid:"
+  val UUID_PREFIX = "uuid:".intern
 
   def optimizeLocalScoped_?(): Boolean //Apply optimizations for remote operations in local scope
   protected[akka] def notifyListeners(message: => Any): Unit
-
 
   private[akka] def actors: ConcurrentHashMap[String, ActorRef]
   private[akka] def actorsByUuid: ConcurrentHashMap[String, ActorRef]
@@ -27,7 +28,6 @@ trait RemoteModule {
   private[akka] def typedActors: ConcurrentHashMap[String, AnyRef]
   private[akka] def typedActorsByUuid: ConcurrentHashMap[String, AnyRef]
   private[akka] def typedActorsFactories: ConcurrentHashMap[String, () => AnyRef]
-
 
   /** Lookup methods **/
 
@@ -84,7 +84,6 @@ case class RemoteClientWriteFailed(
   @BeanProperty client: RemoteClientModule,
   @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 
-
 /**
  *  Life-cycle events for RemoteServer.
  */
@@ -114,24 +113,43 @@ case class RemoteServerWriteFailed(
 /**
  * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down.
  */
-class RemoteClientException private[akka] (message: String,
-                                           @BeanProperty val client: RemoteClientModule,
-                                           val remoteAddress: InetSocketAddress) extends AkkaException(message)
+class RemoteClientException private[akka] (
+  message: String,
+  @BeanProperty val client: RemoteClientModule,
+  val remoteAddress: InetSocketAddress) extends AkkaException(message)
 
 /**
- * Returned when a remote exception cannot be instantiated or parsed
+ * Thrown when the remote server actor dispatching fails for some reason.
  */
-case class UnparsableException private[akka] (originalClassName: String,
-                                              originalMessage: String) extends AkkaException(originalMessage)
+class RemoteServerException private[akka] (message: String) extends AkkaException(message)
 
+/**
+ * Thrown when a remote exception sent over the wire cannot be loaded and instantiated
+ */
+case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorException private[akka] (cause: Throwable, originalClassName: String, originalMessage: String)
+  extends AkkaException("\nParsingError[%s]\nOriginalException[%s]\nOriginalMessage[%s]"
+                        .format(cause.toString, originalClassName, originalMessage)) {
+  override def printStackTrace                           = cause.printStackTrace
+  override def printStackTrace(printStream: PrintStream) = cause.printStackTrace(printStream)
+  override def printStackTrace(printWriter: PrintWriter) = cause.printStackTrace(printWriter)
+}
 
 abstract class RemoteSupport extends ListenerManagement with RemoteServerModule with RemoteClientModule {
+
+  lazy val eventHandler: ActorRef = {
+    val handler = Actor.actorOf[RemoteEventHandler].start()
+    // add the remote client and server listener that pipes the events to the event handler system
+    addListener(handler)
+    handler
+  }
+
   def shutdown {
+    eventHandler.stop()
+    removeListener(eventHandler)
     this.shutdownClientModule
     this.shutdownServerModule
     clear
   }
-
 
   /**
    * Creates a Client-managed ActorRef out of the Actor of the specified Class.
@@ -139,13 +157,13 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    * <pre>
    *   import Actor._
    *   val actor = actorOf(classOf[MyActor],"www.akka.io", 2552)
-   *   actor.start
+   *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(classOf[MyActor],"www.akka.io", 2552).start
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io", 2552).start()
    * </pre>
    */
   @deprecated("Will be removed after 1.1")
@@ -158,13 +176,13 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    * <pre>
    *   import Actor._
    *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552)
-   *   actor.start
+   *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552).start
+   *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552).start()
    * </pre>
    */
   @deprecated("Will be removed after 1.1")
@@ -186,13 +204,13 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    * <pre>
    *   import Actor._
    *   val actor = actorOf[MyActor]("www.akka.io",2552)
-   *   actor.start
+   *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf[MyActor]("www.akka.io",2552).start
+   *   val actor = actorOf[MyActor]("www.akka.io",2552).start()
    * </pre>
    */
   @deprecated("Will be removed after 1.1")
