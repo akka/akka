@@ -14,6 +14,8 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent. {ConcurrentLinkedQueue, TimeUnit, Callable}
 import java.util.concurrent.TimeUnit.{NANOSECONDS => NANOS, MILLISECONDS => MILLIS}
 import java.util.concurrent.atomic. {AtomicBoolean, AtomicInteger}
+import java.lang.{Iterable => JIterable}
+import java.util.{LinkedList => JLinkedList}
 import annotation.tailrec
 
 class FutureTimeoutException(message: String) extends AkkaException(message)
@@ -152,29 +154,47 @@ object Futures {
   def reduce[T <: AnyRef, R >: T](futures: java.lang.Iterable[Future[T]], timeout: Long, fun: akka.japi.Function2[R, T, T]): Future[R] =
     reduce(scala.collection.JavaConversions.iterableAsScalaIterable(futures), timeout)(fun.apply _)
 
-  import scala.collection.mutable.Builder
-  import scala.collection.generic.CanBuildFrom
-
   /**
-   * Simple version of Futures.traverse. Transforms a Traversable[Future[A]] into a Future[Traversable[A]].
+   * Java API.
+   * Simple version of Futures.traverse. Transforms a java.lang.Iterable[Future[A]] into a Future[java.util.LinkedList[A]].
    * Useful for reducing many Futures into a single Future.
    */
-  def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]], timeout: Long = Actor.TIMEOUT)(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]]): Future[M[A]] =
-    in.foldLeft(new DefaultCompletableFuture[Builder[A, M[A]]](timeout).completeWithResult(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) => for (r <- fr; a <- fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
+  def sequence[A](in: JIterable[Future[A]], timeout: Long): Future[JLinkedList[A]] =
+    scala.collection.JavaConversions.iterableAsScalaIterable(in).foldLeft(Future(new JLinkedList[A]()))((fr, fa) =>
+      for (r <- fr; a <- fa) yield {
+        r add a
+        r
+      })
 
   /**
-   * Transforms a Traversable[A] into a Future[Traversable[B]] using the provided Function A => Future[B].
-   * This is useful for performing a parallel map. For example, to apply a function to all items of a list
-   * in parallel:
-   * <pre>
-   * val myFutureList = Futures.traverse(myList)(x => Future(myFunc(x)))
-   * </pre>
+   * Java API.
+   * Simple version of Futures.traverse. Transforms a java.lang.Iterable[Future[A]] into a Future[java.util.LinkedList[A]].
+   * Useful for reducing many Futures into a single Future.
    */
-  def traverse[A, B, M[_] <: Traversable[_]](in: M[A], timeout: Long = Actor.TIMEOUT)(fn: A => Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]]): Future[M[B]] =
-    in.foldLeft(new DefaultCompletableFuture[Builder[B, M[B]]](timeout).completeWithResult(cbf(in)): Future[Builder[B, M[B]]]) { (fr, a) =>
-      val fb = fn(a.asInstanceOf[A])
-      for (r <- fr; b <-fb) yield (r += b)
-    }.map(_.result)
+  def sequence[A](in: JIterable[Future[A]]): Future[JLinkedList[A]] = sequence(in, Actor.TIMEOUT)
+
+  /**
+   * Java API.
+   * Transforms a java.lang.Iterable[A] into a Future[java.util.LinkedList[B]] using the provided Function A => Future[B].
+   * This is useful for performing a parallel map. For example, to apply a function to all items of a list
+   * in parallel.
+   */
+  def traverse[A, B](in: JIterable[A], timeout: Long, fn: JFunc[A,Future[B]]): Future[JLinkedList[B]] =
+    scala.collection.JavaConversions.iterableAsScalaIterable(in).foldLeft(Future(new JLinkedList[B]())){(fr, a) =>
+      val fb = fn(a)
+      for (r <- fr; b <- fb) yield {
+        r add b
+        r
+      }
+    }
+
+  /**
+   * Java API.
+   * Transforms a java.lang.Iterable[A] into a Future[java.util.LinkedList[B]] using the provided Function A => Future[B].
+   * This is useful for performing a parallel map. For example, to apply a function to all items of a list
+   * in parallel.
+   */
+  def traverse[A, B](in: JIterable[A], fn: JFunc[A,Future[B]]): Future[JLinkedList[B]] = traverse(in, Actor.TIMEOUT, fn)
 
   // =====================================
   // Deprecations
@@ -217,6 +237,30 @@ object Future {
     dispatcher.dispatchFuture(FutureInvocation(f.asInstanceOf[CompletableFuture[Any]], () => body))
     f
   }
+
+  import scala.collection.mutable.Builder
+  import scala.collection.generic.CanBuildFrom
+
+  /**
+   * Simple version of Futures.traverse. Transforms a Traversable[Future[A]] into a Future[Traversable[A]].
+   * Useful for reducing many Futures into a single Future.
+   */
+  def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]], timeout: Long = Actor.TIMEOUT)(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]]): Future[M[A]] =
+    in.foldLeft(new DefaultCompletableFuture[Builder[A, M[A]]](timeout).completeWithResult(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) => for (r <- fr; a <- fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
+
+  /**
+   * Transforms a Traversable[A] into a Future[Traversable[B]] using the provided Function A => Future[B].
+   * This is useful for performing a parallel map. For example, to apply a function to all items of a list
+   * in parallel:
+   * <pre>
+   * val myFutureList = Futures.traverse(myList)(x => Future(myFunc(x)))
+   * </pre>
+   */
+  def traverse[A, B, M[_] <: Traversable[_]](in: M[A], timeout: Long = Actor.TIMEOUT)(fn: A => Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]]): Future[M[B]] =
+    in.foldLeft(new DefaultCompletableFuture[Builder[B, M[B]]](timeout).completeWithResult(cbf(in)): Future[Builder[B, M[B]]]) { (fr, a) =>
+      val fb = fn(a.asInstanceOf[A])
+      for (r <- fr; b <-fb) yield (r += b)
+    }.map(_.result)
 }
 
 sealed trait Future[+T] {
