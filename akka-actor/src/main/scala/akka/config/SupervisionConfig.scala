@@ -6,7 +6,7 @@ package akka.config
 
 import akka.dispatch.MessageDispatcher
 import akka.actor.{MaximumNumberOfRestartsWithinTimeRangeReached, ActorRef}
-import akka.japi.Procedure
+import akka.japi.{Procedure2, Procedure}
 
 case class RemoteAddress(val hostname: String, val port: Int)
 
@@ -22,10 +22,10 @@ object Supervision {
   sealed abstract class LifeCycle extends ConfigElement
   sealed abstract class FaultHandlingStrategy(val trapExit: List[Class[_ <: Throwable]]) extends ConfigElement
 
-  case class SupervisorConfig(restartStrategy: FaultHandlingStrategy, worker: List[Server], maxRestartsHandler: MaximumNumberOfRestartsWithinTimeRangeReached => Unit = {max=>()}) extends Server {
+  case class SupervisorConfig(restartStrategy: FaultHandlingStrategy, worker: List[Server], maxRestartsHandler: (ActorRef,MaximumNumberOfRestartsWithinTimeRangeReached)=> Unit = {(aRef,max)=>()}) extends Server {
     //Java API
     def this(restartStrategy: FaultHandlingStrategy, worker: Array[Server]) = this(restartStrategy,worker.toList)
-    def this(restartStrategy: FaultHandlingStrategy, worker: Array[Server], restartHandler:Procedure[MaximumNumberOfRestartsWithinTimeRangeReached]) = this(restartStrategy,worker.toList, {max=>restartHandler.apply(max)})
+    def this(restartStrategy: FaultHandlingStrategy, worker: Array[Server], restartHandler:Procedure2[ActorRef,MaximumNumberOfRestartsWithinTimeRangeReached]) = this(restartStrategy,worker.toList, {(aRef,max)=>restartHandler.apply(aRef,max)})
   }
 
   class Supervise(val actorRef: ActorRef, val lifeCycle: LifeCycle, val registerAsRemoteService: Boolean = false) extends Server {

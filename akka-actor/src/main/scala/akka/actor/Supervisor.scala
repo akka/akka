@@ -99,7 +99,7 @@ case class SupervisorFactory(val config: SupervisorConfig) {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: MaximumNumberOfRestartsWithinTimeRangeReached => Unit) {
+sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached) => Unit) {
   import Supervisor._
 
   private val _childActors = new ConcurrentHashMap[String, List[ActorRef]]
@@ -156,7 +156,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: Maxi
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final class SupervisorActor private[akka] (handler: FaultHandlingStrategy, maxRestartsHandler: MaximumNumberOfRestartsWithinTimeRangeReached => Unit) extends Actor {
+final class SupervisorActor private[akka] (handler: FaultHandlingStrategy, maxRestartsHandler: (ActorRef,MaximumNumberOfRestartsWithinTimeRangeReached) => Unit) extends Actor {
   self.faultHandler = handler
 
 
@@ -170,7 +170,7 @@ final class SupervisorActor private[akka] (handler: FaultHandlingStrategy, maxRe
   }
 
   def receive = {
-    case max@MaximumNumberOfRestartsWithinTimeRangeReached(_,_,_,_) => maxRestartsHandler(max)
+    case max@MaximumNumberOfRestartsWithinTimeRangeReached(_,_,_,_) => maxRestartsHandler(self, max)
     case unknown => throw new SupervisorException(
       "SupervisorActor can not respond to messages.\n\tUnknown message [" + unknown + "]")
   }

@@ -125,6 +125,36 @@ The Actor’s supervision can be declaratively defined by creating a ‘Supervis
 
 Supervisors created like this are implicitly instantiated and started.
 
+To cofigure a handler function for when the actor underlying the supervisor recieves a MaximumNumberOfRestartsWithinTimeRangeReached message, you can specify
+ a Procedure2<ActorRef,MaximumNumberOfRestartsWithinTimeRangeReached> when creating the SupervisorConfig. This handler will be called with the ActorRef of the supervisor and the
+MaximumNumberOfRestartsWithinTimeRangeReached message.
+
+.. code-block:: java
+
+  import static akka.config.Supervision.*;
+  import static akka.actor.Actors.*;
+  import akka.event.JavaEventHandler;
+
+   Procedure2<ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached> handler = new Procedure2<ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached>() {
+            public void apply(ActorRef ref, MaximumNumberOfRestartsWithinTimeRangeReached max) {
+                JavaEventHandler.error(ref, max);
+            }
+        };
+
+  Supervisor supervisor = new Supervisor(
+    new SupervisorConfig(
+      new AllForOneStrategy(new Class[]{Exception.class}, 3, 5000),
+      new Supervise[] {
+        new Supervise(
+          actorOf(MyActor1.class),
+          permanent()),
+        Supervise(
+          actorOf(MyActor2.class),
+          permanent())
+       },handler));
+
+
+
 You can link and unlink actors from a declaratively defined supervisor using the 'link' and 'unlink' methods:
 
 .. code-block:: java

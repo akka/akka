@@ -121,6 +121,29 @@ The Actor's supervision can be declaratively defined by creating a "Supervisor' 
 
 Supervisors created like this are implicitly instantiated and started.
 
+To cofigure a handler function for when the actor underlying the supervisor recieves a MaximumNumberOfRestartsWithinTimeRangeReached message, you can specify a function of type
+(ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached) => Unit when creating the SupervisorConfig. This handler will be called with the ActorRef of the supervisor and the
+MaximumNumberOfRestartsWithinTimeRangeReached message.
+
+
+.. code-block:: scala
+
+  val handler = {
+    (supervisor:ActorRef,max:MaximumNumberOfRestartsWithinTimeRangeReached) => EventHandler.notify(supervisor,max)
+  }
+
+  val supervisor = Supervisor(
+    SupervisorConfig(
+      AllForOneStrategy(List(classOf[Exception]), 3, 1000),
+      Supervise(
+        actorOf[MyActor1],
+        Permanent) ::
+      Supervise(
+        actorOf[MyActor2],
+        Permanent) ::
+      Nil), handler)
+
+
 You can link and unlink actors from a declaratively defined supervisor using the 'link' and 'unlink' methods:
 
 .. code-block:: scala
