@@ -4,6 +4,7 @@
 package akka.actor
 
 import akka.util._
+import akka.event.EventHandler
 
 import scala.collection.mutable
 import java.util.concurrent.ScheduledFuture
@@ -376,8 +377,13 @@ trait FSM[S, D] {
       }
     case SubscribeTransitionCallBack(actorRef) =>
     // send current state back as reference point
-      actorRef ! CurrentState(self, currentState.stateName)
-      transitionCallBackList ::= actorRef
+      try {
+        actorRef ! CurrentState(self, currentState.stateName)
+        transitionCallBackList ::= actorRef
+      } catch {
+        case e : ActorInitializationException =>
+          EventHandler.warning(this, "trying to register not running listener")
+      }
     case UnsubscribeTransitionCallBack(actorRef) =>
       transitionCallBackList = transitionCallBackList.filterNot(_ == actorRef)
     case value => {
@@ -413,7 +419,16 @@ trait FSM[S, D] {
         handleTransition(currentState.stateName, nextState.stateName)
         if (!transitionCallBackList.isEmpty) {
           val transition = Transition(self, currentState.stateName, nextState.stateName)
-          transitionCallBackList.foreach(_ ! transition)
+          transitionCallBackList = transitionCallBackList flatMap { cb =>
+            try {
+              cb ! transition
+              Some(cb)
+            } catch {
+              case e : ActorInitializationException =>
+                EventHandler.warning(this, "registered transition listener went away")
+                None
+            }
+          }
         }
       }
       applyState(nextState)
