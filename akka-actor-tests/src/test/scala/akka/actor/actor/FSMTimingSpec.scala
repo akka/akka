@@ -4,6 +4,7 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
 import akka.testkit.TestKit
+import akka.util.Duration
 import akka.util.duration._
 
 
@@ -26,6 +27,18 @@ class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
         fsm ! TestStateTimeout
         expectMsg(Transition(fsm, TestStateTimeout, Initial))
         expectNoMsg
+      }
+    }
+
+    "allow StateTimeout override" in {
+      within (500 millis) {
+        fsm ! TestStateTimeoutOverride
+        expectNoMsg
+      }
+      within (50 millis) {
+        fsm ! Cancel
+        expectMsg(Cancel)
+        expectMsg(Transition(fsm, TestStateTimeout, Initial))
       }
     }
 
@@ -81,6 +94,7 @@ object FSMTimingSpec {
   trait State
   case object Initial extends State
   case object TestStateTimeout extends State
+  case object TestStateTimeoutOverride extends State
   case object TestSingleTimer extends State
   case object TestRepeatedTimer extends State
   case object TestUnhandled extends State
@@ -102,10 +116,13 @@ object FSMTimingSpec {
       case Ev(TestRepeatedTimer) =>
         setTimer("tester", Tick, 100 millis, true)
         goto(TestRepeatedTimer) using 4
+      case Ev(TestStateTimeoutOverride) =>
+        goto(TestStateTimeout) forMax (Duration.Inf)
       case Ev(x : FSMTimingSpec.State) => goto(x)
     }
     when(TestStateTimeout, stateTimeout = 100 millis) {
       case Ev(StateTimeout) => goto(Initial)
+      case Ev(Cancel) => goto(Initial) replying (Cancel)
     }
     when(TestSingleTimer) {
       case Ev(Tick) =>

@@ -425,7 +425,7 @@ trait FSM[S, D] {
     val timeout = if (currentState.timeout.isDefined) currentState.timeout else stateTimeouts(currentState.stateName)
     if (timeout.isDefined) {
       val t = timeout.get
-      if (t.length >= 0) {
+      if (t.finite_? && t.length >= 0) {
         timeoutFuture = Some(Scheduler.scheduleOnce(self, TimeoutMarker(generation), t.length, t.unit))
       }
     }
