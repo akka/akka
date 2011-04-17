@@ -207,7 +207,9 @@ these requirements are case objects.
 If the :meth:`stateTimeout` parameter is given, then all transitions into this
 state, including staying, receive this timeout by default. Initiating the
 transition with an explicit timeout may be used to override this default, see
-`Initiating Transitions`_ for more information.
+`Initiating Transitions`_ for more information. The state timeout of any state
+may be changed during action processing with :func:`setStateTimeout(state,
+duration)`. This enables runtime configuration e.g. via external message.
 
 The :meth:`stateFunction` argument is a :class:`PartialFunction[Event, State]`,
 which is conveniently given using the partial function literal syntax as
@@ -382,6 +384,30 @@ sending :class:`UnsubscribeTransitionCallBack(actorRef)` to the FSM actor.
 Registering a not-running listener generates a warning and fails gracefully.
 Stopping a listener without unregistering will remove the listener from the
 subscription list upon the next transition.
+
+Timers
+------
+
+Besides state timeouts, FSM manages timers identified by :class:`String` names.
+You may set a timer using
+
+  :func:`setTimer(name, msg, interval, repeat)`
+
+where :obj:`msg` is the message object which will be sent after the duration
+:obj:`interval` has elapsed. If :obj:`repeat` is :obj:`true`, then the timer is
+scheduled at fixed rate given by the :obj:`interval` parameter. Timers may be
+canceled using
+
+  :func:`cancelTimer(name)`
+
+which is guaranteed to work immediately, meaning that the scheduled message
+will not be processed after this call even if the timer already fired and
+queued it. The status of any timer may be inquired with
+
+  :func:`timerActive_?(name)`
+
+These named timers complement state timeouts because they are not affected by
+intervening reception of other messages.
 
 Termination
 -----------
