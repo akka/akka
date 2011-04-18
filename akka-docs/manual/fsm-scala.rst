@@ -191,6 +191,32 @@ The :class:`FSM` trait takes two type parameters:
    to the FSM class you have the advantage of making all changes of the
    internal state explicit in a few well-known places.
 
+Defining Timeouts
+-----------------
+
+The :class:`FSM` module uses :class:`akka.util.Duration` for all timing
+configuration, which includes a mini-DSL:
+
+.. code-block:: scala
+
+   import akka.util.duration._   // notice the small d
+
+   val fivesec = 5.seconds
+   val threemillis = 3.millis
+   val diff = fivesec - threemillis
+
+.. note::
+
+   You may leave out the dot if the expression is clearly delimited (e.g.
+   within parentheses or in an argument list), but it is recommended to use it
+   if the time unit is the last token on a line, otherwise semi-colon inference
+   might go wrong, depending on what starts the next line.
+
+Several methods, like :func:`when()` and :func:`startWith()` take a
+:class:`FSM.Timeout`, which is an alias for :class:`Option[Duration]`. There is
+an implicit conversion available in the :obj:`FSM` object which makes this
+transparent, just import it into your FSM body.
+
 Defining States
 ---------------
 
