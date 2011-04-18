@@ -92,16 +92,16 @@ Downloading and installing Scala
 
 To build and run the tutorial sample from the command line, you have to install the Scala distribution. If you prefer to use SBT to build and run the sample then you can skip this section and jump to the next one.
 
-Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0 final release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
+Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0.RC1 release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
 
-You also need to make sure that the ``scala-2.9.0-final/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
+You also need to make sure that the ``scala-2.9.0.RC1/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
 
-    $ export PATH=$PATH:scala-2.9.0-final/bin
+    $ export PATH=$PATH:scala-2.9.0.RC1/bin
 
 You can test your installation by invoking scala::
 
     $ scala -version
-    Scala code runner version 2.9.0.final -- Copyright 2002-2011, LAMP/EPFL
+    Scala code runner version 2.9.0.RC1 -- Copyright 2002-2011, LAMP/EPFL
 
 Looks like we are all good. Finally let's create a source file ``Pi.scala`` for the tutorial and put it in the root of the Akka distribution in the ``tutorial`` directory (you have to create it first).
 
@@ -110,9 +110,12 @@ Some tools require you to set the ``SCALA_HOME`` environment variable to the roo
 Downloading and installing SBT
 ------------------------------
 
-SBT, short for 'Simple Build Tool' is an excellent build system written in Scala. It uses Scala to write the build scripts which gives you a lot of power. It has a plugin architecture with many plugins available, something that we will take advantage of soon. SBT is the preferred way of building software in Scala. If you want to use SBT for this tutorial then follow the following instructions, if not you can skip this section and the next.
+SBT, short for 'Simple Build Tool' is an excellent build system written in Scala. It uses Scala to write the build scripts which gives you a lot of power. It has a plugin architecture with many plugins available, something that we will take advantage of soon. SBT is the preferred way of building software in Scala and is probably the easiest way of getting through this tutorial. If you want to use SBT for this tutorial then follow the following instructions, if not you can skip this section and the next.
 
-To install SBT and create a project for this tutorial it is easiest to follow the instructions on `this page <http://code.google.com/p/simple-build-tool/wiki/Setup>`_. The preferred SBT version to install is ``0.7.6``.
+First browse to the
+`SBT download page<http://code.google.com/p/simple-build-tool/downloads/list>`_ and download the ``0.7.6.RC0`` distribution.
+
+To install SBT and create a project for this tutorial it is easiest to follow the instructions on `this page <http://code.google.com/p/simple-build-tool/wiki/Setup>`_.
 
 If you have created an SBT project then step into the newly created SBT project, create a source file ``Pi.scala`` for the tutorial sample and put it in the ``src/main/scala`` directory.
 
@@ -128,8 +131,8 @@ If you have not already done so, now is the time to create an SBT project for ou
     Name: Tutorial 1
     Organization: Hakkers Inc
     Version [1.0]:
-    Scala version [2.9.0]:
-    sbt version [0.7.6]:
+    Scala version [2.9.0.RC1]:
+    sbt version [0.7.6.RC0]:
 
 Now we have the basis for an SBT project. Akka has an SBT Plugin making it very easy to use Akka is an SBT-based project so let's use that.
 
@@ -458,7 +461,7 @@ But before we package it up and run it, let's take a look at the full code now, 
         latch.await()
       }
     }
-    
+
 Run it as a command line application
 ------------------------------------
 
@@ -479,7 +482,7 @@ When we have compiled the source file we are ready to run the application. This 
 
 Yippee! It is working.
 
-If you have not defined an the ``AKKA_HOME`` environment variable then Akka can't find the ``akka.conf`` configuration file and will print out a ``Can’t load akka.conf`` warning. This is ok since it will then just use the defaults. 
+If you have not defined an the ``AKKA_HOME`` environment variable then Akka can't find the ``akka.conf`` configuration file and will print out a ``Can’t load akka.conf`` warning. This is ok since it will then just use the defaults.
 
 Run it inside SBT
 -----------------
@@ -501,7 +504,7 @@ When this in done we can run our application directly inside SBT::
 
 Yippee! It is working.
 
-If you have not defined an the ``AKKA_HOME`` environment variable then Akka can't find the ``akka.conf`` configuration file and will print out a ``Can’t load akka.conf`` warning. This is ok since it will then just use the defaults. 
+If you have not defined an the ``AKKA_HOME`` environment variable then Akka can't find the ``akka.conf`` configuration file and will print out a ``Can’t load akka.conf`` warning. This is ok since it will then just use the defaults.
 
 The implementation in more detail
 ---------------------------------
@@ -514,7 +517,7 @@ The actor's life-cycle is:
 - Started -- ``actorRef.start()`` -- can receive messages
 - Stopped -- ``actorRef.stop()`` -- can **not** receive messages
 
-Once the actor has been stopped it is dead and can not be started again. 
+Once the actor has been stopped it is dead and can not be started again.
 
 Conclusion
 ----------
