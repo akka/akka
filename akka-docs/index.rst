@@ -27,7 +27,7 @@ Contents
    pending/fault-tolerance-java
    pending/fault-tolerance-scala
    pending/Feature Stability Matrix
-   pending/fsm-scala
+   manual/fsm-scala
    pending/futures-scala
    pending/getting-started
    pending/guice-integration

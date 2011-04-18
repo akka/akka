@@ -5,8 +5,7 @@
 package akka.util
 
 import java.util.concurrent.ConcurrentSkipListSet
-
-import akka.actor.ActorRef
+import akka.actor.{ActorInitializationException, ActorRef}
 
 /**
  * A manager for listener actors. Intended for mixin by observables.
@@ -46,7 +45,8 @@ trait ListenerManagement {
   def hasListeners: Boolean = !listeners.isEmpty
 
   /**
-   * Checks if a specfic listener is registered.
+   * Checks if a specfic listener is registered. ActorInitializationException leads to removal of listener if that
+   * one isShutdown.
    */
   def hasListener(listener: ActorRef): Boolean = listeners.contains(listener)
 
@@ -56,13 +56,19 @@ trait ListenerManagement {
       val iterator = listeners.iterator
       while (iterator.hasNext) {
         val listener = iterator.next
-        if (listener.isRunning) listener ! msg
+        if (listener.isShutdown) iterator.remove()
+        else try {
+          listener ! msg
+        } catch {
+          case e : ActorInitializationException =>
+            if (listener.isShutdown) iterator.remove()
+        }
       }
     }
   }
 
   /**
-   * Execute <code>f</code> with each listener as argument.
+   * Execute <code>f</code> with each listener as argument. ActorInitializationException is not handled.
    */
   protected[akka] def foreachListener(f: (ActorRef) => Unit) {
     val iterator = listeners.iterator
