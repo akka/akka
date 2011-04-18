@@ -9,7 +9,6 @@ import Actor._
 import akka.routing.{Routing, CyclicIterator}
 import Routing._
 
-import System.{currentTimeMillis => now}
 import java.util.concurrent.CountDownLatch
 
 /**

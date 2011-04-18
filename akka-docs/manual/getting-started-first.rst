@@ -142,7 +142,7 @@ To use the plugin, first add a plugin definition to your SBT project by creating
       val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "1.1"
     }
 
-Now we need to create a project definition using our Akka SBT plugin. We do that by creating a ``Project.scala`` file in the ``build`` directory containing::
+Now we need to create a project definition using our Akka SBT plugin. We do that by creating a ``project/build/Project.scala`` file containing::
 
     import sbt._
 
@@ -174,7 +174,7 @@ We start by creating a ``Pi.scala`` file and adding these import statements at t
 
     package akka.tutorial.scala.first
 
-    import akka.actor.{Actor, ActorRef, PoisonPill}
+    import akka.actor.{Actor, PoisonPill}
     import Actor._
     import akka.routing.{Routing, CyclicIterator}
     import Routing._
@@ -334,7 +334,8 @@ The ``Pi`` object is a perfect container module for our actors and messages, so 
         val latch = new CountDownLatch(1)
 
         // create the master
-        val master = actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start()
+        val master = actorOf(
+          new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start()
 
         // start the calculation
         master ! Calculate
@@ -355,7 +356,6 @@ But before we package it up and run it, let's take a look at the full code now, 
     import akka.routing.{Routing, CyclicIterator}
     import Routing._
 
-    import System.{currentTimeMillis => now}
     import java.util.concurrent.CountDownLatch
 
     object Pi extends App {
@@ -392,7 +392,8 @@ But before we package it up and run it, let's take a look at the full code now, 
       // ==================
       // ===== Master =====
       // ==================
-      class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
+      class Master(
+        nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
         extends Actor {
 
         var pi: Double = _
@@ -431,7 +432,9 @@ But before we package it up and run it, let's take a look at the full code now, 
 
         override def postStop {
           // tell the world that the calculation is complete
-          println("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
+          println(
+            "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
+              .format(pi, (now - start)))
           latch.countDown()
         }
       }
@@ -445,7 +448,8 @@ But before we package it up and run it, let's take a look at the full code now, 
         val latch = new CountDownLatch(1)
 
         // create the master
-        val master = actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start()
+        val master = actorOf(
+          new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start()
 
         // start the calculation
         master ! Calculate
@@ -454,7 +458,7 @@ But before we package it up and run it, let's take a look at the full code now, 
         latch.await()
       }
     }
-
+    
 Run it as a command line application
 ------------------------------------
 
@@ -475,6 +479,8 @@ When we have compiled the source file we are ready to run the application. This 
 
 Yippee! It is working.
 
+If you have not defined an the ``AKKA_HOME`` environment variable then Akka can't find the ``akka.conf`` configuration file and will print out a ``Can’t load akka.conf`` warning. This is ok since it will then just use the defaults. 
+
 Run it inside SBT
 -----------------
 
@@ -494,6 +500,21 @@ When this in done we can run our application directly inside SBT::
     Calculation time:   942 millis
 
 Yippee! It is working.
+
+If you have not defined an the ``AKKA_HOME`` environment variable then Akka can't find the ``akka.conf`` configuration file and will print out a ``Can’t load akka.conf`` warning. This is ok since it will then just use the defaults. 
+
+The implementation in more detail
+---------------------------------
+
+To create our actors we used a method called ``actorOf`` in the ``Actor`` object. We used it in two different ways,  one of them taking a actor type and the other one an instance of an actor. The former one (``actorOf[Worker]``) is used when the actor class has a no-argument constructor while the second one (``actorOf(new Master(..))``) is used when the actor class has a constructor that takes arguments. This is the only way to create an instance of an Actor and the ``actorOf`` method ensures this. The latter version is using call-by-name and lazily creates the actor within the scope of the ``actorOf`` method. The ``actorOf`` method instantiates the actor and returns, not an instance to the actor, but an instance to an ``ActorRef``. This reference is the handle through which you communicate with the actor. It is immutable, serializable and location-aware meaning that it "remembers" its original actor even if it is sent to other nodes across the network and can be seen as the equivalent to the Erlang actor's PID.
+
+The actor's life-cycle is:
+
+- Created -- ``Actor.actorOf[MyActor]`` -- can **not** receive messages
+- Started -- ``actorRef.start()`` -- can receive messages
+- Stopped -- ``actorRef.stop()`` -- can **not** receive messages
+
+Once the actor has been stopped it is dead and can not be started again. 
 
 Conclusion
 ----------
