@@ -440,7 +440,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSlf4jProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val sjson   = Dependencies.slf4j
+    val slf4j   = Dependencies.slf4j
   }
 
   // -------------------------------------------------------------------------------------------------------------------
