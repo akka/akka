@@ -393,6 +393,7 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
   protected[akka] def send[T](message: Any,
                               senderOption: Option[ActorRef],
                               senderFuture: Option[CompletableFuture[T]],
+                              remoteAddress: InetSocketAddress,
                               timeout: Long,
                               isOneWay: Boolean,
                               actorRef: ActorRef,

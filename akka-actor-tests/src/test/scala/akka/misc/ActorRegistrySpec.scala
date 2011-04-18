@@ -8,7 +8,7 @@ import java.util.concurrent.{CyclicBarrier, TimeUnit, CountDownLatch}
 object ActorRegistrySpec {
   var record = ""
   class TestActor extends Actor {
-    self.id = "MyID"
+    self.address = "MyID"
     def receive = {
       case "ping" =>
         record = "pong" + record
@@ -17,7 +17,7 @@ object ActorRegistrySpec {
   }
 
   class TestActor2 extends Actor {
-    self.id = "MyID2"
+    self.address = "MyID2"
     def receive = {
       case "ping" =>
         record = "pong" + record
@@ -60,7 +60,7 @@ class ActorRegistrySpec extends JUnitSuite {
     val found = Actor.registry.local.find({ case a: ActorRef if a.actor.isInstanceOf[TestActor] => a })
     assert(found.isDefined)
     assert(found.get.actor.isInstanceOf[TestActor])
-    assert(found.get.id === "MyID")
+    assert(found.get.address === "MyID")
     actor.stop
   }
 
@@ -73,9 +73,9 @@ class ActorRegistrySpec extends JUnitSuite {
     val actors = Actor.registry.local.actors
     assert(actors.size === 2)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.id === "MyID")
+    assert(actors.head.address === "MyID")
     assert(actors.last.actor.isInstanceOf[TestActor])
-    assert(actors.last.id === "MyID")
+    assert(actors.last.address === "MyID")
     actor1.stop
     actor2.stop
   }
@@ -121,7 +121,7 @@ class ActorRegistrySpec extends JUnitSuite {
     Actor.registry.local.shutdownAll
 
     def mkTestActors = for(i <- (1 to 10).toList;j <- 1 to 3000) yield actorOf( new Actor {
-      self.id = i.toString
+      self.address = i.toString
       def receive = { case _ => }
     })
 

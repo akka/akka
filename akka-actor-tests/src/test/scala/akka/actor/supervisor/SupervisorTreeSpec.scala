@@ -11,21 +11,21 @@ import akka.config.Supervision.{SupervisorConfig, OneForOneStrategy, Supervise, 
 import Actor._
 
 class SupervisorTreeSpec extends WordSpec with MustMatchers {
-  
+
   var log = ""
   case object Die
   class Chainer(myId: String, a: Option[ActorRef] = None) extends Actor {
-    self.id = myId
+    self.address = myId
     self.lifeCycle = Permanent
     self.faultHandler = OneForOneStrategy(List(classOf[Exception]), 3, 1000)
     a.foreach(self.link(_))
 
     def receive = {
-      case Die => throw new Exception(self.id + " is dying...")
+      case Die => throw new Exception(self.address + " is dying...")
     }
 
     override def preRestart(reason: Throwable) {
-      log += self.id
+      log += self.address
     }
   }
 
@@ -37,7 +37,7 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
       val lastActor   = actorOf(new Chainer("lastActor")).start
       val middleActor = actorOf(new Chainer("middleActor", Some(lastActor))).start
       val headActor   = actorOf(new Chainer("headActor",   Some(middleActor))).start
-      
+
       middleActor ! Die
       Thread.sleep(100)
       log must equal ("INITmiddleActorlastActor")

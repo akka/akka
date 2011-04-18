@@ -93,15 +93,6 @@ object ActorSerialization {
   def toBinaryJ[T <: Actor](a: ActorRef, format: Format[T], srlMailBox: Boolean = true): Array[Byte] =
     toBinary(a, srlMailBox)(format)
 
-  private[akka] def toAddressProtocol(actorRef: ActorRef) = {
-    val address = actorRef.homeAddress.getOrElse(Actor.remote.address)
-    AddressProtocol.newBuilder
-        .setHostname(address.getAddress.getHostAddress)
-        .setPort(address.getPort)
-        .build
-  }
-
-
   private[akka] def toSerializedActorRefProtocol[T <: Actor](
     actorRef: ActorRef, format: Format[T], serializeMailBox: Boolean = true): SerializedActorRefProtocol = {
     val lifeCycleProtocol: Option[LifeCycleProtocol] = {
@@ -207,8 +198,7 @@ object ActorSerialization {
       lifeCycle,
       supervisor,
       hotswap,
-      factory,
-      "address") // FIXME grab real address and use that
+      factory)
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
     messages.foreach(message => ar ! MessageSerializer.deserialize(message.getMessage))
@@ -253,9 +243,8 @@ object RemoteActorSerialization {
     Actor.remote.registerByUuid(ar)
 
     RemoteActorRefProtocol.newBuilder
-        .setClassOrServiceName("uuid:"+uuid.toString)
+        .setAddress("uuid:" + uuid.toString)
         .setActorClassname(actorClassName)
-        .setHomeAddress(ActorSerialization.toAddressProtocol(ar))
         .setTimeout(timeout)
         .build
   }

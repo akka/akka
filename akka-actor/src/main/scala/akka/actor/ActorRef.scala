@@ -1000,10 +1000,15 @@ private[akka] case class RemoteActorRef private[akka] (
   ensureRemotingEnabled
   timeout = _timeout
   address = _address
+
+  // FIXME BAD, we should not have different ActorRefs
+  val remoteAddress: InetSocketAddress = AddressRegistry.lookupRemoteAddress(address).getOrElse(
+    throw new IllegalStateException("Actor [" + actorClassName + "] is not configured as being a remote actor."))
+
   start
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
-    Actor.remote.send[Any](message, senderOption, None, timeout, true, this, None, actorType, loader)
+    Actor.remote.send[Any](message, senderOption, None, remoteAddress, timeout, true, this, None, actorType, loader)
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
     message: Any,
@@ -1012,7 +1017,7 @@ private[akka] case class RemoteActorRef private[akka] (
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
     val future = Actor.remote.send[T](
       message, senderOption, senderFuture,
-      timeout, false, this, None,
+      remoteAddress, timeout, false, this, None,
       actorType, loader)
     if (future.isDefined) future.get
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)

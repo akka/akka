@@ -23,7 +23,7 @@ object TypedActorSpec {
   }
 
   class MyTypedActorImpl extends TypedActor with MyTypedActor {
-    self.id = "my-custom-id"
+    self.address = "my-custom-id"
     def sendOneWay(msg: String) {
       println("got " + msg )
     }
@@ -33,7 +33,7 @@ object TypedActorSpec {
   }
 
   class MyTypedActorWithConstructorArgsImpl(aString: String, aLong: Long) extends TypedActor with MyTypedActor {
-    self.id = "my-custom-id"
+    self.address = "my-custom-id"
     def sendOneWay(msg: String) {
       println("got " + msg + " " + aString + " " + aLong)
     }
@@ -44,7 +44,7 @@ object TypedActorSpec {
   }
 
   class MyActor extends Actor {
-    self.id = "my-custom-id"
+    self.address = "my-custom-id"
     def receive = {
         case msg: String => println("got " + msg)
     }

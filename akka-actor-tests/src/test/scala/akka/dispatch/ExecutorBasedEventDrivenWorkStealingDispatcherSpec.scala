@@ -19,7 +19,7 @@ object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
   class DelayableActor(name: String, delay: Int, finishedCounter: CountDownLatch) extends Actor {
     self.dispatcher = delayableActorDispatcher
     @volatile var invocationCount = 0
-    self.id = name
+    self.address = name
 
     def receive = {
       case x: Int => {
