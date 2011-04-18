@@ -19,6 +19,10 @@ Videos
 Articles
 --------
 
+`Actor-Based Continuations with Akka and Swarm <http://www.earldouglas.com/actor-based-continuations-with-akka-and-swarm>`_
+
+`Mimicking Twitter Using an Akka-Based Event-Driven Architecture <http://www.earldouglas.com/mimicking-twitter-using-an-akka-based-event-driven-architecture>`_
+
 `Remote Actor Class Loading with Akka <https://www.earldouglas.com/remote-actor-class-loading-with-akka>`_
 
 `Akka Producer Actors: New Features and Best Practices <http://krasserm.blogspot.com/2011/02/akka-producer-actor-new-features-and.html>`_
