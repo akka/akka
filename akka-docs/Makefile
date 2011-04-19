@@ -33,7 +33,7 @@ clean:
 	-rm -rf $(BUILDDIR)/*
 
 pygments:
-	mkdir $(LOCALPACKAGES)
+	mkdir -p $(LOCALPACKAGES)
 	$(EASYINSTALL) --install-dir $(LOCALPACKAGES) $(PYGMENTSDIR)
 	-rm -rf $(PYGMENTSDIR)/*.egg-info $(PYGMENTSDIR)/build $(PYGMENTSDIR)/temp
 	@echo
