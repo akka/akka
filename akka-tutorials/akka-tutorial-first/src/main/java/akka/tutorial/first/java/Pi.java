@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.tutorial.java.first;
+package akka.tutorial.first.java;
 
 import static akka.actor.Actors.actorOf;
 import static akka.actor.Actors.poisonPill;
@@ -27,8 +27,8 @@ import java.util.concurrent.CountDownLatch;
  * <pre>
  *   $ cd akka-1.1
  *   $ export AKKA_HOME=`pwd`
- *   $ javac -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar akka/tutorial/java/first/Pi.java
- *   $ java -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.java.first.Pi
+ *   $ javac -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar akka/tutorial/first/java/Pi.java
+ *   $ java -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.first.java.Pi
  *   $ ...
  * </pre>
  * <p/>
@@ -36,7 +36,7 @@ import java.util.concurrent.CountDownLatch;
  * <pre>
  *   $ mvn
  *   > scala:console
- *   > val pi = new akka.tutorial.java.first.Pi
+ *   > val pi = new akka.tutorial.first.java.Pi
  *   > pi.calculate(4, 10000, 10000)
  *   > ...
  * </pre>
@@ -96,7 +96,13 @@ public class Pi {
     public void onReceive(Object message) {
       if (message instanceof Work) {
         Work work = (Work) message;
-        getContext().replyUnsafe(new Result(calculatePiFor(work.getArg(), work.getNrOfElements()))); // perform the work
+
+        // perform the work
+        double result = calculatePiFor(work.getArg(), work.getNrOfElements());
+
+        // reply with the result
+        getContext().replyUnsafe(new Result(result));
+
       } else throw new IllegalArgumentException("Unknown message [" + message + "]");
     }
   }
@@ -180,7 +186,9 @@ public class Pi {
     @Override
     public void postStop() {
       // tell the world that the calculation is complete
-      System.out.println(String.format("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis", pi, (System.currentTimeMillis() - start)));
+      System.out.println(String.format(
+        "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis",
+        pi, (System.currentTimeMillis() - start)));
       latch.countDown();
     }
   }
@@ -188,9 +196,10 @@ public class Pi {
   // ==================
   // ===== Run it =====
   // ==================
-  public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages) throws Exception {
+  public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages)
+    throws Exception {
 
-    // this latch is only plumbing to kSystem.currentTimeMillis(); when the calculation is completed
+    // this latch is only plumbing to know when the calculation is completed
     final CountDownLatch latch = new CountDownLatch(1);
 
     // create the master
