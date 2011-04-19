@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.tutorial.scala.first
+package akka.tutorial.first.scala
 
 import akka.actor.{Actor, PoisonPill}
 import Actor._
@@ -21,7 +21,7 @@ import java.util.concurrent.CountDownLatch
  *   $ cd akka-1.1
  *   $ export AKKA_HOME=`pwd`
  *   $ scalac -cp dist/akka-actor-1.1-SNAPSHOT.jar Pi.scala
- *   $ java -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.scala.first.Pi
+ *   $ java -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.first.scala.Pi
  *   $ ...
  * </pre>
  * <p/>
@@ -30,7 +30,7 @@ import java.util.concurrent.CountDownLatch
  *   $ sbt
  *   > update
  *   > console
- *   > akka.tutorial.scala.first.Pi.calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
+ *   > akka.tutorial.first.scala.Pi.calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
  *   > ...
  *   > :quit
  * </pre>
@@ -105,12 +105,14 @@ object Pi extends App {
     }
 
     override def preStart {
-      start = now
+      start = System.currentTimeMillis
     }
 
     override def postStop {
       // tell the world that the calculation is complete
-      println("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
+      println(
+        "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
+        .format(pi, (System.currentTimeMillis - start)))
       latch.countDown()
     }
   }
