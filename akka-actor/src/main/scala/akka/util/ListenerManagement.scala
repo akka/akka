@@ -56,8 +56,9 @@ trait ListenerManagement {
       val iterator = listeners.iterator
       while (iterator.hasNext) {
         val listener = iterator.next
-        if (listener.isShutdown) iterator.remove()
-        else try {
+        // Uncomment if those exceptions are so frequent as to bottleneck
+        // if (listener.isShutdown) iterator.remove() else
+        try {
           listener ! msg
         } catch {
           case e : ActorInitializationException =>
