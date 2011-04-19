@@ -78,7 +78,7 @@ class IncludeCode(Directive):
         exclude = set(exclude_sections.split(',')) if exclude_sections else set()
         hideexcludes = 'hideexcludes' in self.options
         if section:
-            include |= {section}
+            include |= set([section])
         within = set()
         res = []
         excluding = False
@@ -87,11 +87,11 @@ class IncludeCode(Directive):
             if index >= 0:
                 section_name = line[index+lenm:].strip()
                 if section_name in within:
-                    within ^= {section_name}
+                    within ^= set([section_name])
                     if excluding and not (exclude & within):
                         excluding = False
                 else:
-                    within |= {section_name}
+                    within |= set([section_name])
                     if not excluding and (exclude & within):
                         excluding = True
                         if not hideexcludes:
