@@ -104,9 +104,9 @@ Downloading and installing Maven
 
 Maven is an excellent build system that can be used to build both Java and Scala projects. If you want to use Maven for this tutorial then follow the following instructions, if not you can skip this section and the next.
 
-First browse to the `Maven download page <http://maven.apache.org/download.html>`_ and download the ``3.0.3`` distribution.
+First browse to `http://maven.apache.org/download.html <http://maven.apache.org/download.html>`_ and download the ``3.0.3`` distribution.
 
-To install Maven it is easiest to follow the instructions on `this page <http://maven.apache.org/download.html#Installation>`_.
+To install Maven it is easiest to follow the instructions on `http://maven.apache.org/download.html#Installation <http://maven.apache.org/download.html#Installation>`_.
 
 Creating an Akka Maven project
 ------------------------------
@@ -378,7 +378,8 @@ Here is the master actor::
         }
       }
 
-      public Master(int nrOfWorkers, int nrOfMessages, int nrOfElements, CountDownLatch latch) {
+      public Master(
+        int nrOfWorkers, int nrOfMessages, int nrOfElements, CountDownLatch latch) {
         this.nrOfMessages = nrOfMessages;
         this.nrOfElements = nrOfElements;
         this.latch = latch;
@@ -470,7 +471,7 @@ Now the only thing that is left to implement is the runner that should bootstrap
         pi.calculate(4, 10000, 10000);
       }
 
-      public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages)
+      public void calculate(int nrOfWorkers, int nrOfElements, int nrOfMessages)
         throws Exception {
 
         // this latch is only plumbing to know when the calculation is completed
@@ -601,7 +602,9 @@ Before we package it up and run it, let's take a look at the full code now, with
           }
         }
 
-        public Master(int nrOfWorkers, int nrOfMessages, int nrOfElements, CountDownLatch latch) {
+        public Master(
+          int nrOfWorkers, int nrOfMessages, int nrOfElements, CountDownLatch latch) {
+
           this.nrOfMessages = nrOfMessages;
           this.nrOfElements = nrOfElements;
           this.latch = latch;
@@ -664,7 +667,7 @@ Before we package it up and run it, let's take a look at the full code now, with
       // ==================
       // ===== Run it =====
       // ==================
-      public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages)
+      public void calculate(int nrOfWorkers, int nrOfElements, int nrOfMessages)
         throws Exception {
 
         // this latch is only plumbing to know when the calculation is completed
@@ -702,9 +705,11 @@ First we need to compile the source file. That is done with Java's compiler ``ja
 
 When we have compiled the source file we are ready to run the application. This is done with ``java`` but yet again we need to add the ``akka-actor-1.1.jar`` and the ``scala-library.jar`` JAR files to the classpath as well as the classes we compiled ourselves::
 
-    $ java -cp dist/akka-actor-1.1.jar:scala-library.jar:tutorial akka.tutorial.java.first.Pi
-    AKKA_HOME is defined as [/Users/jboner/src/akka-stuff/akka-core], loading config from \
-      [/Users/jboner/src/akka-stuff/akka-core/config/akka.conf].
+    $ java \
+        -cp dist/akka-actor-1.1.jar:scala-library.jar:tutorial \
+        akka.tutorial.java.first.Pi
+    AKKA_HOME is defined as [/Users/jboner/src/akka-stuff/akka-core]
+    loading config from [/Users/jboner/src/akka-stuff/akka-core/config/akka.conf].
 
     Pi estimate:        3.1435501812459323
     Calculation time:   822 millis

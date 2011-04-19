@@ -3,7 +3,7 @@
     pygments.styles.akka
     ~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Akka style for Scala highlighting.
+    Simple style for Scala highlighting.
 """
 
 from pygments.style import Style
@@ -11,9 +11,9 @@ from pygments.token import Keyword, Name, Comment, String, Error, \
      Number, Operator, Generic, Whitespace
 
 
-class AkkaStyle(Style):
+class SimpleStyle(Style):
     """
-    Akka style for Scala highlighting.
+    Simple style for Scala highlighting.
     """
 
     background_color = "#f0f0f0"
