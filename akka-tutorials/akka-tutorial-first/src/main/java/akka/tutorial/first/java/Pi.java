@@ -98,13 +98,14 @@ public class Pi {
         Work work = (Work) message;
 
         // perform the work
-        double result = calculatePiFor(work.getArg(), work.getNrOfElements())
+        double result = calculatePiFor(work.getArg(), work.getNrOfElements());
 
         // reply with the result
         getContext().replyUnsafe(new Result(result));
 
       } else throw new IllegalArgumentException("Unknown message [" + message + "]");
     }
+  }
 
   // ==================
   // ===== Master =====
@@ -186,7 +187,7 @@ public class Pi {
     public void postStop() {
       // tell the world that the calculation is complete
       System.out.println(String.format(
-        "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis", 
+        "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis",
         pi, (System.currentTimeMillis() - start)));
       latch.countDown();
     }
@@ -195,7 +196,7 @@ public class Pi {
   // ==================
   // ===== Run it =====
   // ==================
-  public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages) 
+  public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages)
     throws Exception {
 
     // this latch is only plumbing to know when the calculation is completed
