@@ -112,7 +112,7 @@ Downloading and installing SBT
 
 SBT, short for 'Simple Build Tool' is an excellent build system written in Scala. It uses Scala to write the build scripts which gives you a lot of power. It has a plugin architecture with many plugins available, something that we will take advantage of soon. SBT is the preferred way of building software in Scala and is probably the easiest way of getting through this tutorial. If you want to use SBT for this tutorial then follow the following instructions, if not you can skip this section and the next.
 
-First browse to the `SBT download page<http://code.google.com/p/simple-build-tool/downloads/list>`_ and download the ``0.7.6.RC0`` distribution.
+First browse to the `SBT download page <http://code.google.com/p/simple-build-tool/downloads/list>`_ and download the ``0.7.6.RC0`` distribution.
 
 To install SBT and create a project for this tutorial it is easiest to follow the instructions on `this page <http://code.google.com/p/simple-build-tool/wiki/Setup>`_.
 
