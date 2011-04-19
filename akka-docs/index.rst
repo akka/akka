@@ -4,7 +4,8 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   manual/getting-started-first
+   manual/getting-started-first-scala
+   manual/getting-started-first-java
    pending/actor-registry-java
    pending/actor-registry-scala
    pending/actors-scala
