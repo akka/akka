@@ -89,7 +89,6 @@ object Pi extends App {
     def receive = {
       case Calculate =>
         // schedule work
-        //for (arg <- 0 until nrOfMessages) router ! Work(arg, nrOfElements)
         for (i <- 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
 
         // send a PoisonPill to all workers telling them to shut down themselves
