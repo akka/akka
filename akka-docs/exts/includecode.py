@@ -15,16 +15,17 @@ class IncludeCode(Directive):
     optional_arguments = 0
     final_argument_whitespace = False
     option_spec = {
-        'section':  directives.unchanged_required,
-        'comment':  directives.unchanged_required,
-        'marker':   directives.unchanged_required,
-        'include':  directives.unchanged_required,
-        'exclude':  directives.unchanged_required,
-        'linenos':  directives.flag,
-        'language': directives.unchanged_required,
-        'encoding': directives.encoding,
-        'prepend':  directives.unchanged_required,
-        'append':   directives.unchanged_required,
+        'section':      directives.unchanged_required,
+        'comment':      directives.unchanged_required,
+        'marker':       directives.unchanged_required,
+        'include':      directives.unchanged_required,
+        'exclude':      directives.unchanged_required,
+        'hideexcludes': directives.flag,
+        'linenos':      directives.flag,
+        'language':     directives.unchanged_required,
+        'encoding':     directives.encoding,
+        'prepend':      directives.unchanged_required,
+        'append':       directives.unchanged_required,
     }
 
     def run(self):
@@ -75,6 +76,7 @@ class IncludeCode(Directive):
         exclude_sections = self.options.get('exclude', '')
         include = set(include_sections.split(',')) if include_sections else set()
         exclude = set(exclude_sections.split(',')) if exclude_sections else set()
+        hideexcludes = 'hideexcludes' in self.options
         if section:
             include |= {section}
         within = set()
@@ -92,7 +94,8 @@ class IncludeCode(Directive):
                     within |= {section_name}
                     if not excluding and (exclude & within):
                         excluding = True
-                        res.append(' ' * index + comment + ' ' + section_name.replace('-', ' ') + ' ...\n')
+                        if not hideexcludes:
+                            res.append(' ' * index + comment + ' ' + section_name.replace('-', ' ') + ' ...\n')
             elif not (exclude & within) and (not include or (include & within)):
                 res.append(line)
         lines = res
@@ -107,7 +110,7 @@ class IncludeCode(Directive):
 
         nonempty = filter(lambda l: l.strip(), lines)
         tabcounts = map(lambda l: countwhile(lambda c: c == ' ', l), nonempty)
-        tabshift = min(tabcounts)
+        tabshift = min(tabcounts) if tabcounts else 0
 
         if tabshift > 0:
             lines = map(lambda l: l[tabshift:] if len(l) > tabshift else l, lines)

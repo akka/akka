@@ -172,17 +172,9 @@ Start writing the code
 
 Now it's about time to start hacking.
 
-We start by creating a ``Pi.scala`` file and adding these import statements at the top of the file::
+We start by creating a ``Pi.scala`` file and adding these import statements at the top of the file:
 
-    package akka.tutorial.scala.first
-
-    import akka.actor.{Actor, PoisonPill}
-    import Actor._
-    import akka.routing.{Routing, CyclicIterator}
-    import Routing._
-    import akka.dispatch.Dispatchers
-
-    import java.util.concurrent.CountDownLatch
+.. includecode:: examples/Pi.scala#imports
 
 If you are using SBT in this tutorial then create the file in the ``src/main/scala`` directory.
 
@@ -199,49 +191,30 @@ With this in mind, let's now create the messages that we want to have flowing in
 - ``Work`` -- sent from the ``Master`` actor to the ``Worker`` actors containing the work assignment
 - ``Result`` -- sent from the ``Worker`` actors to the ``Master`` actor containing the result from the worker's calculation
 
-Messages sent to actors should always be immutable to avoid sharing mutable state. In scala we have 'case classes' which make excellent messages. So let's start by creating three messages as case classes.  We also create a common base trait for our messages (that we define as being ``sealed`` in order to prevent creating messages outside our control)::
+Messages sent to actors should always be immutable to avoid sharing mutable state. In scala we have 'case classes' which make excellent messages. So let's start by creating three messages as case classes.  We also create a common base trait for our messages (that we define as being ``sealed`` in order to prevent creating messages outside our control):
 
-    sealed trait PiMessage
-
-    case object Calculate extends PiMessage
-
-    case class Work(start: Int, nrOfElements: Int) extends PiMessage
-
-    case class Result(value: Double) extends PiMessage
+.. includecode:: examples/Pi.scala#messages
 
 Creating the worker
 -------------------
 
-Now we can create the worker actor.  This is done by mixing in the ``Actor`` trait and defining the ``receive`` method. The ``receive`` method defines our message handler. We expect it to be able to handle the ``Work`` message so we need to add a handler for this message::
+Now we can create the worker actor.  This is done by mixing in the ``Actor`` trait and defining the ``receive`` method. The ``receive`` method defines our message handler. We expect it to be able to handle the ``Work`` message so we need to add a handler for this message:
 
-    class Worker extends Actor {
-      def receive = {
-        case Work(start, nrOfElements) =>
-          self reply Result(calculatePiFor(start, nrOfElements)) // perform the work
-      }
-    }
+.. includecode:: examples/Pi.scala#worker
+   :exclude: calculate-pi
 
 As you can see we have now created an ``Actor`` with a ``receive`` method as a handler for the ``Work`` message. In this handler we invoke the ``calculatePiFor(..)`` method, wrap the result in a ``Result`` message and send it back to the original sender using ``self.reply``. In Akka the sender reference is implicitly passed along with the message so that the receiver can always reply or store away the sender reference for future use.
 
-The only thing missing in our ``Worker`` actor is the implementation on the ``calculatePiFor(..)`` method. While there are many ways we can implement this algorithm in Scala, in this introductory tutorial we have chosen an imperative style using a for comprehension and an accumulator::
+The only thing missing in our ``Worker`` actor is the implementation on the ``calculatePiFor(..)`` method. While there are many ways we can implement this algorithm in Scala, in this introductory tutorial we have chosen an imperative style using a for comprehension and an accumulator:
 
-    def calculatePiFor(start: Int, nrOfElements: Int): Double = {
-      var acc = 0.0
-      for (i <- start until (start + nrOfElements))
-        acc += 4 * math.pow(-1, i) / (2 * i + 1)
-      acc
-    }
+.. includecode:: examples/Pi.scala#calculate-pi
 
 Creating the master
 -------------------
 
-The master actor is a little bit more involved. In its constructor we need to create the workers (the ``Worker`` actors) and start them. We will also wrap them in a load-balancing router to make it easier to spread out the work evenly between the workers. Let's do that first::
+The master actor is a little bit more involved. In its constructor we need to create the workers (the ``Worker`` actors) and start them. We will also wrap them in a load-balancing router to make it easier to spread out the work evenly between the workers. Let's do that first:
 
-    // create the workers
-    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
-
-    // wrap them with a load-balancing router
-    val router = Routing.loadBalancerActor(CyclicIterator(workers)).start()
+.. includecode:: examples/Pi.scala#create-workers
 
 As you can see we are using the ``actorOf`` factory method to create actors, this method returns as an ``ActorRef`` which is a reference to our newly created actor.  This method is available in the ``Actor`` object but is usually imported::
 
@@ -253,33 +226,10 @@ Now we have a router that is representing all our workers in a single abstractio
 - ``nrOfMessages`` -- defining how many number chunks to send out to the workers
 - ``nrOfElements`` -- defining how big the number chunks sent to each worker should be
 
-Here is the master actor::
+Here is the master actor:
 
-    class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
-      extends Actor {
-
-      var pi: Double = _
-      var nrOfResults: Int = _
-      var start: Long = _
-
-      // create the workers
-      val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
-
-      // wrap them with a load-balancing router
-      val router = Routing.loadBalancerActor(CyclicIterator(workers)).start()
-
-      def receive = { ... }
-
-      override def preStart {
-        start = now
-      }
-
-      override def postStop {
-        // tell the world that the calculation is complete
-        println("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
-        latch.countDown()
-      }
-    }
+.. includecode:: examples/Pi.scala#master
+   :exclude: message-handling
 
 A couple of things are worth explaining further.
 
@@ -296,170 +246,27 @@ The ``Calculate`` handler is sending out work to all the ``Worker`` actors and a
 
 The ``Result`` handler is simpler, here we get the value from the ``Result`` message and aggregate it to our ``pi`` member variable. We also keep track of how many results we have received back, and if that matches the number of tasks sent out, the ``Master`` actor considers itself done and shuts down.
 
-Let's capture this in code::
+Let's capture this in code:
 
-    // message handler
-    def receive = {
-      case Calculate =>
-        // schedule work
-        for (i <- 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
-
-        // send a PoisonPill to all workers telling them to shut down themselves
-        router ! Broadcast(PoisonPill)
-
-        // send a PoisonPill to the router, telling him to shut himself down
-        router ! PoisonPill
-
-      case Result(value) =>
-        // handle result from the worker
-        pi += value
-        nrOfResults += 1
-        if (nrOfResults == nrOfMessages) self.stop()
-    }
+.. includecode:: examples/Pi.scala#master-receive
 
 Bootstrap the calculation
 -------------------------
 
 Now the only thing that is left to implement is the runner that should bootstrap and run the calculation for us. We do that by creating an object that we call ``Pi``, here we can extend the ``App`` trait in Scala, which means that we will be able to run this as an application directly from the command line.
 
-The ``Pi`` object is a perfect container module for our actors and messages, so let's put them all there. We also create a method ``calculate`` in which we start up the ``Master`` actor and wait for it to finish::
+The ``Pi`` object is a perfect container module for our actors and messages, so let's put them all there. We also create a method ``calculate`` in which we start up the ``Master`` actor and wait for it to finish:
 
-    object Pi extends App {
-
-      calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
-
-      ... // actors and messages
-
-      def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
-
-        // this latch is only plumbing to know when the calculation is completed
-        val latch = new CountDownLatch(1)
-
-        // create the master
-        val master = actorOf(
-          new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start()
-
-        // start the calculation
-        master ! Calculate
-
-        // wait for master to shut down
-        latch.await()
-      }
-    }
+.. includecode:: examples/Pi.scala#app
+   :exclude: actors-and-messages
 
 That's it. Now we are done.
 
-But before we package it up and run it, let's take a look at the full code now, with package declaration, imports and all::
+But before we package it up and run it, let's take a look at the full code now, with package declaration, imports and all:
 
-    package akka.tutorial.scala.first
+.. includecode:: examples/Pi.scala
 
-    import akka.actor.{Actor, PoisonPill}
-    import Actor._
-    import akka.routing.{Routing, CyclicIterator}
-    import Routing._
 
-    import java.util.concurrent.CountDownLatch
-
-    object Pi extends App {
-
-      calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
-
-      // ====================
-      // ===== Messages =====
-      // ====================
-      sealed trait PiMessage
-      case object Calculate extends PiMessage
-      case class Work(start: Int, nrOfElements: Int) extends PiMessage
-      case class Result(value: Double) extends PiMessage
-
-      // ==================
-      // ===== Worker =====
-      // ==================
-      class Worker extends Actor {
-
-        // define the work
-        def calculatePiFor(start: Int, nrOfElements: Int): Double = {
-          var acc = 0.0
-          for (i <- start until (start + nrOfElements))
-            acc += 4 * math.pow(-1, i) / (2 * i + 1)
-          acc
-        }
-
-        def receive = {
-          case Work(start, nrOfElements) =>
-            self reply Result(calculatePiFor(start, nrOfElements)) // perform the work
-        }
-      }
-
-      // ==================
-      // ===== Master =====
-      // ==================
-      class Master(
-        nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
-        extends Actor {
-
-        var pi: Double = _
-        var nrOfResults: Int = _
-        var start: Long = _
-
-        // create the workers
-        val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
-
-        // wrap them with a load-balancing router
-        val router = Routing.loadBalancerActor(CyclicIterator(workers)).start()
-
-        // message handler
-        def receive = {
-          case Calculate =>
-            // schedule work
-            //for (arg <- 0 until nrOfMessages) router ! Work(arg, nrOfElements)
-            for (i <- 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
-
-            // send a PoisonPill to all workers telling them to shut down themselves
-            router ! Broadcast(PoisonPill)
-
-            // send a PoisonPill to the router, telling him to shut himself down
-            router ! PoisonPill
-
-          case Result(value) =>
-            // handle result from the worker
-            pi += value
-            nrOfResults += 1
-            if (nrOfResults == nrOfMessages) self.stop()
-        }
-
-        override def preStart {
-          start = now
-        }
-
-        override def postStop {
-          // tell the world that the calculation is complete
-          println(
-            "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
-              .format(pi, (now - start)))
-          latch.countDown()
-        }
-      }
-
-      // ==================
-      // ===== Run it =====
-      // ==================
-      def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
-
-        // this latch is only plumbing to know when the calculation is completed
-        val latch = new CountDownLatch(1)
-
-        // create the master
-        val master = actorOf(
-          new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start()
-
-        // start the calculation
-        master ! Calculate
-
-        // wait for master to shut down
-        latch.await()
-      }
-    }
 
 Run it as a command line application
 ------------------------------------
