@@ -7,7 +7,8 @@ import sys, os
 
 # -- General configuration -----------------------------------------------------
 
-extensions = ['sphinx.ext.todo']
+sys.path.append(os.path.abspath('exts'))
+extensions = ['sphinx.ext.todo', 'includecode']
 
 templates_path = ['_templates']
 source_suffix = '.rst'
