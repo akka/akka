@@ -7,12 +7,17 @@ SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = _build
 EASYINSTALL   = easy_install
+LOCALPACKAGES = $(shell pwd)/$(BUILDDIR)/site-packages
 PYGMENTSDIR   = pygments
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
+
+# Set python path to include local packages for pygments styles.
+PYTHONPATH += $(LOCALPACKAGES)
+export PYTHONPATH
 
 .PHONY: help clean pygments html singlehtml latex pdf
 
@@ -28,7 +33,8 @@ clean:
 	-rm -rf $(BUILDDIR)/*
 
 pygments:
-	$(EASYINSTALL) --user $(PYGMENTSDIR)
+	mkdir $(LOCALPACKAGES)
+	$(EASYINSTALL) --install-dir $(LOCALPACKAGES) $(PYGMENTSDIR)
 	-rm -rf $(PYGMENTSDIR)/*.egg-info $(PYGMENTSDIR)/build $(PYGMENTSDIR)/temp
 	@echo
 	@echo "Custom pygments styles have been installed."
