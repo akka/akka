@@ -118,8 +118,8 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
       latch.await(1, TimeUnit.SECONDS) must be (true)
       actor1.uuid must not equal actor2.uuid
       actor1.uuid must not equal actor3.uuid
-      actor1.id must not equal actor2.id
-      actor2.id must equal (actor3.id)
+      actor1.address must not equal actor2.address
+      actor2.address must equal (actor3.address)
     }
 
     "shouldFindActorByUuid" in {

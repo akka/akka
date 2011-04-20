@@ -60,8 +60,8 @@ class RemoteErrorHandlingNetworkTest extends AkkaRemoteTest with NetworkFailureT
       val latch = new CountDownLatch(10)
       implicit val sender = replyHandler(latch, "Pong")
       val service = actorOf[RemoteActorSpecActorUnidirectional]
-      remote.register(service.id, service)
-      val actor = remote.actorFor(service.id, 5000L, host, port)
+      remote.register(service.address, service)
+      val actor = remote.actorFor(service.address, 5000L, host, port)
       actor ! "Ping"
       actor ! "Ping"
       actor ! "Ping"
@@ -84,8 +84,8 @@ class RemoteErrorHandlingNetworkTest extends AkkaRemoteTest with NetworkFailureT
       val latch = new CountDownLatch(10)
       implicit val sender = replyHandler(latch, "Pong")
       val service = actorOf[RemoteActorSpecActorUnidirectional]
-      remote.register(service.id, service)
-      val actor = remote.actorFor(service.id, 5000L, host, port)
+      remote.register(service.address, service)
+      val actor = remote.actorFor(service.address, 5000L, host, port)
       actor ! "Ping"
       actor ! "Ping"
       actor ! "Ping"

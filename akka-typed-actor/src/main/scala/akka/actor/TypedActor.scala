@@ -837,8 +837,13 @@ private[akka] abstract class ActorAspect {
     //val senderProxy = Option(SenderContextInfo.senderProxy.value)
 
     val future = Actor.remote.send[AnyRef](
-      message, senderActorRef, None,
-      timeout, isOneWay, actorRef,
+      message,
+      senderActorRef,
+      None,
+      remoteAddress.getOrElse(throw new IllegalStateException("No remote address specified")),
+      timeout,
+      isOneWay,
+      actorRef,
       Some((interfaceClass.getName, methodRtti.getMethod.getName)), //TODO Include the interface of the senderProxy here somehow
       ActorType.TypedActor,
       None) //TODO: REVISIT: Use another classloader?

@@ -128,8 +128,8 @@ object Actor extends ListenerManagement {
 
   private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
 
-   /**
-   *  Creates an ActorRef out of the Actor with type T.
+  /**
+   * Creates an ActorRef out of the Actor with type T.
    * <pre>
    *   import Actor._
    *   val actor = actorOf[MyActor]
@@ -146,10 +146,22 @@ object Actor extends ListenerManagement {
     actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], address)
 
   /**
-   * FIXME document
+   * Creates an ActorRef out of the Actor with type T.
+   * Uses generated address.
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf[MyActor]
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf[MyActor].start
+   * </pre>
    */
   def actorOf[T <: Actor : Manifest]: ActorRef =
-    actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], (new UUID).toString)
+    actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], new UUID().toString)
 
   /**
    * Creates an ActorRef out of the Actor of the specified Class.
@@ -176,9 +188,21 @@ object Actor extends ListenerManagement {
   }, address)
 
   /**
-   * FIXME document
+   * Creates an ActorRef out of the Actor of the specified Class.
+   * Uses generated address.
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf(classOf[MyActor])
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf(classOf[MyActor]).start
+   * </pre>
    */
-  def actorOf(clazz: Class[_ <: Actor]): ActorRef = actorOf(clazz, (new UUID).toString)
+  def actorOf(clazz: Class[_ <: Actor]): ActorRef = actorOf(clazz, new UUID().toString)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -201,9 +225,25 @@ object Actor extends ListenerManagement {
   def actorOf(factory: => Actor, address: String): ActorRef = new LocalActorRef(() => factory, address)
 
   /**
-   * FIXME document
+   * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
+   * that creates the Actor. Please note that this function can be invoked multiple
+   * times if for example the Actor is supervised and needs to be restarted.
+   * Uses generated address.
+   * <p/>
+   * This function should <b>NOT</b> be used for remote actors.
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf(new MyActor)
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf(new MyActor).start
+   * </pre>
    */
-  def actorOf(factory: => Actor): ActorRef = actorOf(factory, (new UUID).toString)
+  def actorOf(factory: => Actor): ActorRef = actorOf(factory, new UUID().toString)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
@@ -219,11 +259,12 @@ object Actor extends ListenerManagement {
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
    * that creates the Actor. Please note that this function can be invoked multiple
    * times if for example the Actor is supervised and needs to be restarted.
+   * Uses generated address.
    * <p/>
    * This function should <b>NOT</b> be used for remote actors.
    * JAVA API
    */
-  def actorOf(creator: Creator[Actor]): ActorRef = actorOf(creator, (new UUID).toString)
+  def actorOf(creator: Creator[Actor]): ActorRef = actorOf(creator, new UUID().toString)
 
   /**
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
