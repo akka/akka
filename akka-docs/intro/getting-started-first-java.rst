@@ -184,12 +184,6 @@ We also need to edit the ``pom.xml`` build file. Let's add the dependency we nee
         </build>
     </project>
 
-So, now we are all set. Just one final thing to do; make Maven download the dependencies it needs. That can be done by invoking::
-
-    $ mvn package
-
-Maven itself needs a whole bunch of dependencies but our project will only need one; ``akka-actor-1.1.jar``. Maven downloads that as well.
-
 Start writing the code
 ----------------------
 
@@ -235,15 +229,15 @@ Messages sent to actors should always be immutable to avoid sharing mutable stat
       static class Calculate {}
 
       static class Work {
-        private final int arg;
+        private final int start;
         private final int nrOfElements;
 
-        public Work(int arg, int nrOfElements) {
-          this.arg = arg;
+        public Work(int start, int nrOfElements) {
+          this.start = start;
           this.nrOfElements = nrOfElements;
         }
 
-        public int getArg() { return arg; }
+        public int getStart() { return start; }
         public int getNrOfElements() { return nrOfElements; }
       }
 
@@ -271,7 +265,7 @@ Now we can create the worker actor.  This is done by extending in the ``UntypedA
           Work work = (Work) message;
 
           // perform the work
-          double result = calculatePiFor(work.getArg(), work.getNrOfElements())
+          double result = calculatePiFor(work.getStart(), work.getNrOfElements())
 
           // reply with the result
           getContext().replyUnsafe(new Result(result));
@@ -285,10 +279,10 @@ As you can see we have now created an ``UntypedActor`` with a ``onReceive`` meth
 The only thing missing in our ``Worker`` actor is the implementation on the ``calculatePiFor(..)`` method::
 
     // define the work
-    private double calculatePiFor(int arg, int nrOfElements) {
+    private double calculatePiFor(int start, int nrOfElements) {
       double acc = 0.0;
-      for (int i = arg * nrOfElements; i <= ((arg + 1) * nrOfElements - 1); i++) {
-        acc += 4 * Math.pow(-1, i) / (2 * i + 1);
+      for (int i = start * nrOfElements; i <= ((start + 1) * nrOfElements - 1); i++) {
+        acc += 4 * (1 - (i % 2) * 2) / (2 * i + 1);
       }
       return acc;
     }
@@ -335,7 +329,7 @@ As you can see we are using the ``actorOf`` factory method to create actors, thi
 
     import static akka.actor.Actors.actorOf;
 
-In thing to note is that we used two different versions of the ``actorOf`` method. For creating the ``Worker`` actor we just pass in the class but to create the ``PiRouter`` actor we can't do that since the constructor in the ``PiRouter`` class takes arguments, instead we need to use the ``UntypedActorFactory`` which unfortunately is a bit more verbose.
+One thing to note is that we used two different versions of the ``actorOf`` method. For creating the ``Worker`` actor we just pass in the class but to create the ``PiRouter`` actor we can't do that since the constructor in the ``PiRouter`` class takes arguments, instead we need to use the ``UntypedActorFactory`` which unfortunately is a bit more verbose.
 
 ``actorOf`` is the only way to create an instance of an Actor, this is enforced by Akka runtime. The ``actorOf`` method instantiates the actor and returns, not an instance to the actor, but an instance to an ``ActorRef``. This reference is the handle through which you communicate with the actor. It is immutable, serializable and location-aware meaning that it "remembers" its original actor even if it is sent to other nodes across the network and can be seen as the equivalent to the Erlang actor's PID.
 
@@ -438,8 +432,8 @@ Let's capture this in code::
 
       if (message instanceof Calculate) {
         // schedule work
-        for (int arg = 0; arg < nrOfMessages; arg++) {
-          router.sendOneWay(new Work(arg, nrOfElements), getContext());
+        for (int start = 0; start < nrOfMessages; start++) {
+          router.sendOneWay(new Work(start, nrOfElements), getContext());
         }
 
         // send a PoisonPill to all workers telling them to shut down themselves
@@ -525,15 +519,15 @@ Before we package it up and run it, let's take a look at the full code now, with
       static class Calculate {}
 
       static class Work {
-        private final int arg;
+        private final int start;
         private final int nrOfElements;
 
-        public Work(int arg, int nrOfElements) {
-          this.arg = arg;
+        public Work(int start, int nrOfElements) {
+          this.start = start;
           this.nrOfElements = nrOfElements;
         }
 
-        public int getArg() { return arg; }
+        public int getStart() { return start; }
         public int getNrOfElements() { return nrOfElements; }
       }
 
@@ -553,10 +547,10 @@ Before we package it up and run it, let's take a look at the full code now, with
       static class Worker extends UntypedActor {
 
         // define the work
-        private double calculatePiFor(int arg, int nrOfElements) {
+        private double calculatePiFor(int start, int nrOfElements) {
           double acc = 0.0;
-          for (int i = arg * nrOfElements; i <= ((arg + 1) * nrOfElements - 1); i++) {
-            acc += 4 * Math.pow(-1, i) / (2 * i + 1);
+          for (int i = start * nrOfElements; i <= ((start + 1) * nrOfElements - 1); i++) {
+            acc += 4 * (1 - (i % 2) * 2) / (2 * i + 1);
           }
           return acc;
         }
@@ -567,7 +561,7 @@ Before we package it up and run it, let's take a look at the full code now, with
             Work work = (Work) message;
 
             // perform the work
-            double result = calculatePiFor(work.getArg(), work.getNrOfElements())
+            double result = calculatePiFor(work.getStart(), work.getNrOfElements())
 
             // reply with the result
             getContext().replyUnsafe(new Result(result));
@@ -628,8 +622,8 @@ Before we package it up and run it, let's take a look at the full code now, with
 
           if (message instanceof Calculate) {
             // schedule work
-            for (int arg = 0; arg < nrOfMessages; arg++) {
-              router.sendOneWay(new Work(arg, nrOfElements), getContext());
+            for (int start = 0; start < nrOfMessages; start++) {
+              router.sendOneWay(new Work(start, nrOfElements), getContext());
             }
 
             // send a PoisonPill to all workers telling them to shut down themselves
@@ -716,7 +710,7 @@ When we have compiled the source file we are ready to run the application. This 
 
 Yippee! It is working.
 
-If you have not defined an the ``AKKA_HOME`` environment variable then Akka can't find the ``akka.conf`` configuration file and will print out a ``Can’t load akka.conf`` warning. This is ok since it will then just use the defaults.
+If you have not defined the ``AKKA_HOME`` environment variable then Akka can't find the ``akka.conf`` configuration file and will print out a ``Can’t load akka.conf`` warning. This is ok since it will then just use the defaults.
 
 Run it inside Maven
 -------------------
@@ -740,6 +734,8 @@ Conclusion
 ----------
 
 We have learned how to create our first Akka project using Akka's actors to speed up a computation-intensive problem by scaling out on multi-core processors (also known as scaling up). We have also learned to compile and run an Akka project using either the tools on the command line or the SBT build system.
+
+If you have a multi-core machine then I encourage you to try out different number of workers (number of working actors) by tweaking the ``nrOfWorkers`` variable to for example; 2, 4, 6, 8 etc. to see performance improvement by scaling up.
 
 Now we are ready to take on more advanced problems. In the next tutorial we will build on this one, refactor it into more idiomatic Akka and Scala code, and introduce a few new concepts and abstractions. Whenever you feel ready, join me in the `Getting Started Tutorial: Second Chapter <TODO>`_.
 

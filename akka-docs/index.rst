@@ -6,7 +6,7 @@ Contents
 
    intro/index
    scala/index
-
+   dev/index
 
 Links
 =====
