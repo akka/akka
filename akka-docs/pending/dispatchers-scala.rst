@@ -233,7 +233,9 @@ Making it bounded (by specifying a capacity) is optional, but if you do, you nee
 
 `<code format="scala">`_
 class MyActor extends Actor {
-  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity, pushTimeout, pushTimeoutUnit)
+  import akka.util.duration._
+  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 100,
+    pushTimeOut = 10 seconds)
    ...
 }
 `<code>`_

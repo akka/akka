@@ -237,7 +237,8 @@ For the 'ExecutorBasedEventDrivenDispatcher' and the 'ExecutorBasedWorkStealingD
   class MyActor extends UntypedActor {
     public MyActor() {
       int capacity = 100;
-      MailboxType mailboxCapacity = new BoundedMailbox(false, capacity, Dispatchers.MAILBOX_PUSH_TIME_OUT());
+      Duration pushTimeout = new FiniteDuration(10, TimeUnit.SECONDS);
+      MailboxType mailboxCapacity = new BoundedMailbox(false, capacity, pushTimeout);
       MessageDispatcher dispatcher =
           Dispatchers.newExecutorBasedEventDrivenDispatcher(name, throughput, mailboxCapacity).build();
       getContext().setDispatcher(dispatcher);
@@ -252,7 +253,7 @@ Making it bounded (by specifying a capacity) is optional, but if you do, you nee
 class MyActor extends UntypedActor {
   public MyActor() {
     int mailboxCapacity = 100;
-    Duration pushTimeout = Dispatchers.MAILBOX_PUSH_TIME_OUT();
+    Duration pushTimeout = new FiniteDuration(10, TimeUnit.SECONDS);
     getContext().setDispatcher(Dispatchers.newThreadBasedDispatcher(getContext(), mailboxCapacity, pushTimeout));
   }
    ...
