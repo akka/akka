@@ -56,15 +56,15 @@ public class Pi {
   static class Calculate {}
 
   static class Work {
-    private final int arg;
+    private final int start;
     private final int nrOfElements;
 
-    public Work(int arg, int nrOfElements) {
-      this.arg = arg;
+    public Work(int start, int nrOfElements) {
+      this.start = start;
       this.nrOfElements = nrOfElements;
     }
 
-    public int getArg() { return arg; }
+    public int getStart() { return start; }
     public int getNrOfElements() { return nrOfElements; }
   }
 
@@ -84,10 +84,10 @@ public class Pi {
   static class Worker extends UntypedActor {
 
     // define the work
-    private double calculatePiFor(int arg, int nrOfElements) {
+    private double calculatePiFor(int start, int nrOfElements) {
       double acc = 0.0;
-      for (int i = arg * nrOfElements; i <= ((arg + 1) * nrOfElements - 1); i++) {
-        acc += 4 * Math.pow(-1, i) / (2 * i + 1);
+      for (int i = start * nrOfElements; i <= ((start + 1) * nrOfElements - 1); i++) {
+        acc += 4 * (1 - (i % 2) * 2) / (2 * i + 1);
       }
       return acc;
     }
@@ -98,7 +98,7 @@ public class Pi {
         Work work = (Work) message;
 
         // perform the work
-        double result = calculatePiFor(work.getArg(), work.getNrOfElements());
+        double result = calculatePiFor(work.getStart(), work.getNrOfElements());
 
         // reply with the result
         getContext().replyUnsafe(new Result(result));
@@ -157,8 +157,8 @@ public class Pi {
 
       if (message instanceof Calculate) {
         // schedule work
-        for (int arg = 0; arg < nrOfMessages; arg++) {
-          router.sendOneWay(new Work(arg, nrOfElements), getContext());
+        for (int start = 0; start < nrOfMessages; start++) {
+          router.sendOneWay(new Work(start, nrOfElements), getContext());
         }
 
         // send a PoisonPill to all workers telling them to shut down themselves

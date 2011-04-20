@@ -238,7 +238,7 @@ The only thing missing in our ``Worker`` actor is the implementation on the ``ca
     def calculatePiFor(start: Int, nrOfElements: Int): Double = {
       var acc = 0.0
       for (i <- start until (start + nrOfElements))
-        acc += 4 * math.pow(-1, i) / (2 * i + 1)
+        acc += 4 * (1 - (i % 2) * 2) / (2 * i + 1)
       acc
     }
 
@@ -404,7 +404,7 @@ But before we package it up and run it, let's take a look at the full code now, 
         def calculatePiFor(start: Int, nrOfElements: Int): Double = {
           var acc = 0.0
           for (i <- start until (start + nrOfElements))
-            acc += 4 * math.pow(-1, i) / (2 * i + 1)
+            acc += 4 * (1 - (i % 2) * 2) / (2 * i + 1)
           acc
         }
 
@@ -435,7 +435,7 @@ But before we package it up and run it, let's take a look at the full code now, 
         def receive = {
           case Calculate =>
             // schedule work
-            //for (arg <- 0 until nrOfMessages) router ! Work(arg, nrOfElements)
+            //for (start <- 0 until nrOfMessages) router ! Work(start, nrOfElements)
             for (i <- 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
 
             // send a PoisonPill to all workers telling them to shut down themselves
@@ -534,6 +534,8 @@ Conclusion
 ----------
 
 We have learned how to create our first Akka project using Akka's actors to speed up a computation-intensive problem by scaling out on multi-core processors (also known as scaling up). We have also learned to compile and run an Akka project using either the tools on the command line or the SBT build system.
+
+If you have a multi-core machine then I encourage you to try out different number of workers (number of working actors) by tweaking the ``nrOfWorkers`` variable to for example; 2, 4, 6, 8 etc. to see performance improvement by scaling up.
 
 Now we are ready to take on more advanced problems. In the next tutorial we will build on this one, refactor it into more idiomatic Akka and Scala code, and introduce a few new concepts and abstractions. Whenever you feel ready, join me in the `Getting Started Tutorial: Second Chapter <TODO>`_.
 
