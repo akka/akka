@@ -425,7 +425,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
           })
 
           def limit = 1
-          def selectionCount = 2
+          def selectionCount = 1
           def rampupRate = 0.1
           def partialFill = true
           def instance = factory
@@ -458,7 +458,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
           })
 
           def limit = 2
-          def selectionCount = 2
+          def selectionCount = 1
           def rampupRate = 0.1
           def partialFill = false
           def instance = factory

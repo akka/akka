@@ -104,7 +104,7 @@ trait DefaultActorPool extends ActorPool { this: Actor =>
 /**
  * Selectors
  *      These traits define how, when a message needs to be routed, delegate(s) are chosen from the pool
- **/
+ */
 
 /**
  * Returns the set of delegates with the least amount of message backlog.
@@ -141,7 +141,7 @@ trait RoundRobinSelector {
                else selectionCount
 
     val set =
-      for (i <- 0 to take) yield {
+      for (i <- 0 until take) yield {
         _last = (_last + 1) % length
         delegates(_last)
       }
