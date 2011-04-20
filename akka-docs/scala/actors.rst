@@ -1,5 +1,5 @@
-Actors (Scala)
-==============
+Actors
+======
 
 Module stability: **SOLID**
 

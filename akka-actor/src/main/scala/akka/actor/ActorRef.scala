@@ -88,9 +88,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   protected[akka] var _uuid = newUuid
   @volatile
   protected[this] var _status: ActorRefInternals.StatusType = ActorRefInternals.UNSTARTED
-  @volatile
-  protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
-  protected[akka] val guard = new ReentrantGuard
 
   /**
    * User overridable callback/setting.
@@ -572,20 +569,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   }
 
   override def toString = "Actor[" + id + ":" + uuid + "]"
-
-  protected[akka] def checkReceiveTimeout = {
-    cancelReceiveTimeout
-    if (receiveTimeout.isDefined && dispatcher.mailboxSize(this) <= 0) { //Only reschedule if desired and there are currently no more messages to be processed
-      _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, receiveTimeout.get, TimeUnit.MILLISECONDS))
-    }
-  }
-
-  protected[akka] def cancelReceiveTimeout = {
-    if (_futureTimeout.isDefined) {
-      _futureTimeout.get.cancel(true)
-      _futureTimeout = None
-    }
-  }
 }
 
 /**
@@ -598,7 +581,10 @@ class LocalActorRef private[akka] (
   val homeAddress: Option[InetSocketAddress],
   val clientManaged: Boolean = false)
   extends ActorRef with ScalaActorRef {
+  protected[akka] val guard = new ReentrantGuard
 
+  @volatile
+  protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
   @volatile
   private[akka] lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
   @volatile
@@ -1101,6 +1087,21 @@ class LocalActorRef private[akka] (
   private def initializeActorInstance = {
     actor.preStart // run actor preStart
     Actor.registry.register(this)
+  }
+
+
+  protected[akka] def checkReceiveTimeout = {
+    cancelReceiveTimeout
+    if (receiveTimeout.isDefined && dispatcher.mailboxSize(this) <= 0) { //Only reschedule if desired and there are currently no more messages to be processed
+      _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, receiveTimeout.get, TimeUnit.MILLISECONDS))
+    }
+  }
+
+  protected[akka] def cancelReceiveTimeout = {
+    if (_futureTimeout.isDefined) {
+      _futureTimeout.get.cancel(true)
+      _futureTimeout = None
+    }
   }
 }
 

@@ -996,14 +996,20 @@ private[akka] abstract class ActorAspect {
       None) //TODO: REVISIT: Use another classloader?
 
     if (isOneWay) null // for void methods
+    else if (future.isEmpty) throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
     else if (TypedActor.returnsFuture_?(methodRtti)) future.get
+    else if (TypedActor.returnsOption_?(methodRtti)) {
+      import akka.japi.{Option => JOption}
+      future.get.await.resultOrException.as[JOption[AnyRef]] match {
+        case None => JOption.none[AnyRef]
+        case Some(x) if ((x eq null) || x.isEmpty) => JOption.some[AnyRef](null)
+        case Some(x) => x
+      }
+    }
     else {
-      if (future.isDefined) {
-        future.get.await
-        val result = future.get.resultOrException
-        if (result.isDefined) result.get
-        else throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
-      } else throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
+      val result = future.get.await.resultOrException
+      if(result.isDefined) result.get
+      else throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
     }
   }
 
