@@ -4,6 +4,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   manual/why-akka
    manual/getting-started-first-scala
    manual/getting-started-first-java
    manual/fsm-scala
