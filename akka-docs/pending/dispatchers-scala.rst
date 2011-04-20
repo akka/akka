@@ -5,7 +5,7 @@ Module stability: **SOLID**
 
 The Dispatcher is an important piece that allows you to configure the right semantics and parameters for optimal performance, throughput and scalability. Different Actors have different needs.
 
-Akka supports dispatchers for both event-driven lightweight threads, allowing creation of millions threads on a single workstation, and thread-based Actors, where each dispatcher is bound to a dedicated OS thread.
+Akka supports dispatchers for both event-driven lightweight threads, allowing creation of millions of threads on a single workstation, and thread-based Actors, where each dispatcher is bound to a dedicated OS thread.
 
 The event-based Actors currently consume ~600 bytes per Actor which means that you can create more than 6.5 million Actors on 4 G RAM.
 
@@ -47,11 +47,26 @@ There are six different types of message dispatchers:
 * Event-based
 * Priority event-based
 * Work-stealing
-* HawtDispatch-based event-driven
 
 Factory methods for all of these, including global versions of some of them, are in the 'akka.dispatch.Dispatchers' object.
 
 Let's now walk through the different dispatchers in more detail.
+
+Thread-based
+^^^^^^^^^^^^
+
+The 'ThreadBasedDispatcher' binds a dedicated OS thread to each specific Actor. The messages are posted to a 'LinkedBlockingQueue' which feeds the messages to the dispatcher one by one. A 'ThreadBasedDispatcher' cannot be shared between actors. This dispatcher has worse performance and scalability than the event-based dispatcher but works great for creating "daemon" Actors that consumes a low frequency of messages and are allowed to go off and do their own thing for a longer period of time. Another advantage with this dispatcher is that Actors do not block threads for each other.
+
+It would normally by used from within the actor like this:
+
+.. code-block:: java
+
+  class MyActor extends Actor {
+    public MyActor() {
+      self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
+    }
+    ...
+  }
 
 Event-based
 ^^^^^^^^^^^
@@ -80,9 +95,13 @@ Here is an example:
 
 .. code-block:: scala
 
+  import akka.actor.Actor
+  import akka.dispatch.Dispatchers
+  import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
+
   class MyActor extends Actor {
     self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(name)
-      .withNewThreadPoolWithBoundedBlockingQueue(100)
+      .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
       .setCorePoolSize(16)
       .setMaxPoolSize(128)
       .setKeepAliveTimeInMillis(60000)
@@ -110,12 +129,11 @@ Priority event-based
 Sometimes it's useful to be able to specify priority order of messages, that is done by using PriorityExecutorBasedEventDrivenDispatcher and supply
 a java.util.Comparator[MessageInvocation] or use a akka.dispatch.PriorityGenerator (recommended):
 
-Creating a PriorityExecutorBasedEventDrivenDispatcher using PriorityGenerator in Java:
+Creating a PriorityExecutorBasedEventDrivenDispatcher using PriorityGenerator:
 
 .. code-block:: scala
 
   import akka.dispatch._
-  
   import akka.actor._
   
   val gen = PriorityGenerator { // Create a new PriorityGenerator, lower prio means more important
@@ -138,17 +156,11 @@ Creating a PriorityExecutorBasedEventDrivenDispatcher using PriorityGenerator in
     a.dispatcher.suspend(a) // Suspening the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
 
      a ! 'lowpriority
-
      a ! 'lowpriority
-
      a ! 'highpriority
-
      a ! 'pigdog
-
      a ! 'pigdog2
-
      a ! 'pigdog3
-
      a ! 'highpriority
 
      a.dispatcher.resume(a) // Resuming the actor so it will start treating its messages
@@ -173,7 +185,7 @@ Normally the way you use it is to create an Actor companion object to hold the d
 .. code-block:: scala
 
   object MyActor {
-    val dispatcher = Dispatchers.newExecutorEventBasedWorkStealingDispatcher(name)
+    val dispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher(name).build
   }
 
   class MyActor extends Actor {
@@ -183,54 +195,6 @@ Normally the way you use it is to create an Actor companion object to hold the d
 
 Here is an article with some more information: `Load Balancing Actors with Work Stealing Techniques <http://janvanbesien.blogspot.com/2010/03/load-balancing-actors-with-work.html>`_
 Here is another article discussing this particular dispatcher: `Flexible load balancing with Akka in Scala <http://vasilrem.com/blog/software-development/flexible-load-balancing-with-akka-in-scala/>`_
-
-HawtDispatch-based event-driven
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The 'HawtDispatcher' uses the `HawtDispatch threading library <http://hawtdispatch.fusesource.org/>`_ which is a Java clone of libdispatch. All actors with this type of dispatcher are executed on a single system wide fixed sized thread pool. The number of of threads will match the number of cores available on your system. The dispatcher delivers messages to the actors in the order that they were producer at the sender.
-
-A 'HawtDispatcher' instance can be shared by many actors. Normally the way you use it is to create an Actor companion object to hold the dispatcher and then set in in the Actor explicitly.
-
-.. code-block:: scala
-
-  import akka.dispatch.HawtDispatcher
-
-  object MyActor {
-    val dispatcher = new HawtDispatcher
-  }
-
-  class MyActor extends Actor {
-    self.dispatcher = MyActor.dispatcher
-    ...
-  }
-
-Since a fixed thread pool is being used, an actor using a 'HawtDispatcher' is restricted to executing non blocking operations. For example, the actor is NOT alllowed to:
-* synchronously call another actor
-* call 3rd party libraries that can block
-* use sockets that are in blocking mode
-
-HawtDispatch supports integrating non-blocking Socket IO events with your actors. Every thread in the HawtDispatch thread pool is parked in an IO event loop when it is not executing an actors. The IO events can be configured to be get delivered to the actor in either the reactor or proactor style. For an example, see `HawtDispacherEchoServer.scala <https://github.com/jboner/akka/blob/master/akka-actor/src/test/scala/akka/dispatch/HawtDispatcherEchoServer.scala>`_.
-
-A `HawtDispatcher` will aggregate cross actor messages by default. This means that if Actor *A* is executing and sends actor *B* 10 messages, those messages will not be delivered to actor *B* until *A*'s execution ends. HawtDispatch will aggregate the 10 messages into 1 single enqueue operation on to actor *B*'s inbox. This an significantly reduce mailbox contention when actors are very chatty. If you want to avoid this aggregation behavior, then create the `HawtDispatcher` like this:
-
-.. code-block:: scala
-
-  val dispatcher = new HawtDispatcher(false)
-
-The `HawtDispatcher` provides a companion object that lets you use more advanced HawtDispatch features. For example to pin an actor so that it always executed on the same thread in the thread poool you would:
-
-.. code-block:: scala
-
-  val a: ActorRef = ...
-  HawtDispatcher.pin(a)
-
-If you have an Actor *b* which will be sending many messages to an Actor *a*, then you may want to consider setting *b*'s dispatch target to be *a*'s dispatch queue. When this is the case, messages sent from *b* to a will avoid cross thread mailbox contention. A side-effect of this is that the *a* and *b* actors will execute as if they shared a single mailbox.
-
-.. code-block:: scala
-
-  val a: ActorRef = ...
-  val b: ActorRef = ...
-  HawtDispatcher.target(b, HawtDispatcher.queue(a))
 
 Making the Actor mailbox bounded
 --------------------------------
@@ -245,7 +209,7 @@ You can make the Actor mailbox bounded by a capacity in two ways. Either you def
   actor {
     default-dispatcher {
       mailbox-capacity = -1            # If negative (or zero) then an unbounded mailbox is used (default)
-                                       # If positive then a bounded mailbox is used and the capacity is set to the number specificed
+                                       # If positive then a bounded mailbox is used and the capacity is set to the number specified
     }
   }
 
@@ -259,7 +223,8 @@ For the 'ExecutorBasedEventDrivenDispatcher' and the 'ExecutorBasedWorkStealingD
 .. code-block:: scala
 
   class MyActor extends Actor {
-    self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(name, throughput, mailboxCapacity)
+    val mailboxCapacity = BoundedMailbox(capacity = 100)
+    self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(name, throughput, mailboxCapacity).build
      ...
   }
 

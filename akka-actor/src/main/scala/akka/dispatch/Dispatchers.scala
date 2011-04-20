@@ -20,12 +20,12 @@ import java.util.concurrent.TimeUnit
  * <pre/>
  *   val dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("name")
  *   dispatcher
- *     .withNewThreadPoolWithBoundedBlockingQueue(100)
+ *     .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
  *     .setRejectionPolicy(new CallerRunsPolicy)
- *     .buildThreadPool
+ *     .build
  * </pre>
  * <p/>
  * Java API. Dispatcher factory.
@@ -34,12 +34,12 @@ import java.util.concurrent.TimeUnit
  * <pre/>
  *   MessageDispatcher dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("name");
  *   dispatcher
- *     .withNewThreadPoolWithBoundedBlockingQueue(100)
+ *     .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
- *     .setRejectionPolicy(new CallerRunsPolicy)
- *     .buildThreadPool();
+ *     .setRejectionPolicy(new CallerRunsPolicy())
+ *     .build();
  * </pre>
  * <p/>
  *
