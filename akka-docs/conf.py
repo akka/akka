@@ -7,7 +7,7 @@ import sys, os
 
 # -- General configuration -----------------------------------------------------
 
-sys.path.append(os.path.abspath('exts'))
+sys.path.append(os.path.abspath('_sphinx/exts'))
 extensions = ['sphinx.ext.todo', 'includecode']
 
 templates_path = ['_templates']
@@ -31,13 +31,13 @@ html_theme = 'akka'
 html_theme_options = {
     'full_logo': 'true'
     }
-html_theme_path = ['themes']
+html_theme_path = ['_sphinx/themes']
 
 html_title = 'Akka Documentation'
-html_logo = '_static/logo.png'
+html_logo = '_sphinx/static/logo.png'
 #html_favicon = None
 
-html_static_path = ['_static']
+html_static_path = ['_sphinx/static']
 
 html_last_updated_fmt = '%b %d, %Y'
 #html_sidebars = {}
@@ -65,4 +65,4 @@ latex_elements = {
     'preamble': '\\definecolor{VerbatimColor}{rgb}{0.935,0.935,0.935}'
     }
 
-# latex_logo = '_static/akka.png'
+# latex_logo = '_sphinx/static/akka.png'
