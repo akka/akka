@@ -133,7 +133,7 @@ If you are also using Protobuf then you can use the methods that work with Proto
 
   val actorRef2 = ActorRef.fromProtocol(protobufMessage)
 
- Camel
+Camel
 ======
 
 Some methods of the se.scalablesolutions.akka.camel.Message class have been deprecated in 0.9. These are
@@ -163,7 +163,8 @@ They will be removed in 1.0. Instead use
   }
 
 Usage example:
-`<code format="scala">`_
-val m = Message(1.4)
-val b = m.bodyAs[String]
-`<code>`_
+.. code-block:: scala
+  
+  val m = Message(1.4)
+  val b = m.bodyAs[String]
+

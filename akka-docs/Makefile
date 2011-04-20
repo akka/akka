@@ -8,7 +8,7 @@ PAPER         =
 BUILDDIR      = _build
 EASYINSTALL   = easy_install
 LOCALPACKAGES = $(shell pwd)/$(BUILDDIR)/site-packages
-PYGMENTSDIR   = pygments
+PYGMENTSDIR   = _sphinx/pygments
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4

@@ -16,6 +16,8 @@ Videos
 
 `Akka talk at Scala Days - March 2010 <http://days2010.scala-lang.org/node/138/162>`_
 
+`Devoxx 2010 talk "Akka: Simpler Scalability, Fault-Tolerance, Concurrency" by Viktor Klang <http://parleys.com/d/2089>`_
+
 Articles
 --------
 
