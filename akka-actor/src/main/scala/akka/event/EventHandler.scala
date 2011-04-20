@@ -79,11 +79,10 @@ object EventHandler extends ListenerManagement {
   val info    = "[INFO] [%s] [%s] [%s] %s".intern
   val debug   = "[DEBUG] [%s] [%s] [%s] %s".intern
   val generic = "[GENERIC] [%s] [%s]".intern
-  val ADDRESS      = "event:handler".intern
 
   class EventHandlerException extends AkkaException
 
-  lazy val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ADDRESS).build
+  lazy val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("event:handler").build
 
   val level: Int = config.getString("akka.event-handler-level", "DEBUG") match {
     case "ERROR"   => ErrorLevel
@@ -91,7 +90,7 @@ object EventHandler extends ListenerManagement {
     case "INFO"    => InfoLevel
     case "DEBUG"   => DebugLevel
     case unknown   => throw new ConfigurationException(
-                    "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
+                        "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
   }
 
   def notify(event: Any) { notifyListeners(event) }
@@ -150,7 +149,6 @@ object EventHandler extends ListenerManagement {
   }
 
   class DefaultListener extends Actor {
-    self.address = ADDRESS
     self.dispatcher = EventHandlerDispatcher
 
     def receive = {
@@ -191,7 +189,7 @@ object EventHandler extends ListenerManagement {
   defaultListeners foreach { listenerName =>
     try {
       ReflectiveAccess.getClassFor[Actor](listenerName) map { clazz =>
-        addListener(Actor.actorOf(clazz).start)
+        addListener(Actor.actorOf(clazz, listenerName).start)
       }
     } catch {
       case e: Exception =>

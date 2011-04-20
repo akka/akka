@@ -92,12 +92,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
   protected[akka] val guard = new ReentrantGuard
 
-  /**
-   * FIXME Document
-   */
-  @BeanProperty
-  @volatile
-  var address: String = _uuid.toString // FIXME set 'address' in ActorRef and make 'val'
+  val address: String
 
   /**
    * User overridable callback/setting.
@@ -542,9 +537,8 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class LocalActorRef private[akka] (private[this] val actorFactory: () => Actor, _address: String)
+class LocalActorRef private[akka] (private[this] val actorFactory: () => Actor, val address: String)
   extends ActorRef with ScalaActorRef {
-  this.address = _address
 
   @volatile
   private[akka] lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
@@ -990,7 +984,7 @@ object RemoteActorSystemMessage {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] case class RemoteActorRef private[akka] (
-  _address: String,
+  val address: String,
   val actorClassName: String,
   _timeout: Long,
   loader: Option[ClassLoader],
@@ -999,10 +993,9 @@ private[akka] case class RemoteActorRef private[akka] (
 
   ensureRemotingEnabled
   timeout = _timeout
-  address = _address
 
   // FIXME BAD, we should not have different ActorRefs
-  val remoteAddress: InetSocketAddress = AddressRegistry.lookupRemoteAddress(address).getOrElse(
+  val remoteAddress: InetSocketAddress = AddressRegistry.remoteAddressFor(address).getOrElse(
     throw new IllegalStateException("Actor [" + actorClassName + "] is not configured as being a remote actor."))
 
   start
@@ -1086,11 +1079,9 @@ trait ActorRefShared {
 trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
 
   /**
-   * Address for actor, must be a unique one. Default is the 'uuid'.
+   * Address for actor, must be a unique one.
    */
   def address: String
-
-  def address_=(address: String): Unit
 
   /**
    * User overridable callback/setting.

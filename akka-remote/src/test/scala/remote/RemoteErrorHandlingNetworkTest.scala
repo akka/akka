@@ -11,7 +11,7 @@ object RemoteErrorHandlingNetworkTest {
   case class Send(actor: ActorRef)
 
   class RemoteActorSpecActorUnidirectional extends Actor {
-    self.address = "network-drop:unidirectional"
+
     def receive = {
       case "Ping" => self.reply_?("Pong")
     }

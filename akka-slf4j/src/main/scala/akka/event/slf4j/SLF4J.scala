@@ -33,7 +33,6 @@ object Logger {
 class Slf4jEventHandler extends Actor with Logging {
   import EventHandler._
 
-  self.address = ADDRESS
   self.dispatcher = EventHandlerDispatcher
 
   def receive = {

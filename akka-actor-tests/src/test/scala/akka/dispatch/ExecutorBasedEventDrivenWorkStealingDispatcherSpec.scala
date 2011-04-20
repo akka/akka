@@ -16,10 +16,9 @@ object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
 
   val delayableActorDispatcher, sharedActorDispatcher, parentActorDispatcher = newWorkStealer()
 
-  class DelayableActor(name: String, delay: Int, finishedCounter: CountDownLatch) extends Actor {
+  class DelayableActor(delay: Int, finishedCounter: CountDownLatch) extends Actor {
     self.dispatcher = delayableActorDispatcher
     @volatile var invocationCount = 0
-    self.address = name
 
     def receive = {
       case x: Int => {
@@ -58,8 +57,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
   @Test def fastActorShouldStealWorkFromSlowActor  {
     val finishedCounter = new CountDownLatch(110)
 
-    val slow = actorOf(new DelayableActor("slow", 50, finishedCounter)).start
-    val fast = actorOf(new DelayableActor("fast", 10, finishedCounter)).start
+    val slow = actorOf(new DelayableActor(50, finishedCounter), "slow").start
+    val fast = actorOf(new DelayableActor(10, finishedCounter), "fast").start
 
     var sentToFast = 0
 

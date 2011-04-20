@@ -15,7 +15,6 @@ import akka.event.EventHandler
 class RemoteEventHandler extends Actor {
   import EventHandler._
 
-  self.address    = ADDRESS
   self.dispatcher = EventHandlerDispatcher
 
   def receive = {

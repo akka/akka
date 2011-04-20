@@ -868,6 +868,7 @@ private[akka] abstract class ActorAspect {
       actorRef = init.actorRef
       uuid = actorRef.uuid
       timeout = init.timeout
+      remoteAddress = None//actorRef.remoteAddress
     }
   }
 }

@@ -14,8 +14,7 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
 
   var log = ""
   case object Die
-  class Chainer(myId: String, a: Option[ActorRef] = None) extends Actor {
-    self.address = myId
+  class Chainer(a: Option[ActorRef] = None) extends Actor {
     self.lifeCycle = Permanent
     self.faultHandler = OneForOneStrategy(List(classOf[Exception]), 3, 1000)
     a.foreach(self.link(_))
@@ -34,9 +33,9 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
     "be able to kill the middle actor and see itself and its child restarted" in {
       log = "INIT"
 
-      val lastActor   = actorOf(new Chainer("lastActor")).start
-      val middleActor = actorOf(new Chainer("middleActor", Some(lastActor))).start
-      val headActor   = actorOf(new Chainer("headActor",   Some(middleActor))).start
+      val lastActor   = actorOf(new Chainer, "lastActor").start
+      val middleActor = actorOf(new Chainer(Some(lastActor)), "middleActor").start
+      val headActor   = actorOf(new Chainer(Some(middleActor)), "headActor").start
 
       middleActor ! Die
       Thread.sleep(100)

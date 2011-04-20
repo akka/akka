@@ -14,7 +14,6 @@ import Actor._
  */
 class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustMatchers {
   class SlowActor(finishedCounter: CountDownLatch) extends Actor {
-    self.address = "SlowActor"
 
     def receive = {
       case x: Int => {
@@ -25,8 +24,6 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
   }
 
   class FastActor(finishedCounter: CountDownLatch) extends Actor {
-    self.address = "FastActor"
-
     def receive = {
       case x: Int => {
         finishedCounter.countDown
@@ -37,8 +34,8 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
   @Test def slowActorShouldntBlockFastActor {
     val sFinished = new CountDownLatch(50)
     val fFinished = new CountDownLatch(10)
-    val s = actorOf(new SlowActor(sFinished)).start
-    val f = actorOf(new FastActor(fFinished)).start
+    val s = actorOf(new SlowActor(sFinished), "SlowActor").start
+    val f = actorOf(new FastActor(fFinished), "FastActor").start
 
     // send a lot of stuff to s
     for (i <- 1 to 50) {

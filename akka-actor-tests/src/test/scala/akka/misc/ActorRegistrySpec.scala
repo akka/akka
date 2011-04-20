@@ -4,11 +4,11 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import Actor._
 import java.util.concurrent.{CyclicBarrier, TimeUnit, CountDownLatch}
+import org.scalatest.Assertions._
 
 object ActorRegistrySpec {
   var record = ""
   class TestActor extends Actor {
-    self.address = "MyID"
     def receive = {
       case "ping" =>
         record = "pong" + record
@@ -17,7 +17,6 @@ object ActorRegistrySpec {
   }
 
   class TestActor2 extends Actor {
-    self.address = "MyID2"
     def receive = {
       case "ping" =>
         record = "pong" + record
@@ -34,57 +33,59 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldGetActorByAddressFromActorRegistry {
     Actor.registry.local.shutdownAll
-    val actor1 = actorOf[TestActor]
+    val actor1 = actorOf[TestActor]("test-actor-1")
     actor1.start
     val actor2 = Actor.registry.actorFor(actor1.address)
     assert(actor2.isDefined)
     assert(actor2.get.address === actor1.address)
+    assert(actor2.get.address === "test-actor-1")
     actor2.get.stop
   }
 
   @Test def shouldGetActorByUUIDFromLocalActorRegistry {
     Actor.registry.local.shutdownAll
-    val actor = actorOf[TestActor]
+    val actor = actorOf[TestActor]("test-actor-1")
     val uuid = actor.uuid
     actor.start
     val actorOrNone = Actor.registry.local.actorFor(uuid)
     assert(actorOrNone.isDefined)
     assert(actorOrNone.get.uuid === uuid)
+    assert(actorOrNone.get.address === "test-actor-1")
     actor.stop
   }
 
   @Test def shouldFindThingsFromLocalActorRegistry {
     Actor.registry.local.shutdownAll
-    val actor = actorOf[TestActor]
+    val actor = actorOf[TestActor]("test-actor-1")
     actor.start
     val found = Actor.registry.local.find({ case a: ActorRef if a.actor.isInstanceOf[TestActor] => a })
     assert(found.isDefined)
     assert(found.get.actor.isInstanceOf[TestActor])
-    assert(found.get.address === "MyID")
+    assert(found.get.address === "test-actor-1")
     actor.stop
   }
 
   @Test def shouldGetAllActorsFromLocalActorRegistry {
     Actor.registry.local.shutdownAll
-    val actor1 = actorOf[TestActor]
+    val actor1 = actorOf[TestActor]("test-actor-1")
     actor1.start
-    val actor2 = actorOf[TestActor]
+    val actor2 = actorOf[TestActor]("test-actor-2")
     actor2.start
     val actors = Actor.registry.local.actors
     assert(actors.size === 2)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.address === "MyID")
+    assert(actors.head.address === "test-actor-2")
     assert(actors.last.actor.isInstanceOf[TestActor])
-    assert(actors.last.address === "MyID")
+    assert(actors.last.address === "test-actor-1")
     actor1.stop
     actor2.stop
   }
 
   @Test def shouldGetResponseByAllActorsInLocalActorRegistryWhenInvokingForeach {
     Actor.registry.local.shutdownAll
-    val actor1 = actorOf[TestActor]
+    val actor1 = actorOf[TestActor]("test-actor-1")
     actor1.start
-    val actor2 = actorOf[TestActor]
+    val actor2 = actorOf[TestActor]("test-actor-2")
     actor2.start
     record = ""
     Actor.registry.local.foreach(actor => actor !! "ping")
@@ -95,9 +96,9 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldShutdownAllActorsInLocalActorRegistry {
     Actor.registry.local.shutdownAll
-    val actor1 = actorOf[TestActor]
+    val actor1 = actorOf[TestActor]("test-actor-1")
     actor1.start
-    val actor2 = actorOf[TestActor]
+    val actor2 = actorOf[TestActor]("test-actor-2")
     actor2.start
     Actor.registry.local.shutdownAll
     assert(Actor.registry.local.actors.size === 0)
@@ -105,9 +106,9 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldRemoveUnregisterActorInLocalActorRegistry {
     Actor.registry.local.shutdownAll
-    val actor1 = actorOf[TestActor]
+    val actor1 = actorOf[TestActor]("test-actor-1")
     actor1.start
-    val actor2 = actorOf[TestActor]
+    val actor2 = actorOf[TestActor]("test-actor-2")
     actor2.start
     assert(Actor.registry.local.actors.size === 2)
     Actor.registry.unregister(actor1)

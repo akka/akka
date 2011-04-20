@@ -9,11 +9,11 @@ import akka.actor.TypedActor._
 
 import akka.config.Supervision._
 
-import java.util.concurrent.CountDownLatch
 import akka.config.TypedActorConfigurator
 
 import akka.testing._
 import akka.util.duration._
+import java.util.concurrent.{TimeUnit, CountDownLatch}
 
 
 /**
@@ -49,7 +49,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
         fail("expected exception not thrown")
       } catch {
         case e: RuntimeException => {
-          cdl.await
+          cdl.await(10, TimeUnit.SECONDS)
           assert(SamplePojoImpl._pre)
           assert(SamplePojoImpl._post)
           assert(!SamplePojoImpl._down)
