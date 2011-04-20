@@ -30,13 +30,11 @@ div.footer {
 /* link colors and text decoration */
 
 a:link {
-    font-weight: bold;
     text-decoration: none;
     color: {{ theme_linkcolor }};
 }
 
 a:visited {
-    font-weight: bold;
     text-decoration: none;
     color: {{ theme_visitedlinkcolor }};
 }
