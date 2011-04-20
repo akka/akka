@@ -7,6 +7,7 @@ Contents
    manual/why-akka
    manual/getting-started-first-scala
    manual/getting-started-first-java
+   manual/building-akka
    manual/fsm-scala
 
 .. pending/actor-registry-java
@@ -15,7 +16,6 @@ Contents
 .. pending/agents-scala
 .. pending/articles
 .. pending/benchmarks
-.. pending/building-akka
 .. pending/buildr
 .. pending/cluster-membership
 .. pending/companies-using-akka
