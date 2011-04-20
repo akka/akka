@@ -159,8 +159,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val sjson      = "net.debasishg" % "sjson_2.9.0.RC1" % "0.11" % "compile" //ApacheV2
     lazy val sjson_test = "net.debasishg" % "sjson_2.9.0.RC1" % "0.11" % "test" //ApacheV2
 
-    lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % "1.6.0"
-    lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.24"
+    lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % SLF4J_VERSION
+    lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.28" % "runtime"
 
     // Test
 
