@@ -235,6 +235,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       val ref = TestActorRef[WorkerActor].start()
       ref.isDefinedAt("work") must be (true)
       ref.isDefinedAt("sleep") must be (false)
+      intercept[IllegalActorStateException] { ref("work") }
       val ch = Future.channel()
       ref ! ch
       val f = ch.future
