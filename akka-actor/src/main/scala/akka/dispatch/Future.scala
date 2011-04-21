@@ -6,7 +6,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.Actor
+import akka.actor.{Actor, Channel}
 import akka.routing.Dispatcher
 import akka.japi.{ Procedure, Function => JFunc }
 
@@ -216,6 +216,14 @@ object Future {
     val f = new DefaultCompletableFuture[T](timeout)
     dispatcher.dispatchFuture(FutureInvocation(f.asInstanceOf[CompletableFuture[Any]], () => body))
     f
+  }
+
+  /**
+   * Construct a completable channel
+   */
+  def channel(timeout: Long = Actor.TIMEOUT) = new Channel[Any] {
+    val future = new DefaultCompletableFuture[Any](timeout)
+    def !(msg: Any) = future << msg
   }
 }
 
