@@ -19,6 +19,18 @@ class TestActorRef[T <: Actor](factory: () => T) extends LocalActorRef(factory, 
   receiveTimeout = None
 
   /**
+   * Query actor's current receive behavior.
+   */
+  override def isDefinedAt(o : Any) = actor.isDefinedAt(o)
+
+  /**
+   * Directly inject messages into actor receive behavior. Any exceptions
+   * thrown will be available to you, while still being able to use
+   * become/unbecome and their message counterparts.
+   */
+  def apply(o : Any) { actor(o) }
+
+  /**
    * Retrieve reference to the underlying actor, where the static type matches the factory used inside the
    * constructor. Beware that this reference is discarded by the ActorRef upon restarting the actor (should this
    * reference be linked to a supervisor). The old Actor may of course still be used in post-mortem assertions.

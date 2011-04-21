@@ -172,6 +172,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
           override def preRestart(reason: Throwable) { counter -= 1 }
           override def postRestart(reason: Throwable) { counter -= 1 }
         }).start()
+        self.dispatcher = CallingThreadDispatcher.global
         self link ref
         def receiveT = { case "sendKill" => ref ! Kill }
       }).start()
@@ -228,6 +229,17 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       la.count must be (1)
       la.msg must (include ("supervisor") and include ("CallingThreadDispatcher"))
       EventHandler.removeListener(log)
+    }
+
+    "proxy isDefinedAt/apply for the underlying actor" in {
+      val ref = TestActorRef[WorkerActor].start()
+      ref.isDefinedAt("work") must be (true)
+      ref.isDefinedAt("sleep") must be (false)
+      val ch = Future.channel()
+      ref ! ch
+      val f = ch.future
+      f must be ('completed)
+      f() must be ("complexReply")
     }
 
   }
