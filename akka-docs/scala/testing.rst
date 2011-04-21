@@ -2,6 +2,10 @@
 Testing Actor Systems
 #####################
 
+.. toctree::
+
+   testkit-example
+
 .. sidebar:: Contents
 
    .. contents:: :local:
@@ -218,6 +222,25 @@ you do not specify it, is is inherited from the innermost enclosing
 terminate upon reception of a message or at the deadline, whichever occurs
 first; it follows that this examination usually is the last statement in a
 :meth:`within` block.
+
+.. code-block:: scala
+
+  class SomeSpec extends WordSpec with MustMatchers with TestKit {
+    "A Worker" must {
+      "send timely replies" in {
+        val worker = actorOf(...)
+        within (50 millis) {
+          worker ! "some work"
+          expectMsg("some result")
+          expectNoMsg
+        }
+      }
+    }
+  }
+
+Ray Roestenburg has written a great article on using the TestKit:
+`<http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html>`_.
+His full example is also available :ref:`here <testkit-example>`.
 
 CallingThreadDispatcher
 =======================
