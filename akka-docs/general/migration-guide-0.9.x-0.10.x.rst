@@ -1,5 +1,5 @@
-Migration Guide from Akka 0.9.x to Akka 0.10.x
-==============================================
+Migration Guide 0.9.x to 0.10.x
+===============================
 
 Module akka-camel
 -----------------

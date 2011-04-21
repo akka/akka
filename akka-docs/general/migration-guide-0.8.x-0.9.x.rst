@@ -1,7 +1,10 @@
+Migration Guide 0.8.x to 0.9.x
+==============================
+
 **This document describes between the 0.8.x and the 0.9 release.**
 
 Background for the new ActorRef
-===============================
+-------------------------------
 
 In the work towards 0.9 release we have now done a major change to how Actors are created. In short we have separated identity and value, created an 'ActorRef' that holds the actual Actor instance. This allows us to do many great things such as for example:
 
@@ -15,8 +18,7 @@ These changes means that there is no difference in defining Actors. You still us
 
 Here is a short migration guide with the things that you have to change. It is a big conceptual change but in practice you don't have to change much.
 
-Migration Guide
-===============
+
 
 Creating Actors with default constructor
 ----------------------------------------
@@ -111,7 +113,7 @@ However, for convenience you can import these functions and fields like below, w
   }
 
 Serialization
-=============
+-------------
 
 If you want to serialize it yourself, here is how to do it:
 
@@ -134,7 +136,7 @@ If you are also using Protobuf then you can use the methods that work with Proto
   val actorRef2 = ActorRef.fromProtocol(protobufMessage)
 
 Camel
-======
+-----
 
 Some methods of the se.scalablesolutions.akka.camel.Message class have been deprecated in 0.9. These are
 

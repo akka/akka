@@ -1,11 +1,11 @@
-Migrate from 0.7.x to 0.8.x
-===========================
+Migration Guide 0.7.x to 0.8.x
+==============================
 
 This is a case-by-case migration guide from Akka 0.7.x (on Scala 2.7.7) to Akka 0.8.x (on Scala 2.8.x)
 ------------------------------------------------------------------------------------------------------
 
 Cases:
-======
+------
 
 Actor.send is removed and replaced in full with Actor.!
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
