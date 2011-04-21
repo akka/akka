@@ -6,7 +6,6 @@ class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
   // All repositories *must* go here! See ModuleConigurations below.
   // -------------------------------------------------------------------------------------------------------------------
   object Repositories {
-    lazy val AquteRepo      = "aQute Maven Repository" at "http://www.aqute.biz/repo"
     lazy val DatabinderRepo = "Databinder Repository" at "http://databinder.net/repo"
   }
 
@@ -17,12 +16,11 @@ class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
   // Therefore, if repositories are defined, this must happen as def, not as val.
   // -------------------------------------------------------------------------------------------------------------------
   import Repositories._
-  lazy val aquteModuleConfig      = ModuleConfiguration("biz.aQute", AquteRepo)
-  lazy val spdeModuleConfig       = ModuleConfiguration("us.technically.spde", DatabinderRepo)
+  lazy val spdeModuleConfig = ModuleConfiguration("us.technically.spde", DatabinderRepo)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
   // -------------------------------------------------------------------------------------------------------------------
-  lazy val bnd4sbt    = "com.weiglewilczek.bnd4sbt" % "bnd4sbt"           % "1.0.1"
-  lazy val spdeSbt    = "us.technically.spde"       % "spde-sbt-plugin"   % "0.4.2"
+  lazy val bnd4sbt = "com.weiglewilczek.bnd4sbt" % "bnd4sbt"         % "1.0.2"
+  lazy val spdeSbt = "us.technically.spde"       % "spde-sbt-plugin" % "0.4.2"
 }
