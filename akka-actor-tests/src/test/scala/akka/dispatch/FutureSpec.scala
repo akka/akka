@@ -351,34 +351,93 @@ class FutureSpec extends JUnitSuite {
     val latch = new StandardLatch
 
     val f = Future({ latch.await; 5})
-    val f2 = Future({ f() + 5 })
+    val f2 = Future({ f.get + 5 })
 
     assert(f2.resultOrException === None)
     latch.open
-    assert(f2() === 10)
+    assert(f2.get === 10)
 
     val f3 = Future({ Thread.sleep(100); 5}, 10)
     intercept[FutureTimeoutException] {
-      f3()
+      f3.get
     }
   }
 
-  @Test def lesslessIsMore {
-    import akka.actor.Actor.spawn
-    val dataflowVar, dataflowVar2 = new DefaultCompletableFuture[Int](Long.MaxValue)
-    val begin, end = new StandardLatch
-    spawn {
-      begin.await
-      dataflowVar2 << dataflowVar
-      end.open
+  @Test def futureComposingWithContinuations {
+    import Future.flow
+
+    val actor = actorOf[TestActor].start
+
+    val x = Future("Hello")
+    val y = x flatMap (actor !!! _)
+
+    val r = flow(x() + " " + y[String]() + "!")
+
+    assert(r.get === "Hello World!")
+
+    actor.stop
+  }
+
+  @Test def futureComposingWithContinuationsFailureDivideZero {
+    import Future.flow
+
+    val x = Future("Hello")
+    val y = x map (_.length)
+
+    val r = flow(x() + " " + y.map(_ / 0).map(_.toString)(), 100)
+
+    intercept[java.lang.ArithmeticException](r.get)
+  }
+
+  @Test def futureComposingWithContinuationsFailureCastInt {
+    import Future.flow
+
+    val actor = actorOf[TestActor].start
+
+    val x = Future(3)
+    val y = actor !!! "Hello"
+
+    val r = flow(x() + y[Int](), 100)
+
+    intercept[ClassCastException](r.get)
+  }
+
+  @Test def futureComposingWithContinuationsFailureCastNothing {
+    import Future.flow
+
+    val actor = actorOf[TestActor].start
+
+    val x = Future("Hello")
+    val y = actor !!! "Hello"
+
+    val r = flow(x() + y())
+
+    intercept[ClassCastException](r.get)
+  }
+
+  @Test def futureCompletingWithContinuations {
+    import Future.flow
+
+    val x, y, z = new DefaultCompletableFuture[Int](Actor.TIMEOUT)
+    val ly, lz = new StandardLatch
+
+    val result = flow {
+      y completeWith x
+      ly.open // not within continuation
+
+      z << x
+      lz.open // within continuation, will wait for 'z' to complete
+      z() + y()
     }
 
-    spawn {
-      dataflowVar << 5
-    }
-    begin.open
-    end.await
-    assert(dataflowVar2() === 5)
-    assert(dataflowVar.get === 5)
+    assert(ly.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
+    assert(!lz.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
+
+    x << 5
+
+    assert(y.get === 5)
+    assert(z.get === 5)
+    assert(lz.isOpen)
+    assert(result.get === 10)
   }
 }

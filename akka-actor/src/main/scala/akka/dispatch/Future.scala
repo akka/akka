@@ -10,6 +10,8 @@ import akka.actor.Actor
 import akka.routing.Dispatcher
 import akka.japi.{ Procedure, Function => JFunc }
 
+import scala.util.continuations._
+
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent. {ConcurrentLinkedQueue, TimeUnit, Callable}
 import java.util.concurrent.TimeUnit.{NANOSECONDS => NANOS, MILLISECONDS => MILLIS}
@@ -261,22 +263,30 @@ object Future {
       val fb = fn(a.asInstanceOf[A])
       for (r <- fr; b <-fb) yield (r += b)
     }.map(_.result)
+
+  def flow[A](body: => A @cpsParam[Future[Any],Future[Any]], timeout: Long = Actor.TIMEOUT): Future[A] = {
+
+    val future = new DefaultCompletableFuture[A](timeout)
+
+    reset(future completeWithResult body) onComplete { f =>
+      val ex = f.exception
+      if (ex.isDefined) future.completeWithException(ex.get)
+    }
+
+    future
+  }
 }
 
 sealed trait Future[+T] {
 
-  /**
-   * Returns the result of this future after waiting for it to complete,
-   * this method will throw any throwable that this Future was completed with
-   * and will throw a java.util.concurrent.TimeoutException if there is no result
-   * within the Futures timeout
-   */
-  def apply(): T = this.await.resultOrException.get
+  def apply[A >: T](): A @cpsParam[Future[Any],Future[Any]] = shift { f: (A => Future[Any]) =>
+    (new DefaultCompletableFuture[Any](timeoutInNanos, NANOS)) completeWith (this flatMap f)
+  }
 
   /**
    * Java API for apply()
    */
-  def get: T = apply()
+  def get: T = this.await.resultOrException.get
 
   /**
    * Blocks the current thread until the Future has been completed or the
@@ -581,10 +591,10 @@ trait CompletableFuture[T] extends Future[T] {
    */
   final def << (value: T): Future[T] = complete(Right(value))
 
-  /**
-   * Alias for completeWith(other).
-   */
-  final def << (other : Future[T]): Future[T] = completeWith(other)
+  final def << (other: Future[T]): T @cpsParam[Future[Any],Future[Any]] = shift { k: (T => Future[Any]) =>
+    this completeWith other flatMap k
+  }
+
 }
 
 /**

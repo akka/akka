@@ -10,7 +10,7 @@ import sbt._
 import sbt.CompileOrder._
 import spde._
 
-class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
+class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with AutoCompilerPlugins {
 
   // -------------------------------------------------------------------------------------------------------------------
   // Compile settings
@@ -273,8 +273,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-actor subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with OsgiProject {
+  class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with OsgiProject with AutoCompilerPlugins {
     override def bndExportPackage = super.bndExportPackage ++ Seq("com.eaio.*;version=3.2")
+    val cont = compilerPlugin("org.scala-lang.plugins" % "continuations" % "2.9.0.RC1")
+    override def compileOptions = super.compileOptions ++ compileOptions("-P:continuations:enable")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -436,11 +438,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-actor-tests subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaActorTestsProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaActorTestsProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with AutoCompilerPlugins {
     // testing
     val junit           = Dependencies.junit
     val scalatest       = Dependencies.scalatest
     val multiverse_test = Dependencies.multiverse_test // StandardLatch
+    val cont = compilerPlugin("org.scala-lang.plugins" % "continuations" % "2.9.0.RC1")
+    override def compileOptions = super.compileOptions ++ compileOptions("-P:continuations:enable")
   }
   
   // -------------------------------------------------------------------------------------------------------------------
