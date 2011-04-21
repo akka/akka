@@ -4,7 +4,6 @@
 
 package akka.actor
 
-import akka.config.Supervision._
 import akka.AkkaException
 import akka.util._
 import ReflectiveAccess._
@@ -81,7 +80,7 @@ case class SupervisorFactory(val config: SupervisorConfig) {
   def newInstance: Supervisor = newInstanceFor(config)
 
   def newInstanceFor(config: SupervisorConfig): Supervisor = {
-    val supervisor = new Supervisor(config.restartStrategy)
+    val supervisor = new Supervisor(config.restartStrategy, config.maxRestartsHandler)
     supervisor.configure(config)
     supervisor.start
     supervisor
@@ -100,13 +99,13 @@ case class SupervisorFactory(val config: SupervisorConfig) {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-sealed class Supervisor(handler: FaultHandlingStrategy) {
+sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached) => Unit) {
   import Supervisor._
 
   private val _childActors = new ConcurrentHashMap[String, List[ActorRef]]
   private val _childSupervisors = new CopyOnWriteArrayList[Supervisor]
 
-  private[akka] val supervisor = actorOf(new SupervisorActor(handler)).start()
+  private[akka] val supervisor = actorOf(new SupervisorActor(handler,maxRestartsHandler)).start()
 
   def uuid = supervisor.uuid
 
@@ -127,7 +126,8 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
     _childActors.values.toArray.toList.asInstanceOf[List[Supervisor]]
 
   def configure(config: SupervisorConfig): Unit = config match {
-    case SupervisorConfig(_, servers) =>
+    case SupervisorConfig(_, servers, _) =>
+
       servers.map(server =>
         server match {
           case Supervise(actorRef, lifeCycle, registerAsRemoteService) =>
@@ -143,7 +143,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
             supervisor.link(actorRef)
             if (registerAsRemoteService)
               Actor.remote.register(actorRef)
-          case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
+          case supervisorConfig @ SupervisorConfig(_, _,_) => // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)
             supervisor.link(childSupervisor.supervisor)
             _childSupervisors.add(childSupervisor)
@@ -156,8 +156,9 @@ sealed class Supervisor(handler: FaultHandlingStrategy) {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final class SupervisorActor private[akka] (handler: FaultHandlingStrategy) extends Actor {
+final class SupervisorActor private[akka] (handler: FaultHandlingStrategy, maxRestartsHandler: (ActorRef,MaximumNumberOfRestartsWithinTimeRangeReached) => Unit) extends Actor {
   self.faultHandler = handler
+
 
   override def postStop(): Unit = {
     val i = self.linkedActors.values.iterator
@@ -169,11 +170,8 @@ final class SupervisorActor private[akka] (handler: FaultHandlingStrategy) exten
   }
 
   def receive = {
-    // FIXME add a way to respond to MaximumNumberOfRestartsWithinTimeRangeReached in declaratively configured Supervisor
-    case MaximumNumberOfRestartsWithinTimeRangeReached(
-      victim, maxNrOfRetries, withinTimeRange, lastExceptionCausingRestart) =>
+    case max@MaximumNumberOfRestartsWithinTimeRangeReached(_,_,_,_) => maxRestartsHandler(self, max)
     case unknown => throw new SupervisorException(
       "SupervisorActor can not respond to messages.\n\tUnknown message [" + unknown + "]")
   }
 }
-

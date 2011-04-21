@@ -316,11 +316,11 @@ class FutureSpec extends JUnitSuite {
     }).start()
 
     val oddFutures: List[Future[Int]] = List.fill(100)(oddActor !!! 'GetNext)
-    assert(Futures.sequence(oddFutures).get.sum === 10000)
+    assert(Future.sequence(oddFutures).get.sum === 10000)
     oddActor.stop()
 
     val list = (1 to 100).toList
-    assert(Futures.traverse(list)(x => Future(x * 2 - 1)).get.sum === 10000)
+    assert(Future.traverse(list)(x => Future(x * 2 - 1)).get.sum === 10000)
   }
 
   @Test def shouldHandleThrowables {

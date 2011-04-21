@@ -16,8 +16,14 @@ Videos
 
 `Akka talk at Scala Days - March 2010 <http://days2010.scala-lang.org/node/138/162>`_
 
+`Devoxx 2010 talk "Akka: Simpler Scalability, Fault-Tolerance, Concurrency" by Viktor Klang <http://parleys.com/d/2089>`_
+
 Articles
 --------
+
+`Actor-Based Continuations with Akka and Swarm <http://www.earldouglas.com/actor-based-continuations-with-akka-and-swarm>`_
+
+`Mimicking Twitter Using an Akka-Based Event-Driven Architecture <http://www.earldouglas.com/mimicking-twitter-using-an-akka-based-event-driven-architecture>`_
 
 `Remote Actor Class Loading with Akka <https://www.earldouglas.com/remote-actor-class-loading-with-akka>`_
 

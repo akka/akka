@@ -20,6 +20,12 @@ trait Procedure[T] {
   def apply(param: T): Unit
 }
 
+/** A Procedure is like a Function, but it doesn't produce a return value
+ */
+trait Procedure2[T1,T2] {
+  def apply(param: T1, param2:T2): Unit
+}
+
 /**
  * An executable piece of code that takes no parameters and doesn't return any value.
  */

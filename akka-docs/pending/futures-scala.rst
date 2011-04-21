@@ -158,24 +158,24 @@ This is fine when dealing with a known amount of Actors, but can grow unwieldly 
   val listOfFutures: List[Future[Int]] = List.fill(100)(oddActor !!! GetNext)
 
   // now we have a Future[List[Int]]
-  val futureList = Futures.sequence(listOfFutures)
+  val futureList = Future.sequence(listOfFutures)
 
   // Find the sum of the odd numbers
   val oddSum = futureList.map(_.sum).apply
 
-To better explain what happened in the example, Futures.sequence is taking the List[Future[Int]] and turning it into a Future[List[Int]]. We can then use 'map' to work with the List[Int] directly, and we find the sum of the List.
+To better explain what happened in the example, Future.sequence is taking the List[Future[Int]] and turning it into a Future[List[Int]]. We can then use 'map' to work with the List[Int] directly, and we find the sum of the List.
 
 The 'traverse' method is similar to 'sequence', but it takes a Traversable[A] and a Function T => Future[B] to return a Future[Traversable[B]]. For example, to use 'traverse' to sum the first 100 odd numbers:
 
 .. code-block:: scala
 
-  val oddSum = Futures.traverse((1 to 100).toList)(x => Future(x * 2 - 1)).map(_.sum).apply
+  val oddSum = Future.traverse((1 to 100).toList)(x => Future(x * 2 - 1)).map(_.sum).apply
 
 This is the same result as this example:
 
 .. code-block:: scala
 
-  val oddSum = Futures.sequence((1 to 100).toList.map(x => Future(x * 2 - 1))).map(_.sum).apply
+  val oddSum = Future.sequence((1 to 100).toList.map(x => Future(x * 2 - 1))).map(_.sum).apply
 
 But it may be faster to use 'traverse' as it doesn't have to create an intermediate List[Future[Int]].
 

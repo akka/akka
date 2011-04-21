@@ -88,9 +88,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   protected[akka] var _uuid = newUuid
   @volatile
   protected[this] var _status: ActorRefInternals.StatusType = ActorRefInternals.UNSTARTED
-  @volatile
-  protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
-  protected[akka] val guard = new ReentrantGuard
 
   /**
    * User overridable callback/setting.
@@ -112,6 +109,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * Defines the default timeout for '!!' and '!!!' invocations,
    * e.g. the timeout for the future returned by the call to '!!' and '!!!'.
    */
+  @deprecated("Will be replaced by implicit-scoped timeout on all methods that needs it, will default to timeout specified in config")
   @BeanProperty
   @volatile
   var timeout: Long = Actor.TIMEOUT
@@ -186,11 +184,13 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   /**
    * Returns on which node this actor lives if None it lives in the local ActorRegistry
    */
+  @deprecated("Remoting will become fully transparent in the future")
   def homeAddress: Option[InetSocketAddress]
 
   /**
    * Java API. <p/>
    */
+  @deprecated("Remoting will become fully transparent in the future")
   def getHomeAddress(): InetSocketAddress = homeAddress getOrElse null
 
   /**
@@ -256,6 +256,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   /**
    * Is the actor able to handle the message passed in as arguments?
    */
+  @deprecated("Will be removed without replacement, it's just not reliable in the face of `become` and `unbecome`")
   def isDefinedAt(message: Any): Boolean = actor.isDefinedAt(message)
 
   /**
@@ -381,23 +382,27 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.
    */
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
   def actorClass: Class[_ <: Actor]
 
   /**
    * Akka Java API. <p/>
    * Returns the class for the Actor instance that is managed by the ActorRef.
    */
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
   def getActorClass(): Class[_ <: Actor] = actorClass
 
   /**
    * Returns the class name for the Actor instance that is managed by the ActorRef.
    */
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
   def actorClassName: String
 
   /**
    * Akka Java API. <p/>
    * Returns the class name for the Actor instance that is managed by the ActorRef.
    */
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
   def getActorClassName(): String = actorClassName
 
   /**
@@ -572,20 +577,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   }
 
   override def toString = "Actor[" + id + ":" + uuid + "]"
-
-  protected[akka] def checkReceiveTimeout = {
-    cancelReceiveTimeout
-    if (receiveTimeout.isDefined && dispatcher.mailboxSize(this) <= 0) { //Only reschedule if desired and there are currently no more messages to be processed
-      _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, receiveTimeout.get, TimeUnit.MILLISECONDS))
-    }
-  }
-
-  protected[akka] def cancelReceiveTimeout = {
-    if (_futureTimeout.isDefined) {
-      _futureTimeout.get.cancel(true)
-      _futureTimeout = None
-    }
-  }
 }
 
 /**
@@ -598,7 +589,10 @@ class LocalActorRef private[akka] (
   val homeAddress: Option[InetSocketAddress],
   val clientManaged: Boolean = false)
   extends ActorRef with ScalaActorRef {
+  protected[akka] val guard = new ReentrantGuard
 
+  @volatile
+  protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
   @volatile
   private[akka] lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
   @volatile
@@ -650,11 +644,13 @@ class LocalActorRef private[akka] (
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.
    */
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
   def actorClass: Class[_ <: Actor] = actor.getClass.asInstanceOf[Class[_ <: Actor]]
 
   /**
    * Returns the class name for the Actor instance that is managed by the ActorRef.
    */
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
   def actorClassName: String = actorClass.getName
 
   /**
@@ -1102,6 +1098,21 @@ class LocalActorRef private[akka] (
     actor.preStart // run actor preStart
     Actor.registry.register(this)
   }
+
+
+  protected[akka] def checkReceiveTimeout = {
+    cancelReceiveTimeout
+    if (receiveTimeout.isDefined && dispatcher.mailboxSize(this) <= 0) { //Only reschedule if desired and there are currently no more messages to be processed
+      _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, receiveTimeout.get, TimeUnit.MILLISECONDS))
+    }
+  }
+
+  protected[akka] def cancelReceiveTimeout = {
+    if (_futureTimeout.isDefined) {
+      _futureTimeout.get.cancel(true)
+      _futureTimeout = None
+    }
+  }
 }
 
 /**
@@ -1173,6 +1184,7 @@ private[akka] case class RemoteActorRef private[akka] (
   protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = None
 
   // ==== NOT SUPPORTED ====
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
   def actorClass: Class[_ <: Actor] = unsupported
   def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported
