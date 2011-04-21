@@ -20,6 +20,8 @@ class TestActor(queue : BlockingDeque[AnyRef]) extends Actor with FSM[Int, TestA
   import FSM._
   import TestActor._
 
+  self.dispatcher = CallingThreadDispatcher.global
+
   startWith(0, None)
   when(0, stateTimeout = 5 seconds) {
     case Ev(SetTimeout(d)) =>
