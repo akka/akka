@@ -6,3 +6,4 @@ Scala API
 
    actors
    fsm
+   testing

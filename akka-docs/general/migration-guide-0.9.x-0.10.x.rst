@@ -8,8 +8,10 @@ The following list summarizes the breaking changes since Akka 0.9.1.
 
 * CamelService moved from package se.scalablesolutions.akka.camel.service one level up to se.scalablesolutions.akka.camel.
 * CamelService.newInstance removed. For starting and stopping a CamelService, applications should use
-** CamelServiceManager.startCamelService and
-** CamelServiceManager.stopCamelService.
+
+  * CamelServiceManager.startCamelService and
+  * CamelServiceManager.stopCamelService.
+
 * Existing def receive = produce method definitions from Producer implementations must be removed (resolves compile error: method receive needs override modifier).
 * The Producer.async method and the related Sync trait have been removed. This is now fully covered by Camel's `asynchronous routing engine <http://camel.apache.org/asynchronous-processing.html>`_.
 * @consume annotation can not placed any longer on actors (i.e. on type-level), only on typed actor methods. Consumer actors must mixin the Consumer trait.

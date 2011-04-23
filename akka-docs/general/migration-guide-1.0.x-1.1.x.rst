@@ -19,6 +19,7 @@ Akka Actor
 Don't forget to add a SLF4J backend though, we recommend:
 
 .. code-block:: scala
+
     lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.28"
 
 # If you used HawtDispatcher and want to continue using it, you need to include akka-dispatcher-extras.jar from Akka Modules, in your akka.conf you need to specify: ``akka.dispatch.HawtDispatcherConfigurator`` instead of ``HawtDispatcher``
@@ -37,4 +38,4 @@ Akka Remote
 Akka Testkit
 ------------
 
-The TestKit moved into the akka-testkit subproject and correspondingly into the ``akka.testkit` package.
+The TestKit moved into the akka-testkit subproject and correspondingly into the :code:`akka.testkit` package.

@@ -20,6 +20,8 @@ class TestActor(queue : BlockingDeque[AnyRef]) extends Actor with FSM[Int, TestA
   import FSM._
   import TestActor._
 
+  self.dispatcher = CallingThreadDispatcher.global
+
   startWith(0, None)
   when(0, stateTimeout = 5 seconds) {
     case Ev(SetTimeout(d)) =>
@@ -157,7 +159,7 @@ trait TestKit {
     val prev_end = end
     end = start + max_diff
 
-    val ret = f
+    val ret = try f finally end = prev_end
 
     val diff = now - start
     assert (min <= diff, "block took "+format(min.unit, diff)+", should at least have been "+min)
@@ -170,7 +172,6 @@ trait TestKit {
       lastSoftTimeout -= 5.millis
     }
 
-    end = prev_end
     ret
   }
 

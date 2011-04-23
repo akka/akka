@@ -430,7 +430,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-testkit subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaTestkitProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
+  class AkkaTestkitProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val scalatest = Dependencies.scalatest
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-actor-tests subproject
