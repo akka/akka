@@ -242,9 +242,14 @@ object Future {
    * Construct a completable channel
    */
   def channel(timeout: Long = Actor.TIMEOUT) = new Channel[Any] {
-    val future = new DefaultCompletableFuture[Any](timeout)
+    val future = empty[Any](timeout)
     def !(msg: Any) = future << msg
   }
+
+  /**
+   * Create an empty Future with default timeout
+   */
+  def empty[T](timeout : Long = Actor.TIMEOUT) = new DefaultCompletableFuture[T](timeout)
 
   import scala.collection.mutable.Builder
   import scala.collection.generic.CanBuildFrom
