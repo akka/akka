@@ -266,8 +266,6 @@ But before we package it up and run it, let's take a look at the full code now, 
 
 .. includecode:: examples/Pi.scala
 
-
-
 Run it as a command line application
 ------------------------------------
 

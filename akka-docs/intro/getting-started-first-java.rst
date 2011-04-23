@@ -282,7 +282,7 @@ The only thing missing in our ``Worker`` actor is the implementation on the ``ca
     private double calculatePiFor(int start, int nrOfElements) {
       double acc = 0.0;
       for (int i = start * nrOfElements; i <= ((start + 1) * nrOfElements - 1); i++) {
-        acc += 4 * (1 - (i % 2) * 2) / (2 * i + 1);
+        acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1);
       }
       return acc;
     }
@@ -550,7 +550,7 @@ Before we package it up and run it, let's take a look at the full code now, with
         private double calculatePiFor(int start, int nrOfElements) {
           double acc = 0.0;
           for (int i = start * nrOfElements; i <= ((start + 1) * nrOfElements - 1); i++) {
-            acc += 4 * (1 - (i % 2) * 2) / (2 * i + 1);
+            acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1);
           }
           return acc;
         }

@@ -4,7 +4,7 @@ Getting Started Tutorial (Scala with Eclipse): First Chapter
 Introduction
 ------------
 
-Welcome to the first tutorial on how to get started with Akka and Scala. We assume that you already know what Akka and Scala are and will now focus on the steps necessary to start your first project. We will be using `Eclipse <http://www.eclipse.org/downloads/>`_, and the `Scala plugin for Eclipse <http://www.scala-ide.org/>`_. 
+Welcome to the first tutorial on how to get started with Akka and Scala. We assume that you already know what Akka and Scala are and will now focus on the steps necessary to start your first project. We will be using `Eclipse <http://www.eclipse.org/downloads/>`_, and the `Scala plugin for Eclipse <http://www.scala-ide.org/>`_.
 
 The sample application that we will create is using actors to calculate the value of Pi. Calculating Pi is a CPU intensive operation and we will utilize Akka Actors to write a concurrent solution that scales out to multi-core processors. This sample will be extended in future tutorials to use Akka Remote Actors to scale out on multiple machines in a cluster.
 
@@ -109,7 +109,7 @@ Once the installation is finished, you need to restart Eclipse. The first time t
 
 Accept the recommended settings, and follow the instructions if you need to increase the heap size of Eclipse.
 
-Check that the installation succeeded by creating a new Scala project (``File/New>Scala Project``), and typing some code. You should have content-assist, hyperlinking to definitions, instant error reporting, and so on. 
+Check that the installation succeeded by creating a new Scala project (``File/New>Scala Project``), and typing some code. You should have content-assist, hyperlinking to definitions, instant error reporting, and so on.
 
 .. image:: example-code.png
 
@@ -147,8 +147,8 @@ Using SBT in Eclipse
 
 If you are an `SBT <http://code.google.com/p/simple-build-tool/>`_ user, you can follow the :doc:`Akka Tutorial in Scala </intro/getting-started-first-scala>` and additionally install the ``sbt-eclipse`` plugin. This adds support for generating Eclipse project files from your SBT project. You need to update your SBT plugins definition in ``project/plugins``::
 
-    import sbt._ 
-    
+    import sbt._
+
     class TutorialPlugins(info: ProjectInfo) extends PluginDefinition(info) {
       // eclipsify plugin
       lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.7.0"
@@ -161,8 +161,8 @@ and then update your SBT project definition by mixing in ``Eclipsify`` in your p
 
     import sbt._
     import de.element34.sbteclipsify._
-    
-    class MySbtProject(info: ProjectInfo) extends DefaultProject(info) 
+
+    class MySbtProject(info: ProjectInfo) extends DefaultProject(info)
       with Eclipsify with AkkaProject  {
       // the project definition here
       // akka dependencies
@@ -173,14 +173,14 @@ Then run the ``eclipse`` target to generate the Eclipse project::
     dragos@dragos-imac pi $ sbt eclipse
     [info] Building project AkkaPi 1.0 against Scala 2.9.0.RC1
     [info]    using MySbtProject with sbt 0.7.4 and Scala 2.7.7
-    [info] 
+    [info]
     [info] == eclipse ==
     [info] Creating eclipse project...
     [info] == eclipse ==
     [success] Successful.
-    [info] 
+    [info]
     [info] Total time: 0 s, completed Apr 20, 2011 2:48:03 PM
-    [info] 
+    [info]
     [info] Total session time: 1 s, completed Apr 20, 2011 2:48:03 PM
     [success] Build completed successfully.
 
@@ -195,7 +195,7 @@ Start writing the code
 
 The design we are aiming for is to have one ``Master`` actor initiating the computation, creating a set of ``Worker`` actors. Then it splits up the work into discrete chunks, and sends these chunks to the different workers in a round-robin fashion. The master waits until all the workers have completed their work and sent back results for aggregation. When computation is completed the master prints out the result, shuts down all workers and then itself.
 
-With this in mind, let's now create the messages that we want to have flowing in the system. 
+With this in mind, let's now create the messages that we want to have flowing in the system.
 
 Creating the messages
 ---------------------
@@ -245,7 +245,7 @@ The only thing missing in our ``Worker`` actor is the implementation on the ``ca
     def calculatePiFor(start: Int, nrOfElements: Int): Double = {
       var acc = 0.0
       for (i <- start until (start + nrOfElements))
-        acc += 4 * (1 - (i % 2) * 2) / (2 * i + 1)
+        acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1)
       acc
     }
 
@@ -392,7 +392,7 @@ Run it from Eclipse
 -------------------
 
 Eclipse builds your project on every save when ``Project/Build Automatically`` is set. If not, bring you project up to date by clicking ``Project/Build Project``. If there are no compilation errors, you can right-click in the editor where ``Pi`` is defined, and choose ``Run as.. /Scala application``. If everything works fine, you should see::
-    
+
     AKKA_HOME is defined as [/Users/jboner/tools/akka-modules-1.1-M1/]
     loading config from [/Users/jboner/tools/akka-modules-1.1-M1/config/akka.conf].
 

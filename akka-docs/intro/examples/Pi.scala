@@ -36,7 +36,7 @@ object Pi extends App {
     def calculatePiFor(start: Int, nrOfElements: Int): Double = {
       var acc = 0.0
       for (i <- start until (start + nrOfElements))
-        acc += 4 * math.pow(-1, i) / (2 * i + 1)
+        acc += 4.0 * math.pow(-1, i) / (2 * i + 1)
       acc
     }
     //#calculate-pi
