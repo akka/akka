@@ -264,7 +264,7 @@ object Future {
       for (r <- fr; b <-fb) yield (r += b)
     }.map(_.result)
 
-  def flow[A](body: => A @cpsParam[Future[Any],Future[Any]], timeout: Long = Actor.TIMEOUT): Future[A] = {
+  def flow[A](body: => A @cps[Future[Any]], timeout: Long = Actor.TIMEOUT): Future[A] = {
 
     val future = new DefaultCompletableFuture[A](timeout)
 
@@ -279,7 +279,7 @@ object Future {
 
 sealed trait Future[+T] {
 
-  def apply[A >: T](): A @cpsParam[Future[Any],Future[Any]] = shift(this.flatMap(_))
+  def apply[A >: T](): A @cps[Future[Any]] = shift(this.flatMap(_))
 
   /**
    * Java API for apply()
@@ -589,7 +589,7 @@ trait CompletableFuture[T] extends Future[T] {
    */
   final def << (value: T): Future[T] = complete(Right(value))
 
-  final def << (other: Future[T]): T @cpsParam[Future[Any],Future[Any]] = shift { k: (T => Future[Any]) =>
+  final def << (other: Future[T]): T @cps[Future[Any]] = shift { k: (T => Future[Any]) =>
     this completeWith other flatMap k
   }
 
