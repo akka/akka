@@ -85,7 +85,7 @@ object EventHandler extends ListenerManagement {
 
   lazy val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
 
-  val level: Int = config.getString("akka.event-handler-level", "DEBUG") match {
+  val level: Int = config.getString("akka.event-handler-level", "INFO") match {
     case "ERROR"   => ErrorLevel
     case "WARNING" => WarningLevel
     case "INFO"    => InfoLevel
