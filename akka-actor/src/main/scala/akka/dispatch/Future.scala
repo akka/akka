@@ -264,17 +264,8 @@ object Future {
       for (r <- fr; b <-fb) yield (r += b)
     }.map(_.result)
 
-  def flow[A](body: => A @cps[Future[Any]], timeout: Long = Actor.TIMEOUT): Future[A] = {
-
-    val future = new DefaultCompletableFuture[A](timeout)
-
-    reset(future completeWithResult body) onComplete { f =>
-      val ex = f.exception
-      if (ex.isDefined) future.completeWithException(ex.get)
-    }
-
-    future
-  }
+  def flow[A](body: => A @cps[Future[A]], timeout: Long = Actor.TIMEOUT): Future[A] =
+    reset(new DefaultCompletableFuture[A](timeout).completeWithResult(body))
 }
 
 sealed trait Future[+T] {
