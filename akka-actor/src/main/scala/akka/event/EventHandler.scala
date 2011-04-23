@@ -44,6 +44,11 @@ import akka.AkkaException
  * EventHandler.error(exception, this, message)
  * </pre>
  *
+ * Shut down the EventHandler:
+ * <pre>
+ * EventHandler.shutdown()
+ * </pre>
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object EventHandler extends ListenerManagement {
@@ -92,6 +97,14 @@ object EventHandler extends ListenerManagement {
     case "DEBUG"   => DebugLevel
     case unknown   => throw new ConfigurationException(
                     "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
+  }
+
+  /**
+   * Shuts down all event handler listeners including the event handle dispatcher.
+   */
+  def shutdown() = {
+    foreachListener(_.stop)
+    EventHandlerDispatcher.shutdown
   }
 
   def notify(event: Any) {
