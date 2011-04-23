@@ -443,17 +443,16 @@ class FutureSpec extends JUnitSuite {
     val a, b, c = new DefaultCompletableFuture[Int](Actor.TIMEOUT)
 
     val result2 = flow {
-      a << (c() - 2)
-      val n = c() + 10
-      val bb = b << a
-      a() + n * bb()
+      val n = (a << c).result.get + 10
+      b << (c() - 2)
+      a() + n * b()
     }
 
     c completeWith Future(5)
 
-    assert(a.get === 3)
+    assert(a.get === 5)
     assert(b.get === 3)
-    assert(result2.get === 48)
+    assert(result2.get === 50)
   }
 
   @Test def futureCompletingWithContinuationsFailure {
