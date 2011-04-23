@@ -440,4 +440,24 @@ class FutureSpec extends JUnitSuite {
     assert(lz.isOpen)
     assert(result.get === 10)
   }
+
+  @Test def futureContinuationsShouldNotBlock {
+    import Future.flow
+
+    val latch = new StandardLatch
+    val future = Future {
+      latch.await
+      "Hello"
+    }
+
+    val result = flow {
+      Some(future()).filter(_ == "Hello")
+    }
+
+    assert(!result.isCompleted)
+
+    latch.open
+
+    assert(result.get === Some("Hello"))
+  }
 }
