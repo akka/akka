@@ -439,6 +439,47 @@ class FutureSpec extends JUnitSuite {
     assert(z.get === 5)
     assert(lz.isOpen)
     assert(result.get === 10)
+
+    val a, b, c = new DefaultCompletableFuture[Int](Actor.TIMEOUT)
+
+    val result2 = flow {
+      a << (c() - 2)
+      val n = c() + 10
+      val bb = b << a
+      a() + n * bb()
+    }
+
+    c completeWith Future(5)
+
+    assert(a.get === 3)
+    assert(b.get === 3)
+    assert(result2.get === 48)
+  }
+
+  @Test def futureCompletingWithContinuationsFailure {
+    import Future.flow
+
+    val x, y, z = new DefaultCompletableFuture[Int](Actor.TIMEOUT)
+    val ly, lz = new StandardLatch
+
+    val result = flow {
+      y << x
+      ly.open
+      val oops = 1 / 0
+      z << x
+      lz.open
+      z() + y() + oops
+    }
+
+    assert(!ly.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
+    assert(!lz.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
+
+    x << 5
+
+    assert(y.get === 5)
+    intercept[java.lang.ArithmeticException](result.get)
+    assert(z.value === None)
+    assert(!lz.isOpen)
   }
 
   @Test def futureContinuationsShouldNotBlock {

@@ -279,7 +279,7 @@ object Future {
 
 sealed trait Future[+T] {
 
-  def apply[A >: T](): A @cps[Future[Any]] = shift(this.flatMap(_))
+  def apply[A >: T](): A @cps[Future[Any]] = shift(this flatMap _)
 
   /**
    * Java API for apply()
@@ -589,8 +589,18 @@ trait CompletableFuture[T] extends Future[T] {
    */
   final def << (value: T): Future[T] = complete(Right(value))
 
-  final def << (other: Future[T]): T @cps[Future[Any]] = shift { k: (T => Future[Any]) =>
-    this completeWith other flatMap k
+  final def << (other: Future[T]): Future[T] @cps[Future[Any]] = shift { cont: (Future[T] => Future[Any]) =>
+    val fr = new DefaultCompletableFuture[Any](Actor.TIMEOUT)
+    this completeWith other onComplete { f =>
+      try {
+        fr completeWith cont(f)
+      } catch {
+        case e: Exception =>
+          EventHandler.error(e, this, e.getMessage)
+          fr completeWithException e
+      }
+    }
+    fr
   }
 
 }
