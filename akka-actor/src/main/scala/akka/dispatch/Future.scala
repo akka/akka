@@ -242,7 +242,7 @@ object Future {
    * Construct a completable channel
    */
   def channel(timeout: Long = Actor.TIMEOUT) = new Channel[Any] {
-    val future = new DefaultCompletableFuture[Any](timeout)
+    val future = empty[Any](timeout)
     def !(msg: Any) = future << msg
   }
 
