@@ -12,7 +12,7 @@ Akka Actor
 ==========
 
 # is now dependency free, with the exception of the dependency on the ``scala-library.jar``
-# does not bundle any logging anymore, but you can subscribe to events within Akka by registering an event handler on akka.aevent.EventHandler or by specifying the ``FQN`` of an Actor in the akka.conf under akka.event-handlers; there is an ``akka-slf4j`` module which still provides the Logging trait and a default ``SLF4J`` logger adapter.
+# does not bundle any logging anymore, but you can subscribe to events within Akka by registering an event handler on akka.event.EventHandler or by specifying the ``FQN`` of an Actor in the akka.conf under akka.event-handlers; there is an ``akka-slf4j`` module which still provides the Logging trait and a default ``SLF4J`` logger adapter.
 Don't forget to add a SLF4J backend though, we recommend:
 
 .. code-block:: scala

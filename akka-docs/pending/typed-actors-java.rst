@@ -100,7 +100,7 @@ Methods that return void are turned into ‘fire-and-forget’ semantics by asyn
 Request-reply message send
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Methods that return something (e.g. non-void methods) are turned into ‘send-and-recieve-eventually’ semantics by asynchronously firing off the message and wait on the reply using a Future.
+Methods that return something (e.g. non-void methods) are turned into ‘send-and-receive-eventually’ semantics by asynchronously firing off the message and wait on the reply using a Future.
 
 .. code-block:: java
 
@@ -118,7 +118,7 @@ The same holds for the 'request-reply-with-future' described below.
 Request-reply-with-future message send
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Methods that return a 'akka.dispatch.Future<TYPE>' are turned into ‘send-and-recieve-with-future’ semantics by asynchronously firing off the message and returns immediately with a Future. You need to use the 'future(...)' method in the TypedActor base class to resolve the Future that the client code is waiting on.
+Methods that return a 'akka.dispatch.Future<TYPE>' are turned into ‘send-and-receive-with-future’ semantics by asynchronously firing off the message and returns immediately with a Future. You need to use the 'future(...)' method in the TypedActor base class to resolve the Future that the client code is waiting on.
 
 Here is an example:
 

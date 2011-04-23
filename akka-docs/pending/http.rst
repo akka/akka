@@ -179,7 +179,7 @@ Endpoints are actors that handle request messages. Minimally there must be an in
 Preparations
 ^^^^^^^^^^^^
 
-In order to use Mist you have to register the MistServlet in *web.xml* or do the analogous for the embedded server if running in Akka Micrkernel:
+In order to use Mist you have to register the MistServlet in *web.xml* or do the analogous for the embedded server if running in Akka Microkernel:
 
 .. code-block:: xml
 
@@ -419,7 +419,7 @@ As noted above, hook functions are non-exclusive. This means multiple actors can
     def receive = handleHttpRequest
 
     //
-    // this guy completes requests after other actions have occured
+    // this guy completes requests after other actions have occurred
     //
     lazy val complete = actorOf[ActionCompleteActor].start()
   }

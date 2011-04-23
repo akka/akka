@@ -322,7 +322,7 @@ trait Actor {
    * <p/>
    * For example fields like:
    * <pre>
-   * self.dispactcher = ...
+   * self.dispatcher = ...
    * self.trapExit = ...
    * self.faultHandler = ...
    * self.lifeCycle = ...
@@ -417,7 +417,7 @@ trait Actor {
   }
 
   /**
-   * Changes tha Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
+   * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * Puts the behavior on top of the hotswap stack.
    * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
    */

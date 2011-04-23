@@ -42,7 +42,7 @@ B and C.
   case object B extends ExampleState
   case object C extends ExampleState
 
-Now lets create an object representing the FSM and defining the behaviour.
+Now lets create an object representing the FSM and defining the behavior.
 
 .. code-block:: scala
 

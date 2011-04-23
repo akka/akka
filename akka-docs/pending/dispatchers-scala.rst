@@ -153,7 +153,7 @@ Creating a PriorityExecutorBasedEventDrivenDispatcher using PriorityGenerator:
     a.dispatcher = new PriorityExecutorBasedEventDrivenDispatcher("foo", gen) 
     a.start // Start the Actor
 
-    a.dispatcher.suspend(a) // Suspening the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
+    a.dispatcher.suspend(a) // Suspending the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
 
      a ! 'lowpriority
      a ! 'lowpriority

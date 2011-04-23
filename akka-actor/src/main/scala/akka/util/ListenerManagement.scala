@@ -45,7 +45,7 @@ trait ListenerManagement {
   def hasListeners: Boolean = !listeners.isEmpty
 
   /**
-   * Checks if a specfic listener is registered. ActorInitializationException leads to removal of listener if that
+   * Checks if a specific listener is registered. ActorInitializationException leads to removal of listener if that
    * one isShutdown.
    */
   def hasListener(listener: ActorRef): Boolean = listeners.contains(listener)

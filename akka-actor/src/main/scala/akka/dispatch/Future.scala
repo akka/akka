@@ -357,12 +357,12 @@ sealed trait Future[+T] {
   /**
    * When this Future is completed, apply the provided function to the
    * Future. If the Future has already been completed, this will apply
-   * immediatly.
+   * immediately.
    */
   def onComplete(func: Future[T] => Unit): Future[T]
 
   /**
-   * When the future is compeleted with a valid result, apply the provided
+   * When the future is completed with a valid result, apply the provided
    * PartialFunction to the result.
    * <pre>
    *   val result = future receive {

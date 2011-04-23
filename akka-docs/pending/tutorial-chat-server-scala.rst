@@ -358,7 +358,7 @@ It responds to two different messages; 'ChatMessage' and 'GetChatLog'. The 'Chat
 
 The 'GetChatLog' message handler retrieves all the messages in the chat log storage inside an atomic block, iterates over them using the 'map' combinator transforming them from 'Array[Byte] to 'String'. Then it invokes the 'reply(message)' function that will send the chat log to the original sender; the 'ChatClient'.
 
-You might rememeber that the 'ChatServer' was supervising the 'ChatStorage' actor. When we discussed that we showed you the supervising Actor's view. Now is the time for the supervised Actor's side of things. First, a supervised Actor need to define a life-cycle in which it declares if it should be seen as a:
+You might remember that the 'ChatServer' was supervising the 'ChatStorage' actor. When we discussed that we showed you the supervising Actor's view. Now is the time for the supervised Actor's side of things. First, a supervised Actor need to define a life-cycle in which it declares if it should be seen as a:
 
 * 'Permanent': which means that the actor will always be restarted.
 * 'Temporary': which means that the actor will not be restarted, but it will be shut down through the regular shutdown process so the 'postStop' callback function will called.

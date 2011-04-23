@@ -279,7 +279,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * Akka Java API. <p/>
    * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
    * <p/>
-   * Allows you to pass along the sender of the messag.
+   * Allows you to pass along the sender of the message.
    * <p/>
    * <pre>
    * actor.sendOneWay(message, context);
@@ -291,14 +291,14 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   /**
    * Akka Java API. <p/>
    * @see sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef)
-   * Uses the defualt timeout of the Actor (setTimeout()) and omits the sender reference
+   * Uses the default timeout of the Actor (setTimeout()) and omits the sender reference
    */
   def sendRequestReply(message: AnyRef): AnyRef = sendRequestReply(message, timeout, null)
 
   /**
    * Akka Java API. <p/>
    * @see sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef)
-   * Uses the defualt timeout of the Actor (setTimeout())
+   * Uses the default timeout of the Actor (setTimeout())
    */
   def sendRequestReply(message: AnyRef, sender: ActorRef): AnyRef = sendRequestReply(message, timeout, sender)
 

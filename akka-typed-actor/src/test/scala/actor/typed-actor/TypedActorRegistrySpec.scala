@@ -16,7 +16,7 @@ class TypedActorRegistrySpec extends WordSpec with MustMatchers {
 
   "Typed Actor" should {
 
-    "be able to be retreived from the registry by class" in {
+    "be able to be retrieved from the registry by class" in {
       Actor.registry.shutdownAll()
       val my = TypedActor.newInstance[My](classOf[My], classOf[MyImpl], 3000)
       val actors = Actor.registry.typedActorsFor(classOf[My])
@@ -24,7 +24,7 @@ class TypedActorRegistrySpec extends WordSpec with MustMatchers {
       Actor.registry.shutdownAll()
     }
 
-    "be able to be retreived from the registry by manifest" in {
+    "be able to be retrieved from the registry by manifest" in {
       Actor.registry.shutdownAll()
       val my = TypedActor.newInstance[My](classOf[My], classOf[MyImpl], 3000)
       val option = Actor.registry.typedActorFor[My]
@@ -33,7 +33,7 @@ class TypedActorRegistrySpec extends WordSpec with MustMatchers {
       Actor.registry.shutdownAll()
     }
 
-    "be able to be retreived from the registry by class two times" in {
+    "be able to be retrieved from the registry by class two times" in {
       Actor.registry.shutdownAll()
       val my = TypedActor.newInstance[My](classOf[My], classOf[MyImpl], 3000)
       val actors1 = Actor.registry.typedActorsFor(classOf[My])
@@ -43,7 +43,7 @@ class TypedActorRegistrySpec extends WordSpec with MustMatchers {
       Actor.registry.shutdownAll()
     }
 
-    "be able to be retreived from the registry by manifest two times" in {
+    "be able to be retrieved from the registry by manifest two times" in {
       Actor.registry.shutdownAll()
       val my = TypedActor.newInstance[My](classOf[My], classOf[MyImpl], 3000)
       val option1 = Actor.registry.typedActorFor[My]
@@ -55,7 +55,7 @@ class TypedActorRegistrySpec extends WordSpec with MustMatchers {
       Actor.registry.shutdownAll()
     }
 
-    "be able to be retreived from the registry by manifest two times (even when created in supervisor)" in {
+    "be able to be retrieved from the registry by manifest two times (even when created in supervisor)" in {
       Actor.registry.shutdownAll()
       val manager = new TypedActorConfigurator
       manager.configure(

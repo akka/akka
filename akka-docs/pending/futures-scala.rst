@@ -11,7 +11,7 @@ Use with Actors
 
 There are generally two ways of getting a reply from an ``Actor``: the first is by a sent message (``actor ! msg``), which only works if the original sender was an ``Actor``) and the second is through a ``Future``.
 
-Using an ``Actor``\'s ``!!!`` method to send a message will return a Future. To wait for and retreive the actual result the simplest method is:
+Using an ``Actor``\'s ``!!!`` method to send a message will return a Future. To wait for and retrieve the actual result the simplest method is:
 
 .. code-block:: scala
 
@@ -97,7 +97,7 @@ If we do the opposite:
 
 Our little string has been processed long before our 1 second sleep has finished. Because of this, the dispatcher has moved onto other messages that need processing and can no longer calculate the length of the string for us, instead it gets calculated in the current thread just as if we weren't using a Future.
 
-Normally this works quite well for us as it means there is very little overhead to running a quick Function. If there is a possiblity of the Function taking a non-trivial amount of time to process it might be better to have this done concurrently, and for that we use 'flatMap':
+Normally this works quite well for us as it means there is very little overhead to running a quick Function. If there is a possibility of the Function taking a non-trivial amount of time to process it might be better to have this done concurrently, and for that we use 'flatMap':
 
 .. code-block:: scala
 
@@ -150,7 +150,7 @@ The example for comprehension above is an example of composing Futures. A common
 
 Here we have 2 actors processing a single message each. In the for comprehension we need to add the expected types in order to work with the results. Once the 2 results are available, they are being added together and sent to a third actor, which replies with a String, which we assign to 'result'.
 
-This is fine when dealing with a known amount of Actors, but can grow unwieldly if we have more then a handful. The 'sequence' and 'traverse' helper methods can make it easier to handle more complex use cases. Both of these methods are ways of turning a Traversable[Future[A]] into a Future[Traversable[A]]. For example:
+This is fine when dealing with a known amount of Actors, but can grow unwieldy if we have more then a handful. The 'sequence' and 'traverse' helper methods can make it easier to handle more complex use cases. Both of these methods are ways of turning a Traversable[Future[A]] into a Future[Traversable[A]]. For example:
 
 .. code-block:: scala
 

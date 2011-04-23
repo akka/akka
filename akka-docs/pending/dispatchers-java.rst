@@ -165,7 +165,7 @@ Creating a PriorityExecutorBasedEventDrivenDispatcher using PriorityGenerator:
       ref.setDispatcher(new PriorityExecutorBasedEventDrivenDispatcher("foo", gen)); 
 
           ref.start(); // Start the actor
-      ref.getDispatcher().suspend(ref); // Suspening the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
+      ref.getDispatcher().suspend(ref); // Suspending the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
           ref.sendOneWay("lowpriority");
           ref.sendOneWay("lowpriority");
           ref.sendOneWay("highpriority");

@@ -155,7 +155,7 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
- * ActiveRemoteClient, but otehrs could be feasible, like a PassiveRemoteClient that
+ * ActiveRemoteClient, but others could be feasible, like a PassiveRemoteClient that
  * reuses an already established connection.
  */
 abstract class RemoteClient private[akka] (

@@ -372,7 +372,7 @@ Actors are started by invoking the ``start`` method.
   val actor = actorOf[MyActor]
   actor.start()
 
-You can create and start the ``Actor`` in a oneliner like this:
+You can create and start the ``Actor`` in a one liner like this:
 
 .. code-block:: scala
 

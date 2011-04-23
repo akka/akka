@@ -15,7 +15,7 @@ Starting up the remote service
 Starting remote service in user code as a library
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Here is how to start up the RemoteNode and specify the hostname and port programatically:
+Here is how to start up the RemoteNode and specify the hostname and port programmatically:
 
 .. code-block:: scala
 
@@ -318,7 +318,7 @@ The API for server managed remote actors is really simple. 2 methods only:
 
 Actors created like this are automatically started.
 
-You can also register an actor by its UUD rather than ID or handle. This is done by prefixing the handle with the "uuid:" protocol.
+You can also register an actor by its UUID rather than ID or handle. This is done by prefixing the handle with the "uuid:" protocol.
 
 .. code-block:: scala
 
@@ -645,7 +645,7 @@ So a simple listener actor can look like this:
       case RemoteServerClientConnected(server, clientAddress)    => ... // act upon client connection
       case RemoteServerClientDisconnected(server, clientAddress) => ... // act upon client disconnection
       case RemoteServerClientClosed(server, clientAddress)       => ... // act upon client connection close
-      case RemoteServerWriteFailed(request, casue, server, clientAddress) => ... // act upon server write failure
+      case RemoteServerWriteFailed(request, cause, server, clientAddress) => ... // act upon server write failure
     }
   }).start()
 

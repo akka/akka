@@ -7,7 +7,7 @@ The Akka Software Transactional Memory implementation
 
 Read consistency is that all value
 
-**Read concistency and MVCC**
+**Read consistency and MVCC**
 *****************************
 
 A lot of STM (like the Clojure STM) implementations are Multi Version Concurrency Control Based (MVCC) based (TL2 of david dice could be seen as MVCC).

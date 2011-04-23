@@ -321,7 +321,7 @@ Each serialization interface/trait in
 Note however that if you are using one of the Serializable interfaces then you don’t have to do anything else in regard to sending remote messages.
 
 The ones currently supported are (besides the default which is regular Java serialization):
-* ScalaJON (Scala only)
+* ScalaJSON (Scala only)
 * JavaJSON (Java but some Scala structures)
 * SBinary (Scala only)
 * Protobuf (Scala and Java)
@@ -439,7 +439,7 @@ Here are the steps that you need to follow:
 Serializer API using reflection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can also use the Serializer abstraction to serialize using reflection based serialization API of sjson. But we recommend using the type class based one, because reflection based serialization has limitations due to type erasure. Here's an example of reflection based serialization:
+You can also use the Serializer abstraction to serialize using the reflection based serialization API of sjson. But we recommend using the type class based one, because reflection based serialization has limitations due to type erasure. Here's an example of reflection based serialization:
 
 .. code-block:: scala
 
@@ -672,7 +672,7 @@ Consider the following Scala class:
   }
 
 Because of erasure, you need to add the type hint declaratively through the annotation @JSONTypeHint that
-SJSON will pick up during serialization. No we can say:
+SJSON will pick up during serialization. Now we can say:
 
 .. code-block:: scala
 
@@ -683,7 +683,7 @@ SJSON will pick up during serialization. No we can say:
     c should equal(serializer.in[Contact](co))
   }
 
-With optional generic data members, we need to provide the hint to SJSON through another annotation@OptionTypeHint.
+With optional generic data members, we need to provide the hint to SJSON through another annotation @OptionTypeHint.
 
 .. code-block:: scala
 
@@ -714,7 +714,7 @@ Serialization works ok with optional members annotated as above.
     }
   }
 
-You can also specify a custom ClassLoader while using SJSON serializer:
+You can also specify a custom ClassLoader while using the SJSON serializer:
 
 .. code-block:: scala
 
@@ -915,7 +915,7 @@ For your POJOs to be able to serialize themselves you have to extend the JavaJSO
   SerializerFactory factory = new SerializerFactory();
   MyMessage messageCopy = factory.getJavaJSON().in(json);
 
-Use the akka.serialization.SerializerFactory.getJavaJSON to do generic JSONserialization, e.g. serialize object that does not extend JavaJSON using the JSON serializer.
+Use the akka.serialization.SerializerFactory.getJavaJSON to do generic JSON serialization, e.g. serialize object that does not extend JavaJSON using the JSON serializer.
 
 .. code-block:: java
 
@@ -948,7 +948,7 @@ If you need to serialize your own user-defined objects then you have to do three
 ## toBytes: Array[Byte]
 # Create an implicit sbinary.Format[T] object for your class. Which means that you have to define its two methods:
 ## reads(in: Input): T; in which you read in all the fields in your object, using read[FieldType](in)and recreate it.
-## writes(out: Output, value: T): Unit; in which you write out all the fields in your object, usingwrite[FieldType](out, value.field).
+## writes(out: Output, value: T): Unit; in which you write out all the fields in your object, using write[FieldType](out, value.field).
 
 Here is an example:
 `<code format="scala">`_

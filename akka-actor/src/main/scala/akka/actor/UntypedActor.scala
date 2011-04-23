@@ -24,7 +24,7 @@ import akka.japi.{Creator, Procedure}
  *
  *        } else if (msg.equals("UseSender") && getContext().getSender().isDefined()) {
  *          // Reply to original sender of message using the sender reference
- *          // also passing along my own refererence (the context)
+ *          // also passing along my own reference (the context)
  *          getContext().getSender().get().sendOneWay(msg, context);
  *
  *        } else if (msg.equals("UseSenderFuture") && getContext().getSenderFuture().isDefined()) {
@@ -36,7 +36,7 @@ import akka.japi.{Creator, Procedure}
  *          getContext().sendOneWay(msg)
  *
  *        } else if (msg.equals("ForwardMessage")) {
- *          // Retreive an actor from the ActorRegistry by ID and get an ActorRef back
+ *          // Retrieve an actor from the ActorRegistry by ID and get an ActorRef back
  *          ActorRef actorRef = Actor.registry.actorsFor("some-actor-id").head();
  *
  *        } else throw new IllegalArgumentException("Unknown message: " + message);

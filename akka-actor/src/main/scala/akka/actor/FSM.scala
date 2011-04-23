@@ -104,7 +104,7 @@ object FSM {
  * different concerns in different places; you may choose to use
  * <code>when</code> for describing the properties of a state, including of
  * course initiating transitions, but you can describe the transitions using
- * <code>onTransision</code> to avoid having to duplicate that code among
+ * <code>onTransition</code> to avoid having to duplicate that code among
  * multiple paths which lead to a transition:
  *
  * <pre>

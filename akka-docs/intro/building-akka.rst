@@ -167,7 +167,7 @@ download) use the ``dist`` command::
 The distribution zip can be found in the dist directory and is called
 ``akka-modules-{version}.zip``.
 
-To run the mircokernel, unzip the zip file, change into the unzipped directory,
+To run the microkernel, unzip the zip file, change into the unzipped directory,
 set the ``AKKA_HOME`` environment variable, and run the main jar file. For
 example:
 
@@ -282,7 +282,7 @@ akka-camel
 ^^^^^^^^^^
 
 * Depends on akka-actor
-* camel-core-2.5.0.jar
+* camel-core-2.7.0.jar
 * commons-logging-api-1.1.jar
 * commons-management-1.0.jar
 
@@ -290,7 +290,7 @@ akka-camel-typed
 ^^^^^^^^^^^^^^^^
 
 * Depends on akka-typed-actor
-* camel-core-2.5.0.jar
+* camel-core-2.7.0.jar
 * commons-logging-api-1.1.jar
 * commons-management-1.0.jar
 

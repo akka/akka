@@ -82,7 +82,7 @@ case class SendTo(actor: ActorRef, message: Option[Any] = None)
  * }}}
  * <br/>
  *
- * To exeucte directly before or after the coordinated transaction, override
+ * To execute directly before or after the coordinated transaction, override
  * the `before` and `after` methods. These methods also expect partial functions
  * like the receive method. They do not execute within the transaction.
  *
