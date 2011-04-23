@@ -178,9 +178,7 @@ object ReflectiveAccess {
     val first = try {
       Option(classloader.loadClass(fqn).asInstanceOf[Class[T]])
     } catch {
-      case c: ClassNotFoundException =>
-        EventHandler.debug(this, c.toString)
-        None
+      case c: ClassNotFoundException => None
     }
 
     if (first.isDefined) first
@@ -189,9 +187,7 @@ object ReflectiveAccess {
       val second = try {
         Option(Thread.currentThread.getContextClassLoader.loadClass(fqn).asInstanceOf[Class[T]])
       } catch {
-        case c: ClassNotFoundException =>
-          EventHandler.debug(this, c.toString)
-          None
+        case c: ClassNotFoundException => None
       }
 
       if (second.isDefined) second
@@ -201,9 +197,7 @@ object ReflectiveAccess {
            if (classloader ne loader) Option(loader.loadClass(fqn).asInstanceOf[Class[T]])
           else None
         } catch {
-          case c: ClassNotFoundException =>
-            EventHandler.debug(this, c.toString)
-            None
+          case c: ClassNotFoundException => None
         }
 
         if (third.isDefined) third
@@ -212,9 +206,7 @@ object ReflectiveAccess {
           try {
             Option(Class.forName(fqn).asInstanceOf[Class[T]])
           } catch {
-            case c: ClassNotFoundException =>
-              EventHandler.debug(this, c.toString)
-              None
+            case c: ClassNotFoundException => None
           }
         }
       }
