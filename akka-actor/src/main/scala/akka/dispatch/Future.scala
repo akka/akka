@@ -264,12 +264,38 @@ object Future {
       for (r <- fr; b <-fb) yield (r += b)
     }.map(_.result)
 
+  /**
+   * Captures a block that will be transformed into 'Continuation Passing Style' using Scala's Delimited
+   * Continuations plugin.
+   *
+   * Within the block, the result of a Future may be accessed by calling Future.apply. At that point
+   * execution is suspended with the rest of the block being stored in a continuation until the result
+   * of the Future is available. If an Exception is thrown while processing, it will be contained
+   * within the resulting Future.
+   *
+   * This allows working with Futures in an imperative style without blocking for each result.
+   *
+   * Completing a Future using 'CompletableFuture << Future' will also suspend execution until the
+   * value of the other Future is available.
+   *
+   * The Delimited Continuations compiler plugin must be enabled in order to use this method.
+   */
   def flow[A](body: => A @cps[Future[A]], timeout: Long = Actor.TIMEOUT): Future[A] =
     reset(new DefaultCompletableFuture[A](timeout).completeWithResult(body))
 }
 
 sealed trait Future[+T] {
 
+  /**
+   * For use only within a Future.flow block or another compatible Delimited Continuations reset block.
+   *
+   * Returns the result of this Future without blocking, by suspending execution and storing it as a
+   * continuation until the result is available.
+   *
+   * If this Future is untyped (a Future[Nothing]), a type parameter must be explicitly provided or
+   * execution will fail. The normal result of getting a Future from an ActorRef using !!! will return
+   * an untyped Future.
+   */
   def apply[A >: T](): A @cps[Future[Any]] = shift(this flatMap _)
 
   /**
