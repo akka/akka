@@ -279,9 +279,7 @@ object Future {
 
 sealed trait Future[+T] {
 
-  def apply[A >: T](): A @cpsParam[Future[Any],Future[Any]] = shift { f: (A => Future[Any]) =>
-    (new DefaultCompletableFuture[Any](timeoutInNanos, NANOS)) completeWith (this flatMap f)
-  }
+  def apply[A >: T](): A @cpsParam[Future[Any],Future[Any]] = shift(this.flatMap(_))
 
   /**
    * Java API for apply()
