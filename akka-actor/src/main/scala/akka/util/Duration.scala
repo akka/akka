@@ -96,15 +96,32 @@ object Duration {
     case "ns"  | "nano"   | "nanos"  | "nanosecond"  | "nanoseconds"  => NANOSECONDS
   }
 
+  val Zero : Duration = new FiniteDuration(0, NANOSECONDS)
+
   trait Infinite {
     this : Duration =>
 
     override def equals(other : Any) = false
 
-    def +(other : Duration) : Duration = this
-    def -(other : Duration) : Duration = this
-    def *(other : Double) : Duration = this
-    def /(other : Double) : Duration = this
+    def +(other : Duration) : Duration =
+      other match {
+        case _ : this.type => this
+        case _ : Infinite => throw new IllegalArgumentException("illegal addition of infinities")
+        case _ => this
+      }
+    def -(other : Duration) : Duration =
+      other match {
+        case _ : this.type => throw new IllegalArgumentException("illegal subtraction of infinities")
+        case _ => this
+      }
+    def *(factor : Double) : Duration = this
+    def /(factor : Double) : Duration = this
+    def /(other : Duration) : Double =
+      other match {
+        case _ : Infinite => throw new IllegalArgumentException("illegal division of infinities")
+        // maybe questionable but pragmatic: Inf / 0 => Inf
+        case x => Double.PositiveInfinity * (if ((this > Zero) ^ (other >= Zero)) -1 else 1)
+      }
   
     def finite_? = false
   
@@ -126,7 +143,7 @@ object Duration {
    * Infinite duration: greater than any other and not equal to any other,
    * including itself.
    */
-  object Inf extends Duration with Infinite {
+  val Inf : Duration = new Duration with Infinite {
     override def toString = "Duration.Inf"
     def >(other : Duration) = true
     def >=(other : Duration) = true
@@ -139,7 +156,7 @@ object Duration {
    * Infinite negative duration: lesser than any other and not equal to any other,
    * including itself.
    */
-  object MinusInf extends Duration with Infinite {
+  val MinusInf : Duration = new Duration with Infinite {
     override def toString = "Duration.MinusInf"
     def >(other : Duration) = false
     def >=(other : Duration) = false
@@ -148,6 +165,11 @@ object Duration {
     def unary_- : Duration = Inf
   }
 
+  // Java Factories
+  def create(length : Long, unit : TimeUnit) : Duration = apply(length, unit)
+  def create(length : Double, unit : TimeUnit) : Duration = apply(length, unit)
+  def create(length : Long, unit : String) : Duration = apply(length, unit)
+  def parse(s : String) : Duration = unapply(s).get
 }
 
 /**
@@ -195,7 +217,7 @@ object Duration {
  * val d3 = d2 + 1.millisecond
  * </pre>
  */
-trait Duration {
+abstract class Duration {
   def length : Long
   def unit : TimeUnit
   def toNanos : Long
@@ -215,8 +237,22 @@ trait Duration {
   def -(other : Duration) : Duration
   def *(factor : Double) : Duration
   def /(factor : Double) : Duration
+  def /(other : Duration) : Double
   def unary_- : Duration
   def finite_? : Boolean
+
+  // Java API
+  def lt(other : Duration) = this < other
+  def lteq(other : Duration) = this <= other
+  def gt(other : Duration) = this > other
+  def gteq(other : Duration) = this >= other
+  def plus(other : Duration) = this + other
+  def minus(other : Duration) = this - other
+  def mul(factor : Double) = this * factor
+  def div(factor : Double) = this / factor
+  def div(other : Duration) = this / other
+  def neg() = -this
+  def isFinite() = finite_?
 }
 
 class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
@@ -305,6 +341,8 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   def *(factor : Double) = fromNanos(long2double(toNanos) * factor)
 
   def /(factor : Double) = fromNanos(long2double(toNanos) / factor)
+
+  def /(other : Duration) = if (other.finite_?) long2double(toNanos) / other.toNanos else 0
 
   def unary_- = Duration(-length, unit)
 
