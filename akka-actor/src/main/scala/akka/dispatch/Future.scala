@@ -246,6 +246,11 @@ object Future {
     def !(msg: Any) = future << msg
   }
 
+  /**
+   * Create an empty Future with default timeout
+   */
+  def empty[T](timeout : Long = Actor.TIMEOUT) = new DefaultCompletableFuture[T](timeout)
+
   import scala.collection.mutable.Builder
   import scala.collection.generic.CanBuildFrom
 
