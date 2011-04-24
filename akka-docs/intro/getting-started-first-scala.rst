@@ -404,7 +404,7 @@ But before we package it up and run it, let's take a look at the full code now, 
         def calculatePiFor(start: Int, nrOfElements: Int): Double = {
           var acc = 0.0
           for (i <- start until (start + nrOfElements))
-            acc += 4 * (1 - (i % 2) * 2) / (2 * i + 1)
+            acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1)
           acc
         }
 
