@@ -238,7 +238,7 @@ The only thing missing in our ``Worker`` actor is the implementation on the ``ca
     def calculatePiFor(start: Int, nrOfElements: Int): Double = {
       var acc = 0.0
       for (i <- start until (start + nrOfElements))
-        acc += 4 * (1 - (i % 2) * 2) / (2 * i + 1)
+        acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1)
       acc
     }
 
