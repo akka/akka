@@ -520,7 +520,7 @@ sealed trait Future[+T] {
       f(optr.get)
   }
 
-  final def filter(p: T => Boolean): Future[T] = {
+  final def filter(p: Any => Boolean): Future[Any] = {
     val f = new DefaultCompletableFuture[T](timeoutInNanos, NANOS)
     onComplete { ft =>
       val optv = ft.value
@@ -565,7 +565,7 @@ sealed trait Future[+T] {
 
   final def foreach[A >: T](proc: Procedure[A]): Unit = foreach(proc(_))
 
-  final def filter[A >: T](p: JFunc[A,Boolean]): Future[T] = filter(p(_))
+  final def filter(p: JFunc[Any,Boolean]): Future[Any] = filter(p(_))
 
 }
 
