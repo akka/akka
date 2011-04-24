@@ -443,7 +443,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
     val junit           = Dependencies.junit
     val scalatest       = Dependencies.scalatest
     val multiverse_test = Dependencies.multiverse_test // StandardLatch
-    val cont = compilerPlugin("org.scala-lang.plugins" % "continuations" % "2.9.0.RC1")
     override def compileOptions = super.compileOptions ++ compileOptions("-P:continuations:enable")
   }
   
