@@ -26,7 +26,7 @@ An Agent will be running until you invoke ``close`` on it. Then it will be eligi
 
 .. code-block:: scala
 
-  agent.close
+  agent.close()
 
 Updating Agents
 ---------------
@@ -101,6 +101,7 @@ Example of a monadic usage:
   val agent2 = Agent(5)
 
   // uses foreach
+  var result = 0
   for (value <- agent1) {
     result = value + 1
   }
@@ -115,7 +116,7 @@ Example of a monadic usage:
     value2 <- agent2
   } yield value1 + value2
 
-  agent1.close
-  agent2.close
-  agent3.close
-  agent4.close
+  agent1.close()
+  agent2.close()
+  agent3.close()
+  agent4.close()
