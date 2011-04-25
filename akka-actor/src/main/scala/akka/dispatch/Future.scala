@@ -201,7 +201,7 @@ object Futures {
   // =====================================
   // Deprecations
   // =====================================
-  
+
   /**
    * (Blocking!)
    */
@@ -421,23 +421,50 @@ sealed trait Future[+T] {
   final def collect[A](pf: PartialFunction[Any, A]): Future[A] = {
     val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
     onComplete { ft =>
-      val optv = ft.value
-      if (optv.isDefined) {
-        val v = optv.get
-        fa complete {
-          if (v.isLeft) v.asInstanceOf[Either[Throwable, A]]
-          else {
-            try {
-              val r = v.right.get
-              if (pf isDefinedAt r) Right(pf(r))
-              else Left(new MatchError(r))
-            } catch {
-              case e: Exception =>
-                EventHandler.error(e, this, e.getMessage)
-                Left(e)
-            }
+      val v = ft.value.get
+      fa complete {
+        if (v.isLeft) v.asInstanceOf[Either[Throwable, A]]
+        else {
+          try {
+            val r = v.right.get
+            if (pf isDefinedAt r) Right(pf(r))
+            else Left(new MatchError(r))
+          } catch {
+            case e: Exception =>
+              EventHandler.error(e, this, e.getMessage)
+              Left(e)
           }
         }
+      }
+    }
+    fa
+  }
+
+  /**
+   * Creates a new Future that will handle any matching Throwable that this
+   * Future might contain. If there is no match, or if this Future contains
+   * a valid result then the new Future will contain the same.
+   * Example:
+   * <pre>
+   * Future(6 / 0) failure { case e: ArithmeticException => 0 } // result: 0
+   * Future(6 / 0) failure { case e: NotFoundException   => 0 } // result: exception
+   * Future(6 / 2) failure { case e: ArithmeticException => 0 } // result: 3
+   * </pre>
+   */
+  final def failure[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
+    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    onComplete { ft =>
+      val opte = ft.exception
+      fa complete {
+        if (opte.isDefined) {
+          val e = opte.get
+          try {
+            if (pf isDefinedAt e) Right(pf(e))
+            else Left(e)
+          } catch {
+            case x: Exception => Left(x)
+          }
+        } else ft.value.get
       }
     }
     fa
@@ -468,7 +495,7 @@ sealed trait Future[+T] {
           fa complete (try {
             Right(f(v.right.get))
           } catch {
-            case e: Exception => 
+            case e: Exception =>
               EventHandler.error(e, this, e.getMessage)
               Left(e)
           })
@@ -504,7 +531,7 @@ sealed trait Future[+T] {
           try {
             fa.completeWith(f(v.right.get))
           } catch {
-            case e: Exception => 
+            case e: Exception =>
               EventHandler.error(e, this, e.getMessage)
               fa completeWithException e
           }
@@ -534,7 +561,7 @@ sealed trait Future[+T] {
             if (p(r)) Right(r)
             else Left(new MatchError(r))
           } catch {
-            case e: Exception => 
+            case e: Exception =>
               EventHandler.error(e, this, e.getMessage)
               Left(e)
           })

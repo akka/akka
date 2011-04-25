@@ -134,6 +134,51 @@ class FutureSpec extends JUnitSuite {
     actor.stop()
   }
 
+  @Test def shouldMapMatchedExceptionsToResult {
+    val future1 = Future(5)
+    val future2 = future1 map (_ / 0)
+    val future3 = future2 map (_.toString)
+
+    val future4 = future1 failure {
+      case e: ArithmeticException => 0
+    } map (_.toString)
+
+    val future5 = future2 failure {
+      case e: ArithmeticException => 0
+    } map (_.toString)
+
+    val future6 = future2 failure {
+      case e: MatchError => 0
+    } map (_.toString)
+
+    val future7 = future3 failure { case e: ArithmeticException => "You got ERROR" }
+
+    val actor = actorOf[TestActor].start()
+
+    val future8 = actor !!! "Failure"
+    val future9 = actor !!! "Failure" failure {
+      case e: RuntimeException => "FAIL!"
+    }
+    val future10 = actor !!! "Hello" failure {
+      case e: RuntimeException => "FAIL!"
+    }
+    val future11 = actor !!! "Failure" failure { case _ => "Oops!" }
+
+    assert(future1.get === 5)
+    intercept[ArithmeticException] { future2.get }
+    intercept[ArithmeticException] { future3.get }
+    assert(future4.get === "5")
+    assert(future5.get === "0")
+    intercept[ArithmeticException] { future6.get }
+    assert(future7.get === "You got ERROR")
+    intercept[RuntimeException] { future8.get }
+    assert(future9.get === "FAIL!")
+    assert(future10.get === "World")
+    assert(future11.get === "Oops!")
+
+    actor.stop()
+  }
+
   @Test def shouldFutureAwaitEitherLeft = {
     val actor1 = actorOf[TestActor].start()
     val actor2 = actorOf[TestActor].start()
