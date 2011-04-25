@@ -62,8 +62,8 @@ class FutureSpec extends JUnitSuite {
     val future1 = actor1 !!! "Hello" flatMap ((s: String) => actor2 !!! s)
     val future2 = actor1 !!! "Hello" flatMap (actor2 !!! (_: String))
     val future3 = actor1 !!! "Hello" flatMap (actor2 !!! (_: Int))
-    assert(future1.get === "WORLD")
-    assert(future2.get === "WORLD")
+    assert((future1.get: Any) === "WORLD")
+    assert((future2.get: Any) === "WORLD")
     intercept[ClassCastException] { future3.get }
     actor1.stop()
     actor2.stop()
@@ -74,7 +74,7 @@ class FutureSpec extends JUnitSuite {
     val actor2 = actorOf(new Actor { def receive = { case s: String => self reply s.toUpperCase } } ).start()
     val future1 = actor1 !!! "Hello" collect { case (s: String) => s } flatMap (actor2 !!! _)
     val future2 = actor1 !!! "Hello" collect { case (n: Int) => n } flatMap (actor2 !!! _)
-    assert(future1.get === "WORLD")
+    assert((future1.get: Any) === "WORLD")
     intercept[MatchError] { future2.get }
     actor1.stop()
     actor2.stop()
@@ -103,7 +103,7 @@ class FutureSpec extends JUnitSuite {
     } yield b + "-" + c
 
     assert(future1.get === "10-14")
-    intercept[MatchError] { future2.get }
+    intercept[ClassCastException] { future2.get }
     actor.stop()
   }
 
