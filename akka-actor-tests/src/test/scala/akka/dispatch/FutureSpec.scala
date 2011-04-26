@@ -557,18 +557,19 @@ class FutureSpec extends JUnitSuite {
 
   @Test def dataFlowAPIshouldbeSlick {
     import Future.flow
-    val s1, s2 = new StandardLatch
 
-    def callService1 = Future { s1.awaitUninterruptible; 1 }
-    def callService2 = Future { s2.awaitUninterruptible; 9 }
+    val i1, i2, s1, s2 = new StandardLatch
 
-    val result = flow {
-      callService1() + callService2()
-    }
+    val callService1 = Future { i1.open; s1.awaitUninterruptible; 1 }
+    val callService2 = Future { i2.open; s2.awaitUninterruptible; 9 }
+
+    val result = flow { callService1() + callService2() }
 
     assert(!s1.isOpen)
     assert(!s2.isOpen)
     assert(!result.isCompleted)
+    assert(i1.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
+    assert(i2.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
     s1.open
     s2.open
     assert(result.get === 10)
