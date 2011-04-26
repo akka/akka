@@ -518,7 +518,7 @@ class FutureSpec extends JUnitSuite {
     two << 9
 
     assert(List(one, two).forall(_.isCompleted == true))
-    assert(simpleResult.await.result.get === 10)
+    assert(simpleResult.get === 10)
 
   }
 
@@ -542,17 +542,36 @@ class FutureSpec extends JUnitSuite {
     y1 << 1 // When this is set, it should cascade down the line
 
     assert(ly.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
-    assert(x1.await.result.get === 1)
+    assert(x1.get === 1)
     assert(!lz.isOpen)
 
     y2 << 9 // When this is set, it should cascade down the line
 
     assert(lz.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
-    assert(x2.await.result.get === 9)
+    assert(x2.get === 9)
 
     assert(List(x1,x2,y1,y2).forall(_.isCompleted == true))
 
-    assert(result.await.get === 10)
+    assert(result.get === 10)
+  }
+
+  @Test def dataFlowAPIshouldbeSlick {
+    import Future.flow
+    val s1, s2 = new StandardLatch
+
+    def callService1 = Future { s1.awaitUninterruptible; 1 }
+    def callService2 = Future { s2.awaitUninterruptible; 9 }
+
+    val result = flow {
+      callService1() + callService2()
+    }
+
+    assert(!s1.isOpen)
+    assert(!s2.isOpen)
+    assert(!result.isCompleted)
+    s1.open
+    s2.open
+    assert(result.get === 10)
   }
 
   @Test def futureCompletingWithContinuationsFailure {
