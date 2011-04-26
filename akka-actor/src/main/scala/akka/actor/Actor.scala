@@ -165,30 +165,6 @@ object Actor extends ListenerManagement {
 
   /**
    * Creates an ActorRef out of the Actor of the specified Class.
-   * <pre>
-   *   import Actor._
-   *   val actor = actorOf(classOf[MyActor])
-   *   actor.start
-   *   actor ! message
-   *   actor.stop
-   * </pre>
-   * You can create and start the actor in one statement like this:
-   * <pre>
-   *   val actor = actorOf(classOf[MyActor]).start
-   * </pre>
-   */
-  def actorOf(clazz: Class[_ <: Actor], address: String): ActorRef = new LocalActorRef(() => {
-    import ReflectiveAccess.{ createInstance, noParams, noArgs }
-    createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
-      throw new ActorInitializationException(
-        "Could not instantiate Actor" +
-        "\nMake sure Actor is NOT defined inside a class/trait," +
-        "\nif so put it outside the class/trait, f.e. in a companion object," +
-        "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
-  }, address)
-
-  /**
-   * Creates an ActorRef out of the Actor of the specified Class.
    * Uses generated address.
    * <pre>
    *   import Actor._
@@ -205,24 +181,32 @@ object Actor extends ListenerManagement {
   def actorOf(clazz: Class[_ <: Actor]): ActorRef = actorOf(clazz, new UUID().toString)
 
   /**
-   * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
-   * that creates the Actor. Please note that this function can be invoked multiple
-   * times if for example the Actor is supervised and needs to be restarted.
-   * <p/>
-   * This function should <b>NOT</b> be used for remote actors.
+   * Creates an ActorRef out of the Actor of the specified Class.
    * <pre>
    *   import Actor._
-   *   val actor = actorOf(new MyActor)
+   *   val actor = actorOf(classOf[MyActor])
    *   actor.start
    *   actor ! message
    *   actor.stop
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(new MyActor).start
+   *   val actor = actorOf(classOf[MyActor]).start
    * </pre>
    */
-  def actorOf(factory: => Actor, address: String): ActorRef = new LocalActorRef(() => factory, address)
+  def actorOf(clazz: Class[_ <: Actor], address: String): ActorRef = {
+    import DeploymentConfig._
+    Address.validate(address)
+
+    Deployer.deploymentFor(address) match {
+      case Deploy(_, _, Local) =>
+        newLocalActorRef(clazz, address)
+      case Deploy(_, router, Clustered(Home(hostname, port), Replicate(nrOfReplicas), state)) =>
+        RemoteActorRef(
+          address, clazz.getName,
+          Actor.TIMEOUT, None, ActorType.ScalaActor)
+    }
+  }
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -246,14 +230,27 @@ object Actor extends ListenerManagement {
   def actorOf(factory: => Actor): ActorRef = actorOf(factory, new UUID().toString)
 
   /**
-   * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
+   * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
    * that creates the Actor. Please note that this function can be invoked multiple
    * times if for example the Actor is supervised and needs to be restarted.
    * <p/>
    * This function should <b>NOT</b> be used for remote actors.
-   * JAVA API
+   * <pre>
+   *   import Actor._
+   *   val actor = actorOf(new MyActor)
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf(new MyActor).start
+   * </pre>
    */
-  def actorOf(creator: Creator[Actor], address: String): ActorRef = new LocalActorRef(() => creator.create, address)
+  def actorOf(factory: => Actor, address: String): ActorRef = {
+    Address.validate(address)
+    new LocalActorRef(() => factory, address)
+  }
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
@@ -265,6 +262,19 @@ object Actor extends ListenerManagement {
    * JAVA API
    */
   def actorOf(creator: Creator[Actor]): ActorRef = actorOf(creator, new UUID().toString)
+
+  /**
+   * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
+   * that creates the Actor. Please note that this function can be invoked multiple
+   * times if for example the Actor is supervised and needs to be restarted.
+   * <p/>
+   * This function should <b>NOT</b> be used for remote actors.
+   * JAVA API
+   */
+  def actorOf(creator: Creator[Actor], address: String): ActorRef = {
+    Address.validate(address)
+    new LocalActorRef(() => creator.create, address)
+  }
 
   /**
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
@@ -290,6 +300,19 @@ object Actor extends ListenerManagement {
       }
     }).start ! Spawn
   }
+
+  private[akka] def newLocalActorRef(clazz: Class[_ <: Actor], address: String): ActorRef = {
+    new LocalActorRef(() => {
+      import ReflectiveAccess.{ createInstance, noParams, noArgs }
+      createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
+        throw new ActorInitializationException(
+          "Could not instantiate Actor" +
+          "\nMake sure Actor is NOT defined inside a class/trait," +
+          "\nif so put it outside the class/trait, f.e. in a companion object," +
+          "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
+      }, address)
+  }
+
   /**
    * Implicitly converts the given Option[Any] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
    * to convert an Option[Any] to an Option[T].

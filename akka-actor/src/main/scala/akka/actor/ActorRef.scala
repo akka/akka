@@ -995,8 +995,13 @@ private[akka] case class RemoteActorRef private[akka] (
   timeout = _timeout
 
   // FIXME BAD, we should not have different ActorRefs
-  val remoteAddress: InetSocketAddress = AddressRegistry.remoteAddressFor(address).getOrElse(
-    throw new IllegalStateException("Actor [" + actorClassName + "] is not configured as being a remote actor."))
+
+  import DeploymentConfig._
+  val remoteAddress = Deployer.deploymentFor(address) match {
+    case Deploy(_, _, Clustered(Home(hostname, port), _, _)) => new InetSocketAddress(hostname, port)
+    case _ => throw new IllegalStateException(
+      "Actor [" + actorClassName + "] with Address [" + address + "] is not bound to a Clustered Deployment")
+  }
 
   start
 

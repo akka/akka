@@ -12,7 +12,7 @@ import org.scalatest.matchers.MustMatchers
 @RunWith(classOf[JUnitRunner])
 class ConfigSpec extends WordSpec with MustMatchers {
 
-  "The default configuration file (i.e. akka-reference.conf)" should {
+  "The default configuration file (i.e. akka-reference.conf)" must {
     "contain all configuration properties for akka-actor that are used in code with their correct defaults" in {
       import Config.config._
 

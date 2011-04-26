@@ -68,6 +68,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   object Repositories {
+    lazy val EmbeddedRepo           = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
     lazy val LocalMavenRepo         = MavenRepository("Local Maven Repo", (Path.userHome / ".m2" / "repository").asURL.toString)
     lazy val AkkaRepo               = MavenRepository("Akka Repository", "http://akka.io/repository")
     lazy val CodehausRepo           = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
@@ -105,6 +106,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val aspectWerkzModuleConfig = ModuleConfiguration("org.codehaus.aspectwerkz", "aspectwerkz", "2.2.3", AkkaRepo)
   lazy val objenesisModuleConfig   = ModuleConfiguration("org.objenesis", sbt.DefaultMavenRepository)
   lazy val localMavenRepo          = LocalMavenRepo // Second exception, also fast! ;-)
+  lazy val embeddedRepo            = EmbeddedRepo
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
@@ -117,6 +119,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val JETTY_VERSION         = "7.2.2.v20101205"
   lazy val JAVAX_SERVLET_VERSION = "3.0"
   lazy val SLF4J_VERSION         = "1.6.0"
+  lazy val ZOOKEEPER_VERSION     = "3.4.0"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
@@ -128,6 +131,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile" //Public domain
 
     lazy val aspectwerkz = "org.codehaus.aspectwerkz" % "aspectwerkz" % "2.2.3" % "compile" //ApacheV2
+
+    lazy val bookkeeper       = "org.apache.hadoop.zookeeper" % "bookkeeper"             % ZOOKEEPER_VERSION //ApacheV2
 
     lazy val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile" //ApacheV2
 
@@ -162,6 +167,12 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % "1.6.0"
     lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.24"
 
+    lazy val log4j            = "log4j"                       % "log4j"                  % "1.2.15"
+
+    lazy val zookeeper        = "org.apache.hadoop.zookeeper" % "zookeeper"              % ZOOKEEPER_VERSION //ApacheV2
+    lazy val zookeeperLock    = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % ZOOKEEPER_VERSION //ApacheV2
+    lazy val zkClient         = "zkclient"                    % "zkclient"               % "0.2"             //ApacheV2
+
     // Test
 
     lazy val commons_coll   = "commons-collections"    % "commons-collections" % "3.2.1"           % "test" //ApacheV2
@@ -184,10 +195,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_stm         = project("akka-stm",         "akka-stm",         new AkkaStmProject(_),        akka_actor)
   lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_stm, akka_actor_tests)
   lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),     akka_typed_actor)
+  lazy val akka_zookeeper   = project("akka-zookeeper",   "akka-zookeeper",   new AkkaZookeeperProject(_),  akka_remote)
+  lazy val akka_cluster     = project("akka-cluster",     "akka-cluster",     new AkkaClusterProject(_),    akka_zookeeper)
+
   lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_actor)
   lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
   lazy val akka_slf4j       = project("akka-slf4j",       "akka-slf4j",       new AkkaSlf4jProject(_),      akka_actor)
-  lazy val akka_tutorials   = project("akka-tutorials",   "akka-tutorials",   new AkkaTutorialsParentProject(_),      akka_actor)
+  lazy val akka_tutorials   = project("akka-tutorials",   "akka-tutorials",   new AkkaTutorialsParentProject(_), akka_actor)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Miscellaneous
@@ -248,7 +262,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   override def deliverProjectDependencies = super.deliverProjectDependencies.toList - akka_samples.projectID - akka_tutorials.projectID
 
-  // ------------------------------------------------------------  
+  // ------------------------------------------------------------
   // Build release
   // ------------------------------------------------------------
 
@@ -331,6 +345,38 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
+  // akka-zookeeper sub project
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaZookeeperProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val log4j         = Dependencies.log4j
+    val zookeeper     = Dependencies.zookeeper
+    val zookeeperLock = Dependencies.zookeeperLock
+    val zkClient      = Dependencies.zkClient
+    val commons_io    = Dependencies.commons_io
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-cluster sub project
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaClusterProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with MultiJvmTests {
+    val bookkeeper    = Dependencies.bookkeeper
+
+    // test dependencies
+
+    val scalatest     = Dependencies.scalatest
+    val junit         = Dependencies.junit
+
+    // multi jvm tests
+
+    lazy val clusterTest = multiJvmTest
+    lazy val clusterRun  = multiJvmRun
+
+    override def multiJvmOptions = Seq("-Xmx256M")
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
   // akka-http subproject
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -379,8 +425,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSampleAntsProject(_), akka_stm)
     lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
       new AkkaSampleFSMProject(_), akka_actor)
-    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
-      new AkkaSampleRemoteProject(_), akka_remote)
+//    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
+//      new AkkaSampleRemoteProject(_), akka_remote)
 
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
@@ -427,7 +473,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val scalatest       = Dependencies.scalatest
     val multiverse_test = Dependencies.multiverse_test // StandardLatch
   }
-  
+
   // -------------------------------------------------------------------------------------------------------------------
   // akka-slf4j subproject
   // -------------------------------------------------------------------------------------------------------------------

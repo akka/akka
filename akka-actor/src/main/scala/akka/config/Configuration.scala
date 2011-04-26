@@ -10,9 +10,8 @@ package akka.config
 
 import java.io.File
 
-
 object Configuration {
-  val DefaultPath = new File(".").getCanonicalPath
+  val DefaultPath     = new File(".").getCanonicalPath
   val DefaultImporter = new FilesystemImporter(DefaultPath)
 
   def load(data: String, importer: Importer = DefaultImporter): Configuration = {
@@ -63,6 +62,24 @@ class Configuration(val map: Map[String, Any]) {
   def contains(key: String): Boolean = map contains key
 
   def keys: Iterable[String] = map.keys
+
+  def getAny(key: String): Option[Any] = {
+    try {
+      Some(map(key))
+    } catch {
+      case _ => None
+    }
+  }
+
+  def getAny(key: String, defaultValue: Any): Any = getAny(key).getOrElse(defaultValue)
+
+  def getListAny(key: String): Seq[Any] = {
+    try {
+      map(key).asInstanceOf[Seq[Any]]
+    } catch {
+      case _ => Seq.empty[Any]
+    }
+  }
 
   def getString(key: String): Option[String] = map.get(key).map(_.toString)
 
