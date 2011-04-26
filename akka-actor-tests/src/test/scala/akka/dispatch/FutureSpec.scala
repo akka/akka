@@ -500,6 +500,39 @@ class FutureSpec extends JUnitSuite {
     assert(result2.get === 50)
   }
 
+  @Test def futureDataFlowShouldEmulateBlocking {
+    import Future.flow
+    val x1, x2, y1, y2 = new DefaultCompletableFuture[Int](1000 * 60)
+    val lx, ly, lz = new StandardLatch
+    val result = flow {
+      lx.open()
+      x1 << y1
+      ly.open()
+      x2 << y2
+      lz.open()
+      x1() + x2()
+    }
+    assert(lx.isOpen)
+    assert(!ly.isOpen)
+    assert(!lz.isOpen)
+    assert(List(x1,x2,y1,y2).forall(_.isCompleted == false))
+
+    y1 << 1 // When this is set, it should cascade down the line
+
+    assert(ly.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
+    assert(x1.await.result.get === 1)
+    assert(!lz.isOpen)
+
+    y2 << 9 // When this is set, it should cascade down the line
+
+    assert(lz.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
+    assert(x2.await.result.get === 9)
+
+    assert(List(x1,x2,y1,y2).forall(_.isCompleted == true))
+
+    assert(result.await.get === 10)
+  }
+
   @Test def futureCompletingWithContinuationsFailure {
     import Future.flow
 
