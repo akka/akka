@@ -66,63 +66,63 @@ class SerializableTypeClassActorSpec extends
     it("should be able to serialize and de-serialize a stateful actor") {
       import BinaryFormatMyActor._
 
-      val actor1 = actorOf[MyActor].start
+      val actor1 = actorOf[MyActor].start()
       (actor1 !! "hello").getOrElse("_") should equal("world 1")
       (actor1 !! "hello").getOrElse("_") should equal("world 2")
 
       val bytes = toBinary(actor1)
       val actor2 = fromBinary(bytes)
-      actor2.start
+      actor2.start()
       (actor2 !! "hello").getOrElse("_") should equal("world 3")
     }
 
     it("should be able to serialize and de-serialize a stateful actor with compound state") {
       import BinaryFormatMyActorWithDualCounter._
 
-      val actor1 = actorOf[MyActorWithDualCounter].start
+      val actor1 = actorOf[MyActorWithDualCounter].start()
       (actor1 !! "hello").getOrElse("_") should equal("world 1 1")
       (actor1 !! "hello").getOrElse("_") should equal("world 2 2")
 
       val bytes = toBinary(actor1)
       val actor2 = fromBinary(bytes)
-      actor2.start
+      actor2.start()
       (actor2 !! "hello").getOrElse("_") should equal("world 3 3")
     }
 
     it("should be able to serialize and de-serialize a stateless actor") {
       import BinaryFormatMyStatelessActor._
 
-      val actor1 = actorOf[MyStatelessActor].start
+      val actor1 = actorOf[MyStatelessActor].start()
       (actor1 !! "hello").getOrElse("_") should equal("world")
       (actor1 !! "hello").getOrElse("_") should equal("world")
 
       val bytes = toBinary(actor1)
       val actor2 = fromBinary(bytes)
-      actor2.start
+      actor2.start()
       (actor2 !! "hello").getOrElse("_") should equal("world")
     }
 
     it("should be able to serialize and de-serialize a stateful actor with a given serializer") {
       import BinaryFormatMyJavaSerializableActor._
 
-      val actor1 = actorOf[MyJavaSerializableActor].start
+      val actor1 = actorOf[MyJavaSerializableActor].start()
       (actor1 !! "hello").getOrElse("_") should equal("world 1")
       (actor1 !! "hello").getOrElse("_") should equal("world 2")
 
       val bytes = toBinary(actor1)
       val actor2 = fromBinary(bytes)
-      actor2.start
+      actor2.start()
       (actor2 !! "hello").getOrElse("_") should equal("world 3")
 
       actor2.receiveTimeout should equal (Some(1000))
-      actor1.stop
-      actor2.stop
+      actor1.stop()
+      actor2.stop()
     }
 
     it("should be able to serialize and deserialize a MyStatelessActorWithMessagesInMailbox") {
       import BinaryFormatMyStatelessActorWithMessagesInMailbox._
 
-      val actor1 = actorOf[MyStatelessActorWithMessagesInMailbox].start
+      val actor1 = actorOf[MyStatelessActorWithMessagesInMailbox].start()
       (actor1 ! "hello")
       (actor1 ! "hello")
       (actor1 ! "hello")
@@ -147,7 +147,7 @@ class SerializableTypeClassActorSpec extends
 
     it("should be able to serialize and de-serialize an Actor hotswapped with 'become'") {
       import BinaryFormatMyActor._
-      val actor1 = actorOf[MyActor].start
+      val actor1 = actorOf[MyActor].start()
       (actor1 !! "hello").getOrElse("_") should equal("world 1")
       (actor1 !! "hello").getOrElse("_") should equal("world 2")
       actor1 ! "swap"
@@ -155,7 +155,7 @@ class SerializableTypeClassActorSpec extends
 
       val bytes = toBinary(actor1)
       val actor2 = fromBinary(bytes)
-      actor2.start
+      actor2.start()
 
       (actor1 !! "hello").getOrElse("_") should equal("swapped")
 
@@ -166,7 +166,7 @@ class SerializableTypeClassActorSpec extends
     it("should be able to serialize and de-serialize an hotswapped actor") {
       import BinaryFormatMyActor._
 
-      val actor1 = actorOf[MyActor].start
+      val actor1 = actorOf[MyActor].start()
       (actor1 !! "hello").getOrElse("_") should equal("world 1")
       (actor1 !! "hello").getOrElse("_") should equal("world 2")
       actor1 ! HotSwap {
@@ -177,7 +177,7 @@ class SerializableTypeClassActorSpec extends
 
       val bytes = toBinary(actor1)
       val actor2 = fromBinary(bytes)
-      actor2.start
+      actor2.start()
 
       (actor1 !! "hello").getOrElse("_") should equal("swapped")
 
@@ -190,7 +190,7 @@ class SerializableTypeClassActorSpec extends
     it("should serialize and de-serialize") {
       import BinaryFormatMyActorWithSerializableMessages._
 
-      val actor1 = actorOf[MyActorWithSerializableMessages].start
+      val actor1 = actorOf[MyActorWithSerializableMessages].start()
       (actor1 ! MyMessage("hello1", ("akka", 100)))
       (actor1 ! MyMessage("hello2", ("akka", 200)))
       (actor1 ! MyMessage("hello3", ("akka", 300)))

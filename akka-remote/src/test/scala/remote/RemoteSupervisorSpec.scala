@@ -226,7 +226,7 @@ class RemotePingPong3Actor extends Actor with scala.Serializable {
     // Then create a concrete container in which we mix in support for the specific
     // implementation of the Actors we want to use.
 
-    pingpong1 = remote.actorOf[RemotePingPong1Actor](host,port).start
+    pingpong1 = remote.actorOf[RemotePingPong1Actor](host,port).start()
 
     val factory = SupervisorFactory(
       SupervisorConfig(
@@ -240,7 +240,7 @@ class RemotePingPong3Actor extends Actor with scala.Serializable {
   }
 
   def getSingleActorOneForOneSupervisor: Supervisor = {
-    pingpong1 = remote.actorOf[RemotePingPong1Actor](host,port).start
+    pingpong1 = remote.actorOf[RemotePingPong1Actor](host,port).start()
 
     val factory = SupervisorFactory(
       SupervisorConfig(
@@ -253,9 +253,9 @@ class RemotePingPong3Actor extends Actor with scala.Serializable {
   }
 
   def getMultipleActorsAllForOneConf: Supervisor = {
-    pingpong1 = remote.actorOf[RemotePingPong1Actor](host,port).start
-    pingpong2 = remote.actorOf[RemotePingPong2Actor](host,port).start
-    pingpong3 = remote.actorOf[RemotePingPong3Actor](host,port).start
+    pingpong1 = remote.actorOf[RemotePingPong1Actor](host,port).start()
+    pingpong2 = remote.actorOf[RemotePingPong2Actor](host,port).start()
+    pingpong3 = remote.actorOf[RemotePingPong3Actor](host,port).start()
 
     val factory = SupervisorFactory(
       SupervisorConfig(
@@ -276,9 +276,9 @@ class RemotePingPong3Actor extends Actor with scala.Serializable {
   }
 
   def getMultipleActorsOneForOneConf: Supervisor = {
-    pingpong1 = remote.actorOf[RemotePingPong1Actor](host,port).start
-    pingpong2 = remote.actorOf[RemotePingPong2Actor](host,port).start
-    pingpong3 = remote.actorOf[RemotePingPong3Actor](host,port).start
+    pingpong1 = remote.actorOf[RemotePingPong1Actor](host,port).start()
+    pingpong2 = remote.actorOf[RemotePingPong2Actor](host,port).start()
+    pingpong3 = remote.actorOf[RemotePingPong3Actor](host,port).start()
 
     val factory = SupervisorFactory(
       SupervisorConfig(
@@ -299,9 +299,9 @@ class RemotePingPong3Actor extends Actor with scala.Serializable {
   }
 
   def getNestedSupervisorsAllForOneConf: Supervisor = {
-    pingpong1 = remote.actorOf[RemotePingPong1Actor](host,port).start
-    pingpong2 = remote.actorOf[RemotePingPong2Actor](host,port).start
-    pingpong3 = remote.actorOf[RemotePingPong3Actor](host,port).start
+    pingpong1 = remote.actorOf[RemotePingPong1Actor](host,port).start()
+    pingpong2 = remote.actorOf[RemotePingPong2Actor](host,port).start()
+    pingpong3 = remote.actorOf[RemotePingPong3Actor](host,port).start()
 
     val factory = SupervisorFactory(
       SupervisorConfig(

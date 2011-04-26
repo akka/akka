@@ -268,15 +268,15 @@ object Deployer {
             // akka.actor.deployment.<address>.clustered.home
             // --------------------------------
             val home = clusteredConfig.getListAny("home") match {
-              case List(host: String, port: String) =>
+              case List(hostname: String, port: String) =>
                 try {
-                  Home(host, port.toInt)
+                  Home(hostname, port.toInt)
                 } catch {
                   case e: NumberFormatException =>
                     throw new ConfigurationException(
                       "Config option [" + addressPath +
                       ".clustered.home] needs to be an array on format [[\"hostname\", port]] - was [[" +
-                      host + ", " + port + "]]")
+                      hostname + ", " + port + "]]")
                 }
               case invalid => throw new ConfigurationException(
                 "Config option [" + addressPath +

@@ -95,7 +95,7 @@ abstract class MailboxSpec extends
           case e: Throwable => result.completeWithException(e)
         }
       })
-      t.start
+      t.start()
       result
     }
 
@@ -173,11 +173,7 @@ class DefaultMailboxSpec extends MailboxSpec {
 }
 
 class PriorityMailboxSpec extends MailboxSpec {
-  val comparator = new java.util.Comparator[MessageInvocation] {
-    def compare(a: MessageInvocation, b: MessageInvocation): Int  = {
-      a.## - b.##
-    }
-  }
+  val comparator = PriorityGenerator(_.##)
   lazy val name = "The priority mailbox implementation"
   def factory = {
     case UnboundedMailbox(blockDequeue) =>

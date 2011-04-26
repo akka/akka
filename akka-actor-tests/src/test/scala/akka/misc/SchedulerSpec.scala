@@ -21,8 +21,8 @@ class SchedulerSpec extends JUnitSuite {
     case object Tick
     val countDownLatch = new CountDownLatch(3)
     val tickActor = actorOf(new Actor {
-      def receive = { case Tick => countDownLatch.countDown }
-    }).start
+      def receive = { case Tick => countDownLatch.countDown() }
+    }).start()
     // run every 50 millisec
     Scheduler.schedule(tickActor, Tick, 0, 50, TimeUnit.MILLISECONDS)
 
@@ -31,7 +31,7 @@ class SchedulerSpec extends JUnitSuite {
 
     val countDownLatch2 = new CountDownLatch(3)
 
-    Scheduler.schedule( () => countDownLatch2.countDown, 0, 50, TimeUnit.MILLISECONDS)
+    Scheduler.schedule( () => countDownLatch2.countDown(), 0, 50, TimeUnit.MILLISECONDS)
 
     // after max 1 second it should be executed at least the 3 times already
     assert(countDownLatch2.await(1, TimeUnit.SECONDS))
@@ -41,11 +41,11 @@ class SchedulerSpec extends JUnitSuite {
     case object Tick
     val countDownLatch = new CountDownLatch(3)
     val tickActor = actorOf(new Actor {
-      def receive = { case Tick => countDownLatch.countDown }
-    }).start
+      def receive = { case Tick => countDownLatch.countDown() }
+    }).start()
     // run every 50 millisec
     Scheduler.scheduleOnce(tickActor, Tick, 50, TimeUnit.MILLISECONDS)
-    Scheduler.scheduleOnce( () => countDownLatch.countDown, 50, TimeUnit.MILLISECONDS)
+    Scheduler.scheduleOnce( () => countDownLatch.countDown(), 50, TimeUnit.MILLISECONDS)
 
     // after 1 second the wait should fail
     assert(countDownLatch.await(1, TimeUnit.SECONDS) == false)
@@ -76,8 +76,8 @@ class SchedulerSpec extends JUnitSuite {
     val ticks = new CountDownLatch(1)
 
     val actor = actorOf(new Actor {
-      def receive = { case Ping => ticks.countDown }
-    }).start
+      def receive = { case Ping => ticks.countDown() }
+    }).start()
 
     (1 to 10).foreach { i =>
       val future = Scheduler.scheduleOnce(actor,Ping,1,TimeUnit.SECONDS)
@@ -101,7 +101,7 @@ class SchedulerSpec extends JUnitSuite {
       self.lifeCycle = Permanent
 
       def receive = {
-        case Ping => pingLatch.countDown
+        case Ping => pingLatch.countDown()
         case Crash => throw new Exception("CRASH")
       }
 

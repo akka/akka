@@ -51,9 +51,9 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers {
   val timeout = 5 seconds
 
   def createActors = {
-    def createCounter(i: Int) = Actor.actorOf(new Counter("counter" + i)).start
+    def createCounter(i: Int) = Actor.actorOf(new Counter("counter" + i)).start()
     val counters = (1 to numCounters) map createCounter
-    val failer = Actor.actorOf(new Failer).start
+    val failer = Actor.actorOf(new Failer).start()
     (counters, failer)
   }
 
@@ -66,8 +66,8 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers {
       for (counter <- counters) {
         (counter !! GetCount).get must be === 1
       }
-      counters foreach (_.stop)
-      failer.stop
+      counters foreach (_.stop())
+      failer.stop()
     }
 
     "increment no counters with a failing transaction" in {
@@ -78,8 +78,8 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers {
       for (counter <- counters) {
         (counter !! GetCount).get must be === 0
       }
-      counters foreach (_.stop)
-      failer.stop
+      counters foreach (_.stop())
+      failer.stop()
     }
   }
 }

@@ -25,7 +25,7 @@ class Ticket434Spec extends AkkaRemoteTest {
       latch.await(1, unit) must be (true)
     }
 
-    "should be possible to set the acor id and uuuid" in {
+    "should be possible to set the actor id and uuid" in {
       val uuid = newUuid
       val actorInfo = ActorInfoProtocol.newBuilder
         .setUuid(UuidProtocol.newBuilder.setHigh(uuid.getTime).setLow(uuid.getClockSeqAndNode).build)

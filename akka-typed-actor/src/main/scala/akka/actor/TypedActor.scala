@@ -156,6 +156,34 @@ abstract class TypedActor extends Actor with Proxyable {
   def getContext: TypedActorContext = context
 
   /**
+   * User overridable callback.
+   * <p/>
+   * Is called when an Actor is started by invoking 'actor.start()'.
+   */
+  override def preStart {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called when 'actor.stop()' is invoked.
+   */
+  override def postStop {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called on a crashed Actor right BEFORE it is restarted to allow clean up of resources before Actor is terminated.
+   */
+  override def preRestart(reason: Throwable) {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
+   */
+  override def postRestart(reason: Throwable) {}
+
+  /**
    * This method is used to resolve the Future for TypedActor methods that are defined to return a
    * {@link akka.actor.dispatch.Future }.
    * <p/>
@@ -287,7 +315,7 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   private[akka] var _sender: AnyRef = _
 
   /**
-5  * Returns the uuid for the actor.
+   * Returns the uuid for the actor.
    */
   def uuid = actorRef.uuid
 
@@ -307,6 +335,9 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   def isShutdown: Boolean = actorRef.isShutdown
   def isUnstarted: Boolean = actorRef.isUnstarted
   def isBeingRestarted: Boolean = actorRef.isBeingRestarted
+
+  def getSelfAs[T <: AnyRef](): T = TypedActor.proxyFor(actorRef).get.asInstanceOf[T]
+  def getSelf(): AnyRef = getSelfAs[AnyRef]
 
   /**
    * Returns the current sender reference.
@@ -559,7 +590,7 @@ object TypedActor {
       actorRef.timeout = timeout
       if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
       AspectInitRegistry.register(proxy, AspectInit(targetClass, proxy, actorRef, remoteAddress, timeout))
-      actorRef.start
+      actorRef.start()
       proxy.asInstanceOf[T]
     }
   */
@@ -849,14 +880,20 @@ private[akka] abstract class ActorAspect {
       None) //TODO: REVISIT: Use another classloader?
 
     if (isOneWay) null // for void methods
+    else if (future.isEmpty) throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
     else if (TypedActor.returnsFuture_?(methodRtti)) future.get
+    else if (TypedActor.returnsOption_?(methodRtti)) {
+      import akka.japi.{Option => JOption}
+      future.get.await.resultOrException.as[JOption[AnyRef]] match {
+        case None => JOption.none[AnyRef]
+        case Some(x) if ((x eq null) || x.isEmpty) => JOption.some[AnyRef](null)
+        case Some(x) => x
+      }
+    }
     else {
-      if (future.isDefined) {
-        future.get.await
-        val result = future.get.resultOrException
-        if (result.isDefined) result.get
-        else throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
-      } else throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
+      val result = future.get.await.resultOrException
+      if(result.isDefined) result.get
+      else throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
     }
   }
 
@@ -906,7 +943,7 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
     val init = if (proxy ne null) initializations.remove(proxy) else null
     if (init ne null) {
       notifyListeners(AspectInitUnregistered(proxy, init))
-      init.actorRef.stop
+      init.actorRef.stop()
     }
     init
   }

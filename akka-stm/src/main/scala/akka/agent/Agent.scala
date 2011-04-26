@@ -94,7 +94,7 @@ object Agent {
  */
 class Agent[T](initialValue: T) {
   private[akka] val ref = Ref(initialValue)
-  private[akka] val updater = Actor.actorOf(new AgentUpdater(this)).start
+  private[akka] val updater = Actor.actorOf(new AgentUpdater(this)).start()
 
   /**
    * Read the internal state of the agent.
@@ -135,7 +135,7 @@ class Agent[T](initialValue: T) {
    */
   def sendOff(f: T => T): Unit = send((value: T) => {
     suspend
-    val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this)).start
+    val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this)).start()
     threadBased ! Update(f)
     value
   })
@@ -182,7 +182,7 @@ class Agent[T](initialValue: T) {
    * Closes the agents and makes it eligable for garbage collection.
    * A closed agent cannot accept any `send` actions.
    */
-  def close() = updater.stop
+  def close() = updater.stop()
 
   // ---------------------------------------------
   // Support for Java API Functions and Procedures
@@ -250,8 +250,8 @@ class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
     case update: Update[T] => {
       atomic(txFactory) { agent.ref alter update.function }
       agent.resume
-      self.stop
+      self.stop()
     }
-    case _ => self.stop
+    case _ => self.stop()
   }
 }

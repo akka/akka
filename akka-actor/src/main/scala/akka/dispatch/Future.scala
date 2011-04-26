@@ -6,7 +6,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.Actor
+import akka.actor.{Actor, Channel}
 import akka.routing.Dispatcher
 import akka.japi.{ Procedure, Function => JFunc }
 
@@ -14,7 +14,12 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent. {ConcurrentLinkedQueue, TimeUnit, Callable}
 import java.util.concurrent.TimeUnit.{NANOSECONDS => NANOS, MILLISECONDS => MILLIS}
 import java.util.concurrent.atomic. {AtomicBoolean, AtomicInteger}
-import annotation.tailrec
+import java.lang.{Iterable => JIterable}
+import java.util.{LinkedList => JLinkedList}
+
+import scala.annotation.tailrec
+import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable.Builder
 
 class FutureTimeoutException(message: String) extends AkkaException(message)
 
@@ -152,6 +157,78 @@ object Futures {
   def reduce[T <: AnyRef, R >: T](futures: java.lang.Iterable[Future[T]], timeout: Long, fun: akka.japi.Function2[R, T, T]): Future[R] =
     reduce(scala.collection.JavaConversions.iterableAsScalaIterable(futures), timeout)(fun.apply _)
 
+  /**
+   * Java API.
+   * Simple version of Futures.traverse. Transforms a java.lang.Iterable[Future[A]] into a Future[java.util.LinkedList[A]].
+   * Useful for reducing many Futures into a single Future.
+   */
+  def sequence[A](in: JIterable[Future[A]], timeout: Long): Future[JLinkedList[A]] =
+    scala.collection.JavaConversions.iterableAsScalaIterable(in).foldLeft(Future(new JLinkedList[A]()))((fr, fa) =>
+      for (r <- fr; a <- fa) yield {
+        r add a
+        r
+      })
+
+  /**
+   * Java API.
+   * Simple version of Futures.traverse. Transforms a java.lang.Iterable[Future[A]] into a Future[java.util.LinkedList[A]].
+   * Useful for reducing many Futures into a single Future.
+   */
+  def sequence[A](in: JIterable[Future[A]]): Future[JLinkedList[A]] = sequence(in, Actor.TIMEOUT)
+
+  /**
+   * Java API.
+   * Transforms a java.lang.Iterable[A] into a Future[java.util.LinkedList[B]] using the provided Function A => Future[B].
+   * This is useful for performing a parallel map. For example, to apply a function to all items of a list
+   * in parallel.
+   */
+  def traverse[A, B](in: JIterable[A], timeout: Long, fn: JFunc[A,Future[B]]): Future[JLinkedList[B]] =
+    scala.collection.JavaConversions.iterableAsScalaIterable(in).foldLeft(Future(new JLinkedList[B]())){(fr, a) =>
+      val fb = fn(a)
+      for (r <- fr; b <- fb) yield {
+        r add b
+        r
+      }
+    }
+
+  /**
+   * Java API.
+   * Transforms a java.lang.Iterable[A] into a Future[java.util.LinkedList[B]] using the provided Function A => Future[B].
+   * This is useful for performing a parallel map. For example, to apply a function to all items of a list
+   * in parallel.
+   */
+  def traverse[A, B, M[_] <: Traversable[_]](in: M[A], timeout: Long = Actor.TIMEOUT)(fn: A => Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]]): Future[M[B]] =
+    in.foldLeft(new DefaultCompletableFuture[Builder[B, M[B]]](timeout).completeWithResult(cbf(in)): Future[Builder[B, M[B]]]) { (fr, a) =>
+      val fb = fn(a.asInstanceOf[A])
+      for (r <- fr; b <-fb) yield (r += b)
+    }.map(_.result)
+}
+
+object Future {
+
+  /**
+   * This method constructs and returns a Future that will eventually hold the result of the execution of the supplied body
+   * The execution is performed by the specified Dispatcher.
+   */
+  def apply[T](body: => T, timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher): Future[T] = {
+    val f = new DefaultCompletableFuture[T](timeout)
+    dispatcher.dispatchFuture(FutureInvocation(f.asInstanceOf[CompletableFuture[Any]], () => body))
+    f
+  }
+
+  /**
+   * Construct a completable channel
+   */
+  def channel(timeout: Long = Actor.TIMEOUT) = new Channel[Any] {
+    val future = empty[Any](timeout)
+    def !(msg: Any) = future << msg
+  }
+
+  /**
+   * Create an empty Future with default timeout
+   */
+  def empty[T](timeout : Long = Actor.TIMEOUT) = new DefaultCompletableFuture[T](timeout)
+
   import scala.collection.mutable.Builder
   import scala.collection.generic.CanBuildFrom
 
@@ -175,18 +252,6 @@ object Futures {
       val fb = fn(a.asInstanceOf[A])
       for (r <- fr; b <-fb) yield (r += b)
     }.map(_.result)
-}
-
-object Future {
-  /**
-   * This method constructs and returns a Future that will eventually hold the result of the execution of the supplied body
-   * The execution is performed by the specified Dispatcher.
-   */
-  def apply[T](body: => T, timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher): Future[T] = {
-    val f = new DefaultCompletableFuture[T](timeout)
-    dispatcher.dispatchFuture(FutureInvocation(f.asInstanceOf[CompletableFuture[Any]], () => body))
-    f
-  }
 }
 
 sealed trait Future[+T] {
@@ -283,12 +348,12 @@ sealed trait Future[+T] {
   /**
    * When this Future is completed, apply the provided function to the
    * Future. If the Future has already been completed, this will apply
-   * immediatly.
+   * immediately.
    */
   def onComplete(func: Future[T] => Unit): Future[T]
 
   /**
-   * When the future is compeleted with a valid result, apply the provided
+   * When the future is completed with a valid result, apply the provided
    * PartialFunction to the result.
    * <pre>
    *   val result = future receive {
@@ -369,7 +434,7 @@ sealed trait Future[+T] {
           fa complete (try {
             Right(f(v.right.get))
           } catch {
-            case e: Exception => 
+            case e: Exception =>
               EventHandler.error(e, this, e.getMessage)
               Left(e)
           })
@@ -405,7 +470,7 @@ sealed trait Future[+T] {
           try {
             fa.completeWith(f(v.right.get))
           } catch {
-            case e: Exception => 
+            case e: Exception =>
               EventHandler.error(e, this, e.getMessage)
               fa completeWithException e
           }
@@ -435,7 +500,7 @@ sealed trait Future[+T] {
             if (p(r)) Right(r)
             else Left(new MatchError(r))
           } catch {
-            case e: Exception => 
+            case e: Exception =>
               EventHandler.error(e, this, e.getMessage)
               Left(e)
           })

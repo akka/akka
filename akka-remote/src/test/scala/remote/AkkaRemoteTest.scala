@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 object AkkaRemoteTest {
   class ReplyHandlerActor(latch: CountDownLatch, expect: String) extends Actor {
     def receive = {
-      case x: String if x == expect => latch.countDown
+      case x: String if x == expect => latch.countDown()
     }
   }
 }
@@ -52,13 +52,13 @@ class AkkaRemoteTest extends
 
   override def afterEach() {
     remote.shutdown
-    Actor.registry.local.shutdownAll
+    Actor.registry.local.shutdownAll()
     super.afterEach
   }
 
   /* Utilities */
 
-  def replyHandler(latch: CountDownLatch, expect: String) = Some(Actor.actorOf(new ReplyHandlerActor(latch, expect)).start)
+  def replyHandler(latch: CountDownLatch, expect: String) = Some(Actor.actorOf(new ReplyHandlerActor(latch, expect)).start())
 }
 
 trait NetworkFailureTest { self: WordSpec =>

@@ -25,7 +25,7 @@ object ExecutorBasedEventDrivenDispatcherActorSpec {
   class OneWayTestActor extends Actor {
     self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(self.uuid.toString).build
     def receive = {
-      case "OneWay" => OneWayTestActor.oneWay.countDown
+      case "OneWay" => OneWayTestActor.oneWay.countDown()
     }
   }
 }
@@ -35,28 +35,28 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
   private val unit = TimeUnit.MILLISECONDS
 
   @Test def shouldSendOneWay = {
-    val actor = actorOf[OneWayTestActor].start
+    val actor = actorOf[OneWayTestActor].start()
     val result = actor ! "OneWay"
     assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldSendReplySync = {
-    val actor = actorOf[TestActor].start
+    val actor = actorOf[TestActor].start()
     val result = (actor !! ("Hello", 10000)).as[String]
     assert("World" === result.get)
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldSendReplyAsync = {
-    val actor = actorOf[TestActor].start
+    val actor = actorOf[TestActor].start()
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
-    actor.stop
+    actor.stop()
   }
 
   @Test def shouldSendReceiveException = {
-    val actor = actorOf[TestActor].start
+    val actor = actorOf[TestActor].start()
     try {
       actor !! "Failure"
       fail("Should have thrown an exception")
@@ -64,7 +64,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
       case e =>
         assert("Expected exception; to test fault-tolerance" === e.getMessage())
     }
-    actor.stop
+    actor.stop()
   }
 
  @Test def shouldRespectThroughput {
@@ -80,24 +80,24 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
                    new Actor {
                      self.dispatcher = throughputDispatcher
                      def receive = { case "sabotage" => works.set(false)  }
-                   }).start
+                   }).start()
 
    val slowOne = actorOf(
                    new Actor {
                      self.dispatcher = throughputDispatcher
                      def receive = {
                        case "hogexecutor" => start.await
-                       case "ping"        => if (works.get) latch.countDown
+                       case "ping"        => if (works.get) latch.countDown()
                      }
-                   }).start
+                   }).start()
 
    slowOne ! "hogexecutor"
    (1 to 100) foreach { _ => slowOne ! "ping"}
    fastOne ! "sabotage"
-   start.countDown
+   start.countDown()
    val result = latch.await(3,TimeUnit.SECONDS)
-   fastOne.stop
-   slowOne.stop
+   fastOne.stop()
+   slowOne.stop()
    assert(result === true)
  }
 
@@ -115,24 +115,24 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
    val fastOne = actorOf(
                    new Actor {
                      self.dispatcher = throughputDispatcher
-                     def receive = { case "ping" => if(works.get) latch.countDown; self.stop  }
-                   }).start
+                     def receive = { case "ping" => if(works.get) latch.countDown(); self.stop()  }
+                   }).start()
 
    val slowOne = actorOf(
                    new Actor {
                      self.dispatcher = throughputDispatcher
                      def receive = {
-                       case "hogexecutor" => ready.countDown; start.await
-                       case "ping"        => works.set(false); self.stop
+                       case "hogexecutor" => ready.countDown(); start.await
+                       case "ping"        => works.set(false); self.stop()
                      }
-                   }).start
+                   }).start()
 
    slowOne ! "hogexecutor"
    slowOne ! "ping"
    fastOne ! "ping"
    assert(ready.await(2,TimeUnit.SECONDS) === true)
    Thread.sleep(deadlineMs+10) // wait just a bit more than the deadline
-   start.countDown
+   start.countDown()
    assert(latch.await(2,TimeUnit.SECONDS) === true)
  }
 }

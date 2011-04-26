@@ -20,11 +20,8 @@ object RemoteTypedActorLog {
 
 class RemoteTypedActorSpec extends AkkaRemoteTest {
 
-
   "RemoteModule Typed Actor " should {
-
     "have unit tests" in {
-
     }
   }
 }

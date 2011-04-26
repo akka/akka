@@ -133,13 +133,13 @@ object Actor extends ListenerManagement {
    * <pre>
    *   import Actor._
    *   val actor = actorOf[MyActor]
-   *   actor.start
+   *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf[MyActor].start
+   *   val actor = actorOf[MyActor].start()
    * </pre>
    */
   def actorOf[T <: Actor : Manifest](address: String): ActorRef =
@@ -169,13 +169,13 @@ object Actor extends ListenerManagement {
    * <pre>
    *   import Actor._
    *   val actor = actorOf(classOf[MyActor])
-   *   actor.start
+   *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(classOf[MyActor]).start
+   *   val actor = actorOf(classOf[MyActor]).start()
    * </pre>
    */
   def actorOf(clazz: Class[_ <: Actor]): ActorRef = actorOf(clazz, new UUID().toString)
@@ -218,13 +218,13 @@ object Actor extends ListenerManagement {
    * <pre>
    *   import Actor._
    *   val actor = actorOf(new MyActor)
-   *   actor.start
+   *   actor.start()
    *   actor ! message
-   *   actor.stop
+   *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(new MyActor).start
+   *   val actor = actorOf(new MyActor).start()
    * </pre>
    */
   def actorOf(factory: => Actor): ActorRef = actorOf(factory, new UUID().toString)
@@ -296,9 +296,9 @@ object Actor extends ListenerManagement {
     actorOf(new Actor() {
       self.dispatcher = dispatcher
       def receive = {
-        case Spawn => try { body } finally { self.stop }
+        case Spawn => try { body } finally { self.stop() }
       }
-    }).start ! Spawn
+    }).start() ! Spawn
   }
 
   private[akka] def newLocalActorRef(clazz: Class[_ <: Actor], address: String): ActorRef = {
@@ -411,7 +411,7 @@ trait Actor {
    * <p/>
    * For example fields like:
    * <pre>
-   * self.dispactcher = ...
+   * self.dispatcher = ...
    * self.trapExit = ...
    * self.faultHandler = ...
    * self.lifeCycle = ...
@@ -455,14 +455,14 @@ trait Actor {
   /**
    * User overridable callback.
    * <p/>
-   * Is called when an Actor is started by invoking 'actor.start'.
+   * Is called when an Actor is started by invoking 'actor.start()'.
    */
   def preStart {}
 
   /**
    * User overridable callback.
    * <p/>
-   * Is called when 'actor.stop' is invoked.
+   * Is called when 'actor.stop()' is invoked.
    */
   def postStop {}
 
@@ -506,12 +506,12 @@ trait Actor {
   }
 
   /**
-   * Changes tha Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
+   * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * Puts the behavior on top of the hotswap stack.
    * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
    */
   def become(behavior: Receive, discardOld: Boolean = true) {
-    if (discardOld) unbecome
+    if (discardOld) unbecome()
     self.hotswap = self.hotswap.push(behavior)
   }
 
@@ -543,16 +543,16 @@ trait Actor {
 
   private final def autoReceiveMessage(msg: AutoReceivedMessage): Unit = msg match {
     case HotSwap(code, discardOld) => become(code(self), discardOld)
-    case RevertHotSwap             => unbecome
+    case RevertHotSwap             => unbecome()
     case Exit(dead, reason)        => self.handleTrapExit(dead, reason)
     case Link(child)               => self.link(child)
     case Unlink(child)             => self.unlink(child)
-    case UnlinkAndStop(child)      => self.unlink(child); child.stop
+    case UnlinkAndStop(child)      => self.unlink(child); child.stop()
     case Restart(reason)           => throw reason
     case Kill                      => throw new ActorKilledException("Kill")
     case PoisonPill                =>
       val f = self.senderFuture
-      self.stop
+      self.stop()
       if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
   }
 

@@ -2,18 +2,15 @@
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.tutorial.scala.first
+package akka.tutorial.first.scala
 
-import akka.actor.{Actor, ActorRef, PoisonPill}
+import akka.actor.{Actor, PoisonPill}
 import Actor._
 import akka.routing.{Routing, CyclicIterator}
 import Routing._
-import akka.dispatch.Dispatchers
 
 import System.{currentTimeMillis => now}
 import java.util.concurrent.CountDownLatch
-
-import scala.annotation.tailrec
 
 /**
  * First part in Akka tutorial.
@@ -25,7 +22,7 @@ import scala.annotation.tailrec
  *   $ cd akka-1.1
  *   $ export AKKA_HOME=`pwd`
  *   $ scalac -cp dist/akka-actor-1.1-SNAPSHOT.jar Pi.scala
- *   $ java -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.scala.first.Pi
+ *   $ java -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.first.scala.Pi
  *   $ ...
  * </pre>
  * <p/>
@@ -34,7 +31,7 @@ import scala.annotation.tailrec
  *   $ sbt
  *   > update
  *   > console
- *   > akka.tutorial.scala.first.Pi.calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
+ *   > akka.tutorial.first.scala.Pi.calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
  *   > ...
  *   > :quit
  * </pre>
@@ -50,60 +47,49 @@ object Pi extends App {
   // ====================
   sealed trait PiMessage
   case object Calculate extends PiMessage
-  case class Work(arg: Int, nrOfElements: Int) extends PiMessage
+  case class Work(start: Int, nrOfElements: Int) extends PiMessage
   case class Result(value: Double) extends PiMessage
 
   // ==================
   // ===== Worker =====
   // ==================
   class Worker extends Actor {
-    // define the work
 
-/*
-    // FIXME tail-recursive fun instead
-    val calculatePiFor = (arg: Int, nrOfElements: Int) => {
-      val range = (arg * nrOfElements) to ((arg + 1) * nrOfElements - 1)
-      var acc = 0.0D
-      range foreach (i => acc += 4 * math.pow(-1, i) / (2 * i + 1))
+    // define the work
+    def calculatePiFor(start: Int, nrOfElements: Int): Double = {
+      var acc = 0.0
+      for (i <- start until (start + nrOfElements))
+        acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1)
       acc
-      // Use this for more functional style but is twice as slow
-      // range.foldLeft(0.0D)( (acc, i) =>  acc + 4 * math.pow(-1, i) / (2 * i + 1) )
-    }
-*/
-    def calculatePiFor(arg: Int, nrOfElements: Int): Double = {
-      val end = (arg + 1) * nrOfElements - 1
-      @tailrec def doCalculatePiFor(cursor: Int, acc: Double): Double = {
-        if (end == cursor) acc
-        else doCalculatePiFor(cursor + 1, acc + (4 * math.pow(-1, cursor) / (2 * cursor + 1)))
-      }
-      doCalculatePiFor(arg * nrOfElements, 0.0D)
     }
 
     def receive = {
-      case Work(arg, nrOfElements) =>
-        self reply Result(calculatePiFor(arg, nrOfElements)) // perform the work
+      case Work(start, nrOfElements) =>
+        self reply Result(calculatePiFor(start, nrOfElements)) // perform the work
     }
   }
 
   // ==================
   // ===== Master =====
   // ==================
-  class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch) extends Actor {
+  class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
+    extends Actor {
+
     var pi: Double = _
     var nrOfResults: Int = _
     var start: Long = _
 
     // create the workers
-    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start)
+    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
 
     // wrap them with a load-balancing router
-    val router = Routing.loadBalancerActor(CyclicIterator(workers)).start
+    val router = Routing.loadBalancerActor(CyclicIterator(workers)).start()
 
     // message handler
     def receive = {
       case Calculate =>
         // schedule work
-        for (arg <- 0 until nrOfMessages) router ! Work(arg, nrOfElements)
+        for (i <- 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
 
         // send a PoisonPill to all workers telling them to shut down themselves
         router ! Broadcast(PoisonPill)
@@ -115,15 +101,19 @@ object Pi extends App {
         // handle result from the worker
         pi += value
         nrOfResults += 1
-        if (nrOfResults == nrOfMessages) self.stop
+        if (nrOfResults == nrOfMessages) self.stop()
     }
 
-    override def preStart = start = now
+    override def preStart {
+      start = System.currentTimeMillis
+    }
 
-    override def postStop = {
+    override def postStop {
       // tell the world that the calculation is complete
-      println("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
-      latch.countDown
+      println(
+        "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
+        .format(pi, (System.currentTimeMillis - start)))
+      latch.countDown()
     }
   }
 
@@ -136,12 +126,12 @@ object Pi extends App {
     val latch = new CountDownLatch(1)
 
     // create the master
-    val master = actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start
+    val master = actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start()
 
     // start the calculation
     master ! Calculate
 
     // wait for master to shut down
-    latch.await
+    latch.await()
   }
 }

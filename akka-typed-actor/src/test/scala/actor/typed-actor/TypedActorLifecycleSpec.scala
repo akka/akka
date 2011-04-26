@@ -120,7 +120,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
           second.fail
           fail("shouldn't get here")
         } catch {
-          case r: ActorInitializationException if r.getMessage == "Actor has not been started, you need to invoke 'actor.start' before using it" => //expected
+          case r: ActorInitializationException if r.getMessage == "Actor has not been started, you need to invoke 'actor.start()' before using it" => //expected
         }
       } finally {
         conf.stop

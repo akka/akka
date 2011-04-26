@@ -12,7 +12,7 @@ import java.util.concurrent.CountDownLatch
 
 class CountDownFunction[A](num: Int = 1) extends Function1[A, A] {
   val latch = new CountDownLatch(num)
-  def apply(a: A) = { latch.countDown; a }
+  def apply(a: A) = { latch.countDown(); a }
   def await(timeout: Duration) = latch.await(timeout.length, timeout.unit)
 }
 
@@ -61,7 +61,7 @@ class AgentSpec extends WordSpec with MustMatchers {
       }
       agent send f1
       val read = agent()
-      readLatch.countDown
+      readLatch.countDown()
       agent send countDown
 
       countDown.await(5 seconds)

@@ -42,7 +42,7 @@ object ServerInitiatedRemoteActorSpec {
     def receive = {
       case Send(actor: ActorRef) =>
         actor ! "Hello"
-      case "World" => latch.countDown
+      case "World" => latch.countDown()
     }
   }
 }
@@ -73,7 +73,7 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
       val actor = remote.actorFor(
         "akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional", timeout,host, port)
       val latch = new CountDownLatch(1)
-      val sender = actorOf( new RemoteActorSpecActorAsyncSender(latch) ).start
+      val sender = actorOf( new RemoteActorSpecActorAsyncSender(latch) ).start()
       sender ! Send(actor)
       latch.await(1, TimeUnit.SECONDS) must be (true)
     }
@@ -163,7 +163,7 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
       val actor1 = actorOf[RemoteActorSpecActorUnidirectional]
       remote.register("foo", actor1)
       val latch = new CountDownLatch(1)
-      val actor2 = actorOf(new Actor { def receive = { case "Pong" => latch.countDown } }).start
+      val actor2 = actorOf(new Actor { def receive = { case "Pong" => latch.countDown() } }).start()
 
       val remoteActor = remote.actorFor("foo", host, port)
       remoteActor.!("Ping")(Some(actor2))
@@ -193,7 +193,7 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
         if (latch.await(200, TimeUnit.MILLISECONDS))
           sys.error("Test didn't complete within 100 cycles")
         else
-          latch.countDown
+          latch.countDown()
       }
 
       val decrementer = Actor.registry.local.actorFor[Decrementer]

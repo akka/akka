@@ -8,7 +8,7 @@ import akka.actor.Actor
 import Actor._
 
 /**
- * Tests the behaviour of the executor based event driven dispatcher when multiple actors are being dispatched on it.
+ * Tests the behavior of the executor based event driven dispatcher when multiple actors are being dispatched on it.
  *
  * @author Jan Van Besien
  */
@@ -18,7 +18,7 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
     def receive = {
       case x: Int => {
         Thread.sleep(50) // slow actor
-        finishedCounter.countDown
+        finishedCounter.countDown()
       }
     }
   }
@@ -26,7 +26,7 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
   class FastActor(finishedCounter: CountDownLatch) extends Actor {
     def receive = {
       case x: Int => {
-        finishedCounter.countDown
+        finishedCounter.countDown()
       }
     }
   }
@@ -52,7 +52,7 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
     assert(sFinished.getCount > 0)
     sFinished.await
     assert(sFinished.getCount === 0)
-    f.stop
-    s.stop
+    f.stop()
+    s.stop()
   }
 }

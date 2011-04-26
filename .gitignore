@@ -46,6 +46,7 @@ multiverse.log
 .eprj
 .*.swp
 akka-docs/_build/
+*.pyc
 akka-tutorials/akka-tutorial-first/project/boot/
 akka-tutorials/akka-tutorial-first/project/plugins/project/
 akka-docs/exts/

@@ -54,13 +54,13 @@ object ActorModelSpec {
       case Await(latch)     => ack; latch.await(); busy.switchOff()
       case Meet(sign, wait) => ack; sign.countDown(); wait.await(); busy.switchOff()
       case Wait(time)       => ack; Thread.sleep(time); busy.switchOff()
-      case WaitAck(time, l) => ack; Thread.sleep(time); l.countDown; busy.switchOff()
+      case WaitAck(time, l) => ack; Thread.sleep(time); l.countDown(); busy.switchOff()
       case Reply(msg)       => ack; self.reply(msg); busy.switchOff()
       case Reply_?(msg)     => ack; self.reply_?(msg); busy.switchOff()
       case Forward(to,msg)  => ack; to.forward(msg); busy.switchOff()
       case CountDown(latch) => ack; latch.countDown(); busy.switchOff()
       case Increment(count) => ack; count.incrementAndGet(); busy.switchOff()
-      case CountDownNStop(l)=> ack; l.countDown; self.stop; busy.switchOff()
+      case CountDownNStop(l)=> ack; l.countDown(); self.stop(); busy.switchOff()
       case Restart          => ack; busy.switchOff(); throw new Exception("Restart requested")
     }
   }
@@ -202,9 +202,9 @@ abstract class ActorModelSpec extends JUnitSuite {
     implicit val dispatcher = newInterceptedDispatcher
     val a = newTestActor
     assertDispatcher(dispatcher)(starts = 0, stops = 0)
-    a.start
+    a.start()
     assertDispatcher(dispatcher)(starts = 1, stops = 0)
-    a.stop
+    a.stop()
     await(dispatcher.stops.get == 1)(withinMs = dispatcher.timeoutMs * 5)
     assertDispatcher(dispatcher)(starts = 1, stops = 1)
     assertRef(a,dispatcher)(
@@ -222,7 +222,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     implicit val dispatcher = newInterceptedDispatcher
     val a = newTestActor
     val start,oneAtATime = new CountDownLatch(1)
-    a.start
+    a.start()
 
     a ! CountDown(start)
     assertCountDown(start, Testing.testTime(3000), "Should process first message within 3 seconds")
@@ -234,7 +234,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     assertCountDown(oneAtATime, Testing.testTime(1500) ,"Processed message when allowed")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 3, msgsProcessed = 3)
 
-    a.stop
+    a.stop()
     assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 3, msgsProcessed = 3)
   }
 
@@ -242,25 +242,25 @@ abstract class ActorModelSpec extends JUnitSuite {
     implicit val dispatcher = newInterceptedDispatcher
     val a = newTestActor
     val counter = new CountDownLatch(200)
-    a.start
+    a.start()
 
     def start = spawn { for (i <- 1 to 20) { a ! WaitAck(1, counter) } }
     for (i <- 1 to 10) { start }
     assertCountDown(counter, Testing.testTime(3000), "Should process 200 messages")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 200, msgsProcessed = 200)
 
-    a.stop
+    a.stop()
   }
 
   def spawn(f : => Unit) = {
     val thread = new Thread { override def run { f } }
-    thread.start
+    thread.start()
     thread
   }
 
   @Test def dispatcherShouldProcessMessagesInParallel: Unit = {
     implicit val dispatcher = newInterceptedDispatcher
-    val a, b = newTestActor.start
+    val a, b = newTestActor.start()
     val aStart,aStop,bParallel = new CountDownLatch(1)
 
     a ! Meet(aStart,aStop)
@@ -270,27 +270,27 @@ abstract class ActorModelSpec extends JUnitSuite {
     assertCountDown(bParallel, Testing.testTime(3000), "Should process other actors in parallel")
 
     aStop.countDown()
-    a.stop
-    b.stop
+    a.stop()
+    b.stop()
     assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
     assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
   }
 
   @Test def dispatcherShouldSuspendAndResumeAFailingNonSupervisedPermanentActor {
     implicit val dispatcher = newInterceptedDispatcher
-    val a = newTestActor.start
+    val a = newTestActor.start()
     val done = new CountDownLatch(1)
     a ! Restart
     a ! CountDown(done)
     assertCountDown(done, Testing.testTime(3000), "Should be suspended+resumed and done with next message within 3 seconds")
-    a.stop
+    a.stop()
     assertRefDefaultZero(a)(registers = 1,unregisters = 1, msgsReceived = 2,
       msgsProcessed = 2, suspensions = 1, resumes = 1)
   }
 
   @Test def dispatcherShouldNotProcessMessagesForASuspendedActor {
     implicit val dispatcher = newInterceptedDispatcher
-    val a = newTestActor.start
+    val a = newTestActor.start()
     val done = new CountDownLatch(1)
     dispatcher.suspend(a)
     a ! CountDown(done)
@@ -302,7 +302,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, msgsProcessed = 1,
       suspensions = 1, resumes = 1)
 
-    a.stop
+    a.stop()
     assertRefDefaultZero(a)(registers = 1,unregisters = 1, msgsReceived = 1, msgsProcessed = 1,
       suspensions = 1, resumes = 1)
   }
@@ -313,7 +313,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     def flood(num: Int) {
       val cachedMessage = CountDownNStop(new CountDownLatch(num))
       (1 to num) foreach {
-        _ => newTestActor.start ! cachedMessage
+        _ => newTestActor.start() ! cachedMessage
       }
       assertCountDown(cachedMessage.latch, Testing.testTime(10000), "Should process " + num + " countdowns")
     }

@@ -18,7 +18,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   val scalaCompileSettings =
     Seq("-deprecation",
-        "-Xmigration",
+        //"-Xmigration",
         "-optimise",
         "-encoding", "utf8")
 
@@ -116,7 +116,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.2"
   lazy val SCALATEST_VERSION     = "1.4-SNAPSHOT"
-  lazy val JETTY_VERSION         = "7.2.2.v20101205"
+  lazy val JETTY_VERSION         = "7.4.0.v20110414"
   lazy val JAVAX_SERVLET_VERSION = "3.0"
   lazy val SLF4J_VERSION         = "1.6.0"
   lazy val ZOOKEEPER_VERSION     = "3.4.0"
@@ -159,13 +159,15 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val netty = "org.jboss.netty" % "netty" % "3.2.3.Final" % "compile" //ApacheV2
 
+    lazy val osgi_core = "org.osgi" % "org.osgi.core" % "4.2.0" //ApacheV2
+
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile" //New BSD
 
-    lazy val sjson      = "net.debasishg" % "sjson_2.9.0.RC1" % "0.10" % "compile" //ApacheV2
-    lazy val sjson_test = "net.debasishg" % "sjson_2.9.0.RC1" % "0.10" % "test" //ApacheV2
+    lazy val sjson      = "net.debasishg" % "sjson_2.9.0.RC1" % "0.11" % "compile" //ApacheV2
+    lazy val sjson_test = "net.debasishg" % "sjson_2.9.0.RC1" % "0.11" % "test" //ApacheV2
 
-    lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % "1.6.0"
-    lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.24"
+    lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % SLF4J_VERSION
+    lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.28" % "runtime"
 
     lazy val log4j            = "log4j"                       % "log4j"                  % "1.2.15"
 
@@ -285,7 +287,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-actor subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with OsgiProject {
     override def bndExportPackage = super.bndExportPackage ++ Seq("com.eaio.*;version=3.2")
   }
 
@@ -313,6 +315,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     // testing
     val junit     = Dependencies.junit
     val scalatest = Dependencies.scalatest
+
+    override def deliverProjectDependencies =
+      super.deliverProjectDependencies.toList - akka_actor_tests.projectID ++ Seq(akka_actor_tests.projectID % "test")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -340,8 +345,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       if (!networkTestsEnabled.value) Seq(TestFilter(test => !test.endsWith("NetworkTest")))
       else Seq.empty
     }
-
-    override def bndImportPackage = "javax.transaction;version=1.1" :: super.bndImportPackage.toList
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -416,7 +419,15 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
+  class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+
   class AkkaSampleFSMProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+
+  class AkkaSampleOsgiProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with BNDPlugin {
+    val osgiCore = Dependencies.osgi_core
+    override protected def bndPrivatePackage = List("sample.osgi.*")
+    override protected def bndBundleActivator = Some("sample.osgi.Activator")
+  }
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
     override def disableCrossPaths = true
@@ -425,8 +436,12 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSampleAntsProject(_), akka_stm)
     lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
       new AkkaSampleFSMProject(_), akka_actor)
-//    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
-//      new AkkaSampleRemoteProject(_), akka_remote)
+    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
+      new AkkaSampleRemoteProject(_), akka_remote)
+    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
+      new AkkaSampleChatProject(_), akka_remote)
+    lazy val akka_sample_osgi = project("akka-sample-osgi", "akka-sample-osgi",
+      new AkkaSampleOsgiProject(_), akka_actor)
 
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
@@ -461,7 +476,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-testkit subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaTestkitProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
+  class AkkaTestkitProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val scalatest = Dependencies.scalatest
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-actor-tests subproject
@@ -479,7 +496,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSlf4jProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val sjson   = Dependencies.slf4j
+    val slf4j   = Dependencies.slf4j
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -512,8 +529,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   def akkaArtifacts = descendents(info.projectPath / "dist", "*-" + version + ".jar")
 
   // ------------------------------------------------------------
-  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info)
-    with DeployProject with OSGiProject with McPom {
+  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with McPom {
+
     override def disableCrossPaths = true
 
     override def compileOptions = super.compileOptions ++ scalaCompileSettings.map(CompileOption)
@@ -565,7 +582,7 @@ trait DeployProject { self: BasicScalaProject =>
   }
 }
 
-trait OSGiProject extends BNDPlugin { self: DefaultProject =>
+trait OsgiProject extends BNDPlugin { self: DefaultProject =>
   override def bndExportPackage = Seq("akka.*;version=%s".format(projectVersion.value))
 }
 

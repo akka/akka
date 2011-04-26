@@ -76,7 +76,7 @@ object SupervisorSpec {
   // =====================================================
 
   def temporaryActorAllForOne = {
-    val temporaryActor = actorOf[TemporaryActor].start
+    val temporaryActor = actorOf[TemporaryActor].start()
 
     val supervisor = Supervisor(
       SupervisorConfig(
@@ -90,7 +90,7 @@ object SupervisorSpec {
   }
 
   def singleActorAllForOne = {
-    val pingpong = actorOf[PingPongActor].start
+    val pingpong = actorOf[PingPongActor].start()
 
     val supervisor = Supervisor(
       SupervisorConfig(
@@ -104,7 +104,7 @@ object SupervisorSpec {
   }
 
   def singleActorOneForOne = {
-    val pingpong = actorOf[PingPongActor].start
+    val pingpong = actorOf[PingPongActor].start()
 
     val supervisor = Supervisor(
       SupervisorConfig(
@@ -118,9 +118,9 @@ object SupervisorSpec {
   }
 
   def multipleActorsAllForOne = {
-    val pingpong1 = actorOf[PingPongActor].start
-    val pingpong2 = actorOf[PingPongActor].start
-    val pingpong3 = actorOf[PingPongActor].start
+    val pingpong1 = actorOf[PingPongActor].start()
+    val pingpong2 = actorOf[PingPongActor].start()
+    val pingpong3 = actorOf[PingPongActor].start()
 
     val supervisor = Supervisor(
       SupervisorConfig(
@@ -142,9 +142,9 @@ object SupervisorSpec {
   }
 
   def multipleActorsOneForOne = {
-    val pingpong1 = actorOf[PingPongActor].start
-    val pingpong2 = actorOf[PingPongActor].start
-    val pingpong3 = actorOf[PingPongActor].start
+    val pingpong1 = actorOf[PingPongActor].start()
+    val pingpong2 = actorOf[PingPongActor].start()
+    val pingpong3 = actorOf[PingPongActor].start()
 
     val supervisor = Supervisor(
       SupervisorConfig(
@@ -213,7 +213,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
   "A supervisor" must {
 
     "not restart programmatically linked temporary actor" in {
-      val master = actorOf[Master].start
+      val master = actorOf[Master].start()
 
       intercept[RuntimeException] {
         master !! (Die, TimeoutMillis)

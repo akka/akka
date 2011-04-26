@@ -136,7 +136,7 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
- * ActiveRemoteClient, but otehrs could be feasible, like a PassiveRemoteClient that
+ * ActiveRemoteClient, but others could be feasible, like a PassiveRemoteClient that
  * reuses an already established connection.
  */
 abstract class RemoteClient private[akka] (
@@ -375,7 +375,7 @@ class ActiveRemoteClient private[akka] (
   //Please note that this method does _not_ remove the ARC from the NettyRemoteClientModule's map of clients
   def shutdown = runSwitch switchOff {
     notifyListeners(RemoteClientShutdown(module, remoteAddress))
-    timer.stop
+    timer.stop()
     timer = null
     openChannels.close.awaitUninterruptibly
     openChannels = null
@@ -672,7 +672,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
   private def register[Key](id: Key, actorRef: ActorRef, registry: ConcurrentHashMap[Key, ActorRef]) {
     if (_isRunning.isOn) {
       registry.put(id, actorRef) //TODO change to putIfAbsent
-      if (!actorRef.isRunning) actorRef.start
+      if (!actorRef.isRunning) actorRef.start()
     }
   }
 
@@ -915,7 +915,8 @@ class RemoteServerHandler(
     message match { // first match on system messages
       case RemoteActorSystemMessage.Stop =>
         if (UNTRUSTED_MODE) throw new SecurityException("RemoteModule server is operating is untrusted mode, can not stop the actor")
-        else actorRef.stop
+        else actorRef.stop()
+
       case _: LifeCycleMessage if (UNTRUSTED_MODE) =>
         throw new SecurityException("RemoteModule server is operating is untrusted mode, can not pass on a LifeCycleMessage to the remote actor")
 
@@ -1077,7 +1078,7 @@ class RemoteServerHandler(
             val actorRef = factory()
             actorRef.uuid = parseUuid(uuid) //FIXME is this sensible?
             sessionActors.get(channel).put(address, actorRef)
-            actorRef.start //Start it where's it's created
+            actorRef.start() //Start it where's it's created
         }
       case sessionActor => sessionActor
     }

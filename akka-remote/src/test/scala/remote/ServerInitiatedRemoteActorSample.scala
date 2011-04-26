@@ -25,7 +25,7 @@ Have fun.
 *************************************/
 
 class HelloWorldActor extends Actor {
-  self.start
+  self.start()
 
   def receive = {
     case "Hello" => self.reply("World")

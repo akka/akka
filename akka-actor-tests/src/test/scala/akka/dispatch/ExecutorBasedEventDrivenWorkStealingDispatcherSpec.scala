@@ -24,7 +24,7 @@ object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
       case x: Int => {
         Thread.sleep(delay)
         invocationCount += 1
-        finishedCounter.countDown
+        finishedCounter.countDown()
       }
     }
   }
@@ -89,17 +89,17 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     fast.actor.asInstanceOf[DelayableActor].invocationCount must be > sentToFast
     fast.actor.asInstanceOf[DelayableActor].invocationCount must be >
     (slow.actor.asInstanceOf[DelayableActor].invocationCount)
-    slow.stop
-    fast.stop
+    slow.stop()
+    fast.stop()
   }
 
   @Test def canNotUseActorsOfDifferentTypesInSameDispatcher(): Unit = {
     val first = actorOf[FirstActor]
     val second = actorOf[SecondActor]
 
-    first.start
+    first.start()
     intercept[IllegalActorStateException] {
-      second.start
+      second.start()
     }
   }
 
@@ -107,9 +107,9 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     val parent = actorOf[ParentActor]
     val child = actorOf[ChildActor]
 
-    parent.start
+    parent.start()
     intercept[IllegalActorStateException] {
-      child.start
+      child.start()
     }
   }
 }

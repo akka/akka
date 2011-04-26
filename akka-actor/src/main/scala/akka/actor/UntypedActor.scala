@@ -24,7 +24,7 @@ import akka.japi.{Creator, Procedure}
  *
  *        } else if (msg.equals("UseSender") && getContext().getSender().isDefined()) {
  *          // Reply to original sender of message using the sender reference
- *          // also passing along my own refererence (the context)
+ *          // also passing along my own reference (the context)
  *          getContext().getSender().get().sendOneWay(msg, context);
  *
  *        } else if (msg.equals("UseSenderFuture") && getContext().getSenderFuture().isDefined()) {
@@ -86,14 +86,14 @@ abstract class UntypedActor extends Actor {
   /**
    * User overridable callback.
    * <p/>
-   * Is called when an Actor is started by invoking 'actor.start'.
+   * Is called when an Actor is started by invoking 'actor.start()'.
    */
   override def preStart {}
 
   /**
    * User overridable callback.
    * <p/>
-   * Is called when 'actor.stop' is invoked.
+   * Is called when 'actor.stop()' is invoked.
    */
   override def postStop {}
 

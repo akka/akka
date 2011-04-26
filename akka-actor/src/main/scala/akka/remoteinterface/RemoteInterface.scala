@@ -20,7 +20,7 @@ trait RemoteModule {
   val UUID_PREFIX = "uuid:".intern
 
   def optimizeLocalScoped_?(): Boolean //Apply optimizations for remote operations in local scope
-  protected[akka] def notifyListeners(message: Any): Unit
+  protected[akka] def notifyListeners(message: => Any): Unit
 
   private[akka] def actors: ConcurrentHashMap[String, ActorRef]
   private[akka] def actorsByUuid: ConcurrentHashMap[String, ActorRef]
@@ -137,14 +137,14 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
 abstract class RemoteSupport extends ListenerManagement with RemoteServerModule with RemoteClientModule {
 
   lazy val eventHandler: ActorRef = {
-    val handler = Actor.actorOf[RemoteEventHandler].start
+    val handler = Actor.actorOf[RemoteEventHandler].start()
     // add the remote client and server listener that pipes the events to the event handler system
     addListener(handler)
     handler
   }
 
   def shutdown {
-    eventHandler.stop
+    eventHandler.stop()
     removeListener(eventHandler)
     this.shutdownClientModule
     this.shutdownServerModule
@@ -152,7 +152,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   }
 
   protected override def manageLifeCycleOfListeners = false
-  protected[akka] override def notifyListeners(message: Any): Unit = super.notifyListeners(message)
+  protected[akka] override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
 
   private[akka] val actors               = new ConcurrentHashMap[String, ActorRef]
   private[akka] val actorsByUuid         = new ConcurrentHashMap[String, ActorRef]

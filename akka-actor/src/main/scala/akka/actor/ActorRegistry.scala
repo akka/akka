@@ -29,7 +29,6 @@ case class ActorUnregistered(address: String, actor: ActorRef) extends ActorRegi
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-
 private[actor] final class ActorRegistry private[actor] () extends ListenerManagement {
 
   //private val isClusterEnabled = ReflectiveAccess.isClusterEnabled

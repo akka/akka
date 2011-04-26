@@ -70,23 +70,23 @@ class ActorFireForgetRequestReplySpec extends WordSpec with MustMatchers with Be
   "An Actor" must {
 
     "reply to bang message using reply" in {  
-      val replyActor = actorOf[ReplyActor].start
-      val senderActor = actorOf(new SenderActor(replyActor)).start
+      val replyActor = actorOf[ReplyActor].start()
+      val senderActor = actorOf(new SenderActor(replyActor)).start()
       senderActor ! "Init"
       state.finished.await
       state.s must be ("Reply")
     }
 
     "reply to bang message using implicit sender" in {
-      val replyActor = actorOf[ReplyActor].start
-      val senderActor = actorOf(new SenderActor(replyActor)).start
+      val replyActor = actorOf[ReplyActor].start()
+      val senderActor = actorOf(new SenderActor(replyActor)).start()
       senderActor ! "InitImplicit"
       state.finished.await
       state.s must be ("ReplyImplicit")
     }
 
     "should shutdown crashed temporary actor" in {
-      val actor = actorOf[CrashingTemporaryActor].start
+      val actor = actorOf[CrashingTemporaryActor].start()
       actor.isRunning must be (true)
       actor ! "Die"
       state.finished.await

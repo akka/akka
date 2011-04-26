@@ -63,7 +63,7 @@ import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionExcept
  * @param throughput positive integer indicates the dispatcher will only process so much messages at a time from the
  *                   mailbox, without checking the mailboxes of other actors. Zero or negative means the dispatcher
  *                   always continues until the mailbox is empty.
- *                   Larger values (or zero or negative) increase througput, smaller values increase fairness
+ *                   Larger values (or zero or negative) increase throughput, smaller values increase fairness
  */
 class ExecutorBasedEventDrivenDispatcher(
   _name: String,
@@ -229,9 +229,31 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
   }
 }
 
+object PriorityGenerator {
+  /**
+   * Creates a PriorityGenerator that uses the supplied function as priority generator
+   */
+  def apply(priorityFunction: Any => Int): PriorityGenerator = new PriorityGenerator {
+    def gen(message: Any): Int = priorityFunction(message)
+  }
+}
+
+/**
+ * A PriorityGenerator is a convenience API to create a Comparator that orders the messages of a
+ * PriorityExecutorBasedEventDrivenDispatcher
+ */
+abstract class PriorityGenerator extends java.util.Comparator[MessageInvocation] {
+  def gen(message: Any): Int
+
+  final def compare(thisMessage: MessageInvocation, thatMessage: MessageInvocation): Int =
+    gen(thisMessage.message) - gen(thatMessage.message)
+}
+
 /**
  * A version of ExecutorBasedEventDrivenDispatcher that gives all actors registered to it a priority mailbox,
  * prioritized according to the supplied comparator.
+ *
+ * The dispatcher will process the messages with the _lowest_ priority first.
  */
 class PriorityExecutorBasedEventDrivenDispatcher(
     name: String,
@@ -242,10 +264,10 @@ class PriorityExecutorBasedEventDrivenDispatcher(
     config: ThreadPoolConfig = ThreadPoolConfig()
     ) extends ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineTime, mailboxType, config) with PriorityMailbox {
 
-  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int, throughputDeadlineTime: Int, mailboxType: UnboundedMailbox) =
+  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
     this(name, comparator, throughput, throughputDeadlineTime, mailboxType,ThreadPoolConfig())  // Needed for Java API usage
 
-  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int, mailboxType: UnboundedMailbox) =
+  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int, mailboxType: MailboxType) =
     this(name, comparator, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
 
   def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int) =
@@ -258,6 +280,15 @@ class PriorityExecutorBasedEventDrivenDispatcher(
     this(name, comparator, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 }
 
+
+/**
+ * Can be used to give an ExecutorBasedEventDrivenDispatcher's actors priority-enabled mailboxes
+ *
+ * Usage:
+ * new ExecutorBasedEventDrivenDispatcher(...) with PriorityMailbox {
+ *   val comparator = ...comparator that determines mailbox priority ordering...
+ * }
+ */
 trait PriorityMailbox { self: ExecutorBasedEventDrivenDispatcher =>
   def comparator: java.util.Comparator[MessageInvocation]
 

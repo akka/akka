@@ -44,6 +44,11 @@ import akka.AkkaException
  * EventHandler.error(exception, this, message)
  * </pre>
  *
+ * Shut down the EventHandler:
+ * <pre>
+ * EventHandler.shutdown()
+ * </pre>
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object EventHandler extends ListenerManagement {
@@ -84,7 +89,7 @@ object EventHandler extends ListenerManagement {
 
   lazy val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("event:handler").build
 
-  val level: Int = config.getString("akka.event-handler-level", "DEBUG") match {
+  val level: Int = config.getString("akka.event-handler-level", "INFO") match {
     case "ERROR"   => ErrorLevel
     case "WARNING" => WarningLevel
     case "INFO"    => InfoLevel
@@ -93,10 +98,23 @@ object EventHandler extends ListenerManagement {
                         "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
   }
 
-  def notify(event: Any) { notifyListeners(event) }
+  /**
+   * Shuts down all event handler listeners including the event handle dispatcher.
+   */
+  def shutdown() = {
+    foreachListener(_.stop)
+    EventHandlerDispatcher.shutdown
+  }
 
-  def notify(event: Event) {
-    if (level >= event.level) notifyListeners(event)
+  def notify(event: Any) {
+    if (event.isInstanceOf[Event]) {
+      if (level >= event.asInstanceOf[Event].level) notifyListeners(event)
+    } else
+      notifyListeners(event)
+  }
+
+  def notify[T <: Event : ClassManifest](event: => T) {
+    if (level >= levelFor(classManifest[T].erasure.asInstanceOf[Class[_ <: Event]])) notifyListeners(event)
   }
 
   def error(cause: Throwable, instance: AnyRef, message: => String) {
@@ -139,6 +157,10 @@ object EventHandler extends ListenerManagement {
     if (level >= DebugLevel) notifyListeners(Debug(instance, message))
   }
 
+  def isInfoEnabled = level >= InfoLevel
+
+  def isDebugEnabled = level >= DebugLevel
+
   def formattedTimestamp = DateFormat.getInstance.format(new Date)
 
   def stackTraceFor(e: Throwable) = {
@@ -146,6 +168,14 @@ object EventHandler extends ListenerManagement {
     val pw = new PrintWriter(sw)
     e.printStackTrace(pw)
     sw.toString
+  }
+
+  private def levelFor(eventClass: Class[_ <: Event]) = {
+    if (eventClass.isInstanceOf[Error])        ErrorLevel
+    else if (eventClass.isInstanceOf[Warning]) WarningLevel
+    else if (eventClass.isInstanceOf[Info])    InfoLevel
+    else if (eventClass.isInstanceOf[Debug])   DebugLevel
+    else                                       DebugLevel
   }
 
   class DefaultListener extends Actor {

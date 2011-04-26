@@ -90,8 +90,8 @@ class ActorRegistrySpec extends JUnitSuite {
     record = ""
     Actor.registry.local.foreach(actor => actor !! "ping")
     assert(record === "pongpong")
-    actor1.stop
-    actor2.stop
+    actor1.stop()
+    actor2.stop()
   }
 
   @Test def shouldShutdownAllActorsInLocalActorRegistry {
@@ -130,11 +130,11 @@ class ActorRegistrySpec extends JUnitSuite {
     val barrier = new CyclicBarrier(3)
 
     def mkThread(actors: Iterable[ActorRef]) = new Thread {
-      this.start
+      this.start()
       override def run {
         barrier.await
-        actors foreach { _.start }
-        latch.countDown
+        actors foreach { _.start() }
+        latch.countDown()
       }
     }
     val a1,a2,a3 = mkTestActors

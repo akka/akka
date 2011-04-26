@@ -5,8 +5,7 @@
 package akka.util
 
 import java.util.concurrent.ConcurrentSkipListSet
-
-import akka.actor.ActorRef
+import akka.actor.{ActorInitializationException, ActorRef}
 
 /**
  * A manager for listener actors. Intended for mixin by observables.
@@ -27,7 +26,7 @@ trait ListenerManagement {
    * The <code>listener</code> is started by this method if manageLifeCycleOfListeners yields true.
    */
   def addListener(listener: ActorRef) {
-    if (manageLifeCycleOfListeners) listener.start
+    if (manageLifeCycleOfListeners) listener.start()
     listeners add listener
   }
 
@@ -37,7 +36,7 @@ trait ListenerManagement {
    */
   def removeListener(listener: ActorRef) {
     listeners remove listener
-    if (manageLifeCycleOfListeners) listener.stop
+    if (manageLifeCycleOfListeners) listener.stop()
   }
 
   /*
@@ -46,22 +45,31 @@ trait ListenerManagement {
   def hasListeners: Boolean = !listeners.isEmpty
 
   /**
-   * Checks if a specfic listener is registered.
+   * Checks if a specific listener is registered. ActorInitializationException leads to removal of listener if that
+   * one isShutdown.
    */
   def hasListener(listener: ActorRef): Boolean = listeners.contains(listener)
 
-  protected[akka] def notifyListeners(message: Any) {
+  protected[akka] def notifyListeners(message: => Any) {
     if (hasListeners) {
+      val msg = message
       val iterator = listeners.iterator
       while (iterator.hasNext) {
         val listener = iterator.next
-        if (listener.isRunning) listener ! message
+        // Uncomment if those exceptions are so frequent as to bottleneck
+        // if (listener.isShutdown) iterator.remove() else
+        try {
+          listener ! msg
+        } catch {
+          case e : ActorInitializationException =>
+            if (listener.isShutdown) iterator.remove()
+        }
       }
     }
   }
 
   /**
-   * Execute <code>f</code> with each listener as argument.
+   * Execute <code>f</code> with each listener as argument. ActorInitializationException is not handled.
    */
   protected[akka] def foreachListener(f: (ActorRef) => Unit) {
     val iterator = listeners.iterator
