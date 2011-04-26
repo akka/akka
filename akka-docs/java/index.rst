@@ -5,4 +5,5 @@ Java API
    :maxdepth: 2
 
    untyped-actors
+   typed-actors
    actor-registry
