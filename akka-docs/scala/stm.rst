@@ -1,10 +1,14 @@
 Software Transactional Memory (Scala)
 =====================================
 
+.. sidebar:: Contents
+
+   .. contents:: :local:
+   
 Module stability: **SOLID**
 
 Overview of STM
-===============
+---------------
 
 An `STM <http://en.wikipedia.org/wiki/Software_transactional_memory>`_ turns the Java heap into a transactional data set with begin/commit/rollback semantics. Very much like a regular database. It implements the first three letters in ACID; ACI:
 * Atomic
@@ -24,7 +28,7 @@ The STM is based on Transactional References (referred to as Refs). Refs are mem
 Working with immutable collections can sometimes give bad performance due to extensive copying. Scala provides so-called persistent datastructures which makes working with immutable collections fast. They are immutable but with constant time access and modification. They use structural sharing and an insert or update does not ruin the old structure, hence “persistent”. Makes working with immutable composite types fast. The persistent datastructures currently consist of a Map and Vector.
 
 Simple example
-==============
+--------------
 
 Here is a simple example of an incremental counter using STM. This shows creating a ``Ref``, a transactional reference, and then modifying it within a transaction, which is delimited by ``atomic``.
 
@@ -44,15 +48,14 @@ Here is a simple example of an incremental counter using STM. This shows creatin
   counter
   // -> 2
 
-----
 
 Ref
-===
+---
 
 Refs (transactional references) are mutable references to values and through the STM allow the safe sharing of mutable data. Refs separate identity from value. To ensure safety the value stored in a Ref should be immutable (they can of course contain refs themselves). The value referenced by a Ref can only be accessed or swapped within a transaction. If a transaction is not available, the call will be executed in its own transaction (the call will be atomic). This is a different approach than the Clojure Refs, where a missing transaction results in an error.
 
 Creating a Ref
---------------
+^^^^^^^^^^^^^^
 
 You can create a Ref with or without an initial value.
 
@@ -67,7 +70,7 @@ You can create a Ref with or without an initial value.
   val ref = Ref[Int]
 
 Accessing the value of a Ref
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Use ``get`` to access the value of a Ref. Note that if no initial value has been given then the value is initially ``null``.
 
@@ -97,7 +100,7 @@ If there is a chance that the value of a Ref is null then you can use ``opt``, w
   }
 
 Changing the value of a Ref
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To set a new value for a Ref you can use ``set`` (or equivalently ``swap``), which sets the new value and returns the old value.
 
@@ -138,7 +141,7 @@ You can also use ``alter`` which accepts a function that takes the old value and
   // -> 6
 
 Refs in for-comprehensions
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Ref is monadic and can be used in for-comprehensions.
 
@@ -174,10 +177,9 @@ Ref is monadic and can be used in for-comprehensions.
   }
   // -> Ref[Int]
 
-----
 
 Transactions
-============
+------------
 
 A transaction is delimited using ``atomic``.
 
@@ -190,24 +192,24 @@ A transaction is delimited using ``atomic``.
 All changes made to transactional objects are isolated from other changes, all make it or non make it (so failure atomicity) and are consistent. With the AkkaSTM you automatically have the Oracle version of the SERIALIZED isolation level, lower isolation is not possible. To make it fully serialized, set the writeskew property that checks if a writeskew problem is allowed to happen.
 
 Retries
--------
+^^^^^^^
 
 A transaction is automatically retried when it runs into some read or write conflict, until the operation completes, an exception (throwable) is thrown or when there are too many retries. When a read or writeconflict is encountered, the transaction uses a bounded exponential backoff to prevent cause more contention and give other transactions some room to complete.
 
 If you are using non transactional resources in an atomic block, there could be problems because a transaction can be retried. If you are using print statements or logging, it could be that they are called more than once. So you need to be prepared to deal with this. One of the possible solutions is to work with a deferred or compensating task that is executed after the transaction aborts or commits.
 
 Unexpected retries
-------------------
+^^^^^^^^^^^^^^^^^^
 
 It can happen for the first few executions that you get a few failures of execution that lead to unexpected retries, even though there is not any read or writeconflict. The cause of this is that speculative transaction configuration/selection is used. There are transactions optimized for a single transactional object, for 1..n and for n to unlimited. So based on the execution of the transaction, the system learns; it begins with a cheap one and upgrades to more expensive ones. Once it has learned, it will reuse this knowledge. It can be activated/deactivated using the speculative property on the TransactionFactory. In most cases it is best use the default value (enabled) so you get more out of performance.
 
 Coordinated transactions and Transactors
-----------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you need coordinated transactions across actors or threads then see `Transactors <transactors-scala>`_.
 
 Configuring transactions
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 It's possible to configure transactions. The ``atomic`` method can take an implicit or explicit ``TransactionFactory``, which can determine properties of the transaction. A default transaction factory is used if none is specified explicitly or there is no implicit ``TransactionFactory`` in scope.
 
@@ -311,7 +313,7 @@ Here's a similar example with an individual transaction factory for each instanc
   }
 
 Transaction lifecycle listeners
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 It's possible to have code that will only run on the successful commit of a transaction, or when a transaction aborts. You can do this by adding ``deferred`` or ``compensating`` blocks to a transaction.
 
@@ -329,7 +331,7 @@ It's possible to have code that will only run on the successful commit of a tran
   }
 
 Blocking transactions
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 You can block in a transaction until a condition is met by using an explicit ``retry``. To use ``retry`` you also need to configure the transaction to allow explicit retries.
 
@@ -383,7 +385,7 @@ Here is an example of using ``retry`` to block until an account has enough money
   transferer.stop()
 
 Alternative blocking transactions
----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can also have two alternative blocking transactions, one of which can succeed first, with ``either-orElse``.
 
@@ -434,10 +436,9 @@ You can also have two alternative blocking transactions, one of which can succee
 
   brancher.stop()
 
-----
 
 Transactional datastructures
-============================
+----------------------------
 
 Akka provides two datastructures that are managed by the STM.
 
@@ -511,14 +512,13 @@ Here is the same example using TransactionalMap:
   }
   // -> User("bill")
 
-----
 
 Persistent datastructures
-=========================
+-------------------------
 
 Akka's STM should only be used with immutable data. This can be costly if you have large datastructures and are using a naive copy-on-write. In order to make working with immutable datastructures fast enough Scala provides what are called Persistent Datastructures. There are currently two different ones:
-* HashMap (`scaladoc <http://www.scala-lang.org/api/current/scala/collection/immutable/HashMap.html>`_)
-* Vector (`scaladoc <http://www.scala-lang.org/api/current/scala/collection/immutable/Vector.html>`_)
+* HashMap (`scaladoc <http://www.scala-lang.org/api/current/scala/collection/immutable/HashMap.html>`__)
+* Vector (`scaladoc <http://www.scala-lang.org/api/current/scala/collection/immutable/Vector.html>`__)
 
 They are immutable and each update creates a completely new version but they are using clever structural sharing in order to make them almost as fast, for both read and update, as regular mutable datastructures.
 
@@ -527,10 +527,8 @@ This illustration is taken from Rich Hickey's presentation. Copyright Rich Hicke
 .. image:: http://eclipsesource.com/blogs/wp-content/uploads/2009/12/clojure-trees.png
 
 
-----
-
 JTA integration
-===============
+---------------
 
 The STM has JTA (Java Transaction API) integration. This means that it will, if enabled, hook in to JTA and start a JTA transaction when the STM transaction is started. It will also rollback the STM transaction if the JTA transaction has failed and vice versa. This does not mean that the STM is made durable, if you need that you should use one of the `persistence modules <persistence>`_. It simply means that the STM will participate and interact with and external JTA provider, for example send a message using JMS atomically within an STM transaction, or use Hibernate to persist STM managed data etc.
 
@@ -556,9 +554,8 @@ You also have to configure which JTA provider to use etc in the 'jta' config sec
       timeout = 60
     }
 
-----
 
 Ants simulation sample
-======================
+----------------------
 
 One fun and very enlightening visual demo of STM, actors and transactional references is the `Ant simulation sample <http://github.com/jboner/akka/tree/master/akka-samples/akka-sample-ants/>`_. I encourage you to run it and read through the code since it's a good example of using actors with STM.
