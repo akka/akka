@@ -1,0 +1,61 @@
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
+option java_package = "akka.cloud.cluster";
+option optimize_for = SPEED;
+
+/******************************************
+  Compile with:
+  cd ./akka-cloud-cluster/src/main/protocol
+  protoc ClusterProtocol.proto --java_out ../java
+*******************************************/
+
+/**
+ * Defines the remote daemon message.
+ */
+message RemoteDaemonMessageProtocol {
+  required RemoteDaemonMessageType messageType = 1;
+  optional UuidProtocol actorUuid = 2;
+  optional string actorId = 3;
+  optional string actorClassName = 4;
+  optional bytes payload = 5;
+}
+
+/**
+ * Defines the remote daemon message type.
+ */
+enum RemoteDaemonMessageType {
+  START = 1;
+  STOP = 2;
+  USE = 3;
+  RELEASE = 4;
+  MAKE_AVAILABLE = 5;
+  MAKE_UNAVAILABLE = 6;
+  DISCONNECT = 7;
+  RECONNECT = 8;
+  RESIGN = 9;
+  FAIL_OVER_CONNECTIONS = 10;
+  FUNCTION_FUN0_UNIT = 11;
+  FUNCTION_FUN0_ANY = 12;
+  FUNCTION_FUN1_ARG_UNIT = 13;
+  FUNCTION_FUN1_ARG_ANY = 14;
+}
+
+/**
+ * Defines the durable mailbox message.
+ */
+message DurableMailboxMessageProtocol {
+  required string ownerActorId = 1;
+  optional string senderActorId = 2;
+  optional UuidProtocol futureUuid = 3;
+  required bytes message = 4;
+}
+
+/**
+ * Defines a UUID.
+ */
+message UuidProtocol {
+  required uint64 high = 1;
+  required uint64 low = 2;
+}
