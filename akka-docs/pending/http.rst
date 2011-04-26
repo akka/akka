@@ -138,12 +138,12 @@ If you want to use akka-camel or any other modules that have their own "Bootable
 Java API: Typed Actors
 ----------------------
 
-`Sample module for REST services with Actors in Java <https://github.com/jboner/akka-modules/tree/master/akka-samples/akka-sample-rest-java/src/main/java/sample/rest/java>`_
+`Sample module for REST services with Actors in Java <https://github.com/jboner/akka-modules/tree/v1.0/akka-samples/akka-sample-rest-java/src/main/java/sample/rest/java>`_
 
 Scala API: Actors
 -----------------
 
-`Sample module for REST services with Actors in Scala <https://github.com/jboner/akka-modules/blob/master/akka-samples/akka-sample-rest-scala/src/main/scala/SimpleService.scala>`_
+`Sample module for REST services with Actors in Scala <https://github.com/jboner/akka-modules/blob/v1.0/akka-samples/akka-sample-rest-scala/src/main/scala/SimpleService.scala>`_
 
 Using Akka with the Pinky REST/MVC framework
 --------------------------------------------
