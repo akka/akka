@@ -500,7 +500,29 @@ class FutureSpec extends JUnitSuite {
     assert(result2.get === 50)
   }
 
-  @Test def futureDataFlowShouldEmulateBlocking {
+  @Test def futureDataFlowShouldEmulateBlocking1 {
+    import Future.flow
+
+    val one, two = new DefaultCompletableFuture[Int](1000 * 60)
+    val simpleResult = flow {
+      one() + two()
+    }
+
+    assert(List(one, two, simpleResult).forall(_.isCompleted == false))
+
+    one << 1
+
+    assert(one.isCompleted)
+    assert(List(two, simpleResult).forall(_.isCompleted == false))
+
+    two << 9
+
+    assert(List(one, two).forall(_.isCompleted == true))
+    assert(simpleResult.await.result.get === 10)
+
+  }
+
+  @Test def futureDataFlowShouldEmulateBlocking2 {
     import Future.flow
     val x1, x2, y1, y2 = new DefaultCompletableFuture[Int](1000 * 60)
     val lx, ly, lz = new StandardLatch
