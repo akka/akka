@@ -368,14 +368,14 @@ trait Actor {
    * <p/>
    * Is called when an Actor is started by invoking 'actor.start()'.
    */
-  def preStart {}
+  def preStart() {}
 
   /**
    * User overridable callback.
    * <p/>
    * Is called when 'actor.stop()' is invoked.
    */
-  def postStop {}
+  def postStop() {}
 
   /**
    * User overridable callback.
