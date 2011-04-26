@@ -5,5 +5,6 @@ Scala API
    :maxdepth: 2
 
    actors
+   actor-registry
    fsm
    testing
