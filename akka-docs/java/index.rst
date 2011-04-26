@@ -7,3 +7,4 @@ Java API
    untyped-actors
    typed-actors
    actor-registry
+   dispatchers
