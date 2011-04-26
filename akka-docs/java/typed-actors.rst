@@ -175,7 +175,7 @@ Here is an example how you can use it to in a 'void' (e.g. fire-forget) method t
     }
   }
 
-If the sender, sender future etc. is not available, then these methods will return 'null' so you should have a way of dealing with scenario.
+If the sender, sender future etc. is not available, then these methods will return 'null' so you should have a way of dealing with that scenario.
 
 Messages and immutability
 -------------------------
