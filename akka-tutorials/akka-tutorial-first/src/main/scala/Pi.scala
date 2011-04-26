@@ -104,11 +104,11 @@ object Pi extends App {
         if (nrOfResults == nrOfMessages) self.stop()
     }
 
-    override def preStart {
+    override def preStart() {
       start = System.currentTimeMillis
     }
 
-    override def postStop {
+    override def postStop() {
       // tell the world that the calculation is complete
       println(
         "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"

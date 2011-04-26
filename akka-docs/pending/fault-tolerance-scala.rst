@@ -316,7 +316,7 @@ Supervised actors have the option to reply to the initial sender within preResta
       self.reply_?(reason.getMessage)
     }
 
-    override def postStop {
+    override def postStop() {
       self.reply_?("stopped by supervisor")
     }
   }

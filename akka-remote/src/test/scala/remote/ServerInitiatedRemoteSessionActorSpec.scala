@@ -19,8 +19,8 @@ object ServerInitiatedRemoteSessionActorSpec {
 
   class RemoteStatefullSessionActorSpec extends Actor {
 
-    override def preStart = instantiatedSessionActors.add(self)
-    override def postStop = instantiatedSessionActors.remove(self)
+    override def preStart() = instantiatedSessionActors.add(self)
+    override def postStop() = instantiatedSessionActors.remove(self)
     var user: String = "anonymous"
 
     def receive = {
