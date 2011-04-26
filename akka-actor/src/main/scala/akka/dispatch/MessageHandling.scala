@@ -5,11 +5,10 @@
 package akka.dispatch
 
 import java.util.concurrent._
-import atomic. {AtomicInteger, AtomicBoolean, AtomicReference, AtomicLong}
 import akka.event.EventHandler
 import akka.config.Configuration
 import akka.config.Config.TIME_UNIT
-import akka.util.{Duration, Switch, ReentrantGuard, HashCode, ReflectiveAccess}
+import akka.util.{Duration, Switch, ReentrantGuard}
 import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy}
 import akka.actor._
 
