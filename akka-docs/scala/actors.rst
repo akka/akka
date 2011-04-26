@@ -26,6 +26,9 @@ Here is an example:
 
 .. code-block:: scala
 
+  import akka.actor.Actor
+  import akka.event.EventHandler
+  
   class MyActor extends Actor {
     def receive = {
       case "test" => EventHandler.info(this, "received test")

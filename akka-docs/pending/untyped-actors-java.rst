@@ -16,6 +16,9 @@ Here is an example:
 
 .. code-block:: java
 
+  import akka.actor.UntypedActor;
+  import akka.event.EventHandler;
+
   public class SampleUntypedActor extends UntypedActor {
 
     public void onReceive(Object message) throws Exception {
