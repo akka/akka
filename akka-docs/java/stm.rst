@@ -524,7 +524,7 @@ They are immutable and each update creates a completely new version but they are
 
 This illustration is taken from Rich Hickey's presentation. Copyright Rich Hickey 2009.
 
-.. image:: http://eclipsesource.com/blogs/wp-content/uploads/2009/12/clojure-trees.png
+.. image:: ../images/clojure-trees.png
 
 
 JTA integration

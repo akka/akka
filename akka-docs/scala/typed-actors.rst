@@ -70,6 +70,7 @@ Configuration factory class
 Using a configuration object:
 
 .. code-block:: scala
+
   import akka.actor.TypedActorConfiguration
   import akka.util.Duration
   import akka.util.duration._

@@ -13,7 +13,7 @@ extensions = ['sphinx.ext.todo', 'includecode']
 templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
-exclude_patterns = ['_build', 'pending']
+exclude_patterns = ['_build', 'pending', 'disabled']
 
 project = u'Akka'
 copyright = u'2009-2011, Scalable Solutions AB'
