@@ -161,7 +161,7 @@ object Actor extends ListenerManagement {
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
     createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
       throw new ActorInitializationException(
-        "Could not instantiate Actor" +
+        "Could not instantiate Actor of " + clazz +
         "\nMake sure Actor is NOT defined inside a class/trait," +
         "\nif so put it outside the class/trait, f.e. in a companion object," +
         "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
