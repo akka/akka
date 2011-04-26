@@ -8,6 +8,7 @@ Scala API
    typed-actors
    actor-registry
    agents
+   stm
    dispatchers
    fsm
    testing
