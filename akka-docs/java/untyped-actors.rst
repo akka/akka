@@ -1,7 +1,5 @@
-Actors (Java)
-=============
-
-=
+Actors
+======
 
 Module stability: **SOLID**
 
@@ -412,8 +410,9 @@ Actor life-cycle
 
 The actor has a well-defined non-circular life-cycle.
 
-`<code>`_
-NEW (newly created actor) - can't receive messages (yet)
-    => STARTED (when 'start' is invoked) - can receive messages
-        => SHUT DOWN (when 'exit' or 'stop' is invoked) - can't do anything
-`<code>`_
+::
+
+  NEW (newly created actor) - can't receive messages (yet)
+      => STARTED (when 'start' is invoked) - can receive messages
+          => SHUT DOWN (when 'exit' or 'stop' is invoked) - can't do anything
+
