@@ -19,11 +19,5 @@ class OptimizedLocalScopedSpec extends AkkaRemoteTest {
 
       remote.actorFor("foo", host, port) must be (fooActor)
     }
-
-    "Create local actor when client-managed is hosted locally" in {
-      val localClientManaged = Actor.remote.actorOf[TestActor](host, port)
-      localClientManaged.homeAddress must be (None)
-    }
-
   }
 }

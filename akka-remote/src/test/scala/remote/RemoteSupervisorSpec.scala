@@ -69,7 +69,7 @@ class RemotePingPong3Actor extends Actor with Serializable {
   }
 }
 
-class RemoteSupervisorSpec extends AkkaRemoteTest {
+/*class RemoteSupervisorSpec extends AkkaRemoteTest {
 
   var pingpong1: ActorRef = _
   var pingpong2: ActorRef = _
@@ -324,7 +324,6 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
     factory.newInstance
   }
 
-  /*
   // Uncomment when the same test passes in SupervisorSpec - pending bug
   @Test def shouldKillMultipleActorsOneForOne2 = {
     clearMessageLogs
@@ -338,9 +337,7 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
-*/
 
-  /*
 
   @Test def shouldOneWayKillSingleActorOneForOne = {
     clearMessageLogs
@@ -435,6 +432,4 @@ class RemoteSupervisorSpec extends AkkaRemoteTest {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
-   */
-
-}
+}*/

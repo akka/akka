@@ -14,7 +14,7 @@
 
   /******************************************************************************
   Akka Chat Client/Server Sample Application
-  
+
   How to run the sample:
 
   1. Fire up two shells. For each of them:
@@ -149,7 +149,7 @@
 
     protected def chatManagement: Receive = {
       case msg @ ChatMessage(from, _) => getSession(from).foreach(_ ! msg)
-      case msg @ GetChatLog(from) =>     getSession(from).foreach(_ forward msg)
+      case msg @ GetChatLog(from)     => getSession(from).foreach(_ forward msg)
     }
 
     private def getSession(from: String) : Option[ActorRef] = {
@@ -166,7 +166,7 @@
    * Creates and links a MemoryChatStorage.
    */
   trait MemoryChatStorageFactory { this: Actor =>
-    val storage = this.self.spawnLink[MemoryChatStorage] // starts and links ChatStorage
+    val storage = this.self.startLink(actorOf[MemoryChatStorage]) // starts and links ChatStorage
   }
 
   /**

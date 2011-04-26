@@ -74,7 +74,7 @@ class Configuration(val map: Map[String, Any]) {
 
   def getAny(key: String, defaultValue: Any): Any = getAny(key).getOrElse(defaultValue)
 
-  def getSeqAny(key: String): Seq[Any] = {
+  def getListAny(key: String): Seq[Any] = {
     try {
       map(key).asInstanceOf[Seq[Any]]
     } catch {

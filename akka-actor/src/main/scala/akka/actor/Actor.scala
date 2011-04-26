@@ -165,7 +165,7 @@ object Actor extends ListenerManagement {
         "\nMake sure Actor is NOT defined inside a class/trait," +
         "\nif so put it outside the class/trait, f.e. in a companion object," +
         "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
-  }, None)
+  })
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -185,7 +185,7 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf(new MyActor).start()
    * </pre>
    */
-  def actorOf(factory: => Actor): ActorRef = new LocalActorRef(() => factory, None)
+  def actorOf(factory: => Actor): ActorRef = new LocalActorRef(() => factory)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
@@ -195,7 +195,7 @@ object Actor extends ListenerManagement {
    * This function should <b>NOT</b> be used for remote actors.
    * JAVA API
    */
-  def actorOf(creator: Creator[Actor]): ActorRef = new LocalActorRef(() => creator.create, None)
+  def actorOf(creator: Creator[Actor]): ActorRef = new LocalActorRef(() => creator.create)
 
   /**
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
@@ -245,8 +245,7 @@ object Actor extends ListenerManagement {
  * <p/>
  * Here you find functions like:
  *   - !, !!, !!! and forward
- *   - link, unlink, startLink, spawnLink etc
- *   - makeRemote etc.
+ *   - link, unlink, startLink etc
  *   - start, stop
  *   - etc.
  *
@@ -269,7 +268,6 @@ object Actor extends ListenerManagement {
  *   import self._
  *   id = ...
  *   dispatcher = ...
- *   spawnLink[OtherActor]
  *   ...
  * }
  * </pre>

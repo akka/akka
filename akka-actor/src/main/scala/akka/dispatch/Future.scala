@@ -16,7 +16,10 @@ import java.util.concurrent.TimeUnit.{NANOSECONDS => NANOS, MILLISECONDS => MILL
 import java.util.concurrent.atomic. {AtomicBoolean, AtomicInteger}
 import java.lang.{Iterable => JIterable}
 import java.util.{LinkedList => JLinkedList}
-import annotation.tailrec
+
+import scala.annotation.tailrec
+import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable.Builder
 
 class FutureTimeoutException(message: String) extends AkkaException(message)
 
@@ -194,37 +197,11 @@ object Futures {
    * This is useful for performing a parallel map. For example, to apply a function to all items of a list
    * in parallel.
    */
-  def traverse[A, B](in: JIterable[A], fn: JFunc[A,Future[B]]): Future[JLinkedList[B]] = traverse(in, Actor.TIMEOUT, fn)
-
-  // =====================================
-  // Deprecations
-  // =====================================
-  
-  /**
-   * (Blocking!)
-   */
-  @deprecated("Will be removed after 1.1, if you must block, use: futures.foreach(_.await)")
-  def awaitAll(futures: List[Future[_]]): Unit = futures.foreach(_.await)
-
-  /**
-   *  Returns the First Future that is completed (blocking!)
-   */
-  @deprecated("Will be removed after 1.1, if you must block, use: firstCompletedOf(futures).await")
-  def awaitOne(futures: List[Future[_]], timeout: Long = Long.MaxValue): Future[_] = firstCompletedOf[Any](futures, timeout).await
-
-
-  /**
-   * Applies the supplied function to the specified collection of Futures after awaiting each future to be completed
-   */
-  @deprecated("Will be removed after 1.1, if you must block, use: futures map { f => fun(f.await) }")
-  def awaitMap[A,B](in: Traversable[Future[A]])(fun: (Future[A]) => B): Traversable[B] =
-    in map { f => fun(f.await) }
-
-  /**
-   * Returns Future.resultOrException of the first completed of the 2 Futures provided (blocking!)
-   */
-  @deprecated("Will be removed after 1.1, if you must block, use: firstCompletedOf(List(f1,f2)).await.resultOrException")
-  def awaitEither[T](f1: Future[T], f2: Future[T]): Option[T] = firstCompletedOf[T](List(f1,f2)).await.resultOrException
+  def traverse[A, B, M[_] <: Traversable[_]](in: M[A], timeout: Long = Actor.TIMEOUT)(fn: A => Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]]): Future[M[B]] =
+    in.foldLeft(new DefaultCompletableFuture[Builder[B, M[B]]](timeout).completeWithResult(cbf(in)): Future[Builder[B, M[B]]]) { (fr, a) =>
+      val fb = fn(a.asInstanceOf[A])
+      for (r <- fr; b <-fb) yield (r += b)
+    }.map(_.result)
 }
 
 object Future {
@@ -456,7 +433,7 @@ sealed trait Future[+T] {
           fa complete (try {
             Right(f(v.right.get))
           } catch {
-            case e: Exception => 
+            case e: Exception =>
               EventHandler.error(e, this, e.getMessage)
               Left(e)
           })
@@ -492,7 +469,7 @@ sealed trait Future[+T] {
           try {
             fa.completeWith(f(v.right.get))
           } catch {
-            case e: Exception => 
+            case e: Exception =>
               EventHandler.error(e, this, e.getMessage)
               fa completeWithException e
           }
@@ -522,7 +499,7 @@ sealed trait Future[+T] {
             if (p(r)) Right(r)
             else Left(new MatchError(r))
           } catch {
-            case e: Exception => 
+            case e: Exception =>
               EventHandler.error(e, this, e.getMessage)
               Left(e)
           })

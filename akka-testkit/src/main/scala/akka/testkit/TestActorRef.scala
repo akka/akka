@@ -13,7 +13,7 @@ import akka.event.EventHandler
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestActorRef[T <: Actor](factory: () => T) extends LocalActorRef(factory, None) {
+class TestActorRef[T <: Actor](factory: () => T) extends LocalActorRef(factory) {
 
   dispatcher = CallingThreadDispatcher.global
   receiveTimeout = None
