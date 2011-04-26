@@ -616,6 +616,9 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   private var _value: Option[Either[Throwable, T]] = None
   private var _listeners: List[Future[T] => Unit] = Nil
 
+  /**
+   * Must be called inside _lock.lock<->_lock.unlock
+   */
   @tailrec
   private def awaitUnsafe(wait: Long): Boolean = {
     if (_value.isEmpty && wait > 0) {
@@ -635,7 +638,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   def awaitValue: Option[Either[Throwable, T]] = {
     _lock.lock
     try {
-      awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos))
+      awaitUnsafe(timeLeft())
       _value
     } finally {
       _lock.unlock
@@ -645,7 +648,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   def valueWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]] = {
     _lock.lock
     try {
-      awaitUnsafe(unit.toNanos(time).min(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)))
+      awaitUnsafe(unit toNanos time min timeLeft())
       _value
     } finally {
       _lock.unlock
@@ -654,7 +657,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
 
   def await = {
     _lock.lock
-    if (try { awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)) } finally { _lock.unlock }) this
+    if (try { awaitUnsafe(timeLeft()) } finally { _lock.unlock }) this
     else throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(timeoutInNanos) + "] milliseconds")
   }
 
@@ -670,7 +673,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     }
   }
 
-  def isExpired: Boolean = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos) <= 0
+  def isExpired: Boolean = timeLeft() <= 0
 
   def value: Option[Either[Throwable, T]] = {
     _lock.lock
@@ -725,7 +728,8 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     }
   }
 
-  private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis)
+  @inline private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis)
+  @inline private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
 }
 
 /**
