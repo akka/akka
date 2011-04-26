@@ -1,6 +1,10 @@
 Dispatchers (Java)
 ==================
 
+.. sidebar:: Contents
+
+   .. contents:: :local:
+   
 Module stability: **SOLID**
 
 The Dispatcher is an important piece that allows you to configure the right semantics and parameters for optimal performance, throughput and scalability. Different Actors have different needs.
@@ -128,7 +132,7 @@ If you don't define a the 'throughput' option in the configuration file then the
 Browse the `ScalaDoc <scaladoc>`_ or look at the code for all the options available.
 
 Priority event-based
-^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 Sometimes it's useful to be able to specify priority order of messages, that is done by using PriorityExecutorBasedEventDrivenDispatcher and supply
 a java.util.Comparator[MessageInvocation] or use a akka.dispatch.PriorityGenerator (recommended):
@@ -137,7 +141,7 @@ Creating a PriorityExecutorBasedEventDrivenDispatcher using PriorityGenerator:
 
 .. code-block:: java
 
-  package some.package;
+  package some.pkg;
   
   import akka.actor.*;
   import akka.dispatch.*;
@@ -249,13 +253,14 @@ For the 'ExecutorBasedEventDrivenDispatcher' and the 'ExecutorBasedWorkStealingD
 For the 'ThreadBasedDispatcher', it is non-shareable between actors, and associates a dedicated Thread with the actor.
 Making it bounded (by specifying a capacity) is optional, but if you do, you need to provide a pushTimeout (default is 10 seconds). When trying to send a message to the Actor it will throw a MessageQueueAppendFailedException("BlockingMessageTransferQueue transfer timed out") if the message cannot be added to the mailbox within the time specified by the pushTimeout.
 
-`<code format="java">`_
-class MyActor extends UntypedActor {
-  public MyActor() {
-    int mailboxCapacity = 100;
-    Duration pushTimeout = new FiniteDuration(10, TimeUnit.SECONDS);
-    getContext().setDispatcher(Dispatchers.newThreadBasedDispatcher(getContext(), mailboxCapacity, pushTimeout));
+.. code-block:: java
+
+  class MyActor extends UntypedActor {
+    public MyActor() {
+      int mailboxCapacity = 100;
+      Duration pushTimeout = new FiniteDuration(10, TimeUnit.SECONDS);
+      getContext().setDispatcher(Dispatchers.newThreadBasedDispatcher(getContext(), mailboxCapacity, pushTimeout));
+    }
+     ...
   }
-   ...
-}
-`<code>`_
+
