@@ -299,7 +299,12 @@ sealed trait Future[+T] {
   def apply[A >: T](): A @cps[Future[Any]] = shift(this flatMap _)
 
   /**
-   * Java API for apply()
+   * Blocks awaiting completion of this Future, then returns the resulting value,
+   * or throws the completed exception
+   *
+   * Scala & Java API
+   *
+   * throws FutureTimeoutException if this Future times out when waiting for completion
    */
   def get: T = this.await.resultOrException.get
 
