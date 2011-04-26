@@ -12,7 +12,8 @@ You can configure which event handlers should be registered at boot time. That i
 .. code-block:: ruby
 
   akka {
-    event-handlers = ["akka.event.EventHandler$DefaultListener"] # event handlers to register at boot time (EventHandler$DefaultListener logs to STDOUT)
+    # event handlers to register at boot time (EventHandler$DefaultListener logs to STDOUT)
+    event-handlers = ["akka.event.EventHandler$DefaultListener"]
     event-handler-level = "DEBUG" # Options: ERROR, WARNING, INFO, DEBUG
   }
 
@@ -88,9 +89,10 @@ The methods take a call-by-name parameter for the message to avoid object alloca
 
 From Java you need to nest the call in an if statement to achieve the same thing.
 
-`<code format="scala">`_
-if (EventHandler.isDebugEnabled()) {
-  EventHandler.debug(this, String.format("Processing took %s ms", duration));
-}
+.. code-block:: java
 
-`<code>`_
+  if (EventHandler.isDebugEnabled()) {
+    EventHandler.debug(this, String.format("Processing took %s ms", duration));
+  }
+
+
