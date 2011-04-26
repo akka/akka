@@ -187,6 +187,20 @@ A transaction is delimited using ``atomic``.
     // ...
   }
 
+All changes made to transactional objects are isolated from other changes, all make it or non make it (so failure atomicity) and are consistent. With the AkkaSTM you automatically have the Oracle version of the SERIALIZED isolation level, lower isolation is not possible. To make it fully serialized, set the writeskew property that checks if a writeskew problem is allowed to happen.
+
+Retries
+-------
+
+A transaction is automatically retried when it runs into some read or write conflict, until the operation completes, an exception (throwable) is thrown or when there are too many retries. When a read or writeconflict is encountered, the transaction uses a bounded exponential backoff to prevent cause more contention and give other transactions some room to complete.
+
+If you are using non transactional resources in an atomic block, there could be problems because a transaction can be retried. If you are using print statements or logging, it could be that they are called more than once. So you need to be prepared to deal with this. One of the possible solutions is to work with a deferred or compensating task that is executed after the transaction aborts or commits.
+
+Unexpected retries
+------------------
+
+It can happen for the first few executions that you get a few failures of execution that lead to unexpected retries, even though there is not any read or writeconflict. The cause of this is that speculative transaction configuration/selection is used. There are transactions optimized for a single transactional object, for 1..n and for n to unlimited. So based on the execution of the transaction, the system learns; it begins with a cheap one and upgrades to more expensive ones. Once it has learned, it will reuse this knowledge. It can be activated/deactivated using the speculative property on the TransactionFactory. In most cases it is best use the default value (enabled) so you get more out of performance.
+
 Coordinated transactions and Transactors
 ----------------------------------------
 
@@ -222,33 +236,36 @@ Configuring transactions with an **explicit** ``TransactionFactory``:
   }
 
 The following settings are possible on a TransactionFactory:
-* familyName - Family name for transactions. Useful for debugging.
-* readonly - Sets transaction as readonly. Readonly transactions are cheaper.
-* maxRetries - The maximum number of times a transaction will retry.
-* timeout - The maximum time a transaction will block for.
-* trackReads - Whether all reads should be tracked. Needed for blocking operations.
-* writeSkew - Whether writeskew is allowed. Disable with care.
-* blockingAllowed - Whether explicit retries are allowed.
-* interruptible - Whether a blocking transaction can be interrupted.
-* speculative - Whether speculative configuration should be enabled.
-* quickRelease - Whether locks should be released as quickly as possible (before whole commit).
-* propagation - For controlling how nested transactions behave.
-* traceLevel - Transaction trace level.
+
+- familyName - Family name for transactions. Useful for debugging.
+- readonly - Sets transaction as readonly. Readonly transactions are cheaper.
+- maxRetries - The maximum number of times a transaction will retry.
+- timeout - The maximum time a transaction will block for.
+- trackReads - Whether all reads should be tracked. Needed for blocking operations.
+- writeSkew - Whether writeskew is allowed. Disable with care.
+- blockingAllowed - Whether explicit retries are allowed.
+- interruptible - Whether a blocking transaction can be interrupted.
+- speculative - Whether speculative configuration should be enabled.
+- quickRelease - Whether locks should be released as quickly as possible (before whole commit).
+- propagation - For controlling how nested transactions behave.
+- traceLevel - Transaction trace level.
 
 You can also specify the default values for some of these options in akka.conf. Here they are with their default values:
 
 ::
 
   stm {
-    max-retries = 1000
-    timeout = 10
-    write-skew = true
+    fair             = on     # Should global transactions be fair or non-fair (non fair yield better performance)
+    max-retries      = 1000
+    timeout          = 5      # Default timeout for blocking transactions and transaction set (in unit defined by
+                              #     the time-unit property)
+    write-skew       = true
     blocking-allowed = false
-    interruptible = false
-    speculative = true
-    quick-release = true
-    propagation = requires
-    trace-level = none
+    interruptible    = false
+    speculative      = true
+    quick-release    = true
+    propagation      = "requires"
+    trace-level      = "none"
   }
 
 You can also determine at which level a transaction factory is shared or not shared, which affects the way in which the STM can optimise transactions.
@@ -323,23 +340,23 @@ Here is an example of using ``retry`` to block until an account has enough money
   import akka.stm._
   import akka.actor._
   import akka.util.duration._
-  import akka.util.Logging
+  import akka.event.EventHandler
 
   type Account = Ref[Double]
 
   case class Transfer(from: Account, to: Account, amount: Double)
 
-  class Transferer extends Actor with Logging {
+  class Transferer extends Actor {
     implicit val txFactory = TransactionFactory(blockingAllowed = true, trackReads = true, timeout = 60 seconds)
 
     def receive = {
       case Transfer(from, to, amount) =>
         atomic {
           if (from.get < amount) {
-            log.info("not enough money - retrying")
+            EventHandler.info(this, "not enough money - retrying")
             retry
           }
-          log.info("transferring")
+          EventHandler.info(this, "transferring")
           from alter (_ - amount)
           to alter (_ + amount)
         }
@@ -375,11 +392,11 @@ You can also have two alternative blocking transactions, one of which can succee
   import akka.stm._
   import akka.actor._
   import akka.util.duration._
-  import akka.util.Logging
+  import akka.event.EventHandler
 
   case class Branch(left: Ref[Int], right: Ref[Int], amount: Int)
 
-  class Brancher extends Actor with Logging {
+  class Brancher extends Actor {
     implicit val txFactory = TransactionFactory(blockingAllowed = true, trackReads = true, timeout = 60 seconds)
 
     def receive = {
@@ -387,13 +404,13 @@ You can also have two alternative blocking transactions, one of which can succee
         atomic {
           either {
             if (left.get < amount) {
-              log.info("not enough on left - retrying")
+              EventHandler.info(this, "not enough on left - retrying")
               retry
             }
             log.info("going left")
           } orElse {
             if (right.get < amount) {
-              log.info("not enough on right - retrying")
+              EventHandler.info(this, "not enough on right - retrying")
               retry
             }
             log.info("going right")
@@ -423,8 +440,9 @@ Transactional datastructures
 ============================
 
 Akka provides two datastructures that are managed by the STM.
-* TransactionalMap
-* TransactionalVector
+
+- TransactionalMap
+- TransactionalVector
 
 TransactionalMap and TransactionalVector look like regular mutable datastructures, they even implement the standard Scala 'Map' and 'RandomAccessSeq' interfaces, but they are implemented using persistent datastructures and managed references under the hood. Therefore they are safe to use in a concurrent environment. Underlying TransactionalMap is HashMap, an immutable Map but with near constant time access and modification operations. Similarly TransactionalVector uses a persistent Vector. See the Persistent Datastructures section below for more details.
 
@@ -506,7 +524,8 @@ They are immutable and each update creates a completely new version but they are
 
 This illustration is taken from Rich Hickey's presentation. Copyright Rich Hickey 2009.
 
-`<image:http://eclipsesource.com/blogs/wp-content/uploads/2009/12/clojure-trees.png>`_
+.. image:: http://eclipsesource.com/blogs/wp-content/uploads/2009/12/clojure-trees.png
+
 
 ----
 
