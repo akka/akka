@@ -5,4 +5,5 @@ General
    :maxdepth: 2
 
    migration-guides
+   event-handler
    util
