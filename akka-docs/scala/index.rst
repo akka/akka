@@ -12,3 +12,4 @@ Scala API
    dispatchers
    fsm
    testing
+   tutorial-chat-server
