@@ -24,7 +24,7 @@ abstract class MailboxSpec extends
 
     name should {
       "create a !blockDequeue && unbounded mailbox" in {
-        val config = UnboundedMailbox(false)
+        val config = UnboundedMailbox()
         val q = factory(config)
         ensureInitialMailboxState(config, q)
 
@@ -37,8 +37,8 @@ abstract class MailboxSpec extends
         f.await.resultOrException must be === Some(null)
       }
 
-      "create a !blockDequeue and bounded mailbox with 10 capacity and with push timeout" in {
-        val config = BoundedMailbox(false, 10, Duration(10,TimeUnit.MILLISECONDS))
+      "create a bounded mailbox with 10 capacity and with push timeout" in {
+        val config = BoundedMailbox(10, Duration(10,TimeUnit.MILLISECONDS))
         val q = factory(config)
         ensureInitialMailboxState(config, q)
 
@@ -59,30 +59,16 @@ abstract class MailboxSpec extends
       }
 
       "dequeue what was enqueued properly for unbounded mailboxes" in {
-        testEnqueueDequeue(UnboundedMailbox(false))
+        testEnqueueDequeue(UnboundedMailbox())
       }
 
       "dequeue what was enqueued properly for bounded mailboxes" in {
-        testEnqueueDequeue(BoundedMailbox(false, 10000, Duration(-1, TimeUnit.MILLISECONDS)))
+        testEnqueueDequeue(BoundedMailbox(10000, Duration(-1, TimeUnit.MILLISECONDS)))
       }
 
       "dequeue what was enqueued properly for bounded mailboxes with pushTimeout" in {
-        testEnqueueDequeue(BoundedMailbox(false, 10000, Duration(100, TimeUnit.MILLISECONDS)))
+        testEnqueueDequeue(BoundedMailbox(10000, Duration(100, TimeUnit.MILLISECONDS)))
       }
-
-      /** FIXME Adapt test so it works with the last dequeue
-
-      "dequeue what was enqueued properly for unbounded mailboxes with blockDeque" in {
-        testEnqueueDequeue(UnboundedMailbox(true))
-      }
-
-      "dequeue what was enqueued properly for bounded mailboxes with blockDeque" in {
-        testEnqueueDequeue(BoundedMailbox(true, 1000, Duration(-1, TimeUnit.MILLISECONDS)))
-      }
-
-      "dequeue what was enqueued properly for bounded mailboxes with blockDeque and pushTimeout" in {
-        testEnqueueDequeue(BoundedMailbox(true, 1000, Duration(100, TimeUnit.MILLISECONDS)))
-      }*/
     }
 
     //CANDIDATE FOR TESTKIT
@@ -111,8 +97,8 @@ abstract class MailboxSpec extends
       q match {
         case aQueue: BlockingQueue[_] =>
           config match {
-            case BoundedMailbox(_,capacity,_) => aQueue.remainingCapacity must be === capacity
-            case UnboundedMailbox(_) => aQueue.remainingCapacity must be === Int.MaxValue
+            case BoundedMailbox(capacity,_) => aQueue.remainingCapacity must be === capacity
+            case UnboundedMailbox() => aQueue.remainingCapacity must be === Int.MaxValue
           }
         case _ =>
       }
@@ -165,10 +151,8 @@ abstract class MailboxSpec extends
 class DefaultMailboxSpec extends MailboxSpec {
   lazy val name = "The default mailbox implementation"
   def factory = {
-    case UnboundedMailbox(blockDequeue) =>
-      new DefaultUnboundedMessageQueue(blockDequeue)
-    case BoundedMailbox(blocking, capacity, pushTimeOut) =>
-      new DefaultBoundedMessageQueue(capacity, pushTimeOut, blocking)
+    case UnboundedMailbox() => new DefaultUnboundedMessageQueue()
+    case BoundedMailbox(capacity, pushTimeOut) => new DefaultBoundedMessageQueue(capacity, pushTimeOut)
   }
 }
 
@@ -176,9 +160,7 @@ class PriorityMailboxSpec extends MailboxSpec {
   val comparator = PriorityGenerator(_.##)
   lazy val name = "The priority mailbox implementation"
   def factory = {
-    case UnboundedMailbox(blockDequeue) =>
-      new UnboundedPriorityMessageQueue(blockDequeue, comparator)
-    case BoundedMailbox(blocking, capacity, pushTimeOut) =>
-      new BoundedPriorityMessageQueue(capacity, pushTimeOut, blocking, comparator)
+    case UnboundedMailbox() => new UnboundedPriorityMessageQueue(comparator)
+    case BoundedMailbox(capacity, pushTimeOut) => new BoundedPriorityMessageQueue(capacity, pushTimeOut, comparator)
   }
 }

@@ -221,9 +221,8 @@ abstract class MessageDispatcherConfigurator {
 
   def mailboxType(config: Configuration): MailboxType = {
     val capacity = config.getInt("mailbox-capacity", Dispatchers.MAILBOX_CAPACITY)
-    // FIXME how do we read in isBlocking for mailbox? Now set to 'false'.
     if (capacity < 1) UnboundedMailbox()
-    else BoundedMailbox(false, capacity, Duration(config.getInt("mailbox-push-timeout-time", Dispatchers.MAILBOX_PUSH_TIME_OUT.toMillis.toInt), TIME_UNIT))
+    else BoundedMailbox(capacity, Duration(config.getInt("mailbox-push-timeout-time", Dispatchers.MAILBOX_PUSH_TIME_OUT.toMillis.toInt), TIME_UNIT))
   }
 
   def configureThreadPool(config: Configuration, createDispatcher: => (ThreadPoolConfig) => MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
