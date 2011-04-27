@@ -9,6 +9,7 @@ Scala API
    actor-registry
    agents
    stm
+   transactors
    dispatchers
    fsm
    testing

@@ -8,4 +8,5 @@ Java API
    typed-actors
    actor-registry
    stm
+   transactors
    dispatchers
