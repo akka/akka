@@ -1,10 +1,14 @@
-**<span style="font-size: 150%;">Transactors (Scala)</span>**
-=============================================================
+Transactors (Scala)
+===================
+
+.. sidebar:: Contents
+
+   .. contents:: :local:
 
 Module stability: **SOLID**
 
 Why Transactors?
-================
+----------------
 
 Actors are excellent for solving problems where you have many independent processes that can work in isolation and only interact with other Actors through message passing. This model fits many problems. But the actor model is unfortunately a terrible model for implementing truly shared state. E.g. when you need to have consensus and a stable view of state across many components. The classic example is the bank account where clients can deposit and withdraw, in which each operation needs to be atomic. For detailed discussion on the topic see `this JavaOne presentation <http://www.slideshare.net/jboner/state-youre-doing-it-wrong-javaone-2009>`_.
 
@@ -15,21 +19,21 @@ Akka's Transactors combine Actors and STM to provide the best of the Actor model
 If you need Durability then you should not use one of the in-memory data structures but one of the persistent ones.
 
 Generally, the STM is not needed very often when working with Akka. Some use-cases (that we can think of) are:
-# When you really need composable message flows across many actors updating their **internal local** state but need them to do that atomically in one big transaction. Might not often, but when you do need this then you are screwed without it.
-# When you want to share a datastructure across actors.
-# When you need to use the persistence modules.
+
+- When you really need composable message flows across many actors updating their **internal local** state but need them to do that atomically in one big transaction. Might not often, but when you do need this then you are screwed without it.
+- When you want to share a datastructure across actors.
+- When you need to use the persistence modules.
 
 Actors and STM
---------------
+^^^^^^^^^^^^^^
 
 You can combine Actors and STM in several ways. An Actor may use STM internally so that particular changes are guaranteed to be atomic. Actors may also share transactional datastructures as the STM provides safe shared state across threads.
 
 It's also possible to coordinate transactions across Actors or threads so that either the transactions in a set all commit successfully or they all fail. This is the focus of Transactors and the explicit support for coordinated transactions in this section.
 
-----
 
 Coordinated transactions
-========================
+------------------------
 
 Akka provides an explicit mechanism for coordinating transactions across Actors. Under the hood it uses a ``CountDownCommitBarrier``, similar to a CountDownLatch.
 
@@ -70,7 +74,7 @@ Here is an example of coordinating two simple counter Actors so that they both i
   counter1.stop()
   counter2.stop()
 
-To start a new coordinated transaction set that you will also participate in, just create a ``Coordinated`` object:
+To start a new coordinated transaction that you will also participate in, just create a ``Coordinated`` object:
 
 .. code-block:: scala
 
@@ -90,7 +94,7 @@ To receive a coordinated message in an actor simply match it in a case statement
     case coordinated @ Coordinated(Message) => ...
   }
 
-To include another actor in the same coordinated transaction set that you've created or received, use the apply method on that object. This will increment the number of parties involved by one and create a new ``Coordinated`` object to be sent.
+To include another actor in the same coordinated transaction that you've created or received, use the apply method on that object. This will increment the number of parties involved by one and create a new ``Coordinated`` object to be sent.
 
 .. code-block:: scala
 
@@ -106,10 +110,9 @@ To enter the coordinated transaction use the atomic method of the coordinated ob
 
 The coordinated transaction will wait for the other transactions before committing. If any of the coordinated transactions fail then they all fail.
 
-----
 
 Transactor
-==========
+----------
 
 Transactors are actors that provide a general pattern for coordinating transactions, using the explicit coordination described above.
 
@@ -125,7 +128,7 @@ Here's an example of a simple transactor that will join a coordinated transactio
   class Counter extends Transactor {
     val count = Ref(0)
 
-    def atomically = {
+    override def atomically = {
       case Increment => count alter (_ + 1)
     }
   }
@@ -140,6 +143,7 @@ Example of coordinating an increment:
 
   import akka.transactor.Transactor
   import akka.stm.Ref
+  import akka.actor.ActorRef
 
   case object Increment
 
@@ -150,7 +154,7 @@ Example of coordinating an increment:
       case Increment => include(friend)
     }
 
-    def atomically = {
+    override def atomically = {
       case Increment => count alter (_ + 1)
     }
   }
@@ -176,10 +180,9 @@ To execute directly before or after the coordinated transaction, override the ``
 
 To completely bypass coordinated transactions override the ``normally`` method. Any message matched by ``normally`` will not be matched by the other methods, and will not be involved in coordinated transactions. In this method you can implement normal actor behavior, or use the normal STM atomic for local transactions.
 
-----
 
 Coordinating Typed Actors
-=========================
+-------------------------
 
 It's also possible to use coordinated transactions with typed actors. You can explicitly pass around ``Coordinated`` objects, or use built-in support with the ``@Coordinated`` annotation and the ``Coordination.coordinate`` method.
 
@@ -188,7 +191,7 @@ To specify a method should use coordinated transactions add the ``@Coordinated``
 .. code-block:: scala
 
   trait Counter {
-    @Coordinated def increment: Unit
+    @Coordinated def increment()
     def get: Int
   }
 
@@ -197,8 +200,8 @@ To coordinate transactions use a ``coordinate`` block:
 .. code-block:: scala
 
   coordinate {
-    counter1.increment
-    counter2.increment
+    counter1.increment()
+    counter2.increment()
   }
 
 Here's an example of using ``@Coordinated`` with a TypedActor to coordinate increments.
@@ -211,13 +214,13 @@ Here's an example of using ``@Coordinated`` with a TypedActor to coordinate incr
   import akka.transactor.Coordination._
 
   trait Counter {
-    @Coordinated def increment: Unit
+    @Coordinated def increment()
     def get: Int
   }
 
   class CounterImpl extends TypedActor with Counter {
     val ref = Ref(0)
-    def increment = ref alter (_ + 1)
+    def increment() { ref alter (_ + 1) }
     def get = ref.get
   }
 
@@ -227,8 +230,8 @@ Here's an example of using ``@Coordinated`` with a TypedActor to coordinate incr
   val counter2 = TypedActor.newInstance(classOf[Counter], classOf[CounterImpl])
 
   coordinate {
-    counter1.increment
-    counter2.increment
+    counter1.increment()
+    counter2.increment()
   }
 
   TypedActor.stop(counter1)
@@ -236,9 +239,10 @@ Here's an example of using ``@Coordinated`` with a TypedActor to coordinate incr
 
 The ``coordinate`` block will wait for the transactions to complete. If you do not want to wait then you can specify this explicitly:
 
-`<code format="scala">`_
-coordinate(wait = false) {
-  counter1.increment
-  counter2.increment
-}
-`<code>`_
+.. code-block:: scala
+
+  coordinate(wait = false) {
+    counter1.increment()
+    counter2.increment()
+  }
+
