@@ -277,26 +277,6 @@ class FutureSpec extends JUnitSuite {
     Futures.reduce(List[Future[Int]]())(_ + _).await.resultOrException
   }
 
-  @Test def resultWithinShouldNotThrowExceptions {
-    val latch = new StandardLatch
-
-    val actors = (1 to 10).toList map { _ =>
-      actorOf(new Actor {
-        def receive = { case (add: Int, wait: Boolean, latch: StandardLatch) => if (wait) latch.await; self reply_? add }
-      }).start()
-    }
-
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx >= 5, latch)) }
-    val result = for(f <- futures) yield f.valueWithin(2, TimeUnit.SECONDS)
-    latch.open
-    val done = result collect { case Some(Right(x)) => x }
-    val undone = result collect { case None => None }
-    val errors = result collect { case Some(Left(t)) => t }
-    assert(done.size === 5)
-    assert(undone.size === 5)
-    assert(errors.size === 0)
-  }
-
   @Test def receiveShouldExecuteOnComplete {
     val latch = new StandardLatch
     val actor = actorOf[TestActor].start()
