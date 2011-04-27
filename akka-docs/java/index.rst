@@ -1,15 +1,11 @@
-Scala API
+Java API
 =========
 
 .. toctree::
    :maxdepth: 2
 
-   actors
+   untyped-actors
    typed-actors
    actor-registry
-   agents
    stm
    dispatchers
-   fsm
-   testing
-   tutorial-chat-server

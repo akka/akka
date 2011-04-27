@@ -1,6 +1,10 @@
 Dispatchers (Scala)
 ===================
 
+.. sidebar:: Contents
+
+   .. contents:: :local:
+   
 Module stability: **SOLID**
 
 The Dispatcher is an important piece that allows you to configure the right semantics and parameters for optimal performance, throughput and scalability. Different Actors have different needs.
@@ -124,7 +128,7 @@ If you don't define a the 'throughput' option in the configuration file then the
 Browse the `ScalaDoc <scaladoc>`_ or look at the code for all the options available.
 
 Priority event-based
-^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 Sometimes it's useful to be able to specify priority order of messages, that is done by using PriorityExecutorBasedEventDrivenDispatcher and supply
 a java.util.Comparator[MessageInvocation] or use a akka.dispatch.PriorityGenerator (recommended):
@@ -231,11 +235,13 @@ For the 'ExecutorBasedEventDrivenDispatcher' and the 'ExecutorBasedWorkStealingD
 For the 'ThreadBasedDispatcher', it is non-shareable between actors, and associates a dedicated Thread with the actor.
 Making it bounded (by specifying a capacity) is optional, but if you do, you need to provide a pushTimeout (default is 10 seconds). When trying to send a message to the Actor it will throw a MessageQueueAppendFailedException("BlockingMessageTransferQueue transfer timed out") if the message cannot be added to the mailbox within the time specified by the pushTimeout.
 
-`<code format="scala">`_
-class MyActor extends Actor {
-  import akka.util.duration._
-  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 100,
-    pushTimeOut = 10 seconds)
-   ...
-}
-`<code>`_
+.. code-block:: scala
+
+  class MyActor extends Actor {
+    import akka.util.duration._
+    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 100,
+      pushTimeOut = 10 seconds)
+     ...
+  }
+
+

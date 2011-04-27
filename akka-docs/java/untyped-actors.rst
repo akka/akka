@@ -1,7 +1,9 @@
 Actors (Java)
 =============
 
-=
+.. sidebar:: Contents
+
+   .. contents:: :local:
 
 Module stability: **SOLID**
 
@@ -16,11 +18,15 @@ Here is an example:
 
 .. code-block:: java
 
+  import akka.actor.UntypedActor;
+  import akka.event.EventHandler;
+
   public class SampleUntypedActor extends UntypedActor {
 
     public void onReceive(Object message) throws Exception {
       if (message instanceof String) 
-        EventHandler.info(this, String.format("Received String message: %s", message));
+        EventHandler.info(this, String.format("Received String message: %s",
+          message));
       else 
         throw new IllegalArgumentException("Unknown message: " + message);
     }
@@ -409,8 +415,9 @@ Actor life-cycle
 
 The actor has a well-defined non-circular life-cycle.
 
-`<code>`_
-NEW (newly created actor) - can't receive messages (yet)
-    => STARTED (when 'start' is invoked) - can receive messages
-        => SHUT DOWN (when 'exit' or 'stop' is invoked) - can't do anything
-`<code>`_
+::
+
+  NEW (newly created actor) - can't receive messages (yet)
+      => STARTED (when 'start' is invoked) - can receive messages
+          => SHUT DOWN (when 'exit' or 'stop' is invoked) - can't do anything
+

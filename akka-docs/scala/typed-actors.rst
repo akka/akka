@@ -1,6 +1,10 @@
-Typed Actors (Java)
-===================
+Typed Actors (Scala)
+====================
 
+.. sidebar:: Contents
+
+   .. contents:: :local:
+   
 Module stability: **SOLID**
 
 The Typed Actors are implemented through `Typed Actors <http://en.wikipedia.org/wiki/Active_object>`_. It uses AOP through `AspectWerkz <http://aspectwerkz.codehaus.org/>`_ to turn regular POJOs into asynchronous non-blocking Actors with semantics of the Actor Model. E.g. each message dispatch is turned into a message that is put on a queue to be processed by the Typed Actor sequentially one by one.
@@ -10,7 +14,7 @@ If you are using the `Spring Framework <http://springsource.org>`_ then take a l
 Creating Typed Actors
 ---------------------
 
-**IMPORTANT:** The Typed Actors class must have access modifier 'public' and can't be a non-static inner class.
+**IMPORTANT:** The Typed Actors class must have access modifier 'public' (which is default) and can't be an inner class (unless it is an inner class in an 'object').
 
 Akka turns POJOs with interface and implementation into asynchronous (Typed) Actors. Akka is using `AspectWerkz’s Proxy <http://blogs.codehaus.org/people/jboner/archives/000914_awproxy_proxy_on_steriods.html>`_ implementation, which is the `most performant <http://docs.codehaus.org/display/AW/AOP+Benchmark>`_ proxy implementation there exists.
 
@@ -20,67 +24,63 @@ Here is an example.
 
 If you have a POJO with an interface implementation separation like this:
 
-.. code-block:: java
+.. code-block:: scala
 
-  interface RegistrationService {
-    void register(User user, Credentials cred);
-    User getUserFor(String username);
+  import akka.actor.TypedActor
+
+  trait RegistrationService {
+    def register(user: User, cred: Credentials): Unit
+    def getUserFor(username: String): User
   }
 
-.. code-block:: java
+.. code-block:: scala
 
-  import akka.actor.TypedActor;
-  
-  public class RegistrationServiceImpl extends TypedActor implements RegistrationService {
-    public void register(User user, Credentials cred) {
+  public class RegistrationServiceImpl extends TypedActor with RegistrationService {
+    def register(user: User, cred: Credentials): Unit = {
       ... // register user
     }
 
-    public User getUserFor(String username) {
+    def getUserFor(username: String): User = {
       ... // fetch user by username
-     return user;
+     user
     }
   }
 
 Then you can create an Typed Actor out of it by creating it through the 'TypedActor' factory like this:
 
-.. code-block:: java
+.. code-block:: scala
 
-  RegistrationService service =
-    (RegistrationService) TypedActor.newInstance(RegistrationService.class, RegistrationServiceImpl.class, 1000);
+  val service = TypedActor.newInstance(classOf[RegistrationService], classOf[RegistrationServiceImpl], 1000)
   // The last parameter defines the timeout for Future calls
 
 **Creating Typed Actors with non-default constructor**
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To create a typed actor that takes constructor arguments use a variant of 'newInstance' or 'newRemoteInstance' that takes an instance of a 'TypedActorFactory' in which you can create the TypedActor in any way you like. If you use this method then make sure that no one can get a reference to the actor instance. Touching actor state directly is bypassing the whole actor dispatching mechanism and create race conditions which can lead to corrupt data.
+To create a typed actor that takes constructor arguments use a variant of 'newInstance' or 'newRemoteInstance' that takes a call-by-name block in which you can create the Typed Actor in any way you like.
 
 Here is an example:
 
-.. code-block:: java
+.. code-block:: scala
 
-  Service service = TypedActor.newInstance(classOf[Service], new TypedActorFactory() {
-    public TypedActor create() {
-      return new ServiceWithConstructorArgsImpl("someString", 500L));
-  });
+  val service = TypedActor.newInstance(classOf[Service], new ServiceWithConstructorArgs("someString", 500L))
 
 Configuration factory class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Using a configuration object:
 
-.. code-block:: java
+.. code-block:: scala
 
-  import static java.util.concurrent.TimeUnit.MILLISECONDS;
-  import akka.actor.TypedActorConfiguration;
-  import akka.util.FiniteDuration;
+  import akka.actor.TypedActorConfiguration
+  import akka.util.Duration
+  import akka.util.duration._
 
-  TypedActorConfiguration config = new TypedActorConfiguration()
-      .timeout(new FiniteDuration(3000, MILLISECONDS));
+      val config = TypedActorConfiguration()
+        .timeout(3000 millis)
 
-  RegistrationService service = (RegistrationService) TypedActor.newInstance(RegistrationService.class, config);
+  val service = TypedActor.newInstance(classOf[RegistrationService], classOf[RegistrationServiceImpl], config)
 
-However, often you will not use these factory methods but declaratively define the Typed Actors as part of a supervisor hierarchy. More on that in the `Fault Tolerance <fault-tolerance-java>`_ section.
+However, often you will not use these factory methods but declaratively define the Typed Actors as part of a supervisor hierarchy. More on that in the `Fault Tolerance <fault-tolerance-scala>`_ section.
 
 Sending messages
 ----------------
@@ -95,25 +95,23 @@ Methods that return void are turned into ‘fire-and-forget’ semantics by asyn
 .. code-block:: java
 
   // method invocation returns immediately and method is invoke asynchronously using the Actor Model semantics
-  service.register(user, creds);
+  service.register(user, creds)
 
 Request-reply message send
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Methods that return something (e.g. non-void methods) are turned into ‘send-and-receive-eventually’ semantics by asynchronously firing off the message and wait on the reply using a Future.
 
-.. code-block:: java
+.. code-block:: scala
 
   // method invocation is asynchronously dispatched using the Actor Model semantics,
   // but it blocks waiting on a Future to be resolved in the background
-  User user =  service.getUser(username);
+  val user = service.getUser(username)
 
 Generally it is preferred to use fire-forget messages as much as possible since they will never block, e.g. consume a resource by waiting. But sometimes they are neat to use since they:
 # Simulates standard Java method dispatch, which is more intuitive for most Java developers
 # Are a neat to model request-reply
 # Are useful when you need to do things in a defined order
-
-The same holds for the 'request-reply-with-future' described below.
 
 Request-reply-with-future message send
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -122,35 +120,34 @@ Methods that return a 'akka.dispatch.Future<TYPE>' are turned into ‘send-and-r
 
 Here is an example:
 
-.. code-block:: java
+.. code-block:: scala
 
-  public class MathTypedActorImpl extends TypedActor implements MathTypedActor {
-   public Future<Integer> square(int value) {
-      return future(value * value);
-    }
+  class MathTypedActorImpl extends TypedActor with MathTypedActor {
+    def square(x: Int): Future[Integer] = future(x * x)
   }
 
-  MathTypedActor math = TypedActor.actorOf(MathTypedActor .class, MathTypedActorImpl.class);
+  // create the ping actor
+  val math = TypedActor.newInstance(classOf[MathTyped], classOf[MathTypedImpl])
 
   // This method will return immediately when called, caller should wait on the Future for the result
-  Future<Integer> future = math.square(10);
-  future.await();
-  Integer result = future.get();
+  val future = math.square(10)
+  future.await
+  val result: Int = future.get
 
 Stopping Typed Actors
 ---------------------
 
 Once Typed Actors have been created with one of the TypedActor.newInstance methods they need to be stopped with TypedActor.stop to free resources allocated by the created Typed Actor (this is not needed when the Typed Actor is `supervised <fault-tolerance#supervise-active-object>`_).
 
-.. code-block:: java
+.. code-block:: scala
 
   // Create Typed Actor
-  RegistrationService service = (RegistrationService) TypedActor.newInstance(RegistrationService.class);
+  val service = TypedActor.newInstance(classOf[RegistrationService], classOf[RegistrationServiceImpl], 1000)
 
   // ...
 
   // Free Typed Actor resources
-  TypedActor.stop(service);
+  TypedActor.stop(service)
 
 When the Typed Actor defines a `shutdown callback <fault-tolerance#shutdown>`_ method it will be invoked on TypedActor.stop.
 
@@ -161,17 +158,17 @@ The 'akka.actor.TypedActorContext' class Holds 'runtime type information' (RTTI)
 
 Here is an example how you can use it to in a 'void' (e.g. fire-forget) method to implement request-reply by using the sender reference:
 
-.. code-block:: java
+.. code-block:: scala
 
-  class PingImpl implements Ping extends TypedActor {
+  class PingImpl extends TypedActor with Ping {
 
-    public void hit(int count) {
-      Pong pong = (Pong) getContext().getSender();
-      pong.hit(count++);
+    def hit(count: Int) {
+      val pong = context.getSender.asInstanceOf[Pong]
+      pong.hit(count++)
     }
   }
 
-If the sender, sender future etc. is not available, then these methods will return 'null' so you should have a way of dealing with scenario.
+If the sender, sender future etc. is not available, then these methods will return 'null' so you should have a way of dealing with that scenario.
 
 Messages and immutability
 -------------------------

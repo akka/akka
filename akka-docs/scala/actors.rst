@@ -1,5 +1,9 @@
-Actors
-======
+Actors (Scala)
+==============
+
+.. sidebar:: Contents
+
+   .. contents:: :local:
 
 Module stability: **SOLID**
 
@@ -26,6 +30,9 @@ Here is an example:
 
 .. code-block:: scala
 
+  import akka.actor.Actor
+  import akka.event.EventHandler
+  
   class MyActor extends Actor {
     def receive = {
       case "test" => EventHandler.info(this, "received test")
@@ -382,7 +389,7 @@ When you start the ``Actor`` then it will automatically call the ``def preStart`
 
 .. code-block:: scala
 
-  override def preStart = {
+  override def preStart() = {
     ... // initialization code
   }
 
@@ -399,7 +406,7 @@ When stop is called then a call to the ``def postStop`` callback method will tak
 
 .. code-block:: scala
 
-  override def postStop = {
+  override def postStop() = {
     ... // clean up resources
   }
 

@@ -65,7 +65,7 @@ object Ticket669Spec {
       self.reply_?("failure1")
     }
 
-    override def postStop {
+    override def postStop() {
       self.reply_?("failure2")
     }
   }

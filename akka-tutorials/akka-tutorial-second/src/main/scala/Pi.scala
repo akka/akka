@@ -111,7 +111,7 @@ object Pi extends App {
     def receive = scatter
 
     // when we are stopped, stop our team of workers and our router
-    override def postStop {
+    override def postStop() {
       // send a PoisonPill to all workers telling them to shut down themselves
       router ! Broadcast(PoisonPill)
       // send a PoisonPill to the router, telling him to shut himself down

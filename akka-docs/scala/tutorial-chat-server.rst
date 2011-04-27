@@ -1,6 +1,10 @@
 Tutorial: write a scalable, fault-tolerant, persistent network chat server and client (Scala)
 =============================================================================================
 
+.. sidebar:: Contents
+
+   .. contents:: :local:
+   
 Introduction
 ------------
 
@@ -44,6 +48,8 @@ Here is a little example before we dive into a more interesting one.
 
 .. code-block:: scala
 
+  import akka.actor.Actor
+  
   class MyActor extends Actor {
     def receive = {
       case "test" => println("received test")
@@ -118,7 +124,8 @@ Sometimes however, there is a need for sequential logic, sending a message and w
     def login                 = chat ! Login(name)
     def logout                = chat ! Logout(name)
     def post(message: String) = chat ! ChatMessage(name, name + ": " + message)
-    def chatLog               = (chat !! GetChatLog(name)).as[ChatLog].getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
+    def chatLog               = (chat !! GetChatLog(name)).as[ChatLog]
+                                  .getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
   }
 
 As you can see, we are using the 'Actor.remote.actorFor' to lookup the chat server on the remote node. From this call we will get a handle to the remote instance and can use it as it is local.
@@ -221,7 +228,7 @@ I'll try to show you how we can make use Scala's mixins to decouple the Actor im
     protected def sessionManagement: Receive
     protected def shutdownSessions(): Unit
 
-    override def postStop = {
+    override def postStop() = {
       EventHandler.info(this, "Chat server is shutting down...")
       shutdownSessions
       self.unlink(storage)
@@ -422,7 +429,7 @@ We have now created the full functionality for the chat server, all nicely decou
     SessionManagement with
     ChatManagement with
     MemoryChatStorageFactory {
-    override def preStart = {
+    override def preStart() = {
       remote.start("localhost", 2552);
       remote.register("chat:service", self) //Register the actor with the specified service id
     }

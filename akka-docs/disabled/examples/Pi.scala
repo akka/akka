@@ -91,11 +91,11 @@ object Pi extends App {
     }
     //#master-receive
 
-    override def preStart {
+    override def preStart() {
       start = now
     }
 
-    override def postStop {
+    override def postStop() {
       // tell the world that the calculation is complete
       println(
         "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"

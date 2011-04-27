@@ -186,7 +186,7 @@
     protected def sessionManagement: Receive
     protected def shutdownSessions(): Unit
 
-    override def postStop = {
+    override def postStop() = {
       EventHandler.info(this, "Chat server is shutting down...")
       shutdownSessions
       self.unlink(storage)
@@ -206,7 +206,7 @@
     SessionManagement with
     ChatManagement with
     MemoryChatStorageFactory {
-    override def preStart = {
+    override def preStart() = {
       remote.start("localhost", 2552);
       remote.register("chat:service", self) //Register the actor with the specified service id
     }

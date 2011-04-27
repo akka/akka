@@ -12,14 +12,17 @@ We will be using an algorithm that is called "embarrassingly parallel" which jus
 
 Here is the formula for the algorithm we will use:
 
-.. image:: pi-formula.png
+.. image:: ../images/pi-formula.png
 
 In this particular algorithm the master splits the series into chunks which are sent out to each worker actor to be processed. When each worker has processed its chunk it sends a result back to the master which aggregates the total result.
 
 Tutorial source code
 --------------------
 
-If you want don't want to type in the code and/or set up an SBT project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here <https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first>`_, with the actual source code `here <https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala>`_.
+If you want don't want to type in the code and/or set up an SBT project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here`__, with the actual source code `here`__.
+
+__ https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first
+__ https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala
 
 Prerequisites
 -------------
@@ -99,19 +102,19 @@ If you want to use Eclipse for coding your Akka tutorial, you need to install th
 
 You can install this plugin using the regular update mechanism. First choose a version of the IDE from `http://download.scala-ide.org <http://download.scala-ide.org>`_. We recommend you choose 2.0.x, which comes with Scala 2.9. Copy the corresponding URL and then choose ``Help/Install New Software`` and paste the URL you just copied. You should see  something similar to the following image.
 
-.. image:: install-beta2-updatesite.png
+.. image:: ../images/install-beta2-updatesite.png
 
 Make sure you select both the ``JDT Weaving for Scala`` and the ``Scala IDE for Eclipse`` plugins. The other plugin is optional, and contains the source code of the plugin itself.
 
 Once the installation is finished, you need to restart Eclipse. The first time the plugin starts it will open a diagnostics window and offer to fix several settings, such as the delay for content assist (code-completion) or the shown completion proposal types.
 
-.. image:: diagnostics-window.png
+.. image:: ../images/diagnostics-window.png
 
 Accept the recommended settings, and follow the instructions if you need to increase the heap size of Eclipse.
 
 Check that the installation succeeded by creating a new Scala project (``File/New>Scala Project``), and typing some code. You should have content-assist, hyperlinking to definitions, instant error reporting, and so on.
 
-.. image:: example-code.png
+.. image:: ../images/example-code.png
 
 You are ready to code now!
 
@@ -140,7 +143,7 @@ Creating an Akka project in Eclipse
 
 If you have not already done so, now is the time to create an Eclipse project for our tutorial. Use the ``New Scala Project`` wizard and accept the default settings. Once the project is open, we need to add the akka libraries to the *build path*. Right click on the project and choose ``Properties``, then click on ``Java Build Path``. Go to ``Libraries`` and click on ``Add External Jars..``, then navigate to the location where you installed akka and choose ``akka-actor.jar``. You should see something similar to this:
 
-.. image:: build-path.png
+.. image:: ../images/build-path.png
 
 Using SBT in Eclipse
 ^^^^^^^^^^^^^^^^^^^^
@@ -186,7 +189,7 @@ Then run the ``eclipse`` target to generate the Eclipse project::
 
 Next you need to import this project in Eclipse, by choosing ``Eclipse/Import.. Existing Projects into Workspace``. Navigate to the directory where you defined your SBT project and choose import:
 
-.. image:: import-project.png
+.. image:: ../images/import-project.png
 
 Now we have the basis for an Akka Eclipse application, so we can..
 
@@ -234,7 +237,7 @@ Now we can create the worker actor.  Create a new class called ``Worker`` as bef
 
 The ``Actor`` trait is defined in ``akka.actor`` and you can either import it explicitly, or let Eclipse do it for you when it cannot resolve the ``Actor`` trait. The quick fix option (``Ctrl-F1``) will offer two options:
 
-.. image:: quickfix.png
+.. image:: ../images/quickfix.png
 
 Choose the Akka Actor and move on.
 
@@ -307,11 +310,11 @@ Here is the master actor::
 
       def receive = { ... }
 
-      override def preStart {
+      override def preStart() {
         start = System.currentTimeMillis
       }
 
-      override def postStop {
+      override def postStop() {
         // tell the world that the calculation is complete
         println(
           "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
@@ -403,7 +406,7 @@ If you have not defined an the ``AKKA_HOME`` environment variable then Akka can'
 
 You can also define a new Run configuration, by going to ``Run/Run Configurations``. Create a new ``Scala application`` and choose the tutorial project and the main class to be ``akkatutorial.Pi``. You can pass additional command line arguments to the JVM on the ``Arguments`` page, for instance to define where ``akka.conf`` is:
 
-.. image:: run-config.png
+.. image:: ../images/run-config.png
 
 Once you finished your run configuration, click ``Run``. You should see the same output in the ``Console`` window. You can use the same configuration for debugging the application, by choosing ``Run/Debug History`` or just ``Debug As``.
 
