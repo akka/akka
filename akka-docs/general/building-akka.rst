@@ -151,69 +151,7 @@ testing, and publishing Akka to the local Ivy repository can be done with::
 Building Akka Modules
 =====================
 
-To build Akka Modules first build and publish Akka to your local Ivy repository
-as described above. Or using::
-
-   cd akka
-   sbt update publish-local
-
-Then you can build Akka Modules using the same steps as building Akka. First
-update to get all dependencies (including the Akka core modules), then compile,
-test, or publish-local as needed. For example::
-
-   cd akka-modules
-   sbt update publish-local
-
-
-Microkernel distribution
-------------------------
-
-To build the Akka Modules microkernel (the same as the Akka Modules distribution
-download) use the ``dist`` command::
-
-   sbt dist
-
-The distribution zip can be found in the dist directory and is called
-``akka-modules-{version}.zip``.
-
-To run the microkernel, unzip the zip file, change into the unzipped directory,
-set the ``AKKA_HOME`` environment variable, and run the main jar file. For
-example::
-
-   unzip dist/akka-modules-1.1-SNAPSHOT.zip
-   cd akka-modules-1.1-SNAPSHOT
-   export AKKA_HOME=`pwd`
-   java -jar akka-modules-1.1-SNAPSHOT.jar
-
-The microkernel will boot up and install the sample applications that reside in
-the distribution's ``deploy`` directory. You can deploy your own applications
-into the ``deploy`` directory as well.
-
-
-Scripts
-=======
-
-Linux/Unix init script
-----------------------
-
-Here is a Linux/Unix init script that can be very useful:
-
-http://github.com/jboner/akka/blob/master/scripts/akka-init-script.sh
-
-Copy and modify as needed.
-
-
-Simple startup shell script
----------------------------
-
-This little script might help a bit. Just make sure you have the Akka
-distribution in the '$AKKA_HOME/dist' directory and then invoke this script to
-start up the kernel. The distribution is created in the './dist' dir for you if
-you invoke 'sbt dist'.
-
-http://github.com/jboner/akka/blob/master/scripts/run_akka.sh
-
-Copy and modify as needed.
+See the Akka Modules documentation.
 
 
 Dependencies
