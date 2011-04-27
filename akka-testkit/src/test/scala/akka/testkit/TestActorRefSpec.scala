@@ -91,6 +91,8 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
 
   import TestActorRefSpec._
 
+  EventHandler.start()
+
   override def beforeEach {
     otherthread = null
   }
@@ -177,9 +179,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
         def receiveT = { case "sendKill" => ref ! Kill }
       }).start()
 
-      val l = stopLog()
       boss ! "sendKill"
-      startLog(l)
 
       counter must be (0)
       assertThread
@@ -244,15 +244,4 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
     }
 
   }
-
-  private def stopLog() = {
-    val l = Actor.registry.actorsFor[EventHandler.DefaultListener]
-    l foreach (EventHandler.removeListener(_))
-    l
-  }
-
-  private def startLog(l : Array[ActorRef]) {
-    l foreach {a => EventHandler.addListener(Actor.actorOf[EventHandler.DefaultListener])}
-  }
-
 }

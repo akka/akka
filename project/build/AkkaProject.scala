@@ -196,14 +196,15 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_actor_tests = project("akka-actor-tests", "akka-actor-tests", new AkkaActorTestsProject(_), akka_testkit)
   lazy val akka_stm         = project("akka-stm",         "akka-stm",         new AkkaStmProject(_),        akka_actor)
   lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_stm, akka_actor_tests)
-  lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),     akka_typed_actor)
-  lazy val akka_zookeeper   = project("akka-zookeeper",   "akka-zookeeper",   new AkkaZookeeperProject(_),  akka_remote)
-  lazy val akka_cluster     = project("akka-cluster",     "akka-cluster",     new AkkaClusterProject(_),    akka_zookeeper)
+
+//  lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),     akka_typed_actor)
+//  lazy val akka_zookeeper   = project("akka-zookeeper",   "akka-zookeeper",   new AkkaZookeeperProject(_),  akka_remote)
+//  lazy val akka_cluster     = project("akka-cluster",     "akka-cluster",     new AkkaClusterProject(_),    akka_zookeeper)
 
   lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_actor)
-  lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
   lazy val akka_slf4j       = project("akka-slf4j",       "akka-slf4j",       new AkkaSlf4jProject(_),      akka_actor)
   lazy val akka_tutorials   = project("akka-tutorials",   "akka-tutorials",   new AkkaTutorialsParentProject(_), akka_actor)
+  lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
 
   // -------------------------------------------------------------------------------------------------------------------
   // Miscellaneous
@@ -436,10 +437,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSampleAntsProject(_), akka_stm)
     lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
       new AkkaSampleFSMProject(_), akka_actor)
-    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
-      new AkkaSampleRemoteProject(_), akka_remote)
-    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
-      new AkkaSampleChatProject(_), akka_remote)
+//    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
+//      new AkkaSampleRemoteProject(_), akka_remote)
+//    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
+//      new AkkaSampleChatProject(_), akka_remote)
     lazy val akka_sample_osgi = project("akka-sample-osgi", "akka-sample-osgi",
       new AkkaSampleOsgiProject(_), akka_actor)
 

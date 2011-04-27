@@ -65,11 +65,7 @@ class TypedActorSpec extends
   }
 
   override def afterEach() {
-<<<<<<< HEAD
     Actor.registry.local.shutdownAll
-=======
-    Actor.registry.shutdownAll()
->>>>>>> wip-rebase
   }
 
   describe("TypedActor") {
@@ -126,26 +122,12 @@ class TypedActorSpec extends
       assert(Actor.registry.local.typedActorFor(uuid).get === simplePojo)
     }
 
-<<<<<<< HEAD
     it("should support finding a typed actor by address ") {
       val typedActorRef = TypedActor.actorFor(simplePojo).get
       val address = typedActorRef.address
       assert(Actor.registry.local.typedActorFor(newUuid().toString) === None)
       assert(Actor.registry.local.typedActorFor(address).isDefined)
       assert(Actor.registry.local.typedActorFor(address).get === simplePojo)
-=======
-    it("should support finding typed actors by id ") {
-      val typedActors = Actor.registry.typedActorsFor("my-custom-id")
-      assert(typedActors.length === 1)
-      assert(typedActors.contains(pojo))
-
-      // creating untyped actor with same custom id
-      val actorRef = Actor.actorOf[MyActor].start()
-      val typedActors2 = Actor.registry.typedActorsFor("my-custom-id")
-      assert(typedActors2.length === 1)
-      assert(typedActors2.contains(pojo))
-      actorRef.stop()
->>>>>>> wip-rebase
     }
 
     it("should support to filter typed actors") {
@@ -162,7 +144,6 @@ class TypedActorSpec extends
     }
 
     it("should support foreach for typed actors") {
-<<<<<<< HEAD
       val actorRef = Actor.actorOf[MyActor].start
       assert(Actor.registry.local.actors.size === 3)
       assert(Actor.registry.local.typedActors.size === 2)
@@ -178,23 +159,6 @@ class TypedActorSpec extends
       Actor.registry.local.shutdownAll()
       assert(Actor.registry.local.actors.size === 0)
       assert(Actor.registry.local.typedActors.size === 0)
-=======
-      val actorRef = Actor.actorOf[MyActor].start()
-      assert(Actor.registry.actors.size === 3)
-      assert(Actor.registry.typedActors.size === 2)
-      Actor.registry.foreachTypedActor(TypedActor.stop(_))
-      assert(Actor.registry.actors.size === 1)
-      assert(Actor.registry.typedActors.size === 0)
-    }
-
-    it("should shutdown all typed and untyped actors") {
-      val actorRef = Actor.actorOf[MyActor].start()
-      assert(Actor.registry.actors.size === 3)
-      assert(Actor.registry.typedActors.size === 2)
-      Actor.registry.shutdownAll()
-      assert(Actor.registry.actors.size === 0)
-      assert(Actor.registry.typedActors.size === 0)
->>>>>>> wip-rebase
     }
   }
 }

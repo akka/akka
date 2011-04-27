@@ -1,8 +1,14 @@
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package akka.testkit
 
 import akka.actor._
 import akka.util.ReflectiveAccess
 import akka.event.EventHandler
+
+import com.eaio.uuid.UUID
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it
@@ -13,7 +19,7 @@ import akka.event.EventHandler
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestActorRef[T <: Actor](factory: () => T) extends LocalActorRef(factory) {
+class TestActorRef[T <: Actor](factory: () => T, address: String) extends LocalActorRef(factory, address) {
 
   dispatcher = CallingThreadDispatcher.global
   receiveTimeout = None
@@ -45,11 +51,11 @@ class TestActorRef[T <: Actor](factory: () => T) extends LocalActorRef(factory) 
     this
   }
 
-  override def toString = "TestActor[" + id + ":" + uuid + "]"
+  override def toString = "TestActor[" + address + ":" + uuid + "]"
 
   override def equals(other : Any) =
     other.isInstanceOf[TestActorRef[_]] &&
-      other.asInstanceOf[TestActorRef[_]].uuid == uuid
+    other.asInstanceOf[TestActorRef[_]].uuid == uuid
 
   /**
    * Override to check whether the new supervisor is running on the CallingThreadDispatcher,
@@ -68,9 +74,14 @@ class TestActorRef[T <: Actor](factory: () => T) extends LocalActorRef(factory) 
 
 object TestActorRef {
 
-  def apply[T <: Actor](factory: => T) = new TestActorRef(() => factory)
+  def apply[T <: Actor](factory: => T): TestActorRef[T] = apply[T](factory, new UUID().toString)
 
-  def apply[T <: Actor : Manifest] : TestActorRef[T] = new TestActorRef[T] ({ () =>
+  def apply[T <: Actor](factory: => T, address: String): TestActorRef[T] = new TestActorRef(() => factory, address)
+
+  def apply[T <: Actor : Manifest]: TestActorRef[T] = apply[T](new UUID().toString)
+
+  def apply[T <: Actor : Manifest](address: String): TestActorRef[T] = new TestActorRef[T] ({ () =>
+
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
     createInstance[T](manifest[T].erasure, noParams, noArgs).getOrElse(
       throw new ActorInitializationException(
@@ -78,6 +89,6 @@ object TestActorRef {
         "\nMake sure Actor is NOT defined inside a class/trait," +
         "\nif so put it outside the class/trait, f.e. in a companion object," +
         "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
-  })
+  }, address)
 
 }

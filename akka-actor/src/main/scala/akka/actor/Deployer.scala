@@ -151,8 +151,10 @@ object Deployer {
     val address = deployment.address
     Address.validate(address)
 
-    if (deployments.putIfAbsent(address, deployment) != deployment)
-      throwDeploymentBoundException(deployment)
+    if (deployments.putIfAbsent(address, deployment) != deployment) {
+      // FIXME do automatic 'undeploy' and redeploy (perhaps have it configurable if redeploy should be done or exception thrown)
+      // throwDeploymentBoundException(deployment)
+    }
 
     deployLocally(deployment)
   }
@@ -190,23 +192,6 @@ object Deployer {
     deployments.clear()
   }
 
-  def lookupDeploymentFor(address: String): Option[Deploy] = {
-    val deployment = deployments.get(address)
-    if (deployments ne null) Some(deployment)
-    else {
-      val deployment =
-        try {
-          lookupInConfig(address)
-        } catch {
-          case e: ConfigurationException =>
-            EventHandler.error(e, this, e.getMessage)
-            throw e
-        }
-      deployment foreach (deploy(_))
-      deployment
-    }
-  }
-
   /**
    * Same as 'lookupDeploymentFor' but throws an exception if no deployment is bound.
    */
@@ -217,13 +202,33 @@ object Deployer {
     }
   }
 
-  def isLocal(address: String): Boolean = lookupDeploymentFor(address) match {
-    case Some(Deploy(_, _, Local)) => true
-    case _                         => false
+  def lookupDeploymentFor(address: String): Option[Deploy] = {
+    val deployment = deployments.get(address)
+    if (deployment ne null) Some(deployment)
+    else {
+      val deployment =
+        try {
+          lookupInConfig(address)
+        } catch {
+          case e: ConfigurationException =>
+            EventHandler.error(e, this, e.getMessage)
+            throw e
+        }
+      deployment foreach { d =>
+        if (d eq null) {
+          val e = new IllegalStateException("Deployment for address [" + address + "] is null")
+          EventHandler.error(e, this, e.getMessage)
+          throw e
+        }
+        deploy(d)
+      }
+      deployment
+    }
   }
 
-  def isClustered(address: String): Boolean = !isLocal(address)
-
+  /**
+   * Lookup deployment in 'akka.conf' configuration file.
+   */
   def lookupInConfig(address: String): Option[Deploy] = {
 
     // --------------------------------
@@ -313,6 +318,13 @@ object Deployer {
         }
     }
   }
+
+  def isLocal(address: String): Boolean = lookupDeploymentFor(address) match {
+    case Some(Deploy(_, _, Local)) => true
+    case _                         => false
+  }
+
+  def isClustered(address: String): Boolean = !isLocal(address)
 
   private def throwDeploymentBoundException(deployment: Deploy): Nothing = {
     val e = new DeploymentBoundException(

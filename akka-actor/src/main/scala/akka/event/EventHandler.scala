@@ -98,10 +98,14 @@ object EventHandler extends ListenerManagement {
                         "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
   }
 
+  def start() {
+    info(this, "Starting up EventHandler")
+  }
+
   /**
    * Shuts down all event handler listeners including the event handle dispatcher.
    */
-  def shutdown() = {
+  def shutdown() {
     foreachListener(_.stop)
     EventHandlerDispatcher.shutdown
   }
@@ -222,10 +226,13 @@ object EventHandler extends ListenerManagement {
         addListener(Actor.actorOf(clazz, listenerName).start)
       }
     } catch {
+      case e: akka.actor.DeploymentBoundException => // do nothing
       case e: Exception =>
         throw new ConfigurationException(
           "Event Handler specified in config can't be loaded [" + listenerName +
           "] due to [" + e.toString + "]")
     }
   }
+
+  start()
 }

@@ -519,20 +519,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   }
 
   override def toString = "Actor[" + address + ":" + uuid + "]"
-
-  protected[akka] def checkReceiveTimeout = {
-    cancelReceiveTimeout
-    if (receiveTimeout.isDefined && dispatcher.mailboxSize(this) <= 0) { //Only reschedule if desired and there are currently no more messages to be processed
-      _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, receiveTimeout.get, TimeUnit.MILLISECONDS))
-    }
-  }
-
-  protected[akka] def cancelReceiveTimeout = {
-    if (_futureTimeout.isDefined) {
-      _futureTimeout.get.cancel(true)
-      _futureTimeout = None
-    }
-  }
 }
 
 /**
@@ -977,7 +963,6 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () => Actor, 
     actor.preStart // run actor preStart
     Actor.registry.register(this)
   }
-
 
   protected[akka] def checkReceiveTimeout = {
     cancelReceiveTimeout

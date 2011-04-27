@@ -6,14 +6,14 @@ package akka.actor
 
 import akka.dispatch._
 import akka.config.Config._
-import akka.util.Helpers.{narrow, narrowSilently}
-import akka.util.ListenerManagement
+import akka.util.{ListenerManagement, ReflectiveAccess, Duration, Helpers}
+import Helpers.{narrow, narrowSilently}
+import akka.remoteinterface.RemoteSupport
+import akka.japi.{Creator, Procedure}
 import akka.AkkaException
 
 import scala.reflect.BeanProperty
-import akka.util. {ReflectiveAccess, Duration}
-import akka.remoteinterface.RemoteSupport
-import akka.japi. {Creator, Procedure}
+
 import com.eaio.uuid.UUID
 
 /**
@@ -21,7 +21,9 @@ import com.eaio.uuid.UUID
  */
 sealed trait LifeCycleMessage extends Serializable
 
-/* Marker trait to show which Messages are automatically handled by Akka */
+/**
+ * Marker trait to show which Messages are automatically handled by Akka
+ */
 sealed trait AutoReceivedMessage { self: LifeCycleMessage => }
 
 case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true)
@@ -199,12 +201,19 @@ object Actor extends ListenerManagement {
     Address.validate(address)
 
     Deployer.deploymentFor(address) match {
-      case Deploy(_, _, Local) =>
+      case Deploy(_, router, Local) =>
+        // FIXME handle 'router' in 'Local' actors
         newLocalActorRef(clazz, address)
+
       case Deploy(_, router, Clustered(Home(hostname, port), Replicate(nrOfReplicas), state)) =>
         RemoteActorRef(
           address, clazz.getName,
           Actor.TIMEOUT, None, ActorType.ScalaActor)
+
+      case invalid => throw new IllegalActorStateException(
+        "Could not create actor [" + clazz.getName +
+        "] with address [" + address +
+        "], not bound to a valid deployment scheme [" + invalid + "]")
     }
   }
 
