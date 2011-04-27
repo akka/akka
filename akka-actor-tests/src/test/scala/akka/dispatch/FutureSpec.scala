@@ -343,6 +343,20 @@ class FutureSpec extends JUnitSuite {
     }
   }
 
+  @Test def shouldNotAddOrRunCallbacksAfterFailureToBeCompletedBeforeExpiry {
+    val latch = new StandardLatch
+    val f = new DefaultCompletableFuture[Int](0)
+    Thread.sleep(25)
+    f.onComplete( _ => latch.open ) //Shouldn't throw any exception here
+
+    assert(f.isExpired) //Should be expired
+
+    f.complete(Right(1)) //Shouldn't complete the Future since it is expired
+
+    assert(f.value.isEmpty) //Shouldn't be completed
+    assert(!latch.isOpen) //Shouldn't run the listener
+  }
+
   @Test def lesslessIsMore {
     import akka.actor.Actor.spawn
     val dataflowVar, dataflowVar2 = new DefaultCompletableFuture[Int](Long.MaxValue)

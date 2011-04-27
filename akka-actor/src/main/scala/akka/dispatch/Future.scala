@@ -664,7 +664,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   def complete(value: Either[Throwable, T]): DefaultCompletableFuture[T] = {
     _lock.lock
     val notifyTheseListeners = try {
-      if (_value.isEmpty) {
+      if (_value.isEmpty && !isExpired) { //Only complete if we aren't expired
         _value = Some(value)
         val existingListeners = _listeners
         _listeners = Nil
@@ -685,8 +685,10 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     _lock.lock
     val notifyNow = try {
       if (_value.isEmpty) {
-        _listeners ::= func
-        false
+        if(!isExpired) { //Only add the listener if the future isn't expired
+          _listeners ::= func
+          false
+        } else false //Will never run the callback since the future is expired
       } else true
     } finally {
       _lock.unlock
