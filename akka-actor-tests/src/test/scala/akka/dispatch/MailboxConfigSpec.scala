@@ -23,7 +23,7 @@ abstract class MailboxSpec extends
     def factory: MailboxType => MessageQueue
 
     name should {
-      "create a !blockDequeue && unbounded mailbox" in {
+      "create an unbounded mailbox" in {
         val config = UnboundedMailbox()
         val q = factory(config)
         ensureInitialMailboxState(config, q)
