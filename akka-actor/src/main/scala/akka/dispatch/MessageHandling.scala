@@ -5,6 +5,7 @@
 package akka.dispatch
 
 import java.util.concurrent._
+import java.util.concurrent.atomic.AtomicLong
 import akka.event.EventHandler
 import akka.config.Configuration
 import akka.config.Config.TIME_UNIT
@@ -29,16 +30,18 @@ final case class MessageInvocation(val receiver: ActorRef,
   }
 }
 
-final case class FutureInvocation(future: CompletableFuture[Any], function: () => Any) extends Runnable {
-  val uuid = akka.actor.newUuid
-
-  def run = future complete (try {
-    Right(function.apply)
-  } catch {
-    case e =>
-      EventHandler.error(e, this, e.getMessage)
-      Left(e)
-  })
+final case class FutureInvocation[T](future: CompletableFuture[T], function: () => T, cleanup: () => Unit) extends Runnable {
+  def run = {
+    future complete (try {
+      Right(function())
+    } catch {
+      case e =>
+        EventHandler.error(e, this, e.getMessage)
+        Left(e)
+    } finally {
+      cleanup()
+    })
+  }
 }
 
 object MessageDispatcher {
@@ -56,7 +59,7 @@ trait MessageDispatcher {
   import MessageDispatcher._
 
   protected val uuids   = new ConcurrentSkipListSet[Uuid]
-  protected val futures = new ConcurrentSkipListSet[Uuid]
+  protected val futures = new AtomicLong(0L)
   protected val guard   = new ReentrantGuard
   protected val active  = new Switch(false)
 
@@ -83,27 +86,25 @@ trait MessageDispatcher {
 
   private[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = dispatch(invocation)
 
-  private[akka] final def dispatchFuture(invocation: FutureInvocation): Unit = {
-    guard withGuard {
-      futures add invocation.uuid
-      if (active.isOff) { active.switchOn { start } }
-    }
-    invocation.future.onComplete { f =>
-      guard withGuard {
-        futures remove invocation.uuid
-        if (futures.isEmpty && uuids.isEmpty) {
-          shutdownSchedule match {
-            case UNSCHEDULED =>
-              shutdownSchedule = SCHEDULED
-              Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
-            case SCHEDULED =>
-              shutdownSchedule = RESCHEDULED
-            case RESCHEDULED => //Already marked for reschedule
-          }
-        }
+  private[akka] final def dispatchFuture[T](block: () => T, timeout: Long): Future[T] = {
+    futures.getAndIncrement()
+    val future = new DefaultCompletableFuture[T](timeout)
+    if (active.isOff) { active.switchOn { start } }
+    executeFuture(FutureInvocation[T](future, block, futureCleanup))
+    future
+  }
+
+  private val futureCleanup: () => Unit = { () =>
+    if (futures.decrementAndGet() == 0 && uuids.isEmpty) {
+      shutdownSchedule match {
+        case UNSCHEDULED =>
+          shutdownSchedule = SCHEDULED
+          Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
+        case SCHEDULED =>
+          shutdownSchedule = RESCHEDULED
+        case RESCHEDULED => //Already marked for reschedule
       }
     }
-    executeFuture(invocation)
   }
 
   private[akka] def register(actorRef: ActorRef) {
@@ -121,7 +122,7 @@ trait MessageDispatcher {
   private[akka] def unregister(actorRef: ActorRef) = {
     if (uuids remove actorRef.uuid) {
       actorRef.mailbox = null
-      if (uuids.isEmpty && futures.isEmpty){
+      if (uuids.isEmpty && futures.get == 0){
         shutdownSchedule match {
           case UNSCHEDULED =>
             shutdownSchedule = SCHEDULED
@@ -155,7 +156,7 @@ trait MessageDispatcher {
           shutdownSchedule = SCHEDULED
           Scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
         case SCHEDULED =>
-          if (uuids.isEmpty() && futures.isEmpty) {
+          if (uuids.isEmpty() && futures.get == 0) {
             active switchOff {
               shutdown // shut down in the dispatcher's references is zero
             }
@@ -187,7 +188,7 @@ trait MessageDispatcher {
    */
   private[akka] def dispatch(invocation: MessageInvocation): Unit
 
-  private[akka] def executeFuture(invocation: FutureInvocation): Unit
+  private[akka] def executeFuture(invocation: FutureInvocation[_]): Unit
 
   /**
    * Called one time every time an actor is attached to this dispatcher and this dispatcher was previously shutdown
@@ -205,9 +206,9 @@ trait MessageDispatcher {
   def mailboxSize(actorRef: ActorRef): Int
 
   /**
-   * Returns the size of the Future queue
+   * Returns the amount of futures queued for execution
    */
-  def futureQueueSize: Int = futures.size
+  def pendingFutures: Long = futures.get
 }
 
 /**

@@ -156,7 +156,7 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
     if (execute) runQueue(mbox, queue)
   }
 
-  private[akka] override def executeFuture(invocation: FutureInvocation) { invocation.run }
+  private[akka] override def executeFuture(invocation: FutureInvocation[_]) { invocation.run }
 
   /*
    * This method must be called with this thread's queue, which must already

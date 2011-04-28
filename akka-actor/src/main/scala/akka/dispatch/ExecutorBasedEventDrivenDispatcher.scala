@@ -99,7 +99,7 @@ class ExecutorBasedEventDrivenDispatcher(
     registerForExecution(mbox)
   }
 
-  private[akka] def executeFuture(invocation: FutureInvocation): Unit = if (active.isOn) {
+  private[akka] def executeFuture(invocation: FutureInvocation[_]): Unit = if (active.isOn) {
     try executorService.get() execute invocation
     catch {
       case e: RejectedExecutionException =>

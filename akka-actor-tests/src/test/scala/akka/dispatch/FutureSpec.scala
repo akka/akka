@@ -324,7 +324,7 @@ class FutureSpec extends JUnitSuite {
     assert(f3.resultOrException === Some("SUCCESS"))
 
     // make sure all futures are completed in dispatcher
-    assert(Dispatchers.defaultGlobalDispatcher.futureQueueSize === 0)
+    assert(Dispatchers.defaultGlobalDispatcher.pendingFutures === 0)
   }
 
   @Test def shouldBlockUntilResult {
@@ -341,6 +341,10 @@ class FutureSpec extends JUnitSuite {
     intercept[FutureTimeoutException] {
       f3()
     }
+    Thread.sleep(100)
+
+    // make sure all futures are completed in dispatcher
+    assert(Dispatchers.defaultGlobalDispatcher.pendingFutures === 0)
   }
 
   @Test def shouldNotAddOrRunCallbacksAfterFailureToBeCompletedBeforeExpiry {
@@ -378,11 +382,11 @@ class FutureSpec extends JUnitSuite {
 
   @Test def ticket812FutureDispatchCleanup {
     val dispatcher = implicitly[MessageDispatcher]
-    assert(dispatcher.futureQueueSize === 0)
+    assert(dispatcher.pendingFutures === 0)
     val future = Future({Thread.sleep(100);"Done"}, 10)
     intercept[FutureTimeoutException] { future.await }
-    assert(dispatcher.futureQueueSize === 1)
-    Thread.sleep(200)
-    assert(dispatcher.futureQueueSize === 0)
+    assert(dispatcher.pendingFutures === 1)
+    Thread.sleep(100)
+    assert(dispatcher.pendingFutures === 0)
   }
 }
