@@ -4,6 +4,8 @@
 
 package akka.util
 
+import akka.event.EventHandler
+
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -22,6 +24,30 @@ object Helpers {
 
   def bytesToInt(bytes: Array[Byte], offset: Int): Int = {
     (0 until 4).foldLeft(0)((value, index) => value + ((bytes(index + offset) & 0x000000FF) << ((4 - 1 - index) * 8)))
+  }
+
+  def flatten[T: ClassManifest](array: Array[Any]) = array.flatMap {
+    case arr: Array[T] => arr
+    case elem: T       => Array(elem)
+  }
+
+  def ignore[E : Manifest](body: => Unit): Unit = {
+    try {
+      body
+    }
+    catch {
+      case e if manifest[E].erasure.isAssignableFrom(e.getClass) => ()
+    }
+  }
+
+  def withPrintStackTraceOnError(body: => Unit) = {
+    try {
+      body
+    } catch {
+      case e: Throwable =>
+        EventHandler.error(e, this, "")
+        throw e
+    }
   }
 
   /**

@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-option java_package = "akka.cloud.cluster";
+option java_package = "akka.cluster";
 option optimize_for = SPEED;
 
 /******************************************
   Compile with:
-  cd ./akka-cloud-cluster/src/main/protocol
+  cd ./akka-cluster/src/main/protocol
   protoc ClusterProtocol.proto --java_out ../java
 *******************************************/
 
@@ -17,7 +17,7 @@ option optimize_for = SPEED;
 message RemoteDaemonMessageProtocol {
   required RemoteDaemonMessageType messageType = 1;
   optional UuidProtocol actorUuid = 2;
-  optional string actorId = 3;
+  optional string actorAddress = 3;
   optional string actorClassName = 4;
   optional bytes payload = 5;
 }
@@ -46,8 +46,8 @@ enum RemoteDaemonMessageType {
  * Defines the durable mailbox message.
  */
 message DurableMailboxMessageProtocol {
-  required string ownerActorId = 1;
-  optional string senderActorId = 2;
+  required string ownerActorAddress= 1;
+  optional string senderActorAddress = 2;
   optional UuidProtocol futureUuid = 3;
   required bytes message = 4;
 }
