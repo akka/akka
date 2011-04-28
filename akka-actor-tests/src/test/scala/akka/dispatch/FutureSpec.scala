@@ -375,4 +375,14 @@ class FutureSpec extends JUnitSuite {
     assert(dataflowVar2() === 5)
     assert(dataflowVar.get === 5)
   }
+
+  @Test def ticket812FutureDispatchCleanup {
+    val dispatcher = implicitly[MessageDispatcher]
+    assert(dispatcher.futureQueueSize === 0)
+    val future = Future({Thread.sleep(100);"Done"}, 10)
+    intercept[FutureTimeoutException] { future.await }
+    assert(dispatcher.futureQueueSize === 1)
+    Thread.sleep(200)
+    assert(dispatcher.futureQueueSize === 0)
+  }
 }
