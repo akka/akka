@@ -88,24 +88,36 @@ trait MessageDispatcher {
 
   private[akka] final def dispatchFuture[T](block: () => T, timeout: Long): Future[T] = {
     futures.getAndIncrement()
-    val future = new DefaultCompletableFuture[T](timeout)
-    if (active.isOff) { active.switchOn { start } }
-    executeFuture(FutureInvocation[T](future, block, futureCleanup))
-    future
+    try {
+      val future = new DefaultCompletableFuture[T](timeout)
+
+      if (active.isOff)
+        guard withGuard { if (active.isOff) active.switchOn { start } }
+
+      executeFuture(FutureInvocation[T](future, block, futureCleanup))
+      future
+    } catch {
+      case e =>
+        futures.decrementAndGet
+        throw e
+    }
   }
 
-  private val futureCleanup: () => Unit = { () =>
-    if (futures.decrementAndGet() == 0) guard withGuard { if (uuids.isEmpty) {
-      shutdownSchedule match {
-        case UNSCHEDULED =>
-          shutdownSchedule = SCHEDULED
-          Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
-        case SCHEDULED =>
-          shutdownSchedule = RESCHEDULED
-        case RESCHEDULED => //Already marked for reschedule
+  private val futureCleanup: () => Unit =
+   () => if (futures.decrementAndGet() == 0) {
+      guard withGuard {
+        if (futures.get == 0 && uuids.isEmpty) {
+          shutdownSchedule match {
+            case UNSCHEDULED =>
+              shutdownSchedule = SCHEDULED
+              Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
+            case SCHEDULED =>
+              shutdownSchedule = RESCHEDULED
+            case RESCHEDULED => //Already marked for reschedule
+          }
+        }
       }
-    }}
-  }
+    }
 
   private[akka] def register(actorRef: ActorRef) {
     if (actorRef.mailbox eq null)
