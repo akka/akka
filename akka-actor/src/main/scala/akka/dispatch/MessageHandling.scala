@@ -95,7 +95,7 @@ trait MessageDispatcher {
   }
 
   private val futureCleanup: () => Unit = { () =>
-    if (futures.decrementAndGet() == 0 && uuids.isEmpty) {
+    if (futures.decrementAndGet() == 0) guard withGuard { if (uuids.isEmpty) {
       shutdownSchedule match {
         case UNSCHEDULED =>
           shutdownSchedule = SCHEDULED
@@ -104,7 +104,7 @@ trait MessageDispatcher {
           shutdownSchedule = RESCHEDULED
         case RESCHEDULED => //Already marked for reschedule
       }
-    }
+    }}
   }
 
   private[akka] def register(actorRef: ActorRef) {
