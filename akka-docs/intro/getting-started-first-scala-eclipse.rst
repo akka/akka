@@ -1,3 +1,5 @@
+.. _getting-started-first-scala-eclipse:
+
 Getting Started Tutorial (Scala with Eclipse): First Chapter
 ============================================================
 

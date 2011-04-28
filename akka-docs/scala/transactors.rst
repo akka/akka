@@ -1,3 +1,5 @@
+.. _transactors-scala:
+
 Transactors (Scala)
 ===================
 

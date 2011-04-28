@@ -141,7 +141,7 @@ It can happen for the first few executions that you get a few failures of execut
 Coordinated transactions and Transactors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you need coordinated transactions across actors or threads then see `Transactors <transactors-java>`_.
+If you need coordinated transactions across actors or threads then see :ref:`transactors-java`.
 
 Configuring transactions
 ^^^^^^^^^^^^^^^^^^^^^^^^

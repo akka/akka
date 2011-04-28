@@ -1,3 +1,5 @@
+.. _transactors-java:
+
 Transactors (Java)
 ==================
 
