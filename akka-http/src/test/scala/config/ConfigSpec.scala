@@ -19,7 +19,7 @@ class ConfigSpec extends WordSpec with MustMatchers {
       getString("akka.http.authenticator") must equal(Some("N/A"))
       getBool("akka.http.connection-close") must equal(Some(true))
       getString("akka.http.expired-header-name") must equal(Some("Async-Timeout"))
-      getList("akka.http.filters") must equal(List("se.scalablesolutions.akka.security.AkkaSecurityFilterFactory"))
+      getList("akka.http.filters") must equal(List("akka.security.AkkaSecurityFilterFactory"))
       getList("akka.http.resource-packages") must equal(Nil)
       getString("akka.http.hostname") must equal(Some("localhost"))
       getString("akka.http.expired-header-value") must equal(Some("expired"))
