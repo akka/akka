@@ -176,7 +176,10 @@ Not needed in this tutorial, but if you would like to use additional Akka module
 
 So, now we are all set. Just one final thing to do; make SBT download the dependencies it needs. That is done by invoking::
 
+    > reload
     > update
+
+The first reload command is needed because we have changed the project definition since the sbt session started.
 
 SBT itself needs a whole bunch of dependencies but our project will only need one; ``akka-actor-1.1.jar``. SBT downloads that as well.
 
