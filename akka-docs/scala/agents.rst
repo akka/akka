@@ -92,6 +92,29 @@ Transactional Agents
 
 If an Agent is used within an enclosing transaction, then it will participate in that transaction. If you send to an Agent within a transaction then the dispatch to the Agent will be held until that transaction commits, and discarded if the transaction is aborted.
 
+.. code-block:: scala
+
+  import akka.agent.Agent
+  import akka.stm._
+
+  def transfer(from: Agent[Int], to: Agent[Int], amount: Int): Boolean = {
+    atomic {
+      if (from.get < amount) false
+      else {
+        from send (_ - amount)
+        to send (_ + amount)
+        true
+      }
+    }
+  }
+
+  val from = Agent(100)
+  val to = Agent(20)
+  val ok = transfer(from, to, 50)
+
+  from() // -> 50
+  to()   // -> 70
+
 Monadic usage
 -------------
 
