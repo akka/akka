@@ -215,8 +215,9 @@ class FutureSpec extends JUnitSuite {
         def receive = { case (add: Int, wait: Int) => Thread.sleep(wait); self reply_? add }
       }).start()
     }
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 )) }
-    assert(Futures.fold(0)(futures)(_ + _).awaitBlocking.result.get === 45)
+    val timeout = 10000
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 ), timeout) }
+    assert(Futures.fold(0, timeout)(futures)(_ + _).await.result.get === 45)
   }
 
   @Test def shouldFoldResultsByComposing {
@@ -225,8 +226,8 @@ class FutureSpec extends JUnitSuite {
         def receive = { case (add: Int, wait: Int) => Thread.sleep(wait); self reply_? add }
       }).start()
     }
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 )) }
-    assert(futures.foldLeft(Future(0))((fr, fa) => for (r <- fr; a <- fa) yield (r + a)).awaitBlocking.result.get === 45)
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 ), 10000) }
+    assert(futures.foldLeft(Future(0))((fr, fa) => for (r <- fr; a <- fa) yield (r + a)).get === 45)
   }
 
   @Test def shouldFoldResultsWithException {
@@ -240,12 +241,13 @@ class FutureSpec extends JUnitSuite {
         }
       }).start()
     }
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 100 )) }
-    assert(Futures.fold(0)(futures)(_ + _).awaitBlocking.exception.get.getMessage === "shouldFoldResultsWithException: expected")
+    val timeout = 10000
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 100 ), timeout) }
+    assert(Futures.fold(0, timeout)(futures)(_ + _).await.exception.get.getMessage === "shouldFoldResultsWithException: expected")
   }
 
   @Test def shouldFoldReturnZeroOnEmptyInput {
-    assert(Futures.fold(0)(List[Future[Int]]())(_ + _).awaitBlocking.result.get === 0)
+    assert(Futures.fold(0)(List[Future[Int]]())(_ + _).get === 0)
   }
 
   @Test def shouldReduceResults {
@@ -254,8 +256,9 @@ class FutureSpec extends JUnitSuite {
         def receive = { case (add: Int, wait: Int) => Thread.sleep(wait); self reply_? add }
       }).start()
     }
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 )) }
-    assert(Futures.reduce(futures)(_ + _).awaitBlocking.result.get === 45)
+    val timeout = 10000
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 ), timeout) }
+    assert(Futures.reduce(futures, timeout)(_ + _).get === 45)
   }
 
   @Test def shouldReduceResultsWithException {
@@ -269,8 +272,9 @@ class FutureSpec extends JUnitSuite {
         }
       }).start()
     }
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 100 )) }
-    assert(Futures.reduce(futures)(_ + _).awaitBlocking.exception.get.getMessage === "shouldFoldResultsWithException: expected")
+    val timeout = 10000
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 100 ), timeout) }
+    assert(Futures.reduce(futures, timeout)(_ + _).await.exception.get.getMessage === "shouldFoldResultsWithException: expected")
   }
 
   @Test(expected = classOf[UnsupportedOperationException]) def shouldReduceThrowIAEOnEmptyInput {
