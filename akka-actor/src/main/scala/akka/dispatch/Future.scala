@@ -685,6 +685,14 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
       }
     }
 
+    def runCallbacks(rest: List[Future[T] => Unit], callbacks: Stack[() => Unit]) {
+      if (rest.nonEmpty) {
+        notify(rest.head)
+        while (callbacks.nonEmpty) { callbacks.pop().apply }
+        runCallbacks(rest.tail, callbacks)
+      }
+    }
+
     if (notifyTheseListeners.nonEmpty) {
       val optCallbacks = Future.callbacks.get
       if (optCallbacks.isDefined) addToCallbacks(notifyTheseListeners, optCallbacks.get)
@@ -692,10 +700,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
         try {
           val callbacks = Stack[() => Unit]()
           Future.callbacks.set(Some(callbacks))
-          addToCallbacks(notifyTheseListeners, callbacks)
-          while (callbacks.nonEmpty) {
-            callbacks.pop().apply
-          }
+          runCallbacks(notifyTheseListeners, callbacks)
         } finally {
           Future.callbacks.set(None)
         }
