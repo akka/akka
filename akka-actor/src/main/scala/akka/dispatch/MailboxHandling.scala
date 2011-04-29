@@ -11,7 +11,7 @@ import java.util.{Queue, List, Comparator, PriorityQueue}
 import java.util.concurrent._
 import akka.util._
 
-class MessageQueueAppendFailedException(message: String) extends AkkaException(message)
+class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

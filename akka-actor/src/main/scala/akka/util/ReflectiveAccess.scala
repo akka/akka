@@ -42,12 +42,16 @@ object ReflectiveAccess {
     lazy val isEnabled = remoteSupportClass.isDefined
 
     def ensureEnabled = if (!isEnabled) {
-      val e = new ModuleNotAvailableException(
-        "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
+      val e = new ModuleNotAvailableException("Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
       EventHandler.debug(this, e.toString)
       throw e
     }
-    val remoteSupportClass: Option[Class[_ <: RemoteSupport]] = getClassFor(TRANSPORT)
+    val remoteSupportClass = getClassFor[RemoteSupport](TRANSPORT) match {
+      case r: Right[_, Class[RemoteSupport]] => Some(r.b)
+      case l: Left[Exception,_] =>
+        EventHandler.debug(this, l.a)
+        None
+    }
 
     protected[akka] val defaultRemoteSupport: Option[() => RemoteSupport] =
       remoteSupportClass map { remoteClass =>
@@ -55,9 +59,11 @@ object ReflectiveAccess {
           remoteClass,
           Array[Class[_]](),
           Array[AnyRef]()
-        ) getOrElse {
+        ) match {
+          case r: Right[Exception, RemoteSupport] => r.b
+          case l: Left[Exception, RemoteSupport] =>
           val e = new ModuleNotAvailableException(
-            "Can't instantiate [%s] - make sure that akka-remote.jar is on the classpath".format(remoteClass.getName))
+            "Can't instantiate [%s] - make sure that akka-remote.jar is on the classpath".format(remoteClass.getName), l.a)
           EventHandler.debug(this, e.toString)
           throw e
         }
@@ -114,7 +120,12 @@ object ReflectiveAccess {
       getObjectFor("akka.cloud.cluster.Cluster$")
 
     val serializerClass: Option[Class[_]] =
-      getClassFor("akka.serialization.Serializer")
+      getClassFor("akka.serialization.Serializer") match {
+        case r: Right[_, Class[_]] => Some(r.b)
+        case l: Left[Exception,_] =>
+          EventHandler.debug(this, l.toString)
+          None
+      }
 
     def ensureEnabled = if (!isEnabled) throw new ModuleNotAvailableException(
       "Feature is only available in Akka Cloud")
@@ -125,17 +136,15 @@ object ReflectiveAccess {
 
   def createInstance[T](clazz: Class[_],
                         params: Array[Class[_]],
-                        args: Array[AnyRef]): Option[T] = try {
+                        args: Array[AnyRef]): Either[Exception,T] = try {
     assert(clazz ne null)
     assert(params ne null)
     assert(args ne null)
     val ctor = clazz.getDeclaredConstructor(params: _*)
     ctor.setAccessible(true)
-    Some(ctor.newInstance(args: _*).asInstanceOf[T])
+    Right(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
-    case e: Exception =>
-      EventHandler.debug(this, e.toString)
-      None
+    case e: Exception => Left(e)
   }
 
   def createInstance[T](fqn: String,
@@ -145,11 +154,11 @@ object ReflectiveAccess {
     assert(params ne null)
     assert(args ne null)
     getClassFor(fqn) match {
-      case Some(clazz) =>
-        val ctor = clazz.getDeclaredConstructor(params: _*)
+      case r: Right[Exception, Class[T]] =>
+        val ctor = r.b.getDeclaredConstructor(params: _*)
         ctor.setAccessible(true)
         Some(ctor.newInstance(args: _*).asInstanceOf[T])
-      case None => None
+      case _ => None
     }
   } catch {
     case e: Exception =>
@@ -159,11 +168,11 @@ object ReflectiveAccess {
 
   def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Option[T] = try {//Obtains a reference to $MODULE$
     getClassFor(fqn) match {
-      case Some(clazz) =>
-        val instance = clazz.getDeclaredField("MODULE$")
+      case r: Right[Exception, Class[T]] =>
+        val instance = r.b.getDeclaredField("MODULE$")
         instance.setAccessible(true)
         Option(instance.get(null).asInstanceOf[T])
-      case None => None
+      case _ => None
     }
   } catch {
     case e: ExceptionInInitializerError =>
@@ -171,45 +180,44 @@ object ReflectiveAccess {
       throw e
   }
 
-  def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Option[Class[T]] = {
+  def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception,Class[T]] = try {
     assert(fqn ne null)
 
     // First, use the specified CL
     val first = try {
-      Option(classloader.loadClass(fqn).asInstanceOf[Class[T]])
+      Right(classloader.loadClass(fqn).asInstanceOf[Class[T]])
     } catch {
-      case c: ClassNotFoundException => None
+      case c: ClassNotFoundException => Left(c)
     }
 
-    if (first.isDefined) first
+    if (first.isRight) first
     else {
       // Second option is to use the ContextClassLoader
       val second = try {
-        Option(Thread.currentThread.getContextClassLoader.loadClass(fqn).asInstanceOf[Class[T]])
+        Right(Thread.currentThread.getContextClassLoader.loadClass(fqn).asInstanceOf[Class[T]])
       } catch {
-        case c: ClassNotFoundException => None
+        case c: ClassNotFoundException => Left(c)
       }
 
-      if (second.isDefined) second
+      if (second.isRight) second
       else {
         val third = try {
-           // Don't try to use "loader" if we got the default "classloader" parameter
-           if (classloader ne loader) Option(loader.loadClass(fqn).asInstanceOf[Class[T]])
-          else None
+           if (classloader ne loader) Right(loader.loadClass(fqn).asInstanceOf[Class[T]]) else Left(null) //Horrid
         } catch {
-          case c: ClassNotFoundException => None
+          case c: ClassNotFoundException => Left(c)
         }
 
-        if (third.isDefined) third
+        if (third.isRight) third
         else {
-          // Last option is Class.forName
           try {
-            Option(Class.forName(fqn).asInstanceOf[Class[T]])
+            Right(Class.forName(fqn).asInstanceOf[Class[T]]) // Last option is Class.forName
           } catch {
-            case c: ClassNotFoundException => None
+            case c: ClassNotFoundException => Left(c)
           }
         }
       }
     }
+  } catch {
+    case e: Exception => Left(e)
   }
 }

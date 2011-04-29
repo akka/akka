@@ -19,7 +19,7 @@ import java.util.{LinkedList => JLinkedList}
 import scala.collection.mutable.Stack
 import annotation.tailrec
 
-class FutureTimeoutException(message: String) extends AkkaException(message)
+class FutureTimeoutException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 object Futures {
 
