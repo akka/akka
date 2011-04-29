@@ -125,7 +125,9 @@ object Actor extends ListenerManagement {
    */
   type Receive = PartialFunction[Any, Unit]
 
-  private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
+  private[actor] val actorRefInCreation = new ThreadLocal[Option[ActorRef]]{
+    override def initialValue = None
+  }
 
    /**
    *  Creates an ActorRef out of the Actor with type T.
@@ -290,7 +292,7 @@ trait Actor {
    * the 'forward' function.
    */
   @transient implicit val someSelf: Some[ActorRef] = {
-    val optRef = Actor.actorRefInCreation.value
+    val optRef = Actor.actorRefInCreation.get
     if (optRef.isEmpty) throw new ActorInitializationException(
       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
       "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
@@ -298,7 +300,7 @@ trait Actor {
       "\n\tEither use:" +
       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
-     Actor.actorRefInCreation.value = None
+     Actor.actorRefInCreation.set(None)
      optRef.asInstanceOf[Some[ActorRef]].get.id = getClass.getName  //FIXME: Is this needed?
      optRef.asInstanceOf[Some[ActorRef]]
   }
