@@ -18,7 +18,6 @@ import java.lang.{Iterable => JIterable}
 import java.util.{LinkedList => JLinkedList}
 import scala.collection.mutable.Stack
 import annotation.tailrec
-import util.DynamicVariable
 
 class FutureTimeoutException(message: String) extends AkkaException(message)
 
@@ -274,7 +273,9 @@ object Future {
       for (r <- fr; b <-fb) yield (r += b)
     }.map(_.result)
 
-  private[akka] val callbacksPendingExecution = new DynamicVariable[Option[Stack[() => Unit]]](None)
+  private[akka] val callbacksPendingExecution = new ThreadLocal[Option[Stack[() => Unit]]]() {
+    override def initialValue = None
+  }
 }
 
 sealed trait Future[+T] {
@@ -685,7 +686,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
         }
       }
 
-      val pending = Future.callbacksPendingExecution.value
+      val pending = Future.callbacksPendingExecution.get
       if (pending.isDefined) { //Instead of nesting the calls to the callbacks (leading to stack overflow)
         pending.get.push(() => { // Linearize/aggregate callbacks at top level and then execute
           val doNotify = notifyCompleted _ //Hoist closure to avoid garbage
@@ -694,9 +695,9 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
       } else {
         try {
           val callbacks = Stack[() => Unit]() // Allocate new aggregator for pending callbacks
-          Future.callbacksPendingExecution.value = Some(callbacks) // Specify the callback aggregator
+          Future.callbacksPendingExecution.set(Some(callbacks)) // Specify the callback aggregator
           runCallbacks(notifyTheseListeners, callbacks) // Execute callbacks, if they trigger new callbacks, they are aggregated
-        } finally { Future.callbacksPendingExecution.value = None } // Ensure cleanup
+        } finally { Future.callbacksPendingExecution.set(None) } // Ensure cleanup
       }
     }
 
