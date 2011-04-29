@@ -11,6 +11,7 @@ Scala API
    stm
    transactors
    remote-actors
+   serialization
    dispatchers
    fsm
    testing

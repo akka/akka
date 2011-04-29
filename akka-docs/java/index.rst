@@ -10,4 +10,5 @@ Java API
    stm
    transactors
    remote-actors
+   serialization
    dispatchers
