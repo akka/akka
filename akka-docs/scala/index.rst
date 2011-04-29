@@ -10,6 +10,7 @@ Scala API
    agents
    stm
    transactors
+   remote-actors
    dispatchers
    fsm
    testing

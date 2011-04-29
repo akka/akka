@@ -9,4 +9,5 @@ Java API
    actor-registry
    stm
    transactors
+   remote-actors
    dispatchers
