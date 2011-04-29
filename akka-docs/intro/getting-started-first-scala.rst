@@ -31,6 +31,14 @@ If you want don't want to type in the code and/or set up an SBT project then you
 __ https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first
 __ https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala
 
+To check out the code using Git invoke the following::
+
+    $ git clone git://github.com/jboner/akka.git
+
+Then you can navigate down to the tutorial:: 
+
+    $ cd akka/akka-tutorials/akka-tutorial-first
+
 Prerequisites
 -------------
 
