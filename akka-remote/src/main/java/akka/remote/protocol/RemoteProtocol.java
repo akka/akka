@@ -1848,15 +1848,8 @@ public final class RemoteProtocol {
     public boolean hasAddress() { return hasAddress; }
     public java.lang.String getAddress() { return address_; }
     
-    // required string actorClassname = 2;
-    public static final int ACTORCLASSNAME_FIELD_NUMBER = 2;
-    private boolean hasActorClassname;
-    private java.lang.String actorClassname_ = "";
-    public boolean hasActorClassname() { return hasActorClassname; }
-    public java.lang.String getActorClassname() { return actorClassname_; }
-    
-    // optional uint64 timeout = 3;
-    public static final int TIMEOUT_FIELD_NUMBER = 3;
+    // optional uint64 timeout = 2;
+    public static final int TIMEOUT_FIELD_NUMBER = 2;
     private boolean hasTimeout;
     private long timeout_ = 0L;
     public boolean hasTimeout() { return hasTimeout; }
@@ -1866,7 +1859,6 @@ public final class RemoteProtocol {
     }
     public final boolean isInitialized() {
       if (!hasAddress) return false;
-      if (!hasActorClassname) return false;
       return true;
     }
     
@@ -1876,11 +1868,8 @@ public final class RemoteProtocol {
       if (hasAddress()) {
         output.writeString(1, getAddress());
       }
-      if (hasActorClassname()) {
-        output.writeString(2, getActorClassname());
-      }
       if (hasTimeout()) {
-        output.writeUInt64(3, getTimeout());
+        output.writeUInt64(2, getTimeout());
       }
       getUnknownFields().writeTo(output);
     }
@@ -1895,13 +1884,9 @@ public final class RemoteProtocol {
         size += com.google.protobuf.CodedOutputStream
           .computeStringSize(1, getAddress());
       }
-      if (hasActorClassname()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(2, getActorClassname());
-      }
       if (hasTimeout()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(3, getTimeout());
+          .computeUInt64Size(2, getTimeout());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -2064,9 +2049,6 @@ public final class RemoteProtocol {
         if (other.hasAddress()) {
           setAddress(other.getAddress());
         }
-        if (other.hasActorClassname()) {
-          setActorClassname(other.getActorClassname());
-        }
         if (other.hasTimeout()) {
           setTimeout(other.getTimeout());
         }
@@ -2099,11 +2081,7 @@ public final class RemoteProtocol {
               setAddress(input.readString());
               break;
             }
-            case 18: {
-              setActorClassname(input.readString());
-              break;
-            }
-            case 24: {
+            case 16: {
               setTimeout(input.readUInt64());
               break;
             }
@@ -2133,28 +2111,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required string actorClassname = 2;
-      public boolean hasActorClassname() {
-        return result.hasActorClassname();
-      }
-      public java.lang.String getActorClassname() {
-        return result.getActorClassname();
-      }
-      public Builder setActorClassname(java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  result.hasActorClassname = true;
-        result.actorClassname_ = value;
-        return this;
-      }
-      public Builder clearActorClassname() {
-        result.hasActorClassname = false;
-        result.actorClassname_ = getDefaultInstance().getActorClassname();
-        return this;
-      }
-      
-      // optional uint64 timeout = 3;
+      // optional uint64 timeout = 2;
       public boolean hasTimeout() {
         return result.hasTimeout();
       }
@@ -4130,36 +4087,29 @@ public final class RemoteProtocol {
     public boolean hasUuid() { return hasUuid; }
     public akka.remote.protocol.RemoteProtocol.UuidProtocol getUuid() { return uuid_; }
     
-    // required string target = 2;
-    public static final int TARGET_FIELD_NUMBER = 2;
-    private boolean hasTarget;
-    private java.lang.String target_ = "";
-    public boolean hasTarget() { return hasTarget; }
-    public java.lang.String getTarget() { return target_; }
-    
-    // required uint64 timeout = 3;
-    public static final int TIMEOUT_FIELD_NUMBER = 3;
+    // required uint64 timeout = 2;
+    public static final int TIMEOUT_FIELD_NUMBER = 2;
     private boolean hasTimeout;
     private long timeout_ = 0L;
     public boolean hasTimeout() { return hasTimeout; }
     public long getTimeout() { return timeout_; }
     
-    // required .ActorType actorType = 4;
-    public static final int ACTORTYPE_FIELD_NUMBER = 4;
+    // required .ActorType actorType = 3;
+    public static final int ACTORTYPE_FIELD_NUMBER = 3;
     private boolean hasActorType;
     private akka.remote.protocol.RemoteProtocol.ActorType actorType_;
     public boolean hasActorType() { return hasActorType; }
     public akka.remote.protocol.RemoteProtocol.ActorType getActorType() { return actorType_; }
     
-    // optional .TypedActorInfoProtocol typedActorInfo = 5;
-    public static final int TYPEDACTORINFO_FIELD_NUMBER = 5;
+    // optional .TypedActorInfoProtocol typedActorInfo = 4;
+    public static final int TYPEDACTORINFO_FIELD_NUMBER = 4;
     private boolean hasTypedActorInfo;
     private akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol typedActorInfo_;
     public boolean hasTypedActorInfo() { return hasTypedActorInfo; }
     public akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol getTypedActorInfo() { return typedActorInfo_; }
     
-    // optional string address = 6;
-    public static final int ADDRESS_FIELD_NUMBER = 6;
+    // optional string address = 5;
+    public static final int ADDRESS_FIELD_NUMBER = 5;
     private boolean hasAddress;
     private java.lang.String address_ = "";
     public boolean hasAddress() { return hasAddress; }
@@ -4172,7 +4122,6 @@ public final class RemoteProtocol {
     }
     public final boolean isInitialized() {
       if (!hasUuid) return false;
-      if (!hasTarget) return false;
       if (!hasTimeout) return false;
       if (!hasActorType) return false;
       if (!getUuid().isInitialized()) return false;
@@ -4188,20 +4137,17 @@ public final class RemoteProtocol {
       if (hasUuid()) {
         output.writeMessage(1, getUuid());
       }
-      if (hasTarget()) {
-        output.writeString(2, getTarget());
-      }
       if (hasTimeout()) {
-        output.writeUInt64(3, getTimeout());
+        output.writeUInt64(2, getTimeout());
       }
       if (hasActorType()) {
-        output.writeEnum(4, getActorType().getNumber());
+        output.writeEnum(3, getActorType().getNumber());
       }
       if (hasTypedActorInfo()) {
-        output.writeMessage(5, getTypedActorInfo());
+        output.writeMessage(4, getTypedActorInfo());
       }
       if (hasAddress()) {
-        output.writeString(6, getAddress());
+        output.writeString(5, getAddress());
       }
       getUnknownFields().writeTo(output);
     }
@@ -4216,25 +4162,21 @@ public final class RemoteProtocol {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(1, getUuid());
       }
-      if (hasTarget()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(2, getTarget());
-      }
       if (hasTimeout()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(3, getTimeout());
+          .computeUInt64Size(2, getTimeout());
       }
       if (hasActorType()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeEnumSize(4, getActorType().getNumber());
+          .computeEnumSize(3, getActorType().getNumber());
       }
       if (hasTypedActorInfo()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(5, getTypedActorInfo());
+          .computeMessageSize(4, getTypedActorInfo());
       }
       if (hasAddress()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(6, getAddress());
+          .computeStringSize(5, getAddress());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -4397,9 +4339,6 @@ public final class RemoteProtocol {
         if (other.hasUuid()) {
           mergeUuid(other.getUuid());
         }
-        if (other.hasTarget()) {
-          setTarget(other.getTarget());
-        }
         if (other.hasTimeout()) {
           setTimeout(other.getTimeout());
         }
@@ -4446,25 +4385,21 @@ public final class RemoteProtocol {
               setUuid(subBuilder.buildPartial());
               break;
             }
-            case 18: {
-              setTarget(input.readString());
-              break;
-            }
-            case 24: {
+            case 16: {
               setTimeout(input.readUInt64());
               break;
             }
-            case 32: {
+            case 24: {
               int rawValue = input.readEnum();
               akka.remote.protocol.RemoteProtocol.ActorType value = akka.remote.protocol.RemoteProtocol.ActorType.valueOf(rawValue);
               if (value == null) {
-                unknownFields.mergeVarintField(4, rawValue);
+                unknownFields.mergeVarintField(3, rawValue);
               } else {
                 setActorType(value);
               }
               break;
             }
-            case 42: {
+            case 34: {
               akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol.Builder subBuilder = akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol.newBuilder();
               if (hasTypedActorInfo()) {
                 subBuilder.mergeFrom(getTypedActorInfo());
@@ -4473,7 +4408,7 @@ public final class RemoteProtocol {
               setTypedActorInfo(subBuilder.buildPartial());
               break;
             }
-            case 50: {
+            case 42: {
               setAddress(input.readString());
               break;
             }
@@ -4519,28 +4454,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required string target = 2;
-      public boolean hasTarget() {
-        return result.hasTarget();
-      }
-      public java.lang.String getTarget() {
-        return result.getTarget();
-      }
-      public Builder setTarget(java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  result.hasTarget = true;
-        result.target_ = value;
-        return this;
-      }
-      public Builder clearTarget() {
-        result.hasTarget = false;
-        result.target_ = getDefaultInstance().getTarget();
-        return this;
-      }
-      
-      // required uint64 timeout = 3;
+      // required uint64 timeout = 2;
       public boolean hasTimeout() {
         return result.hasTimeout();
       }
@@ -4558,7 +4472,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required .ActorType actorType = 4;
+      // required .ActorType actorType = 3;
       public boolean hasActorType() {
         return result.hasActorType();
       }
@@ -4579,7 +4493,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional .TypedActorInfoProtocol typedActorInfo = 5;
+      // optional .TypedActorInfoProtocol typedActorInfo = 4;
       public boolean hasTypedActorInfo() {
         return result.hasTypedActorInfo();
       }
@@ -4616,7 +4530,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional string address = 6;
+      // optional string address = 5;
       public boolean hasAddress() {
         return result.hasAddress();
       }
@@ -6687,34 +6601,33 @@ public final class RemoteProtocol {
       "tadata\030\010 \003(\0132\026.MetadataEntryProtocol\022\016\n\006" +
       "cookie\030\t \001(\t\"J\n\025RemoteControlProtocol\022\016\n" +
       "\006cookie\030\001 \001(\t\022!\n\013commandType\030\002 \002(\0162\014.Com" +
-      "mandType\"R\n\026RemoteActorRefProtocol\022\017\n\007ad" +
-      "dress\030\001 \002(\t\022\026\n\016actorClassname\030\002 \002(\t\022\017\n\007t" +
-      "imeout\030\003 \001(\004\"_\n\033RemoteTypedActorRefProto" +
-      "col\022)\n\010actorRef\030\001 \002(\0132\027.RemoteActorRefPr" +
-      "otocol\022\025\n\rinterfaceName\030\002 \002(\t\"\323\002\n\032Serial" +
-      "izedActorRefProtocol\022\033\n\004uuid\030\001 \002(\0132\r.Uui" +
-      "dProtocol\022\017\n\007address\030\002 \002(\t\022\026\n\016actorClass",
-      "name\030\003 \002(\t\022\025\n\ractorInstance\030\004 \001(\014\022\033\n\023ser" +
-      "ializerClassname\030\005 \001(\t\022\017\n\007timeout\030\006 \001(\004\022" +
-      "\026\n\016receiveTimeout\030\007 \001(\004\022%\n\tlifeCycle\030\010 \001" +
-      "(\0132\022.LifeCycleProtocol\022+\n\nsupervisor\030\t \001" +
-      "(\0132\027.RemoteActorRefProtocol\022\024\n\014hotswapSt" +
-      "ack\030\n \001(\014\022(\n\010messages\030\013 \003(\0132\026.RemoteMess" +
-      "ageProtocol\"g\n\037SerializedTypedActorRefPr" +
-      "otocol\022-\n\010actorRef\030\001 \002(\0132\033.SerializedAct" +
-      "orRefProtocol\022\025\n\rinterfaceName\030\002 \002(\t\"r\n\017" +
-      "MessageProtocol\0225\n\023serializationScheme\030\001",
-      " \002(\0162\030.SerializationSchemeType\022\017\n\007messag" +
-      "e\030\002 \002(\014\022\027\n\017messageManifest\030\003 \001(\014\"\262\001\n\021Act" +
-      "orInfoProtocol\022\033\n\004uuid\030\001 \002(\0132\r.UuidProto" +
-      "col\022\016\n\006target\030\002 \002(\t\022\017\n\007timeout\030\003 \002(\004\022\035\n\t" +
-      "actorType\030\004 \002(\0162\n.ActorType\022/\n\016typedActo" +
-      "rInfo\030\005 \001(\0132\027.TypedActorInfoProtocol\022\017\n\007" +
-      "address\030\006 \001(\t\";\n\026TypedActorInfoProtocol\022" +
+      "mandType\":\n\026RemoteActorRefProtocol\022\017\n\007ad" +
+      "dress\030\001 \002(\t\022\017\n\007timeout\030\002 \001(\004\"_\n\033RemoteTy" +
+      "pedActorRefProtocol\022)\n\010actorRef\030\001 \002(\0132\027." +
+      "RemoteActorRefProtocol\022\025\n\rinterfaceName\030" +
+      "\002 \002(\t\"\323\002\n\032SerializedActorRefProtocol\022\033\n\004" +
+      "uuid\030\001 \002(\0132\r.UuidProtocol\022\017\n\007address\030\002 \002" +
+      "(\t\022\026\n\016actorClassname\030\003 \002(\t\022\025\n\ractorInsta",
+      "nce\030\004 \001(\014\022\033\n\023serializerClassname\030\005 \001(\t\022\017" +
+      "\n\007timeout\030\006 \001(\004\022\026\n\016receiveTimeout\030\007 \001(\004\022" +
+      "%\n\tlifeCycle\030\010 \001(\0132\022.LifeCycleProtocol\022+" +
+      "\n\nsupervisor\030\t \001(\0132\027.RemoteActorRefProto" +
+      "col\022\024\n\014hotswapStack\030\n \001(\014\022(\n\010messages\030\013 " +
+      "\003(\0132\026.RemoteMessageProtocol\"g\n\037Serialize" +
+      "dTypedActorRefProtocol\022-\n\010actorRef\030\001 \002(\013" +
+      "2\033.SerializedActorRefProtocol\022\025\n\rinterfa" +
+      "ceName\030\002 \002(\t\"r\n\017MessageProtocol\0225\n\023seria" +
+      "lizationScheme\030\001 \002(\0162\030.SerializationSche",
+      "meType\022\017\n\007message\030\002 \002(\014\022\027\n\017messageManife" +
+      "st\030\003 \001(\014\"\242\001\n\021ActorInfoProtocol\022\033\n\004uuid\030\001" +
+      " \002(\0132\r.UuidProtocol\022\017\n\007timeout\030\002 \002(\004\022\035\n\t" +
+      "actorType\030\003 \002(\0162\n.ActorType\022/\n\016typedActo" +
+      "rInfo\030\004 \001(\0132\027.TypedActorInfoProtocol\022\017\n\007" +
+      "address\030\005 \001(\t\";\n\026TypedActorInfoProtocol\022" +
       "\021\n\tinterface\030\001 \002(\t\022\016\n\006method\030\002 \002(\t\")\n\014Uu" +
       "idProtocol\022\014\n\004high\030\001 \002(\004\022\013\n\003low\030\002 \002(\004\"3\n" +
-      "\025MetadataEntryProtocol\022\013\n\003key\030\001 \002(\t\022\r\n\005v",
-      "alue\030\002 \002(\014\"6\n\021LifeCycleProtocol\022!\n\tlifeC" +
+      "\025MetadataEntryProtocol\022\013\n\003key\030\001 \002(\t\022\r\n\005v" +
+      "alue\030\002 \002(\014\"6\n\021LifeCycleProtocol\022!\n\tlifeC",
       "ycle\030\001 \002(\0162\016.LifeCycleType\"1\n\017AddressPro" +
       "tocol\022\020\n\010hostname\030\001 \002(\t\022\014\n\004port\030\002 \002(\r\"7\n" +
       "\021ExceptionProtocol\022\021\n\tclassname\030\001 \002(\t\022\017\n" +
@@ -6723,7 +6636,7 @@ public final class RemoteProtocol {
       "A_ACTOR\020\002\022\017\n\013TYPED_ACTOR\020\003*]\n\027Serializat" +
       "ionSchemeType\022\010\n\004JAVA\020\001\022\013\n\007SBINARY\020\002\022\016\n\n" +
       "SCALA_JSON\020\003\022\r\n\tJAVA_JSON\020\004\022\014\n\010PROTOBUF\020" +
-      "\005*-\n\rLifeCycleType\022\r\n\tPERMANENT\020\001\022\r\n\tTEM",
+      "\005*-\n\rLifeCycleType\022\r\n\tPERMANENT\020\001\022\r\n\tTEM" +
       "PORARY\020\002B\030\n\024akka.remote.protocolH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
@@ -6760,7 +6673,7 @@ public final class RemoteProtocol {
           internal_static_RemoteActorRefProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_RemoteActorRefProtocol_descriptor,
-              new java.lang.String[] { "Address", "ActorClassname", "Timeout", },
+              new java.lang.String[] { "Address", "Timeout", },
               akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.class,
               akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.Builder.class);
           internal_static_RemoteTypedActorRefProtocol_descriptor =
@@ -6800,7 +6713,7 @@ public final class RemoteProtocol {
           internal_static_ActorInfoProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ActorInfoProtocol_descriptor,
-              new java.lang.String[] { "Uuid", "Target", "Timeout", "ActorType", "TypedActorInfo", "Address", },
+              new java.lang.String[] { "Uuid", "Timeout", "ActorType", "TypedActorInfo", "Address", },
               akka.remote.protocol.RemoteProtocol.ActorInfoProtocol.class,
               akka.remote.protocol.RemoteProtocol.ActorInfoProtocol.Builder.class);
           internal_static_TypedActorInfoProtocol_descriptor =

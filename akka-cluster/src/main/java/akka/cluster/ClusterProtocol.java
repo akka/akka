@@ -147,13 +147,6 @@ public final class ClusterProtocol {
     public boolean hasActorAddress() { return hasActorAddress; }
     public java.lang.String getActorAddress() { return actorAddress_; }
     
-    // optional string actorClassName = 4;
-    public static final int ACTORCLASSNAME_FIELD_NUMBER = 4;
-    private boolean hasActorClassName;
-    private java.lang.String actorClassName_ = "";
-    public boolean hasActorClassName() { return hasActorClassName; }
-    public java.lang.String getActorClassName() { return actorClassName_; }
-    
     // optional bytes payload = 5;
     public static final int PAYLOAD_FIELD_NUMBER = 5;
     private boolean hasPayload;
@@ -185,9 +178,6 @@ public final class ClusterProtocol {
       if (hasActorAddress()) {
         output.writeString(3, getActorAddress());
       }
-      if (hasActorClassName()) {
-        output.writeString(4, getActorClassName());
-      }
       if (hasPayload()) {
         output.writeBytes(5, getPayload());
       }
@@ -211,10 +201,6 @@ public final class ClusterProtocol {
       if (hasActorAddress()) {
         size += com.google.protobuf.CodedOutputStream
           .computeStringSize(3, getActorAddress());
-      }
-      if (hasActorClassName()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(4, getActorClassName());
       }
       if (hasPayload()) {
         size += com.google.protobuf.CodedOutputStream
@@ -387,9 +373,6 @@ public final class ClusterProtocol {
         if (other.hasActorAddress()) {
           setActorAddress(other.getActorAddress());
         }
-        if (other.hasActorClassName()) {
-          setActorClassName(other.getActorClassName());
-        }
         if (other.hasPayload()) {
           setPayload(other.getPayload());
         }
@@ -439,10 +422,6 @@ public final class ClusterProtocol {
             }
             case 26: {
               setActorAddress(input.readString());
-              break;
-            }
-            case 34: {
-              setActorClassName(input.readString());
               break;
             }
             case 42: {
@@ -530,27 +509,6 @@ public final class ClusterProtocol {
       public Builder clearActorAddress() {
         result.hasActorAddress = false;
         result.actorAddress_ = getDefaultInstance().getActorAddress();
-        return this;
-      }
-      
-      // optional string actorClassName = 4;
-      public boolean hasActorClassName() {
-        return result.hasActorClassName();
-      }
-      public java.lang.String getActorClassName() {
-        return result.getActorClassName();
-      }
-      public Builder setActorClassName(java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  result.hasActorClassName = true;
-        result.actorClassName_ = value;
-        return this;
-      }
-      public Builder clearActorClassName() {
-        result.hasActorClassName = false;
-        result.actorClassName_ = getDefaultInstance().getActorClassName();
         return this;
       }
       
@@ -1376,24 +1334,23 @@ public final class ClusterProtocol {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\025ClusterProtocol.proto\"\255\001\n\033RemoteDaemon" +
+      "\n\025ClusterProtocol.proto\"\225\001\n\033RemoteDaemon" +
       "MessageProtocol\022-\n\013messageType\030\001 \002(\0162\030.R" +
       "emoteDaemonMessageType\022 \n\tactorUuid\030\002 \001(" +
-      "\0132\r.UuidProtocol\022\024\n\014actorAddress\030\003 \001(\t\022\026" +
-      "\n\016actorClassName\030\004 \001(\t\022\017\n\007payload\030\005 \001(\014\"" +
-      "\212\001\n\035DurableMailboxMessageProtocol\022\031\n\021own" +
-      "erActorAddress\030\001 \002(\t\022\032\n\022senderActorAddre" +
-      "ss\030\002 \001(\t\022!\n\nfutureUuid\030\003 \001(\0132\r.UuidProto" +
-      "col\022\017\n\007message\030\004 \002(\014\")\n\014UuidProtocol\022\014\n\004" +
-      "high\030\001 \002(\004\022\013\n\003low\030\002 \002(\004*\232\002\n\027RemoteDaemon",
-      "MessageType\022\t\n\005START\020\001\022\010\n\004STOP\020\002\022\007\n\003USE\020" +
-      "\003\022\013\n\007RELEASE\020\004\022\022\n\016MAKE_AVAILABLE\020\005\022\024\n\020MA" +
-      "KE_UNAVAILABLE\020\006\022\016\n\nDISCONNECT\020\007\022\r\n\tRECO" +
-      "NNECT\020\010\022\n\n\006RESIGN\020\t\022\031\n\025FAIL_OVER_CONNECT" +
-      "IONS\020\n\022\026\n\022FUNCTION_FUN0_UNIT\020\013\022\025\n\021FUNCTI" +
-      "ON_FUN0_ANY\020\014\022\032\n\026FUNCTION_FUN1_ARG_UNIT\020" +
-      "\r\022\031\n\025FUNCTION_FUN1_ARG_ANY\020\016B\020\n\014akka.clu" +
-      "sterH\001"
+      "\0132\r.UuidProtocol\022\024\n\014actorAddress\030\003 \001(\t\022\017" +
+      "\n\007payload\030\005 \001(\014\"\212\001\n\035DurableMailboxMessag" +
+      "eProtocol\022\031\n\021ownerActorAddress\030\001 \002(\t\022\032\n\022" +
+      "senderActorAddress\030\002 \001(\t\022!\n\nfutureUuid\030\003" +
+      " \001(\0132\r.UuidProtocol\022\017\n\007message\030\004 \002(\014\")\n\014" +
+      "UuidProtocol\022\014\n\004high\030\001 \002(\004\022\013\n\003low\030\002 \002(\004*" +
+      "\232\002\n\027RemoteDaemonMessageType\022\t\n\005START\020\001\022\010",
+      "\n\004STOP\020\002\022\007\n\003USE\020\003\022\013\n\007RELEASE\020\004\022\022\n\016MAKE_A" +
+      "VAILABLE\020\005\022\024\n\020MAKE_UNAVAILABLE\020\006\022\016\n\nDISC" +
+      "ONNECT\020\007\022\r\n\tRECONNECT\020\010\022\n\n\006RESIGN\020\t\022\031\n\025F" +
+      "AIL_OVER_CONNECTIONS\020\n\022\026\n\022FUNCTION_FUN0_" +
+      "UNIT\020\013\022\025\n\021FUNCTION_FUN0_ANY\020\014\022\032\n\026FUNCTIO" +
+      "N_FUN1_ARG_UNIT\020\r\022\031\n\025FUNCTION_FUN1_ARG_A" +
+      "NY\020\016B\020\n\014akka.clusterH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -1405,7 +1362,7 @@ public final class ClusterProtocol {
           internal_static_RemoteDaemonMessageProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_RemoteDaemonMessageProtocol_descriptor,
-              new java.lang.String[] { "MessageType", "ActorUuid", "ActorAddress", "ActorClassName", "Payload", },
+              new java.lang.String[] { "MessageType", "ActorUuid", "ActorAddress", "Payload", },
               akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol.class,
               akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol.Builder.class);
           internal_static_DurableMailboxMessageProtocol_descriptor =

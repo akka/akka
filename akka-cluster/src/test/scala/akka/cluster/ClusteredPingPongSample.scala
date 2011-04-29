@@ -13,6 +13,8 @@ import akka.serialization.{Serializer, SerializerBasedActorFormat}
 import java.util.concurrent.CountDownLatch
 
 object PingPong {
+  val PING_ADDRESS = "ping"
+  val PONG_ADDRESS = "pong"
 
   val NrOfPings = 5
 
@@ -79,8 +81,6 @@ object ClusteredPingPongSample {
   import BinaryFormats._
 
   val CLUSTER_NAME = "test-cluster"
-  val PING_SERVICE = classOf[PingActor].getName
-  val PONG_SERVICE = classOf[PongActor].getName
 
   def main(args: Array[String]) = run
 
@@ -102,11 +102,11 @@ object ClusteredPingPongSample {
     // ------------------------
 
     // Store the PingActor in the cluster, but do not deploy it anywhere
-    localNode.store(classOf[PingActor])
+    localNode.store(classOf[PingActor], PING_ADDRESS)
 
     // Store the PongActor in the cluster and deploy it
     // to 5 (replication factor) nodes in the cluster
-    localNode.store(classOf[PongActor], 5)
+    localNode.store(classOf[PongActor], PONG_ADDRESS, 5)
 
     Thread.sleep(1000) // let the deployment finish
 
@@ -115,10 +115,10 @@ object ClusteredPingPongSample {
     // ------------------------
 
     // Check out a local PingActor instance (not reference)
-    val ping = localNode.use[PingActor](ActorAddress(actorId = PING_SERVICE)).head
+    val ping = localNode.use[PingActor](PING_ADDRESS).head
 
     // Get a reference to all the pong actors through a round-robin router ActorRef
-    val pong = localNode.ref(ActorAddress(actorId = PONG_SERVICE), router = Router.RoundRobin)
+    val pong = localNode.ref(PONG_ADDRESS, router = Router.RoundRobin)
 
     // ------------------------
     // Play the game

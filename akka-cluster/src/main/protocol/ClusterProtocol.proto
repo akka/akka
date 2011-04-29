@@ -18,7 +18,6 @@ message RemoteDaemonMessageProtocol {
   required RemoteDaemonMessageType messageType = 1;
   optional UuidProtocol actorUuid = 2;
   optional string actorAddress = 3;
-  optional string actorClassName = 4;
   optional bytes payload = 5;
 }
 

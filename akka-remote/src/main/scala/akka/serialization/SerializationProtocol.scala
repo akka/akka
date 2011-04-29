@@ -67,7 +67,7 @@ trait StatelessActorFormat[T <: Actor] extends Format[T] with scala.Serializable
 trait SerializerBasedActorFormat[T <: Actor] extends Format[T] with scala.Serializable {
   val serializer: Serializer
 
-  def fromBinary(bytes: Array[Byte], act: T) = serializer.fromBinary(bytes, Some(act.self.actorClass)).asInstanceOf[T]
+  def fromBinary(bytes: Array[Byte], act: T) = serializer.fromBinary(bytes, Some(act.getClass)).asInstanceOf[T]
 
   def toBinary(ac: T) = serializer.toBinary(ac)
 }
@@ -106,7 +106,7 @@ object ActorSerialization {
     val builder = SerializedActorRefProtocol.newBuilder
       .setUuid(UuidProtocol.newBuilder.setHigh(actorRef.uuid.getTime).setLow(actorRef.uuid.getClockSeqAndNode).build)
       .setAddress(actorRef.address)
-      .setActorClassname(actorRef.actorClass.getName)
+      .setActorClassname(actorRef.actorInstance.get.getClass.getName)
       .setTimeout(actorRef.timeout)
 
     if (serializeMailBox == true) {
@@ -125,7 +125,6 @@ object ActorSerialization {
             Some(actorRef),
             Left(actorRef.uuid),
             actorRef.address,
-            actorRef.actorClassName,
             actorRef.timeout,
             Right(m.message),
             false,
@@ -228,7 +227,6 @@ object RemoteActorSerialization {
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
     val ref = RemoteActorRef(
       protocol.getAddress,
-      protocol.getActorClassname,
       protocol.getTimeout,
       loader)
     ref
@@ -244,7 +242,6 @@ object RemoteActorSerialization {
 
     RemoteActorRefProtocol.newBuilder
         .setAddress("uuid:" + uuid.toString)
-        .setActorClassname(actorClassName)
         .setTimeout(timeout)
         .build
   }
@@ -253,7 +250,6 @@ object RemoteActorSerialization {
       actorRef: Option[ActorRef],
       replyUuid: Either[Uuid, UuidProtocol],
       actorAddress: String,
-      actorClassName: String,
       timeout: Long,
       message: Either[Throwable, Any],
       isOneWay: Boolean,
@@ -270,7 +266,6 @@ object RemoteActorSerialization {
     val actorInfoBuilder = ActorInfoProtocol.newBuilder
         .setUuid(uuidProtocol)
         .setAddress(actorAddress)
-        .setTarget(actorClassName)
         .setTimeout(timeout)
 
     typedActorInfo.foreach { typedActor =>

@@ -270,15 +270,15 @@ class TransactionLog private (
  */
 object TransactionLog {
 
-  val digestType = config.getString("akka.cloud.cluster.replication.digest-type", "CRC32") match {
+  val digestType = config.getString("akka.cluster.replication.digest-type", "CRC32") match {
     case "CRC32" => BookKeeper.DigestType.CRC32
     case "MAC"   => BookKeeper.DigestType.MAC
     case unknown => throw new ConfigurationException(
-                    "akka.cloud.cluster.replication.digest-type is invalid [" + unknown + "]")
+                    "akka.cluster.replication.digest-type is invalid [" + unknown + "]")
   }
-  val password     = config.getString("akka.cloud.cluster.replication.password", "secret").getBytes("UTF-8")
-  val ensembleSize = config.getInt("akka.cloud.cluster.replication.ensemble-size", 3)
-  val quorumSize   = config.getInt("akka.cloud.cluster.replication.quorum-size", 2)
+  val password     = config.getString("akka.cluster.replication.password", "secret").getBytes("UTF-8")
+  val ensembleSize = config.getInt("akka.cluster.replication.ensemble-size", 3)
+  val quorumSize   = config.getInt("akka.cluster.replication.quorum-size", 2)
   val timeout      = 5000 // FIXME make configurable
 
   private[akka] val transactionLogNode = "/transaction-log-ids"

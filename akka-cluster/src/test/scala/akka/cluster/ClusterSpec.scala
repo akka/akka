@@ -10,6 +10,7 @@ import akka.actor._
 import akka.actor.Actor._
 import akka.serialization.{Serializer, SerializerBasedActorFormat}
 import akka.util.Helpers._
+import akka.actor.DeploymentConfig._
 
 import java.util.concurrent.{ CyclicBarrier, TimeUnit }
 
@@ -42,6 +43,7 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
   var zkServer: ZkServer = _
 
   "A ClusterNode" should {
+    /*
     "be able to start and stop - one node" in {
       val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "start-stop-1", port = 9001))
       node.start()
@@ -237,7 +239,7 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
 
     "be able to cluster an actor by ActorRef" in {
       // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
+      val actorRef = actorOf[MyJavaSerializableActor]("actor-address").start
 
       val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "cluster-actor-1", port = 9001))
       node.start
@@ -247,29 +249,15 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       var serializeMailbox = true
       node.store(actorRef, serializeMailbox)
 
-      node.isClustered(ActorAddress(actorUuid = actorRef.uuid)) must be(true)
+      node.isClustered(actorRef.address) must be(true)
       node.uuidsForClusteredActors.exists(_ == actorRef.uuid) must be(true)
-
-      node.stop
-    }
-
-    "be able to cluster an actor by class" in {
-      // create actor
-      val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "cluster-actor-1", port = 9001))
-      node.start
-
-      // register actor
-      import BinaryFormatMyJavaSerializableActor._
-      node.store(classOf[MyJavaSerializableActor])
-
-      node.isClustered(ActorAddress(actorClassName = classOf[MyJavaSerializableActor].getName)) must be(true)
 
       node.stop
     }
 
     "be able to remove an actor by actor uuid" in {
       // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
+      val actorRef = actorOf[MyJavaSerializableActor]("actor-address").start
 
       val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "remove-actor-uuid", port = 9001))
       node.start
@@ -279,19 +267,18 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       var serializeMailbox = true
       node.store(actorRef, serializeMailbox)
 
-      node.isClustered(ActorAddress(actorUuid = actorRef.uuid)) must be(true)
       node.uuidsForClusteredActors.exists(_ == actorRef.uuid) must be(true)
 
       // deregister actor
-      node.remove(ActorAddress(actorUuid = actorRef.uuid))
+      node.remove(actorRef.uuid)
       node.uuidsForClusteredActors.exists(_ == actorRef.uuid) must be(false)
 
       node.stop
     }
 
-    "be able to remove an actor by actor id" in {
+    "be able to remove an actor by actor address" in {
       // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
+      val actorRef = actorOf[MyJavaSerializableActor]("actor-address").start
 
       val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "remove-actor-id", port = 9001))
       node.start
@@ -301,71 +288,22 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       var serializeMailbox = true
       node.store(actorRef, serializeMailbox)
 
-      node.isClustered(ActorAddress(actorId = actorRef.id)) must be(true)
-      node.idsForClusteredActors.exists(_ == actorRef.id) must be(true)
+      node.isClustered(actorRef.address) must be(true)
+      node.addressesForClusteredActors.exists(_ == actorRef.address) must be(true)
 
       // deregister actor
-      node.remove(ActorAddress(actorId = actorRef.id))
-      node.idsForClusteredActors.exists(_ == actorRef.id) must be(false)
+      node.remove(actorRef.address)
+      node.addressesForClusteredActors.exists(_ == actorRef.address) must be(false)
 
       node.stop
     }
 
-    "be able to remove an actor by actor class name" in {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
-
-      val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "remove-actor-classname", port = 9001))
-      node.start
-
-      // register actor
-      import BinaryFormatMyJavaSerializableActor._
-      var serializeMailbox = true
-      node.store(actorRef, serializeMailbox)
-
-      node.isClustered(ActorAddress(actorClassName = actorRef.actorClassName)) must be(true)
-      node.classNamesForClusteredActors.exists(_ == actorRef.actorClassName) must be(true)
-
-      // deregister actor
-      node.remove(ActorAddress(actorClassName = actorRef.actorClassName))
-      node.classNamesForClusteredActors.exists(_ == actorRef.actorClassName) must be(false)
-
-      node.stop
-    }
-
-    "be able to use an actor by actor uuid" in {
-      val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "use-actor-uuid", port = 9001))
-      node.start
-
-      // create actor
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      (actorRef1 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef1 !! "hello").getOrElse("_") must equal("world 2")
-
-      // register actor
-      var serializeMailbox = true
-      import BinaryFormatMyJavaSerializableActor._
-      node.store(actorRef1, serializeMailbox)
-      node.isClustered(ActorAddress(actorUuid = actorRef1.uuid)) must be(true)
-      node.uuidsForClusteredActors.exists(_ == actorRef1.uuid) must be(true)
-
-      // check out actor
-      val actorRef2 = node.use(ActorAddress(actorUuid = actorRef1.uuid)).head
-      node.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "use-actor-uuid")) must be(true)
-      (actorRef2 !! "hello").getOrElse("_") must equal("world 3")
-
-      actorRef1.stop
-      actorRef2.stop
-
-      node.stop
-    }
-
-    "be able to use an actor by actor id" in {
+    "be able to use an actor by actor address" in {
       val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "use-actor-id", port = 9001))
       node.start
 
       // create actor
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
+      val actorRef1 = actorOf[MyJavaSerializableActor]("actor-address").start
       (actorRef1 !! "hello").getOrElse("_") must equal("world 1")
       (actorRef1 !! "hello").getOrElse("_") must equal("world 2")
 
@@ -373,12 +311,12 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       var serializeMailbox = true
       import BinaryFormatMyJavaSerializableActor._
       node.store(actorRef1, serializeMailbox)
-      node.isClustered(ActorAddress(actorId = actorRef1.id)) must be(true)
-      node.idsForClusteredActors.exists(_ == actorRef1.id) must be(true)
+      node.isClustered(actorRef1.address) must be(true)
+      node.addressesForClusteredActors.exists(_ == actorRef1.address) must be(true)
 
       // check out actor
-      val actorRef2 = node.use(ActorAddress(actorId = actorRef1.id)).head
-      node.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "use-actor-id")) must be(true)
+      val actorRef2 = node.use(actorRef1.address).head
+      node.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "use-actor-id")) must be(true)
       (actorRef2 !! "hello").getOrElse("_") must equal("world 3")
 
       actorRef1.stop
@@ -387,70 +325,12 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node.stop
     }
 
-    "be able to use an actor by actor class name" in {
-      val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "use-actor-classname", port = 9001))
-      node.start
-
-      // create actor
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      (actorRef1 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef1 !! "hello").getOrElse("_") must equal("world 2")
-
-      // register actor
-      var serializeMailbox = true
-      import BinaryFormatMyJavaSerializableActor._
-      node.store(actorRef1, serializeMailbox)
-      node.isClustered(ActorAddress(actorClassName = actorRef1.actorClassName)) must be(true)
-      node.classNamesForClusteredActors.exists(_ == actorRef1.actorClassName) must be(true)
-
-      // check out actor
-      val actorRef2 = node.use(ActorAddress(actorClassName = actorRef1.actorClassName)).head
-      node.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "use-actor-classname")) must be(true)
-      (actorRef2 !! "hello").getOrElse("_") must equal("world 3")
-
-      actorRef1.stop
-      actorRef2.stop
-
-      node.stop
-    }
-
-    "be able to release an actor by uuid" in {
-      val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "release-actor-uuid", port = 9001))
-      node.start
-
-      // create actor
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      (actorRef1 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef1 !! "hello").getOrElse("_") must equal("world 2")
-
-      // register actor
-      var serializeMailbox = true
-      import BinaryFormatMyJavaSerializableActor._
-      node.store(actorRef1, serializeMailbox)
-      node.isClustered(ActorAddress(actorUuid = actorRef1.uuid)) must be(true)
-      node.uuidsForClusteredActors.exists(_ == actorRef1.uuid) must be(true)
-
-      // check out actor
-      val actorRef2 = node.use(ActorAddress(actorUuid = actorRef1.uuid)).head
-      node.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "release-actor-uuid")) must be(true)
-      (actorRef2 !! "hello").getOrElse("_") must equal("world 3")
-
-      // check in actor
-      node.release(ActorAddress(actorUuid = actorRef2.uuid))
-      node.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "release-actor-uuid")) must be(false)
-
-      actorRef1.stop
-      actorRef2.stop
-
-      node.stop
-    }
-
-    "be able to release an actor by id" in {
+    "be able to release an actor by address" in {
       val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "release-actor-id", port = 9001))
       node.start
 
       // create actor
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
+      val actorRef1 = actorOf[MyJavaSerializableActor]("actor-address").start
       (actorRef1 !! "hello").getOrElse("_") must equal("world 1")
       (actorRef1 !! "hello").getOrElse("_") must equal("world 2")
 
@@ -458,17 +338,17 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       var serializeMailbox = true
       import BinaryFormatMyJavaSerializableActor._
       node.store(actorRef1, serializeMailbox)
-      node.isClustered(ActorAddress(actorId = actorRef1.id)) must be(true)
-      node.idsForClusteredActors.exists(_ == actorRef1.id) must be(true)
+      node.isClustered(actorRef1.address) must be(true)
+      node.addressesForClusteredActors.exists(_ == actorRef1.address) must be(true)
 
       // check out actor
-      val actorRef2 = node.use(ActorAddress(actorId = actorRef1.id)).head
-      node.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "release-actor-id")) must be(true)
+      val actorRef2 = node.use(actorRef1.address).head
+      node.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "release-actor-id")) must be(true)
       (actorRef2 !! "hello").getOrElse("_") must equal("world 3")
 
       // check in actor
-      node.release(ActorAddress(actorId = actorRef2.id))
-      node.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "release-actor-id")) must be(false)
+      node.release(actorRef2.address)
+      node.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "release-actor-id")) must be(false)
 
       actorRef1.stop
       actorRef2.stop
@@ -476,65 +356,9 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node.stop
     }
 
-    "be able to release an actor by class name" in {
-      val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "release-actor-classname", port = 9001))
-      node.start
-
+    "be able to release used actor on remove an actor by actor address" in {
       // create actor
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      (actorRef1 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef1 !! "hello").getOrElse("_") must equal("world 2")
-
-      // register actor
-      var serializeMailbox = true
-      import BinaryFormatMyJavaSerializableActor._
-      node.store(actorRef1, serializeMailbox)
-      node.isClustered(ActorAddress(actorClassName = actorRef1.actorClassName)) must be(true)
-      node.classNamesForClusteredActors.exists(_ == actorRef1.actorClassName) must be(true)
-
-      // check out actor
-      val actorRef2 = node.use(ActorAddress(actorClassName = actorRef1.actorClassName)).head
-      node.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "release-actor-classname")) must be(true)
-      (actorRef2 !! "hello").getOrElse("_") must equal("world 3")
-
-      // check in actor
-      node.release(ActorAddress(actorClassName = actorRef2.actorClassName))
-      node.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "release-actor-classname")) must be(false)
-
-      actorRef1.stop
-      actorRef2.stop
-
-      node.stop
-    }
-
-    "be able to release used actor on remove an actor by actor uuid" in {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
-
-      val node  = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "remove-actor-uuid", port = 9001)).start
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "remove-actor-uuid-2", port = 9002)).start
-
-      // register actor
-      import BinaryFormatMyJavaSerializableActor._
-      var serializeMailbox = true
-      node.store(actorRef, serializeMailbox)
-      val actorRef2 = node2.use(ActorAddress(actorUuid = actorRef.uuid)).head
-
-      node2.isClustered(ActorAddress(actorUuid = actorRef.uuid)) must be(true)
-      node.uuidsForClusteredActors.exists(_ == actorRef.uuid) must be(true)
-      node.nodesForActorsInUseWithUuid(actorRef.uuid) must have length (1)
-
-      // deregister actor
-      node.remove(ActorAddress(actorUuid = actorRef.uuid))
-      node.uuidsForClusteredActors.exists(_ == actorRef.uuid) must be(false)
-
-      node.nodesForActorsInUseWithUuid(actorRef.uuid) must have length (0)
-      node.stop
-    }
-
-    "be able to release used actor on remove an actor by actor id" in {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
+      val actorRef = actorOf[MyJavaSerializableActor]("actor-address").start
 
       val node  = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "remove-actor-id", port = 9001)).start
       val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "remove-actor-uuid-2", port = 9002)).start
@@ -543,43 +367,17 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       import BinaryFormatMyJavaSerializableActor._
       var serializeMailbox = true
       node.store(actorRef, serializeMailbox)
-      val actorRef2 = node2.use(ActorAddress(actorId = actorRef.id)).head
+      val actorRef2 = node2.use(actorRef.address).head
 
-      node2.isClustered(ActorAddress(actorId = actorRef.id)) must be(true)
-      node.idsForClusteredActors.exists(_ == actorRef.id) must be(true)
-      node.nodesForActorsInUseWithId(actorRef.id) must have length (1)
-
-      // deregister actor
-      node.remove(ActorAddress(actorId = actorRef.id))
-      node.idsForClusteredActors.exists(_ == actorRef.id) must be(false)
-
-      node.nodesForActorsInUseWithId(actorRef.id) must have length (0)
-      node.stop
-    }
-
-    "be able to release used actor on remove an actor by actor class name" in {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
-
-      val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "remove-actor-classname", port = 9001))
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "remove-actor-uuid-2", port = 9002)).start
-      node.start
-
-      // register actor
-      import BinaryFormatMyJavaSerializableActor._
-      var serializeMailbox = true
-      node.store(actorRef, serializeMailbox)
-      val actorRef2 = node2.use(ActorAddress(actorClassName = actorRef.actorClassName)).head
-
-      node2.isClustered(ActorAddress(actorClassName = actorRef.actorClassName)) must be(true)
-      node.classNamesForClusteredActors.exists(_ == actorRef.actorClassName) must be(true)
-      node.nodesForActorsInUseWithClassName(actorRef.actorClassName) must have length (1)
+      node2.isClustered(actorRef.address) must be(true)
+      node.addressesForClusteredActors.exists(_ == actorRef.address) must be(true)
+      node.nodesForActorsInUseWithAddress(actorRef.address) must have length (1)
 
       // deregister actor
-      node.remove(ActorAddress(actorClassName = actorRef.actorClassName))
-      node.classNamesForClusteredActors.exists(_ == actorRef.actorClassName) must be(false)
-      node.nodesForActorsInUseWithClassName(actorRef.actorClassName) must have length (0)
+      node.remove(actorRef.address)
+      node.addressesForClusteredActors.exists(_ == actorRef.address) must be(false)
 
+      node.nodesForActorsInUseWithAddress(actorRef.address) must have length (0)
       node.stop
     }
 
@@ -588,7 +386,7 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node.start
 
       // create actor
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
+      val actorRef1 = actorOf[MyJavaSerializableActor]("actor-address").start
       (actorRef1 !! "hello").getOrElse("_") must equal("world 1")
       (actorRef1 !! "hello").getOrElse("_") must equal("world 2")
 
@@ -596,15 +394,15 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       var serializeMailbox = true
       import BinaryFormatMyJavaSerializableActor._
       node.store(actorRef1, serializeMailbox)
-      node.isClustered(ActorAddress(actorUuid = actorRef1.uuid)) must be(true)
+      node.isClustered(actorRef1.address) must be(true)
       node.uuidsForClusteredActors.exists(_ == actorRef1.uuid) must be(true)
 
       // check out actor
-      val actorRef2 = node.use(ActorAddress(actorUuid = actorRef1.uuid)).head
-      node.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "get-home-address")) must be(true)
+      val actorRef2 = node.use(actorRef1.address).head
+      node.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "get-home-address")) must be(true)
       (actorRef2 !! "hello").getOrElse("_") must equal("world 3")
 
-      val addresses = node.addressesForActor(ActorAddress(actorUuid = actorRef1.uuid))
+      val addresses = node.addressesForActor(actorRef1.address)
       addresses.length must be > (0)
       addresses(0)._2.getPort must equal(9001)
 
@@ -614,89 +412,15 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node.stop
     }
 
-    "be able to migrate an actor between two nodes using uuid" in {
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-uuid-1", port = 9001))
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-uuid-2", port = 9002))
-      node1.start
-      node2.start
-
-      // create actors
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      val actorRef2 = actorOf[MyJavaSerializableActor].start
-
-      // register actors
-      var serializeMailbox = true
-      import BinaryFormatMyJavaSerializableActor._
-      node1.store(actorRef1, serializeMailbox)
-      node1.store(actorRef2, serializeMailbox)
-
-      node1.isClustered(ActorAddress(actorUuid = actorRef1.uuid)) must be(true)
-      node1.uuidsForClusteredActors.exists(_ == actorRef1.uuid) must be(true)
-
-      // check out actor
-      val actorRef1_2 = node1.use(ActorAddress(actorUuid = actorRef1.uuid)).head
-      val actorRef2_2 = node1.use(ActorAddress(actorUuid = actorRef2.uuid)).head
-      (actorRef1_2 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef2_2 !! "hello").getOrElse("_") must equal("world 1")
-
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-uuid-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-uuid-1")) must be(true)
-
-      node1.uuidsForActorsInUse.exists(_ == actorRef1.uuid) must be(true)
-      node1.uuidsForActorsInUse.exists(_ == actorRef2.uuid) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-uuid-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-uuid-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-uuid-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-uuid-1")) must be(true)
-
-      node2.uuidsForActorsInUse.exists(_ == actorRef1.uuid) must be(false)
-      node2.uuidsForActorsInUse.exists(_ == actorRef2.uuid) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-uuid-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-uuid-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-uuid-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-uuid-2")) must be(false)
-
-      // migrate to node2
-      node1.migrate(node1.nodeAddress, node2.nodeAddress, ActorAddress(actorUuid = actorRef1_2.uuid))
-      node1.migrate(node1.nodeAddress, node2.nodeAddress, ActorAddress(actorUuid = actorRef2_2.uuid))
-
-      val actorRef1_3 = node2.use(ActorAddress(actorUuid = actorRef1.uuid)).head
-      val actorRef2_3 = node2.use(ActorAddress(actorUuid = actorRef2.uuid)).head
-      (actorRef1_3 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef2_3 !! "hello").getOrElse("_") must equal("world 1")
-
-      node1.uuidsForActorsInUse.exists(_ == actorRef1.uuid) must be(false)
-      node1.uuidsForActorsInUse.exists(_ == actorRef2.uuid) must be(false)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-uuid-1")) must be(false)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-uuid-1")) must be(false)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-uuid-1")) must be(false)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-uuid-1")) must be(false)
-
-      node2.uuidsForActorsInUse.exists(_ == actorRef1.uuid) must be(true)
-      node2.uuidsForActorsInUse.exists(_ == actorRef2.uuid) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-uuid-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-uuid-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-uuid-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-uuid-2")) must be(true)
-
-      actorRef1.stop
-      actorRef2.stop
-      actorRef1_2.stop
-      actorRef2_2.stop
-
-      node1.stop
-      node2.stop
-    }
-
-    "be able to migrate an actor between two nodes using id" in {
+    "be able to migrate an actor between two nodes using address" in {
       val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-id-1", port = 9001))
       val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-id-2", port = 9002))
       node1.start
       node2.start
 
       // create actors
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      val actorRef2 = actorOf[MyJavaSerializableActor].start
+      val actorRef1 = actorOf[MyJavaSerializableActor]("actor-address").start
+      val actorRef2 = actorOf[MyJavaSerializableActor]("actor-address").start
 
       // register actors
       var serializeMailbox = true
@@ -704,53 +428,53 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node1.store(actorRef1, serializeMailbox)
       node1.store(actorRef2, serializeMailbox)
 
-      node1.isClustered(ActorAddress(actorId = actorRef1.id)) must be(true)
-      node1.idsForClusteredActors.exists(_ == actorRef1.id) must be(true)
+      node1.isClustered(actorRef1.address) must be(true)
+      node1.addressesForClusteredActors.exists(_ == actorRef1.address) must be(true)
 
       // check out actor
-      val actorRef1_2 = node1.use(ActorAddress(actorId = actorRef1.id)).head
-      val actorRef2_2 = node1.use(ActorAddress(actorId = actorRef2.id)).head
+      val actorRef1_2 = node1.use(actorRef1.address).head
+      val actorRef2_2 = node1.use(actorRef2.address).head
       (actorRef1_2 !! "hello").getOrElse("_") must equal("world 1")
       (actorRef2_2 !! "hello").getOrElse("_") must equal("world 1")
 
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-id-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-id-1")) must be(true)
+      node1.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-id-1")) must be(true)
+      node1.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-id-1")) must be(true)
 
-      node1.idsForActorsInUse.exists(_ == actorRef1.id) must be(true)
-      node1.idsForActorsInUse.exists(_ == actorRef2.id) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-id-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-id-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-id-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-id-1")) must be(true)
+      node1.addressesForActorsInUse.exists(_ == actorRef1.address) must be(true)
+      node1.addressesForActorsInUse.exists(_ == actorRef2.address) must be(true)
+      node1.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-id-1")) must be(true)
+      node1.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-id-1")) must be(true)
+      node1.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-id-1")) must be(true)
+      node1.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-id-1")) must be(true)
 
-      node2.idsForActorsInUse.exists(_ == actorRef1.id) must be(false)
-      node2.idsForActorsInUse.exists(_ == actorRef2.id) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-id-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-id-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-id-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-id-2")) must be(false)
+      node2.addressesForActorsInUse.exists(_ == actorRef1.address) must be(false)
+      node2.addressesForActorsInUse.exists(_ == actorRef2.address) must be(false)
+      node2.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-id-2")) must be(false)
+      node2.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-id-2")) must be(false)
+      node2.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-id-2")) must be(false)
+      node2.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-id-2")) must be(false)
 
       // migrate to node2
-      node1.migrate(node1.nodeAddress, node2.nodeAddress, ActorAddress(actorId = actorRef1_2.id))
+      node1.migrate(node1.nodeAddress, node2.nodeAddress, actorRef1_2.address)
 
-      val actorRef1_3 = node2.use(ActorAddress(actorId = actorRef1.id)).head
-      val actorRef2_3 = node2.use(ActorAddress(actorId = actorRef2.id)).head
+      val actorRef1_3 = node2.use(actorRef1.address).head
+      val actorRef2_3 = node2.use(actorRef2.address).head
       (actorRef1_3 !! "hello").getOrElse("_") must equal("world 1")
       (actorRef2_3 !! "hello").getOrElse("_") must equal("world 1")
 
-      node1.idsForActorsInUse.exists(_ == actorRef1.id) must be(false)
-      node1.idsForActorsInUse.exists(_ == actorRef2.id) must be(false)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-id-1")) must be(false)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-id-1")) must be(false)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-id-1")) must be(false)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-id-1")) must be(false)
+      node1.addressesForActorsInUse.exists(_ == actorRef1.address) must be(false)
+      node1.addressesForActorsInUse.exists(_ == actorRef2.address) must be(false)
+      node1.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-id-1")) must be(false)
+      node1.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-id-1")) must be(false)
+      node1.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-id-1")) must be(false)
+      node1.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-id-1")) must be(false)
 
-      node2.idsForActorsInUse.exists(_ == actorRef1.id) must be(true)
-      node2.idsForActorsInUse.exists(_ == actorRef2.id) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-id-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-id-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-id-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-id-2")) must be(true)
+      node2.addressesForActorsInUse.exists(_ == actorRef1.address) must be(true)
+      node2.addressesForActorsInUse.exists(_ == actorRef2.address) must be(true)
+      node2.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-id-2")) must be(true)
+      node2.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-id-2")) must be(true)
+      node2.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-id-2")) must be(true)
+      node2.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-id-2")) must be(true)
 
       actorRef1.stop
       actorRef2.stop
@@ -761,147 +485,15 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node2.stop
     }
 
-    "be able to migrate an actor between two nodes using actor class name" in {
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-class-name-1", port = 9001))
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-class-name-2", port = 9002))
-      node1.start
-      node2.start
-
-      // create actors
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      val actorRef2 = actorOf[MyJavaSerializableActor].start
-
-      // register actors
-      var serializeMailbox = true
-      import BinaryFormatMyJavaSerializableActor._
-      node1.store(actorRef1, serializeMailbox)
-      node1.store(actorRef2, serializeMailbox)
-
-      node1.isClustered(ActorAddress(actorClassName = actorRef1.actorClassName)) must be(true)
-      node1.classNamesForClusteredActors.exists(_ == actorRef1.actorClassName) must be(true)
-
-      // check out actor
-      val actorRef1_2 = node1.use(ActorAddress(actorClassName = actorRef1.actorClassName)).head
-      val actorRef2_2 = node1.use(ActorAddress(actorClassName = actorRef2.actorClassName)).head
-      (actorRef1_2 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef2_2 !! "hello").getOrElse("_") must equal("world 1")
-
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-class-name-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-class-name-1")) must be(true)
-
-      node1.classNamesForActorsInUse.exists(_ == actorRef1.actorClassName) must be(true)
-      node1.classNamesForActorsInUse.exists(_ == actorRef2.actorClassName) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-class-name-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-class-name-1")) must be(true)
-
-      node2.idsForActorsInUse.exists(_ == actorRef1.actorClassName) must be(false)
-      node2.idsForActorsInUse.exists(_ == actorRef2.actorClassName) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-class-name-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-class-name-2")) must be(false)
-
-      // migrate to node2
-      node1.migrate(node1.nodeAddress, node2.nodeAddress, ActorAddress(actorClassName = actorRef1_2.actorClassName))
-
-      val actorRef1_3 = node2.use(ActorAddress(actorClassName = actorRef1.actorClassName)).head
-      val actorRef2_3 = node2.use(ActorAddress(actorClassName = actorRef2.actorClassName)).head
-      (actorRef1_3 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef2_3 !! "hello").getOrElse("_") must equal("world 1")
-
-      node1.classNamesForActorsInUse.exists(_ == actorRef1.actorClassName) must be(false)
-      node1.classNamesForActorsInUse.exists(_ == actorRef2.actorClassName) must be(false)
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-class-name-1")) must be(false)
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-class-name-1")) must be(false)
-
-      node2.classNamesForActorsInUse.exists(_ == actorRef1.actorClassName) must be(true)
-      node2.classNamesForActorsInUse.exists(_ == actorRef2.actorClassName) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-class-name-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-class-name-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-class-name-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-class-name-2")) must be(true)
-
-      actorRef1.stop
-      actorRef2.stop
-      actorRef1_2.stop
-      actorRef2_2.stop
-
-      node1.stop
-      node2.stop
-    }
-
-    "automatically migrate actors of a failed node in a cluster of two nodes using uuid" in {
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-2-uuid-1", port = 9001))
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-2-uuid-2", port = 9002))
-      node1.start
-      node2.start
-
-      // create actors
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      val actorRef2 = actorOf[MyJavaSerializableActor].start
-
-      // register actors
-      var serializeMailbox = true
-      import BinaryFormatMyJavaSerializableActor._
-      node1.store(actorRef1, serializeMailbox)
-      node1.store(actorRef2, serializeMailbox)
-
-      node1.isClustered(ActorAddress(actorUuid = actorRef1.uuid)) must be(true)
-      node1.uuidsForClusteredActors.exists(_ == actorRef1.uuid) must be(true)
-
-      // check out actor
-      val actorRef1_2 = node1.use(ActorAddress(actorUuid = actorRef1.uuid)).head
-      val actorRef2_2 = node1.use(ActorAddress(actorUuid = actorRef2.uuid)).head
-
-      (actorRef1_2 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef2_2 !! "hello").getOrElse("_") must equal("world 1")
-
-      node1.uuidsForActorsInUse.exists(_ == actorRef1.uuid) must be(true)
-      node1.uuidsForActorsInUse.exists(_ == actorRef2.uuid) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-2-uuid-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-2-uuid-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-2-uuid-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-2-uuid-1")) must be(true)
-
-      node2.uuidsForActorsInUse.exists(_ == actorRef1.uuid) must be(false)
-      node2.uuidsForActorsInUse.exists(_ == actorRef2.uuid) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-2-uuid-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-2-uuid-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-2-uuid-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-2-uuid-2")) must be(false)
-
-      // should migrate to node2
-      node1.stop
-      node1.isRunning must be(false)
-      Thread.sleep(500)
-
-      val actorRef1_3 = node2.use(ActorAddress(actorUuid = actorRef1.uuid)).head
-      val actorRef2_3 = node2.use(ActorAddress(actorUuid = actorRef2.uuid)).head
-      (actorRef1_3 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef2_3 !! "hello").getOrElse("_") must equal("world 1")
-
-      node2.uuidsForActorsInUse.exists(_ == actorRef1.uuid) must be(true)
-      node2.uuidsForActorsInUse.exists(_ == actorRef2.uuid) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-2-uuid-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-2-uuid-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-2-uuid-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-2-uuid-2")) must be(true)
-
-      actorRef1.stop
-      actorRef2.stop
-      actorRef1_2.stop
-      actorRef2_2.stop
-
-      node1.stop
-    }
-
-    "automatically migrate actors of a failed node in a cluster of two nodes using id" in {
+    "automatically migrate actors of a failed node in a cluster of two nodes using address" in {
       val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-2-id-1", port = 9001))
       val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-2-id-2", port = 9002))
       node1.start
       node2.start
 
       // create actors
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      val actorRef2 = actorOf[MyJavaSerializableActor].start
+      val actorRef1 = actorOf[MyJavaSerializableActor]("actor-address").start
+      val actorRef2 = actorOf[MyJavaSerializableActor]("actor-address").start
 
       // register actors
       var serializeMailbox = true
@@ -909,46 +501,46 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node1.store(actorRef1, serializeMailbox)
       node1.store(actorRef2, serializeMailbox)
 
-      node1.isClustered(ActorAddress(actorClassName = actorRef1.id)) must be(true)
-      node1.idsForClusteredActors.exists(_ == actorRef1.id) must be(true)
+      node1.isClustered(actorRef1.address) must be(true)
+      node1.addressesForClusteredActors.exists(_ == actorRef1.address) must be(true)
 
       // check out actor
-      val actorRef1_2 = node1.use(ActorAddress(actorId = actorRef1.id)).head
-      val actorRef2_2 = node1.use(ActorAddress(actorId = actorRef2.id)).head
+      val actorRef1_2 = node1.use(actorRef1.address).head
+      val actorRef2_2 = node1.use(actorRef2.address).head
 
       (actorRef1_2 !! "hello").getOrElse("_") must equal("world 1")
       (actorRef2_2 !! "hello").getOrElse("_") must equal("world 1")
 
-      node1.idsForActorsInUse.exists(_ == actorRef1.id) must be(true)
-      node1.idsForActorsInUse.exists(_ == actorRef2.id) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-2-id-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-2-id-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-2-id-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-2-id-1")) must be(true)
+      node1.addressesForActorsInUse.exists(_ == actorRef1.address) must be(true)
+      node1.addressesForActorsInUse.exists(_ == actorRef2.address) must be(true)
+      node1.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-2-id-1")) must be(true)
+      node1.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-2-id-1")) must be(true)
+      node1.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-2-id-1")) must be(true)
+      node1.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-2-id-1")) must be(true)
 
-      node2.idsForActorsInUse.exists(_ == actorRef1.id) must be(false)
-      node2.idsForActorsInUse.exists(_ == actorRef2.id) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(false)
+      node2.addressesForActorsInUse.exists(_ == actorRef1.address) must be(false)
+      node2.addressesForActorsInUse.exists(_ == actorRef2.address) must be(false)
+      node2.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(false)
+      node2.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(false)
+      node2.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(false)
+      node2.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(false)
 
       // should migrate to node2
       node1.stop
       node1.isRunning must be(false)
       Thread.sleep(500)
 
-      val actorRef1_3 = node2.use(ActorAddress(actorId = actorRef1.id)).head
-      val actorRef2_3 = node2.use(ActorAddress(actorId = actorRef2.id)).head
+      val actorRef1_3 = node2.use(actorRef1.address).head
+      val actorRef2_3 = node2.use(actorRef2.address).head
       (actorRef1_3 !! "hello").getOrElse("_") must equal("world 1")
       (actorRef2_3 !! "hello").getOrElse("_") must equal("world 1")
 
-      node2.idsForActorsInUse.exists(_ == actorRef1.id) must be(true)
-      node2.idsForActorsInUse.exists(_ == actorRef2.id) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(true)
+      node2.addressesForActorsInUse.exists(_ == actorRef1.address) must be(true)
+      node2.addressesForActorsInUse.exists(_ == actorRef2.address) must be(true)
+      node2.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(true)
+      node2.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(true)
+      node2.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(true)
+      node2.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-2-id-2")) must be(true)
 
       actorRef1.stop
       actorRef2.stop
@@ -958,153 +550,7 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node2.stop
     }
 
-    "automatically migrate actors of a failed node in a cluster of two nodes using class name" in {
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-2-classname-1", port = 9001))
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-2-classname-2", port = 9002))
-      node1.start
-      node2.start
-
-      // create actors
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      val actorRef2 = actorOf[MyJavaSerializableActor].start
-
-      // register actors
-      var serializeMailbox = true
-      import BinaryFormatMyJavaSerializableActor._
-      node1.store(actorRef1, serializeMailbox)
-      node1.store(actorRef2, serializeMailbox)
-
-      node1.isClustered(ActorAddress(actorClassName = actorRef1.actorClassName)) must be(true)
-      node1.classNamesForClusteredActors.exists(_ == actorRef1.actorClassName) must be(true)
-
-      // check out actor
-      val actorRef1_2 = node1.use(ActorAddress(actorClassName = actorRef1.actorClassName)).head
-      val actorRef2_2 = node1.use(ActorAddress(actorClassName = actorRef2.actorClassName)).head
-
-      (actorRef1_2 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef2_2 !! "hello").getOrElse("_") must equal("world 1")
-
-      node1.classNamesForActorsInUse.exists(_ == actorRef1.actorClassName) must be(true)
-      node1.classNamesForActorsInUse.exists(_ == actorRef2.actorClassName) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-2-classname-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-2-classname-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-2-classname-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-2-classname-1")) must be(true)
-
-      node2.classNamesForActorsInUse.exists(_ == actorRef1.actorClassName) must be(false)
-      node2.classNamesForActorsInUse.exists(_ == actorRef2.actorClassName) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-2-classname-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-2-classname-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-2-classname-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-2-classname-2")) must be(false)
-
-      // should migrate to node2
-      node1.stop
-      node1.isRunning must be(false)
-      Thread.sleep(500)
-
-      val actorRef1_3 = node2.use(ActorAddress(actorClassName = actorRef1.actorClassName)).head
-      val actorRef2_3 = node2.use(ActorAddress(actorClassName = actorRef2.actorClassName)).head
-      (actorRef1_3 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef2_3 !! "hello").getOrElse("_") must equal("world 1")
-
-      node2.classNamesForActorsInUse.exists(_ == actorRef1.actorClassName) must be(true)
-      node2.classNamesForActorsInUse.exists(_ == actorRef2.actorClassName) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-2-classname-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-2-classname-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-2-classname-2")) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-2-classname-2")) must be(true)
-
-      actorRef1.stop
-      actorRef2.stop
-      actorRef1_2.stop
-      actorRef2_2.stop
-
-      node2.stop
-    }
-
-    "automatically migrate actors of a failed node in a cluster of three nodes using uuid" in {
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-3-uuid-1", port = 9001))
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-3-uuid-2", port = 9002))
-      val node3 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-3-uuid-3", port = 9003))
-      node1.start
-      node2.start
-      node3.start
-
-      // create actors
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      val actorRef2 = actorOf[MyJavaSerializableActor].start
-
-      // register actors
-      var serializeMailbox = true
-      import BinaryFormatMyJavaSerializableActor._
-      node1.store(actorRef1, serializeMailbox)
-      node1.store(actorRef2, serializeMailbox)
-
-      node1.isClustered(ActorAddress(actorUuid = actorRef1.uuid)) must be(true)
-      node1.uuidsForClusteredActors.exists(_ == actorRef1.uuid) must be(true)
-
-      // check out actor
-      val actorRef1_2 = node1.use(ActorAddress(actorUuid = actorRef1.uuid)).head
-      val actorRef2_2 = node1.use(ActorAddress(actorUuid = actorRef2.uuid)).head
-      (actorRef1_2 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef2_2 !! "hello").getOrElse("_") must equal("world 1")
-
-      node1.uuidsForActorsInUse.exists(_ == actorRef1.uuid) must be(true)
-      node1.uuidsForActorsInUse.exists(_ == actorRef2.uuid) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-1")) must be(true)
-
-      node2.uuidsForActorsInUse.exists(_ == actorRef1.uuid) must be(false)
-      node2.uuidsForActorsInUse.exists(_ == actorRef2.uuid) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-2")) must be(false)
-
-      node3.uuidsForActorsInUse.exists(_ == actorRef1.uuid) must be(false)
-      node3.uuidsForActorsInUse.exists(_ == actorRef2.uuid) must be(false)
-      node3.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-3")) must be(false)
-      node3.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-3")) must be(false)
-      node3.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-3")) must be(false)
-      node3.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-3")) must be(false)
-
-      // should migrate to node2
-      node1.stop
-      node1.isRunning must be(false)
-      Thread.sleep(500)
-
-      val actorRef1_3 = node3.use(ActorAddress(actorUuid = actorRef1.uuid)).head
-      val actorRef2_3 = node3.use(ActorAddress(actorUuid = actorRef2.uuid)).head
-      (actorRef1_3 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef2_3 !! "hello").getOrElse("_") must equal("world 1")
-
-      node3.uuidsForActorsInUse.exists(_ == actorRef1.uuid) must be(true)
-      node3.uuidsForActorsInUse.exists(_ == actorRef2.uuid) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-3")) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-3")) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-3")) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-3")) must be(true)
-
-      node2.uuidsForActorsInUse.exists(_ == actorRef1.uuid) must be(false)
-      node2.uuidsForActorsInUse.exists(_ == actorRef2.uuid) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = NodeAddress("test-cluster", "migrate-3-uuid-2")) must be(false)
-
-      actorRef1.stop
-      actorRef2.stop
-      actorRef1_2.stop
-      actorRef2_2.stop
-
-      node2.stop
-      node3.stop
-    }
-
-    "automatically migrate actors of a failed node in a cluster of three nodes using id" in {
+    "automatically migrate actors of a failed node in a cluster of three nodes using address" in {
       val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-3-id-1", port = 9001))
       val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-3-id-2", port = 9002))
       val node3 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-3-id-3", port = 9003))
@@ -1113,8 +559,8 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node3.start
 
       // create actors
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      val actorRef2 = actorOf[MyJavaSerializableActor].start
+      val actorRef1 = actorOf[MyJavaSerializableActor]("actor-address").start
+      val actorRef2 = actorOf[MyJavaSerializableActor]("actor-address").start
 
       // register actors
       var serializeMailbox = true
@@ -1122,59 +568,59 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node1.store(actorRef1, serializeMailbox)
       node1.store(actorRef2, serializeMailbox)
 
-      node1.isClustered(ActorAddress(actorId = actorRef1.id)) must be(true)
-      node1.idsForClusteredActors.exists(_ == actorRef1.id) must be(true)
+      node1.isClustered(actorRef1.address) must be(true)
+      node1.addressesForClusteredActors.exists(_ == actorRef1.address) must be(true)
 
       // check out actor
-      val actorRef1_2 = node1.use(ActorAddress(actorId = actorRef1.id)).head
-      val actorRef2_2 = node1.use(ActorAddress(actorId = actorRef2.id)).head
+      val actorRef1_2 = node1.use(actorRef1.address).head
+      val actorRef2_2 = node1.use(actorRef2.address).head
       (actorRef1_2 !! "hello").getOrElse("_") must equal("world 1")
       (actorRef2_2 !! "hello").getOrElse("_") must equal("world 1")
 
-      node1.idsForActorsInUse.exists(_ == actorRef1.id) must be(true)
-      node1.idsForActorsInUse.exists(_ == actorRef2.id) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-3-id-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-3-id-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-3-id-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-3-id-1")) must be(true)
+      node1.addressesForActorsInUse.exists(_ == actorRef1.address) must be(true)
+      node1.addressesForActorsInUse.exists(_ == actorRef2.address) must be(true)
+      node1.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-3-id-1")) must be(true)
+      node1.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-3-id-1")) must be(true)
+      node1.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-3-id-1")) must be(true)
+      node1.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-3-id-1")) must be(true)
 
-      node2.idsForActorsInUse.exists(_ == actorRef1.id) must be(false)
-      node2.idsForActorsInUse.exists(_ == actorRef2.id) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
+      node2.addressesForActorsInUse.exists(_ == actorRef1.address) must be(false)
+      node2.addressesForActorsInUse.exists(_ == actorRef2.address) must be(false)
+      node2.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
+      node2.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
+      node2.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
+      node2.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
 
-      node3.idsForActorsInUse.exists(_ == actorRef1.id) must be(false)
-      node3.idsForActorsInUse.exists(_ == actorRef2.id) must be(false)
-      node3.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(false)
-      node3.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(false)
-      node3.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(false)
-      node3.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(false)
+      node3.addressesForActorsInUse.exists(_ == actorRef1.address) must be(false)
+      node3.addressesForActorsInUse.exists(_ == actorRef2.address) must be(false)
+      node3.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(false)
+      node3.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(false)
+      node3.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(false)
+      node3.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(false)
 
       // should migrate to node2
       node1.stop
       node1.isRunning must be(false)
       Thread.sleep(500)
 
-      val actorRef1_3 = node3.use(ActorAddress(actorId = actorRef1.id)).head
-      val actorRef2_3 = node3.use(ActorAddress(actorId = actorRef2.id)).head
+      val actorRef1_3 = node3.use(actorRef1.address).head
+      val actorRef2_3 = node3.use(actorRef2.address).head
       (actorRef1_3 !! "hello").getOrElse("_") must equal("world 1")
       (actorRef2_3 !! "hello").getOrElse("_") must equal("world 1")
 
-      node3.idsForActorsInUse.exists(_ == actorRef1.id) must be(true)
-      node3.idsForActorsInUse.exists(_ == actorRef2.id) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(true)
+      node3.addressesForActorsInUse.exists(_ == actorRef1.address) must be(true)
+      node3.addressesForActorsInUse.exists(_ == actorRef2.address) must be(true)
+      node3.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(true)
+      node3.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(true)
+      node3.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(true)
+      node3.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-3-id-3")) must be(true)
 
-      node2.idsForActorsInUse.exists(_ == actorRef1.id) must be(false)
-      node2.idsForActorsInUse.exists(_ == actorRef2.id) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef2.id), node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
+      node2.addressesForActorsInUse.exists(_ == actorRef1.address) must be(false)
+      node2.addressesForActorsInUse.exists(_ == actorRef2.address) must be(false)
+      node2.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
+      node2.isInUseOnNode(actorRef1.address, node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
+      node2.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
+      node2.isInUseOnNode(actorRef2.address, node = NodeAddress("test-cluster", "migrate-3-id-2")) must be(false)
 
       actorRef1.stop
       actorRef2.stop
@@ -1185,148 +631,17 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node3.stop
     }
 
-    "automatically migrate actors of a failed node in a cluster of three nodes using class name" in {
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-3-classname-1", port = 9001))
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-3-classname-2", port = 9002))
-      val node3 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-3-classname-3", port = 9003))
-      node1.start
-      node2.start
-      node3.start
-
-      // create actors
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      val actorRef2 = actorOf[MyJavaSerializableActor].start
-
-      // register actors
-      var serializeMailbox = true
-      import BinaryFormatMyJavaSerializableActor._
-      node1.store(actorRef1, serializeMailbox)
-      node1.store(actorRef2, serializeMailbox)
-
-      node1.isClustered(ActorAddress(actorClassName = actorRef1.actorClassName)) must be(true)
-      node1.classNamesForClusteredActors.exists(_ == actorRef1.actorClassName) must be(true)
-
-      // check out actor
-      val actorRef1_2 = node1.use(ActorAddress(actorClassName = actorRef1.actorClassName)).head
-      val actorRef2_2 = node1.use(ActorAddress(actorClassName = actorRef2.actorClassName)).head
-      (actorRef1_2 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef2_2 !! "hello").getOrElse("_") must equal("world 1")
-
-      node1.classNamesForActorsInUse.exists(_ == actorRef1.actorClassName) must be(true)
-      node1.classNamesForActorsInUse.exists(_ == actorRef2.actorClassName) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-1")) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-1")) must be(true)
-
-      node2.classNamesForActorsInUse.exists(_ == actorRef1.actorClassName) must be(false)
-      node2.classNamesForActorsInUse.exists(_ == actorRef2.actorClassName) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-2")) must be(false)
-
-      node3.classNamesForActorsInUse.exists(_ == actorRef1.actorClassName) must be(false)
-      node3.classNamesForActorsInUse.exists(_ == actorRef2.actorClassName) must be(false)
-      node3.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-3")) must be(false)
-      node3.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-3")) must be(false)
-      node3.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-3")) must be(false)
-      node3.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-3")) must be(false)
-
-      // should migrate to node2
-      node1.stop
-      node1.isRunning must be(false)
-      Thread.sleep(500)
-
-      val actorRef1_3 = node3.use(ActorAddress(actorClassName = actorRef1.actorClassName)).head
-      val actorRef2_3 = node3.use(ActorAddress(actorClassName = actorRef2.actorClassName)).head
-      (actorRef1_3 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef2_3 !! "hello").getOrElse("_") must equal("world 1")
-
-      node3.classNamesForActorsInUse.exists(_ == actorRef1.actorClassName) must be(true)
-      node3.classNamesForActorsInUse.exists(_ == actorRef2.actorClassName) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-3")) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-3")) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-3")) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-3")) must be(true)
-
-      node2.classNamesForActorsInUse.exists(_ == actorRef1.actorClassName) must be(false)
-      node2.classNamesForActorsInUse.exists(_ == actorRef2.actorClassName) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-2")) must be(false)
-      node2.isInUseOnNode(ActorAddress(actorClassName = actorRef2.actorClassName), node = NodeAddress("test-cluster", "migrate-3-classname-2")) must be(false)
-
-      actorRef1.stop
-      actorRef2.stop
-      actorRef1_2.stop
-      actorRef2_2.stop
-
-      node2.stop
-      node3.stop
-    }
-
-    "be able to migrate an actor between two nodes using uuid and see that 'ref' to it is redirected and continue to work" in {
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-uuid-and-see-ref-failover-1", port = 9001))
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-uuid-and-see-ref-failover-2", port = 9002))
-      node1.start
-      node2.start
-
-      // create actors
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-      val actorRef2 = actorOf[MyJavaSerializableActor].start
-
-      Thread.sleep(500)
-
-      // register actors
-      import BinaryFormatMyJavaSerializableActor._
-      node1.store(actorRef1)
-      node1.store(actorRef2)
-
-      Thread.sleep(500)
-
-      // use on node1
-      node1.use(ActorAddress(actorUuid = actorRef1.uuid))
-      node1.use(ActorAddress(actorUuid = actorRef2.uuid))
-
-      Thread.sleep(500)
-
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef1.uuid), node = node1.nodeAddress) must be(true)
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef2.uuid), node = node1.nodeAddress) must be(true)
-
-      // check out actor ref on node2
-      val actorRef1_2 = node2.ref(ActorAddress(actorUuid = actorRef1.uuid), router = Router.Direct)
-      val actorRef2_2 = node2.ref(ActorAddress(actorUuid = actorRef2.uuid), router = Router.Direct)
-
-      (actorRef1_2 !! "hello").getOrElse("_") must equal("world 1")
-      (actorRef2_2 !! "hello").getOrElse("_") must equal("world 1")
-
-      // migrate to node2
-      node1.migrate(node1.nodeAddress, node2.nodeAddress, ActorAddress(actorUuid = actorRef1.uuid))
-      node1.migrate(node1.nodeAddress, node2.nodeAddress, ActorAddress(actorUuid = actorRef2.uuid))
-
-      Thread.sleep(500)
-
-      (actorRef1_2 !! "hello").getOrElse("_") must equal("world 2")
-      (actorRef2_2 !! "hello").getOrElse("_") must equal("world 2")
-
-      actorRef1.stop
-      actorRef2.stop
-      actorRef1_2.stop
-      actorRef2_2.stop
-
-      node1.stop
-      node2.stop
-    }
-
-    "be able to migrate an actor between two nodes using id and see that 'ref' to it is redirected and continue to work" in {
+    "be able to migrate an actor between two nodes using address and see that 'ref' to it is redirected and continue to work" in {
       val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-id-and-see-ref-failover-1", port = 9001))
       val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-id-and-see-ref-failover-2", port = 9002))
       node1.start
       node2.start
 
       // create actors
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
+      Deployer.deploy(Deploy(
+        "actor-address", Direct,
+        Clustered(Home("localhost", 2552), NoReplicas, Stateless)))
+      val actorRef1 = actorOf[MyJavaSerializableActor]("actor-address").start
 
       Thread.sleep(500)
 
@@ -1337,60 +652,19 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       Thread.sleep(500)
 
       // use on node1
-      node1.use(ActorAddress(actorId = actorRef1.id))
+      node1.use(actorRef1.address)
 
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef1.id), node = node1.nodeAddress) must be(true)
+      node1.isInUseOnNode(actorRef1.address, node = node1.nodeAddress) must be(true)
 
       // check out actor ref on node2
-      val actorRef1_2 = node2.ref(ActorAddress(actorId = actorRef1.id), router = Router.Direct)
+      val actorRef1_2 = node2.ref(actorRef1.address, router = Router.Direct)
 
       (actorRef1_2 !! "hello").getOrElse("_") must equal("world 1")
 
       // migrate to node2
-      node1.migrate(node1.nodeAddress, node2.nodeAddress, ActorAddress(actorId = actorRef1.id))
+      node1.migrate(node1.nodeAddress, node2.nodeAddress, actorRef1.address)
 
       Thread.sleep(500)
-
-      (actorRef1_2 !! "hello").getOrElse("_") must equal("world 2")
-
-      actorRef1.stop
-      actorRef1_2.stop
-
-      node1.stop
-      node2.stop
-    }
-
-    "be able to migrate an actor between two nodes using class name and see that 'ref' to it is redirected and continue to work" in {
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-classname-and-see-ref-failover-1", port = 9011))
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "migrate-classname-and-see-ref-failover-2", port = 9012))
-      node1.start
-      node2.start
-
-      // create actors
-      val actorRef1 = actorOf[MyJavaSerializableActor].start
-
-      Thread.sleep(500)
-
-      // register actors
-      import BinaryFormatMyJavaSerializableActor._
-      node1.store(actorRef1)
-
-      Thread.sleep(500)
-
-      // use on node1
-      node1.use(ActorAddress(actorClassName = actorRef1.actorClassName))
-
-      node1.isInUseOnNode(ActorAddress(actorClassName = actorRef1.actorClassName), node = node1.nodeAddress) must be(true)
-
-      Thread.sleep(500)
-
-      // check out actor ref on node2
-      val actorRef1_2 = node2.ref(ActorAddress(actorClassName = actorRef1.actorClassName), router = Router.Direct)
-
-      (actorRef1_2 !! "hello").getOrElse("_") must equal("world 1")
-
-      // migrate to node2
-      node1.migrate(node1.nodeAddress, node2.nodeAddress, ActorAddress(actorClassName = actorRef1.actorClassName))
 
       (actorRef1_2 !! "hello").getOrElse("_") must equal("world 2")
 
@@ -1435,7 +709,7 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
 
     "be able to replicate an actor" in {
       // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
+      val actorRef = actorOf[MyJavaSerializableActor]("actor-address").start
 
       val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "replicate-actor-1", port = 9001)).start
       val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "replicate-actor-2", port = 9002)).start
@@ -1450,42 +724,20 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
 
       Thread.sleep(500) // since deployment is async (daemon ! command), we have to wait some before checking
 
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef.uuid), node = NodeAddress("test-cluster", "replicate-actor-1", port = 9001)) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef.uuid), node = NodeAddress("test-cluster", "replicate-actor-2", port = 9002)) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorUuid = actorRef.uuid), node = NodeAddress("test-cluster", "replicate-actor-3", port = 9003)) must be(true)
+      node1.isInUseOnNode(actorRef.address, node = NodeAddress("test-cluster", "replicate-actor-1", port = 9001)) must be(true)
+      node2.isInUseOnNode(actorRef.address, node = NodeAddress("test-cluster", "replicate-actor-2", port = 9002)) must be(true)
+      node3.isInUseOnNode(actorRef.address, node = NodeAddress("test-cluster", "replicate-actor-3", port = 9003)) must be(true)
 
       node1.stop
       node2.stop
       node3.stop
     }
 
-    "be able to create a reference to a replicated actor by UUID using Router.Direct routing" in {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
-
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-direct-actor-by-uuid-1", port = 9001)).start
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-direct-actor-by-uuid-2", port = 9002)).start
-
-      Thread.sleep(500)
-
-      // register actor
-      import BinaryFormatMyJavaSerializableActor._
-      val replicationFactor = 1
-      node1.store(actorRef, replicationFactor)
-
-      Thread.sleep(500) // since deployment is async (daemon ! command), we have to wait some before checking
-
-      val ref = node1.ref(ActorAddress(actorUuid = actorRef.uuid), router = Router.Direct)
-
-      (ref !! "hello").getOrElse("_") must equal("world 1")
-      (ref !! "hello").getOrElse("_") must equal("world 2")
-
-      node1.stop
-      node2.stop
-    }
-
-    "be able to create a reference to a replicated actor by ID using Router.Direct routing" in {
-      val actorRef = actorOf[MyJavaSerializableActor].start
+    "be able to create a reference to a replicated actor by address using Router.Direct routing" in {
+      Deployer.deploy(Deploy(
+        "actor-address", Direct,
+        Clustered(Home("localhost", 2552), NoReplicas, Stateless)))
+      val actorRef = actorOf[MyJavaSerializableActor]("actor-address").start
 
       val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-direct-actor-by-id-1", port = 9001)).start
       val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-direct-actor-by-id-2", port = 9002)).start
@@ -1498,7 +750,7 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
 
       Thread.sleep(500) // since deployment is async (daemon ! command), we have to wait some before checking
 
-      val ref = node1.ref(ActorAddress(actorId = actorRef.id), router = Router.Direct)
+      val ref = node1.ref(actorRef.address, router = Router.Direct)
 
       (ref !! "hello").getOrElse("_") must equal("world 1")
       (ref !! "hello").getOrElse("_") must equal("world 2")
@@ -1507,60 +759,12 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node2.stop
     }
 
-    "be able to create a reference to a replicated actor by ClassName using Router.Direct routing" in {
+   "be able to create a reference to a replicated actor by address using Router.Random routing" in {
       // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
-
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-direct-actor-by-classname-1", port = 9001)).start
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-direct-actor-by-classname-2", port = 9002)).start
-
-      Thread.sleep(500)
-
-      // register actor
-      import BinaryFormatMyJavaSerializableActor._
-      val replicationFactor = 1
-      node1.store(actorRef, replicationFactor)
-
-      Thread.sleep(500) // since deployment is async (daemon ! command), we have to wait some before checking
-
-      val ref = node1.ref(ActorAddress(actorClassName = actorRef.actorClassName), router = Router.Direct)
-
-      (ref !! "hello").getOrElse("_") must equal("world 1")
-      (ref !! "hello").getOrElse("_") must equal("world 2")
-
-      node1.stop
-      node2.stop
-    }
-
-    "be able to create a reference to a replicated actor by UUID using Router.Random routing" in {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
-
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-random-actor-by-uuid-1", port = 9001)).start
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-random-actor-by-uuid-2", port = 9002)).start
-      val node3 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-random-actor-by-uuid-3", port = 9003)).start
-
-      Thread.sleep(500)
-
-      // register actor
-      import BinaryFormatMyJavaSerializableActor._
-      val replicationFactor = 2
-      node1.store(actorRef, replicationFactor)
-
-      Thread.sleep(500) // since deployment is async (daemon ! command), we have to wait some before checking
-
-      val ref = node1.ref(ActorAddress(actorUuid = actorRef.uuid), router = Router.Random)
-
-      (ref !! "hello").getOrElse("_") must equal("world 1")
-
-      node1.stop
-      node2.stop
-      node3.stop
-   }
-
-   "be able to create a reference to a replicated actor by ID using Router.Random routing" in {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
+     Deployer.deploy(Deploy(
+       "actor-address", Direct,
+       Clustered(Home("localhost", 2552), NoReplicas, Stateless)))
+      val actorRef = actorOf[MyJavaSerializableActor]("actor-address").start
 
       val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-random-actor-by-id-1", port = 9001)).start
       val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-random-actor-by-id-2", port = 9002)).start
@@ -1575,7 +779,7 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
 
       Thread.sleep(500) // since deployment is async (daemon ! command), we have to wait some before checking
 
-      val ref = node1.ref(ActorAddress(actorId = actorRef.id), router = Router.Random)
+      val ref = node1.ref(actorRef.address, router = Router.Random)
 
       (ref !! "hello").getOrElse("_") must equal("world 1")
 
@@ -1583,79 +787,10 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node2.stop
       node3.stop
     }
-
-   "be able to create a reference to a replicated actor by class name using Router.Random routing" in {
+*/
+   "be able to create a reference to a replicated actor by address using Router.RoundRobin routing" in {
       // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
-
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-random-actor-by-classname-1", port = 9001)).start
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-random-actor-by-classname-2", port = 9002)).start
-      val node3 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-random-actor-by-classname-3", port = 9003)).start
-
-      Thread.sleep(500)
-
-      // register actor
-      import BinaryFormatMyJavaSerializableActor._
-      val replicationFactor = 2
-      node1.store(actorRef, replicationFactor)
-
-      Thread.sleep(500) // since deployment is async (daemon ! command), we have to wait some before checking
-
-      val ref = node1.ref(ActorAddress(actorClassName = actorRef.actorClassName), router = Router.Random)
-
-      (ref !! "hello").getOrElse("_") must equal("world 1")
-
-      node1.stop
-      node2.stop
-      node3.stop
-    }
-
-   "be able to create a reference to a replicated actor by UUID using Router.RoundRobin routing" in {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
-
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-round-robin-actor-by-uuid-1", port = 9001)).start
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-round-robin-actor-by-uuid-2", port = 9002)).start
-      val node3 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-round-robin-actor-by-uuid-3", port = 9003)).start
-
-      Thread.sleep(500)
-
-      // register actor
-      import BinaryFormatMyJavaSerializableActor._
-      val replicationFactor = 3
-      node1.store(actorRef, replicationFactor)
-
-      Thread.sleep(500) // since deployment is async (daemon ! command), we have to wait some before checking
-
-      val ref = node1.ref(ActorAddress(actorUuid = actorRef.uuid), router = Router.RoundRobin)
-
-      node1.isInUseOnNode(ActorAddress(actorUuid = actorRef.uuid), node = NodeAddress("test-cluster", "router-round-robin-actor-by-uuid-1", port = 9001)) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorUuid = actorRef.uuid), node = NodeAddress("test-cluster", "router-round-robin-actor-by-uuid-2", port = 9002)) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorUuid = actorRef.uuid), node = NodeAddress("test-cluster", "router-round-robin-actor-by-uuid-3", port = 9003)) must be(true)
-
-      val addresses = node1.addressesForActor(ActorAddress(actorUuid = actorRef.uuid))
-      addresses.length must equal(3)
-
-      (ref !! "hello").getOrElse("_") must equal("world 1")
-      (ref !! "hello").getOrElse("_") must equal("world 1")
-      (ref !! "hello").getOrElse("_") must equal("world 1")
-
-      (ref !! "hello").getOrElse("_") must equal("world 2")
-      (ref !! "hello").getOrElse("_") must equal("world 2")
-      (ref !! "hello").getOrElse("_") must equal("world 2")
-
-      (ref !! "hello").getOrElse("_") must equal("world 3")
-      (ref !! "hello").getOrElse("_") must equal("world 3")
-      (ref !! "hello").getOrElse("_") must equal("world 3")
-
-      node1.stop
-      node2.stop
-      node3.stop
-    }
-
-   "be able to create a reference to a replicated actor by ID using Router.RoundRobin routing" in {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
+     val actorRef = actorOf[MyJavaSerializableActor]("actor-address").start
 
       val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-round-robin-actor-by-id-1", port = 9001)).start
       val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-round-robin-actor-by-id-2", port = 9002)).start
@@ -1670,13 +805,13 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
 
       Thread.sleep(500) // since deployment is async (daemon ! command), we have to wait some before checking
 
-      val ref = node1.ref(ActorAddress(actorId = actorRef.id), router = Router.RoundRobin)
+      val ref = node1.ref(actorRef.address, router = Router.RoundRobin)
 
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef.id), node = NodeAddress("test-cluster", "router-round-robin-actor-by-id-1", port = 9001)) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef.id), node = NodeAddress("test-cluster", "router-round-robin-actor-by-id-2", port = 9002)) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorId = actorRef.id), node = NodeAddress("test-cluster", "router-round-robin-actor-by-id-3", port = 9003)) must be(true)
+      node1.isInUseOnNode(actorRef.address, node = NodeAddress("test-cluster", "router-round-robin-actor-by-id-1", port = 9001)) must be(true)
+      node2.isInUseOnNode(actorRef.address, node = NodeAddress("test-cluster", "router-round-robin-actor-by-id-2", port = 9002)) must be(true)
+      node3.isInUseOnNode(actorRef.address, node = NodeAddress("test-cluster", "router-round-robin-actor-by-id-3", port = 9003)) must be(true)
 
-      val addresses = node1.addressesForActor(ActorAddress(actorId = actorRef.id))
+      val addresses = node1.addressesForActor(actorRef.address)
       addresses.length must equal(3)
 
       (ref !! "hello").getOrElse("_") must equal("world 1")
@@ -1694,57 +829,6 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node1.stop
       node2.stop
       node3.stop
-    }
-
-   "be able to create a reference to a replicated actor by class name using Router.RoundRobin routing" in {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
-
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-round-robin-actor-by-classname-1", port = 9001)).start
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-round-robin-actor-by-classname-2", port = 9002)).start
-      val node3 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-round-robin-actor-by-classname-3", port = 9003)).start
-
-      Thread.sleep(500)
-
-      // register actor
-      import BinaryFormatMyJavaSerializableActor._
-      val replicationFactor = 3
-      node1.store(actorRef, replicationFactor)
-
-      Thread.sleep(500) // since deployment is async (daemon ! command), we have to wait some before checking
-
-      val ref = node1.ref(ActorAddress(actorId = actorRef.id), router = Router.RoundRobin)
-
-      node1.isInUseOnNode(ActorAddress(actorId = actorRef.id), node = NodeAddress("test-cluster", "router-round-robin-actor-by-classname-1", port = 9001)) must be(true)
-      node2.isInUseOnNode(ActorAddress(actorId = actorRef.id), node = NodeAddress("test-cluster", "router-round-robin-actor-by-classname-2", port = 9002)) must be(true)
-      node3.isInUseOnNode(ActorAddress(actorId = actorRef.id), node = NodeAddress("test-cluster", "router-round-robin-actor-by-classname-3", port = 9003)) must be(true)
-
-      val addresses = node1.addressesForActor(ActorAddress(actorId = actorRef.id))
-      addresses.length must equal(3)
-
-      (ref !! "hello").getOrElse("_") must equal("world 1")
-      (ref !! "hello").getOrElse("_") must equal("world 1")
-      (ref !! "hello").getOrElse("_") must equal("world 1")
-
-      (ref !! "hello").getOrElse("_") must equal("world 2")
-      (ref !! "hello").getOrElse("_") must equal("world 2")
-      (ref !! "hello").getOrElse("_") must equal("world 2")
-
-      (ref !! "hello").getOrElse("_") must equal("world 3")
-      (ref !! "hello").getOrElse("_") must equal("world 3")
-      (ref !! "hello").getOrElse("_") must equal("world 3")
-
-      node1.stop
-      node2.stop
-      node3.stop
-    }
-
-    "last dummy test" in withPrintStackTraceOnError {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor].start
-      Thread.sleep(1000)
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "router-round-robin-actor-by-classname-1", port = 9001)).start
-      node1.stop
     }
   }
 
@@ -1758,7 +842,7 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
 
   override def afterAll() = {
     Cluster.shutdownLocalCluster
-    Actor.registry.shutdownAll
+    Actor.registry.local.shutdownAll
   }
 }
 
@@ -1778,8 +862,8 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
         node2.start
 
         // create actors
-        val actorRef1 = actorOf[MyJavaSerializableActor].start
-        val actorRef2 = actorOf[MyJavaSerializableActor].start
+        val actorRef1 = actorOf[MyJavaSerializableActor]("actor-address").start
+        val actorRef2 = actorOf[MyJavaSerializableActor]("actor-address").start
 
         // register actors
         var serializeMailbox = true

@@ -30,7 +30,6 @@ class Ticket434Spec extends AkkaRemoteTest {
       val actorInfo = ActorInfoProtocol.newBuilder
         .setUuid(UuidProtocol.newBuilder.setHigh(uuid.getTime).setLow(uuid.getClockSeqAndNode).build)
         .setAddress("some-id")
-        .setTarget("actorClassName")
         .setTimeout(5000L)
         .setActorType(ActorType.SCALA_ACTOR).build
 

@@ -20,18 +20,17 @@ import com.eaio.uuid.UUID
  */
 class ClusterActorRef private[akka] (
   actorAddresses: Array[Tuple2[UUID, InetSocketAddress]],
-  val serviceId: String,
-  actorClassName: String,
+  address: String,
   timeout: Long,
   actorType: ActorType,
   val replicationStrategy: ReplicationStrategy)
-  extends RemoteActorRef(serviceId, actorClassName, timeout, None, actorType) {
+  extends RemoteActorRef(address, timeout, None, actorType) {
   this: ClusterActorRef with Router.Router =>
 
-  EventHandler.debug(this, "Creating a ClusterActorRef [%s] for Actor [%s]".format(serviceId, actorClassName))
+  EventHandler.debug(this, "Creating a ClusterActorRef for actor with address [%s]".format(address))
 
   private[akka] val addresses = new AtomicReference[Map[InetSocketAddress, ActorRef]](
-    createConnections(actorAddresses, actorClassName))
+    createConnections(actorAddresses))
 
   def connections: Map[InetSocketAddress, ActorRef] = addresses.get.toMap
 
@@ -56,9 +55,7 @@ class ClusterActorRef private[akka] (
     )
   }
 
-  private def createConnections(
-    addresses: Array[Tuple2[UUID, InetSocketAddress]],
-    actorClassName: String): Map[InetSocketAddress, ActorRef] = {
+  private def createConnections(addresses: Array[Tuple2[UUID, InetSocketAddress]]): Map[InetSocketAddress, ActorRef] = {
     var connections = Map.empty[InetSocketAddress, ActorRef]
     addresses foreach { case (uuid, address) =>
       connections = connections + (address -> createRemoteActorRef(uuid, address))
@@ -68,7 +65,7 @@ class ClusterActorRef private[akka] (
 
   private def createRemoteActorRef(uuid: UUID, address: InetSocketAddress) = {
     RemoteActorRef(
-      UUID_PREFIX + uuidToString(uuid), actorClassName, // clustered refs are always registered and looked up by UUID
+      UUID_PREFIX + uuidToString(uuid), // clustered refs are always registered and looked up by UUID
       Actor.TIMEOUT, None, actorType)
   }
 }

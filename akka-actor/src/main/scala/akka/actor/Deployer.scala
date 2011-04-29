@@ -9,9 +9,10 @@ import collection.immutable.Seq
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.event.EventHandler
-import akka.AkkaException
 import akka.actor.DeploymentConfig._
 import akka.config.{ConfigurationException, Config}
+import akka.util.ReflectiveAccess
+import akka.AkkaException
 
 /**
  * Programatic deployment configuration classes. Most values have defaults and can be left out.
@@ -138,9 +139,9 @@ object DeploymentConfig {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Deployer {
-  // FIXME create clustered version of this when we have clustering in place
-
-  private val deployments = new ConcurrentHashMap[String, Deploy]
+  lazy val useClusterDeployer = ReflectiveAccess.ClusterModule.isEnabled
+  lazy val cluster            = ReflectiveAccess.ClusterModule.clusterDeployer
+  lazy val local              = new LocalDeployer
 
   def deploy(deployment: Seq[Deploy]) {
     deployment foreach (deploy(_))
@@ -150,13 +151,8 @@ object Deployer {
     if (deployment eq null) throw new IllegalArgumentException("Deploy can not be null")
     val address = deployment.address
     Address.validate(address)
-
-    if (deployments.putIfAbsent(address, deployment) != deployment) {
-      // FIXME do automatic 'undeploy' and redeploy (perhaps have it configurable if redeploy should be done or exception thrown)
-      // throwDeploymentBoundException(deployment)
-    }
-
-    deployLocally(deployment)
+    if (useClusterDeployer) cluster.deploy(deployment)
+    else                    local.deploy(deployment)
   }
 
   private def deployLocally(deployment: Deploy) {
@@ -185,11 +181,13 @@ object Deployer {
    * Undeploy is idemponent. E.g. safe to invoke multiple times.
    */
   def undeploy(deployment: Deploy) {
-    deployments.remove(deployment.address)
+    if (useClusterDeployer) cluster.undeploy(deployment)
+    else                    local.undeploy(deployment)
   }
 
   def undeployAll() {
-    deployments.clear()
+    if (useClusterDeployer) cluster.undeployAll()
+    else                    local.undeployAll()
   }
 
   /**
@@ -203,10 +201,12 @@ object Deployer {
   }
 
   def lookupDeploymentFor(address: String): Option[Deploy] = {
-    val deployment = deployments.get(address)
-    if (deployment ne null) Some(deployment)
+    val deployment_? =
+      if (useClusterDeployer) cluster.lookupDeploymentFor(address)
+      else                    local.lookupDeploymentFor(address)
+    if (deployment_?.isDefined && (deployment_?.get ne null)) deployment_?
     else {
-      val deployment =
+      val newDeployment =
         try {
           lookupInConfig(address)
         } catch {
@@ -214,15 +214,15 @@ object Deployer {
             EventHandler.error(e, this, e.getMessage)
             throw e
         }
-      deployment foreach { d =>
+      newDeployment foreach { d =>
         if (d eq null) {
           val e = new IllegalStateException("Deployment for address [" + address + "] is null")
           EventHandler.error(e, this, e.getMessage)
           throw e
         }
-        deploy(d)
+        deploy(d) // deploy and cache it
       }
-      deployment
+      newDeployment
     }
   }
 
@@ -319,15 +319,19 @@ object Deployer {
     }
   }
 
-  def isLocal(address: String): Boolean = lookupDeploymentFor(address) match {
-    case Some(Deploy(_, _, Local)) => true
-    case _                         => false
+  def isLocal(deployment: Deploy): Boolean = deployment match {
+    case Deploy(_, _, Local) => true
+    case _                   => false
   }
+
+  def isClustered(deployment: Deploy): Boolean = isLocal(deployment)
+
+  def isLocal(address: String): Boolean = isLocal(deploymentFor(address))
 
   def isClustered(address: String): Boolean = !isLocal(address)
 
   private def throwDeploymentBoundException(deployment: Deploy): Nothing = {
-    val e = new DeploymentBoundException(
+    val e = new DeploymentAlreadyBoundException(
       "Address [" + deployment.address +
       "] already bound to [" + deployment +
       "]. You have to invoke 'undeploy(deployment) first.")
@@ -339,6 +343,35 @@ object Deployer {
     val e = new NoDeploymentBoundException("Address [" + address + "] is not bound to a deployment")
     EventHandler.error(e, this, e.getMessage)
     throw e
+  }
+}
+
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class LocalDeployer {
+  private val deployments = new ConcurrentHashMap[String, Deploy]
+
+  def deploy(deployment: Deploy) {
+    if (deployments.putIfAbsent(deployment.address, deployment) != deployment) {
+      println("----- DEPLOYING " + deployment)
+      // FIXME do automatic 'undeploy' and redeploy (perhaps have it configurable if redeploy should be done or exception thrown)
+      // throwDeploymentBoundException(deployment)
+    }
+  }
+
+  def undeploy(deployment: Deploy) {
+    deployments.remove(deployment.address)
+  }
+
+  def undeployAll() {
+    deployments.clear()
+  }
+
+  def lookupDeploymentFor(address: String): Option[Deploy] = {
+    val deployment = deployments.get(address)
+    if (deployment eq null) None
+    else Some(deployment)
   }
 }
 
@@ -358,6 +391,6 @@ object Address {
   }
 }
 
-class DeploymentBoundException private[akka](message: String) extends AkkaException(message)
+class DeploymentException private[akka](message: String) extends AkkaException(message)
+class DeploymentAlreadyBoundException private[akka](message: String) extends AkkaException(message)
 class NoDeploymentBoundException private[akka](message: String) extends AkkaException(message)
-

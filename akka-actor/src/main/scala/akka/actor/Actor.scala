@@ -205,10 +205,31 @@ object Actor extends ListenerManagement {
         // FIXME handle 'router' in 'Local' actors
         newLocalActorRef(clazz, address)
 
-      case Deploy(_, router, Clustered(Home(hostname, port), Replicate(nrOfReplicas), state)) =>
-        RemoteActorRef(
-          address, clazz.getName,
-          Actor.TIMEOUT, None, ActorType.ScalaActor)
+      case Deploy(_, router, Clustered(Home(hostname, port), replication  , state)) =>
+        /*
+          1. Check ZK for deployment config
+          2. Check Home(..)
+            a) If home is same as Actor.remote.address then:
+              - check if actor is stored in ZK, if not; node.store(..)
+              - checkout actor using node.use(..)
+            b) If not the same
+              - check out actor using node.ref(..)
+
+          Misc stuff:
+            - Manage deployment in ZK
+            - How to define a single ClusterNode to use? Where should it be booted up? How should it be configured?
+            - Deployer should:
+              1. Check if deployment exists in ZK
+              2. If not, upload it
+            - ClusterNode API and Actor.remote API should be made private[akka]
+            - Rewrite ClusterSpec or remove it
+            - Actor.stop on home node (actor checked out with node.use(..)) should do node.remove(..) of actor
+            - Should we allow configuring of session-scoped remote actors? How?
+
+
+         */
+
+        RemoteActorRef(address, Actor.TIMEOUT, None, ActorType.ScalaActor)
 
       case invalid => throw new IllegalActorStateException(
         "Could not create actor [" + clazz.getName +

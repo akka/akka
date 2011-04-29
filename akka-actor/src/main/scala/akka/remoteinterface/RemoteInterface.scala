@@ -336,38 +336,26 @@ trait RemoteServerModule extends RemoteModule {
 
 trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
 
-  def actorFor(classNameOrServiceAddress: String, hostname: String, port: Int): ActorRef =
-    actorFor(classNameOrServiceAddress, classNameOrServiceAddress, Actor.TIMEOUT, hostname, port, None)
+  def actorFor(address: String, hostname: String, port: Int): ActorRef =
+    actorFor(address, Actor.TIMEOUT, hostname, port, None)
 
-  def actorFor(classNameOrServiceAddress: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    actorFor(classNameOrServiceAddress, classNameOrServiceAddress, Actor.TIMEOUT, hostname, port, Some(loader))
+  def actorFor(address: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
+    actorFor(address, Actor.TIMEOUT, hostname, port, Some(loader))
 
-  def actorFor(address: String, className: String, hostname: String, port: Int): ActorRef =
-    actorFor(address, className, Actor.TIMEOUT, hostname, port, None)
+  def actorFor(address: String, timeout: Long, hostname: String, port: Int): ActorRef =
+    actorFor(address, timeout, hostname, port, None)
 
-  def actorFor(address: String, className: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    actorFor(address, className, Actor.TIMEOUT, hostname, port, Some(loader))
-
-  def actorFor(classNameOrServiceAddress: String, timeout: Long, hostname: String, port: Int): ActorRef =
-    actorFor(classNameOrServiceAddress, classNameOrServiceAddress, timeout, hostname, port, None)
-
-  def actorFor(classNameOrServiceAddress: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    actorFor(classNameOrServiceAddress, classNameOrServiceAddress, timeout, hostname, port, Some(loader))
-
-  def actorFor(address: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef =
-    actorFor(address, className, timeout, hostname, port, None)
+  def actorFor(address: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
+    actorFor(address, timeout, hostname, port, Some(loader))
 
   def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, hostname: String, port: Int): T =
-    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, Actor.TIMEOUT, hostname, port, None)
+    typedActorFor(intfClass, serviceIdOrClassName, Actor.TIMEOUT, hostname, port, None)
 
   def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int): T =
-    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, timeout, hostname, port, None)
+    typedActorFor(intfClass, serviceIdOrClassName, timeout, hostname, port, None)
 
   def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): T =
-    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, timeout, hostname, port, Some(loader))
-
-  def typedActorFor[T](intfClass: Class[T], address: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): T =
-    typedActorFor(intfClass, address, implClassName, timeout, hostname, port, Some(loader))
+    typedActorFor(intfClass, serviceIdOrClassName, timeout, hostname, port, Some(loader))
 
   /**
    * Clean-up all open connections.
@@ -386,9 +374,9 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
 
   /** Methods that needs to be implemented by a transport **/
 
-  protected[akka] def typedActorFor[T](intfClass: Class[T], serviceaddress: String, implClassName: String, timeout: Long, host: String, port: Int, loader: Option[ClassLoader]): T
+  protected[akka] def typedActorFor[T](intfClass: Class[T], serviceaddress: String, timeout: Long, host: String, port: Int, loader: Option[ClassLoader]): T
 
-  protected[akka] def actorFor(serviceaddress: String, className: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): ActorRef
+  protected[akka] def actorFor(address: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): ActorRef
 
   protected[akka] def send[T](message: Any,
                               senderOption: Option[ActorRef],

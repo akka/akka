@@ -226,7 +226,7 @@ object EventHandler extends ListenerManagement {
         addListener(Actor.actorOf(clazz, listenerName).start)
       }
     } catch {
-      case e: akka.actor.DeploymentBoundException => // do nothing
+      case e: akka.actor.DeploymentAlreadyBoundException => // do nothing
       case e: Exception =>
         throw new ConfigurationException(
           "Event Handler specified in config can't be loaded [" + listenerName +

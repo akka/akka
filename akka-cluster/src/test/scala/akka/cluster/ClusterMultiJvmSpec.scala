@@ -8,7 +8,7 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
-import akka.zookeeper._
+import akka.cluster.zookeeper._
 import org.I0Itec.zkclient._
 
 object MultiNodeTest {

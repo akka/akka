@@ -11,6 +11,7 @@ import java.net.InetSocketAddress
 import akka.remoteinterface.RemoteSupport
 import akka.actor._
 import akka.event.EventHandler
+import akka.actor.DeploymentConfig.Deploy
 
 /**
  * Helper class for reflective access to different modules in order to allow optional loading of modules.
@@ -21,13 +22,13 @@ object ReflectiveAccess {
 
   val loader = getClass.getClassLoader
 
-  lazy val isRemotingEnabled   = RemoteModule.isEnabled
-  lazy val isTypedActorEnabled = TypedActorModule.isEnabled
-  lazy val isClusterEnabled    = ClusterModule.isEnabled
+  lazy val isRemotingEnabled: Boolean   = RemoteModule.isEnabled
+  lazy val isTypedActorEnabled: Boolean = TypedActorModule.isEnabled
+  lazy val isClusterEnabled: Boolean    = ClusterModule.isEnabled
 
-  def ensureClusterEnabled     = ClusterModule.ensureEnabled
-  def ensureRemotingEnabled    = RemoteModule.ensureEnabled
-  def ensureTypedActorEnabled  = TypedActorModule.ensureEnabled
+  def ensureClusterEnabled()     { ClusterModule.ensureEnabled() }
+  def ensureRemotingEnabled()    { RemoteModule.ensureEnabled() }
+  def ensureTypedActorEnabled()  { TypedActorModule.ensureEnabled() }
 
   /**
    * Reflective access to the Cluster module.
@@ -35,30 +36,46 @@ object ReflectiveAccess {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object ClusterModule {
-    lazy val isEnabled = clusterObjectInstance.isDefined
+    lazy val isEnabled = clusterInstance.isDefined
 
-    def ensureEnabled = if (!isEnabled) {
-      val e = new ModuleNotAvailableException(
-        "Can't load the cluster module, make sure that akka-cluster.jar is on the classpath")
-      EventHandler.debug(this, e.toString)
-      throw e
+    def ensureEnabled() {
+      if (!isEnabled) {
+        val e = new ModuleNotAvailableException(
+          "Can't load the cluster module, make sure that akka-cluster.jar is on the classpath")
+        EventHandler.debug(this, e.toString)
+        throw e
+      }
     }
 
-    lazy val clusterObjectInstance: Option[Cluster] = getObjectFor("akka.cloud.cluster.Cluster$")
+    lazy val clusterInstance: Option[Cluster] = getObjectFor("akka.cluster.Cluster$")
+
+    lazy val clusterDeployerInstance: Option[ClusterDeployer] = getObjectFor("akka.cluster.ClusterDeployer$")
 
     lazy val serializerClass: Option[Class[_]] = getClassFor("akka.serialization.Serializer")
 
     lazy val node: ClusterNode = {
-      ensureEnabled
-      clusterObjectInstance.get.newNode()
+      ensureEnabled()
+      clusterInstance.get.newNode()
+    }
+
+    lazy val clusterDeployer: ClusterDeployer = {
+      ensureEnabled()
+      clusterDeployerInstance.get
     }
 
     type ClusterNode = {
       def nrOfActors: Int
-      def store[T <: Actor](address: String, actorRef: ActorRef): Unit
+      def store[T <: Actor](address: String, actorRef: ActorRef)
 //        (implicit format: Format[T])
-      def remove(address: String): Unit
+      def remove(address: String)
       def use(address: String): Option[ActorRef]
+    }
+
+    type ClusterDeployer = {
+      def deploy(deployment: Deploy)
+      def undeploy(deployment: Deploy)
+      def undeployAll()
+      def lookupDeploymentFor(address: String): Option[Deploy]
     }
 
     type Cluster = {
@@ -94,11 +111,13 @@ object ReflectiveAccess {
 
     lazy val isEnabled = remoteSupportClass.isDefined
 
-    def ensureEnabled = if (!isEnabled) {
-      val e = new ModuleNotAvailableException(
-        "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
-      EventHandler.debug(this, e.toString)
-      throw e
+    def ensureEnabled() {
+      if (!isEnabled) {
+        val e = new ModuleNotAvailableException(
+          "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
+        EventHandler.debug(this, e.toString)
+        throw e
+      }
     }
 
     val remoteSupportClass: Option[Class[_ <: RemoteSupport]] = getClassFor(TRANSPORT)
@@ -130,19 +149,21 @@ object ReflectiveAccess {
       def isJoinPointAndOneWay(message: Any): Boolean
       def actorFor(proxy: AnyRef): Option[ActorRef]
       def proxyFor(actorRef: ActorRef): Option[AnyRef]
-      def stop(anyRef: AnyRef) : Unit
+      def stop(anyRef: AnyRef)
     }
 
     lazy val isEnabled = typedActorObjectInstance.isDefined
 
-    def ensureEnabled = if (!isTypedActorEnabled) throw new ModuleNotAvailableException(
-      "Can't load the typed actor module, make sure that akka-typed-actor.jar is on the classpath")
+    def ensureEnabled() {
+      if (!isTypedActorEnabled) throw new ModuleNotAvailableException(
+        "Can't load the typed actor module, make sure that akka-typed-actor.jar is on the classpath")
+    }
 
     val typedActorObjectInstance: Option[TypedActorObject] =
       getObjectFor("akka.actor.TypedActor$")
 
     def resolveFutureIfMessageIsJoinPoint(message: Any, future: Future[_]): Boolean = {
-      ensureEnabled
+      ensureEnabled()
       if (typedActorObjectInstance.get.isJoinPointAndOneWay(message)) {
         future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
       }

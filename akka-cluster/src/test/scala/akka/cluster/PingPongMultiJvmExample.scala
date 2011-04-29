@@ -11,6 +11,9 @@ import akka.serialization.{Serializer, SerializerBasedActorFormat}
 import akka.util.duration._
 
 object PingPong {
+  val PING_ADDRESS = "ping"
+  val PONG_ADDRESS = "pong"
+
   val ClusterName = "ping-pong-cluster"
   val NrOfNodes = 5
   val Pause = true
@@ -89,8 +92,8 @@ object PingPongMultiJvmNode1 {
     // Start monitoring
     // -----------------------------------------------
 
-    MonitoringServer.start
-    Monitoring.startLocalDaemons
+    //MonitoringServer.start
+    //Monitoring.startLocalDaemons
 
     // -----------------------------------------------
     // Start cluster
@@ -128,10 +131,10 @@ object PingPongMultiJvmNode1 {
     println("Creating actors ...")
 
     // store the ping actor in the cluster, but do not deploy it anywhere
-    node.store(classOf[PingActor])
+    node.store(classOf[PingActor], PING_ADDRESS)
 
     // store the pong actor in the cluster and replicate it on all nodes
-    node.store(classOf[PongActor], NrOfNodes)
+    node.store(classOf[PongActor], PONG_ADDRESS, NrOfNodes)
 
     // give some time for the deployment
     Thread.sleep(3000)
@@ -141,10 +144,10 @@ object PingPongMultiJvmNode1 {
     // -----------------------------------------------
 
     // check out a local ping actor
-    val ping = node.use[PingActor](ActorAddress(actorId = PingService)).head
+    val ping = node.use[PingActor](PING_ADDRESS).head
 
     // get a reference to all the pong actors through a round-robin router actor ref
-    val pong = node.ref(ActorAddress(actorId = PongService), router = Router.RoundRobin)
+    val pong = node.ref(PONG_ADDRESS, router = Router.RoundRobin)
 
     // -----------------------------------------------
     // Play the game

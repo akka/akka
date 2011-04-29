@@ -28,25 +28,22 @@ object Router {
   def newRouter(
     routerType: RouterType,
     addresses: Array[Tuple2[UUID, InetSocketAddress]],
-    serviceId: String,
-    actorClassName: String,
-    hostname: String,
-    port: Int,
+    address: String,
     timeout: Long,
     actorType: ActorType,
     replicationStrategy: ReplicationStrategy = ReplicationStrategy.WriteThrough): ClusterActorRef = {
 
     routerType match {
       case Direct => new ClusterActorRef(
-        addresses, serviceId, actorClassName, timeout,
+        addresses, address, timeout,
         actorType, replicationStrategy) with Direct
 
       case Random => new ClusterActorRef(
-        addresses, serviceId, actorClassName, timeout,
+        addresses, address, timeout,
         actorType, replicationStrategy) with Random
 
       case RoundRobin => new ClusterActorRef(
-        addresses, serviceId, actorClassName, timeout,
+        addresses, address, timeout,
         actorType, replicationStrategy) with RoundRobin
     }
   }

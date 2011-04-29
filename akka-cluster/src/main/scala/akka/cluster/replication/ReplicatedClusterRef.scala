@@ -37,7 +37,7 @@ object ReplicationStrategy {
 class ReplicatedActorRef private[akka] (actorRef: ActorRef, val address: String) extends ActorRef with ScalaActorRef {
 
   private lazy val txLog = {
-    EventHandler.debug(this, "Creating a ReplicatedActorRef for Actor [%s]".format(actorClassName))
+    EventHandler.debug(this, "Creating a ReplicatedActorRef for Actor [%s]".format(address))
     TransactionLog.newLogFor(uuid.toString)
   }
 
@@ -48,7 +48,7 @@ class ReplicatedActorRef private[akka] (actorRef: ActorRef, val address: String)
 
   def start(): ActorRef = {
     EventHandler.debug(this, "Starting ReplicatedActorRef for Actor [%s] with transaction log [%s]"
-                             .format(actorClassName, txLog.logId))
+                             .format(address, txLog.logId))
     actorRef.start
   }
 
@@ -61,8 +61,6 @@ class ReplicatedActorRef private[akka] (actorRef: ActorRef, val address: String)
   override def getFaultHandler(): FaultHandlingStrategy = actorRef.getFaultHandler()
   override def setLifeCycle(lifeCycle: LifeCycle): Unit = actorRef.setLifeCycle(lifeCycle)
   override def getLifeCycle(): LifeCycle = actorRef.getLifeCycle
-  def actorClass: Class[_ <: Actor] = actorRef.actorClass
-  def actorClassName: String = actorRef.actorClassName
   def dispatcher_=(md: MessageDispatcher): Unit = actorRef.dispatcher_=(md)
   def dispatcher: MessageDispatcher = actorRef.dispatcher
   def link(actorRef: ActorRef): Unit = actorRef.link(actorRef)

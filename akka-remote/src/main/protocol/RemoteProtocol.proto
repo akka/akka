@@ -52,8 +52,7 @@ enum CommandType {
  */
 message RemoteActorRefProtocol {
   required string address = 1;
-  required string actorClassname = 2;
-  optional uint64 timeout = 3;
+  optional uint64 timeout = 2;
 }
 
 /**
@@ -108,11 +107,10 @@ message MessageProtocol {
  */
 message ActorInfoProtocol {
   required UuidProtocol uuid = 1;
-  required string target = 2;
-  required uint64 timeout = 3;
-  required ActorType actorType = 4;
-  optional TypedActorInfoProtocol typedActorInfo = 5;
-  optional string address = 6;
+  required uint64 timeout = 2;
+  required ActorType actorType = 3;
+  optional TypedActorInfoProtocol typedActorInfo = 4;
+  optional string address = 5;
 }
 
 /**

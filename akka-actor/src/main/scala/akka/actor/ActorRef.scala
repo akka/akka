@@ -295,8 +295,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   def sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef): AnyRef = {
     !!(message, timeout)(Option(sender)).getOrElse(throw new ActorTimeoutException(
       "Message [" + message +
-      "]\n\tsent to [" + actorClassName +
-      "]\n\tfrom [" + (if (sender ne null) sender.actorClassName else "nowhere") +
+      "]\n\tfrom [" + (if (sender ne null) sender.address else "nowhere") +
       "]\n\twith timeout [" + timeout +
       "]\n\ttimed out."))
       .asInstanceOf[AnyRef]
@@ -354,32 +353,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * Returns true if reply was sent, and false if unable to determine what to reply to.
    */
   def replySafe(message: AnyRef): Boolean = reply_?(message)
-
-  /**
-   * Returns the class for the Actor instance that is managed by the ActorRef.
-   */
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
-  def actorClass: Class[_ <: Actor]
-
-  /**
-   * Akka Java API. <p/>
-   * Returns the class for the Actor instance that is managed by the ActorRef.
-   */
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
-  def getActorClass(): Class[_ <: Actor] = actorClass
-
-  /**
-   * Returns the class name for the Actor instance that is managed by the ActorRef.
-   */
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
-  def actorClassName: String
-
-  /**
-   * Akka Java API. <p/>
-   * Returns the class name for the Actor instance that is managed by the ActorRef.
-   */
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
-  def getActorClassName(): String = actorClassName
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
@@ -572,20 +545,6 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () => Actor, 
   }
 
   // ========= PUBLIC FUNCTIONS =========
-
-  /**
-   * Returns the class for the Actor instance that is managed by the ActorRef.
-   */
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
-  def actorClass: Class[_ <: Actor] = actor.getClass.asInstanceOf[Class[_ <: Actor]]
-
-  /**
-   * Returns the class name for the Actor instance that is managed by the ActorRef.
-   */
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
-  def actorClassName: String = actorClass.getName
-
-  final def homeAddress: Option[InetSocketAddress] = None
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
@@ -996,7 +955,6 @@ object RemoteActorSystemMessage {
  */
 private[akka] case class RemoteActorRef private[akka] (
   val address: String,
-  val actorClassName: String,
   _timeout: Long,
   loader: Option[ClassLoader],
   val actorType: ActorType = ActorType.ScalaActor)
@@ -1008,10 +966,11 @@ private[akka] case class RemoteActorRef private[akka] (
   // FIXME BAD, we should not have different ActorRefs
 
   import DeploymentConfig._
+  println("--------- " + Deployer.deploymentFor(address))
   val remoteAddress = Deployer.deploymentFor(address) match {
     case Deploy(_, _, Clustered(Home(hostname, port), _, _)) => new InetSocketAddress(hostname, port)
     case _ => throw new IllegalStateException(
-      "Actor [" + actorClassName + "] with Address [" + address + "] is not bound to a Clustered Deployment")
+      "Actor with Address [" + address + "] is not bound to a Clustered Deployment")
   }
 
   start

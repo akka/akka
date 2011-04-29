@@ -62,8 +62,8 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
   private val remoteActors  = new Index[Address, Uuid]
   private val lock          = new ReadWriteGuard
 
-  protected[akka] def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): T =
-    TypedActor.createProxyForRemoteActorRef(intfClass, RemoteActorRef(serviceId, implClassName, timeout, loader, AkkaActorType.TypedActor))
+  protected[akka] def typedActorFor[T](intfClass: Class[T], serviceId: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): T =
+    TypedActor.createProxyForRemoteActorRef(intfClass, RemoteActorRef(serviceId, timeout, loader, AkkaActorType.TypedActor))
 
   protected[akka] def send[T](message: Any,
                               senderOption: Option[ActorRef],
@@ -200,7 +200,6 @@ abstract class RemoteClient private[akka] (
         Some(actorRef),
         Left(actorRef.uuid),
         actorRef.address,
-        actorRef.actorClassName,
         actorRef.timeout,
         Right(message),
         isOneWay,
@@ -536,16 +535,16 @@ class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with
 
   def optimizeLocalScoped_?() = optimizeLocal.get
 
-  protected[akka] def actorFor(serviceId: String, className: String, timeout: Long, host: String, port: Int, loader: Option[ClassLoader]): ActorRef = {
+  protected[akka] def actorFor(address: String, timeout: Long, host: String, port: Int, loader: Option[ClassLoader]): ActorRef = {
     if (optimizeLocalScoped_?) {
       val home = this.address
       if ((host == home.getAddress.getHostAddress || host == home.getHostName) && port == home.getPort) {//TODO: switch to InetSocketAddress.equals?
-        val localRef = findActorByAddressOrUuid(serviceId,serviceId)
+        val localRef = findActorByAddressOrUuid(address,address)
         if (localRef ne null) return localRef //Code significantly simpler with the return statement
       }
     }
 
-    RemoteActorRef(serviceId, className, timeout, loader)
+    RemoteActorRef(address, timeout, loader)
   }
 }
 
@@ -934,7 +933,6 @@ class RemoteServerHandler(
                   Some(actorRef),
                   Right(request.getUuid),
                   actorInfo.getAddress,
-                  actorInfo.getTarget,
                   actorInfo.getTimeout,
                   r,
                   true,
@@ -1014,7 +1012,6 @@ class RemoteServerHandler(
             None,
             Right(request.getUuid),
             actorInfo.getAddress,
-            actorInfo.getTarget,
             actorInfo.getTimeout,
             result,
             true,
@@ -1135,7 +1132,6 @@ class RemoteServerHandler(
       None,
       Right(request.getUuid),
       actorInfo.getAddress,
-      actorInfo.getTarget,
       actorInfo.getTimeout,
       Left(exception),
       true,
