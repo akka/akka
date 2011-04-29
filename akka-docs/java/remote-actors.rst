@@ -3,9 +3,9 @@ Remote Actors (Java)
 
 Module stability: **SOLID**
 
-Akka supports starting UntypedActors and TypedActors on remote nodes using a very efficient and scalable NIO implementation built upon `JBoss Netty <http://jboss.org/netty>`_ and `Google Protocol Buffers <http://code.google.com/p/protobuf/>`_ .
+Akka supports starting interacting with UntypedActors and TypedActors on remote nodes using a very efficient and scalable NIO implementation built upon `JBoss Netty <http://jboss.org/netty>`_ and `Google Protocol Buffers <http://code.google.com/p/protobuf/>`_ .
 
-The usage is completely transparent both in regards to sending messages and error handling and propagation as well as supervision, linking and restarts. You can send references to other Actors as part of the message.
+The usage is completely transparent with local actors, both in regards to sending messages and error handling and propagation as well as supervision, linking and restarts. You can send references to other Actors as part of the message.
 
 **WARNING**: For security reasons, do not run an Akka node with a Remote Actor port reachable by untrusted connections unless you have supplied a classloader that restricts access to the JVM.
 
