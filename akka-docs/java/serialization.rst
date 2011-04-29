@@ -1,10 +1,16 @@
+.. _serialization-java:
+
 Serialization (Java)
 ====================
 
-Akka serialization module has been documented extensively under the Scala API section. In this section we will point out the different APIs that are available in Akka for Java based serialization of ActorRefs. The Scala APIs of ActorSerialization has implicit Format objects that set up the type class based serialization. In the Java API, the Format objects need to be specified explicitly.
+.. sidebar:: Contents
+
+   .. contents:: :local:
+
+Akka serialization module has been documented extensively under the :ref:`serialization-scala` section. In this section we will point out the different APIs that are available in Akka for Java based serialization of ActorRefs. The Scala APIs of ActorSerialization has implicit Format objects that set up the type class based serialization. In the Java API, the Format objects need to be specified explicitly.
 
 Serialization of ActorRef
-=========================
+-------------------------
 
 The following are the Java APIs for serialization of local ActorRefs:
 
@@ -26,10 +32,9 @@ The following are the Java APIs for serialization of local ActorRefs:
 The following steps describe the procedure for serializing an Actor and ActorRef.
 
 Serialization of a Stateless Actor
-==================================
+----------------------------------
 
 Step 1: Define the Actor
-------------------------
 
 .. code-block:: scala
 
@@ -40,7 +45,6 @@ Step 1: Define the Actor
   }
 
 Step 2: Define the typeclass instance for the actor
----------------------------------------------------
 
 Note how the generated Java classes are accessed using the $class based naming convention of the Scala compiler.
 
@@ -58,7 +62,7 @@ Note how the generated Java classes are accessed using the $class based naming c
       }
   }
 
-**Step 3: Serialize and de-serialize**
+Step 3: Serialize and de-serialize
 
 The following JUnit snippet first creates an actor using the default constructor. The actor is, as we saw above a stateless one. Then it is serialized and de-serialized to get back the original actor. Being stateless, the de-serialized version behaves in the same way on a message as the original actor.
 
@@ -91,12 +95,11 @@ The following JUnit snippet first creates an actor using the default constructor
   }
 
 Serialization of a Stateful Actor
-=================================
+---------------------------------
 
 Let's now have a look at how to serialize an actor that carries a state with it. Here the expectation is that the serialization of the actor will also persist the state information. And after de-serialization we will get back the state with which it was serialized.
 
 Step 1: Define the Actor
-------------------------
 
 Here we consider an actor defined in Scala. We will however serialize using the Java APIs.
 
@@ -119,7 +122,6 @@ Here we consider an actor defined in Scala. We will however serialize using the 
 Note the actor has a state in the form of an Integer. And every message that the actor receives, it replies with an addition to the integer member.
 
 Step 2: Define the instance of the typeclass
---------------------------------------------
 
 .. code-block:: java
 
@@ -141,7 +143,6 @@ Step 2: Define the instance of the typeclass
 Note the usage of Protocol Buffers to serialize the state of the actor.
 
 Step 3: Serialize and de-serialize
-----------------------------------
 
 .. code-block:: java
 
