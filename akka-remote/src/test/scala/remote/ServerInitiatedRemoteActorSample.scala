@@ -1,8 +1,8 @@
 package akka.actor.remote
 
-import akka.actor.{Actor, ActorRegistry}
-
+import akka.actor.Actor
 import Actor._
+import akka.event.EventHandler
 
 /*************************************
 Instructions how to run the sample:
@@ -19,14 +19,12 @@ Instructions how to run the sample:
 * Then paste in the code below into both shells.
 
 Then run:
-* ServerInitiatedRemoteActorServer.run in one shell
-* ServerInitiatedRemoteActorClient.run in one shell
+* ServerInitiatedRemoteActorServer.run() in one shell
+* ServerInitiatedRemoteActorClient.run() in the other shell
 Have fun.
 *************************************/
 
 class HelloWorldActor extends Actor {
-  self.start()
-
   def receive = {
     case "Hello" => self.reply("World")
   }
@@ -34,16 +32,22 @@ class HelloWorldActor extends Actor {
 
 object ServerInitiatedRemoteActorServer {
 
-  def main(args: Array[String]) = {
-    Actor.remote.start("localhost", 2552)
-    Actor.remote.register("hello-service", actorOf[HelloWorldActor])
+  def run() {
+    remote.start("localhost", 2552)
+    remote.register("hello-service", actorOf[HelloWorldActor])
   }
+
+  def main(args: Array[String]) { run() }
 }
 
 object ServerInitiatedRemoteActorClient {
-  def main(args: Array[String]) = {
-    val actor = Actor.remote.actorFor("hello-service", "localhost", 2552)
+
+  def run() {
+    val actor = remote.actorFor("hello-service", "localhost", 2552)
     val result = actor !! "Hello"
+    EventHandler.info("Result from Remote Actor: %s", result)
   }
+
+  def main(args: Array[String]) { run() }
 }
 

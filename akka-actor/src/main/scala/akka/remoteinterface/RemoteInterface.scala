@@ -354,7 +354,8 @@ trait RemoteServerModule extends RemoteModule {
   def registerByUuid(actorRef: ActorRef): Unit
 
   /**
-   *  Register Remote Actor by a specific 'id' passed as argument.
+   *  Register Remote Actor by a specific 'id' passed as argument. The actor is registered by UUID rather than ID
+   *  when prefixing the handle with the “uuid:” protocol.
    * <p/>
    * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself.
    */
