@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit.{NANOSECONDS => NANOS, MILLISECONDS => MILL
 import java.util.concurrent.atomic. {AtomicBoolean}
 import java.lang.{Iterable => JIterable}
 import java.util.{LinkedList => JLinkedList}
+import scala.collection.mutable.Stack
 import annotation.tailrec
 
 class FutureTimeoutException(message: String) extends AkkaException(message)
@@ -271,6 +272,10 @@ object Future {
       val fb = fn(a.asInstanceOf[A])
       for (r <- fr; b <-fb) yield (r += b)
     }.map(_.result)
+
+  private[akka] val callbacks = new ThreadLocal[Option[Stack[() => Unit]]]() {
+    override def initialValue = None
+  }
 }
 
 sealed trait Future[+T] {
@@ -672,8 +677,30 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
       _lock.unlock
     }
 
-    if (notifyTheseListeners.nonEmpty)
-      notifyTheseListeners.reverse foreach notify
+    @tailrec
+    def addToCallbacks(rest: List[Future[T] => Unit], callbacks: Stack[() => Unit]) {
+      if (rest.nonEmpty) {
+        callbacks.push(() => notify(rest.head))
+        addToCallbacks(rest.tail, callbacks)
+      }
+    }
+
+    if (notifyTheseListeners.nonEmpty) {
+      val optCallbacks = Future.callbacks.get
+      if (optCallbacks.isDefined) addToCallbacks(notifyTheseListeners, optCallbacks.get)
+      else {
+        try {
+          val callbacks = Stack[() => Unit]()
+          Future.callbacks.set(Some(callbacks))
+          addToCallbacks(notifyTheseListeners, callbacks)
+          while (callbacks.nonEmpty) {
+            callbacks.pop().apply
+          }
+        } finally {
+          Future.callbacks.set(None)
+        }
+      }
+    }
 
     this
   }
