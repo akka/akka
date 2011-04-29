@@ -685,6 +685,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
       }
     }
 
+    @tailrec
     def runCallbacks(rest: List[Future[T] => Unit], callbacks: Stack[() => Unit]) {
       if (rest.nonEmpty) {
         notify(rest.head)
