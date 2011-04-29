@@ -127,8 +127,8 @@ Make SBT download the dependencies it needs. That is done by invoking::
 
 From the SBT project you can generate files for your IDE:
 
-- `SbtEclipsify <https://github.com/musk/SbtEclipsify>`_ to generate the Eclipse project. Detailed instructions are available in :ref:`getting-started-first-scala-eclipse`.
-- `sbt-idea <https://github.com/mpeltonen/sbt-idea>`_ to generate the Eclipse project
+- `SbtEclipsify <https://github.com/musk/SbtEclipsify>`_ to generate Eclipse project. Detailed instructions are available in :ref:`getting-started-first-scala-eclipse`.
+- `sbt-idea <https://github.com/mpeltonen/sbt-idea>`_ to generate IntelliJ IDEA project.
 
 Creating messages
 -----------------
