@@ -10,6 +10,7 @@ import akka.util.{ReflectiveAccess, Switch}
 import java.util.Queue
 import java.util.concurrent.atomic.{AtomicReference, AtomicInteger}
 import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue, LinkedBlockingQueue}
+import util.DynamicVariable
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -55,6 +56,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
 
   @volatile private var actorType: Option[Class[_]] = None
   @volatile private var members = Vector[ActorRef]()
+  private val donationInProgress = new DynamicVariable(false)
 
   private[akka] override def register(actorRef: ActorRef) = {
     //Verify actor type conformity
@@ -78,18 +80,22 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
 
   override private[akka] def dispatch(invocation: MessageInvocation) = {
     val mbox = getMailbox(invocation.receiver)
-    /*if (!mbox.isEmpty && attemptDonationOf(invocation, mbox)) {
+    if (donationInProgress.value == false && mbox.dispatcherLock.locked && attemptDonationOf(invocation, mbox)) {
       //We were busy and we got to donate the message to some other lucky guy, we're done here
-    } else {*/
+    } else {
       mbox enqueue invocation
       registerForExecution(mbox)
-    //}
+    }
   }
 
   override private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
-    while(donateFrom(mbox)) {} //When we reregister, first donate messages to another actor
+    try {
+      donationInProgress.value = true
+      while(donateFrom(mbox)) {} //When we reregister, first donate messages to another actor
+    } finally { donationInProgress.value = false }
+
     if (!mbox.isEmpty) //If we still have messages left to process, reschedule for execution
-      super.reRegisterForExecution(mbox)
+        super.reRegisterForExecution(mbox)
   }
 
   /**
@@ -110,13 +116,14 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   /**
    * Returns true if the donation succeeded or false otherwise
    */
-  /*protected def attemptDonationOf(message: MessageInvocation, donorMbox: MessageQueue with ExecutableMailbox): Boolean = {
+  protected def attemptDonationOf(message: MessageInvocation, donorMbox: MessageQueue with ExecutableMailbox): Boolean = try {
+    donationInProgress.value = true
     val actors = members // copy to prevent concurrent modifications having any impact
     doFindDonorRecipient(donorMbox, actors, System.identityHashCode(message) % actors.size) match {
       case null => false
       case recipient => donate(message, recipient)
     }
-  }*/
+  } finally { donationInProgress.value = false }
 
   /**
    * Rewrites the message and adds that message to the recipients mailbox
