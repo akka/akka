@@ -91,7 +91,12 @@ object ReflectiveAccess {
       "Can't load the typed actor module, make sure that akka-typed-actor.jar is on the classpath")
 
     val typedActorObjectInstance: Option[TypedActorObject] =
-      getObjectFor("akka.actor.TypedActor$")
+      getObjectFor[TypedActorObject]("akka.actor.TypedActor$") match {
+        case r: Right[_, TypedActorObject] => Some(r.b)
+        case l: Left[Exception, _] =>
+          EventHandler.debug(this, l.toString)
+          None
+      }
 
     def resolveFutureIfMessageIsJoinPoint(message: Any, future: Future[_]): Boolean = {
       ensureEnabled
@@ -117,7 +122,12 @@ object ReflectiveAccess {
     lazy val isEnabled = clusterObjectInstance.isDefined
 
     val clusterObjectInstance: Option[AnyRef] =
-      getObjectFor("akka.cloud.cluster.Cluster$")
+      getObjectFor[AnyRef]("akka.cloud.cluster.Cluster$") match {
+        case r: Right[_, AnyRef] => Some(r.b)
+        case l: Left[Exception, _] =>
+          EventHandler.debug(this, l.toString)
+          None
+      }
 
     val serializerClass: Option[Class[_]] =
       getClassFor("akka.serialization.Serializer") match {
@@ -150,34 +160,34 @@ object ReflectiveAccess {
   def createInstance[T](fqn: String,
                         params: Array[Class[_]],
                         args: Array[AnyRef],
-                        classloader: ClassLoader = loader): Option[T] = try {
+                        classloader: ClassLoader = loader): Either[Exception,T] = try {
     assert(params ne null)
     assert(args ne null)
     getClassFor(fqn) match {
-      case r: Right[Exception, Class[T]] =>
+      case r: Right[_, Class[T]] =>
         val ctor = r.b.getDeclaredConstructor(params: _*)
         ctor.setAccessible(true)
-        Some(ctor.newInstance(args: _*).asInstanceOf[T])
-      case _ => None
+        Right(ctor.newInstance(args: _*).asInstanceOf[T])
+      case l : Left[Exception, _] => Left(l.a)
     }
   } catch {
     case e: Exception =>
-      EventHandler.debug(this, e.toString)
-      None
+      Left(e)
   }
 
-  def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Option[T] = try {//Obtains a reference to $MODULE$
+  //Obtains a reference to fqn.MODULE$
+  def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception,T] = try {
     getClassFor(fqn) match {
-      case r: Right[Exception, Class[T]] =>
+      case r: Right[_, Class[_]] =>
         val instance = r.b.getDeclaredField("MODULE$")
         instance.setAccessible(true)
-        Option(instance.get(null).asInstanceOf[T])
-      case _ => None
+        val obj = instance.get(null)
+        if (obj eq null) Left(new NullPointerException) else Right(obj.asInstanceOf[T])
+      case l : Left[Exception, _] => Left(l.a)
     }
   } catch {
-    case e: ExceptionInInitializerError =>
-      EventHandler.debug(this, e.toString)
-      throw e
+    case e: Exception =>
+      Left(e)
   }
 
   def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception,Class[T]] = try {
