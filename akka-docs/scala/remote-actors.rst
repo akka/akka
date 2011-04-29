@@ -64,7 +64,7 @@ If you invoke 'shutdown' on the server then the connection will be closed.
 
   import akka.actor.Actor._
 
-  remote.shutdown
+  remote.shutdown()
 
 Connecting and shutting down a client explicitly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
