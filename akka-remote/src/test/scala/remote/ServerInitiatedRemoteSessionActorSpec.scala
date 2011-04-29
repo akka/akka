@@ -48,7 +48,7 @@ class ServerInitiatedRemoteSessionActorSpec extends AkkaRemoteTest {
       val result1 = session1 !! GetUser()
       result1.as[String] must equal (Some("session[1]"))
 
-      remote.shutdownClientModule
+      remote.shutdownClientModule()
 
       val session2 = remote.actorFor("untyped-session-actor-service", 5000L, host, port)
 
@@ -66,7 +66,7 @@ class ServerInitiatedRemoteSessionActorSpec extends AkkaRemoteTest {
       default1.as[String] must equal (Some("anonymous"))
 
       instantiatedSessionActors must have size (1)
-      remote.shutdownClientModule
+      remote.shutdownClientModule()
       Thread.sleep(1000)
       instantiatedSessionActors must have size (0)
     }

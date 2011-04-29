@@ -102,9 +102,9 @@ object EventHandler extends ListenerManagement {
   /**
    * Shuts down all event handler listeners including the event handle dispatcher.
    */
-  def shutdown() = {
-    foreachListener(_.stop)
-    EventHandlerDispatcher.shutdown
+  def shutdown() {
+    foreachListener(_.stop())
+    EventHandlerDispatcher.shutdown()
   }
 
   def notify(event: Any) {

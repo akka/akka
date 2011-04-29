@@ -168,7 +168,7 @@ trait MessageDispatcher {
           shutdownSchedule = SCHEDULED
           Scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
         case SCHEDULED =>
-          if (uuids.isEmpty() && futures.get == 0) {
+          if (uuids.isEmpty && futures.get == 0) {
             active switchOff {
               shutdown // shut down in the dispatcher's references is zero
             }
@@ -205,12 +205,12 @@ trait MessageDispatcher {
   /**
    * Called one time every time an actor is attached to this dispatcher and this dispatcher was previously shutdown
    */
-  private[akka] def start: Unit
+  private[akka] def start(): Unit
 
   /**
    * Called one time every time an actor is detached from this dispatcher and this dispatcher has no actors left attached
    */
-  private[akka] def shutdown: Unit
+  private[akka] def shutdown(): Unit
 
   /**
    * Returns the size of the mailbox for the specified actor

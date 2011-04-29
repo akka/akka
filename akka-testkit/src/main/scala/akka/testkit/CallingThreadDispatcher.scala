@@ -108,9 +108,9 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
 
   private def getMailbox(actor: ActorRef) = actor.mailbox.asInstanceOf[CallingThreadMailbox]
 
-  private[akka] override def start {}
+  private[akka] override def start() {}
 
-  private[akka] override def shutdown {}
+  private[akka] override def shutdown() {}
 
   private[akka] override def timeoutMs = 100L
 

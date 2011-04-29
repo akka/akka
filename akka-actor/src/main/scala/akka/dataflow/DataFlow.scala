@@ -160,6 +160,6 @@ object DataFlow {
       }
     }
 
-    def shutdown = in ! Exit
+    def shutdown() { in ! Exit }
   }
 }

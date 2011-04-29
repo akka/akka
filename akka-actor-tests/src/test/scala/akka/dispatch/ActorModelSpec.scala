@@ -111,13 +111,13 @@ object ActorModelSpec {
       super.dispatch(invocation)
     }
 
-    private[akka] abstract override def start {
-      super.start
+    private[akka] abstract override def start() {
+      super.start()
       starts.incrementAndGet()
     }
 
-    private[akka] abstract override def shutdown {
-      super.shutdown
+    private[akka] abstract override def shutdown() {
+      super.shutdown()
       stops.incrementAndGet()
     }
   }

@@ -5,6 +5,6 @@
 package akka.util
 
 trait Bootable {
-  def onLoad {}
-  def onUnload {}
+  def onLoad() {}
+  def onUnload() {}
 }

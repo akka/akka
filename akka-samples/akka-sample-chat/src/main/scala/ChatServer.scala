@@ -6,7 +6,7 @@
 
   import scala.collection.mutable.HashMap
 
-  import akka.actor.{SupervisorFactory, Actor, ActorRef}
+  import akka.actor.{Actor, ActorRef}
   import akka.stm._
   import akka.config.Supervision.{OneForOneStrategy,Permanent}
   import Actor._
@@ -108,7 +108,9 @@
         self.reply(ChatLog(messageList))
     }
 
-    override def postRestart(reason: Throwable) = chatLog = TransactionalVector()
+    override def postRestart(reason: Throwable) {
+      chatLog = TransactionalVector()
+    }
   }
 
   /**
@@ -135,8 +137,9 @@
         sessions -= username
     }
 
-    protected def shutdownSessions =
+    protected def shutdownSessions() {
       sessions.foreach { case (_, session) => session.stop() }
+    }
   }
 
   /**
@@ -184,11 +187,11 @@
     // abstract methods to be defined somewhere else
     protected def chatManagement: Receive
     protected def sessionManagement: Receive
-    protected def shutdownSessions(): Unit
+    protected def shutdownSessions()
 
-    override def postStop() = {
+    override def postStop() {
       EventHandler.info(this, "Chat server is shutting down...")
-      shutdownSessions
+      shutdownSessions()
       self.unlink(storage)
       storage.stop()
     }
@@ -206,7 +209,7 @@
     SessionManagement with
     ChatManagement with
     MemoryChatStorageFactory {
-    override def preStart() = {
+    override def preStart() {
       remote.start("localhost", 2552);
       remote.register("chat:service", self) //Register the actor with the specified service id
     }
@@ -217,9 +220,9 @@
    */
   object ServerRunner {
 
-    def main(args: Array[String]): Unit = ServerRunner.run
+    def main(args: Array[String]) { ServerRunner.run() }
 
-    def run = {
+    def run() {
       actorOf[ChatService].start()
     }
   }
@@ -229,9 +232,9 @@
    */
   object ClientRunner {
 
-    def main(args: Array[String]): Unit = ClientRunner.run
+    def main(args: Array[String]) { ClientRunner.run() }
 
-    def run = {
+    def run() {
 
       val client1 = new ChatClient("jonas")
       client1.login

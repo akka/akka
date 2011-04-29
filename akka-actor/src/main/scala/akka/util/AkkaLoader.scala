@@ -21,7 +21,7 @@ class AkkaLoader {
    * Boot initializes the specified bundles
    */
   def boot(withBanner: Boolean, b : Bootable): Unit = hasBooted switchOn {
-    if (withBanner) printBanner
+    if (withBanner) printBanner()
     println("Starting Akka...")
     b.onLoad
     Thread.currentThread.setContextClassLoader(getClass.getClassLoader)
@@ -32,15 +32,17 @@ class AkkaLoader {
   /*
    * Shutdown, well, shuts down the bundles used in boot
    */
-  def shutdown: Unit = hasBooted switchOff {
-    println("Shutting down Akka...")
-    _bundles.foreach(_.onUnload)
-    _bundles = None
-    Actor.shutdownHook.run
-    println("Akka succesfully shut down")
+  def shutdown() {
+    hasBooted switchOff {
+      println("Shutting down Akka...")
+      _bundles.foreach(_.onUnload)
+      _bundles = None
+      Actor.shutdownHook.run
+      println("Akka succesfully shut down")
+    }
   }
 
-  private def printBanner = {
+  private def printBanner() {
     println("==================================================")
     println("                       t")
     println("             t       t t")

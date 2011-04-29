@@ -40,20 +40,20 @@ class AkkaRemoteTest extends
       remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(false) //Can't run the test if we're eliminating all remote calls
   }
 
-  override def afterAll {
+  override def afterAll() {
     if (!OptimizeLocal)
       remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(optimizeLocal_?) //Reset optimizelocal after all tests
   }
 
-  override def beforeEach {
+  override def beforeEach() {
     remote.start(host,port)
     super.beforeEach
   }
 
   override def afterEach() {
-    remote.shutdown
+    remote.shutdown()
     Actor.registry.shutdownAll()
-    super.afterEach
+    super.afterEach()
   }
 
   /* Utilities */
