@@ -3,11 +3,11 @@ Remote Actors (Scala)
 
 Module stability: **SOLID**
 
-Akka supports starting Actors and Typed Actors on remote nodes using a very efficient and scalable NIO implementation built upon `JBoss Netty <http://jboss.org/netty>`_ and `Google Protocol Buffers <http://code.google.com/p/protobuf/>`_ .
+Akka supports starting and interacting with Actors and Typed Actors on remote nodes using a very efficient and scalable NIO implementation built upon `JBoss Netty <http://jboss.org/netty>`_ and `Google Protocol Buffers <http://code.google.com/p/protobuf/>`_ .
 
-The usage is completely transparent both in regards to sending messages and error handling and propagation as well as supervision, linking and restarts. You can send references to other Actors as part of the message.
+The usage is completely transparent with local actors, both in regards to sending messages and error handling and propagation as well as supervision, linking and restarts. You can send references to other Actors as part of the message.
 
-You can find a runnable sample `here <http://github.com/jboner/akka/tree/master/akka-samples/akka-sample-remote/>`_.
+You can find a runnable sample `here <http://github.com/jboner/akka/tree/master/akka-samples/akka-sample-remote/>`__.
 
 Starting up the remote service
 ------------------------------
@@ -332,7 +332,7 @@ Session bound server side setup
 Session bound server managed remote actors work by creating and starting a new actor for every client that connects. Actors are stopped automatically when the client disconnects. The client side is the same as regular server managed remote actors. Use the function registerPerSession instead of register.
 
 Session bound actors are useful if you need to keep state per session, e.g. username.
-They are also useful if you need to perform some cleanup when a client disconnects by overriding the postStop method as described `here <actors-scala#Stopping actors>`_
+They are also useful if you need to perform some cleanup when a client disconnects by overriding the postStop method as described `here <actors-scala#Stopping actors>`__
 
 .. code-block:: scala
 
@@ -697,26 +697,27 @@ Using the generated message builder to send the message to a remote actor:
 SBinary
 ^^^^^^^
 
-`<code format="scala">`_
-case class User(firstNameLastName: Tuple2[String, String], email: String, age: Int) extends Serializable.SBinary[User] {
-  import sbinary.DefaultProtocol._
+.. code-block:: scala
 
-  def this() = this(null, null, 0)
+  case class User(firstNameLastName: Tuple2[String, String], email: String, age: Int) extends Serializable.SBinary[User] {
+    import sbinary.DefaultProtocol._
 
-  implicit object UserFormat extends Format[User] {
-    def reads(in : Input) = User(
-      read[Tuple2[String, String]](in),
-      read[String](in),
-      read[Int](in))
-    def writes(out: Output, value: User) = {
-      write[Tuple2[String, String]](out, value. firstNameLastName)
-      write[String](out, value.email)
-      write[Int](out, value.age)
+    def this() = this(null, null, 0)
+
+    implicit object UserFormat extends Format[User] {
+      def reads(in : Input) = User(
+        read[Tuple2[String, String]](in),
+        read[String](in),
+        read[Int](in))
+      def writes(out: Output, value: User) = {
+        write[Tuple2[String, String]](out, value. firstNameLastName)
+        write[String](out, value.email)
+        write[Int](out, value.age)
+      }
     }
+
+    def fromBytes(bytes: Array[Byte]) = fromByteArray[User](bytes)
+
+    def toBytes: Array[Byte] = toByteArray(this)
   }
 
-  def fromBytes(bytes: Array[Byte]) = fromByteArray[User](bytes)
-
-  def toBytes: Array[Byte] = toByteArray(this)
-}
-`<code>`_
