@@ -143,16 +143,16 @@ object Deployer {
   lazy val cluster            = ReflectiveAccess.ClusterModule.clusterDeployer
   lazy val local              = new LocalDeployer
 
-  def deploy(deployment: Seq[Deploy]) {
-    deployment foreach (deploy(_))
-  }
-
   def deploy(deployment: Deploy) {
     if (deployment eq null) throw new IllegalArgumentException("Deploy can not be null")
     val address = deployment.address
     Address.validate(address)
     if (useClusterDeployer) cluster.deploy(deployment)
     else                    local.deploy(deployment)
+  }
+
+  def deploy(deployment: Seq[Deploy]) {
+    deployment foreach (deploy(_))
   }
 
   private def deployLocally(deployment: Deploy) {

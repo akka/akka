@@ -206,8 +206,20 @@ object Actor extends ListenerManagement {
         newLocalActorRef(clazz, address)
 
       case Deploy(_, router, Clustered(Home(hostname, port), replication  , state)) =>
+        sys.error("Clustered deployment not yet supported")
         /*
-          1. Check ZK for deployment config
+        if (Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
+        val remoteAddress = Actor.remote.address
+        if (remoteAddress.getHostName == hostname && remoteAddress.getPort == port) {
+          // home node for actor
+          if (!node.isClustered(address)) node.store(clazz, address)
+          node.use(address).head
+        } else {
+          val router  =
+          node.ref(address, router)
+        }
+        */
+        /*
           2. Check Home(..)
             a) If home is same as Actor.remote.address then:
               - check if actor is stored in ZK, if not; node.store(..)
@@ -216,7 +228,6 @@ object Actor extends ListenerManagement {
               - check out actor using node.ref(..)
 
           Misc stuff:
-            - Manage deployment in ZK
             - How to define a single ClusterNode to use? Where should it be booted up? How should it be configured?
             - Deployer should:
               1. Check if deployment exists in ZK

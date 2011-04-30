@@ -561,7 +561,7 @@ class ClusterNode private[akka] (
   /**
    * Explicitly resign from being a leader. If this node is not a leader then this operation is a no-op.
    */
-  def resign = if (isLeader.get) leaderLock.unlock
+  def resign() { if (isLeader.get) leaderLock.unlock }
 
   // =======================================
   // Actor
