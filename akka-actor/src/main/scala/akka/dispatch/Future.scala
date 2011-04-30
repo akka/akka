@@ -311,7 +311,7 @@ sealed trait Future[+T] {
    * execution will fail. The normal result of getting a Future from an ActorRef using !!! will return
    * an untyped Future.
    */
-  def apply[A >: T](): A @cps[Future[Any]] = shift(this flatMap _)
+  def apply[A >: T](): A @cps[Future[Any]] = shift(this flatMap (_: A => Future[Any]))
 
   /**
    * Blocks awaiting completion of this Future, then returns the resulting value,
