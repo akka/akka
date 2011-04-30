@@ -94,7 +94,7 @@ object ReflectiveAccess {
       getObjectFor[TypedActorObject]("akka.actor.TypedActor$") match {
         case r: Right[_, TypedActorObject] => Some(r.b)
         case l: Left[Exception, _] =>
-          EventHandler.debug(this, l.toString)
+          EventHandler.debug(this, l.a.toString)
           None
       }
 
@@ -125,7 +125,7 @@ object ReflectiveAccess {
       getObjectFor[AnyRef]("akka.cloud.cluster.Cluster$") match {
         case r: Right[_, AnyRef] => Some(r.b)
         case l: Left[Exception, _] =>
-          EventHandler.debug(this, l.toString)
+          EventHandler.debug(this, l.a.toString)
           None
       }
 
@@ -133,7 +133,7 @@ object ReflectiveAccess {
       getClassFor("akka.serialization.Serializer") match {
         case r: Right[_, Class[_]] => Some(r.b)
         case l: Left[Exception,_] =>
-          EventHandler.debug(this, l.toString)
+          EventHandler.debug(this, l.a.toString)
           None
       }
 
