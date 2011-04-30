@@ -5,6 +5,7 @@
 package akka.camel
 
 import org.apache.camel.CamelContext
+import akka.event.EventHandler
 
 import akka.util.ReflectiveAccess.getObjectFor
 
@@ -25,6 +26,11 @@ private[camel] object TypedCamelAccess {
     }
 
     val typedCamelObject: Option[TypedCamelObject] =
-      getObjectFor("akka.camel.TypedCamel$", loader)
+      getObjectFor("akka.camel.TypedCamel$", loader)  match {
+        case Right(value) => Some(value)
+        case Left(exception) =>
+          EventHandler.debug(this, exception.toString)
+          None
+      }
   }
 }
