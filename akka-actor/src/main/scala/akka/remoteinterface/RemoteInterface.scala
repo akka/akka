@@ -116,7 +116,7 @@ case class RemoteServerWriteFailed(
 class RemoteClientException private[akka] (
   message: String,
   @BeanProperty val client: RemoteClientModule,
-  val remoteAddress: InetSocketAddress) extends AkkaException(message)
+  val remoteAddress: InetSocketAddress, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * Thrown when the remote server actor dispatching fails for some reason.
@@ -189,13 +189,14 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   def actorOf(clazz: Class[_ <: Actor], host: String, port: Int): ActorRef = {
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
     clientManagedActorOf(() =>
-        createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
-          throw new ActorInitializationException(
-            "Could not instantiate Actor" +
-            "\nMake sure Actor is NOT defined inside a class/trait," +
-            "\nif so put it outside the class/trait, f.e. in a companion object," +
-            "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.")),
-      host, port)
+        createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs) match {
+            case r: Right[_, Actor] => r.b
+            case l: Left[Exception, _] => throw new ActorInitializationException(
+              "Could not instantiate Actor" +
+              "\nMake sure Actor is NOT defined inside a class/trait," +
+              "\nif so put it outside the class/trait, f.e. in a companion object," +
+              "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", l.a)
+          }, host, port)
   }
 
   /**
@@ -217,13 +218,14 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   def actorOf[T <: Actor : Manifest](host: String, port: Int): ActorRef = {
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
     clientManagedActorOf(() =>
-      createInstance[Actor](manifest[T].erasure.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
-        throw new ActorInitializationException(
-          "Could not instantiate Actor" +
-          "\nMake sure Actor is NOT defined inside a class/trait," +
-          "\nif so put it outside the class/trait, f.e. in a companion object," +
-          "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.")),
-      host, port)
+      createInstance[Actor](manifest[T].erasure.asInstanceOf[Class[_]], noParams, noArgs) match {
+          case r: Right[_, Actor] => r.b
+          case l: Left[Exception, _] => throw new ActorInitializationException(
+            "Could not instantiate Actor" +
+            "\nMake sure Actor is NOT defined inside a class/trait," +
+            "\nif so put it outside the class/trait, f.e. in a companion object," +
+            "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", l.a)
+        }, host, port)
   }
 
   protected override def manageLifeCycleOfListeners = false

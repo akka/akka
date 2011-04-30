@@ -220,14 +220,15 @@ object EventHandler extends ListenerManagement {
   }
   defaultListeners foreach { listenerName =>
     try {
-      ReflectiveAccess.getClassFor[Actor](listenerName) map { clazz =>
-        addListener(Actor.actorOf(clazz).start())
+      ReflectiveAccess.getClassFor[Actor](listenerName) match {
+        case r: Right[_, Class[Actor]] => addListener(Actor.actorOf(r.b).start())
+        case l: Left[Exception,_] => throw l.a
       }
     } catch {
       case e: Exception =>
         throw new ConfigurationException(
           "Event Handler specified in config can't be loaded [" + listenerName +
-          "] due to [" + e.toString + "]")
+          "] due to [" + e.toString + "]", e)
     }
   }
 }
