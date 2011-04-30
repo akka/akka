@@ -47,9 +47,9 @@ object ReflectiveAccess {
       throw e
     }
     val remoteSupportClass = getClassFor[RemoteSupport](TRANSPORT) match {
-      case r: Right[_, Class[RemoteSupport]] => Some(r.b)
-      case l: Left[Exception,_] =>
-        EventHandler.debug(this, l.a)
+      case Right(value) => Some(value)
+      case Left(exception) =>
+        EventHandler.debug(this, exception.toString)
         None
     }
 
@@ -60,10 +60,10 @@ object ReflectiveAccess {
           Array[Class[_]](),
           Array[AnyRef]()
         ) match {
-          case r: Right[Exception, RemoteSupport] => r.b
-          case l: Left[Exception, RemoteSupport] =>
+          case Right(value) => value
+          case Left(exception) =>
           val e = new ModuleNotAvailableException(
-            "Can't instantiate [%s] - make sure that akka-remote.jar is on the classpath".format(remoteClass.getName), l.a)
+            "Can't instantiate [%s] - make sure that akka-remote.jar is on the classpath".format(remoteClass.getName), exception)
           EventHandler.debug(this, e.toString)
           throw e
         }
@@ -92,9 +92,9 @@ object ReflectiveAccess {
 
     val typedActorObjectInstance: Option[TypedActorObject] =
       getObjectFor[TypedActorObject]("akka.actor.TypedActor$") match {
-        case r: Right[_, TypedActorObject] => Some(r.b)
-        case l: Left[Exception, _] =>
-          EventHandler.debug(this, l.a.toString)
+        case Right(value) => Some(value)
+        case Left(exception)=>
+          EventHandler.debug(this, exception.toString)
           None
       }
 
@@ -123,17 +123,17 @@ object ReflectiveAccess {
 
     val clusterObjectInstance: Option[AnyRef] =
       getObjectFor[AnyRef]("akka.cloud.cluster.Cluster$") match {
-        case r: Right[_, AnyRef] => Some(r.b)
-        case l: Left[Exception, _] =>
-          EventHandler.debug(this, l.a.toString)
+        case Right(value) => Some(value)
+        case Left(exception) =>
+          EventHandler.debug(this, exception.toString)
           None
       }
 
     val serializerClass: Option[Class[_]] =
       getClassFor("akka.serialization.Serializer") match {
-        case r: Right[_, Class[_]] => Some(r.b)
-        case l: Left[Exception,_] =>
-          EventHandler.debug(this, l.a.toString)
+        case Right(value) => Some(value)
+        case Left(exception) =>
+          EventHandler.debug(this, exception.toString)
           None
       }
 
@@ -164,11 +164,11 @@ object ReflectiveAccess {
     assert(params ne null)
     assert(args ne null)
     getClassFor(fqn) match {
-      case r: Right[_, Class[T]] =>
-        val ctor = r.b.getDeclaredConstructor(params: _*)
+      case Right(value) =>
+        val ctor = value.getDeclaredConstructor(params: _*)
         ctor.setAccessible(true)
         Right(ctor.newInstance(args: _*).asInstanceOf[T])
-      case l : Left[Exception, _] => Left(l.a)
+      case Left(exception) => Left(exception) //We could just cast this to Either[Exception, T] but it's ugly
     }
   } catch {
     case e: Exception =>
@@ -178,12 +178,12 @@ object ReflectiveAccess {
   //Obtains a reference to fqn.MODULE$
   def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception,T] = try {
     getClassFor(fqn) match {
-      case r: Right[_, Class[_]] =>
-        val instance = r.b.getDeclaredField("MODULE$")
+      case Right(value) =>
+        val instance = value.getDeclaredField("MODULE$")
         instance.setAccessible(true)
         val obj = instance.get(null)
         if (obj eq null) Left(new NullPointerException) else Right(obj.asInstanceOf[T])
-      case l : Left[Exception, _] => Left(l.a)
+      case Left(exception) => Left(exception) //We could just cast this to Either[Exception, T] but it's ugly
     }
   } catch {
     case e: Exception =>
