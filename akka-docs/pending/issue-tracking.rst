@@ -7,6 +7,8 @@ Browsing
 --------
 
 You can find the Akka tickets here: `<http://www.assembla.com/spaces/akka>`_
+You can find the Akka Modules tickets here: `<https://www.assembla.com/spaces/akka-modules/tickets>`_
+
 The roadmap for each milestone is here: `<https://www.assembla.com/spaces/akka/milestones>`_
 
 Creating tickets
@@ -16,7 +18,15 @@ In order to create tickets you need to do the following:
 
 # Register here: `<https://www.assembla.com/user/signup>`_
 # Log in
+
+For Akka tickets:
+
 # Create the ticket: `<https://www.assembla.com/spaces/akka/tickets/new>`_
+
+
+For Akka Modules tickets:
+
+# Create the ticket: `<https://www.assembla.com/spaces/akka-modules/tickets>`_
 
 Thanks a lot for reporting bugs and suggesting features.
 

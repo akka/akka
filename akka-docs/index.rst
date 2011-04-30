@@ -7,6 +7,7 @@ Contents
    intro/index
    general/index
    scala/index
+   java/index
    dev/index
 
 Links

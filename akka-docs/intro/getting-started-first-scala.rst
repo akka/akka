@@ -19,14 +19,25 @@ We will be using an algorithm that is called "embarrassingly parallel" which jus
 
 Here is the formula for the algorithm we will use:
 
-.. image:: pi-formula.png
+.. image:: ../images/pi-formula.png
 
 In this particular algorithm the master splits the series into chunks which are sent out to each worker actor to be processed. When each worker has processed its chunk it sends a result back to the master which aggregates the total result.
 
 Tutorial source code
 --------------------
 
-If you want don't want to type in the code and/or set up an SBT project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here <https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first>`_, with the actual source code `here <https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala>`_.
+If you want don't want to type in the code and/or set up an SBT project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here`__, with the actual source code `here`__.
+
+__ https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first
+__ https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala
+
+To check out the code using Git invoke the following::
+
+    $ git clone git://github.com/jboner/akka.git
+
+Then you can navigate down to the tutorial:: 
+
+    $ cd akka/akka-tutorials/akka-tutorial-first
 
 Prerequisites
 -------------
@@ -173,7 +184,10 @@ Not needed in this tutorial, but if you would like to use additional Akka module
 
 So, now we are all set. Just one final thing to do; make SBT download the dependencies it needs. That is done by invoking::
 
+    > reload
     > update
+
+The first reload command is needed because we have changed the project definition since the sbt session started.
 
 SBT itself needs a whole bunch of dependencies but our project will only need one; ``akka-actor-1.1.jar``. SBT downloads that as well.
 
@@ -238,7 +252,7 @@ The only thing missing in our ``Worker`` actor is the implementation on the ``ca
     def calculatePiFor(start: Int, nrOfElements: Int): Double = {
       var acc = 0.0
       for (i <- start until (start + nrOfElements))
-        acc += 4 * (1 - (i % 2) * 2) / (2 * i + 1)
+        acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1)
       acc
     }
 
@@ -291,11 +305,11 @@ Here is the master actor::
 
       def receive = { ... }
 
-      override def preStart {
+      override def preStart() {
         start = System.currentTimeMillis
       }
 
-      override def postStop {
+      override def postStop() {
         // tell the world that the calculation is complete
         println(
           "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
@@ -404,7 +418,7 @@ But before we package it up and run it, let's take a look at the full code now, 
         def calculatePiFor(start: Int, nrOfElements: Int): Double = {
           var acc = 0.0
           for (i <- start until (start + nrOfElements))
-            acc += 4 * (1 - (i % 2) * 2) / (2 * i + 1)
+            acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1)
           acc
         }
 
@@ -451,11 +465,11 @@ But before we package it up and run it, let's take a look at the full code now, 
             if (nrOfResults == nrOfMessages) self.stop()
         }
 
-        override def preStart {
+        override def preStart() {
           start = System.currentTimeMillis
         }
 
-        override def postStop {
+        override def postStop() {
           // tell the world that the calculation is complete
           println(
             "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"

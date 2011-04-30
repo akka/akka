@@ -44,6 +44,11 @@ import akka.AkkaException
  * EventHandler.error(exception, this, message)
  * </pre>
  *
+ * Shut down the EventHandler:
+ * <pre>
+ * EventHandler.shutdown()
+ * </pre>
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object EventHandler extends ListenerManagement {
@@ -85,13 +90,21 @@ object EventHandler extends ListenerManagement {
 
   lazy val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
 
-  val level: Int = config.getString("akka.event-handler-level", "DEBUG") match {
+  val level: Int = config.getString("akka.event-handler-level", "INFO") match {
     case "ERROR"   => ErrorLevel
     case "WARNING" => WarningLevel
     case "INFO"    => InfoLevel
     case "DEBUG"   => DebugLevel
     case unknown   => throw new ConfigurationException(
                     "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
+  }
+
+  /**
+   * Shuts down all event handler listeners including the event handle dispatcher.
+   */
+  def shutdown() {
+    foreachListener(_.stop())
+    EventHandlerDispatcher.shutdown()
   }
 
   def notify(event: Any) {
@@ -207,14 +220,15 @@ object EventHandler extends ListenerManagement {
   }
   defaultListeners foreach { listenerName =>
     try {
-      ReflectiveAccess.getClassFor[Actor](listenerName) map { clazz =>
-        addListener(Actor.actorOf(clazz).start())
+      ReflectiveAccess.getClassFor[Actor](listenerName) match {
+        case r: Right[_, Class[Actor]] => addListener(Actor.actorOf(r.b).start())
+        case l: Left[Exception,_] => throw l.a
       }
     } catch {
       case e: Exception =>
         throw new ConfigurationException(
           "Event Handler specified in config can't be loaded [" + listenerName +
-          "] due to [" + e.toString + "]")
+          "] due to [" + e.toString + "]", e)
     }
   }
 }

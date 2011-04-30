@@ -78,7 +78,7 @@ object Chameneos {
     var sumMeetings = 0
     var numFaded = 0
 
-    override def preStart = {
+    override def preStart() = {
       for (i <- 0 until numChameneos) actorOf(new Chameneo(self, colours(i % 3), i))
     }
 

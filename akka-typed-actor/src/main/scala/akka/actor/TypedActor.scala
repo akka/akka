@@ -83,11 +83,11 @@ import scala.reflect.BeanProperty
  *
  *   def square(x: Int): Future[Integer] = future(x * x)
  *
- *   override def preStart = {
+ *   override def preStart() = {
  *     ... // optional initialization on start
  *   }
  *
- *   override def postStop = {
+ *   override def postStop() = {
  *     ... // optional cleanup on stop
  *   }
  *
@@ -160,14 +160,14 @@ abstract class TypedActor extends Actor with Proxyable {
    * <p/>
    * Is called when an Actor is started by invoking 'actor.start()'.
    */
-  override def preStart {}
+  override def preStart() {}
 
   /**
    * User overridable callback.
    * <p/>
    * Is called when 'actor.stop()' is invoked.
    */
-  override def postStop {}
+  override def postStop() {}
 
   /**
    * User overridable callback.

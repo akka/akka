@@ -8,7 +8,7 @@ Overview
 
 Testing actors comprises several aspects, which can have different weight according to the concrete project at hand:
 * If you have a collection of actors which performs a certain function, you may want to apply defined stimuli and observe the delivery of the desired result messages to a test actor; in this case the ***TestKit*** trait will likely interest you.
-* If you encounter undesired behaviour (exceptions, dead-locks) and want to nail down the cause, it might help to run the actors in question using the ***CallingThreadDispatcher***; this dispatcher is strictly less powerful than the general purpose ones, but its deterministic behaviour and complete message stack can help debugging, unless your setup depends on concurrent execution for correctness.
+* If you encounter undesired behavior (exceptions, dead-locks) and want to nail down the cause, it might help to run the actors in question using the ***CallingThreadDispatcher***; this dispatcher is strictly less powerful than the general purpose ones, but its deterministic behavior and complete message stack can help debugging, unless your setup depends on concurrent execution for correctness.
 * For real unit tests of one actor body at a time, there soon will be a special ***TestActorRef*** which allows access to the innards and enables running without a dispatcher.
 
 TestKit
@@ -42,7 +42,7 @@ CallingThreadDispatcher
 
 This special purpose dispatcher was conceived to enable collection of the full stack trace accumulated during processing of a complete message chain. The idea is to run invocations always on the calling thread, except when the target actor is already running on the current thread; in that case it is necessary to queue the invocation and run it after the current invocation on that actor has finished processing. This design implies that any invocation which blocks waiting on some future action to be done by the current thread will dead-lock. Hence, the CallingThreadDispatcher offers strictly more possibilities to dead-lock than a standard dispatcher.
 
-One nice property is that this feature can help verify that your design is dead-lock free: if you run only on this dispatcher and utilitze only one thread, then a successful run implies that for the given set of inputs there cannot be a dead-lock. (This is unfortunately not a hard guarantee, as long as your actor behavior depends on the dispatcher used, e.g. you could sabotage it by explicitly dead-locking only if self.dispatcher != CallingThreadDispatcher.)
+One nice property is that this feature can help verify that your design is dead-lock free: if you run only on this dispatcher and utilize only one thread, then a successful run implies that for the given set of inputs there cannot be a dead-lock. (This is unfortunately not a hard guarantee, as long as your actor behavior depends on the dispatcher used, e.g. you could sabotage it by explicitly dead-locking only if self.dispatcher != CallingThreadDispatcher.)
 
 TestActorRef (coming soon ...)
 ------------------------------

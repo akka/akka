@@ -1,5 +1,9 @@
-Actors
-======
+Actors (Scala)
+==============
+
+.. sidebar:: Contents
+
+   .. contents:: :local:
 
 Module stability: **SOLID**
 
@@ -7,7 +11,7 @@ The `Actor Model <http://en.wikipedia.org/wiki/Actor_model>`_ provides a higher 
 
 The API of Akka’s Actors is similar to Scala Actors which has borrowed some of its syntax from Erlang.
 
-The Akka 0.9 release introduced a new concept; ActorRef, which requires some refactoring. If you are new to Akka just read along, but if you have used Akka 0.6.x, 0.7.x and 0.8.x then you might be helped by the :doc:`0.8.x => 0.9.x migration guide <migration-guide-0.8.x-0.9.x>`
+The Akka 0.9 release introduced a new concept; ActorRef, which requires some refactoring. If you are new to Akka just read along, but if you have used Akka 0.6.x, 0.7.x and 0.8.x then you might be helped by the :doc:`0.8.x => 0.9.x migration guide </general/migration-guide-0.8.x-0.9.x>`
 
 Creating Actors
 ---------------
@@ -26,6 +30,9 @@ Here is an example:
 
 .. code-block:: scala
 
+  import akka.actor.Actor
+  import akka.event.EventHandler
+  
   class MyActor extends Actor {
     def receive = {
       case "test" => EventHandler.info(this, "received test")
@@ -372,7 +379,7 @@ Actors are started by invoking the ``start`` method.
   val actor = actorOf[MyActor]
   actor.start()
 
-You can create and start the ``Actor`` in a oneliner like this:
+You can create and start the ``Actor`` in a one liner like this:
 
 .. code-block:: scala
 
@@ -382,7 +389,7 @@ When you start the ``Actor`` then it will automatically call the ``def preStart`
 
 .. code-block:: scala
 
-  override def preStart = {
+  override def preStart() = {
     ... // initialization code
   }
 
@@ -399,7 +406,7 @@ When stop is called then a call to the ``def postStop`` callback method will tak
 
 .. code-block:: scala
 
-  override def postStop = {
+  override def postStop() = {
     ... // clean up resources
   }
 

@@ -15,11 +15,12 @@ Akka Actor
 ----------
 
 # is now dependency free, with the exception of the dependency on the ``scala-library.jar``
-# does not bundle any logging anymore, but you can subscribe to events within Akka by registering an event handler on akka.aevent.EventHandler or by specifying the ``FQN`` of an Actor in the akka.conf under akka.event-handlers; there is an ``akka-slf4j`` module which still provides the Logging trait and a default ``SLF4J`` logger adapter.
+# does not bundle any logging anymore, but you can subscribe to events within Akka by registering an event handler on akka.event.EventHandler or by specifying the ``FQN`` of an Actor in the akka.conf under akka.event-handlers; there is an ``akka-slf4j`` module which still provides the Logging trait and a default ``SLF4J`` logger adapter.
 Don't forget to add a SLF4J backend though, we recommend:
 
 .. code-block:: scala
-    lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.28"
+
+    lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.28" % "runtime"
 
 # If you used HawtDispatcher and want to continue using it, you need to include akka-dispatcher-extras.jar from Akka Modules, in your akka.conf you need to specify: ``akka.dispatch.HawtDispatcherConfigurator`` instead of ``HawtDispatcher``
 # FSM: the onTransition method changed from Function1 to PartialFunction; there is an implicit conversion for the precise types in place, but it may be necessary to add an underscore if you are passing an eta-expansion (using a method as function value).
@@ -37,4 +38,4 @@ Akka Remote
 Akka Testkit
 ------------
 
-The TestKit moved into the akka-testkit subproject and correspondingly into the ``akka.testkit` package.
+The TestKit moved into the akka-testkit subproject and correspondingly into the ``akka.testkit`` package.

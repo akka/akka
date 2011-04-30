@@ -138,12 +138,12 @@ If you want to use akka-camel or any other modules that have their own "Bootable
 Java API: Typed Actors
 ----------------------
 
-`Sample module for REST services with Actors in Java <https://github.com/jboner/akka-modules/tree/master/akka-samples/akka-sample-rest-java/src/main/java/sample/rest/java>`_
+`Sample module for REST services with Actors in Java <https://github.com/jboner/akka-modules/tree/v1.0/akka-samples/akka-sample-rest-java/src/main/java/sample/rest/java>`_
 
 Scala API: Actors
 -----------------
 
-`Sample module for REST services with Actors in Scala <https://github.com/jboner/akka-modules/blob/master/akka-samples/akka-sample-rest-scala/src/main/scala/SimpleService.scala>`_
+`Sample module for REST services with Actors in Scala <https://github.com/jboner/akka-modules/blob/v1.0/akka-samples/akka-sample-rest-scala/src/main/scala/SimpleService.scala>`_
 
 Using Akka with the Pinky REST/MVC framework
 --------------------------------------------
@@ -179,7 +179,7 @@ Endpoints are actors that handle request messages. Minimally there must be an in
 Preparations
 ^^^^^^^^^^^^
 
-In order to use Mist you have to register the MistServlet in *web.xml* or do the analogous for the embedded server if running in Akka Micrkernel:
+In order to use Mist you have to register the MistServlet in *web.xml* or do the analogous for the embedded server if running in Akka Microkernel:
 
 .. code-block:: xml
 
@@ -269,7 +269,7 @@ Finally, bind the *handleHttpRequest* function of the *Endpoint* trait to the ac
       //
       // this is where you want attach your endpoint hooks
       //
-    override def preStart = {
+    override def preStart() = {
         //
         // we expect there to be one root and that it's already been started up
         // obviously there are plenty of other ways to obtaining this actor
@@ -397,7 +397,7 @@ As noted above, hook functions are non-exclusive. This means multiple actors can
       //
       // this is where you want attach your endpoint hooks
       //
-    override def preStart = {
+    override def preStart() = {
       //
       // we expect there to be one root and that it's already been started up
       // obviously there are plenty of other ways to obtaining this actor
@@ -419,7 +419,7 @@ As noted above, hook functions are non-exclusive. This means multiple actors can
     def receive = handleHttpRequest
 
     //
-    // this guy completes requests after other actions have occured
+    // this guy completes requests after other actions have occurred
     //
     lazy val complete = actorOf[ActionCompleteActor].start()
   }

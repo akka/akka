@@ -1,5 +1,6 @@
+###
 FSM
-===
+###
 
 .. sidebar:: Contents
 
@@ -14,7 +15,7 @@ FSM
 Module stability: **STABLE**
 
 Overview
-++++++++
+========
 
 The FSM (Finite State Machine) is available as a mixin for the akka Actor and
 is best described in the `Erlang design principles
@@ -29,7 +30,7 @@ These relations are interpreted as meaning:
   *If we are in state S and the event E occurs, we should perform the actions A and make a transition to the state S'.*
 
 A Simple Example
-++++++++++++++++
+================
 
 To demonstrate the usage of states we start with a simple FSM without state
 data. The state can be of any type so for this example we create the states A,
@@ -42,7 +43,7 @@ B and C.
   case object B extends ExampleState
   case object C extends ExampleState
 
-Now lets create an object representing the FSM and defining the behaviour.
+Now lets create an object representing the FSM and defining the behavior.
 
 .. code-block:: scala
 
@@ -94,7 +95,7 @@ FSM is finished by calling the :func:`initialize` method as last part of the
 ABC constructor.
 
 State Data
-++++++++++
+==========
 
 The FSM can also hold state data associated with the internal state of the
 state machine. The state data can be of any type but to demonstrate let's look
@@ -152,7 +153,7 @@ This encapsulation is what makes state machines a powerful abstraction, e.g.
 for handling socket states in a network server application.
 
 Reference
-+++++++++
+=========
 
 This section describes the DSL in a more formal way, refer to `Examples`_ for more sample material.
 
@@ -194,24 +195,7 @@ The :class:`FSM` trait takes two type parameters:
 Defining Timeouts
 -----------------
 
-The :class:`FSM` module uses :class:`akka.util.Duration` for all timing
-configuration, which includes a mini-DSL:
-
-.. code-block:: scala
-
-   import akka.util.duration._   // notice the small d
-
-   val fivesec = 5.seconds
-   val threemillis = 3.millis
-   val diff = fivesec - threemillis
-
-.. note::
-
-   You may leave out the dot if the expression is clearly delimited (e.g.
-   within parentheses or in an argument list), but it is recommended to use it
-   if the time unit is the last token on a line, otherwise semi-colon inference
-   might go wrong, depending on what starts the next line.
-
+The :class:`FSM` module uses :ref:`Duration` for all timing configuration.
 Several methods, like :func:`when()` and :func:`startWith()` take a
 :class:`FSM.Timeout`, which is an alias for :class:`Option[Duration]`. There is
 an implicit conversion available in the :obj:`FSM` object which makes this
@@ -344,7 +328,7 @@ state variable, as everything within the FSM actor is running single-threaded
 anyway.
 
 Internal Monitoring
-*******************
+^^^^^^^^^^^^^^^^^^^
 
 Up to this point, the FSM DSL has been centered on states and events. The dual
 view is to describe it as a series of transitions. This is enabled by the
@@ -398,7 +382,7 @@ are still executed in declaration order, though.
    a certain state cannot be forgot when adding new target states.
 
 External Monitoring
-*******************
+^^^^^^^^^^^^^^^^^^^
 
 External actors may be registered to be notified of state transitions by
 sending a message :class:`SubscribeTransitionCallBack(actorRef)`. The named
@@ -476,7 +460,7 @@ As for the :func:`whenUnhandled` case, this handler is not stacked, so each
 invocation of :func:`onTermination` replaces the previously installed handler.
 
 Examples
-++++++++
+========
 
 A bigger FSM example can be found in the sources:
 

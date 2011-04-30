@@ -54,7 +54,7 @@ trait DefaultActorPool extends ActorPool { this: Actor =>
   private var _lastCapacityChange = 0
   private var _lastSelectorCount = 0
 
-  override def postStop = _delegates foreach {
+  override def postStop() = _delegates foreach {
     delegate => try {
       delegate ! PoisonPill
     } catch { case e: Exception => } //Ignore any exceptions here

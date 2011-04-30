@@ -89,7 +89,7 @@ How does it work (at least for REST actors)?
 # The browser will send the *service ticket* to the web application encoded in the header value of the *Authorization*header
 # The web application must validate the ticket based on a shared secret between the web application and the kerberos server. As a result the web application will know the name of the user
 
-To activate the kerberos/SPNEGO authentication for your REST actor you need to enable the kerberos/SPNGEOauthentication actor in the akka.conf like this:
+To activate the kerberos/SPNEGO authentication for your REST actor you need to enable the kerberos/SPNEGOauthentication actor in the akka.conf like this:
 
 .. code-block:: ruby
 

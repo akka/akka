@@ -6,8 +6,8 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.Actor
-import akka.routing.Dispatcher
+import akka.actor.{Actor, Channel}
+import akka.util.Duration
 import akka.japi.{ Procedure, Function => JFunc }
 
 import scala.util.continuations._
@@ -15,12 +15,13 @@ import scala.util.continuations._
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent. {ConcurrentLinkedQueue, TimeUnit, Callable}
 import java.util.concurrent.TimeUnit.{NANOSECONDS => NANOS, MILLISECONDS => MILLIS}
-import java.util.concurrent.atomic. {AtomicBoolean, AtomicInteger}
+import java.util.concurrent.atomic. {AtomicBoolean}
 import java.lang.{Iterable => JIterable}
 import java.util.{LinkedList => JLinkedList}
+import scala.collection.mutable.Stack
 import annotation.tailrec
 
-class FutureTimeoutException(message: String) extends AkkaException(message)
+class FutureTimeoutException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 object Futures {
 
@@ -234,11 +235,21 @@ object Future {
    * This method constructs and returns a Future that will eventually hold the result of the execution of the supplied body
    * The execution is performed by the specified Dispatcher.
    */
-  def apply[T](body: => T, timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher): Future[T] = {
-    val f = new DefaultCompletableFuture[T](timeout)
-    dispatcher.dispatchFuture(FutureInvocation(f.asInstanceOf[CompletableFuture[Any]], () => body))
-    f
+  def apply[T](body: => T, timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher): Future[T] =
+    dispatcher.dispatchFuture(() => body, timeout)
+
+  /**
+   * Construct a completable channel
+   */
+  def channel(timeout: Long = Actor.TIMEOUT) = new Channel[Any] {
+    val future = empty[Any](timeout)
+    def !(msg: Any) = future << msg
   }
+
+  /**
+   * Create an empty Future with default timeout
+   */
+  def empty[T](timeout : Long = Actor.TIMEOUT) = new DefaultCompletableFuture[T](timeout)
 
   import scala.collection.mutable.Builder
   import scala.collection.generic.CanBuildFrom
@@ -282,6 +293,10 @@ object Future {
    */
   def flow[A](body: => A @cps[Future[A]], timeout: Long = Actor.TIMEOUT): Future[A] =
     reset(new DefaultCompletableFuture[A](timeout).completeWithResult(body))
+
+  private[akka] val callbacksPendingExecution = new ThreadLocal[Option[Stack[() => Unit]]]() {
+    override def initialValue = None
+  }
 }
 
 sealed trait Future[+T] {
@@ -316,10 +331,19 @@ sealed trait Future[+T] {
   def await : Future[T]
 
   /**
+   * Blocks the current thread until the Future has been completed or the
+   * timeout has expired. The timeout will be the least value of 'atMost' and the timeout
+   * supplied at the constructuion of this Future.
+   * In the case of the timeout expiring a FutureTimeoutException will be thrown.
+   */
+  def await(atMost: Duration) : Future[T]
+
+  /**
    * Blocks the current thread until the Future has been completed. Use
    * caution with this method as it ignores the timeout and will block
    * indefinitely if the Future is never completed.
    */
+  @deprecated("Will be removed after 1.1, it's dangerous and can cause deadlocks, agony and insanity.")
   def awaitBlocking : Future[T]
 
   /**
@@ -358,24 +382,6 @@ sealed trait Future[+T] {
   }
 
   /**
-   * Waits for the completion of this Future, then returns the completed value.
-   * If the Future's timeout expires while waiting a FutureTimeoutException
-   * will be thrown.
-   *
-   * Equivalent to calling future.await.value.
-   */
-  def awaitValue: Option[Either[Throwable, T]]
-
-  /**
-   * Returns the result of the Future if one is available within the specified
-   * time, if the time left on the future is less than the specified time, the
-   * time left on the future will be used instead of the specified time.
-   * returns None if no result, Some(Right(t)) if a result, or
-   * Some(Left(error)) if there was an exception
-   */
-  def valueWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]]
-
-  /**
    * Returns the contained exception of this Future if it exists.
    */
   final def exception: Option[Throwable] = {
@@ -387,12 +393,12 @@ sealed trait Future[+T] {
   /**
    * When this Future is completed, apply the provided function to the
    * Future. If the Future has already been completed, this will apply
-   * immediatly.
+   * immediately.
    */
   def onComplete(func: Future[T] => Unit): Future[T]
 
   /**
-   * When the future is compeleted with a valid result, apply the provided
+   * When the future is completed with a valid result, apply the provided
    * PartialFunction to the result.
    * <pre>
    *   val result = future receive {
@@ -670,45 +676,34 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   private var _value: Option[Either[Throwable, T]] = None
   private var _listeners: List[Future[T] => Unit] = Nil
 
+  /**
+   * Must be called inside _lock.lock<->_lock.unlock
+   */
   @tailrec
-  private def awaitUnsafe(wait: Long): Boolean = {
-    if (_value.isEmpty && wait > 0) {
+  private def awaitUnsafe(waitTimeNanos: Long): Boolean = {
+    if (_value.isEmpty && waitTimeNanos > 0) {
       val start = currentTimeInNanos
-      val remaining = try {
-        _signal.awaitNanos(wait)
+      val remainingNanos = try {
+        _signal.awaitNanos(waitTimeNanos)
       } catch {
         case e: InterruptedException =>
-          wait - (currentTimeInNanos - start)
+          waitTimeNanos - (currentTimeInNanos - start)
       }
-      awaitUnsafe(remaining)
+      awaitUnsafe(remainingNanos)
     } else {
       _value.isDefined
     }
   }
 
-  def awaitValue: Option[Either[Throwable, T]] = {
+  def await(atMost: Duration) = {
     _lock.lock
-    try {
-      awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos))
-      _value
-    } finally {
-      _lock.unlock
-    }
-  }
-
-  def valueWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]] = {
-    _lock.lock
-    try {
-      awaitUnsafe(unit.toNanos(time).min(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)))
-      _value
-    } finally {
-      _lock.unlock
-    }
+    if (try { awaitUnsafe(atMost.toNanos min timeLeft()) } finally { _lock.unlock }) this
+    else throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(timeoutInNanos) + "] milliseconds")
   }
 
   def await = {
     _lock.lock
-    if (try { awaitUnsafe(timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)) } finally { _lock.unlock }) this
+    if (try { awaitUnsafe(timeLeft()) } finally { _lock.unlock }) this
     else throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(timeoutInNanos) + "] milliseconds")
   }
 
@@ -724,7 +719,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     }
   }
 
-  def isExpired: Boolean = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos) <= 0
+  def isExpired: Boolean = timeLeft() <= 0
 
   def value: Option[Either[Throwable, T]] = {
     _lock.lock
@@ -738,7 +733,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   def complete(value: Either[Throwable, T]): DefaultCompletableFuture[T] = {
     _lock.lock
     val notifyTheseListeners = try {
-      if (_value.isEmpty) {
+      if (_value.isEmpty && !isExpired) { //Only complete if we aren't expired
         _value = Some(value)
         val existingListeners = _listeners
         _listeners = Nil
@@ -749,8 +744,29 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
       _lock.unlock
     }
 
-    if (notifyTheseListeners.nonEmpty)
-      notifyTheseListeners.reverse foreach notify
+    if (notifyTheseListeners.nonEmpty) { // Steps to ensure we don't run into a stack-overflow situation
+      @tailrec def runCallbacks(rest: List[Future[T] => Unit], callbacks: Stack[() => Unit]) {
+        if (rest.nonEmpty) {
+          notifyCompleted(rest.head)
+          while (callbacks.nonEmpty) { callbacks.pop().apply() }
+          runCallbacks(rest.tail, callbacks)
+        }
+      }
+
+      val pending = Future.callbacksPendingExecution.get
+      if (pending.isDefined) { //Instead of nesting the calls to the callbacks (leading to stack overflow)
+        pending.get.push(() => { // Linearize/aggregate callbacks at top level and then execute
+          val doNotify = notifyCompleted _ //Hoist closure to avoid garbage
+          notifyTheseListeners foreach doNotify
+        })
+      } else {
+        try {
+          val callbacks = Stack[() => Unit]() // Allocate new aggregator for pending callbacks
+          Future.callbacksPendingExecution.set(Some(callbacks)) // Specify the callback aggregator
+          runCallbacks(notifyTheseListeners, callbacks) // Execute callbacks, if they trigger new callbacks, they are aggregated
+        } finally { Future.callbacksPendingExecution.set(None) } // Ensure cleanup
+      }
+    }
 
     this
   }
@@ -759,19 +775,21 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     _lock.lock
     val notifyNow = try {
       if (_value.isEmpty) {
-        _listeners ::= func
-        false
+        if(!isExpired) { //Only add the listener if the future isn't expired
+          _listeners ::= func
+          false
+        } else false //Will never run the callback since the future is expired
       } else true
     } finally {
       _lock.unlock
     }
 
-    if (notifyNow) notify(func)
+    if (notifyNow) notifyCompleted(func)
 
     this
   }
 
-  private def notify(func: Future[T] => Unit) {
+  private def notifyCompleted(func: Future[T] => Unit) {
     try {
       func(this)
     } catch {
@@ -779,7 +797,8 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     }
   }
 
-  private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis)
+  @inline private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis)
+  @inline private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
 }
 
 /**
@@ -791,8 +810,7 @@ sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T]) exte
 
   def complete(value: Either[Throwable, T]): CompletableFuture[T] = this
   def onComplete(func: Future[T] => Unit): Future[T] = { func(this); this }
-  def awaitValue: Option[Either[Throwable, T]] = value
-  def valueWithin(time: Long, unit: TimeUnit): Option[Either[Throwable, T]] = value
+  def await(atMost: Duration): Future[T] = this
   def await : Future[T] = this
   def awaitBlocking : Future[T] = this
   def isExpired: Boolean = true

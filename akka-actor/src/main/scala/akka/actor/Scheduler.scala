@@ -105,13 +105,17 @@ object Scheduler {
     }
   }
 
-  def shutdown: Unit = synchronized {
-    service.shutdown
+  def shutdown() {
+    synchronized {
+      service.shutdown()
+    }
   }
 
-  def restart: Unit = synchronized {
-    shutdown
-    service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
+  def restart() {
+    synchronized {
+      shutdown()
+      service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
+    }
   }
 }
 

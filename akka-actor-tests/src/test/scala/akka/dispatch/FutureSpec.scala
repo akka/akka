@@ -260,8 +260,9 @@ class FutureSpec extends JUnitSuite {
         def receive = { case (add: Int, wait: Int) => Thread.sleep(wait); self reply_? add }
       }).start()
     }
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 )) }
-    assert(Futures.fold(0)(futures)(_ + _).awaitBlocking.result.get === 45)
+    val timeout = 10000
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 ), timeout) }
+    assert(Futures.fold(0, timeout)(futures)(_ + _).await.result.get === 45)
   }
 
   @Test def shouldFoldResultsByComposing {
@@ -270,8 +271,8 @@ class FutureSpec extends JUnitSuite {
         def receive = { case (add: Int, wait: Int) => Thread.sleep(wait); self reply_? add }
       }).start()
     }
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 )) }
-    assert(futures.foldLeft(Future(0))((fr, fa) => for (r <- fr; a <- fa) yield (r + a)).awaitBlocking.result.get === 45)
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 ), 10000) }
+    assert(futures.foldLeft(Future(0))((fr, fa) => for (r <- fr; a <- fa) yield (r + a)).get === 45)
   }
 
   @Test def shouldFoldResultsWithException {
@@ -285,12 +286,13 @@ class FutureSpec extends JUnitSuite {
         }
       }).start()
     }
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 100 )) }
-    assert(Futures.fold(0)(futures)(_ + _).awaitBlocking.exception.get.getMessage === "shouldFoldResultsWithException: expected")
+    val timeout = 10000
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 100 ), timeout) }
+    assert(Futures.fold(0, timeout)(futures)(_ + _).await.exception.get.getMessage === "shouldFoldResultsWithException: expected")
   }
 
   @Test def shouldFoldReturnZeroOnEmptyInput {
-    assert(Futures.fold(0)(List[Future[Int]]())(_ + _).awaitBlocking.result.get === 0)
+    assert(Futures.fold(0)(List[Future[Int]]())(_ + _).get === 0)
   }
 
   @Test def shouldReduceResults {
@@ -299,8 +301,9 @@ class FutureSpec extends JUnitSuite {
         def receive = { case (add: Int, wait: Int) => Thread.sleep(wait); self reply_? add }
       }).start()
     }
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 )) }
-    assert(Futures.reduce(futures)(_ + _).awaitBlocking.result.get === 45)
+    val timeout = 10000
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 200 ), timeout) }
+    assert(Futures.reduce(futures, timeout)(_ + _).get === 45)
   }
 
   @Test def shouldReduceResultsWithException {
@@ -314,32 +317,13 @@ class FutureSpec extends JUnitSuite {
         }
       }).start()
     }
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 100 )) }
-    assert(Futures.reduce(futures)(_ + _).awaitBlocking.exception.get.getMessage === "shouldFoldResultsWithException: expected")
+    val timeout = 10000
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx * 100 ), timeout) }
+    assert(Futures.reduce(futures, timeout)(_ + _).await.exception.get.getMessage === "shouldFoldResultsWithException: expected")
   }
 
   @Test(expected = classOf[UnsupportedOperationException]) def shouldReduceThrowIAEOnEmptyInput {
     Futures.reduce(List[Future[Int]]())(_ + _).await.resultOrException
-  }
-
-  @Test def resultWithinShouldNotThrowExceptions {
-    val latch = new StandardLatch
-
-    val actors = (1 to 10).toList map { _ =>
-      actorOf(new Actor {
-        def receive = { case (add: Int, wait: Boolean, latch: StandardLatch) => if (wait) latch.await; self reply_? add }
-      }).start()
-    }
-
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) => actor.!!![Int]((idx, idx >= 5, latch)) }
-    val result = for(f <- futures) yield f.valueWithin(2, TimeUnit.SECONDS)
-    latch.open
-    val done = result collect { case Some(Right(x)) => x }
-    val undone = result collect { case None => None }
-    val errors = result collect { case Some(Left(t)) => t }
-    assert(done.size === 5)
-    assert(undone.size === 5)
-    assert(errors.size === 0)
   }
 
   @Test def receiveShouldExecuteOnComplete {
@@ -389,7 +373,7 @@ class FutureSpec extends JUnitSuite {
     assert(f3.resultOrException === Some("SUCCESS"))
 
     // make sure all futures are completed in dispatcher
-    assert(Dispatchers.defaultGlobalDispatcher.futureQueueSize === 0)
+    assert(Dispatchers.defaultGlobalDispatcher.pendingFutures === 0)
   }
 
   @Test def shouldBlockUntilResult {
@@ -498,6 +482,24 @@ class FutureSpec extends JUnitSuite {
     assert(a.get === 5)
     assert(b.get === 3)
     assert(result2.get === 50)
+    Thread.sleep(100)
+
+    // make sure all futures are completed in dispatcher
+    assert(Dispatchers.defaultGlobalDispatcher.pendingFutures === 0)
+  }
+
+  @Test def shouldNotAddOrRunCallbacksAfterFailureToBeCompletedBeforeExpiry {
+    val latch = new StandardLatch
+    val f = new DefaultCompletableFuture[Int](0)
+    Thread.sleep(25)
+    f.onComplete( _ => latch.open ) //Shouldn't throw any exception here
+
+    assert(f.isExpired) //Should be expired
+
+    f.complete(Right(1)) //Shouldn't complete the Future since it is expired
+
+    assert(f.value.isEmpty) //Shouldn't be completed
+    assert(!latch.isOpen) //Shouldn't run the listener
   }
 
   @Test def futureDataFlowShouldEmulateBlocking1 {
@@ -619,5 +621,15 @@ class FutureSpec extends JUnitSuite {
     latch.open
 
     assert(result.get === Some("Hello"))
+  }
+
+  @Test def ticket812FutureDispatchCleanup {
+    val dispatcher = implicitly[MessageDispatcher]
+    assert(dispatcher.pendingFutures === 0)
+    val future = Future({Thread.sleep(100);"Done"}, 10)
+    intercept[FutureTimeoutException] { future.await }
+    assert(dispatcher.pendingFutures === 1)
+    Thread.sleep(100)
+    assert(dispatcher.pendingFutures === 0)
   }
 }

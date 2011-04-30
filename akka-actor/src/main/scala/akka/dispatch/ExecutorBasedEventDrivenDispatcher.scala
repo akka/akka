@@ -63,7 +63,7 @@ import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionExcept
  * @param throughput positive integer indicates the dispatcher will only process so much messages at a time from the
  *                   mailbox, without checking the mailboxes of other actors. Zero or negative means the dispatcher
  *                   always continues until the mailbox is empty.
- *                   Larger values (or zero or negative) increase througput, smaller values increase fairness
+ *                   Larger values (or zero or negative) increase throughput, smaller values increase fairness
  */
 class ExecutorBasedEventDrivenDispatcher(
   _name: String,
@@ -99,7 +99,7 @@ class ExecutorBasedEventDrivenDispatcher(
     registerForExecution(mbox)
   }
 
-  private[akka] def executeFuture(invocation: FutureInvocation): Unit = if (active.isOn) {
+  private[akka] def executeFuture(invocation: FutureInvocation[_]): Unit = if (active.isOn) {
     try executorService.get() execute invocation
     catch {
       case e: RejectedExecutionException =>
@@ -117,20 +117,14 @@ class ExecutorBasedEventDrivenDispatcher(
 
   def createMailbox(actorRef: ActorRef): AnyRef = mailboxType match {
     case b: UnboundedMailbox =>
-      if (b.blocking) {
-        new DefaultUnboundedMessageQueue(true) with ExecutableMailbox {
-          final def dispatcher = ExecutorBasedEventDrivenDispatcher.this
-        }
-      } else { //If we have an unbounded, non-blocking mailbox, we can go lockless
-        new ConcurrentLinkedQueue[MessageInvocation] with MessageQueue with ExecutableMailbox {
-          final def dispatcher = ExecutorBasedEventDrivenDispatcher.this
-          final def enqueue(m: MessageInvocation) = this.add(m)
-          final def dequeue(): MessageInvocation = this.poll()
-        }
+      new ConcurrentLinkedQueue[MessageInvocation] with MessageQueue with ExecutableMailbox {
+        @inline final def dispatcher = ExecutorBasedEventDrivenDispatcher.this
+        @inline final def enqueue(m: MessageInvocation) = this.add(m)
+        @inline final def dequeue(): MessageInvocation = this.poll()
       }
     case b: BoundedMailbox =>
-      new DefaultBoundedMessageQueue(b.capacity, b.pushTimeOut, b.blocking) with ExecutableMailbox {
-        final def dispatcher = ExecutorBasedEventDrivenDispatcher.this
+      new DefaultBoundedMessageQueue(b.capacity, b.pushTimeOut) with ExecutableMailbox {
+        @inline final def dispatcher = ExecutorBasedEventDrivenDispatcher.this
       }
   }
 
@@ -294,13 +288,13 @@ trait PriorityMailbox { self: ExecutorBasedEventDrivenDispatcher =>
 
   override def createMailbox(actorRef: ActorRef): AnyRef = self.mailboxType match {
     case b: UnboundedMailbox =>
-      new UnboundedPriorityMessageQueue(b.blocking, comparator) with ExecutableMailbox {
-        final def dispatcher = self
+      new UnboundedPriorityMessageQueue(comparator) with ExecutableMailbox {
+        @inline final def dispatcher = self
       }
 
     case b: BoundedMailbox =>
-      new BoundedPriorityMessageQueue(b.capacity, b.pushTimeOut, b.blocking, comparator) with ExecutableMailbox {
-        final def dispatcher = self
+      new BoundedPriorityMessageQueue(b.capacity, b.pushTimeOut, comparator) with ExecutableMailbox {
+        @inline final def dispatcher = self
       }
   }
 }

@@ -41,7 +41,7 @@ SVT (Swedish Television)
 
 *Our system is highly asynchronous so the actor style of doing things is a perfect fit. I don’t know about how you feel about concurrency in a big system, but rolling your own abstractions is not a very easy thing to do. When using Akka you can almost forget about all that. Synchronizing between threads, locking and protecting access to state etc. Akka is not just about actors, but that’s one of the most pleasurable things to work with. It’s easy to add new ones and it’s easy to design with actors. You can fire up work actors tied to a specific dispatcher etc. I could make the list of benefits much longer, but I’m at work right now. I suggest you try it out and see how it fits your requirements.*
 
-*We saw a perfect businness reson for using Akka. It lets you concentrate on the business logic instead of the low level things. It’s easy to teach others and the business intent is clear just by reading the code. We didn’t chose Akka just for fun. It’s a business critical application that’s used in broadcasting. Even live broadcasting. We wouldn’t have been where we are today in such a short time without using Akka. We’re two developers that have done great things in such a short amount of time and part of this is due to Akka. As I said, it lets us focus on the business logic instead of low level things such as concurrency, locking, performence etc."*
+*We saw a perfect business reason for using Akka. It lets you concentrate on the business logic instead of the low level things. It’s easy to teach others and the business intent is clear just by reading the code. We didn’t chose Akka just for fun. It’s a business critical application that’s used in broadcasting. Even live broadcasting. We wouldn’t have been where we are today in such a short time without using Akka. We’re two developers that have done great things in such a short amount of time and part of this is due to Akka. As I said, it lets us focus on the business logic instead of low level things such as concurrency, locking, performance etc."*
 
 Tapad
 -----
@@ -107,7 +107,7 @@ LShift
 
 * *"Diffa is an open source data analysis tool that automatically establishes data differences between two or more real-time systems.*
 * Diffa will help you compare local or distributed systems for data consistency, without having to stop them running or implement manual cross-system comparisons. The interface provides you with simple visual summary of any consistency breaks and tools to investigate the issues.*
-* Diffa is the ideal tool to use to investigate where or when inconsistencies are occuring, or simply to provide confidence that your systems are running in perfect sync. It can be used operationally as an early warning system, in deployment for release verification, or in development with other enterprise diagnosis tools to help troubleshoot faults."*
+* Diffa is the ideal tool to use to investigate where or when inconsistencies are occurring, or simply to provide confidence that your systems are running in perfect sync. It can be used operationally as an early warning system, in deployment for release verification, or in development with other enterprise diagnosis tools to help troubleshoot faults."*
 
 `<http://diffa.lshift.net/>`_
 

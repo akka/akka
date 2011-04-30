@@ -315,7 +315,7 @@ Release 0.10 - Aug 21 2010
 ||< **ADD** ||< Added isDefinedAt method to Actor for checking if it can receive a certain message ||< Jonas Bonér ||
 ||< **ADD** ||< Added caching of Active Object generated class bytes, huge perf improvement ||< Jonas Bonér ||
 ||< **ADD** ||< Added RemoteClient Listener API ||< Jonas Bonér ||
-||< **ADD** ||< Added methods to retreive children from a Supervisor ||< Jonas Bonér ||
+||< **ADD** ||< Added methods to retrieve children from a Supervisor ||< Jonas Bonér ||
 ||< **ADD** ||< Rewritten Supervisor to become more clear and "correct" ||< Jonas Bonér ||
 ||< **ADD** ||< Added options to configure a blocking mailbox with custom capacity ||< Jonas Bonér ||
 ||< **ADD** ||< Added RemoteClient reconnection time window configuration option ||< Jonas Bonér ||

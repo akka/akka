@@ -8,7 +8,7 @@ import akka.actor.Actor
 import Actor._
 
 /**
- * Tests the behaviour of the executor based event driven dispatcher when multiple actors are being dispatched on it.
+ * Tests the behavior of the executor based event driven dispatcher when multiple actors are being dispatched on it.
  *
  * @author Jan Van Besien
  */

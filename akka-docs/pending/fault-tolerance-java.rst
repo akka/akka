@@ -125,7 +125,7 @@ The Actor’s supervision can be declaratively defined by creating a ‘Supervis
 
 Supervisors created like this are implicitly instantiated and started.
 
-To cofigure a handler function for when the actor underlying the supervisor recieves a MaximumNumberOfRestartsWithinTimeRangeReached message, you can specify
+To configure a handler function for when the actor underlying the supervisor receives a MaximumNumberOfRestartsWithinTimeRangeReached message, you can specify
  a Procedure2<ActorRef,MaximumNumberOfRestartsWithinTimeRangeReached> when creating the SupervisorConfig. This handler will be called with the ActorRef of the supervisor and the
 MaximumNumberOfRestartsWithinTimeRangeReached message.
 
@@ -213,7 +213,7 @@ Here is an example:
           true)
        }));
 
-Programmatical linking and supervision of Untyped Actors
+Programmatic linking and supervision of Untyped Actors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Untyped Actors can at runtime create, spawn, link and supervise other actors. Linking and unlinking is done using one of the 'link' and 'unlink' methods available in the 'ActorRef' (therefore prefixed with getContext() in these examples).
@@ -459,10 +459,10 @@ In the supervised TypedActor you can override the ‘preRestart’ and ‘postRe
     }
   }
 
-Programatical linking and supervision of TypedActors
+Programatic linking and supervision of TypedActors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TypedActors can be linked an unlinked just like UntypedActors:
+TypedActors can be linked and unlinked just like UntypedActors:
 
 .. code-block:: java
 

@@ -18,7 +18,7 @@ Download the release you need (Akka core or Akka Modules) from `<http://akka.io/
 Microkernel
 ^^^^^^^^^^^
 
-The Akka Modules distribution includes the mircokernel. To run the microkernel:
+The Akka Modules distribution includes the microkernel. To run the microkernel:
 
 * Set the AKKA_HOME environment variable to the root of the Akka distribution.
 * Run ``java -jar akka-modules-1.0.jar``. This will boot up the microkernel and deploy all samples applications from './deploy' dir.

@@ -121,7 +121,7 @@ The Actor's supervision can be declaratively defined by creating a "Supervisor' 
 
 Supervisors created like this are implicitly instantiated and started.
 
-To cofigure a handler function for when the actor underlying the supervisor recieves a MaximumNumberOfRestartsWithinTimeRangeReached message, you can specify a function of type
+To configure a handler function for when the actor underlying the supervisor receives a MaximumNumberOfRestartsWithinTimeRangeReached message, you can specify a function of type
 (ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached) => Unit when creating the SupervisorConfig. This handler will be called with the ActorRef of the supervisor and the
 MaximumNumberOfRestartsWithinTimeRangeReached message.
 
@@ -194,7 +194,7 @@ Here is an example:
         **true**)
       :: Nil))
 
-Programmatical linking and supervision of Actors
+Programmatic linking and supervision of Actors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Actors can at runtime create, spawn, link and supervise other actors. Linking and unlinking is done using one of the 'link' and 'unlink' methods available in the 'ActorRef' (therefore prefixed with 'self' in these examples).
@@ -316,7 +316,7 @@ Supervised actors have the option to reply to the initial sender within preResta
       self.reply_?(reason.getMessage)
     }
 
-    override def postStop {
+    override def postStop() {
       self.reply_?("stopped by supervisor")
     }
   }
@@ -411,10 +411,10 @@ Then you can retrieve the Typed Actor as follows:
 Restart callbacks
 ^^^^^^^^^^^^^^^^^
 
-Programatical linking and supervision of TypedActors
+Programatic linking and supervision of TypedActors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TypedActors can be linked an unlinked just like actors - in fact the linking is done on the underlying actor:
+TypedActors can be linked and unlinked just like actors - in fact the linking is done on the underlying actor:
 
 .. code-block:: scala
 

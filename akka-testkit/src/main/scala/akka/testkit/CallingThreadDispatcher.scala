@@ -28,6 +28,11 @@ import scala.annotation.tailrec
  */
 
 object CallingThreadDispatcher {
+
+  lazy val global = new CallingThreadDispatcher
+
+  // PRIVATE DATA
+
   private var queues = Map[CallingThreadMailbox, Set[WeakReference[NestingQueue]]]()
 
   // we have to forget about long-gone threads sometime
@@ -35,7 +40,7 @@ object CallingThreadDispatcher {
     queues = queues mapValues (_ filter (_.get ne null)) filter (!_._2.isEmpty)
   }
 
-  def registerQueue(mbox : CallingThreadMailbox, q : NestingQueue) : Unit = synchronized {
+  private[akka] def registerQueue(mbox : CallingThreadMailbox, q : NestingQueue) : Unit = synchronized {
     if (queues contains mbox) {
       val newSet = queues(mbox) + new WeakReference(q)
       queues += mbox -> newSet
@@ -50,7 +55,7 @@ object CallingThreadDispatcher {
    * given mailbox. When this method returns, the queue will be entered
    * (active).
    */
-  def gatherFromAllInactiveQueues(mbox : CallingThreadMailbox, own : NestingQueue) : Unit = synchronized {
+  private[akka] def gatherFromAllInactiveQueues(mbox : CallingThreadMailbox, own : NestingQueue) : Unit = synchronized {
     if (!own.isActive) own.enter
     if (queues contains mbox) {
       for {
@@ -103,9 +108,9 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
 
   private def getMailbox(actor: ActorRef) = actor.mailbox.asInstanceOf[CallingThreadMailbox]
 
-  private[akka] override def start {}
+  private[akka] override def start() {}
 
-  private[akka] override def shutdown {}
+  private[akka] override def shutdown() {}
 
   private[akka] override def timeoutMs = 100L
 
@@ -151,7 +156,7 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
     if (execute) runQueue(mbox, queue)
   }
 
-  private[akka] override def executeFuture(invocation: FutureInvocation) { invocation.run }
+  private[akka] override def executeFuture(invocation: FutureInvocation[_]) { invocation.run }
 
   /*
    * This method must be called with this thread's queue, which must already

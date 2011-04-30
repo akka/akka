@@ -67,12 +67,12 @@ case class MaximumNumberOfRestartsWithinTimeRangeReached(
   @BeanProperty val lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
 
 // Exceptions for Actors
-class ActorStartException          private[akka](message: String) extends AkkaException(message)
-class IllegalActorStateException   private[akka](message: String) extends AkkaException(message)
-class ActorKilledException         private[akka](message: String) extends AkkaException(message)
-class ActorInitializationException private[akka](message: String) extends AkkaException(message)
-class ActorTimeoutException        private[akka](message: String) extends AkkaException(message)
-class InvalidMessageException      private[akka](message: String) extends AkkaException(message)
+class ActorStartException          private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class IllegalActorStateException   private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class ActorKilledException         private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class ActorInitializationException private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class ActorTimeoutException        private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class InvalidMessageException      private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message
@@ -125,7 +125,9 @@ object Actor extends ListenerManagement {
    */
   type Receive = PartialFunction[Any, Unit]
 
-  private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
+  private[actor] val actorRefInCreation = new ThreadLocal[Option[ActorRef]]{
+    override def initialValue = None
+  }
 
    /**
    *  Creates an ActorRef out of the Actor with type T.
@@ -159,12 +161,15 @@ object Actor extends ListenerManagement {
    */
   def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(() => {
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
-    createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
-      throw new ActorInitializationException(
-        "Could not instantiate Actor" +
+    createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs) match {
+      case r: Right[Exception, Actor] => r.b
+      case l: Left[Exception, Actor] => throw new ActorInitializationException(
+        "Could not instantiate Actor of " + clazz +
         "\nMake sure Actor is NOT defined inside a class/trait," +
         "\nif so put it outside the class/trait, f.e. in a companion object," +
-        "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
+        "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", l.a)
+    }
+
   }, None)
 
   /**
@@ -290,7 +295,7 @@ trait Actor {
    * the 'forward' function.
    */
   @transient implicit val someSelf: Some[ActorRef] = {
-    val optRef = Actor.actorRefInCreation.value
+    val optRef = Actor.actorRefInCreation.get
     if (optRef.isEmpty) throw new ActorInitializationException(
       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
       "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
@@ -298,7 +303,7 @@ trait Actor {
       "\n\tEither use:" +
       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
-     Actor.actorRefInCreation.value = None
+     Actor.actorRefInCreation.set(None)
      optRef.asInstanceOf[Some[ActorRef]].get.id = getClass.getName  //FIXME: Is this needed?
      optRef.asInstanceOf[Some[ActorRef]]
   }
@@ -322,7 +327,7 @@ trait Actor {
    * <p/>
    * For example fields like:
    * <pre>
-   * self.dispactcher = ...
+   * self.dispatcher = ...
    * self.trapExit = ...
    * self.faultHandler = ...
    * self.lifeCycle = ...
@@ -368,14 +373,14 @@ trait Actor {
    * <p/>
    * Is called when an Actor is started by invoking 'actor.start()'.
    */
-  def preStart {}
+  def preStart() {}
 
   /**
    * User overridable callback.
    * <p/>
    * Is called when 'actor.stop()' is invoked.
    */
-  def postStop {}
+  def postStop() {}
 
   /**
    * User overridable callback.
@@ -417,7 +422,7 @@ trait Actor {
   }
 
   /**
-   * Changes tha Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
+   * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * Puts the behavior on top of the hotswap stack.
    * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
    */

@@ -36,7 +36,7 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 
-private[actor] final class ActorRegistry private[actor] () extends ListenerManagement {
+final class ActorRegistry private[actor] () extends ListenerManagement {
 
   private val actorsByUUID    = new ConcurrentHashMap[Uuid, ActorRef]
   private val actorsById      = new Index[String,ActorRef]

@@ -59,7 +59,7 @@ object Pi extends App {
     def calculatePiFor(start: Int, nrOfElements: Int): Double = {
       var acc = 0.0
       for (i <- start until (start + nrOfElements))
-        acc += 4 * (1 - (i % 2) * 2) / (2 * i + 1)
+        acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1)
       acc
     }
 
@@ -104,11 +104,11 @@ object Pi extends App {
         if (nrOfResults == nrOfMessages) self.stop()
     }
 
-    override def preStart {
+    override def preStart() {
       start = System.currentTimeMillis
     }
 
-    override def postStop {
+    override def postStop() {
       // tell the world that the calculation is complete
       println(
         "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"

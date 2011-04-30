@@ -8,5 +8,3 @@ Introduction
    getting-started-first-scala
    getting-started-first-scala-eclipse
    getting-started-first-java
-   building-akka
-   configuration

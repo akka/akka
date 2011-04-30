@@ -3,7 +3,7 @@ Guice Integration
 
 Module stability: **STABLE**
 
-All Typed Actors supports dependency injection using `Guice <http://code.google.com/p/google-guice/>`_ annotations (such as ‘@Inject’ etc.).
+All Typed Actors support dependency injection using `Guice <http://code.google.com/p/google-guice/>`_ annotations (such as ‘@Inject’ etc.).
 The ‘TypedActorManager’ class understands Guice and will do the wiring for you.
 
 External Guice modules
