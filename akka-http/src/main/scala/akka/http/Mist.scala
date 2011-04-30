@@ -269,7 +269,7 @@ class RootEndpoint extends Actor with Endpoint {
   // adopt the configured id
   if (RootActorBuiltin) self.id = RootActorID
 
-  override def preStart =
+  override def preStart() =
     _attachments = Tuple2((uri: String) => {uri eq Root}, (uri: String) => this.actor) :: _attachments
 
   def recv: Receive = {
