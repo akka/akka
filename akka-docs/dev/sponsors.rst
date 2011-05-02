@@ -1,4 +1,4 @@
-**Sponsors**
+Sponsors
 ============
 
 YourKit

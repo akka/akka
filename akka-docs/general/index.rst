@@ -9,5 +9,6 @@ General
    building-akka
    configuration
    event-handler
-   util
    issue-tracking
+   util
+   licenses
