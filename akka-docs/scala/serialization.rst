@@ -58,9 +58,14 @@ Step 1: Define the actor
     }
   }
 
-Step 2: Implement the type class for the actor
+Step 2: Implement the type class for the actor. ProtobufProtocol.Counter is something you need to define yourself, as
+explained in the Protobuf section.
 
 .. code-block:: scala
+
+  import akka.serialization.{Serializer, Format}
+  import akka.actor.Actor
+  import akka.actor.Actor._
 
   object BinaryFormatMyActor {
     implicit object MyActorFormat extends Format[MyActor] {
@@ -70,8 +75,7 @@ Step 2: Implement the type class for the actor
         act
       }
       def toBinary(ac: MyActor) =
-          ProtobufProtocol.Counter.newBuilder.setCount(ac.count).build.toByteArray
-      }
+        ProtobufProtocol.Counter.newBuilder.setCount(ac.count).build.toByteArray
     }
   }
 
@@ -159,7 +163,7 @@ For a Java serializable actor:
 
 .. code-block:: scala
 
-  @serializable class MyJavaSerializableActor extends Actor {
+  class MyJavaSerializableActor extends Actor with scala.Serializable {
     var count = 0
 
     def receive = {
@@ -173,6 +177,8 @@ Create a module for the type class ..
 
 .. code-block:: scala
 
+  import akka.serialization.{SerializerBasedActorFormat, Serializer}
+
   object BinaryFormatMyJavaSerializableActor {
     implicit object MyJavaSerializableActorFormat extends SerializerBasedActorFormat[MyJavaSerializableActor] {
       val serializer = Serializer.Java
@@ -184,6 +190,7 @@ and serialize / de-serialize ..
 .. code-block:: scala
 
   it("should be able to serialize and de-serialize a stateful actor with a given serializer") {
+    import akka.actor.Actor._
     import akka.serialization.ActorSerialization._
     import BinaryFormatMyJavaSerializableActor._
 
@@ -202,7 +209,7 @@ Serialization of a RemoteActorRef
 
 You can serialize an ``ActorRef`` to an immutable, network-aware Actor reference that can be freely shared across the network, a reference that "remembers" and stay mapped to its original Actor instance and host node, and will always work as expected.
 
-The ``RemoteActorRef`` serialization is based upon Protobuf (Google Protocol Buffers) and you don't need to do anything to use it, it works on any ``ActorRef`` (as long as the actor has **not** implemented one of the ``SerializableActor`` traits, since then deep serialization will happen).
+The ``RemoteActorRef`` serialization is based upon Protobuf (Google Protocol Buffers) and you don't need to do anything to use it, it works on any ``ActorRef``.
 
 Currently Akka will **not** autodetect an ``ActorRef`` as part of your message and serialize it for you automatically, so you have to do that manually or as part of your custom serialization mechanisms.
 
@@ -218,14 +225,14 @@ To deserialize the ``ActorRef`` to a ``RemoteActorRef`` you need to use the ``fr
 
 .. code-block:: scala
 
-  import RemoteActorSerialization._
+  import akka.serialization.RemoteActorSerialization._
   val actor2 = fromBinaryToRemoteActorRef(bytes)
 
 You can also pass in a class loader to load the ``ActorRef`` class and dependencies from:
 
 .. code-block:: scala
 
-  import RemoteActorSerialization._
+  import akka.serialization.RemoteActorSerialization._
   val actor2 = fromBinaryToRemoteActorRef(bytes, classLoader)
 
 Deep serialization of a TypedActor
@@ -240,6 +247,8 @@ Step 1: Define the actor
 
 .. code-block:: scala
 
+  import akka.actor.TypedActor
+
   trait MyTypedActor {
     def requestReply(s: String) : String
     def oneWay() : Unit
@@ -252,11 +261,17 @@ Step 1: Define the actor
       count = count + 1
       "world " + count
     }
+
+    override def oneWay() {
+      count = count + 1
+    }
   }
 
 Step 2: Implement the type class for the actor
 
 .. code-block:: scala
+
+  import akka.serialization.{Serializer, Format}
 
   class MyTypedActorFormat extends Format[MyTypedActorImpl] {
     def fromBinary(bytes: Array[Byte], act: MyTypedActorImpl) = {
@@ -270,6 +285,8 @@ Step 2: Implement the type class for the actor
 Step 3: Import the type class module definition and serialize / de-serialize
 
 .. code-block:: scala
+
+  import akka.serialization.TypedActorSerialization._
 
   val typedActor1 = TypedActor.newInstance(classOf[MyTypedActor], classOf[MyTypedActorImpl], 1000)
 
@@ -288,7 +305,7 @@ To deserialize the TypedActor to a ``RemoteTypedActorRef`` (an aspectwerkz proxy
 
 .. code-block:: scala
 
-  import RemoteTypedActorSerialization._
+  import akka.serialization.RemoteTypedActorSerialization._
   val typedActor = fromBinaryToRemoteTypedActorRef(bytes)
 
   // you can also pass in a class loader
@@ -328,7 +345,6 @@ The ones currently supported are (besides the default which is regular Java seri
 
 - ScalaJSON (Scala only)
 - JavaJSON (Java but some Scala structures)
-- SBinary (Scala only)
 - Protobuf (Scala and Java)
 
 Apart from the above, Akka also supports Scala object serialization through `SJSON <http://github.com/debasishg/sjson/tree/master>`_ that implements APIs similar to ``akka.serialization.Serializer.*``. See the section on SJSON below for details.
@@ -377,15 +393,16 @@ The remote Actor can then receive the Protobuf message typed as-is:
 JSON: Scala
 -----------
 
-Use the akka.serialization.Serialization.ScalaJSON base class with its toJSON method. Akka’s Scala JSON is based upon the SJSON library.
+Use the ``akka.serialization.Serializable.ScalaJSON`` base class with its toJSON method. Akka’s Scala JSON is based upon the SJSON library.
 
 For your POJOs to be able to serialize themselves you have to extend the ScalaJSON[] trait as follows. JSON serialization is based on a type class protocol which you need to define for your own abstraction. The instance of the type class is defined as an implicit object which is used for serialization and de-serialization. You also need to implement the methods in terms of the APIs which sjson publishes.
 
 .. code-block:: scala
 
-  import akka.serialization.Serializer
+  import akka.serialization._
   import akka.serialization.Serializable.ScalaJSON
-  import scala.reflect.BeanInfo
+  import akka.serialization.JsonSerialization._
+  import akka.serialization.DefaultProtocol._
 
   case class MyMessage(val id: String, val value: Tuple2[String, Int]) extends ScalaJSON[MyMessage] {
     // type class instance
@@ -427,7 +444,7 @@ Here are the steps that you need to follow:
 
 .. code-block:: scala
 
-  import DefaultProtocol._
+  import akka.serialization.DefaultProtocol._
   implicit val MyMessageFormat: sjson.json.Format[MyMessage] =
     asProduct2("id", "value")(MyMessage)(MyMessage.unapply(_).get)
 
@@ -436,6 +453,7 @@ Here are the steps that you need to follow:
 .. code-block:: scala
 
   import akka.serialization.Serializer.ScalaJSON
+  import akka.serialization.JsonSerialization._
 
   val o = MyMessage("dg", ("akka", 100))
   fromjson[MyMessage](tojson(o)) should equal(o)
@@ -480,7 +498,7 @@ So if you see something like that:
 
 it means, that you haven't got a @BeanInfo annotation on your class.
 
-You may also see this exception when trying to serialize a case class with out an attribute like this:
+You may also see this exception when trying to serialize a case class without any attributes, like this:
 
 .. code-block:: scala
 
@@ -900,11 +918,14 @@ There are other nifty ways to implement case class serialization using sjson. Fo
 JSON: Java
 ----------
 
-Use the akka.serialization.Serialization.JavaJSON base class with its toJSONmethod. Akka’s Java JSON is based upon the Jackson library.
+Use the ``akka.serialization.Serializable.JavaJSON`` base class with its toJSONmethod. Akka’s Java JSON is based upon the Jackson library.
 
-For your POJOs to be able to serialize themselves you have to extend the JavaJSON trait.
+For your POJOs to be able to serialize themselves you have to extend the JavaJSON base class.
 
 .. code-block:: java
+
+  import akka.serialization.Serializable.JavaJSON;
+  import akka.serialization.SerializerFactory;
 
   class MyMessage extends JavaJSON {
     private String name = null;
@@ -931,59 +952,4 @@ Use the akka.serialization.SerializerFactory.getJavaJSON to do generic JSON seri
   Foo fooCopy = factory.getJavaJSON().in(json, Foo.class);
 
 
-SBinary: Scala
---------------
-
-To serialize Scala structures you can use SBinary serializer. SBinary can serialize all primitives and most default Scala datastructures; such as List, Tuple, Map, Set, BigInt etc.
-
-Here is an example of using the akka.serialization.Serializer.SBinary serializer to serialize standard Scala library objects.
-
-.. code-block:: scala
-
-  import akka.serialization.Serializer
-  import sbinary.DefaultProtocol._ // you always need to import these implicits
-  val users = List(("user1", "passwd1"), ("user2", "passwd2"), ("user3", "passwd3"))
-  val bytes = Serializer.SBinary.out(users)
-  val usersCopy = Serializer.SBinary.in(bytes, Some(classOf[List[Tuple2[String,String]]]))
-
-If you need to serialize your own user-defined objects then you have to do three things:
-
-- Define an empty constructor
-- Mix in the Serializable.SBinary[T] trait, and implement its methods:
-
-  - fromBytes(bytes: Array[Byte])[T]
-  - toBytes: Array[Byte]
-
-- Create an implicit sbinary.Format[T] object for your class. Which means that you have to define its two methods:
-
-  - reads(in: Input): T; in which you read in all the fields in your object, using read[FieldType](in)and recreate it.
-  - writes(out: Output, value: T): Unit; in which you write out all the fields in your object, using write[FieldType](out, value.field).
-
-Here is an example:
-
-.. code-block:: scala
-
-  case class User(val usernamePassword: Tuple2[String, String], val email: String, val age: Int)
-    extends Serializable.SBinary[User] {
-    import sbinary.DefaultProtocol._
-    import sbinary.Operations._
-
-    def this() = this(null, null, 0)
-
-    implicit object UserFormat extends Format[User] {
-      def reads(in : Input) = User(
-        read[Tuple2[String, String]](in),
-        read[String](in),
-        read[Int](in))
-      def writes(out: Output, value: User) = {
-        write[Tuple2[String, String]](out, value.usernamePassword)
-        write[String](out, value.email)
-        write[Int](out, value.age)
-      }
-    }
-
-    def fromBytes(bytes: Array[Byte]) = fromByteArray[User](bytes)
-
-    def toBytes: Array[Byte] = toByteArray(this)
-  }
 
