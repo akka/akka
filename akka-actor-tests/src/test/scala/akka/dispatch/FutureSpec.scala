@@ -623,6 +623,32 @@ class FutureSpec extends JUnitSuite {
     assert(result.get === Some("Hello"))
   }
 
+  @Test def futureFlowShouldBeTypeSafe {
+    import Future.flow
+
+    def checkType[A: Manifest, B](in: Future[A], refmanifest: Manifest[B]): Boolean = manifest[A] == refmanifest
+
+    val rString = flow {
+      val x = Future(5)
+      x().toString
+    }
+
+    val rInt = flow {
+      val x = rString.apply
+      val y = Future(5)
+      x.length + y()
+    }
+
+    assert(checkType(rString, manifest[String]))
+    assert(checkType(rInt, manifest[Int]))
+    assert(!checkType(rInt, manifest[String]))
+    assert(!checkType(rInt, manifest[Nothing]))
+    assert(!checkType(rInt, manifest[Any]))
+    
+    rString.await
+    rInt.await
+  }
+
   @Test def ticket812FutureDispatchCleanup {
     val dispatcher = implicitly[MessageDispatcher]
     assert(dispatcher.pendingFutures === 0)

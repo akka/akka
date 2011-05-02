@@ -291,8 +291,14 @@ object Future {
    *
    * The Delimited Continuations compiler plugin must be enabled in order to use this method.
    */
-  def flow(body: => Any @cps[Future[Any]], timeout: Long = Actor.TIMEOUT): Future[Any] =
-    reset(new DefaultCompletableFuture[Any](timeout).completeWithResult(body))
+  def flow[A](body: => A @cps[Future[Any]], timeout: Long = Actor.TIMEOUT): Future[A] = {
+    val f = new DefaultCompletableFuture[A](timeout)
+    reset(f.asInstanceOf[CompletableFuture[Any]].completeWithResult(body)).onComplete{ f2 =>
+      val e = f2.exception
+      e foreach (f.completeWithException(_))
+    }
+    f
+  }
 
   private[akka] val callbacksPendingExecution = new ThreadLocal[Option[Stack[() => Unit]]]() {
     override def initialValue = None
