@@ -10,5 +10,4 @@ General
    configuration
    event-handler
    issue-tracking
-   util
    licenses
