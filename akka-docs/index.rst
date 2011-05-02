@@ -6,6 +6,7 @@ Contents
 
    intro/index
    general/index
+   common/index
    scala/index
    java/index
    dev/index
