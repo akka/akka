@@ -1,4 +1,4 @@
-Developer Guidelines
+Developer Guidelines (committers)
 ====================
 
 Code Style
@@ -6,25 +6,25 @@ Code Style
 
 The Akka code style follows `this document <http://davetron5000.github.com/scala-style/ScalaStyleGuide.pdf>`_ .
 
-Here is a code style settings file for IntelliJ IDEA.
-`<file:akka-intellij-code-style.jar>`_
+Here is a code style settings file for ``IntelliJ IDEA``:
+`Download <@http://scalablesolutions.se/akka/docs/akka-0.10/files/akka-intellij-code-style.jar>`_
 
 Please follow the code style. Look at the code around you and mimic.
 
 Testing
 -------
 
-All code that is checked in should have tests. All testing is done with ScalaTest and ScalaCheck.
+All code that is checked in **should** have tests. All testing is done with ``ScalaTest`` and ``ScalaCheck``.
 
 * Name tests as *Test.scala if they do not depend on any external stuff. That keeps surefire happy.
 * Name tests as *Spec.scala if they have external dependencies.
 
-There is a testing standard that should be followed: `Ticket001Spec <@https://github.com/jboner/akka/blob/master/akka-actor/src/test/scala/akka/ticket/Ticket001Spec.scala>`_
+There is a testing standard that should be followed: `Ticket001Spec <@https://github.com/jboner/akka/blob/master/akka-actor-tests/src/test/scala/akka/ticket/Ticket001Spec.scala>`_
 
 Actor TestKit
 ^^^^^^^^^^^^^
 
-There is a useful test kit for testing actors: `akka.util.TestKit <@https://github.com/jboner/akka/tree/master/akka-actor/src/main/scala/akka/util/TestKit.scala>`_. It enables assertions concerning replies received and their timing, there is more documentation in the `<TestKit>`_ module.
+There is a useful test kit for testing actors: `akka.util.TestKit <@https://github.com/jboner/akka/tree/master/akka-testkit/src/main/scala/akka/testkit/TestKit.scala>`_. It enables assertions concerning replies received and their timing, there is more documentation in the `<TestKit>`_ module.
 
 NetworkFailureTest
 ^^^^^^^^^^^^^^^^^^

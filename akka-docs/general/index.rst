@@ -10,3 +10,4 @@ General
    configuration
    event-handler
    util
+   developer-guidelines
