@@ -134,13 +134,13 @@ class Agent[T](initialValue: T) {
 
   /**
    * Dispatch a new value for the internal state. Behaves the same
-   * as sending a fuction (x => newValue).
+   * as sending a function (x => newValue).
    */
   def send(newValue: T): Unit = send(x => newValue)
 
   /**
    * Dispatch a new value for the internal state. Behaves the same
-   * as sending a fuction (x => newValue).
+   * as sending a function (x => newValue).
    */
   def update(newValue: T) = send(newValue)
 
@@ -214,7 +214,7 @@ class Agent[T](initialValue: T) {
   def resume() = updater.dispatcher.resume(updater)
 
   /**
-   * Closes the agents and makes it eligable for garbage collection.
+   * Closes the agents and makes it eligible for garbage collection.
    * A closed agent cannot accept any `send` actions.
    */
   def close() = updater.stop()

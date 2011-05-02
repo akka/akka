@@ -5,7 +5,7 @@
 package akka
 
 /**
- * For easily importing everthing needed for STM.
+ * For easily importing everything needed for STM.
  */
 package object stm extends akka.stm.Stm with akka.stm.StmUtil {
 
