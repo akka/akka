@@ -62,9 +62,9 @@ class FutureSpec extends JUnitSuite {
     val future1 = actor1 !!! "Hello" flatMap ((s: String) => actor2 !!! s)
     val future2 = actor1 !!! "Hello" flatMap (actor2 !!! (_: String))
     val future3 = actor1 !!! "Hello" flatMap (actor2 !!! (_: Int))
-    assert(Some(Right("WORLD")) === future1.await.value)
-    assert(Some(Right("WORLD")) === future2.await.value)
-    intercept[ClassCastException] { future3.await.resultOrException }
+    assert((future1.get: Any) === "WORLD")
+    assert((future2.get: Any) === "WORLD")
+    intercept[ClassCastException] { future3.get }
     actor1.stop()
     actor2.stop()
   }
@@ -74,8 +74,8 @@ class FutureSpec extends JUnitSuite {
     val actor2 = actorOf(new Actor { def receive = { case s: String => self reply s.toUpperCase } } ).start()
     val future1 = actor1 !!! "Hello" collect { case (s: String) => s } flatMap (actor2 !!! _)
     val future2 = actor1 !!! "Hello" collect { case (n: Int) => n } flatMap (actor2 !!! _)
-    assert(Some(Right("WORLD")) === future1.await.value)
-    intercept[MatchError] { future2.await.resultOrException }
+    assert((future1.get: Any) === "WORLD")
+    intercept[MatchError] { future2.get }
     actor1.stop()
     actor2.stop()
   }
@@ -102,8 +102,8 @@ class FutureSpec extends JUnitSuite {
       c: String <- actor !!! 7
     } yield b + "-" + c
 
-    assert(Some(Right("10-14")) === future1.await.value)
-    intercept[ClassCastException] { future2.await.resultOrException }
+    assert(future1.get === "10-14")
+    intercept[ClassCastException] { future2.get }
     actor.stop()
   }
 
@@ -118,19 +118,64 @@ class FutureSpec extends JUnitSuite {
     }).start()
 
     val future1 = for {
-      a <- actor !!! Req("Hello") collect { case Res(x: Int) => x }
-      b <- actor !!! Req(a) collect { case Res(x: String) => x }
-      c <- actor !!! Req(7) collect { case Res(x: String) => x }
+      Res(a: Int)    <- actor !!! Req("Hello")
+      Res(b: String) <- actor !!! Req(a)
+      Res(c: String) <- actor !!! Req(7)
     } yield b + "-" + c
 
     val future2 = for {
-      a <- actor !!! Req("Hello") collect { case Res(x: Int) => x }
-      b <- actor !!! Req(a) collect { case Res(x: Int) => x }
-      c <- actor !!! Req(7) collect { case Res(x: String) => x }
+      Res(a: Int) <- actor !!! Req("Hello")
+      Res(b: Int) <- actor !!! Req(a)
+      Res(c: Int) <- actor !!! Req(7)
     } yield b + "-" + c
 
-    assert(Some(Right("10-14")) === future1.await.value)
-    intercept[MatchError] { future2.await.resultOrException }
+    assert(future1.get === "10-14")
+    intercept[MatchError] { future2.get }
+    actor.stop()
+  }
+
+  @Test def shouldMapMatchedExceptionsToResult {
+    val future1 = Future(5)
+    val future2 = future1 map (_ / 0)
+    val future3 = future2 map (_.toString)
+
+    val future4 = future1 failure {
+      case e: ArithmeticException => 0
+    } map (_.toString)
+
+    val future5 = future2 failure {
+      case e: ArithmeticException => 0
+    } map (_.toString)
+
+    val future6 = future2 failure {
+      case e: MatchError => 0
+    } map (_.toString)
+
+    val future7 = future3 failure { case e: ArithmeticException => "You got ERROR" }
+
+    val actor = actorOf[TestActor].start()
+
+    val future8 = actor !!! "Failure"
+    val future9 = actor !!! "Failure" failure {
+      case e: RuntimeException => "FAIL!"
+    }
+    val future10 = actor !!! "Hello" failure {
+      case e: RuntimeException => "FAIL!"
+    }
+    val future11 = actor !!! "Failure" failure { case _ => "Oops!" }
+
+    assert(future1.get === 5)
+    intercept[ArithmeticException] { future2.get }
+    intercept[ArithmeticException] { future3.get }
+    assert(future4.get === "5")
+    assert(future5.get === "0")
+    intercept[ArithmeticException] { future6.get }
+    assert(future7.get === "You got ERROR")
+    intercept[RuntimeException] { future8.get }
+    assert(future9.get === "FAIL!")
+    assert(future10.get === "World")
+    assert(future11.get === "Oops!")
+
     actor.stop()
   }
 
@@ -335,16 +380,108 @@ class FutureSpec extends JUnitSuite {
     val latch = new StandardLatch
 
     val f = Future({ latch.await; 5})
-    val f2 = Future({ f() + 5 })
+    val f2 = Future({ f.get + 5 })
 
     assert(f2.resultOrException === None)
     latch.open
-    assert(f2() === 10)
+    assert(f2.get === 10)
 
     val f3 = Future({ Thread.sleep(100); 5}, 10)
     intercept[FutureTimeoutException] {
-      f3()
+      f3.get
     }
+  }
+
+  @Test def futureComposingWithContinuations {
+    import Future.flow
+
+    val actor = actorOf[TestActor].start
+
+    val x = Future("Hello")
+    val y = x flatMap (actor !!! _)
+
+    val r = flow(x() + " " + y[String]() + "!")
+
+    assert(r.get === "Hello World!")
+
+    actor.stop
+  }
+
+  @Test def futureComposingWithContinuationsFailureDivideZero {
+    import Future.flow
+
+    val x = Future("Hello")
+    val y = x map (_.length)
+
+    val r = flow(x() + " " + y.map(_ / 0).map(_.toString)(), 100)
+
+    intercept[java.lang.ArithmeticException](r.get)
+  }
+
+  @Test def futureComposingWithContinuationsFailureCastInt {
+    import Future.flow
+
+    val actor = actorOf[TestActor].start
+
+    val x = Future(3)
+    val y = actor !!! "Hello"
+
+    val r = flow(x() + y[Int](), 100)
+
+    intercept[ClassCastException](r.get)
+  }
+
+  @Test def futureComposingWithContinuationsFailureCastNothing {
+    import Future.flow
+
+    val actor = actorOf[TestActor].start
+
+    val x = Future("Hello")
+    val y = actor !!! "Hello"
+
+    val r = flow(x() + y())
+
+    intercept[ClassCastException](r.get)
+  }
+
+  @Test def futureCompletingWithContinuations {
+    import Future.flow
+
+    val x, y, z = new DefaultCompletableFuture[Int](Actor.TIMEOUT)
+    val ly, lz = new StandardLatch
+
+    val result = flow {
+      y completeWith x
+      ly.open // not within continuation
+
+      z << x
+      lz.open // within continuation, will wait for 'z' to complete
+      z() + y()
+    }
+
+    assert(ly.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
+    assert(!lz.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
+
+    x << 5
+
+    assert(y.get === 5)
+    assert(z.get === 5)
+    assert(lz.isOpen)
+    assert(result.get === 10)
+
+    val a, b, c = new DefaultCompletableFuture[Int](Actor.TIMEOUT)
+
+    val result2 = flow {
+      val n = (a << c).result.get + 10
+      b << (c() - 2)
+      a() + n * b()
+    }
+
+    c completeWith Future(5)
+
+    assert(a.get === 5)
+    assert(b.get === 3)
+    assert(result2.get === 50)
     Thread.sleep(100)
 
     // make sure all futures are completed in dispatcher
@@ -365,23 +502,125 @@ class FutureSpec extends JUnitSuite {
     assert(!latch.isOpen) //Shouldn't run the listener
   }
 
-  @Test def lesslessIsMore {
-    import akka.actor.Actor.spawn
-    val dataflowVar, dataflowVar2 = new DefaultCompletableFuture[Int](Long.MaxValue)
-    val begin, end = new StandardLatch
-    spawn {
-      begin.await
-      dataflowVar2 << dataflowVar
-      end.open
+  @Test def futureDataFlowShouldEmulateBlocking1 {
+    import Future.flow
+
+    val one, two = new DefaultCompletableFuture[Int](1000 * 60)
+    val simpleResult = flow {
+      one() + two()
     }
 
-    spawn {
-      dataflowVar << 5
+    assert(List(one, two, simpleResult).forall(_.isCompleted == false))
+
+    one << 1
+
+    assert(one.isCompleted)
+    assert(List(two, simpleResult).forall(_.isCompleted == false))
+
+    two << 9
+
+    assert(List(one, two).forall(_.isCompleted == true))
+    assert(simpleResult.get === 10)
+
+  }
+
+  @Test def futureDataFlowShouldEmulateBlocking2 {
+    import Future.flow
+    val x1, x2, y1, y2 = new DefaultCompletableFuture[Int](1000 * 60)
+    val lx, ly, lz = new StandardLatch
+    val result = flow {
+      lx.open()
+      x1 << y1
+      ly.open()
+      x2 << y2
+      lz.open()
+      x1() + x2()
     }
-    begin.open
-    end.await
-    assert(dataflowVar2() === 5)
-    assert(dataflowVar.get === 5)
+    assert(lx.isOpen)
+    assert(!ly.isOpen)
+    assert(!lz.isOpen)
+    assert(List(x1,x2,y1,y2).forall(_.isCompleted == false))
+
+    y1 << 1 // When this is set, it should cascade down the line
+
+    assert(ly.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
+    assert(x1.get === 1)
+    assert(!lz.isOpen)
+
+    y2 << 9 // When this is set, it should cascade down the line
+
+    assert(lz.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
+    assert(x2.get === 9)
+
+    assert(List(x1,x2,y1,y2).forall(_.isCompleted == true))
+
+    assert(result.get === 10)
+  }
+
+  @Test def dataFlowAPIshouldbeSlick {
+    import Future.flow
+
+    val i1, i2, s1, s2 = new StandardLatch
+
+    val callService1 = Future { i1.open; s1.awaitUninterruptible; 1 }
+    val callService2 = Future { i2.open; s2.awaitUninterruptible; 9 }
+
+    val result = flow { callService1() + callService2() }
+
+    assert(!s1.isOpen)
+    assert(!s2.isOpen)
+    assert(!result.isCompleted)
+    assert(i1.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
+    assert(i2.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
+    s1.open
+    s2.open
+    assert(result.get === 10)
+  }
+
+  @Test def futureCompletingWithContinuationsFailure {
+    import Future.flow
+
+    val x, y, z = new DefaultCompletableFuture[Int](Actor.TIMEOUT)
+    val ly, lz = new StandardLatch
+
+    val result = flow {
+      y << x
+      ly.open
+      val oops = 1 / 0
+      z << x
+      lz.open
+      z() + y() + oops
+    }
+
+    assert(!ly.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
+    assert(!lz.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
+
+    x << 5
+
+    assert(y.get === 5)
+    intercept[java.lang.ArithmeticException](result.get)
+    assert(z.value === None)
+    assert(!lz.isOpen)
+  }
+
+  @Test def futureContinuationsShouldNotBlock {
+    import Future.flow
+
+    val latch = new StandardLatch
+    val future = Future {
+      latch.await
+      "Hello"
+    }
+
+    val result = flow {
+      Some(future()).filter(_ == "Hello")
+    }
+
+    assert(!result.isCompleted)
+
+    latch.open
+
+    assert(result.get === Some("Hello"))
   }
 
   @Test def ticket812FutureDispatchCleanup {

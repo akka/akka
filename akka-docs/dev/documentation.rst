@@ -7,6 +7,10 @@
  Documentation
 ###############
 
+.. sidebar:: Contents
+
+   .. contents:: :local:
+   
 The Akka documentation uses `reStructuredText`_ as its markup language and is
 built using `Sphinx`_.
 
@@ -67,3 +71,83 @@ For example::
   Here is a reference to "akka section": :ref:`akka-section` which will have the
   name "Akka Section".
 
+Build the documentation
+=======================
+
+First install `Sphinx`_. See below.
+
+Building
+--------
+
+::
+
+  cd akka-docs
+
+  make html
+  open _build/html/index.html
+
+  make pdf
+  open _build/latex/Akka.pdf
+
+
+Installing Sphinx on OS X
+-------------------------
+
+Install `Homebrew <https://github.com/mxcl/homebrew>`_
+
+Install Python and pip:
+
+::
+
+  brew install python
+  /usr/local/share/python/easy_install pip
+
+Add the Homebrew Python path to your $PATH:
+
+::
+
+  /usr/local/Cellar/python/2.7.1/bin
+
+
+More information in case of trouble:
+https://github.com/mxcl/homebrew/wiki/Homebrew-and-Python
+
+Install sphinx:
+
+::
+
+  pip install sphinx
+
+Add sphinx_build to your $PATH:
+
+::
+
+  /usr/local/share/python
+
+Install BasicTeX package from:
+http://www.tug.org/mactex/morepackages.html
+
+Add texlive bin to $PATH:
+
+::
+
+  /usr/local/texlive/2010basic/bin/universal-darwin
+
+Add missing tex packages:
+
+::
+
+  sudo tlmgr update --self
+  sudo tlmgr install titlesec
+  sudo tlmgr install framed
+  sudo tlmgr install threeparttable
+  sudo tlmgr install wrapfig
+  sudo tlmgr install helvetic
+  sudo tlmgr install courier
+
+Link the akka pygments style:
+
+::
+
+  cd /usr/local/Cellar/python/2.7.1/lib/python2.7/site-packages/pygments/styles
+  ln -s /path/to/akka/akka-docs/themes/akka/pygments/akka.py akka.py

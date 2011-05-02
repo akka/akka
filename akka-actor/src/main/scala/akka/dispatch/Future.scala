@@ -10,6 +10,8 @@ import akka.actor.{Actor, Channel}
 import akka.util.Duration
 import akka.japi.{ Procedure, Function => JFunc }
 
+import scala.util.continuations._
+
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent. {ConcurrentLinkedQueue, TimeUnit, Callable}
 import java.util.concurrent.TimeUnit.{NANOSECONDS => NANOS, MILLISECONDS => MILLIS}
@@ -200,7 +202,7 @@ object Futures {
   // =====================================
   // Deprecations
   // =====================================
-  
+
   /**
    * (Blocking!)
    */
@@ -273,6 +275,25 @@ object Future {
       for (r <- fr; b <-fb) yield (r += b)
     }.map(_.result)
 
+  /**
+   * Captures a block that will be transformed into 'Continuation Passing Style' using Scala's Delimited
+   * Continuations plugin.
+   *
+   * Within the block, the result of a Future may be accessed by calling Future.apply. At that point
+   * execution is suspended with the rest of the block being stored in a continuation until the result
+   * of the Future is available. If an Exception is thrown while processing, it will be contained
+   * within the resulting Future.
+   *
+   * This allows working with Futures in an imperative style without blocking for each result.
+   *
+   * Completing a Future using 'CompletableFuture << Future' will also suspend execution until the
+   * value of the other Future is available.
+   *
+   * The Delimited Continuations compiler plugin must be enabled in order to use this method.
+   */
+  def flow(body: => Any @cps[Future[Any]], timeout: Long = Actor.TIMEOUT): Future[Any] =
+    reset(new DefaultCompletableFuture[Any](timeout).completeWithResult(body))
+
   private[akka] val callbacksPendingExecution = new ThreadLocal[Option[Stack[() => Unit]]]() {
     override def initialValue = None
   }
@@ -281,17 +302,26 @@ object Future {
 sealed trait Future[+T] {
 
   /**
-   * Returns the result of this future after waiting for it to complete,
-   * this method will throw any throwable that this Future was completed with
-   * and will throw a java.util.concurrent.TimeoutException if there is no result
-   * within the Futures timeout
+   * For use only within a Future.flow block or another compatible Delimited Continuations reset block.
+   *
+   * Returns the result of this Future without blocking, by suspending execution and storing it as a
+   * continuation until the result is available.
+   *
+   * If this Future is untyped (a Future[Nothing]), a type parameter must be explicitly provided or
+   * execution will fail. The normal result of getting a Future from an ActorRef using !!! will return
+   * an untyped Future.
    */
-  def apply(): T = this.await.resultOrException.get
+  def apply[A >: T](): A @cps[Future[Any]] = shift(this flatMap (_: A => Future[Any]))
 
   /**
-   * Java API for apply()
+   * Blocks awaiting completion of this Future, then returns the resulting value,
+   * or throws the completed exception
+   *
+   * Scala & Java API
+   *
+   * throws FutureTimeoutException if this Future times out when waiting for completion
    */
-  def get: T = apply()
+  def get: T = this.await.resultOrException.get
 
   /**
    * Blocks the current thread until the Future has been completed or the
@@ -402,23 +432,50 @@ sealed trait Future[+T] {
   final def collect[A](pf: PartialFunction[Any, A]): Future[A] = {
     val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
     onComplete { ft =>
-      val optv = ft.value
-      if (optv.isDefined) {
-        val v = optv.get
-        fa complete {
-          if (v.isLeft) v.asInstanceOf[Either[Throwable, A]]
-          else {
-            try {
-              val r = v.right.get
-              if (pf isDefinedAt r) Right(pf(r))
-              else Left(new MatchError(r))
-            } catch {
-              case e: Exception =>
-                EventHandler.error(e, this, e.getMessage)
-                Left(e)
-            }
+      val v = ft.value.get
+      fa complete {
+        if (v.isLeft) v.asInstanceOf[Either[Throwable, A]]
+        else {
+          try {
+            val r = v.right.get
+            if (pf isDefinedAt r) Right(pf(r))
+            else Left(new MatchError(r))
+          } catch {
+            case e: Exception =>
+              EventHandler.error(e, this, e.getMessage)
+              Left(e)
           }
         }
+      }
+    }
+    fa
+  }
+
+  /**
+   * Creates a new Future that will handle any matching Throwable that this
+   * Future might contain. If there is no match, or if this Future contains
+   * a valid result then the new Future will contain the same.
+   * Example:
+   * <pre>
+   * Future(6 / 0) failure { case e: ArithmeticException => 0 } // result: 0
+   * Future(6 / 0) failure { case e: NotFoundException   => 0 } // result: exception
+   * Future(6 / 2) failure { case e: ArithmeticException => 0 } // result: 3
+   * </pre>
+   */
+  final def failure[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
+    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    onComplete { ft =>
+      val opte = ft.exception
+      fa complete {
+        if (opte.isDefined) {
+          val e = opte.get
+          try {
+            if (pf isDefinedAt e) Right(pf(e))
+            else Left(e)
+          } catch {
+            case x: Exception => Left(x)
+          }
+        } else ft.value.get
       }
     }
     fa
@@ -449,7 +506,7 @@ sealed trait Future[+T] {
           fa complete (try {
             Right(f(v.right.get))
           } catch {
-            case e: Exception => 
+            case e: Exception =>
               EventHandler.error(e, this, e.getMessage)
               Left(e)
           })
@@ -485,7 +542,7 @@ sealed trait Future[+T] {
           try {
             fa.completeWith(f(v.right.get))
           } catch {
-            case e: Exception => 
+            case e: Exception =>
               EventHandler.error(e, this, e.getMessage)
               fa completeWithException e
           }
@@ -501,7 +558,7 @@ sealed trait Future[+T] {
       f(optr.get)
   }
 
-  final def filter(p: T => Boolean): Future[T] = {
+  final def filter(p: Any => Boolean): Future[Any] = {
     val f = new DefaultCompletableFuture[T](timeoutInNanos, NANOS)
     onComplete { ft =>
       val optv = ft.value
@@ -515,7 +572,7 @@ sealed trait Future[+T] {
             if (p(r)) Right(r)
             else Left(new MatchError(r))
           } catch {
-            case e: Exception => 
+            case e: Exception =>
               EventHandler.error(e, this, e.getMessage)
               Left(e)
           })
@@ -546,7 +603,7 @@ sealed trait Future[+T] {
 
   final def foreach[A >: T](proc: Procedure[A]): Unit = foreach(proc(_))
 
-  final def filter[A >: T](p: JFunc[A,Boolean]): Future[T] = filter(p(_))
+  final def filter(p: JFunc[Any,Boolean]): Future[Any] = filter(p(_))
 
 }
 
@@ -587,10 +644,20 @@ trait CompletableFuture[T] extends Future[T] {
    */
   final def << (value: T): Future[T] = complete(Right(value))
 
-  /**
-   * Alias for completeWith(other).
-   */
-  final def << (other : Future[T]): Future[T] = completeWith(other)
+  final def << (other: Future[T]): Future[T] @cps[Future[Any]] = shift { cont: (Future[T] => Future[Any]) =>
+    val fr = new DefaultCompletableFuture[Any](Actor.TIMEOUT)
+    this completeWith other onComplete { f =>
+      try {
+        fr completeWith cont(f)
+      } catch {
+        case e: Exception =>
+          EventHandler.error(e, this, e.getMessage)
+          fr completeWithException e
+      }
+    }
+    fr
+  }
+
 }
 
 /**

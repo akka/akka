@@ -240,7 +240,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       ref ! ch
       val f = ch.future
       f must be ('completed)
-      f() must be ("complexReply")
+      f.get must be ("complexReply")
     }
 
   }
