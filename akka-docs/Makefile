@@ -44,10 +44,10 @@ pygments:
 	@echo "Custom pygments styles have been installed."
 	@echo
 
-$(LOCALPACKAGES)/akkastyles-0.1-py2.6.egg:
+$(LOCALPACKAGES):
 	$(MAKE) pygments
 
-html: $(LOCALPACKAGES)/akkastyles-0.1-py2.6.egg
+html: $(LOCALPACKAGES)
 	$(SPHINXBUILD) -a -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
