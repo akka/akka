@@ -16,7 +16,11 @@ PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 # Set python path to include local packages for pygments styles.
-PYTHONPATH += $(LOCALPACKAGES)
+ifneq (,$(PYTHONPATH))
+	PYTHONPATH := $(PYTHONPATH):$(LOCALPACKAGES)
+else
+	PYTHONPATH := $(LOCALPACKAGES)
+endif
 export PYTHONPATH
 
 .PHONY: help clean pygments html singlehtml latex pdf
@@ -40,8 +44,11 @@ pygments:
 	@echo "Custom pygments styles have been installed."
 	@echo
 
-html: pygments
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+$(LOCALPACKAGES)/akkastyles-0.1-py2.6.egg:
+	$(MAKE) pygments
+
+html: $(LOCALPACKAGES)/akkastyles-0.1-py2.6.egg
+	$(SPHINXBUILD) -a -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
