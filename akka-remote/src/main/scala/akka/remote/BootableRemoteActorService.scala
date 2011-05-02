@@ -4,7 +4,6 @@
 
 package akka.remote
 
-import akka.config.Config.config
 import akka.actor. {Actor, BootableActorLoaderService}
 import akka.util. {ReflectiveAccess, Bootable}
 
