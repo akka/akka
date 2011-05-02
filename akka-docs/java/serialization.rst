@@ -9,34 +9,14 @@ Serialization (Java)
 
 Akka serialization module has been documented extensively under the :ref:`serialization-scala` section. In this section we will point out the different APIs that are available in Akka for Java based serialization of ActorRefs. The Scala APIs of ActorSerialization has implicit Format objects that set up the type class based serialization. In the Java API, the Format objects need to be specified explicitly.
 
-Serialization of ActorRef
--------------------------
-
-The following are the Java APIs for serialization of local ActorRefs:
-
-.. code-block:: scala
-
-  /**
-   * Module for local actor serialization.
-   */
-  object ActorSerialization {
-    // wrapper for implicits to be used by Java
-    def fromBinaryJ[T <: Actor](bytes: Array[Byte], format: Format[T]): ActorRef =
-      fromBinary(bytes)(format)
-
-    // wrapper for implicits to be used by Java
-    def toBinaryJ[T <: Actor](a: ActorRef, format: Format[T], srlMailBox: Boolean = true): Array[Byte] =
-      toBinary(a, srlMailBox)(format)
-  }
-
-The following steps describe the procedure for serializing an Actor and ActorRef.
-
 Serialization of a Stateless Actor
 ----------------------------------
 
 Step 1: Define the Actor
 
 .. code-block:: scala
+
+  import akka.actor.UntypedActor;
 
   public class SerializationTestActor extends UntypedActor {
       public void onReceive(Object msg) {
@@ -49,6 +29,8 @@ Step 2: Define the typeclass instance for the actor
 Note how the generated Java classes are accessed using the $class based naming convention of the Scala compiler.
 
 .. code-block:: scala
+
+  import akka.serialization.StatelessActorFormat;
 
   class SerializationTestActorFormat implements StatelessActorFormat<SerializationTestActor>  {
       @Override
@@ -67,6 +49,14 @@ Step 3: Serialize and de-serialize
 The following JUnit snippet first creates an actor using the default constructor. The actor is, as we saw above a stateless one. Then it is serialized and de-serialized to get back the original actor. Being stateless, the de-serialized version behaves in the same way on a message as the original actor.
 
 .. code-block:: java
+
+  import akka.actor.ActorRef;
+  import akka.actor.ActorTimeoutException;
+  import akka.actor.Actors;
+  import akka.actor.UntypedActor;
+  import akka.serialization.Format;
+  import akka.serialization.StatelessActorFormat;
+  import static akka.serialization.ActorSerialization.*;
 
   @Test public void mustBeAbleToSerializeAfterCreateActorRefFromClass() {
       ActorRef ref = Actors.actorOf(SerializationTestActor.class);
@@ -101,21 +91,23 @@ Let's now have a look at how to serialize an actor that carries a state with it.
 
 Step 1: Define the Actor
 
-Here we consider an actor defined in Scala. We will however serialize using the Java APIs.
-
 .. code-block:: scala
 
-  class MyUntypedActor extends UntypedActor {
-    var count = 0
-    def onReceive(message: Any): Unit = message match {
-      case m: String if m == "hello" =>
-        count = count + 1
-        getContext.replyUnsafe("world " + count)
-      case m: String =>
-        count = count + 1
-        getContext.replyUnsafe("hello " + m + " " + count)
-      case _ =>
-        throw new Exception("invalid message type")
+  import akka.actor.UntypedActor;
+
+  public class MyUntypedActor extends UntypedActor {
+    int count = 0;
+
+    public void onReceive(Object msg) {
+      if (msg.equals("hello")) {
+        count = count + 1;
+        getContext().replyUnsafe("world " + count);
+      } else if (msg instanceof String) {
+        count = count + 1;
+        getContext().replyUnsafe("hello " + msg + " " + count);
+      } else {
+        throw new IllegalArgumentException("invalid message type");
+      }
     }
   }
 
@@ -125,26 +117,36 @@ Step 2: Define the instance of the typeclass
 
 .. code-block:: java
 
-  class MyUntypedActorFormat implements Format<MyUntypedActor> {
-      @Override
-      public MyUntypedActor fromBinary(byte[] bytes, MyUntypedActor act) {
-        ProtobufProtocol.Counter p =
-  	  (ProtobufProtocol.Counter) new SerializerFactory().getProtobuf().fromBinary(bytes, ProtobufProtocol.Counter.class);
-        act.count_$eq(p.getCount());
-        return act;
-      }
+  import akka.actor.UntypedActor;
+  import akka.serialization.Format;
+  import akka.serialization.SerializerFactory;
 
-      @Override
-      public byte[] toBinary(MyUntypedActor ac) {
-        return ProtobufProtocol.Counter.newBuilder().setCount(ac.count()).build().toByteArray();
-      }
+  class MyUntypedActorFormat implements Format<MyUntypedActor> {
+    @Override
+    public MyUntypedActor fromBinary(byte[] bytes, MyUntypedActor act) {
+      ProtobufProtocol.Counter p =
+        (ProtobufProtocol.Counter) new SerializerFactory().getProtobuf().fromBinary(bytes, ProtobufProtocol.Counter.class);
+      act.count = p.getCount();
+      return act;
     }
 
-Note the usage of Protocol Buffers to serialize the state of the actor.
+    @Override
+    public byte[] toBinary(MyUntypedActor ac) {
+      return ProtobufProtocol.Counter.newBuilder().setCount(ac.count()).build().toByteArray();
+    }
+  }
+
+Note the usage of Protocol Buffers to serialize the state of the actor. ProtobufProtocol.Counter is something
+you need to define yourself
 
 Step 3: Serialize and de-serialize
 
 .. code-block:: java
+
+  import akka.actor.ActorRef;
+  import akka.actor.ActorTimeoutException;
+  import akka.actor.Actors;
+  import static akka.serialization.ActorSerialization.*;
 
   @Test public void mustBeAbleToSerializeAStatefulActor() {
       ActorRef ref = Actors.actorOf(MyUntypedActor.class);
