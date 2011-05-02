@@ -40,6 +40,10 @@ encompass functional tests of complete actor networks. The important
 distinction lies in whether concurrency concerns are part of the test or not.
 The tools offered are described in detail in the following sections.
 
+.. note::
+
+   Be sure to add the module :mod:`akka-testkit` to your dependencies.
+
 Unit Testing with :class:`TestActorRef`
 =======================================
 
@@ -67,6 +71,8 @@ traditional unit testing techniques on the contained methods. Obtaining a
 reference is done like this:
 
 .. code-block:: scala
+
+   import akka.testkit.TestActorRef
 
    val actorRef = TestActorRef[MyActor]
    val actor = actorRef.underlyingActor
@@ -169,6 +175,10 @@ common task easy:
 
 .. code-block:: scala
 
+   import akka.testkit.TestKit
+   import org.scalatest.WordSpec
+   import org.scalatest.matchers.MustMatchers
+
    class MySpec extends WordSpec with MustMatchers with TestKit {
 
      "An Echo actor" must {
@@ -251,6 +261,31 @@ stack traces to be generated in case of an error. As this special dispatcher
 runs everything which would normally be queued directly on the current thread,
 the full history of a message's processing chain is recorded on the call stack,
 so long as all intervening actors run on this dispatcher.
+
+How to use it
+-------------
+
+Just set the dispatcher as you normally would, either from within the actor
+
+.. code-block:: scala
+
+   import akka.testkit.CallingThreadDispatcher
+
+   class MyActor extends Actor {
+     self.dispatcher = CallingThreadDispatcher.global
+     ...
+   }
+
+or from the client code
+
+.. code-block:: scala
+
+   val ref = Actor.actorOf[MyActor]
+   ref.dispatcher = CallingThreadDispatcher.global
+   ref.start()
+
+As the :class:`CallingThreadDispatcher` does not have any configurable state,
+you may always use the (lazily) preallocated one as shown in the examples.
 
 How it works
 ------------
