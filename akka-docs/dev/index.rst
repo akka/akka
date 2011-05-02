@@ -6,3 +6,5 @@ Information for Developers
 
    documentation
    developer-guidelines
+   sponsors
+   team

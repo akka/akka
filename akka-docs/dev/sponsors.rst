@@ -1,11 +1,5 @@
-****<span style="font-size: 150%;">Sponsors </span>****
-=======================================================
-
-Scalable Solutions
-==================
-
-Scalable Solutions AB is the commercial entity behind Akka, providing support, consulting and training around Akka.
-`<http://scalablesolutions.se>`_
+**Sponsors**
+============
 
 YourKit
 =======
