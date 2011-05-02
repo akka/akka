@@ -7,7 +7,7 @@ package akka.agent
 import akka.stm._
 import akka.actor.Actor
 import akka.japi.{Function => JFunc, Procedure => JProc}
-import akka.dispatch.{Dispatchers, Future}
+import akka.dispatch.{DefaultCompletableFuture, Dispatchers, Future}
 
 /**
  * Used internally to send functions.
@@ -116,6 +116,23 @@ class Agent[T](initialValue: T) {
   }
 
   /**
+   * Dispatch a function to update the internal state, and return a Future where that new state can be obtained
+   * within the given timeout
+   */
+  def alter(f: T => T)(timeout: Long): Future[T] = {
+    def dispatch = updater.!!!(Update(f),timeout)
+    if (Stm.activeTransaction) {
+      val result = new DefaultCompletableFuture[T](timeout)
+      get //Join xa
+      deferred {
+        result completeWith dispatch
+      } //Attach deferred-block to current transaction
+      result
+    }
+    else dispatch
+  }
+
+  /**
    * Dispatch a new value for the internal state. Behaves the same
    * as sending a fuction (x => newValue).
    */
@@ -139,6 +156,24 @@ class Agent[T](initialValue: T) {
     threadBased ! Update(f)
     value
   })
+
+  /**
+   * Dispatch a function to update the internal state but on its own thread,
+   * and return a Future where that new state can be obtained within the given timeout.
+   * This does not use the reactive thread pool and can be used for long-running
+   * or blocking operations. Dispatches using either `alterOff` or `alter` will
+   * still be executed in order.
+   */
+  def alterOff(f: T => T)(timeout: Long): Future[T] = {
+    val result = new DefaultCompletableFuture[T](timeout)
+    send((value: T) => {
+      suspend
+      val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this)).start()
+      result completeWith threadBased.!!!(Update(f), timeout)
+      value
+    })
+    result
+  }
 
   /**
    * A future to the current value that will be completed after any currently
@@ -195,6 +230,13 @@ class Agent[T](initialValue: T) {
   def send(f: JFunc[T, T]): Unit = send(x => f(x))
 
   /**
+   * Java API
+   * Dispatch a function to update the internal state, and return a Future where that new state can be obtained
+   * within the given timeout
+   */
+  def alter(f: JFunc[T, T], timeout: Long): Future[T] = alter(x => f(x))(timeout)
+
+  /**
    * Java API:
    * Dispatch a function to update the internal state but on its own thread.
    * This does not use the reactive thread pool and can be used for long-running
@@ -202,6 +244,16 @@ class Agent[T](initialValue: T) {
    * still be executed in order.
    */
   def sendOff(f: JFunc[T, T]): Unit = sendOff(x => f(x))
+
+  /**
+   * Java API:
+   * Dispatch a function to update the internal state but on its own thread,
+   * and return a Future where that new state can be obtained within the given timeout.
+   * This does not use the reactive thread pool and can be used for long-running
+   * or blocking operations. Dispatches using either `alterOff` or `alter` will
+   * still be executed in order.
+   */
+  def alterOff(f: JFunc[T, T], timeout: Long): Unit = alterOff(x => f(x))(timeout)
 
   /**
    * Java API:
@@ -232,7 +284,7 @@ class AgentUpdater[T](agent: Agent[T]) extends Actor {
 
   def receive = {
     case update: Update[T] =>
-      atomic(txFactory) { agent.ref alter update.function }
+      self.reply_?(atomic(txFactory) { agent.ref alter update.function })
     case Get => self reply agent.get
     case _ => ()
   }
@@ -247,8 +299,9 @@ class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
   val txFactory = TransactionFactory(familyName = "ThreadBasedAgentUpdater", readonly = false)
 
   def receive = {
-    case update: Update[T] => {
-      atomic(txFactory) { agent.ref alter update.function }
+    case update: Update[T] => try {
+      self.reply_?(atomic(txFactory) { agent.ref alter update.function })
+    } finally {
       agent.resume
       self.stop()
     }
