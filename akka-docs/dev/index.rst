@@ -5,3 +5,4 @@ Information for Developers
    :maxdepth: 2
 
    documentation
+   developer-guidelines

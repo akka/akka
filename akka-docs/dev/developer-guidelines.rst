@@ -1,4 +1,4 @@
-Developer Guidelines (committers)
+Developer Guidelines
 ====================
 
 Code Style
