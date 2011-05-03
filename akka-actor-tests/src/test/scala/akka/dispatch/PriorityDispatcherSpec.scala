@@ -10,11 +10,11 @@ class PriorityDispatcherSpec extends WordSpec with MustMatchers {
 
   "A PriorityExecutorBasedEventDrivenDispatcher" must {
     "Order it's messages according to the specified comparator using an unbounded mailbox" in {
-      testOrdering(UnboundedMailbox(false))
+      testOrdering(UnboundedMailbox())
     }
 
     "Order it's messages according to the specified comparator using a bounded mailbox" in {
-      testOrdering(BoundedMailbox(false,1000))
+      testOrdering(BoundedMailbox(1000))
     }
   }
 

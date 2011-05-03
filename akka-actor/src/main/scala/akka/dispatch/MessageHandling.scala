@@ -5,6 +5,7 @@
 package akka.dispatch
 
 import java.util.concurrent._
+import java.util.concurrent.atomic.AtomicLong
 import akka.event.EventHandler
 import akka.config.Configuration
 import akka.config.Config.TIME_UNIT
@@ -29,16 +30,18 @@ final case class MessageInvocation(val receiver: ActorRef,
   }
 }
 
-final case class FutureInvocation(future: CompletableFuture[Any], function: () => Any) extends Runnable {
-  val uuid = akka.actor.newUuid
-
-  def run = future complete (try {
-    Right(function.apply)
-  } catch {
-    case e =>
-      EventHandler.error(e, this, e.getMessage)
-      Left(e)
-  })
+final case class FutureInvocation[T](future: CompletableFuture[T], function: () => T, cleanup: () => Unit) extends Runnable {
+  def run = {
+    future complete (try {
+      Right(function())
+    } catch {
+      case e =>
+        EventHandler.error(e, this, e.getMessage)
+        Left(e)
+    } finally {
+      cleanup()
+    })
+  }
 }
 
 object MessageDispatcher {
@@ -56,7 +59,7 @@ trait MessageDispatcher {
   import MessageDispatcher._
 
   protected val uuids   = new ConcurrentSkipListSet[Uuid]
-  protected val futures = new ConcurrentSkipListSet[Uuid]
+  protected val futures = new AtomicLong(0L)
   protected val guard   = new ReentrantGuard
   protected val active  = new Switch(false)
 
@@ -83,15 +86,27 @@ trait MessageDispatcher {
 
   private[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = dispatch(invocation)
 
-  private[akka] final def dispatchFuture(invocation: FutureInvocation): Unit = {
-    guard withGuard {
-      futures add invocation.uuid
-      if (active.isOff) { active.switchOn { start } }
+  private[akka] final def dispatchFuture[T](block: () => T, timeout: Long): Future[T] = {
+    futures.getAndIncrement()
+    try {
+      val future = new DefaultCompletableFuture[T](timeout)
+
+      if (active.isOff)
+        guard withGuard { active.switchOn { start } }
+
+      executeFuture(FutureInvocation[T](future, block, futureCleanup))
+      future
+    } catch {
+      case e =>
+        futures.decrementAndGet
+        throw e
     }
-    invocation.future.onComplete { f =>
+  }
+
+  private val futureCleanup: () => Unit =
+   () => if (futures.decrementAndGet() == 0) {
       guard withGuard {
-        futures remove invocation.uuid
-        if (futures.isEmpty && uuids.isEmpty) {
+        if (futures.get == 0 && uuids.isEmpty) {
           shutdownSchedule match {
             case UNSCHEDULED =>
               shutdownSchedule = SCHEDULED
@@ -103,8 +118,6 @@ trait MessageDispatcher {
         }
       }
     }
-    executeFuture(invocation)
-  }
 
   private[akka] def register(actorRef: ActorRef) {
     if (actorRef.mailbox eq null)
@@ -121,7 +134,7 @@ trait MessageDispatcher {
   private[akka] def unregister(actorRef: ActorRef) = {
     if (uuids remove actorRef.uuid) {
       actorRef.mailbox = null
-      if (uuids.isEmpty && futures.isEmpty){
+      if (uuids.isEmpty && futures.get == 0){
         shutdownSchedule match {
           case UNSCHEDULED =>
             shutdownSchedule = SCHEDULED
@@ -155,7 +168,7 @@ trait MessageDispatcher {
           shutdownSchedule = SCHEDULED
           Scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
         case SCHEDULED =>
-          if (uuids.isEmpty() && futures.isEmpty) {
+          if (uuids.isEmpty && futures.get == 0) {
             active switchOff {
               shutdown // shut down in the dispatcher's references is zero
             }
@@ -187,17 +200,17 @@ trait MessageDispatcher {
    */
   private[akka] def dispatch(invocation: MessageInvocation): Unit
 
-  private[akka] def executeFuture(invocation: FutureInvocation): Unit
+  private[akka] def executeFuture(invocation: FutureInvocation[_]): Unit
 
   /**
    * Called one time every time an actor is attached to this dispatcher and this dispatcher was previously shutdown
    */
-  private[akka] def start: Unit
+  private[akka] def start(): Unit
 
   /**
    * Called one time every time an actor is detached from this dispatcher and this dispatcher has no actors left attached
    */
-  private[akka] def shutdown: Unit
+  private[akka] def shutdown(): Unit
 
   /**
    * Returns the size of the mailbox for the specified actor
@@ -205,9 +218,9 @@ trait MessageDispatcher {
   def mailboxSize(actorRef: ActorRef): Int
 
   /**
-   * Returns the size of the Future queue
+   * Returns the amount of futures queued for execution
    */
-  def futureQueueSize: Int = futures.size
+  def pendingFutures: Long = futures.get
 }
 
 /**
@@ -221,9 +234,8 @@ abstract class MessageDispatcherConfigurator {
 
   def mailboxType(config: Configuration): MailboxType = {
     val capacity = config.getInt("mailbox-capacity", Dispatchers.MAILBOX_CAPACITY)
-    // FIXME how do we read in isBlocking for mailbox? Now set to 'false'.
     if (capacity < 1) UnboundedMailbox()
-    else BoundedMailbox(false, capacity, Duration(config.getInt("mailbox-push-timeout-time", Dispatchers.MAILBOX_PUSH_TIME_OUT.toMillis.toInt), TIME_UNIT))
+    else BoundedMailbox(capacity, Duration(config.getInt("mailbox-push-timeout-time", Dispatchers.MAILBOX_PUSH_TIME_OUT.toMillis.toInt), TIME_UNIT))
   }
 
   def configureThreadPool(config: Configuration, createDispatcher: => (ThreadPoolConfig) => MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {

@@ -269,7 +269,7 @@ Finally, bind the *handleHttpRequest* function of the *Endpoint* trait to the ac
       //
       // this is where you want attach your endpoint hooks
       //
-    override def preStart = {
+    override def preStart() = {
         //
         // we expect there to be one root and that it's already been started up
         // obviously there are plenty of other ways to obtaining this actor
@@ -397,7 +397,7 @@ As noted above, hook functions are non-exclusive. This means multiple actors can
       //
       // this is where you want attach your endpoint hooks
       //
-    override def preStart = {
+    override def preStart() = {
       //
       // we expect there to be one root and that it's already been started up
       // obviously there are plenty of other ways to obtaining this actor

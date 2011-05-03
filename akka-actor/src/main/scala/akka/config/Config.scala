@@ -6,8 +6,8 @@ package akka.config
 
 import akka.AkkaException
 
-class ConfigurationException(message: String) extends AkkaException(message)
-class ModuleNotAvailableException(message: String) extends AkkaException(message)
+class ConfigurationException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class ModuleNotAvailableException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * Loads up the configuration (from the akka.conf file).

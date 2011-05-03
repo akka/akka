@@ -4,5 +4,10 @@ General
 .. toctree::
    :maxdepth: 2
 
+   jmm
    migration-guides
-   util
+   building-akka
+   configuration
+   event-handler
+   issue-tracking
+   licenses

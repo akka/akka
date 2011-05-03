@@ -38,4 +38,4 @@ Akka Remote
 Akka Testkit
 ------------
 
-The TestKit moved into the akka-testkit subproject and correspondingly into the :code:`akka.testkit` package.
+The TestKit moved into the akka-testkit subproject and correspondingly into the ``akka.testkit`` package.

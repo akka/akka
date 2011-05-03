@@ -187,14 +187,14 @@ object Dispatchers {
         case "GlobalExecutorBasedEventDriven"       => GlobalExecutorBasedEventDrivenDispatcherConfigurator
         case fqn =>
           ReflectiveAccess.getClassFor[MessageDispatcherConfigurator](fqn) match {
-            case Some(clazz) =>
-              val instance = ReflectiveAccess.createInstance[MessageDispatcherConfigurator](clazz, Array[Class[_]](), Array[AnyRef]())
-              if (instance.isEmpty)
-                throw new IllegalArgumentException("Cannot instantiate MessageDispatcherConfigurator type [%s], make sure it has a default no-args constructor" format fqn)
-              else
-                instance.get
-            case None =>
-              throw new IllegalArgumentException("Unknown MessageDispatcherConfigurator type [%s]" format fqn)
+            case r: Right[_, Class[MessageDispatcherConfigurator]] =>
+              ReflectiveAccess.createInstance[MessageDispatcherConfigurator](r.b, Array[Class[_]](), Array[AnyRef]()) match {
+                case r: Right[Exception, MessageDispatcherConfigurator] => r.b
+                case l: Left[Exception, MessageDispatcherConfigurator] =>
+                  throw new IllegalArgumentException("Cannot instantiate MessageDispatcherConfigurator type [%s], make sure it has a default no-args constructor" format fqn, l.a)
+              }
+            case l: Left[Exception, _] =>
+              throw new IllegalArgumentException("Unknown MessageDispatcherConfigurator type [%s]" format fqn, l.a)
           }
       } map {
         _ configure cfg

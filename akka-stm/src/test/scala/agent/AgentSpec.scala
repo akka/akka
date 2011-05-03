@@ -49,6 +49,23 @@ class AgentSpec extends WordSpec with MustMatchers {
       agent.close
     }
 
+    "maintain order between alter and alterOff" in {
+
+      val agent = Agent("a")
+
+      val r1 = agent.alter(_ + "b")(5000)
+      val r2 = agent.alterOff((s: String) => { Thread.sleep(2000); s + "c" })(5000)
+      val r3 = agent.alter(_ + "d")(5000)
+
+      r1.await.resultOrException.get must be === "ab"
+      r2.await.resultOrException.get must be === "abc"
+      r3.await.resultOrException.get must be === "abcd"
+
+      agent() must be ("abcd")
+
+      agent.close
+    }
+
     "be immediately readable" in {
       val countDown = new CountDownFunction[Int]
       val readLatch = new CountDownLatch(1)

@@ -13,7 +13,7 @@ import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
 import java.net.InetSocketAddress
 import akka.config.Supervision._
 
-class SupervisorException private[akka](message: String) extends AkkaException(message)
+class SupervisorException private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * Factory object for creating supervisors declarative. It creates instances of the 'Supervisor' class.

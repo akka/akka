@@ -46,7 +46,7 @@ class RestartStrategySpec extends JUnitSuite {
           secondRestartLatch.open
       }
 
-      override def postStop = {
+      override def postStop() = {
         stopLatch.open
       }
     })
@@ -131,7 +131,7 @@ class RestartStrategySpec extends JUnitSuite {
           thirdRestartLatch.open
       }
 
-      override def postStop = {
+      override def postStop() = {
         if (restartLatch.isOpen) {
           secondRestartLatch.open
         }
@@ -189,7 +189,7 @@ class RestartStrategySpec extends JUnitSuite {
           secondRestartLatch.open
       }
 
-      override def postStop = {
+      override def postStop() = {
         stopLatch.open
       }
     })
@@ -243,7 +243,7 @@ class RestartStrategySpec extends JUnitSuite {
         restartLatch.open
       }
 
-      override def postStop = {
+      override def postStop() = {
         stopLatch.open
       }
     })

@@ -28,42 +28,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   override def javaCompileOptions = super.javaCompileOptions ++ javaCompileSettings.map(JavaCompileOption)
 
   // -------------------------------------------------------------------------------------------------------------------
-  // Deploy/dist settings
-  // -------------------------------------------------------------------------------------------------------------------
-  val distName = "%s-%s".format(name, version)
-  val distArchiveName = distName + ".zip"
-  val deployPath = info.projectPath / "deploy"
-  val distPath = info.projectPath / "dist"
-  val distArchive = (distPath ##) / distArchiveName
-
-  lazy override val `package` = task { None }
-
-  //The distribution task, packages Akka into a zipfile and places it into the projectPath/dist directory
-  lazy val dist = task {
-
-    def transferFile(from: Path, to: Path) =
-      if ( from.asFile.renameTo(to.asFile) ) None
-      else Some("Couldn't transfer %s to %s".format(from,to))
-
-    //Creates a temporary directory where we can assemble the distribution
-    val genDistDir = Path.fromFile({
-      val d = File.createTempFile("akka","dist")
-      d.delete //delete the file
-      d.mkdir  //Recreate it as a dir
-      d
-    }).## //## is needed to make sure that the zipped archive has the correct root folder
-
-    //Temporary directory to hold the dist currently being generated
-    val currentDist = genDistDir / distName
-
-    FileUtilities.copy(allArtifacts.get, currentDist, log).left.toOption orElse //Copy all needed artifacts into the root archive
-    FileUtilities.zip(List(currentDist), distArchiveName, true, log) orElse //Compress the root archive into a zipfile
-    transferFile(info.projectPath / distArchiveName, distArchive) orElse //Move the archive into the dist folder
-    FileUtilities.clean(genDistDir,log) //Cleanup the generated jars
-
-  } dependsOn (`package`) describedAs("Zips up the distribution.")
-
-  // -------------------------------------------------------------------------------------------------------------------
   // All repositories *must* go here! See ModuleConigurations below.
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -197,14 +161,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   override def disableCrossPaths = true
 
-  override def packageOptions =
-    manifestClassPath.map(cp => ManifestAttributes(
-      (Attributes.Name.CLASS_PATH, cp),
-      (IMPLEMENTATION_TITLE, "Akka"),
-      (IMPLEMENTATION_URL, "http://akka.io"),
-      (IMPLEMENTATION_VENDOR, "Scalable Solutions AB")
-    )).toList
-
   //Exclude slf4j1.5.11 from the classpath, it's conflicting...
   override def fullClasspath(config: Configuration): PathFinder = {
     super.fullClasspath(config) ---
@@ -250,7 +206,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   override def deliverProjectDependencies = super.deliverProjectDependencies.toList - akka_samples.projectID - akka_tutorials.projectID
 
-  // ------------------------------------------------------------  
+  // ------------------------------------------------------------
   // Build release
   // ------------------------------------------------------------
 
@@ -265,23 +221,23 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
   }
 
-  lazy val buildRelease = task {
-    FileUtilities.copy(Seq(distArchive), localReleaseDownloads, log).left.toOption
-  } dependsOn (publishRelease, dist)
+  lazy val buildRelease = task { None } dependsOn publishRelease
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-actor subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with OsgiProject {
+  class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info) with OsgiProject with AutoCompilerPlugins {
     override def bndExportPackage = super.bndExportPackage ++ Seq("com.eaio.*;version=3.2")
+    val cont = compilerPlugin("org.scala-lang.plugins" % "continuations" % "2.9.0.RC1")
+    override def compileOptions = super.compileOptions ++ compileOptions("-P:continuations:enable")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-stm subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaStmProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaStmProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
     val multiverse = Dependencies.multiverse
 
     // testing
@@ -293,7 +249,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-typed-actor subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaTypedActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaTypedActorProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
     val aopalliance  = Dependencies.aopalliance
     val aspectwerkz  = Dependencies.aspectwerkz
     val guicey       = Dependencies.guicey
@@ -310,7 +266,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-remote subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
     val commons_codec = Dependencies.commons_codec
     val commons_io    = Dependencies.commons_io
     val guicey        = Dependencies.guicey
@@ -337,7 +293,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-http subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaHttpProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaHttpProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
     val jsr250           = Dependencies.jsr250
     val javax_servlet30  = Dependencies.javax_servlet_30
     val jetty            = Dependencies.jetty
@@ -371,13 +327,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     }
   }
 
-  class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+  class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info)
 
-  class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+  class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info)
 
-  class AkkaSampleFSMProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+  class AkkaSampleFSMProject(info: ProjectInfo) extends AkkaDefaultProject(info)
 
-  class AkkaSampleOsgiProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with BNDPlugin {
+  class AkkaSampleOsgiProject(info: ProjectInfo) extends AkkaDefaultProject(info) with BNDPlugin {
     val osgiCore = Dependencies.osgi_core
     override protected def bndPrivatePackage = List("sample.osgi.*")
     override protected def bndBundleActivator = Some("sample.osgi.Activator")
@@ -407,9 +363,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Tutorials
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaTutorialFirstProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+  class AkkaTutorialFirstProject(info: ProjectInfo) extends AkkaDefaultProject(info)
 
-  class AkkaTutorialSecondProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+  class AkkaTutorialSecondProject(info: ProjectInfo) extends AkkaDefaultProject(info)
 
   class AkkaTutorialsParentProject(info: ProjectInfo) extends ParentProject(info) {
     override def disableCrossPaths = true
@@ -430,7 +386,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-testkit subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaTestkitProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaTestkitProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
     val scalatest = Dependencies.scalatest
   }
 
@@ -438,52 +394,27 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-actor-tests subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaActorTestsProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaActorTestsProject(info: ProjectInfo) extends AkkaDefaultProject(info) with AutoCompilerPlugins {
     // testing
     val junit           = Dependencies.junit
     val scalatest       = Dependencies.scalatest
     val multiverse_test = Dependencies.multiverse_test // StandardLatch
+    override def compileOptions = super.compileOptions ++ compileOptions("-P:continuations:enable")
   }
-  
+
   // -------------------------------------------------------------------------------------------------------------------
   // akka-slf4j subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaSlf4jProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaSlf4jProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
     val slf4j   = Dependencies.slf4j
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // Helpers
+  // Default project
   // -------------------------------------------------------------------------------------------------------------------
 
-  def removeDupEntries(paths: PathFinder) = Path.lazyPathFinder {
-    val mapped = paths.get map { p => (p.relativePath, p) }
-    (Map() ++ mapped).values.toList
-  }
-
-  def allArtifacts = {
-    Path.fromFile(buildScalaInstance.libraryJar) +++
-    (removeDupEntries(runClasspath filter ClasspathUtilities.isArchive) +++
-    ((outputPath ##) / defaultJarName) +++
-    mainResources +++
-    mainDependencies.scalaJars +++
-    descendents(info.projectPath / "scripts", "run_akka.sh") +++
-    descendents(info.projectPath / "scripts", "akka-init-script.sh") +++
-    descendents(info.projectPath / "dist", "*.jar") +++
-    descendents(info.projectPath / "deploy", "*.jar") +++
-    descendents(path("lib") ##, "*.jar") +++
-    descendents(configurationPath(Configurations.Compile) ##, "*.jar"))
-    .filter(jar => // remove redundant libs
-      !jar.toString.endsWith("stax-api-1.0.1.jar") ||
-      !jar.toString.endsWith("scala-library-2.7.7.jar")
-    )
-  }
-
-  def akkaArtifacts = descendents(info.projectPath / "dist", "*-" + version + ".jar")
-
-  // ------------------------------------------------------------
-  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with McPom {
+  class AkkaDefaultProject(info: ProjectInfo) extends DefaultProject(info) with McPom {
 
     override def disableCrossPaths = true
 
@@ -512,27 +443,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
       publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
     }
-  }
-}
-
-trait DeployProject { self: BasicScalaProject =>
-  // defines where the deployTask copies jars to
-  def deployPath: Path
-
-  lazy val dist = deployTask(jarPath, packageDocsJar, packageSrcJar, deployPath, true, true, true) dependsOn(
-    `package`, packageDocs, packageSrc) describedAs("Deploying")
-
-  def deployTask(jar: Path, docs: Path, src: Path, toDir: Path,
-                 genJar: Boolean, genDocs: Boolean, genSource: Boolean) = task {
-    def gen(jar: Path, toDir: Path, flag: Boolean, msg: String): Option[String] =
-    if (flag) {
-      log.info(msg + " " + jar)
-      FileUtilities.copyFile(jar, toDir / jar.name, log)
-    } else None
-
-    gen(jar, toDir, genJar, "Deploying bits") orElse
-    gen(docs, toDir, genDocs, "Deploying docs") orElse
-    gen(src, toDir, genSource, "Deploying sources")
   }
 }
 

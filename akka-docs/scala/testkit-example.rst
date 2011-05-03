@@ -4,7 +4,7 @@
 TestKit Example
 ###############
 
-Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html>`_.
+Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html>`_ adapted to work with Akka 1.1.
 
 .. code-block:: scala
 
@@ -14,7 +14,7 @@ Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com
    import org.scalatest.{WordSpec, BeforeAndAfterAll}
    import akka.actor.Actor._
    import akka.util.duration._
-   import akka.util.TestKit
+   import akka.testkit.TestKit
    import java.util.concurrent.TimeUnit
    import akka.actor.{ActorRef, Actor}
    import util.Random

@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.{AtomicReference, AtomicBoolean}
 import java.util.concurrent._
 import akka.AkkaException
 
-class RemoteClientMessageBufferException(message: String) extends AkkaException(message)
+class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 object RemoteEncoder {
   def encode(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {
@@ -107,7 +107,7 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
 
   def shutdownClientConnection(address: InetSocketAddress): Boolean = lock withWriteGuard {
     remoteClients.remove(Address(address)) match {
-      case s: Some[RemoteClient] => s.get.shutdown
+      case s: Some[RemoteClient] => s.get.shutdown()
       case None => false
     }
   }
@@ -132,15 +132,15 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
   /**
    * Clean-up all open connections.
    */
-  def shutdownClientModule = {
-    shutdownRemoteClients
+  def shutdownClientModule() {
+    shutdownRemoteClients()
     //TODO: Should we empty our remoteActors too?
     //remoteActors.clear
   }
 
-  def shutdownRemoteClients = lock withWriteGuard {
-    remoteClients.foreach({ case (addr, client) => client.shutdown })
-    remoteClients.clear
+  def shutdownRemoteClients() = lock withWriteGuard {
+    remoteClients.foreach({ case (addr, client) => client.shutdown() })
+    remoteClients.clear()
   }
 
   def registerClientManagedActor(hostname: String, port: Int, uuid: Uuid) = {
@@ -187,7 +187,7 @@ abstract class RemoteClient private[akka] (
 
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean
 
-  def shutdown: Boolean
+  def shutdown(): Boolean
 
   /**
    * Returns an array with the current pending messages not yet delivered.
@@ -403,16 +403,16 @@ class ActiveRemoteClient private[akka] (
   }
 
   //Please note that this method does _not_ remove the ARC from the NettyRemoteClientModule's map of clients
-  def shutdown = runSwitch switchOff {
+  def shutdown() = runSwitch switchOff {
     notifyListeners(RemoteClientShutdown(module, remoteAddress))
     timer.stop()
     timer = null
     openChannels.close.awaitUninterruptibly
     openChannels = null
-    bootstrap.releaseExternalResources
+    bootstrap.releaseExternalResources()
     bootstrap = null
     connection = null
-    pendingRequests.clear
+    pendingRequests.clear()
   }
 
   private[akka] def isWithinReconnectionTimeWindow: Boolean = {
@@ -629,7 +629,7 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
   openChannels.add(bootstrap.bind(address))
   serverModule.notifyListeners(RemoteServerStarted(serverModule))
 
-  def shutdown {
+  def shutdown() {
     try {
       val shutdownSignal = {
         val b = RemoteControlProtocol.newBuilder
@@ -641,7 +641,7 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
       openChannels.write(RemoteEncoder.encode(shutdownSignal)).awaitUninterruptibly
       openChannels.disconnect
       openChannels.close.awaitUninterruptibly
-      bootstrap.releaseExternalResources
+      bootstrap.releaseExternalResources()
       serverModule.notifyListeners(RemoteServerShutdown(serverModule))
     } catch {
       case e: Exception =>
@@ -684,11 +684,11 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule =>
     this
   }
 
-  def shutdownServerModule = guard withGuard {
+  def shutdownServerModule() = guard withGuard {
     _isRunning switchOff {
       currentServer.getAndSet(None) foreach {
         instance =>
-        instance.shutdown
+        instance.shutdown()
       }
     }
   }

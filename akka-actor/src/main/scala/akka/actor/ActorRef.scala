@@ -1015,12 +1015,12 @@ class LocalActorRef private[akka] (
 
   private[this] def newActor: Actor = {
     try {
-      Actor.actorRefInCreation.value = Some(this)
+      Actor.actorRefInCreation.set(Some(this))
       val a = actorFactory()
       if (a eq null) throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
       a
     } finally {
-      Actor.actorRefInCreation.value = None
+      Actor.actorRefInCreation.set(None)
     }
   }
 

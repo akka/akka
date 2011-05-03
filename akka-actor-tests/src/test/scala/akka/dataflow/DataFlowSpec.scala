@@ -36,7 +36,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
 
         latch.await(10,TimeUnit.SECONDS) should equal (true)
         result.get should equal (42)
-        List(x,y,z).foreach(_.shutdown)
+        List(x,y,z).foreach(_.shutdown())
       }
 
       it("should be able to sum a sequence of ints") {
@@ -67,7 +67,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
 
         latch.await(10,TimeUnit.SECONDS) should equal (true)
         result.get should equal (sum(0,ints(0,1000)))
-        List(x,y,z).foreach(_.shutdown)
+        List(x,y,z).foreach(_.shutdown())
       }
 /*
     it("should be able to join streams") {
@@ -158,7 +158,7 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
       val setV = thread {
         v << y
       }
-      List(x,y,z,v) foreach (_.shutdown)
+      List(x,y,z,v) foreach (_.shutdown())
       latch.await(2,TimeUnit.SECONDS) should equal (true)
     }*/
   }

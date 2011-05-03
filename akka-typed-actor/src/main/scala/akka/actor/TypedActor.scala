@@ -83,11 +83,11 @@ import scala.reflect.BeanProperty
  *
  *   def square(x: Int): Future[Integer] = future(x * x)
  *
- *   override def preStart = {
+ *   override def preStart() = {
  *     ... // optional initialization on start
  *   }
  *
- *   override def postStop = {
+ *   override def postStop() = {
  *     ... // optional cleanup on stop
  *   }
  *
@@ -160,14 +160,14 @@ abstract class TypedActor extends Actor with Proxyable {
    * <p/>
    * Is called when an Actor is started by invoking 'actor.start()'.
    */
-  override def preStart {}
+  override def preStart() {}
 
   /**
    * User overridable callback.
    * <p/>
    * Is called when 'actor.stop()' is invoked.
    */
-  override def postStop {}
+  override def postStop() {}
 
   /**
    * User overridable callback.
@@ -515,7 +515,7 @@ object TypedActor {
    * Factory method for remote typed actor.
    * @param intfClass interface the typed actor implements
    * @param targetClass implementation class of the typed actor
-   * @param host hostanme of the remote server
+   * @param host hostname of the remote server
    * @param port port of the remote server
    */
   @deprecated("Will be removed after 1.1")
@@ -527,7 +527,7 @@ object TypedActor {
    * Factory method for remote typed actor.
    * @param intfClass interface the typed actor implements
    * @param factory factory method that constructs the typed actor
-   * @param host hostanme of the remote server
+   * @param host hostname of the remote server
    * @param port port of the remote server
    */
   @deprecated("Will be removed after 1.1")
@@ -560,7 +560,7 @@ object TypedActor {
    * @param intfClass interface the typed actor implements
    * @param targetClass implementation class of the typed actor
    * @paramm timeout timeout for future
-   * @param host hostanme of the remote server
+   * @param host hostname of the remote server
    * @param port port of the remote server
    */
   @deprecated("Will be removed after 1.1")
@@ -573,7 +573,7 @@ object TypedActor {
    * @param intfClass interface the typed actor implements
    * @param factory factory method that constructs the typed actor
    * @paramm timeout timeout for future
-   * @param host hostanme of the remote server
+   * @param host hostname of the remote server
    * @param port port of the remote server
    */
   @deprecated("Will be removed after 1.1")
@@ -585,7 +585,7 @@ object TypedActor {
    * Factory method for typed actor.
    * @param intfClass interface the typed actor implements
    * @param factory factory method that constructs the typed actor
-   * @paramm config configuration object fo the typed actor
+   * @paramm config configuration object forthe typed actor
    */
   def newInstance[T](intfClass: Class[T], factory: => AnyRef, config: TypedActorConfiguration): T =
     newInstance(intfClass, createActorRef(newTypedActor(factory),config), config)
@@ -607,7 +607,7 @@ object TypedActor {
    *  Factory method for typed actor.
    * @param intfClass interface the typed actor implements
    * @param targetClass implementation class of the typed actor
-   * @paramm config configuration object fo the typed actor
+   * @paramm config configuration object forthe typed actor
    */
   def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T =
     newInstance(intfClass, createActorRef(newTypedActor(targetClass),config), config)

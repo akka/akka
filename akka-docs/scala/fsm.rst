@@ -49,12 +49,13 @@ Now lets create an object representing the FSM and defining the behavior.
 
   import akka.actor.{Actor, FSM}
   import akka.event.EventHandler
-  import FSM._
   import akka.util.duration._
 
   case object Move
 
   class ABC extends Actor with FSM[ExampleState, Unit] {
+
+    import FSM._
 
     startWith(A, Unit)
 

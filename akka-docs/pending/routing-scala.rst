@@ -219,18 +219,16 @@ Examples
                                  with SmallestMailboxSelector
                                  with BasicNoBackoffFilter
   {
-     def factory = actorOf(new Actor {def receive = {case n:Int =>
-                                                     Thread.sleep(n)
-                                                     counter.incrementAndGet
-                                                     latch.countDown()}})
-
+     def receive = _route
      def lowerBound = 2
      def upperBound = 4
      def rampupRate = 0.1
      def partialFill = true
      def selectionCount = 1
-     def instance = factory
-     def receive = _route
+     def instance = actorOf(new Actor {def receive = {case n:Int =>
+                                                     Thread.sleep(n)
+                                                     counter.incrementAndGet
+                                                     latch.countDown()}})
   }
 
 .. code-block:: scala
@@ -243,11 +241,7 @@ Examples
                                    with RunningMeanBackoff
                                    with BasicRampup
   {
-
-    def factory = actorOf(new Actor {def receive = {case n:Int =>
-                                                    Thread.sleep(n)
-                                                    latch.countDown()}})
-
+    def receive = _route
     def lowerBound = 1
     def upperBound = 5
     def pressureThreshold = 1
@@ -256,8 +250,9 @@ Examples
     def rampupRate = 0.1
     def backoffRate = 0.50
     def backoffThreshold = 0.50
-    def instance = factory
-    def receive = _route
+    def instance = actorOf(new Actor {def receive = {case n:Int =>
+                                                    Thread.sleep(n)
+                                                    latch.countDown()}})
   }
 
 Taken from the unit test `spec <https://github.com/jboner/akka/blob/master/akka-actor/src/test/scala/akka/routing/RoutingSpec.scala>`_.
