@@ -1,6 +1,10 @@
 Fault Tolerance Through Supervisor Hierarchies (Java)
 =====================================================
 
+.. sidebar:: Contents
+
+   .. contents:: :local:
+
 Module stability: **SOLID**
 
 The "let it crash" approach to fault/error handling, implemented by linking actors, is very different to what Java and most non-concurrency oriented languages/frameworks have adopted. It’s a way of dealing with failure that is designed for concurrent and distributed systems.
@@ -10,14 +14,14 @@ Concurrency
 
 Throwing an exception in concurrent code (let’s assume we are using non-linked actors), will just simply blow up the thread that currently executes the actor.
 
-# There is no way to find out that things went wrong (apart from inspecting the stack trace).
-# There is nothing you can do about it.
+- There is no way to find out that things went wrong (apart from inspecting the stack trace).
+- There is nothing you can do about it.
 
 Here actors provide a clean way of getting notification of the error and do something about it.
 
 Linking actors also allow you to create sets of actors where you can be sure that either:
-# All are dead
-# None are dead
+- All are dead
+- None are dead
 
 This is very useful when you have thousands of concurrent actors. Some actors might have implicit dependencies and together implement a service, computation, user session etc.
 
@@ -56,8 +60,8 @@ Restart callbacks
 
 There are two different callbacks that an UntypedActor or TypedActor can hook in to:
 
-* Pre restart
-* Post restart
+- Pre restart
+- Post restart
 
 These are called prior to and after the restart upon failure and can be used to clean up and reset/reinitialize state upon restart. This is important in order to reset the component failure and leave the component in a fresh and stable state before consuming further messages.
 
@@ -66,8 +70,8 @@ Defining a supervisor's restart strategy
 
 Both the Typed Actor supervisor configuration and the Actor supervisor configuration take a ‘FaultHandlingStrategy’ instance which defines the fault management. The different strategies are:
 
-* AllForOne
-* OneForOne
+- AllForOne
+- OneForOne
 
 These have the semantics outlined in the section above.
 
@@ -86,8 +90,8 @@ Defining actor life-cycle
 
 The other common configuration element is the ‘LifeCycle’ which defines the life-cycle. The supervised actor can define one of two different life-cycle configurations:
 
-* Permanent: which means that the actor will always be restarted.
-* Temporary: which means that the actor will **not** be restarted, but it will be shut down through the regular shutdown process so the 'postStop' callback function will called.
+- Permanent: which means that the actor will always be restarted.
+- Temporary: which means that the actor will **not** be restarted, but it will be shut down through the regular shutdown process so the 'postStop' callback function will called.
 
 Here is an example of how to define the life-cycle:
 
@@ -126,7 +130,7 @@ The Actor’s supervision can be declaratively defined by creating a ‘Supervis
 Supervisors created like this are implicitly instantiated and started.
 
 To configure a handler function for when the actor underlying the supervisor receives a MaximumNumberOfRestartsWithinTimeRangeReached message, you can specify
- a Procedure2<ActorRef,MaximumNumberOfRestartsWithinTimeRangeReached> when creating the SupervisorConfig. This handler will be called with the ActorRef of the supervisor and the
+a Procedure2<ActorRef,MaximumNumberOfRestartsWithinTimeRangeReached> when creating the SupervisorConfig. This handler will be called with the ActorRef of the supervisor and the
 MaximumNumberOfRestartsWithinTimeRangeReached message.
 
 .. code-block:: java
@@ -254,10 +258,13 @@ The supervising Actor also needs to define a fault handler that defines the rest
 
 The different options are:
 
-* AllForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
-  * trapExit is an Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
-* OneForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
-  * trapExit is an Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
+- AllForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
+
+  - trapExit is an Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
+
+- OneForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
+
+  - trapExit is an Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
 
 Here is an example:
 
@@ -346,8 +353,8 @@ Supervised actors have the option to reply to the initial sender within preResta
       }
   }
 
-* A reply within preRestart or postRestart must be a safe reply via getContext().replySafe() because a getContext().replyUnsafe() will throw an exception when the actor is restarted without having failed. This can be the case in context of AllForOne restart strategies.
-* A reply within postStop must be a safe reply via getContext().replySafe() because a getContext().replyUnsafe() will throw an exception when the actor has been stopped by the application (and not by a supervisor) after successful execution of receive (or no execution at all).
+- A reply within preRestart or postRestart must be a safe reply via getContext().replySafe() because a getContext().replyUnsafe() will throw an exception when the actor is restarted without having failed. This can be the case in context of AllForOne restart strategies.
+- A reply within postStop must be a safe reply via getContext().replySafe() because a getContext().replyUnsafe() will throw an exception when the actor has been stopped by the application (and not by a supervisor) after successful execution of receive (or no execution at all).
 
 Handling too many actor restarts within a specific time limit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -366,10 +373,10 @@ Now, what happens if this limit is reached?
 
 What will happen is that the failing actor will send a system message to its supervisor called 'MaximumNumberOfRestartsWithinTimeRangeReached' with the following these properties:
 
-* victim: ActorRef
-* maxNrOfRetries: int
-* withinTimeRange: int
-* lastExceptionCausingRestart: Throwable
+- victim: ActorRef
+- maxNrOfRetries: int
+- withinTimeRange: int
+- lastExceptionCausingRestart: Throwable
 
 If you want to be able to take action upon this event (highly recommended) then you have to create a message handle for it in the supervisor.
 
@@ -479,6 +486,7 @@ If the parent TypedActor (supervisor) wants to be able to do handle failing chil
 For convenience there is an overloaded link that takes trapExit and faultHandler for the supervisor as arguments. Here is an example:
 
 .. code-block:: java
+
   import static akka.actor.TypedActor.*;
   import static akka.config.Supervision.*;
 

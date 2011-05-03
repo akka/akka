@@ -1,6 +1,10 @@
 Fault Tolerance Through Supervisor Hierarchies (Scala)
 ======================================================
 
+.. sidebar:: Contents
+
+   .. contents:: :local:
+
 Module stability: **SOLID**
 
 The "let it crash" approach to fault/error handling, implemented by linking actors, is very different to what Java and most non-concurrency oriented languages/frameworks have adopted. It's a way of dealing with failure that is designed for concurrent and distributed systems.
@@ -10,15 +14,15 @@ Concurrency
 
 Throwing an exception in concurrent code (let's assume we are using non-linked actors), will just simply blow up the thread that currently executes the actor.
 
-# There is no way to find out that things went wrong (apart from inspecting the stack trace).
-# There is nothing you can do about it.
+- There is no way to find out that things went wrong (apart from inspecting the stack trace).
+- There is nothing you can do about it.
 
 Here actors provide a clean way of getting notification of the error and do something about it.
 
 Linking actors also allow you to create sets of actors where you can be sure that either:
 
-# All are dead
-# None are dead
+- All are dead
+- None are dead
 
 This is very useful when you have thousands of concurrent actors. Some actors might have implicit dependencies and together implement a service, computation, user session etc.
 
@@ -241,10 +245,13 @@ The supervising Actor also needs to define a fault handler that defines the rest
 
 The different options are:
 
-* AllForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
-  * trapExit is a List or Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
-* OneForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
-  * trapExit is a List or Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
+- AllForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
+
+  - trapExit is a List or Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
+
+- OneForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
+
+  - trapExit is a List or Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
 
 Here is an example:
 
@@ -321,8 +328,8 @@ Supervised actors have the option to reply to the initial sender within preResta
     }
   }
 
-* A reply within preRestart or postRestart must be a safe reply via self.reply_? because an unsafe self.reply will throw an exception when the actor is restarted without having failed. This can be the case in context of AllForOne restart strategies.
-* A reply within postStop must be a safe reply via self.reply_? because an unsafe self.reply will throw an exception when the actor has been stopped by the application (and not by a supervisor) after successful execution of receive (or no execution at all).
+- A reply within preRestart or postRestart must be a safe reply via `self.reply_?` because an unsafe self.reply will throw an exception when the actor is restarted without having failed. This can be the case in context of AllForOne restart strategies.
+- A reply within postStop must be a safe reply via `self.reply_?` because an unsafe self.reply will throw an exception when the actor has been stopped by the application (and not by a supervisor) after successful execution of receive (or no execution at all).
 
 Handling too many actor restarts within a specific time limit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -431,6 +438,7 @@ If the parent TypedActor (supervisor) wants to be able to do handle failing chil
 For convenience there is an overloaded link that takes trapExit and faultHandler for the supervisor as arguments. Here is an example:
 
 .. code-block:: scala
+
   import akka.actor.TypedActor._
 
   val foo = newInstance(classOf[Foo], 1000)
