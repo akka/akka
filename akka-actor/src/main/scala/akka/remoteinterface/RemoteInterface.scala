@@ -136,8 +136,8 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
 
 abstract class RemoteSupport extends ListenerManagement with RemoteServerModule with RemoteClientModule {
 
-  lazy val eventHandler: ActorRef = {
-    val handler = Actor.actorOf[RemoteEventHandler].start()
+  val eventHandler: ActorRef = {
+    val handler = Actor.actorOf[RemoteEventHandler](classOf[RemoteEventHandler].getName).start()
     // add the remote client and server listener that pipes the events to the event handler system
     addListener(handler)
     handler
@@ -146,8 +146,8 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   def shutdown {
     eventHandler.stop()
     removeListener(eventHandler)
-    this.shutdownClientModule
-    this.shutdownServerModule
+    this.shutdownClientModule()
+    this.shutdownServerModule()
     clear
   }
 

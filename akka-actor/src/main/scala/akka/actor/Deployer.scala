@@ -106,18 +106,17 @@ object DeploymentConfig {
   // --- Replication
   // --------------------------------
   sealed trait Replication
-  class ReplicationBase(factor: Int) extends Replication {
+  case class Replicate(factor: Int) extends Replication {
     if (factor < 1) throw new IllegalArgumentException("Replication factor can not be negative or zero")
   }
-  case class Replicate(factor: Int) extends ReplicationBase(factor)
 
   // For Java API
   case class AutoReplicate() extends Replication
-  case class NoReplicas() extends ReplicationBase(1)
+  case class NoReplicas() extends Replication
 
   // For Scala API
   case object AutoReplicate extends Replication
-  case object NoReplicas extends ReplicationBase(1)
+  case object NoReplicas extends Replication
 
   // --------------------------------
   // --- State
@@ -139,71 +138,66 @@ object DeploymentConfig {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Deployer {
-  lazy val useClusterDeployer = ReflectiveAccess.ClusterModule.isEnabled
-  lazy val cluster            = ReflectiveAccess.ClusterModule.clusterDeployer
-  lazy val local              = new LocalDeployer
+
+  val defaultAddress = Home("localhost", 2552) // FIXME allow configuring node-local default hostname and port
+
+  lazy val instance: ReflectiveAccess.ClusterModule.ClusterDeployer = {
+    val deployer =
+      if (ReflectiveAccess.ClusterModule.isEnabled) ReflectiveAccess.ClusterModule.clusterDeployer
+      else LocalDeployer
+    deployer.init(deploymentsInConfig)
+    deployer
+  }
+
+  def shutdown() {
+    instance.shutdown()
+  }
 
   def deploy(deployment: Deploy) {
     if (deployment eq null) throw new IllegalArgumentException("Deploy can not be null")
     val address = deployment.address
     Address.validate(address)
-    if (useClusterDeployer) cluster.deploy(deployment)
-    else                    local.deploy(deployment)
+    instance.deploy(deployment)
   }
 
   def deploy(deployment: Seq[Deploy]) {
     deployment foreach (deploy(_))
   }
 
-  private def deployLocally(deployment: Deploy) {
-    deployment match {
-      case Deploy(address, Direct, Clustered(Home(hostname, port), _, _)) =>
-        val currentRemoteServerAddress = Actor.remote.address
-        if (currentRemoteServerAddress.getHostName == hostname) { // are we on the right server?
-          if (currentRemoteServerAddress.getPort != port) throw new ConfigurationException(
-            "Remote server started on [" + hostname +
-            "] is started on port [" + currentRemoteServerAddress.getPort +
-            "] can not use deployment configuration [" + deployment +
-            "] due to invalid port [" + port + "]")
-
-          // FIXME how to handle registerPerSession
-//          Actor.remote.register(Actor.newLocalActorRef(address))
-        }
-
-      case Deploy(_, routing, Clustered(Home(hostname, port), replicas, state)) =>
-        // FIXME clustered actor deployment
-
-      case _ => // local deployment do nothing
-    }
-  }
-
   /**
    * Undeploy is idemponent. E.g. safe to invoke multiple times.
    */
   def undeploy(deployment: Deploy) {
-    if (useClusterDeployer) cluster.undeploy(deployment)
-    else                    local.undeploy(deployment)
+    instance.undeploy(deployment)
   }
 
   def undeployAll() {
-    if (useClusterDeployer) cluster.undeployAll()
-    else                    local.undeployAll()
+    instance.undeployAll()
   }
+
+  def isLocal(deployment: Deploy): Boolean = deployment match {
+    case Deploy(_, _, Local) => true
+    case _                   => false
+  }
+
+  def isClustered(deployment: Deploy): Boolean = isLocal(deployment)
+
+  def isLocal(address: String): Boolean = isLocal(deploymentFor(address))
+
+  def isClustered(address: String): Boolean = !isLocal(address)
 
   /**
    * Same as 'lookupDeploymentFor' but throws an exception if no deployment is bound.
    */
-  def deploymentFor(address: String): Deploy = {
+  private[akka] def deploymentFor(address: String): Deploy = {
     lookupDeploymentFor(address) match {
       case Some(deployment) => deployment
       case None             => thrownNoDeploymentBoundException(address)
     }
   }
 
-  def lookupDeploymentFor(address: String): Option[Deploy] = {
-    val deployment_? =
-      if (useClusterDeployer) cluster.lookupDeploymentFor(address)
-      else                    local.lookupDeploymentFor(address)
+  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = {
+    val deployment_? = instance.lookupDeploymentFor(address)
     if (deployment_?.isDefined && (deployment_?.get ne null)) deployment_?
     else {
       val newDeployment =
@@ -226,10 +220,28 @@ object Deployer {
     }
   }
 
+  private[akka] def deploymentsInConfig: List[Deploy] = {
+    for {
+      address    <- addressesInConfig
+      deployment <- lookupInConfig(address)
+    } yield deployment
+  }
+
+  private[akka] def addressesInConfig: List[String] = {
+    val deploymentPath = "akka.actor.deployment"
+    Config.config.getSection(deploymentPath) match {
+      case None                => Nil
+      case Some(addressConfig) =>
+        addressConfig.map.keySet
+          .map(path => path.substring(0, path.indexOf(".")))
+          .toSet.toList // toSet to force uniqueness
+    }
+  }
+
   /**
    * Lookup deployment in 'akka.conf' configuration file.
    */
-  def lookupInConfig(address: String): Option[Deploy] = {
+  private[akka] def lookupInConfig(address: String): Option[Deploy] = {
 
     // --------------------------------
     // akka.actor.deployment.<address>
@@ -273,6 +285,7 @@ object Deployer {
             // akka.actor.deployment.<address>.clustered.home
             // --------------------------------
             val home = clusteredConfig.getListAny("home") match {
+              case Nil => defaultAddress
               case List(hostname: String, port: String) =>
                 try {
                   Home(hostname, port.toInt)
@@ -285,14 +298,14 @@ object Deployer {
                 }
               case invalid => throw new ConfigurationException(
                 "Config option [" + addressPath +
-                ".clustered.home] needs to be an arrayon format [\"hostname\", port] - was [" +
+                ".clustered.home] needs to be an array on format [\"hostname\", port] - was [" +
                 invalid + "]")
             }
 
             // --------------------------------
             // akka.actor.deployment.<address>.clustered.replicas
             // --------------------------------
-            val replicas = clusteredConfig.getAny("replicas", 1) match {
+            val replicas = clusteredConfig.getAny("replicas", "1") match {
               case "auto"               => AutoReplicate
               case "1"                  => NoReplicas
               case nrOfReplicas: String =>
@@ -319,17 +332,6 @@ object Deployer {
     }
   }
 
-  def isLocal(deployment: Deploy): Boolean = deployment match {
-    case Deploy(_, _, Local) => true
-    case _                   => false
-  }
-
-  def isClustered(deployment: Deploy): Boolean = isLocal(deployment)
-
-  def isLocal(address: String): Boolean = isLocal(deploymentFor(address))
-
-  def isClustered(address: String): Boolean = !isLocal(address)
-
   private def throwDeploymentBoundException(deployment: Deploy): Nothing = {
     val e = new DeploymentAlreadyBoundException(
       "Address [" + deployment.address +
@@ -344,31 +346,63 @@ object Deployer {
     EventHandler.error(e, this, e.getMessage)
     throw e
   }
+
+  private def deployLocally(deployment: Deploy) {
+    deployment match {
+      case Deploy(address, Direct, Clustered(Home(hostname, port), _, _)) =>
+        val currentRemoteServerAddress = Actor.remote.address
+        if (currentRemoteServerAddress.getHostName == hostname) { // are we on the right server?
+          if (currentRemoteServerAddress.getPort != port) throw new ConfigurationException(
+            "Remote server started on [" + hostname +
+            "] is started on port [" + currentRemoteServerAddress.getPort +
+            "] can not use deployment configuration [" + deployment +
+            "] due to invalid port [" + port + "]")
+
+          // FIXME how to handle registerPerSession
+//          Actor.remote.register(Actor.newLocalActorRef(address))
+        }
+
+      case Deploy(_, routing, Clustered(Home(hostname, port), replicas, state)) =>
+        // FIXME clustered actor deployment
+
+      case _ => // local deployment do nothing
+    }
+  }
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class LocalDeployer {
+object LocalDeployer {
   private val deployments = new ConcurrentHashMap[String, Deploy]
 
-  def deploy(deployment: Deploy) {
+  private[akka] def init(deployments: List[Deploy]) {
+    EventHandler.info(this, "Initializing local deployer")
+    EventHandler.info(this, "Deploying locally [\n" + deployments.mkString("\n\t") + "\n]")
+    deployments foreach (deploy(_)) // deploy
+  }
+
+  private[akka] def shutdown() {
+    undeployAll()
+    deployments.clear()
+  }
+
+  private[akka] def deploy(deployment: Deploy) {
     if (deployments.putIfAbsent(deployment.address, deployment) != deployment) {
-      println("----- DEPLOYING " + deployment)
       // FIXME do automatic 'undeploy' and redeploy (perhaps have it configurable if redeploy should be done or exception thrown)
       // throwDeploymentBoundException(deployment)
     }
   }
 
-  def undeploy(deployment: Deploy) {
+  private[akka] def undeploy(deployment: Deploy) {
     deployments.remove(deployment.address)
   }
 
-  def undeployAll() {
+  private[akka] def undeployAll() {
     deployments.clear()
   }
 
-  def lookupDeploymentFor(address: String): Option[Deploy] = {
+  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = {
     val deployment = deployments.get(address)
     if (deployment eq null) None
     else Some(deployment)

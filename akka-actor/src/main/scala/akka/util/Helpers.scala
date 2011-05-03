@@ -31,7 +31,7 @@ object Helpers {
     case elem: T       => Array(elem)
   }
 
-  def ignore[E : Manifest](body: => Unit): Unit = {
+  def ignore[E : Manifest](body: => Unit) {
     try {
       body
     }
@@ -40,12 +40,12 @@ object Helpers {
     }
   }
 
-  def withPrintStackTraceOnError(body: => Unit) = {
+  def withPrintStackTraceOnError(body: => Unit) {
     try {
       body
     } catch {
       case e: Throwable =>
-        EventHandler.error(e, this, "")
+        EventHandler.error(e, this, e.toString)
         throw e
     }
   }
@@ -106,7 +106,7 @@ object Helpers {
   class ResultOrError[R](result: R){
     private[this] var contents: Either[R, Throwable] = Left(result)
 
-    def update(value: => R) = {
+    def update(value: => R) {
       contents = try {
         Left(value)
       } catch {

@@ -99,7 +99,31 @@ object EventHandler extends ListenerManagement {
   }
 
   def start() {
-    info(this, "Starting up EventHandler")
+    try {
+      val defaultListeners = config.getList("akka.event-handlers") match {
+        case Nil       => "akka.event.EventHandler$DefaultListener" :: Nil
+        case listeners => listeners
+      }
+      defaultListeners foreach { listenerName =>
+        try {
+          ReflectiveAccess.getClassFor[Actor](listenerName) map { clazz =>
+            val listener = Actor.actorOf(clazz, listenerName).start()
+            addListener(listener)
+          }
+        } catch {
+          case e: akka.actor.DeploymentAlreadyBoundException => // do nothing
+          case e: Exception =>
+            throw new ConfigurationException(
+              "Event Handler specified in config can't be loaded [" + listenerName +
+              "] due to [" + e.toString + "]")
+        }
+      }
+      info(this, "Starting up EventHandler")
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        throw new ConfigurationException("Could not start Event Handler due to [" + e.toString + "]")
+    }
   }
 
   /**
@@ -213,24 +237,6 @@ object EventHandler extends ListenerManagement {
           message))
       case event =>
         println(generic.format(formattedTimestamp, event.toString))
-    }
-  }
-
-  val defaultListeners = config.getList("akka.event-handlers") match {
-    case Nil       => "akka.event.EventHandler$DefaultListener" :: Nil
-    case listeners => listeners
-  }
-  defaultListeners foreach { listenerName =>
-    try {
-      ReflectiveAccess.getClassFor[Actor](listenerName) map { clazz =>
-        addListener(Actor.actorOf(clazz, listenerName).start)
-      }
-    } catch {
-      case e: akka.actor.DeploymentAlreadyBoundException => // do nothing
-      case e: Exception =>
-        throw new ConfigurationException(
-          "Event Handler specified in config can't be loaded [" + listenerName +
-          "] due to [" + e.toString + "]")
     }
   }
 

@@ -4,24 +4,37 @@
 
 package akka.cluster
 
-import akka.actor.DeploymentConfig.Deploy
-import akka.actor.DeploymentException
+import akka.actor.{DeploymentConfig, Deployer, DeploymentException}
+import DeploymentConfig._
 import akka.event.EventHandler
 import akka.util.Switch
+import akka.util.Helpers._
 import akka.cluster.zookeeper.AkkaZkClient
 
 import org.apache.zookeeper.CreateMode
+import org.apache.zookeeper.recipes.lock.{WriteLock, LockListener}
 
 import scala.collection.JavaConversions.collectionAsScalaIterable
+
+import com.eaio.uuid.UUID
+
+import java.util.concurrent.CountDownLatch
+import org.I0Itec.zkclient.exception.{ZkNoNodeException, ZkNodeExistsException}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ClusterDeployer {
-  val deploymentPath        = "deployment"
-  val deploymentAddressPath = deploymentPath + "/%s"
+  val clusterName                 = Cluster.name
+  val nodeName                    = new UUID().toString // FIXME how to configure node name? now using UUID
+  val clusterPath                 = "/%s" format clusterName
+  val clusterDeploymentLockPath   = clusterPath + "/deployment-lock"
+  val deploymentPath              = clusterPath + "/deployment"
+  val baseNodes                   = List(clusterPath, clusterDeploymentLockPath, deploymentPath)
+  val deploymentAddressPath       = deploymentPath + "/%s"
 
-  private val isConnected = new Switch(false)
+  private val isConnected         = new Switch(false)
+  private val deploymentCompleted = new CountDownLatch(1)
 
   private lazy val zkClient = {
     val zk = new AkkaZkClient(
@@ -30,54 +43,115 @@ object ClusterDeployer {
       Cluster.connectionTimeout,
       Cluster.defaultSerializer)
     EventHandler.info(this, "ClusterDeployer started")
-    isConnected.switchOn
     zk
+  }
+
+  // FIXME invert dependency; let Cluster have an instance of ClusterDeployer instead
+  lazy val cluster = Cluster(NodeAddress(clusterName, nodeName))
+
+  private val clusterDeploymentLockListener = new LockListener {
+    def lockAcquired() {
+      EventHandler.debug(this, "Clustered deployment started")
+    }
+
+    def lockReleased() {
+      EventHandler.debug(this, "Clustered deployment completed")
+      deploymentCompleted.countDown()
+    }
+  }
+
+  private lazy val deploymentLock = new WriteLock(
+    zkClient.connection.getZookeeper, clusterDeploymentLockPath, null, clusterDeploymentLockListener) {
+    private val ownerIdField = classOf[WriteLock].getDeclaredField("ownerId")
+    ownerIdField.setAccessible(true)
+    def leader: String = ownerIdField.get(this).asInstanceOf[String]
+  }
+
+  private val systemDeployments = List(
+    Deploy(
+      RemoteClusterDaemon.ADDRESS, Direct,
+      Clustered(Deployer.defaultAddress, NoReplicas, Stateless))
+  )
+
+  private[akka] def init(deployments: List[Deploy]) {
+    isConnected.switchOn {
+      baseNodes.foreach { path =>
+        try {
+          ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
+          EventHandler.debug(this, "Created node [%s]".format(path))
+        } catch {
+          case e =>
+            val error = new DeploymentException(e.toString)
+            EventHandler.error(error, this)
+            throw error
+        }
+      }
+
+      val allDeployments = deployments ::: systemDeployments
+      EventHandler.info(this, "Initializing cluster deployer")
+      if (deploymentLock.lock()) {         // try to be the one doing the clustered deployment
+        EventHandler.info(this, "Deploying to cluster [\n" + allDeployments.mkString("\n\t") + "\n]")
+        allDeployments foreach (deploy(_)) // deploy
+        deploymentLock.unlock()            // signal deployment complete
+      } else {
+        deploymentCompleted.await()        // wait until deployment is completed
+      }
+    }
   }
 
   def shutdown() {
     isConnected switchOff {
+      undeployAll()
       zkClient.close()
     }
   }
 
-  def deploy(deployment: Deploy) {
+  private[akka] def deploy(deployment: Deploy) {
+    val path  = deploymentAddressPath.format(deployment.address)
     try {
-      val path  = deploymentAddressPath.format(deployment.address)
-      zkClient.create(path, null, CreateMode.PERSISTENT)
+      ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
       zkClient.writeData(path, deployment)
 
-      // FIXME trigger some deploy action?
+      // FIXME trigger cluster-wide deploy action
     } catch {
-      case e => handleError(new DeploymentException("Could store deployment data [" + deployment + "] in ZooKeeper due to: " + e))
+      case e: NullPointerException =>
+        handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper since client session is closed"))
+      case e: Exception =>
+        handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper due to: " + e))
     }
   }
 
-  def undeploy(deployment: Deploy) {
+  private[akka] def undeploy(deployment: Deploy) {
     try {
       zkClient.delete(deploymentAddressPath.format(deployment.address))
 
-      // FIXME trigger some undeploy action?
+      // FIXME trigger cluster-wide undeployment action
     } catch {
-      case e => handleError(new DeploymentException("Could undeploy deployment [" + deployment + "] in ZooKeeper due to: " + e))
+      case e: Exception =>
+        handleError(new DeploymentException("Could not undeploy deployment [" + deployment + "] in ZooKeeper due to: " + e))
     }
   }
 
-  def undeployAll() {
+  private[akka] def undeployAll() {
     try {
       for {
         child      <- collectionAsScalaIterable(zkClient.getChildren(deploymentPath))
         deployment <- lookupDeploymentFor(child)
       } undeploy(deployment)
     } catch {
-      case e => handleError(new DeploymentException("Could undeploy all deployment data in ZooKeeper due to: " + e))
+      case e: Exception =>
+        handleError(new DeploymentException("Could not undeploy all deployment data in ZooKeeper due to: " + e))
     }
   }
 
-  def lookupDeploymentFor(address: String): Option[Deploy] = {
+  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = {
     try {
       Some(zkClient.readData(deploymentAddressPath.format(address)).asInstanceOf[Deploy])
     } catch {
-      case e: Exception => None
+      case e: ZkNoNodeException => None
+      case e: Exception =>
+        EventHandler.warning(this, e.toString)
+        None
     }
   }
 

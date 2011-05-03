@@ -117,6 +117,7 @@ object Cluster {
   val UUID_PREFIX  = "uuid:".intern
 
   // config options
+  val name                        = config.getString("akka.cluster.name",                                   "default")
   val zooKeeperServers            = config.getString("akka.cluster.zookeeper-server-addresses",             "localhost:2181")
   val remoteServerPort            = config.getInt("akka.cluster.remote-server-port",                        2552)
   val sessionTimeout              = Duration(config.getInt("akka.cluster.session-timeout",                  60), TIME_UNIT).toMillis.toInt
@@ -287,9 +288,6 @@ object Cluster {
    */
   def startLocalCluster(dataPath: String, logPath: String, port: Int, tickTime: Int): ZkServer = {
     try {
-      EventHandler.info(this,
-          "Starting local ZooKeeper server on\n\tport [%s]\n\tdata path [%s]\n\tlog path [%s]\n\ttick time [%s]"
-            .format(port, dataPath, logPath, tickTime))
       val zkServer = AkkaZooKeeper.startLocalServer(dataPath, logPath, port, tickTime)
       _zkServer.set(Some(zkServer))
       zkServer
@@ -395,10 +393,6 @@ class ClusterNode private[akka] (
   }, "akka.cluster.remoteClientLifeCycleListener").start
 
   val remoteDaemon = actorOf(new RemoteClusterDaemon(this), RemoteClusterDaemon.ADDRESS).start
-  import DeploymentConfig._
-  Deployer.deploy(Deploy(
-    RemoteClusterDaemon.ADDRESS, Direct,
-    Clustered(Home(nodeAddress.hostname, nodeAddress.port), NoReplicas, Stateless)))
 
   val remoteService: RemoteSupport = {
     val remote = new akka.remote.netty.NettyRemoteSupport

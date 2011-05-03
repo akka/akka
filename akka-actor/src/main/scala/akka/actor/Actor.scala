@@ -15,6 +15,7 @@ import akka.AkkaException
 import scala.reflect.BeanProperty
 
 import com.eaio.uuid.UUID
+import akka.event.EventHandler
 
 /**
  * Life-cycle messages for the Actors
@@ -200,52 +201,58 @@ object Actor extends ListenerManagement {
     import DeploymentConfig._
     Address.validate(address)
 
-    Deployer.deploymentFor(address) match {
-      case Deploy(_, router, Local) =>
-        // FIXME handle 'router' in 'Local' actors
-        newLocalActorRef(clazz, address)
+    try {
+      Deployer.deploymentFor(address) match {
+        case Deploy(_, router, Local) =>
+          // FIXME handle 'router' in 'Local' actors
+          newLocalActorRef(clazz, address)
 
-      case Deploy(_, router, Clustered(Home(hostname, port), replication  , state)) =>
-        sys.error("Clustered deployment not yet supported")
-        /*
-        if (Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
-        val remoteAddress = Actor.remote.address
-        if (remoteAddress.getHostName == hostname && remoteAddress.getPort == port) {
-          // home node for actor
-          if (!node.isClustered(address)) node.store(clazz, address)
-          node.use(address).head
-        } else {
-          val router  =
-          node.ref(address, router)
-        }
-        */
-        /*
-          2. Check Home(..)
-            a) If home is same as Actor.remote.address then:
-              - check if actor is stored in ZK, if not; node.store(..)
-              - checkout actor using node.use(..)
-            b) If not the same
-              - check out actor using node.ref(..)
+        case Deploy(_, router, Clustered(Home(hostname, port), replication  , state)) =>
+          sys.error("Clustered deployment not yet supported")
+          /*
+          if (Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
+          val remoteAddress = Actor.remote.address
+          if (remoteAddress.getHostName == hostname && remoteAddress.getPort == port) {
+            // home node for actor
+            if (!node.isClustered(address)) node.store(clazz, address)
+            node.use(address).head
+          } else {
+            val router  =
+            node.ref(address, router)
+          }
+          */
+          /*
+            2. Check Home(..)
+              a) If home is same as Actor.remote.address then:
+                - check if actor is stored in ZK, if not; node.store(..)
+                - checkout actor using node.use(..)
+              b) If not the same
+                - check out actor using node.ref(..)
 
-          Misc stuff:
-            - How to define a single ClusterNode to use? Where should it be booted up? How should it be configured?
-            - Deployer should:
-              1. Check if deployment exists in ZK
-              2. If not, upload it
-            - ClusterNode API and Actor.remote API should be made private[akka]
-            - Rewrite ClusterSpec or remove it
-            - Actor.stop on home node (actor checked out with node.use(..)) should do node.remove(..) of actor
-            - Should we allow configuring of session-scoped remote actors? How?
+            Misc stuff:
+              - How to define a single ClusterNode to use? Where should it be booted up? How should it be configured?
+              - Deployer should:
+                1. Check if deployment exists in ZK
+                2. If not, upload it
+              - ClusterNode API and Actor.remote API should be made private[akka]
+              - Rewrite ClusterSpec or remove it
+              - Actor.stop on home node (actor checked out with node.use(..)) should do node.remove(..) of actor
+              - Should we allow configuring of session-scoped remote actors? How?
 
 
-         */
+           */
 
-        RemoteActorRef(address, Actor.TIMEOUT, None, ActorType.ScalaActor)
+          RemoteActorRef(address, Actor.TIMEOUT, None, ActorType.ScalaActor)
 
-      case invalid => throw new IllegalActorStateException(
-        "Could not create actor [" + clazz.getName +
-        "] with address [" + address +
-        "], not bound to a valid deployment scheme [" + invalid + "]")
+        case invalid => throw new IllegalActorStateException(
+          "Could not create actor [" + clazz.getName +
+          "] with address [" + address +
+          "], not bound to a valid deployment scheme [" + invalid + "]")
+      }
+    } catch {
+      case e: DeploymentException =>
+        EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
+        newLocalActorRef(clazz, address) // if deployment fails, fall back to local actors
     }
   }
 

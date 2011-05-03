@@ -72,6 +72,8 @@ object ReflectiveAccess {
     }
 
     type ClusterDeployer = {
+      def init(deployments: List[Deploy])
+      def shutdown()
       def deploy(deployment: Deploy)
       def undeploy(deployment: Deploy)
       def undeployAll()
@@ -184,6 +186,9 @@ object ReflectiveAccess {
     ctor.setAccessible(true)
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
+    case e: java.lang.reflect.InvocationTargetException =>
+      EventHandler.debug(this, e.getCause.toString)
+      None
     case e: Exception =>
       EventHandler.debug(this, e.toString)
       None
