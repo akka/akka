@@ -1,3 +1,5 @@
+.. _stm-scala:
+
 Software Transactional Memory (Scala)
 =====================================
 

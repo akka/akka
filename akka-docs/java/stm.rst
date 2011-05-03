@@ -1,3 +1,5 @@
+.. _stm-java:
+
 Software Transactional Memory (Java)
 ====================================
 

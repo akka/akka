@@ -1,3 +1,5 @@
+.. _untyped-actors-java:
+
 Actors (Java)
 =============
 

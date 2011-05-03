@@ -1,8 +1,8 @@
 What is Akka?
-====
+=============
 
 **Akka**
-^^^^^^
+--------
 
 **Simpler Scalability, Fault-Tolerance, Concurrency & Remoting through Actors**
 
@@ -11,23 +11,25 @@ We believe that writing correct concurrent, fault-tolerant and scalable applicat
 
 Download from `<http://akka.io/downloads/>`_
 
-**Akka implements a unique hybrid of:**
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Akka implements a unique hybrid of:
+-----------------------------------
 
-* `Actors <untyped-actors-java>`_, which gives you:
-  * Simple and high-level abstractions for concurrency and parallelism.
-  * Asynchronous, non-blocking and highly performant event-driven programming model.
-  * Very lightweight event-driven processes (create ~6.5 million actors on 4GB RAM).
-* `Failure management <fault-tolerance-java>`_ through supervisor hierarchies with `let-it-crash <http://letitcrash.com>`_ semantics. Excellent for writing highly fault-tolerant systems that never stop, systems that self-heal.
-* `Software Transactional Memory <stm-java>`_ (STM). (Distributed transactions coming soon).
-* `Transactors <transactors-java>`_: combine actors and STM into transactional actors. Allows you to compose atomic message flows with automatic retry and rollback.
-* `Remote actors <remote-actors-java>`_: highly performant distributed actors with remote supervision and error management.
-* Java and Scala API.
+- :ref:`untyped-actors-java`, which gives you:
 
-**Akka can be used in two different ways:**
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  - Simple and high-level abstractions for concurrency and parallelism.
+  - Asynchronous, non-blocking and highly performant event-driven programming model.
+  - Very lightweight event-driven processes (create ~6.5 million actors on 4GB RAM).
 
-* As a library: used by a web app, to be put into ‘WEB-INF/lib’ or as a regular JAR on your classpath.
-* As a microkernel: stand-alone kernel, embedding a servlet container and all the other modules.
+- :ref:`fault-tolerance-java` through supervisor hierarchies with `let-it-crash <http://letitcrash.com>`_ semantics. Excellent for writing highly fault-tolerant systems that never stop, systems that self-heal.
+- :ref:`stm-java` (STM). (Distributed transactions coming soon).
+- :ref:`transactors-java`: combine actors and STM into transactional actors. Allows you to compose atomic message flows with automatic retry and rollback.
+- :ref:`remote-actors-java`: highly performant distributed actors with remote supervision and error management.
+- Java and Scala API.
 
-See the `Use-case and Deployment Scenarios <deployment-scenarios>`_ for details.
+Akka can be used in two different ways:
+---------------------------------------
+
+- As a library: used by a web app, to be put into ‘WEB-INF/lib’ or as a regular JAR on your classpath.
+- As a microkernel: stand-alone kernel, embedding a servlet container and all the other modules.
+
+See the ref:`deployment-scenarios` for details.

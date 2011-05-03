@@ -1,3 +1,5 @@
+.. _remote-actors-java:
+
 Remote Actors (Java)
 ====================
 
