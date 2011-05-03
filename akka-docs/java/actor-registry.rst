@@ -31,7 +31,7 @@ You can shut down all Actors in the system by invoking:
 
   registry().shutdownAll();
 
-If you want to know when a new Actor is added or to or removed from the registry, you can use the subscription API. You can register an Actor that should be notified when an event happens in the ActorRegistry:
+If you want to know when a new Actor is added to or removed from the registry, you can use the subscription API on the registry. You can register an Actor that should be notified when an event happens in the ActorRegistry:
 
 .. code-block:: java
 
