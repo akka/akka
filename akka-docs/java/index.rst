@@ -7,6 +7,7 @@ Java API
    untyped-actors
    typed-actors
    actor-registry
+   dataflow
    stm
    transactors
    remote-actors

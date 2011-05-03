@@ -8,6 +8,7 @@ Scala API
    typed-actors
    actor-registry
    futures
+   dataflow
    agents
    stm
    transactors
