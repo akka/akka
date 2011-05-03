@@ -10,7 +10,7 @@ import sbt._
 import sbt.CompileOrder._
 import spde._
 
-class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
+class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with AutoCompilerPlugins {
 
   // -------------------------------------------------------------------------------------------------------------------
   // Compile settings
@@ -26,6 +26,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   override def compileOptions     = super.compileOptions ++ scalaCompileSettings.map(CompileOption)
   override def javaCompileOptions = super.javaCompileOptions ++ javaCompileSettings.map(JavaCompileOption)
+  override def consoleOptions     = super.consoleOptions ++ compileOptions("-P:continuations:enable")
 
   // -------------------------------------------------------------------------------------------------------------------
   // All repositories *must* go here! See ModuleConigurations below.
