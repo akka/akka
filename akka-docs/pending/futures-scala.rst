@@ -17,10 +17,10 @@ Using an ``Actor``\'s ``!!!`` method to send a message will return a Future. To 
 
   val future = actor !!! msg
   val result: Any = future.apply
-  // or more simply
+  // or simply
   val result: Any = future()
 
-This will cause the current thread to block and wait for the ``Actor`` to 'complete' the ``Future`` with it's reply. Due to the dynamic nature of Akka's ``Actor``\s this result will be untyped and will default to ``Nothing``. The safest way to deal with this is to cast the result to an ``Any`` as is shown in the above example. You can also use the expected result type instead of ``Any``, but if an unexpected type were to be returned you will get a ``ClassCastException``. For more elegant ways to deal with this and to use the result without blocking refer to `Functional Futures`_.
+This will cause the current thread to block and wait for the ``Actor`` to 'complete' the ``Future`` with its reply. Due to the dynamic nature of Akka's ``Actor``\s this result will be untyped and will default to ``Nothing``. The safest way to deal with this is to cast the result to an ``Any`` as is shown in the above example. You can also use the expected result type instead of ``Any``, but if an unexpected type were to be returned you will get a ``ClassCastException``. For more elegant ways to deal with this and to use the result without blocking, refer to `Functional Futures`_.
 
 Use Directly
 ------------
@@ -60,7 +60,7 @@ The first method for working with ``Future`` functionally is ``map``. This metho
 
   val result = f2()
 
-In this example we are joining two strings together within a Future. Instead of waiting for this to complete, we apply our Function that calculates the length of the string using the 'map' method. Now we have a second Future that will contain an Int. When our original Future completes, it will also apply our Function and complete the second Future with that result. When we finally await the result, it will contain the number 10. Our original Future still contains the string "HelloWorld" and is unaffected by the 'map'.
+In this example we are joining two strings together within a Future. Instead of waiting for this to complete, we apply our Function that calculates the length of the string using the 'map' method. Now we have a second Future that will contain an Int. When our original Future completes, it will also apply our Function and complete the second Future with its result. When we finally await the result, it will contain the number 10. Our original Future still contains the string "HelloWorld" and is unaffected by the 'map'.
 
 Something to note when using these methods: if the Future is still being processed when one of these methods are called, it will be the completing thread that actually does the work. If the Future is already complete though, it will be run in our current thread. For example:
 
@@ -97,7 +97,7 @@ If we do the opposite:
 
 Our little string has been processed long before our 1 second sleep has finished. Because of this, the dispatcher has moved onto other messages that need processing and can no longer calculate the length of the string for us, instead it gets calculated in the current thread just as if we weren't using a Future.
 
-Normally this works quite well for us as it means there is very little overhead to running a quick Function. If there is a possibility of the Function taking a non-trivial amount of time to process it might be better to have this done concurrently, and for that we use 'flatMap':
+Normally this works quite well as it means there is very little overhead to running a quick Function. If there is a possibility of the Function taking a non-trivial amount of time to process it might be better to have this done concurrently, and for that we use 'flatMap':
 
 .. code-block:: scala
 
@@ -148,9 +148,9 @@ The example for comprehension above is an example of composing Futures. A common
 
   val result = f3()
 
-Here we have 2 actors processing a single message each. In the for comprehension we need to add the expected types in order to work with the results. Once the 2 results are available, they are being added together and sent to a third actor, which replies with a String, which we assign to 'result'.
+Here we have 2 actors processing a single message each. In the for comprehension we need to add the expected types in order to work with the results. Once the 2 results are available (note that we don't block to get these results!), they are being added together and sent to a third actor, which replies with a String, which we assign to 'result'.
 
-This is fine when dealing with a known amount of Actors, but can grow unwieldy if we have more then a handful. The 'sequence' and 'traverse' helper methods can make it easier to handle more complex use cases. Both of these methods are ways of turning a Traversable[Future[A]] into a Future[Traversable[A]]. For example:
+This is fine when dealing with a known amount of Actors, but can grow unwieldy if we have more then a handful. The 'sequence' and 'traverse' helper methods can make it easier to handle more complex use cases. Both of these methods are ways of turning, for a subclass T of Traversable, T[Future[A]] into a Future[T[A]]. For example:
 
 .. code-block:: scala
 
@@ -165,7 +165,7 @@ This is fine when dealing with a known amount of Actors, but can grow unwieldy i
 
 To better explain what happened in the example, Future.sequence is taking the List[Future[Int]] and turning it into a Future[List[Int]]. We can then use 'map' to work with the List[Int] directly, and we find the sum of the List.
 
-The 'traverse' method is similar to 'sequence', but it takes a Traversable[A] and a Function T => Future[B] to return a Future[Traversable[B]]. For example, to use 'traverse' to sum the first 100 odd numbers:
+The 'traverse' method is similar to 'sequence', but it takes a T[A] and a Function T => Future[B] to return a Future[T[B]], where T is again a subclass of Traversable. For example, to use 'traverse' to sum the first 100 odd numbers:
 
 .. code-block:: scala
 
@@ -179,7 +179,7 @@ This is the same result as this example:
 
 But it may be faster to use 'traverse' as it doesn't have to create an intermediate List[Future[Int]].
 
-This is just a sample of what can be done, but to use more advanced techniques it is easier to take advantage of Scalaz, which Akka has support for in it's akka-scalaz module.
+This is just a sample of what can be done, but to use more advanced techniques it is easier to take advantage of Scalaz, which Akka has support for in its akka-scalaz module.
 
 Scalaz
 ^^^^^^
