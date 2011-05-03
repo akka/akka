@@ -19,11 +19,8 @@ import java.net.{InetAddress, UnknownHostException}
 class AkkaException(message: String = "", cause: Throwable = null) extends RuntimeException(message, cause) with Serializable {
   val uuid = "%s_%s".format(AkkaException.hostname, newUuid)
 
-  override lazy val toString = {
-    val name = getClass.getName
-    val trace = stackTraceToString
-    "%s: %s\n[%s]\n%s".format(name, message, uuid, trace)
-  }
+  override lazy val toString =
+    "%s: %s\n[%s]\n%s".format(getClass.getName, message, uuid, stackTraceToString)
 
   def stackTraceToString = {
     val trace = getStackTrace

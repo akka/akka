@@ -15,6 +15,7 @@ import scala.reflect.BeanProperty
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.io.{PrintWriter, PrintStream}
+import java.lang.reflect.InvocationTargetException
 
 trait RemoteModule {
   val UUID_PREFIX = "uuid:".intern
@@ -186,18 +187,8 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    * </pre>
    */
   @deprecated("Will be removed after 1.1")
-  def actorOf(clazz: Class[_ <: Actor], host: String, port: Int): ActorRef = {
-    import ReflectiveAccess.{ createInstance, noParams, noArgs }
-    clientManagedActorOf(() =>
-        createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs) match {
-            case r: Right[_, Actor] => r.b
-            case l: Left[Exception, _] => throw new ActorInitializationException(
-              "Could not instantiate Actor" +
-              "\nMake sure Actor is NOT defined inside a class/trait," +
-              "\nif so put it outside the class/trait, f.e. in a companion object," +
-              "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", l.a)
-          }, host, port)
-  }
+  def actorOf(clazz: Class[_ <: Actor], host: String, port: Int): ActorRef =
+    clientManagedActorOf(() => createActorFromClass(clazz), host, port)
 
   /**
    * Creates a Client-managed ActorRef out of the Actor of the specified Class.
@@ -215,17 +206,26 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    * </pre>
    */
   @deprecated("Will be removed after 1.1")
-  def actorOf[T <: Actor : Manifest](host: String, port: Int): ActorRef = {
+  def actorOf[T <: Actor : Manifest](host: String, port: Int): ActorRef =
+    clientManagedActorOf(() => createActorFromClass(manifest.erasure), host, port)
+
+
+  protected def createActorFromClass(clazz: Class[_]): Actor = {
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
-    clientManagedActorOf(() =>
-      createInstance[Actor](manifest[T].erasure.asInstanceOf[Class[_]], noParams, noArgs) match {
-          case r: Right[_, Actor] => r.b
-          case l: Left[Exception, _] => throw new ActorInitializationException(
-            "Could not instantiate Actor" +
-            "\nMake sure Actor is NOT defined inside a class/trait," +
-            "\nif so put it outside the class/trait, f.e. in a companion object," +
-            "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", l.a)
-        }, host, port)
+    createInstance[Actor](clazz, noParams, noArgs) match {
+      case Right(actor) => actor
+      case Left(exception) =>
+        val cause = exception match {
+          case i: InvocationTargetException => i.getTargetException
+          case _ => exception
+        }
+
+        throw new ActorInitializationException(
+          "Could not instantiate Actor of " + clazz +
+          "\nMake sure Actor is NOT defined inside a class/trait," +
+          "\nif so put it outside the class/trait, f.e. in a companion object," +
+          "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
+    }
   }
 
   protected override def manageLifeCycleOfListeners = false

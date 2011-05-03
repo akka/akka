@@ -14,6 +14,7 @@ import scala.reflect.BeanProperty
 import akka.util. {ReflectiveAccess, Duration}
 import akka.remoteinterface.RemoteSupport
 import akka.japi. {Creator, Procedure}
+import java.lang.reflect.InvocationTargetException
 
 /**
  * Life-cycle messages for the Actors
@@ -162,12 +163,18 @@ object Actor extends ListenerManagement {
   def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(() => {
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
     createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs) match {
-      case r: Right[Exception, Actor] => r.b
-      case l: Left[Exception, Actor] => throw new ActorInitializationException(
-        "Could not instantiate Actor of " + clazz +
-        "\nMake sure Actor is NOT defined inside a class/trait," +
-        "\nif so put it outside the class/trait, f.e. in a companion object," +
-        "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", l.a)
+      case Right(actor) => actor
+      case Left(exception) =>
+        val cause = exception match {
+          case i: InvocationTargetException => i.getTargetException
+          case _ => exception
+        }
+
+        throw new ActorInitializationException(
+          "Could not instantiate Actor of " + clazz +
+          "\nMake sure Actor is NOT defined inside a class/trait," +
+          "\nif so put it outside the class/trait, f.e. in a companion object," +
+          "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
     }
 
   }, None)
