@@ -11,4 +11,5 @@ Java API
    transactors
    remote-actors
    serialization
+   fault-tolerance
    dispatchers
