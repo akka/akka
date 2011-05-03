@@ -185,6 +185,7 @@ Shows how to shutdown dataflow variables and bind threads to values to be able t
 Example in Akka:
 
 .. code-block:: scala
+
   import  akka.dataflow.DataFlow._
 
   // create four 'Int' data flow variables

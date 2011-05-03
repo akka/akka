@@ -138,6 +138,7 @@ Shows how to shutdown dataflow variables and bind threads to values to be able t
 Example in Akka:
 
 .. code-block:: java
+
   import static akka.dataflow.DataFlow.*;
   import akka.japi.Effect;
 
