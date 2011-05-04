@@ -519,6 +519,8 @@ where Address is a custom class defined by the user. Using SJSON, I can store it
 
 .. code-block:: scala
 
+  val serializer = sjson.json.Serializer.SJSON
+
   addr should equal(
     serializer.in[Address](serializer.out(addr)))
 
@@ -539,6 +541,8 @@ or just as ..
 What you get back from is a JsValue, an abstraction of the JSON object model. For details of JsValueimplementation, refer to `dispatch-json <http://databinder.net/dispatch/About>`_ that SJSON uses as the underlying JSON parser implementation. Once I have the JsValue model, I can use use extractors to get back individual attributes ..
 
 .. code-block:: scala
+
+  val serializer = sjson.json.Serializer.SJSON
 
   val a = serializer.in[AnyRef](serializer.out(addr))
 
@@ -586,6 +590,8 @@ With SJSON, I can do the following:
 
   val c = Contact("Bob", Map("residence" -> a1, "office" -> a2, "club" -> a3))
   val co = serializer.out(c)
+
+  val serializer = sjson.json.Serializer.SJSON
 
   // with class specified
   c should equal(serializer.in[Contact](co))
@@ -669,6 +675,8 @@ The annotation @JSONProperty can be used to selectively ignore fields. When I se
 
 .. code-block:: scala
 
+  val serializer = sjson.json.Serializer.SJSON
+
   it("should ignore issn field") {
       val j = Journal(100, "IEEE Computer", "Alex Payne", "012-456372")
       serializer.in[Journal](serializer.out(j)).asInstanceOf[Journal].issn should equal(null)
@@ -699,6 +707,8 @@ SJSON will pick up during serialization. Now we can say:
 
 .. code-block:: scala
 
+  val serializer = sjson.json.Serializer.SJSON
+
   val c = Contact("Bob", Map("residence" -> a1, "office" -> a2, "club" -> a3))
   val co = serializer.out(c)
 
@@ -726,6 +736,8 @@ With optional generic data members, we need to provide the hint to SJSON through
 Serialization works ok with optional members annotated as above.
 
 .. code-block:: scala
+
+  val serializer = sjson.json.Serializer.SJSON
 
   describe("Bean with optional bean member serialization") {
     it("should serialize with Option defined") {
@@ -774,12 +786,14 @@ and the serialization code like the following:
      val res = sjson.json.Serializer.SJSON.in[D](json)
      val res1: D = res.asInstanceOf[D]
      println(res1)
-   }
+   } q  
   }
 
 Note that the type hint on class D says A, but the actual instances that have been put into the object before serialization is one of the derived classes (B). During de-serialization, we have no idea of what can be inside D. The serializer.in API will fail since all hint it has is for A, which is abstract. In such cases, we need to handle the de-serialization by using extractors over the underlying data structure that we use for storing JSON objects, which is JsValue. Here's an example:
 
 .. code-block:: scala
+
+  val serializer = sjson.json.Serializer.SJSON
 
   val test1 = new D(List(B("hello1")))
   val json = serializer.out(test1)
