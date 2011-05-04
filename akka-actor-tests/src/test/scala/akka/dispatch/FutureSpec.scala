@@ -447,7 +447,7 @@ class FutureSpec extends JUnitSuite {
   @Test def futureCompletingWithContinuations {
     import Future.flow
 
-    val x, y, z = new DefaultCompletableFuture[Int](Actor.TIMEOUT)
+    val x, y, z = Promise[Int]()
     val ly, lz = new StandardLatch
 
     val result = flow {
@@ -469,7 +469,7 @@ class FutureSpec extends JUnitSuite {
     assert(lz.isOpen)
     assert(result.get === 10)
 
-    val a, b, c = new DefaultCompletableFuture[Int](Actor.TIMEOUT)
+    val a, b, c = Promise[Int]()
 
     val result2 = flow {
       val n = (a << c).result.get + 10
@@ -490,7 +490,7 @@ class FutureSpec extends JUnitSuite {
 
   @Test def shouldNotAddOrRunCallbacksAfterFailureToBeCompletedBeforeExpiry {
     val latch = new StandardLatch
-    val f = new DefaultCompletableFuture[Int](0)
+    val f = Promise[Int](0)
     Thread.sleep(25)
     f.onComplete( _ => latch.open ) //Shouldn't throw any exception here
 
@@ -505,7 +505,7 @@ class FutureSpec extends JUnitSuite {
   @Test def futureDataFlowShouldEmulateBlocking1 {
     import Future.flow
 
-    val one, two = new DefaultCompletableFuture[Int](1000 * 60)
+    val one, two = Promise[Int](1000 * 60)
     val simpleResult = flow {
       one() + two()
     }
@@ -526,7 +526,7 @@ class FutureSpec extends JUnitSuite {
 
   @Test def futureDataFlowShouldEmulateBlocking2 {
     import Future.flow
-    val x1, x2, y1, y2 = new DefaultCompletableFuture[Int](1000 * 60)
+    val x1, x2, y1, y2 = Promise[Int](1000 * 60)
     val lx, ly, lz = new StandardLatch
     val result = flow {
       lx.open()
@@ -580,7 +580,7 @@ class FutureSpec extends JUnitSuite {
   @Test def futureCompletingWithContinuationsFailure {
     import Future.flow
 
-    val x, y, z = new DefaultCompletableFuture[Int](Actor.TIMEOUT)
+    val x, y, z = Promise[Int]()
     val ly, lz = new StandardLatch
 
     val result = flow {
@@ -652,7 +652,7 @@ class FutureSpec extends JUnitSuite {
   @Test def futureFlowSimpleAssign {
     import Future.flow
 
-    val x, y, z = new DefaultCompletableFuture[Int](5000)
+    val x, y, z = Promise[Int]()
 
     flow {
       z << x() + y()
