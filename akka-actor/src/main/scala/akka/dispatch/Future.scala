@@ -243,7 +243,7 @@ object Future {
    */
   def channel(timeout: Long = Actor.TIMEOUT) = new Channel[Any] {
     val future = empty[Any](timeout)
-    def !(msg: Any) = future << msg
+    def !(msg: Any) = future completeWithResult msg
   }
 
   /**
@@ -645,10 +645,7 @@ trait CompletableFuture[T] extends Future[T] {
     this
   }
 
-  /**
-   * Alias for complete(Right(value)).
-   */
-  final def << (value: T): Future[T] = complete(Right(value))
+  final def << (value: T): Future[T] @cps[Future[Any]] = shift { cont: (Future[T] => Future[Any]) => cont(complete(Right(value))) }
 
   final def << (other: Future[T]): Future[T] @cps[Future[Any]] = shift { cont: (Future[T] => Future[Any]) =>
     val fr = new DefaultCompletableFuture[Any](Actor.TIMEOUT)

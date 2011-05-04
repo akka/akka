@@ -462,7 +462,7 @@ class FutureSpec extends JUnitSuite {
     assert(ly.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
     assert(!lz.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
 
-    x << 5
+    flow { x << 5 }
 
     assert(y.get === 5)
     assert(z.get === 5)
@@ -512,12 +512,12 @@ class FutureSpec extends JUnitSuite {
 
     assert(List(one, two, simpleResult).forall(_.isCompleted == false))
 
-    one << 1
+    flow { one << 1 }
 
     assert(one.isCompleted)
     assert(List(two, simpleResult).forall(_.isCompleted == false))
 
-    two << 9
+    flow { two << 9 }
 
     assert(List(one, two).forall(_.isCompleted == true))
     assert(simpleResult.get === 10)
@@ -541,13 +541,13 @@ class FutureSpec extends JUnitSuite {
     assert(!lz.isOpen)
     assert(List(x1,x2,y1,y2).forall(_.isCompleted == false))
 
-    y1 << 1 // When this is set, it should cascade down the line
+    flow { y1 << 1 } // When this is set, it should cascade down the line
 
     assert(ly.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
     assert(x1.get === 1)
     assert(!lz.isOpen)
 
-    y2 << 9 // When this is set, it should cascade down the line
+    flow { y2 << 9 } // When this is set, it should cascade down the line
 
     assert(lz.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
     assert(x2.get === 9)
@@ -595,7 +595,7 @@ class FutureSpec extends JUnitSuite {
     assert(!ly.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
     assert(!lz.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
 
-    x << 5
+    flow { x << 5 }
 
     assert(y.get === 5)
     intercept[java.lang.ArithmeticException](result.get)
@@ -644,9 +644,23 @@ class FutureSpec extends JUnitSuite {
     assert(!checkType(rInt, manifest[String]))
     assert(!checkType(rInt, manifest[Nothing]))
     assert(!checkType(rInt, manifest[Any]))
-    
+
     rString.await
     rInt.await
+  }
+
+  @Test def futureFlowSimpleAssign {
+    import Future.flow
+
+    val x, y, z = new DefaultCompletableFuture[Int](5000)
+
+    flow {
+      z << x() + y()
+    }
+    flow { x << 40 }
+    flow { y << 2 }
+
+    assert(z.get === 42)
   }
 
   @Test def ticket812FutureDispatchCleanup {
