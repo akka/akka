@@ -107,9 +107,10 @@ object ReflectiveAccess {
   object RemoteModule {
     val TRANSPORT = Config.config.getString("akka.remote.layer", "akka.remote.netty.NettyRemoteSupport")
 
-    private[akka] val configDefaultAddress =
-      new InetSocketAddress(Config.config.getString("akka.remote.server.hostname", "localhost"),
-                            Config.config.getInt("akka.remote.server.port", 2552))
+    val remoteServerHostname = Config.config.getString("akka.remote.server.hostname", "localhost")
+    val remoteServerPort     = Config.config.getInt("akka.remote.server.port", 2552)
+
+    private[akka] val configDefaultAddress = new InetSocketAddress(remoteServerHostname, remoteServerPort)
 
     lazy val isEnabled = remoteSupportClass.isDefined
 

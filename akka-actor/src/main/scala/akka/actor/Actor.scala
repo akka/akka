@@ -207,7 +207,7 @@ object Actor extends ListenerManagement {
           // FIXME handle 'router' in 'Local' actors
           newLocalActorRef(clazz, address)
 
-        case Deploy(_, router, Clustered(Home(hostname, port), replication  , state)) =>
+        case Deploy(_, router, Clustered(home, replication  , state)) =>
           sys.error("Clustered deployment not yet supported")
           /*
           if (Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")

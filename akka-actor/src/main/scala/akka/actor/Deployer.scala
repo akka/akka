@@ -23,9 +23,9 @@ import akka.AkkaException
  *
  *   val deploymentHello = Deploy("service:hello", Local)
  *
- *   val deploymentE     = Deploy("service:e", AutoReplicate, Clustered(Home("darkstar.lan", 7887), Stateful))
+ *   val deploymentE     = Deploy("service:e", AutoReplicate, Clustered(Host("darkstar.lan"), Stateful))
  *
- *   val deploymentPi1   = Deploy("service:pi", Replicate(3), Clustered(Home("darkstar.lan", 7887), Stateless(RoundRobin)))
+ *   val deploymentPi1   = Deploy("service:pi", Replicate(3), Clustered(Host("darkstar.lan"), Stateless(RoundRobin)))
  *
  *   // same thing as 'deploymentPi1' but more explicit
  *   val deploymentPi2   =
@@ -33,7 +33,7 @@ import akka.AkkaException
  *       address = "service:pi",
  *         replicas = 3,
  *         scope = Clustered(
- *           home = Home("darkstar.lan", 7887)
+ *           home = Host("darkstar.lan")
  *           state = Stateless(
  *             routing = RoundRobin
  *           )
@@ -46,9 +46,9 @@ import akka.AkkaException
  *
  *   val deploymentHello = new Deploy("service:hello", new Local());
  *
- *   val deploymentE     = new Deploy("service:e", new AutoReplicate(), new Clustered(new Home("darkstar.lan", 7887), new Stateful()));
+ *   val deploymentE     = new Deploy("service:e", new AutoReplicate(), new Clustered(new Host("darkstar.lan"), new Stateful()));
  *
- *   val deploymentPi1   = new Deploy("service:pi", new Replicate(3), new Clustered(new Home("darkstar.lan", 7887), new Stateless(new RoundRobin())))
+ *   val deploymentPi1   = new Deploy("service:pi", new Replicate(3), new Clustered(new Host("darkstar.lan"), new Stateless(new RoundRobin())))
  * </pre>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -87,7 +87,7 @@ object DeploymentConfig {
   // --------------------------------
   sealed trait Scope
   case class Clustered(
-    home: Home = Home("localhost", 2552),
+    home: Home = Host("localhost"),
     replication: Replication = NoReplicas,
     state: State = Stateful) extends Scope
 
@@ -100,7 +100,10 @@ object DeploymentConfig {
   // --------------------------------
   // --- Home
   // --------------------------------
-  case class Home(hostname: String, port: Int)
+  sealed trait Home
+  case class Host(hostName: String) extends Home
+  case class Node(nodeName: String) extends Home
+  case class IP(ipAddress: String) extends Home
 
   // --------------------------------
   // --- Replication
@@ -139,7 +142,7 @@ object DeploymentConfig {
  */
 object Deployer {
 
-  val defaultAddress = Home("localhost", 2552) // FIXME allow configuring node-local default hostname and port
+  val defaultAddress = Host("localhost") // FIXME allow configuring node-local default hostname and port
 
   lazy val instance: ReflectiveAccess.ClusterModule.ClusterDeployer = {
     val deployer =
@@ -284,22 +287,26 @@ object Deployer {
             // --------------------------------
             // akka.actor.deployment.<address>.clustered.home
             // --------------------------------
-            val home = clusteredConfig.getListAny("home") match {
-              case Nil => defaultAddress
-              case List(hostname: String, port: String) =>
-                try {
-                  Home(hostname, port.toInt)
-                } catch {
-                  case e: NumberFormatException =>
-                    throw new ConfigurationException(
-                      "Config option [" + addressPath +
-                      ".clustered.home] needs to be an array on format [[\"hostname\", port]] - was [[" +
-                      hostname + ", " + port + "]]")
+            val home = clusteredConfig.getString("home", "") match {
+              case ""   => Host("localhost")
+              case home =>
+                def raiseHomeConfigError() = throw new ConfigurationException(
+                    "Config option [" + addressPath +
+                    ".clustered.home] needs to be on format 'host:<hostname>', 'ip:<ip address>'' or 'node:<node name>', was [" +
+                    home + "]")
+
+                if (!(home.startsWith("host:") || home.startsWith("node:") || home.startsWith("ip:"))) raiseHomeConfigError()
+
+                val tokenizer = new java.util.StringTokenizer(home, ":")
+                val protocol  = tokenizer.nextElement
+                val address   = tokenizer.nextElement.asInstanceOf[String]
+
+                protocol match {
+                  case "host" => Host(address)
+                  case "node" => Node(address)
+                  case "ip"   => IP(address)
+                  case _      => raiseHomeConfigError()
                 }
-              case invalid => throw new ConfigurationException(
-                "Config option [" + addressPath +
-                ".clustered.home] needs to be an array on format [\"hostname\", port] - was [" +
-                invalid + "]")
             }
 
             // --------------------------------
@@ -345,28 +352,6 @@ object Deployer {
     val e = new NoDeploymentBoundException("Address [" + address + "] is not bound to a deployment")
     EventHandler.error(e, this, e.getMessage)
     throw e
-  }
-
-  private def deployLocally(deployment: Deploy) {
-    deployment match {
-      case Deploy(address, Direct, Clustered(Home(hostname, port), _, _)) =>
-        val currentRemoteServerAddress = Actor.remote.address
-        if (currentRemoteServerAddress.getHostName == hostname) { // are we on the right server?
-          if (currentRemoteServerAddress.getPort != port) throw new ConfigurationException(
-            "Remote server started on [" + hostname +
-            "] is started on port [" + currentRemoteServerAddress.getPort +
-            "] can not use deployment configuration [" + deployment +
-            "] due to invalid port [" + port + "]")
-
-          // FIXME how to handle registerPerSession
-//          Actor.remote.register(Actor.newLocalActorRef(address))
-        }
-
-      case Deploy(_, routing, Clustered(Home(hostname, port), replicas, state)) =>
-        // FIXME clustered actor deployment
-
-      case _ => // local deployment do nothing
-    }
   }
 }
 

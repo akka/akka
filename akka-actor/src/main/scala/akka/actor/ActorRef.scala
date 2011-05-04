@@ -966,9 +966,14 @@ private[akka] case class RemoteActorRef private[akka] (
   // FIXME BAD, we should not have different ActorRefs
 
   import DeploymentConfig._
-  println("--------- " + Deployer.deploymentFor(address))
   val remoteAddress = Deployer.deploymentFor(address) match {
-    case Deploy(_, _, Clustered(Home(hostname, port), _, _)) => new InetSocketAddress(hostname, port)
+    case Deploy(_, _, Clustered(home, _, _)) =>
+      val hostname = home match {
+        case Host(hostname) => hostname
+        case IP(address)    => address
+        case Node(nodeName) => "localhost" // FIXME lookup hostname for node name
+      }
+      new InetSocketAddress(hostname, ReflectiveAccess.RemoteModule.remoteServerPort)
     case _ => throw new IllegalStateException(
       "Actor with Address [" + address + "] is not bound to a Clustered Deployment")
   }
