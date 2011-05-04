@@ -32,13 +32,13 @@ Scala's Delimited Continuations plugin is required to use the Dataflow API. To e
 Dataflow Variables
 ------------------
 
-Dataflow Variable defines three different operations:
+Dataflow Variable defines four different operations:
 
-1. Define a Dataflow Variable (with a timeout)
+1. Define a Dataflow Variable
 
 .. code-block:: scala
 
-  val x = new DefaultCompletableFuture[Int](5000)
+  val x = Promise[Int]()
 
 2. Wait for Dataflow Variable to be bound (must be contained within a ``Future.flow`` block as described in the next section)
 
@@ -46,7 +46,7 @@ Dataflow Variable defines three different operations:
 
   x()
 
-3. Bind Dataflow Variable
+3. Bind Dataflow Variable (must be contained within a ``Future.flow`` block as described in the next section)
 
 .. code-block:: scala
 
@@ -71,7 +71,7 @@ Dataflow is implemented in Akka using Scala's Delimited Continuations. To use th
 
   val a = Future( ... )
   val b = Future( ... )
-  val c = new DefaultCompletableFuture[Int](5000)
+  val c = Promise[Int]()
 
   flow {
     c << (a() + b())
@@ -146,14 +146,14 @@ Example in Akka:
   import akka.dispatch._
   import Future.flow
 
-  val x, y, z = new DefaultCompletableFuture[Int](5000)
+  val x, y, z = Promise[Int]()
 
   flow {
     z << x() + y()
     println("z = " + z())
   }
-  x << 40
-  y << 2
+  flow { x << 40 }
+  flow { y << 2 }
 
 Example of using DataFlowVariable with recursion
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -187,39 +187,41 @@ Example in Akka:
 
 .. code-block:: scala
 
-  import  akka.dataflow.DataFlow._
+  import akka.dispatch._
+  import Future.flow
 
-  def ints(n: Int, max: Int): List[Int] =
+  def ints(n: Int, max: Int): List[Int] = {
     if (n == max) Nil
     else n :: ints(n + 1, max)
+  }
 
-   def sum(s: Int, stream: List[Int]): List[Int] = stream match {
+  def sum(s: Int, stream: List[Int]): List[Int] = stream match {
     case Nil => s :: Nil
     case h :: t => s :: sum(h + s, t)
   }
 
-  val x = new DataFlowVariable[List[Int]]
-  val y = new DataFlowVariable[List[Int]]
+  val x, y = Promise[List[Int]]()
 
-  thread { x << ints(0, 1000) }
-  thread { y << sum(0, x()) }
-  thread { println("List of sums: " + y()) }
+  flow { x << ints(0, 1000) }
+  flow { y << sum(0, x()) }
+  flow { println("List of sums: " + y()) }
 
-Example on life-cycle management of DataFlowVariables
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Example using concurrent Futures
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Shows how to shutdown dataflow variables and bind threads to values to be able to interact with them (exit etc.).
+Shows how to have a calculation run in another thread.
 
 Example in Akka:
 
 .. code-block:: scala
 
-  import  akka.dataflow.DataFlow._
+  import akka.dispatch._
+  import Future.flow
 
   // create four 'Int' data flow variables
-  val x, y, z, v = new DataFlowVariable[Int]
+  val x, y, z, v = Promise[Int]()
 
-  val main = thread {
+  flow {
     println("Thread 'main'")
 
     x << 1
@@ -234,28 +236,19 @@ Example in Akka:
       z << y
       println("'z' set to 'y': " + z())
     }
-
-    // main completed, shut down the data flow variables
-    x.shutdown
-    y.shutdown
-    z.shutdown
-    v.shutdown
   }
 
-  val setY = thread {
-    println("Thread 'setY', sleeping...")
-    Thread.sleep(5000)
-    y << 2
+  flow {
+    y << Future {
+      println("Thread 'setY', sleeping")
+      Thread.sleep(2000)
+      2
+    }
     println("'y' set to: " + y())
   }
 
-  val setV = thread {
+  flow {
     println("Thread 'setV'")
     v << y
     println("'v' set to 'y': " + v())
   }
-
-  // shut down the threads
-  main ! 'exit
-  setY ! 'exit
-  setV ! 'exit
