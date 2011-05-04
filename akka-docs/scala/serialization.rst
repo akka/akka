@@ -217,9 +217,11 @@ Here is an example of how to serialize an Actor.
 
 .. code-block:: scala
 
+  import akka.serialization.RemoteActorSerialization._
+
   val actor1 = actorOf[MyActor]
 
-  val bytes = toBinary(actor1)
+  val bytes = toRemoteActorRefProtocol(actor1).toByteArray
 
 To deserialize the ``ActorRef`` to a ``RemoteActorRef`` you need to use the ``fromBinaryToRemoteActorRef(bytes: Array[Byte])`` method on the ``ActorRef`` companion object:
 
