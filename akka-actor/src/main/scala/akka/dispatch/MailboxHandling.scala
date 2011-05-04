@@ -4,10 +4,9 @@
 
 package akka.dispatch
 
-import akka.actor.{Actor, ActorType, ActorRef, ActorInitializationException}
 import akka.AkkaException
 
-import java.util.{Queue, List, Comparator, PriorityQueue}
+import java.util.{Comparator, PriorityQueue}
 import java.util.concurrent._
 import akka.util._
 

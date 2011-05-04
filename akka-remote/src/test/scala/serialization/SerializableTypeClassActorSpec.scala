@@ -186,6 +186,7 @@ class SerializableTypeClassActorSpec extends
     }
 */
   }
+
   describe("Custom serializable actors") {
     it("should serialize and de-serialize") {
       import BinaryFormatMyActorWithSerializableMessages._
@@ -206,6 +207,31 @@ class SerializableTypeClassActorSpec extends
       Thread.sleep(1000)
       actor3.mailboxSize should equal(0)
       (actor3 !! "hello-reply").getOrElse("_") should equal("world")
+    }
+  }
+
+  describe("ActorRef serialization") {
+    it("should serialize and deserialize local actor refs ") {
+      val a = actorOf[MyActorWithDualCounter].start
+      val out = RemoteActorSerialization.toRemoteActorRefProtocol(a).toByteArray
+      val in = RemoteActorSerialization.fromBinaryToRemoteActorRef(out)
+
+      in.id should equal("uuid:"+a.uuid)
+      in.actorClassName should equal(a.actorClassName)
+      in.timeout should equal(a.timeout)
+      in.homeAddress should equal(Some(Actor.remote.address))
+      a.stop
+    }
+
+    it("should serialize and deserialize remote actor refs ") {
+      val a = Actor.remote.actorFor("foo", "localhost", 6666)
+      val out = RemoteActorSerialization.toRemoteActorRefProtocol(a).toByteArray
+      val in = RemoteActorSerialization.fromBinaryToRemoteActorRef(out)
+
+      in.id should equal(a.id)
+      in.actorClassName should equal(a.actorClassName)
+      in.timeout should equal(a.timeout)
+      in.homeAddress should equal(a.homeAddress)
     }
   }
 }

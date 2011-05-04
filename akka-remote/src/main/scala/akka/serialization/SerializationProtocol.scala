@@ -269,15 +269,13 @@ object RemoteActorSerialization {
         .setTimeout(r.timeout)
         .build
     case ar: LocalActorRef =>
-      import ar._
-
       Actor.remote.registerByUuid(ar)
 
       RemoteActorRefProtocol.newBuilder
-          .setClassOrServiceName("uuid:"+uuid.toString)
-          .setActorClassname(actorClassName)
+          .setClassOrServiceName("uuid:"+ar.uuid.toString)
+          .setActorClassname(ar.actorClassName)
           .setHomeAddress(ActorSerialization.toAddressProtocol(ar))
-          .setTimeout(timeout)
+          .setTimeout(ar.timeout)
           .build
   }
 
