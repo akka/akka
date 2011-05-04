@@ -22,7 +22,7 @@ echo "Find and replace: $FIND --> $REPLACE"
 
 # Exclude directories from search
 
-excludedirs=".git dist deploy embedded-repo lib_managed project/boot project/scripts src_managed target"
+excludedirs=".git dist deploy embedded-repo lib_managed project/boot project/scripts src_managed target akka-docs"
 
 echo "Excluding directories: $excludedirs"
 
