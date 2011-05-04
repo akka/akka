@@ -292,7 +292,7 @@ object Future {
    * The Delimited Continuations compiler plugin must be enabled in order to use this method.
    */
   def flow[A](body: => A @cps[Future[Any]], timeout: Long = Actor.TIMEOUT): Future[A] = {
-    val future = new DefaultCompletableFuture[A](timeout)
+    val future = Promise[A](timeout)
     (reset(future.asInstanceOf[CompletableFuture[Any]].completeWithResult(body)): Future[Any]) onComplete { f =>
       val opte = f.exception
       if (opte.isDefined) future completeWithException (opte.get)
@@ -610,6 +610,14 @@ sealed trait Future[+T] {
   final def foreach[A >: T](proc: Procedure[A]): Unit = foreach(proc(_))
 
   final def filter(p: JFunc[Any,Boolean]): Future[Any] = filter(p(_))
+
+}
+
+object Promise {
+
+  def apply[A](timeout: Long): CompletableFuture[A] = new DefaultCompletableFuture[A](timeout)
+
+  def apply[A](): CompletableFuture[A] = apply(Actor.TIMEOUT)
 
 }
 
