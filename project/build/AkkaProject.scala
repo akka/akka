@@ -61,7 +61,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
-  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshotRepo)
+  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsRelRepo)
   lazy val spdeModuleConfig        = ModuleConfiguration("us.technically.spde", DatabinderRepo)
   lazy val processingModuleConfig  = ModuleConfiguration("org.processing", DatabinderRepo)
   lazy val sjsonModuleConfig       = ModuleConfiguration("net.debasishg", ScalaToolsRelRepo)
@@ -78,7 +78,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
   lazy val JACKSON_VERSION       = "1.7.1"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.2"
-  lazy val SCALATEST_VERSION     = "1.4-SNAPSHOT"
+  lazy val SCALATEST_VERSION     = "1.4.RC3"
   lazy val JETTY_VERSION         = "7.4.0.v20110414"
   lazy val JAVAX_SERVLET_VERSION = "3.0"
   lazy val SLF4J_VERSION         = "1.6.0"
@@ -123,8 +123,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile" //New BSD
 
-    lazy val sjson      = "net.debasishg" % "sjson_2.9.0.RC3" % "0.11" % "compile" //ApacheV2
-    lazy val sjson_test = "net.debasishg" % "sjson_2.9.0.RC3" % "0.11" % "test" //ApacheV2
+    lazy val sjson      = "net.debasishg" %% "sjson" % "0.11" % "compile" //ApacheV2
+    lazy val sjson_test = "net.debasishg" %% "sjson" % "0.11" % "test" //ApacheV2
 
     lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % SLF4J_VERSION
     lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.28" % "runtime"
@@ -138,7 +138,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
 
     lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test" //Common Public License 1.0
     lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test" //MIT
-    lazy val scalatest      = "org.scalatest"          % "scalatest"           % SCALATEST_VERSION % "test" //ApacheV2
+    lazy val scalatest      = "org.scalatest"          %% "scalatest"          % SCALATEST_VERSION % "test" //ApacheV2
   }
 
   // -------------------------------------------------------------------------------------------------------------------
