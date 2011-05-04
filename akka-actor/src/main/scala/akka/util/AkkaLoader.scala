@@ -67,7 +67,7 @@ class AkkaLoader {
     println("  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt")
     println("   tttttttt  ttt    ttt  ttt    ttt  tttttttt")
     println("==================================================")
-    println("            Running version {}", Config.VERSION)
+    println("            Running version " + Config.VERSION)
     println("==================================================")
   }
 }
