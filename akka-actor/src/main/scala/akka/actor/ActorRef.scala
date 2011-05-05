@@ -109,7 +109,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * Defines the default timeout for '!!' and '!!!' invocations,
    * e.g. the timeout for the future returned by the call to '!!' and '!!!'.
    */
-  @deprecated("Will be replaced by implicit-scoped timeout on all methods that needs it, will default to timeout specified in config")
+  @deprecated("Will be replaced by implicit-scoped timeout on all methods that needs it, will default to timeout specified in config", "1.1")
   @BeanProperty
   @volatile
   var timeout: Long = Actor.TIMEOUT
@@ -184,13 +184,13 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   /**
    * Returns on which node this actor lives if None it lives in the local ActorRegistry
    */
-  @deprecated("Remoting will become fully transparent in the future")
+  @deprecated("Remoting will become fully transparent in the future", "1.1")
   def homeAddress: Option[InetSocketAddress]
 
   /**
    * Java API. <p/>
    */
-  @deprecated("Remoting will become fully transparent in the future")
+  @deprecated("Remoting will become fully transparent in the future", "1.1")
   def getHomeAddress(): InetSocketAddress = homeAddress getOrElse null
 
   /**
@@ -256,7 +256,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   /**
    * Is the actor able to handle the message passed in as arguments?
    */
-  @deprecated("Will be removed without replacement, it's just not reliable in the face of `become` and `unbecome`")
+  @deprecated("Will be removed without replacement, it's just not reliable in the face of `become` and `unbecome`", "1.1")
   def isDefinedAt(message: Any): Boolean = actor.isDefinedAt(message)
 
   /**
@@ -382,27 +382,27 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.
    */
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
   def actorClass: Class[_ <: Actor]
 
   /**
    * Akka Java API. <p/>
    * Returns the class for the Actor instance that is managed by the ActorRef.
    */
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
   def getActorClass(): Class[_ <: Actor] = actorClass
 
   /**
    * Returns the class name for the Actor instance that is managed by the ActorRef.
    */
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
   def actorClassName: String
 
   /**
    * Akka Java API. <p/>
    * Returns the class name for the Actor instance that is managed by the ActorRef.
    */
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
   def getActorClassName(): String = actorClassName
 
   /**
@@ -456,7 +456,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * <p/>
    * To be invoked from within the actor itself.
    */
-  @deprecated("Will be removed after 1.1, use Actor.actorOf instead")
+  @deprecated("Will be removed after 1.1, use Actor.actorOf instead", "1.1")
   def spawn(clazz: Class[_ <: Actor]): ActorRef
 
   /**
@@ -464,7 +464,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * <p/>
    * To be invoked from within the actor itself.
    */
-  @deprecated("Will be removed after 1.1, client managed actors will be removed")
+  @deprecated("Will be removed after 1.1, client managed actors will be removed", "1.1")
   def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef
 
   /**
@@ -472,7 +472,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * <p/>
    * To be invoked from within the actor itself.
    */
-  @deprecated("Will be removed after 1.1, use use Actor.remote.actorOf instead and then link on success")
+  @deprecated("Will be removed after 1.1, use use Actor.remote.actorOf instead and then link on success", "1.1")
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef
 
   /**
@@ -480,7 +480,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * <p/>
    * To be invoked from within the actor itself.
    */
-  @deprecated("Will be removed after 1.1, client managed actors will be removed")
+  @deprecated("Will be removed after 1.1, client managed actors will be removed", "1.1")
   def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef
 
   /**
@@ -644,13 +644,13 @@ class LocalActorRef private[akka] (
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.
    */
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
   def actorClass: Class[_ <: Actor] = actor.getClass.asInstanceOf[Class[_ <: Actor]]
 
   /**
    * Returns the class name for the Actor instance that is managed by the ActorRef.
    */
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
   def actorClassName: String = actorClass.getName
 
   /**
@@ -1184,7 +1184,7 @@ private[akka] case class RemoteActorRef private[akka] (
   protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = None
 
   // ==== NOT SUPPORTED ====
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
   def actorClass: Class[_ <: Actor] = unsupported
   def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported

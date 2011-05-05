@@ -167,7 +167,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    *   val actor = actorOf(classOf[MyActor],"www.akka.io", 2552).start()
    * </pre>
    */
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def actorOf(factory: => Actor, host: String, port: Int): ActorRef =
     Actor.remote.clientManagedActorOf(() => factory, host, port)
 
@@ -186,7 +186,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    *   val actor = actorOf(classOf[MyActor],"www.akka.io",2552).start()
    * </pre>
    */
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def actorOf(clazz: Class[_ <: Actor], host: String, port: Int): ActorRef =
     clientManagedActorOf(() => createActorFromClass(clazz), host, port)
 
@@ -205,7 +205,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    *   val actor = actorOf[MyActor]("www.akka.io",2552).start()
    * </pre>
    */
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def actorOf[T <: Actor : Manifest](host: String, port: Int): ActorRef =
     clientManagedActorOf(() => createActorFromClass(manifest.erasure), host, port)
 
@@ -447,7 +447,7 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
   def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): T =
     typedActorFor(intfClass, serviceId, implClassName, timeout, hostname, port, Some(loader))
 
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def clientManagedActorOf(factory: () => Actor, host: String, port: Int): ActorRef
 
 
@@ -487,9 +487,9 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
 
   private[akka] def deregisterSupervisorForActor(actorRef: ActorRef): ActorRef
 
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   private[akka] def registerClientManagedActor(hostname: String, port: Int, uuid: Uuid): Unit
 
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   private[akka] def unregisterClientManagedActor(hostname: String, port: Int, uuid: Uuid): Unit
 }
