@@ -102,8 +102,8 @@ into a :class:`TestActorRef`.
 .. code-block:: scala
 
    val actorRef = TestActorRef(new MyActor)
-   val result = actorRef !! msg
-   result must be (expected)
+   val result = actorRef !! Say42 // hypothetical message stimulating a '42' answer
+   result must be (42)
 
 As the :class:`TestActorRef` is a subclass of :class:`LocalActorRef` with a few
 special extras, also aspects like linking to a supervisor and restarting work
