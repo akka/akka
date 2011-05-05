@@ -37,7 +37,10 @@ excludeopts="${excludeopts} \) -prune -o"
 
 # Replace in files
 
-search="find . -type f ${excludeopts} -print0 | xargs -0 grep -Il \"${FIND}\""
+search="find . ${excludeopts} -type f -print0 | xargs -0 grep -Il \"${FIND}\""
+
+echo $search
+echo
 
 files=$(eval "$search")
 
@@ -61,7 +64,10 @@ echo
 
 # Replace in file names
 
-search="find . -type f ${excludeopts} -name \"*${FIND}*\" -print0"
+search="find . ${excludeopts} -type f -name \"*${FIND}*\" -print"
+
+echo $search
+echo
 
 files=$(eval "$search")
 
