@@ -10,7 +10,7 @@ import sbt._
 import sbt.CompileOrder._
 import spde._
 
-class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with AutoCompilerPlugins {
+class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) {
 
   // -------------------------------------------------------------------------------------------------------------------
   // Compile settings
@@ -23,10 +23,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
         "-encoding", "utf8")
 
   val javaCompileSettings = Seq("-Xlint:unchecked")
-
-  override def compileOptions     = super.compileOptions ++ scalaCompileSettings.map(CompileOption)
-  override def javaCompileOptions = super.javaCompileOptions ++ javaCompileSettings.map(JavaCompileOption)
-  override def consoleOptions     = super.consoleOptions ++ compileOptions("-P:continuations:enable")
 
   // -------------------------------------------------------------------------------------------------------------------
   // All repositories *must* go here! See ModuleConigurations below.
@@ -161,12 +157,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
   // -------------------------------------------------------------------------------------------------------------------
 
   override def disableCrossPaths = true
-
-  //Exclude slf4j1.5.11 from the classpath, it's conflicting...
-  override def fullClasspath(config: Configuration): PathFinder = {
-    super.fullClasspath(config) ---
-    (super.fullClasspath(config) ** "slf4j*1.5.11.jar")
-  }
 
   // ------------------------------------------------------------
   // Publishing
@@ -309,7 +299,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // Examples
+  // Samples
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
