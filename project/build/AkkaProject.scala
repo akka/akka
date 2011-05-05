@@ -10,7 +10,7 @@ import sbt._
 import sbt.CompileOrder._
 import spde._
 
-class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with AutoCompilerPlugins {
+class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with DocParentProject {
 
   // -------------------------------------------------------------------------------------------------------------------
   // Compile settings
@@ -23,10 +23,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
         "-encoding", "utf8")
 
   val javaCompileSettings = Seq("-Xlint:unchecked")
-
-  override def compileOptions     = super.compileOptions ++ scalaCompileSettings.map(CompileOption)
-  override def javaCompileOptions = super.javaCompileOptions ++ javaCompileSettings.map(JavaCompileOption)
-  override def consoleOptions     = super.consoleOptions ++ compileOptions("-P:continuations:enable")
 
   // -------------------------------------------------------------------------------------------------------------------
   // All repositories *must* go here! See ModuleConigurations below.
@@ -61,7 +57,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
-  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshotRepo)
+  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsRelRepo)
   lazy val spdeModuleConfig        = ModuleConfiguration("us.technically.spde", DatabinderRepo)
   lazy val processingModuleConfig  = ModuleConfiguration("org.processing", DatabinderRepo)
   lazy val sjsonModuleConfig       = ModuleConfiguration("net.debasishg", ScalaToolsRelRepo)
@@ -78,7 +74,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
   lazy val JACKSON_VERSION       = "1.7.1"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.2"
-  lazy val SCALATEST_VERSION     = "1.4-SNAPSHOT"
+  lazy val SCALATEST_VERSION     = "1.4.RC3"
   lazy val JETTY_VERSION         = "7.4.0.v20110414"
   lazy val JAVAX_SERVLET_VERSION = "3.0"
   lazy val SLF4J_VERSION         = "1.6.0"
@@ -123,8 +119,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile" //New BSD
 
-    lazy val sjson      = "net.debasishg" % "sjson_2.9.0.RC3" % "0.11" % "compile" //ApacheV2
-    lazy val sjson_test = "net.debasishg" % "sjson_2.9.0.RC3" % "0.11" % "test" //ApacheV2
+    lazy val sjson      = "net.debasishg" %% "sjson" % "0.11" % "compile" //ApacheV2
+    lazy val sjson_test = "net.debasishg" %% "sjson" % "0.11" % "test" //ApacheV2
 
     lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % SLF4J_VERSION
     lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.28" % "runtime"
@@ -138,7 +134,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
 
     lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test" //Common Public License 1.0
     lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test" //MIT
-    lazy val scalatest      = "org.scalatest"          % "scalatest"           % SCALATEST_VERSION % "test" //ApacheV2
+    lazy val scalatest      = "org.scalatest"          %% "scalatest"          % SCALATEST_VERSION % "test" //ApacheV2
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -162,15 +158,15 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
 
   override def disableCrossPaths = true
 
-  //Exclude slf4j1.5.11 from the classpath, it's conflicting...
-  override def fullClasspath(config: Configuration): PathFinder = {
-    super.fullClasspath(config) ---
-    (super.fullClasspath(config) ** "slf4j*1.5.11.jar")
-  }
+  // -------------------------------------------------------------------------------------------------------------------
+  // Scaladocs
+  // -------------------------------------------------------------------------------------------------------------------
 
-  // ------------------------------------------------------------
+  override def docProjectDependencies = dependencies.toList - akka_samples
+
+  // -------------------------------------------------------------------------------------------------------------------
   // Publishing
-  // ------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------------------------------
 
   override def managedStyle = ManagedStyle.Maven
 
@@ -207,9 +203,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
 
   override def deliverProjectDependencies = super.deliverProjectDependencies.toList - akka_samples.projectID - akka_tutorials.projectID
 
-  // ------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------------------------------
   // Build release
-  // ------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------------------------------
 
   val localReleasePath = outputPath / "release" / version.toString
   val localReleaseRepository = Resolver.file("Local Release", localReleasePath / "repository" asFile)
@@ -309,7 +305,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) with Aut
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // Examples
+  // Samples
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
