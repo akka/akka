@@ -10,7 +10,7 @@ import sbt._
 import sbt.CompileOrder._
 import spde._
 
-class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) {
+class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with DocParentProject {
 
   // -------------------------------------------------------------------------------------------------------------------
   // Compile settings
@@ -158,9 +158,15 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) {
 
   override def disableCrossPaths = true
 
-  // ------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------------------------------
+  // Scaladocs
+  // -------------------------------------------------------------------------------------------------------------------
+
+  override def docProjectDependencies = dependencies.toList - akka_samples
+
+  // -------------------------------------------------------------------------------------------------------------------
   // Publishing
-  // ------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------------------------------
 
   override def managedStyle = ManagedStyle.Maven
 
@@ -197,9 +203,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) {
 
   override def deliverProjectDependencies = super.deliverProjectDependencies.toList - akka_samples.projectID - akka_tutorials.projectID
 
-  // ------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------------------------------
   // Build release
-  // ------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------------------------------
 
   val localReleasePath = outputPath / "release" / version.toString
   val localReleaseRepository = Resolver.file("Local Release", localReleasePath / "repository" asFile)
