@@ -48,10 +48,10 @@ trait CamelService extends Bootable {
     super.onUnload
   }
 
-  @deprecated("use start() instead")
+  @deprecated("use start() instead", "1.1")
   def load = start
 
-  @deprecated("use stop() instead")
+  @deprecated("use stop() instead", "1.1")
   def unload = stop
 
   /**
