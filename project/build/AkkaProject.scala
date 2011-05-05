@@ -10,7 +10,7 @@ import sbt._
 import sbt.CompileOrder._
 import spde._
 
-class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with DocParentProject {
+class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with ExecProject with DocParentProject {
 
   // -------------------------------------------------------------------------------------------------------------------
   // Compile settings
@@ -157,6 +157,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with DocP
   // -------------------------------------------------------------------------------------------------------------------
 
   override def disableCrossPaths = true
+
+  // add the sh action since it doesn't exist in ParentProject
+  lazy val sh = task { args =>  execOut { Process("sh" :: "-c" :: args.mkString(" ") :: Nil) } }
 
   // -------------------------------------------------------------------------------------------------------------------
   // Scaladocs
