@@ -66,7 +66,7 @@ object DataFlow {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  @deprecated("Superceeded by Future and CompletableFuture as of 1.1")
+  @deprecated("Superceeded by Future and CompletableFuture as of 1.1", "1.1")
   sealed class DataFlowVariable[T <: Any](timeoutMs: Long) {
     import DataFlowVariable._
 

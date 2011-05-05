@@ -206,27 +206,27 @@ object Futures {
   /**
    * (Blocking!)
    */
-  @deprecated("Will be removed after 1.1, if you must block, use: futures.foreach(_.await)")
+  @deprecated("Will be removed after 1.1, if you must block, use: futures.foreach(_.await)", "1.1")
   def awaitAll(futures: List[Future[_]]): Unit = futures.foreach(_.await)
 
   /**
    *  Returns the First Future that is completed (blocking!)
    */
-  @deprecated("Will be removed after 1.1, if you must block, use: firstCompletedOf(futures).await")
+  @deprecated("Will be removed after 1.1, if you must block, use: firstCompletedOf(futures).await", "1.1")
   def awaitOne(futures: List[Future[_]], timeout: Long = Long.MaxValue): Future[_] = firstCompletedOf[Any](futures, timeout).await
 
 
   /**
    * Applies the supplied function to the specified collection of Futures after awaiting each future to be completed
    */
-  @deprecated("Will be removed after 1.1, if you must block, use: futures map { f => fun(f.await) }")
+  @deprecated("Will be removed after 1.1, if you must block, use: futures map { f => fun(f.await) }", "1.1")
   def awaitMap[A,B](in: Traversable[Future[A]])(fun: (Future[A]) => B): Traversable[B] =
     in map { f => fun(f.await) }
 
   /**
    * Returns Future.resultOrException of the first completed of the 2 Futures provided (blocking!)
    */
-  @deprecated("Will be removed after 1.1, if you must block, use: firstCompletedOf(List(f1,f2)).await.resultOrException")
+  @deprecated("Will be removed after 1.1, if you must block, use: firstCompletedOf(List(f1,f2)).await.resultOrException", "1.1")
   def awaitEither[T](f1: Future[T], f2: Future[T]): Option[T] = firstCompletedOf[T](List(f1,f2)).await.resultOrException
 }
 
@@ -349,7 +349,7 @@ sealed trait Future[+T] {
    * caution with this method as it ignores the timeout and will block
    * indefinitely if the Future is never completed.
    */
-  @deprecated("Will be removed after 1.1, it's dangerous and can cause deadlocks, agony and insanity.")
+  @deprecated("Will be removed after 1.1, it's dangerous and can cause deadlocks, agony and insanity.", "1.1")
   def awaitBlocking : Future[T]
 
   /**

@@ -412,12 +412,12 @@ object TypedActorConfiguration {
     new TypedActorConfiguration().timeout(Duration(timeout, "millis"))
   }
 
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def apply(host: String, port: Int) : TypedActorConfiguration = {
     new TypedActorConfiguration().makeRemote(host, port)
   }
 
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def apply(host: String, port: Int, timeout: Long) : TypedActorConfiguration = {
     new TypedActorConfiguration().makeRemote(host, port).timeout(Duration(timeout, "millis"))
   }
@@ -447,10 +447,10 @@ final class TypedActorConfiguration {
     this
   }
 
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def makeRemote(hostname: String, port: Int): TypedActorConfiguration = makeRemote(new InetSocketAddress(hostname, port))
 
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def makeRemote(remoteAddress: InetSocketAddress): TypedActorConfiguration = {
     _host = Some(remoteAddress)
     this
@@ -518,7 +518,7 @@ object TypedActor {
    * @param host hostname of the remote server
    * @param port port of the remote server
    */
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def newRemoteInstance[T](intfClass: Class[T], targetClass: Class[_], hostname: String, port: Int): T = {
     newInstance(intfClass, targetClass, TypedActorConfiguration(hostname, port))
   }
@@ -530,7 +530,7 @@ object TypedActor {
    * @param host hostname of the remote server
    * @param port port of the remote server
    */
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def newRemoteInstance[T](intfClass: Class[T], factory: => AnyRef, hostname: String, port: Int): T = {
     newInstance(intfClass, factory, TypedActorConfiguration(hostname, port))
   }
@@ -563,7 +563,7 @@ object TypedActor {
    * @param host hostname of the remote server
    * @param port port of the remote server
    */
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def newRemoteInstance[T](intfClass: Class[T], targetClass: Class[_], timeout: Long, hostname: String, port: Int): T = {
     newInstance(intfClass, targetClass, TypedActorConfiguration(hostname, port, timeout))
   }
@@ -576,7 +576,7 @@ object TypedActor {
    * @param host hostname of the remote server
    * @param port port of the remote server
    */
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def newRemoteInstance[T](intfClass: Class[T], factory: => AnyRef, timeout: Long, hostname: String, port: Int): T = {
     newInstance(intfClass, factory, TypedActorConfiguration(hostname, port, timeout))
   }
@@ -593,7 +593,7 @@ object TypedActor {
   /**
    * Creates an ActorRef, can be local only or client-managed-remote
    */
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   private[akka] def createActorRef(typedActor: => TypedActor, config: TypedActorConfiguration): ActorRef = {
     config match {
       case null => actorOf(typedActor)
@@ -669,14 +669,14 @@ object TypedActor {
   /**
    * Java API.
    */
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def newRemoteInstance[T](intfClass: Class[T], factory: TypedActorFactory, hostname: String, port: Int) : T =
     newRemoteInstance(intfClass, factory.create, hostname, port)
 
   /**
    * Java API.
    */
-  @deprecated("Will be removed after 1.1")
+  @deprecated("Will be removed after 1.1", "1.1")
   def newRemoteInstance[T](intfClass: Class[T], factory: TypedActorFactory, timeout: Long, hostname: String, port: Int) : T =
     newRemoteInstance(intfClass, factory.create, timeout, hostname, port)
 
