@@ -559,7 +559,7 @@ object TypedActor {
    * Factory method for remote typed actor.
    * @param intfClass interface the typed actor implements
    * @param targetClass implementation class of the typed actor
-   * @paramm timeout timeout for future
+   * @param timeout timeout for future
    * @param host hostname of the remote server
    * @param port port of the remote server
    */
@@ -572,7 +572,7 @@ object TypedActor {
    * Factory method for remote typed actor.
    * @param intfClass interface the typed actor implements
    * @param factory factory method that constructs the typed actor
-   * @paramm timeout timeout for future
+   * @param timeout timeout for future
    * @param host hostname of the remote server
    * @param port port of the remote server
    */
@@ -585,7 +585,7 @@ object TypedActor {
    * Factory method for typed actor.
    * @param intfClass interface the typed actor implements
    * @param factory factory method that constructs the typed actor
-   * @paramm config configuration object forthe typed actor
+   * @param config configuration object for the typed actor
    */
   def newInstance[T](intfClass: Class[T], factory: => AnyRef, config: TypedActorConfiguration): T =
     newInstance(intfClass, createActorRef(newTypedActor(factory),config), config)
@@ -607,7 +607,7 @@ object TypedActor {
    *  Factory method for typed actor.
    * @param intfClass interface the typed actor implements
    * @param targetClass implementation class of the typed actor
-   * @paramm config configuration object forthe typed actor
+   * @param config configuration object for the typed actor
    */
   def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T =
     newInstance(intfClass, createActorRef(newTypedActor(targetClass),config), config)
