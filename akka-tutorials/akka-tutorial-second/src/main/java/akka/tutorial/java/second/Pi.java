@@ -29,8 +29,8 @@ import akka.routing.UntypedLoadBalancer;
  * <pre>
  *   $ cd akka-1.1
  *   $ export AKKA_HOME=`pwd`
- *   $ javac -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar akka/tutorial/java/second/Pi.java
- *   $ java -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.java.second.Pi
+ *   $ javac -cp dist/akka-actor-1.1-RC1.jar:scala-library.jar akka/tutorial/java/second/Pi.java
+ *   $ java -cp dist/akka-actor-1.1-RC1.jar:scala-library.jar:. akka.tutorial.java.second.Pi
  *   $ ...
  * </pre>
  * <p/>
