@@ -10,22 +10,25 @@ Explanation of the different levels of stability
 * **Stable** - Ready for use in production environment
 * **In progress** - Not enough feedback/use to claim it's ready for production use
 
-||~ Feature ||~  Solid  ||~  Stable  ||~ In progress ||
-||= ====`Actors (Scala) <actors-scala>`_ ==== ||= Solid ||=   ||=   ||
-||= ====`Actors (Java) <actors-java>`_ ==== ||= Solid ||=   ||=   ||
-||= ====` Typed Actors (Scala) <typed-actors-scala>`_ ==== ||= Solid ||=   ||=   ||
-||= ====` Typed Actors (Java) <typed-actors-java>`_ ==== ||= Solid ||=   ||=   ||
-||= ====`STM (Scala) <stm-scala>`_ ==== ||= Solid ||=   ||=   ||
-||= ====`STM (Java) <stm-java>`_ ==== ||= Solid ||=   ||=   ||
-||= ====`Transactors (Scala) <transactors-scala>`_ ==== ||= Solid ||=   ||=   ||
-||= ====`Transactors (Java) <transactors-java>`_ ==== ||= Solid ||=   ||=   ||
-||= ====`Remote Actors (Scala) <remote-actors-scala>`_ ==== ||= Solid ||=   ||=   ||
-||= ====`Remote Actors (Java) <remote-actors-java>`_ ==== ||= Solid ||=   ||=   ||
-||= ====`Camel <camel>`_ ==== ||= Solid  ||= ||=   ||
-||= ====`AMQP <amqp>`_ ==== ||= Solid  ||= ||=   ||
-||= ====`HTTP <http>`_ ==== ||= Solid  ||= ||=   ||
-||= ====`Integration Guice <guice-integration>`_ ==== ||=   ||= Stable ||=   ||
-||= ====`Integration Spring <spring-integration>`_ ==== ||=   ||= Stable  ||=  ||
-||= ====`JTA <jta>`_ ==== ||=   ||= Stable ||=   ||
-||= ====`Scheduler <scheduler>`_ ==== ||= Solid ||=   ||=   ||
-||= ====`Redis Pub Sub <pubsub>`_ ==== ||=   ||=   ||= In progress ||
+================================  ============  ============  ============
+Feature                           Solid         Stable        In progress
+================================  ============  ============  ============
+Actors (Scala)                    Solid
+Actors (Java)                     Solid
+Typed Actors (Scala)              Solid
+Typed Actors (Java)               Solid
+STM (Scala)                       Solid
+STM (Java)                        Solid
+Transactors (Scala)               Solid
+Transactors (Java)                Solid
+Remote Actors (Scala)             Solid
+Remote Actors (Java)              Solid
+Camel                             Solid
+AMQP                              Solid
+HTTP                              Solid
+Integration Guice                               Stable
+Integration Spring                              Stable
+JTA                                             Stable
+Scheduler                         Solid
+Redis Pub Sub                                                 In progress
+================================  ============  ============  ============
