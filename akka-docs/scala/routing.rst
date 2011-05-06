@@ -1,4 +1,9 @@
-**Routing / Patterns (Scala)**
+Routing (Scala)
+===============
+
+.. sidebar:: Contents
+
+   .. contents:: :local:
 
 Akka-core includes some building blocks to build more complex message flow handlers, they are listed and explained below:
 
@@ -7,7 +12,7 @@ Dispatcher
 
 A Dispatcher is an actor that routes incoming messages to outbound actors.
 
-To use it you can either create a Dispatcher through the **dispatcherActor()** factory method
+To use it you can either create a Dispatcher through the ``dispatcherActor()` factory method
 
 .. code-block:: scala
 
@@ -69,7 +74,7 @@ LoadBalancer
 
 A LoadBalancer is an actor that forwards messages it receives to a boundless sequence of destination actors.
 
-Example using the **loadBalancerActor()** factory method:
+Example using the ``loadBalancerActor()`` factory method:
 
 .. code-block:: scala
 
@@ -147,10 +152,9 @@ Selection
 ^^^^^^^^^
 
 All pools require a *Selector* to be mixed-in. This trait controls how and how many actors in the pool will receive the incoming message. Define *selectionCount* to some positive number greater than one to route to multiple actors. Currently two are provided:
+
 * `SmallestMailboxSelector <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L133>`_ - Using the exact same logic as the iterator of the same name, the pooled actor with the fewest number of pending messages will be chosen.
 * `RoundRobinSelector <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L158>`_ - Performs a very simple index-based selection, wrapping around the end of the list, very much like the CyclicIterator does.
-
-*
 
 Partial Fills
 *************
@@ -161,6 +165,7 @@ Capacity
 ^^^^^^^^
 
 As you'd expect, capacity traits determine how the pool is funded with actors. There are two types of strategies that can be employed:
+
 * `FixedCapacityStrategy <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L268>`_ - When you mix this into your actor pool, you define a pool size and when the pool is started, it will have that number of actors within to which messages will be delegated.
 * `BoundedCapacityStrategy <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L269>`_ - When you mix this into your actor pool, you define upper and lower bounds, and when the pool is started, it will have the minimum number of actors in place to handle messages. You must also mix-in a Capacitor and a Filter when using this strategy (see below).
 
@@ -204,6 +209,7 @@ A *Filter* is a trait that modifies the raw pressure reading returned from a Cap
   }
 
 Here we see how the filter function will have the chance to modify the pressure reading to influence the capacity change. You are free to implement filter() however you like. We provide a `Filter <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L279>`_ trait that evaluates both a rampup and a backoff subfilter to determine how to use the pressure reading to alter the pool capacity. There are several subfilters available to use, though again you may create whatever makes the most sense for you pool:
+
 * `BasicRampup <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L308>`_ - When pressure exceeds current capacity, increase the number of actors in the pool by some factor (*rampupRate*) of the current pool size.
 * `BasicBackoff <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L322>`_ - When the pressure ratio falls under some predefined amount (*backoffThreshold*), decrease the number of actors in the pool by some factor of the current pool size.
 * `RunningMeanBackoff <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L341>`_ - This filter tracks the average pressure-to-capacity over the lifetime of the pool (or since the last time the filter was reset) and will begin to reduce capacity once this mean falls below some predefined amount. The number of actors that will be stopped is determined by some factor of the difference between the current capacity and pressure. The idea behind this filter is to reduce the likelihood of "thrashing" (removing then immediately creating...) pool actors by delaying the backoff until some quiescent stage of the pool. Put another way, use this subfilter to allow quick rampup to handle load and more subtle backoff as that decreases over time.
