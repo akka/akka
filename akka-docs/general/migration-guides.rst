@@ -1,3 +1,5 @@
+.. _migration:
+
 Migration Guides
 ================
 
