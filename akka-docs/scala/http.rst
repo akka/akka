@@ -1,10 +1,14 @@
-HTTP
-====
+
+.. _http-module:
+
+######
+ HTTP
+######
 
 Module stability: **SOLID**
 
-When using Akkas embedded servlet container:
---------------------------------------------
+When using Akkas embedded servlet container
+-------------------------------------------
 
 Akka supports the JSR for REST called JAX-RS (JSR-311). It allows you to create interaction with your actors through HTTP + REST
 

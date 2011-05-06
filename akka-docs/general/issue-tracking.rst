@@ -28,11 +28,11 @@ In order to create tickets you need to do the following:
 `Register here <https://www.assembla.com/user/signup>`_ then log in
 
 For Akka tickets:
-`Link to create new ticket <https://www.assembla.com/spaces/akka/tickets/new>`_
+`Link to create new ticket <https://www.assembla.com/spaces/akka/tickets/new>`__
 
 
 For Akka Modules tickets:
-`Link to create new ticket <https://www.assembla.com/spaces/akka-modules/tickets>`_
+`Link to create new ticket <https://www.assembla.com/spaces/akka-modules/tickets/new>`__
 
 Thanks a lot for reporting bugs and suggesting features.
 
