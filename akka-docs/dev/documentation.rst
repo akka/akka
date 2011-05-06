@@ -3,9 +3,9 @@
 
 .. _documentation:
 
-###############
- Documentation
-###############
+#########################
+ Documentation Guidelines
+#########################
 
 .. sidebar:: Contents
 

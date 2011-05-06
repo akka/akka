@@ -1,9 +1,11 @@
+.. _team:
+
 Team
 =====
 
-===================  ==========================  =================================
+===================  ==========================  ====================================
 Name                 Role                        Email
-===================  ==========================  =================================
+===================  ==========================  ====================================
 Jonas Bonér          Founder, Despot, Committer  jonas AT jonasboner DOT com
 Viktor Klang         Bad cop, Committer          viktor DOT klang AT gmail DOT com  
 Debasish Ghosh       Committer                   dghosh AT acm DOT org  
@@ -21,5 +23,6 @@ Irmo Manie           Committer
 Heiko Seeberger      Committer    
 Hiram Chirino        Committer    
 Scott Clasen         Committer    
-Roland Kuhn          Committer    
-===================  ==========================  =================================
+Roland Kuhn          Committer
+Patrik Nordwall      Committer                   patrik DOT nordwall AT gmail DOT com
+===================  ==========================  ====================================

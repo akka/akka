@@ -1,3 +1,5 @@
+.. _issue_tracking:
+
 Issue Tracking
 ==============
 
