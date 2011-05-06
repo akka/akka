@@ -9,5 +9,6 @@ Additional Information
    recipes
    external-sample-projects
    companies-using-akka
+   third-party-integrations
    language-bindings
    stability-matrix
