@@ -4,13 +4,13 @@ Release Notes
 Changes listed in no particular order.
 
 Current Development 1.1-SNAPSHOT
-================================
+----------------------------------------
 
 ||~ =Type= ||~ =Changes= ||~ =By= ||
 || **UPD** || improve FSM DSL: make onTransition syntax nicer || Roland Kuhn ||
 
 Release 1.1-M1
-==============
+--------------------
 
 ||~ =**Type**
  ||~
@@ -74,7 +74,7 @@ Release 1.1-M1
 || **REM** || #686 Remove SBinary || Viktor Klang ||
 
 Release 1.0-RC6
-===============
+----------------------------------------
 
 ||~ =**Type**
  ||~
@@ -89,7 +89,7 @@ Release 1.0-RC6
 || **FIX** || #629 Stuck upon actor invocation || Viktor Klang ||
 
 Release 1.0-RC5
-===============
+----------------------------------------
 
 ||~ =**Type**
  ||~
@@ -109,7 +109,7 @@ Release 1.0-RC5
 || **FIX** || ActorRef.forward now doesn't require the sender to be set on the message || Viktor Klang ||
 
 Release 1.0-RC3
-===============
+----------------------------------------
 
 ||~ =**Type**
  ||~
@@ -146,7 +146,7 @@ Release 1.0-RC3
 || **REM** || object UntypedActor, object ActorRegistry, class RemoteActor, class RemoteUntypedActor, class RemoteUntypedConsumerActor || Viktor Klang ||
 
 Release 1.0-RC1
-===============
+----------------------------------------
 
 ||~ =**Type**
  ||~
@@ -218,7 +218,7 @@ Release 1.0-RC1
 || **REM** || JGroups integration, doesn't play with cloud services :/ || Viktor Klang ||
 
 Release 1.0-MILESTONE1
-======================
+----------------------------------------
 
 ||~ =**Type**
  ||~
@@ -295,7 +295,7 @@ Release 1.0-MILESTONE1
 || **ADD** || #265 Java API for AMQP module || Irmo Manie ||
 
 Release 0.10 - Aug 21 2010
-==========================
+----------------------------------------
 
 `<image:Burndown_Akka_0.10.png>`_
 
@@ -425,7 +425,7 @@ trapExit should pass through self with Exit to supervisor || Irmo Manie ||
 || **FIX** || #340 RedisStorage Map.get does not throw exception when disconnected from redis but returns None || Debasish Ghosh ||
 
 Release 0.9 - June 2th 2010
-===========================
+----------------------------------------
 
 ||~ =**Type**
  ||~
@@ -509,7 +509,7 @@ Release 0.9 - June 2th 2010
 || **REM** || Shoal cluster module || Viktor Klang ||
 
 Release 0.8.1 - April 6th 2010
-==============================
+----------------------------------------
 
 ||~ =**Type**
  ||~
@@ -531,7 +531,7 @@ Release 0.8.1 - April 6th 2010
 || **FIX** || Moved web initializer to new akka-servlet module || Viktor Klang ||
 
 Release 0.8 - March 31st 2010
-=============================
+----------------------------------------
 
 ||~ =**Type**
  ||~
@@ -553,7 +553,7 @@ Release 0.8 - March 31st 2010
 || **REMOVE** || Actor.send function || Jonas Bonér ||
 
 Release 0.7 - March 21st 2010
-=============================
+----------------------------------------
 
 ||~ =**Type**
  ||~
@@ -586,7 +586,7 @@ Release 0.7 - March 21st 2010
 || **FIX** || Various bugs fixed || Team ||
 
 Release 0.6 - January 5th 2010
-==============================
+----------------------------------------
 
 ||~ =**Type**
  ||~
