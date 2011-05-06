@@ -17,5 +17,6 @@ Scala API
    fault-tolerance
    dispatchers
    fsm
+   http
    testing
    tutorial-chat-server
