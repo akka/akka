@@ -22,8 +22,8 @@ import System.{currentTimeMillis => now}
  * <pre>
  *   $ cd akka-1.1
  *   $ export AKKA_HOME=`pwd`
- *   $ scalac -cp dist/akka-actor-1.1-SNAPSHOT.jar Pi.scala
- *   $ java -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.second.Pi
+ *   $ scalac -cp dist/akka-actor-1.2-SNAPSHOT.jar Pi.scala
+ *   $ java -cp dist/akka-actor-1.2-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.second.Pi
  *   $ ...
  * </pre>
  * <p/>

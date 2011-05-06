@@ -27,8 +27,8 @@ import java.util.concurrent.CountDownLatch;
  * <pre>
  *   $ cd akka-1.1
  *   $ export AKKA_HOME=`pwd`
- *   $ javac -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar akka/tutorial/first/java/Pi.java
- *   $ java -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.first.java.Pi
+ *   $ javac -cp dist/akka-actor-1.2-SNAPSHOT.jar:scala-library.jar akka/tutorial/first/java/Pi.java
+ *   $ java -cp dist/akka-actor-1.2-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.first.java.Pi
  *   $ ...
  * </pre>
  * <p/>
