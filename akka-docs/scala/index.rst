@@ -16,6 +16,7 @@ Scala API
    serialization
    fault-tolerance
    dispatchers
+   routing
    fsm
    http
    testing
