@@ -1,8 +1,8 @@
 Routing (Java)
 ==============
 
-**UntypedDispatcher**
----------------------
+UntypedDispatcher
+-----------------
 
 An UntypedDispatcher is an actor that routes incoming messages to outbound actors.
 
@@ -42,8 +42,8 @@ An UntypedDispatcher is an actor that routes incoming messages to outbound actor
   dispatcher.sendOneWay("Ping"); //Prints "Pinger: Ping"
   dispatcher.sendOneWay("Pong"); //Prints "Ponger: Pong"
 
-**UntypedLoadBalancer**
------------------------
+UntypedLoadBalancer
+-------------------
 
 An UntypedLoadBalancer is an actor that forwards messages it receives to a boundless sequence of destination actors.
 
@@ -88,6 +88,7 @@ An UntypedLoadBalancer is an actor that forwards messages it receives to a bound
 
 You can also send a 'new Routing.Broadcast(msg)' message to the router to have it be broadcasted out to all the actors it represents.
 
-`<code format="java">`_
-router.sendOneWay(new Routing.Broadcast(new PoisonPill()));
-`<code>`_
+.. code-block:: java
+
+  router.sendOneWay(new Routing.Broadcast(new PoisonPill()));
+
