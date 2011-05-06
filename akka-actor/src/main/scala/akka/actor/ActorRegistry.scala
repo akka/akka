@@ -286,7 +286,7 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
 
   /**
    * Associates the value of type V with the key of type K
-   * @returns true if the value didn't exist for the key previously, and false otherwise
+   * @return true if the value didn't exist for the key previously, and false otherwise
    */
   def put(key: K, value: V): Boolean = {
     //Tailrecursive spin-locking put
@@ -328,7 +328,7 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
   }
 
   /**
-   * @returns a _new_ array of all existing values for the given key at the time of the call
+   * @return a _new_ array of all existing values for the given key at the time of the call
    */
   def values(key: K): Array[V] = {
     val set: JSet[V] = container get key
@@ -337,7 +337,7 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
   }
 
   /**
-   * @returns Some(value) for the first matching value where the supplied function returns true for the given key,
+   * @return Some(value) for the first matching value where the supplied function returns true for the given key,
    * if no matches it returns None
    */
   def findValue(key: K)(f: (V) => Boolean): Option[V] = {
@@ -359,7 +359,7 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
 
   /**
    * Disassociates the value of type V from the key of type K
-   * @returns true if the value was disassociated from the key and false if it wasn't previously associated with the key
+   * @return true if the value was disassociated from the key and false if it wasn't previously associated with the key
    */
   def remove(key: K, value: V): Boolean = {
     val set = container get key
@@ -377,7 +377,7 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
   }
 
   /**
-   * @returns true if the underlying containers is empty, may report false negatives when the last remove is underway
+   * @return true if the underlying containers is empty, may report false negatives when the last remove is underway
    */
   def isEmpty: Boolean = container.isEmpty
 
