@@ -22,19 +22,8 @@ Quick Links
 
 * `Source Code <http://github.com/jboner/akka>`_
 
-* `API <http://akka.io/api/akka/snapshot/>`_
-
-* `Mailing List <http://groups.google.com/group/akka-user>`_
-
-* :ref:`licenses`
+* :ref:`scaladoc`
 
 * :ref:`issue_tracking`
 
-* :ref:`team`
-
-* :ref:`developer_guidelines`
-
-* :ref:`documentation`
-
-* :ref:`sponsors`
 

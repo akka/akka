@@ -9,9 +9,6 @@
 `Source Code <http://github.com/jboner/akka>`_
 ==============================================
 
-`API <http://akka.io/api/akka/snapshot/>`_
-==========================================
-
 `Maven Repository <http://akka.io/repository/>`_
 ================================================
 

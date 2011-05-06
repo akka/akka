@@ -11,7 +11,7 @@ The `Actor Model <http://en.wikipedia.org/wiki/Actor_model>`_ provides a higher 
 
 The API of Akka’s Actors is similar to Scala Actors which has borrowed some of its syntax from Erlang.
 
-The Akka 0.9 release introduced a new concept; ActorRef, which requires some refactoring. If you are new to Akka just read along, but if you have used Akka 0.6.x, 0.7.x and 0.8.x then you might be helped by the :doc:`0.8.x => 0.9.x migration guide </general/migration-guide-0.8.x-0.9.x>`
+The Akka 0.9 release introduced a new concept; ActorRef, which requires some refactoring. If you are new to Akka just read along, but if you have used Akka 0.6.x, 0.7.x and 0.8.x then you might be helped by the :doc:`0.8.x => 0.9.x migration guide </project/migration-guide-0.8.x-0.9.x>`
 
 Creating Actors
 ---------------
