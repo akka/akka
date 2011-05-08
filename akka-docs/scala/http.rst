@@ -1,9 +1,12 @@
 
 .. _http-module:
 
-######
- HTTP
-######
+HTTP
+====
+
+.. sidebar:: Contents
+
+   .. contents:: :local:
 
 Module stability: **SOLID**
 
@@ -523,3 +526,5 @@ Using the Akka Mist module with the Facebook Graph API and WebGL
 
 Example project using Akka Mist with the Facebook Graph API and WebGL
 `<https://github.com/buka/fbgl1>`_
+
+

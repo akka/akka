@@ -697,30 +697,3 @@ Using the generated message builder to send the message to a remote actor:
       .setName("Coltrane")
       .build
 
-SBinary
-^^^^^^^
-
-.. code-block:: scala
-
-  case class User(firstNameLastName: Tuple2[String, String], email: String, age: Int) extends Serializable.SBinary[User] {
-    import sbinary.DefaultProtocol._
-
-    def this() = this(null, null, 0)
-
-    implicit object UserFormat extends Format[User] {
-      def reads(in : Input) = User(
-        read[Tuple2[String, String]](in),
-        read[String](in),
-        read[Int](in))
-      def writes(out: Output, value: User) = {
-        write[Tuple2[String, String]](out, value. firstNameLastName)
-        write[String](out, value.email)
-        write[Int](out, value.age)
-      }
-    }
-
-    def fromBytes(bytes: Array[Byte]) = fromByteArray[User](bytes)
-
-    def toBytes: Array[Byte] = toByteArray(this)
-  }
-

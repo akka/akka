@@ -1,11 +1,16 @@
-Security
-========
+HTTP Security
+=============
+
+.. sidebar:: Contents
+
+   .. contents:: :local:
 
 Module stability: **IN PROGRESS**
 
 Akka supports security for access to RESTful Actors through `HTTP Authentication <http://en.wikipedia.org/wiki/HTTP_Authentication>`_. The security is implemented as a jersey ResourceFilter which delegates the actual authentication to an authentication actor.
 
 Akka provides authentication via the following authentication schemes:
+
 * `Basic Authentication <http://en.wikipedia.org/wiki/Basic_access_authentication>`_
 * `Digest Authentication <http://en.wikipedia.org/wiki/Digest_access_authentication>`_
 * `Kerberos SPNEGO Authentication <http://en.wikipedia.org/wiki/SPNEGO>`_
@@ -13,16 +18,14 @@ Akka provides authentication via the following authentication schemes:
 The authentication is performed by implementations of akka.security.AuthenticationActor.
 
 Akka provides a trait for each authentication scheme:
+
 * BasicAuthenticationActor
 * DigestAuthenticationActor
 * SpnegoAuthenticationActor
 
-With Akka’s excellent support for distributed databases, it’s a one-liner to do a distributed authentication scheme.
-
-^
 
 Setup
-=====
+-----
 
 To secure your RESTful actors you need to perform the following steps:
 
@@ -54,6 +57,7 @@ To secure your RESTful actors you need to perform the following steps:
 3. Start your authentication actor in your 'Boot' class. The security package consists of the following parts:
 
 4. Secure your RESTful actors using class or resource level annotations:
+
 * @DenyAll
 * @RolesAllowed(listOfRoles)
 * @PermitAll
@@ -65,6 +69,7 @@ The akka-samples-security module contains a small sample application with sample
 You can start the sample app using the jetty plugin: mvn jetty:run.
 
 The RESTful actor can then be accessed using your browser of choice under:
+
 * permit access only to users having the “chef” role: `<http://localhost:8080//secureticker/chef>`_
 * public access: `<http://localhost:8080//secureticker/public>`_
 
@@ -72,7 +77,6 @@ You can access the secured resource using any user for basic authentication (whi
 
 Digest authentication can be directly enabled in the sample app. Kerberos/SPNEGO authentication is a bit more involved an is described below.
 
-^
 
 Kerberos/SPNEGO Authentication
 ------------------------------
@@ -83,11 +87,12 @@ In a kerberos enabled environment a user will need to sign on only once. Subsequ
 Most prominently the kerberos protocol is used to authenticate users in a windows network. When deploying web applications to a corporate intranet an important feature will be to support the single sign on (SSO), which comes to make the application kerberos aware.
 
 How does it work (at least for REST actors)?
-# When accessing a secured resource the server will check the request for the *Authorization* header as with basic or digest authentication.
-# If it is not set, the server will respond with a challenge to “Negotiate”. The negotiation is in fact the NEGO part of the `SPNEGO <http://tools.ietf.org/html/rfc4178>`_ specification)
-# The browser will then try to acquire a so called *service ticket* from a ticket granting service, i.e. the kerberos server
-# The browser will send the *service ticket* to the web application encoded in the header value of the *Authorization*header
-# The web application must validate the ticket based on a shared secret between the web application and the kerberos server. As a result the web application will know the name of the user
+
+- When accessing a secured resource the server will check the request for the *Authorization* header as with basic or digest authentication.
+- If it is not set, the server will respond with a challenge to "Negotiate". The negotiation is in fact the NEGO part of the `SPNEGO <http://tools.ietf.org/html/rfc4178>`_ specification
+- The browser will then try to acquire a so called *service ticket* from a ticket granting service, i.e. the kerberos server
+- The browser will send the *service ticket* to the web application encoded in the header value of the *Authorization* header
+- The web application must validate the ticket based on a shared secret between the web application and the kerberos server. As a result the web application will know the name of the user
 
 To activate the kerberos/SPNEGO authentication for your REST actor you need to enable the kerberos/SPNEGOauthentication actor in the akka.conf like this:
 
@@ -103,8 +108,9 @@ To activate the kerberos/SPNEGO authentication for your REST actor you need to e
   }
 
 Furthermore you must provide the SpnegoAuthenticator with the following information.
-# Service principal name: the name of your web application in the kerberos servers user database. This name is always has the form “HTTP/{server}@{realm}”
-# Path to the keytab file: this is a kind of certificate for your web application to acquire tickets from the kerberos server
+
+- Service principal name: the name of your web application in the kerberos servers user database. This name is always has the form ``HTTP/{server}@{realm}``
+- Path to the keytab file: this is a kind of certificate for your web application to acquire tickets from the kerberos server
 
 .. code-block:: ruby
 
@@ -122,7 +128,6 @@ Furthermore you must provide the SpnegoAuthenticator with the following informat
    ...
   }
 
-^
 
 How to setup kerberos on localhost for Ubuntu
 ---------------------------------------------
@@ -233,9 +238,9 @@ This seems correct. To remove the ticket cache simply type kdestroy.
   Verifying - Password:
   eckart@dilbert:~$
 
-This command will create a keytab file for the service principal named “http.keytab” in the current directory. You can specify other encryption methods than ‘aes256-cts-hmac-sha1-96’, but this is the e default encryption method for the heimdal client, so there is no additional configuration needed. You can specify other encryption types in the krb5.conf.
+This command will create a keytab file for the service principal named ``http.keytab`` in the current directory. You can specify other encryption methods than ‘aes256-cts-hmac-sha1-96’, but this is the e default encryption method for the heimdal client, so there is no additional configuration needed. You can specify other encryption types in the krb5.conf.
 
-Note that you might need to install the unlimited strength policy files for java from here:`<http://java.sun.com/javase/downloads/index_jdk5.jsp>`_ to use the aes256 encryption from your application.
+Note that you might need to install the unlimited strength policy files for java from here: `<http://java.sun.com/javase/downloads/index_jdk5.jsp>`_ to use the aes256 encryption from your application.
 
 Again we can test if the keytab generation worked with the kinit command:
 
@@ -249,13 +254,13 @@ Again we can test if the keytab generation worked with the kinit command:
     Issued           Expires          Principal
   Oct 24 21:59:20  Oct 25 06:59:20  krbtgt/EXAMPLE.COM@EXAMPLE.COM
 
-Now point the configuration of the key in 'akka.conf' to the correct location and set the correct service principal name. The web application should now startup and produce at least a 401 response with a header “WWW-Authenticate” = “Negotiate”. The last step is to configure the browser.
+Now point the configuration of the key in 'akka.conf' to the correct location and set the correct service principal name. The web application should now startup and produce at least a 401 response with a header ``WWW-Authenticate`` = "Negotiate". The last step is to configure the browser.
 
 6. Set up Firefox to use Kerberos/SPNEGO
-This is done by typing 'about:config'. Filter the config entries for “network.neg” and set the config entries “network.negotiate-auth.delegation-uris” and “network.negotiate-auth.trusted-uris” to “localhost”.
+This is done by typing ``about:config``. Filter the config entries for ``network.neg`` and set the config entries ``network.negotiate-auth.delegation-uris`` and ``network.negotiate-auth.trusted-uris`` to ``localhost``.
 and now …
 
 7. Access the RESTful Actor.
 
 8. Have fun
-… but acquire an initial ticket for the user principal first: kinit zaphod
+… but acquire an initial ticket for the user principal first: ``kinit zaphod``

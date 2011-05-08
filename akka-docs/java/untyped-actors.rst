@@ -227,6 +227,27 @@ Here is an example:
 Reply to messages
 -----------------
 
+Reply using the channel
+^^^^^^^^^^^^^^^^^^^^^^^
+
+If you want to have a handle to an object to whom you can reply to the message, you can use the Channel abstraction.
+Simply call getContext().channel() and then you can forward that to others, store it away or otherwise until you want to reply,
+which you do by Channel.sendOneWay(msg)
+
+.. code-block:: java
+
+  public void onReceive(Object message) throws Exception {
+    if (message instanceof String) {
+      String msg = (String)message;
+      if (msg.equals("Hello") && getContext().getSenderFuture().isDefined()) {
+        // Reply to original sender of message using the channel
+        getContext().channel().sendOneWay(msg + " from " + getContext().getUuid());
+      }
+    }
+  }
+
+We recommend that you as first choice use the channel abstraction instead of the other ways described in the following sections.
+
 Reply using the 'replySafe' and 'replyUnsafe' methods
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -307,24 +328,6 @@ Here is an example of how it can be used:
     }
   }
 
-Reply using the channel
-^^^^^^^^^^^^^^^^^^^^^^^
-
-If you want to have a handle to an object to whom you can reply to the message, you can use the Channel abstraction.
-Simply call getContext().channel() and then you can forward that to others, store it away or otherwise until you want to reply,
-which you do by Channel.sendOneWay(msg)
-
-.. code-block:: java
-
-  public void onReceive(Object message) throws Exception {
-    if (message instanceof String) {
-      String msg = (String)message;
-      if (msg.equals("Hello") && getContext().getSenderFuture().isDefined()) {
-        // Reply to original sender of message using the channel
-        getContext().channel().sendOneWay(msg + " from " + getContext().getUuid());
-      }
-    }
-  }
 
 Summary of reply semantics and options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

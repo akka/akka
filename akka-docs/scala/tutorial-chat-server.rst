@@ -371,22 +371,8 @@ Akka currently provides three different transactional abstractions; 'Map', 'Vect
 
 What you get is transactional memory in which multiple Actors are allowed to read and write to the same memory concurrently and if there is a clash between two transactions then both of them are aborted and retried. Aborting a transaction means that the memory is rolled back to the state it were in when the transaction was started.
 
-In database terms STM gives you 'ACI' semantics; 'Atomicity', 'Consistency' and 'Isolation'. The 'D' in 'ACID'; 'Durability', you can't get with an STM since it is in memory. This however is addressed by the persistence module in Akka.
-
-Persistence: Storing the chat log
----------------------------------
-
-Akka modules provides the possibility of taking the transactional data structures we discussed above and making them persistent. It is an extension to the STM which guarantees that it has the same semantics.
-
-The `persistence module <persistence>`_ has pluggable storage back-ends.
-
-They all implement persistent 'Map', 'Vector' and 'Ref'. Which can be created and retrieved by id through one of the storage modules.
-
-.. code-block:: scala
-
-  val map =    RedisStorage.newMap(id)
-  val vector = CassandraStorage.newVector(id)
-  val ref =    MongoStorage.newRef(id)
+In database terms STM gives you 'ACI' semantics; 'Atomicity', 'Consistency' and 'Isolation'. The 'D' in 'ACID'; 'Durability', you can't get with an STM since it is in memory.
+It possible to implement durable persistence for the transactional data structures, but in this sample we keep them in memory.
 
 Chat storage: Backed with simple in-memory
 ------------------------------------------

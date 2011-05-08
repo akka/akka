@@ -1,6 +1,10 @@
 Dataflow Concurrency (Java)
 ===========================
 
+.. sidebar:: Contents
+
+   .. contents:: :local:
+
 Introduction
 ------------
 
@@ -13,6 +17,7 @@ Dataflow concurrency is deterministic. This means that it will always behave the
 The best way to learn how to program with dataflow variables is to read the fantastic book `Concepts, Techniques, and Models of Computer Programming <http://www.info.ucl.ac.be/%7Epvr/book.html>`_. By Peter Van Roy and Seif Haridi.
 
 The documentation is not as complete as it should be, something we will improve shortly. For now, besides above listed resources on dataflow concurrency, I recommend you to read the documentation for the GPars implementation, which is heavily influenced by the Akka implementation:
+
 * `<http://gpars.codehaus.org/Dataflow>`_
 * `<http://www.gpars.org/guide/guide/7.%20Dataflow%20Concurrency.html>`_
 

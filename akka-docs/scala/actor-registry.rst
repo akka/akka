@@ -6,14 +6,14 @@ Module stability: **SOLID**
 ActorRegistry: Finding Actors
 -----------------------------
 
-Actors can be looked up by using the **akka.actor.Actor.registry: akka.actor.ActorRegistry**. Lookups for actors through this registry can be done by:
+Actors can be looked up by using the ``akka.actor.Actor.registry: akka.actor.ActorRegistry``. Lookups for actors through this registry can be done by:
 
-* uuid akka.actor.Uuid – this uses the ‘**uuid**’ field in the Actor class, returns the actor reference for the actor with specified uuid, if one exists, otherwise None
-* id string – this uses the ‘**id**’ field in the Actor class, which can be set by the user (default is the class name), returns all actor references to actors with specified id
-* specific actor class - returns an '**Array[Actor]**' with all actors of this exact class
-* parameterized type - returns an '**Array[Actor]**' with all actors that are a subtype of this specific type
+* uuid akka.actor.Uuid – this uses the ``uuid`` field in the Actor class, returns the actor reference for the actor with specified uuid, if one exists, otherwise None
+* id string – this uses the ``id`` field in the Actor class, which can be set by the user (default is the class name), returns all actor references to actors with specified id
+* specific actor class - returns an ``Array[Actor]`` with all actors of this exact class
+* parameterized type - returns an ``Array[Actor]`` with all actors that are a subtype of this specific type
 
-Actors are automatically registered in the ActorRegistry when they are started, removed or stopped. You can explicitly register and unregister ActorRef's by using the '**register**' and '**unregister**' methods. The ActorRegistry contains many convenience methods for looking up typed actors.
+Actors are automatically registered in the ActorRegistry when they are started, removed or stopped. You can explicitly register and unregister ActorRef's by using the ``register`` and ``unregister`` methods. The ActorRegistry contains many convenience methods for looking up typed actors.
 
 Here is a summary of the API for finding actors:
 

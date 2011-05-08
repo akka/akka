@@ -8,12 +8,12 @@ ActorRegistry: Finding Actors
 
 Actors can be looked up using the 'akka.actor.Actors.registry()' object. Through this registry you can look up actors by:
 
-* uuid com.eaio.uuid.UUID – this uses the ‘uuid’ field in the Actor class, returns the actor reference for the actor with specified uuid, if one exists, otherwise None
-* id string – this uses the ‘id’ field in the Actor class, which can be set by the user (default is the class name), returns all actor references to actors with specified id
-* parameterized type - returns a 'ActorRef[]' with all actors that are a subtype of this specific type
-* specific actor class - returns a 'ActorRef[]' with all actors of this exact class
+* uuid com.eaio.uuid.UUID – this uses the ``uuid`` field in the Actor class, returns the actor reference for the actor with specified uuid, if one exists, otherwise None
+* id string – this uses the ``id`` field in the Actor class, which can be set by the user (default is the class name), returns all actor references to actors with specified id
+* parameterized type - returns a ``ActorRef[]`` with all actors that are a subtype of this specific type
+* specific actor class - returns a ``ActorRef[]`` with all actors of this exact class
 
-Actors are automatically registered in the ActorRegistry when they are started and removed when they are stopped. But you can explicitly register and unregister ActorRef's if you need to using the 'register' and 'unregister' methods.
+Actors are automatically registered in the ActorRegistry when they are started and removed when they are stopped. But you can explicitly register and unregister ActorRef's if you need to using the ``register`` and ``unregister`` methods.
 
 Here is a summary of the API for finding actors:
 
