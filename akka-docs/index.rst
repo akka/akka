@@ -13,8 +13,8 @@ Contents
    project/index
    additional/index
 
-Quick Links
-===========
+Links
+=====
 
 * :ref:`migration`
 
@@ -26,4 +26,5 @@ Quick Links
 
 * :ref:`issue_tracking`
 
+* :ref:`support`
 

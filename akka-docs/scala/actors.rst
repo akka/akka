@@ -260,6 +260,25 @@ Let's start by looking how we can reply to messages in a convenient way using th
 Reply to messages
 -----------------
 
+Reply using the channel
+^^^^^^^^^^^^^^^^^^^^^^^
+
+If you want to have a handle to an object to whom you can reply to the message, you can use the ``Channel`` abstraction.
+Simply call ``self.channel`` and then you can forward that to others, store it away or otherwise until you want to reply, which you do by ``Channel ! response``:
+
+.. code-block:: scala
+
+  case request =>
+      val result = process(request)
+      self.channel ! result
+
+.. code-block:: scala
+
+  case request =>
+      friend forward self.channel
+
+We recommend that you as first choice use the channel abstraction instead of the other ways described in the following sections.
+
 Reply using the reply and reply\_? methods
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -325,22 +344,6 @@ Here is an example of how it can be used:
         senderFuture.foreach(_.completeWithException(this, e))
     }
 
-Reply using the channel
-^^^^^^^^^^^^^^^^^^^^^^^
-
-If you want to have a handle to an object to whom you can reply to the message, you can use the ``Channel`` abstraction.
-Simply call ``self.channel`` and then you can forward that to others, store it away or otherwise until you want to reply, which you do by ``Channel ! response``:
-
-.. code-block:: scala
-
-  case request =>
-      val result = process(request)
-      self.channel ! result
-
-.. code-block:: scala
-
-  case request =>
-      friend forward self.channel
 
 Summary of reply semantics and options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

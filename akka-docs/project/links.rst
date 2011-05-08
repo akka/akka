@@ -1,9 +1,16 @@
-.. _links:
+.. _support:
 
-`Support <http://scalablesolutions.se>`_
-========================================
+`Support <http://scalablesolutions.se>`__
+=========================================
 
 `Scalable Solutions <http://scalablesolutions.se>`_
+
+`Mailing List <http://groups.google.com/group/akka-user>`_
+==========================================================
+
+`Akka User Google Group <http://groups.google.com/group/akka-user>`_
+
+`Akka Developer Google Group <http://groups.google.com/group/akka-dev>`_
 
 
 `Downloads <http://akka.io/downloads/>`_
@@ -27,9 +34,3 @@ Akka uses Git and is hosted at `Github <http://github.com>`_.
 `<http://akka.io/repository>`_
 
 
-`Mailing List <http://groups.google.com/group/akka-user>`_
-==========================================================
-
-`Akka User Google Group <http://groups.google.com/group/akka-user>`_
-
-`Akka Developer Google Group <http://groups.google.com/group/akka-dev>`_

@@ -1,3 +1,5 @@
+.. _event-handler:
+
 Event Handler
 =============
 
@@ -17,7 +19,7 @@ You can configure which event handlers should be registered at boot time. That i
     event-handler-level = "DEBUG" # Options: ERROR, WARNING, INFO, DEBUG
   }
 
-The default one logs to STDOUT and is registered by default. It is not intended to be used for production. There is also an SLF4J event handler available in the 'akka-slf4j.jar' module. Read more about it `here <slf4j>`_.
+The default one logs to STDOUT and is registered by default. It is not intended to be used for production. There is also an :ref:`slf4j` event handler available in the 'akka-slf4j' module.
 
 Example of creating a listener from Scala (from Java you just have to create an 'UntypedActor' and create a handler for these messages):
 

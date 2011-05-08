@@ -53,8 +53,8 @@ Then you can create an Typed Actor out of it by creating it through the 'TypedAc
   val service = TypedActor.newInstance(classOf[RegistrationService], classOf[RegistrationServiceImpl], 1000)
   // The last parameter defines the timeout for Future calls
 
-**Creating Typed Actors with non-default constructor**
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Creating Typed Actors with non-default constructor
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To create a typed actor that takes constructor arguments use a variant of 'newInstance' or 'newRemoteInstance' that takes a call-by-name block in which you can create the Typed Actor in any way you like.
 

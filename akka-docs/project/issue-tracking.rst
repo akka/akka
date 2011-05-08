@@ -11,7 +11,7 @@ Browsing
 Tickets
 ^^^^^^^
 
-`You can find the Akka tickets here <http://www.assembla.com/spaces/akka>`_
+`You can find the Akka tickets here <http://www.assembla.com/spaces/akka/tickets>`_
 
 `You can find the Akka Modules tickets here <https://www.assembla.com/spaces/akka-modules/tickets>`_
 
