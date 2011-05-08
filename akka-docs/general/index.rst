@@ -7,4 +7,5 @@ General
    jmm
    configuration
    event-handler
+   slf4j
 
