@@ -154,6 +154,8 @@ Building Akka Modules
 See the Akka Modules documentation.
 
 
+.. _dependencies:
+
 Dependencies
 ============
 

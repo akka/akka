@@ -1,3 +1,5 @@
+.. _scala_api:
+
 Scala API
 =========
 

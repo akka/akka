@@ -1,19 +1,78 @@
 Getting Started
 ===============
 
-There are several ways to download Akka. You can download the full distribution with microkernel, which includes all modules. You can download just the core distribution. Or you can use a build tool like Maven or SBT to download dependencies from the Akka Maven repository.
+.. sidebar:: Contents
 
-A list of each of the Akka module JARs dependencies can be found `here <http://doc.akka.io/building-akka#Dependencies>`_.
+   .. contents:: :local:
+
+The best way to start learning Akka is to try the Getting Started Tutorial, which comes in several flavours
+depending on you development environment preferences:
+
+- :ref:`getting-started-first-java` for Java development, either
+
+  - as standalone project, running from the command line,
+  - or as Maven project and running it from within Maven
+
+- :ref:`getting-started-first-scala` for Scala development, either
+
+  - as standalone project, running from the command line,
+  - or as SBT (Simple Build Tool) project and running it from within SBT
+
+- :ref:`getting-started-first-scala-eclipse` for Scala development with Eclipse
+
+The Getting Started Tutorial describes everything you need to get going, and you don't need to read the rest of
+this page if you study the tutorial. For later look back reference this page describes the
+essential parts for getting started with different development environments.
+
+Prerequisites
+-------------
+
+Akka requires that you have `Jave 1.6 <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`_ or
+later installed on you machine.
+
+Download
+--------
+
+There are several ways to download Akka. You can download the full distribution with microkernel, which includes
+all modules. You can download just the core distribution. Or you can use a build tool like Maven or SBT to download
+dependencies from the Akka Maven repository.
+
+Modules
+-------
+
+Akka is split up into two different parts:
+
+* Akka - The core modules. Reflects all the sections under :ref:`scala_api` and :ref:`java_api`.
+* Akka Modules - The microkernel and add-on modules, described in :ref:`add-on-modules`.
+
+Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
+
+- ``akka-actor-1.1.jar`` -- Standard Actors
+- ``akka-typed-actor-1.1.jar`` -- Typed Actors
+- ``akka-remote-1.1.jar`` -- Remote Actors
+- ``akka-stm-1.1.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+- ``akka-http-1.1.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
+- ``akka-slf4j-1.1.jar`` -- SLF4J Event Handler Listener
+- ``akka-testkit-1.1.jar`` -- Toolkit for testing Actors
+
+We also have Akka Modules containing add-on modules outside the core of Akka.
+
+- ``akka-kernel-1.1.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
+- ``akka-amqp-1.1.jar`` -- AMQP integration
+- ``akka-camel-1.1.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+- ``akka-camel-typed-1.1.jar`` -- Apache Camel Typed Actors integration
+- ``akka-scalaz-1.1.jar`` -- Support for the Scalaz library
+- ``akka-spring-1.1.jar`` -- Spring framework integration
+- ``akka-osgi-dependencies-bundle-1.1.jar`` -- OSGi support
+
+
+How to see the JARs dependencies of each Akka module is described in the :ref:`dependencies` section. Worth noting
+is that ``akka-actor`` has zero external dependencies (apart from the ``scala-library.jar`` JAR).
 
 Using a release distribution
 ----------------------------
 
-Akka is split up into two different parts:
-
-* Akka - The core modules. Reflects all the sections under 'Scala API' and 'Java API' in the navigation bar.
-* Akka Modules - The microkernel and add-on modules. Reflects all the sections under 'Add-on modules' in the navigation bar.
-
-Download the release you need (Akka core or Akka Modules) from `<http://akka.io/downloads>`_ and unzip it.
+Download the release you need, Akka core or Akka Modules, from `<http://akka.io/downloads>`_ and unzip it.
 
 Microkernel
 ^^^^^^^^^^^
@@ -21,17 +80,9 @@ Microkernel
 The Akka Modules distribution includes the microkernel. To run the microkernel:
 
 * Set the AKKA_HOME environment variable to the root of the Akka distribution.
-* Run ``java -jar akka-modules-1.0.jar``. This will boot up the microkernel and deploy all samples applications from './deploy' dir.
+* To start the kernel use the scripts in the ``bin`` directory and deploy all samples applications from ``./deploy`` dir.
 
-For example (bash shell):
-
-::
-
-  cd akka-modules-1.0
-  export AKKA_HOME=`pwd`
-  java -jar akka-modules-1.0.jar
-
-Now you can continue with reading the `tutorial <tutorial-chat-server>`_ and try to build the tutorial sample project step by step. This can be a good starting point before diving into the reference documentation which can be navigated in the left sidebar.
+More information is available in the documentation of the Microkernel in :ref:`add-on-modules`.
 
 Using a build tool
 ------------------
@@ -39,9 +90,14 @@ Using a build tool
 Akka can be used with build tools that support Maven repositories. The Akka Maven repository can be found at `<http://akka.io/repository>`_.
 
 Using Akka with Maven
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
-If you want to use Akka with Maven then you need to add this repository to your ``pom.xml``:
+Information about how to use Akka with Maven, including how to create an Akka Maven project from scratch,
+can be found in the :ref:`getting-started-first-java`.
+
+Summary of the essential parts for using Akka with Maven:
+
+1) Add this repository to your ``pom.xml``:
 
 .. code-block:: xml
 
@@ -51,22 +107,30 @@ If you want to use Akka with Maven then you need to add this repository to your 
     <url>http://akka.io/repository/ </url>
   </repository>
 
-Then you can add the Akka dependencies. For example, here is the dependency for Akka Actor 1.0:
+2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 1.1:
 
 .. code-block:: xml
 
   <dependency>
     <groupId>se.scalablesolutions.akka</groupId>
     <artifactId>akka-actor</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
   </dependency>
 
+
+
 Using Akka with SBT
-^^^^^^^^^^^^^^^^^^^
+-------------------
 
-Akka has an SBT plugin which makes it very easy to get started with Akka and SBT.
+Information about how to use Akka with SBT, including how to create an Akka SBT project from scratch,
+can be found in the :ref:`getting-started-first-scala`.
 
-The Scala version in your SBT project needs to match the version that Akka is built against. For 1.0 this is 2.8.1.
+Summary of the essential parts for using Akka with SBT:
+
+1) Akka has an SBT plugin which makes it very easy to get started with Akka and SBT.
+
+The Scala version in your SBT project needs to match the version that Akka is built against. For Akka 1.1 this is
+Scala version 2.9.0.
 
 To use the plugin, first add a plugin definition to your SBT project by creating project/plugins/Plugins.scala with:
 
@@ -76,12 +140,12 @@ To use the plugin, first add a plugin definition to your SBT project by creating
 
   class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
     val akkaRepo = "Akka Repo" at "http://akka.io/repository"
-    val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "1.0"
+    val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "1.1"
   }
 
-*Note: the plugin version matches the Akka version provided. The current release is 1.0.*
+*Note: the plugin version matches the Akka version provided. The current release is 1.1.*
 
-Then mix the AkkaProject trait into your project definition. For example:
+2) Then mix the AkkaProject trait into your project definition. For example:
 
 .. code-block:: scala
 
@@ -106,6 +170,18 @@ If you also want to include other Akka modules there is a convenience method: ``
   val akkaMongo = akkaModule("persistence-mongo")
   val akkaRedis = akkaModule("persistence-redis")
 
+
+Using Akka with Eclipse
+-----------------------
+
+Information about how to use Akka with Eclipse, including how to create an Akka Eclipse project from scratch,
+can be found in the :ref:`getting-started-first-scala-eclipse`.
+
+Using Akka with IntelliJ IDEA
+-----------------------------
+
+Setup SBT project and then use `sbt-idea <https://github.com/mpeltonen/sbt-idea>`_ to generate IntelliJ IDEA project.
+
 Build from sources
 ------------------
 
@@ -114,7 +190,7 @@ Akka uses Git and is hosted at `Github <http://github.com>`_.
 * Akka: clone the Akka repository from `<http://github.com/jboner/akka>`_
 * Akka Modules: clone the Akka Modules repository from `<http://github.com/jboner/akka-modules>`_
 
-Continue reading the page on `how to build and run Akka <building-akka>`_
+Continue reading the page on :ref:`building-akka`
 
 Need help?
 ----------
