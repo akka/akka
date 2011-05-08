@@ -1,3 +1,5 @@
+.. _getting-started-first-scala:
+
 Getting Started Tutorial (Scala): First Chapter
 ===============================================
 
