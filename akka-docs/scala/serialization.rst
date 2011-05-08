@@ -468,21 +468,22 @@ You can also use the Serializer abstraction to serialize using the reflection ba
 
 .. code-block:: scala
 
-  import akka.serialization.Serializer
   import scala.reflect.BeanInfo
+  import akka.serialization.Serializer
 
   @BeanInfo case class Foo(name: String) {
     def this() = this(null)  // default constructor is necessary for deserialization
   }
 
-  val foo = new Foo("bar")
-  val json = Serializer.ScalaJSON.out(foo)
+  val foo = Foo("bar")
 
-  val fooCopy = Serializer.ScalaJSON.in(json) // returns a JsObject as an AnyRef
+  val json = Serializer.ScalaJSON.toBinary(foo)
 
-  val fooCopy2 = Serializer.ScalaJSON.in(new String(json)) // can also take a string as input
+  val fooCopy = Serializer.ScalaJSON.fromBinary(json) // returns a JsObject as an AnyRef
 
-  val fooCopy3 = Serializer.ScalaJSON.in[Foo](json).asInstanceOf[Foo]
+  val fooCopy2 = Serializer.ScalaJSON.fromJSON(new String(json)) // can also take a string as input
+
+  val fooCopy3 = Serializer.ScalaJSON.fromBinary[Foo](json).asInstanceOf[Foo]
 
 Classes without a @BeanInfo annotation cannot be serialized as JSON.
 So if you see something like that:
