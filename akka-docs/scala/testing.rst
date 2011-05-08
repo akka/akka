@@ -248,6 +248,11 @@ first; it follows that this examination usually is the last statement in a
     }
   }
 
+.. note::
+
+   All times are measured using ``System.nanoTime``, meaning that they describe
+   wall time, not CPU time.
+
 Ray Roestenburg has written a great article on using the TestKit:
 `<http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html>`_.
 His full example is also available :ref:`here <testkit-example>`.
