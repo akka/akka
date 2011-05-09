@@ -10,7 +10,7 @@ import sbt._
 import sbt.CompileOrder._
 import spde._
 
-class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with ExecProject with DocParentProject {
+class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with ExecProject with DocParentProject { akkaParent =>
 
   // -------------------------------------------------------------------------------------------------------------------
   // Compile settings
@@ -442,6 +442,34 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
       publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
+    }
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Distribution
+  // -------------------------------------------------------------------------------------------------------------------
+
+  lazy val akkaDist = project("dist", "akka-dist", new AkkaDistParentProject(_))
+
+  class AkkaDistParentProject(info: ProjectInfo) extends ParentProject(info) {
+    lazy val akkaActorsDist = project("actors", "akka-dist-actors", new AkkaActorsDistProject(_), akka_actor)
+
+    lazy val akkaCoreDist = project("core", "akka-dist-core", new AkkaCoreDistProject(_),
+                                    akkaActorsDist, akka_remote, akka_http, akka_slf4j, akka_testkit, akka_actor_tests)
+
+    def doNothing = task { None }
+    override def publishLocalAction = doNothing
+    override def deliverLocalAction = doNothing
+    override def publishAction = doNothing
+    override def deliverAction = doNothing
+
+    class AkkaActorsDistProject(info: ProjectInfo) extends DefaultProject(info) with AkkaDistDocProject {
+      def distName = "akka-actors"
+      override def distDocName = "akka"
+    }
+
+    class AkkaCoreDistProject(info: ProjectInfo)extends DefaultProject(info) with AkkaDistProject {
+      def distName = "akka-core"
     }
   }
 }
