@@ -204,7 +204,10 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   override def artifacts = Set(Artifact(artifactID, "pom", "pom"))
 
-  override def deliverProjectDependencies = super.deliverProjectDependencies.toList - akka_samples.projectID - akka_tutorials.projectID
+  override def deliverProjectDependencies = (super.deliverProjectDependencies.toList
+                                             - akka_samples.projectID
+                                             - akka_tutorials.projectID
+                                             - akkaDist.projectID)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Build release
