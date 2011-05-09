@@ -529,34 +529,6 @@ This illustration is taken from Rich Hickey's presentation. Copyright Rich Hicke
 .. image:: ../images/clojure-trees.png
 
 
-JTA integration
----------------
-
-The STM has JTA (Java Transaction API) integration. This means that it will, if enabled, hook in to JTA and start a JTA transaction when the STM transaction is started. It will also rollback the STM transaction if the JTA transaction has failed and vice versa. This does not mean that the STM is made durable, if you need that you should use one of the `persistence modules <persistence>`_. It simply means that the STM will participate and interact with and external JTA provider, for example send a message using JMS atomically within an STM transaction, or use Hibernate to persist STM managed data etc.
-
-Akka also has an API for using JTA explicitly. Read the `section on JTA <jta>`_ for details.
-
-You can enable JTA support in the 'stm' section in the config:
-
-::
-
-    stm {
-      jta-aware = off       # 'on' means that if there JTA Transaction Manager available then the STM will
-                            # begin (or join), commit or rollback the JTA transaction. Default is 'off'.
-    }
-
-You also have to configure which JTA provider to use etc in the 'jta' config section:
-
-::
-
-    jta {
-      provider = "from-jndi" # Options: "from-jndi" (means that Akka will try to detect a TransactionManager in the JNDI)
-                             #          "atomikos" (means that Akka will use the Atomikos based JTA impl in 'akka-jta',
-                             #          e.g. you need the akka-jta JARs on classpath).
-      timeout = 60
-    }
-
-
 Ants simulation sample
 ----------------------
 

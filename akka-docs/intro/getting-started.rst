@@ -165,10 +165,6 @@ If you also want to include other Akka modules there is a convenience method: ``
   val akkaCamel = akkaModule("camel")
   val akkaCamelTyped = akkaModule("camel-typed")
   val akkaSpring = akkaModule("spring")
-  val akkaJta = akkaModule("jta")
-  val akkaCassandra = akkaModule("persistence-cassandra")
-  val akkaMongo = akkaModule("persistence-mongo")
-  val akkaRedis = akkaModule("persistence-redis")
 
 
 Using Akka with Eclipse
