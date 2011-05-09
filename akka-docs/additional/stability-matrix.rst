@@ -28,7 +28,6 @@ AMQP                              Solid
 HTTP                              Solid
 Integration Guice                               Stable
 Integration Spring                              Stable
-JTA                                             Stable
 Scheduler                         Solid
 Redis Pub Sub                                                 In progress
 ================================  ============  ============  ============
