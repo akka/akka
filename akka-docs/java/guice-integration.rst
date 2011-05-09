@@ -45,6 +45,8 @@ Retrieve the external Guice dependency
 --------------------------------------
 
 The external dependency can be retrieved like this:
-`<code format="java">`_
-Ext ext = manager.getExternalDependency(Ext.class);
-`<code>`_
+
+.. code-block:: java
+
+  Ext ext = manager.getExternalDependency(Ext.class);
+
