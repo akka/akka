@@ -1,4 +1,4 @@
-.. _scala_api:
+.. _scala-api:
 
 Scala API
 =========

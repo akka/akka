@@ -42,7 +42,7 @@ Modules
 
 Akka is split up into two different parts:
 
-* Akka - The core modules. Reflects all the sections under :ref:`scala_api` and :ref:`java_api`.
+* Akka - The core modules. Reflects all the sections under :ref:`scala-api` and :ref:`java-api`.
 * Akka Modules - The microkernel and add-on modules, described in :ref:`add-on-modules`.
 
 Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
