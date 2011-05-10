@@ -1,4 +1,4 @@
-.. _java_api:
+.. _java-api:
 
 Java API
 =========
