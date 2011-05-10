@@ -126,6 +126,12 @@ div.header img.rightlogo {
     float: right;
 }
 
+div.header h2.rightheading {
+    position: relative;
+    top:-45px;
+    float: right;
+}
+
 
 div.title {
     font-size: 1.3em;
