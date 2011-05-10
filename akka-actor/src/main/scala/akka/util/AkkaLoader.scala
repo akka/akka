@@ -65,29 +65,29 @@ class AkkaLoader {
         .?ZZZZZZ'    .ZZZZ?    .ZZZ?                                'ZZZO
     .+ZZZZZZ?'    .7ZZZZ'    .ZZZZ                                    :ZZZZ
  .ZZZZZZ$'     .?ZZZZZ'   .~ZZZZ                                        'ZZZZ.
-                                                                                
-                                                                                
-                      NNNNN              $NNNN+                                 
-                      NNNNN              $NNNN+                                 
-                      NNNNN              $NNNN+                                 
-                      NNNNN              $NNNN+                                 
-                      NNNNN              $NNNN+                                 
-    =NNNNNNNNND$      NNNNN     DDDDDD:  $NNNN+     DDDDDN     NDDNNNNNNNN,     
-   NNNNNNNNNNNNND     NNNNN    DNNNNN    $NNNN+   8NNNNN=    :NNNNNNNNNNNNNN    
-  NNNNN$    DNNNNN    NNNNN  $NNNNN~     $NNNN+  NNNNNN      NNNNN,   :NNNNN+   
-   ?DN~      NNNNN    NNNNN MNNNNN       $NNNN+:NNNNN7        $ND      =NNNNN   
-            DNNNNN    NNNNNDNNNN$        $NNNNDNNNNN                  :DNNNNN   
-     ZNDNNNNNNNNND    NNNNNNNNNND,       $NNNNNNNNNNN           DNDNNNNNNNNNN   
-   NNNNNNNDDINNNNN    NNNNNNNNNNND       $NNNNNNNNNNND       ONNNNNNND8+NNNNN   
- :NNNND      NNNNN    NNNNNN  DNNNN,     $NNNNNO 7NNNND     NNNNNO     :NNNNN   
- DNNNN       NNNNN    NNNNN    DNNNN     $NNNN+   8NNNNN    NNNNN      $NNNNN   
- DNNNNO     NNNNNN    NNNNN     NNNNN    $NNNN+    NNNNN$   NNNND,    ,NNNNND   
-  NNNNNNDDNNNNNNNN    NNNNN     =NNNNN   $NNNN+     DNNNN?  DNNNNNNDNNNNNNNND   
+
+
+                      NNNNN              $NNNN+
+                      NNNNN              $NNNN+
+                      NNNNN              $NNNN+
+                      NNNNN              $NNNN+
+                      NNNNN              $NNNN+
+    =NNNNNNNNND$      NNNNN     DDDDDD:  $NNNN+     DDDDDN     NDDNNNNNNNN,
+   NNNNNNNNNNNNND     NNNNN    DNNNNN    $NNNN+   8NNNNN=    :NNNNNNNNNNNNNN
+  NNNNN$    DNNNNN    NNNNN  $NNNNN~     $NNNN+  NNNNNN      NNNNN,   :NNNNN+
+   ?DN~      NNNNN    NNNNN MNNNNN       $NNNN+:NNNNN7        $ND      =NNNNN
+            DNNNNN    NNNNNDNNNN$        $NNNNDNNNNN                  :DNNNNN
+     ZNDNNNNNNNNND    NNNNNNNNNND,       $NNNNNNNNNNN           DNDNNNNNNNNNN
+   NNNNNNNDDINNNNN    NNNNNNNNNNND       $NNNNNNNNNNND       ONNNNNNND8+NNNNN
+ :NNNND      NNNNN    NNNNNN  DNNNN,     $NNNNNO 7NNNND     NNNNNO     :NNNNN
+ DNNNN       NNNNN    NNNNN    DNNNN     $NNNN+   8NNNNN    NNNNN      $NNNNN
+ DNNNNO     NNNNNN    NNNNN     NNNNN    $NNNN+    NNNNN$   NNNND,    ,NNNNND
+  NNNNNNDDNNNNNNNN    NNNNN     =NNNNN   $NNNN+     DNNNN?  DNNNNNNDNNNNNNNND
    NNNNNNNNN  NNNN$   NNNNN      8NNNND  $NNNN+      NNNNN=  ,DNNNNNNND NNNNN$
 
 ==============================================================================
-""")
-    println("            Running version " + Config.VERSION)
-    println("==================================================")
+                      Running version %s
+==============================================================================
+""".format(Config.VERSION))
   }
 }
