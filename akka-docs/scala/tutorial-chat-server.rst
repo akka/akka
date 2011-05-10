@@ -97,7 +97,7 @@ First we need to create an SBT project for our tutorial. You do that by stepping
     Name: Chat
     Organization: Hakkers Inc
     Version [1.0]:
-    Scala version [2.9.0.RC1]:
+    Scala version [2.9.0]:
     sbt version [0.7.6.RC0]:
 
 Add the Akka SBT plugin definition to your SBT project by creating a ``Plugins.scala`` file in the ``project/plugins`` directory containing::

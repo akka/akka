@@ -53,16 +53,15 @@ And that's all in the ApacheV2-licensed open source project. On top of that we
 have a commercial product called Cloudy Akka which provides the following
 features:
 
-#. Dynamically clustered ActorRegistry with both automatic and manual migration
-   of actors
-
-#. Cluster membership and cluster event subscriptions
-
-#. Durable actor mailboxes of different sizes and shapes - file-backed,
-   Redis-backed, ZooKeeper-backed, Beanstalkd-backed and with AMQP and JMS-based
-   in the works
-
-#. Monitoring influenced by Dapper for cross-machine message tracing and
-   JMX-exposed statistics
+#. Management through Dashboard, JMX and REST
+#. Monitoring through Dashboard, JMX and SNMP
+#. Dapper-style tracing of messages across components and remote nodes
+#. A configurable alert system
+#. Real-time statistics
+#. Very low overhead monitoring agents (should always be on in production)
+#. Consolidation of statistics and logging information to a single node
+#. Data analysis through Hadoop
+#. Storage of statistics data for later processing
+#. Provisioning and rolling upgrades through a dashboard
 
 Read more `here <http://scalablesolutions.se/products.html>`_.

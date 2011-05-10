@@ -6,7 +6,7 @@ Getting Started Tutorial (Java): First Chapter
 Introduction
 ------------
 
-Welcome to the first tutorial on how to get started with Akka and Java. We assume that you already know what Akka and Java are and will now focus on the steps necessary to start your first project.
+Welcome to the first tutorial on how to get started with `Akka <http://akka.io>`_ and Java. We assume that you already know what Akka and Java are and will now focus on the steps necessary to start your first project.
 
 There are two variations of this first tutorial:
 
@@ -165,7 +165,9 @@ Here is the layout that Maven created::
 
 As you can see we already have a Java source file called ``App.java``, let's now rename it to ``Pi.java``.
 
-We also need to edit the ``pom.xml`` build file. Let's add the dependency we need as well as the Maven repository it should download it from. It should now look something like this::
+We also need to edit the ``pom.xml`` build file. Let's add the dependency we need as well as the Maven repository it should download it from. It should now look something like this:
+
+.. code-block:: xml
 
     <?xml version="1.0" encoding="UTF-8"?>
     <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -292,7 +294,7 @@ Now we can create the worker actor.  This is done by extending in the ``UntypedA
           Work work = (Work) message;
 
           // perform the work
-          double result = calculatePiFor(work.getStart(), work.getNrOfElements())
+          double result = calculatePiFor(work.getStart(), work.getNrOfElements());
 
           // reply with the result
           getContext().replyUnsafe(new Result(result));
@@ -492,7 +494,7 @@ Now the only thing that is left to implement is the runner that should bootstrap
         pi.calculate(4, 10000, 10000);
       }
 
-      public void calculate(int nrOfWorkers, int nrOfElements, int nrOfMessages)
+      public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages)
         throws Exception {
 
         // this latch is only plumbing to know when the calculation is completed
@@ -688,7 +690,7 @@ Before we package it up and run it, let's take a look at the full code now, with
       // ==================
       // ===== Run it =====
       // ==================
-      public void calculate(int nrOfWorkers, int nrOfElements, int nrOfMessages)
+      public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages)
         throws Exception {
 
         // this latch is only plumbing to know when the calculation is completed
@@ -753,7 +755,7 @@ If you used Maven, then you can run the application directly inside Maven. First
 
     $ mvn compile
 
-When this in done we can run our application directly inside SBT::
+When this in done we can run our application directly inside Maven::
 
     $ mvn exec:java -Dexec.mainClass="akka.tutorial.first.java.Pi"
     ...
