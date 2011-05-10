@@ -1,3 +1,5 @@
+.. _futures-scala:
+
 Futures (Scala)
 ===============
 
@@ -200,7 +202,7 @@ This is just a sample of what can be done, but to use more advanced techniques i
 Scalaz
 ^^^^^^
 
-Akka also has a `Scalaz module <scalaz>`_ for a more complete support of programming in a functional style.
+Akka also has a Scalaz module (:ref:`add-on-modules`) for a more complete support of programming in a functional style.
 
 Exceptions
 ----------

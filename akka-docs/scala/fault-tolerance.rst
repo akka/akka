@@ -1,3 +1,5 @@
+.. _fault-tolerance-scala:
+
 Fault Tolerance Through Supervisor Hierarchies (Scala)
 ======================================================
 

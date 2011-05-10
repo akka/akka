@@ -1,3 +1,5 @@
+.. _akka-testkit:
+
 #####################
 Testing Actor Systems
 #####################

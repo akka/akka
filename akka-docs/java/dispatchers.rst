@@ -129,7 +129,7 @@ Setting this to a higher number will increase throughput but lower fairness, and
 
 If you don't define a the 'throughput' option in the configuration file then the default value of '5' will be used.
 
-Browse the `ScalaDoc <scaladoc>`_ or look at the code for all the options available.
+Browse the :ref:`scaladoc` or look at the code for all the options available.
 
 Priority event-based
 ^^^^^^^^^^^^^^^^^^^^

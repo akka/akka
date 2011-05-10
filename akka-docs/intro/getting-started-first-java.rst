@@ -113,7 +113,7 @@ Akka is very modular and has many JARs for containing different features. The co
 - ``akka-testkit-1.1.jar`` -- Toolkit for testing Actors
 
 We also have Akka Modules containing add-on modules outside the core of
-Akka. You can download the Akka Modules distribution from TODO. It contains Akka
+Akka. You can download the Akka Modules distribution from `<http://akka.io/downloads/>`_. It contains Akka
 core as well. We will not be needing any modules there today, but for your
 information the module JARs are these:
 

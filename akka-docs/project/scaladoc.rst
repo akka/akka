@@ -20,11 +20,11 @@ be found here:
 Release Versions
 ================
 
-1.1-RC1
--------
+1.1
+---
 
-- Akka 1.1-RC1 - http://akka.io/api/akka/1.1-RC1/
-- Akka Modules 1.1-RC1 - http://akka.io/api/akka-modules/1.1-RC1/
+- Akka 1.1 - http://akka.io/api/akka/1.1/
+- Akka Modules 1.1 - http://akka.io/api/akka-modules/1.1/
 
 1.0
 ---
