@@ -22,7 +22,7 @@ Actors as services
 The simplest way you can use Akka is to use the actors as services in your Web application. All that’s needed to do that is to put the Akka charts as well as its dependency jars into ‘WEB-INF/lib’. You also need to put the ‘akka.conf’ config file in the ‘$AKKA_HOME/config’ directory.
 Now you can create your Actors as regular services referenced from your Web application. You should also be able to use the Remoting service, e.g. be able to make certain Actors remote on other hosts. Please note that remoting service does not speak HTTP over port 80, but a custom protocol over the port is specified in ‘akka.conf’.
 
- Using Akka as a stand alone microkernel
+Using Akka as a stand alone microkernel
 ---------------------------------------
 
 Akka can also be run as a stand-alone microkernel. It implements a full enterprise stack:
