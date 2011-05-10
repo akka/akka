@@ -226,7 +226,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val buildRelease = task {
     log.info("Built release.")
     None
-  } dependsOn (publishRelease, releaseApi, releaseDocs, releaseDownloads)
+  } dependsOn (publishRelease, releaseApi, releaseDocs, releaseDownloads, releaseDist)
 
   lazy val releaseApi = task {
     val apiSources = ((apiOutputPath ##) ***)
@@ -247,6 +247,12 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     val distArchives = akkaDist.akkaActorsDist.distArchive +++ akkaDist.akkaCoreDist.distArchive
     val downloadsPath = localReleasePath / "downloads"
     FileUtilities.copy(distArchives.get, downloadsPath, log).left.toOption
+  } dependsOn (dist)
+
+  lazy val releaseDist = task {
+    val distArchives = akkaDist.akkaActorsDist.distExclusiveArchive +++ akkaDist.akkaCoreDist.distExclusiveArchive
+    val distPath = localReleasePath / "dist"
+    FileUtilities.copy(distArchives.get, distPath, log).left.toOption
   } dependsOn (dist)
 
   lazy val dist = task { None } // dummy task
@@ -495,7 +501,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
       def distName = "akka-actors"
       override def distDocName = "akka"
 
-      override def distConfigSources = (akkaParent.info.projectPath / "config") * "*"
+      override def distConfigSources = (akkaParent.info.projectPath / "config" ##) * "*"
 
       override def distAction = super.distAction dependsOn (distTutorials)
 

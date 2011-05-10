@@ -30,14 +30,17 @@ trait DistProject extends DistBaseProject {
   val distArchiveName = distFullName + ".zip"
   val distArchive = (distOutputBasePath ##) / distArchiveName
 
-  def distConfigSources = info.projectPath / "config" * "*"
-  def distScriptSources = info.projectPath / "scripts" * "*"
+  val distExclusiveOutputBasePath = distOutputBasePath / "exclusive"
+  val distExclusiveOutputPath = (distExclusiveOutputBasePath ##) / distFullName
+  val distExclusiveArchive = (distExclusiveOutputBasePath ##) / distArchiveName
 
-  lazy val distExclusiveProperty = systemOptional[Boolean]("dist.exclusive", false)
+  def distConfigSources = ((info.projectPath / "config" ##) ***)
+  def distScriptSources = ((info.projectPath / "scripts" ##) ***)
 
-  def distExclusive = distExclusiveProperty.value
+  def distAlwaysExclude(path: Path) = path.name == "scala-library.jar"
+  def distAlwaysInclude(path: Path) = distConfigSources.get.toList.map(_.name).contains(path.name)
 
-  def scalaDependency = if (distExclusive) Path.emptyPathFinder else buildLibraryJar
+  def scalaDependency = buildLibraryJar
 
   def allProjectDependencies = topologicalSort.dropRight(1)
 
@@ -48,24 +51,7 @@ trait DistProject extends DistBaseProject {
     })
   }
 
-  def distDependencyJarNames = {
-    val jarNames = distDependencies.flatMap { dist =>
-      (dist.distLibPath ** "*.jar").get.map(_.name) ++
-      (dist.distSrcPath ** "*.jar").get.map(_.name) ++
-      (dist.distDocPath ** "*.jar").get.map(_.name)
-    }
-    Set(jarNames: _*)
-  }
-
   def distClasspath = runClasspath
-
-  def filterOutExcludes(paths: PathFinder) = {
-    if (distExclusive) {
-      val exclude = distDependencyJarNames
-      def include(path: Path) = !exclude(path.name)
-      paths.filter(include)
-    } else paths
-  }
 
   def dependencyJars(filter: Path => Boolean) = distClasspath.filter(filter)
 
@@ -88,11 +74,11 @@ trait DistProject extends DistBaseProject {
     }
   }
 
-  def distLibs = filterOutExcludes(dependencyJars(isClassJar) +++ projectDependencyJars(_.jarPath))
+  def distLibs = dependencyJars(isClassJar) +++ projectDependencyJars(_.jarPath)
 
-  def distSrcJars = filterOutExcludes(dependencyJars(isSrcJar) +++ projectDependencyJars(_.packageSrcJar))
+  def distSrcJars = dependencyJars(isSrcJar) +++ projectDependencyJars(_.packageSrcJar)
 
-  def distDocJars = filterOutExcludes(dependencyJars(isDocJar) +++ projectDependencyJars(_.packageDocsJar))
+  def distDocJars = dependencyJars(isDocJar) +++ projectDependencyJars(_.packageDocsJar)
 
   def distShareSources = ((distOutputPath ##) ***)
 
@@ -100,25 +86,36 @@ trait DistProject extends DistBaseProject {
                    describedAs("Create a distribution."))
 
   def distAction = task {
+    def exclusiveDist = {
+      val excludePaths = (distDependencies.map(p => ((p.distOutputPath ##) ***))
+                           .foldLeft(Path.emptyPathFinder)(_ +++ _))
+      val excludeRelativePaths = excludePaths.get.toList.map(_.relativePath)
+      val allDistPaths = ((distOutputPath ##) ***)
+      val includePaths = allDistPaths.filter(path => {
+        distAlwaysInclude(path) || !(distAlwaysExclude(path) || excludeRelativePaths.contains(path.relativePath))
+      })
+      copyPaths(includePaths, distExclusiveOutputPath) orElse
+      FileUtilities.zip(List(distExclusiveOutputPath), distExclusiveArchive, true, log)
+    }
+
     copyFiles(scalaDependency, distScalaLibPath) orElse
     copyFiles(distLibs, distLibPath) orElse
     copyFiles(distSrcJars, distSrcPath) orElse
     copyFiles(distDocJars, distDocJarsPath) orElse
-    copyFiles(distConfigSources, distConfigPath) orElse
+    copyPaths(distConfigSources, distConfigPath) orElse
     copyScripts(distScriptSources, distBinPath) orElse
     copyPaths(distShareSources, distSharePath) orElse
-    FileUtilities.zip(List(distOutputPath), distArchive, true, log)
+    FileUtilities.zip(List(distOutputPath), distArchive, true, log) orElse
+    exclusiveDist
   }
 
   lazy val distBase = distBaseAction dependsOn (distClean) describedAs "Create the dist base."
 
   def distBaseAction = task {
-    if (!distExclusive) {
-      distDependencies.map( dist => {
-        val allFiles = ((dist.distOutputPath ##) ***)
-        copyPaths(allFiles, distOutputPath)
-      }).foldLeft(None: Option[String])(_ orElse _)
-    } else None
+    distDependencies.map( dist => {
+      val allFiles = ((dist.distOutputPath ##) ***)
+      copyPaths(allFiles, distOutputPath)
+    }).foldLeft(None: Option[String])(_ orElse _)
   }
 
   def distDependencyTasks: Seq[ManagedTask] = distDependencies.map(_.dist)
@@ -138,7 +135,7 @@ trait DistProject extends DistBaseProject {
 
   def copyPaths(from: PathFinder, to: Path): Option[String] = {
     if (from.get.isEmpty) None
-    else FileUtilities.copy(from.get, to, log).left.toOption
+    else FileUtilities.copy(from.get, to, true, log).left.toOption
   }
 
   def copyScripts(from: PathFinder, to: Path): Option[String] = {
