@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <name>akka-tutorial-first-java</name>
-    <groupId>akka.tutorial.first.java</groupId>
-    <artifactId>akka-tutorial-first-java</artifactId>
+    <name>akka-tutorial-second-java</name>
+    <groupId>akka.tutorial.second.java</groupId>
+    <artifactId>akka-tutorial-second-java</artifactId>
     <packaging>jar</packaging>
     <version>1.2-SNAPSHOT</version>
     <url>http://akka.io</url>

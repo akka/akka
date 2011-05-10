@@ -20,31 +20,6 @@ import akka.routing.InfiniteIterator;
 import akka.routing.Routing.Broadcast;
 import akka.routing.UntypedLoadBalancer;
 
-/**
- * Second part in Akka tutorial for Java.
- * <p/>
- * Calculates Pi.
- * <p/>
- * Run on command line:
- * <pre>
- *   $ cd akka-1.1
- *   $ export AKKA_HOME=`pwd`
- *   $ javac -cp dist/akka-actor-1.2-SNAPSHOT.jar:scala-library.jar akka/tutorial/java/second/Pi.java
- *   $ java -cp dist/akka-actor-1.2-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.java.second.Pi
- *   $ ...
- * </pre>
- * <p/>
- * Run it in Maven:
- * <pre>
- *   $ mvn
- *   > scala:console
- *   > val pi = new akka.tutorial.java.second.Pi
- *   > pi.calculate(4, 10000, 10000)
- *   > ...
- * </pre>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 public class Pi {
 
   public static void main(String[] args) throws Exception {

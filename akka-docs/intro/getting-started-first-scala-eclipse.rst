@@ -43,39 +43,49 @@ You can test your installation by invoking ``java``::
     Java(TM) SE Runtime Environment (build 1.6.0_24-b07-334-10M3326)
     Java HotSpot(TM) 64-Bit Server VM (build 19.1-b02-334, mixed mode)
 
+
 Downloading and installing Akka
 -------------------------------
 
-To build and run the tutorial sample from the command line, you have to download Akka. If you prefer to use SBT to build and run the sample then you can skip this section and jump to the next one.
+To build and run the tutorial sample from the command line, you have to download
+Akka. If you prefer to use SBT to build and run the sample then you can skip
+this section and jump to the next one.
 
-Let's get the ``akka-1.1`` distribution of Akka core (not Akka Modules) from `http://akka.io/downloads <http://akka.io/downloads/>`_. Once you have downloaded the distribution unzip it in the folder you would like to have Akka installed in, in my case I choose to install it in ``/Users/jboner/tools/``, simply by unzipping it to this directory.
+Let's get the ``akka-actors-1.1.zip`` distribution of Akka from
+http://akka.io/downloads/ which includes everything we need for this
+tutorial. Once you have downloaded the distribution unzip it in the folder you
+would like to have Akka installed in. In my case I choose to install it in
+``/Users/jboner/tools/``, simply by unzipping it to this directory.
 
-You need to do one more thing in order to install Akka properly: set the ``AKKA_HOME`` environment variable to the root of the distribution. In my case I'm opening up a shell, navigating down to the distribution, and setting the ``AKKA_HOME`` variable::
+You need to do one more thing in order to install Akka properly: set the
+``AKKA_HOME`` environment variable to the root of the distribution. In my case
+I'm opening up a shell, navigating down to the distribution, and setting the
+``AKKA_HOME`` variable::
 
-    $ cd /Users/jboner/tools/akka-1.1
+    $ cd /Users/jboner/tools/akka-actors-1.1
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
-    /Users/jboner/tools/akka-1.1
+    /Users/jboner/tools/akka-actors-1.1
 
 The distribution looks like this::
 
-    $ ls -l
-    total 16944
-    drwxr-xr-x   7 jboner  staff      238 Apr  6 11:15 .
-    drwxr-xr-x  28 jboner  staff      952 Apr  6 11:16 ..
-    drwxr-xr-x  17 jboner  staff      578 Apr  6 11:16 deploy
-    drwxr-xr-x  26 jboner  staff      884 Apr  6 11:16 dist
-    drwxr-xr-x   3 jboner  staff      102 Apr  6 11:15 lib_managed
-    -rwxr-xr-x   1 jboner  staff  8674105 Apr  6 11:15 scala-library.jar
-    drwxr-xr-x   4 jboner  staff      136 Apr  6 11:16 scripts
+    $ ls -1
+    config
+    doc
+    lib
+    src
 
-- In the ``dist`` directory we have the Akka JARs, including sources and docs.
-- In the ``lib_managed/compile`` directory we have Akka's dependency JARs.
-- In the ``deploy`` directory we have the sample JARs.
-- In the ``scripts`` directory we have scripts for running Akka.
-- Finally ``scala-library.jar`` is the JAR for the latest Scala distribution that Akka depends on.
+- In the ``config`` directory we have the Akka conf files.
+- In the ``doc`` directory we have the documentation, API, doc JARs, and also
+  the source files for the tutorials.
+- In the ``lib`` directory we have the Scala and Akka JARs.
+- In the ``src`` directory we have the source JARs for Akka.
 
-The only JAR we will need for this tutorial (apart from the ``scala-library.jar`` JAR) is the ``akka-actor-1.1.jar`` JAR in the ``dist`` directory. This is a self-contained JAR with zero dependencies and contains everything we need to write a system using Actors.
+
+The only JAR we will need for this tutorial (apart from the
+``scala-library.jar`` JAR) is the ``akka-actor-1.1.jar`` JAR in the ``lib/akka``
+directory. This is a self-contained JAR with zero dependencies and contains
+everything we need to write a system using Actors.
 
 Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
 
@@ -84,10 +94,13 @@ Akka is very modular and has many JARs for containing different features. The co
 - ``akka-remote-1.1.jar`` -- Remote Actors
 - ``akka-stm-1.1.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
 - ``akka-http-1.1.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
-- ``akka-slf4j-1.1.jar`` -- SLF4J Event Handler Listener
+- ``akka-slf4j-1.1.jar`` -- SLF4J Event Handler Listener for logging with SLF4J
 - ``akka-testkit-1.1.jar`` -- Toolkit for testing Actors
 
-We also have Akka Modules containing add-on modules outside the core of Akka. You can download the Akka Modules distribution from TODO. It contains Akka core as well. We will not be needing any modules there today, but for your information the module JARs are these:
+We also have Akka Modules containing add-on modules outside the core of
+Akka. You can download the Akka Modules distribution from TODO. It contains Akka
+core as well. We will not be needing any modules there today, but for your
+information the module JARs are these:
 
 - ``akka-kernel-1.1.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
 - ``akka-amqp-1.1.jar`` -- AMQP integration
@@ -96,6 +109,7 @@ We also have Akka Modules containing add-on modules outside the core of Akka. Yo
 - ``akka-scalaz-1.1.jar`` -- Support for the Scalaz library
 - ``akka-spring-1.1.jar`` -- Spring framework integration
 - ``akka-osgi-dependencies-bundle-1.1.jar`` -- OSGi support
+
 
 Downloading and installing the Scala IDE for Eclipse
 ----------------------------------------------------
