@@ -32,19 +32,12 @@
 {% block content %}
       <div class="header">
         {%- block akkaheader %}
-        {%- if theme_full_logo != "false" %}
-        <a href="{{ pathto('index') }}">
-          <img class="logo" src="{{ pathto('_static/' + logo, 1) }}" alt="Logo"/>
-        </a>
-        {%- else %}
         {%- if logo -%}
-          <img class="leftlogo" src="{{ pathto('_static/' + logo, 1) }}" alt="Logo"/>
+          <a href="{{ pathto('index') }}"><img class="leftlogo" src="{{ pathto('_static/' + logo, 1) }}" alt="Logo"/></a>
         {%- endif -%}
-       <h1 class="heading"><a href="{{ pathto('index') }}">
-         <span>{{ shorttitle|e }}</span></a></h1>
-       <h2 class="heading"><span>Version {{ version|e }}</span></h2>
-       <h2 class="rightheading"><span><a href="http://akka.io/docs/akka/{{ version|e }}/akka.pdf">PDF</a></span></h2>
-        {%- endif %}
+       <h1 class="heading"><a href="{{ pathto('index') }}"><span>{{ shorttitle|e }}</span></a></h1>
+       <h2 class="heading"><a href="{{ pathto('index') }}"><span>Version {{ version|e }}</span></a></h2>
+       <h2 class="rightheading"><span><a href="http://akka.io/docs/akka/{{ version|e }}/Akka.pdf">PDF</a></span></h2>
         {%- endblock %}
       </div>
       <div class="topnav">
