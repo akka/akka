@@ -185,6 +185,45 @@ It is very often desirable to be able to combine different Futures with eachothe
 
 To better explain what happened in the example, ``Future.sequence`` is taking the ``LinkedList<Future<Integer>>`` and turning it into a ``Future<LinkedList<Integer>>``. We can then use ``map`` to work with the ``LinkedList<Integer>`` directly, and we aggregate the sum of the ``LinkedList``.
 
+Then there's a method that's called ``fold`` that takes a start-value, a sequence of ``Future``:s and a function from the type of the start-value, a timeout, and the type of the futures and returns something with the same type as the start-value, and then applies the function to all elements in the sequence of futures, non-blockingly, the execution will run on the Thread of the last completing Future in the sequence.
+
+.. code-block:: java
+
+  import static akka.dispatch.Futures.fold;
+  import java.util.Iterable;
+
+  Iterable<Future<String>> futures = ... //A sequence of Futures, in this case Strings
+
+  Future<String> result = fold("", 15000, futures, new Function2<String, String, String>(){ //Start value is the empty string, timeout is 15 seconds
+          public String apply(String r, String t) {
+              return r + t; //Just concatenate
+          }
+        });
+  
+  result.get(); // Will produce a String that says "testtesttesttest"(... and so on).
+
+That's all it takes!
+
+
+If the sequence passed to ``fold`` is empty, it will return the start-value, in the case above, that will be 0. In some cases you don't have a start-value and you're able to use the value of the first completing Future in the sequence as the start-value, you can use ``reduce``, it works like this:
+
+.. code-block:: java
+
+  import static akka.dispatch.Futures.reduce;
+  import java.util.Iterable;
+
+  Iterable<Future<String>> futures = ... //A sequence of Futures, in this case Strings
+
+  Future<String> result = reduce(futures, 15000, new Function2<String, String, String>(){ //Timeout is 15 seconds
+          public String apply(String r, String t) {
+              return r + t; //Just concatenate
+          }
+        });
+  
+  result.get(); // Will produce a String that says "testtesttesttest"(... and so on).
+
+Same as with ``fold``, the execution will be done by the Thread that completes the last of the Futures, you can also parallize it by chunking your futures into sub-sequences and reduce them, and then reduce the reduced results again.
+
 This is just a sample of what can be done.
 
 Exceptions
