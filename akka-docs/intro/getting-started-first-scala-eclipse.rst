@@ -6,7 +6,7 @@ Getting Started Tutorial (Scala with Eclipse): First Chapter
 Introduction
 ------------
 
-Welcome to the first tutorial on how to get started with Akka and Scala. We assume that you already know what Akka and Scala are and will now focus on the steps necessary to start your first project. We will be using `Eclipse <http://www.eclipse.org/downloads/>`_, and the `Scala plugin for Eclipse <http://www.scala-ide.org/>`_.
+Welcome to the first tutorial on how to get started with `Akka <http://akka.io>`_ and `Scala <http://scala-lang.org>`_. We assume that you already know what Akka and Scala are and will now focus on the steps necessary to start your first project. We will be using `Eclipse <http://www.eclipse.org/downloads/>`_, and the `Scala plugin for Eclipse <http://www.scala-ide.org/>`_.
 
 The sample application that we will create is using actors to calculate the value of Pi. Calculating Pi is a CPU intensive operation and we will utilize Akka Actors to write a concurrent solution that scales out to multi-core processors. This sample will be extended in future tutorials to use Akka Remote Actors to scale out on multiple machines in a cluster.
 
@@ -139,16 +139,16 @@ Downloading and installing Scala
 
 To build and run the tutorial sample from the command line, you have to install the Scala distribution. If you prefer to use Eclipse to build and run the sample then you can skip this section and jump to the next one.
 
-Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0.RC1 release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
+Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0 release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
 
-You also need to make sure that the ``scala-2.9.0.RC1/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
+You also need to make sure that the ``scala-2.9.0/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
 
-    $ export PATH=$PATH:scala-2.9.0.RC1/bin
+    $ export PATH=$PATH:scala-2.9.0/bin
 
 You can test your installation by invoking scala::
 
     $ scala -version
-    Scala code runner version 2.9.0.RC1 -- Copyright 2002-2011, LAMP/EPFL
+    Scala code runner version 2.9.0.final -- Copyright 2002-2011, LAMP/EPFL
 
 Looks like we are all good. Finally let's create a source file ``Pi.scala`` for the tutorial and put it in the root of the Akka distribution in the ``tutorial`` directory (you have to create it first).
 
@@ -164,7 +164,7 @@ If you have not already done so, now is the time to create an Eclipse project fo
 Using SBT in Eclipse
 ^^^^^^^^^^^^^^^^^^^^
 
-If you are an `SBT <http://code.google.com/p/simple-build-tool/>`_ user, you can follow the :doc:`Akka Tutorial in Scala </intro/getting-started-first-scala>` and additionally install the ``sbt-eclipse`` plugin. This adds support for generating Eclipse project files from your SBT project. You need to update your SBT plugins definition in ``project/plugins``::
+If you are an `SBT <http://code.google.com/p/simple-build-tool/>`_ user, you can follow the :ref:`getting-started-first-scala-download-sbt` instruction and additionally install the ``sbt-eclipse`` plugin. This adds support for generating Eclipse project files from your SBT project. You need to update your SBT plugins definition in ``project/plugins``::
 
     import sbt._
 
@@ -190,7 +190,7 @@ and then update your SBT project definition by mixing in ``Eclipsify`` in your p
 Then run the ``eclipse`` target to generate the Eclipse project::
 
     dragos@dragos-imac pi $ sbt eclipse
-    [info] Building project AkkaPi 1.0 against Scala 2.9.0.RC1
+    [info] Building project AkkaPi 1.0 against Scala 2.9.0
     [info]    using MySbtProject with sbt 0.7.4 and Scala 2.7.7
     [info]
     [info] == eclipse ==
@@ -412,8 +412,8 @@ Run it from Eclipse
 
 Eclipse builds your project on every save when ``Project/Build Automatically`` is set. If not, bring you project up to date by clicking ``Project/Build Project``. If there are no compilation errors, you can right-click in the editor where ``Pi`` is defined, and choose ``Run as.. /Scala application``. If everything works fine, you should see::
 
-    AKKA_HOME is defined as [/Users/jboner/tools/akka-modules-1.1-M1/]
-    loading config from [/Users/jboner/tools/akka-modules-1.1-M1/config/akka.conf].
+    AKKA_HOME is defined as [/Users/jboner/tools/akka-actors-1.1]
+    loading config from [/Users/jboner/tools/akka-actors-1.1/config/akka.conf].
 
     Pi estimate:        3.1435501812459323
     Calculation time:   858 millis
