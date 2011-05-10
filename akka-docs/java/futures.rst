@@ -33,6 +33,7 @@ A common use case within Akka is to have some computation performed concurrently
 
 .. code-block:: java
 
+  import akka.dispatch.Future;
   import static akka.dispatch.Futures.future;
   import java.util.concurrent.Callable;
 
@@ -56,7 +57,8 @@ Future is a Monad
 The first method for working with ``Future`` functionally is ``map``. This method takes a ``Function`` which performs some operation on the result of the ``Future``, and returning a new result. The return value of the ``map`` method is another ``Future`` that will contain the new result:
 
 .. code-block:: java
-  
+
+  import akka.dispatch.Future; 
   import static akka.dispatch.Futures.future;
   import static akka.japi.Function;
   import java.util.concurrent.Callable;
@@ -81,6 +83,7 @@ Something to note when using these methods: if the ``Future`` is still being pro
 
 .. code-block:: java
 
+  import akka.dispatch.Future;
   import static akka.dispatch.Futures.future;
   import static akka.japi.Function;
   import java.util.concurrent.Callable;
@@ -106,6 +109,7 @@ If we do the opposite:
 
 .. code-block:: java
 
+  import akka.dispatch.Future;
   import static akka.dispatch.Futures.future;
   import static akka.japi.Function;
   import java.util.concurrent.Callable;
@@ -132,6 +136,7 @@ Normally this works quite well as it means there is very little overhead to runn
 
 .. code-block:: java
 
+  import akka.dispatch.Future;
   import static akka.dispatch.Futures.future;
   import static akka.japi.Function;
   import java.util.concurrent.Callable;
@@ -164,7 +169,9 @@ It is very often desirable to be able to combine different Futures with eachothe
 
 .. code-block:: java
 
+  import akka.dispatch.Future;
   import static akka.dispatch.Futures.sequence;
+  import akka.japi.Function;
   import java.util.LinkedList;
 
   LinkedList<Future<Integer>> listOfFutureInts = ... //Some source generating a list of Future<Integer>:s
@@ -185,12 +192,40 @@ It is very often desirable to be able to combine different Futures with eachothe
 
 To better explain what happened in the example, ``Future.sequence`` is taking the ``LinkedList<Future<Integer>>`` and turning it into a ``Future<LinkedList<Integer>>``. We can then use ``map`` to work with the ``LinkedList<Integer>`` directly, and we aggregate the sum of the ``LinkedList``.
 
+The ``traverse`` method is similar to ``sequence``, but it takes a sequence of ``A``s and applies a function from ``A`` to ``Future<B>`` and returns a ``Future<LinkedList<B>>``, enabling parallel ``map`` over the sequence, if you use ``Futures.future`` to create the ``Future``.
+
+.. code-block:: java
+
+  import akka.dispatch.Future;
+  import static akka.dispatch.Futures.traverse;
+  import static akka.dispatch.Futures.future;
+  import java.util.LinkedList;
+  import akka.japi.Function;
+
+  LinkedList<String> listStrings = ... //Just a list of Strings
+
+  Future<LinkedList<String>> result = traverse(listStrings, new Function<String,Future<String>>(){
+          public Future<String> apply(final String r) {
+              return future(new Callable<String>() {
+                        public String call() {
+                            return r.toUpperCase();
+                        }
+                    });
+          }
+        });
+
+  result.get(); //Returns a the list of strings as upper case
+
+It's as simple as that!
+
 Then there's a method that's called ``fold`` that takes a start-value, a sequence of ``Future``:s and a function from the type of the start-value, a timeout, and the type of the futures and returns something with the same type as the start-value, and then applies the function to all elements in the sequence of futures, non-blockingly, the execution will run on the Thread of the last completing Future in the sequence.
 
 .. code-block:: java
 
+  import akka.dispatch.Future;
   import static akka.dispatch.Futures.fold;
   import java.util.Iterable;
+  import akka.japi.Function2;
 
   Iterable<Future<String>> futures = ... //A sequence of Futures, in this case Strings
 
@@ -209,8 +244,10 @@ If the sequence passed to ``fold`` is empty, it will return the start-value, in 
 
 .. code-block:: java
 
+  import akka.dispatch.Future;
   import static akka.dispatch.Futures.reduce;
   import java.util.Iterable;
+  import akka.japi.Function2;
 
   Iterable<Future<String>> futures = ... //A sequence of Futures, in this case Strings
 
