@@ -7,6 +7,7 @@ Project Information
    migration-guides
    release-notes
    scaladoc
+   other-doc
    issue-tracking
    licenses
    sponsors
