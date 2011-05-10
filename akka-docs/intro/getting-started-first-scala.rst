@@ -146,6 +146,8 @@ Looks like we are all good. Finally let's create a source file ``Pi.scala`` for 
 
 Some tools require you to set the ``SCALA_HOME`` environment variable to the root of the Scala distribution, however Akka does not require that.
 
+.. _getting-started-first-scala-download-sbt:
+
 Downloading and installing SBT
 ------------------------------
 
