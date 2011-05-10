@@ -244,9 +244,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   } dependsOn (docs)
 
   lazy val releaseDownloads = task {
-    val distArchive = akkaDist.akkaCoreDist.distArchive
+    val distArchives = akkaDist.akkaActorsDist.distArchive +++ akkaDist.akkaCoreDist.distArchive
     val downloadsPath = localReleasePath / "downloads"
-    FileUtilities.copy(distArchive.get, downloadsPath, log).left.toOption
+    FileUtilities.copy(distArchives.get, downloadsPath, log).left.toOption
   } dependsOn (dist)
 
   lazy val dist = task { None } // dummy task
@@ -494,6 +494,25 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     class AkkaActorsDistProject(info: ProjectInfo) extends DefaultProject(info) with DistDocProject {
       def distName = "akka-actors"
       override def distDocName = "akka"
+
+      override def distConfigSources = (akkaParent.info.projectPath / "config") * "*"
+
+      override def distAction = super.distAction dependsOn (distTutorials)
+
+      val distTutorialsPath = distDocPath / "tutorials"
+
+      lazy val distTutorials = task {
+        val tutorials = Set(akka_tutorials.akka_tutorial_first,
+                            akka_tutorials.akka_tutorial_second)
+
+        tutorials.map { tutorial =>
+          val tutorialPath = (tutorial.info.projectPath ##)
+          val tutorialFilterOut = ((tutorial.outputPath ##) ***)
+          val tutorialSources = (tutorialPath ***) --- tutorialFilterOut
+          val tutorialOutputPath = distTutorialsPath / tutorial.name
+          copyPaths(tutorialSources, tutorialOutputPath)
+        }.foldLeft(None: Option[String])(_ orElse _)
+      } dependsOn (distBase)
     }
 
     class AkkaCoreDistProject(info: ProjectInfo)extends DefaultProject(info) with DistProject {
