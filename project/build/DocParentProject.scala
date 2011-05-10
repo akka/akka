@@ -27,12 +27,14 @@ trait DocParentProject extends ParentProject {
 
   def apiOptions: Seq[String] = Seq.empty
 
-  lazy val api = apiAction describedAs ("Create combined scaladoc for all subprojects.")
+  lazy val api = apiAction dependsOn (doc) describedAs ("Create combined scaladoc for all subprojects.")
 
   def apiAction = task {
     val scaladoc = new Scaladoc(apiMaxErrors, buildCompiler)
     scaladoc(apiLabel, apiMainSources.get, apiCompileClasspath.get, apiOutputPath, apiOptions, log)
   }
+
+  lazy val doc = task { None } // dummy task
 
   val docsPath = info.projectPath / "akka-docs"
 
