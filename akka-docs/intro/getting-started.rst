@@ -27,7 +27,7 @@ essential parts for getting started with different development environments.
 Prerequisites
 -------------
 
-Akka requires that you have `Jave 1.6 <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`_ or
+Akka requires that you have `Java 1.6 <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`_ or
 later installed on you machine.
 
 Download
