@@ -9,6 +9,7 @@ Java API
    untyped-actors
    typed-actors
    actor-registry
+   futures
    dataflow
    stm
    transactors

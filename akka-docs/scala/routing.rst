@@ -12,7 +12,7 @@ Dispatcher
 
 A Dispatcher is an actor that routes incoming messages to outbound actors.
 
-To use it you can either create a Dispatcher through the ``dispatcherActor()` factory method
+To use it you can either create a Dispatcher through the ``dispatcherActor()`` factory method
 
 .. code-block:: scala
 
