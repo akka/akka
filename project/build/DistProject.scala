@@ -4,7 +4,7 @@
 
 import sbt._
 
-trait AkkaDistBaseProject extends DefaultProject {
+trait DistBaseProject extends DefaultProject {
   def distOutputPath: Path
   def distLibPath: Path
   def distSrcPath: Path
@@ -12,7 +12,7 @@ trait AkkaDistBaseProject extends DefaultProject {
   def dist: Task
 }
 
-trait AkkaDistProject extends AkkaDistBaseProject {
+trait DistProject extends DistBaseProject {
   def distName: String
 
   val distFullName = distName + "-" + version
@@ -43,7 +43,7 @@ trait AkkaDistProject extends AkkaDistBaseProject {
 
   def distDependencies = {
     allProjectDependencies.flatMap( p => p match {
-      case adp: AkkaDistBaseProject => Some(adp)
+      case adp: DistBaseProject => Some(adp)
       case _ => None
     })
   }
@@ -94,7 +94,7 @@ trait AkkaDistProject extends AkkaDistBaseProject {
 
   def distDocJars = filterOutExcludes(dependencyJars(isDocJar) +++ projectDependencyJars(_.packageDocsJar))
 
-  def distShareSources = (distOutputPath ##) ** "*"
+  def distShareSources = ((distOutputPath ##) ***)
 
   lazy val dist = (distAction dependsOn (distBase, `package`, packageSrc, packageDocs)
                    describedAs("Create a distribution."))
@@ -115,7 +115,7 @@ trait AkkaDistProject extends AkkaDistBaseProject {
   def distBaseAction = task {
     if (!distExclusive) {
       distDependencies.map( dist => {
-        val allFiles = (dist.distOutputPath ##) ** "*"
+        val allFiles = ((dist.distOutputPath ##) ***)
         copyPaths(allFiles, distOutputPath)
       }).foldLeft(None: Option[String])(_ orElse _)
     } else None
@@ -167,7 +167,7 @@ trait AkkaDistProject extends AkkaDistBaseProject {
   override def deliverAction = doNothing
 }
 
-trait AkkaDistDocProject extends AkkaDistProject {
+trait DistDocProject extends DistProject {
   def distDocName = distName
 
   def findDocParent(project: Project): DocParentProject = project.info.parent match {
@@ -178,42 +178,33 @@ trait AkkaDistDocProject extends AkkaDistProject {
 
   def docParent = findDocParent(this)
 
-  override def distAction = super.distAction dependsOn (distApi, distRstDocs)
+  override def distAction = super.distAction dependsOn (distApi, distDocs)
 
-  val apiSources = (docParent.docOutputPath ##) ** "*"
+  val apiSources = ((docParent.apiOutputPath ##) ***)
   val apiPath = distDocPath / "api" / "html" / distDocName
 
   lazy val distApi = task {
     copyPaths(apiSources, apiPath)
-  } dependsOn (distBase, docParent.doc)
+  } dependsOn (distBase, docParent.api)
 
-  val rstDocsPath = docParent.info.projectPath / "akka-docs"
+  val docsBuildPath = docParent.docsPath / "_build"
+  val docsHtmlSources = ((docsBuildPath / "html" ##) ***)
+  val docsPdfSources = (docsBuildPath / "latex" ##) ** "*.pdf"
 
-  lazy val rstDocs = task {
-    import Process._
-    log.info("Building docs...")
-    val exitCode = ((new java.lang.ProcessBuilder("make", "clean", "html", "pdf")) directory rstDocsPath.asFile) ! log
-    if (exitCode > 0) Some("Failed to build docs.") else None
-  }
+  val docsOutputPath = distDocPath / "docs"
+  val docsHtmlPath = docsOutputPath / "html" / distDocName
+  val docsPdfPath = docsOutputPath / "pdf"
 
-  val rstDocsBuildPath = rstDocsPath / "_build"
-  val rstDocsHtmlSources = (rstDocsBuildPath / "html" ##) ** "*"
-  val rstDocsPdfSources = (rstDocsBuildPath / "latex" ##) ** "*.pdf"
-
-  val rstDocsOutputPath = distDocPath / "docs"
-  val rstDocsHtmlPath = rstDocsOutputPath / "html" / distDocName
-  val rstDocsPdfPath = rstDocsOutputPath / "pdf"
-
-  lazy val distRstDocs = task {
-    copyPaths(rstDocsHtmlSources, rstDocsHtmlPath) orElse
-    copyPaths(rstDocsPdfSources, rstDocsPdfPath)
-  } dependsOn (distBase, rstDocs)
+  lazy val distDocs = task {
+    copyPaths(docsHtmlSources, docsHtmlPath) orElse
+    copyPaths(docsPdfSources, docsPdfPath)
+  } dependsOn (distBase, docParent.docs)
 }
 
 /*
  * For wiring together akka and akka-modules.
  */
-trait AkkaDistSharedProject extends AkkaDistBaseProject {
+trait DistSharedProject extends DistBaseProject {
   def distName: String
 
   val distFullName = distName + "-" + version

@@ -5,32 +5,43 @@
 import sbt._
 
 trait DocParentProject extends ParentProject {
-  def docOutputPath = outputPath / "doc" / "main" / "api"
+  def apiOutputPath = outputPath / "doc" / "main" / "api"
 
-  def docProjectDependencies = topologicalSort.dropRight(1)
+  def apiProjectDependencies = topologicalSort.dropRight(1)
 
-  def docMainSources =
-    docProjectDependencies.map {
+  def apiMainSources =
+    apiProjectDependencies.map {
       case sp: ScalaPaths => sp.mainSources
       case _ => Path.emptyPathFinder
     }.foldLeft(Path.emptyPathFinder)(_ +++ _)
 
-  def docCompileClasspath =
-    docProjectDependencies.map {
+  def apiCompileClasspath =
+    apiProjectDependencies.map {
       case bsp: BasicScalaProject => bsp.compileClasspath
       case _ => Path.emptyPathFinder
     }.foldLeft(Path.emptyPathFinder)(_ +++ _)
 
-  def docLabel = "main"
+  def apiLabel = "main"
 
-  def docMaxErrors = 100
+  def apiMaxErrors = 100
 
-  def docOptions: Seq[String] = Seq.empty
+  def apiOptions: Seq[String] = Seq.empty
 
-  lazy val doc = docAction describedAs ("Create combined scaladoc for all subprojects")
+  lazy val api = apiAction describedAs ("Create combined scaladoc for all subprojects.")
 
-  def docAction = task {
-    val scaladoc = new Scaladoc(docMaxErrors, buildCompiler)
-    scaladoc(docLabel, docMainSources.get, docCompileClasspath.get, docOutputPath, docOptions, log)
+  def apiAction = task {
+    val scaladoc = new Scaladoc(apiMaxErrors, buildCompiler)
+    scaladoc(apiLabel, apiMainSources.get, apiCompileClasspath.get, apiOutputPath, apiOptions, log)
+  }
+
+  val docsPath = info.projectPath / "akka-docs"
+
+  lazy val docs = docsAction describedAs ("Create the reStructuredText documentation.")
+
+  def docsAction = task {
+    import Process._
+    log.info("Building docs...")
+    val exitCode = ((new java.lang.ProcessBuilder("make", "clean", "html", "pdf")) directory docsPath.asFile) ! log
+    if (exitCode > 0) Some("Failed to build docs.") else None
   }
 }

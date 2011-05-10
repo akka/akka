@@ -165,7 +165,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // Scaladocs
   // -------------------------------------------------------------------------------------------------------------------
 
-  override def docProjectDependencies = dependencies.toList - akka_samples
+  override def apiProjectDependencies = dependencies.toList - akka_samples
 
   // -------------------------------------------------------------------------------------------------------------------
   // Publishing
@@ -215,7 +215,6 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   val localReleasePath = outputPath / "release" / version.toString
   val localReleaseRepository = Resolver.file("Local Release", localReleasePath / "repository" asFile)
-  val localReleaseDownloads = localReleasePath / "downloads"
 
   override def otherRepositories = super.otherRepositories ++ Seq(localReleaseRepository)
 
@@ -224,7 +223,33 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
   }
 
-  lazy val buildRelease = task { None } dependsOn publishRelease
+  lazy val buildRelease = task {
+    log.info("Built release.")
+    None
+  } dependsOn (publishRelease, releaseApi, releaseDocs, releaseDownloads)
+
+  lazy val releaseApi = task {
+    val apiSources = ((apiOutputPath ##) ***)
+    val apiPath = localReleasePath / "api" / "akka" / version.toString
+    FileUtilities.copy(apiSources.get, apiPath, log).left.toOption
+  } dependsOn (api)
+
+  lazy val releaseDocs = task {
+    val docsBuildPath = docsPath / "_build"
+    val docsHtmlSources = ((docsBuildPath / "html" ##) ***)
+    val docsPdfSources = (docsBuildPath / "latex" ##) ** "*.pdf"
+    val docsOutputPath = localReleasePath / "docs" / "akka" / version.toString
+    FileUtilities.copy(docsHtmlSources.get, docsOutputPath, log).left.toOption orElse
+    FileUtilities.copy(docsPdfSources.get, docsOutputPath, log).left.toOption
+  } dependsOn (docs)
+
+  lazy val releaseDownloads = task {
+    val distArchive = akkaDist.akkaCoreDist.distArchive
+    val downloadsPath = localReleasePath / "downloads"
+    FileUtilities.copy(distArchive.get, downloadsPath, log).left.toOption
+  } dependsOn (dist)
+
+  lazy val dist = task { None } // dummy task
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-actor subproject
@@ -466,12 +491,12 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     override def publishAction = doNothing
     override def deliverAction = doNothing
 
-    class AkkaActorsDistProject(info: ProjectInfo) extends DefaultProject(info) with AkkaDistDocProject {
+    class AkkaActorsDistProject(info: ProjectInfo) extends DefaultProject(info) with DistDocProject {
       def distName = "akka-actors"
       override def distDocName = "akka"
     }
 
-    class AkkaCoreDistProject(info: ProjectInfo)extends DefaultProject(info) with AkkaDistProject {
+    class AkkaCoreDistProject(info: ProjectInfo)extends DefaultProject(info) with DistProject {
       def distName = "akka-core"
     }
   }
