@@ -5,7 +5,6 @@
 package akka.routing
 
 import akka.actor.{Actor, ActorRef, PoisonPill}
-import java.util.concurrent.TimeUnit
 
 /**
  * Actor pooling
@@ -47,7 +46,6 @@ trait ActorPool {
  */
 trait DefaultActorPool extends ActorPool { this: Actor =>
   import ActorPool._
-  import collection.mutable.LinkedList
   import akka.actor.MaximumNumberOfRestartsWithinTimeRangeReached
 
   protected var _delegates = Vector[ActorRef]()

@@ -10,7 +10,7 @@ import sbt._
 import sbt.CompileOrder._
 import spde._
 
-class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with ExecProject with DocParentProject {
+class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with ExecProject with DocParentProject { akkaParent =>
 
   // -------------------------------------------------------------------------------------------------------------------
   // Compile settings
@@ -165,7 +165,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // Scaladocs
   // -------------------------------------------------------------------------------------------------------------------
 
-  override def docProjectDependencies = dependencies.toList - akka_samples
+  override def apiProjectDependencies = dependencies.toList - akka_samples
 
   // -------------------------------------------------------------------------------------------------------------------
   // Publishing
@@ -204,7 +204,10 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   override def artifacts = Set(Artifact(artifactID, "pom", "pom"))
 
-  override def deliverProjectDependencies = super.deliverProjectDependencies.toList - akka_samples.projectID - akka_tutorials.projectID
+  override def deliverProjectDependencies = (super.deliverProjectDependencies.toList
+                                             - akka_samples.projectID
+                                             - akka_tutorials.projectID
+                                             - akkaDist.projectID)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Build release
@@ -212,7 +215,6 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   val localReleasePath = outputPath / "release" / version.toString
   val localReleaseRepository = Resolver.file("Local Release", localReleasePath / "repository" asFile)
-  val localReleaseDownloads = localReleasePath / "downloads"
 
   override def otherRepositories = super.otherRepositories ++ Seq(localReleaseRepository)
 
@@ -221,7 +223,39 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
   }
 
-  lazy val buildRelease = task { None } dependsOn publishRelease
+  lazy val buildRelease = task {
+    log.info("Built release.")
+    None
+  } dependsOn (publishRelease, releaseApi, releaseDocs, releaseDownloads, releaseDist)
+
+  lazy val releaseApi = task {
+    val apiSources = ((apiOutputPath ##) ***)
+    val apiPath = localReleasePath / "api" / "akka" / version.toString
+    FileUtilities.copy(apiSources.get, apiPath, log).left.toOption
+  } dependsOn (api)
+
+  lazy val releaseDocs = task {
+    val docsBuildPath = docsPath / "_build"
+    val docsHtmlSources = ((docsBuildPath / "html" ##) ***)
+    val docsPdfSources = (docsBuildPath / "latex" ##) ** "*.pdf"
+    val docsOutputPath = localReleasePath / "docs" / "akka" / version.toString
+    FileUtilities.copy(docsHtmlSources.get, docsOutputPath, log).left.toOption orElse
+    FileUtilities.copy(docsPdfSources.get, docsOutputPath, log).left.toOption
+  } dependsOn (docs)
+
+  lazy val releaseDownloads = task {
+    val distArchives = akkaDist.akkaActorsDist.distArchive +++ akkaDist.akkaCoreDist.distArchive
+    val downloadsPath = localReleasePath / "downloads"
+    FileUtilities.copy(distArchives.get, downloadsPath, log).left.toOption
+  } dependsOn (dist)
+
+  lazy val releaseDist = task {
+    val distArchives = akkaDist.akkaActorsDist.distExclusiveArchive +++ akkaDist.akkaCoreDist.distExclusiveArchive
+    val distPath = localReleasePath / "dist"
+    FileUtilities.copy(distArchives.get, distPath, log).left.toOption
+  } dependsOn (dist)
+
+  lazy val dist = task { None } // dummy task
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-actor subproject
@@ -442,6 +476,53 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
       publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
+    }
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Distribution
+  // -------------------------------------------------------------------------------------------------------------------
+
+  lazy val akkaDist = project("dist", "akka-dist", new AkkaDistParentProject(_))
+
+  class AkkaDistParentProject(info: ProjectInfo) extends ParentProject(info) {
+    lazy val akkaActorsDist = project("actors", "akka-dist-actors", new AkkaActorsDistProject(_), akka_actor)
+
+    lazy val akkaCoreDist = project("core", "akka-dist-core", new AkkaCoreDistProject(_),
+                                    akkaActorsDist, akka_remote, akka_http, akka_slf4j, akka_testkit, akka_actor_tests)
+
+    def doNothing = task { None }
+    override def publishLocalAction = doNothing
+    override def deliverLocalAction = doNothing
+    override def publishAction = doNothing
+    override def deliverAction = doNothing
+
+    class AkkaActorsDistProject(info: ProjectInfo) extends DefaultProject(info) with DistDocProject {
+      def distName = "akka-actors"
+      override def distDocName = "akka"
+
+      override def distConfigSources = (akkaParent.info.projectPath / "config" ##) * "*"
+
+      override def distAction = super.distAction dependsOn (distTutorials)
+
+      val distTutorialsPath = distDocPath / "tutorials"
+
+      lazy val distTutorials = task {
+        val tutorials = Set(akka_tutorials.akka_tutorial_first,
+                            akka_tutorials.akka_tutorial_second)
+
+        tutorials.map { tutorial =>
+          val tutorialPath = (tutorial.info.projectPath ##)
+          val tutorialFilterOut = ((tutorial.outputPath ##) ***)
+          val tutorialSources = (tutorialPath ***) --- tutorialFilterOut
+          val tutorialOutputPath = distTutorialsPath / tutorial.name
+          copyPaths(tutorialSources, tutorialOutputPath)
+        }.foldLeft(None: Option[String])(_ orElse _)
+      } dependsOn (distBase)
+    }
+
+    class AkkaCoreDistProject(info: ProjectInfo)extends DefaultProject(info) with DistProject {
+      def distName = "akka-core"
     }
   }
 }

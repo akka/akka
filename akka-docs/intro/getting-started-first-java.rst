@@ -37,7 +37,7 @@ To check out the code using Git invoke the following::
 
     $ git clone git://github.com/jboner/akka.git
 
-Then you can navigate down to the tutorial:: 
+Then you can navigate down to the tutorial::
 
     $ cd akka/akka-tutorials/akka-tutorial-first
 
@@ -58,39 +58,49 @@ You can test your installation by invoking ``java``::
     Java(TM) SE Runtime Environment (build 1.6.0_24-b07-334-10M3326)
     Java HotSpot(TM) 64-Bit Server VM (build 19.1-b02-334, mixed mode)
 
+
 Downloading and installing Akka
 -------------------------------
 
-To build and run the tutorial sample from the command line, you have to download Akka. If you prefer to use SBT to build and run the sample then you can skip this section and jump to the next one.
+To build and run the tutorial sample from the command line, you have to download
+Akka. If you prefer to use SBT to build and run the sample then you can skip
+this section and jump to the next one.
 
-Let's get the ``akka-1.1`` distribution of Akka core (not Akka Modules) from `http://akka.io/downloads <http://akka.io/downloads/>`_. Once you have downloaded the distribution unzip it in the folder you would like to have Akka installed in, in my case I choose to install it in ``/Users/jboner/tools/``, simply by unzipping it to this directory.
+Let's get the ``akka-actors-1.1.zip`` distribution of Akka from
+http://akka.io/downloads/ which includes everything we need for this
+tutorial. Once you have downloaded the distribution unzip it in the folder you
+would like to have Akka installed in. In my case I choose to install it in
+``/Users/jboner/tools/``, simply by unzipping it to this directory.
 
-You need to do one more thing in order to install Akka properly: set the ``AKKA_HOME`` environment variable to the root of the distribution. In my case I'm opening up a shell, navigating down to the distribution, and setting the ``AKKA_HOME`` variable::
+You need to do one more thing in order to install Akka properly: set the
+``AKKA_HOME`` environment variable to the root of the distribution. In my case
+I'm opening up a shell, navigating down to the distribution, and setting the
+``AKKA_HOME`` variable::
 
-    $ cd /Users/jboner/tools/akka-1.1
+    $ cd /Users/jboner/tools/akka-actors-1.1
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
-    /Users/jboner/tools/akka-1.1
+    /Users/jboner/tools/akka-actors-1.1
 
 The distribution looks like this::
 
-    $ ls -l
-    total 16944
-    drwxr-xr-x   7 jboner  staff      238 Apr  6 11:15 .
-    drwxr-xr-x  28 jboner  staff      952 Apr  6 11:16 ..
-    drwxr-xr-x  17 jboner  staff      578 Apr  6 11:16 deploy
-    drwxr-xr-x  26 jboner  staff      884 Apr  6 11:16 dist
-    drwxr-xr-x   3 jboner  staff      102 Apr  6 11:15 lib_managed
-    -rwxr-xr-x   1 jboner  staff  8674105 Apr  6 11:15 scala-library.jar
-    drwxr-xr-x   4 jboner  staff      136 Apr  6 11:16 scripts
+    $ ls -1
+    config
+    doc
+    lib
+    src
 
-- In the ``dist`` directory we have the Akka JARs, including sources and docs.
-- In the ``lib_managed/compile`` directory we have Akka's dependency JARs.
-- In the ``deploy`` directory we have the sample JARs.
-- In the ``scripts`` directory we have scripts for running Akka.
-- Finally ``scala-library.jar`` is the JAR for the latest Scala distribution that Akka depends on.
+- In the ``config`` directory we have the Akka conf files.
+- In the ``doc`` directory we have the documentation, API, doc JARs, and also
+  the source files for the tutorials.
+- In the ``lib`` directory we have the Scala and Akka JARs.
+- In the ``src`` directory we have the source JARs for Akka.
 
-The only JAR we will need for this tutorial (apart from the ``scala-library.jar`` JAR) is the ``akka-actor-1.1.jar`` JAR in the ``dist`` directory. This is a self-contained JAR with zero dependencies and contains everything we need to write a system using Actors.
+
+The only JAR we will need for this tutorial (apart from the
+``scala-library.jar`` JAR) is the ``akka-actor-1.1.jar`` JAR in the ``lib/akka``
+directory. This is a self-contained JAR with zero dependencies and contains
+everything we need to write a system using Actors.
 
 Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
 
@@ -114,6 +124,7 @@ information the module JARs are these:
 - ``akka-scalaz-1.1.jar`` -- Support for the Scalaz library
 - ``akka-spring-1.1.jar`` -- Spring framework integration
 - ``akka-osgi-dependencies-bundle-1.1.jar`` -- OSGi support
+
 
 Downloading and installing Maven
 --------------------------------
@@ -181,7 +192,7 @@ We also need to edit the ``pom.xml`` build file. Let's add the dependency we nee
             <repository>
                 <id>Akka</id>
                 <name>Akka Maven2 Repository</name>
-                <url>http://www.scalablesolutions.se/akka/repository/</url>
+                <url>http://akka.io/repository/</url>
             </repository>
         </repositories>
 
@@ -698,35 +709,42 @@ Before we package it up and run it, let's take a look at the full code now, with
       }
     }
 
+
 Run it as a command line application
 ------------------------------------
 
-To build and run the tutorial from the command line, you need to have the Scala library JAR on the classpath.
+If you have not typed in (or copied) the code for the tutorial as
+``$AKKA_HOME/tutorial/akka/tutorial/first/java/Pi.java`` then now is the
+time. When that's done open up a shell and step in to the Akka distribution
+(``cd $AKKA_HOME``).
 
-Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0.RC1 release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
+First we need to compile the source file. That is done with Java's compiler
+``javac``. Our application depends on the ``akka-actor-1.1.jar`` and the
+``scala-library.jar`` JAR files, so let's add them to the compiler classpath
+when we compile the source::
 
-The ``scala-library.jar`` resides in the ``scala-2.9.0.RC1/lib`` directory. Copy that to your project directory.
+    $ javac -cp lib/scala-library.jar:lib/akka/akka-actor-1.1.jar tutorial/akka/tutorial/first/java/Pi.java
 
-If you have not typed in (or copied) the code for the tutorial as ``$AKKA_HOME/tutorial/akka/tutorial/first/java/Pi.java`` then now is the time. When that's done open up a shell and step in to the Akka distribution (``cd $AKKA_HOME``).
-
-First we need to compile the source file. That is done with Java's compiler ``javac``. Our application depends on the ``akka-actor-1.1.jar`` and the ``scala-library.jar`` JAR files, so let's add them to the compiler classpath when we compile the source::
-
-    $ javac -cp dist/akka-actor-1.1.jar:scala-library.jar tutorial/Pi.scala
-
-When we have compiled the source file we are ready to run the application. This is done with ``java`` but yet again we need to add the ``akka-actor-1.1.jar`` and the ``scala-library.jar`` JAR files to the classpath as well as the classes we compiled ourselves::
+When we have compiled the source file we are ready to run the application. This
+is done with ``java`` but yet again we need to add the ``akka-actor-1.1.jar``
+and the ``scala-library.jar`` JAR files to the classpath as well as the classes
+we compiled ourselves::
 
     $ java \
-        -cp dist/akka-actor-1.1.jar:scala-library.jar:tutorial \
+        -cp lib/scala-library.jar:lib/akka/akka-actor-1.1.jar:tutorial \
         akka.tutorial.java.first.Pi
-    AKKA_HOME is defined as [/Users/jboner/src/akka-stuff/akka-core]
-    loading config from [/Users/jboner/src/akka-stuff/akka-core/config/akka.conf].
+    AKKA_HOME is defined as [/Users/jboner/tools/akka-actors-1.1]
+    loading config from [/Users/jboner/tools/akka-actors-1.1/config/akka.conf].
 
     Pi estimate:        3.1435501812459323
     Calculation time:   822 millis
 
 Yippee! It is working.
 
-If you have not defined the ``AKKA_HOME`` environment variable then Akka can't find the ``akka.conf`` configuration file and will print out a ``Can’t load akka.conf`` warning. This is ok since it will then just use the defaults.
+If you have not defined the ``AKKA_HOME`` environment variable then Akka can't
+find the ``akka.conf`` configuration file and will print out a ``Can’t load
+akka.conf`` warning. This is ok since it will then just use the defaults.
+
 
 Run it inside Maven
 -------------------

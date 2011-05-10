@@ -112,11 +112,14 @@ div.header h2 {
     font-size: 1.3em;
     font-weight: normal;
     letter-spacing: 1px;
-    text-transform: uppercase;
-    color: #aaa;
+    color: {{ theme_headingcolor }};
     border: 0;
     margin-top: -3px;
     padding: 0;
+}
+
+div.header img.leftlogo {
+    float: left;
 }
 
 div.header img.rightlogo {

@@ -1,4 +1,4 @@
-sh git checkout -b release-{{release.arg1}}
+sh git checkout -b releasing-{{release.arg1}}
 clean
 script find-replace.sh {{project.version}} {{release.arg1}}
 script find-replace.sh //[[:space:]]*release:[[:space:]]*

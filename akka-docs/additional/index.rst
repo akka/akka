@@ -7,7 +7,7 @@ Additional Information
    add-on-modules
    articles
    benchmarks
-   recipes
+   recipies
    external-sample-projects
    companies-using-akka
    third-party-integrations

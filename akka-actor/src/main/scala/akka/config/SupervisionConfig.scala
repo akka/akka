@@ -46,6 +46,12 @@ object Supervision {
         if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
   }
 
+  /**
+   * Restart all actors linked to the same supervisor when one fails,
+   * trapExit = which Throwables should be intercepted
+   * maxNrOfRetries = the number of times an actor is allowed to be restarted
+   * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
+   */
   case class AllForOneStrategy(override val trapExit: List[Class[_ <: Throwable]],
                                maxNrOfRetries: Option[Int] = None,
                                withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy(trapExit) {
@@ -68,6 +74,12 @@ object Supervision {
         if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
   }
 
+  /**
+   * Restart an actor when it fails
+   * trapExit = which Throwables should be intercepted
+   * maxNrOfRetries = the number of times an actor is allowed to be restarted
+   * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
+   */
   case class OneForOneStrategy(override val trapExit: List[Class[_ <: Throwable]],
                                maxNrOfRetries: Option[Int] = None,
                                withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy(trapExit) {
