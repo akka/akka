@@ -38,11 +38,11 @@
         </a>
         {%- else %}
         {%- if logo -%}
-          <img class="rightlogo" src="{{ pathto('_static/' + logo, 1) }}" alt="Logo"/>
+          <img class="leftlogo" src="{{ pathto('_static/' + logo, 1) }}" alt="Logo"/>
         {%- endif -%}
-        <h1 class="heading"><a href="{{ pathto('index') }}">
-          <span>{{ shorttitle|e }}</span></a></h1>
-        <h2 class="heading"><span>{{ title|striptags|e }}</span></h2>
+       <h1 class="heading"><a href="{{ pathto('index') }}">
+         <span>{{ shorttitle|e }}</span></a></h1>
+       <h2 class="heading"><span>Version {{ version|e }}</span></h2>
         {%- endif %}
         {%- endblock %}
       </div>
