@@ -31,8 +31,3 @@ Release Versions
 
 - Akka 1.0 - http://akka.io/api/1.0/
 
-Older
------
-
-- Akka 0.10 - http://www.scalablesolutions.se/akka/api/0.10/
-- Akka 0.9 - http://www.scalablesolutions.se/akka/api/0.9/
