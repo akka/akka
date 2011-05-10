@@ -24,6 +24,8 @@ Links
 
 * :ref:`scaladoc`
 
+* `Akka Modules Documentation <http://akka.io/docs/akka-modules/1.1/>`_.
+
 * :ref:`issue_tracking`
 
 * :ref:`support`

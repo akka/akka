@@ -1,3 +1,5 @@
+.. _actors-scala:
+
 Actors (Scala)
 ==============
 
@@ -184,7 +186,7 @@ Using ``!!!`` will send a message to the receiving Actor asynchronously and will
 
   val future = actor !!! "Hello"
 
-See `Futures <futures-scala>`_ for more information.
+See :ref:`futures-scala` for more information.
 
 Forward message
 ^^^^^^^^^^^^^^^

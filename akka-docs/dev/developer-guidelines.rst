@@ -9,7 +9,7 @@ Code Style
 The Akka code style follows `this document <http://davetron5000.github.com/scala-style/ScalaStyleGuide.pdf>`_ .
 
 Here is a code style settings file for ``IntelliJ IDEA``:
-`Download <http://scalablesolutions.se/akka/docs/akka-0.10/files/akka-intellij-code-style.jar>`_
+`Download <../_static/akka-intellij-code-style.jar>`_
 
 Please follow the code style. Look at the code around you and mimic.
 
@@ -26,7 +26,7 @@ There is a testing standard that should be followed: `Ticket001Spec <https://git
 Actor TestKit
 ^^^^^^^^^^^^^
 
-There is a useful test kit for testing actors: `akka.util.TestKit <https://github.com/jboner/akka/tree/master/akka-testkit/src/main/scala/akka/testkit/TestKit.scala>`_. It enables assertions concerning replies received and their timing, there is more documentation in the `<TestKit>`_ module.
+There is a useful test kit for testing actors: `akka.util.TestKit <https://github.com/jboner/akka/tree/master/akka-testkit/src/main/scala/akka/testkit/TestKit.scala>`_. It enables assertions concerning replies received and their timing, there is more documentation in the :ref:`akka-testkit` module.
 
 NetworkFailureTest
 ^^^^^^^^^^^^^^^^^^

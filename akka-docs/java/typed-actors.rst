@@ -84,7 +84,7 @@ Using a configuration object:
 
   RegistrationService service = (RegistrationService) TypedActor.newInstance(RegistrationService.class, config);
 
-However, often you will not use these factory methods but declaratively define the Typed Actors as part of a supervisor hierarchy. More on that in the `Fault Tolerance <fault-tolerance-java>`_ section.
+However, often you will not use these factory methods but declaratively define the Typed Actors as part of a supervisor hierarchy. More on that in the :ref:`fault-tolerance-java` section.
 
 Sending messages
 ----------------
@@ -144,7 +144,7 @@ Here is an example:
 Stopping Typed Actors
 ---------------------
 
-Once Typed Actors have been created with one of the TypedActor.newInstance methods they need to be stopped with TypedActor.stop to free resources allocated by the created Typed Actor (this is not needed when the Typed Actor is `supervised <fault-tolerance#supervise-active-object>`_).
+Once Typed Actors have been created with one of the TypedActor.newInstance methods they need to be stopped with TypedActor.stop to free resources allocated by the created Typed Actor (this is not needed when the Typed Actor is supervised).
 
 .. code-block:: java
 
@@ -156,7 +156,7 @@ Once Typed Actors have been created with one of the TypedActor.newInstance metho
   // Free Typed Actor resources
   TypedActor.stop(service);
 
-When the Typed Actor defines a `shutdown callback <fault-tolerance#shutdown>`_ method it will be invoked on TypedActor.stop.
+When the Typed Actor defines a shutdown callback method (:ref:`fault-tolerance-java`) it will be invoked on TypedActor.stop.
 
 How to use the TypedActorContext for runtime information access
 ---------------------------------------------------------------

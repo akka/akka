@@ -36,7 +36,7 @@ Actors encapsulate state and behavior into a lightweight process/thread. In a se
 Creating Actors
 ---------------
 
-Akka has both a `Scala API <actors>`_ and a `Java API <active-objects>`_. In this article we will only look at the Scala API since that is the most expressive one. The article assumes some basic Scala knowledge, but even if you don't know Scala I don't think it will not be too hard to follow along anyway.
+Akka has both a Scala API (:ref:`actors-scala`) and a Java API (:ref:`untyped-actors-java`). In this article we will only look at the Scala API since that is the most expressive one. The article assumes some basic Scala knowledge, but even if you don't know Scala I don't think it will not be too hard to follow along anyway.
 
 Akka has adopted the same style of writing Actors as Erlang in which each Actor has an explicit message handler which does pattern matching to match on the incoming messages.
 
