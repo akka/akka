@@ -28,9 +28,6 @@ show_authors = True
 # -- Options for HTML output ---------------------------------------------------
 
 html_theme = 'akka'
-html_theme_options = {
-    'full_logo': 'true'
-    }
 html_theme_path = ['_sphinx/themes']
 
 html_title = 'Akka Documentation'
