@@ -197,6 +197,30 @@ This is the same result as this example:
 
 But it may be faster to use ``traverse`` as it doesn't have to create an intermediate ``List[Future[Int]]``.
 
+
+Then there's a method that's called ``fold`` that takes a start-value, a sequence of ``Future``:s and a function from the type of the start-value and the type of the futures and returns something with the same type as the start-value, and then applies the function to all elements in the sequence of futures, non-blockingly, the execution will run on the Thread of the last completing Future in the sequence.
+
+.. code-block:: scala
+
+  val futures = for(i <- 1 to 1000) yield Future(i * 2) // Create a sequence of Futures
+  
+  val futureSum = Futures.fold(0)(futures)(_ + _)
+
+That's all it takes!
+
+
+If the sequence passed to ``fold`` is empty, it will return the start-value, in the case above, that will be 0. In some cases you don't have a start-value and you're able to use the value of the first completing Future in the sequence as the start-value, you can use ``reduce``, it works like this:
+
+.. code-block:: scala
+
+  val futures = for(i <- 1 to 1000) yield Future(i * 2) // Create a sequence of Futures
+
+  val futureSum = Futures.reduce(futures)(_ + _)
+
+Same as with ``fold``, the execution will be done by the Thread that completes the last of the Futures, you can also parallize it by chunking your futures into sub-sequences and reduce them, and then reduce the reduced results again.
+
+
+
 This is just a sample of what can be done, but to use more advanced techniques it is easier to take advantage of Scalaz, which Akka has support for in its akka-scalaz module.
 
 Scalaz
