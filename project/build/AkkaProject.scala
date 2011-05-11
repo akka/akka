@@ -71,7 +71,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val JACKSON_VERSION       = "1.7.1"
+  lazy val JACKSON_VERSION       = "1.8.0"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.2"
   lazy val SCALATEST_VERSION     = "1.4.RC3"
