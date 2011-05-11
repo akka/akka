@@ -10,6 +10,18 @@ trait DistBaseProject extends DefaultProject {
   def distSrcPath: Path
   def distDocPath: Path
   def dist: Task
+
+  override def disableCrossPaths = true
+
+  def doNothing = task { None }
+  override def compileAction = doNothing
+  override def testCompileAction = doNothing
+  override def testAction = doNothing
+  override def packageAction = doNothing
+  override def publishLocalAction = doNothing
+  override def deliverLocalAction = doNothing
+  override def publishAction = doNothing
+  override def deliverAction = doNothing
 }
 
 trait DistProject extends DistBaseProject {
@@ -150,18 +162,6 @@ trait DistProject extends DistBaseProject {
     val success = target.asFile.setExecutable(executable, false)
     if (success) None else Some("Couldn't set permissions of " + target)
   }
-
-  override def disableCrossPaths = true
-
-  def doNothing = task { None }
-  override def compileAction = doNothing
-  override def testCompileAction = doNothing
-  override def testAction = doNothing
-  override def packageAction = doNothing
-  override def publishLocalAction = doNothing
-  override def deliverLocalAction = doNothing
-  override def publishAction = doNothing
-  override def deliverAction = doNothing
 }
 
 trait DistDocProject extends DistProject {
