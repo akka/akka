@@ -397,9 +397,18 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // Tutorials
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaTutorialFirstProject(info: ProjectInfo) extends AkkaDefaultProject(info)
+  class AkkaTutorialFirstProject(info: ProjectInfo) extends AkkaTutorialProject(info)
 
-  class AkkaTutorialSecondProject(info: ProjectInfo) extends AkkaDefaultProject(info)
+  class AkkaTutorialSecondProject(info: ProjectInfo) extends AkkaTutorialProject(info)
+
+  class AkkaTutorialProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    def doNothing = task { None }
+    override def publishLocalAction = doNothing
+    override def deliverLocalAction = doNothing
+    override def publishAction = doNothing
+    override def deliverAction = doNothing
+    override lazy val publishRelease = doNothing
+  }
 
   class AkkaTutorialsParentProject(info: ProjectInfo) extends ParentProject(info) {
     override def disableCrossPaths = true
@@ -410,10 +419,12 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val akka_tutorial_second = project("akka-tutorial-second", "akka-tutorial-second",
       new AkkaTutorialSecondProject(_), akka_actor)
 
-    lazy val publishRelease = {
-      val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
-      publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
-    }
+    def doNothing = task { None }
+    override def publishLocalAction = doNothing
+    override def deliverLocalAction = doNothing
+    override def publishAction = doNothing
+    override def deliverAction = doNothing
+    lazy val publishRelease = doNothing
   }
 
   // -------------------------------------------------------------------------------------------------------------------
