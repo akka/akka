@@ -4,6 +4,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 import java.util.concurrent.Callable;
 import java.util.LinkedList;
+import java.lang.Iterable;
 import akka.japi.Function;
 import akka.japi.Function2;
 import akka.japi.Procedure;
@@ -43,7 +44,7 @@ public class JavaFutureTests {
                     }));
         }
 
-        Future<LinkedList<String>> futureList = sequence(listFutures);
+        Future<Iterable<String>> futureList = sequence(listFutures);
 
         assertEquals(futureList.get(), listExpected);
     }
@@ -102,7 +103,7 @@ public class JavaFutureTests {
             listStrings.add("test");
         }
 
-        Future<LinkedList<String>> result = traverse(listStrings, new Function<String,Future<String>>(){
+        Future<Iterable<String>> result = traverse(listStrings, new Function<String,Future<String>>(){
           public Future<String> apply(final String r) {
               return future(new Callable<String>() {
                         public String call() {

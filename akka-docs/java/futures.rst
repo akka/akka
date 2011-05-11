@@ -172,12 +172,12 @@ It is very often desirable to be able to combine different Futures with eachothe
   import akka.dispatch.Future;
   import static akka.dispatch.Futures.sequence;
   import akka.japi.Function;
-  import java.util.LinkedList;
+  import java.lang.Iterable;
 
-  LinkedList<Future<Integer>> listOfFutureInts = ... //Some source generating a list of Future<Integer>:s
+  Iterable<Future<Integer>> listOfFutureInts = ... //Some source generating a sequence of Future<Integer>:s
 
-  // now we have a Future[List[Int]]
-  Future<LinkedList<Integer>> futureListOfInts = sequence(listOfFutureInts);
+  // now we have a Future[Iterable[Int]]
+  Future<Iterable<Integer>> futureListOfInts = sequence(listOfFutureInts);
 
   // Find the sum of the odd numbers
   Long totalSum = futureListOfInts.map(
@@ -190,21 +190,21 @@ It is very often desirable to be able to combine different Futures with eachothe
           }
       }).get();
 
-To better explain what happened in the example, ``Future.sequence`` is taking the ``LinkedList<Future<Integer>>`` and turning it into a ``Future<LinkedList<Integer>>``. We can then use ``map`` to work with the ``LinkedList<Integer>`` directly, and we aggregate the sum of the ``LinkedList``.
+To better explain what happened in the example, ``Future.sequence`` is taking the ``Iterable<Future<Integer>>`` and turning it into a ``Future<Iterable<Integer>>``. We can then use ``map`` to work with the ``Iterable<Integer>`` directly, and we aggregate the sum of the ``Iterable``.
 
-The ``traverse`` method is similar to ``sequence``, but it takes a sequence of ``A``s and applies a function from ``A`` to ``Future<B>`` and returns a ``Future<LinkedList<B>>``, enabling parallel ``map`` over the sequence, if you use ``Futures.future`` to create the ``Future``.
+The ``traverse`` method is similar to ``sequence``, but it takes a sequence of ``A``s and applies a function from ``A`` to ``Future<B>`` and returns a ``Future<Iterable<B>>``, enabling parallel ``map`` over the sequence, if you use ``Futures.future`` to create the ``Future``.
 
 .. code-block:: java
 
   import akka.dispatch.Future;
   import static akka.dispatch.Futures.traverse;
   import static akka.dispatch.Futures.future;
-  import java.util.LinkedList;
+  import java.lang.Iterable;
   import akka.japi.Function;
 
-  LinkedList<String> listStrings = ... //Just a list of Strings
+  Iterable<String> listStrings = ... //Just a sequence of Strings
 
-  Future<LinkedList<String>> result = traverse(listStrings, new Function<String,Future<String>>(){
+  Future<Iterable<String>> result = traverse(listStrings, new Function<String,Future<String>>(){
           public Future<String> apply(final String r) {
               return future(new Callable<String>() {
                         public String call() {
@@ -214,7 +214,7 @@ The ``traverse`` method is similar to ``sequence``, but it takes a sequence of `
           }
         });
 
-  result.get(); //Returns a the list of strings as upper case
+  result.get(); //Returns the sequence of strings as upper case
 
 It's as simple as that!
 
@@ -224,7 +224,7 @@ Then there's a method that's called ``fold`` that takes a start-value, a sequenc
 
   import akka.dispatch.Future;
   import static akka.dispatch.Futures.fold;
-  import java.util.Iterable;
+  import java.lang.Iterable;
   import akka.japi.Function2;
 
   Iterable<Future<String>> futures = ... //A sequence of Futures, in this case Strings
