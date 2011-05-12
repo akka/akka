@@ -74,7 +74,7 @@ object Config {
         throw new ConfigurationException(
           "Akka JAR version [" + VERSION + "] is different than the provided config version [" + configVersion + "]")
 
-      if(System.getProperty("akka.output.config.source") ne null)
+      if(Configuration.outputConfigSources)
         System.out.println(source)
 
       i
