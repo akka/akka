@@ -600,7 +600,7 @@ class LocalActorRef private[akka] (
   @volatile
   private var maxNrOfRetriesCount: Int = 0
   @volatile
-  private var restartsWithinTimeRangeTimestamp: Long = 0L
+  private var restartTimeWindowStartNanos: Long = 0L
   @volatile
   private var _mailbox: AnyRef = _
   @volatile
@@ -892,30 +892,32 @@ class LocalActorRef private[akka] (
   }
 
   private def requestRestartPermission(maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Boolean = {
+
     val denied = if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty) {  //Immortal
       false
     } else if (withinTimeRange.isEmpty) { // restrict number of restarts
-      maxNrOfRetriesCount += 1 //Increment number of retries
-      maxNrOfRetriesCount > maxNrOfRetries.get
+      val retries = maxNrOfRetriesCount + 1
+      maxNrOfRetriesCount = retries //Increment number of retries
+      retries > maxNrOfRetries.get
     } else {  // cannot restart more than N within M timerange
-      maxNrOfRetriesCount += 1 //Increment number of retries
-      val windowStart = restartsWithinTimeRangeTimestamp
-      val now         = System.currentTimeMillis
-      val retries     = maxNrOfRetriesCount
+      val retries = maxNrOfRetriesCount + 1
+
+      val windowStart = restartTimeWindowStartNanos
+      val now         = System.nanoTime
       //We are within the time window if it isn't the first restart, or if the window hasn't closed
       val insideWindow   = if (windowStart == 0) false
-                          else (now - windowStart) <= withinTimeRange.get
-
-      //The actor is dead if it dies X times within the window of restart
-      val unrestartable = insideWindow && retries > maxNrOfRetries.getOrElse(1)
+                          else (now - windowStart) <= TimeUnit.MILLISECONDS.toNanos(withinTimeRange.get)
 
       if (windowStart == 0 || !insideWindow) //(Re-)set the start of the window
-        restartsWithinTimeRangeTimestamp = now
+        restartTimeWindowStartNanos = now
 
-      if (windowStart != 0 && !insideWindow) //Reset number of restarts if window has expired
-        maxNrOfRetriesCount = 1
+      //Reset number of restarts if window has expired, otherwise, increment it
+      maxNrOfRetriesCount = if (windowStart != 0 && !insideWindow) 1 else retries //Increment number of retries
 
-      unrestartable
+      val restartCountLimit = if (maxNrOfRetries.isDefined) maxNrOfRetries.get else 1
+
+      //The actor is dead if it dies X times within the window of restart
+      insideWindow && retries > restartCountLimit
     }
 
     denied == false //If we weren't denied, we have a go
