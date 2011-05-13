@@ -184,7 +184,6 @@ object Actor extends ListenerManagement {
    * that creates the Actor. Please note that this function can be invoked multiple
    * times if for example the Actor is supervised and needs to be restarted.
    * <p/>
-   * This function should <b>NOT</b> be used for remote actors.
    * <pre>
    *   import Actor._
    *   val actor = actorOf(new MyActor)
@@ -204,7 +203,6 @@ object Actor extends ListenerManagement {
    * that creates the Actor. Please note that this function can be invoked multiple
    * times if for example the Actor is supervised and needs to be restarted.
    * <p/>
-   * This function should <b>NOT</b> be used for remote actors.
    * JAVA API
    */
   def actorOf(creator: Creator[Actor]): ActorRef = new LocalActorRef(() => creator.create, None)
