@@ -203,11 +203,10 @@ abstract class TypedActor extends Actor with Proxyable {
    *  Integer result = future.get();
    * </pre>
    */
-  def future[T](value: T): Future[T] =
-    self.senderFuture
-      .map{f => f.completeWithResult(value); f }
-      .getOrElse(throw new IllegalActorStateException("No sender future in scope"))
-      .asInstanceOf[Future[T]]
+  def future[T](value: T): Future[T] = self.senderFuture match {
+    case None => throw new IllegalActorStateException("No sender future in scope")
+    case Some(f) => f.completeWithResult(value).asInstanceOf[Future[T]]
+  }
 
   def receive = {
     case joinPoint: JoinPoint =>
