@@ -4,7 +4,7 @@
 
 package akka.testkit
 
-import akka.actor.{Actor, FSM}
+import akka.actor._
 import Actor._
 import akka.util.Duration
 import akka.util.duration._
@@ -20,7 +20,7 @@ object TestActor {
   case class SetIgnore(i : Ignore)
 }
 
-class TestActor(queue : BlockingDeque[AnyRef]) extends Actor with FSM[Int, TestActor.Ignore] {
+class TestActor(queue : BlockingDeque[(AnyRef, Option[Channel[Any]])]) extends Actor with FSM[Int, TestActor.Ignore] {
   import FSM._
   import TestActor._
 
@@ -37,7 +37,8 @@ class TestActor(queue : BlockingDeque[AnyRef]) extends Actor with FSM[Int, TestA
     case Event(x : AnyRef, ign) =>
       val ignore = ign map (z => if (z isDefinedAt x) z(x) else false) getOrElse false
       if (!ignore) {
-        queue.offerLast(x)
+        val ch = try Some(self.channel) catch { case _ : IllegalActorStateException => None }
+        queue.offerLast((x, ch))
       }
       stay
   }
@@ -77,13 +78,14 @@ class TestActor(queue : BlockingDeque[AnyRef]) extends Actor with FSM[Int, TestA
  */
 trait TestKit {
 
-  private val queue = new LinkedBlockingDeque[AnyRef]()
-  
+  private val queue = new LinkedBlockingDeque[(AnyRef, Option[Channel[Any]])]()
+  private var lastChannel : Option[Channel[Any]] = None
+
   /**
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  protected val testActor = actorOf(new TestActor(queue)).start()
+  val testActor = actorOf(new TestActor(queue)).start()
 
   /**
    * Implicit sender reference so that replies are possible for messages sent
@@ -183,6 +185,20 @@ trait TestKit {
    * Same as calling `within(0 seconds, max)(f)`.
    */
   def within[T](max : Duration)(f : => T) : T = within(0 seconds, max)(f)
+
+  /**
+   * Send reply to the last dequeued message. Will throw
+   * IllegalActorStateException if no message has been dequeued, yet. Dequeuing
+   * means reception of the message as part of an expect... or receive... call,
+   * not reception by the testActor.
+   */
+  def reply(msg : AnyRef) {
+    if (lastChannel.isDefined) {
+      lastChannel.get ! msg
+    } else {
+      throw new IllegalActorStateException("no sender in scope")
+    }
+  }
 
   /**
    * Same as `expectMsg`, but takes the maximum wait time from the innermost
@@ -397,15 +413,19 @@ trait TestKit {
    */
   def receiveWhile[T](max : Duration)(f : PartialFunction[AnyRef, T]) : Seq[T] = {
     val stop = now + max
+    var ch : Option[Channel[Any]] = None
 
     @tailrec def doit(acc : List[T]) : List[T] = {
       receiveOne(stop - now) match {
         case null =>
+          lastChannel = ch
           acc.reverse
         case o if (f isDefinedAt o) =>
+          ch = lastChannel
           doit(f(o) :: acc)
         case o =>
-          queue.offerFirst(o)
+          queue.offerFirst((o, lastChannel))
+          lastChannel = ch
           acc.reverse
       }
     }
@@ -415,7 +435,7 @@ trait TestKit {
     ret
   }
 
-  private def receiveN(n : Int, stop : Duration) : Seq[AnyRef] = {
+  def receiveN(n : Int, stop : Duration) : Seq[AnyRef] = {
     for { x <- 1 to n } yield {
       val timeout = stop - now
       val o = receiveOne(timeout)
@@ -424,17 +444,24 @@ trait TestKit {
     }
   }
 
-  private def receiveOne(max : Duration) : AnyRef = {
-    if (max == 0.seconds) {
-      queue.pollFirst
-    } else if (max.finite_?) {
-      queue.pollFirst(max.length, max.unit)
-    } else {
-      queue.takeFirst
+  def receiveOne(max : Duration) : AnyRef = {
+    val result = if (max == 0.seconds) {
+        queue.pollFirst
+      } else if (max.finite_?) {
+        queue.pollFirst(max.length, max.unit)
+      } else {
+        queue.takeFirst
+      }
+    result match {
+      case null =>
+        lastChannel = None
+        null
+      case (msg, ch) =>
+        lastChannel = ch
+        msg
     }
   }
 
   private def format(u : TimeUnit, d : Duration) = "%.3f %s".format(d.toUnit(u), u.toString.toLowerCase)
 }
 
-// vim: set ts=2 sw=2 et:
