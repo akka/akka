@@ -5,6 +5,9 @@ Configuration
 
    .. contents:: :local:
 
+.. _-Dakka.config:
+.. _-Dakka.home:
+
 Specifying the configuration file
 ---------------------------------
 
@@ -65,6 +68,8 @@ A custom ``akka.conf`` might look like this:
     }
   }
 
+.. _-Dakka.mode:
+
 Specifying files for different modes
 ------------------------------------
 
@@ -100,4 +105,21 @@ akka.dev.conf:
   akka {
     event-handler-level = "DEBUG"
   }
+
+.. _-Dakka.output.config.source:
+
+Showing Configuration Source
+----------------------------
+
+If the system property ``akka.output.config.source`` is set to anything but
+null, then the source from which Akka reads its configuration is printed to the
+console during application startup.
+
+Summary of System Properties
+----------------------------
+
+* :ref:`akka.home <-Dakka.home>` (``AKKA_HOME``): where Akka searches for configuration
+* :ref:`akka.config <-Dakka.config>`: explicit configuration file location
+* :ref:`akka.mode <-Dakka.mode>` (``AKKA_MODE``): modify configuration file name for multiple profiles
+* :ref:`akka.output.config.source <-Dakka.output.config.source>`: whether to print configuration source to console
 
