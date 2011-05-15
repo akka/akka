@@ -127,10 +127,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
    */
   protected def donate(organ: MessageInvocation, recipient: ActorRef): Boolean = {
     if (organ ne null) {
-      if (organ.senderFuture.isDefined) recipient.postMessageToMailboxAndCreateFutureResultWithTimeout[Any](
-        organ.message, recipient.timeout, organ.sender, organ.senderFuture)
-      else if (organ.sender.isDefined) recipient.postMessageToMailbox(organ.message, organ.sender)
-      else recipient.postMessageToMailbox(organ.message, None)
+      recipient.postMessageToMailbox(organ.message, organ.channel)
       true
     } else false
   }

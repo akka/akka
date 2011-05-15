@@ -5,6 +5,7 @@
 package akka.routing
 
 import akka.actor.{Actor, ActorRef, PoisonPill}
+import akka.dispatch.{CompletableFuture}
 
 /**
  * Actor pooling
@@ -196,7 +197,7 @@ trait MailboxPressureCapacitor {
  */
 trait ActiveFuturesPressureCapacitor {
   def pressure(delegates: Seq[ActorRef]): Int =
-    delegates count { _.senderFuture.isDefined }
+    delegates count { _.channel.isInstanceOf[CompletableFuture[Any]] }
 }
 
 

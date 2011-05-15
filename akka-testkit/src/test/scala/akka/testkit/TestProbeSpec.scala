@@ -8,12 +8,12 @@ import akka.event.EventHandler
 import akka.dispatch.Future
 import akka.util.duration._
 
-class TestKitSpec extends WordSpec with MustMatchers {
+class TestProbeSpec extends WordSpec with MustMatchers {
 
-  "A TestKit" must {
+  "A TestProbe" must {
   
     "reply to futures" in {
-      val tk = new TestKit {}
+      val tk = TestProbe()
       val future = tk.testActor.!!![Any]("hello")
       tk.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
       tk.reply("world")
@@ -22,12 +22,21 @@ class TestKitSpec extends WordSpec with MustMatchers {
     }
 
     "reply to messages" in {
-      val tk1 = new TestKit {}
-      val tk2 = new TestKit {}
-      tk1.testActor.!("hello")(Some(tk2.testActor))
+      val tk1 = TestProbe()
+      val tk2 = TestProbe()
+      tk1.testActor.!("hello")(tk2.testActor)
       tk1.expectMsg(0 millis, "hello")
       tk1.reply("world")
       tk2.expectMsg(0 millis, "world")
+    }
+
+    "properly send and reply to messages" in {
+      val probe1 = TestProbe()
+      val probe2 = TestProbe()
+      probe1.send(probe2.ref, "hello")
+      probe2.expectMsg(0 millis, "hello")
+      probe2.reply("world")
+      probe1.expectMsg(0 millis, "world")
     }
   
   }

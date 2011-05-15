@@ -488,10 +488,7 @@ trait FSM[S, D] extends ListenerManagement {
      * @return this state transition descriptor
      */
     def replying(replyValue: Any): State = {
-      self.sender match {
-        case Some(sender) => sender ! replyValue
-        case None =>
-      }
+      self.channel !? replyValue
       this
     }
 

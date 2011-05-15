@@ -307,13 +307,13 @@ trait Actor {
    */
   type Receive = Actor.Receive
 
-  /*
+  /**
    * Some[ActorRef] representation of the 'self' ActorRef reference.
    * <p/>
    * Mainly for internal use, functions as the implicit sender references when invoking
    * the 'forward' function.
    */
-  @transient implicit val someSelf: Some[ActorRef] = {
+  @transient val someSelf: Some[ActorRef] = {
     val optRef = Actor.actorRefInCreation.get
     if (optRef.isEmpty) throw new ActorInitializationException(
       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
@@ -322,18 +322,18 @@ trait Actor {
       "\n\tEither use:" +
       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
-     Actor.actorRefInCreation.set(None)
-     optRef.asInstanceOf[Some[ActorRef]].get.id = getClass.getName  //FIXME: Is this needed?
-     optRef.asInstanceOf[Some[ActorRef]]
+    Actor.actorRefInCreation.set(None)
+    optRef.asInstanceOf[Some[ActorRef]].get.id = getClass.getName  //FIXME: Is this needed?
+    optRef.asInstanceOf[Some[ActorRef]]
   }
 
-   /*
+  /**
    * Option[ActorRef] representation of the 'self' ActorRef reference.
    * <p/>
    * Mainly for internal use, functions as the implicit sender references when invoking
    * one of the message send functions ('!', '!!' and '!!!').
    */
-  implicit def optionSelf: Option[ActorRef] = someSelf
+  def optionSelf: Option[ActorRef] = someSelf
 
   /**
    * The 'self' field holds the ActorRef for this actor.
@@ -362,7 +362,7 @@ trait Actor {
    * self.stop(..)
    * </pre>
    */
-  @transient val self: ScalaActorRef = someSelf.get
+  @transient implicit val self: ScalaActorRef = someSelf.get
 
   /**
    * User overridable callback/setting.
@@ -464,7 +464,7 @@ trait Actor {
 
   private[akka] final def apply(msg: Any) = {
     if (msg.isInstanceOf[AnyRef] && (msg.asInstanceOf[AnyRef] eq null))
-      throw new InvalidMessageException("Message from [" + self.sender + "] to [" + self.toString + "] is null")
+      throw new InvalidMessageException("Message from [" + self.channel + "] to [" + self.toString + "] is null")
     val behaviorStack = self.hotswap
     msg match {
       case l: AutoReceivedMessage           => autoReceiveMessage(l)
@@ -486,9 +486,13 @@ trait Actor {
     case Restart(reason)           => throw reason
     case Kill                      => throw new ActorKilledException("Kill")
     case PoisonPill                =>
-      val f = self.senderFuture
+      val ch = self.channel
       self.stop()
-      if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
+      ch match {
+        case f : CompletableFuture[Any] =>
+          f.completeWithException(new ActorKilledException("PoisonPill"))
+        case _ =>
+      }
   }
 
   private lazy val processingBehavior = receive //ProcessingBehavior is the original behavior

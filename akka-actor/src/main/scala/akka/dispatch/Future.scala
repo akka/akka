@@ -6,7 +6,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.{Actor, Channel}
+import akka.actor.{Actor, Channel, AvailableChannel, NullChannel, ActorRef}
 import akka.util.Duration
 import akka.japi.{ Procedure, Function => JFunc }
 
@@ -241,9 +241,10 @@ object Future {
   /**
    * Construct a completable channel
    */
-  def channel(timeout: Long = Actor.TIMEOUT) = new Channel[Any] {
+  def channel(timeout: Long = Actor.TIMEOUT) = new AvailableChannel {
     val future = empty[Any](timeout)
-    def !(msg: Any) = future completeWithResult msg
+    def !(msg: Any)(implicit channel: Channel[Any] = NullChannel) = future completeWithResult msg
+    def channel: Channel[Any] = this
   }
 
   /**
@@ -624,7 +625,7 @@ object Promise {
 /**
  * Essentially this is the Promise (or write-side) of a Future (read-side).
  */
-trait CompletableFuture[T] extends Future[T] {
+trait CompletableFuture[T] extends Future[T] with AvailableChannel {
   /**
    * Completes this Future with the specified result, if not already completed.
    * @return this
@@ -668,6 +669,12 @@ trait CompletableFuture[T] extends Future[T] {
     }
     fr
   }
+
+  /*
+   * Implementation of AvailableChannel trait
+   */
+  def !(message: Any)(implicit channel: Channel[Any]) = completeWithResult(message.asInstanceOf[T])
+  def channel: Channel[Any] = this
 
 }
 

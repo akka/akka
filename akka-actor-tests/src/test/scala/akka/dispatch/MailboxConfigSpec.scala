@@ -4,7 +4,7 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
-import akka.actor. {Actor, ActorRegistry}
+import akka.actor. {Actor, ActorRegistry, NullChannel}
 import akka.actor.Actor.{actorOf}
 import java.util.concurrent. {TimeUnit, CountDownLatch, BlockingQueue}
 import java.util.{Queue}
@@ -89,7 +89,7 @@ abstract class MailboxSpec extends
       new MessageInvocation(
         actorOf(new Actor { //Dummy actor
           def receive = { case _ => }
-        }), msg, None, None)
+        }), msg, NullChannel)
     }
 
     def ensureInitialMailboxState(config: MailboxType, q: MessageQueue) {

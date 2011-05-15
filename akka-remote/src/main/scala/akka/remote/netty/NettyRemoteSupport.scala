@@ -982,8 +982,7 @@ class RemoteServerHandler(
         else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(
           message,
           request.getActorInfo.getTimeout,
-          None,
-          Some(new DefaultCompletableFuture[Any](request.getActorInfo.getTimeout).
+          new DefaultCompletableFuture[Any](request.getActorInfo.getTimeout).
             onComplete(_.value.get match {
               case l: Left[Throwable, Any] => write(channel, createErrorReplyMessage(l.a, request, AkkaActorType.ScalaActor))
               case r: Right[Throwable, Any] =>
@@ -1006,7 +1005,7 @@ class RemoteServerHandler(
                 write(channel, RemoteEncoder.encode(messageBuilder.build))
             }
           )
-       ))
+        )
     }
   }
 
