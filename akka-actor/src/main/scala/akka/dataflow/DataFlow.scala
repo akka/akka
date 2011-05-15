@@ -5,7 +5,7 @@
 package akka.dataflow
 
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
+import java.util.concurrent.{ConcurrentLinkedQueue}
 
 import akka.event.EventHandler
 import akka.actor.{Actor, ActorRef}

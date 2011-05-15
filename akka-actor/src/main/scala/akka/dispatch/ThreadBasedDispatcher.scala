@@ -4,13 +4,9 @@
 
 package akka.dispatch
 
-import akka.actor.{Actor, ActorRef}
-import akka.config.Config.config
+import akka.actor.{ActorRef}
 import akka.util.Duration
 
-import java.util.Queue
-import java.util.concurrent.{ConcurrentLinkedQueue, BlockingQueue, TimeUnit, LinkedBlockingQueue}
-import akka.actor
 import java.util.concurrent.atomic.AtomicReference
 
 /**

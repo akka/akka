@@ -5,11 +5,7 @@
 package akka.dispatch
 
 import akka.actor.{ActorRef, Actor, IllegalActorStateException}
-import akka.util.{ReflectiveAccess, Switch}
 
-import java.util.Queue
-import java.util.concurrent.atomic.{AtomicReference, AtomicInteger}
-import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue, LinkedBlockingQueue}
 import util.DynamicVariable
 
 /**

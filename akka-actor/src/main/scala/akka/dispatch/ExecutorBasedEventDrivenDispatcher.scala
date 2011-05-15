@@ -5,12 +5,10 @@
 package akka.dispatch
 
 import akka.event.EventHandler
-import akka.actor.{ActorRef, IllegalActorStateException}
-import akka.util.{ReflectiveAccess, Switch}
+import akka.actor.{ActorRef}
 
-import java.util.Queue
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue, LinkedBlockingQueue}
+import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue}
 
 /**
  * Default settings are:
