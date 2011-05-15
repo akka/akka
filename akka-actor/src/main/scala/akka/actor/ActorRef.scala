@@ -1463,7 +1463,7 @@ trait ScalaActorRef extends ActorRefShared with AvailableChannel { ref: ActorRef
    * <p/>
    * Returns true if reply was sent, and false if unable to determine what to reply to.
    */
-  def reply_?(message: Any): Boolean = try { reply(message); true } catch { case _ => false }
+  def reply_?(message: Any): Boolean = channel !? message
 
   /**
    * Atomically create (from actor class) and start an actor.

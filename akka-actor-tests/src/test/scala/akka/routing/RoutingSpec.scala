@@ -216,11 +216,11 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }).start()
 
       val successes = TestLatch(2)
-      val successCounter = Some(actorOf(new Actor {
+      val successCounter = actorOf(new Actor {
         def receive = {
           case "success" => successes.countDown()
         }
-      }).start())
+      }).start()
 
       implicit val replyTo = successCounter
       pool ! "a"
