@@ -64,4 +64,4 @@ features:
 #. Storage of statistics data for later processing
 #. Provisioning and rolling upgrades through a dashboard
 
-Read more `here <http://scalablesolutions.se/products.html>`_.
+Read more `here <http://typesafe.com/products/typesafe-subscription>`_.

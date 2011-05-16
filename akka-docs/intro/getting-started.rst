@@ -193,6 +193,6 @@ Need help?
 
 If you have questions you can get help on the `Akka Mailing List <http://groups.google.com/group/akka-user>`_.
 
-You can also ask for `commercial support <http://scalablesolutions.se>`_.
+You can also ask for `commercial support <http://typesafe.com>`_.
 
 Thanks for being a part of the Akka community.
