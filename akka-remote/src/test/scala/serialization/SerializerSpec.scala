@@ -20,20 +20,20 @@ class SerializerSpec extends JUnitSuite {
   @Test
   def shouldSerializeString = {
     val f = Foo("debasish")
-    val json = Serializer.ScalaJSON.toBinary(f)
+    val json = Serializers.ScalaJSON.toBinary(f)
     assert(new String(json) == """{"foo":"debasish"}""")
-    val fo = Serializer.ScalaJSON.fromJSON[Foo](new String(json)).asInstanceOf[Foo]
+    val fo = Serializers.ScalaJSON.fromJSON[Foo](new String(json)).asInstanceOf[Foo]
     assert(fo == f)
   }
 
   @Test
   def shouldSerializeTuple2 = {
     val message = MyMessage("id", ("hello", 34))
-    val json = Serializer.ScalaJSON.toBinary(message)
+    val json = Serializers.ScalaJSON.toBinary(message)
     assert(new String(json) == """{"id":"id","value":{"hello":34}}""")
-    val f = Serializer.ScalaJSON.fromJSON[MyMessage](new String(json)).asInstanceOf[MyMessage]
+    val f = Serializers.ScalaJSON.fromJSON[MyMessage](new String(json)).asInstanceOf[MyMessage]
     assert(f == message)
-    val g = Serializer.ScalaJSON.fromBinary[MyMessage](json).asInstanceOf[MyMessage]
+    val g = Serializers.ScalaJSON.fromBinary[MyMessage](json).asInstanceOf[MyMessage]
     assert(f == message)
   }
 }

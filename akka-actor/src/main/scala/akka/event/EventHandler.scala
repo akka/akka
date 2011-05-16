@@ -8,6 +8,7 @@ import akka.actor._
 import akka.config.Config._
 import akka.config.ConfigurationException
 import akka.util.{ListenerManagement, ReflectiveAccess}
+import akka.serialization._
 import akka.AkkaException
 
 /**
@@ -89,6 +90,8 @@ object EventHandler extends ListenerManagement {
 
   lazy val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("event:handler").build
 
+  implicit object defaultListenerFormat extends StatelessActorFormat[DefaultListener]
+
   val level: Int = config.getString("akka.event-handler-level", "INFO") match {
     case "ERROR"   => ErrorLevel
     case "WARNING" => WarningLevel
@@ -107,8 +110,7 @@ object EventHandler extends ListenerManagement {
       defaultListeners foreach { listenerName =>
         try {
           ReflectiveAccess.getClassFor[Actor](listenerName) map { clazz =>
-            val listener = Actor.actorOf(clazz, listenerName).start()
-            addListener(listener)
+            addListener(Actor.actorOf(clazz, listenerName).start())
           }
         } catch {
           case e: akka.actor.DeploymentAlreadyBoundException => // do nothing

@@ -69,8 +69,9 @@ object ClusterDeployer {
 
   private val systemDeployments = List(
     Deploy(
-      RemoteClusterDaemon.ADDRESS, Direct,
-      Clustered(Deployer.defaultAddress, NoReplicas, Stateless))
+      address = RemoteClusterDaemon.ADDRESS,
+      routing = Direct,
+      scope   = Clustered(Deployer.defaultAddress, NoReplicas, Stateless))
   )
 
   private[akka] def init(deployments: List[Deploy]) {

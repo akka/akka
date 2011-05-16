@@ -21,7 +21,7 @@ class Ticket435Spec extends
   object BinaryFormatMyStatefulActor {
     implicit object MyStatefulActorFormat extends Format[MyStatefulActor] {
       def fromBinary(bytes: Array[Byte], act: MyStatefulActor) = {
-        val p = Serializer.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.Counter])).asInstanceOf[ProtobufProtocol.Counter]
+        val p = Serializers.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.Counter])).asInstanceOf[ProtobufProtocol.Counter]
         act.count = p.getCount
         act
       }

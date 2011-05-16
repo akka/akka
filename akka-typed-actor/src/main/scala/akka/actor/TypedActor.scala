@@ -272,7 +272,7 @@ abstract class TypedActor extends Actor with Proxyable {
     if (!unserializable && hasMutableArgument) {
 
       //FIXME serializeArguments
-  //    val copyOfArgs = Serializer.Java.deepClone(args)
+  //    val copyOfArgs = Serializers.Java.deepClone(args)
   //    joinPoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs.asInstanceOf[Array[AnyRef]])
       joinPoint
     }

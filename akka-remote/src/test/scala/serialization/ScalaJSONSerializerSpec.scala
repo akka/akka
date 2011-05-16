@@ -6,7 +6,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import akka.serialization.Serializer.ScalaJSON
+import akka.serialization.Serializers.ScalaJSON
 //TODO: FIXME WHY IS THIS COMMENTED OUT?
 
 object Protocols {

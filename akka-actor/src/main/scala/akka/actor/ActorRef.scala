@@ -967,7 +967,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   import DeploymentConfig._
   val remoteAddress = Deployer.deploymentFor(address) match {
-    case Deploy(_, _, Clustered(home, _, _)) =>
+    case Deploy(_, _, _, Clustered(home, _, _)) =>
       val hostname = home match {
         case Host(hostname) => hostname
         case IP(address)    => address

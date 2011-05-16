@@ -16,40 +16,6 @@ import akka.AkkaException
 
 /**
  * Programatic deployment configuration classes. Most values have defaults and can be left out.
- * <p/>
- * Example Scala API:
- * <pre>
- *   import akka.actor.DeploymentConfig._
- *
- *   val deploymentHello = Deploy("service:hello", Local)
- *
- *   val deploymentE     = Deploy("service:e", AutoReplicate, Clustered(Host("darkstar.lan"), Stateful))
- *
- *   val deploymentPi1   = Deploy("service:pi", Replicate(3), Clustered(Host("darkstar.lan"), Stateless(RoundRobin)))
- *
- *   // same thing as 'deploymentPi1' but more explicit
- *   val deploymentPi2   =
- *     Deploy(
- *       address = "service:pi",
- *         replicas = 3,
- *         scope = Clustered(
- *           home = Host("darkstar.lan")
- *           state = Stateless(
- *             routing = RoundRobin
- *           )
- *         )
- *       )
- * </pre>
- * Example Java API:
- * <pre>
- *   import static akka.actor.*;
- *
- *   val deploymentHello = new Deploy("service:hello", new Local());
- *
- *   val deploymentE     = new Deploy("service:e", new AutoReplicate(), new Clustered(new Host("darkstar.lan"), new Stateful()));
- *
- *   val deploymentPi1   = new Deploy("service:pi", new Replicate(3), new Clustered(new Host("darkstar.lan"), new Stateless(new RoundRobin())))
- * </pre>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -58,7 +24,7 @@ object DeploymentConfig {
   // --------------------------------
   // --- Deploy
   // --------------------------------
-  case class Deploy(address: String, routing: Routing = Direct, scope: Scope = Local)
+  case class Deploy(address: String, routing: Routing = Direct, format: String = "N/A", scope: Scope = Local)
 
   // --------------------------------
   // --- Routing
@@ -179,7 +145,7 @@ object Deployer {
   }
 
   def isLocal(deployment: Deploy): Boolean = deployment match {
-    case Deploy(_, _, Local) => true
+    case Deploy(_, _, _, Local) => true
     case _                   => false
   }
 
@@ -251,7 +217,7 @@ object Deployer {
     // --------------------------------
     val addressPath = "akka.actor.deployment." + address
     Config.config.getSection(addressPath) match {
-      case None                => Some(Deploy(address, Direct, Local))
+      case None                => Some(Deploy(address, Direct, "N/A", Local))
       case Some(addressConfig) =>
 
         // --------------------------------
@@ -276,11 +242,16 @@ object Deployer {
         }
 
         // --------------------------------
+        // akka.actor.deployment.<address>.format
+        // --------------------------------
+        val format = addressConfig.getString("format", "N/A")
+
+        // --------------------------------
         // akka.actor.deployment.<address>.clustered
         // --------------------------------
         addressConfig.getSection("clustered") match {
           case None =>
-            Some(Deploy(address, router, Local)) // deploy locally
+            Some(Deploy(address, router, "N/A", Local)) // deploy locally
 
           case Some(clusteredConfig) =>
 
@@ -334,7 +305,7 @@ object Deployer {
               if (clusteredConfig.getBool("stateless", false)) Stateless
               else Stateful
 
-            Some(Deploy(address, router, Clustered(home, replicas, state)))
+            Some(Deploy(address, router, format, Clustered(home, replicas, state)))
         }
     }
   }

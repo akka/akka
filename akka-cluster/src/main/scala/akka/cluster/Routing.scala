@@ -7,6 +7,7 @@ import Cluster._
 
 import akka.actor._
 import akka.actor.Actor._
+import akka.actor.RouterType._
 import akka.dispatch.Future
 import akka.AkkaException
 
@@ -20,30 +21,25 @@ class RoutingException(message: String) extends AkkaException(message)
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Router {
-  sealed trait RouterType
-  object Direct extends RouterType
-  object Random extends RouterType
-  object RoundRobin extends RouterType
-
   def newRouter(
     routerType: RouterType,
     addresses: Array[Tuple2[UUID, InetSocketAddress]],
-    address: String,
+    serviceId: String,
     timeout: Long,
     actorType: ActorType,
     replicationStrategy: ReplicationStrategy = ReplicationStrategy.WriteThrough): ClusterActorRef = {
 
     routerType match {
       case Direct => new ClusterActorRef(
-        addresses, address, timeout,
+        addresses, serviceId, timeout,
         actorType, replicationStrategy) with Direct
 
       case Random => new ClusterActorRef(
-        addresses, address, timeout,
+        addresses, serviceId, timeout,
         actorType, replicationStrategy) with Random
 
       case RoundRobin => new ClusterActorRef(
-        addresses, address, timeout,
+        addresses, serviceId, timeout,
         actorType, replicationStrategy) with RoundRobin
     }
   }

@@ -13,6 +13,7 @@ import java.util.{Set => JSet}
 
 import akka.util.ReflectiveAccess._
 import akka.util.{ReflectiveAccess, ReadWriteGuard, ListenerManagement}
+import akka.serialization._
 
 /**
  * Base trait for ActorRegistry events, allows listen to when an actor is added and removed from the ActorRegistry.
@@ -101,8 +102,9 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
   /**
    *  Registers an actor in the Cluster ActorRegistry.
    */
-  private[akka] def registerInCluster(address: String, actor: ActorRef) {
-    ClusterModule.node.store(address, actor)
+  private[akka] def registerInCluster[T <: Actor](
+    address: String, actor: ActorRef, replicas: Int, serializeMailbox: Boolean = false)(implicit format: Format[T]) {
+    ClusterModule.node.store(address, actor, replicas, serializeMailbox)
   }
 
   /**

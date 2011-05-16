@@ -18,7 +18,7 @@ class TypedActorSerializationSpec extends AkkaRemoteTest {
 
   class MyTypedActorFormat extends Format[MyTypedActorImpl] {
     def fromBinary(bytes: Array[Byte], act: MyTypedActorImpl) = {
-      val p = Serializer.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.Counter])).asInstanceOf[ProtobufProtocol.Counter]
+      val p = Serializers.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.Counter])).asInstanceOf[ProtobufProtocol.Counter]
       act.count = p.getCount
       act
     }
@@ -28,7 +28,7 @@ class TypedActorSerializationSpec extends AkkaRemoteTest {
 
   class MyTypedActorWithDualCounterFormat extends Format[MyTypedActorWithDualCounter] {
     def fromBinary(bytes: Array[Byte], act: MyTypedActorWithDualCounter) = {
-      val p = Serializer.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.DualCounter])).asInstanceOf[ProtobufProtocol.DualCounter]
+      val p = Serializers.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.DualCounter])).asInstanceOf[ProtobufProtocol.DualCounter]
       act.count1 = p.getCount1
       act.count2 = p.getCount2
       act

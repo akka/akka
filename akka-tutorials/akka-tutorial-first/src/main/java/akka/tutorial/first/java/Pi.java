@@ -141,7 +141,7 @@ public class Pi {
       // create the workers
       final ActorRef[] workers = new ActorRef[nrOfWorkers];
       for (int i = 0; i < nrOfWorkers; i++) {
-        workers[i] = actorOf(Worker.class).start();
+        workers[i] = actorOf(Worker.class, "worker").start();
       }
 
       // wrap them with a load-balancing router
@@ -149,7 +149,7 @@ public class Pi {
         public UntypedActor create() {
           return new PiRouter(workers);
         }
-      }).start();
+      }, "router").start();
     }
 
     // message handler
@@ -207,7 +207,7 @@ public class Pi {
       public UntypedActor create() {
         return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
       }
-    }).start();
+    }, "master").start();
 
     // start the calculation
     master.sendOneWay(new Calculate());

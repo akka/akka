@@ -4,17 +4,17 @@
 
 package akka.remote
 
-import akka.serialization.{Serializer, Serializable}
+import akka.serialization.{Serializers, Serializable}
 import akka.remote.protocol.RemoteProtocol._
 import akka.util._
 
 import com.google.protobuf.{Message, ByteString}
 
 object MessageSerializer {
-  private def SERIALIZER_JAVA:       Serializer.Java      = Serializer.Java
-  private def SERIALIZER_JAVA_JSON:  Serializer.JavaJSON  = Serializer.JavaJSON
-  private def SERIALIZER_SCALA_JSON: Serializer.ScalaJSON = Serializer.ScalaJSON
-  private def SERIALIZER_PROTOBUF:   Serializer.Protobuf  = Serializer.Protobuf
+  private def SERIALIZER_JAVA:       Serializers.Java      = Serializers.Java
+  private def SERIALIZER_JAVA_JSON:  Serializers.JavaJSON  = Serializers.JavaJSON
+  private def SERIALIZER_SCALA_JSON: Serializers.ScalaJSON = Serializers.ScalaJSON
+  private def SERIALIZER_PROTOBUF:   Serializers.Protobuf  = Serializers.Protobuf
 
   def setClassLoader(cl: ClassLoader) = {
     val someCl = Some(cl)

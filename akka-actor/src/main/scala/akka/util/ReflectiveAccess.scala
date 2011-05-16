@@ -12,6 +12,7 @@ import akka.remoteinterface.RemoteSupport
 import akka.actor._
 import akka.event.EventHandler
 import akka.actor.DeploymentConfig.Deploy
+import akka.serialization.Format
 
 /**
  * Helper class for reflective access to different modules in order to allow optional loading of modules.
@@ -64,11 +65,19 @@ object ReflectiveAccess {
     }
 
     type ClusterNode = {
-      def nrOfActors: Int
-      def store[T <: Actor](address: String, actorRef: ActorRef)
-//        (implicit format: Format[T])
+      def store[T <: Actor]
+        (address: String, actorClass: Class[T], replicas: Int, serializeMailbox: Boolean)
+        (implicit format: Format[T])
+
+      def store[T <: Actor]
+        (address: String, actorRef: ActorRef, replicas: Int, serializeMailbox: Boolean)
+        (implicit format: Format[T])
+
       def remove(address: String)
-      def use(address: String): Option[ActorRef]
+      def use(address: String): Array[ActorRef]
+      def ref(address: String, router: RouterType): ActorRef
+      def isClustered(address: String): Boolean
+      def nrOfActors: Int
     }
 
     type ClusterDeployer = {

@@ -61,7 +61,7 @@ Step 2: Implement the type class for the actor
   object BinaryFormatMyActor {
     implicit object MyActorFormat extends Format[MyActor] {
       def fromBinary(bytes: Array[Byte], act: MyActor) = {
-        val p = Serializer.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.Counter])).asInstanceOf[ProtobufProtocol.Counter]
+        val p = Serializers.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.Counter])).asInstanceOf[ProtobufProtocol.Counter]
         act.count = p.getCount
         act
       }
@@ -170,7 +170,7 @@ Create a module for the type class ..
 
   object BinaryFormatMyJavaSerializableActor {
     implicit object MyJavaSerializableActorFormat extends SerializerBasedActorFormat[MyJavaSerializableActor] {
-      val serializer = Serializer.Java
+      val serializer = Serializers.Java
     }
   }
 
@@ -258,7 +258,7 @@ Step 2: Implement the type class for the actor
 
   class MyTypedActorFormat extends Format[MyTypedActorImpl] {
     def fromBinary(bytes: Array[Byte], act: MyTypedActorImpl) = {
-      val p = Serializer.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.Counter])).asInstanceOf[ProtobufProtocol.Counter]
+      val p = Serializers.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.Counter])).asInstanceOf[ProtobufProtocol.Counter]
       act.count = p.getCount
       act
     }
@@ -316,7 +316,7 @@ If you are sending messages to a remote Actor and these messages implement one o
 Each serialization interface/trait in
 * akka.serialization.Serializable.*
 > has a matching serializer in
-* akka.serialization.Serializer.*
+* akka.serialization.Serializers.*
 
 Note however that if you are using one of the Serializable interfaces then you don’t have to do anything else in regard to sending remote messages.
 
@@ -326,7 +326,7 @@ The ones currently supported are (besides the default which is regular Java seri
 * SBinary (Scala only)
 * Protobuf (Scala and Java)
 
-Apart from the above, Akka also supports Scala object serialization through `SJSON <http://github.com/debasishg/sjson/tree/master>`_ that implements APIs similar to 'akka.serialization.Serializer.*'. See the section on SJSON below for details.
+Apart from the above, Akka also supports Scala object serialization through `SJSON <http://github.com/debasishg/sjson/tree/master>`_ that implements APIs similar to 'akka.serialization.Serializers.*'. See the section on SJSON below for details.
 
 Protobuf
 --------
@@ -400,7 +400,7 @@ For your POJOs to be able to serialize themselves you have to extend the ScalaJS
     s.fromJSON(s.toJSON) should equal(s)
   }
 
-Use akka.serialization.Serializer.ScalaJSON to do generic JSON serialization, e.g. serialize object that does not extend ScalaJSON using the JSON serializer. Serialization using Serializer can be done in two ways :-
+Use akka.serialization.Serializers.ScalaJSON to do generic JSON serialization, e.g. serialize object that does not extend ScalaJSON using the JSON serializer. Serialization using Serializer can be done in two ways :-
 
 1. Type class based serialization (recommended)
 2. Reflection based serialization
@@ -430,7 +430,7 @@ Here are the steps that you need to follow:
 
 .. code-block:: scala
 
-  import akka.serialization.Serializer.ScalaJSON
+  import akka.serialization.Serializers.ScalaJSON
 
   val o = MyMessage("dg", ("akka", 100))
   fromjson[MyMessage](tojson(o)) should equal(o)
@@ -451,26 +451,26 @@ You can also use the Serializer abstraction to serialize using the reflection ba
   }
 
   val foo = new Foo("bar")
-  val json = Serializer.ScalaJSON.out(foo)
+  val json = Serializers.ScalaJSON.out(foo)
 
-  val fooCopy = Serializer.ScalaJSON.in(json) // returns a JsObject as an AnyRef
+  val fooCopy = Serializers.ScalaJSON.in(json) // returns a JsObject as an AnyRef
 
-  val fooCopy2 = Serializer.ScalaJSON.in(new String(json)) // can also take a string as input
+  val fooCopy2 = Serializers.ScalaJSON.in(new String(json)) // can also take a string as input
 
-  val fooCopy3 = Serializer.ScalaJSON.in[Foo](json).asInstanceOf[Foo]
+  val fooCopy3 = Serializers.ScalaJSON.in[Foo](json).asInstanceOf[Foo]
 
 Classes without a @BeanInfo annotation cannot be serialized as JSON.
 So if you see something like that:
 
 .. code-block:: scala
 
-  scala> Serializer.ScalaJSON.out(bar)
-  Serializer.ScalaJSON.out(bar)
+  scala> Serializers.ScalaJSON.out(bar)
+  Serializers.ScalaJSON.out(bar)
   java.lang.UnsupportedOperationException: Class class Bar not supported for conversion
           at sjson.json.JsBean$class.toJSON(JsBean.scala:210)
-          at sjson.json.Serializer$SJSON$.toJSON(Serializer.scala:107)
-          at sjson.json.Serializer$SJSON$class.out(Serializer.scala:37)
-          at sjson.json.Serializer$SJSON$.out(Serializer.scala:107)
+          at sjson.json.Serializer$SJSON$.toJSON(Serializers.scala:107)
+          at sjson.json.Serializer$SJSON$class.out(Serializers.scala:37)
+          at sjson.json.Serializer$SJSON$.out(Serializers.scala:107)
           at akka.serialization.Serializer$ScalaJSON...
 
 it means, that you haven't got a @BeanInfo annotation on your class.
@@ -747,8 +747,8 @@ and the serialization code like the following:
   object TestSerialize{
    def main(args: Array[String]) {
      val test1 = new D(List(B("hello1")))
-     val json = sjson.json.Serializer.SJSON.out(test1)
-     val res = sjson.json.Serializer.SJSON.in[D](json)
+     val json = sjson.json.Serializers.SJSON.out(test1)
+     val res = sjson.json.Serializers.SJSON.in[D](json)
      val res1: D = res.asInstanceOf[D]
      println(res1)
    }
@@ -931,15 +931,15 @@ SBinary: Scala
 
 To serialize Scala structures you can use SBinary serializer. SBinary can serialize all primitives and most default Scala datastructures; such as List, Tuple, Map, Set, BigInt etc.
 
-Here is an example of using the akka.serialization.Serializer.SBinary serializer to serialize standard Scala library objects.
+Here is an example of using the akka.serialization.Serializers.SBinary serializer to serialize standard Scala library objects.
 
 .. code-block:: scala
 
   import akka.serialization.Serializer
   import sbinary.DefaultProtocol._ // you always need to import these implicits
   val users = List(("user1", "passwd1"), ("user2", "passwd2"), ("user3", "passwd3"))
-  val bytes = Serializer.SBinary.out(users)
-  val usersCopy = Serializer.SBinary.in(bytes, Some(classOf[List[Tuple2[String,String]]]))
+  val bytes = Serializers.SBinary.out(users)
+  val usersCopy = Serializers.SBinary.in(bytes, Some(classOf[List[Tuple2[String,String]]]))
 
 If you need to serialize your own user-defined objects then you have to do three things:
 # Define an empty constructor

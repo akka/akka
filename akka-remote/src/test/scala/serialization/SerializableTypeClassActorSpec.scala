@@ -22,7 +22,7 @@ class SerializableTypeClassActorSpec extends
   object BinaryFormatMyActor {
     implicit object MyActorFormat extends Format[MyActor] {
       def fromBinary(bytes: Array[Byte], act: MyActor) = {
-        val p = Serializer.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.Counter])).asInstanceOf[ProtobufProtocol.Counter]
+        val p = Serializers.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.Counter])).asInstanceOf[ProtobufProtocol.Counter]
         act.count = p.getCount
         act
       }
@@ -34,7 +34,7 @@ class SerializableTypeClassActorSpec extends
   object BinaryFormatMyActorWithDualCounter {
     implicit object MyActorWithDualCounterFormat extends Format[MyActorWithDualCounter] {
       def fromBinary(bytes: Array[Byte], act: MyActorWithDualCounter) = {
-        val p = Serializer.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.DualCounter])).asInstanceOf[ProtobufProtocol.DualCounter]
+        val p = Serializers.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.DualCounter])).asInstanceOf[ProtobufProtocol.DualCounter]
         act.count1 = p.getCount1
         act.count2 = p.getCount2
         act
@@ -58,7 +58,7 @@ class SerializableTypeClassActorSpec extends
 
   object BinaryFormatMyJavaSerializableActor {
     implicit object MyJavaSerializableActorFormat extends SerializerBasedActorFormat[MyJavaSerializableActor] {
-      val serializer = Serializer.Java
+      val serializer = Serializers.Java
     }
   }
 

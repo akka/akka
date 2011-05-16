@@ -19,58 +19,6 @@ import akka.util.ReflectiveAccess
 import java.net.InetSocketAddress
 import akka.remote. {RemoteClientSettings, MessageSerializer}
 
-/**
- * Type class definition for Actor Serialization
- */
-trait FromBinary[T <: Actor] {
-  def fromBinary(bytes: Array[Byte], act: T): T
-}
-
-trait ToBinary[T <: Actor] {
-  def toBinary(t: T): Array[Byte]
-}
-
-// client needs to implement Format[] for the respective actor
-trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
-
-/**
- * A default implementation for a stateless actor
- *
- * Create a Format object with the client actor as the implementation of the type class
- *
- * <pre>
- * object BinaryFormatMyStatelessActor  {
- *   implicit object MyStatelessActorFormat extends StatelessActorFormat[MyStatelessActor]
- * }
- * </pre>
- */
-trait StatelessActorFormat[T <: Actor] extends Format[T] with scala.Serializable {
-  def fromBinary(bytes: Array[Byte], act: T) = act
-
-  def toBinary(ac: T) = Array.empty[Byte]
-}
-
-/**
- * A default implementation of the type class for a Format that specifies a serializer
- *
- * Create a Format object with the client actor as the implementation of the type class and
- * a serializer object
- *
- * <pre>
- * object BinaryFormatMyJavaSerializableActor  {
- *   implicit object MyJavaSerializableActorFormat extends SerializerBasedActorFormat[MyJavaSerializableActor]  {
- *     val serializer = Serializer.Java
- * }
- * }
- * </pre>
- */
-trait SerializerBasedActorFormat[T <: Actor] extends Format[T] with scala.Serializable {
-  val serializer: Serializer
-
-  def fromBinary(bytes: Array[Byte], act: T) = serializer.fromBinary(bytes, Some(act.getClass)).asInstanceOf[T]
-
-  def toBinary(ac: T) = serializer.toBinary(ac)
-}
 
 /**
  * Module for local actor serialization.
@@ -140,7 +88,7 @@ object ActorSerialization {
     builder.setActorInstance(ByteString.copyFrom(format.toBinary(actorRef.actor.asInstanceOf[T])))
     lifeCycleProtocol.foreach(builder.setLifeCycle(_))
     actorRef.supervisor.foreach(s => builder.setSupervisor(RemoteActorSerialization.toRemoteActorRefProtocol(s)))
-    if (!actorRef.hotswap.isEmpty) builder.setHotswapStack(ByteString.copyFrom(Serializer.Java.toBinary(actorRef.hotswap)))
+    if (!actorRef.hotswap.isEmpty) builder.setHotswapStack(ByteString.copyFrom(Serializers.Java.toBinary(actorRef.hotswap)))
     builder.build
   }
 

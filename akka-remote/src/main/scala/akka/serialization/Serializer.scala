@@ -14,20 +14,9 @@ import org.codehaus.jackson.map.ObjectMapper
 
 import sjson.json.{Serializer => SJSONSerializer}
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait Serializer extends scala.Serializable {
-  @volatile var classLoader: Option[ClassLoader] = None
-  def deepClone(obj: AnyRef): AnyRef = fromBinary(toBinary(obj), Some(obj.getClass))
-
-  def toBinary(obj: AnyRef): Array[Byte]
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
-}
-
 // For Java API
 class SerializerFactory {
-  import Serializer._
+  import Serializers._
   def getJava: Java.type = Java
   def getJavaJSON: JavaJSON.type = JavaJSON
   def getScalaJSON: ScalaJSON.type = ScalaJSON
@@ -37,7 +26,7 @@ class SerializerFactory {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Serializer {
+object Serializers {
   val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
 
   object NOOP extends NOOP

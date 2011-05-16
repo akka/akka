@@ -8,6 +8,7 @@ import akka.japi.Creator
 import akka.actor._
 import akka.util._
 import akka.dispatch.CompletableFuture
+import akka.serialization._
 import akka.AkkaException
 
 import scala.reflect.BeanProperty
@@ -137,7 +138,9 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
 abstract class RemoteSupport extends ListenerManagement with RemoteServerModule with RemoteClientModule {
 
   val eventHandler: ActorRef = {
-    val handler = Actor.actorOf[RemoteEventHandler](classOf[RemoteEventHandler].getName).start()
+    implicit object format extends StatelessActorFormat[RemoteEventHandler]
+    val clazz = classOf[RemoteEventHandler]
+    val handler = Actor.actorOf(clazz, clazz.getName).start()
     // add the remote client and server listener that pipes the events to the event handler system
     addListener(handler)
     handler

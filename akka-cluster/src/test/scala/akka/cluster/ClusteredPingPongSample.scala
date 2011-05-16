@@ -8,7 +8,7 @@ import akka.cluster._
 
 import akka.actor._
 import akka.actor.Actor._
-import akka.serialization.{Serializer, SerializerBasedActorFormat}
+import akka.serialization.{Serializers, SerializerBasedActorFormat}
 
 import java.util.concurrent.CountDownLatch
 
@@ -67,15 +67,16 @@ object PingPong {
 
   object BinaryFormats {
     implicit object PingActorFormat extends SerializerBasedActorFormat[PingActor] with Serializable {
-      val serializer = Serializer.Java
+      val serializer = Serializers.Java
     }
 
     implicit object PongActorFormat extends SerializerBasedActorFormat[PongActor] with Serializable {
-      val serializer = Serializer.Java
+      val serializer = Serializers.Java
     }
   }
 }
 
+/*
 object ClusteredPingPongSample {
   import PingPong._
   import BinaryFormats._
@@ -145,3 +146,4 @@ object ClusteredPingPongSample {
     Cluster.shutdownLocalCluster()
   }
 }
+*/

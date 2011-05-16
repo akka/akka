@@ -14,7 +14,14 @@ class DeployerSpec extends WordSpec with MustMatchers {
     "be able to parse 'akka.actor.deployment._' config elements" in {
       val deployment = Deployer.lookupInConfig("service-pi")
       deployment must be ('defined)
-      deployment must equal (Some(Deploy("service-pi", RoundRobin, Clustered(Node("test-1"), Replicate(3), Stateless))))
+      deployment must equal (Some(Deploy(
+          "service-pi",
+          RoundRobin,
+          "akka.serializer.Format$Default$",
+          Clustered(
+              Node("test-1"),
+              Replicate(3),
+              Stateless))))
     }
   }
 }

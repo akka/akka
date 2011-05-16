@@ -33,7 +33,7 @@ import akka.event.EventHandler
 import akka.dispatch.{Dispatchers, Future}
 import akka.remoteinterface._
 import akka.config.Config._
-import akka.serialization.{Format, Serializer}
+import akka.serialization.{Format, Serializers}
 import akka.serialization.Compression.LZF
 import akka.AkkaException
 
@@ -413,7 +413,7 @@ class ClusterNode private[akka] (
   val ACTOR_REGISTRY_NODE         = CLUSTER_NODE + "/actor-registry"
   val ACTOR_LOCATIONS_NODE        = CLUSTER_NODE + "/actor-locations"
   val ACTOR_ADDRESS_TO_UUIDS_NODE = CLUSTER_NODE + "/actor-address-to-uuids"
-  val ACTORS_AT_NODE_NODE      = CLUSTER_NODE + "/actors-at-address"
+  val ACTORS_AT_NODE_NODE         = CLUSTER_NODE + "/actors-at-address"
   val baseNodes = List(
     CLUSTER_NODE,
     MEMBERSHIP_NODE,
@@ -852,7 +852,7 @@ class ClusterNode private[akka] (
   /**
    * Creates an ActorRef with a Router to a set of clustered actors.
    */
-  def ref(actorAddress: String, router: Router.RouterType): ActorRef = if (isConnected.isOn) {
+  def ref(actorAddress: String, router: RouterType): ActorRef = if (isConnected.isOn) {
 
     val addresses = addressesForActor(actorAddress)
     val actorType = ActorType.ScalaActor // FIXME later we also want to suppot TypedActor, then 'actorType' needs to be configurable
@@ -1031,7 +1031,7 @@ class ClusterNode private[akka] (
   def send(f: Function0[Unit], replicationFactor: Int): Unit = {
     val message = RemoteDaemonMessageProtocol.newBuilder
       .setMessageType(FUNCTION_FUN0_UNIT)
-      .setPayload(ByteString.copyFrom(Serializer.Java.toBinary(f)))
+      .setPayload(ByteString.copyFrom(Serializers.Java.toBinary(f)))
       .build
     replicaConnectionsForReplicationFactor(replicationFactor) foreach (_ ! message)
   }
@@ -1043,7 +1043,7 @@ class ClusterNode private[akka] (
   def send(f: Function0[Any], replicationFactor: Int): List[Future[Any]] = {
     val message = RemoteDaemonMessageProtocol.newBuilder
       .setMessageType(FUNCTION_FUN0_ANY)
-      .setPayload(ByteString.copyFrom(Serializer.Java.toBinary(f)))
+      .setPayload(ByteString.copyFrom(Serializers.Java.toBinary(f)))
       .build
     val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ !!! message)
     results.toList.asInstanceOf[List[Future[Any]]]
@@ -1056,7 +1056,7 @@ class ClusterNode private[akka] (
   def send(f: Function1[Any, Unit], arg: Any, replicationFactor: Int): Unit = {
     val message = RemoteDaemonMessageProtocol.newBuilder
       .setMessageType(FUNCTION_FUN1_ARG_UNIT)
-      .setPayload(ByteString.copyFrom(Serializer.Java.toBinary((f, arg))))
+      .setPayload(ByteString.copyFrom(Serializers.Java.toBinary((f, arg))))
       .build
     replicaConnectionsForReplicationFactor(replicationFactor) foreach (_ ! message)
   }
@@ -1069,7 +1069,7 @@ class ClusterNode private[akka] (
   def send(f: Function1[Any, Any], arg: Any, replicationFactor: Int): List[Future[Any]] = {
     val message = RemoteDaemonMessageProtocol.newBuilder
       .setMessageType(FUNCTION_FUN1_ARG_ANY)
-      .setPayload(ByteString.copyFrom(Serializer.Java.toBinary((f, arg))))
+      .setPayload(ByteString.copyFrom(Serializers.Java.toBinary((f, arg))))
       .build
     val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ !!! message)
     results.toList.asInstanceOf[List[Future[Any]]]
@@ -1290,7 +1290,7 @@ class ClusterNode private[akka] (
         val to      = remoteServerAddress
         val command = RemoteDaemonMessageProtocol.newBuilder
           .setMessageType(FAIL_OVER_CONNECTIONS)
-          .setPayload(ByteString.copyFrom(Serializer.Java.toBinary((from, to))))
+          .setPayload(ByteString.copyFrom(Serializers.Java.toBinary((from, to))))
           .build
         membershipNodes foreach { node =>
           replicaConnections.get(node) foreach { case (_, connection) =>
@@ -1587,6 +1587,6 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
   }
 
   private def payloadFor[T](message: RemoteDaemonMessageProtocol, clazz: Class[T]): T = {
-    Serializer.Java.fromBinary(message.getPayload.toByteArray, Some(clazz)).asInstanceOf[T]
+    Serializers.Java.fromBinary(message.getPayload.toByteArray, Some(clazz)).asInstanceOf[T]
   }
 }

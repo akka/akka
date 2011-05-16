@@ -20,7 +20,7 @@ class UntypedActorSerializationSpec extends
 
   class MyUntypedActorFormat extends Format[MyUntypedActor] {
     def fromBinary(bytes: Array[Byte], act: MyUntypedActor) = {
-      val p = Serializer.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.Counter])).asInstanceOf[ProtobufProtocol.Counter]
+      val p = Serializers.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.Counter])).asInstanceOf[ProtobufProtocol.Counter]
       act.count = p.getCount
       act
     }
@@ -30,7 +30,7 @@ class UntypedActorSerializationSpec extends
 
   class MyUntypedActorWithDualCounterFormat extends Format[MyUntypedActorWithDualCounter] {
     def fromBinary(bytes: Array[Byte], act: MyUntypedActorWithDualCounter) = {
-      val p = Serializer.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.DualCounter])).asInstanceOf[ProtobufProtocol.DualCounter]
+      val p = Serializers.Protobuf.fromBinary(bytes, Some(classOf[ProtobufProtocol.DualCounter])).asInstanceOf[ProtobufProtocol.DualCounter]
       act.count1 = p.getCount1
       act.count2 = p.getCount2
       act

@@ -11,11 +11,12 @@ import Helpers.{narrow, narrowSilently}
 import akka.remoteinterface.RemoteSupport
 import akka.japi.{Creator, Procedure}
 import akka.AkkaException
+import akka.serialization._
+import akka.event.EventHandler
 
 import scala.reflect.BeanProperty
 
 import com.eaio.uuid.UUID
-import akka.event.EventHandler
 
 /**
  * Life-cycle messages for the Actors
@@ -145,8 +146,8 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf[MyActor].start()
    * </pre>
    */
-  def actorOf[T <: Actor : Manifest](address: String): ActorRef =
-    actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], address)
+   def actorOf[T <: Actor : Manifest](address: String): ActorRef =
+     actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], address)
 
   /**
    * Creates an ActorRef out of the Actor with type T.
@@ -163,8 +164,8 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf[MyActor].start
    * </pre>
    */
-  def actorOf[T <: Actor : Manifest]: ActorRef =
-    actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], new UUID().toString)
+   def actorOf[T <: Actor : Manifest]: ActorRef =
+     actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], new UUID().toString)
 
   /**
    * Creates an ActorRef out of the Actor of the specified Class.
@@ -181,7 +182,8 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf(classOf[MyActor]).start()
    * </pre>
    */
-  def actorOf(clazz: Class[_ <: Actor]): ActorRef = actorOf(clazz, new UUID().toString)
+  def actorOf[T <: Actor](clazz: Class[T]): ActorRef =
+    actorOf(clazz, new UUID().toString)
 
   /**
    * Creates an ActorRef out of the Actor of the specified Class.
@@ -197,28 +199,63 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf(classOf[MyActor]).start
    * </pre>
    */
-  def actorOf(clazz: Class[_ <: Actor], address: String): ActorRef = {
+  def actorOf[T <: Actor](clazz: Class[T], address: String): ActorRef = {
     import DeploymentConfig._
+    import ReflectiveAccess._
     Address.validate(address)
 
     try {
       Deployer.deploymentFor(address) match {
-        case Deploy(_, router, Local) =>
+        case Deploy(_, router, _, Local) =>
           // FIXME handle 'router' in 'Local' actors
           newLocalActorRef(clazz, address)
 
-        case Deploy(_, router, Clustered(home, replication  , state)) =>
-          sys.error("Clustered deployment not yet supported")
-          /*
+        case Deploy(_, router, formatClassName, Clustered(home, replication, state)) =>
+          ClusterModule.ensureEnabled()
           if (Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
+
+          val hostname = home match {
+            case Host(hostname) => hostname
+            case IP(address)    => address
+            case Node(nodeName) => "localhost" // FIXME lookup hostname for node name
+          }
+
+          val replicas = replication match {
+            case Replicate(replicas) => replicas
+            case AutoReplicate       => -1
+            case NoReplicas          => 0
+          }
+
+          import ClusterModule.node
+          if (hostname == RemoteModule.remoteServerHostname) { // home node for clustered actor
+
+            def formatErrorDueTo(reason: String) = {
+              throw new akka.config.ConfigurationException(
+                "Could not create Format[T] object [" + formatClassName +
+                "] for serialization of actor [" + address +
+                "] since " + reason)
+            }
+
+            implicit val format: Format[T] = {
+              if (formatClassName == "N/A") formatErrorDueTo("no class name defined in configuration")
+              val f = ReflectiveAccess.getObjectFor(formatClassName).getOrElse(formatErrorDueTo("it could not be loaded"))
+              if (f.isInstanceOf[Format[T]]) f.asInstanceOf[Format[T]]
+              else formatErrorDueTo("class must be of type [akka.serialization.Format[T]]")
+            }
+
+            if (!node.isClustered(address)) node.store(address, clazz, replicas, false)
+            node.use(address)
+          } else {
+            //val router =
+            node.ref(address, null)
+          }
+          sys.error("Clustered deployment not yet supported")
+
+          /*
           val remoteAddress = Actor.remote.address
           if (remoteAddress.getHostName == hostname && remoteAddress.getPort == port) {
             // home node for actor
-            if (!node.isClustered(address)) node.store(clazz, address)
-            node.use(address).head
           } else {
-            val router  =
-            node.ref(address, router)
           }
           */
           /*
@@ -231,9 +268,6 @@ object Actor extends ListenerManagement {
 
             Misc stuff:
               - How to define a single ClusterNode to use? Where should it be booted up? How should it be configured?
-              - Deployer should:
-                1. Check if deployment exists in ZK
-                2. If not, upload it
               - ClusterNode API and Actor.remote API should be made private[akka]
               - Rewrite ClusterSpec or remove it
               - Actor.stop on home node (actor checked out with node.use(..)) should do node.remove(..) of actor
@@ -275,7 +309,7 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf(new MyActor).start()
    * </pre>
    */
-  def actorOf(factory: => Actor): ActorRef = actorOf(factory, new UUID().toString)
+  def actorOf[T <: Actor](factory: => T): ActorRef = actorOf(factory, new UUID().toString)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -295,7 +329,7 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf(new MyActor).start
    * </pre>
    */
-  def actorOf(factory: => Actor, address: String): ActorRef = {
+  def actorOf[T <: Actor](factory: => T, address: String): ActorRef = {
     Address.validate(address)
     new LocalActorRef(() => factory, address)
   }
@@ -309,7 +343,8 @@ object Actor extends ListenerManagement {
    * This function should <b>NOT</b> be used for remote actors.
    * JAVA API
    */
-  def actorOf(creator: Creator[Actor]): ActorRef = actorOf(creator, new UUID().toString)
+  def actorOf[T <: Actor](creator: Creator[T]): ActorRef =
+    actorOf(creator, new UUID().toString)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
@@ -319,7 +354,7 @@ object Actor extends ListenerManagement {
    * This function should <b>NOT</b> be used for remote actors.
    * JAVA API
    */
-  def actorOf(creator: Creator[Actor], address: String): ActorRef = {
+  def actorOf[T <: Actor](creator: Creator[T], address: String): ActorRef = {
     Address.validate(address)
     new LocalActorRef(() => creator.create, address)
   }
@@ -332,7 +367,7 @@ object Actor extends ListenerManagement {
    * there is a method 'spawn[ActorType]' in the Actor trait already.
    * Example:
    * <pre>
-   * import Actor.{spawn}
+   * import Actor.spawn
    *
    * spawn  {
    *   ... // do stuff

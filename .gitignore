@@ -51,3 +51,5 @@ akka-tutorials/akka-tutorial-first/project/boot/
 akka-tutorials/akka-tutorial-first/project/plugins/project/
 akka-docs/exts/
 _akka_cluster/
+Makefile
+akka.sublime-project
