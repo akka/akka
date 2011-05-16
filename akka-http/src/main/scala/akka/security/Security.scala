@@ -184,7 +184,7 @@ trait AuthenticationActor[C <: Credentials] extends Actor {
    * Responsible for the execution flow of authentication
    *
    * Credentials are extracted and verified from the request,
-   * and a se3curity context is created for the ContainerRequest
+   * and a security context is created for the ContainerRequest
    * this should ensure good integration with current Jersey security
    */
   protected val authenticate: Receive = {
