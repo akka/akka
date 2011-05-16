@@ -49,12 +49,13 @@ Now lets create an object representing the FSM and defining the behavior.
 
   import akka.actor.{Actor, FSM}
   import akka.event.EventHandler
-  import FSM._
   import akka.util.duration._
 
   case object Move
 
   class ABC extends Actor with FSM[ExampleState, Unit] {
+
+    import FSM._
 
     startWith(A, Unit)
 
@@ -113,7 +114,11 @@ Now we can create a lock FSM that takes :class:`LockState` as a state and a
 
 .. code-block:: scala
 
+  import akka.actor.{Actor, FSM}
+
   class Lock(code: String) extends Actor with FSM[LockState, String] {
+
+    import FSM._
 
     val emptyCode = ""
 
@@ -317,6 +322,12 @@ The parentheses are not actually needed in all cases, but they visually
 distinguish between modifiers and their arguments and therefore make the code
 even more pleasant to read for foreigners.
 
+.. note::
+
+   Please note that the ``return`` statement may not be used in :meth:`when`
+   blocks or similar; this is a Scala restriction. Either refactor your code
+   using ``if () ... else ...`` or move it into a method definition.
+
 Monitoring Transitions
 ----------------------
 
@@ -434,7 +445,8 @@ state data which is available during termination handling.
 
    It should be noted that :func:`stop` does not abort the actions and stop the
    FSM immediately. The stop action must be returned from the event handler in
-   the same way as a state transition.
+   the same way as a state transition (but note that the ``return`` statement
+   may not be used within a :meth:`when` block).
 
 .. code-block:: scala
 
@@ -462,7 +474,7 @@ invocation of :func:`onTermination` replaces the previously installed handler.
 Examples
 ========
 
-A bigger FSM example can be found in the sources:
+A bigger FSM example contrasted with Actor's :meth:`become`/:meth:`unbecome` can be found in the sources:
 
  * `Dining Hakkers using FSM <https://github.com/jboner/akka/blob/master/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnFsm.scala#L1>`_
  * `Dining Hakkers using become <https://github.com/jboner/akka/blob/master/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnBecome.scala#L1>`_

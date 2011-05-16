@@ -1,3 +1,5 @@
+.. _getting-started-first-scala:
+
 Getting Started Tutorial (Scala): First Chapter
 ===============================================
 
@@ -19,19 +21,30 @@ We will be using an algorithm that is called "embarrassingly parallel" which jus
 
 Here is the formula for the algorithm we will use:
 
-.. image:: pi-formula.png
+.. image:: ../images/pi-formula.png
 
 In this particular algorithm the master splits the series into chunks which are sent out to each worker actor to be processed. When each worker has processed its chunk it sends a result back to the master which aggregates the total result.
 
 Tutorial source code
 --------------------
 
-If you want don't want to type in the code and/or set up an SBT project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here <https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first>`_, with the actual source code `here <https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala>`_.
+If you want don't want to type in the code and/or set up an SBT project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here`__, with the actual source code `here`__.
+
+__ https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first
+__ https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala
+
+To check out the code using Git invoke the following::
+
+    $ git clone git://github.com/jboner/akka.git
+
+Then you can navigate down to the tutorial:: 
+
+    $ cd akka/akka-tutorials/akka-tutorial-first
 
 Prerequisites
 -------------
 
-This tutorial assumes that you have Jave 1.6 or later installed on you machine and ``java`` on your ``PATH``. You also need to know how to run commands in a shell (ZSH, Bash, DOS etc.) and a decent text editor or IDE to type in the Scala code.
+This tutorial assumes that you have Java 1.6 or later installed on you machine and ``java`` on your ``PATH``. You also need to know how to run commands in a shell (ZSH, Bash, DOS etc.) and a decent text editor or IDE to type in the Scala code.
 
 You need to make sure that ``$JAVA_HOME`` environment variable is set to the root of the Java distribution. You also need to make sure that the ``$JAVA_HOME/bin`` is on your ``PATH``::
 
@@ -45,39 +58,49 @@ You can test your installation by invoking ``java``::
     Java(TM) SE Runtime Environment (build 1.6.0_24-b07-334-10M3326)
     Java HotSpot(TM) 64-Bit Server VM (build 19.1-b02-334, mixed mode)
 
+
 Downloading and installing Akka
 -------------------------------
 
-To build and run the tutorial sample from the command line, you have to download Akka. If you prefer to use SBT to build and run the sample then you can skip this section and jump to the next one.
+To build and run the tutorial sample from the command line, you have to download
+Akka. If you prefer to use SBT to build and run the sample then you can skip
+this section and jump to the next one.
 
-Let's get the ``akka-1.1`` distribution of Akka core (not Akka Modules) from `http://akka.io/downloads <http://akka.io/downloads/>`_. Once you have downloaded the distribution unzip it in the folder you would like to have Akka installed in, in my case I choose to install it in ``/Users/jboner/tools/``, simply by unzipping it to this directory.
+Let's get the ``akka-actors-1.1.zip`` distribution of Akka from
+http://akka.io/downloads/ which includes everything we need for this
+tutorial. Once you have downloaded the distribution unzip it in the folder you
+would like to have Akka installed in. In my case I choose to install it in
+``/Users/jboner/tools/``, simply by unzipping it to this directory.
 
-You need to do one more thing in order to install Akka properly: set the ``AKKA_HOME`` environment variable to the root of the distribution. In my case I'm opening up a shell, navigating down to the distribution, and setting the ``AKKA_HOME`` variable::
+You need to do one more thing in order to install Akka properly: set the
+``AKKA_HOME`` environment variable to the root of the distribution. In my case
+I'm opening up a shell, navigating down to the distribution, and setting the
+``AKKA_HOME`` variable::
 
-    $ cd /Users/jboner/tools/akka-1.1
+    $ cd /Users/jboner/tools/akka-actors-1.1
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
-    /Users/jboner/tools/akka-1.1
+    /Users/jboner/tools/akka-actors-1.1
 
 The distribution looks like this::
 
-    $ ls -l
-    total 16944
-    drwxr-xr-x   7 jboner  staff      238 Apr  6 11:15 .
-    drwxr-xr-x  28 jboner  staff      952 Apr  6 11:16 ..
-    drwxr-xr-x  17 jboner  staff      578 Apr  6 11:16 deploy
-    drwxr-xr-x  26 jboner  staff      884 Apr  6 11:16 dist
-    drwxr-xr-x   3 jboner  staff      102 Apr  6 11:15 lib_managed
-    -rwxr-xr-x   1 jboner  staff  8674105 Apr  6 11:15 scala-library.jar
-    drwxr-xr-x   4 jboner  staff      136 Apr  6 11:16 scripts
+    $ ls -1
+    config
+    doc
+    lib
+    src
 
-- In the ``dist`` directory we have the Akka JARs, including sources and docs.
-- In the ``lib_managed/compile`` directory we have Akka's dependency JARs.
-- In the ``deploy`` directory we have the sample JARs.
-- In the ``scripts`` directory we have scripts for running Akka.
-- Finally ``scala-library.jar`` is the JAR for the latest Scala distribution that Akka depends on.
+- In the ``config`` directory we have the Akka conf files.
+- In the ``doc`` directory we have the documentation, API, doc JARs, and also
+  the source files for the tutorials.
+- In the ``lib`` directory we have the Scala and Akka JARs.
+- In the ``src`` directory we have the source JARs for Akka.
 
-The only JAR we will need for this tutorial (apart from the ``scala-library.jar`` JAR) is the ``akka-actor-1.1.jar`` JAR in the ``dist`` directory. This is a self-contained JAR with zero dependencies and contains everything we need to write a system using Actors.
+
+The only JAR we will need for this tutorial (apart from the
+``scala-library.jar`` JAR) is the ``akka-actor-1.1.jar`` JAR in the ``lib/akka``
+directory. This is a self-contained JAR with zero dependencies and contains
+everything we need to write a system using Actors.
 
 Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
 
@@ -86,10 +109,13 @@ Akka is very modular and has many JARs for containing different features. The co
 - ``akka-remote-1.1.jar`` -- Remote Actors
 - ``akka-stm-1.1.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
 - ``akka-http-1.1.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
-- ``akka-slf4j-1.1.jar`` -- SLF4J Event Handler Listener
+- ``akka-slf4j-1.1.jar`` -- SLF4J Event Handler Listener for logging with SLF4J
 - ``akka-testkit-1.1.jar`` -- Toolkit for testing Actors
 
-We also have Akka Modules containing add-on modules outside the core of Akka. You can download the Akka Modules distribution from TODO. It contains Akka core as well. We will not be needing any modules there today, but for your information the module JARs are these:
+We also have Akka Modules containing add-on modules outside the core of
+Akka. You can download the Akka Modules distribution from `<http://akka.io/downloads/>`_. It contains Akka
+core as well. We will not be needing any modules there today, but for your
+information the module JARs are these:
 
 - ``akka-kernel-1.1.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
 - ``akka-amqp-1.1.jar`` -- AMQP integration
@@ -99,25 +125,28 @@ We also have Akka Modules containing add-on modules outside the core of Akka. Yo
 - ``akka-spring-1.1.jar`` -- Spring framework integration
 - ``akka-osgi-dependencies-bundle-1.1.jar`` -- OSGi support
 
+
 Downloading and installing Scala
 --------------------------------
 
 To build and run the tutorial sample from the command line, you have to install the Scala distribution. If you prefer to use SBT to build and run the sample then you can skip this section and jump to the next one.
 
-Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0.RC1 release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
+Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0 release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
 
-You also need to make sure that the ``scala-2.9.0.RC1/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
+You also need to make sure that the ``scala-2.9.0/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
 
-    $ export PATH=$PATH:scala-2.9.0.RC1/bin
+    $ export PATH=$PATH:scala-2.9.0/bin
 
 You can test your installation by invoking scala::
 
     $ scala -version
-    Scala code runner version 2.9.0.RC1 -- Copyright 2002-2011, LAMP/EPFL
+    Scala code runner version 2.9.0.final -- Copyright 2002-2011, LAMP/EPFL
 
 Looks like we are all good. Finally let's create a source file ``Pi.scala`` for the tutorial and put it in the root of the Akka distribution in the ``tutorial`` directory (you have to create it first).
 
 Some tools require you to set the ``SCALA_HOME`` environment variable to the root of the Scala distribution, however Akka does not require that.
+
+.. _getting-started-first-scala-download-sbt:
 
 Downloading and installing SBT
 ------------------------------
@@ -140,7 +169,7 @@ If you have not already done so, now is the time to create an SBT project for ou
     Name: Tutorial 1
     Organization: Hakkers Inc
     Version [1.0]:
-    Scala version [2.9.0.RC1]:
+    Scala version [2.9.0]:
     sbt version [0.7.6.RC0]:
 
 Now we have the basis for an SBT project. Akka has an SBT Plugin making it very easy to use Akka is an SBT-based project so let's use that.
@@ -158,9 +187,7 @@ Now we need to create a project definition using our Akka SBT plugin. We do that
 
     import sbt._
 
-    class TutorialOneProject(info: ProjectInfo) extends DefaultProject(info) with AkkaProject {
-      val akkaRepo = "Akka Repo" at "http://akka.io/repository"
-    }
+    class TutorialOneProject(info: ProjectInfo) extends DefaultProject(info) with AkkaProject
 
 The magic is in mixing in the ``AkkaProject`` trait.
 
@@ -173,7 +200,10 @@ Not needed in this tutorial, but if you would like to use additional Akka module
 
 So, now we are all set. Just one final thing to do; make SBT download the dependencies it needs. That is done by invoking::
 
+    > reload
     > update
+
+The first reload command is needed because we have changed the project definition since the sbt session started.
 
 SBT itself needs a whole bunch of dependencies but our project will only need one; ``akka-actor-1.1.jar``. SBT downloads that as well.
 
@@ -291,11 +321,11 @@ Here is the master actor::
 
       def receive = { ... }
 
-      override def preStart {
+      override def preStart() {
         start = System.currentTimeMillis
       }
 
-      override def postStop {
+      override def postStop() {
         // tell the world that the calculation is complete
         println(
           "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
@@ -451,11 +481,11 @@ But before we package it up and run it, let's take a look at the full code now, 
             if (nrOfResults == nrOfMessages) self.stop()
         }
 
-        override def preStart {
+        override def preStart() {
           start = System.currentTimeMillis
         }
 
-        override def postStop {
+        override def postStop() {
           // tell the world that the calculation is complete
           println(
             "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
@@ -491,15 +521,15 @@ If you have not typed in (or copied) the code for the tutorial as ``$AKKA_HOME/t
 
 First we need to compile the source file. That is done with Scala's compiler ``scalac``. Our application depends on the ``akka-actor-1.1.jar`` JAR file, so let's add that to the compiler classpath when we compile the source::
 
-    $ scalac -cp dist/akka-actor-1.1.jar tutorial/Pi.scala
+    $ scalac -cp lib/akka/akka-actor-1.1.jar tutorial/Pi.scala
 
 When we have compiled the source file we are ready to run the application. This is done with ``java`` but yet again we need to add the ``akka-actor-1.1.jar`` JAR file to the classpath, and this time we also need to add the Scala runtime library ``scala-library.jar`` and the classes we compiled ourselves::
 
     $ java \
-        -cp dist/akka-actor-1.1.jar:scala-library.jar:tutorial \
+        -cp lib/scala-library.jar:lib/akka/akka-actor-1.1.jar:. \
         akka.tutorial.first.scala.Pi
-    AKKA_HOME is defined as [/Users/jboner/src/akka-stuff/akka-core]
-    loading config from [/Users/jboner/src/akka-stuff/akka-core/config/akka.conf].
+    AKKA_HOME is defined as [/Users/jboner/tools/akka-actors-1.1]
+    loading config from [/Users/jboner/tools/akka-actors-1.1/config/akka.conf].
 
     Pi estimate:        3.1435501812459323
     Calculation time:   858 millis

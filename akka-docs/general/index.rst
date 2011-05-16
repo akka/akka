@@ -4,5 +4,8 @@ General
 .. toctree::
    :maxdepth: 2
 
-   migration-guides
-   util
+   jmm
+   configuration
+   event-handler
+   slf4j
+

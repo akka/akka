@@ -4,7 +4,6 @@
 
 package akka.remote
 
-import akka.config.Config.config
 import akka.actor. {Actor, BootableActorLoaderService}
 import akka.util. {ReflectiveAccess, Bootable}
 
@@ -20,18 +19,18 @@ trait BootableRemoteActorService extends Bootable {
     def run = Actor.remote.start(self.applicationLoader.getOrElse(null)) //Use config host/port
   }, "Akka RemoteModule Service")
 
-  def startRemoteService = remoteServerThread.start()
+  def startRemoteService() { remoteServerThread.start() }
 
-  abstract override def onLoad = {
+  abstract override def onLoad() {
     if (ReflectiveAccess.isRemotingEnabled && RemoteServerSettings.isRemotingEnabled) {
-      startRemoteService
+      startRemoteService()
     }
-    super.onLoad
+    super.onLoad()
   }
 
-  abstract override def onUnload = {
-    Actor.remote.shutdown
+  abstract override def onUnload() {
+    Actor.remote.shutdown()
     if (remoteServerThread.isAlive) remoteServerThread.join(1000)
-    super.onUnload
+    super.onUnload()
   }
 }

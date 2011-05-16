@@ -166,7 +166,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
   }
 
   def stop = synchronized {
-    if (supervisor.isDefined) supervisor.get.shutdown
+    if (supervisor.isDefined) supervisor.get.shutdown()
   }
 }
 

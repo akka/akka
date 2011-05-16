@@ -18,8 +18,8 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends AkkaRemoteTest {
   }
 
   // make sure the servers shutdown cleanly after the test has finished
-  override def afterEach = {
-    super.afterEach
+  override def afterEach() {
+    super.afterEach()
     clearMessageLogs
   }
 
@@ -32,7 +32,7 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends AkkaRemoteTest {
       session1.login("session[1]")
       session1.getUser() must equal ("session[1]")
 
-      remote.shutdownClientModule
+      remote.shutdownClientModule()
 
       val session2 = remote.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, host, port)
 
@@ -46,7 +46,7 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends AkkaRemoteTest {
       session1.getUser() must equal ("anonymous")
 
       RemoteTypedSessionActorImpl.getInstances() must have size (1)
-      remote.shutdownClientModule
+      remote.shutdownClientModule()
       Thread.sleep(1000)
       RemoteTypedSessionActorImpl.getInstances() must have size (0)
 
@@ -57,7 +57,7 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends AkkaRemoteTest {
 
       session1.doSomethingFunny()
 
-      remote.shutdownClientModule
+      remote.shutdownClientModule()
       Thread.sleep(1000)
       RemoteTypedSessionActorImpl.getInstances() must have size (0)
     }

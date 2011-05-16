@@ -83,11 +83,11 @@ import scala.reflect.BeanProperty
  *
  *   def square(x: Int): Future[Integer] = future(x * x)
  *
- *   override def preStart = {
+ *   override def preStart() = {
  *     ... // optional initialization on start
  *   }
  *
- *   override def postStop = {
+ *   override def postStop() = {
  *     ... // optional cleanup on stop
  *   }
  *
@@ -160,14 +160,14 @@ abstract class TypedActor extends Actor with Proxyable {
    * <p/>
    * Is called when an Actor is started by invoking 'actor.start()'.
    */
-  override def preStart {}
+  override def preStart() {}
 
   /**
    * User overridable callback.
    * <p/>
    * Is called when 'actor.stop()' is invoked.
    */
-  override def postStop {}
+  override def postStop() {}
 
   /**
    * User overridable callback.
@@ -203,11 +203,10 @@ abstract class TypedActor extends Actor with Proxyable {
    *  Integer result = future.get();
    * </pre>
    */
-  def future[T](value: T): Future[T] =
-    self.senderFuture
-      .map{f => f.completeWithResult(value); f }
-      .getOrElse(throw new IllegalActorStateException("No sender future in scope"))
-      .asInstanceOf[Future[T]]
+  def future[T](value: T): Future[T] = self.senderFuture match {
+    case None => throw new IllegalActorStateException("No sender future in scope")
+    case Some(f) => f.completeWithResult(value).asInstanceOf[Future[T]]
+  }
 
   def receive = {
     case joinPoint: JoinPoint =>
@@ -462,6 +461,24 @@ object TypedActor {
   /**
    * Factory method for typed actor.
    * @param intfClass interface the typed actor implements
+   * @param factory factory method that constructs the typed actor
+   * @param config configuration object for the typed actor
+   */
+  def newInstance[T](intfClass: Class[T], factory: => AnyRef, config: TypedActorConfiguration): T =
+    newInstance(intfClass, actorOf(newTypedActor(factory)), config)
+
+  /**
+   *  Factory method for typed actor.
+   * @param intfClass interface the typed actor implements
+   * @param targetClass implementation class of the typed actor
+   * @param config configuration object for the typed actor
+   */
+  def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T =
+    newInstance(intfClass, actorOf(newTypedActor(targetClass)), config)
+
+  /**
+   * Factory method for typed actor.
+   * @param intfClass interface the typed actor implements
    * @param targetClass implementation class of the typed actor
    * @param timeout timeout for future
    */
@@ -478,24 +495,6 @@ object TypedActor {
   def newInstance[T](intfClass: Class[T], factory: => AnyRef, timeout: Long) : T = {
     newInstance(intfClass, factory, TypedActorConfiguration(timeout))
   }
-
-  /**
-   * Factory method for typed actor.
-   * @param intfClass interface the typed actor implements
-   * @param factory factory method that constructs the typed actor
-   * @paramm config configuration object fo the typed actor
-   */
-  def newInstance[T](intfClass: Class[T], factory: => AnyRef, config: TypedActorConfiguration): T =
-    newInstance(intfClass, actorOf(newTypedActor(factory)), config)
-
-  /**
-   *  Factory method for typed actor.
-   * @param intfClass interface the typed actor implements
-   * @param targetClass implementation class of the typed actor
-   * @paramm config configuration object fo the typed actor
-   */
-  def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T =
-    newInstance(intfClass, actorOf(newTypedActor(targetClass)), config)
 
   private[akka] def newInstance[T](intfClass: Class[T], actorRef: ActorRef): T = {
     if (!actorRef.actorInstance.get.isInstanceOf[TypedActor]) throw new IllegalArgumentException("ActorRef is not a ref to a typed actor")
@@ -544,8 +543,8 @@ object TypedActor {
   /**
    * Java API.
    */
-  def newInstance[T](intfClass: Class[T], factory: TypedActorFactory, timeout: Long) : T =
-    newInstance(intfClass, factory.create, timeout)
+//  def newInstance[T](intfClass: Class[T], factory: TypedActorFactory, timeout: Long) : T =
+//    newInstance(intfClass, factory.create, timeout)
 
   /**
    * Java API.

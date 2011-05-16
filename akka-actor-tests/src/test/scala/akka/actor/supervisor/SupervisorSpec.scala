@@ -385,7 +385,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
       inits.get must be (3)
 
-      supervisor.shutdown
+      supervisor.shutdown()
     }
   }
 }

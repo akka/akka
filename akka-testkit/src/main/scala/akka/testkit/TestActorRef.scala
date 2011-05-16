@@ -83,12 +83,13 @@ object TestActorRef {
   def apply[T <: Actor : Manifest](address: String): TestActorRef[T] = new TestActorRef[T] ({ () =>
 
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
-    createInstance[T](manifest[T].erasure, noParams, noArgs).getOrElse(
-      throw new ActorInitializationException(
+    createInstance[T](manifest[T].erasure, noParams, noArgs) match {
+      case r: Right[_, T] => r.b
+      case l: Left[Exception, _] => throw new ActorInitializationException(
         "Could not instantiate Actor" +
         "\nMake sure Actor is NOT defined inside a class/trait," +
         "\nif so put it outside the class/trait, f.e. in a companion object," +
-        "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
+        "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", l.a)
+    }
   }, address)
-
 }

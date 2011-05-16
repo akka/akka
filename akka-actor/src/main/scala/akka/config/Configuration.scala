@@ -14,6 +14,8 @@ object Configuration {
   val DefaultPath     = new File(".").getCanonicalPath
   val DefaultImporter = new FilesystemImporter(DefaultPath)
 
+  val outputConfigSources = System.getProperty("akka.output.config.source") ne null
+
   def load(data: String, importer: Importer = DefaultImporter): Configuration = {
     val parser = new ConfigParser(importer = importer)
     new Configuration(parser parse data)
@@ -59,6 +61,13 @@ class Configuration(val map: Map[String, Any]) {
   private val trueValues = Set("true", "on")
   private val falseValues = Set("false", "off")
 
+  private def outputIfDesiredAndReturnInput[T](key: String, t: T): T = {
+    if (Configuration.outputConfigSources)
+      println("Akka config is using default value for: " + key)
+
+    t
+  }
+
   def contains(key: String): Boolean = map contains key
 
   def keys: Iterable[String] = map.keys
@@ -71,7 +80,8 @@ class Configuration(val map: Map[String, Any]) {
     }
   }
 
-  def getAny(key: String, defaultValue: Any): Any = getAny(key).getOrElse(defaultValue)
+  def getAny(key: String, defaultValue: Any): Any =
+    getAny(key).getOrElse(outputIfDesiredAndReturnInput(key, defaultValue))
 
   def getListAny(key: String): Seq[Any] = {
     try {
@@ -83,7 +93,8 @@ class Configuration(val map: Map[String, Any]) {
 
   def getString(key: String): Option[String] = map.get(key).map(_.toString)
 
-  def getString(key: String, defaultValue: String): String = getString(key).getOrElse(defaultValue)
+  def getString(key: String, defaultValue: String): String =
+    getString(key).getOrElse(outputIfDesiredAndReturnInput(key, defaultValue))
 
   def getList(key: String): Seq[String] = {
     try {
@@ -101,7 +112,8 @@ class Configuration(val map: Map[String, Any]) {
     }
   }
 
-  def getInt(key: String, defaultValue: Int): Int = getInt(key).getOrElse(defaultValue)
+  def getInt(key: String, defaultValue: Int): Int =
+    getInt(key).getOrElse(outputIfDesiredAndReturnInput(key, defaultValue))
 
   def getLong(key: String): Option[Long] = {
     try {
@@ -111,7 +123,8 @@ class Configuration(val map: Map[String, Any]) {
     }
   }
 
-  def getLong(key: String, defaultValue: Long): Long = getLong(key).getOrElse(defaultValue)
+  def getLong(key: String, defaultValue: Long): Long =
+    getLong(key).getOrElse(outputIfDesiredAndReturnInput(key, defaultValue))
 
   def getFloat(key: String): Option[Float] = {
     try {
@@ -121,7 +134,8 @@ class Configuration(val map: Map[String, Any]) {
     }
   }
 
-  def getFloat(key: String, defaultValue: Float): Float = getFloat(key).getOrElse(defaultValue)
+  def getFloat(key: String, defaultValue: Float): Float =
+    getFloat(key).getOrElse(outputIfDesiredAndReturnInput(key, defaultValue))
 
   def getDouble(key: String): Option[Double] = {
     try {
@@ -131,7 +145,8 @@ class Configuration(val map: Map[String, Any]) {
     }
   }
 
-  def getDouble(key: String, defaultValue: Double): Double = getDouble(key).getOrElse(defaultValue)
+  def getDouble(key: String, defaultValue: Double): Double =
+    getDouble(key).getOrElse(outputIfDesiredAndReturnInput(key, defaultValue))
 
   def getBoolean(key: String): Option[Boolean] = {
     getString(key) flatMap { s =>
@@ -141,11 +156,13 @@ class Configuration(val map: Map[String, Any]) {
     }
   }
 
-  def getBoolean(key: String, defaultValue: Boolean): Boolean = getBool(key).getOrElse(defaultValue)
+  def getBoolean(key: String, defaultValue: Boolean): Boolean =
+    getBool(key).getOrElse(outputIfDesiredAndReturnInput(key, defaultValue))
 
   def getBool(key: String): Option[Boolean] = getBoolean(key)
 
-  def getBool(key: String, defaultValue: Boolean): Boolean = getBoolean(key, defaultValue)
+  def getBool(key: String, defaultValue: Boolean): Boolean =
+    getBoolean(key, defaultValue)
 
   def apply(key: String): String = getString(key) match {
     case None => throw new ConfigurationException("undefined config: " + key)

@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent. {ConcurrentHashMap, CountDownLatch, TimeUnit}
 import akka.actor.dispatch.ActorModelSpec.MessageDispatcherInterceptor
 import akka.util.{Duration, Switch}
+import org.multiverse.api.latches.StandardLatch
 
 object ActorModelSpec {
 
@@ -110,13 +111,13 @@ object ActorModelSpec {
       super.dispatch(invocation)
     }
 
-    private[akka] abstract override def start {
-      super.start
+    private[akka] abstract override def start() {
+      super.start()
       starts.incrementAndGet()
     }
 
-    private[akka] abstract override def shutdown {
-      super.shutdown
+    private[akka] abstract override def shutdown() {
+      super.shutdown()
       stops.incrementAndGet()
     }
   }
@@ -216,6 +217,21 @@ abstract class ActorModelSpec extends JUnitSuite {
       msgsProcessed = 0,
       restarts = 0
     )
+
+    val futures = for(i <- 1 to 10) yield Future { i }
+    await(dispatcher.stops.get == 2)(withinMs = dispatcher.timeoutMs * 5)
+    assertDispatcher(dispatcher)(starts = 2, stops = 2)
+
+    val a2 = newTestActor
+    a2.start
+    val futures2 = for(i <- 1 to 10) yield Future { i }
+
+    await(dispatcher.starts.get == 3)(withinMs = dispatcher.timeoutMs * 5)
+    assertDispatcher(dispatcher)(starts = 3, stops = 2)
+
+    a2.stop
+    await(dispatcher.stops.get == 3)(withinMs = dispatcher.timeoutMs * 5)
+    assertDispatcher(dispatcher)(starts = 3, stops = 3)
   }
 
   @Test def dispatcherShouldProcessMessagesOneAtATime {

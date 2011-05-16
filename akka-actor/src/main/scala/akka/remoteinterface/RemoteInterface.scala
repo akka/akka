@@ -16,6 +16,7 @@ import scala.reflect.BeanProperty
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.io.{PrintWriter, PrintStream}
+import java.lang.reflect.InvocationTargetException
 
 trait RemoteModule {
   val UUID_PREFIX = "uuid:".intern
@@ -117,7 +118,7 @@ case class RemoteServerWriteFailed(
 class RemoteClientException private[akka] (
   message: String,
   @BeanProperty val client: RemoteClientModule,
-  val remoteAddress: InetSocketAddress) extends AkkaException(message)
+  val remoteAddress: InetSocketAddress, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * Thrown when the remote server actor dispatching fails for some reason.
@@ -146,7 +147,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
     handler
   }
 
-  def shutdown {
+  def shutdown() {
     eventHandler.stop()
     removeListener(eventHandler)
     this.shutdownClientModule()
@@ -282,7 +283,8 @@ trait RemoteServerModule extends RemoteModule {
   def registerByUuid(actorRef: ActorRef): Unit
 
   /**
-   *  Register Remote Actor by a specific 'id' passed as argument.
+   *  Register Remote Actor by a specific 'id' passed as argument. The actor is registered by UUID rather than ID
+   *  when prefixing the handle with the “uuid:” protocol.
    * <p/>
    * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself.
    */

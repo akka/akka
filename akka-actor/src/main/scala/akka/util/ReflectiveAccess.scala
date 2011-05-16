@@ -48,11 +48,26 @@ object ReflectiveAccess {
       }
     }
 
-    lazy val clusterInstance: Option[Cluster] = getObjectFor("akka.cluster.Cluster$")
+    lazy val clusterInstance: Option[Cluster] = getObjectFor("akka.cluster.Cluster$") match {
+      case Right(value)    => Some(value)
+      case Left(exception) =>
+        EventHandler.debug(this, exception.toString)
+        None
+    }
 
-    lazy val clusterDeployerInstance: Option[ClusterDeployer] = getObjectFor("akka.cluster.ClusterDeployer$")
+    lazy val clusterDeployerInstance: Option[ClusterDeployer] = getObjectFor("akka.cluster.ClusterDeployer$") match {
+      case Right(value)    => Some(value)
+      case Left(exception) =>
+        EventHandler.debug(this, exception.toString)
+        None
+    }
 
-    lazy val serializerClass: Option[Class[_]] = getClassFor("akka.serialization.Serializer")
+    lazy val serializerClass: Option[Class[_]] = getClassFor("akka.serialization.Serializer") match {
+      case Right(value)    => Some(value)
+      case Left(exception) =>
+        EventHandler.debug(this, exception.toString)
+        None
+    }
 
     lazy val node: ClusterNode = {
       ensureEnabled()
@@ -123,16 +138,20 @@ object ReflectiveAccess {
 
     lazy val isEnabled = remoteSupportClass.isDefined
 
-    def ensureEnabled() {
+    def ensureEnabled() = {
       if (!isEnabled) {
-        val e = new ModuleNotAvailableException(
-          "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
-        EventHandler.debug(this, e.toString)
-        throw e
+      val e = new ModuleNotAvailableException("Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
+      EventHandler.debug(this, e.toString)
+      throw e
       }
     }
 
-    val remoteSupportClass: Option[Class[_ <: RemoteSupport]] = getClassFor(TRANSPORT)
+    val remoteSupportClass = getClassFor[RemoteSupport](TRANSPORT) match {
+      case Right(value)    => Some(value)
+      case Left(exception) =>
+        EventHandler.debug(this, exception.toString)
+        None
+    }
 
     protected[akka] val defaultRemoteSupport: Option[() => RemoteSupport] =
       remoteSupportClass map { remoteClass =>
@@ -140,9 +159,11 @@ object ReflectiveAccess {
           remoteClass,
           Array[Class[_]](),
           Array[AnyRef]()
-        ) getOrElse {
+        ) match {
+          case Right(value)    => value
+          case Left(exception) =>
           val e = new ModuleNotAvailableException(
-            "Can't instantiate [%s] - make sure that akka-remote.jar is on the classpath".format(remoteClass.getName))
+            "Can't instantiate [%s] - make sure that akka-remote.jar is on the classpath".format(remoteClass.getName), exception)
           EventHandler.debug(this, e.toString)
           throw e
         }
@@ -172,7 +193,12 @@ object ReflectiveAccess {
     }
 
     val typedActorObjectInstance: Option[TypedActorObject] =
-      getObjectFor("akka.actor.TypedActor$")
+      getObjectFor[TypedActorObject]("akka.actor.TypedActor$") match {
+        case Right(value) => Some(value)
+        case Left(exception)=>
+          EventHandler.debug(this, exception.toString)
+          None
+      }
 
     def resolveFutureIfMessageIsJoinPoint(message: Any, future: Future[_]): Boolean = {
       ensureEnabled()
@@ -188,94 +214,93 @@ object ReflectiveAccess {
 
   def createInstance[T](clazz: Class[_],
                         params: Array[Class[_]],
-                        args: Array[AnyRef]): Option[T] = try {
+                        args: Array[AnyRef]): Either[Exception,T] = try {
     assert(clazz ne null)
     assert(params ne null)
     assert(args ne null)
     val ctor = clazz.getDeclaredConstructor(params: _*)
     ctor.setAccessible(true)
-    Some(ctor.newInstance(args: _*).asInstanceOf[T])
+    Right(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e: java.lang.reflect.InvocationTargetException =>
       EventHandler.debug(this, e.getCause.toString)
-      None
+      Left(e)
     case e: Exception =>
       EventHandler.debug(this, e.toString)
-      None
+      Left(e)
   }
 
   def createInstance[T](fqn: String,
                         params: Array[Class[_]],
                         args: Array[AnyRef],
-                        classloader: ClassLoader = loader): Option[T] = try {
+                        classloader: ClassLoader = loader): Either[Exception,T] = try {
     assert(params ne null)
     assert(args ne null)
     getClassFor(fqn) match {
-      case Some(clazz) =>
-        val ctor = clazz.getDeclaredConstructor(params: _*)
+      case Right(value) =>
+        val ctor = value.getDeclaredConstructor(params: _*)
         ctor.setAccessible(true)
-        Some(ctor.newInstance(args: _*).asInstanceOf[T])
-      case None => None
+        Right(ctor.newInstance(args: _*).asInstanceOf[T])
+      case Left(exception) => Left(exception) //We could just cast this to Either[Exception, T] but it's ugly
     }
   } catch {
     case e: Exception =>
-      EventHandler.debug(this, e.toString)
-      None
+      Left(e)
   }
 
-  def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Option[T] = try {//Obtains a reference to $MODULE$
+  //Obtains a reference to fqn.MODULE$
+  def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception,T] = try {
     getClassFor(fqn) match {
-      case Some(clazz) =>
-        val instance = clazz.getDeclaredField("MODULE$")
+      case Right(value) =>
+        val instance = value.getDeclaredField("MODULE$")
         instance.setAccessible(true)
-        Option(instance.get(null).asInstanceOf[T])
-      case None => None
+        val obj = instance.get(null)
+        if (obj eq null) Left(new NullPointerException) else Right(obj.asInstanceOf[T])
+      case Left(exception) => Left(exception) //We could just cast this to Either[Exception, T] but it's ugly
     }
   } catch {
-    case e: ExceptionInInitializerError =>
-      EventHandler.debug(this, e.toString)
-      throw e
+    case e: Exception =>
+      Left(e)
   }
 
-  def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Option[Class[T]] = {
+  def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception,Class[T]] = try {
     assert(fqn ne null)
 
     // First, use the specified CL
     val first = try {
-      Option(classloader.loadClass(fqn).asInstanceOf[Class[T]])
+      Right(classloader.loadClass(fqn).asInstanceOf[Class[T]])
     } catch {
-      case c: ClassNotFoundException => None
+      case c: ClassNotFoundException => Left(c)
     }
 
-    if (first.isDefined) first
+    if (first.isRight) first
     else {
       // Second option is to use the ContextClassLoader
       val second = try {
-        Option(Thread.currentThread.getContextClassLoader.loadClass(fqn).asInstanceOf[Class[T]])
+        Right(Thread.currentThread.getContextClassLoader.loadClass(fqn).asInstanceOf[Class[T]])
       } catch {
-        case c: ClassNotFoundException => None
+        case c: ClassNotFoundException => Left(c)
       }
 
-      if (second.isDefined) second
+      if (second.isRight) second
       else {
         val third = try {
-           // Don't try to use "loader" if we got the default "classloader" parameter
-           if (classloader ne loader) Option(loader.loadClass(fqn).asInstanceOf[Class[T]])
-          else None
+           if (classloader ne loader) Right(loader.loadClass(fqn).asInstanceOf[Class[T]]) else Left(null) //Horrid
         } catch {
-          case c: ClassNotFoundException => None
+          case c: ClassNotFoundException => Left(c)
         }
 
-        if (third.isDefined) third
+        if (third.isRight) third
         else {
-          // Last option is Class.forName
           try {
-            Option(Class.forName(fqn).asInstanceOf[Class[T]])
+            Right(Class.forName(fqn).asInstanceOf[Class[T]]) // Last option is Class.forName
           } catch {
-            case c: ClassNotFoundException => None
+            case c: ClassNotFoundException => Left(c)
           }
         }
       }
     }
+  } catch {
+    case e: Exception => Left(e)
   }
 }

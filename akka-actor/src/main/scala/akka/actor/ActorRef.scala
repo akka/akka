@@ -97,7 +97,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * Defines the default timeout for '!!' and '!!!' invocations,
    * e.g. the timeout for the future returned by the call to '!!' and '!!!'.
    */
-  @deprecated("Will be replaced by implicit-scoped timeout on all methods that needs it, will default to timeout specified in config")
+  @deprecated("Will be replaced by implicit-scoped timeout on all methods that needs it, will default to timeout specified in config", "1.1")
   @BeanProperty
   @volatile
   var timeout: Long = Actor.TIMEOUT
@@ -232,7 +232,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   /**
    * Is the actor able to handle the message passed in as arguments?
    */
-  @deprecated("Will be removed without replacement, it's just not reliable in the face of `become` and `unbecome`")
+  @deprecated("Will be removed without replacement, it's just not reliable in the face of `become` and `unbecome`", "1.1")
   def isDefinedAt(message: Any): Boolean = actor.isDefinedAt(message)
 
   /**
@@ -512,7 +512,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () => Actor, 
   @volatile
   private var maxNrOfRetriesCount: Int = 0
   @volatile
-  private var restartsWithinTimeRangeTimestamp: Long = 0L
+  private var restartTimeWindowStartNanos: Long = 0L
   @volatile
   private var _mailbox: AnyRef = _
   @volatile
@@ -724,30 +724,32 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () => Actor, 
   }
 
   private def requestRestartPermission(maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Boolean = {
+
     val denied = if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty) {  //Immortal
       false
     } else if (withinTimeRange.isEmpty) { // restrict number of restarts
-      maxNrOfRetriesCount += 1 //Increment number of retries
-      maxNrOfRetriesCount > maxNrOfRetries.get
+      val retries = maxNrOfRetriesCount + 1
+      maxNrOfRetriesCount = retries //Increment number of retries
+      retries > maxNrOfRetries.get
     } else {  // cannot restart more than N within M timerange
-      maxNrOfRetriesCount += 1 //Increment number of retries
-      val windowStart = restartsWithinTimeRangeTimestamp
-      val now         = System.currentTimeMillis
-      val retries     = maxNrOfRetriesCount
+      val retries = maxNrOfRetriesCount + 1
+
+      val windowStart = restartTimeWindowStartNanos
+      val now         = System.nanoTime
       //We are within the time window if it isn't the first restart, or if the window hasn't closed
       val insideWindow   = if (windowStart == 0) false
-                          else (now - windowStart) <= withinTimeRange.get
-
-      //The actor is dead if it dies X times within the window of restart
-      val unrestartable = insideWindow && retries > maxNrOfRetries.getOrElse(1)
+                          else (now - windowStart) <= TimeUnit.MILLISECONDS.toNanos(withinTimeRange.get)
 
       if (windowStart == 0 || !insideWindow) //(Re-)set the start of the window
-        restartsWithinTimeRangeTimestamp = now
+        restartTimeWindowStartNanos = now
 
-      if (windowStart != 0 && !insideWindow) //Reset number of restarts if window has expired
-        maxNrOfRetriesCount = 1
+      //Reset number of restarts if window has expired, otherwise, increment it
+      maxNrOfRetriesCount = if (windowStart != 0 && !insideWindow) 1 else retries //Increment number of retries
 
-      unrestartable
+      val restartCountLimit = if (maxNrOfRetries.isDefined) maxNrOfRetries.get else 1
+
+      //The actor is dead if it dies X times within the window of restart
+      insideWindow && retries > restartCountLimit
     }
 
     denied == false //If we weren't denied, we have a go
@@ -839,12 +841,12 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () => Actor, 
 
   private[this] def newActor: Actor = {
     try {
-      Actor.actorRefInCreation.value = Some(this)
+      Actor.actorRefInCreation.set(Some(this))
       val a = actorFactory()
       if (a eq null) throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
       a
     } finally {
-      Actor.actorRefInCreation.value = None
+      Actor.actorRefInCreation.set(None)
     }
   }
 
@@ -1009,7 +1011,7 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   // ==== NOT SUPPORTED ====
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`")
+  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
   def actorClass: Class[_ <: Actor] = unsupported
   def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported

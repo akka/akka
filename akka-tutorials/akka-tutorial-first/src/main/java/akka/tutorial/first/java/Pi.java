@@ -18,31 +18,6 @@ import akka.routing.UntypedLoadBalancer;
 
 import java.util.concurrent.CountDownLatch;
 
-/**
- * First part in Akka tutorial for Java.
- * <p/>
- * Calculates Pi.
- * <p/>
- * Run on command line:
- * <pre>
- *   $ cd akka-1.1
- *   $ export AKKA_HOME=`pwd`
- *   $ javac -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar akka/tutorial/first/java/Pi.java
- *   $ java -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.first.java.Pi
- *   $ ...
- * </pre>
- * <p/>
- * Run it in Maven:
- * <pre>
- *   $ mvn
- *   > scala:console
- *   > val pi = new akka.tutorial.first.java.Pi
- *   > pi.calculate(4, 10000, 10000)
- *   > ...
- * </pre>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 public class Pi {
 
   public static void main(String[] args) throws Exception {

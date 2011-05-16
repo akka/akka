@@ -88,14 +88,14 @@ abstract class UntypedActor extends Actor {
    * <p/>
    * Is called when an Actor is started by invoking 'actor.start()'.
    */
-  override def preStart {}
+  override def preStart() {}
 
   /**
    * User overridable callback.
    * <p/>
    * Is called when 'actor.stop()' is invoked.
    */
-  override def postStop {}
+  override def postStop() {}
 
   /**
    * User overridable callback.

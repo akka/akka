@@ -6,10 +6,29 @@ Contents
 
    intro/index
    general/index
+   common/index
    scala/index
+   java/index
    dev/index
+   project/index
+   additional/index
 
 Links
 =====
 
-* `Support <http://scalablesolutions.se>`_
+* :ref:`migration`
+
+* `Downloads <http://akka.io/downloads/>`_
+
+* `Source Code <http://github.com/jboner/akka>`_
+
+* :ref:`scaladoc`
+
+* :ref:`other-doc`
+
+* `Akka Modules Documentation <http://akka.io/docs/akka-modules/snapshot/>`_
+
+* :ref:`issue_tracking`
+
+* :ref:`support`
+

@@ -1,10 +1,12 @@
+.. _getting-started-first-scala-eclipse:
+
 Getting Started Tutorial (Scala with Eclipse): First Chapter
 ============================================================
 
 Introduction
 ------------
 
-Welcome to the first tutorial on how to get started with Akka and Scala. We assume that you already know what Akka and Scala are and will now focus on the steps necessary to start your first project. We will be using `Eclipse <http://www.eclipse.org/downloads/>`_, and the `Scala plugin for Eclipse <http://www.scala-ide.org/>`_.
+Welcome to the first tutorial on how to get started with `Akka <http://akka.io>`_ and `Scala <http://scala-lang.org>`_. We assume that you already know what Akka and Scala are and will now focus on the steps necessary to start your first project. We will be using `Eclipse <http://www.eclipse.org/downloads/>`_, and the `Scala plugin for Eclipse <http://www.scala-ide.org/>`_.
 
 The sample application that we will create is using actors to calculate the value of Pi. Calculating Pi is a CPU intensive operation and we will utilize Akka Actors to write a concurrent solution that scales out to multi-core processors. This sample will be extended in future tutorials to use Akka Remote Actors to scale out on multiple machines in a cluster.
 
@@ -12,14 +14,17 @@ We will be using an algorithm that is called "embarrassingly parallel" which jus
 
 Here is the formula for the algorithm we will use:
 
-.. image:: pi-formula.png
+.. image:: ../images/pi-formula.png
 
 In this particular algorithm the master splits the series into chunks which are sent out to each worker actor to be processed. When each worker has processed its chunk it sends a result back to the master which aggregates the total result.
 
 Tutorial source code
 --------------------
 
-If you want don't want to type in the code and/or set up an SBT project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here <https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first>`_, with the actual source code `here <https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala>`_.
+If you want don't want to type in the code and/or set up an SBT project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here`__, with the actual source code `here`__.
+
+__ https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first
+__ https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala
 
 Prerequisites
 -------------
@@ -38,39 +43,49 @@ You can test your installation by invoking ``java``::
     Java(TM) SE Runtime Environment (build 1.6.0_24-b07-334-10M3326)
     Java HotSpot(TM) 64-Bit Server VM (build 19.1-b02-334, mixed mode)
 
+
 Downloading and installing Akka
 -------------------------------
 
-To build and run the tutorial sample from the command line, you have to download Akka. If you prefer to use SBT to build and run the sample then you can skip this section and jump to the next one.
+To build and run the tutorial sample from the command line, you have to download
+Akka. If you prefer to use SBT to build and run the sample then you can skip
+this section and jump to the next one.
 
-Let's get the ``akka-1.1`` distribution of Akka core (not Akka Modules) from `http://akka.io/downloads <http://akka.io/downloads/>`_. Once you have downloaded the distribution unzip it in the folder you would like to have Akka installed in, in my case I choose to install it in ``/Users/jboner/tools/``, simply by unzipping it to this directory.
+Let's get the ``akka-actors-1.1.zip`` distribution of Akka from
+http://akka.io/downloads/ which includes everything we need for this
+tutorial. Once you have downloaded the distribution unzip it in the folder you
+would like to have Akka installed in. In my case I choose to install it in
+``/Users/jboner/tools/``, simply by unzipping it to this directory.
 
-You need to do one more thing in order to install Akka properly: set the ``AKKA_HOME`` environment variable to the root of the distribution. In my case I'm opening up a shell, navigating down to the distribution, and setting the ``AKKA_HOME`` variable::
+You need to do one more thing in order to install Akka properly: set the
+``AKKA_HOME`` environment variable to the root of the distribution. In my case
+I'm opening up a shell, navigating down to the distribution, and setting the
+``AKKA_HOME`` variable::
 
-    $ cd /Users/jboner/tools/akka-1.1
+    $ cd /Users/jboner/tools/akka-actors-1.1
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
-    /Users/jboner/tools/akka-1.1
+    /Users/jboner/tools/akka-actors-1.1
 
 The distribution looks like this::
 
-    $ ls -l
-    total 16944
-    drwxr-xr-x   7 jboner  staff      238 Apr  6 11:15 .
-    drwxr-xr-x  28 jboner  staff      952 Apr  6 11:16 ..
-    drwxr-xr-x  17 jboner  staff      578 Apr  6 11:16 deploy
-    drwxr-xr-x  26 jboner  staff      884 Apr  6 11:16 dist
-    drwxr-xr-x   3 jboner  staff      102 Apr  6 11:15 lib_managed
-    -rwxr-xr-x   1 jboner  staff  8674105 Apr  6 11:15 scala-library.jar
-    drwxr-xr-x   4 jboner  staff      136 Apr  6 11:16 scripts
+    $ ls -1
+    config
+    doc
+    lib
+    src
 
-- In the ``dist`` directory we have the Akka JARs, including sources and docs.
-- In the ``lib_managed/compile`` directory we have Akka's dependency JARs.
-- In the ``deploy`` directory we have the sample JARs.
-- In the ``scripts`` directory we have scripts for running Akka.
-- Finally ``scala-library.jar`` is the JAR for the latest Scala distribution that Akka depends on.
+- In the ``config`` directory we have the Akka conf files.
+- In the ``doc`` directory we have the documentation, API, doc JARs, and also
+  the source files for the tutorials.
+- In the ``lib`` directory we have the Scala and Akka JARs.
+- In the ``src`` directory we have the source JARs for Akka.
 
-The only JAR we will need for this tutorial (apart from the ``scala-library.jar`` JAR) is the ``akka-actor-1.1.jar`` JAR in the ``dist`` directory. This is a self-contained JAR with zero dependencies and contains everything we need to write a system using Actors.
+
+The only JAR we will need for this tutorial (apart from the
+``scala-library.jar`` JAR) is the ``akka-actor-1.1.jar`` JAR in the ``lib/akka``
+directory. This is a self-contained JAR with zero dependencies and contains
+everything we need to write a system using Actors.
 
 Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
 
@@ -79,10 +94,13 @@ Akka is very modular and has many JARs for containing different features. The co
 - ``akka-remote-1.1.jar`` -- Remote Actors
 - ``akka-stm-1.1.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
 - ``akka-http-1.1.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
-- ``akka-slf4j-1.1.jar`` -- SLF4J Event Handler Listener
+- ``akka-slf4j-1.1.jar`` -- SLF4J Event Handler Listener for logging with SLF4J
 - ``akka-testkit-1.1.jar`` -- Toolkit for testing Actors
 
-We also have Akka Modules containing add-on modules outside the core of Akka. You can download the Akka Modules distribution from TODO. It contains Akka core as well. We will not be needing any modules there today, but for your information the module JARs are these:
+We also have Akka Modules containing add-on modules outside the core of
+Akka. You can download the Akka Modules distribution from `<http://akka.io/downloads/>`_. It contains Akka
+core as well. We will not be needing any modules there today, but for your
+information the module JARs are these:
 
 - ``akka-kernel-1.1.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
 - ``akka-amqp-1.1.jar`` -- AMQP integration
@@ -92,6 +110,7 @@ We also have Akka Modules containing add-on modules outside the core of Akka. Yo
 - ``akka-spring-1.1.jar`` -- Spring framework integration
 - ``akka-osgi-dependencies-bundle-1.1.jar`` -- OSGi support
 
+
 Downloading and installing the Scala IDE for Eclipse
 ----------------------------------------------------
 
@@ -99,19 +118,19 @@ If you want to use Eclipse for coding your Akka tutorial, you need to install th
 
 You can install this plugin using the regular update mechanism. First choose a version of the IDE from `http://download.scala-ide.org <http://download.scala-ide.org>`_. We recommend you choose 2.0.x, which comes with Scala 2.9. Copy the corresponding URL and then choose ``Help/Install New Software`` and paste the URL you just copied. You should see  something similar to the following image.
 
-.. image:: install-beta2-updatesite.png
+.. image:: ../images/install-beta2-updatesite.png
 
 Make sure you select both the ``JDT Weaving for Scala`` and the ``Scala IDE for Eclipse`` plugins. The other plugin is optional, and contains the source code of the plugin itself.
 
 Once the installation is finished, you need to restart Eclipse. The first time the plugin starts it will open a diagnostics window and offer to fix several settings, such as the delay for content assist (code-completion) or the shown completion proposal types.
 
-.. image:: diagnostics-window.png
+.. image:: ../images/diagnostics-window.png
 
 Accept the recommended settings, and follow the instructions if you need to increase the heap size of Eclipse.
 
 Check that the installation succeeded by creating a new Scala project (``File/New>Scala Project``), and typing some code. You should have content-assist, hyperlinking to definitions, instant error reporting, and so on.
 
-.. image:: example-code.png
+.. image:: ../images/example-code.png
 
 You are ready to code now!
 
@@ -120,16 +139,16 @@ Downloading and installing Scala
 
 To build and run the tutorial sample from the command line, you have to install the Scala distribution. If you prefer to use Eclipse to build and run the sample then you can skip this section and jump to the next one.
 
-Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0.RC1 release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
+Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0 release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
 
-You also need to make sure that the ``scala-2.9.0.RC1/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
+You also need to make sure that the ``scala-2.9.0/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
 
-    $ export PATH=$PATH:scala-2.9.0.RC1/bin
+    $ export PATH=$PATH:scala-2.9.0/bin
 
 You can test your installation by invoking scala::
 
     $ scala -version
-    Scala code runner version 2.9.0.RC1 -- Copyright 2002-2011, LAMP/EPFL
+    Scala code runner version 2.9.0.final -- Copyright 2002-2011, LAMP/EPFL
 
 Looks like we are all good. Finally let's create a source file ``Pi.scala`` for the tutorial and put it in the root of the Akka distribution in the ``tutorial`` directory (you have to create it first).
 
@@ -140,12 +159,12 @@ Creating an Akka project in Eclipse
 
 If you have not already done so, now is the time to create an Eclipse project for our tutorial. Use the ``New Scala Project`` wizard and accept the default settings. Once the project is open, we need to add the akka libraries to the *build path*. Right click on the project and choose ``Properties``, then click on ``Java Build Path``. Go to ``Libraries`` and click on ``Add External Jars..``, then navigate to the location where you installed akka and choose ``akka-actor.jar``. You should see something similar to this:
 
-.. image:: build-path.png
+.. image:: ../images/build-path.png
 
 Using SBT in Eclipse
 ^^^^^^^^^^^^^^^^^^^^
 
-If you are an `SBT <http://code.google.com/p/simple-build-tool/>`_ user, you can follow the :doc:`Akka Tutorial in Scala </intro/getting-started-first-scala>` and additionally install the ``sbt-eclipse`` plugin. This adds support for generating Eclipse project files from your SBT project. You need to update your SBT plugins definition in ``project/plugins``::
+If you are an `SBT <http://code.google.com/p/simple-build-tool/>`_ user, you can follow the :ref:`getting-started-first-scala-download-sbt` instruction and additionally install the ``sbt-eclipse`` plugin. This adds support for generating Eclipse project files from your SBT project. You need to update your SBT plugins definition in ``project/plugins``::
 
     import sbt._
 
@@ -171,7 +190,7 @@ and then update your SBT project definition by mixing in ``Eclipsify`` in your p
 Then run the ``eclipse`` target to generate the Eclipse project::
 
     dragos@dragos-imac pi $ sbt eclipse
-    [info] Building project AkkaPi 1.0 against Scala 2.9.0.RC1
+    [info] Building project AkkaPi 1.0 against Scala 2.9.0
     [info]    using MySbtProject with sbt 0.7.4 and Scala 2.7.7
     [info]
     [info] == eclipse ==
@@ -186,7 +205,7 @@ Then run the ``eclipse`` target to generate the Eclipse project::
 
 Next you need to import this project in Eclipse, by choosing ``Eclipse/Import.. Existing Projects into Workspace``. Navigate to the directory where you defined your SBT project and choose import:
 
-.. image:: import-project.png
+.. image:: ../images/import-project.png
 
 Now we have the basis for an Akka Eclipse application, so we can..
 
@@ -234,7 +253,7 @@ Now we can create the worker actor.  Create a new class called ``Worker`` as bef
 
 The ``Actor`` trait is defined in ``akka.actor`` and you can either import it explicitly, or let Eclipse do it for you when it cannot resolve the ``Actor`` trait. The quick fix option (``Ctrl-F1``) will offer two options:
 
-.. image:: quickfix.png
+.. image:: ../images/quickfix.png
 
 Choose the Akka Actor and move on.
 
@@ -307,11 +326,11 @@ Here is the master actor::
 
       def receive = { ... }
 
-      override def preStart {
+      override def preStart() {
         start = System.currentTimeMillis
       }
 
-      override def postStop {
+      override def postStop() {
         // tell the world that the calculation is complete
         println(
           "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
@@ -393,8 +412,8 @@ Run it from Eclipse
 
 Eclipse builds your project on every save when ``Project/Build Automatically`` is set. If not, bring you project up to date by clicking ``Project/Build Project``. If there are no compilation errors, you can right-click in the editor where ``Pi`` is defined, and choose ``Run as.. /Scala application``. If everything works fine, you should see::
 
-    AKKA_HOME is defined as [/Users/jboner/tools/akka-modules-1.1-M1/]
-    loading config from [/Users/jboner/tools/akka-modules-1.1-M1/config/akka.conf].
+    AKKA_HOME is defined as [/Users/jboner/tools/akka-actors-1.1]
+    loading config from [/Users/jboner/tools/akka-actors-1.1/config/akka.conf].
 
     Pi estimate:        3.1435501812459323
     Calculation time:   858 millis
@@ -403,7 +422,7 @@ If you have not defined an the ``AKKA_HOME`` environment variable then Akka can'
 
 You can also define a new Run configuration, by going to ``Run/Run Configurations``. Create a new ``Scala application`` and choose the tutorial project and the main class to be ``akkatutorial.Pi``. You can pass additional command line arguments to the JVM on the ``Arguments`` page, for instance to define where ``akka.conf`` is:
 
-.. image:: run-config.png
+.. image:: ../images/run-config.png
 
 Once you finished your run configuration, click ``Run``. You should see the same output in the ``Console`` window. You can use the same configuration for debugging the application, by choosing ``Run/Debug History`` or just ``Debug As``.
 

@@ -17,6 +17,7 @@ import akka.event.EventHandler
 import scala.reflect.BeanProperty
 
 import com.eaio.uuid.UUID
+import java.lang.reflect.InvocationTargetException
 
 /**
  * Life-cycle messages for the Actors
@@ -28,18 +29,18 @@ sealed trait LifeCycleMessage extends Serializable
  */
 sealed trait AutoReceivedMessage { self: LifeCycleMessage => }
 
-case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true)
-  extends AutoReceivedMessage with LifeCycleMessage {
+case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true) extends AutoReceivedMessage with LifeCycleMessage {
 
   /**
    * Java API
    */
-  def this(code: akka.japi.Function[ActorRef,Procedure[Any]], discardOld: Boolean) =
+  def this(code: akka.japi.Function[ActorRef,Procedure[Any]], discardOld: Boolean) = {
     this( (self: ActorRef) => {
       val behavior = code(self)
       val result: Actor.Receive = { case msg => behavior(msg) }
       result
     }, discardOld)
+  }
 
   /**
    *  Java API with default non-stacking behavior
@@ -72,12 +73,12 @@ case class MaximumNumberOfRestartsWithinTimeRangeReached(
   @BeanProperty val lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
 
 // Exceptions for Actors
-class ActorStartException          private[akka](message: String) extends AkkaException(message)
-class IllegalActorStateException   private[akka](message: String) extends AkkaException(message)
-class ActorKilledException         private[akka](message: String) extends AkkaException(message)
-class ActorInitializationException private[akka](message: String) extends AkkaException(message)
-class ActorTimeoutException        private[akka](message: String) extends AkkaException(message)
-class InvalidMessageException      private[akka](message: String) extends AkkaException(message)
+class ActorStartException          private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class IllegalActorStateException   private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class ActorKilledException         private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class ActorInitializationException private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class ActorTimeoutException        private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class InvalidMessageException      private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message
@@ -130,7 +131,9 @@ object Actor extends ListenerManagement {
    */
   type Receive = PartialFunction[Any, Unit]
 
-  private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
+  private[actor] val actorRefInCreation = new ThreadLocal[Option[ActorRef]]{
+    override def initialValue = None
+  }
 
   /**
    * Creates an ActorRef out of the Actor with type T.
@@ -238,7 +241,15 @@ object Actor extends ListenerManagement {
 
             implicit val format: Format[T] = {
               if (formatClassName == "N/A") formatErrorDueTo("no class name defined in configuration")
-              val f = ReflectiveAccess.getObjectFor(formatClassName).getOrElse(formatErrorDueTo("it could not be loaded"))
+              val f = ReflectiveAccess.getObjectFor(formatClassName) match {
+                case Right(actor) => actor
+                case Left(exception) =>
+                  val cause = exception match {
+                    case i: InvocationTargetException => i.getTargetException
+                    case _                            => exception
+                  }
+                  formatErrorDueTo(" " + cause.toString)
+              }
               if (f.isInstanceOf[Format[T]]) f.asInstanceOf[Format[T]]
               else formatErrorDueTo("class must be of type [akka.serialization.Format[T]]")
             }
@@ -296,7 +307,6 @@ object Actor extends ListenerManagement {
    * times if for example the Actor is supervised and needs to be restarted.
    * Uses generated address.
    * <p/>
-   * This function should <b>NOT</b> be used for remote actors.
    * <pre>
    *   import Actor._
    *   val actor = actorOf(new MyActor)
@@ -340,7 +350,6 @@ object Actor extends ListenerManagement {
    * times if for example the Actor is supervised and needs to be restarted.
    * Uses generated address.
    * <p/>
-   * This function should <b>NOT</b> be used for remote actors.
    * JAVA API
    */
   def actorOf[T <: Actor](creator: Creator[T]): ActorRef =
@@ -387,13 +396,21 @@ object Actor extends ListenerManagement {
   private[akka] def newLocalActorRef(clazz: Class[_ <: Actor], address: String): ActorRef = {
     new LocalActorRef(() => {
       import ReflectiveAccess.{ createInstance, noParams, noArgs }
-      createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs).getOrElse(
-        throw new ActorInitializationException(
-          "Could not instantiate Actor" +
-          "\nMake sure Actor is NOT defined inside a class/trait," +
-          "\nif so put it outside the class/trait, f.e. in a companion object," +
-          "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
-      }, address)
+      createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs) match {
+        case Right(actor) => actor
+        case Left(exception) =>
+          val cause = exception match {
+            case i: InvocationTargetException => i.getTargetException
+            case _ => exception
+          }
+
+          throw new ActorInitializationException(
+            "Could not instantiate Actor of " + clazz +
+            "\nMake sure Actor is NOT defined inside a class/trait," +
+            "\nif so put it outside the class/trait, f.e. in a companion object," +
+            "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
+        }
+    }, address)
   }
 
   /**
@@ -401,6 +418,19 @@ object Actor extends ListenerManagement {
    * to convert an Option[Any] to an Option[T].
    */
   implicit def toAnyOptionAsTypedOption(anyOption: Option[Any]) = new AnyOptionAsTypedOption(anyOption)
+
+  /**
+   * Implicitly converts the given Future[_] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
+   * to convert an Option[Any] to an Option[T].
+   * This means that the following code is equivalent:
+   *   (actor !! "foo").as[Int] (Deprecated)
+   *   and
+   *   (actor !!! "foo").as[Int] (Recommended)
+   */
+  implicit def futureToAnyOptionAsTypedOption(anyFuture: Future[_]) = new AnyOptionAsTypedOption({
+   try { anyFuture.await } catch { case t: FutureTimeoutException => }
+   anyFuture.resultOrException
+  })
 }
 
 /**
@@ -463,7 +493,7 @@ trait Actor {
    * the 'forward' function.
    */
   @transient implicit val someSelf: Some[ActorRef] = {
-    val optRef = Actor.actorRefInCreation.value
+    val optRef = Actor.actorRefInCreation.get
     if (optRef.isEmpty) throw new ActorInitializationException(
       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
       "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
@@ -471,7 +501,7 @@ trait Actor {
       "\n\tEither use:" +
       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
-     Actor.actorRefInCreation.value = None
+     Actor.actorRefInCreation.set(None)
      optRef.asInstanceOf[Some[ActorRef]]
   }
 
@@ -540,14 +570,14 @@ trait Actor {
    * <p/>
    * Is called when an Actor is started by invoking 'actor.start()'.
    */
-  def preStart {}
+  def preStart() {}
 
   /**
    * User overridable callback.
    * <p/>
    * Is called when 'actor.stop()' is invoked.
    */
-  def postStop {}
+  def postStop() {}
 
   /**
    * User overridable callback.

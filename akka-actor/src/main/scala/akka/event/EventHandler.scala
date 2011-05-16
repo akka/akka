@@ -109,15 +109,15 @@ object EventHandler extends ListenerManagement {
       }
       defaultListeners foreach { listenerName =>
         try {
-          ReflectiveAccess.getClassFor[Actor](listenerName) map { clazz =>
-            addListener(Actor.actorOf(clazz, listenerName).start())
+          ReflectiveAccess.getClassFor[Actor](listenerName) match {
+            case r: Right[_, Class[Actor]] => addListener(Actor.actorOf(r.b, listenerName).start())
+            case l: Left[Exception,_]      => throw l.a
           }
         } catch {
-          case e: akka.actor.DeploymentAlreadyBoundException => // do nothing
           case e: Exception =>
             throw new ConfigurationException(
               "Event Handler specified in config can't be loaded [" + listenerName +
-              "] due to [" + e.toString + "]")
+              "] due to [" + e.toString + "]", e)
         }
       }
       info(this, "Starting up EventHandler")
@@ -132,8 +132,8 @@ object EventHandler extends ListenerManagement {
    * Shuts down all event handler listeners including the event handle dispatcher.
    */
   def shutdown() {
-    foreachListener(_.stop)
-    EventHandlerDispatcher.shutdown
+    foreachListener(_.stop())
+    EventHandlerDispatcher.shutdown()
   }
 
   def notify(event: Any) {

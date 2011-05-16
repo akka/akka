@@ -12,32 +12,6 @@ import Routing._
 import System.{currentTimeMillis => now}
 import java.util.concurrent.CountDownLatch
 
-/**
- * First part in Akka tutorial.
- * <p/>
- * Calculates Pi.
- * <p/>
- * Run on command line:
- * <pre>
- *   $ cd akka-1.1
- *   $ export AKKA_HOME=`pwd`
- *   $ scalac -cp dist/akka-actor-1.1-SNAPSHOT.jar Pi.scala
- *   $ java -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.first.scala.Pi
- *   $ ...
- * </pre>
- * <p/>
- * Run it in SBT:
- * <pre>
- *   $ sbt
- *   > update
- *   > console
- *   > akka.tutorial.first.scala.Pi.calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
- *   > ...
- *   > :quit
- * </pre>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object Pi extends App {
 
   calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
@@ -104,11 +78,11 @@ object Pi extends App {
         if (nrOfResults == nrOfMessages) self.stop()
     }
 
-    override def preStart {
+    override def preStart() {
       start = System.currentTimeMillis
     }
 
-    override def postStop {
+    override def postStop() {
       // tell the world that the calculation is complete
       println(
         "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"

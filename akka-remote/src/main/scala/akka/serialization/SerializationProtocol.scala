@@ -183,15 +183,15 @@ object RemoteActorSerialization {
   /**
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
-  def toRemoteActorRefProtocol(ar: ActorRef): RemoteActorRefProtocol = {
-    import ar._
-
-    Actor.remote.registerByUuid(ar)
-
+  def toRemoteActorRefProtocol(actor: ActorRef): RemoteActorRefProtocol = {
+    actor match {
+      case ar: LocalActorRef => Actor.remote.registerByUuid(ar)
+      case _ => {}
+    }
     RemoteActorRefProtocol.newBuilder
-        .setAddress("uuid:" + uuid.toString)
-        .setTimeout(timeout)
-        .build
+      .setAddress("uuid:" + actor.uuid.toString)
+      .setTimeout(actor.timeout)
+      .build
   }
 
   def createRemoteMessageProtocolBuilder(

@@ -13,32 +13,6 @@ import akka.dispatch.Future
 
 import System.{currentTimeMillis => now}
 
-/**
- * Second part in Akka tutorial.
- * <p/>
- * Calculates Pi.
- * <p/>
- * Run on command line:
- * <pre>
- *   $ cd akka-1.1
- *   $ export AKKA_HOME=`pwd`
- *   $ scalac -cp dist/akka-actor-1.1-SNAPSHOT.jar Pi.scala
- *   $ java -cp dist/akka-actor-1.1-SNAPSHOT.jar:scala-library.jar:. akka.tutorial.second.Pi
- *   $ ...
- * </pre>
- * <p/>
- * Run it in SBT:
- * <pre>
- *   $ sbt
- *   > update
- *   > console
- *   > akka.tutorial.second.Pi.calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
- *   > ...
- *   > :quit
- * </pre>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object Pi extends App {
 
   calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
@@ -111,7 +85,7 @@ object Pi extends App {
     def receive = scatter
 
     // when we are stopped, stop our team of workers and our router
-    override def postStop {
+    override def postStop() {
       // send a PoisonPill to all workers telling them to shut down themselves
       router ! Broadcast(PoisonPill)
       // send a PoisonPill to the router, telling him to shut himself down

@@ -1,6 +1,4 @@
 clean
-sh rm -rf dist
-sh rm -rf deploy
 clean-lib
 script find-replace.sh {{project.version}} {{test-release.arg1}}
 script find-replace.sh //[[:space:]]*release:[[:space:]]*

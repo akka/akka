@@ -13,7 +13,6 @@ TAGS
 akka.tmproj
 reports
 dist
-build
 target
 deploy/*.jar
 data

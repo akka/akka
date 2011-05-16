@@ -1,5 +1,11 @@
-Actors
-======
+.. _actors-scala:
+
+Actors (Scala)
+==============
+
+.. sidebar:: Contents
+
+   .. contents:: :local:
 
 Module stability: **SOLID**
 
@@ -7,7 +13,7 @@ The `Actor Model <http://en.wikipedia.org/wiki/Actor_model>`_ provides a higher 
 
 The API of Akka’s Actors is similar to Scala Actors which has borrowed some of its syntax from Erlang.
 
-The Akka 0.9 release introduced a new concept; ActorRef, which requires some refactoring. If you are new to Akka just read along, but if you have used Akka 0.6.x, 0.7.x and 0.8.x then you might be helped by the :doc:`0.8.x => 0.9.x migration guide </general/migration-guide-0.8.x-0.9.x>`
+The Akka 0.9 release introduced a new concept; ActorRef, which requires some refactoring. If you are new to Akka just read along, but if you have used Akka 0.6.x, 0.7.x and 0.8.x then you might be helped by the :doc:`0.8.x => 0.9.x migration guide </project/migration-guide-0.8.x-0.9.x>`
 
 Creating Actors
 ---------------
@@ -26,6 +32,9 @@ Here is an example:
 
 .. code-block:: scala
 
+  import akka.actor.Actor
+  import akka.event.EventHandler
+  
   class MyActor extends Actor {
     def receive = {
       case "test" => EventHandler.info(this, "received test")
@@ -177,7 +186,7 @@ Using ``!!!`` will send a message to the receiving Actor asynchronously and will
 
   val future = actor !!! "Hello"
 
-See `Futures <futures-scala>`_ for more information.
+See :ref:`futures-scala` for more information.
 
 Forward message
 ^^^^^^^^^^^^^^^
@@ -253,6 +262,25 @@ Let's start by looking how we can reply to messages in a convenient way using th
 Reply to messages
 -----------------
 
+Reply using the channel
+^^^^^^^^^^^^^^^^^^^^^^^
+
+If you want to have a handle to an object to whom you can reply to the message, you can use the ``Channel`` abstraction.
+Simply call ``self.channel`` and then you can forward that to others, store it away or otherwise until you want to reply, which you do by ``Channel ! response``:
+
+.. code-block:: scala
+
+  case request =>
+      val result = process(request)
+      self.channel ! result
+
+.. code-block:: scala
+
+  case request =>
+      friend forward self.channel
+
+We recommend that you as first choice use the channel abstraction instead of the other ways described in the following sections.
+
 Reply using the reply and reply\_? methods
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -318,22 +346,6 @@ Here is an example of how it can be used:
         senderFuture.foreach(_.completeWithException(this, e))
     }
 
-Reply using the channel
-^^^^^^^^^^^^^^^^^^^^^^^
-
-If you want to have a handle to an object to whom you can reply to the message, you can use the ``Channel`` abstraction.
-Simply call ``self.channel`` and then you can forward that to others, store it away or otherwise until you want to reply, which you do by ``Channel ! response``:
-
-.. code-block:: scala
-
-  case request =>
-      val result = process(request)
-      self.channel ! result
-
-.. code-block:: scala
-
-  case request =>
-      friend forward self.channel
 
 Summary of reply semantics and options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -382,7 +394,7 @@ When you start the ``Actor`` then it will automatically call the ``def preStart`
 
 .. code-block:: scala
 
-  override def preStart = {
+  override def preStart() = {
     ... // initialization code
   }
 
@@ -399,7 +411,7 @@ When stop is called then a call to the ``def postStop`` callback method will tak
 
 .. code-block:: scala
 
-  override def postStop = {
+  override def postStop() = {
     ... // clean up resources
   }
 

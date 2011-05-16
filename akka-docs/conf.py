@@ -13,12 +13,12 @@ extensions = ['sphinx.ext.todo', 'includecode']
 templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
-exclude_patterns = ['_build', 'pending']
+exclude_patterns = ['_build', 'pending', 'disabled']
 
 project = u'Akka'
-copyright = u'2009-2011, Scalable Solutions AB'
-version = '1.1'
-release = '1.1'
+copyright = u'2011, Typesafe Inc'
+version = '1.2-SNAPSHOT'
+release = '1.2-SNAPSHOT'
 
 pygments_style = 'simple'
 highlight_language = 'scala'
@@ -28,9 +28,6 @@ show_authors = True
 # -- Options for HTML output ---------------------------------------------------
 
 html_theme = 'akka'
-html_theme_options = {
-    'full_logo': 'true'
-    }
 html_theme_path = ['_sphinx/themes']
 
 html_title = 'Akka Documentation'

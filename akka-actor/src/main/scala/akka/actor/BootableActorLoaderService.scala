@@ -21,7 +21,6 @@ trait BootableActorLoaderService extends Bootable {
 
   protected def createApplicationClassLoader : Option[ClassLoader] = Some({
     if (HOME.isDefined) {
-      val CONFIG = HOME.get + "/config"
       val DEPLOY = HOME.get + "/deploy"
       val DEPLOY_DIR = new File(DEPLOY)
       if (!DEPLOY_DIR.exists) {
