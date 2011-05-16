@@ -172,6 +172,9 @@ stimuli at varying injection points and arrange results to be sent from
 different emission points, but the basic principle stays the same in that a
 single procedure drives the test.
 
+Overview
+--------
+
 The :class:`TestKit` trait contains a collection of tools which makes this
 common task easy:
 
@@ -211,6 +214,11 @@ classes, receiving nothing for some time, etc.
 
    The test actor shuts itself down by default after 5 seconds (configurable)
    of inactivity, relieving you of the duty of explicitly managing it.
+
+.. _TestKit.within:
+
+Timing Assertions
+-----------------
 
 Another important part of functional testing concerns timing: certain events
 must not happen immediately (like a timer), others need to happen before a
@@ -258,6 +266,111 @@ first; it follows that this examination usually is the last statement in a
 Ray Roestenburg has written a great article on using the TestKit:
 `<http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html>`_.
 His full example is also available :ref:`here <testkit-example>`.
+
+Using Multiple Probe Actors
+---------------------------
+
+When the actors under test are supposed to send various messages to different
+destinations, it may be difficult distinguishing the message streams arriving
+at the :obj:`testActor` when using the :class:`TestKit` as a mixin. Another
+approach is to use it for creation of simple probe actors to be inserted in the
+message flows. To make this more powerful and convenient, there is a concrete
+implementation called :class:`TestProbe`. The functionality is best explained
+using a small example::
+
+  class MyDoubleEcho extends Actor {
+    var dest1 : ActorRef = _
+    var dest2 : ActorRef = _
+    def receive = {
+      case (d1, d2) =>
+        dest1 = d1
+        dest2 = d2
+      case x =>
+        dest1 ! x
+        dest2 ! x
+    }
+  }
+
+  val probe1 = TestProbe()
+  val probe2 = TestProbe()
+  val actor = Actor.actorOf[MyDoubleEcho].start()
+  actor ! (probe1.ref, probe2.ref)
+  actor ! "hello"
+  probe1.expectMsg(50 millis, "hello")
+  probe2.expectMsg(50 millis, "hello")
+
+Probes may also be equipped with custom assertions to make your test code even
+more concise and clear::
+
+  case class Update(id : Int, value : String)
+
+  val probe = new TestProbe {
+      def expectUpdate(x : Int) = {
+        expectMsg {
+          case Update(id, _) if id == x => true
+        }
+        reply("ACK")
+      }
+    }
+
+You have complete flexibility here in mixing and matching the :class:`TestKit`
+facilities with your own checks and choosing an intuitive name for it. In real
+life your code will probably be a bit more complicated than the example given
+above; just use the power!
+
+Replying to Messages Received by Probes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The probes keep track of the communications channel for replies, if possible,
+so they can also reply::
+
+  val probe = TestProbe()
+  val future = probe.ref !!! "hello"
+  probe.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
+  probe.reply("world")
+  assert (future.isCompleted && future.as[String] == "world")
+
+Forwarding Messages Received by Probes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Given a destination actor ``dest`` which in the nominal actor network would
+receive a message from actor ``source``. If you arrange for the message to be
+sent to a :class:`TestProbe` ``probe`` instead, you can make assertions
+concerning volume and timing of the message flow while still keeping the
+network functioning::
+
+  val probe = TestProbe()
+  val source = Actor.actorOf(new Source(probe)).start()
+  val dest = Actor.actorOf[Destination].start()
+  source ! "start"
+  probe.expectMsg("work")
+  probe.forward(dest)
+
+The ``dest`` actor will receive the same message invocation as if no test probe
+had intervened.
+
+Caution about Timing Assertions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The behavior of :meth:`within` blocks when using test probes might be perceived
+as counter-intuitive: you need to remember that the nicely scoped deadline as
+described :ref:`above <TestKit.within>` is local to each probe. Hence, probes
+do not react to each other's deadlines or to the deadline set in an enclosing
+:class:`TestKit` instance::
+
+  class SomeTest extends TestKit {
+
+    val probe = TestProbe()
+
+    within(100 millis) {
+      probe.expectMsg("hallo")  // Will hang forever!
+    }
+  }
+
+This test will hang indefinitely, because the :meth:`expectMsg` call does not
+see any deadline. Currently, the only option is to use ``probe.within`` in the
+above code to make it work; later versions may include lexically scoped
+deadlines using implicit arguments.
 
 CallingThreadDispatcher
 =======================
