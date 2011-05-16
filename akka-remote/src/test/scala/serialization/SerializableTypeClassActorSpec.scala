@@ -63,6 +63,7 @@ class SerializableTypeClassActorSpec extends
   }
 
   describe("Serializable actor") {
+    /*
     it("should be able to serialize and de-serialize a stateful actor") {
       import BinaryFormatMyActor._
 
@@ -162,6 +163,7 @@ class SerializableTypeClassActorSpec extends
       actor1 ! RevertHotSwap
       (actor2 !! "hello").getOrElse("_") should equal("world 3")
     }
+    */
 /*
     it("should be able to serialize and de-serialize an hotswapped actor") {
       import BinaryFormatMyActor._
@@ -187,6 +189,7 @@ class SerializableTypeClassActorSpec extends
 */
   }
 
+/*
   describe("Custom serializable actors") {
     it("should serialize and de-serialize") {
       import BinaryFormatMyActorWithSerializableMessages._
@@ -230,6 +233,7 @@ class SerializableTypeClassActorSpec extends
       in.timeout should equal(a.timeout)
     }
   }
+  */
 }
 
 class MyActorWithDualCounter extends Actor {

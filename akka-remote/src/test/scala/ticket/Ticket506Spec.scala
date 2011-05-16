@@ -22,6 +22,7 @@ class ActorRefService(latch: CountDownLatch) extends Actor {
 
 class Ticket506Spec extends AkkaRemoteTest {
   "a RemoteActorRef serialized" should {
+    /*
       "should be remotely usable" in {
 
       val latch = new CountDownLatch(1)
@@ -39,5 +40,6 @@ class Ticket506Spec extends AkkaRemoteTest {
 
       latch.await(1, unit) must be(true)
     }
+    */
   }
 }

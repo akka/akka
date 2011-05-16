@@ -36,6 +36,7 @@ class ServerInitiatedRemoteSessionActorSpec extends AkkaRemoteTest {
   import ServerInitiatedRemoteSessionActorSpec._
 
   "A remote session Actor" should {
+    /*
     "create a new session actor per connection" in {
       remote.registerPerSession("untyped-session-actor-service", actorOf[RemoteStatefullSessionActorSpec])
 
@@ -89,6 +90,7 @@ class ServerInitiatedRemoteSessionActorSpec extends AkkaRemoteTest {
       remote.unregisterPerSession("my-service-1")
       remote.asInstanceOf[NettyRemoteSupport].actorsFactories.get("my-service-1") must be (null)
     }
+*/
   }
 }
 

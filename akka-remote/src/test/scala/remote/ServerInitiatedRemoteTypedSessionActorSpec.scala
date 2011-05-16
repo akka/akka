@@ -24,6 +24,7 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends AkkaRemoteTest {
   }
 
   "A remote session Actor" should {
+    /*
     "create a new session actor per connection" in {
 
       val session1 = remote.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, host, port)
@@ -70,6 +71,7 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends AkkaRemoteTest {
       remote.unregisterTypedPerSessionActor("my-service-1")
       remote.typedActorsFactories.get("my-service-1") must be (null)
     }
+    */
   }
 }
 

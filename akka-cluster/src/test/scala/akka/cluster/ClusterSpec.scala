@@ -33,7 +33,7 @@ object BinaryFormatMyJavaSerializableActor {
     val serializer = Serializers.Java
   }
 }
-
+/*
 class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
   import Cluster._
 
@@ -43,7 +43,6 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
   var zkServer: ZkServer = _
 
   "A ClusterNode" should {
-    /*
     "be able to start and stop - one node" in {
       val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "start-stop-1", port = 9001))
       node.start()
@@ -830,8 +829,6 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node2.stop
       node3.stop
     }
-
-*/
   }
 
   override def beforeAll() = {
@@ -847,7 +844,7 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
     Actor.registry.local.shutdownAll
   }
 }
-
+*/
 /*
     "be able to subscribe to actor location change events" in {
       val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "test-node1", port = 9991)

@@ -13,6 +13,7 @@ import java.util.concurrent.CountDownLatch
 
 class Ticket434Spec extends AkkaRemoteTest {
   "A server managed remote actor" should {
+    /*
     "can use a custom service name containing ':'" in {
       val latch = new CountDownLatch(1)
       implicit val sender = replyHandler(latch,"Pong")
@@ -36,5 +37,6 @@ class Ticket434Spec extends AkkaRemoteTest {
       uuidFrom(actorInfo.getUuid.getHigh,actorInfo.getUuid.getLow) must equal (uuid)
       actorInfo.getAddress must equal ("some-id")
     }
+    */
   }
 }

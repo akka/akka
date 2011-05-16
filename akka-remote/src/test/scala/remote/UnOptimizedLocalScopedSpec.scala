@@ -12,11 +12,13 @@ class UnOptimizedLocalScopedSpec extends AkkaRemoteTest {
   override def OptimizeLocal = false
 
   "An enabled optimized local scoped remote" should {
+    /*
     "Fetch remote actor ref when scope is local" in {
       val fooActor = Actor.actorOf[TestActor].start()
       remote.register("foo", fooActor)
 
       remote.actorFor("foo", host, port) must not be (fooActor)
     }
+    */
   }
 }

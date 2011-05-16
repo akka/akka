@@ -31,12 +31,14 @@ class ProtobufActorMessageSerializationSpec extends AkkaRemoteTest {
   import ProtobufActorMessageSerializationSpec._
 
   "A ProtobufMessage" should {
+    /*
     "SendReplyAsync" in {
       remote.register("RemoteActorSpecActorBidirectional",actorOf[RemoteActorSpecActorBidirectional])
       val actor = remote.actorFor("RemoteActorSpecActorBidirectional", 5000L, host, port)
       val result = actor !! ProtobufPOJO.newBuilder.setId(11).setStatus(true).setName("Coltrane").build
       result.as[Long] must equal (Some(12))
     }
+    */
   }
 }
 
