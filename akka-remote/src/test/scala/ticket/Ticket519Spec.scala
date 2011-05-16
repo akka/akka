@@ -13,7 +13,7 @@ class Ticket519Spec extends AkkaRemoteTest {
       val actor = TypedActor.newRemoteInstance(classOf[SamplePojo], classOf[SamplePojoImpl],7000,host,port)
       val r = actor.someFutureString
 
-      r.await.result.get must equal ("foo")
+      r.get must equal ("foo")
     }
   }
 }

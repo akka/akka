@@ -5,7 +5,6 @@
 package akka.actor
 
 import Actor._
-import akka.dispatch.{MessageDispatcher, Future, CompletableFuture, Dispatchers}
 import akka.config.Supervision._
 import akka.util._
 import ReflectiveAccess._
@@ -20,6 +19,7 @@ import java.net.InetSocketAddress
 import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
 
 import scala.reflect.BeanProperty
+import akka.dispatch._
 
 /**
  * TypedActor is a type-safe actor made out of a POJO with interface.
@@ -203,10 +203,8 @@ abstract class TypedActor extends Actor with Proxyable {
    *  Integer result = future.get();
    * </pre>
    */
-  def future[T](value: T): Future[T] = self.senderFuture match {
-    case None => throw new IllegalActorStateException("No sender future in scope")
-    case Some(f) => f.completeWithResult(value).asInstanceOf[Future[T]]
-  }
+  def future[T](value: T): Future[T] =
+    new AlreadyCompletedFuture(Right(value))
 
   def receive = {
     case joinPoint: JoinPoint =>
@@ -214,7 +212,13 @@ abstract class TypedActor extends Actor with Proxyable {
         SenderContextInfo.senderProxy.withValue(proxy) {
           if (Actor.SERIALIZE_MESSAGES)       serializeArguments(joinPoint)
           if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
-          else                                self.reply(joinPoint.proceed)
+          else if (TypedActor.returnsFuture_?(joinPoint)) {
+            joinPoint.proceed match {
+              case f: Future[Any] => self.senderFuture.get.completeWith(f)
+              case null           => self.reply(null)
+            }
+          }
+          else self.reply(joinPoint.proceed)
         }
       }
 
@@ -841,6 +845,9 @@ object TypedActor {
   private[akka] def isCoordinated(methodRtti: MethodRtti): Boolean =
     methodRtti.getMethod.isAnnotationPresent(classOf[CoordinatedAnnotation])
 
+  private[akka] def returnsFuture_?(joinPoint: JoinPoint): Boolean =
+    returnsFuture_?(joinPoint.getRtti.asInstanceOf[MethodRtti])
+
   private[akka] def returnsFuture_?(methodRtti: MethodRtti): Boolean =
     classOf[Future[_]].isAssignableFrom(methodRtti.getMethod.getReturnType)
 
@@ -987,7 +994,7 @@ private[akka] abstract class ActorAspect {
     //FIXME send the interface name of the senderProxy in the TypedActorContext and assemble a context.sender with that interface on the server
     //val senderProxy = Option(SenderContextInfo.senderProxy.value)
 
-    val future = Actor.remote.send[AnyRef](
+    val future_? = Actor.remote.send[AnyRef](
       message, senderActorRef, None, remoteAddress.get,
       timeout, isOneWay, actorRef,
       Some((interfaceClass.getName, methodRtti.getMethod.getName)),
@@ -995,18 +1002,18 @@ private[akka] abstract class ActorAspect {
       None) //TODO: REVISIT: Use another classloader?
 
     if (isOneWay) null // for void methods
-    else if (future.isEmpty) throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
-    else if (TypedActor.returnsFuture_?(methodRtti)) future.get
+    else if (future_?.isEmpty) throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
+    else if (TypedActor.returnsFuture_?(methodRtti)) future_?.get
     else if (TypedActor.returnsOption_?(methodRtti)) {
       import akka.japi.{Option => JOption}
-      future.get.await.resultOrException.as[JOption[AnyRef]] match {
+      future_?.get.await.resultOrException.as[JOption[AnyRef]] match {
         case None => JOption.none[AnyRef]
         case Some(x) if ((x eq null) || x.isEmpty) => JOption.some[AnyRef](null)
         case Some(x) => x
       }
     }
     else {
-      val result = future.get.await.resultOrException
+      val result = future_?.get.await.resultOrException
       if(result.isDefined) result.get
       else throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
     }
