@@ -21,6 +21,8 @@ Videos
 Articles
 --------
 
+`Scatter-Gather with Akka Dataflow <http://vasilrem.com/blog/software-development/scatter-gather-with-akka-dataflow/>`_
+
 `Actor-Based Continuations with Akka and Swarm <http://www.earldouglas.com/actor-based-continuations-with-akka-and-swarm>`_
 
 `Mimicking Twitter Using an Akka-Based Event-Driven Architecture <http://www.earldouglas.com/mimicking-twitter-using-an-akka-based-event-driven-architecture>`_
