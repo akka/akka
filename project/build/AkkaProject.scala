@@ -329,24 +329,27 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaClusterProject(info: ProjectInfo) extends AkkaDefaultProject(info) with MultiJvmTests {
-    val bookkeeper    = Dependencies.bookkeeper
-    val zookeeper     = Dependencies.zookeeper
+    val bookkeeper     = Dependencies.bookkeeper
+    val zookeeper      = Dependencies.zookeeper
     val zookeeper_lock = Dependencies.zookeeper_lock
-    val zkClient      = Dependencies.zkClient
-    val commons_io    = Dependencies.commons_io
-    val log4j         = Dependencies.log4j
+    val zkClient       = Dependencies.zkClient
+    val commons_io     = Dependencies.commons_io
+    val log4j          = Dependencies.log4j
 
     // test dependencies
-
-    val scalatest     = Dependencies.scalatest
-    val junit         = Dependencies.junit
+    val scalatest      = Dependencies.scalatest
+    val junit          = Dependencies.junit
 
     // multi jvm tests
-
     lazy val clusterTest = multiJvmTest
     lazy val clusterRun  = multiJvmRun
 
     override def multiJvmOptions = Seq("-Xmx256M")
+
+    lazy val replicationTestsEnabled = systemOptional[Boolean]("cluster.test.replication", false)
+
+    override def testOptions =
+      super.testOptions ++ (if (!replicationTestsEnabled.value) Seq(testFilter("Replication")) else Seq.empty)
   }
 
   // -------------------------------------------------------------------------------------------------------------------

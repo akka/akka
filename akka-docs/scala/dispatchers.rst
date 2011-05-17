@@ -1,3 +1,5 @@
+.. _dispatchers-scala:
+
 Dispatchers (Scala)
 ===================
 

@@ -319,13 +319,15 @@ object TransactionLog {
     new TransactionLog(ledger, id, isAsync)
 
   /**
-   * TODO document method
+   * Shuts down the transaction log.
    */
   def shutdown() {
     isConnected switchOff {
       try {
-        zkClient.close
-        bookieClient.halt
+        EventHandler.info(this, "Shutting down transaction log...")
+        zkClient.close()
+        bookieClient.halt()
+        EventHandler.info(this, "Transaction log shut down successfully")
       } catch {
         case e => handleError(e)
       }
@@ -378,8 +380,7 @@ object TransactionLog {
           "] meta-data in ZooKeeper for UUID [" + id +"]"))
     }
 
-    EventHandler.info(this,
-      "Created new transaction log [%s] for UUID [%s]".format(logId, id))
+    EventHandler.info(this, "Created new transaction log [%s] for UUID [%s]".format(logId, id))
     TransactionLog(ledger, id, isAsync)
   }
 
@@ -459,6 +460,7 @@ object LocalBookKeeperEnsemble {
       localBookKeeper.runZookeeper(port)
       localBookKeeper.initializeZookeper
       localBookKeeper.runBookies
+      EventHandler.info(this, "LocalBookKeeperEnsemble started successfully")
     }
   }
 
@@ -467,10 +469,17 @@ object LocalBookKeeperEnsemble {
    */
   def shutdown() {
     isRunning switchOff {
-      localBookKeeper.bs.foreach(_.shutdown) // stop bookies
-      localBookKeeper.zkc.close              // stop zk client
-      localBookKeeper.zks.shutdown           // stop zk server
-      localBookKeeper.serverFactory.shutdown // stop zk NIOServer
+      EventHandler.info(this, "Shutting down LocalBookKeeperEnsemble...")
+      println("***************************** 1")
+      localBookKeeper.bs.foreach(_.shutdown()) // stop bookies
+      println("***************************** 2")
+      localBookKeeper.zkc.close()              // stop zk client
+      println("***************************** 3")
+      localBookKeeper.zks.shutdown()           // stop zk server
+      println("***************************** 4")
+      localBookKeeper.serverFactory.shutdown() // stop zk NIOServer
+      println("***************************** 5")
+      EventHandler.info(this, "LocalBookKeeperEnsemble shut down successfully")
     }
   }
 }

@@ -1,3 +1,5 @@
+.. _dispatchers-java:
+
 Dispatchers (Java)
 ==================
 
