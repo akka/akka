@@ -4,7 +4,7 @@
 
 package akka.routing
 
-import akka.actor.{UntypedActor, Actor, ActorRef, AvailableChannel}
+import akka.actor.{UntypedActor, Actor, ActorRef, ForwardableChannel}
 
 /**
  * A Dispatcher is a trait whose purpose is to route incoming messages to actors.
@@ -27,7 +27,7 @@ trait Dispatcher { this: Actor =>
 
   def receive = dispatch
 
-  private def isSenderDefined = self.channel.isInstanceOf[AvailableChannel]
+  private def isSenderDefined = self.channel.isInstanceOf[ForwardableChannel]
 }
 
 /**
@@ -40,7 +40,7 @@ abstract class UntypedDispatcher extends UntypedActor {
 
   protected def broadcast(message: Any) {}
 
-  private def isSenderDefined = self.channel.isInstanceOf[AvailableChannel]
+  private def isSenderDefined = self.channel.isInstanceOf[ForwardableChannel]
 
   @throws(classOf[Exception])
   def onReceive(msg: Any): Unit = {

@@ -32,106 +32,6 @@ private[akka] object ActorRefInternals {
 }
 
 /**
- * Abstraction for unification of sender and senderFuture for later reply.
- * Can be stored away and used at a later point in time.
- */
-trait Channel[T] {
-
-  /**
-   * Scala API. <p/>
-   * Sends the specified message to the channel.
-   */
-  def !(msg: T)(implicit channel: Channel[Any] = NullChannel): Unit
-
-  /**
-   * Scala API.<p/>
-   * Try to send message to the channel, return whether successful.
-   */
-  def !?(msg: T)(implicit channel: Channel[Any] = NullChannel): Boolean =
-    try {
-      this ! msg
-      true
-    } catch {
-      case _ => false
-    }
-
-  /**
-   * Java API.<p/>
-   * Sends the specified message to the channel, i.e. fire-and-forget semantics.<p/>
-   * <pre>
-   * actor.sendOneWay(message);
-   * </pre>
-   */
-  def sendOneWay(msg: T): Unit = this.!(msg)
-
-  /**
-   * Java API. <p/>
-   * Sends the specified message to the channel, i.e. fire-and-forget
-   * semantics, including the sender reference if possible (not supported on
-   * all channels).<p/>
-   * <pre>
-   * actor.sendOneWay(message, context);
-   * </pre>
-   */
-  def sendOneWay(msg: T, sender: ActorRef): Unit = this.!(msg)(sender)
-
-  /**
-   * Java API.<p/>
-   * Try to send the specified message to the channel, i.e. fire-and-forget semantics.<p/>
-   * <pre>
-   * actor.sendOneWay(message);
-   * </pre>
-   */
-  def sendOneWaySafe(msg: T): Boolean = this.!?(msg)
-
-  /**
-   * Java API. <p/>
-   * Try to send the specified message to the channel, i.e. fire-and-forget
-   * semantics, including the sender reference if possible (not supported on
-   * all channels).<p/>
-   * <pre>
-   * actor.sendOneWay(message, context);
-   * </pre>
-   */
-  def sendOneWaySafe(msg: T, sender: ActorRef): Boolean = this.!?(msg)(sender)
-
-}
-
-object Channel {
-  implicit def senderOption2Channel(sender: Option[ActorRef]): Channel[Any] =
-    sender match {
-      case Some(actor) => actor
-      case None => NullChannel
-    }
-}
-
-/**
- * Default channel when none available.
- */
-case object NullChannel extends Channel[Any] {
-  def !(msg: Any)(implicit channel: Channel[Any] = NullChannel) { throw new IllegalActorStateException(
-    "\n\tNo sender in scope, can't reply. " +
-    "\n\tYou have probably: " +
-    "\n\t\t1. Sent a message to an Actor from an instance that is NOT an Actor." +
-    "\n\t\t2. Invoked a method on an TypedActor from an instance NOT an TypedActor." +
-    "\n\tElse you might want to use 'reply_?' which returns Boolean(true) if succes and Boolean(false) if no sender in scope")
-  }
-  override def !?(msg: Any)(implicit channel: Channel[Any] = NullChannel): Boolean = false
-}
-
-trait AvailableChannel extends Channel[Any] {
-  /**
-   * Get channel by which this channel would reply (used by ActorRef.forward)
-   */
-  def channel: Channel[Any]
-}
-
-object AvailableChannel {
-  implicit def someSender2AvailableChannel(sender: Some[ActorRef]): AvailableChannel = sender.get
-  implicit def someImplicitSender2AvailableChannel(implicit sender: Some[ActorRef]): AvailableChannel = sender.get
-}
-
-/**
  * ActorRef is an immutable and serializable handle to an Actor.
  * <p/>
  * Create an ActorRef for an Actor by using the factory method on the Actor object.
@@ -163,7 +63,11 @@ object AvailableChannel {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ActorRef extends ActorRefShared with AvailableChannel with java.lang.Comparable[ActorRef] { scalaRef: ScalaActorRef =>
+trait ActorRef extends ActorRefShared
+               with ForwardableChannel
+               with java.lang.Comparable[ActorRef] {
+  scalaRef: ScalaActorRef =>
+
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile
   protected[akka] var _uuid = newUuid
@@ -350,7 +254,14 @@ trait ActorRef extends ActorRefShared with AvailableChannel with java.lang.Compa
    * @see sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef)
    * Uses the default timeout of the Actor (setTimeout()) and omits the sender reference
    */
-  def sendRequestReply(message: AnyRef): AnyRef = sendRequestReply(message, timeout, null)
+  def sendRequestReply(message: AnyRef): AnyRef = {
+    !!(message, timeout).getOrElse(throw new ActorTimeoutException(
+      "Message [" + message +
+      "]\n\tsent to [" + actorClassName +
+      "]\n\tfrom [nowhere]\n\twith timeout [" + timeout +
+      "]\n\ttimed out."))
+      .asInstanceOf[AnyRef]
+  }
 
   /**
    * Akka Java API. <p/>
@@ -374,7 +285,7 @@ trait ActorRef extends ActorRefShared with AvailableChannel with java.lang.Compa
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef): AnyRef = {
-    !!(message, timeout)(Option(sender)).getOrElse(throw new ActorTimeoutException(
+    !!(message, timeout)(sender).getOrElse(throw new ActorTimeoutException(
       "Message [" + message +
       "]\n\tsent to [" + actorClassName +
       "]\n\tfrom [" + (if (sender ne null) sender.actorClassName else "nowhere") +
@@ -388,14 +299,15 @@ trait ActorRef extends ActorRefShared with AvailableChannel with java.lang.Compa
    * @see sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the Actors default timeout (setTimeout()) and omits the sender
    */
-  def sendRequestReplyFuture[T <: AnyRef](message: AnyRef): Future[T] = sendRequestReplyFuture(message, timeout, null).asInstanceOf[Future[T]]
+  def sendRequestReplyFuture(message: AnyRef): Future[Any] = !!!(message)
 
   /**
    * Akka Java API. <p/>
    * @see sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the Actors default timeout (setTimeout())
    */
-  def sendRequestReplyFuture[T <: AnyRef](message: AnyRef, sender: ActorRef): Future[T] = sendRequestReplyFuture(message, timeout, sender).asInstanceOf[Future[T]]
+  def sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[Any] =
+    sendRequestReplyFuture(message, timeout, sender)
 
   /**
    *  Akka Java API. <p/>
@@ -408,7 +320,8 @@ trait ActorRef extends ActorRefShared with AvailableChannel with java.lang.Compa
    * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def sendRequestReplyFuture[T <: AnyRef](message: AnyRef, timeout: Long, sender: ActorRef): Future[T] = !!!(message, timeout)(Option(sender)).asInstanceOf[Future[T]]
+  def sendRequestReplyFuture(message: AnyRef, timeout: Long, sender: ActorRef): Future[Any] =
+    !!!(message, timeout)(sender)
 
   /**
    * Akka Java API. <p/>
@@ -578,26 +491,36 @@ trait ActorRef extends ActorRefShared with AvailableChannel with java.lang.Compa
   /**
    * Abstraction for unification of sender and senderFuture for later reply
    */
-  def channel: Channel[Any] = {
+  def channel: UntypedChannel = {
     val msg = currentMessage
     if (msg ne null) msg.channel
     else NullChannel
   }
 
+  /*
+   * Implementation of ForwardableChannel
+   */
+
+  def sendException(ex: Throwable) {}
+  def isUsableOnlyOnce = false
+  def isUsable = true
+  def isReplyable = true
+  def canSendException = false
+
   /**
    * Java API. <p/>
    * Abstraction for unification of sender and senderFuture for later reply
    */
-  def getChannel: Channel[Any] = channel
+  def getChannel: UntypedChannel = channel
 
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit
 
-  protected[akka] def postMessageToMailbox(message: Any, channel: Channel[Any]): Unit
+  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
     timeout: Long,
-    channel: Channel[Any]): CompletableFuture[Any]
+    channel: UntypedChannel): ActorCompletableFuture
 
   protected[akka] def actorInstance: AtomicReference[Actor]
 
@@ -632,10 +555,11 @@ trait ActorRef extends ActorRefShared with AvailableChannel with java.lang.Compa
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
-  private[this] val actorFactory: () => Actor,
-  val homeAddress: Option[InetSocketAddress],
-  val clientManaged: Boolean = false)
-  extends ActorRef with ScalaActorRef {
+      private[this] val actorFactory: () => Actor,
+      val homeAddress: Option[InetSocketAddress],
+      val clientManaged: Boolean = false)
+    extends ActorRef with ScalaActorRef {
+
   protected[akka] val guard = new ReentrantGuard
 
   @volatile
@@ -869,7 +793,7 @@ class LocalActorRef private[akka] (
 
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = _supervisor = sup
 
-  protected[akka] def postMessageToMailbox(message: Any, channel: Channel[Any]): Unit =
+  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
     if (isClientManaged_?) {
       val sender = channel match {
           case ref : ActorRef => Some(ref)
@@ -884,23 +808,23 @@ class LocalActorRef private[akka] (
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
     timeout: Long,
-    channel: Channel[Any]): CompletableFuture[Any] = {
+    channel: UntypedChannel): ActorCompletableFuture = {
       if (isClientManaged_?) {
         val chSender = channel match {
             case ref : ActorRef => Some(ref)
             case _ => None
           }
         val chFuture = channel match {
-            case f : CompletableFuture[Any] => Some(f)
+            case f : ActorCompletableFuture => Some(f)
             case _ => None
           }
         val future = Actor.remote.send[Any](message, chSender, chFuture, homeAddress.get, timeout, false, this, None, ActorType.ScalaActor, None)
-        if (future.isDefined) future.get
+        if (future.isDefined) ActorCompletableFuture(future.get)
         else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
       } else {
         val future = channel match {
-            case f : CompletableFuture[Any] => f
-            case _ => new DefaultCompletableFuture[Any](timeout)
+            case f : ActorCompletableFuture => f
+            case _ => new ActorCompletableFuture(timeout)
           }
         dispatcher dispatchMessage new MessageInvocation(this, message, future)
         future
@@ -1100,10 +1024,7 @@ class LocalActorRef private[akka] (
     //Prevent any further messages to be processed until the actor has been restarted
     dispatcher.suspend(this)
 
-    channel match {
-      case f : CompletableFuture[Any] => f.completeWithException(reason)
-      case _ =>
-    }
+    channel.sendException(reason)
 
     if (supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
     else {
@@ -1217,7 +1138,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   start
 
-  def postMessageToMailbox(message: Any, channel: Channel[Any]): Unit = {
+  def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
     val chSender = channel match {
         case ref : ActorRef => Some(ref)
         case _ => None
@@ -1228,17 +1149,17 @@ private[akka] case class RemoteActorRef private[akka] (
   def postMessageToMailboxAndCreateFutureResultWithTimeout(
       message: Any,
       timeout: Long,
-      channel: Channel[Any]): CompletableFuture[Any] = {
+      channel: UntypedChannel): ActorCompletableFuture = {
     val chSender = channel match {
         case ref : ActorRef => Some(ref)
         case _ => None
       }
     val chFuture = channel match {
-        case f : CompletableFuture[Any] => Some(f)
+        case f : ActorCompletableFuture => Some(f)
         case _ => None
       }
     val future = Actor.remote.send[Any](message, chSender, chFuture, homeAddress.get, timeout, false, this, None, actorType, loader)
-    if (future.isDefined) future.get
+    if (future.isDefined) ActorCompletableFuture(future.get)
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
 
@@ -1303,7 +1224,7 @@ trait ActorRefShared {
  * There are implicit conversions in ../actor/Implicits.scala
  * from ActorRef -> ScalaActorRef and back
  */
-trait ScalaActorRef extends ActorRefShared with AvailableChannel { ref: ActorRef =>
+trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorRef =>
 
   /**
    * Identifier for actor, does not have to be a unique one. Default is the 'uuid'.
@@ -1367,7 +1288,7 @@ trait ScalaActorRef extends ActorRefShared with AvailableChannel { ref: ActorRef
     val msg = currentMessage
     if (msg eq null) None
     else msg.channel match {
-        case f : CompletableFuture[Any] => Some(f)
+        case f : ActorCompletableFuture => Some(f)
         case _ => None
       }
   }
@@ -1386,7 +1307,7 @@ trait ScalaActorRef extends ActorRefShared with AvailableChannel { ref: ActorRef
    * </pre>
    * <p/>
    */
-  def !(message: Any)(implicit channel: Channel[Any] = NullChannel): Unit = {
+  def !(message: Any)(implicit channel: UntypedChannel = NullChannel): Unit = {
     if (isRunning) postMessageToMailbox(message, channel)
     else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
@@ -1404,7 +1325,7 @@ trait ScalaActorRef extends ActorRefShared with AvailableChannel { ref: ActorRef
    * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>self.reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def !!(message: Any, timeout: Long = this.timeout)(implicit channel: Channel[Any] = NullChannel): Option[Any] = {
+  def !!(message: Any, timeout: Long = this.timeout)(implicit channel: UntypedChannel = NullChannel): Option[Any] = {
     if (isRunning) {
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
       val isMessageJoinPoint = if (isTypedActorEnabled) TypedActorModule.resolveFutureIfMessageIsJoinPoint(message, future)
@@ -1432,8 +1353,12 @@ trait ScalaActorRef extends ActorRefShared with AvailableChannel { ref: ActorRef
    * If you are sending messages using <code>!!!</code> then you <b>have to</b> use <code>self.reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def !!![T](message: Any, timeout: Long = this.timeout)(implicit channel: Channel[Any] = NullChannel): Future[T] = {
-    if (isRunning) postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel).asInstanceOf[Future[T]]
+  @deprecated("return type is an illusion, use the more honest ? method", "1.2")
+  def !!![T](message: Any, timeout: Long = this.timeout)(implicit channel: UntypedChannel = NullChannel): Future[T] =
+    this.?(message, timeout)(channel).asInstanceOf[Future[T]]
+
+  def ?(message: Any, timeout: Long = this.timeout)(implicit channel: UntypedChannel = NullChannel): ActorCompletableFuture = {
+    if (isRunning) postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
     else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
@@ -1443,7 +1368,7 @@ trait ScalaActorRef extends ActorRefShared with AvailableChannel { ref: ActorRef
    * <p/>
    * Works with '!', '!!' and '!!!'.
    */
-  def forward(message: Any)(implicit channel: AvailableChannel) = {
+  def forward(message: Any)(implicit channel: ForwardableChannel) = {
     if (isRunning) {
         postMessageToMailbox(message, channel.channel)
     } else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start()' before using it")
@@ -1463,7 +1388,7 @@ trait ScalaActorRef extends ActorRefShared with AvailableChannel { ref: ActorRef
    * <p/>
    * Returns true if reply was sent, and false if unable to determine what to reply to.
    */
-  def reply_?(message: Any): Boolean = channel !? message
+  def reply_?(message: Any): Boolean = channel safe_! message
 
   /**
    * Atomically create (from actor class) and start an actor.

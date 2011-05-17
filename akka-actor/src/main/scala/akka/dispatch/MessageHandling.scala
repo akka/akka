@@ -18,7 +18,7 @@ import akka.actor._
  */
 final case class MessageInvocation(val receiver: ActorRef,
                                    val message: Any,
-                                   val channel: Channel[Any]) {
+                                   val channel: UntypedChannel) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
 
   def invoke = try {

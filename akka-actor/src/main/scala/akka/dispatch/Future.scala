@@ -6,7 +6,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.{Actor, Channel, AvailableChannel, NullChannel, ActorRef}
+import akka.actor.{Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef}
 import akka.util.Duration
 import akka.japi.{ Procedure, Function => JFunc }
 
@@ -241,11 +241,7 @@ object Future {
   /**
    * Construct a completable channel
    */
-  def channel(timeout: Long = Actor.TIMEOUT) = new AvailableChannel {
-    val future = empty[Any](timeout)
-    def !(msg: Any)(implicit channel: Channel[Any] = NullChannel) = future completeWithResult msg
-    def channel: Channel[Any] = this
-  }
+  def channel(timeout: Long = Actor.TIMEOUT) = new ActorCompletableFuture(timeout)
 
   /**
    * Create an empty Future with default timeout
@@ -344,6 +340,22 @@ sealed trait Future[+T] {
    * In the case of the timeout expiring a FutureTimeoutException will be thrown.
    */
   def await(atMost: Duration) : Future[T]
+
+  /**
+   * Await completion of this Future (as `await`) and return its value if it
+   * conforms to A's erased type.
+   */
+  def as[A](implicit m : Manifest[A]): Option[A] =
+    try {
+      await
+      value match {
+        case None => None
+        case Some(_ : Left[_, _]) => None
+        case Some(Right(v)) => Some(m.erasure.cast(v).asInstanceOf[A])
+      }
+    } catch {
+      case _ : Exception => None
+    }
 
   /**
    * Blocks the current thread until the Future has been completed. Use
@@ -524,6 +536,26 @@ sealed trait Future[+T] {
   }
 
   /**
+   * Creates a new Future[A] which is completed with this Future's result if
+   * that conforms to A's erased type or a ClassCastException otherwise.
+   */
+  final def mapTo[A](implicit m: Manifest[A]): Future[A] = {
+    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    onComplete { ft =>
+      fa complete (ft.value.get match {
+        case l : Left[_, _] => l.asInstanceOf[Either[Throwable, A]]
+        case Right(t) =>
+          try {
+            Right(m.erasure.cast(t).asInstanceOf[A])
+          } catch {
+            case e : ClassCastException => Left(e)
+          }
+        })
+    }
+    fa
+  }
+
+  /**
    * Creates a new Future by applying a function to the successful result of
    * this Future, and returns the result of the function as the new Future.
    * If this Future is completed with an exception then the new Future will
@@ -625,7 +657,7 @@ object Promise {
 /**
  * Essentially this is the Promise (or write-side) of a Future (read-side).
  */
-trait CompletableFuture[T] extends Future[T] with AvailableChannel {
+trait CompletableFuture[T] extends Future[T] {
   /**
    * Completes this Future with the specified result, if not already completed.
    * @return this
@@ -669,12 +701,6 @@ trait CompletableFuture[T] extends Future[T] with AvailableChannel {
     }
     fr
   }
-
-  /*
-   * Implementation of AvailableChannel trait
-   */
-  def !(message: Any)(implicit channel: Channel[Any]) = completeWithResult(message.asInstanceOf[T])
-  def channel: Channel[Any] = this
 
 }
 
@@ -817,6 +843,35 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
 
   @inline private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis)
   @inline private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
+}
+
+class ActorCompletableFuture(timeout: Long, timeunit: TimeUnit)
+    extends DefaultCompletableFuture[Any](timeout, timeunit)
+    with ForwardableChannel {
+  def this() = this(0, MILLIS)
+  def this(timeout: Long) = this(timeout, MILLIS)
+
+  def !(message: Any)(implicit channel: UntypedChannel = NullChannel) = completeWithResult(message)
+
+  def sendException(ex: Throwable) = completeWithException(ex)
+
+  def channel: UntypedChannel = this
+
+  def isUsableOnlyOnce = true
+  def isUsable = !isCompleted
+  def isReplyable = false
+  def canSendException = true
+
+  @deprecated("ActorCompletableFuture merged with Channel[Any], just use 'this'", "1.2")
+  def future = this
+}
+
+object ActorCompletableFuture {
+  def apply(f: CompletableFuture[Any]): ActorCompletableFuture =
+    new ActorCompletableFuture(f.timeoutInNanos, NANOS) {
+      override def !(message: Any)(implicit channel: UntypedChannel) = f completeWithResult message
+      override def sendException(ex: Throwable) = f completeWithException ex
+    }
 }
 
 /**

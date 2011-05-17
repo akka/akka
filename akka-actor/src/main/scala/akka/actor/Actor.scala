@@ -488,11 +488,7 @@ trait Actor {
     case PoisonPill                =>
       val ch = self.channel
       self.stop()
-      ch match {
-        case f : CompletableFuture[Any] =>
-          f.completeWithException(new ActorKilledException("PoisonPill"))
-        case _ =>
-      }
+      ch.sendException(new ActorKilledException("PoisonPill"))
   }
 
   private lazy val processingBehavior = receive //ProcessingBehavior is the original behavior

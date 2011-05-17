@@ -488,7 +488,7 @@ trait FSM[S, D] extends ListenerManagement {
      * @return this state transition descriptor
      */
     def replying(replyValue: Any): State = {
-      self.channel !? replyValue
+      self.channel safe_! replyValue
       this
     }
 

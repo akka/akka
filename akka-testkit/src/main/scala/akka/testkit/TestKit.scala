@@ -21,12 +21,12 @@ object TestActor {
 
   trait Message {
     def msg : AnyRef
-    def channel : Channel[Any]
+    def channel : UntypedChannel
   }
-  case class RealMessage(msg : AnyRef, channel : Channel[Any]) extends Message
+  case class RealMessage(msg : AnyRef, channel : UntypedChannel) extends Message
   case object NullMessage extends Message {
     override def msg : AnyRef = throw new IllegalActorStateException("last receive did not dequeue a message")
-    override def channel : Channel[Any] = throw new IllegalActorStateException("last receive did not dequeue a message")
+    override def channel : UntypedChannel = throw new IllegalActorStateException("last receive did not dequeue a message")
   }
 }
 
