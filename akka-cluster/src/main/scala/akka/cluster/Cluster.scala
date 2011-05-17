@@ -93,21 +93,6 @@ trait ClusterNodeMBean {
 }
 
 /**
- * Node address holds the node name and the cluster name and can be used as a hash lookup key for a Node instance.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-final case class NodeAddress(
-  clusterName: String,
-  nodeName: String,
-  hostname: String = Cluster.lookupLocalhostName,
-  port: Int        = Cluster.remoteServerPort) {
-  if ((nodeName eq null)    || nodeName == "")    throw new NullPointerException("Node name must not be null or empty string")
-  if ((clusterName eq null) || clusterName == "") throw new NullPointerException("Cluster name must not be null or empty string")
-  override def toString = "%s:%s:%s:%s".format(clusterName, nodeName, hostname, port)
-}
-
-/**
  * Factory object for ClusterNode. Also holds global state such as configuration data etc.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

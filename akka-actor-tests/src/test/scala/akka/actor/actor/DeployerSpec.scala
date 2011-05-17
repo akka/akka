@@ -17,7 +17,7 @@ class DeployerSpec extends WordSpec with MustMatchers {
       deployment must equal (Some(Deploy(
           "service-pi",
           RoundRobin,
-          "akka.serializer.Format$Default$",
+          "akka.serialization.Format$Default$",
           Clustered(
               Node("test-1"),
               Replicate(3),

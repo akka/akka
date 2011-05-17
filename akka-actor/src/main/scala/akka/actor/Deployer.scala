@@ -333,8 +333,7 @@ object LocalDeployer {
   private val deployments = new ConcurrentHashMap[String, Deploy]
 
   private[akka] def init(deployments: List[Deploy]) {
-    EventHandler.info(this, "Initializing local deployer")
-    EventHandler.info(this, "Deploying locally [\n" + deployments.mkString("\n\t") + "\n]")
+    EventHandler.info(this, "Initializing local deployer\nDeploying actors locally [\n%s\n]" format deployments.mkString("\n\t"))
     deployments foreach (deploy(_)) // deploy
   }
 
