@@ -41,6 +41,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val ScalaToolsRelRepo      = MavenRepository("Scala Tools Releases Repo", "http://scala-tools.org/repo-releases")
     lazy val DatabinderRepo         = MavenRepository("Databinder Repo", "http://databinder.net/repo")
     lazy val ScalaToolsSnapshotRepo = MavenRepository("Scala-Tools Snapshot Repo", "http://scala-tools.org/repo-snapshots")
+    lazy val SunJDMKRepo          = MavenRepository("WP5 Repository", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -66,6 +67,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val vscaladocModuleConfig   = ModuleConfiguration("org.scala-tools", "vscaladoc", "1.1-md-3", AkkaRepo)
   lazy val aspectWerkzModuleConfig = ModuleConfiguration("org.codehaus.aspectwerkz", "aspectwerkz", "2.2.3", AkkaRepo)
   lazy val objenesisModuleConfig   = ModuleConfiguration("org.objenesis", sbt.DefaultMavenRepository)
+  lazy val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", SunJDMKRepo)
+  lazy val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", SunJDMKRepo)
+  lazy val jmsModuleConfig         = ModuleConfiguration("javax.jms", JBossRepo)
   lazy val localMavenRepo          = LocalMavenRepo // Second exception, also fast! ;-)
   lazy val embeddedRepo            = EmbeddedRepo
 
