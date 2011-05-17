@@ -9,20 +9,6 @@ import akka.actor.Actor
 import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream}
 
 /**
- * Type class definition for Actor Serialization
- */
-trait FromBinary[T <: Actor] {
-  def fromBinary(bytes: Array[Byte], act: T): T
-}
-
-trait ToBinary[T <: Actor] {
-  def toBinary(t: T): Array[Byte]
-}
-
-// client needs to implement Format[] for the respective actor
-trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
-
-/**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Serializer extends scala.Serializable {
@@ -31,6 +17,48 @@ trait Serializer extends scala.Serializable {
 
   def toBinary(obj: AnyRef): Array[Byte]
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
+}
+
+trait FromBinary[T <: Actor] {
+  def fromBinary(bytes: Array[Byte], act: T): T
+}
+
+trait ToBinary[T <: Actor] {
+  def toBinary(t: T): Array[Byte]
+}
+
+/**
+ * Type class definition for Actor Serialization.
+ * Client needs to implement Format[] for the respective actor.
+ */
+trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
+
+/**
+ *
+ */
+object Format {
+
+  object Default extends Serializer {
+    import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream}
+    //import org.apache.commons.io.input.ClassLoaderObjectInputStream
+
+    def toBinary(obj: AnyRef): Array[Byte] = {
+      val bos = new ByteArrayOutputStream
+      val out = new ObjectOutputStream(bos)
+      out.writeObject(obj)
+      out.close
+      bos.toByteArray
+    }
+
+    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
+      val in =
+        //if (classLoader.isDefined) new ClassLoaderObjectInputStream(classLoader.get, new ByteArrayInputStream(bytes)) else
+        new ObjectInputStream(new ByteArrayInputStream(bytes))
+      val obj = in.readObject
+      in.close
+      obj
+    }
+  }
 }
 
 /**
@@ -60,7 +88,7 @@ trait StatelessActorFormat[T <: Actor] extends Format[T] with scala.Serializable
  * object BinaryFormatMyJavaSerializableActor  {
  *   implicit object MyJavaSerializableActorFormat extends SerializerBasedActorFormat[MyJavaSerializableActor]  {
  *     val serializer = Serializers.Java
- * }
+ *   }
  * }
  * </pre>
  */

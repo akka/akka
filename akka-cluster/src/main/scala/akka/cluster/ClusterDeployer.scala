@@ -14,12 +14,13 @@ import akka.cluster.zookeeper.AkkaZkClient
 import org.apache.zookeeper.CreateMode
 import org.apache.zookeeper.recipes.lock.{WriteLock, LockListener}
 
+import org.I0Itec.zkclient.exception.{ZkNoNodeException, ZkNodeExistsException}
+
 import scala.collection.JavaConversions.collectionAsScalaIterable
 
 import com.eaio.uuid.UUID
 
 import java.util.concurrent.CountDownLatch
-import org.I0Itec.zkclient.exception.{ZkNoNodeException, ZkNodeExistsException}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -45,9 +46,6 @@ object ClusterDeployer {
     EventHandler.info(this, "ClusterDeployer started")
     zk
   }
-
-  // FIXME invert dependency; let Cluster have an instance of ClusterDeployer instead
-  lazy val cluster = Cluster(NodeAddress(clusterName, nodeName))
 
   private val clusterDeploymentLockListener = new LockListener {
     def lockAcquired() {

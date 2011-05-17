@@ -37,6 +37,27 @@ object ReflectiveAccess {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object ClusterModule {
+    import java.net.InetAddress
+    import com.eaio.uuid.UUID
+    import akka.cluster.NodeAddress
+    import Config.{config, TIME_UNIT}
+
+    val name                        = config.getString("akka.cluster.name",                                   "default")
+    val zooKeeperServers            = config.getString("akka.cluster.zookeeper-server-addresses",             "localhost:2181")
+    val remoteServerPort            = config.getInt("akka.cluster.remote-server-port",                        2552)
+    val sessionTimeout              = Duration(config.getInt("akka.cluster.session-timeout",                  60), TIME_UNIT).toMillis.toInt
+    val connectionTimeout           = Duration(config.getInt("akka.cluster.connection-timeout",               60), TIME_UNIT).toMillis.toInt
+    val maxTimeToWaitUntilConnected = Duration(config.getInt("akka.cluster.max-time-to-wait-until-connected", 30), TIME_UNIT).toMillis.toInt
+    val shouldCompressData          = config.getBool("akka.cluster.use-compression",                          false)
+
+    // FIXME allow setting hostname from command line or node local property file
+    val hostname = InetAddress.getLocalHost.getHostName
+
+    // FIXME allow setting nodeName from command line or node local property file
+    val nodeName = new UUID().toString
+
+    val nodeAddress = NodeAddress(name, nodeName, hostname, remoteServerPort)
+
     lazy val isEnabled = clusterInstance.isDefined
 
     def ensureEnabled() {
@@ -71,7 +92,7 @@ object ReflectiveAccess {
 
     lazy val node: ClusterNode = {
       ensureEnabled()
-      clusterInstance.get.newNode()
+      clusterInstance.get.newNode(nodeAddress, zooKeeperServers)
     }
 
     lazy val clusterDeployer: ClusterDeployer = {
@@ -80,6 +101,9 @@ object ReflectiveAccess {
     }
 
     type ClusterNode = {
+      def start()
+      def shutdown()
+
       def store[T <: Actor]
         (address: String, actorClass: Class[T], replicas: Int, serializeMailbox: Boolean)
         (implicit format: Format[T])
@@ -105,11 +129,7 @@ object ReflectiveAccess {
     }
 
     type Cluster = {
-      def newNode(
-        //nodeAddress: NodeAddress,
-        //zkServerAddresses: String,
-        //serializer: ZkSerializer
-        ): ClusterNode
+      def newNode(nodeAddress: NodeAddress, zkServerAddresses: String): ClusterNode
     }
 
     type Mailbox = {
@@ -263,7 +283,7 @@ object ReflectiveAccess {
       Left(e)
   }
 
-  def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception,Class[T]] = try {
+  def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception, Class[T]] = try {
     assert(fqn ne null)
 
     // First, use the specified CL

@@ -41,6 +41,10 @@ object Router {
       case RoundRobin => new ClusterActorRef(
         addresses, serviceId, timeout,
         actorType, replicationStrategy) with RoundRobin
+
+      case LeastCPU      => sys.error("Router LeastCPU not supported yet")
+      case LeastRAM      => sys.error("Router LeastRAM not supported yet")
+      case LeastMessages => sys.error("Router LeastMessages not supported yet")
     }
   }
 
