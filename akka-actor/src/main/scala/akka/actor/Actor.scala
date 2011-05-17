@@ -4,9 +4,11 @@
 
 package akka.actor
 
+import DeploymentConfig._
 import akka.dispatch._
 import akka.config.Config._
 import akka.util.{ListenerManagement, ReflectiveAccess, Duration, Helpers}
+import ReflectiveAccess._
 import Helpers.{narrow, narrowSilently}
 import akka.remoteinterface.RemoteSupport
 import akka.japi.{Creator, Procedure}
@@ -17,6 +19,7 @@ import akka.event.EventHandler
 import scala.reflect.BeanProperty
 
 import com.eaio.uuid.UUID
+
 import java.lang.reflect.InvocationTargetException
 
 /**
@@ -203,96 +206,12 @@ object Actor extends ListenerManagement {
    * </pre>
    */
   def actorOf[T <: Actor](clazz: Class[T], address: String): ActorRef = {
-    import DeploymentConfig._
-    import ReflectiveAccess._
     Address.validate(address)
 
     try {
       Deployer.deploymentFor(address) match {
-        case Deploy(_, router, _, Local) =>
-          // FIXME handle 'router' in 'Local' actors
-          newLocalActorRef(clazz, address)
-
-        case Deploy(_, router, formatClassName, Clustered(home, replication, state)) =>
-          ClusterModule.ensureEnabled()
-          if (Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
-
-          val hostname = home match {
-            case Host(hostname) => hostname
-            case IP(address)    => address
-            case Node(nodeName) => "localhost" // FIXME lookup hostname for node name
-          }
-
-          val replicas = replication match {
-            case Replicate(replicas) => replicas
-            case AutoReplicate       => -1
-            case NoReplicas          => 0
-          }
-
-          import ClusterModule.node
-          if (hostname == RemoteModule.remoteServerHostname) { // home node for clustered actor
-
-            def formatErrorDueTo(reason: String) = {
-              throw new akka.config.ConfigurationException(
-                "Could not create Format[T] object [" + formatClassName +
-                "] for serialization of actor [" + address +
-                "] since " + reason)
-            }
-
-            implicit val format: Format[T] = {
-              if (formatClassName == "N/A") formatErrorDueTo("no class name defined in configuration")
-              val f = ReflectiveAccess.getObjectFor(formatClassName) match {
-                case Right(actor) => actor
-                case Left(exception) =>
-                  val cause = exception match {
-                    case i: InvocationTargetException => i.getTargetException
-                    case _                            => exception
-                  }
-                  formatErrorDueTo(" " + cause.toString)
-              }
-              if (f.isInstanceOf[Format[T]]) f.asInstanceOf[Format[T]]
-              else formatErrorDueTo("class must be of type [akka.serialization.Format[T]]")
-            }
-
-            if (!node.isClustered(address)) node.store(address, clazz, replicas, false)
-            node.use(address)
-          } else {
-            //val router =
-            node.ref(address, null)
-          }
-          sys.error("Clustered deployment not yet supported")
-
-          /*
-          val remoteAddress = Actor.remote.address
-          if (remoteAddress.getHostName == hostname && remoteAddress.getPort == port) {
-            // home node for actor
-          } else {
-          }
-          */
-          /*
-            2. Check Home(..)
-              a) If home is same as Actor.remote.address then:
-                - check if actor is stored in ZK, if not; node.store(..)
-                - checkout actor using node.use(..)
-              b) If not the same
-                - check out actor using node.ref(..)
-
-            Misc stuff:
-              - How to define a single ClusterNode to use? Where should it be booted up? How should it be configured?
-              - ClusterNode API and Actor.remote API should be made private[akka]
-              - Rewrite ClusterSpec or remove it
-              - Actor.stop on home node (actor checked out with node.use(..)) should do node.remove(..) of actor
-              - Should we allow configuring of session-scoped remote actors? How?
-
-
-           */
-
-          RemoteActorRef(address, Actor.TIMEOUT, None, ActorType.ScalaActor)
-
-        case invalid => throw new IllegalActorStateException(
-          "Could not create actor [" + clazz.getName +
-          "] with address [" + address +
-          "], not bound to a valid deployment scheme [" + invalid + "]")
+        case Deploy(_, router, _, Local) => newLocalActorRef(clazz, address) // FIXME handle 'router' in 'Local' actors
+        case deploy                      => newClusterActorRef[T](clazz, address, deploy)
       }
     } catch {
       case e: DeploymentException =>
@@ -340,6 +259,7 @@ object Actor extends ListenerManagement {
    * </pre>
    */
   def actorOf[T <: Actor](factory: => T, address: String): ActorRef = {
+    // FIXME use deployment info
     Address.validate(address)
     new LocalActorRef(() => factory, address)
   }
@@ -364,6 +284,7 @@ object Actor extends ListenerManagement {
    * JAVA API
    */
   def actorOf[T <: Actor](creator: Creator[T], address: String): ActorRef = {
+    // FIXME use deployment info
     Address.validate(address)
     new LocalActorRef(() => creator.create, address)
   }
@@ -393,6 +314,25 @@ object Actor extends ListenerManagement {
     }).start() ! Spawn
   }
 
+  /**
+   * Implicitly converts the given Option[Any] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
+   * to convert an Option[Any] to an Option[T].
+   */
+  implicit def toAnyOptionAsTypedOption(anyOption: Option[Any]) = new AnyOptionAsTypedOption(anyOption)
+
+  /**
+   * Implicitly converts the given Future[_] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
+   * to convert an Option[Any] to an Option[T].
+   * This means that the following code is equivalent:
+   *   (actor !! "foo").as[Int] (Deprecated)
+   *   and
+   *   (actor !!! "foo").as[Int] (Recommended)
+   */
+  implicit def futureToAnyOptionAsTypedOption(anyFuture: Future[_]) = new AnyOptionAsTypedOption({
+    try { anyFuture.await } catch { case t: FutureTimeoutException => }
+    anyFuture.resultOrException
+  })
+
   private[akka] def newLocalActorRef(clazz: Class[_ <: Actor], address: String): ActorRef = {
     new LocalActorRef(() => {
       import ReflectiveAccess.{ createInstance, noParams, noArgs }
@@ -413,24 +353,96 @@ object Actor extends ListenerManagement {
     }, address)
   }
 
-  /**
-   * Implicitly converts the given Option[Any] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
-   * to convert an Option[Any] to an Option[T].
-   */
-  implicit def toAnyOptionAsTypedOption(anyOption: Option[Any]) = new AnyOptionAsTypedOption(anyOption)
+  private def newClusterActorRef[T <: Actor](clazz: Class[T], address: String, deploy: Deploy): ActorRef = {
+    deploy match {
+      case Deploy(_, router, serializerClassName, Clustered(home, replication: Replication, state: State)) =>
+        ClusterModule.ensureEnabled()
 
-  /**
-   * Implicitly converts the given Future[_] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
-   * to convert an Option[Any] to an Option[T].
-   * This means that the following code is equivalent:
-   *   (actor !! "foo").as[Int] (Deprecated)
-   *   and
-   *   (actor !!! "foo").as[Int] (Recommended)
-   */
-  implicit def futureToAnyOptionAsTypedOption(anyFuture: Future[_]) = new AnyOptionAsTypedOption({
-   try { anyFuture.await } catch { case t: FutureTimeoutException => }
-   anyFuture.resultOrException
-  })
+        if (Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
+
+        val hostname = home match {
+          case Host(hostname) => hostname
+          case IP(address)    => address
+          case Node(nodeName) => "localhost" // FIXME lookup hostname for node name
+        }
+
+        val replicas = replication match {
+          case Replicate(replicas) => replicas
+          case AutoReplicate       => -1
+          case AutoReplicate()     => -1
+          case NoReplicas          => 0
+          case NoReplicas()        => 0
+        }
+
+        import ClusterModule.node
+        node.start() // start cluster node
+
+        if (hostname == RemoteModule.remoteServerHostname) { // home node for clustered actor
+
+          def serializerErrorDueTo(reason: String) =
+            throw new akka.config.ConfigurationException(
+              "Could not create Serializer object [" + serializerClassName +
+              "] for serialization of actor [" + address +
+              "] since " + reason)
+
+          val serializer: Serializer = {
+            if (serializerClassName == "N/A") serializerErrorDueTo("no class name defined in configuration")
+            val clazz: Class[_] = ReflectiveAccess.getClassFor(serializerClassName) match {
+              case Right(clazz)    => clazz
+              case Left(exception) =>
+                val cause = exception match {
+                  case i: InvocationTargetException => i.getTargetException
+                  case _                            => exception
+                }
+                serializerErrorDueTo(cause.toString)
+            }
+            val f = clazz.newInstance.asInstanceOf[AnyRef]
+            if (f.isInstanceOf[Serializer]) f.asInstanceOf[Serializer]
+            else serializerErrorDueTo("class must be of type [akka.serialization.Serializer")
+          }
+
+          // FIXME use the serializer above instead of dummy Format, but then the ClusterNode AND ActorRef serialization needs to be rewritten
+          implicit val format: Format[T] = null
+          sys.error("FIXME use the serializer above instead of dummy Format, but then the ClusterNode AND ActorRef serialization needs to be rewritten")
+
+          if (!node.isClustered(address)) node.store(address, clazz, replicas, false)
+          node.use(address)
+        } else {
+          val routerType = router match {
+            case Direct          => RouterType.Direct
+            case Direct()        => RouterType.Direct
+            case RoundRobin      => RouterType.RoundRobin
+            case RoundRobin()    => RouterType.RoundRobin
+            case Random          => RouterType.Random
+            case Random()        => RouterType.Random
+            case LeastCPU        => RouterType.LeastCPU
+            case LeastCPU()      => RouterType.LeastCPU
+            case LeastRAM        => RouterType.LeastRAM
+            case LeastRAM()      => RouterType.LeastRAM
+            case LeastMessages   => RouterType.LeastMessages
+            case LeastMessages() => RouterType.LeastMessages
+          }
+          node.ref(address, routerType)
+        }
+
+        /*
+          Misc stuff:
+            - How to define a single ClusterNode to use? Where should it be booted up? How should it be configured?
+            - ClusterNode API and Actor.remote API should be made private[akka]
+            - Rewrite ClusterSpec or remove it
+            - Actor.stop on home node (actor checked out with node.use(..)) should do node.remove(..) of actor
+            - Should we allow configuring of session-scoped remote actors? How?
+
+
+         */
+
+        RemoteActorRef(address, Actor.TIMEOUT, None, ActorType.ScalaActor)
+      case invalid => throw new IllegalActorStateException(
+        "Could not create actor [" + clazz.getName +
+        "] with address [" + address +
+        "], not bound to a valid deployment scheme [" + invalid + "]")
+    }
+  }
 }
 
 /**
