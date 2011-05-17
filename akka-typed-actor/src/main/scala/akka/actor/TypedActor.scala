@@ -713,7 +713,7 @@ object TypedActor {
     val jProxy = JProxy.newProxyInstance(intfClass.getClassLoader(), interfaces, handler)
     val awProxy = Proxy.newInstance(interfaces, Array(jProxy, jProxy), true, false)
 
-    AspectInitRegistry.register(awProxy, AspectInit(intfClass, null, actorRef, actorRef.homeAddress, 5000L))
+    AspectInitRegistry.register(awProxy, AspectInit(intfClass, null, actorRef, actorRef.homeAddress, actorRef.timeout))
     awProxy.asInstanceOf[T]
   }
 
