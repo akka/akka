@@ -12,6 +12,7 @@ import akka.dispatch.Dispatchers
 import ticket855.{Ticket855ServiceImpl, Ticket855Service}
 import akka.routing.CyclicIterator
 import org.scalatest.{BeforeAndAfterAll, WordSpec, BeforeAndAfterEach}
+import akka.util.Duration
 
 @RunWith(classOf[JUnitRunner])
 class Issue855Spec extends
@@ -22,25 +23,21 @@ class Issue855Spec extends
 
   import akka.actor.Actor._
 
-  override def afterEach() {
+
+  override def afterEach {
     registry.shutdownAll()
-  }
-
-  override def beforeAll {
-    remote.start
-  }
-
-  override def afterAll {
     remote.shutdown
   }
 
   "TypedActors with Future return types" must {
     "must work for Remote Typed Actors" in {
-      val configurator = new TypedActorConfigurator()
-
+      remote.start
+      Thread.sleep(500)
       val configuration = new TypedActorConfiguration
 
-      configuration.dispatcher(Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
+      configuration.timeout(Duration(6600L,"ms"))
+
+      configuration.dispatcher(Dispatchers.newExecutorBasedEventDrivenDispatcher("pooled-dispatcher")
                             .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
                             .setCorePoolSize(60)
                             .setMaxPoolSize(60)
@@ -52,9 +49,9 @@ class Issue855Spec extends
 
       val address = remote.address
 
-      val iterator = new CyclicIterator(for(i <- 1 to 60) yield remote.typedActorFor(classOf[Ticket855Service], "ticket855-" + i, 60000L, address.getAddress.getHostName, address.getPort))
+      val iterator = new CyclicIterator(for(i <- 1 to 60) yield remote.typedActorFor(classOf[Ticket855Service], "ticket855-" + i, 6600L, address.getAddress.getHostName, address.getPort))
 
-      val results = for(i <- 1 to 120) yield (i, iterator.next.callAndWait("ping - " + i, 2000L))
+      val results = for(i <- 1 to 120) yield (i, iterator.next.callAndWait("ping - " + i, 200L))
 
       for((i,r) <- results) assert(r.get === "x: ping - " + i)
     }
@@ -63,7 +60,9 @@ class Issue855Spec extends
 
       val configuration = new TypedActorConfiguration
 
-      configuration.dispatcher(Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
+      configuration.timeout(Duration(6600L,"ms"))
+
+      configuration.dispatcher(Dispatchers.newExecutorBasedEventDrivenDispatcher("pooled-dispatcher")
                             .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
                             .setCorePoolSize(60)
                             .setMaxPoolSize(60)
@@ -71,7 +70,7 @@ class Issue855Spec extends
 
       val iterator = new CyclicIterator(for(i <- 1 to 60) yield TypedActor.newInstance(classOf[Ticket855Service], classOf[Ticket855ServiceImpl], configuration))
 
-      val results = for(i <- 1 to 120) yield (i, iterator.next.callAndWait("ping - " + i, 2000L))
+      val results = for(i <- 1 to 120) yield (i, iterator.next.callAndWait("ping - " + i, 200L))
 
       for((i,r) <- results) assert(r.get === "x: ping - " + i)
     }
