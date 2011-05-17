@@ -271,11 +271,11 @@ class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll 
   }
 
   override def beforeAll() = {
-    LocalBookKeeperEnsemble.start
+    LocalBookKeeperEnsemble.start()
   }
 
   override def afterAll() = {
-    TransactionLog.shutdown
-    LocalBookKeeperEnsemble.shutdown
+    TransactionLog.shutdown()
+    LocalBookKeeperEnsemble.shutdown()
   }
 }

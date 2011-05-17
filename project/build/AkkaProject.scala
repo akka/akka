@@ -62,6 +62,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val spdeModuleConfig        = ModuleConfiguration("us.technically.spde", DatabinderRepo)
   lazy val processingModuleConfig  = ModuleConfiguration("org.processing", DatabinderRepo)
   lazy val sjsonModuleConfig       = ModuleConfiguration("net.debasishg", ScalaToolsRelRepo)
+  lazy val redisModuleConfig       = ModuleConfiguration("net.debasishg", ScalaToolsRelRepo)
+  lazy val beanstalkModuleConfig   = ModuleConfiguration("beanstalk", AkkaRepo)
   lazy val lzfModuleConfig         = ModuleConfiguration("voldemort.store.compress", "h2-lzf", AkkaRepo)
   lazy val vscaladocModuleConfig   = ModuleConfiguration("org.scala-tools", "vscaladoc", "1.1-md-3", AkkaRepo)
   lazy val aspectWerkzModuleConfig = ModuleConfiguration("org.codehaus.aspectwerkz", "aspectwerkz", "2.2.3", AkkaRepo)
@@ -92,82 +94,63 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   object Dependencies {
 
     // Compile
-    lazy val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile" //Public domain
-
-    lazy val aspectwerkz = "org.codehaus.aspectwerkz" % "aspectwerkz" % "2.2.3" % "compile" //ApacheV2
-
-    lazy val bookkeeper       = "org.apache.hadoop.zookeeper" % "bookkeeper"             % ZOOKEEPER_VERSION //ApacheV2
-
-    lazy val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile" //ApacheV2
-
-    lazy val commons_io = "commons-io" % "commons-io" % "2.0.1" % "compile" //ApacheV2
-
-    lazy val javax_servlet_30 = "org.glassfish" % "javax.servlet" % JAVAX_SERVLET_VERSION % "provided" //CDDL v1
-
-    lazy val jetty         = "org.eclipse.jetty" % "jetty-server"  % JETTY_VERSION % "provided" //Eclipse license
-    lazy val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile" //ApacheV2
-
-    lazy val h2_lzf = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile" //ApacheV2
-
-    lazy val jackson          = "org.codehaus.jackson" % "jackson-mapper-asl" % JACKSON_VERSION % "compile" //ApacheV2
-    lazy val jackson_core     = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile" //ApacheV2
-
-    lazy val jersey_server  = "com.sun.jersey"          % "jersey-server" % JERSEY_VERSION % "provided" //CDDL v1
-
-    lazy val jsr250 = "javax.annotation" % "jsr250-api" % "1.0" % "compile" //CDDL v1
-
-    lazy val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile" //CDDL v1
-
-    lazy val multiverse      = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" //ApacheV2
-    lazy val multiverse_test = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "test" //ApacheV2
-
-    lazy val netty = "org.jboss.netty" % "netty" % "3.2.4.Final" % "compile" //ApacheV2
-
-    lazy val osgi_core = "org.osgi" % "org.osgi.core" % "4.2.0" //ApacheV2
-
-    lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile" //New BSD
-
-    lazy val sjson      = "net.debasishg" %% "sjson" % "0.11" % "compile" //ApacheV2
-    lazy val sjson_test = "net.debasishg" %% "sjson" % "0.11" % "test" //ApacheV2
-
-    lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % SLF4J_VERSION
-    lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.28" % "runtime"
-
-    lazy val log4j            = "log4j"                       % "log4j"                  % "1.2.15"
-
-    lazy val zookeeper        = "org.apache.hadoop.zookeeper" % "zookeeper"              % ZOOKEEPER_VERSION //ApacheV2
-    lazy val zookeeperLock    = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % ZOOKEEPER_VERSION //ApacheV2
-    lazy val zkClient         = "zkclient"                    % "zkclient"               % "0.2"             //ApacheV2
+    lazy val aopalliance      = "aopalliance"                 % "aopalliance"             % "1.0" % "compile" //Public domain
+    lazy val aspectwerkz      = "org.codehaus.aspectwerkz"    % "aspectwerkz"             % "2.2.3" % "compile" //ApacheV2
+    lazy val beanstalk        = "beanstalk"                   % "beanstalk_client"        % "1.4.5" //New BSD
+    lazy val bookkeeper       = "org.apache.hadoop.zookeeper" % "bookkeeper"              % ZOOKEEPER_VERSION //ApacheV2
+    lazy val commons_codec    = "commons-codec"               % "commons-codec"           % "1.4" % "compile" //ApacheV2
+    lazy val commons_io       = "commons-io"                  % "commons-io"              % "2.0.1" % "compile" //ApacheV2
+    lazy val javax_servlet_30 = "org.glassfish"               % "javax.servlet"           % JAVAX_SERVLET_VERSION % "provided" //CDDL v1
+    lazy val jetty            = "org.eclipse.jetty"           % "jetty-server"            % JETTY_VERSION % "provided" //Eclipse license
+    lazy val guicey           = "org.guiceyfruit"             % "guice-all"               % "2.0" % "compile" //ApacheV2
+    lazy val h2_lzf           = "voldemort.store.compress"    % "h2-lzf"                  % "1.0" % "compile" //ApacheV2
+    lazy val jackson          = "org.codehaus.jackson"        % "jackson-mapper-asl"      % JACKSON_VERSION % "compile" //ApacheV2
+    lazy val jackson_core     = "org.codehaus.jackson"        % "jackson-core-asl"        % JACKSON_VERSION % "compile" //ApacheV2
+    lazy val jersey_server    = "com.sun.jersey"              % "jersey-server"           % JERSEY_VERSION % "provided" //CDDL v1
+    lazy val jsr250           = "javax.annotation"            % "jsr250-api"              % "1.0" % "compile" //CDDL v1
+    lazy val jsr311           = "javax.ws.rs"                 % "jsr311-api"              % "1.1" % "compile" //CDDL v1
+    lazy val multiverse       = "org.multiverse"              % "multiverse-alpha"        % MULTIVERSE_VERSION % "compile" //ApacheV2
+    lazy val netty            = "org.jboss.netty"             % "netty"                   % "3.2.4.Final" % "compile" //ApacheV2
+    lazy val osgi_core        = "org.osgi"                    % "org.osgi.core"           % "4.2.0" //ApacheV2
+    lazy val protobuf         = "com.google.protobuf"         % "protobuf-java"           % "2.3.0" % "compile" //New BSD
+    lazy val redis            = "net.debasishg"               % "redisclient_2.9.0"       % "2.3.1"            //ApacheV2
+    lazy val sjson            = "net.debasishg"               %% "sjson"                  % "0.11" % "compile" //ApacheV2
+    lazy val sjson_test       = "net.debasishg"               %% "sjson"                  % "0.11" % "test"    //ApacheV2
+    lazy val slf4j            = "org.slf4j"                   % "slf4j-api"               % SLF4J_VERSION        // MIT
+    lazy val logback          = "ch.qos.logback"              % "logback-classic"         % "0.9.28" % "runtime" //MIT
+    lazy val log4j            = "log4j"                       % "log4j"                   % "1.2.15"          //ApacheV2
+    lazy val zookeeper        = "org.apache.hadoop.zookeeper" % "zookeeper"               % ZOOKEEPER_VERSION //ApacheV2
+    lazy val zookeeper_lock   = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock"  % ZOOKEEPER_VERSION //ApacheV2
+    lazy val zkClient         = "zkclient"                    % "zkclient"                % "0.2"             //ApacheV2
 
     // Test
-
-    lazy val commons_coll   = "commons-collections"    % "commons-collections" % "3.2.1"           % "test" //ApacheV2
-
-    lazy val testJetty      = "org.eclipse.jetty"      % "jetty-server"        % JETTY_VERSION     % "test" //Eclipse license
-    lazy val testJettyWebApp= "org.eclipse.jetty"      % "jetty-webapp"        % JETTY_VERSION     % "test" //Eclipse license
-
-    lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test" //Common Public License 1.0
-    lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test" //MIT
-    lazy val scalatest      = "org.scalatest"          %% "scalatest"          % SCALATEST_VERSION % "test" //ApacheV2
+    lazy val multiverse_test  = "org.multiverse"              % "multiverse-alpha"        % MULTIVERSE_VERSION % "test" //ApacheV2
+    lazy val commons_coll     = "commons-collections"         % "commons-collections"     % "3.2.1"           % "test" //ApacheV2
+    lazy val testJetty        = "org.eclipse.jetty"           % "jetty-server"            % JETTY_VERSION     % "test" //Eclipse license
+    lazy val testJettyWebApp  = "org.eclipse.jetty"           % "jetty-webapp"            % JETTY_VERSION     % "test" //Eclipse license
+    lazy val junit            = "junit"                       % "junit"                   % "4.5"             % "test" //Common Public License 1.0
+    lazy val mockito          = "org.mockito"                 % "mockito-all"             % "1.8.1"           % "test" //MIT
+    lazy val scalatest        = "org.scalatest"               %% "scalatest"              % SCALATEST_VERSION % "test" //ApacheV2
   }
 
   // -------------------------------------------------------------------------------------------------------------------
   // Subprojects
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val akka_actor       = project("akka-actor",       "akka-actor",       new AkkaActorProject(_))
-  lazy val akka_testkit     = project("akka-testkit",     "akka-testkit",     new AkkaTestkitProject(_),    akka_actor)
-  lazy val akka_actor_tests = project("akka-actor-tests", "akka-actor-tests", new AkkaActorTestsProject(_), akka_testkit)
-  lazy val akka_stm         = project("akka-stm",         "akka-stm",         new AkkaStmProject(_),        akka_actor)
-  lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_stm, akka_actor_tests)
+  lazy val akka_actor             = project("akka-actor",             "akka-actor",             new AkkaActorProject(_))
+  lazy val akka_testkit           = project("akka-testkit",           "akka-testkit",           new AkkaTestkitProject(_),                akka_actor)
+  lazy val akka_actor_tests       = project("akka-actor-tests",       "akka-actor-tests",       new AkkaActorTestsProject(_),             akka_testkit)
+  lazy val akka_stm               = project("akka-stm",               "akka-stm",               new AkkaStmProject(_),                    akka_actor)
+  lazy val akka_typed_actor       = project("akka-typed-actor",       "akka-typed-actor",       new AkkaTypedActorProject(_),             akka_stm, akka_actor_tests)
 
-  lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),     akka_typed_actor)
-  lazy val akka_cluster     = project("akka-cluster",     "akka-cluster",     new AkkaClusterProject(_),    akka_remote)
+  lazy val akka_remote            = project("akka-remote",            "akka-remote",            new AkkaRemoteProject(_),                 akka_typed_actor)
+  lazy val akka_cluster           = project("akka-cluster",           "akka-cluster",           new AkkaClusterProject(_),                akka_remote)
+  lazy val akka_durable_mailboxes = project("akka-durable-mailboxes", "akka-durable-mailboxes", new AkkaDurableMailboxesParentProject(_), akka_remote)
 
-  lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_actor)
-  lazy val akka_slf4j       = project("akka-slf4j",       "akka-slf4j",       new AkkaSlf4jProject(_),      akka_actor)
-  lazy val akka_tutorials   = project("akka-tutorials",   "akka-tutorials",   new AkkaTutorialsParentProject(_), akka_actor)
-  lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
+  lazy val akka_http              = project("akka-http",              "akka-http",              new AkkaHttpProject(_),                   akka_actor)
+  lazy val akka_slf4j             = project("akka-slf4j",             "akka-slf4j",             new AkkaSlf4jProject(_),                  akka_actor)
+  lazy val akka_tutorials         = project("akka-tutorials",         "akka-tutorials",         new AkkaTutorialsParentProject(_),        akka_actor)
+  lazy val akka_samples           = project("akka-samples",           "akka-samples",           new AkkaSamplesParentProject(_))
 
   // -------------------------------------------------------------------------------------------------------------------
   // Miscellaneous
@@ -190,7 +173,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   override def managedStyle = ManagedStyle.Maven
 
-  lazy val akkaPublishRepository = systemOptional[String]("akka.publish.repository", "default")
+  lazy val akkaPublishRepository  = systemOptional[String]("akka.publish.repository", "default")
   lazy val akkaPublishCredentials = systemOptional[String]("akka.publish.credentials", "none")
 
   if (akkaPublishCredentials.value != "none") Credentials(akkaPublishCredentials.value, log)
@@ -345,24 +328,27 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaClusterProject(info: ProjectInfo) extends AkkaDefaultProject(info) with MultiJvmTests {
-    val bookkeeper    = Dependencies.bookkeeper
-    val zookeeper     = Dependencies.zookeeper
-    val zookeeperLock = Dependencies.zookeeperLock
-    val zkClient      = Dependencies.zkClient
-    val commons_io    = Dependencies.commons_io
-    val log4j         = Dependencies.log4j
+    val bookkeeper     = Dependencies.bookkeeper
+    val zookeeper      = Dependencies.zookeeper
+    val zookeeper_lock = Dependencies.zookeeper_lock
+    val zkClient       = Dependencies.zkClient
+    val commons_io     = Dependencies.commons_io
+    val log4j          = Dependencies.log4j
 
     // test dependencies
-
-    val scalatest     = Dependencies.scalatest
-    val junit         = Dependencies.junit
+    val scalatest      = Dependencies.scalatest
+    val junit          = Dependencies.junit
 
     // multi jvm tests
-
     lazy val clusterTest = multiJvmTest
     lazy val clusterRun  = multiJvmRun
 
     override def multiJvmOptions = Seq("-Xmx256M")
+
+    lazy val replicationTestsEnabled = systemOptional[Boolean]("cluster.test.replication", false)
+
+    override def testOptions =
+      super.testOptions ++ (if (!replicationTestsEnabled.value) Seq(testFilter("Replication")) else Seq.empty)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -382,6 +368,50 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     val mockito   = Dependencies.mockito
     val scalatest = Dependencies.scalatest
   }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // The akka-durable-mailboxes subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaDurableMailboxesParentProject(info: ProjectInfo) extends ParentProject(info) {
+    lazy val akka_mailboxes_common =
+      project("akka-mailboxes-common",  "akka-mailboxes-common",  new AkkaMailboxesCommonProject(_),  akka_remote)
+    lazy val akka_redis_mailbox =
+      project("akka-redis-mailbox",     "akka-redis-mailbox",     new AkkaRedisMailboxProject(_),     akka_mailboxes_common)
+    lazy val akka_file_mailbox =
+      project("akka-file-mailbox",      "akka-file-mailbox",      new AkkaFileMailboxProject(_),      akka_mailboxes_common)
+    lazy val akka_beanstalk_mailbox =
+      project("akka-beanstalk-mailbox", "akka-beanstalk-mailbox", new AkkaBeanstalkMailboxProject(_), akka_mailboxes_common)
+    lazy val akka_zookeeper_mailbox =
+      project("akka-zookeeper-mailbox", "akka-zookeeper-mailbox", new AkkaZooKeeperMailboxProject(_), akka_mailboxes_common, akka_cluster)
+  }
+
+  class AkkaMailboxesCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    // test dependencies
+    val scalatest = Dependencies.scalatest
+  }
+
+  class AkkaRedisMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    val redis = Dependencies.redis
+
+    lazy val redisTestsEnabled = systemOptional[Boolean]("mailbox.test.redis", false)
+
+    override def testOptions =
+      super.testOptions ++ (if (!redisTestsEnabled.value) Seq(testFilter("Redis")) else Seq.empty)
+  }
+
+  class AkkaFileMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info)
+
+  class AkkaBeanstalkMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    val beanstalk = Dependencies.beanstalk
+
+    lazy val beanstalkTestsEnabled = systemOptional[Boolean]("mailbox.test.beanstalk", false)
+
+    override def testOptions =
+      super.testOptions ++ (if (!beanstalkTestsEnabled.value) Seq(testFilter("Beanstalk")) else Seq.empty)
+  }
+
+  class AkkaZooKeeperMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Samples
@@ -523,6 +553,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
       val exclude = excludeTestsProperty.value
       if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
     }
+
+    def testFilter(containing: String) = TestFilter(test => !test.name.contains(containing))
 
     override def testOptions = super.testOptions ++ excludeTests.map(exclude => TestFilter(test => !test.contains(exclude)))
 

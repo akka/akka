@@ -36,6 +36,7 @@ class ClusterDeployerSpec extends WordSpec with MustMatchers with BeforeAndAfter
         oldDeployment must equal(newDeployment.get)
       }
     }
+
 /*
     "be able to create an actor deployed using ClusterDeployer" in {
       val pi = Actor.actorOf[Pi]("service-pi")
@@ -58,7 +59,7 @@ class ClusterDeployerSpec extends WordSpec with MustMatchers with BeforeAndAfter
   }
 
   override def afterAll() {
-    Deployer.shutdown()
+    ClusterDeployer.shutdown()
     Cluster.shutdownLocalCluster()
     Actor.registry.local.shutdownAll()
   }

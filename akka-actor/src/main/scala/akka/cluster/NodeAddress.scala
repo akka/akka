@@ -1,8 +1,8 @@
+package akka.cluster
+
 /**
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package akka.cluster
-
 import akka.util.ReflectiveAccess.ClusterModule
 
 /**

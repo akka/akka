@@ -204,7 +204,7 @@ abstract class TypedActor extends Actor with Proxyable {
    * </pre>
    */
   def future[T](value: T): Future[T] =
-    new AlreadyCompletedFuture(Right(value))
+    self.senderFuture.get.asInstanceOf[CompletableFuture[T]] completeWithResult value
 
   def receive = {
     case joinPoint: JoinPoint =>

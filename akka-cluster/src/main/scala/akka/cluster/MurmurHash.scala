@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package akka.cluster
+package akka.routing
 
 /** An implementation of Austin Appleby's MurmurHash 3.0 algorithm
  *  (32 bit version); reference: http://code.google.com/p/smhasher
