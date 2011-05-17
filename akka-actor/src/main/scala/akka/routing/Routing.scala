@@ -4,8 +4,12 @@
 
 package akka.routing
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{UntypedActor, Actor, ActorRef}
 import akka.actor.Actor._
+
+import akka.actor.ActorRef
+import scala.collection.JavaConversions._
+import scala.collection.immutable.Seq
 
 object Routing {
 
@@ -62,3 +66,123 @@ object Routing {
   def loggerActor(actorToLog: ActorRef, logger: (Any) => Unit): ActorRef =
     dispatcherActor({case _ => actorToLog}, logger)
 }
+
+/**
+ * An Iterator that is either always empty or yields an infinite number of Ts.
+ */
+trait InfiniteIterator[T] extends Iterator[T] {
+  val items: Seq[T]
+}
+
+/**
+ * CyclicIterator is a round-robin style InfiniteIterator that cycles the supplied List.
+ */
+case class CyclicIterator[T](val items: Seq[T]) extends InfiniteIterator[T] {
+  def this(items: java.util.List[T]) = this(items.toList)
+
+  @volatile private[this] var current: Seq[T] = items
+
+  def hasNext = items != Nil
+
+  def next = {
+    val nc = if (current == Nil) items else current
+    current = nc.tail
+    nc.head
+  }
+
+  override def exists(f: T => Boolean): Boolean = items.exists(f)
+}
+
+/**
+ * This InfiniteIterator always returns the Actor that has the currently smallest mailbox
+ * useful for work-stealing.
+ */
+case class SmallestMailboxFirstIterator(val items : Seq[ActorRef]) extends InfiniteIterator[ActorRef] {
+  def this(items: java.util.List[ActorRef]) = this(items.toList)
+  def hasNext = items != Nil
+
+  def next = items.reduceLeft((a1, a2) => if (a1.mailboxSize < a2.mailboxSize) a1 else a2)
+
+  override def exists(f: ActorRef => Boolean): Boolean = items.exists(f)
+}
+
+/**
+ * A Dispatcher is a trait whose purpose is to route incoming messages to actors.
+ */
+trait Dispatcher { this: Actor =>
+
+  protected def transform(msg: Any): Any = msg
+
+  protected def routes: PartialFunction[Any, ActorRef]
+
+  protected def broadcast(message: Any) {}
+
+  protected def dispatch: Receive = {
+    case Routing.Broadcast(message) =>
+      broadcast(message)
+    case a if routes.isDefinedAt(a) =>
+      if (isSenderDefined) routes(a).forward(transform(a))(someSelf)
+      else routes(a).!(transform(a))(None)
+  }
+
+  def receive = dispatch
+
+  private def isSenderDefined = self.senderFuture.isDefined || self.sender.isDefined
+}
+
+/**
+ * An UntypedDispatcher is an abstract class whose purpose is to route incoming messages to actors.
+ */
+abstract class UntypedDispatcher extends UntypedActor {
+  protected def transform(msg: Any): Any = msg
+
+  protected def route(msg: Any): ActorRef
+
+  protected def broadcast(message: Any) {}
+
+  private def isSenderDefined = self.senderFuture.isDefined || self.sender.isDefined
+
+  @throws(classOf[Exception])
+  def onReceive(msg: Any): Unit = {
+    if (msg.isInstanceOf[Routing.Broadcast]) broadcast(msg.asInstanceOf[Routing.Broadcast].message)
+    else {
+      val r = route(msg)
+      if (r eq null) throw new IllegalStateException("No route for " + msg + " defined!")
+      if (isSenderDefined) r.forward(transform(msg))(someSelf)
+      else r.!(transform(msg))(None)
+    }
+  }
+}
+
+/**
+ * A LoadBalancer is a specialized kind of Dispatcher, that is supplied an InfiniteIterator of targets
+ * to dispatch incoming messages to.
+ */
+trait LoadBalancer extends Dispatcher { self: Actor =>
+  protected def seq: InfiniteIterator[ActorRef]
+
+  protected def routes = {
+    case x if seq.hasNext => seq.next
+  }
+
+  override def broadcast(message: Any) = seq.items.foreach(_ ! message)
+
+  override def isDefinedAt(msg: Any) = seq.exists( _.isDefinedAt(msg) )
+}
+
+/**
+ * A UntypedLoadBalancer is a specialized kind of UntypedDispatcher, that is supplied an InfiniteIterator of targets
+ * to dispatch incoming messages to.
+ */
+abstract class UntypedLoadBalancer extends UntypedDispatcher {
+  protected def seq: InfiniteIterator[ActorRef]
+
+  protected def route(msg: Any) =
+    if (seq.hasNext) seq.next
+    else null
+
+  override def broadcast(message: Any) = seq.items.foreach(_ ! message)
+
+  override def isDefinedAt(msg: Any) = seq.exists( _.isDefinedAt(msg) )
+}
+

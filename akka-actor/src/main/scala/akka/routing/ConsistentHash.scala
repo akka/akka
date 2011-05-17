@@ -1,3 +1,65 @@
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
+package akka.routing
+
+import scala.collection.immutable.{TreeSet, Seq}
+import scala.collection.mutable.{Buffer, Map}
+
+// =============================================================================================
+// Adapted from HashRing.scala in Debasish Ghosh's Redis Client, licensed under Apache 2 license
+// =============================================================================================
+
+/**
+ * Consistent Hashing node ring abstraction.
+ *
+ * Not thread-safe, to be used from within an Actor or protected some other way.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class ConsistentHash[T](nodes: Seq[T], replicas: Int) {
+  private val cluster    = Buffer[T]()
+  private var sortedKeys = TreeSet[Long]()
+  private var ring       = Map[Long, T]()
+
+  nodes.foreach(this += _)
+
+  def +=(node: T) {
+    cluster += node
+    (1 to replicas) foreach { replica =>
+      val key = hashFor((node + ":" + replica).getBytes("UTF-8"))
+      ring += (key -> node)
+      sortedKeys = sortedKeys + key
+    }
+  }
+
+  def -=(node: T) {
+    cluster -= node
+    (1 to replicas) foreach { replica =>
+      val key = hashFor((node + ":" + replica).getBytes("UTF-8"))
+      ring -= key
+      sortedKeys = sortedKeys - key
+    }
+  }
+
+  def nodeFor(key: Array[Byte]): T = {
+    val hash = hashFor(key)
+    if (sortedKeys contains hash) ring(hash)
+    else {
+      if      (hash < sortedKeys.firstKey) ring(sortedKeys.firstKey)
+      else if (hash > sortedKeys.lastKey)  ring(sortedKeys.lastKey)
+      else    ring(sortedKeys.rangeImpl(None, Some(hash)).lastKey)
+    }
+  }
+
+  private def hashFor(bytes: Array[Byte]): Long = {
+    val hash = MurmurHash.arrayHash(bytes)
+    if (hash == Int.MinValue) hash + 1
+    math.abs(hash)
+  }
+}
+
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
@@ -5,8 +67,6 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
-
-package akka.routing
 
 /** An implementation of Austin Appleby's MurmurHash 3.0 algorithm
  *  (32 bit version); reference: http://code.google.com/p/smhasher
