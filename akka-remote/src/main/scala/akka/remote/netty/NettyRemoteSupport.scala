@@ -181,7 +181,7 @@ abstract class RemoteClient private[akka] (
 
   private[remote] def isRunning = runSwitch.isOn
 
-  protected def notifyListeners(msg: => Any); Unit
+  protected def notifyListeners(msg: => Any): Unit
 
   protected def currentChannel: Channel
 
