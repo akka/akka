@@ -200,7 +200,7 @@ abstract class RemoteClient private[akka] (
         Some(actorRef),
         Left(actorRef.uuid),
         actorRef.address,
-        actorRef.timeout,
+        timeout,
         Right(message),
         isOneWay,
         senderOption,
