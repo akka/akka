@@ -14,8 +14,6 @@ object MethodCall {
   def returnsFuture_?(method: Method): Boolean  = classOf[Future[_]].isAssignableFrom(method.getReturnType)
   def returnsJOption_?(method: Method): Boolean = classOf[akka.japi.Option[_]].isAssignableFrom(method.getReturnType)
   def returnsOption_?(method: Method): Boolean  = classOf[scala.Option[_]].isAssignableFrom(method.getReturnType)
-
-  //Note to self: move resolveMethod from NettyRemoteSupport to here for remote typed actors
 }
 
 case class MethodCall(method: Method, parameters: Array[AnyRef]) {
@@ -96,9 +94,13 @@ object ThaipedActor {
     }
   }
 
-  val defaultTimeout = Duration(Actor.TIMEOUT, "millis")
+  case class Configuration(timeout: Duration = Duration(Actor.TIMEOUT, "millis"), dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher)
 
-  case class Configuration(timeout: Duration = defaultTimeout, dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher)
+  def thaipedActorOf[T <: AnyRef,TI <: T](interface: Class[T], impl: Class[TI], config: Configuration): T =
+    configureAndProxy(interface, actorOf(new ThaipedActor[TI](impl.newInstance.asInstanceOf[TI])), config, interface.getClassLoader)
+
+  def thaipedActorOf[T <: AnyRef,TI <: T](interface: Class[T], impl: Creator[TI], config: Configuration): T =
+    configureAndProxy(interface, actorOf(new ThaipedActor[TI](impl.create)), config, interface.getClassLoader)
 
   def thaipedActorOf[T <: AnyRef,TI <: T](interface: Class[T], impl: Class[TI], config: Configuration, loader: ClassLoader): T =
     configureAndProxy(interface, actorOf(new ThaipedActor[TI](impl.newInstance.asInstanceOf[TI])), config, loader)
@@ -106,15 +108,11 @@ object ThaipedActor {
   def thaipedActorOf[T <: AnyRef,TI <: T](interface: Class[T], impl: Creator[TI], config: Configuration, loader: ClassLoader): T =
     configureAndProxy(interface, actorOf(new ThaipedActor[TI](impl.create)), config, loader)
 
-  def thaipedActorOf[T <: AnyRef : Manifest, TI <: T](impl: Creator[TI], config: Configuration, loader: ClassLoader): T =
-    configureAndProxy(implicitly[Manifest[T]].erasure.asInstanceOf[Class[T]], actorOf(new ThaipedActor[TI](impl.create)), config, loader)
-
   protected def configureAndProxy[T <: AnyRef](interface: Class[T], actor: ActorRef, config: Configuration, loader: ClassLoader): T = {
     actor.timeout = config.timeout.toMillis
     actor.dispatcher = config.dispatcher
 
-    val handler = new ThaipedActorInvocationHandler(actor)
-    val proxy: T = Proxy.newProxyInstance(loader, Array[Class[_]](interface), handler).asInstanceOf[T]
+    val proxy: T = Proxy.newProxyInstance(loader, Array[Class[_]](interface), new ThaipedActorInvocationHandler(actor)).asInstanceOf[T]
     actor.start
     proxy
   }

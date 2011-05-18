@@ -109,16 +109,10 @@ class ThaipedActorSpec extends
     newFooBar(Configuration(timeout))
 
   def newFooBar(config: Configuration): Foo =
-    thaipedActorOf(classOf[Foo],
-                   classOf[Bar],
-                   config,
-                   classOf[Foo].getClassLoader)
+    thaipedActorOf(classOf[Foo], classOf[Bar], config)
 
   def newStacked(config: Configuration = Configuration(Duration(2,"s"))): Stacked =
-    thaipedActorOf(classOf[Stacked],
-                   classOf[StackedImpl],
-                   config,
-                   classOf[Stacked].getClassLoader)
+    thaipedActorOf(classOf[Stacked], classOf[StackedImpl], config)
 
   def mustStop(typedActor: AnyRef) = stop(typedActor) must be (true)
 
