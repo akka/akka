@@ -4,7 +4,7 @@
 
 package akka.http
 
-import javax.servlet. {AsyncContext, AsyncListener, AsyncEvent};
+import javax.servlet.{ AsyncContext, AsyncListener, AsyncEvent };
 import Types._
 
 import akka.event.EventHandler
@@ -16,7 +16,7 @@ trait Servlet30Context extends AsyncListener {
   import javax.servlet.http.HttpServletResponse
   import MistSettings._
 
-  val builder: () => tAsyncRequestContext
+  val builder: () ⇒ tAsyncRequestContext
   val context: Option[tAsyncRequestContext] = Some(builder())
   def go = context.isDefined
 
@@ -33,9 +33,8 @@ trait Servlet30Context extends AsyncListener {
     try {
       _ac setTimeout ms
       true
-    }
-    catch {
-      case e: IllegalStateException =>
+    } catch {
+      case e: IllegalStateException ⇒
         EventHandler.error(e, this, e.getMessage)
         false
     }
@@ -46,8 +45,8 @@ trait Servlet30Context extends AsyncListener {
   //
   def onComplete(e: AsyncEvent) {}
   def onError(e: AsyncEvent) = e.getThrowable match {
-    case null => {}
-    case    t => {}
+    case null ⇒ {}
+    case t    ⇒ {}
   }
   def onStartAsync(e: AsyncEvent) {}
   def onTimeout(e: AsyncEvent) = {
@@ -57,13 +56,12 @@ trait Servlet30Context extends AsyncListener {
 }
 
 object Servlet30ContextMethodFactory extends RequestMethodFactory {
-  def  Delete(f: () => tAsyncRequestContext): RequestMethod = new Delete(f) with Servlet30Context
-  def     Get(f: () => tAsyncRequestContext): RequestMethod = new Get(f) with Servlet30Context
-  def    Head(f: () => tAsyncRequestContext): RequestMethod = new Head(f) with Servlet30Context
-  def Options(f: () => tAsyncRequestContext): RequestMethod = new Options(f) with Servlet30Context
-  def    Post(f: () => tAsyncRequestContext): RequestMethod = new Post(f) with Servlet30Context
-  def     Put(f: () => tAsyncRequestContext): RequestMethod = new Put(f) with Servlet30Context
-  def   Trace(f: () => tAsyncRequestContext): RequestMethod = new Trace(f) with Servlet30Context
+  def Delete(f: () ⇒ tAsyncRequestContext): RequestMethod = new Delete(f) with Servlet30Context
+  def Get(f: () ⇒ tAsyncRequestContext): RequestMethod = new Get(f) with Servlet30Context
+  def Head(f: () ⇒ tAsyncRequestContext): RequestMethod = new Head(f) with Servlet30Context
+  def Options(f: () ⇒ tAsyncRequestContext): RequestMethod = new Options(f) with Servlet30Context
+  def Post(f: () ⇒ tAsyncRequestContext): RequestMethod = new Post(f) with Servlet30Context
+  def Put(f: () ⇒ tAsyncRequestContext): RequestMethod = new Put(f) with Servlet30Context
+  def Trace(f: () ⇒ tAsyncRequestContext): RequestMethod = new Trace(f) with Servlet30Context
 }
-
 
