@@ -7,12 +7,13 @@ package akka.util
 import akka.dispatch.{Future, CompletableFuture, MessageInvocation}
 import akka.config.{Config, ModuleNotAvailableException}
 
-import java.net.InetSocketAddress
 import akka.remoteinterface.RemoteSupport
 import akka.actor._
 import akka.event.EventHandler
 import akka.actor.DeploymentConfig.Deploy
 import akka.serialization.Format
+
+import java.net.InetSocketAddress
 
 /**
  * Helper class for reflective access to different modules in order to allow optional loading of modules.
@@ -44,19 +45,11 @@ object ReflectiveAccess {
 
     val name                        = config.getString("akka.cluster.name",                                   "default")
     val zooKeeperServers            = config.getString("akka.cluster.zookeeper-server-addresses",             "localhost:2181")
-    val remoteServerPort            = config.getInt("akka.cluster.remote-server-port",                        2552)
     val sessionTimeout              = Duration(config.getInt("akka.cluster.session-timeout",                  60), TIME_UNIT).toMillis.toInt
     val connectionTimeout           = Duration(config.getInt("akka.cluster.connection-timeout",               60), TIME_UNIT).toMillis.toInt
     val maxTimeToWaitUntilConnected = Duration(config.getInt("akka.cluster.max-time-to-wait-until-connected", 30), TIME_UNIT).toMillis.toInt
     val shouldCompressData          = config.getBool("akka.cluster.use-compression",                          false)
-
-    // FIXME allow setting hostname from command line or node local property file
-    val hostname = InetAddress.getLocalHost.getHostName
-
-    // FIXME allow setting nodeName from command line or node local property file
-    val nodeName = new UUID().toString
-
-    val nodeAddress = NodeAddress(name, nodeName, hostname, remoteServerPort)
+    val nodeAddress                 = NodeAddress(name, Config.nodename, Config.hostname, Config.remoteServerPort)
 
     lazy val isEnabled = clusterInstance.isDefined
 
@@ -151,10 +144,7 @@ object ReflectiveAccess {
   object RemoteModule {
     val TRANSPORT = Config.config.getString("akka.remote.layer", "akka.remote.netty.NettyRemoteSupport")
 
-    val remoteServerHostname = Config.config.getString("akka.remote.server.hostname", "localhost")
-    val remoteServerPort     = Config.config.getInt("akka.remote.server.port", 2552)
-
-    private[akka] val configDefaultAddress = new InetSocketAddress(remoteServerHostname, remoteServerPort)
+    private[akka] val configDefaultAddress = new InetSocketAddress(Config.hostname, Config.remoteServerPort)
 
     lazy val isEnabled = remoteSupportClass.isDefined
 

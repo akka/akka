@@ -4,6 +4,7 @@ package akka.cluster
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 import akka.util.ReflectiveAccess.ClusterModule
+import akka.config.Config
 
 /**
  * Node address holds the node name and the cluster name and can be used as a hash lookup key for a Node instance.
@@ -31,9 +32,9 @@ object NodeAddress {
 
   def apply(
       clusterName: String = ClusterModule.name,
-      nodeName: String    = ClusterModule.nodeName,
-      hostname: String    = ClusterModule.hostname,
-      port: Int           = ClusterModule.remoteServerPort): NodeAddress =
+      nodeName: String    = Config.nodename,
+      hostname: String    = Config.hostname,
+      port: Int           = Config.remoteServerPort): NodeAddress =
     new NodeAddress(clusterName, nodeName, hostname, port)
 
   def unapply(other: Any) = other match {

@@ -6,7 +6,8 @@ package akka.actor
 
 import DeploymentConfig._
 import akka.dispatch._
-import akka.config.Config._
+import akka.config.Config
+import Config._
 import akka.util.{ListenerManagement, ReflectiveAccess, Duration, Helpers}
 import ReflectiveAccess._
 import Helpers.{narrow, narrowSilently}
@@ -385,7 +386,7 @@ object Actor extends ListenerManagement {
         val hostname = home match {
           case Host(hostname) => hostname
           case IP(address)    => address
-          case Node(nodeName) => "localhost" // FIXME lookup hostname for node name
+          case Node(nodeName) => Config.hostname
         }
 
         val replicas = replication match {
@@ -399,7 +400,7 @@ object Actor extends ListenerManagement {
         import ClusterModule.node
         node.start() // start cluster node
 
-        if (hostname == RemoteModule.remoteServerHostname) { // home node for clustered actor
+        if (hostname == Config.hostname) { // home node for clustered actor
 
           def serializerErrorDueTo(reason: String) =
             throw new akka.config.ConfigurationException(

@@ -44,7 +44,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
    */
   def actorFor(address: String): Option[ActorRef] = {
     if (actorsByAddress.containsKey(address)) Some(actorsByAddress.get(address))
-//    else if (isClusterEnabled)             ClusterModule.node.use(address)
+//    else if (isClusterEnabled)                ClusterModule.node.use(address) // FIXME uncomment and fix
     else                                      None
   }
 
@@ -62,12 +62,12 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
   private[akka] def register(actor: ActorRef) {
     val address = actor.address
 
-    // TODO: this check is nice but makes serialization/deserialization specs break
+    // FIXME: this check is nice but makes serialization/deserialization specs break
     //if (actorsByAddress.containsKey(address) || registeredInCluster(address))
     //  throw new IllegalStateException("Actor 'address' [" + address + "] is already in use, can't register actor [" + actor + "]")
+
     actorsByAddress.put(address, actor)
     actorsByUuid.put(actor.uuid.toString, actor)
-    //if (isClusterEnabled) registerInCluster(address, actor)
     notifyListeners(ActorRegistered(address, actor))
   }
 
@@ -77,7 +77,6 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
   private[akka] def unregister(address: String) {
     val actor = actorsByAddress remove address
     actorsByUuid remove actor.uuid
-    //if (isClusterEnabled) unregisterInCluster(address)
     notifyListeners(ActorUnregistered(address, actor))
   }
 
@@ -88,15 +87,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
     val address = actor.address
     actorsByAddress remove address
     actorsByUuid remove actor.uuid
-    //if (isClusterEnabled) unregisterInCluster(address)
     notifyListeners(ActorUnregistered(address, actor))
-  }
-
-  /**
-   *  Registers an actor in the Cluster ActorRegistry.
-   */
-  private[akka] def registeredInCluster(address: String): Boolean = {
-    false // FIXME call out to cluster
   }
 
   /**

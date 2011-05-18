@@ -6,6 +6,10 @@ package akka.config
 
 import akka.AkkaException
 
+import java.net.InetAddress
+
+import com.eaio.uuid.UUID
+
 class ConfigurationException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 class ModuleNotAvailableException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
@@ -91,6 +95,21 @@ object Config {
   val CONFIG_VERSION = config.getString("akka.version", VERSION)
 
   val TIME_UNIT = config.getString("akka.time-unit", "seconds")
+
+  lazy val nodename = System.getProperty("akka.cluster.nodename") match {
+    case null | "" => new UUID().toString
+    case value     => value
+  }
+
+  lazy val hostname = System.getProperty("akka.cluster.hostname") match {
+    case null | "" => InetAddress.getLocalHost.getHostName
+    case value     => value
+  }
+
+  val remoteServerPort = System.getProperty("akka.cluster.remote-server-port") match {
+    case null | "" => config.getInt("akka.cluster.remote-server-port", 2552)
+    case value     => value.toInt
+  }
 
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000

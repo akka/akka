@@ -6,6 +6,7 @@ package akka.actor
 
 import akka.event.EventHandler
 import akka.dispatch._
+import akka.config.Config
 import akka.config.Supervision._
 import akka.util._
 import ReflectiveAccess._
@@ -718,7 +719,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () => Actor, 
         currentMessage = messageHandle
         try {
           try {
-            cancelReceiveTimeout // FIXME: leave this here?
+            cancelReceiveTimeout() // FIXME: leave this here?
             actor(messageHandle.message)
             currentMessage = null // reset current message after successful invocation
           } catch {
@@ -1002,9 +1003,9 @@ private[akka] case class RemoteActorRef private[akka] (
       val hostname = home match {
         case Host(hostname) => hostname
         case IP(address)    => address
-        case Node(nodeName) => "localhost" // FIXME lookup hostname for node name
+        case Node(nodeName) => Config.hostname
       }
-      new InetSocketAddress(hostname, ReflectiveAccess.RemoteModule.remoteServerPort)
+      new InetSocketAddress(hostname, Config.remoteServerPort)
     case _ => throw new IllegalStateException(
       "Actor with Address [" + address + "] is not bound to a Clustered Deployment")
   }

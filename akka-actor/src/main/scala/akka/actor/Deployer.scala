@@ -108,7 +108,7 @@ object DeploymentConfig {
  */
 object Deployer {
 
-  val defaultAddress = Host("localhost") // FIXME allow configuring node-local default hostname and port
+  val defaultAddress = Host(Config.hostname)
 
   lazy val instance: ReflectiveAccess.ClusterModule.ClusterDeployer = {
     val deployer =
