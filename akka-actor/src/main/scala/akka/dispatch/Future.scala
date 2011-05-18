@@ -687,13 +687,13 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   def await(atMost: Duration) = {
-    _lock.lock
+    _lock.lock()
     if (try { awaitUnsafe(atMost.toNanos min timeLeft()) } finally { _lock.unlock }) this
     else throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(timeoutInNanos) + "] milliseconds")
   }
 
   def await = {
-    _lock.lock
+    _lock.lock()
     if (try { awaitUnsafe(timeLeft()) } finally { _lock.unlock }) this
     else throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(timeoutInNanos) + "] milliseconds")
   }

@@ -87,7 +87,7 @@ class InvalidMessageException      private[akka](message: String, cause: Throwab
  * This message is thrown by default when an Actors behavior doesn't match a message
  */
 case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception {
-  override def getMessage() = "Actor %s does not handle [%s]".format(ref, msg)
+  override def getMessage = "Actor %s does not handle [%s]".format(ref, msg)
   override def fillInStackTrace() = this //Don't waste cycles generating stack trace
 }
 
@@ -103,12 +103,12 @@ object Actor extends ListenerManagement {
    */
   private[akka] lazy val shutdownHook = {
     val hook = new Runnable {
-      override def run {
+      override def run() {
         // Clear Thread.subclassAudits
         val tf = classOf[java.lang.Thread].getDeclaredField("subclassAudits")
         tf.setAccessible(true)
         val subclassAudits = tf.get(null).asInstanceOf[java.util.Map[_,_]]
-        subclassAudits synchronized {subclassAudits.clear}
+        subclassAudits synchronized {subclassAudits.clear()}
       }
     }
     Runtime.getRuntime.addShutdownHook(new Thread(hook))
@@ -385,6 +385,7 @@ object Actor extends ListenerManagement {
               "] for serialization of actor [" + address +
               "] since " + reason)
 
+          //todo: serializer is not used.
           val serializer: Serializer = {
             if (serializerClassName == "N/A") serializerErrorDueTo("no class name defined in configuration")
             val clazz: Class[_] = ReflectiveAccess.getClassFor(serializerClassName) match {
@@ -643,7 +644,7 @@ trait Actor {
   /**
    * Reverts the Actor behavior to the previous one in the hotswap stack.
    */
-  def unbecome(): Unit = {
+  def unbecome() {
     val h = self.hotswap
     if (h.nonEmpty) self.hotswap = h.pop
   }
@@ -666,19 +667,21 @@ trait Actor {
     }
   }
 
-  private final def autoReceiveMessage(msg: AutoReceivedMessage): Unit = msg match {
-    case HotSwap(code, discardOld) => become(code(self), discardOld)
-    case RevertHotSwap             => unbecome()
-    case Exit(dead, reason)        => self.handleTrapExit(dead, reason)
-    case Link(child)               => self.link(child)
-    case Unlink(child)             => self.unlink(child)
-    case UnlinkAndStop(child)      => self.unlink(child); child.stop()
-    case Restart(reason)           => throw reason
-    case Kill                      => throw new ActorKilledException("Kill")
-    case PoisonPill                =>
-      val f = self.senderFuture
-      self.stop()
-      if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
+  private final def autoReceiveMessage(msg: AutoReceivedMessage) {
+    msg match {
+      case HotSwap(code, discardOld) => become(code(self), discardOld)
+      case RevertHotSwap => unbecome()
+      case Exit(dead, reason) => self.handleTrapExit(dead, reason)
+      case Link(child) => self.link(child)
+      case Unlink(child) => self.unlink(child)
+      case UnlinkAndStop(child) => self.unlink(child); child.stop()
+      case Restart(reason) => throw reason
+      case Kill => throw new ActorKilledException("Kill")
+      case PoisonPill =>
+        val f = self.senderFuture()
+        self.stop()
+        if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
+    }
   }
 
   private lazy val processingBehavior = receive //ProcessingBehavior is the original behavior

@@ -46,7 +46,7 @@ object Format {
       val bos = new ByteArrayOutputStream
       val out = new ObjectOutputStream(bos)
       out.writeObject(obj)
-      out.close
+      out.close()
       bos.toByteArray
     }
 
@@ -55,7 +55,7 @@ object Format {
         //if (classLoader.isDefined) new ClassLoaderObjectInputStream(classLoader.get, new ByteArrayInputStream(bytes)) else
         new ObjectInputStream(new ByteArrayInputStream(bytes))
       val obj = in.readObject
-      in.close
+      in.close()
       obj
     }
   }
