@@ -22,7 +22,7 @@ class MyUntypedActorFormat implements Format<MyUntypedActor> {
     @Override
     public MyUntypedActor fromBinary(byte[] bytes, MyUntypedActor act) {
       ProtobufProtocol.Counter p = 
-	  (ProtobufProtocol.Counter) new SerializerFactory().getProtobuf().fromBinary(bytes, ProtobufProtocol.Counter.class);
+          (ProtobufProtocol.Counter) new SerializerFactory().getProtobuf().fromBinary(bytes, ProtobufProtocol.Counter.class);
       act.count_$eq(p.getCount());
       return act;
     }
@@ -42,9 +42,9 @@ public class SerializationTest {
       ref.start();
       try {
           Object result = ref.sendRequestReply("Hello");
-	  assertEquals("got it!", result);
+          assertEquals("got it!", result);
       } catch (ActorTimeoutException ex) {
-	  fail("actor should not time out");
+          fail("actor should not time out");
       }
 
       Format<SerializationTestActor> f = new SerializationTestActorFormat();
@@ -54,9 +54,9 @@ public class SerializationTest {
       r.start();
       try {
           Object result = r.sendRequestReply("Hello");
-	  assertEquals("got it!", result);
+          assertEquals("got it!", result);
       } catch (ActorTimeoutException ex) {
-	  fail("actor should not time out");
+          fail("actor should not time out");
       }
       ref.stop();
       r.stop();
@@ -72,9 +72,9 @@ public class SerializationTest {
       ref.start();
       try {
           Object result = ref.sendRequestReply("Hello");
-	  assertEquals("got it!", result);
+          assertEquals("got it!", result);
       } catch (ActorTimeoutException ex) {
-	  fail("actor should not time out");
+          fail("actor should not time out");
       }
 
       Format<SerializationTestActor> f = new SerializationTestActorFormat();
@@ -84,9 +84,9 @@ public class SerializationTest {
       r.start();
       try {
           Object result = r.sendRequestReply("Hello");
-	  assertEquals("got it!", result);
+          assertEquals("got it!", result);
       } catch (ActorTimeoutException ex) {
-	  fail("actor should not time out");
+          fail("actor should not time out");
       }
       ref.stop();
       r.stop();
@@ -98,11 +98,11 @@ public class SerializationTest {
       ref.start();
       try {
           Object result = ref.sendRequestReply("hello");
-	  assertEquals("world 1", result);
+          assertEquals("world 1", result);
           result = ref.sendRequestReply("hello");
-	  assertEquals("world 2", result);
+          assertEquals("world 2", result);
       } catch (ActorTimeoutException ex) {
-	  fail("actor should not time out");
+          fail("actor should not time out");
       }
 
       Format<MyUntypedActor> f = new MyUntypedActorFormat();
@@ -112,11 +112,11 @@ public class SerializationTest {
       r.start();
       try {
           Object result = r.sendRequestReply("hello");
-	  assertEquals("world 3", result);
+          assertEquals("world 3", result);
           result = r.sendRequestReply("hello");
-	  assertEquals("world 4", result);
+          assertEquals("world 4", result);
       } catch (ActorTimeoutException ex) {
-	  fail("actor should not time out");
+          fail("actor should not time out");
       }
       ref.stop();
       r.stop();
