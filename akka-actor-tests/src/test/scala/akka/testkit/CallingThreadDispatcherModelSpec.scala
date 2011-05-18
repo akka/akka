@@ -22,13 +22,13 @@ class CallingThreadDispatcherModelSpec extends ActorModelSpec {
     def flood(num: Int) {
       val cachedMessage = CountDownNStop(new CountDownLatch(num))
       val keeper = newTestActor.start()
-      (1 to num) foreach {
-        _ => newTestActor.start() ! cachedMessage
+      (1 to num) foreach { _ ⇒
+        newTestActor.start() ! cachedMessage
       }
       keeper.stop()
-      assertCountDown(cachedMessage.latch,10000, "Should process " + num + " countdowns")
+      assertCountDown(cachedMessage.latch, 10000, "Should process " + num + " countdowns")
     }
-    for(run <- 1 to 3) {
+    for (run ← 1 to 3) {
       flood(10000)
       await(dispatcher.stops.get == run)(withinMs = 10000)
       assertDispatcher(dispatcher)(starts = run, stops = run)

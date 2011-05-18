@@ -3,9 +3,8 @@
  */
 package akka.actor.ticket
 
-
 import akka.actor.Actor._
-import akka.actor.{Uuid,newUuid,uuidFrom}
+import akka.actor.{ Uuid, newUuid, uuidFrom }
 import akka.actor.remote.ServerInitiatedRemoteActorSpec.RemoteActorSpecActorUnidirectional
 import akka.remote.protocol.RemoteProtocol._
 import akka.actor.remote.AkkaRemoteTest

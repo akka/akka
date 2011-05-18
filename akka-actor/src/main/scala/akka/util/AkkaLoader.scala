@@ -13,14 +13,15 @@ import akka.actor.Actor
 class AkkaLoader {
   private val hasBooted = new Switch(false)
 
-  @volatile private var _bundles: Option[Bootable] = None
+  @volatile
+  private var _bundles: Option[Bootable] = None
 
   def bundles = _bundles;
 
   /*
    * Boot initializes the specified bundles
    */
-  def boot(withBanner: Boolean, b : Bootable): Unit = hasBooted switchOn {
+  def boot(withBanner: Boolean, b: Bootable): Unit = hasBooted switchOn {
     if (withBanner) printBanner()
     println("Starting Akka...")
     b.onLoad

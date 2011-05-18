@@ -4,7 +4,7 @@
 
 package akka.dispatch
 
-import akka.actor.{ActorRef, Actor, IllegalActorStateException}
+import akka.actor.{ ActorRef, Actor, IllegalActorStateException }
 
 import util.DynamicVariable
 
@@ -33,7 +33,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   extends ExecutorBasedEventDrivenDispatcher(_name, throughput, throughputDeadlineTime, mailboxType, config) {
 
   def this(_name: String, throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
-    this(_name, throughput, throughputDeadlineTime, mailboxType,ThreadPoolConfig())  // Needed for Java API usage
+    this(_name, throughput, throughputDeadlineTime, mailboxType, ThreadPoolConfig()) // Needed for Java API usage
 
   def this(_name: String, throughput: Int, mailboxType: MailboxType) =
     this(_name, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
@@ -50,15 +50,17 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   def this(_name: String, mailboxType: MailboxType) =
     this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
 
-  @volatile private var actorType: Option[Class[_]] = None
-  @volatile private var members = Vector[ActorRef]()
+  @volatile
+  private var actorType: Option[Class[_]] = None
+  @volatile
+  private var members = Vector[ActorRef]()
   private val donationInProgress = new DynamicVariable(false)
 
   private[akka] override def register(actorRef: ActorRef) = {
     //Verify actor type conformity
     actorType match {
-      case None => actorType = Some(actorRef.actor.getClass)
-      case Some(aType) =>
+      case None ⇒ actorType = Some(actorRef.actor.getClass)
+      case Some(aType) ⇒
         if (aType != actorRef.actor.getClass)
           throw new IllegalActorStateException(String.format(
             "Can't register actor %s in a work stealing dispatcher which already knows actors of type %s",
@@ -87,11 +89,11 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   override private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
     try {
       donationInProgress.value = true
-      while(donateFrom(mbox)) {} //When we reregister, first donate messages to another actor
+      while (donateFrom(mbox)) {} //When we reregister, first donate messages to another actor
     } finally { donationInProgress.value = false }
 
     if (!mbox.isEmpty) //If we still have messages left to process, reschedule for execution
-        super.reRegisterForExecution(mbox)
+      super.reRegisterForExecution(mbox)
   }
 
   /**
@@ -104,8 +106,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     // the dispatcher is being shut down...
     // Starts at is seeded by current time
     doFindDonorRecipient(donorMbox, actors, (System.currentTimeMillis % actors.size).asInstanceOf[Int]) match {
-      case null => false
-      case recipient => donate(donorMbox.dequeue, recipient)
+      case null      ⇒ false
+      case recipient ⇒ donate(donorMbox.dequeue, recipient)
     }
   }
 
@@ -116,8 +118,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     donationInProgress.value = true
     val actors = members // copy to prevent concurrent modifications having any impact
     doFindDonorRecipient(donorMbox, actors, System.identityHashCode(message) % actors.size) match {
-      case null => false
-      case recipient => donate(message, recipient)
+      case null      ⇒ false
+      case recipient ⇒ donate(message, recipient)
     }
   } finally { donationInProgress.value = false }
 
@@ -143,7 +145,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     var i = 0
     var recipient: ActorRef = null
 
-    while((i < prSz) && (recipient eq null)) {
+    while ((i < prSz) && (recipient eq null)) {
       val actor = potentialRecipients((i + startIndex) % prSz) //Wrap-around, one full lap
       val mbox = getMailbox(actor)
 

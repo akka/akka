@@ -25,7 +25,7 @@ class ServerInitiatedRemoteTypedActorSpec extends AkkaRemoteTest {
   def createRemoteActorRef = remote.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, host, port)
 
   "Server managed remote typed Actor " should {
-/*
+    /*
     "receive one-way message" in {
       val actor = createRemoteActorRef
       actor.oneWay

@@ -9,7 +9,7 @@ import org.scalatest.matchers.MustMatchers
 import akka.util.duration._
 import akka.testing.Testing.sleepFor
 import akka.dispatch.Dispatchers
-import akka.config.Supervision.{SupervisorConfig, OneForOneStrategy, Supervise, Permanent}
+import akka.config.Supervision.{ SupervisorConfig, OneForOneStrategy, Supervise, Permanent }
 import Actor._
 
 class SupervisorTreeSpec extends WordSpec with MustMatchers {
@@ -22,7 +22,7 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
     a.foreach(self.link(_))
 
     def receive = {
-      case Die => throw new Exception(self.address + " is dying...")
+      case Die ⇒ throw new Exception(self.address + " is dying...")
     }
 
     override def preRestart(reason: Throwable) {
@@ -35,13 +35,13 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
     "be able to kill the middle actor and see itself and its child restarted" in {
       log = "INIT"
 
-      val lastActor   = actorOf(new Chainer, "lastActor").start
+      val lastActor = actorOf(new Chainer, "lastActor").start
       val middleActor = actorOf(new Chainer(Some(lastActor)), "middleActor").start
-      val headActor   = actorOf(new Chainer(Some(middleActor)), "headActor").start
+      val headActor = actorOf(new Chainer(Some(middleActor)), "headActor").start
 
       middleActor ! Die
       sleepFor(500 millis)
-      log must equal ("INITmiddleActorlastActor")
+      log must equal("INITmiddleActorlastActor")
     }
   }
 }

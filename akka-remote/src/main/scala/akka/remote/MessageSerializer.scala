@@ -4,40 +4,40 @@
 
 package akka.remote
 
-import akka.serialization.{Serializers, Serializable}
+import akka.serialization.{ Serializers, Serializable }
 import akka.remote.protocol.RemoteProtocol._
 import akka.util._
 
-import com.google.protobuf.{Message, ByteString}
+import com.google.protobuf.{ Message, ByteString }
 
 object MessageSerializer {
-  private def SERIALIZER_JAVA:       Serializers.Java      = Serializers.Java
-  private def SERIALIZER_JAVA_JSON:  Serializers.JavaJSON  = Serializers.JavaJSON
+  private def SERIALIZER_JAVA: Serializers.Java = Serializers.Java
+  private def SERIALIZER_JAVA_JSON: Serializers.JavaJSON = Serializers.JavaJSON
   private def SERIALIZER_SCALA_JSON: Serializers.ScalaJSON = Serializers.ScalaJSON
-  private def SERIALIZER_PROTOBUF:   Serializers.Protobuf  = Serializers.Protobuf
+  private def SERIALIZER_PROTOBUF: Serializers.Protobuf = Serializers.Protobuf
 
   def setClassLoader(cl: ClassLoader) = {
     val someCl = Some(cl)
-    SERIALIZER_JAVA.classLoader       = someCl
-    SERIALIZER_JAVA_JSON.classLoader  = someCl
+    SERIALIZER_JAVA.classLoader = someCl
+    SERIALIZER_JAVA_JSON.classLoader = someCl
     SERIALIZER_SCALA_JSON.classLoader = someCl
   }
 
   def deserialize(messageProtocol: MessageProtocol): Any = {
     messageProtocol.getSerializationScheme match {
-      case SerializationSchemeType.JAVA =>
+      case SerializationSchemeType.JAVA ⇒
         unbox(SERIALIZER_JAVA.fromBinary(messageProtocol.getMessage.toByteArray, None))
 
-      case SerializationSchemeType.PROTOBUF =>
+      case SerializationSchemeType.PROTOBUF ⇒
         val clazz = loadManifest(SERIALIZER_PROTOBUF.classLoader, messageProtocol)
         SERIALIZER_PROTOBUF.fromBinary(messageProtocol.getMessage.toByteArray, Some(clazz))
 
-      case SerializationSchemeType.SCALA_JSON =>
+      case SerializationSchemeType.SCALA_JSON ⇒
         val clazz = loadManifest(SERIALIZER_SCALA_JSON.classLoader, messageProtocol)
         val renderer = clazz.newInstance.asInstanceOf[Serializable.ScalaJSON[_]]
         renderer.fromBytes(messageProtocol.getMessage.toByteArray)
 
-      case SerializationSchemeType.JAVA_JSON =>
+      case SerializationSchemeType.JAVA_JSON ⇒
         val clazz = loadManifest(SERIALIZER_JAVA_JSON.classLoader, messageProtocol)
         SERIALIZER_JAVA_JSON.fromBinary(messageProtocol.getMessage.toByteArray, Some(clazz))
     }
@@ -76,26 +76,26 @@ object MessageSerializer {
   }
 
   private def box(value: Any): AnyRef = value match {
-    case value: Boolean => new java.lang.Boolean(value)
-    case value: Char    => new java.lang.Character(value)
-    case value: Short   => new java.lang.Short(value)
-    case value: Int     => new java.lang.Integer(value)
-    case value: Long    => new java.lang.Long(value)
-    case value: Float   => new java.lang.Float(value)
-    case value: Double  => new java.lang.Double(value)
-    case value: Byte    => new java.lang.Byte(value)
-    case value          => value.asInstanceOf[AnyRef]
+    case value: Boolean ⇒ new java.lang.Boolean(value)
+    case value: Char    ⇒ new java.lang.Character(value)
+    case value: Short   ⇒ new java.lang.Short(value)
+    case value: Int     ⇒ new java.lang.Integer(value)
+    case value: Long    ⇒ new java.lang.Long(value)
+    case value: Float   ⇒ new java.lang.Float(value)
+    case value: Double  ⇒ new java.lang.Double(value)
+    case value: Byte    ⇒ new java.lang.Byte(value)
+    case value          ⇒ value.asInstanceOf[AnyRef]
   }
 
   private def unbox(value: AnyRef): Any = value match {
-    case value: java.lang.Boolean   => value.booleanValue
-    case value: java.lang.Character => value.charValue
-    case value: java.lang.Short     => value.shortValue
-    case value: java.lang.Integer   => value.intValue
-    case value: java.lang.Long      => value.longValue
-    case value: java.lang.Float     => value.floatValue
-    case value: java.lang.Double    => value.doubleValue
-    case value: java.lang.Byte      => value.byteValue
-    case value                      => value
+    case value: java.lang.Boolean   ⇒ value.booleanValue
+    case value: java.lang.Character ⇒ value.charValue
+    case value: java.lang.Short     ⇒ value.shortValue
+    case value: java.lang.Integer   ⇒ value.intValue
+    case value: java.lang.Long      ⇒ value.longValue
+    case value: java.lang.Float     ⇒ value.floatValue
+    case value: java.lang.Double    ⇒ value.doubleValue
+    case value: java.lang.Byte      ⇒ value.byteValue
+    case value                      ⇒ value
   }
 }

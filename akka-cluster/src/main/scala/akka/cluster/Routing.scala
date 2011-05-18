@@ -30,21 +30,21 @@ object Router {
     replicationStrategy: ReplicationStrategy = ReplicationStrategy.WriteThrough): ClusterActorRef = {
 
     routerType match {
-      case Direct => new ClusterActorRef(
+      case Direct ⇒ new ClusterActorRef(
         addresses, serviceId, timeout,
         actorType, replicationStrategy) with Direct
 
-      case Random => new ClusterActorRef(
+      case Random ⇒ new ClusterActorRef(
         addresses, serviceId, timeout,
         actorType, replicationStrategy) with Random
 
-      case RoundRobin => new ClusterActorRef(
+      case RoundRobin ⇒ new ClusterActorRef(
         addresses, serviceId, timeout,
         actorType, replicationStrategy) with RoundRobin
 
-      case LeastCPU      => sys.error("Router LeastCPU not supported yet")
-      case LeastRAM      => sys.error("Router LeastRAM not supported yet")
-      case LeastMessages => sys.error("Router LeastMessages not supported yet")
+      case LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
+      case LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
+      case LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
     }
   }
 
@@ -65,7 +65,7 @@ object Router {
   trait Direct extends Router {
     lazy val connection: Option[ActorRef] = {
       if (connections.size == 0) throw new IllegalStateException("DirectRouter need a single replica connection found [0]")
-      connections.toList.map({ case (address, actor) => actor }).headOption
+      connections.toList.map({ case (address, actor) ⇒ actor }).headOption
     }
 
     def route(message: Any)(implicit sender: Option[ActorRef]) {
@@ -75,7 +75,7 @@ object Router {
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] =
       if (connection.isDefined) connection.get.!!!(message, timeout)(sender)
-      else                      throw new RoutingException("No node connections for router")
+      else throw new RoutingException("No node connections for router")
   }
 
   /**
@@ -91,12 +91,12 @@ object Router {
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] =
       if (next.isDefined) next.get.!!!(message, timeout)(sender)
-      else                throw new RoutingException("No node connections for router")
+      else throw new RoutingException("No node connections for router")
 
     private def next: Option[ActorRef] = {
       val nrOfConnections = connections.size
       if (nrOfConnections == 0) None
-      else                      Some(connections.toArray.apply(random.nextInt(nrOfConnections))._2)
+      else Some(connections.toArray.apply(random.nextInt(nrOfConnections))._2)
     }
   }
 
@@ -104,7 +104,7 @@ object Router {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   trait RoundRobin extends Router {
-    private def items: List[ActorRef] = connections.toList.map({ case (address, actor) => actor })
+    private def items: List[ActorRef] = connections.toList.map({ case (address, actor) ⇒ actor })
 
     @volatile
     private var current = items
@@ -116,7 +116,7 @@ object Router {
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] =
       if (next.isDefined) next.get.!!!(message, timeout)(sender)
-      else                throw new RoutingException("No node connections for router")
+      else throw new RoutingException("No node connections for router")
 
     private def hasNext = items != Nil
 

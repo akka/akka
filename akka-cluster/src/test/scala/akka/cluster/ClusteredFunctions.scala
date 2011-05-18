@@ -11,7 +11,7 @@ import akka.dispatch.Futures
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ClusteredFunctions {
-//sample.cluster.ClusteredFunctions.fun2
+  //sample.cluster.ClusteredFunctions.fun2
 
   // run all
   def run {
@@ -24,11 +24,11 @@ object ClusteredFunctions {
   // Send Function0[Unit]
   def fun1 = {
     Cluster.startLocalCluster()
-    val node    = Cluster newNode (NodeAddress("test", "local", port = 9991)) start
+    val node = Cluster newNode (NodeAddress("test", "local", port = 9991)) start
     val remote1 = Cluster newNode (NodeAddress("test", "remote1", port = 9992)) start
 
     Thread.sleep(100)
-    val fun = () => println("=============>>> AKKA ROCKS <<<=============")
+    val fun = () ⇒ println("=============>>> AKKA ROCKS <<<=============")
     node send (fun, 2) // send and invoke function on to two cluster nodes
 
     node.stop
@@ -39,11 +39,11 @@ object ClusteredFunctions {
   // Send Function0[Any]
   def fun2 = {
     Cluster.startLocalCluster()
-    val local   = Cluster newNode (NodeAddress("test", "local", port = 9991)) start
+    val local = Cluster newNode (NodeAddress("test", "local", port = 9991)) start
     val remote1 = Cluster newNode (NodeAddress("test", "remote1", port = 9992)) start
 
     Thread.sleep(100)
-    val fun = () => "AKKA ROCKS"
+    val fun = () ⇒ "AKKA ROCKS"
     val futures = local send (fun, 2) // send and invoke function on to two cluster nodes and get result
 
     val result = Futures.fold("")(futures)(_ + " - " + _).await.resultOrException
@@ -57,10 +57,10 @@ object ClusteredFunctions {
   // Send Function1[Any, Unit]
   def fun3 = {
     Cluster.startLocalCluster()
-    val local   = Cluster newNode (NodeAddress("test", "local", port = 9991)) start
+    val local = Cluster newNode (NodeAddress("test", "local", port = 9991)) start
     val remote1 = Cluster newNode (NodeAddress("test", "remote1", port = 9992)) start
 
-    val fun = ((s: String) => println("=============>>> " + s + " <<<=============")).asInstanceOf[Function1[Any, Unit]]
+    val fun = ((s: String) ⇒ println("=============>>> " + s + " <<<=============")).asInstanceOf[Function1[Any, Unit]]
     local send (fun, "AKKA ROCKS", 2) // send and invoke function on to two cluster nodes
 
     local.stop
@@ -71,10 +71,10 @@ object ClusteredFunctions {
   // Send Function1[Any, Any]
   def fun4 = {
     Cluster.startLocalCluster()
-    val local   = Cluster newNode (NodeAddress("test", "local", port = 9991)) start
+    val local = Cluster newNode (NodeAddress("test", "local", port = 9991)) start
     val remote1 = Cluster newNode (NodeAddress("test", "remote1", port = 9992)) start
 
-    val fun = ((i: Int) => i * i).asInstanceOf[Function1[Any, Any]]
+    val fun = ((i: Int) ⇒ i * i).asInstanceOf[Function1[Any, Any]]
 
     val future1 = local send (fun, 2, 1) head // send and invoke function on one cluster node and get result
     val future2 = local send (fun, 2, 1) head // send and invoke function on one cluster node and get result

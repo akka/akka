@@ -11,7 +11,7 @@ object MethodCall {
   def isOneWay(method: Method): Boolean         = method.getReturnType == java.lang.Void.TYPE
   def returnsFuture_?(method: Method): Boolean  = classOf[Future[_]].isAssignableFrom(method.getReturnType)
   def returnsJOption_?(method: Method): Boolean = classOf[akka.japi.Option[_]].isAssignableFrom(method.getReturnType)
-  def returnsOption_?(method: Method): Boolean  = classOf[scala.Option[_]].isAssignableFrom(method.getReturnType)
+  def returnsOption_?(method: Method): Boolean = classOf[scala.Option[_]].isAssignableFrom(method.getReturnType)
 }
 
 case class MethodCall(method: Method, parameters: Array[AnyRef]) {
@@ -34,7 +34,7 @@ case class MethodCall(method: Method, parameters: Array[AnyRef]) {
 }
 
 case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], parameterValues: Array[AnyRef]) {
-  private def readResolve(): AnyRef = MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes:_*), parameterValues)
+  private def readResolve(): AnyRef = MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes: _*), parameterValues)
 }
 
 object ThaipedActor {
@@ -89,16 +89,16 @@ object ThaipedActor {
 
   case class Configuration(timeout: Duration = Duration(Actor.TIMEOUT, "millis"), dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher)
 
-  def thaipedActorOf[T <: AnyRef,TI <: T](interface: Class[T], impl: Class[TI], config: Configuration): T =
+  def thaipedActorOf[T <: AnyRef, TI <: T](interface: Class[T], impl: Class[TI], config: Configuration): T =
     configureAndProxy(interface, actorOf(new ThaipedActor[TI](impl.newInstance.asInstanceOf[TI])), config, interface.getClassLoader)
 
-  def thaipedActorOf[T <: AnyRef,TI <: T](interface: Class[T], impl: Creator[TI], config: Configuration): T =
+  def thaipedActorOf[T <: AnyRef, TI <: T](interface: Class[T], impl: Creator[TI], config: Configuration): T =
     configureAndProxy(interface, actorOf(new ThaipedActor[TI](impl.create)), config, interface.getClassLoader)
 
-  def thaipedActorOf[T <: AnyRef,TI <: T](interface: Class[T], impl: Class[TI], config: Configuration, loader: ClassLoader): T =
+  def thaipedActorOf[T <: AnyRef, TI <: T](interface: Class[T], impl: Class[TI], config: Configuration, loader: ClassLoader): T =
     configureAndProxy(interface, actorOf(new ThaipedActor[TI](impl.newInstance.asInstanceOf[TI])), config, loader)
 
-  def thaipedActorOf[T <: AnyRef,TI <: T](interface: Class[T], impl: Creator[TI], config: Configuration, loader: ClassLoader): T =
+  def thaipedActorOf[T <: AnyRef, TI <: T](interface: Class[T], impl: Creator[TI], config: Configuration, loader: ClassLoader): T =
     configureAndProxy(interface, actorOf(new ThaipedActor[TI](impl.create)), config, loader)
 
   protected def configureAndProxy[T <: AnyRef](interface: Class[T], actor: ActorRef, config: Configuration, loader: ClassLoader): T = {

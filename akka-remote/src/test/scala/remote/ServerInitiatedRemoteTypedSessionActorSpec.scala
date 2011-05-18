@@ -9,7 +9,6 @@ import RemoteTypedActorLog._
 
 class ServerInitiatedRemoteTypedSessionActorSpec extends AkkaRemoteTest {
 
-
   override def beforeEach = {
     super.beforeEach
 

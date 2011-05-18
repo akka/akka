@@ -27,7 +27,8 @@ object Scheduler {
 
   case class SchedulerException(msg: String, e: Throwable) extends RuntimeException(msg, e)
 
-  @volatile private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
+  @volatile
+  private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
 
   /**
    * Schedules to send the specified message to the receiver after initialDelay and then repeated after delay
@@ -38,7 +39,7 @@ object Scheduler {
         new Runnable { def run = receiver ! message },
         initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception => 
+      case e: Exception ⇒
         val error = SchedulerException(message + " could not be scheduled on " + receiver, e)
         EventHandler.error(error, this, "%s @ %s".format(receiver, message))
         throw error
@@ -49,7 +50,7 @@ object Scheduler {
    * Schedules to run specified function to the receiver after initialDelay and then repeated after delay,
    * avoid blocking operations since this is executed in the schedulers thread
    */
-  def schedule(f: () => Unit, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] =
+  def schedule(f: () ⇒ Unit, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] =
     schedule(new Runnable { def run = f() }, initialDelay, delay, timeUnit)
 
   /**
@@ -60,7 +61,7 @@ object Scheduler {
     try {
       service.scheduleAtFixedRate(runnable, initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception => 
+      case e: Exception ⇒
         val error = SchedulerException("Failed to schedule a Runnable", e)
         EventHandler.error(error, this, error.getMessage)
         throw error
@@ -76,8 +77,8 @@ object Scheduler {
         new Runnable { def run = receiver ! message },
         delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception =>
-        val error = SchedulerException( message + " could not be scheduleOnce'd on " + receiver, e)
+      case e: Exception ⇒
+        val error = SchedulerException(message + " could not be scheduleOnce'd on " + receiver, e)
         EventHandler.error(e, this, receiver + " @ " + message)
         throw error
     }
@@ -87,7 +88,7 @@ object Scheduler {
    * Schedules a function to be run after delay,
    * avoid blocking operations since the runnable is executed in the schedulers thread
    */
-  def scheduleOnce(f: () => Unit, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] =
+  def scheduleOnce(f: () ⇒ Unit, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] =
     scheduleOnce(new Runnable { def run = f() }, delay, timeUnit)
 
   /**
@@ -96,9 +97,9 @@ object Scheduler {
    */
   def scheduleOnce(runnable: Runnable, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     try {
-      service.schedule(runnable,delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
+      service.schedule(runnable, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception => 
+      case e: Exception ⇒
         val error = SchedulerException("Failed to scheduleOnce a Runnable", e)
         EventHandler.error(e, this, error.getMessage)
         throw error

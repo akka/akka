@@ -6,7 +6,7 @@ package akka.cluster
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
 import akka.cluster.zookeeper._
 import org.I0Itec.zkclient._
@@ -15,7 +15,7 @@ object MultiNodeTest {
   val NrOfNodes = 2
   val ClusterName = "test-cluster"
   val DataPath = "_akka_cluster/data"
-  val LogPath  = "_akka_cluster/log"
+  val LogPath = "_akka_cluster/log"
 }
 
 trait MultiNodeTest extends WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {

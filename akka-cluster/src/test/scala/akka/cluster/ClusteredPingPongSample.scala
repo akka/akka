@@ -8,7 +8,7 @@ import akka.cluster._
 
 import akka.actor._
 import akka.actor.Actor._
-import akka.serialization.{Serializers, SerializerBasedActorFormat}
+import akka.serialization.{ Serializers, SerializerBasedActorFormat }
 
 import java.util.concurrent.CountDownLatch
 
@@ -36,7 +36,7 @@ object PingPong {
     var gameOverLatch: CountDownLatch = _
 
     def receive = {
-      case Ball =>
+      case Ball ⇒
         if (count < NrOfPings) {
           println("---->> PING (%s)" format count)
           count += 1
@@ -46,16 +46,16 @@ object PingPong {
           gameOverLatch.countDown
           self.stop
         }
-      case Latch(latch) =>
+      case Latch(latch) ⇒
         gameOverLatch = latch
     }
   }
 
   class PongActor extends Actor with Serializable {
     def receive = {
-      case Ball =>
+      case Ball ⇒
         self reply Ball
-      case Stop =>
+      case Stop ⇒
         self reply Stop
         self.stop
     }
@@ -146,4 +146,4 @@ object ClusteredPingPongSample {
     Cluster.shutdownLocalCluster()
   }
 }
-*/
+*/ 

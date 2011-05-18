@@ -6,13 +6,14 @@ package akka.serialization
 
 import akka.actor.Actor
 
-import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream}
+import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Serializer extends scala.Serializable {
-  @volatile var classLoader: Option[ClassLoader] = None
+  @volatile
+  var classLoader: Option[ClassLoader] = None
   def deepClone(obj: AnyRef): AnyRef = fromBinary(toBinary(obj), Some(obj.getClass))
 
   def toBinary(obj: AnyRef): Array[Byte]
@@ -39,7 +40,7 @@ trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
 object Format {
 
   object Default extends Serializer {
-    import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream}
+    import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
     //import org.apache.commons.io.input.ClassLoaderObjectInputStream
 
     def toBinary(obj: AnyRef): Array[Byte] = {

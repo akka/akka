@@ -1,9 +1,9 @@
 package akka.actor.remote
-import akka.actor. {ActorRegistry, Actor}
+import akka.actor.{ ActorRegistry, Actor }
 
 object UnOptimizedLocalScopedSpec {
   class TestActor extends Actor {
-    def receive = { case _ => }
+    def receive = { case _ ⇒ }
   }
 }
 

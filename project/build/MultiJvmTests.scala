@@ -168,8 +168,8 @@ object JvmIO {
     def process {
       val line = reader.readLine()
       if (line != null) {
-	processLine(line)
-	process
+        processLine(line)
+        process
       }
     }
     process
@@ -189,10 +189,10 @@ object JvmIO {
         val byteCount = in.read(buffer)
         if (Thread.interrupted) throw new InterruptedException
         if (byteCount > 0) {
-	  out.write(buffer, 0, byteCount)
-	  out.flush()
-	  read
-	}
+          out.write(buffer, 0, byteCount)
+          out.flush()
+          read
+        }
       }
       read
     } catch {

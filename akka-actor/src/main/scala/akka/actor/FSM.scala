@@ -48,7 +48,7 @@ object FSM {
    * reminder what the new state is.
    */
   object -> {
-    def unapply[S](in : (S, S)) = Some(in)
+    def unapply[S](in: (S, S)) = Some(in)
   }
 
   /*
@@ -139,7 +139,7 @@ object FSM {
  * </pre>
  */
 trait FSM[S, D] extends ListenerManagement {
-  this: Actor =>
+  this: Actor ⇒
 
   import FSM._
 
@@ -147,9 +147,11 @@ trait FSM[S, D] extends ListenerManagement {
   type Timeout = Option[Duration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
 
-  /******************************************
+  /**
+   * ****************************************
    *                 DSL
-   ******************************************/
+   * ****************************************
+   */
 
   /**
    * Insert a new StateFunction at the end of the processing chain for the
@@ -261,7 +263,7 @@ trait FSM[S, D] extends ListenerManagement {
    * Set state timeout explicitly. This method can safely be used from within a
    * state handler.
    */
-  protected final def setStateTimeout(state : S, timeout : Timeout) {
+  protected final def setStateTimeout(state: S, timeout: Timeout) {
     stateTimeouts(state) = timeout
   }
 
@@ -298,16 +300,16 @@ trait FSM[S, D] extends ListenerManagement {
    * Convenience wrapper for using a total function instead of a partial
    * function literal. To be used with onTransition.
    */
-  implicit protected final def total2pf(transitionHandler: (S, S) => Unit) =
+  implicit protected final def total2pf(transitionHandler: (S, S) ⇒ Unit) =
     new PartialFunction[(S, S), Unit] {
-      def isDefinedAt(in : (S, S)) = true
-      def apply(in : (S, S)) { transitionHandler(in._1, in._2) }
+      def isDefinedAt(in: (S, S)) = true
+      def apply(in: (S, S)) { transitionHandler(in._1, in._2) }
     }
 
   /**
    * Set handler which is called upon termination of this FSM actor.
    */
-  protected final def onTermination(terminationHandler: PartialFunction[StopEvent[S,D], Unit]) = {
+  protected final def onTermination(terminationHandler: PartialFunction[StopEvent[S, D], Unit]) = {
     terminateEvent = terminationHandler
   }
 
@@ -326,9 +328,11 @@ trait FSM[S, D] extends ListenerManagement {
     makeTransition(currentState)
   }
 
-  /******************************************************************
+  /**
+   * ****************************************************************
    *                PRIVATE IMPLEMENTATION DETAILS
-   ******************************************************************/
+   * ****************************************************************
+   */
 
   /*
    * FSM State data and current timeout handling
@@ -362,7 +366,7 @@ trait FSM[S, D] extends ListenerManagement {
    * unhandled event handler
    */
   private val handleEventDefault: StateFunction = {
-    case Event(value, stateData) =>
+    case Event(value, stateData) ⇒
       stay
   }
   private var handleEvent: StateFunction = handleEventDefault
@@ -370,50 +374,52 @@ trait FSM[S, D] extends ListenerManagement {
   /*
    * termination handling
    */
-  private var terminateEvent: PartialFunction[StopEvent[S,D], Unit] = {
-    case StopEvent(Failure(cause), _, _) =>
-    case StopEvent(reason, _, _) =>
+  private var terminateEvent: PartialFunction[StopEvent[S, D], Unit] = {
+    case StopEvent(Failure(cause), _, _) ⇒
+    case StopEvent(reason, _, _)         ⇒
   }
 
   /*
    * transition handling
    */
   private var transitionEvent: List[TransitionHandler] = Nil
-  private def handleTransition(prev : S, next : S) {
+  private def handleTransition(prev: S, next: S) {
     val tuple = (prev, next)
-    for (te <- transitionEvent) { if (te.isDefinedAt(tuple)) te(tuple) }
+    for (te ← transitionEvent) { if (te.isDefinedAt(tuple)) te(tuple) }
   }
 
   // ListenerManagement shall not start() or stop() listener actors
   override protected val manageLifeCycleOfListeners = false
 
-  /*********************************************
+  /**
+   * *******************************************
    *       Main actor receive() method
-   *********************************************/
+   * *******************************************
+   */
   override final protected def receive: Receive = {
-    case TimeoutMarker(gen) =>
+    case TimeoutMarker(gen) ⇒
       if (generation == gen) {
         processEvent(StateTimeout)
       }
-    case t@Timer(name, msg, repeat) =>
+    case t@Timer(name, msg, repeat) ⇒
       if (timerActive_?(name)) {
         processEvent(msg)
         if (!repeat) {
           timers -= name
         }
       }
-    case SubscribeTransitionCallBack(actorRef) =>
+    case SubscribeTransitionCallBack(actorRef) ⇒
       addListener(actorRef)
       // send current state back as reference point
       try {
         actorRef ! CurrentState(self, currentState.stateName)
       } catch {
-        case e : ActorInitializationException =>
+        case e: ActorInitializationException ⇒
           EventHandler.warning(this, "trying to register not running listener")
       }
-    case UnsubscribeTransitionCallBack(actorRef) =>
+    case UnsubscribeTransitionCallBack(actorRef) ⇒
       removeListener(actorRef)
-    case value => {
+    case value ⇒ {
       if (timeoutFuture.isDefined) {
         timeoutFuture.get.cancel(true)
         timeoutFuture = None
@@ -427,14 +433,14 @@ trait FSM[S, D] extends ListenerManagement {
     val event = Event(value, currentState.stateData)
     val stateFunc = stateFunctions(currentState.stateName)
     val nextState = if (stateFunc isDefinedAt event) {
-        stateFunc(event)
-      } else {
-        // handleEventDefault ensures that this is always defined
-        handleEvent(event)
-      }
+      stateFunc(event)
+    } else {
+      // handleEventDefault ensures that this is always defined
+      handleEvent(event)
+    }
     nextState.stopReason match {
-      case Some(reason) => terminate(reason)
-      case None => makeTransition(nextState)
+      case Some(reason) ⇒ terminate(reason)
+      case None         ⇒ makeTransition(nextState)
     }
   }
 
@@ -468,7 +474,7 @@ trait FSM[S, D] extends ListenerManagement {
 
   case class Event[D](event: Any, stateData: D)
   object Ev {
-    def unapply[D](e : Event[D]) : Option[Any] = Some(e.event)
+    def unapply[D](e: Event[D]): Option[Any] = Some(e.event)
   }
 
   case class State(stateName: S, stateData: D, timeout: Timeout = None) {
@@ -489,8 +495,8 @@ trait FSM[S, D] extends ListenerManagement {
      */
     def replying(replyValue: Any): State = {
       self.sender match {
-        case Some(sender) => sender ! replyValue
-        case None =>
+        case Some(sender) ⇒ sender ! replyValue
+        case None         ⇒
       }
       this
     }

@@ -23,28 +23,27 @@ object Helpers {
   }
 
   def bytesToInt(bytes: Array[Byte], offset: Int): Int = {
-    (0 until 4).foldLeft(0)((value, index) => value + ((bytes(index + offset) & 0x000000FF) << ((4 - 1 - index) * 8)))
+    (0 until 4).foldLeft(0)((value, index) ⇒ value + ((bytes(index + offset) & 0x000000FF) << ((4 - 1 - index) * 8)))
   }
 
   def flatten[T: ClassManifest](array: Array[Any]) = array.flatMap {
-    case arr: Array[T] => arr
-    case elem: T       => Array(elem)
+    case arr: Array[T] ⇒ arr
+    case elem: T       ⇒ Array(elem)
   }
 
-  def ignore[E : Manifest](body: => Unit) {
-    try {
-      body
-    }
-    catch {
-      case e if manifest[E].erasure.isAssignableFrom(e.getClass) => ()
-    }
-  }
-
-  def withPrintStackTraceOnError(body: => Unit) {
+  def ignore[E: Manifest](body: ⇒ Unit) {
     try {
       body
     } catch {
-      case e: Throwable =>
+      case e if manifest[E].erasure.isAssignableFrom(e.getClass) ⇒ ()
+    }
+  }
+
+  def withPrintStackTraceOnError(body: ⇒ Unit) {
+    try {
+      body
+    } catch {
+      case e: Throwable ⇒
         EventHandler.error(e, this, e.toString)
         throw e
     }
@@ -67,7 +66,7 @@ object Helpers {
     try {
       narrow(o)
     } catch {
-      case e: ClassCastException =>
+      case e: ClassCastException ⇒
         None
     }
 
@@ -80,7 +79,7 @@ object Helpers {
    * res0: ResultOrError[Int] = ResultOrError@a96606
    *
    * scala> res0()
-    res1: Int = 1
+   * res1: Int = 1
    *
    * scala> res0() = 3
    *
@@ -103,20 +102,20 @@ object Helpers {
    *    at Re...
    * </pre>
    */
-  class ResultOrError[R](result: R){
+  class ResultOrError[R](result: R) {
     private[this] var contents: Either[R, Throwable] = Left(result)
 
-    def update(value: => R) {
+    def update(value: ⇒ R) {
       contents = try {
         Left(value)
       } catch {
-        case (error : Throwable) => Right(error)
+        case (error: Throwable) ⇒ Right(error)
       }
     }
 
     def apply() = contents match {
-      case Left(result) => result
-      case Right(error) => throw error.fillInStackTrace
+      case Left(result) ⇒ result
+      case Right(error) ⇒ throw error.fillInStackTrace
     }
   }
   object ResultOrError {

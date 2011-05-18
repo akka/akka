@@ -12,64 +12,65 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 import akka.dispatch.DefaultCompletableFuture
-import java.util.concurrent.{TimeUnit, CountDownLatch}
+import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import annotation.tailrec
-import java.util.concurrent.atomic.{AtomicLong, AtomicReference, AtomicInteger}
+import java.util.concurrent.atomic.{ AtomicLong, AtomicReference, AtomicInteger }
 import akka.actor.ActorRegistry
 
 @RunWith(classOf[JUnitRunner])
 class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
-    describe("DataflowVariable") {
-      it("should be able to set the value of one variable from other variables") {
-        import DataFlow._
+  describe("DataflowVariable") {
+    it("should be able to set the value of one variable from other variables") {
+      import DataFlow._
 
-        val latch = new CountDownLatch(1)
-        val result = new AtomicInteger(0)
-        val x, y, z = new DataFlowVariable[Int]
-        thread {
-          z << x() + y()
-          result.set(z())
-          latch.countDown()
-        }
-        thread { x << 40 }
-        thread { y << 2 }
+      val latch = new CountDownLatch(1)
+      val result = new AtomicInteger(0)
+      val x, y, z = new DataFlowVariable[Int]
+      thread {
+        z << x() + y()
+        result.set(z())
+        latch.countDown()
+      }
+      thread { x << 40 }
+      thread { y << 2 }
 
-        latch.await(10,TimeUnit.SECONDS) should equal (true)
-        result.get should equal (42)
-        List(x,y,z).foreach(_.shutdown())
+      latch.await(10, TimeUnit.SECONDS) should equal(true)
+      result.get should equal(42)
+      List(x, y, z).foreach(_.shutdown())
+    }
+
+    it("should be able to sum a sequence of ints") {
+      import DataFlow._
+
+      def ints(n: Int, max: Int): List[Int] =
+        if (n == max) Nil
+        else n :: ints(n + 1, max)
+
+      def sum(s: Int, stream: List[Int]): List[Int] = stream match {
+        case Nil    ⇒ s :: Nil
+        case h :: t ⇒ s :: sum(h + s, t)
       }
 
-      it("should be able to sum a sequence of ints") {
-        import DataFlow._
+      val latch = new CountDownLatch(1)
+      val result = new AtomicReference[List[Int]](Nil)
+      val x = new DataFlowVariable[List[Int]]
+      val y = new DataFlowVariable[List[Int]]
+      val z = new DataFlowVariable[List[Int]]
 
-        def ints(n: Int, max: Int): List[Int] =
-          if (n == max) Nil
-          else n :: ints(n + 1, max)
+      thread { x << ints(0, 1000) }
+      thread { y << sum(0, x()) }
 
-        def sum(s: Int, stream: List[Int]): List[Int] = stream match {
-          case Nil => s :: Nil
-          case h :: t => s :: sum(h + s, t)
-        }
-
-        val latch = new CountDownLatch(1)
-        val result = new AtomicReference[List[Int]](Nil)
-        val x = new DataFlowVariable[List[Int]]
-        val y = new DataFlowVariable[List[Int]]
-        val z = new DataFlowVariable[List[Int]]
-
-        thread { x << ints(0, 1000) }
-        thread { y << sum(0, x())   }
-
-        thread { z << y()
-          result.set(z())
-          latch.countDown()
-        }
-
-        latch.await(10,TimeUnit.SECONDS) should equal (true)
-        result.get should equal (sum(0,ints(0,1000)))
-        List(x,y,z).foreach(_.shutdown())
+      thread {
+        z << y()
+        result.set(z())
+        latch.countDown()
       }
-/*
+
+      latch.await(10, TimeUnit.SECONDS) should equal(true)
+      result.get should equal(sum(0, ints(0, 1000)))
+      List(x, y, z).foreach(_.shutdown())
+    }
+    /*
     it("should be able to join streams") {
       import DataFlow._
       Actor.registry.shutdownAll()
@@ -135,8 +136,8 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
       latch.await(15,TimeUnit.SECONDS) should equal (true)
     }
 */
-  /* Test not ready for prime time, causes some sort of deadlock */
-  /*  it("should be able to conditionally set variables") {
+    /* Test not ready for prime time, causes some sort of deadlock */
+    /*  it("should be able to conditionally set variables") {
 
       import DataFlow._
       Actor.registry.shutdownAll()

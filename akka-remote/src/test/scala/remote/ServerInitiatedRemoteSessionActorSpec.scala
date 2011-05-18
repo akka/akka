@@ -6,12 +6,12 @@ package akka.actor.remote
 
 import akka.actor._
 import akka.actor.Actor._
-import java.util.concurrent. {ConcurrentSkipListSet, TimeUnit}
+import java.util.concurrent.{ ConcurrentSkipListSet, TimeUnit }
 import akka.remote.netty.NettyRemoteSupport
 
 object ServerInitiatedRemoteSessionActorSpec {
 
-  case class Login(user:String)
+  case class Login(user: String)
   case class GetUser()
   case class DoSomethingFunny()
 
@@ -24,9 +24,9 @@ object ServerInitiatedRemoteSessionActorSpec {
     var user: String = "anonymous"
 
     def receive = {
-      case Login(user) => this.user = user
-      case GetUser()   => self.reply(this.user)
-      case DoSomethingFunny() => throw new Exception("Bad boy")
+      case Login(user)        ⇒ this.user = user
+      case GetUser()          ⇒ self.reply(this.user)
+      case DoSomethingFunny() ⇒ throw new Exception("Bad boy")
     }
   }
 

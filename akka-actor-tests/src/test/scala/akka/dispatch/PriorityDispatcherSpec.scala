@@ -20,32 +20,31 @@ class PriorityDispatcherSpec extends WordSpec with MustMatchers {
 
   def testOrdering(mboxType: MailboxType) {
     val dispatcher = new PriorityExecutorBasedEventDrivenDispatcher("Test",
-          PriorityGenerator({
-            case i: Int => i //Reverse order
-            case 'Result => Int.MaxValue
-          }: Any => Int),
-          throughput = 1,
-          mailboxType = mboxType
-        )
+      PriorityGenerator({
+        case i: Int  ⇒ i //Reverse order
+        case 'Result ⇒ Int.MaxValue
+      }: Any ⇒ Int),
+      throughput = 1,
+      mailboxType = mboxType)
 
-      val actor = actorOf(new Actor {
-        self.dispatcher = dispatcher
-        var acc: List[Int] = Nil
+    val actor = actorOf(new Actor {
+      self.dispatcher = dispatcher
+      var acc: List[Int] = Nil
 
-        def receive = {
-          case i: Int      => acc = i :: acc
-          case 'Result     => self reply_? acc
-        }
-      }).start()
+      def receive = {
+        case i: Int  ⇒ acc = i :: acc
+        case 'Result ⇒ self reply_? acc
+      }
+    }).start()
 
-      dispatcher.suspend(actor) //Make sure the actor isn't treating any messages, let it buffer the incoming messages
+    dispatcher.suspend(actor) //Make sure the actor isn't treating any messages, let it buffer the incoming messages
 
-      val msgs = (1 to 100).toList
-      for(m <- msgs) actor ! m
+    val msgs = (1 to 100).toList
+    for (m ← msgs) actor ! m
 
-      dispatcher.resume(actor) //Signal the actor to start treating it's message backlog
+    dispatcher.resume(actor) //Signal the actor to start treating it's message backlog
 
-      actor.!!![List[Int]]('Result).await.result.get must be === (msgs.reverse)
+    actor.!!![List[Int]]('Result).await.result.get must be === (msgs.reverse)
   }
 
 }

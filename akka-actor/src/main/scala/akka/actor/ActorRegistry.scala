@@ -8,11 +8,11 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.Manifest
 import annotation.tailrec
 
-import java.util.concurrent.{ConcurrentSkipListSet, ConcurrentHashMap}
-import java.util.{Set => JSet}
+import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
+import java.util.{ Set ⇒ JSet }
 
 import akka.util.ReflectiveAccess._
-import akka.util.{ReflectiveAccess, ReadWriteGuard, ListenerManagement}
+import akka.util.{ ReflectiveAccess, ReadWriteGuard, ListenerManagement }
 import akka.serialization._
 
 /**
@@ -33,9 +33,9 @@ case class ActorUnregistered(address: String, actor: ActorRef) extends ActorRegi
 private[actor] final class ActorRegistry private[actor] () extends ListenerManagement {
 
   //private val isClusterEnabled = ReflectiveAccess.isClusterEnabled
-  private val actorsByAddress  = new ConcurrentHashMap[String, ActorRef]
-  private val actorsByUuid     = new ConcurrentHashMap[String, ActorRef]
-  private val guard            = new ReadWriteGuard
+  private val actorsByAddress = new ConcurrentHashMap[String, ActorRef]
+  private val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
+  private val guard = new ReadWriteGuard
 
   val local = new LocalActorRegistry(actorsByAddress, actorsByUuid)
 
@@ -44,8 +44,8 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
    */
   def actorFor(address: String): Option[ActorRef] = {
     if (actorsByAddress.containsKey(address)) Some(actorsByAddress.get(address))
-//    else if (isClusterEnabled)                ClusterModule.node.use(address) // FIXME uncomment and fix
-    else                                      None
+    //    else if (isClusterEnabled)                ClusterModule.node.use(address) // FIXME uncomment and fix
+    else None
   }
 
   /**
@@ -150,7 +150,7 @@ class LocalActorRegistry(
    */
   def actorFor(address: String): Option[ActorRef] = {
     if (actorsByAddress.containsKey(address)) Some(actorsByAddress.get(address))
-    else                                      None
+    else None
   }
 
   /**
@@ -159,7 +159,7 @@ class LocalActorRegistry(
   private[akka] def actorFor(uuid: Uuid): Option[ActorRef] = {
     val uuidAsString = uuid.toString
     if (actorsByUuid.containsKey(uuidAsString)) Some(actorsByUuid.get(uuidAsString))
-    else                                        None
+    else None
   }
 
   /**
@@ -181,12 +181,12 @@ class LocalActorRegistry(
   /**
    * Returns all actors in the system.
    */
-  def actors: Array[ActorRef] = filter(_ => true)
+  def actors: Array[ActorRef] = filter(_ ⇒ true)
 
   /**
    * Invokes a function for all actors.
    */
-  def foreach(f: (ActorRef) => Unit) = {
+  def foreach(f: (ActorRef) ⇒ Unit) = {
     val elements = actorsByAddress.elements
     while (elements.hasMoreElements) f(elements.nextElement)
   }
@@ -195,7 +195,7 @@ class LocalActorRegistry(
    * Invokes the function on all known actors until it returns Some
    * Returns None if the function never returns Some
    */
-  def find[T](f: PartialFunction[ActorRef, T]) : Option[T] = {
+  def find[T](f: PartialFunction[ActorRef, T]): Option[T] = {
     val elements = actorsByAddress.elements
     while (elements.hasMoreElements) {
       val element = elements.nextElement
@@ -207,8 +207,8 @@ class LocalActorRegistry(
   /**
    * Finds all actors that satisfy a predicate.
    */
-  def filter(p: ActorRef => Boolean): Array[ActorRef] = {
-   val all = new ListBuffer[ActorRef]
+  def filter(p: ActorRef ⇒ Boolean): Array[ActorRef] = {
+    val all = new ListBuffer[ActorRef]
     val elements = actorsByAddress.elements
     while (elements.hasMoreElements) {
       val actorId = elements.nextElement
@@ -222,12 +222,12 @@ class LocalActorRegistry(
   /**
    * Returns all typed actors in the system.
    */
-  def typedActors: Array[AnyRef] = filterTypedActors(_ => true)
+  def typedActors: Array[AnyRef] = filterTypedActors(_ ⇒ true)
 
   /**
    * Invokes a function for all typed actors.
    */
-  def foreachTypedActor(f: (AnyRef) => Unit) = {
+  def foreachTypedActor(f: (AnyRef) ⇒ Unit) = {
     TypedActorModule.ensureEnabled
     val elements = actorsByAddress.elements
     while (elements.hasMoreElements) {
@@ -240,7 +240,7 @@ class LocalActorRegistry(
    * Invokes the function on all known typed actors until it returns Some
    * Returns None if the function never returns Some
    */
-  def findTypedActor[T](f: PartialFunction[AnyRef,T]) : Option[T] = {
+  def findTypedActor[T](f: PartialFunction[AnyRef, T]): Option[T] = {
     TypedActorModule.ensureEnabled
     val elements = actorsByAddress.elements
     while (elements.hasMoreElements) {
@@ -253,7 +253,7 @@ class LocalActorRegistry(
   /**
    * Finds all typed actors that satisfy a predicate.
    */
-  def filterTypedActors(p: AnyRef => Boolean): Array[AnyRef] = {
+  def filterTypedActors(p: AnyRef ⇒ Boolean): Array[AnyRef] = {
     TypedActorModule.ensureEnabled
     val all = new ListBuffer[AnyRef]
     val elements = actorsByAddress.elements
@@ -281,7 +281,7 @@ class LocalActorRegistry(
  *
  * @author Viktor Klang
  */
-class Index[K <: AnyRef,V <: AnyRef : Manifest] {
+class Index[K <: AnyRef, V <: AnyRef: Manifest] {
   private val Naught = Array[V]() //Nil for Arrays
   private val container = new ConcurrentHashMap[K, JSet[V]]
   private val emptySet = new ConcurrentSkipListSet[V]
@@ -292,7 +292,8 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
    */
   def put(key: K, value: V): Boolean = {
     //Tailrecursive spin-locking put
-    @tailrec def spinPut(k: K, v: V): Boolean = {
+    @tailrec
+    def spinPut(k: K, v: V): Boolean = {
       var retry = false
       var added = false
       val set = container get k
@@ -310,7 +311,7 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
         newSet add v
 
         // Parry for two simultaneous putIfAbsent(id,newSet)
-        val oldSet = container.putIfAbsent(k,newSet)
+        val oldSet = container.putIfAbsent(k, newSet)
         if (oldSet ne null) {
           oldSet.synchronized {
             if (oldSet.isEmpty) retry = true //IF the set is empty then it has been removed, so signal retry
@@ -342,7 +343,7 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
    * @return Some(value) for the first matching value where the supplied function returns true for the given key,
    * if no matches it returns None
    */
-  def findValue(key: K)(f: (V) => Boolean): Option[V] = {
+  def findValue(key: K)(f: (V) ⇒ Boolean): Option[V] = {
     import scala.collection.JavaConversions._
     val set = container get key
     if (set ne null) set.iterator.find(f)
@@ -352,10 +353,10 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
   /**
    * Applies the supplied function to all keys and their values
    */
-  def foreach(fun: (K,V) => Unit) {
+  def foreach(fun: (K, V) ⇒ Unit) {
     import scala.collection.JavaConversions._
-    container.entrySet foreach {
-      (e) => e.getValue.foreach(fun(e.getKey,_))
+    container.entrySet foreach { (e) ⇒
+      e.getValue.foreach(fun(e.getKey, _))
     }
   }
 
@@ -369,8 +370,8 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
     if (set ne null) {
       set.synchronized {
         if (set.remove(value)) { //If we can remove the value
-          if (set.isEmpty)       //and the set becomes empty
-            container.remove(key,emptySet) //We try to remove the key if it's mapped to an empty set
+          if (set.isEmpty) //and the set becomes empty
+            container.remove(key, emptySet) //We try to remove the key if it's mapped to an empty set
 
           true //Remove succeeded
         } else false //Remove failed
@@ -386,5 +387,5 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
   /**
    *  Removes all keys and all values
    */
-  def clear = foreach { case (k, v) => remove(k, v) }
+  def clear = foreach { case (k, v) ⇒ remove(k, v) }
 }

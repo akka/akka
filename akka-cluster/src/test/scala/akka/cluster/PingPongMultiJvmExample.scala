@@ -7,7 +7,7 @@ package example.cluster
 import akka.cluster._
 
 import akka.actor._
-import akka.serialization.{Serializers, SerializerBasedActorFormat}
+import akka.serialization.{ Serializers, SerializerBasedActorFormat }
 import akka.util.duration._
 
 object PingPong {
@@ -39,25 +39,25 @@ object PingPong {
     var play = true
 
     def receive = {
-      case Pong =>
+      case Pong ⇒
         if (play) {
           println("---->> PING")
           pong ! Ping
         } else {
           println("---->> GAME OVER")
         }
-      case Serve(player) =>
+      case Serve(player) ⇒
         pong = player
         println("---->> SERVE")
         pong ! Ping
-      case Stop =>
+      case Stop ⇒
         play = false
     }
   }
 
   class PongActor extends Actor with Serializable {
     def receive = {
-      case Ping =>
+      case Ping ⇒
         println("---->> PONG")
         self reply Pong
     }
@@ -239,4 +239,4 @@ class PongNode(number: Int) {
     node.stop
   }
 }
-*/
+*/ 

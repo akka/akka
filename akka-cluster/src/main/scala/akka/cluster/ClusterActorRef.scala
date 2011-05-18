@@ -25,7 +25,7 @@ class ClusterActorRef private[akka] (
   actorType: ActorType,
   val replicationStrategy: ReplicationStrategy)
   extends RemoteActorRef(address, timeout, None, actorType) {
-  this: ClusterActorRef with Router.Router =>
+  this: ClusterActorRef with Router.Router ⇒
 
   EventHandler.debug(this, "Creating a ClusterActorRef for actor with address [%s]".format(address))
 
@@ -46,20 +46,20 @@ class ClusterActorRef private[akka] (
     route[T](message, timeout)(senderOption).asInstanceOf[CompletableFuture[T]]
 
   private[akka] def failOver(from: InetSocketAddress, to: InetSocketAddress) {
-    addresses set (
-      addresses.get map { case (address, actorRef) =>
+    addresses set (addresses.get map {
+      case (address, actorRef) ⇒
         if (address == from) {
           actorRef.stop()
           (to, createRemoteActorRef(actorRef.uuid, to))
         } else (address, actorRef)
-      }
-    )
+    })
   }
 
   private def createConnections(addresses: Array[Tuple2[UUID, InetSocketAddress]]): Map[InetSocketAddress, ActorRef] = {
     var connections = Map.empty[InetSocketAddress, ActorRef]
-    addresses foreach { case (uuid, address) =>
-      connections = connections + (address -> createRemoteActorRef(uuid, address))
+    addresses foreach {
+      case (uuid, address) ⇒
+        connections = connections + (address -> createRemoteActorRef(uuid, address))
     }
     connections
   }

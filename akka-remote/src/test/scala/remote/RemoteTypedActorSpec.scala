@@ -4,9 +4,8 @@
 
 package akka.actor.remote
 
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
-import akka.config. {RemoteAddress, Config, TypedActorConfigurator}
-
+import java.util.concurrent.{ LinkedBlockingQueue, TimeUnit, BlockingQueue }
+import akka.config.{ RemoteAddress, Config, TypedActorConfigurator }
 
 object RemoteTypedActorLog {
   val messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
