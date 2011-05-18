@@ -21,6 +21,7 @@ object ThaipedActorSpec {
     def futurePigdog(): Future[String]
     def futurePigdog(delay: Long): Future[String]
     def futurePigdog(delay: Long, numbered: Int): Future[String]
+    def futureComposePigdogFrom(foo: Foo): Future[String]
 
     def optionPigdog(): Option[String]
     def optionPigdog(delay: Long): Option[String]
@@ -40,10 +41,13 @@ object ThaipedActorSpec {
       futurePigdog
     }
 
-    def futurePigdog(delay: Long, numbered: Int): Future[String] ={
+    def futurePigdog(delay: Long, numbered: Int): Future[String] = {
       Thread.sleep(delay)
       new AlreadyCompletedFuture(Right(pigdog + numbered))
     }
+
+    def futureComposePigdogFrom(foo: Foo): Future[String] =
+      foo.futurePigdog(500).map(_.toUpperCase)
 
     def optionPigdog(): Option[String] = Some(pigdog)
 
@@ -160,6 +164,15 @@ class ThaipedActorSpec extends
       t.optionPigdog(200).get must be ("Pigdog")
       t.optionPigdog(700) must be (None)
       mustStop(t)
+    }
+
+    "be able to compose futures without blocking" in {
+      val t,t2 = newFooBar(Duration(2,"s"))
+      val f = t.futureComposePigdogFrom(t2)
+      f.isCompleted must be (false)
+      f.get must equal ("PIGDOG")
+      mustStop(t)
+      mustStop(t2)
     }
 
     "be able to use work-stealing dispatcher" in {
