@@ -13,30 +13,31 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.junit.{Before, After, Test}
+import org.junit.{ Before, After, Test }
 
-import javax.ws.rs.core.{SecurityContext, Context, Response}
-import com.sun.jersey.spi.container.{ResourceFilterFactory, ContainerRequest, ContainerRequestFilter, ContainerResponse, ContainerResponseFilter, ResourceFilter}
+import javax.ws.rs.core.{ SecurityContext, Context, Response }
+import com.sun.jersey.spi.container.{ ResourceFilterFactory, ContainerRequest, ContainerRequestFilter, ContainerResponse, ContainerResponseFilter, ResourceFilter }
 import com.sun.jersey.core.util.Base64
 
 object BasicAuthenticatorSpec {
   class BasicAuthenticator extends BasicAuthenticationActor {
     def verify(odc: Option[BasicCredentials]): Option[UserInfo] = odc match {
-      case Some(dc) => Some(UserInfo("foo", "bar", "ninja" :: "chef" :: Nil))
-      case _ => None
+      case Some(dc) ⇒ Some(UserInfo("foo", "bar", "ninja" :: "chef" :: Nil))
+      case _        ⇒ None
     }
     override def realm = "test"
   }
 }
 
 class BasicAuthenticatorSpec extends junit.framework.TestCase
-    with Suite with MockitoSugar with MustMatchers {
+  with Suite with MockitoSugar with MustMatchers {
   import BasicAuthenticatorSpec._
 
   val authenticator = actorOf[BasicAuthenticator]
   authenticator.start()
 
-  @Test def testChallenge = {
+  @Test
+  def testChallenge = {
     val req = mock[ContainerRequest]
 
     val result = (authenticator !! (Authenticate(req, List("foo")), 10000)).as[Response].get
@@ -46,7 +47,8 @@ class BasicAuthenticatorSpec extends junit.framework.TestCase
     result.getMetadata.get("WWW-Authenticate").get(0).toString must startWith("Basic")
   }
 
-  @Test def testAuthenticationSuccess = {
+  @Test
+  def testAuthenticationSuccess = {
     val req = mock[ContainerRequest]
     // fake a basic auth header -> this will authenticate the user
     when(req.getHeaderValue("Authorization")).thenReturn("Basic " + new String(Base64.encode("foo:bar")))
@@ -61,7 +63,8 @@ class BasicAuthenticatorSpec extends junit.framework.TestCase
     verify(req).setSecurityContext(any[SecurityContext])
   }
 
-  @Test def testUnauthorized = {
+  @Test
+  def testUnauthorized = {
     val req = mock[ContainerRequest]
 
     // fake a basic auth header -> this will authenticate the user
