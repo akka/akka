@@ -535,7 +535,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   class AkkaDefaultProject(info: ProjectInfo) extends DefaultProject(info) with McPom with ScalariformPlugin {
 
     override def scalariformOptions = Seq(
-      VerboseScalariform,
+      //VerboseScalariform,
       AlignParameters(true),
       CompactStringConcatenation(false),
       IndentPackageBlocks(true),
