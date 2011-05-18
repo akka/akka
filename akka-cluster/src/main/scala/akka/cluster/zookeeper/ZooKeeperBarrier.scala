@@ -34,18 +34,21 @@ object ZooKeeperBarrier {
   def apply(zkClient: ZkClient, cluster: String, name: String, node: String, count: Int, timeout: Duration) =
     new ZooKeeperBarrier(zkClient, cluster + "-" + name, node, count, timeout)
 
-  def ignore[E : Manifest](body: => Unit): Unit =
+  def ignore[E: Manifest](body: => Unit) {
     try {
       body
     } catch {
       case e if manifest[E].erasure.isAssignableFrom(e.getClass) => ()
     }
+  }
 }
 
 /**
  * Barrier based on Zookeeper barrier tutorial.
  */
-class ZooKeeperBarrier(zkClient: ZkClient, name: String, node: String, count: Int, timeout: Duration) extends IZkChildListener {
+class ZooKeeperBarrier(zkClient: ZkClient, name: String, node: String, count: Int, timeout: Duration)
+  extends IZkChildListener {
+
   import ZooKeeperBarrier.{BarriersNode, ignore}
 
   val barrier = BarriersNode + "/" + name
@@ -57,10 +60,10 @@ class ZooKeeperBarrier(zkClient: ZkClient, name: String, node: String, count: In
   ignore[ZkNodeExistsException](zkClient.createPersistent(BarriersNode))
   ignore[ZkNodeExistsException](zkClient.createPersistent(barrier))
 
-  def apply(body: => Unit) = {
+  def apply(body: => Unit) {
     enter
     body
-    leave
+    leave()
   }
 
   def enter = {
@@ -75,7 +78,7 @@ class ZooKeeperBarrier(zkClient: ZkClient, name: String, node: String, count: In
     zkClient.subscribeChildChanges(barrier, this)
   }
 
-  def leave = {
+  def leave() {
     zkClient.delete(entry)
     exitBarrier.await(timeout.length, timeout.unit)
     if (zkClient.countChildren(barrier) > 0) {
@@ -85,10 +88,10 @@ class ZooKeeperBarrier(zkClient: ZkClient, name: String, node: String, count: In
     zkClient.unsubscribeChildChanges(barrier, this)
   }
 
-  def handleChildChange(path: String, children: JList[String]) = {
+  def handleChildChange(path: String, children: JList[String]) {
     if (children.size <= 1) {
       ignore[ZkNoNodeException](zkClient.delete(ready))
-      exitBarrier.countDown
+      exitBarrier.countDown()
     }
   }
 }

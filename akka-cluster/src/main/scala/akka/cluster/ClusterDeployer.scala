@@ -23,18 +23,22 @@ import com.eaio.uuid.UUID
 import java.util.concurrent.CountDownLatch
 
 /**
+ * A ClusterDeployer is responsible for deploying a Deploy.
+ *
+ * big question is: what does Deploy mean?
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ClusterDeployer {
-  val clusterName                 = Cluster.name
-  val nodeName                    = new UUID().toString // FIXME how to configure node name? now using UUID
-  val clusterPath                 = "/%s" format clusterName
-  val clusterDeploymentLockPath   = clusterPath + "/deployment-lock"
-  val deploymentPath              = clusterPath + "/deployment"
-  val baseNodes                   = List(clusterPath, clusterDeploymentLockPath, deploymentPath)
-  val deploymentAddressPath       = deploymentPath + "/%s"
+  val clusterName = Cluster.name
+  val nodeName = new UUID().toString // FIXME how to configure node name? now using UUID
+  val clusterPath = "/%s" format clusterName
+  val clusterDeploymentLockPath = clusterPath + "/deployment-lock"
+  val deploymentPath = clusterPath + "/deployment"
+  val baseNodes = List(clusterPath, clusterDeploymentLockPath, deploymentPath)
+  val deploymentAddressPath = deploymentPath + "/%s"
 
-  private val isConnected         = new Switch(false)
+  private val isConnected = new Switch(false)
   private val deploymentCompleted = new CountDownLatch(1)
 
   private lazy val zkClient = {
@@ -62,6 +66,7 @@ object ClusterDeployer {
     zkClient.connection.getZookeeper, clusterDeploymentLockPath, null, clusterDeploymentLockListener) {
     private val ownerIdField = classOf[WriteLock].getDeclaredField("ownerId")
     ownerIdField.setAccessible(true)
+
     def leader: String = ownerIdField.get(this).asInstanceOf[String]
   }
 
@@ -69,31 +74,33 @@ object ClusterDeployer {
     Deploy(
       address = RemoteClusterDaemon.ADDRESS,
       routing = Direct,
-      scope   = Clustered(Deployer.defaultAddress, NoReplicas, Stateless))
+      scope = Clustered(Deployer.defaultAddress, NoReplicas, Stateless))
   )
 
   private[akka] def init(deployments: List[Deploy]) {
     isConnected.switchOn {
-      baseNodes.foreach { path =>
-        try {
-          ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
-          EventHandler.debug(this, "Created node [%s]".format(path))
-        } catch {
-          case e =>
-            val error = new DeploymentException(e.toString)
-            EventHandler.error(error, this)
-            throw error
-        }
+      baseNodes.foreach {
+        path =>
+          try {
+            ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
+            EventHandler.debug(this, "Created node [%s]".format(path))
+          } catch {
+            case e =>
+              val error = new DeploymentException(e.toString)
+              EventHandler.error(error, this)
+              throw error
+          }
       }
 
       val allDeployments = deployments ::: systemDeployments
       EventHandler.info(this, "Initializing cluster deployer")
-      if (deploymentLock.lock()) {         // try to be the one doing the clustered deployment
+      if (deploymentLock.lock()) {
+        // try to be the one doing the clustered deployment
         EventHandler.info(this, "Deploying to cluster [\n" + allDeployments.mkString("\n\t") + "\n]")
         allDeployments foreach (deploy(_)) // deploy
-        deploymentLock.unlock()            // signal deployment complete
+        deploymentLock.unlock() // signal deployment complete
       } else {
-        deploymentCompleted.await()        // wait until deployment is completed
+        deploymentCompleted.await() // wait until deployment is completed
       }
     }
   }
@@ -106,7 +113,7 @@ object ClusterDeployer {
   }
 
   private[akka] def deploy(deployment: Deploy) {
-    val path  = deploymentAddressPath.format(deployment.address)
+    val path = deploymentAddressPath.format(deployment.address)
     try {
       ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
       zkClient.writeData(path, deployment)
@@ -134,7 +141,7 @@ object ClusterDeployer {
   private[akka] def undeployAll() {
     try {
       for {
-        child      <- collectionAsScalaIterable(zkClient.getChildren(deploymentPath))
+        child <- collectionAsScalaIterable(zkClient.getChildren(deploymentPath))
         deployment <- lookupDeploymentFor(child)
       } undeploy(deployment)
     } catch {

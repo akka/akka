@@ -15,7 +15,9 @@ import akka.util.ReflectiveAccess
 import akka.AkkaException
 
 /**
- * Programatic deployment configuration classes. Most values have defaults and can be left out.
+ * Programmatic deployment configuration classes. Most values have defaults and can be left out.
+ *
+ * todo: what does the concept Deploy
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -327,6 +329,8 @@ object Deployer {
 }
 
 /**
+ * TODO: Improved documentation
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object LocalDeployer {
@@ -365,6 +369,8 @@ object LocalDeployer {
 }
 
 /**
+ * TODO: Improved documentation
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Address {
