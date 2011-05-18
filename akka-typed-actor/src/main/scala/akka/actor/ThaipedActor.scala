@@ -1,12 +1,12 @@
 package akka.thaipedactor
 
-import java.lang.reflect.{Method, InvocationHandler, Proxy}
 import akka.japi.{Creator, Option => JOption}
 import akka.actor.Actor.{actorOf, futureToAnyOptionAsTypedOption}
 import akka.transactor.annotation.{Coordinated => CoordinatedAnnotation}
 import akka.util.Duration
 import akka.dispatch.{MessageDispatcher, Dispatchers, AlreadyCompletedFuture, Future}
 import akka.actor.{ActorRef, Actor}
+import java.lang.reflect.{InvocationTargetException, Method, InvocationHandler, Proxy}
 
 object MethodCall {
   private[akka] def isOneWay(method: Method): Boolean =
@@ -34,7 +34,7 @@ case class MethodCall(method: Method, parameters: Array[AnyRef]) {
   def returnsJOption_? = MethodCall.returnsJOption_?(method)
   def returnsOption_? = MethodCall.returnsOption_?(method)
 
-  def callMethodOn(instance: AnyRef): AnyRef = {
+  def callMethodOn(instance: AnyRef): AnyRef = try {
 
     /*if (parameters ne null)
       println("### CALLING " + method.getName + "(" + parameters.mkString(", ") + ") owned by [" + method.getDeclaringClass.getName + "] on " + instance + " of class " + instance.getClass.getName)
@@ -47,6 +47,8 @@ case class MethodCall(method: Method, parameters: Array[AnyRef]) {
       case args if args.length == 0 => method.invoke(instance)
       case args                     => method.invoke(instance, args:_*)
     }
+  } catch {
+    case i: InvocationTargetException => throw i.getTargetException
   }
 }
 
@@ -68,7 +70,14 @@ object ThaipedActor {
   case class ThaipedActorInvocationHandler(actor: ActorRef) extends InvocationHandler {
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
       case "toString" => actor.toString
-      case "equals" => if (proxy eq args(0)) java.lang.Boolean.TRUE else java.lang.Boolean.FALSE
+      case "equals" =>
+        if ((proxy eq args(0))) java.lang.Boolean.TRUE
+        else {
+          getActorFor(args(0)) match {
+            case Some(other) if actor == other => java.lang.Boolean.TRUE
+            case _ => java.lang.Boolean.FALSE
+          }
+        }
       case "hashCode" => actor.hashCode.asInstanceOf[AnyRef]
       case _ =>
          MethodCall(method, args) match {

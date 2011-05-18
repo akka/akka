@@ -23,6 +23,12 @@ object ThaipedActorSpec {
     def futurePigdog(delay: Long, numbered: Int): Future[String]
     def futureComposePigdogFrom(foo: Foo): Future[String]
 
+    def failingFuturePigdog(): Future[String] = throw new IllegalStateException("expected")
+    def failingOptionPigdog(): Option[String] = throw new IllegalStateException("expected")
+    def failingJOptionPigdog(): JOption[String] = throw new IllegalStateException("expected")
+
+    def failingPigdog(): Unit = throw new IllegalStateException("expected")
+
     def optionPigdog(): Option[String]
     def optionPigdog(delay: Long): Option[String]
     def joptionPigdog(delay: Long): JOption[String]
@@ -132,6 +138,9 @@ class ThaipedActorSpec extends
       val t = newFooBar
       t.incr()
       t.read() must be (1)
+      t.incr()
+      t.read() must be (2)
+      t.read() must be (2)
       mustStop(t)
     }
 
@@ -173,6 +182,30 @@ class ThaipedActorSpec extends
       f.get must equal ("PIGDOG")
       mustStop(t)
       mustStop(t2)
+    }
+
+    "be able to handle exceptions when calling methods" in {
+      val t = newFooBar
+
+      t.incr()
+      t.failingPigdog()
+      t.read() must be (1)
+
+      t.failingFuturePigdog.await.exception.get.getMessage must be ("expected")
+      t.read() must be (1)
+
+      (intercept[IllegalStateException] {
+        t.failingJOptionPigdog
+      }).getMessage must be ("expected")
+      t.read() must be (1)
+
+      (intercept[IllegalStateException] {
+        t.failingOptionPigdog
+      }).getMessage must be ("expected")
+
+      t.read() must be (1)
+
+      mustStop(t)
     }
 
     "be able to use work-stealing dispatcher" in {
