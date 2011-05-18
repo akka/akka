@@ -7,6 +7,7 @@ package akka.cluster
 import akka.actor.{DeploymentConfig, Deployer, DeploymentException}
 import DeploymentConfig._
 import akka.event.EventHandler
+import akka.config.Config
 import akka.util.Switch
 import akka.util.Helpers._
 import akka.cluster.zookeeper.AkkaZkClient
@@ -31,7 +32,7 @@ import java.util.concurrent.CountDownLatch
  */
 object ClusterDeployer {
   val clusterName = Cluster.name
-  val nodeName = new UUID().toString // FIXME how to configure node name? now using UUID
+  val nodeName = Config.nodename
   val clusterPath = "/%s" format clusterName
   val clusterDeploymentLockPath = clusterPath + "/deployment-lock"
   val deploymentPath = clusterPath + "/deployment"
