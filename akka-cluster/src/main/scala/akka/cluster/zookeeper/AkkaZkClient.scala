@@ -7,23 +7,28 @@ import org.I0Itec.zkclient._
 import org.I0Itec.zkclient.serialize._
 import org.I0Itec.zkclient.exception._
 
+/**
+ * todo: what is the purpose of this class?
+ */
 class AkkaZkClient(zkServers: String,
-  sessionTimeout: Int,
-  connectionTimeout: Int,
-  zkSerializer: ZkSerializer = new SerializableSerializer)
+                   sessionTimeout: Int,
+                   connectionTimeout: Int,
+                   zkSerializer: ZkSerializer = new SerializableSerializer)
   extends ZkClient(zkServers, sessionTimeout, connectionTimeout, zkSerializer) {
 
   def connection: ZkConnection = _connection.asInstanceOf[ZkConnection]
 
   def reconnect() {
-    getEventLock.lock
+    val zkLock = getEventLock
+
+    zkLock.lock()
     try {
-      _connection.close
+      _connection.close()
       _connection.connect(this)
     } catch {
       case e: InterruptedException => throw new ZkInterruptedException(e)
     } finally {
-      getEventLock.unlock
+      zkLock.unlock()
     }
   }
 }

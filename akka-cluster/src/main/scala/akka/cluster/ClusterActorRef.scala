@@ -34,8 +34,9 @@ class ClusterActorRef private[akka] (
 
   def connections: Map[InetSocketAddress, ActorRef] = addresses.get.toMap
 
-  override def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
+  override def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]) {
     route(message)(senderOption)
+  }
 
   override def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
     message: Any,
@@ -48,7 +49,7 @@ class ClusterActorRef private[akka] (
     addresses set (
       addresses.get map { case (address, actorRef) =>
         if (address == from) {
-          actorRef.stop
+          actorRef.stop()
           (to, createRemoteActorRef(actorRef.uuid, to))
         } else (address, actorRef)
       }

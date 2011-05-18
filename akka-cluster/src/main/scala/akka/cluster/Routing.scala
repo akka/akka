@@ -54,7 +54,7 @@ object Router {
   trait Router {
     def connections: Map[InetSocketAddress, ActorRef]
 
-    def route(message: Any)(implicit sender: Option[ActorRef]): Unit
+    def route(message: Any)(implicit sender: Option[ActorRef])
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T]
   }
@@ -68,9 +68,10 @@ object Router {
       connections.toList.map({ case (address, actor) => actor }).headOption
     }
 
-    def route(message: Any)(implicit sender: Option[ActorRef]): Unit =
+    def route(message: Any)(implicit sender: Option[ActorRef]) {
       if (connection.isDefined) connection.get.!(message)(sender)
-      else                      throw new RoutingException("No node connections for router")
+      else throw new RoutingException("No node connections for router")
+    }
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] =
       if (connection.isDefined) connection.get.!!!(message, timeout)(sender)
@@ -83,9 +84,10 @@ object Router {
   trait Random extends Router {
     private val random = new java.util.Random(System.currentTimeMillis)
 
-    def route(message: Any)(implicit sender: Option[ActorRef]): Unit =
+    def route(message: Any)(implicit sender: Option[ActorRef]) {
       if (next.isDefined) next.get.!(message)(sender)
-      else                throw new RoutingException("No node connections for router")
+      else throw new RoutingException("No node connections for router")
+    }
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] =
       if (next.isDefined) next.get.!!!(message, timeout)(sender)
@@ -107,9 +109,10 @@ object Router {
     @volatile
     private var current = items
 
-    def route(message: Any)(implicit sender: Option[ActorRef]): Unit =
+    def route(message: Any)(implicit sender: Option[ActorRef]) {
       if (next.isDefined) next.get.!(message)(sender)
-      else                throw new RoutingException("No node connections for router")
+      else throw new RoutingException("No node connections for router")
+    }
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] =
       if (next.isDefined) next.get.!!!(message, timeout)(sender)
