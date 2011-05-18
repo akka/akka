@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import akka.japi.{Creator, Procedure}
+import akka.japi.{ Creator, Procedure }
 
 /**
  * Subclass this abstract class to create a MDB-style untyped actor.
@@ -70,18 +70,18 @@ abstract class UntypedActor extends Actor {
   /**
    * Returns the 'self' reference with the API.
    */
-  def context(): ActorRef    = self
+  def context(): ActorRef = self
 
   /**
    * Java API for become
    */
-  def become(behavior: Procedure[Any]):Unit = become(behavior,false)
+  def become(behavior: Procedure[Any]): Unit = become(behavior, false)
 
   /*
    * Java API for become with optional discardOld
    */
   def become(behavior: Procedure[Any], discardOld: Boolean): Unit =
-    super.become({ case msg => behavior.apply(msg) }, discardOld)
+    super.become({ case msg ⇒ behavior.apply(msg) }, discardOld)
 
   /**
    * User overridable callback.
@@ -122,7 +122,7 @@ abstract class UntypedActor extends Actor {
   }
 
   final protected def receive = {
-    case msg => onReceive(msg)
+    case msg ⇒ onReceive(msg)
   }
 }
 

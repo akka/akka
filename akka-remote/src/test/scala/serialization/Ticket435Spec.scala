@@ -1,6 +1,5 @@
 package akka.actor.serialization
 
-
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.BeforeAndAfterAll
@@ -13,10 +12,7 @@ import ActorSerialization._
 import Actor._
 
 @RunWith(classOf[JUnitRunner])
-class Ticket435Spec extends
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterAll {
+class Ticket435Spec extends Spec with ShouldMatchers with BeforeAndAfterAll {
 
   object BinaryFormatMyStatefulActor {
     implicit object MyStatefulActorFormat extends Format[MyStatefulActor] {
@@ -116,10 +112,10 @@ class MyStatefulActor extends Actor {
   var count = 0
 
   def receive = {
-    case "hi" =>
+    case "hi" ⇒
       //println("# messages in mailbox " + self.mailboxSize)
       Thread.sleep(500)
-    case "hello" =>
+    case "hello" ⇒
       count = count + 1
       self.reply("world " + count)
   }

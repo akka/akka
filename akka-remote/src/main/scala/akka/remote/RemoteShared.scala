@@ -10,12 +10,12 @@ import akka.config.ConfigurationException
 
 object RemoteClientSettings {
   val SECURE_COOKIE: Option[String] = config.getString("akka.remote.secure-cookie", "") match {
-    case "" => None
-    case cookie => Some(cookie)
+    case ""     ⇒ None
+    case cookie ⇒ Some(cookie)
   }
   val RECONNECTION_TIME_WINDOW = Duration(config.getInt("akka.remote.client.reconnection-time-window", 600), TIME_UNIT).toMillis
-  val READ_TIMEOUT       = Duration(config.getInt("akka.remote.client.read-timeout", 10), TIME_UNIT)
-  val RECONNECT_DELAY    = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
+  val READ_TIMEOUT = Duration(config.getInt("akka.remote.client.read-timeout", 10), TIME_UNIT)
+  val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
   val REAP_FUTURES_DELAY = Duration(config.getInt("akka.remote.client.reap-futures-delay", 5), TIME_UNIT)
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.client.message-frame-size", 1048576)
 }
@@ -23,20 +23,20 @@ object RemoteClientSettings {
 object RemoteServerSettings {
   val isRemotingEnabled = config.getList("akka.enabled-modules").exists(_ == "remote")
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.server.message-frame-size", 1048576)
-  val SECURE_COOKIE      = config.getString("akka.remote.secure-cookie")
-  val REQUIRE_COOKIE     = {
+  val SECURE_COOKIE = config.getString("akka.remote.secure-cookie")
+  val REQUIRE_COOKIE = {
     val requireCookie = config.getBool("akka.remote.server.require-cookie", false)
     if (isRemotingEnabled && requireCookie && SECURE_COOKIE.isEmpty) throw new ConfigurationException(
       "Configuration option 'akka.remote.server.require-cookie' is turned on but no secure cookie is defined in 'akka.remote.secure-cookie'.")
     requireCookie
   }
 
-  val UNTRUSTED_MODE            = config.getBool("akka.remote.server.untrusted-mode", false)
-  val HOSTNAME                  = config.getString("akka.remote.server.hostname", "localhost")
-  val PORT                      = config.getInt("akka.remote.server.port", 2552)
+  val UNTRUSTED_MODE = config.getBool("akka.remote.server.untrusted-mode", false)
+  val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
+  val PORT = config.getInt("akka.remote.server.port", 2552)
   val CONNECTION_TIMEOUT_MILLIS = Duration(config.getInt("akka.remote.server.connection-timeout", 1), TIME_UNIT)
-  val COMPRESSION_SCHEME        = config.getString("akka.remote.compression-scheme", "zlib")
-  val ZLIB_COMPRESSION_LEVEL    = {
+  val COMPRESSION_SCHEME = config.getString("akka.remote.compression-scheme", "zlib")
+  val ZLIB_COMPRESSION_LEVEL = {
     val level = config.getInt("akka.remote.zlib-compression-level", 6)
     if (level < 1 && level > 9) throw new IllegalArgumentException(
       "zlib compression level has to be within 1-9, with 1 being fastest and 9 being the most compressed")
@@ -48,7 +48,7 @@ object RemoteServerSettings {
   val EXECUTION_POOL_KEEPALIVE = Duration(config.getInt("akka.remote.server.execution-pool-keepalive", 60), TIME_UNIT)
 
   val EXECUTION_POOL_SIZE = {
-    val sz = config.getInt("akka.remote.server.execution-pool-size",16)
+    val sz = config.getInt("akka.remote.server.execution-pool-size", 16)
     if (sz < 1) throw new IllegalArgumentException("akka.remote.server.execution-pool-size is less than 1")
     sz
   }

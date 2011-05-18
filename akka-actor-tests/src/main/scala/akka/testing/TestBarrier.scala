@@ -5,8 +5,7 @@
 package akka.testing
 
 import akka.util.Duration
-import java.util.concurrent.{CyclicBarrier, TimeUnit, TimeoutException}
-
+import java.util.concurrent.{ CyclicBarrier, TimeUnit, TimeoutException }
 
 class TestBarrierTimeoutException(message: String) extends RuntimeException(message)
 
@@ -31,7 +30,7 @@ class TestBarrier(count: Int) {
     try {
       barrier.await(Testing.testTime(timeout.toNanos), TimeUnit.NANOSECONDS)
     } catch {
-      case e: TimeoutException =>
+      case e: TimeoutException ⇒
         throw new TestBarrierTimeoutException("Timeout of %s and time factor of %s" format (timeout.toString, Testing.timeFactor))
     }
   }

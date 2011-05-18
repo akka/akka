@@ -1,6 +1,5 @@
 package akka.actor.serialization
 
-
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.BeforeAndAfterAll
@@ -13,10 +12,7 @@ import ActorSerialization._
 import Actor._
 
 @RunWith(classOf[JUnitRunner])
-class UntypedActorSerializationSpec extends
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterAll {
+class UntypedActorSerializationSpec extends Spec with ShouldMatchers with BeforeAndAfterAll {
 
   class MyUntypedActorFormat extends Format[MyUntypedActor] {
     def fromBinary(bytes: Array[Byte], act: MyUntypedActor) = {
@@ -82,13 +78,13 @@ class UntypedActorSerializationSpec extends
 class MyUntypedActor extends UntypedActor {
   var count = 0
   def onReceive(message: Any): Unit = message match {
-    case m: String if m == "hello" =>
+    case m: String if m == "hello" ⇒
       count = count + 1
       getContext.replyUnsafe("world " + count)
-    case m: String =>
+    case m: String ⇒
       count = count + 1
       getContext.replyUnsafe("hello " + m + " " + count)
-    case _ =>
+    case _ ⇒
       throw new Exception("invalid message type")
   }
 }
@@ -98,26 +94,26 @@ class MyUntypedActorWithDualCounter extends UntypedActor {
   var count2 = 0
 
   def onReceive(message: Any): Unit = message match {
-    case m: String if m == "hello" =>
+    case m: String if m == "hello" ⇒
       count1 = count1 + 1
       count2 = count2 + 1
       getContext.replyUnsafe("world " + count1 + " " + count2)
-    case m: String =>
+    case m: String ⇒
       count1 = count1 + 1
       count2 = count2 + 1
       getContext.replyUnsafe("hello " + m + " " + count1 + " " + count2)
-    case _ =>
+    case _ ⇒
       throw new Exception("invalid message type")
   }
 }
 
 class MyUntypedStatelessActor extends UntypedActor {
   def onReceive(message: Any): Unit = message match {
-    case m: String if m == "hello" =>
+    case m: String if m == "hello" ⇒
       getContext.replyUnsafe("world")
-    case m: String =>
+    case m: String ⇒
       getContext.replyUnsafe("hello " + m)
-    case _ =>
+    case _ ⇒
       throw new Exception("invalid message type")
   }
 }

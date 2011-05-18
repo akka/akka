@@ -11,7 +11,6 @@ package akka.config
 import scala.collection.mutable
 import scala.util.parsing.combinator._
 
-
 class ConfigParser(var prefix: String = "", map: mutable.Map[String, Any] = mutable.Map.empty[String, Any], importer: Importer) extends RegexParsers {
   val sections = mutable.Stack[String]()
 
@@ -34,7 +33,7 @@ class ConfigParser(var prefix: String = "", map: mutable.Map[String, Any] = muta
 
   def value: Parser[Any] = number | string | list | boolean
   def number = numberToken
-  def string = stringToken ^^ { s => s.substring(1, s.length - 1) }
+  def string = stringToken ^^ { s ⇒ s.substring(1, s.length - 1) }
   def list = "[" ~> repsep(string | numberToken, opt(",")) <~ (opt(",") ~ "]")
   def boolean = booleanToken
 
@@ -43,20 +42,20 @@ class ConfigParser(var prefix: String = "", map: mutable.Map[String, Any] = muta
   def root = rep(includeFile | assignment | sectionOpen | sectionClose)
 
   def includeFile = "include" ~> string ^^ {
-    case filename: String =>
+    case filename: String ⇒
       new ConfigParser(prefix, map, importer) parse importer.importFile(filename)
   }
 
   def assignment = identToken ~ assignToken ~ value ^^ {
-    case k ~ a ~ v => map(prefix + k) = v
+    case k ~ a ~ v ⇒ map(prefix + k) = v
   }
 
-  def sectionOpen = sectionToken <~ "{" ^^ { name =>
+  def sectionOpen = sectionToken <~ "{" ^^ { name ⇒
     sections push name
     createPrefix
   }
 
-  def sectionClose = "}" ^^ { _ =>
+  def sectionClose = "}" ^^ { _ ⇒
     if (sections.isEmpty) {
       failure("dangling close tag")
     } else {
@@ -67,9 +66,9 @@ class ConfigParser(var prefix: String = "", map: mutable.Map[String, Any] = muta
 
   def parse(in: String): Map[String, Any] = {
     parseAll(root, in) match {
-      case Success(result, _) => map.toMap
-      case x @ Failure(msg, _) => throw new ConfigurationException(x.toString)
-      case x @ Error(msg, _) => throw new ConfigurationException(x.toString)
+      case Success(result, _) ⇒ map.toMap
+      case x@Failure(msg, _)  ⇒ throw new ConfigurationException(x.toString)
+      case x@Error(msg, _)    ⇒ throw new ConfigurationException(x.toString)
     }
   }
 }

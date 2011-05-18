@@ -16,7 +16,7 @@ object Testing {
     try {
       factor.toDouble
     } catch {
-      case e: java.lang.NumberFormatException => 1.0
+      case e: java.lang.NumberFormatException ⇒ 1.0
     }
   }
 

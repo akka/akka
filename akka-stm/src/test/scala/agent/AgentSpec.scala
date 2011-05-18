@@ -28,7 +28,7 @@ class AgentSpec extends WordSpec with MustMatchers {
       agent send countDown
 
       countDown.await(5 seconds)
-      agent() must be ("abcd")
+      agent() must be("abcd")
 
       agent.close
     }
@@ -38,13 +38,13 @@ class AgentSpec extends WordSpec with MustMatchers {
 
       val agent = Agent("a")
       agent send (_ + "b")
-      val longRunning = (s: String) => { Thread.sleep(2000); s + "c" }
+      val longRunning = (s: String) ⇒ { Thread.sleep(2000); s + "c" }
       agent sendOff longRunning
       agent send (_ + "d")
       agent send countDown
 
       countDown.await(5 seconds)
-      agent() must be ("abcd")
+      agent() must be("abcd")
 
       agent.close
     }
@@ -54,14 +54,14 @@ class AgentSpec extends WordSpec with MustMatchers {
       val agent = Agent("a")
 
       val r1 = agent.alter(_ + "b")(5000)
-      val r2 = agent.alterOff((s: String) => { Thread.sleep(2000); s + "c" })(5000)
+      val r2 = agent.alterOff((s: String) ⇒ { Thread.sleep(2000); s + "c" })(5000)
       val r3 = agent.alter(_ + "d")(5000)
 
       r1.await.resultOrException.get must be === "ab"
       r2.await.resultOrException.get must be === "abc"
       r3.await.resultOrException.get must be === "abcd"
 
-      agent() must be ("abcd")
+      agent() must be("abcd")
 
       agent.close
     }
@@ -72,7 +72,7 @@ class AgentSpec extends WordSpec with MustMatchers {
       val readTimeout = 5 seconds
 
       val agent = Agent(5)
-      val f1 = (i: Int) => {
+      val f1 = (i: Int) ⇒ {
         readLatch.await(readTimeout.length, readTimeout.unit)
         i + 5
       }
@@ -82,8 +82,8 @@ class AgentSpec extends WordSpec with MustMatchers {
       agent send countDown
 
       countDown.await(5 seconds)
-      read must be (5)
-      agent() must be (10)
+      read must be(5)
+      agent() must be(10)
 
       agent.close
     }
@@ -91,7 +91,7 @@ class AgentSpec extends WordSpec with MustMatchers {
     "be readable within a transaction" in {
       val agent = Agent(5)
       val value = atomic { agent() }
-      value must be (5)
+      value must be(5)
       agent.close
     }
 
@@ -105,7 +105,7 @@ class AgentSpec extends WordSpec with MustMatchers {
       agent send countDown
 
       countDown.await(5 seconds)
-      agent() must be (10)
+      agent() must be(10)
 
       agent.close
     }
@@ -120,12 +120,12 @@ class AgentSpec extends WordSpec with MustMatchers {
           agent send (_ * 2)
           throw new RuntimeException("Expected failure")
         }
-      } catch { case _ => }
+      } catch { case _ ⇒ }
 
       agent send countDown
 
       countDown.await(5 seconds)
-      agent() must be (5)
+      agent() must be(5)
 
       agent.close
     }
@@ -137,7 +137,7 @@ class AgentSpec extends WordSpec with MustMatchers {
 
       val future = agent.future
 
-      future.await.result.get must be ("abc")
+      future.await.result.get must be("abc")
 
       agent.close
     }
@@ -147,7 +147,7 @@ class AgentSpec extends WordSpec with MustMatchers {
       agent send (_ + "b")
       agent send (_ + "c")
 
-      agent.await must be ("abc")
+      agent.await must be("abc")
 
       agent.close
     }
@@ -156,8 +156,8 @@ class AgentSpec extends WordSpec with MustMatchers {
       val agent1 = Agent(5)
       val agent2 = agent1 map (_ * 2)
 
-      agent1() must be (5)
-      agent2() must be (10)
+      agent1() must be(5)
+      agent2() must be(10)
 
       agent1.close
       agent2.close
@@ -167,21 +167,21 @@ class AgentSpec extends WordSpec with MustMatchers {
       val agent = Agent(3)
       var result = 0
 
-      for (value <- agent) {
-          result += value
+      for (value ← agent) {
+        result += value
       }
 
-      result must be (3)
+      result must be(3)
 
       agent.close
     }
 
     "be able to be used in a 'map' for comprehension" in {
       val agent1 = Agent(5)
-      val agent2 = for (value <- agent1) yield value * 2
+      val agent2 = for (value ← agent1) yield value * 2
 
-      agent1() must be (5)
-      agent2() must be (10)
+      agent1() must be(5)
+      agent2() must be(10)
 
       agent1.close
       agent2.close
@@ -192,13 +192,13 @@ class AgentSpec extends WordSpec with MustMatchers {
       val agent2 = Agent(2)
 
       val agent3 = for {
-          value1 <- agent1
-          value2 <- agent2
-        } yield value1 + value2
+        value1 ← agent1
+        value2 ← agent2
+      } yield value1 + value2
 
-      agent1() must be (1)
-      agent2() must be (2)
-      agent3() must be (3)
+      agent1() must be(1)
+      agent2() must be(2)
+      agent3() must be(3)
 
       agent1.close
       agent2.close

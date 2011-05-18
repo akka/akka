@@ -14,25 +14,22 @@ import org.junit.runner.RunWith
 import akka.dispatch.DefaultCompletableFuture;
 
 @RunWith(classOf[JUnitRunner])
-class TypedActorContextSpec extends
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterAll {
+class TypedActorContextSpec extends Spec with ShouldMatchers with BeforeAndAfterAll {
 
   describe("TypedActorContext") {
     it("context.sender should return the sender TypedActor reference") {
       val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
       val pojoCaller = TypedActor.newInstance(classOf[SimpleJavaPojoCaller], classOf[SimpleJavaPojoCallerImpl])
       pojoCaller.setPojo(pojo)
-      pojoCaller.getSenderFromSimpleJavaPojo.isInstanceOf[Option[_]] should equal (true)
-      pojoCaller.getSenderFromSimpleJavaPojo.asInstanceOf[Option[_]].isDefined should equal (true)
-      pojoCaller.getSenderFromSimpleJavaPojo.asInstanceOf[Option[_]].get should equal (pojoCaller)
+      pojoCaller.getSenderFromSimpleJavaPojo.isInstanceOf[Option[_]] should equal(true)
+      pojoCaller.getSenderFromSimpleJavaPojo.asInstanceOf[Option[_]].isDefined should equal(true)
+      pojoCaller.getSenderFromSimpleJavaPojo.asInstanceOf[Option[_]].get should equal(pojoCaller)
     }
     it("context.senderFuture should return the senderFuture TypedActor reference") {
       val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
       val pojoCaller = TypedActor.newInstance(classOf[SimpleJavaPojoCaller], classOf[SimpleJavaPojoCallerImpl])
       pojoCaller.setPojo(pojo)
-      pojoCaller.getSenderFutureFromSimpleJavaPojo.getClass.getName should equal (classOf[DefaultCompletableFuture[_]].getName)
+      pojoCaller.getSenderFutureFromSimpleJavaPojo.getClass.getName should equal(classOf[DefaultCompletableFuture[_]].getName)
     }
   }
 }

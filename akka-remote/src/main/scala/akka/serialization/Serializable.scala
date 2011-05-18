@@ -10,9 +10,9 @@ import com.google.protobuf.Message
 
 import reflect.Manifest
 
-import java.io.{StringWriter, ByteArrayOutputStream, ObjectOutputStream}
+import java.io.{ StringWriter, ByteArrayOutputStream, ObjectOutputStream }
 
-import sjson.json.{Serializer=>SJSONSerializer}
+import sjson.json.{ Serializer ⇒ SJSONSerializer }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

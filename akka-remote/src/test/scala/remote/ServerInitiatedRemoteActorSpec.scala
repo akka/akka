@@ -1,29 +1,29 @@
 package akka.actor.remote
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.actor.Actor._
-import akka.actor.{ActorRegistry, ActorRef, Actor}
+import akka.actor.{ ActorRegistry, ActorRef, Actor }
 
 object ServerInitiatedRemoteActorSpec {
   case class Send(actor: ActorRef)
 
   class RemoteActorSpecActorUnidirectional extends Actor {
     def receive = {
-      case "Ping" => self.reply_?("Pong")
+      case "Ping" ⇒ self.reply_?("Pong")
     }
   }
 
   class Decrementer extends Actor {
     def receive = {
-      case "done" => self.reply_?(false)
-      case i: Int if i > 0 =>
+      case "done" ⇒ self.reply_?(false)
+      case i: Int if i > 0 ⇒
         self.reply_?(i - 1)
-      case i: Int =>
+      case i: Int ⇒
         self.reply_?(0)
         this become {
-          case "done" => self.reply_?(true)
-          case _ => //Do Nothing
+          case "done" ⇒ self.reply_?(true)
+          case _      ⇒ //Do Nothing
         }
     }
   }
@@ -31,18 +31,18 @@ object ServerInitiatedRemoteActorSpec {
   class RemoteActorSpecActorBidirectional extends Actor {
 
     def receive = {
-      case "Hello" =>
+      case "Hello" ⇒
         self.reply("World")
-      case "Failure" =>
+      case "Failure" ⇒
         throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
 
   class RemoteActorSpecActorAsyncSender(latch: CountDownLatch) extends Actor {
     def receive = {
-      case Send(actor: ActorRef) =>
+      case Send(actor: ActorRef) ⇒
         actor ! "Hello"
-      case "World" => latch.countDown()
+      case "World" ⇒ latch.countDown()
     }
   }
 }
@@ -50,7 +50,7 @@ object ServerInitiatedRemoteActorSpec {
 class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
   import ServerInitiatedRemoteActorSpec._
   "Server-managed remote actors" should {
-/*
+    /*
     "sendWithBang" in {
       val latch = new CountDownLatch(1)
       implicit val sender = replyHandler(latch, "Pong")
@@ -171,35 +171,36 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
     }
 */
 
-    /** FIXME rewrite after new registry changes
-    "should be able to remotely communicate between 2 server-managed actors" in {
-      val localFoo = actorOf[Decrementer]
-      val localBar = actorOf[Decrementer]
-      remote.register("foo", localFoo)
-      remote.register("bar", localBar)
-
-      val remoteFoo = remote.actorFor("foo", host, port)
-      val remoteBar = remote.actorFor("bar", host, port)
-
-      //Seed the start
-      remoteFoo.!(10)(Some(remoteBar))
-
-      val latch = new CountDownLatch(100)
-
-      def testDone() = (remoteFoo !! "done").as[Boolean].getOrElse(false) &&
-                       (remoteBar !! "done").as[Boolean].getOrElse(false)
-
-      while(!testDone()) {
-        if (latch.await(200, TimeUnit.MILLISECONDS))
-          sys.error("Test didn't complete within 100 cycles")
-        else
-          latch.countDown()
-      }
-
-      val decrementer = Actor.registry.local.actorFor[Decrementer]
-      decrementers.find( _ eq localFoo) must equal (Some(localFoo))
-      decrementers.find( _ eq localBar) must equal (Some(localBar))
-    }
+    /**
+     * FIXME rewrite after new registry changes
+     * "should be able to remotely communicate between 2 server-managed actors" in {
+     * val localFoo = actorOf[Decrementer]
+     * val localBar = actorOf[Decrementer]
+     * remote.register("foo", localFoo)
+     * remote.register("bar", localBar)
+     *
+     * val remoteFoo = remote.actorFor("foo", host, port)
+     * val remoteBar = remote.actorFor("bar", host, port)
+     *
+     * //Seed the start
+     * remoteFoo.!(10)(Some(remoteBar))
+     *
+     * val latch = new CountDownLatch(100)
+     *
+     * def testDone() = (remoteFoo !! "done").as[Boolean].getOrElse(false) &&
+     * (remoteBar !! "done").as[Boolean].getOrElse(false)
+     *
+     * while(!testDone()) {
+     * if (latch.await(200, TimeUnit.MILLISECONDS))
+     * sys.error("Test didn't complete within 100 cycles")
+     * else
+     * latch.countDown()
+     * }
+     *
+     * val decrementer = Actor.registry.local.actorFor[Decrementer]
+     * decrementers.find( _ eq localFoo) must equal (Some(localFoo))
+     * decrementers.find( _ eq localBar) must equal (Some(localBar))
+     * }
      */
   }
 }

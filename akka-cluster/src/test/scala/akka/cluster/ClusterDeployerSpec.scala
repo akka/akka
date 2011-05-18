@@ -11,7 +11,7 @@ import akka.actor._
 object ClusterDeployerSpec {
   class Pi extends Actor {
     def receive = {
-      case "Hello" => self.reply("World")
+      case "Hello" ⇒ self.reply("World")
     }
   }
 }
@@ -20,24 +20,24 @@ class ClusterDeployerSpec extends WordSpec with MustMatchers with BeforeAndAfter
   import ClusterDeployerSpec._
 
   val dataPath = "_akka_cluster/data"
-  val logPath  = "_akka_cluster/log"
+  val logPath = "_akka_cluster/log"
 
   var zkServer: ZkServer = _
 
   "A ClusterDeployer" should {
     "be able to deploy deployments in configuration file" in {
       val deployments = Deployer.deploymentsInConfig
-      deployments must not equal(Nil)
+      deployments must not equal (Nil)
       ClusterDeployer.init(deployments)
 
-      deployments map { oldDeployment =>
+      deployments map { oldDeployment ⇒
         val newDeployment = ClusterDeployer.lookupDeploymentFor(oldDeployment.address)
         newDeployment must be('defined)
         oldDeployment must equal(newDeployment.get)
       }
     }
 
-/*
+    /*
     "be able to create an actor deployed using ClusterDeployer" in {
       val pi = Actor.actorOf[Pi]("service-pi")
       pi must not equal(null)
@@ -50,7 +50,7 @@ class ClusterDeployerSpec extends WordSpec with MustMatchers with BeforeAndAfter
       zkServer = Cluster.startLocalCluster(dataPath, logPath)
       Thread.sleep(5000)
     } catch {
-      case e => e.printStackTrace()
+      case e ⇒ e.printStackTrace()
     }
   }
 

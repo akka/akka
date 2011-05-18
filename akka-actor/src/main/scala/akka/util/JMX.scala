@@ -7,7 +7,7 @@ package akka.util
 import akka.event.EventHandler
 
 import java.lang.management.ManagementFactory
-import javax.management.{ObjectInstance, ObjectName, InstanceAlreadyExistsException, InstanceNotFoundException}
+import javax.management.{ ObjectInstance, ObjectName, InstanceAlreadyExistsException, InstanceNotFoundException }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -21,9 +21,9 @@ object JMX {
   def register(name: ObjectName, mbean: AnyRef): Option[ObjectInstance] = try {
     Some(mbeanServer.registerMBean(mbean, name))
   } catch {
-    case e: InstanceAlreadyExistsException =>
+    case e: InstanceAlreadyExistsException ⇒
       Some(mbeanServer.getObjectInstance(name))
-    case e: Exception =>
+    case e: Exception ⇒
       EventHandler.error(e, this, "Error when registering mbean [%s]".format(mbean))
       None
   }
@@ -31,7 +31,7 @@ object JMX {
   def unregister(mbean: ObjectName) = try {
     mbeanServer.unregisterMBean(mbean)
   } catch {
-    case e: InstanceNotFoundException => {}
-    case e: Exception => EventHandler.error(e, this, "Error while unregistering mbean [%s]".format(mbean))
+    case e: InstanceNotFoundException ⇒ {}
+    case e: Exception                 ⇒ EventHandler.error(e, this, "Error while unregistering mbean [%s]".format(mbean))
   }
 }

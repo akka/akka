@@ -3,7 +3,7 @@
  */
 package akka.cluster
 
-import org.apache.bookkeeper.client.{BookKeeper, BKException}
+import org.apache.bookkeeper.client.{ BookKeeper, BKException }
 import BKException._
 import org.apache.zookeeper.server.ZooKeeperServer
 
@@ -57,10 +57,10 @@ class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll 
       txlog1.close
 
       val txlog2 = TransactionLog.logFor(uuid)
-      val entries = txlog2.entriesInRange(0, 1).map(bytes => new String(bytes, "UTF-8"))
-      entries.size must equal (2)
-      entries(0) must equal ("hello")
-      entries(1) must equal ("hello")
+      val entries = txlog2.entriesInRange(0, 1).map(bytes ⇒ new String(bytes, "UTF-8"))
+      entries.size must equal(2)
+      entries(0) must equal("hello")
+      entries(1) must equal("hello")
       txlog2.close
     }
 
@@ -75,12 +75,12 @@ class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll 
       txlog1.close
 
       val txlog2 = TransactionLog.logFor(uuid)
-      val entries = txlog2.entries.map(bytes => new String(bytes, "UTF-8"))
-      entries.size must equal (4)
-      entries(0) must equal ("hello")
-      entries(1) must equal ("hello")
-      entries(2) must equal ("hello")
-      entries(3) must equal ("hello")
+      val entries = txlog2.entries.map(bytes ⇒ new String(bytes, "UTF-8"))
+      entries.size must equal(4)
+      entries(0) must equal("hello")
+      entries(1) must equal("hello")
+      entries(2) must equal("hello")
+      entries(3) must equal("hello")
       txlog2.close
     }
 
@@ -107,14 +107,14 @@ class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll 
 
       val txlog2 = TransactionLog.logFor(uuid)
       val (snapshotAsBytes, entriesAsBytes) = txlog2.entriesFromLatestSnapshot
-      new String(snapshotAsBytes, "UTF-8") must equal ("snapshot")
+      new String(snapshotAsBytes, "UTF-8") must equal("snapshot")
 
-      val entries = entriesAsBytes.map(bytes => new String(bytes, "UTF-8"))
-      entries.size must equal (4)
-      entries(0) must equal ("hello")
-      entries(1) must equal ("hello")
-      entries(2) must equal ("hello")
-      entries(3) must equal ("hello")
+      val entries = entriesAsBytes.map(bytes ⇒ new String(bytes, "UTF-8"))
+      entries.size must equal(4)
+      entries(0) must equal("hello")
+      entries(1) must equal("hello")
+      entries(2) must equal("hello")
+      entries(3) must equal("hello")
       txlog2.close
     }
 
@@ -136,12 +136,12 @@ class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll 
 
       val txlog2 = TransactionLog.logFor(uuid)
       val (snapshotAsBytes, entriesAsBytes) = txlog2.entriesFromLatestSnapshot
-      new String(snapshotAsBytes, "UTF-8") must equal ("snapshot")
+      new String(snapshotAsBytes, "UTF-8") must equal("snapshot")
 
-      val entries = entriesAsBytes.map(bytes => new String(bytes, "UTF-8"))
-      entries.size must equal (2)
-      entries(0) must equal ("hello")
-      entries(1) must equal ("hello")
+      val entries = entriesAsBytes.map(bytes ⇒ new String(bytes, "UTF-8"))
+      entries.size must equal(2)
+      entries(0) must equal("hello")
+      entries(1) must equal("hello")
       txlog2.close
     }
   }
@@ -176,10 +176,10 @@ class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll 
       txlog1.close
 
       val txlog2 = TransactionLog.logFor(uuid, true)
-      val entries = txlog2.entriesInRange(0, 1).map(bytes => new String(bytes, "UTF-8"))
-      entries.size must equal (2)
-      entries(0) must equal ("hello")
-      entries(1) must equal ("hello")
+      val entries = txlog2.entriesInRange(0, 1).map(bytes ⇒ new String(bytes, "UTF-8"))
+      entries.size must equal(2)
+      entries(0) must equal("hello")
+      entries(1) must equal("hello")
       Thread.sleep(100)
       txlog2.close
     }
@@ -196,12 +196,12 @@ class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll 
       txlog1.close
 
       val txlog2 = TransactionLog.logFor(uuid, true)
-      val entries = txlog2.entries.map(bytes => new String(bytes, "UTF-8"))
-      entries.size must equal (4)
-      entries(0) must equal ("hello")
-      entries(1) must equal ("hello")
-      entries(2) must equal ("hello")
-      entries(3) must equal ("hello")
+      val entries = txlog2.entries.map(bytes ⇒ new String(bytes, "UTF-8"))
+      entries.size must equal(4)
+      entries(0) must equal("hello")
+      entries(1) must equal("hello")
+      entries(2) must equal("hello")
+      entries(3) must equal("hello")
       Thread.sleep(100)
       txlog2.close
     }
@@ -231,14 +231,14 @@ class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll 
 
       val txlog2 = TransactionLog.logFor(uuid, true)
       val (snapshotAsBytes, entriesAsBytes) = txlog2.entriesFromLatestSnapshot
-      new String(snapshotAsBytes, "UTF-8") must equal ("snapshot")
+      new String(snapshotAsBytes, "UTF-8") must equal("snapshot")
 
-      val entries = entriesAsBytes.map(bytes => new String(bytes, "UTF-8"))
-      entries.size must equal (4)
-      entries(0) must equal ("hello")
-      entries(1) must equal ("hello")
-      entries(2) must equal ("hello")
-      entries(3) must equal ("hello")
+      val entries = entriesAsBytes.map(bytes ⇒ new String(bytes, "UTF-8"))
+      entries.size must equal(4)
+      entries(0) must equal("hello")
+      entries(1) must equal("hello")
+      entries(2) must equal("hello")
+      entries(3) must equal("hello")
       Thread.sleep(100)
       txlog2.close
     }
@@ -260,11 +260,11 @@ class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll 
 
       val txlog2 = TransactionLog.logFor(uuid, true)
       val (snapshotAsBytes, entriesAsBytes) = txlog2.entriesFromLatestSnapshot
-      new String(snapshotAsBytes, "UTF-8") must equal ("snapshot")
-      val entries = entriesAsBytes.map(bytes => new String(bytes, "UTF-8"))
-      entries.size must equal (2)
-      entries(0) must equal ("hello")
-      entries(1) must equal ("hello")
+      new String(snapshotAsBytes, "UTF-8") must equal("snapshot")
+      val entries = entriesAsBytes.map(bytes ⇒ new String(bytes, "UTF-8"))
+      entries.size must equal(2)
+      entries(0) must equal("hello")
+      entries(1) must equal("hello")
       Thread.sleep(100)
       txlog2.close
     }

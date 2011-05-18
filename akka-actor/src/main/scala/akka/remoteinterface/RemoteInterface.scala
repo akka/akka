@@ -15,46 +15,46 @@ import scala.reflect.BeanProperty
 
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
-import java.io.{PrintWriter, PrintStream}
+import java.io.{ PrintWriter, PrintStream }
 import java.lang.reflect.InvocationTargetException
 
 trait RemoteModule {
   val UUID_PREFIX = "uuid:".intern
 
   def optimizeLocalScoped_?(): Boolean //Apply optimizations for remote operations in local scope
-  protected[akka] def notifyListeners(message: => Any): Unit
+  protected[akka] def notifyListeners(message: ⇒ Any): Unit
 
   private[akka] def actors: ConcurrentHashMap[String, ActorRef]
   private[akka] def actorsByUuid: ConcurrentHashMap[String, ActorRef]
-  private[akka] def actorsFactories: ConcurrentHashMap[String, () => ActorRef]
+  private[akka] def actorsFactories: ConcurrentHashMap[String, () ⇒ ActorRef]
   private[akka] def typedActors: ConcurrentHashMap[String, AnyRef]
   private[akka] def typedActorsByUuid: ConcurrentHashMap[String, AnyRef]
-  private[akka] def typedActorsFactories: ConcurrentHashMap[String, () => AnyRef]
+  private[akka] def typedActorsFactories: ConcurrentHashMap[String, () ⇒ AnyRef]
 
   /** Lookup methods **/
 
-  private[akka] def findActorByAddress(address: String) : ActorRef = actors.get(address)
+  private[akka] def findActorByAddress(address: String): ActorRef = actors.get(address)
 
-  private[akka] def findActorByUuid(uuid: String) : ActorRef = actorsByUuid.get(uuid)
+  private[akka] def findActorByUuid(uuid: String): ActorRef = actorsByUuid.get(uuid)
 
-  private[akka] def findActorFactory(address: String) : () => ActorRef = actorsFactories.get(address)
+  private[akka] def findActorFactory(address: String): () ⇒ ActorRef = actorsFactories.get(address)
 
-  private[akka] def findTypedActorByAddress(address: String) : AnyRef = typedActors.get(address)
+  private[akka] def findTypedActorByAddress(address: String): AnyRef = typedActors.get(address)
 
-  private[akka] def findTypedActorFactory(address: String) : () => AnyRef = typedActorsFactories.get(address)
+  private[akka] def findTypedActorFactory(address: String): () ⇒ AnyRef = typedActorsFactories.get(address)
 
-  private[akka] def findTypedActorByUuid(uuid: String) : AnyRef = typedActorsByUuid.get(uuid)
+  private[akka] def findTypedActorByUuid(uuid: String): AnyRef = typedActorsByUuid.get(uuid)
 
-  private[akka] def findActorByAddressOrUuid(address: String, uuid: String) : ActorRef = {
+  private[akka] def findActorByAddressOrUuid(address: String, uuid: String): ActorRef = {
     var actorRefOrNull = if (address.startsWith(UUID_PREFIX)) findActorByUuid(address.substring(UUID_PREFIX.length))
-                         else findActorByAddress(address)
+    else findActorByAddress(address)
     if (actorRefOrNull eq null) actorRefOrNull = findActorByUuid(uuid)
     actorRefOrNull
   }
 
-  private[akka] def findTypedActorByAddressOrUuid(address: String, uuid: String) : AnyRef = {
+  private[akka] def findTypedActorByAddressOrUuid(address: String, uuid: String): AnyRef = {
     var actorRefOrNull = if (address.startsWith(UUID_PREFIX)) findTypedActorByUuid(address.substring(UUID_PREFIX.length))
-                         else findTypedActorByAddress(address)
+    else findTypedActorByAddress(address)
     if (actorRefOrNull eq null) actorRefOrNull = findTypedActorByUuid(uuid)
     actorRefOrNull
   }
@@ -130,8 +130,8 @@ class RemoteServerException private[akka] (message: String) extends AkkaExceptio
  */
 case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorException private[akka] (cause: Throwable, originalClassName: String, originalMessage: String)
   extends AkkaException("\nParsingError[%s]\nOriginalException[%s]\nOriginalMessage[%s]"
-                        .format(cause.toString, originalClassName, originalMessage)) {
-  override def printStackTrace                           = cause.printStackTrace
+    .format(cause.toString, originalClassName, originalMessage)) {
+  override def printStackTrace = cause.printStackTrace
   override def printStackTrace(printStream: PrintStream) = cause.printStackTrace(printStream)
   override def printStackTrace(printWriter: PrintWriter) = cause.printStackTrace(printWriter)
 }
@@ -156,14 +156,14 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   }
 
   protected override def manageLifeCycleOfListeners = false
-  protected[akka] override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
+  protected[akka] override def notifyListeners(message: ⇒ Any): Unit = super.notifyListeners(message)
 
-  private[akka] val actors               = new ConcurrentHashMap[String, ActorRef]
-  private[akka] val actorsByUuid         = new ConcurrentHashMap[String, ActorRef]
-  private[akka] val actorsFactories      = new ConcurrentHashMap[String, () => ActorRef]
-  private[akka] val typedActors          = new ConcurrentHashMap[String, AnyRef]
-  private[akka] val typedActorsByUuid    = new ConcurrentHashMap[String, AnyRef]
-  private[akka] val typedActorsFactories = new ConcurrentHashMap[String, () => AnyRef]
+  private[akka] val actors = new ConcurrentHashMap[String, ActorRef]
+  private[akka] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
+  private[akka] val actorsFactories = new ConcurrentHashMap[String, () ⇒ ActorRef]
+  private[akka] val typedActors = new ConcurrentHashMap[String, AnyRef]
+  private[akka] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
+  private[akka] val typedActorsFactories = new ConcurrentHashMap[String, () ⇒ AnyRef]
 
   def clear {
     actors.clear
@@ -201,28 +201,28 @@ trait RemoteServerModule extends RemoteModule {
    */
   def start(): RemoteServerModule =
     start(ReflectiveAccess.RemoteModule.configDefaultAddress.getAddress.getHostAddress,
-          ReflectiveAccess.RemoteModule.configDefaultAddress.getPort,
-          None)
+      ReflectiveAccess.RemoteModule.configDefaultAddress.getPort,
+      None)
 
   /**
    *  Starts the server up
    */
   def start(loader: ClassLoader): RemoteServerModule =
     start(ReflectiveAccess.RemoteModule.configDefaultAddress.getAddress.getHostAddress,
-          ReflectiveAccess.RemoteModule.configDefaultAddress.getPort,
-          Option(loader))
+      ReflectiveAccess.RemoteModule.configDefaultAddress.getPort,
+      Option(loader))
 
   /**
    *  Starts the server up
    */
   def start(host: String, port: Int): RemoteServerModule =
-    start(host,port,None)
+    start(host, port, None)
 
   /**
    *  Starts the server up
    */
   def start(host: String, port: Int, loader: ClassLoader): RemoteServerModule =
-    start(host,port,Option(loader))
+    start(host, port, Option(loader))
 
   /**
    *  Starts the server up
@@ -237,7 +237,7 @@ trait RemoteServerModule extends RemoteModule {
   /**
    *  Register typed actor by interface name.
    */
-  def registerTypedActor(intfClass: Class[_], typedActor: AnyRef) : Unit = registerTypedActor(intfClass.getName, typedActor)
+  def registerTypedActor(intfClass: Class[_], typedActor: AnyRef): Unit = registerTypedActor(intfClass.getName, typedActor)
 
   /**
    * Register remote typed actor by a specific id.
@@ -249,20 +249,20 @@ trait RemoteServerModule extends RemoteModule {
   /**
    * Register typed actor by interface name.
    */
-  def registerTypedPerSessionActor(intfClass: Class[_], factory: => AnyRef) : Unit = registerTypedActor(intfClass.getName, factory)
+  def registerTypedPerSessionActor(intfClass: Class[_], factory: ⇒ AnyRef): Unit = registerTypedActor(intfClass.getName, factory)
 
   /**
    * Register typed actor by interface name.
    * Java API
    */
-  def registerTypedPerSessionActor(intfClass: Class[_], factory: Creator[AnyRef]) : Unit = registerTypedActor(intfClass.getName, factory)
+  def registerTypedPerSessionActor(intfClass: Class[_], factory: Creator[AnyRef]): Unit = registerTypedActor(intfClass.getName, factory)
 
   /**
    * Register remote typed actor by a specific id.
    * @param address actor address
    * @param typedActor typed actor to register
    */
-  def registerTypedPerSessionActor(address: String, factory: => AnyRef): Unit
+  def registerTypedPerSessionActor(address: String, factory: ⇒ AnyRef): Unit
 
   /**
    * Register remote typed actor by a specific id.
@@ -295,7 +295,7 @@ trait RemoteServerModule extends RemoteModule {
    * <p/>
    * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself.
    */
-  def registerPerSession(address: String, factory: => ActorRef): Unit
+  def registerPerSession(address: String, factory: ⇒ ActorRef): Unit
 
   /**
    * Register Remote Session Actor by a specific 'id' passed as argument.
@@ -332,14 +332,14 @@ trait RemoteServerModule extends RemoteModule {
   def unregisterTypedActor(address: String): Unit
 
   /**
-  * Unregister Remote Typed Actor by specific 'id'.
-  * <p/>
-  * NOTE: You need to call this method if you have registered an actor by a custom ID.
-  */
- def unregisterTypedPerSessionActor(address: String): Unit
+   * Unregister Remote Typed Actor by specific 'id'.
+   * <p/>
+   * NOTE: You need to call this method if you have registered an actor by a custom ID.
+   */
+  def unregisterTypedPerSessionActor(address: String): Unit
 }
 
-trait RemoteClientModule extends RemoteModule { self: RemoteModule =>
+trait RemoteClientModule extends RemoteModule { self: RemoteModule ⇒
 
   def actorFor(address: String, hostname: String, port: Int): ActorRef =
     actorFor(address, Actor.TIMEOUT, hostname, port, None)

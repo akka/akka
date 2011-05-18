@@ -4,7 +4,7 @@
 
 package akka.stm
 
-import akka.actor.{newUuid, Uuid}
+import akka.actor.{ newUuid, Uuid }
 
 import org.multiverse.transactional.refs.BasicRef
 
@@ -64,7 +64,7 @@ object Ref {
  * }}}
  */
 class Ref[T](initialValue: T) extends BasicRef[T](initialValue) with Transactional {
-  self =>
+  self ⇒
 
   def this() = this(null.asInstanceOf[T])
 
@@ -76,7 +76,7 @@ class Ref[T](initialValue: T) extends BasicRef[T](initialValue) with Transaction
 
   def swap(newValue: T) = set(newValue)
 
-  def alter(f: T => T): T = {
+  def alter(f: T ⇒ T): T = {
     val value = f(get)
     set(value)
     value
@@ -86,35 +86,35 @@ class Ref[T](initialValue: T) extends BasicRef[T](initialValue) with Transaction
 
   def getOrWait: T = getOrAwait
 
-  def getOrElse(default: => T): T =
+  def getOrElse(default: ⇒ T): T =
     if (isNull) default else get
 
   def isDefined: Boolean = !isNull
 
   def isEmpty: Boolean = isNull
 
-  def map[B](f: T => B): Ref[B] =
+  def map[B](f: T ⇒ B): Ref[B] =
     if (isEmpty) Ref[B] else Ref(f(get))
 
-  def flatMap[B](f: T => Ref[B]): Ref[B] =
+  def flatMap[B](f: T ⇒ Ref[B]): Ref[B] =
     if (isEmpty) Ref[B] else f(get)
 
-  def filter(p: T => Boolean): Ref[T] =
+  def filter(p: T ⇒ Boolean): Ref[T] =
     if (isDefined && p(get)) Ref(get) else Ref[T]
 
   /**
    * Necessary to keep from being implicitly converted to Iterable in for comprehensions.
    */
-  def withFilter(p: T => Boolean): WithFilter = new WithFilter(p)
+  def withFilter(p: T ⇒ Boolean): WithFilter = new WithFilter(p)
 
-  class WithFilter(p: T => Boolean) {
-    def map[B](f: T => B): Ref[B] = self filter p map f
-    def flatMap[B](f: T => Ref[B]): Ref[B] = self filter p flatMap f
-    def foreach[U](f: T => U): Unit = self filter p foreach f
-    def withFilter(q: T => Boolean): WithFilter = new WithFilter(x => p(x) && q(x))
+  class WithFilter(p: T ⇒ Boolean) {
+    def map[B](f: T ⇒ B): Ref[B] = self filter p map f
+    def flatMap[B](f: T ⇒ Ref[B]): Ref[B] = self filter p flatMap f
+    def foreach[U](f: T ⇒ U): Unit = self filter p foreach f
+    def withFilter(q: T ⇒ Boolean): WithFilter = new WithFilter(x ⇒ p(x) && q(x))
   }
 
-  def foreach[U](f: T => U): Unit =
+  def foreach[U](f: T ⇒ U): Unit =
     if (isDefined) f(get)
 
   def elements: Iterator[T] =
@@ -123,9 +123,9 @@ class Ref[T](initialValue: T) extends BasicRef[T](initialValue) with Transaction
   def toList: List[T] =
     if (isEmpty) List() else List(get)
 
-  def toRight[X](left: => X) =
+  def toRight[X](left: ⇒ X) =
     if (isEmpty) Left(left) else Right(get)
 
-  def toLeft[X](right: => X) =
+  def toLeft[X](right: ⇒ X) =
     if (isEmpty) Right(right) else Left(get)
 }

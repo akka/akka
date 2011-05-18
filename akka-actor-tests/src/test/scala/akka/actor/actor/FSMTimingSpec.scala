@@ -7,7 +7,6 @@ import akka.testkit.TestKit
 import akka.util.Duration
 import akka.util.duration._
 
-
 class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
   import FSMTimingSpec._
   import FSM._
@@ -17,13 +16,13 @@ class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
   expectMsg(200 millis, CurrentState(fsm, Initial))
 
   ignoreMsg {
-      case Transition(_, Initial, _) => true
+    case Transition(_, Initial, _) ⇒ true
   }
 
   "A Finite State Machine" must {
 
     "receive StateTimeout" in {
-      within (50 millis, 150 millis) {
+      within(50 millis, 150 millis) {
         fsm ! TestStateTimeout
         expectMsg(Transition(fsm, TestStateTimeout, Initial))
         expectNoMsg
@@ -31,11 +30,11 @@ class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
     }
 
     "allow StateTimeout override" in {
-      within (500 millis) {
+      within(500 millis) {
         fsm ! TestStateTimeoutOverride
         expectNoMsg
       }
-      within (50 millis) {
+      within(50 millis) {
         fsm ! Cancel
         expectMsg(Cancel)
         expectMsg(Transition(fsm, TestStateTimeout, Initial))
@@ -43,7 +42,7 @@ class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
     }
 
     "receive single-shot timer" in {
-      within (50 millis, 150 millis) {
+      within(50 millis, 150 millis) {
         fsm ! TestSingleTimer
         expectMsg(Tick)
         expectMsg(Transition(fsm, TestSingleTimer, Initial))
@@ -54,7 +53,7 @@ class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
     "receive and cancel a repeated timer" in {
       fsm ! TestRepeatedTimer
       val seq = receiveWhile(600 millis) {
-        case Tick => Tick
+        case Tick ⇒ Tick
       }
       seq must have length (5)
       within(250 millis) {
@@ -103,34 +102,34 @@ object FSMTimingSpec {
   case object Cancel
   case object SetHandler
 
-  case class Unhandled(msg : AnyRef)
+  case class Unhandled(msg: AnyRef)
 
-  class StateMachine(tester : ActorRef) extends Actor with FSM[State, Int] {
+  class StateMachine(tester: ActorRef) extends Actor with FSM[State, Int] {
     import FSM._
 
     startWith(Initial, 0)
     when(Initial) {
-      case Ev(TestSingleTimer) =>
+      case Ev(TestSingleTimer) ⇒
         setTimer("tester", Tick, 100 millis, false)
         goto(TestSingleTimer)
-      case Ev(TestRepeatedTimer) =>
+      case Ev(TestRepeatedTimer) ⇒
         setTimer("tester", Tick, 100 millis, true)
         goto(TestRepeatedTimer) using 4
-      case Ev(TestStateTimeoutOverride) =>
+      case Ev(TestStateTimeoutOverride) ⇒
         goto(TestStateTimeout) forMax (Duration.Inf)
-      case Ev(x : FSMTimingSpec.State) => goto(x)
+      case Ev(x: FSMTimingSpec.State) ⇒ goto(x)
     }
     when(TestStateTimeout, stateTimeout = 100 millis) {
-      case Ev(StateTimeout) => goto(Initial)
-      case Ev(Cancel) => goto(Initial) replying (Cancel)
+      case Ev(StateTimeout) ⇒ goto(Initial)
+      case Ev(Cancel)       ⇒ goto(Initial) replying (Cancel)
     }
     when(TestSingleTimer) {
-      case Ev(Tick) =>
+      case Ev(Tick) ⇒
         tester ! Tick
         goto(Initial)
     }
     when(TestRepeatedTimer) {
-      case Event(Tick, remaining) =>
+      case Event(Tick, remaining) ⇒
         tester ! Tick
         if (remaining == 0) {
           cancelTimer("tester")
@@ -140,14 +139,14 @@ object FSMTimingSpec {
         }
     }
     when(TestUnhandled) {
-      case Ev(SetHandler) =>
+      case Ev(SetHandler) ⇒
         whenUnhandled {
-          case Ev(Tick) =>
+          case Ev(Tick) ⇒
             tester ! Unhandled(Tick)
             stay
         }
         stay
-      case Ev(Cancel) =>
+      case Ev(Cancel) ⇒
         goto(Initial)
     }
   }

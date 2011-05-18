@@ -6,7 +6,7 @@ package akka.dispatch
 
 import java.util.Collection
 import java.util.concurrent._
-import atomic.{AtomicLong, AtomicInteger}
+import atomic.{ AtomicLong, AtomicInteger }
 import ThreadPoolExecutor.CallerRunsPolicy
 
 import akka.util.Duration
@@ -14,14 +14,14 @@ import akka.event.EventHandler
 
 object ThreadPoolConfig {
   type Bounds = Int
-  type FlowHandler = Either[RejectedExecutionHandler,Bounds]
-  type QueueFactory = () => BlockingQueue[Runnable]
+  type FlowHandler = Either[RejectedExecutionHandler, Bounds]
+  type QueueFactory = () ⇒ BlockingQueue[Runnable]
 
   val defaultAllowCoreThreadTimeout: Boolean = false
-  val defaultCorePoolSize: Int               = 16
-  val defaultMaxPoolSize: Int                = 128
-  val defaultTimeout: Duration               = Duration(60000L,TimeUnit.MILLISECONDS)
-  def defaultFlowHandler: FlowHandler        = flowHandler(new CallerRunsPolicy)
+  val defaultCorePoolSize: Int = 16
+  val defaultMaxPoolSize: Int = 128
+  val defaultTimeout: Duration = Duration(60000L, TimeUnit.MILLISECONDS)
+  def defaultFlowHandler: FlowHandler = flowHandler(new CallerRunsPolicy)
 
   def flowHandler(rejectionHandler: RejectedExecutionHandler): FlowHandler = Left(rejectionHandler)
   def flowHandler(bounds: Int): FlowHandler = Right(bounds)
@@ -31,46 +31,46 @@ object ThreadPoolConfig {
     (Runtime.getRuntime.availableProcessors * multiplier).ceil.toInt
 
   def arrayBlockingQueue(capacity: Int, fair: Boolean): QueueFactory =
-    () => new ArrayBlockingQueue[Runnable](capacity,fair)
+    () ⇒ new ArrayBlockingQueue[Runnable](capacity, fair)
 
   def synchronousQueue(fair: Boolean): QueueFactory =
-    () => new SynchronousQueue[Runnable](fair)
+    () ⇒ new SynchronousQueue[Runnable](fair)
 
   def linkedBlockingQueue(): QueueFactory =
-    () => new LinkedBlockingQueue[Runnable]()
+    () ⇒ new LinkedBlockingQueue[Runnable]()
 
   def linkedBlockingQueue(capacity: Int): QueueFactory =
-    () => new LinkedBlockingQueue[Runnable](capacity)
+    () ⇒ new LinkedBlockingQueue[Runnable](capacity)
 
   def reusableQueue(queue: BlockingQueue[Runnable]): QueueFactory =
-    () => queue
+    () ⇒ queue
 
   def reusableQueue(queueFactory: QueueFactory): QueueFactory = {
     val queue = queueFactory()
-    () => queue
+    () ⇒ queue
   }
 }
 
 case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.defaultAllowCoreThreadTimeout,
-                            corePoolSize:         Int = ThreadPoolConfig.defaultCorePoolSize,
-                            maxPoolSize:          Int = ThreadPoolConfig.defaultMaxPoolSize,
-                            threadTimeout:        Duration = ThreadPoolConfig.defaultTimeout,
-                            flowHandler:          ThreadPoolConfig.FlowHandler = ThreadPoolConfig.defaultFlowHandler,
-                            queueFactory:         ThreadPoolConfig.QueueFactory = ThreadPoolConfig.linkedBlockingQueue()) {
+                            corePoolSize: Int = ThreadPoolConfig.defaultCorePoolSize,
+                            maxPoolSize: Int = ThreadPoolConfig.defaultMaxPoolSize,
+                            threadTimeout: Duration = ThreadPoolConfig.defaultTimeout,
+                            flowHandler: ThreadPoolConfig.FlowHandler = ThreadPoolConfig.defaultFlowHandler,
+                            queueFactory: ThreadPoolConfig.QueueFactory = ThreadPoolConfig.linkedBlockingQueue()) {
 
   final def createLazyExecutorService(threadFactory: ThreadFactory): ExecutorService =
     new LazyExecutorServiceWrapper(createExecutorService(threadFactory))
 
   final def createExecutorService(threadFactory: ThreadFactory): ExecutorService = {
     flowHandler match {
-      case Left(rejectHandler) =>
+      case Left(rejectHandler) ⇒
         val service = new ThreadPoolExecutor(corePoolSize, maxPoolSize, threadTimeout.length, threadTimeout.unit, queueFactory(), threadFactory, rejectHandler)
         service.allowCoreThreadTimeOut(allowCorePoolTimeout)
         service
-      case Right(bounds) =>
+      case Right(bounds) ⇒
         val service = new ThreadPoolExecutor(corePoolSize, maxPoolSize, threadTimeout.length, threadTimeout.unit, queueFactory(), threadFactory)
         service.allowCoreThreadTimeOut(allowCorePoolTimeout)
-        new BoundedExecutorDecorator(service,bounds)
+        new BoundedExecutorDecorator(service, bounds)
     }
   }
 }
@@ -80,11 +80,10 @@ trait DispatcherBuilder {
 }
 
 object ThreadPoolConfigDispatcherBuilder {
-  def conf_?[T](opt: Option[T])(fun: (T) => ThreadPoolConfigDispatcherBuilder => ThreadPoolConfigDispatcherBuilder):
-    Option[(ThreadPoolConfigDispatcherBuilder) => ThreadPoolConfigDispatcherBuilder] = opt map fun
+  def conf_?[T](opt: Option[T])(fun: (T) ⇒ ThreadPoolConfigDispatcherBuilder ⇒ ThreadPoolConfigDispatcherBuilder): Option[(ThreadPoolConfigDispatcherBuilder) ⇒ ThreadPoolConfigDispatcherBuilder] = opt map fun
 }
 
-case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfig) => MessageDispatcher, config: ThreadPoolConfig) extends DispatcherBuilder {
+case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfig) ⇒ MessageDispatcher, config: ThreadPoolConfig) extends DispatcherBuilder {
   import ThreadPoolConfig._
   def build = dispatcherFactory(config)
 
@@ -94,8 +93,8 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
   def withNewThreadPoolWithCustomBlockingQueue(newQueueFactory: QueueFactory): ThreadPoolConfigDispatcherBuilder =
     this.copy(config = config.copy(flowHandler = defaultFlowHandler, queueFactory = newQueueFactory))
 
-   def withNewThreadPoolWithCustomBlockingQueue(queue: BlockingQueue[Runnable]): ThreadPoolConfigDispatcherBuilder =
-     withNewThreadPoolWithCustomBlockingQueue(reusableQueue(queue))
+  def withNewThreadPoolWithCustomBlockingQueue(queue: BlockingQueue[Runnable]): ThreadPoolConfigDispatcherBuilder =
+    withNewThreadPoolWithCustomBlockingQueue(reusableQueue(queue))
 
   def withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity: ThreadPoolConfigDispatcherBuilder =
     this.copy(config = config.copy(queueFactory = linkedBlockingQueue(), flowHandler = defaultFlowHandler))
@@ -107,7 +106,7 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
     this.copy(config = config.copy(queueFactory = synchronousQueue(fair), flowHandler = defaultFlowHandler))
 
   def withNewThreadPoolWithArrayBlockingQueueWithCapacityAndFairness(capacity: Int, fair: Boolean): ThreadPoolConfigDispatcherBuilder =
-    this.copy(config = config.copy(queueFactory = arrayBlockingQueue(capacity,fair), flowHandler = defaultFlowHandler))
+    this.copy(config = config.copy(queueFactory = arrayBlockingQueue(capacity, fair), flowHandler = defaultFlowHandler))
 
   def setCorePoolSize(size: Int): ThreadPoolConfigDispatcherBuilder =
     this.copy(config = config.copy(corePoolSize = size))
@@ -125,7 +124,7 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
     this.copy(config = config.copy(flowHandler = flowHandler(bounds)))
 
   def setKeepAliveTimeInMillis(time: Long): ThreadPoolConfigDispatcherBuilder =
-    setKeepAliveTime(Duration(time,TimeUnit.MILLISECONDS))
+    setKeepAliveTime(Duration(time, TimeUnit.MILLISECONDS))
 
   def setKeepAliveTime(time: Duration): ThreadPoolConfigDispatcherBuilder =
     this.copy(config = config.copy(threadTimeout = time))
@@ -139,8 +138,7 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
   def setAllowCoreThreadTimeout(allow: Boolean): ThreadPoolConfigDispatcherBuilder =
     this.copy(config = config.copy(allowCorePoolTimeout = allow))
 
-  def configure(fs: Option[Function[ThreadPoolConfigDispatcherBuilder,ThreadPoolConfigDispatcherBuilder]]*):
-    ThreadPoolConfigDispatcherBuilder = fs.foldLeft(this)( (c,f) => f.map( _(c) ).getOrElse(c))
+  def configure(fs: Option[Function[ThreadPoolConfigDispatcherBuilder, ThreadPoolConfigDispatcherBuilder]]*): ThreadPoolConfigDispatcherBuilder = fs.foldLeft(this)((c, f) ⇒ f.map(_(c)).getOrElse(c))
 }
 
 /**
@@ -159,15 +157,15 @@ object MonitorableThread {
   val DEFAULT_NAME = "MonitorableThread"
 
   // FIXME use MonitorableThread.created and MonitorableThread.alive in monitoring
-  val created      = new AtomicInteger
-  val alive        = new AtomicInteger
+  val created = new AtomicInteger
+  val alive = new AtomicInteger
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class MonitorableThread(runnable: Runnable, name: String)
-    extends Thread(runnable, name + "-" + MonitorableThread.created.incrementAndGet) {
+  extends Thread(runnable, name + "-" + MonitorableThread.created.incrementAndGet) {
 
   setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
     def uncaughtException(thread: Thread, cause: Throwable) = {}
@@ -202,10 +200,10 @@ class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extend
         }
       })
     } catch {
-      case e: RejectedExecutionException =>
+      case e: RejectedExecutionException ⇒
         EventHandler.warning(this, e.toString)
         semaphore.release
-      case e: Throwable =>
+      case e: Throwable ⇒
         EventHandler.error(e, this, e.getMessage)
         throw e
     }
@@ -252,6 +250,6 @@ trait LazyExecutorService extends ExecutorServiceDelegate {
   }
 }
 
-class LazyExecutorServiceWrapper(executorFactory: => ExecutorService) extends LazyExecutorService {
+class LazyExecutorServiceWrapper(executorFactory: ⇒ ExecutorService) extends LazyExecutorService {
   def createExecutor = executorFactory
 }

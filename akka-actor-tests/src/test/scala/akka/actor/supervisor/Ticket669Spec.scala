@@ -3,12 +3,12 @@
  */
 package akka.actor.supervisor
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.actor._
 import akka.config.Supervision._
 
-import org.scalatest.{BeforeAndAfterAll, WordSpec}
+import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 
 class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
@@ -24,11 +24,10 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
       val supervised = Actor.actorOf[Supervised]
       val supervisor = Supervisor(SupervisorConfig(
         AllForOneStrategy(List(classOf[Exception]), 5, 10000),
-        Supervise(supervised, Permanent) :: Nil)
-      )
+        Supervise(supervised, Permanent) :: Nil))
 
       supervised.!("test")(Some(sender))
-      latch.await(5, TimeUnit.SECONDS) must be (true)
+      latch.await(5, TimeUnit.SECONDS) must be(true)
     }
 
     "be able to reply on failure during postStop" in {
@@ -38,11 +37,10 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
       val supervised = Actor.actorOf[Supervised]
       val supervisor = Supervisor(SupervisorConfig(
         AllForOneStrategy(List(classOf[Exception]), 5, 10000),
-        Supervise(supervised, Temporary) :: Nil)
-      )
+        Supervise(supervised, Temporary) :: Nil))
 
       supervised.!("test")(Some(sender))
-      latch.await(5, TimeUnit.SECONDS) must be (true)
+      latch.await(5, TimeUnit.SECONDS) must be(true)
     }
   }
 }
@@ -50,15 +48,15 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
 object Ticket669Spec {
   class Sender(latch: CountDownLatch) extends Actor {
     def receive = {
-      case "failure1" => latch.countDown()
-      case "failure2" => latch.countDown()
-      case _        => { }
+      case "failure1" ⇒ latch.countDown()
+      case "failure2" ⇒ latch.countDown()
+      case _          ⇒ {}
     }
   }
 
   class Supervised extends Actor {
     def receive = {
-      case msg => throw new Exception("test")
+      case msg ⇒ throw new Exception("test")
     }
 
     override def preRestart(reason: scala.Throwable) {

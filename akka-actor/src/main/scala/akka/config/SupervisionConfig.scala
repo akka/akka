@@ -5,8 +5,8 @@
 package akka.config
 
 import akka.dispatch.MessageDispatcher
-import akka.actor.{MaximumNumberOfRestartsWithinTimeRangeReached, ActorRef}
-import akka.japi.{Procedure2, Procedure}
+import akka.actor.{ MaximumNumberOfRestartsWithinTimeRangeReached, ActorRef }
+import akka.japi.{ Procedure2, Procedure }
 
 case class RemoteAddress(val hostname: String, val port: Int)
 
@@ -22,10 +22,10 @@ object Supervision {
   sealed abstract class LifeCycle extends ConfigElement
   sealed abstract class FaultHandlingStrategy(val trapExit: List[Class[_ <: Throwable]]) extends ConfigElement
 
-  case class SupervisorConfig(restartStrategy: FaultHandlingStrategy, worker: List[Server], maxRestartsHandler: (ActorRef,MaximumNumberOfRestartsWithinTimeRangeReached)=> Unit = {(aRef,max)=>()}) extends Server {
+  case class SupervisorConfig(restartStrategy: FaultHandlingStrategy, worker: List[Server], maxRestartsHandler: (ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached) ⇒ Unit = { (aRef, max) ⇒ () }) extends Server {
     //Java API
-    def this(restartStrategy: FaultHandlingStrategy, worker: Array[Server]) = this(restartStrategy,worker.toList)
-    def this(restartStrategy: FaultHandlingStrategy, worker: Array[Server], restartHandler:Procedure2[ActorRef,MaximumNumberOfRestartsWithinTimeRangeReached]) = this(restartStrategy,worker.toList, {(aRef,max)=>restartHandler.apply(aRef,max)})
+    def this(restartStrategy: FaultHandlingStrategy, worker: Array[Server]) = this(restartStrategy, worker.toList)
+    def this(restartStrategy: FaultHandlingStrategy, worker: Array[Server], restartHandler: Procedure2[ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached]) = this(restartStrategy, worker.toList, { (aRef, max) ⇒ restartHandler.apply(aRef, max) })
   }
 
   class Supervise(val actorRef: ActorRef, val lifeCycle: LifeCycle, val registerAsRemoteService: Boolean = false) extends Server {
@@ -104,19 +104,19 @@ object Supervision {
   case object UndefinedLifeCycle extends LifeCycle
 
   //Java API (& Scala if you fancy)
-  def permanent():          LifeCycle = Permanent
-  def temporary():          LifeCycle = Temporary
+  def permanent(): LifeCycle = Permanent
+  def temporary(): LifeCycle = Temporary
   def undefinedLifeCycle(): LifeCycle = UndefinedLifeCycle
 
   //Java API
   def noFaultHandlingStrategy = NoFaultHandlingStrategy
 
   case class SuperviseTypedActor(_intf: Class[_],
-                  val target: Class[_],
-                  val lifeCycle: LifeCycle,
-                  val timeout: Long,
-                  _dispatcher: MessageDispatcher // optional
-          ) extends Server {
+                                 val target: Class[_],
+                                 val lifeCycle: LifeCycle,
+                                 val timeout: Long,
+                                 _dispatcher: MessageDispatcher // optional
+                                 ) extends Server {
     val intf: Option[Class[_]] = Option(_intf)
     val dispatcher: Option[MessageDispatcher] = Option(_dispatcher)
 

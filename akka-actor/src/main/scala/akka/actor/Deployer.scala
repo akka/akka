@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import akka.event.EventHandler
 import akka.actor.DeploymentConfig._
-import akka.config.{ConfigurationException, Config}
+import akka.config.{ ConfigurationException, Config }
 import akka.util.ReflectiveAccess
 import akka.AkkaException
 
@@ -147,8 +147,8 @@ object Deployer {
   }
 
   def isLocal(deployment: Deploy): Boolean = deployment match {
-    case Deploy(_, _, _, Local) => true
-    case _                   => false
+    case Deploy(_, _, _, Local) ⇒ true
+    case _                      ⇒ false
   }
 
   def isClustered(deployment: Deploy): Boolean = isLocal(deployment)
@@ -162,8 +162,8 @@ object Deployer {
    */
   private[akka] def deploymentFor(address: String): Deploy = {
     lookupDeploymentFor(address) match {
-      case Some(deployment) => deployment
-      case None             => thrownNoDeploymentBoundException(address)
+      case Some(deployment) ⇒ deployment
+      case None             ⇒ thrownNoDeploymentBoundException(address)
     }
   }
 
@@ -175,11 +175,11 @@ object Deployer {
         try {
           lookupInConfig(address)
         } catch {
-          case e: ConfigurationException =>
+          case e: ConfigurationException ⇒
             EventHandler.error(e, this, e.getMessage)
             throw e
         }
-      newDeployment foreach { d =>
+      newDeployment foreach { d ⇒
         if (d eq null) {
           val e = new IllegalStateException("Deployment for address [" + address + "] is null")
           EventHandler.error(e, this, e.getMessage)
@@ -193,18 +193,18 @@ object Deployer {
 
   private[akka] def deploymentsInConfig: List[Deploy] = {
     for {
-      address    <- addressesInConfig
-      deployment <- lookupInConfig(address)
+      address ← addressesInConfig
+      deployment ← lookupInConfig(address)
     } yield deployment
   }
 
   private[akka] def addressesInConfig: List[String] = {
     val deploymentPath = "akka.actor.deployment"
     Config.config.getSection(deploymentPath) match {
-      case None                => Nil
-      case Some(addressConfig) =>
+      case None ⇒ Nil
+      case Some(addressConfig) ⇒
         addressConfig.map.keySet
-          .map(path => path.substring(0, path.indexOf(".")))
+          .map(path ⇒ path.substring(0, path.indexOf(".")))
           .toSet.toList // toSet to force uniqueness
     }
   }
@@ -219,25 +219,25 @@ object Deployer {
     // --------------------------------
     val addressPath = "akka.actor.deployment." + address
     Config.config.getSection(addressPath) match {
-      case None                => Some(Deploy(address, Direct, "N/A", Local))
-      case Some(addressConfig) =>
+      case None ⇒ Some(Deploy(address, Direct, "N/A", Local))
+      case Some(addressConfig) ⇒
 
         // --------------------------------
         // akka.actor.deployment.<address>.router
         // --------------------------------
         val router = addressConfig.getString("router", "direct") match {
-          case "direct"              => Direct
-          case "round-robin"         => RoundRobin
-          case "random"              => Random
-          case "least-cpu"           => LeastCPU
-          case "least-ram"           => LeastRAM
-          case "least-messages"      => LeastMessages
-          case customRouterClassName =>
+          case "direct"         ⇒ Direct
+          case "round-robin"    ⇒ RoundRobin
+          case "random"         ⇒ Random
+          case "least-cpu"      ⇒ LeastCPU
+          case "least-ram"      ⇒ LeastRAM
+          case "least-messages" ⇒ LeastMessages
+          case customRouterClassName ⇒
             val customRouter = try {
               Class.forName(customRouterClassName).newInstance.asInstanceOf[AnyRef]
             } catch {
-              case e => throw new ConfigurationException(
-              "Config option [" + addressPath + ".router] needs to be one of " +
+              case e ⇒ throw new ConfigurationException(
+                "Config option [" + addressPath + ".router] needs to be one of " +
                   "[\"direct\", \"round-robin\", \"random\", \"least-cpu\", \"least-ram\", \"least-messages\" or FQN of router class]")
             }
             CustomRouter(customRouter)
@@ -252,33 +252,33 @@ object Deployer {
         // akka.actor.deployment.<address>.clustered
         // --------------------------------
         addressConfig.getSection("clustered") match {
-          case None =>
+          case None ⇒
             Some(Deploy(address, router, "N/A", Local)) // deploy locally
 
-          case Some(clusteredConfig) =>
+          case Some(clusteredConfig) ⇒
 
             // --------------------------------
             // akka.actor.deployment.<address>.clustered.home
             // --------------------------------
             val home = clusteredConfig.getString("home", "") match {
-              case ""   => Host("localhost")
-              case home =>
+              case "" ⇒ Host("localhost")
+              case home ⇒
                 def raiseHomeConfigError() = throw new ConfigurationException(
-                    "Config option [" + addressPath +
+                  "Config option [" + addressPath +
                     ".clustered.home] needs to be on format 'host:<hostname>', 'ip:<ip address>'' or 'node:<node name>', was [" +
                     home + "]")
 
                 if (!(home.startsWith("host:") || home.startsWith("node:") || home.startsWith("ip:"))) raiseHomeConfigError()
 
                 val tokenizer = new java.util.StringTokenizer(home, ":")
-                val protocol  = tokenizer.nextElement
-                val address   = tokenizer.nextElement.asInstanceOf[String]
+                val protocol = tokenizer.nextElement
+                val address = tokenizer.nextElement.asInstanceOf[String]
 
                 protocol match {
-                  case "host" => Host(address)
-                  case "node" => Node(address)
-                  case "ip"   => IP(address)
-                  case _      => raiseHomeConfigError()
+                  case "host" ⇒ Host(address)
+                  case "node" ⇒ Node(address)
+                  case "ip"   ⇒ IP(address)
+                  case _      ⇒ raiseHomeConfigError()
                 }
             }
 
@@ -286,17 +286,17 @@ object Deployer {
             // akka.actor.deployment.<address>.clustered.replicas
             // --------------------------------
             val replicas = clusteredConfig.getAny("replicas", "1") match {
-              case "auto"               => AutoReplicate
-              case "1"                  => NoReplicas
-              case nrOfReplicas: String =>
+              case "auto" ⇒ AutoReplicate
+              case "1"    ⇒ NoReplicas
+              case nrOfReplicas: String ⇒
                 try {
                   Replicate(nrOfReplicas.toInt)
                 } catch {
-                  case e: NumberFormatException =>
+                  case e: NumberFormatException ⇒
                     throw new ConfigurationException(
                       "Config option [" + addressPath +
-                      ".clustered.replicas] needs to be either [\"auto\"] or [1-N] - was [" +
-                      nrOfReplicas + "]")
+                        ".clustered.replicas] needs to be either [\"auto\"] or [1-N] - was [" +
+                        nrOfReplicas + "]")
                 }
             }
 
@@ -315,8 +315,8 @@ object Deployer {
   private def throwDeploymentBoundException(deployment: Deploy): Nothing = {
     val e = new DeploymentAlreadyBoundException(
       "Address [" + deployment.address +
-      "] already bound to [" + deployment +
-      "]. You have to invoke 'undeploy(deployment) first.")
+        "] already bound to [" + deployment +
+        "]. You have to invoke 'undeploy(deployment) first.")
     EventHandler.error(e, this, e.getMessage)
     throw e
   }
@@ -386,6 +386,6 @@ object Address {
   }
 }
 
-class DeploymentException private[akka](message: String) extends AkkaException(message)
-class DeploymentAlreadyBoundException private[akka](message: String) extends AkkaException(message)
-class NoDeploymentBoundException private[akka](message: String) extends AkkaException(message)
+class DeploymentException private[akka] (message: String) extends AkkaException(message)
+class DeploymentAlreadyBoundException private[akka] (message: String) extends AkkaException(message)
+class NoDeploymentBoundException private[akka] (message: String) extends AkkaException(message)

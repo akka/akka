@@ -11,37 +11,38 @@ import akka.testing._
 
 import Actor._
 
-
 class HotSwapSpec extends WordSpec with MustMatchers {
 
   "An Actor" must {
 
     "be able to hotswap its behavior with HotSwap(..)" in {
       val barrier = TestBarrier(2)
-      @volatile var _log = ""
-      val a = actorOf( new Actor {
-        def receive = { case _ => _log += "default" }
+      @volatile
+      var _log = ""
+      val a = actorOf(new Actor {
+        def receive = { case _ ⇒ _log += "default" }
       }).start()
-      a ! HotSwap( self => {
-        case _ =>
+      a ! HotSwap(self ⇒ {
+        case _ ⇒
           _log += "swapped"
           barrier.await
       })
       a ! "swapped"
       barrier.await
-      _log must be ("swapped")
+      _log must be("swapped")
     }
 
     "be able to hotswap its behavior with become(..)" in {
       val barrier = TestBarrier(2)
-      @volatile var _log = ""
+      @volatile
+      var _log = ""
       val a = actorOf(new Actor {
         def receive = {
-          case "init" =>
+          case "init" ⇒
             _log += "init"
             barrier.await
-          case "swap" => become({
-            case _ =>
+          case "swap" ⇒ become({
+            case _ ⇒
               _log += "swapped"
               barrier.await
           })
@@ -50,42 +51,43 @@ class HotSwapSpec extends WordSpec with MustMatchers {
 
       a ! "init"
       barrier.await
-      _log must be ("init")
+      _log must be("init")
 
       barrier.reset
       _log = ""
       a ! "swap"
       a ! "swapped"
       barrier.await
-      _log must be ("swapped")
+      _log must be("swapped")
     }
 
     "be able to revert hotswap its behavior with RevertHotSwap(..)" in {
       val barrier = TestBarrier(2)
-      @volatile var _log = ""
-      val a = actorOf( new Actor {
+      @volatile
+      var _log = ""
+      val a = actorOf(new Actor {
         def receive = {
-          case "init" =>
+          case "init" ⇒
             _log += "init"
             barrier.await
-          }
+        }
       }).start()
 
       a ! "init"
       barrier.await
-      _log must be ("init")
+      _log must be("init")
 
       barrier.reset
       _log = ""
-      a ! HotSwap(self => {
-        case "swapped" =>
+      a ! HotSwap(self ⇒ {
+        case "swapped" ⇒
           _log += "swapped"
           barrier.await
       })
 
       a ! "swapped"
       barrier.await
-      _log must be ("swapped")
+      _log must be("swapped")
 
       barrier.reset
       _log = ""
@@ -93,7 +95,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
 
       a ! "init"
       barrier.await
-      _log must be ("init")
+      _log must be("init")
 
       // try to revert hotswap below the bottom of the stack
       barrier.reset
@@ -102,23 +104,24 @@ class HotSwapSpec extends WordSpec with MustMatchers {
 
       a ! "init"
       barrier.await
-      _log must be ("init")
+      _log must be("init")
     }
 
     "be able to revert hotswap its behavior with unbecome" in {
       val barrier = TestBarrier(2)
-      @volatile var _log = ""
+      @volatile
+      var _log = ""
       val a = actorOf(new Actor {
         def receive = {
-          case "init" =>
+          case "init" ⇒
             _log += "init"
             barrier.await
-          case "swap" =>
+          case "swap" ⇒
             become({
-              case "swapped" =>
+              case "swapped" ⇒
                 _log += "swapped"
                 barrier.await
-              case "revert" =>
+              case "revert" ⇒
                 unbecome()
             })
             barrier.await
@@ -127,7 +130,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
 
       a ! "init"
       barrier.await
-      _log must be ("init")
+      _log must be("init")
 
       barrier.reset
       _log = ""
@@ -138,14 +141,14 @@ class HotSwapSpec extends WordSpec with MustMatchers {
       _log = ""
       a ! "swapped"
       barrier.await
-      _log must be ("swapped")
+      _log must be("swapped")
 
       barrier.reset
       _log = ""
       a ! "revert"
       a ! "init"
       barrier.await
-      _log must be ("init")
+      _log must be("init")
     }
   }
 }

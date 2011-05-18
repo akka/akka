@@ -1,6 +1,6 @@
 package akka.actor.serialization
 
-import akka.actor.{ProtobufProtocol, Actor}
+import akka.actor.{ ProtobufProtocol, Actor }
 import ProtobufProtocol.ProtobufPOJO
 import Actor._
 import akka.actor.remote.AkkaRemoteTest
@@ -18,10 +18,10 @@ message ProtobufPOJO {
 object ProtobufActorMessageSerializationSpec {
   class RemoteActorSpecActorBidirectional extends Actor {
     def receive = {
-      case pojo: ProtobufPOJO =>
+      case pojo: ProtobufPOJO ⇒
         val id = pojo.getId
         self.reply(id + 1)
-      case msg =>
+      case msg ⇒
         throw new RuntimeException("Expected a ProtobufPOJO message but got: " + msg)
     }
   }

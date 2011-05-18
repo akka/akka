@@ -9,9 +9,8 @@ import akka.util.duration._
 import org.I0Itec.zkclient._
 import org.I0Itec.zkclient.exception._
 
-import java.util.{List => JList}
+import java.util.{ List ⇒ JList }
 import java.util.concurrent.CountDownLatch
-
 
 class BarrierTimeoutException(message: String) extends RuntimeException(message)
 
@@ -34,11 +33,11 @@ object ZooKeeperBarrier {
   def apply(zkClient: ZkClient, cluster: String, name: String, node: String, count: Int, timeout: Duration) =
     new ZooKeeperBarrier(zkClient, cluster + "-" + name, node, count, timeout)
 
-  def ignore[E: Manifest](body: => Unit) {
+  def ignore[E: Manifest](body: ⇒ Unit) {
     try {
       body
     } catch {
-      case e if manifest[E].erasure.isAssignableFrom(e.getClass) => ()
+      case e if manifest[E].erasure.isAssignableFrom(e.getClass) ⇒ ()
     }
   }
 }
@@ -49,7 +48,7 @@ object ZooKeeperBarrier {
 class ZooKeeperBarrier(zkClient: ZkClient, name: String, node: String, count: Int, timeout: Duration)
   extends IZkChildListener {
 
-  import ZooKeeperBarrier.{BarriersNode, ignore}
+  import ZooKeeperBarrier.{ BarriersNode, ignore }
 
   val barrier = BarriersNode + "/" + name
   val entry = barrier + "/" + node
@@ -60,7 +59,7 @@ class ZooKeeperBarrier(zkClient: ZkClient, name: String, node: String, count: In
   ignore[ZkNodeExistsException](zkClient.createPersistent(BarriersNode))
   ignore[ZkNodeExistsException](zkClient.createPersistent(barrier))
 
-  def apply(body: => Unit) {
+  def apply(body: ⇒ Unit) {
     enter
     body
     leave()

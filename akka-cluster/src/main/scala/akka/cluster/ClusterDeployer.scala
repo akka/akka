@@ -4,17 +4,18 @@
 
 package akka.cluster
 
-import akka.actor.{DeploymentConfig, Deployer, DeploymentException}
+import akka.actor.{ DeploymentConfig, Deployer, DeploymentException }
 import DeploymentConfig._
 import akka.event.EventHandler
+import akka.config.Config
 import akka.util.Switch
 import akka.util.Helpers._
 import akka.cluster.zookeeper.AkkaZkClient
 
 import org.apache.zookeeper.CreateMode
-import org.apache.zookeeper.recipes.lock.{WriteLock, LockListener}
+import org.apache.zookeeper.recipes.lock.{ WriteLock, LockListener }
 
-import org.I0Itec.zkclient.exception.{ZkNoNodeException, ZkNodeExistsException}
+import org.I0Itec.zkclient.exception.{ ZkNoNodeException, ZkNodeExistsException }
 
 import scala.collection.JavaConversions.collectionAsScalaIterable
 
@@ -31,7 +32,7 @@ import java.util.concurrent.CountDownLatch
  */
 object ClusterDeployer {
   val clusterName = Cluster.name
-  val nodeName = new UUID().toString // FIXME how to configure node name? now using UUID
+  val nodeName = Config.nodename
   val clusterPath = "/%s" format clusterName
   val clusterDeploymentLockPath = clusterPath + "/deployment-lock"
   val deploymentPath = clusterPath + "/deployment"
@@ -74,22 +75,20 @@ object ClusterDeployer {
     Deploy(
       address = RemoteClusterDaemon.ADDRESS,
       routing = Direct,
-      scope = Clustered(Deployer.defaultAddress, NoReplicas, Stateless))
-  )
+      scope = Clustered(Deployer.defaultAddress, NoReplicas, Stateless)))
 
   private[akka] def init(deployments: List[Deploy]) {
     isConnected.switchOn {
-      baseNodes.foreach {
-        path =>
-          try {
-            ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
-            EventHandler.debug(this, "Created node [%s]".format(path))
-          } catch {
-            case e =>
-              val error = new DeploymentException(e.toString)
-              EventHandler.error(error, this)
-              throw error
-          }
+      baseNodes.foreach { path ⇒
+        try {
+          ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
+          EventHandler.debug(this, "Created node [%s]".format(path))
+        } catch {
+          case e ⇒
+            val error = new DeploymentException(e.toString)
+            EventHandler.error(error, this)
+            throw error
+        }
       }
 
       val allDeployments = deployments ::: systemDeployments
@@ -120,9 +119,9 @@ object ClusterDeployer {
 
       // FIXME trigger cluster-wide deploy action
     } catch {
-      case e: NullPointerException =>
+      case e: NullPointerException ⇒
         handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper since client session is closed"))
-      case e: Exception =>
+      case e: Exception ⇒
         handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper due to: " + e))
     }
   }
@@ -133,7 +132,7 @@ object ClusterDeployer {
 
       // FIXME trigger cluster-wide undeployment action
     } catch {
-      case e: Exception =>
+      case e: Exception ⇒
         handleError(new DeploymentException("Could not undeploy deployment [" + deployment + "] in ZooKeeper due to: " + e))
     }
   }
@@ -141,11 +140,11 @@ object ClusterDeployer {
   private[akka] def undeployAll() {
     try {
       for {
-        child <- collectionAsScalaIterable(zkClient.getChildren(deploymentPath))
-        deployment <- lookupDeploymentFor(child)
+        child ← collectionAsScalaIterable(zkClient.getChildren(deploymentPath))
+        deployment ← lookupDeploymentFor(child)
       } undeploy(deployment)
     } catch {
-      case e: Exception =>
+      case e: Exception ⇒
         handleError(new DeploymentException("Could not undeploy all deployment data in ZooKeeper due to: " + e))
     }
   }
@@ -154,8 +153,8 @@ object ClusterDeployer {
     try {
       Some(zkClient.readData(deploymentAddressPath.format(address)).asInstanceOf[Deploy])
     } catch {
-      case e: ZkNoNodeException => None
-      case e: Exception =>
+      case e: ZkNoNodeException ⇒ None
+      case e: Exception ⇒
         EventHandler.warning(this, e.toString)
         None
     }

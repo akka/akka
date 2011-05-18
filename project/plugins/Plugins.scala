@@ -23,4 +23,5 @@ class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
   // -------------------------------------------------------------------------------------------------------------------
   lazy val bnd4sbt = "com.weiglewilczek.bnd4sbt" % "bnd4sbt"         % "1.0.2"
   lazy val spdeSbt = "us.technically.spde"       % "spde-sbt-plugin" % "0.4.2"
+  lazy val formatter = "com.github.olim7t" % "sbt-scalariform" % "1.0.3"
 }

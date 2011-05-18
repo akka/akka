@@ -4,8 +4,8 @@
 
 package akka.routing
 
-import scala.collection.immutable.{TreeSet, Seq}
-import scala.collection.mutable.{Buffer, Map}
+import scala.collection.immutable.{ TreeSet, Seq }
+import scala.collection.mutable.{ Buffer, Map }
 
 // =============================================================================================
 // Adapted from HashRing.scala in Debasish Ghosh's Redis Client, licensed under Apache 2 license
@@ -19,15 +19,15 @@ import scala.collection.mutable.{Buffer, Map}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ConsistentHash[T](nodes: Seq[T], replicas: Int) {
-  private val cluster    = Buffer[T]()
+  private val cluster = Buffer[T]()
   private var sortedKeys = TreeSet[Long]()
-  private var ring       = Map[Long, T]()
+  private var ring = Map[Long, T]()
 
   nodes.foreach(this += _)
 
   def +=(node: T) {
     cluster += node
-    (1 to replicas) foreach { replica =>
+    (1 to replicas) foreach { replica ⇒
       val key = hashFor((node + ":" + replica).getBytes("UTF-8"))
       ring += (key -> node)
       sortedKeys = sortedKeys + key
@@ -36,7 +36,7 @@ class ConsistentHash[T](nodes: Seq[T], replicas: Int) {
 
   def -=(node: T) {
     cluster -= node
-    (1 to replicas) foreach { replica =>
+    (1 to replicas) foreach { replica ⇒
       val key = hashFor((node + ":" + replica).getBytes("UTF-8"))
       ring -= key
       sortedKeys = sortedKeys - key
@@ -47,9 +47,9 @@ class ConsistentHash[T](nodes: Seq[T], replicas: Int) {
     val hash = hashFor(key)
     if (sortedKeys contains hash) ring(hash)
     else {
-      if      (hash < sortedKeys.firstKey) ring(sortedKeys.firstKey)
-      else if (hash > sortedKeys.lastKey)  ring(sortedKeys.lastKey)
-      else    ring(sortedKeys.rangeImpl(None, Some(hash)).lastKey)
+      if (hash < sortedKeys.firstKey) ring(sortedKeys.firstKey)
+      else if (hash > sortedKeys.lastKey) ring(sortedKeys.lastKey)
+      else ring(sortedKeys.rangeImpl(None, Some(hash)).lastKey)
     }
   }
 
@@ -68,7 +68,8 @@ class ConsistentHash[T](nodes: Seq[T], replicas: Int) {
 **                          |/                                          **
 \*                                                                      */
 
-/** An implementation of Austin Appleby's MurmurHash 3.0 algorithm
+/**
+ * An implementation of Austin Appleby's MurmurHash 3.0 algorithm
  *  (32 bit version); reference: http://code.google.com/p/smhasher
  *
  *  This is the hash used by collections and case classes (including
@@ -79,14 +80,15 @@ class ConsistentHash[T](nodes: Seq[T], replicas: Int) {
  *  @since   2.9
  */
 
-import java.lang.Integer.{ rotateLeft => rotl }
+import java.lang.Integer.{ rotateLeft ⇒ rotl }
 
-/** A class designed to generate well-distributed non-cryptographic
+/**
+ * A class designed to generate well-distributed non-cryptographic
  *  hashes.  It is designed to be passed to a collection's foreach method,
  *  or can take individual hash values with append.  Its own hash code is
  *  set equal to the hash code of whatever it is hashing.
  */
-class MurmurHash[@specialized(Int,Long,Float,Double) T](seed: Int) extends (T => Unit) {
+class MurmurHash[@specialized(Int, Long, Float, Double) T](seed: Int) extends (T ⇒ Unit) {
   import MurmurHash._
 
   private var h = startHash(seed)
@@ -105,7 +107,7 @@ class MurmurHash[@specialized(Int,Long,Float,Double) T](seed: Int) extends (T =>
 
   /** Incorporate the hash value of one item. */
   def apply(t: T) {
-    h = extendHash(h,t.##,c,k)
+    h = extendHash(h, t.##, c, k)
     c = nextMagicA(c)
     k = nextMagicB(k)
     hashed = false
@@ -113,7 +115,7 @@ class MurmurHash[@specialized(Int,Long,Float,Double) T](seed: Int) extends (T =>
 
   /** Incorporate a known hash value. */
   def append(i: Int) {
-    h = extendHash(h,i,c,k)
+    h = extendHash(h, i, c, k)
     c = nextMagicA(c)
     k = nextMagicB(k)
     hashed = false
@@ -130,7 +132,8 @@ class MurmurHash[@specialized(Int,Long,Float,Double) T](seed: Int) extends (T =>
   override def hashCode = hash
 }
 
-/** An object designed to generate well-distributed non-cryptographic
+/**
+ * An object designed to generate well-distributed non-cryptographic
  *  hashes.  It is designed to hash a collection of integers; along with
  *  the integers to hash, it generates two magic streams of integers to
  *  increase the distribution of repetitive input sequences.  Thus,
@@ -172,7 +175,8 @@ object MurmurHash {
   /** The initial magic integer in the second stream. */
   def startMagicB = hiddenMagicB
 
-  /** Incorporates a new value into an existing hash.
+  /**
+   * Incorporates a new value into an existing hash.
    *
    *  @param   hash    the prior hash value
    *  @param  value    the new value to incorporate
@@ -181,18 +185,18 @@ object MurmurHash {
    *  @return          the updated hash value
    */
   def extendHash(hash: Int, value: Int, magicA: Int, magicB: Int) = {
-    (hash ^ rotl(value*magicA,11)*magicB)*3 + visibleMixer
+    (hash ^ rotl(value * magicA, 11) * magicB) * 3 + visibleMixer
   }
 
   /** Given a magic integer from the first stream, compute the next */
-  def nextMagicA(magicA: Int) = magicA*5 + hiddenMixerA
+  def nextMagicA(magicA: Int) = magicA * 5 + hiddenMixerA
 
   /** Given a magic integer from the second stream, compute the next */
-  def nextMagicB(magicB: Int) = magicB*5 + hiddenMixerB
+  def nextMagicB(magicB: Int) = magicB * 5 + hiddenMixerB
 
   /** Once all hashes have been incorporated, this performs a final mixing */
   def finalizeHash(hash: Int) = {
-    var i = (hash ^ (hash>>>16))
+    var i = (hash ^ (hash >>> 16))
     i *= finalMixer1
     i ^= (i >>> 13)
     i *= finalMixer2
@@ -221,25 +225,26 @@ object MurmurHash {
     var c = hiddenMagicA
     var k = hiddenMagicB
     var j = 0
-    while (j+1 < s.length) {
-      val i = (s.charAt(j)<<16) + s.charAt(j+1);
-      h = extendHash(h,i,c,k)
+    while (j + 1 < s.length) {
+      val i = (s.charAt(j) << 16) + s.charAt(j + 1);
+      h = extendHash(h, i, c, k)
       c = nextMagicA(c)
       k = nextMagicB(k)
       j += 2
     }
-    if (j < s.length) h = extendHash(h,s.charAt(j),c,k)
+    if (j < s.length) h = extendHash(h, s.charAt(j), c, k)
     finalizeHash(h)
   }
 
-  /** Compute a hash that is symmetric in its arguments--that is,
+  /**
+   * Compute a hash that is symmetric in its arguments--that is,
    *  where the order of appearance of elements does not matter.
    *  This is useful for hashing sets, for example.
    */
   def symmetricHash[T](xs: TraversableOnce[T], seed: Int) = {
-    var a,b,n = 0
+    var a, b, n = 0
     var c = 1
-    xs.foreach(i => {
+    xs.foreach(i ⇒ {
       val h = i.##
       a += h
       b ^= h

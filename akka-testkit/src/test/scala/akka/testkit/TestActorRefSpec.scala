@@ -1,7 +1,7 @@
 package akka.testkit
 
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.{BeforeAndAfterEach, WordSpec}
+import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import akka.config.Supervision.OneForOneStrategy
 import akka.event.EventHandler
@@ -17,45 +17,45 @@ object TestActorRefSpec {
 
   var counter = 4
   val thread = Thread.currentThread
-  var otherthread : Thread = null
+  var otherthread: Thread = null
 
   trait TActor extends Actor {
     def receive = new Receive {
       val recv = receiveT
-      def isDefinedAt(o : Any) = recv.isDefinedAt(o)
-      def apply(o : Any) {
+      def isDefinedAt(o: Any) = recv.isDefinedAt(o)
+      def apply(o: Any) {
         if (Thread.currentThread ne thread)
           otherthread = Thread.currentThread
         recv(o)
       }
     }
-    def receiveT : Receive
+    def receiveT: Receive
   }
 
   class ReplyActor extends TActor {
     var replyTo: Channel[Any] = null
 
     def receiveT = {
-      case "complexRequest" => {
+      case "complexRequest" ⇒ {
         replyTo = self.channel
         val worker = TestActorRef[WorkerActor].start()
         worker ! "work"
       }
-      case "complexRequest2" =>
+      case "complexRequest2" ⇒
         val worker = TestActorRef[WorkerActor].start()
         worker ! self.channel
-      case "workDone" => replyTo ! "complexReply"
-      case "simpleRequest" => self.reply("simpleReply")
+      case "workDone"      ⇒ replyTo ! "complexReply"
+      case "simpleRequest" ⇒ self.reply("simpleReply")
     }
   }
 
   class WorkerActor() extends TActor {
     def receiveT = {
-      case "work" => {
+      case "work" ⇒ {
         self.reply("workDone")
         self.stop()
       }
-      case replyTo: Channel[Any] => {
+      case replyTo: Channel[Any] ⇒ {
         replyTo ! "complexReply"
       }
     }
@@ -64,13 +64,13 @@ object TestActorRefSpec {
   class SenderActor(replyActor: ActorRef) extends TActor {
 
     def receiveT = {
-      case "complex" => replyActor ! "complexRequest"
-      case "complex2" => replyActor ! "complexRequest2"
-      case "simple" => replyActor ! "simpleRequest"
-      case "complexReply" => {
+      case "complex"  ⇒ replyActor ! "complexRequest"
+      case "complex2" ⇒ replyActor ! "complexRequest2"
+      case "simple"   ⇒ replyActor ! "simpleRequest"
+      case "complexReply" ⇒ {
         counter -= 1
       }
-      case "simpleReply" => {
+      case "simpleReply" ⇒ {
         counter -= 1
       }
     }
@@ -79,9 +79,9 @@ object TestActorRefSpec {
   class Logger extends Actor {
     import EventHandler._
     var count = 0
-    var msg : String = _
+    var msg: String = _
     def receive = {
-      case Warning(_, m : String) => count += 1; msg = m
+      case Warning(_, m: String) ⇒ count += 1; msg = m
     }
   }
 
@@ -98,7 +98,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
   }
 
   private def assertThread {
-    otherthread must (be (null) or equal (thread))
+    otherthread must (be(null) or equal(thread))
   }
 
   "A TestActorRef must be an ActorRef, hence it" must {
@@ -107,24 +107,24 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
 
       "used with TestActorRef" in {
         val a = TestActorRef(new Actor {
-          val nested = TestActorRef(new Actor { def receive = { case _ => } }).start()
-          def receive = { case _ => self reply nested }
+          val nested = TestActorRef(new Actor { def receive = { case _ ⇒ } }).start()
+          def receive = { case _ ⇒ self reply nested }
         }).start()
         a must not be (null)
         val nested = (a !! "any").get.asInstanceOf[ActorRef]
         nested must not be (null)
-        a must not be theSameInstanceAs (nested)
+        a must not be theSameInstanceAs(nested)
       }
 
       "used with ActorRef" in {
         val a = TestActorRef(new Actor {
-          val nested = Actor.actorOf(new Actor { def receive = { case _ => } }).start()
-          def receive = { case _ => self reply nested }
+          val nested = Actor.actorOf(new Actor { def receive = { case _ ⇒ } }).start()
+          def receive = { case _ ⇒ self reply nested }
         }).start()
         a must not be (null)
         val nested = (a !! "any").get.asInstanceOf[ActorRef]
         nested must not be (null)
-        a must not be theSameInstanceAs (nested)
+        a must not be theSameInstanceAs(nested)
       }
 
     }
@@ -140,7 +140,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       clientRef ! "simple"
       clientRef ! "simple"
 
-      counter must be (0)
+      counter must be(0)
 
       counter = 4
 
@@ -149,7 +149,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       clientRef ! "simple"
       clientRef ! "simple"
 
-      counter must be (0)
+      counter must be(0)
 
       assertThread
     }
@@ -160,7 +160,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
         a !! PoisonPill
       }
       a must not be ('running)
-      a must be ('shutdown)
+      a must be('shutdown)
       assertThread
     }
 
@@ -170,26 +170,26 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       val boss = TestActorRef(new TActor {
         self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), Some(1000))
         val ref = TestActorRef(new TActor {
-          def receiveT = { case _ => }
+          def receiveT = { case _ ⇒ }
           override def preRestart(reason: Throwable) { counter -= 1 }
           override def postRestart(reason: Throwable) { counter -= 1 }
         }).start()
         self.dispatcher = CallingThreadDispatcher.global
         self link ref
-        def receiveT = { case "sendKill" => ref ! Kill }
+        def receiveT = { case "sendKill" ⇒ ref ! Kill }
       }).start()
 
       boss ! "sendKill"
 
-      counter must be (0)
+      counter must be(0)
       assertThread
     }
 
     "support futures" in {
       val a = TestActorRef[WorkerActor].start()
-      val f : Future[String] = a !!! "work"
-      f must be ('completed)
-      f.get must equal ("workDone")
+      val f: Future[String] = a !!! "work"
+      f must be('completed)
+      f.get must equal("workDone")
     }
 
   }
@@ -198,49 +198,49 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
 
     "allow access to internals" in {
       val ref = TestActorRef(new TActor {
-        var s : String = _
+        var s: String = _
         def receiveT = {
-          case x : String => s = x
+          case x: String ⇒ s = x
         }
       }).start()
       ref ! "hallo"
       val actor = ref.underlyingActor
-      actor.s must equal ("hallo")
+      actor.s must equal("hallo")
     }
 
     "set receiveTimeout to None" in {
       val a = TestActorRef[WorkerActor]
-      a.receiveTimeout must be (None)
+      a.receiveTimeout must be(None)
     }
 
     "set CallingThreadDispatcher" in {
       val a = TestActorRef[WorkerActor]
-      a.dispatcher.getClass must be (classOf[CallingThreadDispatcher])
+      a.dispatcher.getClass must be(classOf[CallingThreadDispatcher])
     }
 
     "warn about scheduled supervisor" in {
-      val boss = Actor.actorOf(new Actor { def receive = { case _ => } }).start()
+      val boss = Actor.actorOf(new Actor { def receive = { case _ ⇒ } }).start()
       val ref = TestActorRef[WorkerActor].start()
 
       val log = TestActorRef[Logger]
       EventHandler.addListener(log)
       boss link ref
       val la = log.underlyingActor
-      la.count must be (1)
-      la.msg must (include ("supervisor") and include ("CallingThreadDispatcher"))
+      la.count must be(1)
+      la.msg must (include("supervisor") and include("CallingThreadDispatcher"))
       EventHandler.removeListener(log)
     }
 
     "proxy isDefinedAt/apply for the underlying actor" in {
       val ref = TestActorRef[WorkerActor].start()
-      ref.isDefinedAt("work") must be (true)
-      ref.isDefinedAt("sleep") must be (false)
+      ref.isDefinedAt("work") must be(true)
+      ref.isDefinedAt("sleep") must be(false)
       intercept[IllegalActorStateException] { ref("work") }
       val ch = Future.channel()
       ref ! ch
       val f = ch.future
-      f must be ('completed)
-      f.get must be ("complexReply")
+      f must be('completed)
+      f.get must be("complexReply")
     }
 
   }

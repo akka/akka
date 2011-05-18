@@ -6,7 +6,7 @@ package akka.dispatch
 
 import akka.AkkaException
 
-import java.util.{Comparator, PriorityQueue}
+import java.util.{ Comparator, PriorityQueue }
 import java.util.concurrent._
 import akka.util._
 
@@ -31,42 +31,38 @@ sealed trait MailboxType
 
 case class UnboundedMailbox() extends MailboxType
 case class BoundedMailbox(
-  val capacity: Int         = { if (Dispatchers.MAILBOX_CAPACITY < 0) Int.MaxValue else Dispatchers.MAILBOX_CAPACITY },
+  val capacity: Int = { if (Dispatchers.MAILBOX_CAPACITY < 0) Int.MaxValue else Dispatchers.MAILBOX_CAPACITY },
   val pushTimeOut: Duration = Dispatchers.MAILBOX_PUSH_TIME_OUT) extends MailboxType {
-  if (capacity < 0)        throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
+  if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 }
 
-trait UnboundedMessageQueueSemantics extends MessageQueue { self: BlockingQueue[MessageInvocation] =>
-  @inline final def enqueue(handle: MessageInvocation): Unit = this add handle
-  @inline final def dequeue(): MessageInvocation = this.poll()
+trait UnboundedMessageQueueSemantics extends MessageQueue { self: BlockingQueue[MessageInvocation] ⇒
+  @inline
+  final def enqueue(handle: MessageInvocation): Unit = this add handle
+  @inline
+  final def dequeue(): MessageInvocation = this.poll()
 }
 
-trait BoundedMessageQueueSemantics extends MessageQueue { self: BlockingQueue[MessageInvocation] =>
+trait BoundedMessageQueueSemantics extends MessageQueue { self: BlockingQueue[MessageInvocation] ⇒
   def pushTimeOut: Duration
 
   final def enqueue(handle: MessageInvocation) {
     if (pushTimeOut.length > 0) {
       this.offer(handle, pushTimeOut.length, pushTimeOut.unit) || {
-        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + toString) }
+        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + toString)
+      }
     } else this put handle
   }
 
-  @inline final def dequeue(): MessageInvocation = this.poll()
+  @inline
+  final def dequeue(): MessageInvocation = this.poll()
 }
 
-class DefaultUnboundedMessageQueue extends
-      LinkedBlockingQueue[MessageInvocation] with
-      UnboundedMessageQueueSemantics
+class DefaultUnboundedMessageQueue extends LinkedBlockingQueue[MessageInvocation] with UnboundedMessageQueueSemantics
 
-class DefaultBoundedMessageQueue(capacity: Int, val pushTimeOut: Duration) extends
-      LinkedBlockingQueue[MessageInvocation](capacity) with
-      BoundedMessageQueueSemantics
+class DefaultBoundedMessageQueue(capacity: Int, val pushTimeOut: Duration) extends LinkedBlockingQueue[MessageInvocation](capacity) with BoundedMessageQueueSemantics
 
-class UnboundedPriorityMessageQueue(cmp: Comparator[MessageInvocation]) extends
-      PriorityBlockingQueue[MessageInvocation](11, cmp) with
-      UnboundedMessageQueueSemantics
+class UnboundedPriorityMessageQueue(cmp: Comparator[MessageInvocation]) extends PriorityBlockingQueue[MessageInvocation](11, cmp) with UnboundedMessageQueueSemantics
 
-class BoundedPriorityMessageQueue(capacity: Int, val pushTimeOut: Duration, cmp: Comparator[MessageInvocation]) extends
-      BoundedBlockingQueue[MessageInvocation](capacity, new PriorityQueue[MessageInvocation](11, cmp)) with
-      BoundedMessageQueueSemantics
+class BoundedPriorityMessageQueue(capacity: Int, val pushTimeOut: Duration, cmp: Comparator[MessageInvocation]) extends BoundedBlockingQueue[MessageInvocation](capacity, new PriorityQueue[MessageInvocation](11, cmp)) with BoundedMessageQueueSemantics

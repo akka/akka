@@ -9,29 +9,25 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import akka.config.TypedActorConfigurator
 import akka.dispatch.Dispatchers
-import ticket855.{Ticket855ServiceImpl, Ticket855Service}
+import ticket855.{ Ticket855ServiceImpl, Ticket855Service }
 import akka.routing.CyclicIterator
-import org.scalatest.{BeforeAndAfterAll, WordSpec, BeforeAndAfterEach}
+import org.scalatest.{ BeforeAndAfterAll, WordSpec, BeforeAndAfterEach }
 import akka.util.Duration
 
 @RunWith(classOf[JUnitRunner])
-class Issue855Spec extends
-  WordSpec with
-  MustMatchers with
-  BeforeAndAfterEach with
-  BeforeAndAfterAll {
+class Issue855Spec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll {
 
   import akka.actor.Actor._
 
   override def afterEach {
-//    registry.local.shutdownAll()
-//    remote.shutdown
+    //    registry.local.shutdownAll()
+    //    remote.shutdown
   }
 
   "TypedActors with Future return types" must {
     "must work for Remote Typed Actors" in {
 
-/*      remote.start
+      /*      remote.start
       Thread.sleep(500)
 
       val configuration = new TypedActorConfiguration
