@@ -124,8 +124,8 @@ convenient.
 For example, building Akka as above is more commonly done like this::
 
    % sbt
-   [info] Building project akka 1.2-SNAPSHOT against Scala 2.9.0
-   [info]    using AkkaParentProject with sbt 0.7.6 and Scala 2.7.7
+   [info] Building project akka 2.0-SNAPSHOT against Scala 2.9.0
+   [info]    using AkkaParentProject with sbt 0.7.7 and Scala 2.7.7
    > update
    [info]
    [info] == akka-actor / update ==

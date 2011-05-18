@@ -29,7 +29,6 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // -------------------------------------------------------------------------------------------------------------------
 
   object Repositories {
-    lazy val EmbeddedRepo           = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
     lazy val AkkaRepo               = MavenRepository("Akka Repository", "http://akka.io/repository")
     lazy val CodehausRepo           = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
     lazy val GuiceyFruitRepo        = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
@@ -72,7 +71,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", SunJDMKRepo)
   lazy val jmsModuleConfig         = ModuleConfiguration("javax.jms", JBossRepo)
   lazy val jsr311ModuleConfig      = ModuleConfiguration("javax.ws.rs", "jsr311-api", sbt.DefaultMavenRepository)
-  lazy val embeddedRepo            = EmbeddedRepo
+  lazy val zookeeperModuleConfig   = ModuleConfiguration("org.apache.hadoop.zookeeper", AkkaRepo)
+  lazy val zkclientModuleConfig    = ModuleConfiguration("zkclient", AkkaRepo)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
