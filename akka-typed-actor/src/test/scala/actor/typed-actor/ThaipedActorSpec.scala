@@ -75,6 +75,24 @@ object ThaipedActorSpec {
 
     def read() = internalNumber
   }
+
+  trait Stackable1 {
+    def stackable1: String = "foo"
+  }
+
+  trait Stackable2 {
+    def stackable2: String = "bar"
+  }
+
+  trait Stacked extends Stackable1 with Stackable2 {
+    def stacked: String = stackable1 + stackable2
+    def notOverriddenStacked: String = stackable1 + stackable2
+  }
+
+  class StackedImpl extends Stacked {
+    override def stacked: String = "FOOBAR" //Uppercase
+  }
+
 }
 
 @RunWith(classOf[JUnitRunner])
@@ -85,7 +103,7 @@ class ThaipedActorSpec extends
   BeforeAndAfterAll {
   import akka.thaipedactor.ThaipedActorSpec._
 
-  def newFooBar: Foo = newFooBar(Duration(2, "seconds"))
+  def newFooBar: Foo = newFooBar(Duration(2, "s"))
 
   def newFooBar(timeout: Duration): Foo =
     newFooBar(Configuration(timeout))
@@ -96,7 +114,13 @@ class ThaipedActorSpec extends
                    config,
                    classOf[Foo].getClassLoader)
 
-  def mustStop(foo: Foo) = stop(foo) must be (true)
+  def newStacked(config: Configuration = Configuration(Duration(2,"s"))): Stacked =
+    thaipedActorOf(classOf[Stacked],
+                   classOf[StackedImpl],
+                   config,
+                   classOf[Stacked].getClassLoader)
+
+  def mustStop(typedActor: AnyRef) = stop(typedActor) must be (true)
 
   "ThaipedActors" must {
 
@@ -141,6 +165,12 @@ class ThaipedActorSpec extends
       t.incr()
       t.read() must be (2)
       t.read() must be (2)
+      mustStop(t)
+    }
+
+    "be able to call normally returning methods" in {
+      val t = newFooBar
+      t.pigdog() must be ("Pigdog")
       mustStop(t)
     }
 
@@ -189,22 +219,29 @@ class ThaipedActorSpec extends
 
       t.incr()
       t.failingPigdog()
-      t.read() must be (1)
+      t.read() must be (1) //Make sure state is not reset after failure
 
       t.failingFuturePigdog.await.exception.get.getMessage must be ("expected")
-      t.read() must be (1)
+      t.read() must be (1) //Make sure state is not reset after failure
 
       (intercept[IllegalStateException] {
         t.failingJOptionPigdog
       }).getMessage must be ("expected")
-      t.read() must be (1)
+      t.read() must be (1) //Make sure state is not reset after failure
 
       (intercept[IllegalStateException] {
         t.failingOptionPigdog
       }).getMessage must be ("expected")
 
-      t.read() must be (1)
+      t.read() must be (1) //Make sure state is not reset after failure
 
+      mustStop(t)
+    }
+
+    "be able to support stacked traits for the interface part" in {
+      val t = newStacked()
+      t.notOverriddenStacked must be ("foobar")
+      t.stacked must be ("FOOBAR")
       mustStop(t)
     }
 

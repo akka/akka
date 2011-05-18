@@ -9,20 +9,11 @@ import akka.actor.{ActorRef, Actor}
 import java.lang.reflect.{InvocationTargetException, Method, InvocationHandler, Proxy}
 
 object MethodCall {
-  private[akka] def isOneWay(method: Method): Boolean =
-      method.getReturnType == java.lang.Void.TYPE
-
-  private[akka] def isCoordinated(method: Method): Boolean =
-    method.isAnnotationPresent(classOf[CoordinatedAnnotation])
-
-  private[akka] def returnsFuture_?(method: Method): Boolean =
-    classOf[Future[_]].isAssignableFrom(method.getReturnType)
-
-  private[akka] def returnsJOption_?(method: Method): Boolean =
-    classOf[akka.japi.Option[_]].isAssignableFrom(method.getReturnType)
-
-  private[akka] def returnsOption_?(method: Method): Boolean =
-    classOf[scala.Option[_]].isAssignableFrom(method.getReturnType)
+  def isOneWay(method: Method): Boolean         = method.getReturnType == java.lang.Void.TYPE
+  def isCoordinated(method: Method): Boolean    = method.isAnnotationPresent(classOf[CoordinatedAnnotation])
+  def returnsFuture_?(method: Method): Boolean  = classOf[Future[_]].isAssignableFrom(method.getReturnType)
+  def returnsJOption_?(method: Method): Boolean = classOf[akka.japi.Option[_]].isAssignableFrom(method.getReturnType)
+  def returnsOption_?(method: Method): Boolean  = classOf[scala.Option[_]].isAssignableFrom(method.getReturnType)
 
   //Note to self: move resolveMethod from NettyRemoteSupport to here for remote typed actors
 }
@@ -35,12 +26,6 @@ case class MethodCall(method: Method, parameters: Array[AnyRef]) {
   def returnsOption_? = MethodCall.returnsOption_?(method)
 
   def callMethodOn(instance: AnyRef): AnyRef = try {
-
-    /*if (parameters ne null)
-      println("### CALLING " + method.getName + "(" + parameters.mkString(", ") + ") owned by [" + method.getDeclaringClass.getName + "] on " + instance + " of class " + instance.getClass.getName)
-    else
-      println("### CALLING " + method.getName + "() owned by [" + method.getDeclaringClass.getName + "] on " + instance + " of class " + instance.getClass.getName)*/
-
     //We do not yet obey Actor.SERIALIZE_MESSAGES
     parameters match {
       case null                     => method.invoke(instance)
@@ -58,11 +43,9 @@ object ThaipedActor {
     val me = createInstance
     def receive = {
       case m: MethodCall => m match {
-        case m if m.isOneWay => m.callMethodOn(me)
-
+        case m if m.isOneWay        => m.callMethodOn(me)
         case m if m.returnsFuture_? => self.senderFuture.get completeWith m.callMethodOn(me).asInstanceOf[Future[Any]]
-
-        case m => self reply m.callMethodOn(me)
+        case m                      => self reply m.callMethodOn(me)
       }
     }
   }
@@ -72,11 +55,9 @@ object ThaipedActor {
       case "toString" => actor.toString
       case "equals" =>
         if ((proxy eq args(0))) java.lang.Boolean.TRUE
-        else {
-          getActorFor(args(0)) match {
-            case Some(other) if actor == other => java.lang.Boolean.TRUE
-            case _ => java.lang.Boolean.FALSE
-          }
+        else getActorFor(args(0)) match {
+          case Some(`actor`) => java.lang.Boolean.TRUE
+          case _             => java.lang.Boolean.FALSE
         }
       case "hashCode" => actor.hashCode.asInstanceOf[AnyRef]
       case _ =>
@@ -134,14 +115,12 @@ object ThaipedActor {
   }
 
   def stop(thaipedActor: AnyRef): Boolean = getActorFor(thaipedActor) match {
-    case Some(ref) =>
-      ref.stop
-      true
-    case _ => false
+    case Some(ref) => ref.stop; true
+    case _         => false
   }
 
   def getActorFor(thaipedActor: AnyRef): Option[ActorRef] = thaipedActor match {
-    case null => None
+    case null  => None
     case other =>
       Proxy.getInvocationHandler(other) match {
         case null => None
