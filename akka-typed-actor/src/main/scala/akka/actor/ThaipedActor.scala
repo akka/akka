@@ -1,15 +1,19 @@
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package akka.thaipedactor
 
-import akka.japi.{Creator, Option => JOption}
-import akka.actor.Actor.{actorOf, futureToAnyOptionAsTypedOption}
-import akka.dispatch.{MessageDispatcher, Dispatchers, AlreadyCompletedFuture, Future}
-import java.lang.reflect.{InvocationTargetException, Method, InvocationHandler, Proxy}
-import akka.util.{Duration}
-import akka.actor.{ActorRef, Actor}
+import akka.japi.{ Creator, Option ⇒ JOption }
+import akka.actor.Actor.{ actorOf, futureToAnyOptionAsTypedOption }
+import akka.dispatch.{ MessageDispatcher, Dispatchers, AlreadyCompletedFuture, Future }
+import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
+import akka.util.{ Duration }
+import akka.actor.{ ActorRef, Actor }
 
 object MethodCall {
-  def isOneWay(method: Method): Boolean         = method.getReturnType == java.lang.Void.TYPE
-  def returnsFuture_?(method: Method): Boolean  = classOf[Future[_]].isAssignableFrom(method.getReturnType)
+  def isOneWay(method: Method): Boolean = method.getReturnType == java.lang.Void.TYPE
+  def returnsFuture_?(method: Method): Boolean = classOf[Future[_]].isAssignableFrom(method.getReturnType)
   def returnsJOption_?(method: Method): Boolean = classOf[akka.japi.Option[_]].isAssignableFrom(method.getReturnType)
   def returnsOption_?(method: Method): Boolean = classOf[scala.Option[_]].isAssignableFrom(method.getReturnType)
 }
@@ -22,12 +26,12 @@ case class MethodCall(method: Method, parameters: Array[AnyRef]) {
 
   def callMethodOn(instance: AnyRef): AnyRef = try {
     parameters match { //We do not yet obey Actor.SERIALIZE_MESSAGES
-      case null                     => method.invoke(instance)
-      case args if args.length == 0 => method.invoke(instance)
-      case args                     => method.invoke(instance, args:_*)
+      case null                     ⇒ method.invoke(instance)
+      case args if args.length == 0 ⇒ method.invoke(instance)
+      case args                     ⇒ method.invoke(instance, args: _*)
     }
   } catch {
-    case i: InvocationTargetException => throw i.getTargetException
+    case i: InvocationTargetException ⇒ throw i.getTargetException
   }
 
   private def writeReplace(): AnyRef = new SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, parameters)
@@ -39,51 +43,51 @@ case class SerializedMethodCall(ownerType: Class[_], methodName: String, paramet
 
 object ThaipedActor {
 
-  class ThaipedActor[TI <: AnyRef](createInstance: => TI) extends Actor {
+  class ThaipedActor[TI <: AnyRef](createInstance: ⇒ TI) extends Actor {
     val me = createInstance
     def receive = {
-      case m: MethodCall => m match {
-        case m if m.isOneWay        => m.callMethodOn(me)
-        case m if m.returnsFuture_? => self.senderFuture.get completeWith m.callMethodOn(me).asInstanceOf[Future[Any]]
-        case m                      => self reply m.callMethodOn(me)
+      case m: MethodCall ⇒ m match {
+        case m if m.isOneWay        ⇒ m.callMethodOn(me)
+        case m if m.returnsFuture_? ⇒ self.senderFuture.get completeWith m.callMethodOn(me).asInstanceOf[Future[Any]]
+        case m                      ⇒ self reply m.callMethodOn(me)
       }
     }
   }
 
   case class ThaipedActorInvocationHandler(actor: ActorRef) extends InvocationHandler {
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
-      case "toString" => actor.toString
-      case "equals" =>
+      case "toString" ⇒ actor.toString
+      case "equals" ⇒
         if ((proxy eq args(0))) java.lang.Boolean.TRUE
         else getActorFor(args(0)) match {
-          case Some(`actor`) => java.lang.Boolean.TRUE
-          case _             => java.lang.Boolean.FALSE
+          case Some(`actor`) ⇒ java.lang.Boolean.TRUE
+          case _             ⇒ java.lang.Boolean.FALSE
         }
-      case "hashCode" => actor.hashCode.asInstanceOf[AnyRef]
-      case _ =>
-         MethodCall(method, args) match {
-           case m if m.isOneWay =>
-             actor ! m
-             null
+      case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
+      case _ ⇒
+        MethodCall(method, args) match {
+          case m if m.isOneWay ⇒
+            actor ! m
+            null
 
-           case m if m.returnsJOption_? =>
-             (actor !!! m).as[JOption[Any]] match {
-               case Some(null) | None => JOption.none[Any]
-               case Some(joption)     => joption
-             }
+          case m if m.returnsJOption_? ⇒
+            (actor !!! m).as[JOption[Any]] match {
+              case Some(null) | None ⇒ JOption.none[Any]
+              case Some(joption)     ⇒ joption
+            }
 
-           case m if m.returnsOption_? =>
-             (actor !!! m).as[AnyRef] match {
-               case Some(null) | None => None
-               case Some(option)      => option
-             }
+          case m if m.returnsOption_? ⇒
+            (actor !!! m).as[AnyRef] match {
+              case Some(null) | None ⇒ None
+              case Some(option)      ⇒ option
+            }
 
-           case m if m.returnsFuture_? =>
-             actor !!! m
+          case m if m.returnsFuture_? ⇒
+            actor !!! m
 
-           case m =>
-             (actor !!! m).get
-         }
+          case m ⇒
+            (actor !!! m).get
+        }
     }
   }
 
@@ -111,17 +115,17 @@ object ThaipedActor {
   }
 
   def stop(thaipedActor: AnyRef): Boolean = getActorFor(thaipedActor) match {
-    case Some(ref) => ref.stop; true
-    case _         => false
+    case Some(ref) ⇒ ref.stop; true
+    case _         ⇒ false
   }
 
   def getActorFor(thaipedActor: AnyRef): Option[ActorRef] = thaipedActor match {
-    case null  => None
-    case other => Proxy.getInvocationHandler(other) match {
-                    case null => None
-                    case handler: ThaipedActorInvocationHandler => Option(handler.actor)
-                    case _ => None
-                  }
+    case null ⇒ None
+    case other ⇒ Proxy.getInvocationHandler(other) match {
+      case null                                   ⇒ None
+      case handler: ThaipedActorInvocationHandler ⇒ Option(handler.actor)
+      case _                                      ⇒ None
+    }
   }
 
   def isThaipedActor(thaipedActor_? : AnyRef): Boolean = getActorFor(thaipedActor_?).isDefined
