@@ -13,7 +13,7 @@ import Helpers.{narrow, narrowSilently}
 import akka.remoteinterface.RemoteSupport
 import akka.japi.{Creator, Procedure}
 import akka.AkkaException
-import akka.serialization._
+import akka.serialization.{Format, Serializer}
 import akka.event.EventHandler
 
 import scala.reflect.BeanProperty
