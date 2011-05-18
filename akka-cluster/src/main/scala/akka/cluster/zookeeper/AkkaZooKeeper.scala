@@ -23,10 +23,10 @@ object AkkaZooKeeper {
     val zkServer = new ZkServer(
       dataPath, logPath,
       new IDefaultNameSpace() {
-        def createDefaultNameSpace(zkClient: ZkClient) = {}
+        def createDefaultNameSpace(zkClient: ZkClient) {}
       },
       port, tickTime)
-    zkServer.start
+    zkServer.start()
     zkServer
   }
 }
