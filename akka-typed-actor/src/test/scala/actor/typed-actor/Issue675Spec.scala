@@ -13,7 +13,6 @@ import org.junit.runner.RunWith
 
 import Issue675Spec._
 
-
 object Issue675Spec {
   var l = collection.mutable.ListBuffer.empty[String]
 
@@ -30,12 +29,8 @@ object Issue675Spec {
   }
 }
 
-
 @RunWith(classOf[JUnitRunner])
-class Issue675Spec extends
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterEach {
+class Issue675Spec extends Spec with ShouldMatchers with BeforeAndAfterEach {
 
   override def afterEach() {
     Actor.registry.local.shutdownAll()

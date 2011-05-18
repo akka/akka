@@ -20,16 +20,13 @@ object Protocols {
     asProduct2("id", "value")(MyMessage)(MyMessage.unapply(_).get)
 
   case class MyJsonObject(val key: String, val map: Map[String, Int],
-    val standAloneInt: Int)
+                          val standAloneInt: Int)
   implicit val MyJsonObjectFormat: sjson.json.Format[MyJsonObject] =
     asProduct3("key", "map", "standAloneInt")(MyJsonObject)(MyJsonObject.unapply(_).get)
 }
 
 @RunWith(classOf[JUnitRunner])
-class ScalaJSONSerializerSpec extends
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterAll {
+class ScalaJSONSerializerSpec extends Spec with ShouldMatchers with BeforeAndAfterAll {
 
   import Protocols._
   import ScalaJSON._

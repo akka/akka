@@ -4,8 +4,8 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
 import akka.transactor.Coordinated
-import akka.actor.{Actor, ActorRef}
-import akka.stm.{Ref, TransactionFactory}
+import akka.actor.{ Actor, ActorRef }
+import akka.stm.{ Ref, TransactionFactory }
 import akka.util.duration._
 
 object CoordinatedIncrement {
@@ -22,7 +22,7 @@ object CoordinatedIncrement {
     }
 
     def receive = {
-      case coordinated @ Coordinated(Increment(friends)) => {
+      case coordinated@Coordinated(Increment(friends)) ⇒ {
         if (friends.nonEmpty) {
           friends.head ! coordinated(Increment(friends.tail))
         }
@@ -31,13 +31,13 @@ object CoordinatedIncrement {
         }
       }
 
-      case GetCount => self.reply(count.get)
+      case GetCount ⇒ self.reply(count.get)
     }
   }
 
   class Failer extends Actor {
     def receive = {
-      case Coordinated(Increment(friends)) => {
+      case Coordinated(Increment(friends)) ⇒ {
         throw new RuntimeException("Expected failure")
       }
     }
@@ -63,7 +63,7 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers {
       val coordinated = Coordinated()
       counters(0) ! coordinated(Increment(counters.tail))
       coordinated.await
-      for (counter <- counters) {
+      for (counter ← counters) {
         (counter !! GetCount).get must be === 1
       }
       counters foreach (_.stop())
@@ -75,7 +75,7 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers {
       val coordinated = Coordinated()
       counters(0) ! Coordinated(Increment(counters.tail :+ failer))
       coordinated.await
-      for (counter <- counters) {
+      for (counter ← counters) {
         (counter !! GetCount).get must be === 0
       }
       counters foreach (_.stop())

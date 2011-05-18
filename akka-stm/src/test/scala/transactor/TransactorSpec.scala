@@ -4,7 +4,7 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
 import akka.transactor.Transactor
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{ Actor, ActorRef }
 import akka.stm._
 import akka.util.duration._
 
@@ -24,18 +24,18 @@ object TransactorIncrement {
     }
 
     override def coordinate = {
-      case Increment(friends, latch) => {
+      case Increment(friends, latch) ⇒ {
         if (friends.nonEmpty) sendTo(friends.head -> Increment(friends.tail, latch))
         else nobody
       }
     }
 
     override def before = {
-      case i: Increment => 
+      case i: Increment ⇒
     }
 
     def atomically = {
-      case Increment(friends, latch) => {
+      case Increment(friends, latch) ⇒ {
         increment
         deferred { latch.countDown() }
         compensating { latch.countDown() }
@@ -43,17 +43,17 @@ object TransactorIncrement {
     }
 
     override def after = {
-      case i: Increment => 
+      case i: Increment ⇒
     }
 
     override def normally = {
-      case GetCount => self.reply(count.get)
+      case GetCount ⇒ self.reply(count.get)
     }
   }
 
   class Failer extends Transactor {
     def atomically = {
-      case _ => throw new RuntimeException("Expected failure")
+      case _ ⇒ throw new RuntimeException("Expected failure")
     }
   }
 }
@@ -63,7 +63,7 @@ object SimpleTransactor {
 
   class Setter extends Transactor {
     def atomically = {
-      case Set(ref, value, latch) => {
+      case Set(ref, value, latch) ⇒ {
         ref.set(value)
         latch.countDown()
       }
@@ -91,7 +91,7 @@ class TransactorSpec extends WordSpec with MustMatchers {
       val incrementLatch = new CountDownLatch(numCounters)
       counters(0) ! Increment(counters.tail, incrementLatch)
       incrementLatch.await(timeout.length, timeout.unit)
-      for (counter <- counters) {
+      for (counter ← counters) {
         (counter !! GetCount).get must be === 1
       }
       counters foreach (_.stop())
@@ -103,7 +103,7 @@ class TransactorSpec extends WordSpec with MustMatchers {
       val failLatch = new CountDownLatch(numCounters + 1)
       counters(0) ! Increment(counters.tail :+ failer, failLatch)
       failLatch.await(timeout.length, timeout.unit)
-      for (counter <- counters) {
+      for (counter ← counters) {
         (counter !! GetCount).get must be === 0
       }
       counters foreach (_.stop())

@@ -1,6 +1,6 @@
 package akka.actor.dispatch
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
@@ -13,9 +13,9 @@ object ThreadBasedActorSpec {
     self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
 
     def receive = {
-      case "Hello" =>
+      case "Hello" ⇒
         self.reply("World")
-      case "Failure" =>
+      case "Failure" ⇒
         throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
@@ -26,12 +26,13 @@ class ThreadBasedActorSpec extends JUnitSuite {
 
   private val unit = TimeUnit.MILLISECONDS
 
-  @Test def shouldSendOneWay  {
+  @Test
+  def shouldSendOneWay {
     var oneWay = new CountDownLatch(1)
     val actor = actorOf(new Actor {
       self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
       def receive = {
-        case "OneWay" => oneWay.countDown()
+        case "OneWay" ⇒ oneWay.countDown()
       }
     }).start()
     val result = actor ! "OneWay"
@@ -39,27 +40,30 @@ class ThreadBasedActorSpec extends JUnitSuite {
     actor.stop()
   }
 
-  @Test def shouldSendReplySync = {
+  @Test
+  def shouldSendReplySync = {
     val actor = actorOf[TestActor].start()
     val result = (actor !! ("Hello", 10000)).as[String]
     assert("World" === result.get)
     actor.stop()
   }
 
-  @Test def shouldSendReplyAsync = {
+  @Test
+  def shouldSendReplyAsync = {
     val actor = actorOf[TestActor].start()
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
     actor.stop()
   }
 
-  @Test def shouldSendReceiveException = {
+  @Test
+  def shouldSendReceiveException = {
     val actor = actorOf[TestActor].start()
     try {
       actor !! "Failure"
       fail("Should have thrown an exception")
     } catch {
-      case e =>
+      case e ⇒
         assert("Expected exception; to test fault-tolerance" === e.getMessage())
     }
     actor.stop()

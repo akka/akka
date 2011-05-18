@@ -8,7 +8,6 @@ import scala.collection.immutable.Vector
 
 import akka.actor.newUuid
 
-
 /**
  * Transactional vector that implements the IndexedSeq interface with an underlying Ref and Vector.
  */
@@ -59,7 +58,7 @@ class TransactionalVector[T](initialValue: Vector[T]) extends Transactional with
 
   override def equals(other: Any): Boolean =
     other.isInstanceOf[TransactionalVector[_]] &&
-    other.hashCode == hashCode
+      other.hashCode == hashCode
 
   override def toString = if (Stm.activeTransaction) super.toString else "<TransactionalVector>"
 }

@@ -4,8 +4,8 @@
 
 package akka.util
 
-import akka.dispatch.{Future, CompletableFuture, MessageInvocation}
-import akka.config.{Config, ModuleNotAvailableException}
+import akka.dispatch.{ Future, CompletableFuture, MessageInvocation }
+import akka.config.{ Config, ModuleNotAvailableException }
 
 import akka.remoteinterface.RemoteSupport
 import akka.actor._
@@ -24,13 +24,13 @@ object ReflectiveAccess {
 
   val loader = getClass.getClassLoader
 
-  lazy val isRemotingEnabled: Boolean   = RemoteModule.isEnabled
+  lazy val isRemotingEnabled: Boolean = RemoteModule.isEnabled
   lazy val isTypedActorEnabled: Boolean = TypedActorModule.isEnabled
-  lazy val isClusterEnabled: Boolean    = ClusterModule.isEnabled
+  lazy val isClusterEnabled: Boolean = ClusterModule.isEnabled
 
-  def ensureClusterEnabled()     { ClusterModule.ensureEnabled() }
-  def ensureRemotingEnabled()    { RemoteModule.ensureEnabled() }
-  def ensureTypedActorEnabled()  { TypedActorModule.ensureEnabled() }
+  def ensureClusterEnabled() { ClusterModule.ensureEnabled() }
+  def ensureRemotingEnabled() { RemoteModule.ensureEnabled() }
+  def ensureTypedActorEnabled() { TypedActorModule.ensureEnabled() }
 
   /**
    * Reflective access to the Cluster module.
@@ -41,15 +41,15 @@ object ReflectiveAccess {
     import java.net.InetAddress
     import com.eaio.uuid.UUID
     import akka.cluster.NodeAddress
-    import Config.{config, TIME_UNIT}
+    import Config.{ config, TIME_UNIT }
 
-    val name                        = config.getString("akka.cluster.name",                                   "default")
-    val zooKeeperServers            = config.getString("akka.cluster.zookeeper-server-addresses",             "localhost:2181")
-    val sessionTimeout              = Duration(config.getInt("akka.cluster.session-timeout",                  60), TIME_UNIT).toMillis.toInt
-    val connectionTimeout           = Duration(config.getInt("akka.cluster.connection-timeout",               60), TIME_UNIT).toMillis.toInt
+    val name = config.getString("akka.cluster.name", "default")
+    val zooKeeperServers = config.getString("akka.cluster.zookeeper-server-addresses", "localhost:2181")
+    val sessionTimeout = Duration(config.getInt("akka.cluster.session-timeout", 60), TIME_UNIT).toMillis.toInt
+    val connectionTimeout = Duration(config.getInt("akka.cluster.connection-timeout", 60), TIME_UNIT).toMillis.toInt
     val maxTimeToWaitUntilConnected = Duration(config.getInt("akka.cluster.max-time-to-wait-until-connected", 30), TIME_UNIT).toMillis.toInt
-    val shouldCompressData          = config.getBool("akka.cluster.use-compression",                          false)
-    val nodeAddress                 = NodeAddress(name, Config.nodename, Config.hostname, Config.remoteServerPort)
+    val shouldCompressData = config.getBool("akka.cluster.use-compression", false)
+    val nodeAddress = NodeAddress(name, Config.nodename, Config.hostname, Config.remoteServerPort)
 
     lazy val isEnabled = clusterInstance.isDefined
 
@@ -63,22 +63,22 @@ object ReflectiveAccess {
     }
 
     lazy val clusterInstance: Option[Cluster] = getObjectFor("akka.cluster.Cluster$") match {
-      case Right(value)    => Some(value)
-      case Left(exception) =>
+      case Right(value) ⇒ Some(value)
+      case Left(exception) ⇒
         EventHandler.debug(this, exception.toString)
         None
     }
 
     lazy val clusterDeployerInstance: Option[ClusterDeployer] = getObjectFor("akka.cluster.ClusterDeployer$") match {
-      case Right(value)    => Some(value)
-      case Left(exception) =>
+      case Right(value) ⇒ Some(value)
+      case Left(exception) ⇒
         EventHandler.debug(this, exception.toString)
         None
     }
 
     lazy val serializerClass: Option[Class[_]] = getClassFor("akka.serialization.Serializer") match {
-      case Right(value)    => Some(value)
-      case Left(exception) =>
+      case Right(value) ⇒ Some(value)
+      case Left(exception) ⇒
         EventHandler.debug(this, exception.toString)
         None
     }
@@ -97,13 +97,9 @@ object ReflectiveAccess {
       def start()
       def shutdown()
 
-      def store[T <: Actor]
-        (address: String, actorClass: Class[T], replicas: Int, serializeMailbox: Boolean)
-        (implicit format: Format[T])
+      def store[T <: Actor](address: String, actorClass: Class[T], replicas: Int, serializeMailbox: Boolean)(implicit format: Format[T])
 
-      def store[T <: Actor]
-        (address: String, actorRef: ActorRef, replicas: Int, serializeMailbox: Boolean)
-        (implicit format: Format[T])
+      def store[T <: Actor](address: String, actorRef: ActorRef, replicas: Int, serializeMailbox: Boolean)(implicit format: Format[T])
 
       def remove(address: String)
       def use(address: String): Array[ActorRef]
@@ -150,34 +146,33 @@ object ReflectiveAccess {
 
     def ensureEnabled() = {
       if (!isEnabled) {
-      val e = new ModuleNotAvailableException("Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
-      EventHandler.debug(this, e.toString)
-      throw e
+        val e = new ModuleNotAvailableException("Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
+        EventHandler.debug(this, e.toString)
+        throw e
       }
     }
 
     val remoteSupportClass = getClassFor[RemoteSupport](TRANSPORT) match {
-      case Right(value)    => Some(value)
-      case Left(exception) =>
+      case Right(value) ⇒ Some(value)
+      case Left(exception) ⇒
         EventHandler.debug(this, exception.toString)
         None
     }
 
-    protected[akka] val defaultRemoteSupport: Option[() => RemoteSupport] =
-      remoteSupportClass map { remoteClass =>
-        () => createInstance[RemoteSupport](
+    protected[akka] val defaultRemoteSupport: Option[() ⇒ RemoteSupport] =
+      remoteSupportClass map { remoteClass ⇒
+        () ⇒ createInstance[RemoteSupport](
           remoteClass,
           Array[Class[_]](),
-          Array[AnyRef]()
-        ) match {
-          case Right(value)    => value
-          case Left(exception) =>
-          val e = new ModuleNotAvailableException(
-            "Can't instantiate [%s] - make sure that akka-remote.jar is on the classpath".format(remoteClass.getName), exception)
-          EventHandler.debug(this, e.toString)
-          throw e
-        }
-    }
+          Array[AnyRef]()) match {
+            case Right(value) ⇒ value
+            case Left(exception) ⇒
+              val e = new ModuleNotAvailableException(
+                "Can't instantiate [%s] - make sure that akka-remote.jar is on the classpath".format(remoteClass.getName), exception)
+              EventHandler.debug(this, e.toString)
+              throw e
+          }
+      }
   }
 
   /**
@@ -204,8 +199,8 @@ object ReflectiveAccess {
 
     val typedActorObjectInstance: Option[TypedActorObject] =
       getObjectFor[TypedActorObject]("akka.actor.TypedActor$") match {
-        case Right(value) => Some(value)
-        case Left(exception)=>
+        case Right(value) ⇒ Some(value)
+        case Left(exception) ⇒
           EventHandler.debug(this, exception.toString)
           None
       }
@@ -220,11 +215,11 @@ object ReflectiveAccess {
   }
 
   val noParams = Array[Class[_]]()
-  val noArgs   = Array[AnyRef]()
+  val noArgs = Array[AnyRef]()
 
   def createInstance[T](clazz: Class[_],
                         params: Array[Class[_]],
-                        args: Array[AnyRef]): Either[Exception,T] = try {
+                        args: Array[AnyRef]): Either[Exception, T] = try {
     assert(clazz ne null)
     assert(params ne null)
     assert(args ne null)
@@ -232,10 +227,10 @@ object ReflectiveAccess {
     ctor.setAccessible(true)
     Right(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
-    case e: java.lang.reflect.InvocationTargetException =>
+    case e: java.lang.reflect.InvocationTargetException ⇒
       EventHandler.debug(this, e.getCause.toString)
       Left(e)
-    case e: Exception =>
+    case e: Exception ⇒
       EventHandler.debug(this, e.toString)
       Left(e)
   }
@@ -243,33 +238,33 @@ object ReflectiveAccess {
   def createInstance[T](fqn: String,
                         params: Array[Class[_]],
                         args: Array[AnyRef],
-                        classloader: ClassLoader = loader): Either[Exception,T] = try {
+                        classloader: ClassLoader = loader): Either[Exception, T] = try {
     assert(params ne null)
     assert(args ne null)
     getClassFor(fqn) match {
-      case Right(value) =>
+      case Right(value) ⇒
         val ctor = value.getDeclaredConstructor(params: _*)
         ctor.setAccessible(true)
         Right(ctor.newInstance(args: _*).asInstanceOf[T])
-      case Left(exception) => Left(exception) //We could just cast this to Either[Exception, T] but it's ugly
+      case Left(exception) ⇒ Left(exception) //We could just cast this to Either[Exception, T] but it's ugly
     }
   } catch {
-    case e: Exception =>
+    case e: Exception ⇒
       Left(e)
   }
 
   //Obtains a reference to fqn.MODULE$
-  def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception,T] = try {
+  def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception, T] = try {
     getClassFor(fqn) match {
-      case Right(value) =>
+      case Right(value) ⇒
         val instance = value.getDeclaredField("MODULE$")
         instance.setAccessible(true)
         val obj = instance.get(null)
         if (obj eq null) Left(new NullPointerException) else Right(obj.asInstanceOf[T])
-      case Left(exception) => Left(exception) //We could just cast this to Either[Exception, T] but it's ugly
+      case Left(exception) ⇒ Left(exception) //We could just cast this to Either[Exception, T] but it's ugly
     }
   } catch {
-    case e: Exception =>
+    case e: Exception ⇒
       Left(e)
   }
 
@@ -280,7 +275,7 @@ object ReflectiveAccess {
     val first = try {
       Right(classloader.loadClass(fqn).asInstanceOf[Class[T]])
     } catch {
-      case c: ClassNotFoundException => Left(c)
+      case c: ClassNotFoundException ⇒ Left(c)
     }
 
     if (first.isRight) first
@@ -289,15 +284,15 @@ object ReflectiveAccess {
       val second = try {
         Right(Thread.currentThread.getContextClassLoader.loadClass(fqn).asInstanceOf[Class[T]])
       } catch {
-        case c: ClassNotFoundException => Left(c)
+        case c: ClassNotFoundException ⇒ Left(c)
       }
 
       if (second.isRight) second
       else {
         val third = try {
-           if (classloader ne loader) Right(loader.loadClass(fqn).asInstanceOf[Class[T]]) else Left(null) //Horrid
+          if (classloader ne loader) Right(loader.loadClass(fqn).asInstanceOf[Class[T]]) else Left(null) //Horrid
         } catch {
-          case c: ClassNotFoundException => Left(c)
+          case c: ClassNotFoundException ⇒ Left(c)
         }
 
         if (third.isRight) third
@@ -305,12 +300,12 @@ object ReflectiveAccess {
           try {
             Right(Class.forName(fqn).asInstanceOf[Class[T]]) // Last option is Class.forName
           } catch {
-            case c: ClassNotFoundException => Left(c)
+            case c: ClassNotFoundException ⇒ Left(c)
           }
         }
       }
     }
   } catch {
-    case e: Exception => Left(e)
+    case e: Exception ⇒ Left(e)
   }
 }

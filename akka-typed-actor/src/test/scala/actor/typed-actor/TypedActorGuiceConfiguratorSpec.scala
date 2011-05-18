@@ -17,13 +17,10 @@ import org.junit.runner.RunWith
 import akka.config.Supervision._
 import akka.dispatch._
 import akka.dispatch.FutureTimeoutException
-import akka.config.{Config, TypedActorConfigurator}
+import akka.config.{ Config, TypedActorConfigurator }
 
 @RunWith(classOf[JUnitRunner])
-class TypedActorGuiceConfiguratorSpec extends
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterAll {
+class TypedActorGuiceConfiguratorSpec extends Spec with ShouldMatchers with BeforeAndAfterAll {
 
   private val conf = new TypedActorConfigurator
   private var messageLog = ""
@@ -36,20 +33,19 @@ class TypedActorGuiceConfiguratorSpec extends
       def configure = bind(classOf[Ext]).to(classOf[ExtImpl]).in(Scopes.SINGLETON)
     }).configure(
       AllForOneStrategy(classOf[Exception] :: Nil, 3, 5000),
-        List(
-           new SuperviseTypedActor(
-              classOf[Foo],
-              classOf[FooImpl],
-              Permanent,
-              1000,
-              dispatcher),
-          new SuperviseTypedActor(
-              classOf[Bar],
-              classOf[BarImpl],
-              Permanent,
-              1000,
-              dispatcher)
-      ).toArray).inject.supervise
+      List(
+        new SuperviseTypedActor(
+          classOf[Foo],
+          classOf[FooImpl],
+          Permanent,
+          1000,
+          dispatcher),
+        new SuperviseTypedActor(
+          classOf[Bar],
+          classOf[BarImpl],
+          Permanent,
+          1000,
+          dispatcher)).toArray).inject.supervise
 
   }
 
@@ -76,7 +72,7 @@ class TypedActorGuiceConfiguratorSpec extends
         val str = conf.getInstance(classOf[String])
         fail("exception should have been thrown")
       } catch {
-        case e: Exception =>
+        case e: Exception ⇒
           classOf[IllegalActorStateException] should equal(e.getClass)
       }
     }
@@ -109,7 +105,7 @@ class TypedActorGuiceConfiguratorSpec extends
         foo.longRunning
         fail("exception should have been thrown")
       } catch {
-        case e: FutureTimeoutException =>
+        case e: FutureTimeoutException ⇒
           classOf[FutureTimeoutException] should equal(e.getClass)
       }
     }
@@ -121,7 +117,7 @@ class TypedActorGuiceConfiguratorSpec extends
         foo.throwsException
         fail("exception should have been thrown")
       } catch {
-        case e: RuntimeException =>
+        case e: RuntimeException ⇒
           classOf[RuntimeException] should equal(e.getClass)
       }
     }

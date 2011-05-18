@@ -7,11 +7,11 @@ package akka.thaipedactor
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
-import org.scalatest.{BeforeAndAfterAll, WordSpec, BeforeAndAfterEach}
+import org.scalatest.{ BeforeAndAfterAll, WordSpec, BeforeAndAfterEach }
 import akka.thaipedactor.ThaipedActor._
-import akka.japi.{Option => JOption}
+import akka.japi.{ Option ⇒ JOption }
 import akka.util.Duration
-import akka.dispatch.{Dispatchers, Future, AlreadyCompletedFuture}
+import akka.dispatch.{ Dispatchers, Future, AlreadyCompletedFuture }
 import akka.routing.CyclicIterator
 
 object ThaipedActorSpec {
@@ -26,7 +26,6 @@ object ThaipedActorSpec {
     def optionPigdog(): Option[String]
     def optionPigdog(delay: Long): Option[String]
     def joptionPigdog(delay: Long): JOption[String]
-
 
     def incr()
     def read(): Int
@@ -72,11 +71,7 @@ object ThaipedActorSpec {
 }
 
 @RunWith(classOf[JUnitRunner])
-class ThaipedActorSpec extends
-  WordSpec with
-  MustMatchers with
-  BeforeAndAfterEach with
-  BeforeAndAfterAll {
+class ThaipedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll {
   import akka.thaipedactor.ThaipedActorSpec._
 
   def newFooBar: Foo = newFooBar(Duration(2, "seconds"))
@@ -86,11 +81,11 @@ class ThaipedActorSpec extends
 
   def newFooBar(config: Configuration): Foo =
     thaipedActorOf(classOf[Foo],
-                   classOf[Bar],
-                   config,
-                   classOf[Foo].getClassLoader)
+      classOf[Bar],
+      config,
+      classOf[Foo].getClassLoader)
 
-  def mustStop(foo: Foo) = stop(foo) must be (true)
+  def mustStop(foo: Foo) = stop(foo) must be(true)
 
   "ThaipedActors" must {
 
@@ -106,93 +101,92 @@ class ThaipedActorSpec extends
     }
 
     "not stop non-started ones" in {
-      stop(null) must be (false)
+      stop(null) must be(false)
     }
 
     "be able to call toString" in {
       val t = newFooBar
-      t.toString must be (getActorFor(t).get.toString)
+      t.toString must be(getActorFor(t).get.toString)
       mustStop(t)
     }
 
     "be able to call equals" in {
       val t = newFooBar
-      t must equal (t)
+      t must equal(t)
       t must not equal (null)
       mustStop(t)
     }
 
     "be able to call hashCode" in {
       val t = newFooBar
-      t.hashCode must be (getActorFor(t).get.hashCode)
+      t.hashCode must be(getActorFor(t).get.hashCode)
       mustStop(t)
     }
 
     "be able to call user-defined void-methods" in {
       val t = newFooBar
       t.incr()
-      t.read() must be (1)
+      t.read() must be(1)
       mustStop(t)
     }
 
     "be able to call Future-returning methods non-blockingly" in {
       val t = newFooBar
       val f = t.futurePigdog(200)
-      f.isCompleted must be (false)
-      f.get must be ("Pigdog")
+      f.isCompleted must be(false)
+      f.get must be("Pigdog")
       mustStop(t)
     }
 
     "be able to call multiple Future-returning methods non-blockingly" in {
       val t = newFooBar
-      val futures = for(i <- 1 to 20) yield (i, t.futurePigdog(20,i))
-      for((i,f) <- futures) {
-        f.get must be ("Pigdog"+i)
+      val futures = for (i ← 1 to 20) yield (i, t.futurePigdog(20, i))
+      for ((i, f) ← futures) {
+        f.get must be("Pigdog" + i)
       }
       mustStop(t)
     }
 
     "be able to call methods returning Java Options" in {
-      val t = newFooBar(Duration(500,"ms"))
-      t.joptionPigdog(200).get must be ("Pigdog")
-      t.joptionPigdog(700) must be (JOption.none[String])
+      val t = newFooBar(Duration(500, "ms"))
+      t.joptionPigdog(200).get must be("Pigdog")
+      t.joptionPigdog(700) must be(JOption.none[String])
       mustStop(t)
     }
 
     "be able to call methods returning Scala Options" in {
-      val t = newFooBar(Duration(500,"ms"))
-      t.optionPigdog(200).get must be ("Pigdog")
-      t.optionPigdog(700) must be (None)
+      val t = newFooBar(Duration(500, "ms"))
+      t.optionPigdog(200).get must be("Pigdog")
+      t.optionPigdog(700) must be(None)
       mustStop(t)
     }
 
     "be able to compose futures without blocking" in {
-      val t,t2 = newFooBar(Duration(2,"s"))
+      val t, t2 = newFooBar(Duration(2, "s"))
       val f = t.futureComposePigdogFrom(t2)
-      f.isCompleted must be (false)
-      f.get must equal ("PIGDOG")
+      f.isCompleted must be(false)
+      f.get must equal("PIGDOG")
       mustStop(t)
       mustStop(t2)
     }
 
     "be able to use work-stealing dispatcher" in {
       val config = Configuration(
-                     Duration(6600,"ms"),
-                     Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
-                          .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
-                          .setCorePoolSize(60)
-                          .setMaxPoolSize(60)
-                          .build
-                   )
+        Duration(6600, "ms"),
+        Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
+          .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
+          .setCorePoolSize(60)
+          .setMaxPoolSize(60)
+          .build)
 
-      val thais    = for(i <- 1 to 60) yield newFooBar(config)
+      val thais = for (i ← 1 to 60) yield newFooBar(config)
       val iterator = new CyclicIterator(thais)
 
-      val results = for(i <- 1 to 120) yield (i, iterator.next.futurePigdog(200L,i))
+      val results = for (i ← 1 to 120) yield (i, iterator.next.futurePigdog(200L, i))
 
-      for((i,r) <- results) r.get must be ("Pigdog"+i)
+      for ((i, r) ← results) r.get must be("Pigdog" + i)
 
-      for(t <- thais) mustStop(t)
+      for (t ← thais) mustStop(t)
     }
   }
 }

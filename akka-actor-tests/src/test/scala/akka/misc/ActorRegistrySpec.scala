@@ -3,14 +3,14 @@ package akka.actor
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import Actor._
-import java.util.concurrent.{CyclicBarrier, TimeUnit, CountDownLatch}
+import java.util.concurrent.{ CyclicBarrier, TimeUnit, CountDownLatch }
 import org.scalatest.Assertions._
 
 object ActorRegistrySpec {
   var record = ""
   class TestActor extends Actor {
     def receive = {
-      case "ping" =>
+      case "ping" ⇒
         record = "pong" + record
         self.reply("got ping")
     }
@@ -18,10 +18,10 @@ object ActorRegistrySpec {
 
   class TestActor2 extends Actor {
     def receive = {
-      case "ping" =>
+      case "ping" ⇒
         record = "pong" + record
         self.reply("got ping")
-      case "ping2" =>
+      case "ping2" ⇒
         record = "pong" + record
         self.reply("got ping")
     }
@@ -31,7 +31,8 @@ object ActorRegistrySpec {
 class ActorRegistrySpec extends JUnitSuite {
   import ActorRegistrySpec._
 
-  @Test def shouldGetActorByAddressFromActorRegistry {
+  @Test
+  def shouldGetActorByAddressFromActorRegistry {
     Actor.registry.local.shutdownAll
     val actor1 = actorOf[TestActor]("test-actor-1")
     actor1.start
@@ -42,7 +43,8 @@ class ActorRegistrySpec extends JUnitSuite {
     actor2.get.stop
   }
 
-  @Test def shouldGetActorByUUIDFromLocalActorRegistry {
+  @Test
+  def shouldGetActorByUUIDFromLocalActorRegistry {
     Actor.registry.local.shutdownAll
     val actor = actorOf[TestActor]("test-actor-1")
     val uuid = actor.uuid
@@ -54,18 +56,20 @@ class ActorRegistrySpec extends JUnitSuite {
     actor.stop
   }
 
-  @Test def shouldFindThingsFromLocalActorRegistry {
+  @Test
+  def shouldFindThingsFromLocalActorRegistry {
     Actor.registry.local.shutdownAll
     val actor = actorOf[TestActor]("test-actor-1")
     actor.start
-    val found = Actor.registry.local.find({ case a: ActorRef if a.actor.isInstanceOf[TestActor] => a })
+    val found = Actor.registry.local.find({ case a: ActorRef if a.actor.isInstanceOf[TestActor] ⇒ a })
     assert(found.isDefined)
     assert(found.get.actor.isInstanceOf[TestActor])
     assert(found.get.address === "test-actor-1")
     actor.stop
   }
 
-  @Test def shouldGetAllActorsFromLocalActorRegistry {
+  @Test
+  def shouldGetAllActorsFromLocalActorRegistry {
     Actor.registry.local.shutdownAll
     val actor1 = actorOf[TestActor]("test-actor-1")
     actor1.start
@@ -81,20 +85,22 @@ class ActorRegistrySpec extends JUnitSuite {
     actor2.stop
   }
 
-  @Test def shouldGetResponseByAllActorsInLocalActorRegistryWhenInvokingForeach {
+  @Test
+  def shouldGetResponseByAllActorsInLocalActorRegistryWhenInvokingForeach {
     Actor.registry.local.shutdownAll
     val actor1 = actorOf[TestActor]("test-actor-1")
     actor1.start
     val actor2 = actorOf[TestActor]("test-actor-2")
     actor2.start
     record = ""
-    Actor.registry.local.foreach(actor => actor !! "ping")
+    Actor.registry.local.foreach(actor ⇒ actor !! "ping")
     assert(record === "pongpong")
     actor1.stop()
     actor2.stop()
   }
 
-  @Test def shouldShutdownAllActorsInLocalActorRegistry {
+  @Test
+  def shouldShutdownAllActorsInLocalActorRegistry {
     Actor.registry.local.shutdownAll
     val actor1 = actorOf[TestActor]("test-actor-1")
     actor1.start
@@ -104,7 +110,8 @@ class ActorRegistrySpec extends JUnitSuite {
     assert(Actor.registry.local.actors.size === 0)
   }
 
-  @Test def shouldRemoveUnregisterActorInLocalActorRegistry {
+  @Test
+  def shouldRemoveUnregisterActorInLocalActorRegistry {
     Actor.registry.local.shutdownAll
     val actor1 = actorOf[TestActor]("test-actor-1")
     actor1.start

@@ -8,7 +8,7 @@ import org.I0Itec.zkclient._
 
 import akka.actor._
 import akka.actor.Actor._
-import akka.serialization.{Serializers, SerializerBasedActorFormat}
+import akka.serialization.{ Serializers, SerializerBasedActorFormat }
 import akka.util.Helpers._
 import akka.actor.DeploymentConfig._
 
@@ -22,7 +22,7 @@ class MyJavaSerializableActor extends Actor with Serializable {
   var count = 0
 
   def receive = {
-    case "hello" =>
+    case "hello" ⇒
       count = count + 1
       self.reply("world " + count)
   }

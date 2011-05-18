@@ -4,11 +4,11 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
 import akka.transactor.Coordinated
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{ Actor, ActorRef }
 import akka.stm._
 import akka.util.duration._
 
-import scala.util.Random.{nextInt => random}
+import scala.util.Random.{ nextInt ⇒ random }
 
 import java.util.concurrent.CountDownLatch
 
@@ -30,7 +30,7 @@ object FickleFriends {
     }
 
     def receive = {
-      case FriendlyIncrement(friends, latch) => {
+      case FriendlyIncrement(friends, latch) ⇒ {
         var success = false
         while (!success) {
           try {
@@ -46,12 +46,12 @@ object FickleFriends {
               }
             }
           } catch {
-            case _ => () // swallow exceptions
+            case _ ⇒ () // swallow exceptions
           }
         }
       }
 
-      case GetCount => self.reply(count.get)
+      case GetCount ⇒ self.reply(count.get)
     }
   }
 
@@ -72,7 +72,7 @@ object FickleFriends {
     }
 
     def receive = {
-      case coordinated @ Coordinated(Increment(friends)) => {
+      case coordinated@Coordinated(Increment(friends)) ⇒ {
         val failAt = random(8)
         failIf(failAt, 0)
         if (friends.nonEmpty) {
@@ -86,7 +86,7 @@ object FickleFriends {
         }
       }
 
-      case GetCount => self.reply(count.get)
+      case GetCount ⇒ self.reply(count.get)
     }
   }
 }
@@ -110,7 +110,7 @@ class FickleFriendsSpec extends WordSpec with MustMatchers {
       coordinator ! FriendlyIncrement(counters, latch)
       latch.await // this could take a while
       (coordinator !! GetCount).get must be === 1
-      for (counter <- counters) {
+      for (counter ← counters) {
         (counter !! GetCount).get must be === 1
       }
       counters foreach (_.stop())

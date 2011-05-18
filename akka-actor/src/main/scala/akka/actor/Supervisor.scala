@@ -9,11 +9,11 @@ import akka.util._
 import ReflectiveAccess._
 import Actor._
 
-import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
+import java.util.concurrent.{ CopyOnWriteArrayList, ConcurrentHashMap }
 import java.net.InetSocketAddress
 import akka.config.Supervision._
 
-class SupervisorException private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class SupervisorException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * Factory object for creating supervisors declarative. It creates instances of the 'Supervisor' class.
@@ -98,13 +98,13 @@ case class SupervisorFactory(val config: SupervisorConfig) {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached) => Unit) {
+sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached) ⇒ Unit) {
   import Supervisor._
 
   private val _childActors = new ConcurrentHashMap[String, List[ActorRef]]
   private val _childSupervisors = new CopyOnWriteArrayList[Supervisor]
 
-  private[akka] val supervisor = actorOf(new SupervisorActor(handler,maxRestartsHandler)).start()
+  private[akka] val supervisor = actorOf(new SupervisorActor(handler, maxRestartsHandler)).start()
 
   def uuid = supervisor.uuid
 
@@ -125,11 +125,11 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (Act
     _childActors.values.toArray.toList.asInstanceOf[List[Supervisor]]
 
   def configure(config: SupervisorConfig): Unit = config match {
-    case SupervisorConfig(_, servers, _) =>
+    case SupervisorConfig(_, servers, _) ⇒
 
-      servers.map(server =>
+      servers.map(server ⇒
         server match {
-          case Supervise(actorRef, lifeCycle, registerAsRemoteService) =>
+          case Supervise(actorRef, lifeCycle, registerAsRemoteService) ⇒
             actorRef.start()
             val className = actorRef.actor.getClass.getName
             val currentActors = {
@@ -142,7 +142,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (Act
             supervisor.link(actorRef)
             if (registerAsRemoteService)
               Actor.remote.register(actorRef)
-          case supervisorConfig @ SupervisorConfig(_, _,_) => // recursive supervisor configuration
+          case supervisorConfig@SupervisorConfig(_, _, _) ⇒ // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)
             supervisor.link(childSupervisor.supervisor)
             _childSupervisors.add(childSupervisor)
@@ -155,13 +155,12 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (Act
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final class SupervisorActor private[akka] (handler: FaultHandlingStrategy, maxRestartsHandler: (ActorRef,MaximumNumberOfRestartsWithinTimeRangeReached) => Unit) extends Actor {
+final class SupervisorActor private[akka] (handler: FaultHandlingStrategy, maxRestartsHandler: (ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached) ⇒ Unit) extends Actor {
   self.faultHandler = handler
-
 
   override def postStop(): Unit = {
     val i = self.linkedActors.values.iterator
-    while(i.hasNext) {
+    while (i.hasNext) {
       val ref = i.next
       ref.stop()
       self.unlink(ref)
@@ -169,8 +168,8 @@ final class SupervisorActor private[akka] (handler: FaultHandlingStrategy, maxRe
   }
 
   def receive = {
-    case max@MaximumNumberOfRestartsWithinTimeRangeReached(_,_,_,_) => maxRestartsHandler(self, max)
-    case unknown => throw new SupervisorException(
+    case max@MaximumNumberOfRestartsWithinTimeRangeReached(_, _, _, _) ⇒ maxRestartsHandler(self, max)
+    case unknown ⇒ throw new SupervisorException(
       "SupervisorActor can not respond to messages.\n\tUnknown message [" + unknown + "]")
   }
 }

@@ -8,13 +8,13 @@ import DeploymentConfig._
 import akka.dispatch._
 import akka.config.Config
 import Config._
-import akka.util.{ListenerManagement, ReflectiveAccess, Duration, Helpers}
+import akka.util.{ ListenerManagement, ReflectiveAccess, Duration, Helpers }
 import ReflectiveAccess._
-import Helpers.{narrow, narrowSilently}
+import Helpers.{ narrow, narrowSilently }
 import akka.remoteinterface.RemoteSupport
-import akka.japi.{Creator, Procedure}
+import akka.japi.{ Creator, Procedure }
 import akka.AkkaException
-import akka.serialization.{Format, Serializer}
+import akka.serialization.{ Format, Serializer }
 import akka.event.EventHandler
 
 import scala.reflect.BeanProperty
@@ -31,17 +31,17 @@ sealed trait LifeCycleMessage extends Serializable
 /**
  * Marker trait to show which Messages are automatically handled by Akka
  */
-sealed trait AutoReceivedMessage { self: LifeCycleMessage => }
+sealed trait AutoReceivedMessage { self: LifeCycleMessage ⇒ }
 
-case class HotSwap(code: ActorRef => Actor.Receive, discardOld: Boolean = true) extends AutoReceivedMessage with LifeCycleMessage {
+case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true) extends AutoReceivedMessage with LifeCycleMessage {
 
   /**
    * Java API
    */
-  def this(code: akka.japi.Function[ActorRef,Procedure[Any]], discardOld: Boolean) = {
-    this( (self: ActorRef) => {
+  def this(code: akka.japi.Function[ActorRef, Procedure[Any]], discardOld: Boolean) = {
+    this((self: ActorRef) ⇒ {
       val behavior = code(self)
-      val result: Actor.Receive = { case msg => behavior(msg) }
+      val result: Actor.Receive = { case msg ⇒ behavior(msg) }
       result
     }, discardOld)
   }
@@ -77,12 +77,12 @@ case class MaximumNumberOfRestartsWithinTimeRangeReached(
   @BeanProperty val lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
 
 // Exceptions for Actors
-class ActorStartException          private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
-class IllegalActorStateException   private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
-class ActorKilledException         private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
-class ActorInitializationException private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
-class ActorTimeoutException        private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
-class InvalidMessageException      private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class ActorStartException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class IllegalActorStateException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class ActorKilledException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class ActorInitializationException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class ActorTimeoutException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class InvalidMessageException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message
@@ -108,8 +108,8 @@ object Actor extends ListenerManagement {
         // Clear Thread.subclassAudits
         val tf = classOf[java.lang.Thread].getDeclaredField("subclassAudits")
         tf.setAccessible(true)
-        val subclassAudits = tf.get(null).asInstanceOf[java.util.Map[_,_]]
-        subclassAudits synchronized {subclassAudits.clear()}
+        val subclassAudits = tf.get(null).asInstanceOf[java.util.Map[_, _]]
+        subclassAudits synchronized { subclassAudits.clear() }
       }
     }
     Runtime.getRuntime.addShutdownHook(new Thread(hook))
@@ -135,7 +135,7 @@ object Actor extends ListenerManagement {
    */
   type Receive = PartialFunction[Any, Unit]
 
-  private[actor] val actorRefInCreation = new ThreadLocal[Option[ActorRef]]{
+  private[actor] val actorRefInCreation = new ThreadLocal[Option[ActorRef]] {
     override def initialValue = None
   }
 
@@ -153,8 +153,8 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf[MyActor].start()
    * </pre>
    */
-   def actorOf[T <: Actor : Manifest](address: String): ActorRef =
-     actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], address)
+  def actorOf[T <: Actor: Manifest](address: String): ActorRef =
+    actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], address)
 
   /**
    * Creates an ActorRef out of the Actor with type T.
@@ -171,8 +171,8 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf[MyActor].start
    * </pre>
    */
-   def actorOf[T <: Actor : Manifest]: ActorRef =
-     actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], new UUID().toString)
+  def actorOf[T <: Actor: Manifest]: ActorRef =
+    actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], new UUID().toString)
 
   /**
    * Creates an ActorRef out of the Actor of the specified Class.
@@ -210,11 +210,11 @@ object Actor extends ListenerManagement {
     Address.validate(address)
     try {
       Deployer.deploymentFor(address) match {
-        case Deploy(_, router, _, Local) => newLocalActorRef(clazz, address) // FIXME handle 'router' in 'Local' actors
-        case deploy                      => newClusterActorRef[T](clazz, address, deploy)
+        case Deploy(_, router, _, Local) ⇒ newLocalActorRef(clazz, address) // FIXME handle 'router' in 'Local' actors
+        case deploy                      ⇒ newClusterActorRef[T](clazz, address, deploy)
       }
     } catch {
-      case e: DeploymentException =>
+      case e: DeploymentException ⇒
         EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
         newLocalActorRef(clazz, address) // if deployment fails, fall back to local actors
     }
@@ -238,7 +238,7 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf(new MyActor).start()
    * </pre>
    */
-  def actorOf[T <: Actor](factory: => T): ActorRef = actorOf(factory, new UUID().toString)
+  def actorOf[T <: Actor](factory: ⇒ T): ActorRef = actorOf(factory, new UUID().toString)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -258,16 +258,16 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf(new MyActor).start
    * </pre>
    */
-  def actorOf[T <: Actor](creator: => T, address: String): ActorRef = {
+  def actorOf[T <: Actor](creator: ⇒ T, address: String): ActorRef = {
     Address.validate(address)
-    val factory = () => creator
+    val factory = () ⇒ creator
     try {
       Deployer.deploymentFor(address) match {
-        case Deploy(_, router, _, Local) => new LocalActorRef(factory, address) // FIXME handle 'router' in 'Local' actors
-        case deploy                      => newClusterActorRef[T](factory, address, deploy)
+        case Deploy(_, router, _, Local) ⇒ new LocalActorRef(factory, address) // FIXME handle 'router' in 'Local' actors
+        case deploy                      ⇒ newClusterActorRef[T](factory, address, deploy)
       }
     } catch {
-      case e: DeploymentException =>
+      case e: DeploymentException ⇒
         EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
         new LocalActorRef(factory, address) // if deployment fails, fall back to local actors
     }
@@ -294,14 +294,14 @@ object Actor extends ListenerManagement {
    */
   def actorOf[T <: Actor](creator: Creator[T], address: String): ActorRef = {
     Address.validate(address)
-    val factory = () => creator.create
+    val factory = () ⇒ creator.create
     try {
       Deployer.deploymentFor(address) match {
-        case Deploy(_, router, _, Local) => new LocalActorRef(factory, address) // FIXME handle 'router' in 'Local' actors
-        case deploy                      => newClusterActorRef[T](factory, address, deploy)
+        case Deploy(_, router, _, Local) ⇒ new LocalActorRef(factory, address) // FIXME handle 'router' in 'Local' actors
+        case deploy                      ⇒ newClusterActorRef[T](factory, address, deploy)
       }
     } catch {
-      case e: DeploymentException =>
+      case e: DeploymentException ⇒
         EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
         new LocalActorRef(factory, address) // if deployment fails, fall back to local actors
     }
@@ -322,12 +322,12 @@ object Actor extends ListenerManagement {
    * }
    * </pre>
    */
-  def spawn(body: => Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit = {
+  def spawn(body: ⇒ Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit = {
     case object Spawn
     actorOf(new Actor() {
       self.dispatcher = dispatcher
       def receive = {
-        case Spawn => try { body } finally { self.stop() }
+        case Spawn ⇒ try { body } finally { self.stop() }
       }
     }).start() ! Spawn
   }
@@ -347,54 +347,53 @@ object Actor extends ListenerManagement {
    *   (actor !!! "foo").as[Int] (Recommended)
    */
   implicit def futureToAnyOptionAsTypedOption(anyFuture: Future[_]) = new AnyOptionAsTypedOption({
-    try { anyFuture.await } catch { case t: FutureTimeoutException => }
+    try { anyFuture.await } catch { case t: FutureTimeoutException ⇒ }
     anyFuture.resultOrException
   })
 
   private[akka] def newLocalActorRef(clazz: Class[_ <: Actor], address: String): ActorRef = {
-    new LocalActorRef(() => {
+    new LocalActorRef(() ⇒ {
       import ReflectiveAccess.{ createInstance, noParams, noArgs }
       createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs) match {
-        case Right(actor) => actor
-        case Left(exception) =>
+        case Right(actor) ⇒ actor
+        case Left(exception) ⇒
           val cause = exception match {
-            case i: InvocationTargetException => i.getTargetException
-            case _ => exception
+            case i: InvocationTargetException ⇒ i.getTargetException
+            case _                            ⇒ exception
           }
 
           throw new ActorInitializationException(
             "Could not instantiate Actor of " + clazz +
-            "\nMake sure Actor is NOT defined inside a class/trait," +
-            "\nif so put it outside the class/trait, f.e. in a companion object," +
-            "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
-        }
+              "\nMake sure Actor is NOT defined inside a class/trait," +
+              "\nif so put it outside the class/trait, f.e. in a companion object," +
+              "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
+      }
     }, address)
   }
 
-  private def newClusterActorRef[T <: Actor](factory: () => T, address: String, deploy: Deploy): ActorRef = {
+  private def newClusterActorRef[T <: Actor](factory: () ⇒ T, address: String, deploy: Deploy): ActorRef = {
     newClusterActorRef(factory().getClass.asInstanceOf[Class[T]], address, deploy)
   }
 
-
   private def newClusterActorRef[T <: Actor](clazz: Class[T], address: String, deploy: Deploy): ActorRef = {
     deploy match {
-      case Deploy(_, router, serializerClassName, Clustered(home, replication: Replication, state: State)) =>
+      case Deploy(_, router, serializerClassName, Clustered(home, replication: Replication, state: State)) ⇒
         ClusterModule.ensureEnabled()
 
         if (Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
 
         val hostname = home match {
-          case Host(hostname) => hostname
-          case IP(address)    => address
-          case Node(nodeName) => Config.hostname
+          case Host(hostname) ⇒ hostname
+          case IP(address)    ⇒ address
+          case Node(nodeName) ⇒ Config.hostname
         }
 
         val replicas = replication match {
-          case Replicate(replicas) => replicas
-          case AutoReplicate       => -1
-          case AutoReplicate()     => -1
-          case NoReplicas          => 0
-          case NoReplicas()        => 0
+          case Replicate(replicas) ⇒ replicas
+          case AutoReplicate       ⇒ -1
+          case AutoReplicate()     ⇒ -1
+          case NoReplicas          ⇒ 0
+          case NoReplicas()        ⇒ 0
         }
 
         import ClusterModule.node
@@ -405,18 +404,18 @@ object Actor extends ListenerManagement {
           def serializerErrorDueTo(reason: String) =
             throw new akka.config.ConfigurationException(
               "Could not create Serializer object [" + serializerClassName +
-              "] for serialization of actor [" + address +
-              "] since " + reason)
+                "] for serialization of actor [" + address +
+                "] since " + reason)
 
           //todo: serializer is not used.
           val serializer: Serializer = {
             if (serializerClassName == "N/A") serializerErrorDueTo("no class name defined in configuration")
             val clazz: Class[_] = ReflectiveAccess.getClassFor(serializerClassName) match {
-              case Right(clazz)    => clazz
-              case Left(exception) =>
+              case Right(clazz) ⇒ clazz
+              case Left(exception) ⇒
                 val cause = exception match {
-                  case i: InvocationTargetException => i.getTargetException
-                  case _                            => exception
+                  case i: InvocationTargetException ⇒ i.getTargetException
+                  case _                            ⇒ exception
                 }
                 serializerErrorDueTo(cause.toString)
             }
@@ -433,18 +432,18 @@ object Actor extends ListenerManagement {
           node.use(address)
         } else {
           val routerType = router match {
-            case Direct          => RouterType.Direct
-            case Direct()        => RouterType.Direct
-            case RoundRobin      => RouterType.RoundRobin
-            case RoundRobin()    => RouterType.RoundRobin
-            case Random          => RouterType.Random
-            case Random()        => RouterType.Random
-            case LeastCPU        => RouterType.LeastCPU
-            case LeastCPU()      => RouterType.LeastCPU
-            case LeastRAM        => RouterType.LeastRAM
-            case LeastRAM()      => RouterType.LeastRAM
-            case LeastMessages   => RouterType.LeastMessages
-            case LeastMessages() => RouterType.LeastMessages
+            case Direct          ⇒ RouterType.Direct
+            case Direct()        ⇒ RouterType.Direct
+            case RoundRobin      ⇒ RouterType.RoundRobin
+            case RoundRobin()    ⇒ RouterType.RoundRobin
+            case Random          ⇒ RouterType.Random
+            case Random()        ⇒ RouterType.Random
+            case LeastCPU        ⇒ RouterType.LeastCPU
+            case LeastCPU()      ⇒ RouterType.LeastCPU
+            case LeastRAM        ⇒ RouterType.LeastRAM
+            case LeastRAM()      ⇒ RouterType.LeastRAM
+            case LeastMessages   ⇒ RouterType.LeastMessages
+            case LeastMessages() ⇒ RouterType.LeastMessages
           }
           node.ref(address, routerType)
         }
@@ -461,10 +460,10 @@ object Actor extends ListenerManagement {
          */
 
         RemoteActorRef(address, Actor.TIMEOUT, None, ActorType.ScalaActor)
-      case invalid => throw new IllegalActorStateException(
+      case invalid ⇒ throw new IllegalActorStateException(
         "Could not create actor [" + clazz.getName +
-        "] with address [" + address +
-        "], not bound to a valid deployment scheme [" + invalid + "]")
+          "] with address [" + address +
+          "], not bound to a valid deployment scheme [" + invalid + "]")
     }
   }
 }
@@ -528,20 +527,21 @@ trait Actor {
    * Mainly for internal use, functions as the implicit sender references when invoking
    * the 'forward' function.
    */
-  @transient implicit val someSelf: Some[ActorRef] = {
+  @transient
+  implicit val someSelf: Some[ActorRef] = {
     val optRef = Actor.actorRefInCreation.get
     if (optRef.isEmpty) throw new ActorInitializationException(
       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
-      "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
-      "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
-      "\n\tEither use:" +
-      "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
-      "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
-     Actor.actorRefInCreation.set(None)
-     optRef.asInstanceOf[Some[ActorRef]]
+        "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
+        "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
+        "\n\tEither use:" +
+        "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
+        "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
+    Actor.actorRefInCreation.set(None)
+    optRef.asInstanceOf[Some[ActorRef]]
   }
 
-   /*
+  /*
    * Option[ActorRef] representation of the 'self' ActorRef reference.
    * <p/>
    * Mainly for internal use, functions as the implicit sender references when invoking
@@ -576,7 +576,8 @@ trait Actor {
    * self.stop(..)
    * </pre>
    */
-  @transient val self: ScalaActorRef = someSelf.get
+  @transient
+  val self: ScalaActorRef = someSelf.get
 
   /**
    * User overridable callback/setting.
@@ -645,12 +646,12 @@ trait Actor {
   def isDefinedAt(message: Any): Boolean = {
     val behaviorStack = self.hotswap
     message match { //Same logic as apply(msg) but without the unhandled catch-all
-      case l: AutoReceivedMessage           => true
+      case l: AutoReceivedMessage ⇒ true
       case msg if behaviorStack.nonEmpty &&
-        behaviorStack.head.isDefinedAt(msg) => true
+        behaviorStack.head.isDefinedAt(msg) ⇒ true
       case msg if behaviorStack.isEmpty &&
-        processingBehavior.isDefinedAt(msg) => true
-      case _                                => false
+        processingBehavior.isDefinedAt(msg) ⇒ true
+      case _ ⇒ false
     }
   }
 
@@ -681,26 +682,26 @@ trait Actor {
       throw new InvalidMessageException("Message from [" + self.sender + "] to [" + self.toString + "] is null")
     val behaviorStack = self.hotswap
     msg match {
-      case l: AutoReceivedMessage           => autoReceiveMessage(l)
+      case l: AutoReceivedMessage ⇒ autoReceiveMessage(l)
       case msg if behaviorStack.nonEmpty &&
-        behaviorStack.head.isDefinedAt(msg) => behaviorStack.head.apply(msg)
+        behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
       case msg if behaviorStack.isEmpty &&
-        processingBehavior.isDefinedAt(msg) => processingBehavior.apply(msg)
-      case unknown                          => unhandled(unknown) //This is the only line that differs from processingbehavior
+        processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
+      case unknown ⇒ unhandled(unknown) //This is the only line that differs from processingbehavior
     }
   }
 
   private final def autoReceiveMessage(msg: AutoReceivedMessage) {
     msg match {
-      case HotSwap(code, discardOld) => become(code(self), discardOld)
-      case RevertHotSwap => unbecome()
-      case Exit(dead, reason) => self.handleTrapExit(dead, reason)
-      case Link(child) => self.link(child)
-      case Unlink(child) => self.unlink(child)
-      case UnlinkAndStop(child) => self.unlink(child); child.stop()
-      case Restart(reason) => throw reason
-      case Kill => throw new ActorKilledException("Kill")
-      case PoisonPill =>
+      case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
+      case RevertHotSwap             ⇒ unbecome()
+      case Exit(dead, reason)        ⇒ self.handleTrapExit(dead, reason)
+      case Link(child)               ⇒ self.link(child)
+      case Unlink(child)             ⇒ self.unlink(child)
+      case UnlinkAndStop(child)      ⇒ self.unlink(child); child.stop()
+      case Restart(reason)           ⇒ throw reason
+      case Kill                      ⇒ throw new ActorKilledException("Kill")
+      case PoisonPill ⇒
         val f = self.senderFuture()
         self.stop()
         if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))

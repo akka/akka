@@ -27,51 +27,51 @@ object Chameneos {
   var end = 0L
 
   class Chameneo(var mall: ActorRef, var colour: Colour, cid: Int) extends Actor {
-     var meetings = 0
-     self.start()
-     mall ! Meet(self, colour)
+    var meetings = 0
+    self.start()
+    mall ! Meet(self, colour)
 
-     def receive = {
-       case Meet(from, otherColour) =>
-         colour = complement(otherColour)
-         meetings = meetings +1
-         from ! Change(colour)
-         mall ! Meet(self, colour)
+    def receive = {
+      case Meet(from, otherColour) ⇒
+        colour = complement(otherColour)
+        meetings = meetings + 1
+        from ! Change(colour)
+        mall ! Meet(self, colour)
 
-       case Change(newColour) =>
-         colour = newColour
-         meetings = meetings +1
-         mall ! Meet(self, colour)
+      case Change(newColour) ⇒
+        colour = newColour
+        meetings = meetings + 1
+        mall ! Meet(self, colour)
 
-       case Exit =>
-         colour = FADED
-         self.sender.get ! MeetingCount(meetings)
-     }
+      case Exit ⇒
+        colour = FADED
+        self.sender.get ! MeetingCount(meetings)
+    }
 
-     def complement(otherColour: Colour): Colour = colour match {
-       case RED => otherColour match {
-         case RED => RED
-         case YELLOW => BLUE
-         case BLUE => YELLOW
-         case FADED => FADED
-       }
-       case YELLOW => otherColour match {
-         case RED => BLUE
-         case YELLOW => YELLOW
-         case BLUE => RED
-         case FADED => FADED
-       }
-       case BLUE => otherColour match {
-         case RED => YELLOW
-         case YELLOW => RED
-         case BLUE => BLUE
-         case FADED => FADED
-       }
-       case FADED => FADED
-     }
+    def complement(otherColour: Colour): Colour = colour match {
+      case RED ⇒ otherColour match {
+        case RED    ⇒ RED
+        case YELLOW ⇒ BLUE
+        case BLUE   ⇒ YELLOW
+        case FADED  ⇒ FADED
+      }
+      case YELLOW ⇒ otherColour match {
+        case RED    ⇒ BLUE
+        case YELLOW ⇒ YELLOW
+        case BLUE   ⇒ RED
+        case FADED  ⇒ FADED
+      }
+      case BLUE ⇒ otherColour match {
+        case RED    ⇒ YELLOW
+        case YELLOW ⇒ RED
+        case BLUE   ⇒ BLUE
+        case FADED  ⇒ FADED
+      }
+      case FADED ⇒ FADED
+    }
 
-     override def toString = cid + "(" + colour + ")"
-   }
+    override def toString = cid + "(" + colour + ")"
+  }
 
   class Mall(var n: Int, numChameneos: Int) extends Actor {
     var waitingChameneo: Option[ActorRef] = None
@@ -79,11 +79,11 @@ object Chameneos {
     var numFaded = 0
 
     override def preStart() = {
-      for (i <- 0 until numChameneos) actorOf(new Chameneo(self, colours(i % 3), i))
+      for (i ← 0 until numChameneos) actorOf(new Chameneo(self, colours(i % 3), i))
     }
 
     def receive = {
-      case MeetingCount(i) =>
+      case MeetingCount(i) ⇒
         numFaded += 1
         sumMeetings += i
         if (numFaded == numChameneos) {
@@ -91,14 +91,14 @@ object Chameneos {
           self.stop()
         }
 
-      case msg @ Meet(a, c) =>
+      case msg@Meet(a, c) ⇒
         if (n > 0) {
           waitingChameneo match {
-            case Some(chameneo) =>
+            case Some(chameneo) ⇒
               n -= 1
               chameneo ! msg
               waitingChameneo = None
-            case None => waitingChameneo = self.sender
+            case None ⇒ waitingChameneo = self.sender
           }
         } else {
           waitingChameneo.foreach(_ ! Exit)
@@ -108,12 +108,12 @@ object Chameneos {
   }
 
   def run {
-//    System.setProperty("akka.config", "akka.conf")
-      Chameneos.start = System.currentTimeMillis
+    //    System.setProperty("akka.config", "akka.conf")
+    Chameneos.start = System.currentTimeMillis
     actorOf(new Mall(1000000, 4)).start()
     Thread.sleep(10000)
     println("Elapsed: " + (end - start))
   }
 
-  def main(args : Array[String]): Unit = run
+  def main(args: Array[String]): Unit = run
 }

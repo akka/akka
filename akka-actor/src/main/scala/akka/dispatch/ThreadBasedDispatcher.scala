@@ -4,7 +4,7 @@
 
 package akka.dispatch
 
-import akka.actor.{ActorRef}
+import akka.actor.{ ActorRef }
 import akka.util.Duration
 
 import java.util.concurrent.atomic.AtomicReference
@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference
  */
 class ThreadBasedDispatcher(_actor: ActorRef, _mailboxType: MailboxType)
   extends ExecutorBasedEventDrivenDispatcher(
-    _actor.uuid.toString,Dispatchers.THROUGHPUT,-1,_mailboxType,ThreadBasedDispatcher.oneThread) {
+    _actor.uuid.toString, Dispatchers.THROUGHPUT, -1, _mailboxType, ThreadBasedDispatcher.oneThread) {
 
   private[akka] val owner = new AtomicReference[ActorRef](_actor)
 
@@ -32,13 +32,13 @@ class ThreadBasedDispatcher(_actor: ActorRef, _mailboxType: MailboxType)
   override def register(actorRef: ActorRef) = {
     val actor = owner.get()
     if ((actor ne null) && actorRef != actor) throw new IllegalArgumentException("Cannot register to anyone but " + actor)
-    owner.compareAndSet(null,actorRef) //Register if unregistered
+    owner.compareAndSet(null, actorRef) //Register if unregistered
     super.register(actorRef)
   }
 
   override def unregister(actorRef: ActorRef) = {
     super.unregister(actorRef)
-    owner.compareAndSet(actorRef,null) //Unregister (prevent memory leak)
+    owner.compareAndSet(actorRef, null) //Unregister (prevent memory leak)
   }
 }
 

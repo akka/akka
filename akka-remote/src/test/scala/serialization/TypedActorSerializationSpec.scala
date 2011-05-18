@@ -2,7 +2,6 @@
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-
 package akka.actor.serialization
 
 import akka.serialization._
@@ -37,9 +36,8 @@ class TypedActorSerializationSpec extends AkkaRemoteTest {
       ProtobufProtocol.DualCounter.newBuilder.setCount1(ac.count1).setCount2(ac.count2).build.toByteArray
   }
 
-
   "Serializable typed actor" should {
-/*
+    /*
     "should be able to serialize and de-serialize a stateless typed actor" in {
       val typedActor1 = TypedActor.newInstance(classOf[MyTypedActor], classOf[MyStatelessTypedActorImpl], 1000)
       typedActor1.requestReply("hello") must equal("world")
@@ -85,10 +83,9 @@ class TypedActorSerializationSpec extends AkkaRemoteTest {
   }
 }
 
-
 trait MyTypedActor {
-  def requestReply(s: String) : String
-  def oneWay() : Unit
+  def requestReply(s: String): String
+  def oneWay(): Unit
 }
 
 class MyTypedActorImpl extends TypedActor with MyTypedActor {
@@ -98,7 +95,7 @@ class MyTypedActorImpl extends TypedActor with MyTypedActor {
     println("got oneWay message")
   }
 
-  override def requestReply(message: String) : String = {
+  override def requestReply(message: String): String = {
     count = count + 1
     if (message == "hello") {
       "world " + count
@@ -114,7 +111,7 @@ class MyTypedActorWithDualCounter extends TypedActor with MyTypedActor {
     println("got oneWay message")
   }
 
-  override def requestReply(message: String) : String = {
+  override def requestReply(message: String): String = {
     count1 = count1 + 1
     count2 = count2 + 1
 
@@ -130,7 +127,7 @@ class MyStatelessTypedActorImpl extends TypedActor with MyTypedActor {
     println("got oneWay message")
   }
 
-  override def requestReply(message: String) : String = {
+  override def requestReply(message: String): String = {
     if (message == "hello") "world" else ("hello " + message)
   }
 }

@@ -4,29 +4,29 @@
 
 package akka.stm
 
-import java.lang.{Boolean => JBoolean}
+import java.lang.{ Boolean ⇒ JBoolean }
 
 import akka.util.Duration
 
-import org.multiverse.api.{TraceLevel => MTraceLevel}
-import org.multiverse.api.{PropagationLevel => MPropagation}
+import org.multiverse.api.{ TraceLevel ⇒ MTraceLevel }
+import org.multiverse.api.{ PropagationLevel ⇒ MPropagation }
 
 /**
  * For more easily creating TransactionConfig from Java.
  */
 class TransactionConfigBuilder {
-  var familyName: String        = TransactionConfig.FAMILY_NAME
-  var readonly: JBoolean        = TransactionConfig.READONLY
-  var maxRetries: Int           = TransactionConfig.MAX_RETRIES
-  var timeout: Duration         = TransactionConfig.DefaultTimeout
-  var trackReads: JBoolean      = TransactionConfig.TRACK_READS
-  var writeSkew: Boolean        = TransactionConfig.WRITE_SKEW
-  var blockingAllowed: Boolean  = TransactionConfig.BLOCKING_ALLOWED
-  var interruptible: Boolean    = TransactionConfig.INTERRUPTIBLE
-  var speculative: Boolean      = TransactionConfig.SPECULATIVE
-  var quickRelease: Boolean     = TransactionConfig.QUICK_RELEASE
+  var familyName: String = TransactionConfig.FAMILY_NAME
+  var readonly: JBoolean = TransactionConfig.READONLY
+  var maxRetries: Int = TransactionConfig.MAX_RETRIES
+  var timeout: Duration = TransactionConfig.DefaultTimeout
+  var trackReads: JBoolean = TransactionConfig.TRACK_READS
+  var writeSkew: Boolean = TransactionConfig.WRITE_SKEW
+  var blockingAllowed: Boolean = TransactionConfig.BLOCKING_ALLOWED
+  var interruptible: Boolean = TransactionConfig.INTERRUPTIBLE
+  var speculative: Boolean = TransactionConfig.SPECULATIVE
+  var quickRelease: Boolean = TransactionConfig.QUICK_RELEASE
   var propagation: MPropagation = TransactionConfig.PROPAGATION
-  var traceLevel: MTraceLevel   = TransactionConfig.TRACE_LEVEL
+  var traceLevel: MTraceLevel = TransactionConfig.TRACE_LEVEL
 
   def setFamilyName(familyName: String) = { this.familyName = familyName; this }
   def setReadonly(readonly: JBoolean) = { this.readonly = readonly; this }
@@ -50,18 +50,18 @@ class TransactionConfigBuilder {
  * For more easily creating TransactionFactory from Java.
  */
 class TransactionFactoryBuilder {
-  var familyName: String        = TransactionConfig.FAMILY_NAME
-  var readonly: JBoolean        = TransactionConfig.READONLY
-  var maxRetries: Int           = TransactionConfig.MAX_RETRIES
-  var timeout: Duration         = TransactionConfig.DefaultTimeout
-  var trackReads: JBoolean      = TransactionConfig.TRACK_READS
-  var writeSkew: Boolean        = TransactionConfig.WRITE_SKEW
-  var blockingAllowed: Boolean  = TransactionConfig.BLOCKING_ALLOWED
-  var interruptible: Boolean    = TransactionConfig.INTERRUPTIBLE
-  var speculative: Boolean      = TransactionConfig.SPECULATIVE
-  var quickRelease: Boolean     = TransactionConfig.QUICK_RELEASE
+  var familyName: String = TransactionConfig.FAMILY_NAME
+  var readonly: JBoolean = TransactionConfig.READONLY
+  var maxRetries: Int = TransactionConfig.MAX_RETRIES
+  var timeout: Duration = TransactionConfig.DefaultTimeout
+  var trackReads: JBoolean = TransactionConfig.TRACK_READS
+  var writeSkew: Boolean = TransactionConfig.WRITE_SKEW
+  var blockingAllowed: Boolean = TransactionConfig.BLOCKING_ALLOWED
+  var interruptible: Boolean = TransactionConfig.INTERRUPTIBLE
+  var speculative: Boolean = TransactionConfig.SPECULATIVE
+  var quickRelease: Boolean = TransactionConfig.QUICK_RELEASE
   var propagation: MPropagation = TransactionConfig.PROPAGATION
-  var traceLevel: MTraceLevel   = TransactionConfig.TRACE_LEVEL
+  var traceLevel: MTraceLevel = TransactionConfig.TRACE_LEVEL
 
   def setFamilyName(familyName: String) = { this.familyName = familyName; this }
   def setReadonly(readonly: JBoolean) = { this.readonly = readonly; this }

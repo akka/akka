@@ -8,8 +8,7 @@
 
 package akka.config
 
-import java.io.{BufferedReader, File, FileInputStream, InputStream, InputStreamReader}
-
+import java.io.{ BufferedReader, File, FileInputStream, InputStream, InputStreamReader }
 
 /**
  * An interface for finding config files and reading them into strings for
@@ -36,11 +35,10 @@ trait Importer {
       in.close()
       sb.toString
     } catch {
-      case x => throw new ConfigurationException(x.toString)
+      case x ⇒ throw new ConfigurationException(x.toString)
     }
   }
 }
-
 
 /**
  * An Importer that looks for imported config files in the filesystem.
@@ -53,7 +51,6 @@ class FilesystemImporter(val baseDir: String) extends Importer {
     streamToString(new FileInputStream(file))
   }
 }
-
 
 /**
  * An Importer that looks for imported config files in the java resources

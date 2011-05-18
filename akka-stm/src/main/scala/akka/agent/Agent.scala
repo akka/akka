@@ -6,13 +6,13 @@ package akka.agent
 
 import akka.stm._
 import akka.actor.Actor
-import akka.japi.{Function => JFunc, Procedure => JProc}
-import akka.dispatch.{DefaultCompletableFuture, Dispatchers, Future}
+import akka.japi.{ Function ⇒ JFunc, Procedure ⇒ JProc }
+import akka.dispatch.{ DefaultCompletableFuture, Dispatchers, Future }
 
 /**
  * Used internally to send functions.
  */
-private[akka] case class Update[T](function: T => T)
+private[akka] case class Update[T](function: T ⇒ T)
 private[akka] case object Get
 
 /**
@@ -109,7 +109,7 @@ class Agent[T](initialValue: T) {
   /**
    * Dispatch a function to update the internal state.
    */
-  def send(f: T => T): Unit = {
+  def send(f: T ⇒ T): Unit = {
     def dispatch = updater ! Update(f)
     if (Stm.activeTransaction) { get; deferred(dispatch) }
     else dispatch
@@ -119,8 +119,8 @@ class Agent[T](initialValue: T) {
    * Dispatch a function to update the internal state, and return a Future where that new state can be obtained
    * within the given timeout
    */
-  def alter(f: T => T)(timeout: Long): Future[T] = {
-    def dispatch = updater.!!!(Update(f),timeout)
+  def alter(f: T ⇒ T)(timeout: Long): Future[T] = {
+    def dispatch = updater.!!!(Update(f), timeout)
     if (Stm.activeTransaction) {
       val result = new DefaultCompletableFuture[T](timeout)
       get //Join xa
@@ -128,15 +128,14 @@ class Agent[T](initialValue: T) {
         result completeWith dispatch
       } //Attach deferred-block to current transaction
       result
-    }
-    else dispatch
+    } else dispatch
   }
 
   /**
    * Dispatch a new value for the internal state. Behaves the same
    * as sending a function (x => newValue).
    */
-  def send(newValue: T): Unit = send(x => newValue)
+  def send(newValue: T): Unit = send(x ⇒ newValue)
 
   /**
    * Dispatch a new value for the internal state. Behaves the same
@@ -150,7 +149,7 @@ class Agent[T](initialValue: T) {
    * or blocking operations. Dispatches using either `sendOff` or `send` will
    * still be executed in order.
    */
-  def sendOff(f: T => T): Unit = send((value: T) => {
+  def sendOff(f: T ⇒ T): Unit = send((value: T) ⇒ {
     suspend
     val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this)).start()
     threadBased ! Update(f)
@@ -164,9 +163,9 @@ class Agent[T](initialValue: T) {
    * or blocking operations. Dispatches using either `alterOff` or `alter` will
    * still be executed in order.
    */
-  def alterOff(f: T => T)(timeout: Long): Future[T] = {
+  def alterOff(f: T ⇒ T)(timeout: Long): Future[T] = {
     val result = new DefaultCompletableFuture[T](timeout)
-    send((value: T) => {
+    send((value: T) ⇒ {
       suspend
       val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this)).start()
       result completeWith threadBased.!!!(Update(f), timeout)
@@ -190,18 +189,18 @@ class Agent[T](initialValue: T) {
    * Map this agent to a new agent, applying the function to the internal state.
    * Does not change the value of this agent.
    */
-  def map[B](f: T => B): Agent[B] = Agent(f(get))
+  def map[B](f: T ⇒ B): Agent[B] = Agent(f(get))
 
   /**
    * Flatmap this agent to a new agent, applying the function to the internal state.
    * Does not change the value of this agent.
    */
-  def flatMap[B](f: T => Agent[B]): Agent[B] = f(get)
+  def flatMap[B](f: T ⇒ Agent[B]): Agent[B] = f(get)
 
   /**
    * Applies the function to the internal state. Does not change the value of this agent.
    */
-  def foreach[U](f: T => U): Unit = f(get)
+  def foreach[U](f: T ⇒ U): Unit = f(get)
 
   /**
    * Suspends processing of `send` actions for the agent.
@@ -227,14 +226,14 @@ class Agent[T](initialValue: T) {
    * Java API:
    * Dispatch a function to update the internal state.
    */
-  def send(f: JFunc[T, T]): Unit = send(x => f(x))
+  def send(f: JFunc[T, T]): Unit = send(x ⇒ f(x))
 
   /**
    * Java API
    * Dispatch a function to update the internal state, and return a Future where that new state can be obtained
    * within the given timeout
    */
-  def alter(f: JFunc[T, T], timeout: Long): Future[T] = alter(x => f(x))(timeout)
+  def alter(f: JFunc[T, T], timeout: Long): Future[T] = alter(x ⇒ f(x))(timeout)
 
   /**
    * Java API:
@@ -243,7 +242,7 @@ class Agent[T](initialValue: T) {
    * or blocking operations. Dispatches using either `sendOff` or `send` will
    * still be executed in order.
    */
-  def sendOff(f: JFunc[T, T]): Unit = sendOff(x => f(x))
+  def sendOff(f: JFunc[T, T]): Unit = sendOff(x ⇒ f(x))
 
   /**
    * Java API:
@@ -253,7 +252,7 @@ class Agent[T](initialValue: T) {
    * or blocking operations. Dispatches using either `alterOff` or `alter` will
    * still be executed in order.
    */
-  def alterOff(f: JFunc[T, T], timeout: Long): Unit = alterOff(x => f(x))(timeout)
+  def alterOff(f: JFunc[T, T], timeout: Long): Unit = alterOff(x ⇒ f(x))(timeout)
 
   /**
    * Java API:
@@ -283,10 +282,10 @@ class AgentUpdater[T](agent: Agent[T]) extends Actor {
   val txFactory = TransactionFactory(familyName = "AgentUpdater", readonly = false)
 
   def receive = {
-    case update: Update[T] =>
+    case update: Update[T] ⇒
       self.reply_?(atomic(txFactory) { agent.ref alter update.function })
-    case Get => self reply agent.get
-    case _ => ()
+    case Get ⇒ self reply agent.get
+    case _   ⇒ ()
   }
 }
 
@@ -299,12 +298,12 @@ class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
   val txFactory = TransactionFactory(familyName = "ThreadBasedAgentUpdater", readonly = false)
 
   def receive = {
-    case update: Update[T] => try {
+    case update: Update[T] ⇒ try {
       self.reply_?(atomic(txFactory) { agent.ref alter update.function })
     } finally {
       agent.resume
       self.stop()
     }
-    case _ => self.stop()
+    case _ ⇒ self.stop()
   }
 }

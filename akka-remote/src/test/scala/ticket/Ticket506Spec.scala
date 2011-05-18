@@ -1,22 +1,22 @@
 package ticket
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{ Actor, ActorRef }
 import akka.serialization.RemoteActorSerialization
 import akka.actor.Actor.actorOf
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.actor.remote.AkkaRemoteTest
 
-case class RecvActorRef(bytes:Array[Byte])
+case class RecvActorRef(bytes: Array[Byte])
 
 class ActorRefService(latch: CountDownLatch) extends Actor {
   import self._
 
-  def receive:Receive = {
-    case RecvActorRef(bytes) =>
+  def receive: Receive = {
+    case RecvActorRef(bytes) ⇒
       val ref = RemoteActorSerialization.fromBinaryToRemoteActorRef(bytes)
       ref ! "hello"
-    case "hello" => latch.countDown()
+    case "hello" ⇒ latch.countDown()
   }
 }
 

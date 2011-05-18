@@ -26,8 +26,9 @@ class AkkaZkClient(zkServers: String,
       _connection.close()
       _connection.connect(this)
     } catch {
-      case e: InterruptedException => throw new ZkInterruptedException(e)
-    } finally {
+      case e: InterruptedException ⇒ throw new ZkInterruptedException(e)
+    }
+    finally {
       zkLock.unlock()
     }
   }

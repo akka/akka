@@ -4,13 +4,13 @@
 
 package akka.actor.remote
 
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
+import java.util.concurrent.{ LinkedBlockingQueue, TimeUnit, BlockingQueue }
 import akka.config.Supervision._
 import akka.OneWay
 import org.scalatest._
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import akka.actor.{SupervisorFactory, Supervisor, ActorRef, Actor}
+import akka.actor.{ SupervisorFactory, Supervisor, ActorRef, Actor }
 import Actor._
 
 object Log {
@@ -25,14 +25,14 @@ object Log {
 
 class RemotePingPong1Actor extends Actor with scala.Serializable {
   def receive = {
-    case "Ping" =>
+    case "Ping" ⇒
       Log.messageLog.put("ping")
       self.reply("pong")
 
-    case OneWay =>
+    case OneWay ⇒
       Log.oneWayLog.put("oneway")
 
-    case "Die" =>
+    case "Die" ⇒
       throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 
@@ -43,10 +43,10 @@ class RemotePingPong1Actor extends Actor with scala.Serializable {
 
 class RemotePingPong2Actor extends Actor with scala.Serializable {
   def receive = {
-    case "Ping" =>
+    case "Ping" ⇒
       Log.messageLog.put("ping")
       self.reply("pong")
-    case "Die" =>
+    case "Die" ⇒
       throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 
@@ -57,10 +57,10 @@ class RemotePingPong2Actor extends Actor with scala.Serializable {
 
 class RemotePingPong3Actor extends Actor with scala.Serializable {
   def receive = {
-    case "Ping" =>
+    case "Ping" ⇒
       Log.messageLog.put("ping")
       self.reply("pong")
-    case "Die" =>
+    case "Die" ⇒
       throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 

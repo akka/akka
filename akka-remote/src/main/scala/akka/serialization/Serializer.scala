@@ -4,7 +4,7 @@
 
 package akka.serialization
 
-import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream}
+import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
 
 import org.apache.commons.io.input.ClassLoaderObjectInputStream
 
@@ -12,7 +12,7 @@ import com.google.protobuf.Message
 
 import org.codehaus.jackson.map.ObjectMapper
 
-import sjson.json.{Serializer => SJSONSerializer}
+import sjson.json.{ Serializer ⇒ SJSONSerializer }
 
 // For Java API
 class SerializerFactory {

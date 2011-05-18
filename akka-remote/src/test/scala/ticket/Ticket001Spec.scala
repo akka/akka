@@ -7,7 +7,7 @@ class Ticket001Spec extends WordSpec with MustMatchers {
 
   "An XXX" should {
     "do YYY" in {
-      1 must be (1)
+      1 must be(1)
     }
   }
 }
