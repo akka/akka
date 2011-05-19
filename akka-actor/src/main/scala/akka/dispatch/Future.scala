@@ -551,6 +551,20 @@ trait CompletableFuture[T] extends Future[T] {
     fr
   }
 
+  final def <<(stream: PromiseStreamOut[T]): Future[T] @cps[Future[Any]] = shift { cont: (Future[T] ⇒ Future[Any]) ⇒
+    val fr = Promise[Any](Actor.TIMEOUT)
+    stream.dequeue(this).onComplete { f ⇒
+      try {
+        fr completeWith cont(f)
+      } catch {
+        case e: Exception ⇒
+          EventHandler.error(e, this, e.getMessage)
+          fr completeWithException e
+      }
+    }
+    fr
+  }
+
 }
 
 /**
