@@ -14,10 +14,10 @@ object TypedActor {
   class TypedActor[TI <: AnyRef](createInstance: ⇒ TI) extends Actor {
     val me = createInstance
     def receive = {
-      case ƒ: MethodCall ⇒ ƒ match {
-        case ƒ if ƒ.isOneWay        ⇒ ƒ(me)
-        case ƒ if ƒ.returnsFuture_? ⇒ self.senderFuture.get completeWith ƒ(me).asInstanceOf[Future[Any]]
-        case ƒ                      ⇒ self reply ƒ(me)
+      case m: MethodCall ⇒ m match {
+        case m if m.isOneWay        ⇒ m(me)
+        case m if m.returnsFuture_? ⇒ self.senderFuture.get completeWith m(me).asInstanceOf[Future[Any]]
+        case m                      ⇒ self reply m(me)
       }
     }
   }
