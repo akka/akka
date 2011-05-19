@@ -416,27 +416,7 @@ sealed trait Future[+T] {
    * } yield b + "-" + c
    * </pre>
    */
-  final def collect[A](pf: PartialFunction[Any, A]): Future[A] = {
-    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
-    onComplete { ft ⇒
-      val v = ft.value.get
-      fa complete {
-        if (v.isLeft) v.asInstanceOf[Either[Throwable, A]]
-        else {
-          try {
-            val r = v.right.get
-            if (pf isDefinedAt r) Right(pf(r))
-            else Left(new MatchError(r))
-          } catch {
-            case e: Exception ⇒
-              EventHandler.error(e, this, e.getMessage)
-              Left(e)
-          }
-        }
-      }
-    }
-    fa
-  }
+  def collect[A](pf: PartialFunction[Any, A]): Future[A]
 
   /**
    * Creates a new Future that will handle any matching Throwable that this
@@ -449,24 +429,7 @@ sealed trait Future[+T] {
    * Future(6 / 2) failure { case e: ArithmeticException => 0 } // result: 3
    * </pre>
    */
-  final def failure[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
-    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
-    onComplete { ft ⇒
-      val opte = ft.exception
-      fa complete {
-        if (opte.isDefined) {
-          val e = opte.get
-          try {
-            if (pf isDefinedAt e) Right(pf(e))
-            else Left(e)
-          } catch {
-            case x: Exception ⇒ Left(x)
-          }
-        } else ft.value.get
-      }
-    }
-    fa
-  }
+  def failure[A >: T](pf: PartialFunction[Throwable, A]): Future[A]
 
   /**
    * Creates a new Future by applying a function to the successful result of
@@ -481,27 +444,7 @@ sealed trait Future[+T] {
    * } yield b + "-" + c
    * </pre>
    */
-  final def map[A](f: T ⇒ A): Future[A] = {
-    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
-    onComplete { ft ⇒
-      val optv = ft.value
-      if (optv.isDefined) {
-        val v = optv.get
-        if (v.isLeft)
-          fa complete v.asInstanceOf[Either[Throwable, A]]
-        else {
-          fa complete (try {
-            Right(f(v.right.get))
-          } catch {
-            case e: Exception ⇒
-              EventHandler.error(e, this, e.getMessage)
-              Left(e)
-          })
-        }
-      }
-    }
-    fa
-  }
+  def map[A](f: T ⇒ A): Future[A]
 
   /**
    * Creates a new Future by applying a function to the successful result of
@@ -517,27 +460,7 @@ sealed trait Future[+T] {
    * } yield b + "-" + c
    * </pre>
    */
-  final def flatMap[A](f: T ⇒ Future[A]): Future[A] = {
-    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
-    onComplete { ft ⇒
-      val optv = ft.value
-      if (optv.isDefined) {
-        val v = optv.get
-        if (v.isLeft)
-          fa complete v.asInstanceOf[Either[Throwable, A]]
-        else {
-          try {
-            fa.completeWith(f(v.right.get))
-          } catch {
-            case e: Exception ⇒
-              EventHandler.error(e, this, e.getMessage)
-              fa completeWithException e
-          }
-        }
-      }
-    }
-    fa
-  }
+  def flatMap[A](f: T ⇒ Future[A]): Future[A]
 
   final def foreach(f: T ⇒ Unit): Unit = onComplete { ft ⇒
     val optr = ft.result
@@ -545,29 +468,7 @@ sealed trait Future[+T] {
       f(optr.get)
   }
 
-  final def filter(p: Any ⇒ Boolean): Future[Any] = {
-    val f = new DefaultCompletableFuture[T](timeoutInNanos, NANOS)
-    onComplete { ft ⇒
-      val optv = ft.value
-      if (optv.isDefined) {
-        val v = optv.get
-        if (v.isLeft)
-          f complete v
-        else {
-          val r = v.right.get
-          f complete (try {
-            if (p(r)) Right(r)
-            else Left(new MatchError(r))
-          } catch {
-            case e: Exception ⇒
-              EventHandler.error(e, this, e.getMessage)
-              Left(e)
-          })
-        }
-      }
-    }
-    f
-  }
+  def filter(p: Any ⇒ Boolean): Future[Any]
 
   /**
    * Returns the current result, throws the exception is one has been raised, else returns None
@@ -790,6 +691,115 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     }
   }
 
+  final def collect[A](pf: PartialFunction[Any, A]): Future[A] = {
+    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    onComplete { ft ⇒
+      val v = ft.value.get
+      fa complete {
+        if (v.isLeft) v.asInstanceOf[Either[Throwable, A]]
+        else {
+          try {
+            val r = v.right.get
+            if (pf isDefinedAt r) Right(pf(r))
+            else Left(new MatchError(r))
+          } catch {
+            case e: Exception ⇒
+              EventHandler.error(e, this, e.getMessage)
+              Left(e)
+          }
+        }
+      }
+    }
+    fa
+  }
+
+  final def failure[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
+    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    onComplete { ft ⇒
+      val opte = ft.exception
+      fa complete {
+        if (opte.isDefined) {
+          val e = opte.get
+          try {
+            if (pf isDefinedAt e) Right(pf(e))
+            else Left(e)
+          } catch {
+            case x: Exception ⇒ Left(x)
+          }
+        } else ft.value.get
+      }
+    }
+    fa
+  }
+
+  final def map[A](f: T ⇒ A): Future[A] = {
+    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    onComplete { ft ⇒
+      val optv = ft.value
+      if (optv.isDefined) {
+        val v = optv.get
+        if (v.isLeft)
+          fa complete v.asInstanceOf[Either[Throwable, A]]
+        else {
+          fa complete (try {
+            Right(f(v.right.get))
+          } catch {
+            case e: Exception ⇒
+              EventHandler.error(e, this, e.getMessage)
+              Left(e)
+          })
+        }
+      }
+    }
+    fa
+  }
+
+  final def flatMap[A](f: T ⇒ Future[A]): Future[A] = {
+    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    onComplete { ft ⇒
+      val optv = ft.value
+      if (optv.isDefined) {
+        val v = optv.get
+        if (v.isLeft)
+          fa complete v.asInstanceOf[Either[Throwable, A]]
+        else {
+          try {
+            fa.completeWith(f(v.right.get))
+          } catch {
+            case e: Exception ⇒
+              EventHandler.error(e, this, e.getMessage)
+              fa completeWithException e
+          }
+        }
+      }
+    }
+    fa
+  }
+
+  final def filter(p: Any ⇒ Boolean): Future[Any] = {
+    val f = new DefaultCompletableFuture[T](timeoutInNanos, NANOS)
+    onComplete { ft ⇒
+      val optv = ft.value
+      if (optv.isDefined) {
+        val v = optv.get
+        if (v.isLeft)
+          f complete v
+        else {
+          val r = v.right.get
+          f complete (try {
+            if (p(r)) Right(r)
+            else Left(new MatchError(r))
+          } catch {
+            case e: Exception ⇒
+              EventHandler.error(e, this, e.getMessage)
+              Left(e)
+          })
+        }
+      }
+    }
+    f
+  }
+
   @inline
   private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis)
   @inline
@@ -810,4 +820,80 @@ sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T]) exte
   def awaitBlocking: Future[T] = this
   def isExpired: Boolean = true
   def timeoutInNanos: Long = 0
+
+  final def collect[A](pf: PartialFunction[Any, A]): Future[A] = {
+    new AlreadyCompletedFuture[A](try {
+      val v = value.get
+      if (v.isLeft)
+        v.asInstanceOf[Either[Throwable, A]]
+      else {
+        val r = v.right.get
+        if (pf isDefinedAt r) Right(pf(r))
+        else Left(new MatchError(r))
+      }
+    } catch {
+      case e: Exception ⇒
+        EventHandler.error(e, this, e.getMessage)
+        Left(e)
+    })
+  }
+
+  final def failure[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
+    val opte = this.exception
+    if (opte.isDefined) {
+      new AlreadyCompletedFuture[A](try {
+        val e = opte.get
+        if (pf isDefinedAt e) Right(pf(e))
+        else Left(e)
+      } catch {
+        case x: Exception ⇒ Left(x)
+      })
+    } else this.asInstanceOf[AlreadyCompletedFuture[A]]
+  }
+
+  final def map[A](f: T ⇒ A): Future[A] = {
+    new AlreadyCompletedFuture[A](try {
+      val v = value.get
+      if (v.isLeft)
+        v.asInstanceOf[Either[Throwable, A]]
+      else {
+        Right(f(v.right.get))
+      }
+    } catch {
+      case e: Exception ⇒
+        EventHandler.error(e, this, e.getMessage)
+        Left(e)
+    })
+  }
+
+  final def flatMap[A](f: T ⇒ Future[A]): Future[A] = {
+    try {
+      val v = value.get
+      if (v.isLeft)
+        this.asInstanceOf[AlreadyCompletedFuture[A]]
+      else {
+        f(v.right.get)
+      }
+    } catch {
+      case e: Exception ⇒
+        EventHandler.error(e, this, e.getMessage)
+        new AlreadyCompletedFuture(Left(e))
+    }
+  }
+
+  final def filter(p: Any ⇒ Boolean): Future[Any] = {
+    val v = value.get
+    if (v.isLeft)
+      this
+    else
+      new AlreadyCompletedFuture[Any](try {
+        val r = v.right.get
+        if (p(r)) Right(r)
+        else Left(new MatchError(r))
+      } catch {
+        case e: Exception ⇒
+          EventHandler.error(e, this, e.getMessage)
+          Left(e)
+      })
+  }
 }
