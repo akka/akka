@@ -208,15 +208,16 @@ object Actor extends ListenerManagement {
    */
   def actorOf[T <: Actor](clazz: Class[T], address: String): ActorRef = {
     Address.validate(address)
+    val actorRefFactory = () ⇒ newLocalActorRef(clazz, address)
     try {
       Deployer.deploymentFor(address) match {
-        case Deploy(_, router, _, Local) ⇒ newLocalActorRef(clazz, address) // FIXME handle 'router' in 'Local' actors
-        case deploy                      ⇒ newClusterActorRef[T](clazz, address, deploy)
+        case Deploy(_, router, _, Local) ⇒ actorRefFactory() // FIXME handle 'router' in 'Local' actors
+        case deploy                      ⇒ newClusterActorRef[T](actorRefFactory, address, deploy)
       }
     } catch {
       case e: DeploymentException ⇒
         EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
-        newLocalActorRef(clazz, address) // if deployment fails, fall back to local actors
+        actorRefFactory() // if deployment fails, fall back to local actors
     }
   }
 
@@ -260,16 +261,16 @@ object Actor extends ListenerManagement {
    */
   def actorOf[T <: Actor](creator: ⇒ T, address: String): ActorRef = {
     Address.validate(address)
-    val factory = () ⇒ creator
+    val actorRefFactory = () ⇒ new LocalActorRef(() ⇒ creator, address)
     try {
       Deployer.deploymentFor(address) match {
-        case Deploy(_, router, _, Local) ⇒ new LocalActorRef(factory, address) // FIXME handle 'router' in 'Local' actors
-        case deploy                      ⇒ newClusterActorRef[T](factory, address, deploy)
+        case Deploy(_, router, _, Local) ⇒ actorRefFactory() // FIXME handle 'router' in 'Local' actors
+        case deploy                      ⇒ newClusterActorRef[T](actorRefFactory, address, deploy)
       }
     } catch {
       case e: DeploymentException ⇒
         EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
-        new LocalActorRef(factory, address) // if deployment fails, fall back to local actors
+        actorRefFactory() // if deployment fails, fall back to local actors
     }
   }
 
@@ -294,16 +295,16 @@ object Actor extends ListenerManagement {
    */
   def actorOf[T <: Actor](creator: Creator[T], address: String): ActorRef = {
     Address.validate(address)
-    val factory = () ⇒ creator.create
+    val actorRefFactory = () ⇒ new LocalActorRef(() ⇒ creator.create, address)
     try {
       Deployer.deploymentFor(address) match {
-        case Deploy(_, router, _, Local) ⇒ new LocalActorRef(factory, address) // FIXME handle 'router' in 'Local' actors
-        case deploy                      ⇒ newClusterActorRef[T](factory, address, deploy)
+        case Deploy(_, router, _, Local) ⇒ actorRefFactory() // FIXME handle 'router' in 'Local' actors
+        case deploy                      ⇒ newClusterActorRef[T](actorRefFactory, address, deploy)
       }
     } catch {
       case e: DeploymentException ⇒
         EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
-        new LocalActorRef(factory, address) // if deployment fails, fall back to local actors
+        actorRefFactory() // if deployment fails, fall back to local actors
     }
   }
 
@@ -371,11 +372,7 @@ object Actor extends ListenerManagement {
     }, address)
   }
 
-  private def newClusterActorRef[T <: Actor](factory: () ⇒ T, address: String, deploy: Deploy): ActorRef = {
-    newClusterActorRef(factory().getClass.asInstanceOf[Class[T]], address, deploy)
-  }
-
-  private def newClusterActorRef[T <: Actor](clazz: Class[T], address: String, deploy: Deploy): ActorRef = {
+  private def newClusterActorRef[T <: Actor](factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef = {
     deploy match {
       case Deploy(_, router, serializerClassName, Clustered(home, replication: Replication, state: State)) ⇒
         ClusterModule.ensureEnabled()
@@ -397,7 +394,6 @@ object Actor extends ListenerManagement {
         }
 
         import ClusterModule.node
-        node.start() // start cluster node
 
         if (hostname == Config.hostname) { // home node for clustered actor
 
@@ -428,7 +424,7 @@ object Actor extends ListenerManagement {
           implicit val format: Format[T] = null
           sys.error("FIXME use the serializer above instead of dummy Format, but then the ClusterNode AND ActorRef serialization needs to be rewritten")
 
-          if (!node.isClustered(address)) node.store(address, clazz, replicas, false)
+          if (!node.isClustered(address)) node.store(address, factory(), replicas, false)
           node.use(address)
         } else {
           val routerType = router match {
@@ -459,10 +455,10 @@ object Actor extends ListenerManagement {
 
          */
 
-        RemoteActorRef(address, Actor.TIMEOUT, None)
+      RemoteActorRef(address, Actor.TIMEOUT, None)
+
       case invalid ⇒ throw new IllegalActorStateException(
-        "Could not create actor [" + clazz.getName +
-          "] with address [" + address +
+        "Could not create actor with address [" + address +
           "], not bound to a valid deployment scheme [" + invalid + "]")
     }
   }

@@ -418,16 +418,16 @@ class ClusterNode private[akka] (
     }
   }, "akka.cluster.remoteClientLifeCycleListener").start()
 
-  val remoteDaemon = actorOf(new RemoteClusterDaemon(this), RemoteClusterDaemon.ADDRESS).start()
+  lazy val remoteDaemon = actorOf(new RemoteClusterDaemon(this), RemoteClusterDaemon.ADDRESS).start()
 
-  val remoteService: RemoteSupport = {
+  lazy val remoteService: RemoteSupport = {
     val remote = new akka.remote.netty.NettyRemoteSupport
     remote.start(nodeAddress.hostname, nodeAddress.port)
     remote.register(RemoteClusterDaemon.ADDRESS, remoteDaemon)
     remote.addListener(remoteClientLifeCycleListener)
     remote
   }
-  val remoteServerAddress: InetSocketAddress = remoteService.address
+  lazy val remoteServerAddress: InetSocketAddress = remoteService.address
 
   val clusterJmxObjectName = JMX.nameFor(nodeAddress.hostname, "monitoring", "cluster")
 
