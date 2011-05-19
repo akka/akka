@@ -6,7 +6,8 @@ package akka.actor
 
 import akka.japi.{ Creator, Option ⇒ JOption }
 import akka.actor.Actor.{ actorOf, futureToAnyOptionAsTypedOption }
-import akka.dispatch.{ MessageDispatcher, Dispatchers, AlreadyCompletedFuture, Future }
+import akka.dispatch.{ MessageDispatcher, Dispatchers, Future }
+import java.lang.Boolean.{ TRUE, FALSE }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration }
 
@@ -14,10 +15,10 @@ object TypedActor {
   class TypedActor[TI <: AnyRef](createInstance: ⇒ TI) extends Actor {
     val me = createInstance
     def receive = {
-      case m: MethodCall ⇒ m match {
-        case m if m.isOneWay        ⇒ m.callMethodOn(me)
-        case m if m.returnsFuture_? ⇒ self.senderFuture.get completeWith m.callMethodOn(me).asInstanceOf[Future[Any]]
-        case m                      ⇒ self reply m.callMethodOn(me)
+      case ƒ: MethodCall ⇒ ƒ match {
+        case ƒ if ƒ.isOneWay        ⇒ ƒ(me)
+        case ƒ if ƒ.returnsFuture_? ⇒ self.senderFuture.get completeWith ƒ(me).asInstanceOf[Future[Any]]
+        case ƒ                      ⇒ self reply ƒ(me)
       }
     }
   }
@@ -26,10 +27,10 @@ object TypedActor {
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
       case "toString" ⇒ actor.toString
       case "equals" ⇒
-        if ((proxy eq args(0))) java.lang.Boolean.TRUE
+        if ((proxy eq args(0))) TRUE
         else getActorFor(args(0)) match {
-          case Some(`actor`) ⇒ java.lang.Boolean.TRUE
-          case _             ⇒ java.lang.Boolean.FALSE
+          case Some(`actor`) ⇒ TRUE
+          case _             ⇒ FALSE
         }
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
@@ -37,22 +38,18 @@ object TypedActor {
           case m if m.isOneWay ⇒
             actor ! m
             null
-
           case m if m.returnsJOption_? ⇒
             (actor !!! m).as[JOption[Any]] match {
               case Some(null) | None ⇒ JOption.none[Any]
               case Some(joption)     ⇒ joption
             }
-
           case m if m.returnsOption_? ⇒
             (actor !!! m).as[AnyRef] match {
               case Some(null) | None ⇒ None
               case Some(option)      ⇒ option
             }
-
           case m if m.returnsFuture_? ⇒
             actor !!! m
-
           case m ⇒
             (actor !!! m).get
         }
@@ -67,7 +64,7 @@ object TypedActor {
     def returnsJOption_? = classOf[akka.japi.Option[_]].isAssignableFrom(method.getReturnType)
     def returnsOption_? = classOf[scala.Option[_]].isAssignableFrom(method.getReturnType)
 
-    def callMethodOn(instance: AnyRef): AnyRef = try {
+    def apply(instance: AnyRef): AnyRef = try {
       parameters match { //We do not yet obey Actor.SERIALIZE_MESSAGES
         case null                     ⇒ method.invoke(instance)
         case args if args.length == 0 ⇒ method.invoke(instance)
