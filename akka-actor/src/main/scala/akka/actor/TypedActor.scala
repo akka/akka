@@ -61,18 +61,11 @@ object TypedActor {
 
   case class Configuration(timeout: Duration = Duration(Actor.TIMEOUT, "millis"), dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher)
 
-  object MethodCall {
-    def isOneWay(method: Method): Boolean = method.getReturnType == java.lang.Void.TYPE
-    def returnsFuture_?(method: Method): Boolean = classOf[Future[_]].isAssignableFrom(method.getReturnType)
-    def returnsJOption_?(method: Method): Boolean = classOf[akka.japi.Option[_]].isAssignableFrom(method.getReturnType)
-    def returnsOption_?(method: Method): Boolean = classOf[scala.Option[_]].isAssignableFrom(method.getReturnType)
-  }
-
   case class MethodCall(method: Method, parameters: Array[AnyRef]) {
-    def isOneWay = MethodCall.isOneWay(method)
-    def returnsFuture_? = MethodCall.returnsFuture_?(method)
-    def returnsJOption_? = MethodCall.returnsJOption_?(method)
-    def returnsOption_? = MethodCall.returnsOption_?(method)
+    def isOneWay = method.getReturnType == java.lang.Void.TYPE
+    def returnsFuture_? = classOf[Future[_]].isAssignableFrom(method.getReturnType)
+    def returnsJOption_? = classOf[akka.japi.Option[_]].isAssignableFrom(method.getReturnType)
+    def returnsOption_? = classOf[scala.Option[_]].isAssignableFrom(method.getReturnType)
 
     def callMethodOn(instance: AnyRef): AnyRef = try {
       parameters match { //We do not yet obey Actor.SERIALIZE_MESSAGES
