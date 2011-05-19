@@ -7,7 +7,6 @@ package akka.actor
 import akka.japi.{ Creator, Option ⇒ JOption }
 import akka.actor.Actor.{ actorOf, futureToAnyOptionAsTypedOption }
 import akka.dispatch.{ MessageDispatcher, Dispatchers, Future }
-import java.lang.Boolean.{ TRUE, FALSE }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration }
 
@@ -26,12 +25,7 @@ object TypedActor {
   case class TypedActorInvocationHandler(actor: ActorRef) extends InvocationHandler {
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
       case "toString" ⇒ actor.toString
-      case "equals" ⇒
-        if ((proxy eq args(0))) TRUE
-        else getActorFor(args(0)) match {
-          case Some(`actor`) ⇒ TRUE
-          case _             ⇒ FALSE
-        }
+      case "equals"   ⇒ ((proxy eq args(0)) || actor == getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
         MethodCall(method, args) match {
@@ -108,19 +102,19 @@ object TypedActor {
     proxy
   }
 
-  def stop(typedActor: AnyRef): Boolean = getActorFor(typedActor) match {
-    case Some(ref) ⇒ ref.stop; true
-    case _         ⇒ false
+  def stop(typedActor: AnyRef): Boolean = getActorRefFor(typedActor) match {
+    case null ⇒ false
+    case ref  ⇒ ref.stop; true
   }
 
-  def getActorFor(typedActor: AnyRef): Option[ActorRef] = typedActor match {
-    case null ⇒ None
+  def getActorRefFor(typedActor: AnyRef): ActorRef = typedActor match {
+    case null ⇒ null
     case other ⇒ Proxy.getInvocationHandler(other) match {
-      case null                                 ⇒ None
-      case handler: TypedActorInvocationHandler ⇒ Option(handler.actor)
-      case _                                    ⇒ None
+      case null                                 ⇒ null
+      case handler: TypedActorInvocationHandler ⇒ handler.actor
+      case _                                    ⇒ null
     }
   }
 
-  def isTypedActor(typedActor_? : AnyRef): Boolean = getActorFor(typedActor_?).isDefined
+  def isTypedActor(typedActor_? : AnyRef): Boolean = getActorRefFor(typedActor_?) ne null
 }

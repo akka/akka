@@ -131,7 +131,7 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
     "be able to call toString" in {
       val t = newFooBar
-      t.toString must be(getActorFor(t).get.toString)
+      t.toString must be(getActorRefFor(t).toString)
       mustStop(t)
     }
 
@@ -144,7 +144,7 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
     "be able to call hashCode" in {
       val t = newFooBar
-      t.hashCode must be(getActorFor(t).get.hashCode)
+      t.hashCode must be(getActorRefFor(t).hashCode)
       mustStop(t)
     }
 
