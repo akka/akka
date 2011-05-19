@@ -1,8 +1,8 @@
+package akka.actor
+
 /**
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
-
-package akka.thaipedactor
 
 import akka.japi.{ Creator, Option ⇒ JOption }
 import akka.actor.Actor.{ actorOf, futureToAnyOptionAsTypedOption }

@@ -141,9 +141,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val akka_testkit           = project("akka-testkit",           "akka-testkit",           new AkkaTestkitProject(_),                akka_actor)
   lazy val akka_actor_tests       = project("akka-actor-tests",       "akka-actor-tests",       new AkkaActorTestsProject(_),             akka_testkit)
   lazy val akka_stm               = project("akka-stm",               "akka-stm",               new AkkaStmProject(_),                    akka_actor)
-  lazy val akka_typed_actor       = project("akka-typed-actor",       "akka-typed-actor",       new AkkaTypedActorProject(_),             akka_stm, akka_actor_tests)
-
-  lazy val akka_remote            = project("akka-remote",            "akka-remote",            new AkkaRemoteProject(_),                 akka_typed_actor)
+  lazy val akka_remote            = project("akka-remote",            "akka-remote",            new AkkaRemoteProject(_),                 akka_stm, akka_actor_tests)
   lazy val akka_cluster           = project("akka-cluster",           "akka-cluster",           new AkkaClusterProject(_),                akka_remote)
   lazy val akka_durable_mailboxes = project("akka-durable-mailboxes", "akka-durable-mailboxes", new AkkaDurableMailboxesParentProject(_), akka_remote)
 
@@ -277,23 +275,6 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     // testing
     val junit     = Dependencies.junit
     val scalatest = Dependencies.scalatest
-  }
-
-  // -------------------------------------------------------------------------------------------------------------------
-  // akka-typed-actor subproject
-  // -------------------------------------------------------------------------------------------------------------------
-
-  class AkkaTypedActorProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
-    val aopalliance  = Dependencies.aopalliance
-    val aspectwerkz  = Dependencies.aspectwerkz
-    val guicey       = Dependencies.guicey
-
-    // testing
-    val junit     = Dependencies.junit
-    val scalatest = Dependencies.scalatest
-
-    override def deliverProjectDependencies =
-      super.deliverProjectDependencies.toList - akka_actor_tests.projectID ++ Seq(akka_actor_tests.projectID % "test")
   }
 
   // -------------------------------------------------------------------------------------------------------------------

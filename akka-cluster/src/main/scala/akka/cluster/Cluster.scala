@@ -888,7 +888,6 @@ class ClusterNode private[akka] (
   def ref(actorAddress: String, router: RouterType): ActorRef = if (isConnected.isOn) {
 
     val addresses = addressesForActor(actorAddress)
-    val actorType = ActorType.ScalaActor // FIXME later we also want to suppot TypedActor, then 'actorType' needs to be configurable
 
     EventHandler.debug(this,
       "Creating cluster actor ref with router [%s] for actors [%s]".format(router, addresses.mkString(", ")))
@@ -903,7 +902,7 @@ class ClusterNode private[akka] (
     def refByUuid(uuid: UUID): ActorRef = {
       val actor = Router newRouter (router, addresses,
         uuidToString(uuid),
-        Actor.TIMEOUT, actorType)
+        Actor.TIMEOUT)
       registerClusterActorRefForAddress(actor, addresses)
       actor
     }
@@ -913,7 +912,7 @@ class ClusterNode private[akka] (
       val uuids = uuidsForActorAddress(actorAddress)
       val actor = Router newRouter (router, addresses,
         actorAddress,
-        Actor.TIMEOUT, actorType)
+        Actor.TIMEOUT)
       registerClusterActorRefForAddress(actor, addresses)
       actor
     }

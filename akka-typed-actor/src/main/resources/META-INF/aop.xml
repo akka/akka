@@ -1,8 +1,0 @@
-<aspectwerkz>
-  <system id="akka">
-    <package name="akka.actor">
-      <aspect class="TypedActorAspect" />
-      <aspect class="ServerManagedTypedActorAspect" />
-    </package>
-  </system>
-</aspectwerkz>

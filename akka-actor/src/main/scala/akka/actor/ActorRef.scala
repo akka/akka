@@ -988,8 +988,7 @@ object RemoteActorSystemMessage {
 private[akka] case class RemoteActorRef private[akka] (
   val address: String,
   _timeout: Long,
-  loader: Option[ClassLoader],
-  val actorType: ActorType = ActorType.ScalaActor)
+  loader: Option[ClassLoader])
   extends ActorRef with ScalaActorRef {
 
   ensureRemotingEnabled()
@@ -1013,7 +1012,7 @@ private[akka] case class RemoteActorRef private[akka] (
   start()
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]) {
-    Actor.remote.send[Any](message, senderOption, None, remoteAddress, timeout, true, this, None, actorType, loader)
+    Actor.remote.send[Any](message, senderOption, None, remoteAddress, timeout, true, this, loader)
   }
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
@@ -1023,8 +1022,7 @@ private[akka] case class RemoteActorRef private[akka] (
     senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
     val future = Actor.remote.send[T](
       message, senderOption, senderFuture,
-      remoteAddress, timeout, false, this, None,
-      actorType, loader)
+      remoteAddress, timeout, false, this, loader)
     if (future.isDefined) future.get
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }

@@ -22,9 +22,8 @@ class ClusterActorRef private[akka] (
   actorAddresses: Array[Tuple2[UUID, InetSocketAddress]],
   address: String,
   timeout: Long,
-  actorType: ActorType,
   val replicationStrategy: ReplicationStrategy)
-  extends RemoteActorRef(address, timeout, None, actorType) {
+  extends RemoteActorRef(address, timeout, None) {
   this: ClusterActorRef with Router.Router ⇒
 
   EventHandler.debug(this, "Creating a ClusterActorRef for actor with address [%s]".format(address))
@@ -67,6 +66,6 @@ class ClusterActorRef private[akka] (
   private def createRemoteActorRef(uuid: UUID, address: InetSocketAddress) = {
     RemoteActorRef(
       UUID_PREFIX + uuidToString(uuid), // clustered refs are always registered and looked up by UUID
-      Actor.TIMEOUT, None, actorType)
+      Actor.TIMEOUT, None)
   }
 }

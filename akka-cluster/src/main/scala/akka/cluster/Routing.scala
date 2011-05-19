@@ -26,21 +26,20 @@ object Router {
     addresses: Array[Tuple2[UUID, InetSocketAddress]],
     serviceId: String,
     timeout: Long,
-    actorType: ActorType,
     replicationStrategy: ReplicationStrategy = ReplicationStrategy.WriteThrough): ClusterActorRef = {
 
     routerType match {
       case Direct ⇒ new ClusterActorRef(
         addresses, serviceId, timeout,
-        actorType, replicationStrategy) with Direct
+        replicationStrategy) with Direct
 
       case Random ⇒ new ClusterActorRef(
         addresses, serviceId, timeout,
-        actorType, replicationStrategy) with Random
+        replicationStrategy) with Random
 
       case RoundRobin ⇒ new ClusterActorRef(
         addresses, serviceId, timeout,
-        actorType, replicationStrategy) with RoundRobin
+        replicationStrategy) with RoundRobin
 
       case LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
       case LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")

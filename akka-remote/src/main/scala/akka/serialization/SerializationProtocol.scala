@@ -5,9 +5,9 @@
 package akka.serialization
 
 import akka.dispatch.MessageInvocation
-import akka.remote.protocol.RemoteProtocol.{ ActorType ⇒ ActorTypeProtocol, _ }
+import akka.remote.protocol.RemoteProtocol._
+import akka.remote.protocol.RemoteProtocol
 
-import ActorTypeProtocol._
 import akka.config.Supervision._
 import akka.actor.{ uuidFrom, newUuid }
 import akka.actor._
@@ -76,8 +76,6 @@ object ActorSerialization {
             Right(m.message),
             false,
             actorRef.getSender,
-            None,
-            ActorType.ScalaActor,
             RemoteClientSettings.SECURE_COOKIE).build)
 
       requestProtocols.foreach(rp ⇒ builder.addMessages(rp))
@@ -201,8 +199,6 @@ object RemoteActorSerialization {
     message: Either[Throwable, Any],
     isOneWay: Boolean,
     senderOption: Option[ActorRef],
-    typedActorInfo: Option[Tuple2[String, String]],
-    actorType: ActorType,
     secureCookie: Option[String]): RemoteMessageProtocol.Builder = {
 
     val uuidProtocol = replyUuid match {
@@ -215,18 +211,6 @@ object RemoteActorSerialization {
       .setAddress(actorAddress)
       .setTimeout(timeout)
 
-    typedActorInfo.foreach { typedActor ⇒
-      actorInfoBuilder.setTypedActorInfo(
-        TypedActorInfoProtocol.newBuilder
-          .setInterface(typedActor._1)
-          .setMethod(typedActor._2)
-          .build)
-    }
-
-    actorType match {
-      case ActorType.ScalaActor ⇒ actorInfoBuilder.setActorType(SCALA_ACTOR)
-      case ActorType.TypedActor ⇒ actorInfoBuilder.setActorType(TYPED_ACTOR)
-    }
     val actorInfo = actorInfoBuilder.build
     val messageBuilder = RemoteMessageProtocol.newBuilder
       .setUuid({
@@ -268,98 +252,5 @@ object RemoteActorSerialization {
       messageBuilder.setSender(toRemoteActorRefProtocol(senderOption.get))
 
     messageBuilder
-  }
-}
-
-/**
- * Module for local typed actor serialization.
- */
-object TypedActorSerialization {
-
-  def fromBinary[T <: Actor, U <: AnyRef](bytes: Array[Byte])(implicit format: Format[T]): U =
-    fromBinaryToLocalTypedActorRef(bytes, format)
-
-  def toBinary[T <: Actor](proxy: AnyRef)(implicit format: Format[T]): Array[Byte] = {
-    toSerializedTypedActorRefProtocol(proxy, format).toByteArray
-  }
-
-  // wrapper for implicits to be used by Java
-  def fromBinaryJ[T <: Actor, U <: AnyRef](bytes: Array[Byte], format: Format[T]): U =
-    fromBinary(bytes)(format)
-
-  // wrapper for implicits to be used by Java
-  def toBinaryJ[T <: Actor](a: AnyRef, format: Format[T]): Array[Byte] =
-    toBinary(a)(format)
-
-  private def toSerializedTypedActorRefProtocol[T <: Actor](
-    proxy: AnyRef, format: Format[T]): SerializedTypedActorRefProtocol = {
-
-    val init = AspectInitRegistry.initFor(proxy)
-    if (init eq null) throw new IllegalArgumentException("Proxy for typed actor could not be found in AspectInitRegistry.")
-
-    SerializedTypedActorRefProtocol.newBuilder
-      .setActorRef(ActorSerialization.toSerializedActorRefProtocol(init.actorRef, format))
-      .setInterfaceName(init.interfaceClass.getName)
-      .build
-  }
-
-  private def fromBinaryToLocalTypedActorRef[T <: Actor, U <: AnyRef](bytes: Array[Byte], format: Format[T]): U =
-    fromProtobufToLocalTypedActorRef(SerializedTypedActorRefProtocol.newBuilder.mergeFrom(bytes).build, format, None)
-
-  private def fromProtobufToLocalTypedActorRef[T <: Actor, U <: AnyRef](
-    protocol: SerializedTypedActorRefProtocol, format: Format[T], loader: Option[ClassLoader]): U = {
-    val actorRef = ActorSerialization.fromProtobufToLocalActorRef(protocol.getActorRef, format, loader)
-    val intfClass = toClass(loader, protocol.getInterfaceName)
-    TypedActor.newInstance(intfClass, actorRef).asInstanceOf[U]
-  }
-
-  private[akka] def toClass[U <: AnyRef](loader: Option[ClassLoader], name: String): Class[U] = {
-    val classLoader = loader.getOrElse(getClass.getClassLoader)
-    val clazz = classLoader.loadClass(name)
-    clazz.asInstanceOf[Class[U]]
-  }
-}
-
-/**
- * Module for remote typed actor serialization.
- */
-object RemoteTypedActorSerialization {
-  /**
-   * Deserializes a byte array (Array[Byte]) into an RemoteActorRef instance.
-   */
-  def fromBinaryToRemoteTypedActorRef[T <: AnyRef](bytes: Array[Byte]): T =
-    fromProtobufToRemoteTypedActorRef(RemoteTypedActorRefProtocol.newBuilder.mergeFrom(bytes).build, None)
-
-  /**
-   * Deserializes a byte array (Array[Byte]) into a AW RemoteActorRef proxy.
-   */
-  def fromBinaryToRemoteTypedActorRef[T <: AnyRef](bytes: Array[Byte], loader: ClassLoader): T =
-    fromProtobufToRemoteTypedActorRef(RemoteTypedActorRefProtocol.newBuilder.mergeFrom(bytes).build, Some(loader))
-
-  /**
-   * Serialize as AW RemoteActorRef proxy.
-   */
-  def toBinary[T <: Actor](proxy: AnyRef): Array[Byte] = {
-    toRemoteTypedActorRefProtocol(proxy).toByteArray
-  }
-
-  /**
-   * Deserializes a RemoteTypedActorRefProtocol Protocol Buffers (protobuf) Message into AW RemoteActorRef proxy.
-   */
-  private[akka] def fromProtobufToRemoteTypedActorRef[T](protocol: RemoteTypedActorRefProtocol, loader: Option[ClassLoader]): T = {
-    val actorRef = RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getActorRef, loader)
-    val intfClass = TypedActorSerialization.toClass(loader, protocol.getInterfaceName)
-    TypedActor.createProxyForRemoteActorRef(intfClass, actorRef).asInstanceOf[T]
-  }
-
-  /**
-   * Serializes the AW TypedActor proxy into a Protocol Buffers (protobuf) Message.
-   */
-  def toRemoteTypedActorRefProtocol(proxy: AnyRef): RemoteTypedActorRefProtocol = {
-    val init = AspectInitRegistry.initFor(proxy)
-    RemoteTypedActorRefProtocol.newBuilder
-      .setActorRef(RemoteActorSerialization.toRemoteActorRefProtocol(init.actorRef))
-      .setInterfaceName(init.interfaceClass.getName)
-      .build
   }
 }

@@ -56,15 +56,6 @@ message RemoteActorRefProtocol {
 }
 
 /**
- * Defines a remote Typed ActorRef that "remembers" and uses its original typed Actor instance
- * on the original node.
- */
-message RemoteTypedActorRefProtocol {
-  required RemoteActorRefProtocol actorRef = 1;
-  required string interfaceName = 2;
-}
-
-/**
  * Defines a fully serialized remote ActorRef (with serialized Actor instance)
  * that is about to be instantiated on the remote node. It is fully disconnected
  * from its original host.
@@ -108,17 +99,7 @@ message MessageProtocol {
 message ActorInfoProtocol {
   required UuidProtocol uuid = 1;
   required uint64 timeout = 2;
-  required ActorType actorType = 3;
-  optional TypedActorInfoProtocol typedActorInfo = 4;
-  optional string address = 5;
-}
-
-/**
- * Defines the typed actor extra info.
- */
-message TypedActorInfoProtocol {
-  required string interface = 1;
-  required string method = 2;
+  optional string address = 3;
 }
 
 /**
@@ -135,15 +116,6 @@ message UuidProtocol {
 message MetadataEntryProtocol {
   required string key = 1;
   required bytes value = 2;
-}
-
-/**
- * Defines the actor type.
- */
-enum ActorType {
-  SCALA_ACTOR = 1;
-  JAVA_ACTOR = 2;
-  TYPED_ACTOR = 3;
 }
 
 /**

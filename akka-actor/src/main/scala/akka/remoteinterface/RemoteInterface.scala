@@ -27,9 +27,6 @@ trait RemoteModule {
   private[akka] def actors: ConcurrentHashMap[String, ActorRef]
   private[akka] def actorsByUuid: ConcurrentHashMap[String, ActorRef]
   private[akka] def actorsFactories: ConcurrentHashMap[String, () ⇒ ActorRef]
-  private[akka] def typedActors: ConcurrentHashMap[String, AnyRef]
-  private[akka] def typedActorsByUuid: ConcurrentHashMap[String, AnyRef]
-  private[akka] def typedActorsFactories: ConcurrentHashMap[String, () ⇒ AnyRef]
 
   /** Lookup methods **/
 
@@ -39,23 +36,10 @@ trait RemoteModule {
 
   private[akka] def findActorFactory(address: String): () ⇒ ActorRef = actorsFactories.get(address)
 
-  private[akka] def findTypedActorByAddress(address: String): AnyRef = typedActors.get(address)
-
-  private[akka] def findTypedActorFactory(address: String): () ⇒ AnyRef = typedActorsFactories.get(address)
-
-  private[akka] def findTypedActorByUuid(uuid: String): AnyRef = typedActorsByUuid.get(uuid)
-
   private[akka] def findActorByAddressOrUuid(address: String, uuid: String): ActorRef = {
     var actorRefOrNull = if (address.startsWith(UUID_PREFIX)) findActorByUuid(address.substring(UUID_PREFIX.length))
     else findActorByAddress(address)
     if (actorRefOrNull eq null) actorRefOrNull = findActorByUuid(uuid)
-    actorRefOrNull
-  }
-
-  private[akka] def findTypedActorByAddressOrUuid(address: String, uuid: String): AnyRef = {
-    var actorRefOrNull = if (address.startsWith(UUID_PREFIX)) findTypedActorByUuid(address.substring(UUID_PREFIX.length))
-    else findTypedActorByAddress(address)
-    if (actorRefOrNull eq null) actorRefOrNull = findTypedActorByUuid(uuid)
     actorRefOrNull
   }
 }
@@ -161,17 +145,11 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   private[akka] val actors = new ConcurrentHashMap[String, ActorRef]
   private[akka] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
   private[akka] val actorsFactories = new ConcurrentHashMap[String, () ⇒ ActorRef]
-  private[akka] val typedActors = new ConcurrentHashMap[String, AnyRef]
-  private[akka] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
-  private[akka] val typedActorsFactories = new ConcurrentHashMap[String, () ⇒ AnyRef]
 
   def clear {
     actors.clear
     actorsByUuid.clear
-    typedActors.clear
-    typedActorsByUuid.clear
     actorsFactories.clear
-    typedActorsFactories.clear
   }
 }
 
@@ -235,44 +213,6 @@ trait RemoteServerModule extends RemoteModule {
   def shutdownServerModule(): Unit
 
   /**
-   *  Register typed actor by interface name.
-   */
-  def registerTypedActor(intfClass: Class[_], typedActor: AnyRef): Unit = registerTypedActor(intfClass.getName, typedActor)
-
-  /**
-   * Register remote typed actor by a specific id.
-   * @param address actor address
-   * @param typedActor typed actor to register
-   */
-  def registerTypedActor(address: String, typedActor: AnyRef): Unit
-
-  /**
-   * Register typed actor by interface name.
-   */
-  def registerTypedPerSessionActor(intfClass: Class[_], factory: ⇒ AnyRef): Unit = registerTypedActor(intfClass.getName, factory)
-
-  /**
-   * Register typed actor by interface name.
-   * Java API
-   */
-  def registerTypedPerSessionActor(intfClass: Class[_], factory: Creator[AnyRef]): Unit = registerTypedActor(intfClass.getName, factory)
-
-  /**
-   * Register remote typed actor by a specific id.
-   * @param address actor address
-   * @param typedActor typed actor to register
-   */
-  def registerTypedPerSessionActor(address: String, factory: ⇒ AnyRef): Unit
-
-  /**
-   * Register remote typed actor by a specific id.
-   * @param address actor address
-   * @param typedActor typed actor to register
-   * Java API
-   */
-  def registerTypedPerSessionActor(address: String, factory: Creator[AnyRef]): Unit = registerTypedPerSessionActor(address, factory.create)
-
-  /**
    * Register Remote Actor by the Actor's 'id' field. It starts the Actor if it is not started already.
    */
   def register(actorRef: ActorRef): Unit = register(actorRef.address, actorRef)
@@ -323,20 +263,6 @@ trait RemoteServerModule extends RemoteModule {
    * NOTE: You need to call this method if you have registered an actor by a custom ID.
    */
   def unregisterPerSession(address: String): Unit
-
-  /**
-   * Unregister Remote Typed Actor by specific 'id'.
-   * <p/>
-   * NOTE: You need to call this method if you have registered an actor by a custom ID.
-   */
-  def unregisterTypedActor(address: String): Unit
-
-  /**
-   * Unregister Remote Typed Actor by specific 'id'.
-   * <p/>
-   * NOTE: You need to call this method if you have registered an actor by a custom ID.
-   */
-  def unregisterTypedPerSessionActor(address: String): Unit
 }
 
 trait RemoteClientModule extends RemoteModule { self: RemoteModule ⇒
@@ -352,15 +278,6 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule ⇒
 
   def actorFor(address: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
     actorFor(address, timeout, hostname, port, Some(loader))
-
-  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, hostname: String, port: Int): T =
-    typedActorFor(intfClass, serviceIdOrClassName, Actor.TIMEOUT, hostname, port, None)
-
-  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int): T =
-    typedActorFor(intfClass, serviceIdOrClassName, timeout, hostname, port, None)
-
-  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): T =
-    typedActorFor(intfClass, serviceIdOrClassName, timeout, hostname, port, Some(loader))
 
   /**
    * Clean-up all open connections.
@@ -379,8 +296,6 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule ⇒
 
   /** Methods that needs to be implemented by a transport **/
 
-  protected[akka] def typedActorFor[T](intfClass: Class[T], serviceaddress: String, timeout: Long, host: String, port: Int, loader: Option[ClassLoader]): T
-
   protected[akka] def actorFor(address: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): ActorRef
 
   protected[akka] def send[T](message: Any,
@@ -390,7 +305,5 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule ⇒
                               timeout: Long,
                               isOneWay: Boolean,
                               actorRef: ActorRef,
-                              typedActorInfo: Option[Tuple2[String, String]],
-                              actorType: ActorType,
                               loader: Option[ClassLoader]): Option[CompletableFuture[T]]
 }

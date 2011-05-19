@@ -1,4 +1,4 @@
-package akka.thaipedactor
+package akka.actor
 
 /**
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
@@ -8,7 +8,7 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import org.scalatest.{ BeforeAndAfterAll, WordSpec, BeforeAndAfterEach }
-import akka.thaipedactor.ThaipedActor._
+import akka.actor.ThaipedActor._
 import akka.japi.{ Option ⇒ JOption }
 import akka.util.Duration
 import akka.dispatch.{ Dispatchers, Future, AlreadyCompletedFuture }
@@ -96,7 +96,7 @@ object ThaipedActorSpec {
 
 @RunWith(classOf[JUnitRunner])
 class ThaipedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll {
-  import akka.thaipedactor.ThaipedActorSpec._
+  import akka.actor.ThaipedActorSpec._
 
   def newFooBar: Foo = newFooBar(Duration(2, "s"))
 
