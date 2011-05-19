@@ -5,7 +5,7 @@ Included in the example is an sbt trait for multi-JVM testing which will fork
 JVMs for multi-node testing. There is support for running applications (objects
 with main methods) and running ScalaTest tests.
 
-Using the multi-JVM testing is straight-forward. First, mix the MultiJvmTests
+Using the multi-JVM testing is straight-forward. First, mix the ``MultiJvmTests``
 trait into your sbt project::
 
     class SomeProject(info: ProjectInfo) extends DefaultProject(info) with MultiJvmTests
@@ -19,6 +19,7 @@ You can specify JVM options for the forked JVMs::
 There are two sbt commands: ``multi-jvm-run`` for running applications and
 ``multi-jvm-test`` for running ScalaTest tests.
 
+The ``MultiJvmTests`` trait resides in the ``project/build`` directory. 
 
 Creating application tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -144,7 +145,7 @@ something in coordination::
 
     package example
 
-    import akka.cloud.cluster._
+    import akka.cluster._
     import akka.actor._
 
     object TestMultiJvmNode1 {
@@ -167,7 +168,7 @@ something in coordination::
           println("Hello from node 1")
         }
 
-        Actor.registry.shutdownAll
+        Actor.registry.local.shutdownAll
 
         node.stop
 
@@ -193,7 +194,7 @@ something in coordination::
           println("Hello from node 2")
         }
 
-        Actor.registry.shutdownAll
+        Actor.registry.local.shutdownAll
 
         node.stop
       }
@@ -217,4 +218,3 @@ An example output from this would be:
     [info] == multi-jvm / Test ==
     [info] == multi-jvm-run ==
     [success] Successful.
-
