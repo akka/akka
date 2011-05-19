@@ -455,7 +455,7 @@ object Actor extends ListenerManagement {
 
          */
 
-      RemoteActorRef(address, Actor.TIMEOUT, None)
+        RemoteActorRef(address, Actor.TIMEOUT, None)
 
       case invalid ⇒ throw new IllegalActorStateException(
         "Could not create actor with address [" + address +
