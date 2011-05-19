@@ -25,12 +25,10 @@ object ReflectiveAccess {
   val loader = getClass.getClassLoader
 
   lazy val isRemotingEnabled: Boolean = RemoteModule.isEnabled
-  lazy val isTypedActorEnabled: Boolean = TypedActorModule.isEnabled
   lazy val isClusterEnabled: Boolean = ClusterModule.isEnabled
 
   def ensureClusterEnabled() { ClusterModule.ensureEnabled() }
   def ensureRemotingEnabled() { RemoteModule.ensureEnabled() }
-  def ensureTypedActorEnabled() { TypedActorModule.ensureEnabled() }
 
   /**
    * Reflective access to the Cluster module.
@@ -173,45 +171,6 @@ object ReflectiveAccess {
               throw e
           }
       }
-  }
-
-  /**
-   * Reflective access to the TypedActors module.
-   *
-   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
-   */
-  object TypedActorModule {
-
-    type TypedActorObject = {
-      def isJoinPoint(message: Any): Boolean
-      def isJoinPointAndOneWay(message: Any): Boolean
-      def actorFor(proxy: AnyRef): Option[ActorRef]
-      def proxyFor(actorRef: ActorRef): Option[AnyRef]
-      def stop(anyRef: AnyRef)
-    }
-
-    lazy val isEnabled = typedActorObjectInstance.isDefined
-
-    def ensureEnabled() {
-      if (!isTypedActorEnabled) throw new ModuleNotAvailableException(
-        "Can't load the typed actor module, make sure that akka-typed-actor.jar is on the classpath")
-    }
-
-    val typedActorObjectInstance: Option[TypedActorObject] =
-      getObjectFor[TypedActorObject]("akka.actor.TypedActor$") match {
-        case Right(value) ⇒ Some(value)
-        case Left(exception) ⇒
-          EventHandler.debug(this, exception.toString)
-          None
-      }
-
-    def resolveFutureIfMessageIsJoinPoint(message: Any, future: Future[_]): Boolean = {
-      ensureEnabled()
-      if (typedActorObjectInstance.get.isJoinPointAndOneWay(message)) {
-        future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
-      }
-      typedActorObjectInstance.get.isJoinPoint(message)
-    }
   }
 
   val noParams = Array[Class[_]]()

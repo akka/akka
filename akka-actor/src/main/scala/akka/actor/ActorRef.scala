@@ -1195,18 +1195,8 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef ⇒
   def !!(message: Any, timeout: Long = this.timeout)(implicit sender: Option[ActorRef] = None): Option[Any] = {
     if (isRunning) {
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout[Any](message, timeout, sender, None)
-      val isMessageJoinPoint = if (isTypedActorEnabled) TypedActorModule.resolveFutureIfMessageIsJoinPoint(message, future)
-      else false
-      try {
-        future.await
-      } catch {
-        case e: FutureTimeoutException ⇒
-          if (isMessageJoinPoint) {
-            EventHandler.error(e, this, e.getMessage)
-            throw e
-          } else None
-      }
-      future.resultOrException
+
+      try { future.await.resultOrException } catch { case e: FutureTimeoutException ⇒ None }
     } else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }

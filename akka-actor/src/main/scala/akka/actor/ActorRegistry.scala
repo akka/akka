@@ -35,9 +35,10 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
   //private val isClusterEnabled = ReflectiveAccess.isClusterEnabled
   private val actorsByAddress = new ConcurrentHashMap[String, ActorRef]
   private val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
+  private val typedActorsByUuid = new ConcurrentHashMap[Uuid, AnyRef]
   private val guard = new ReadWriteGuard
 
-  val local = new LocalActorRegistry(actorsByAddress, actorsByUuid)
+  val local = new LocalActorRegistry(actorsByAddress, actorsByUuid, typedActorsByUuid)
 
   /**
    * Finds the actor that has a specific address.
@@ -51,10 +52,8 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
   /**
    * Finds the typed actors that have a specific address.
    */
-  def typedActorFor(address: String): Option[AnyRef] = {
-    TypedActorModule.ensureEnabled
+  def typedActorFor(address: String): Option[AnyRef] =
     actorFor(address) map (typedActorFor(_))
-  }
 
   /**
    *  Registers an actor in the ActorRegistry.
@@ -69,6 +68,10 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
     actorsByAddress.put(address, actor)
     actorsByUuid.put(actor.uuid.toString, actor)
     notifyListeners(ActorRegistered(address, actor))
+  }
+
+  private[akka] def registerTypedActor(actorRef: ActorRef, interface: AnyRef) {
+    typedActorsByUuid.put(actorRef.uuid, interface)
   }
 
   /**
@@ -87,6 +90,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
     val address = actor.address
     actorsByAddress remove address
     actorsByUuid remove actor.uuid
+    typedActorsByUuid remove actor.uuid
     notifyListeners(ActorUnregistered(address, actor))
   }
 
@@ -108,9 +112,8 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
   /**
    * Get the typed actor proxy for a given typed actor ref.
    */
-  private def typedActorFor(actorRef: ActorRef): Option[AnyRef] = {
-    TypedActorModule.typedActorObjectInstance.get.proxyFor(actorRef)
-  }
+  private def typedActorFor(actorRef: ActorRef): Option[AnyRef] =
+    Option(typedActorsByUuid.get(actorRef.uuid))
 }
 
 /**
@@ -118,7 +121,8 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
  */
 class LocalActorRegistry(
   private val actorsByAddress: ConcurrentHashMap[String, ActorRef],
-  private val actorsByUuid: ConcurrentHashMap[String, ActorRef]) {
+  private val actorsByUuid: ConcurrentHashMap[String, ActorRef],
+  private val typedActorsByUuid: ConcurrentHashMap[Uuid, AnyRef]) {
 
   /**
    * Returns the number of actors in the system.
@@ -129,18 +133,11 @@ class LocalActorRegistry(
    * Shuts down and unregisters all actors in the system.
    */
   def shutdownAll() {
-    if (TypedActorModule.isEnabled) {
-      val elements = actorsByAddress.elements
-      while (elements.hasMoreElements) {
-        val actorRef = elements.nextElement
-        val proxy = typedActorFor(actorRef)
-        if (proxy.isDefined) TypedActorModule.typedActorObjectInstance.get.stop(proxy.get)
-        else actorRef.stop
-      }
-    } else foreach(_.stop)
+    foreach(_.stop)
     if (RemoteModule.isEnabled) Actor.remote.clear //TODO: REVISIT: Should this be here?
     actorsByAddress.clear
     actorsByUuid.clear
+    typedActorsByUuid.clear
   }
 
   //============== ACTORS ==============
@@ -165,18 +162,14 @@ class LocalActorRegistry(
   /**
    * Finds the typed actor that have a specific address.
    */
-  def typedActorFor(address: String): Option[AnyRef] = {
-    TypedActorModule.ensureEnabled
+  def typedActorFor(address: String): Option[AnyRef] =
     actorFor(address) map (typedActorFor(_)) getOrElse None
-  }
 
   /**
    * Finds the typed actor that have a specific uuid.
    */
-  private[akka] def typedActorFor(uuid: Uuid): Option[AnyRef] = {
-    TypedActorModule.ensureEnabled
-    actorFor(uuid) map (typedActorFor(_)) getOrElse None
-  }
+  private[akka] def typedActorFor(uuid: Uuid): Option[AnyRef] =
+    Option(typedActorsByUuid.get(uuid))
 
   /**
    * Returns all actors in the system.
@@ -228,12 +221,9 @@ class LocalActorRegistry(
    * Invokes a function for all typed actors.
    */
   def foreachTypedActor(f: (AnyRef) ⇒ Unit) = {
-    TypedActorModule.ensureEnabled
-    val elements = actorsByAddress.elements
-    while (elements.hasMoreElements) {
-      val proxy = typedActorFor(elements.nextElement)
-      if (proxy.isDefined) f(proxy.get)
-    }
+    val i = typedActorsByUuid.values.iterator
+    while (i.hasNext)
+      f(i.next)
   }
 
   /**
@@ -241,12 +231,12 @@ class LocalActorRegistry(
    * Returns None if the function never returns Some
    */
   def findTypedActor[T](f: PartialFunction[AnyRef, T]): Option[T] = {
-    TypedActorModule.ensureEnabled
-    val elements = actorsByAddress.elements
-    while (elements.hasMoreElements) {
-      val proxy = typedActorFor(elements.nextElement)
-      if (proxy.isDefined && (f isDefinedAt proxy)) return Some(f(proxy))
+    val i = typedActorsByUuid.values.iterator
+    while (i.hasNext) {
+      val proxy = i.next
+      if (f isDefinedAt proxy) return Some(f(proxy))
     }
+
     None
   }
 
@@ -254,22 +244,21 @@ class LocalActorRegistry(
    * Finds all typed actors that satisfy a predicate.
    */
   def filterTypedActors(p: AnyRef ⇒ Boolean): Array[AnyRef] = {
-    TypedActorModule.ensureEnabled
     val all = new ListBuffer[AnyRef]
-    val elements = actorsByAddress.elements
-    while (elements.hasMoreElements) {
-      val proxy = typedActorFor(elements.nextElement)
-      if (proxy.isDefined && p(proxy.get)) all += proxy.get
+    val i = typedActorsByUuid.values.iterator
+    while (i.hasNext) {
+      val proxy = i.next
+      if (p(proxy)) all += proxy
     }
+
     all.toArray
   }
 
   /**
    * Get the typed actor proxy for a given typed actor ref.
    */
-  private def typedActorFor(actorRef: ActorRef): Option[AnyRef] = {
-    TypedActorModule.typedActorObjectInstance.get.proxyFor(actorRef)
-  }
+  private def typedActorFor(actorRef: ActorRef): Option[AnyRef] =
+    typedActorFor(actorRef.uuid)
 }
 
 /**

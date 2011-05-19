@@ -8,13 +8,13 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import org.scalatest.{ BeforeAndAfterAll, WordSpec, BeforeAndAfterEach }
-import akka.actor.ThaipedActor._
+import akka.actor.TypedActor._
 import akka.japi.{ Option ⇒ JOption }
 import akka.util.Duration
 import akka.dispatch.{ Dispatchers, Future, AlreadyCompletedFuture }
 import akka.routing.CyclicIterator
 
-object ThaipedActorSpec {
+object TypedActorSpec {
   trait Foo {
     def pigdog(): String
 
@@ -95,8 +95,9 @@ object ThaipedActorSpec {
 }
 
 @RunWith(classOf[JUnitRunner])
-class ThaipedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll {
-  import akka.actor.ThaipedActorSpec._
+class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll {
+
+  import akka.actor.TypedActorSpec._
 
   def newFooBar: Foo = newFooBar(Duration(2, "s"))
 
@@ -104,18 +105,18 @@ class ThaipedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
     newFooBar(Configuration(timeout))
 
   def newFooBar(config: Configuration): Foo =
-    thaipedActorOf(classOf[Foo], classOf[Bar], config)
+    typedActorOf(classOf[Foo], classOf[Bar], config)
 
   def newStacked(config: Configuration = Configuration(Duration(2, "s"))): Stacked =
-    thaipedActorOf(classOf[Stacked], classOf[StackedImpl], config)
+    typedActorOf(classOf[Stacked], classOf[StackedImpl], config)
 
   def mustStop(typedActor: AnyRef) = stop(typedActor) must be(true)
 
-  "ThaipedActors" must {
+  "TypedActors" must {
 
     "be able to instantiate" in {
       val t = newFooBar
-      isThaipedActor(t) must be(true)
+      isTypedActor(t) must be(true)
       mustStop(t)
     }
 
@@ -231,6 +232,23 @@ class ThaipedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       val t = newStacked()
       t.notOverriddenStacked must be("foobar")
       t.stacked must be("FOOBAR")
+      mustStop(t)
+    }
+
+    "be able to support implementation only typed actors" in {
+      val t = typedActorOf[Foo, Bar](Configuration())
+      val f = t.futurePigdog(200)
+      val f2 = t.futurePigdog(0)
+      f2.isCompleted must be(false)
+      f.isCompleted must be(false)
+      f.get must equal(f2.get)
+      mustStop(t)
+    }
+
+    "be able to support implementation only typed actors with complex interfaces" in {
+      val t = typedActorOf[Stackable1 with Stackable2, StackedImpl]()
+      t.stackable1 must be("foo")
+      t.stackable2 must be("bar")
       mustStop(t)
     }
 
