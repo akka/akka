@@ -7,12 +7,12 @@ Routing (Scala)
 
 Akka-core includes some building blocks to build more complex message flow handlers, they are listed and explained below:
 
-Dispatcher
+Router
 ----------
 
-A Dispatcher is an actor that routes incoming messages to outbound actors.
+A Router is an actor that routes incoming messages to outbound actors.
 
-To use it you can either create a Dispatcher through the ``dispatcherActor()`` factory method
+To use it you can either create a Router through the ``routerActor()`` factory method
 
 .. code-block:: scala
 
@@ -29,9 +29,9 @@ To use it you can either create a Dispatcher through the ``dispatcherActor()`` f
   val pinger = actorOf(new Actor { def receive = { case x => println("Pinger: " + x) } }).start()
   val ponger = actorOf(new Actor { def receive = { case x => println("Ponger: " + x) } }).start()
 
-  //A dispatcher that dispatches Ping messages to the pinger
+  //A router that dispatches Ping messages to the pinger
   //and Pong messages to the ponger
-  val d = dispatcherActor {
+  val d = routerActor {
     case Ping => pinger
     case Pong => ponger
   }
@@ -39,19 +39,19 @@ To use it you can either create a Dispatcher through the ``dispatcherActor()`` f
   d ! Ping //Prints "Pinger: Ping"
   d ! Pong //Prints "Ponger: Pong"
 
-Or by mixing in akka.patterns.Dispatcher:
+Or by mixing in akka.routing.Router:
 
 .. code-block:: scala
 
   import akka.actor.Actor
   import akka.actor.Actor._
-  import akka.routing.Dispatcher
+  import akka.routing.Router
 
   //Our message types
   case object Ping
   case object Pong
 
-  class MyDispatcher extends Actor with Dispatcher {
+  class MyRouter extends Actor with Router {
     //Our pinger and ponger actors
     val pinger = actorOf(new Actor { def receive = { case x => println("Pinger: " + x) } }).start()
     val ponger = actorOf(new Actor { def receive = { case x => println("Ponger: " + x) } }).start()
@@ -63,8 +63,8 @@ Or by mixing in akka.patterns.Dispatcher:
     }
   }
 
-  //Create an instance of our dispatcher, and start it
-  val d = actorOf[MyDispatcher].start()
+  //Create an instance of our router, and start it
+  val d = actorOf[MyRouter].start()
 
   d ! Ping //Prints "Pinger: Ping"
   d ! Pong //Prints "Ponger: Pong"

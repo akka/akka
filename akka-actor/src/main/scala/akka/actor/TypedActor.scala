@@ -12,14 +12,14 @@ import akka.util.{ Duration }
 import java.util.concurrent.atomic.AtomicReference
 
 object TypedActor {
-  private val selfReference = new scala.util.DynamicVariable[AnyRef](null)
-  def self[T <: AnyRef] = selfReference.value.asInstanceOf[T]
+  private val selfReference = new ThreadLocal[AnyRef]
+  def self[T <: AnyRef] = selfReference.get.asInstanceOf[T]
 
   class TypedActor[TI <: AnyRef](proxyRef: AtomicReference[AnyRef], createInstance: ⇒ TI) extends Actor {
     val me = createInstance
     def receive = {
       case m: MethodCall ⇒
-        selfReference.value = proxyRef.get
+        selfReference set proxyRef.get
         try {
           m match {
             case m if m.isOneWay        ⇒ m(me)
@@ -27,7 +27,7 @@ object TypedActor {
             case m                      ⇒ self reply m(me)
           }
         } finally {
-          selfReference.value = null
+          selfReference set null
         }
     }
   }

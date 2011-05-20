@@ -26,7 +26,7 @@ An UntypedDispatcher is an actor that routes incoming messages to outbound actor
     }
   }
 
-  public class MyDispatcher extends UntypedDispatcher {
+  public class MyRouter extends UntypedRouter {
     private ActorRef pinger = actorOf(Pinger.class).start();
     private ActorRef ponger = actorOf(Ponger.class).start();
 
@@ -38,9 +38,9 @@ An UntypedDispatcher is an actor that routes incoming messages to outbound actor
     }
   }
 
-  ActorRef dispatcher = actorOf(MyDispatcher.class).start();
-  dispatcher.sendOneWay("Ping"); //Prints "Pinger: Ping"
-  dispatcher.sendOneWay("Pong"); //Prints "Ponger: Pong"
+  ActorRef router = actorOf(MyRouter.class).start();
+  router.sendOneWay("Ping"); //Prints "Pinger: Ping"
+  router.sendOneWay("Pong"); //Prints "Ponger: Pong"
 
 UntypedLoadBalancer
 -------------------
@@ -80,15 +80,15 @@ An UntypedLoadBalancer is an actor that forwards messages it receives to a bound
     }
   }
 
-  ActorRef dispatcher = actorOf(MyLoadBalancer.class).start();
-  dispatcher.sendOneWay("Pong"); //Prints "Pinger: Pong"
-  dispatcher.sendOneWay("Ping"); //Prints "Ponger: Ping"
-  dispatcher.sendOneWay("Ping"); //Prints "Pinger: Ping"
-  dispatcher.sendOneWay("Pong"); //Prints "Ponger: Pong
+  ActorRef balancer = actorOf(MyLoadBalancer.class).start();
+  balancer.sendOneWay("Pong"); //Prints "Pinger: Pong"
+  balancer.sendOneWay("Ping"); //Prints "Ponger: Ping"
+  balancer.sendOneWay("Ping"); //Prints "Pinger: Ping"
+  balancer.sendOneWay("Pong"); //Prints "Ponger: Pong
 
 You can also send a 'new Routing.Broadcast(msg)' message to the router to have it be broadcasted out to all the actors it represents.
 
 .. code-block:: java
 
-  router.sendOneWay(new Routing.Broadcast(new PoisonPill()));
+  balancer.sendOneWay(new Routing.Broadcast(new PoisonPill()));
 

@@ -36,7 +36,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       }).start()
 
-      val d = dispatcherActor {
+      val d = routerActor {
         case Test1 | Test2 ⇒ t1
         case Test3         ⇒ t2
       }.start()
