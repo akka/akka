@@ -14,7 +14,6 @@ import akka.dispatch._
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 import java.util.{ Map ⇒ JMap }
-import akka.cluster.TransactionLog
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
