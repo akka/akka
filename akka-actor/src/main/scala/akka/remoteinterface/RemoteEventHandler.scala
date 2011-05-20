@@ -1,8 +1,8 @@
-package akka.remoteinterface
-
 /**
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
+
+package akka.remoteinterface
 
 import akka.actor.Actor
 import akka.event.EventHandler
@@ -21,7 +21,7 @@ class RemoteEventHandler extends Actor {
 
     // client
     case RemoteClientError(cause, client, address) ⇒ EventHandler.error(cause, client, "RemoteClientError - Address[%s]" format address.toString)
-    case RemoteClientWriteFailed(request, cause, client, address) ⇒ EventHandler.error(cause, client, "RemoteClientWriteFailed - Request[%s] Address[%s]".format(address.toString))
+    case RemoteClientWriteFailed(request, cause, client, address) ⇒ EventHandler.error(cause, client, "RemoteClientWriteFailed - Request[%s] Address[%s]".format(request, address.toString))
     case RemoteClientDisconnected(client, address) ⇒ EventHandler.info(client, "RemoteClientDisconnected - Address[%s]" format address.toString)
     case RemoteClientConnected(client, address) ⇒ EventHandler.info(client, "RemoteClientConnected - Address[%s]" format address.toString)
     case RemoteClientStarted(client, address) ⇒ EventHandler.info(client, "RemoteClientStarted - Address[%s]" format address.toString)

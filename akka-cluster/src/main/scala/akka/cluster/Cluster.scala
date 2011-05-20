@@ -741,8 +741,13 @@ class ClusterNode private[akka] (
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
    * for remote access through lookup by its UUID.
    */
-  def use[T <: Actor](actorAddress: String)(
-    implicit format: Serializer = formatForActor(actorAddress)): Array[LocalActorRef] = if (isConnected.isOn) {
+  def use[T <: Actor](actorAddress: String): Array[LocalActorRef] = use(actorAddress, formatForActor(actorAddress))
+
+  /**
+   * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
+   * for remote access through lookup by its UUID.
+   */
+  def use[T <: Actor](actorAddress: String, format: Serializer): Array[LocalActorRef] = if (isConnected.isOn) {
 
     import akka.serialization.ActorSerialization._
 
@@ -1572,7 +1577,7 @@ trait ErrorHandler {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteClusterDaemon {
-  val ADDRESS = "akka-cluster-daemon"
+  val ADDRESS = "akka-cluster-daemon".intern
 
   // FIXME configure functionServerDispatcher to what?
   val functionServerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("akka:cloud:cluster:function:server").build

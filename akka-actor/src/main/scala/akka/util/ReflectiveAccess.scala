@@ -23,12 +23,6 @@ object ReflectiveAccess {
 
   val loader = getClass.getClassLoader
 
-  lazy val isRemotingEnabled: Boolean = RemoteModule.isEnabled
-  lazy val isClusterEnabled: Boolean = ClusterModule.isEnabled
-
-  def ensureClusterEnabled() { ClusterModule.ensureEnabled() }
-  def ensureRemotingEnabled() { RemoteModule.ensureEnabled() }
-
   /**
    * Reflective access to the Cluster module.
    *
@@ -88,7 +82,7 @@ object ReflectiveAccess {
 
       def remove(address: String)
 
-      def use(address: String): Array[ActorRef]
+      def use(address: String, format: Serializer): Array[ActorRef]
       def ref(address: String, router: RouterType): ActorRef
 
       def isClustered(address: String): Boolean

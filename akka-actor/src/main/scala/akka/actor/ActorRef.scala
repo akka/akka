@@ -615,8 +615,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
           currentMessage = null
           Actor.registry.unregister(this)
 
-          if (ClusterModule.isEnabled && isRemotingEnabled)
-            Actor.remote.unregister(this)
+          if (ClusterModule.isEnabled) Actor.remote.unregister(this)
 
           setActorSelfFields(actorInstance.get, null)
         }
@@ -992,7 +991,8 @@ private[akka] case class RemoteActorRef private[akka] (
   loader: Option[ClassLoader])
   extends ActorRef with ScalaActorRef {
 
-  ensureRemotingEnabled()
+  ClusterModule.ensureEnabled()
+
   timeout = _timeout
 
   // FIXME BAD, we should not have different ActorRefs

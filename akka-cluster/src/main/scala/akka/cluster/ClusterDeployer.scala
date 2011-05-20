@@ -43,13 +43,11 @@ object ClusterDeployer {
   private val isConnected = new Switch(false)
   private val deploymentCompleted = new CountDownLatch(1)
 
-  private val _zkClient = new AtomicReference[AkkaZkClient](null)
-
-  private def zkClient: AkkaZkClient = ensureRunning {
-    val zk = _zkClient.get
-    if (zk eq null) handleError(new IllegalStateException("No ZooKeeper client connection available"))
-    else zk
-  }
+  private val zkClient = new AkkaZkClient(
+    Cluster.zooKeeperServers,
+    Cluster.sessionTimeout,
+    Cluster.connectionTimeout,
+    Cluster.defaultSerializer)
 
   private val clusterDeploymentLockListener = new LockListener {
     def lockAcquired() {
@@ -62,7 +60,7 @@ object ClusterDeployer {
     }
   }
 
-  private lazy val deploymentLock = new WriteLock(
+  private val deploymentLock = new WriteLock(
     zkClient.connection.getZookeeper, clusterDeploymentLockPath, null, clusterDeploymentLockListener) {
     private val ownerIdField = classOf[WriteLock].getDeclaredField("ownerId")
     ownerIdField.setAccessible(true)
@@ -74,13 +72,7 @@ object ClusterDeployer {
 
   private[akka] def init(deployments: List[Deploy]) {
     isConnected switchOn {
-      _zkClient.compareAndSet(null, new AkkaZkClient(
-        Cluster.zooKeeperServers,
-        Cluster.sessionTimeout,
-        Cluster.connectionTimeout,
-        Cluster.defaultSerializer))
-
-      baseNodes.foreach { path ⇒
+      baseNodes foreach { path ⇒
         try {
           ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
           EventHandler.debug(this, "Created node [%s]".format(path))
@@ -106,14 +98,13 @@ object ClusterDeployer {
   }
 
   def shutdown() {
-    val zk = zkClient
     isConnected switchOff {
       // undeploy all
       try {
         for {
-          child ← collectionAsScalaIterable(zk.getChildren(deploymentPath))
-          deployment ← zk.readData(deploymentAddressPath.format(child)).asInstanceOf[Deploy]
-        } zk.delete(deploymentAddressPath.format(deployment.address))
+          child ← collectionAsScalaIterable(zkClient.getChildren(deploymentPath))
+          deployment ← zkClient.readData(deploymentAddressPath.format(child)).asInstanceOf[Deploy]
+        } zkClient.delete(deploymentAddressPath.format(deployment.address))
 
       } catch {
         case e: Exception ⇒
@@ -121,7 +112,7 @@ object ClusterDeployer {
       }
 
       // shut down ZooKeeper client
-      zk.close()
+      zkClient.close()
       EventHandler.info(this, "ClusterDeployer shut down successfully")
     }
   }

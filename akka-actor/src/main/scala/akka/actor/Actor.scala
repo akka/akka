@@ -386,7 +386,7 @@ object Actor extends ListenerManagement {
       case Deploy(_, router, serializerClassName, Clustered(home, replication: Replication, state: State)) ⇒
         ClusterModule.ensureEnabled()
 
-        if (Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
+        if (!Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
 
         val hostname = home match {
           case Host(hostname) ⇒ hostname
@@ -401,8 +401,6 @@ object Actor extends ListenerManagement {
           case NoReplicas          ⇒ 0
           case NoReplicas()        ⇒ 0
         }
-
-        import ClusterModule.node
 
         if (hostname == Config.hostname) { // home node for clustered actor
 
@@ -429,12 +427,13 @@ object Actor extends ListenerManagement {
               }
               val f = clazz.newInstance.asInstanceOf[AnyRef]
               if (f.isInstanceOf[Serializer]) f.asInstanceOf[Serializer]
-              else serializerErrorDueTo("class must be of type [akka.serialization.Serializer")
+              else serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
             }
           }
 
-          if (!node.isClustered(address)) node.store(factory().start(), replicas, false, serializer) // add actor to cluster registry (if not already added)
-          node.use(address)
+          if (!cluster.isClustered(address)) cluster.store(factory().start(), replicas, false, serializer) // add actor to cluster registry (if not already added)
+
+          cluster.use(address, serializer)
 
         } else {
           val routerType = router match {
@@ -451,7 +450,7 @@ object Actor extends ListenerManagement {
             case LeastMessages   ⇒ RouterType.LeastMessages
             case LeastMessages() ⇒ RouterType.LeastMessages
           }
-          node.ref(address, routerType)
+          cluster.ref(address, routerType)
         }
 
         /*
@@ -459,7 +458,7 @@ object Actor extends ListenerManagement {
             - How to define a single ClusterNode to use? Where should it be booted up? How should it be configured?
             - ClusterNode API and Actor.remote API should be made private[akka]
             - Rewrite ClusterSpec or remove it
-            - Actor.stop on home node (actor checked out with node.use(..)) should do node.remove(..) of actor
+            - Actor.stop on home node (actor checked out with cluster.use(..)) should do cluster.remove(..) of actor
             - Should we allow configuring of session-scoped remote actors? How?
 
 
