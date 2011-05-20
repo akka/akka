@@ -9,6 +9,7 @@ import akka.config.Config._
 import akka.util.Helpers.{narrow, narrowSilently}
 import akka.util.ListenerManagement
 import akka.AkkaException
+import akka.event.EventHandler
 
 import scala.reflect.BeanProperty
 import akka.util. {ReflectiveAccess, Duration}
@@ -138,11 +139,32 @@ object Actor extends ListenerManagement {
    */
   type Receive = PartialFunction[Any, Unit]
 
+  /**
+   * This decorator adds invocation logging to a Receive function.
+   */
+  class LoggingReceive(source: AnyRef, r: Receive) extends Receive {
+    def isDefinedAt(o: Any) = {
+      val handled = r.isDefinedAt(o)
+      EventHandler.debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o)
+      handled
+    }
+    def apply(o: Any): Unit = r(o)
+  }
+  object LoggingReceive {
+    def apply(source: AnyRef, r: Receive): Receive = r match {
+      case _ : LoggingReceive => r
+      case _ => new LoggingReceive(source, r)
+    }
+  }
+
+  private[akka] val addLoggingReceive = config.getBool("akka.actor.debug.receive", false)
+  private[akka] val debugAutoReceive = config.getBool("akka.actor.debug.autoreceive", false)
+
   private[actor] val actorRefInCreation = new ThreadLocal[Option[ActorRef]]{
     override def initialValue = None
   }
 
-   /**
+  /**
    *  Creates an ActorRef out of the Actor with type T.
    * <pre>
    *   import Actor._
@@ -313,6 +335,8 @@ object Actor extends ListenerManagement {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor {
+
+  import Actor.{addLoggingReceive, debugAutoReceive, LoggingReceive}
 
   /**
    * Type alias because traits cannot have companion objects.
@@ -488,22 +512,42 @@ trait Actor {
     }
   }
 
-  private final def autoReceiveMessage(msg: AutoReceivedMessage): Unit = msg match {
-    case HotSwap(code, discardOld) => become(code(self), discardOld)
-    case RevertHotSwap             => unbecome()
-    case Exit(dead, reason)        => self.handleTrapExit(dead, reason)
-    case Link(child)               => self.link(child)
-    case Unlink(child)             => self.unlink(child)
-    case UnlinkAndStop(child)      => self.unlink(child); child.stop()
-    case Restart(reason)           => throw reason
-    case Kill                      => throw new ActorKilledException("Kill")
-    case PoisonPill                =>
-      val ch = self.channel
-      self.stop()
-      ch.sendException(new ActorKilledException("PoisonPill"))
+  private final def autoReceiveMessage(msg: AutoReceivedMessage): Unit = {
+    if (debugAutoReceive)
+      EventHandler.debug(this, "received AutoReceiveMessage " + msg)
+    msg match {
+      case HotSwap(code, discardOld) => become(code(self), discardOld)
+      case RevertHotSwap             => unbecome()
+      case Exit(dead, reason)        => self.handleTrapExit(dead, reason)
+      case Link(child)               => self.link(child)
+      case Unlink(child)             => self.unlink(child)
+      case UnlinkAndStop(child)      => self.unlink(child); child.stop()
+      case Restart(reason)           => throw reason
+      case Kill                      => throw new ActorKilledException("Kill")
+      case PoisonPill                =>
+        val ch = self.channel
+        self.stop()
+        ch.sendException(new ActorKilledException("PoisonPill"))
+    }
   }
 
   private lazy val processingBehavior = receive //ProcessingBehavior is the original behavior
+
+  /**
+   * Wrap a Receive partial function in a logging enclosure, which sends a
+   * debug message to the EventHandler each time before a message is matched.
+   * This includes messages which are not handled.
+   * 
+   * <pre><code>
+   * def receive = loggingReceive {
+   *   case x => ...
+   * }
+   * </code></pre>
+   *
+   * This method does NOT modify the given Receive unless
+   * akka.actor.debug.receive is set within akka.conf.
+   */
+  protected def loggingReceive(r: Receive): Receive = if (addLoggingReceive) LoggingReceive(this, r) else r
 }
 
 private[actor] class AnyOptionAsTypedOption(anyOption: Option[Any]) {
