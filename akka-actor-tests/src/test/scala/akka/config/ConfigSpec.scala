@@ -20,7 +20,7 @@ class ConfigSpec extends WordSpec with MustMatchers {
       getString("akka.time-unit") must equal(Some("seconds"))
       getString("akka.version") must equal(Some("2.0-SNAPSHOT"))
 
-      getString("akka.actor.default-dispatcher.type") must equal(Some("GlobalExecutorBasedEventDriven"))
+      getString("akka.actor.default-dispatcher.type") must equal(Some("GlobalDispatcher"))
       getInt("akka.actor.default-dispatcher.keep-alive-time") must equal(Some(60))
       getDouble("akka.actor.default-dispatcher.core-pool-size-factor") must equal(Some(1.0))
       getDouble("akka.actor.default-dispatcher.max-pool-size-factor") must equal(Some(4.0))

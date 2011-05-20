@@ -14,9 +14,9 @@ import akka.actor.{ Actor, ActorRef }
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ThreadBasedDispatcher(_actor: ActorRef, _name: String, _mailboxType: MailboxType)
-  extends ExecutorBasedEventDrivenDispatcher(
-    _name, Dispatchers.THROUGHPUT, -1, _mailboxType, ThreadBasedDispatcher.oneThread) {
+class PinnedDispatcher(_actor: ActorRef, _name: String, _mailboxType: MailboxType)
+  extends Dispatcher(
+    _name, Dispatchers.THROUGHPUT, -1, _mailboxType, PinnedDispatcher.oneThread) {
 
   def this(_name: String, _mailboxType: MailboxType) = this(null, _name, _mailboxType)
 
@@ -47,7 +47,7 @@ class ThreadBasedDispatcher(_actor: ActorRef, _name: String, _mailboxType: Mailb
   }
 }
 
-object ThreadBasedDispatcher {
+object PinnedDispatcher {
   val oneThread: ThreadPoolConfig = ThreadPoolConfig(allowCorePoolTimeout = true, corePoolSize = 1, maxPoolSize = 1)
 }
 

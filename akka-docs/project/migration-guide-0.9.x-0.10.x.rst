@@ -36,7 +36,7 @@ Configuration
 
     actor {
       timeout = 5              # default timeout for future based invocations
-      throughput = 5           # default throughput for ExecutorBasedEventDrivenDispatcher
+      throughput = 5           # default throughput for Dispatcher
     }
     ...
   }

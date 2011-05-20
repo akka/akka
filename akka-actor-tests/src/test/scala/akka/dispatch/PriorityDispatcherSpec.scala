@@ -8,7 +8,7 @@ import java.util.concurrent.CountDownLatch
 
 class PriorityDispatcherSpec extends WordSpec with MustMatchers {
 
-  "A PriorityExecutorBasedEventDrivenDispatcher" must {
+  "A PriorityDispatcher" must {
     "Order it's messages according to the specified comparator using an unbounded mailbox" in {
       testOrdering(UnboundedMailbox())
     }
@@ -19,7 +19,7 @@ class PriorityDispatcherSpec extends WordSpec with MustMatchers {
   }
 
   def testOrdering(mboxType: MailboxType) {
-    val dispatcher = new PriorityExecutorBasedEventDrivenDispatcher("Test",
+    val dispatcher = new PriorityDispatcher("Test",
       PriorityGenerator({
         case i: Int  ⇒ i //Reverse order
         case 'Result ⇒ Int.MaxValue

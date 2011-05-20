@@ -19,7 +19,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   val scalaCompileSettings =
     Seq("-deprecation",
         //"-Xmigration",
-        //"-optimise",
+        "-optimise",
         "-encoding", "utf8")
 
   val javaCompileSettings = Seq("-Xlint:unchecked")

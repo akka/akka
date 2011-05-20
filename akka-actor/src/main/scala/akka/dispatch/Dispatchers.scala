@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit
  * <p/>
  * Example usage:
  * <pre/>
- *   val dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("name")
+ *   val dispatcher = Dispatchers.newDispatcher("name")
  *   dispatcher
  *     .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
  *     .setCorePoolSize(16)
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit
  * <p/>
  * Example usage:
  * <pre/>
- *   MessageDispatcher dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("name");
+ *   MessageDispatcher dispatcher = Dispatchers.newDispatcher("name");
  *   dispatcher
  *     .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
  *     .setCorePoolSize(16)
@@ -57,10 +57,10 @@ object Dispatchers {
   val MAILBOX_TYPE: MailboxType = if (MAILBOX_CAPACITY < 1) UnboundedMailbox() else BoundedMailbox()
 
   lazy val defaultGlobalDispatcher = {
-    config.getSection("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalExecutorBasedEventDrivenDispatcher)
+    config.getSection("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalDispatcher)
   }
 
-  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global", THROUGHPUT, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE)
+  object globalDispatcher extends Dispatcher("global", THROUGHPUT, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE)
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
@@ -68,9 +68,9 @@ object Dispatchers {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(actor: ActorRef) = actor match {
-    case null ⇒ new ThreadBasedDispatcher()
-    case some ⇒ new ThreadBasedDispatcher(some)
+  def newPinnedDispatcher(actor: ActorRef) = actor match {
+    case null ⇒ new PinnedDispatcher()
+    case some ⇒ new PinnedDispatcher(some)
   }
 
   /**
@@ -79,9 +79,9 @@ object Dispatchers {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(actor: ActorRef, mailboxType: MailboxType) = actor match {
-    case null ⇒ new ThreadBasedDispatcher(mailboxType)
-    case some ⇒ new ThreadBasedDispatcher(some, mailboxType)
+  def newPinnedDispatcher(actor: ActorRef, mailboxType: MailboxType) = actor match {
+    case null ⇒ new PinnedDispatcher(mailboxType)
+    case some ⇒ new PinnedDispatcher(some, mailboxType)
   }
 
   /**
@@ -89,77 +89,77 @@ object Dispatchers {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(name: String, mailboxType: MailboxType) =
-    new ThreadBasedDispatcher(name, mailboxType)
+  def newPinnedDispatcher(name: String, mailboxType: MailboxType) =
+    new PinnedDispatcher(name, mailboxType)
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(name: String) =
-    new ThreadBasedDispatcher(name)
+  def newPinnedDispatcher(name: String) =
+    new PinnedDispatcher(name)
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String) =
-    ThreadPoolConfigDispatcherBuilder(config ⇒ new ExecutorBasedEventDrivenDispatcher(name, config), ThreadPoolConfig())
+  def newDispatcher(name: String) =
+    ThreadPoolConfigDispatcherBuilder(config ⇒ new Dispatcher(name, config), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, mailboxType: MailboxType) =
+  def newDispatcher(name: String, throughput: Int, mailboxType: MailboxType) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new ExecutorBasedEventDrivenDispatcher(name, throughput, THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType, config), ThreadPoolConfig())
+      new Dispatcher(name, throughput, THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType, config), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) =
+  def newDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineMs, mailboxType, config), ThreadPoolConfig())
+      new Dispatcher(name, throughput, throughputDeadlineMs, mailboxType, config), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String) =
-    ThreadPoolConfigDispatcherBuilder(config ⇒ new ExecutorBasedEventDrivenWorkStealingDispatcher(name, config), ThreadPoolConfig())
+  def newBalancingDispatcher(name: String) =
+    ThreadPoolConfigDispatcherBuilder(config ⇒ new BalancingDispatcher(name, config), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, throughput: Int) =
+  def newBalancingDispatcher(name: String, throughput: Int) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new ExecutorBasedEventDrivenWorkStealingDispatcher(name, throughput, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE, config), ThreadPoolConfig())
+      new BalancingDispatcher(name, throughput, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE, config), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, throughput: Int, mailboxType: MailboxType) =
+  def newBalancingDispatcher(name: String, throughput: Int, mailboxType: MailboxType) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new ExecutorBasedEventDrivenWorkStealingDispatcher(name, throughput, THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType, config), ThreadPoolConfig())
+      new BalancingDispatcher(name, throughput, THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType, config), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) =
+  def newBalancingDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new ExecutorBasedEventDrivenWorkStealingDispatcher(name, throughput, throughputDeadlineMs, mailboxType, config), ThreadPoolConfig())
+      new BalancingDispatcher(name, throughput, throughputDeadlineMs, mailboxType, config), ThreadPoolConfig())
   /**
    * Utility function that tries to load the specified dispatcher config from the akka.conf
    * or else use the supplied default dispatcher
@@ -181,7 +181,7 @@ object Dispatchers {
    *   executor-bounds = -1        # Makes the Executor bounded, -1 is unbounded
    *   allow-core-timeout = on     # Allow core threads to time out
    *   rejection-policy = "caller-runs" # abort, caller-runs, discard-oldest, discard
-   *   throughput = 5              # Throughput for ExecutorBasedEventDrivenDispatcher
+   *   throughput = 5              # Throughput for Dispatcher
    * }
    * ex: from(config.getConfigMap(identifier).get)
    *
@@ -192,9 +192,9 @@ object Dispatchers {
    */
   def from(cfg: Configuration): Option[MessageDispatcher] = {
     cfg.getString("type") map {
-      case "ExecutorBasedEventDriven"             ⇒ new ExecutorBasedEventDrivenDispatcherConfigurator()
-      case "ExecutorBasedEventDrivenWorkStealing" ⇒ new ExecutorBasedEventDrivenWorkStealingDispatcherConfigurator()
-      case "GlobalExecutorBasedEventDriven"       ⇒ GlobalExecutorBasedEventDrivenDispatcherConfigurator
+      case "Dispatcher"          ⇒ new DispatcherConfigurator()
+      case "BalancingDispatcher" ⇒ new BalancingDispatcherConfigurator()
+      case "GlobalDispatcher"    ⇒ GlobalDispatcherConfigurator
       case fqn ⇒
         ReflectiveAccess.getClassFor[MessageDispatcherConfigurator](fqn) match {
           case r: Right[_, Class[MessageDispatcherConfigurator]] ⇒
@@ -212,13 +212,13 @@ object Dispatchers {
   }
 }
 
-object GlobalExecutorBasedEventDrivenDispatcherConfigurator extends MessageDispatcherConfigurator {
-  def configure(config: Configuration): MessageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
+object GlobalDispatcherConfigurator extends MessageDispatcherConfigurator {
+  def configure(config: Configuration): MessageDispatcher = Dispatchers.globalDispatcher
 }
 
-class ExecutorBasedEventDrivenDispatcherConfigurator extends MessageDispatcherConfigurator {
+class DispatcherConfigurator extends MessageDispatcherConfigurator {
   def configure(config: Configuration): MessageDispatcher = {
-    configureThreadPool(config, threadPoolConfig ⇒ new ExecutorBasedEventDrivenDispatcher(
+    configureThreadPool(config, threadPoolConfig ⇒ new Dispatcher(
       config.getString("name", newUuid.toString),
       config.getInt("throughput", Dispatchers.THROUGHPUT),
       config.getInt("throughput-deadline-time", Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS),
@@ -227,9 +227,9 @@ class ExecutorBasedEventDrivenDispatcherConfigurator extends MessageDispatcherCo
   }
 }
 
-class ExecutorBasedEventDrivenWorkStealingDispatcherConfigurator extends MessageDispatcherConfigurator {
+class BalancingDispatcherConfigurator extends MessageDispatcherConfigurator {
   def configure(config: Configuration): MessageDispatcher = {
-    configureThreadPool(config, threadPoolConfig ⇒ new ExecutorBasedEventDrivenWorkStealingDispatcher(
+    configureThreadPool(config, threadPoolConfig ⇒ new BalancingDispatcher(
       config.getString("name", newUuid.toString),
       config.getInt("throughput", Dispatchers.THROUGHPUT),
       config.getInt("throughput-deadline-time", Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS),

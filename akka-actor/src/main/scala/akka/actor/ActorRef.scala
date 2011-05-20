@@ -160,7 +160,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
 
   /**
    * Akka Java API. <p/>
-   * The default dispatcher is the <tt>Dispatchers.globalExecutorBasedEventDrivenDispatcher</tt>.
+   * The default dispatcher is the <tt>Dispatchers.globalDispatcher</tt>.
    * This means that all actors will share the same event-driven executor based dispatcher.
    * <p/>
    * You can override it so it fits the specific use-case that the actor is used for.

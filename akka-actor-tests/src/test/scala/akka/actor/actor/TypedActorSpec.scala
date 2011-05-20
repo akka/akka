@@ -264,7 +264,7 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
     "be able to use work-stealing dispatcher" in {
       val config = Configuration(
         Duration(6600, "ms"),
-        Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
+        Dispatchers.newBalancingDispatcher("pooled-dispatcher")
           .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
           .setCorePoolSize(60)
           .setMaxPoolSize(60)

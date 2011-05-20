@@ -1580,7 +1580,7 @@ object RemoteClusterDaemon {
   val ADDRESS = "akka-cluster-daemon".intern
 
   // FIXME configure functionServerDispatcher to what?
-  val functionServerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("akka:cloud:cluster:function:server").build
+  val functionServerDispatcher = Dispatchers.newDispatcher("akka:cloud:cluster:function:server").build
 }
 
 /**
@@ -1591,7 +1591,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
   import RemoteClusterDaemon._
   import Cluster._
 
-  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
+  self.dispatcher = Dispatchers.newPinnedDispatcher(self)
 
   def receive: Receive = {
     case message: RemoteDaemonMessageProtocol ⇒

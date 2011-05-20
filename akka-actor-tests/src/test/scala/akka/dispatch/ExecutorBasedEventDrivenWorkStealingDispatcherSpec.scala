@@ -10,9 +10,9 @@ import akka.actor.{ IllegalActorStateException, Actor }
 import Actor._
 import akka.dispatch.{ MessageQueue, Dispatchers }
 
-object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
+object BalancingDispatcherSpec {
 
-  def newWorkStealer() = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher", 1).build
+  def newWorkStealer() = Dispatchers.newBalancingDispatcher("pooled-dispatcher", 1).build
 
   val delayableActorDispatcher, sharedActorDispatcher, parentActorDispatcher = newWorkStealer()
 
@@ -52,8 +52,8 @@ object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
 /**
  * @author Jan Van Besien
  */
-class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with MustMatchers {
-  import ExecutorBasedEventDrivenWorkStealingDispatcherSpec._
+class BalancingDispatcherSpec extends JUnitSuite with MustMatchers {
+  import BalancingDispatcherSpec._
 
   @Test
   def fastActorShouldStealWorkFromSlowActor {

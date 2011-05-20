@@ -293,7 +293,7 @@ class AgentUpdater[T](agent: Agent[T]) extends Actor {
  * Thread-based agent updater actor. Used internally for `sendOff` actions.
  */
 class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
-  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
+  self.dispatcher = Dispatchers.newPinnedDispatcher(self)
 
   val txFactory = TransactionFactory(familyName = "ThreadBasedAgentUpdater", readonly = false)
 
