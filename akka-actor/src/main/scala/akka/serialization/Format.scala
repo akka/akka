@@ -20,26 +20,11 @@ trait Serializer extends scala.Serializable {
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
 }
 
-trait FromBinary[T <: Actor] {
-  def fromBinary(bytes: Array[Byte], act: T): T
-}
-
-trait ToBinary[T <: Actor] {
-  def toBinary(t: T): Array[Byte]
-}
-
-/**
- * Type class definition for Actor Serialization.
- * Client needs to implement Format[] for the respective actor.
- */
-trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
-
 /**
  *
  */
 object Format {
-
-  object Default extends Serializer {
+  implicit object Default extends Serializer {
     import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
     //import org.apache.commons.io.input.ClassLoaderObjectInputStream
 
@@ -60,7 +45,23 @@ object Format {
       obj
     }
   }
+
+  val defaultSerializerName = Default.getClass.getName
 }
+
+trait FromBinary[T <: Actor] {
+  def fromBinary(bytes: Array[Byte], act: T): T
+}
+
+trait ToBinary[T <: Actor] {
+  def toBinary(t: T): Array[Byte]
+}
+
+/**
+ * Type class definition for Actor Serialization.
+ * Client needs to implement Format[] for the respective actor.
+ */
+trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
 
 /**
  * A default implementation for a stateless actor

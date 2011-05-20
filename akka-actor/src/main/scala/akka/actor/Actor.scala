@@ -403,29 +403,30 @@ object Actor extends ListenerManagement {
                 "] for serialization of actor [" + address +
                 "] since " + reason)
 
-          //todo: serializer is not used.
           val serializer: Serializer = {
-            if (serializerClassName == "N/A") serializerErrorDueTo("no class name defined in configuration")
-            val clazz: Class[_] = ReflectiveAccess.getClassFor(serializerClassName) match {
-              case Right(clazz) ⇒ clazz
-              case Left(exception) ⇒
-                val cause = exception match {
-                  case i: InvocationTargetException ⇒ i.getTargetException
-                  case _                            ⇒ exception
-                }
-                serializerErrorDueTo(cause.toString)
+            if ((serializerClassName eq null) ||
+              (serializerClassName == "") ||
+              (serializerClassName == Format.defaultSerializerName)) {
+              Format.Default
+            } else {
+              val clazz: Class[_] = ReflectiveAccess.getClassFor(serializerClassName) match {
+                case Right(clazz) ⇒ clazz
+                case Left(exception) ⇒
+                  val cause = exception match {
+                    case i: InvocationTargetException ⇒ i.getTargetException
+                    case _                            ⇒ exception
+                  }
+                  serializerErrorDueTo(cause.toString)
+              }
+              val f = clazz.newInstance.asInstanceOf[AnyRef]
+              if (f.isInstanceOf[Serializer]) f.asInstanceOf[Serializer]
+              else serializerErrorDueTo("class must be of type [akka.serialization.Serializer")
             }
-            val f = clazz.newInstance.asInstanceOf[AnyRef]
-            if (f.isInstanceOf[Serializer]) f.asInstanceOf[Serializer]
-            else serializerErrorDueTo("class must be of type [akka.serialization.Serializer")
           }
 
-          // FIXME use the serializer above instead of dummy Format, but then the ClusterNode AND ActorRef serialization needs to be rewritten
-          implicit val format: Format[T] = null
-          sys.error("FIXME use the serializer above instead of dummy Format, but then the ClusterNode AND ActorRef serialization needs to be rewritten")
-
-          if (!node.isClustered(address)) node.store(address, factory(), replicas, false)
+          if (!node.isClustered(address)) node.store(factory().start(), replicas, false, serializer) // add actor to cluster registry (if not already added)
           node.use(address)
+
         } else {
           val routerType = router match {
             case Direct          ⇒ RouterType.Direct

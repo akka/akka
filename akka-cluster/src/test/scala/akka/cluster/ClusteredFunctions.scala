@@ -13,6 +13,9 @@ import akka.dispatch.Futures
 object ClusteredFunctions {
   //sample.cluster.ClusteredFunctions.fun2
 
+  // FIXME rewrite as multi-jvm test
+
+  /*
   // run all
   def run {
     fun1
@@ -87,4 +90,5 @@ object ClusteredFunctions {
     remote1.stop
     Cluster.shutdownLocalCluster()
   }
+  */
 }

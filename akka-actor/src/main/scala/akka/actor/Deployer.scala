@@ -12,6 +12,7 @@ import akka.event.EventHandler
 import akka.actor.DeploymentConfig._
 import akka.config.{ ConfigurationException, Config }
 import akka.util.ReflectiveAccess
+import akka.serialization.Format
 import akka.AkkaException
 
 /**
@@ -26,7 +27,11 @@ object DeploymentConfig {
   // --------------------------------
   // --- Deploy
   // --------------------------------
-  case class Deploy(address: String, routing: Routing = Direct, format: String = "N/A", scope: Scope = Local)
+  case class Deploy(
+    address: String,
+    routing: Routing = Direct,
+    format: String = Format.defaultSerializerName,
+    scope: Scope = Local)
 
   // --------------------------------
   // --- Routing
@@ -219,7 +224,7 @@ object Deployer {
     // --------------------------------
     val addressPath = "akka.actor.deployment." + address
     Config.config.getSection(addressPath) match {
-      case None ⇒ Some(Deploy(address, Direct, "N/A", Local))
+      case None ⇒ Some(Deploy(address, Direct, Format.defaultSerializerName, Local))
       case Some(addressConfig) ⇒
 
         // --------------------------------
@@ -246,14 +251,14 @@ object Deployer {
         // --------------------------------
         // akka.actor.deployment.<address>.format
         // --------------------------------
-        val format = addressConfig.getString("format", "N/A")
+        val format = addressConfig.getString("format", Format.defaultSerializerName)
 
         // --------------------------------
         // akka.actor.deployment.<address>.clustered
         // --------------------------------
         addressConfig.getSection("clustered") match {
           case None ⇒
-            Some(Deploy(address, router, "N/A", Local)) // deploy locally
+            Some(Deploy(address, router, Format.defaultSerializerName, Local)) // deploy locally
 
           case Some(clusteredConfig) ⇒
 

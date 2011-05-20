@@ -31,7 +31,7 @@ class Ticket435Spec extends Spec with ShouldMatchers with BeforeAndAfterAll {
   }
 
   describe("Serializable actor") {
-
+    /*
     it("should be able to serialize and deserialize a stateless actor with messages in mailbox") {
       import BinaryFormatMyStatelessActorWithMessagesInMailbox._
 
@@ -105,6 +105,7 @@ class Ticket435Spec extends Spec with ShouldMatchers with BeforeAndAfterAll {
       actor3.mailboxSize should equal(0)
       (actor3 !! "hello").getOrElse("_") should equal("world 1")
     }
+    */
   }
 }
 

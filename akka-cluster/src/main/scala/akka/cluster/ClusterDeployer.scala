@@ -71,11 +71,7 @@ object ClusterDeployer {
     def leader: String = ownerIdField.get(this).asInstanceOf[String]
   }
 
-  private val systemDeployments = List(
-    Deploy(
-      address = RemoteClusterDaemon.ADDRESS,
-      routing = Direct,
-      scope = Clustered(Deployer.defaultAddress, NoReplicas, Stateless)))
+  private val systemDeployments: List[Deploy] = Nil
 
   private[akka] def init(deployments: List[Deploy]) {
     isConnected.switchOn {
