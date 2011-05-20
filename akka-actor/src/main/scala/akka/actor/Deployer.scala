@@ -11,14 +11,14 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.event.EventHandler
 import akka.actor.DeploymentConfig._
 import akka.config.{ ConfigurationException, Config }
-import akka.util.ReflectiveAccess
+import akka.util.ReflectiveAccess._
 import akka.serialization.Format
 import akka.AkkaException
 
 /**
- * Programmatic deployment configuration classes. Most values have defaults and can be left out.
- *
- * todo: what does the concept Deploy
+ * Module holding the programmatic deployment configuration classes.
+ * Defines the deployment specification.
+ * Most values have defaults and can be left out.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -117,9 +117,9 @@ object Deployer {
 
   val defaultAddress = Host(Config.hostname)
 
-  lazy val instance: ReflectiveAccess.ClusterModule.ClusterDeployer = {
+  lazy val instance: ClusterModule.ClusterDeployer = {
     val deployer =
-      if (ReflectiveAccess.ClusterModule.isEnabled) ReflectiveAccess.ClusterModule.clusterDeployer
+      if (ClusterModule.isEnabled) ClusterModule.clusterDeployer
       else LocalDeployer
     deployer.init(deploymentsInConfig)
     deployer
