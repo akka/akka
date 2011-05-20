@@ -614,6 +614,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
         } finally {
           currentMessage = null
           Actor.registry.unregister(this)
+
           if (isRemotingEnabled)
             Actor.remote.unregister(this)
 

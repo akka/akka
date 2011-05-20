@@ -49,18 +49,14 @@ class ClusterDeployerSpec extends WordSpec with MustMatchers with BeforeAndAfter
     try {
       zkServer = Cluster.startLocalCluster(dataPath, logPath)
       Thread.sleep(5000)
-      Cluster.node.start()
+      Actor.cluster.start()
     } catch {
       case e ⇒ e.printStackTrace()
     }
   }
 
-  override def beforeEach() {
-    //    Cluster.reset()
-  }
-
   override def afterAll() {
-    Cluster.node.stop()
+    Actor.cluster.shutdown()
     ClusterDeployer.shutdown()
     Cluster.shutdownLocalCluster()
     Actor.registry.local.shutdownAll()

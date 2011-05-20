@@ -835,10 +835,6 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
     zkServer = Cluster.startLocalCluster(dataPath, logPath)
   }
 
-  override def beforeEach() = {
-    Cluster.reset
-  }
-
   override def afterAll() = {
     Cluster.shutdownLocalCluster
     Actor.registry.local.shutdownAll

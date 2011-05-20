@@ -312,15 +312,6 @@ object Cluster {
   def shutdownLocalCluster() {
     withPrintStackTraceOnError {
       EventHandler.info(this, "Shuts down local cluster")
-
-      node.disconnect()
-      node.remoteService.shutdown()
-
-      implicit val zkClient = newZkClient
-      ignore[ZkNoNodeException](zkClient.deleteRecursive("/" + name))
-      ignore[ZkNoNodeException](zkClient.deleteRecursive(ZooKeeperBarrier.BarriersNode))
-      zkClient.close()
-
       _zkServer.get.foreach(_.shutdown())
       _zkServer.set(None)
     }
@@ -489,7 +480,7 @@ class ClusterNode private[akka] (
     this
   }
 
-  def stop() {
+  def shutdown() {
     isConnected switchOff {
       ignore[ZkNoNodeException](zkClient.deleteRecursive(membershipNodePath))
 
@@ -880,9 +871,7 @@ class ClusterNode private[akka] (
 
     // FIXME remove?
     def refByUuid(uuid: UUID): ActorRef = {
-      val actor = Router newRouter (router, addresses,
-        uuidToString(uuid),
-        Actor.TIMEOUT)
+      val actor = Router newRouter (router, addresses, uuidToString(uuid), Actor.TIMEOUT)
       registerClusterActorRefForAddress(actor, addresses)
       actor
     }
@@ -890,9 +879,7 @@ class ClusterNode private[akka] (
     def refByAddress(actorAddress: String): ActorRef = {
       //FIXME: unused uuids
       val uuids = uuidsForActorAddress(actorAddress)
-      val actor = Router newRouter (router, addresses,
-        actorAddress,
-        Actor.TIMEOUT)
+      val actor = Router newRouter (router, addresses, actorAddress, Actor.TIMEOUT)
       registerClusterActorRefForAddress(actor, addresses)
       actor
     }
@@ -1208,6 +1195,7 @@ class ClusterNode private[akka] (
 
   private[cluster] def initializeNode() {
     EventHandler.info(this, "Initializing cluster node [%s]".format(nodeAddress))
+    EventHandler.info(this, "Starting up remote server [%s]".format(remoteServerAddress.toString))
     createRootClusterNode()
     val isLeader = joinLeaderElection
     if (isLeader) createNodeStructureIfNeeded()
@@ -1441,7 +1429,7 @@ class ClusterNode private[akka] (
       }
 
       override def stop() {
-        self.stop()
+        self.shutdown()
       }
 
       override def disconnect() = self.disconnect()
@@ -1628,7 +1616,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
         case START      ⇒ cluster.start()
 
-        case STOP       ⇒ cluster.stop()
+        case STOP       ⇒ cluster.shutdown()
 
         case DISCONNECT ⇒ cluster.disconnect()
 

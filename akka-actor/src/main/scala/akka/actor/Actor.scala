@@ -99,6 +99,15 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception 
  */
 object Actor extends ListenerManagement {
 
+  private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
+  private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
+
+  /**
+   * A Receive is a convenience type that defines actor message behavior currently modeled as
+   * a PartialFunction[Any, Unit].
+   */
+  type Receive = PartialFunction[Any, Unit]
+
   /**
    * Add shutdown cleanups
    */
@@ -116,28 +125,28 @@ object Actor extends ListenerManagement {
     hook
   }
 
-  val registry = new ActorRegistry
-
-  lazy val remote: RemoteSupport = {
-    ReflectiveAccess
-      .RemoteModule
-      .defaultRemoteSupport
-      .map(_())
-      .getOrElse(throw new UnsupportedOperationException("You need to have akka-remote.jar on classpath"))
-  }
-
-  private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
-  private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
-
-  /**
-   * A Receive is a convenience type that defines actor message behavior currently modeled as
-   * a PartialFunction[Any, Unit].
-   */
-  type Receive = PartialFunction[Any, Unit]
-
   private[actor] val actorRefInCreation = new ThreadLocal[Option[ActorRef]] {
     override def initialValue = None
   }
+
+  /**
+   * Handle to the ActorRegistry.
+   */
+  val registry = new ActorRegistry
+
+  /**
+   * Handle to the ClusterNode. API for the cluster client.
+   */
+  lazy val cluster: ClusterModule.ClusterNode = ClusterModule.node
+
+  /**
+   * Handle to the RemoteSupport. API for the remote client/server.
+   * Only for internal use.
+   */
+  private[akka] lazy val remote: RemoteSupport = cluster.remoteService
+
+  // start up a cluster node to join the ZooKeeper cluster
+  if (ClusterModule.isEnabled) cluster.start()
 
   /**
    * Creates an ActorRef out of the Actor with type T.

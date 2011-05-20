@@ -433,10 +433,10 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
       new AkkaSampleAntsProject(_), akka_stm)
     lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
       new AkkaSampleFSMProject(_), akka_actor)
-    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
-      new AkkaSampleRemoteProject(_), akka_remote)
-    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
-      new AkkaSampleChatProject(_), akka_remote)
+//    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
+//      new AkkaSampleRemoteProject(_), akka_remote)
+//    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
+//      new AkkaSampleChatProject(_), akka_remote)
     lazy val akka_sample_osgi = project("akka-sample-osgi", "akka-sample-osgi",
       new AkkaSampleOsgiProject(_), akka_actor)
 

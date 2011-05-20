@@ -6,11 +6,10 @@ package akka.util
 
 import akka.dispatch.{ Future, CompletableFuture, MessageInvocation }
 import akka.config.{ Config, ModuleNotAvailableException }
-
 import akka.remoteinterface.RemoteSupport
 import akka.actor._
+import DeploymentConfig.Deploy
 import akka.event.EventHandler
-import akka.actor.DeploymentConfig.Deploy
 import akka.serialization.Format
 
 import java.net.InetSocketAddress
@@ -81,6 +80,8 @@ object ReflectiveAccess {
     type ClusterNode = {
       def start()
       def shutdown()
+
+      def remoteService: RemoteSupport
 
       def store(address: String, actorClass: Class[_ <: Actor], replicas: Int, serializeMailbox: Boolean, format: Serializer)
       def store(actorRef: ActorRef, replicas: Int, serializeMailbox: Boolean, format: Serializer)
