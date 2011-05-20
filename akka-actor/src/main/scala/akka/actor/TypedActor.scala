@@ -9,16 +9,26 @@ import akka.actor.Actor.{ actorOf, futureToAnyOptionAsTypedOption }
 import akka.dispatch.{ MessageDispatcher, Dispatchers, Future }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration }
+import java.util.concurrent.atomic.AtomicReference
 
 object TypedActor {
-  class TypedActor[TI <: AnyRef](createInstance: ⇒ TI) extends Actor {
+  private val selfReference = new ThreadLocal[AnyRef]
+  def self[T <: AnyRef] = selfReference.get.asInstanceOf[T]
+
+  class TypedActor[TI <: AnyRef](proxyRef: AtomicReference[AnyRef], createInstance: ⇒ TI) extends Actor {
     val me = createInstance
     def receive = {
-      case m: MethodCall ⇒ m match {
-        case m if m.isOneWay        ⇒ m(me)
-        case m if m.returnsFuture_? ⇒ self.senderFuture.get completeWith m(me).asInstanceOf[Future[Any]]
-        case m                      ⇒ self reply m(me)
-      }
+      case m: MethodCall ⇒
+        selfReference set proxyRef.get
+        try {
+          m match {
+            case m if m.isOneWay        ⇒ m(me)
+            case m if m.returnsFuture_? ⇒ self.senderFuture.get completeWith m(me).asInstanceOf[Future[Any]]
+            case m                      ⇒ self reply m(me)
+          }
+        } finally {
+          selfReference set null
+        }
     }
   }
 
@@ -74,30 +84,36 @@ object TypedActor {
   }
 
   def typedActorOf[T <: AnyRef, TI <: T](interface: Class[T], impl: Class[TI], config: Configuration): T =
-    configureAndProxy(Array[Class[_]](interface), actorOf(new TypedActor[TI](impl.newInstance.asInstanceOf[TI])), config, interface.getClassLoader)
+    newTypedActor(Array[Class[_]](interface), impl.newInstance, config, interface.getClassLoader)
 
   def typedActorOf[T <: AnyRef, TI <: T](interface: Class[T], impl: Creator[TI], config: Configuration): T =
-    configureAndProxy(Array[Class[_]](interface), actorOf(new TypedActor[TI](impl.create)), config, interface.getClassLoader)
+    newTypedActor(Array[Class[_]](interface), impl.create, config, interface.getClassLoader)
 
   def typedActorOf[T <: AnyRef, TI <: T](interface: Class[T], impl: Class[TI], config: Configuration, loader: ClassLoader): T =
-    configureAndProxy(Array[Class[_]](interface), actorOf(new TypedActor[TI](impl.newInstance.asInstanceOf[TI])), config, loader)
+    newTypedActor(Array[Class[_]](interface), impl.newInstance, config, loader)
 
   def typedActorOf[T <: AnyRef, TI <: T](interface: Class[T], impl: Creator[TI], config: Configuration, loader: ClassLoader): T =
-    configureAndProxy(Array[Class[_]](interface), actorOf(new TypedActor[TI](impl.create)), config, loader)
+    newTypedActor(Array[Class[_]](interface), impl.create, config, loader)
 
   def typedActorOf[R <: AnyRef, T <: R](impl: Class[T], config: Configuration, loader: ClassLoader): R =
-    configureAndProxy(impl.getInterfaces, actorOf(new TypedActor[T](impl.newInstance)), config, loader)
+    newTypedActor(impl.getInterfaces, impl.newInstance, config, loader)
 
   def typedActorOf[R <: AnyRef, T <: R](config: Configuration = Configuration(), loader: ClassLoader = null)(implicit m: Manifest[T]): R = {
     val clazz = m.erasure.asInstanceOf[Class[T]]
-    configureAndProxy[R](clazz.getInterfaces, actorOf(new TypedActor[T](clazz.newInstance)), config, if (loader eq null) clazz.getClassLoader else loader)
+    newTypedActor(clazz.getInterfaces, clazz.newInstance, config, if (loader eq null) clazz.getClassLoader else loader)
   }
 
-  protected def configureAndProxy[T <: AnyRef](interfaces: Array[Class[_]], actor: ActorRef, config: Configuration, loader: ClassLoader): T = {
+  protected def newTypedActor[R <: AnyRef, T <: R](interfaces: Array[Class[_]], constructor: ⇒ T, config: Configuration, loader: ClassLoader): R = {
+    val proxyRef = new AtomicReference[AnyRef](null)
+    configureAndProxyLocalActorRef[T](interfaces, proxyRef, actorOf(new TypedActor[T](proxyRef, constructor)), config, loader)
+  }
+
+  protected def configureAndProxyLocalActorRef[T <: AnyRef](interfaces: Array[Class[_]], proxyRef: AtomicReference[AnyRef], actor: ActorRef, config: Configuration, loader: ClassLoader): T = {
     actor.timeout = config.timeout.toMillis
     actor.dispatcher = config.dispatcher
 
     val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(actor)).asInstanceOf[T]
+    proxyRef.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
     Actor.registry.registerTypedActor(actor.start, proxy) //We only have access to the proxy from the outside, so register it with the ActorRegistry, will be removed on actor.stop
     proxy
   }

@@ -18,6 +18,8 @@ object TypedActorSpec {
   trait Foo {
     def pigdog(): String
 
+    def self = TypedActor.self[Foo]
+
     def futurePigdog(): Future[String]
     def futurePigdog(delay: Long): Future[String]
     def futurePigdog(delay: Long, numbered: Int): Future[String]
@@ -38,6 +40,7 @@ object TypedActorSpec {
   }
 
   class Bar extends Foo {
+
     def pigdog = "Pigdog"
 
     def futurePigdog(): Future[String] = new AlreadyCompletedFuture(Right(pigdog))
@@ -127,6 +130,12 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
     "not stop non-started ones" in {
       stop(null) must be(false)
+    }
+
+    "have access to itself when executing a method call" in {
+      val t = newFooBar
+      t.self must be(t)
+      mustStop(t)
     }
 
     "be able to call toString" in {
