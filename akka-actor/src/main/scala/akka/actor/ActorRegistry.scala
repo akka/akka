@@ -98,8 +98,8 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
    *  Registers an actor in the Cluster ActorRegistry.
    */
   private[akka] def registerInCluster[T <: Actor](
-    address: String, actor: ActorRef, replicas: Int, serializeMailbox: Boolean = false)(implicit format: Format[T]) {
-    ClusterModule.node.store(address, actor, replicas, serializeMailbox)
+    address: String, actorRef: ActorRef, replicas: Int, serializeMailbox: Boolean = false)(implicit format: Serializer) {
+    ClusterModule.node.store(actorRef, replicas, serializeMailbox, format)
   }
 
   /**

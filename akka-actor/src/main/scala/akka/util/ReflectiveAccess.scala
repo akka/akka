@@ -36,19 +36,6 @@ object ReflectiveAccess {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object ClusterModule {
-    import java.net.InetAddress
-    import com.eaio.uuid.UUID
-    import akka.cluster.NodeAddress
-    import Config.{ config, TIME_UNIT }
-
-    val name = config.getString("akka.cluster.name", "default")
-    val zooKeeperServers = config.getString("akka.cluster.zookeeper-server-addresses", "localhost:2181")
-    val sessionTimeout = Duration(config.getInt("akka.cluster.session-timeout", 60), TIME_UNIT).toMillis.toInt
-    val connectionTimeout = Duration(config.getInt("akka.cluster.connection-timeout", 60), TIME_UNIT).toMillis.toInt
-    val maxTimeToWaitUntilConnected = Duration(config.getInt("akka.cluster.max-time-to-wait-until-connected", 30), TIME_UNIT).toMillis.toInt
-    val shouldCompressData = config.getBool("akka.cluster.use-compression", false)
-    val nodeAddress = NodeAddress(name, Config.nodename, Config.hostname, Config.remoteServerPort)
-
     lazy val isEnabled = clusterInstance.isDefined
 
     def ensureEnabled() {
@@ -83,7 +70,7 @@ object ReflectiveAccess {
 
     lazy val node: ClusterNode = {
       ensureEnabled()
-      clusterInstance.get.newNode(nodeAddress, zooKeeperServers)
+      clusterInstance.get.node
     }
 
     lazy val clusterDeployer: ClusterDeployer = {
@@ -95,13 +82,14 @@ object ReflectiveAccess {
       def start()
       def shutdown()
 
-      def store[T <: Actor](address: String, actorClass: Class[T], replicas: Int, serializeMailbox: Boolean)(implicit format: Format[T])
-
-      def store[T <: Actor](address: String, actorRef: ActorRef, replicas: Int, serializeMailbox: Boolean)(implicit format: Format[T])
+      def store(address: String, actorClass: Class[_ <: Actor], replicas: Int, serializeMailbox: Boolean, format: Serializer)
+      def store(actorRef: ActorRef, replicas: Int, serializeMailbox: Boolean, format: Serializer)
 
       def remove(address: String)
+
       def use(address: String): Array[ActorRef]
       def ref(address: String, router: RouterType): ActorRef
+
       def isClustered(address: String): Boolean
       def nrOfActors: Int
     }
@@ -116,7 +104,7 @@ object ReflectiveAccess {
     }
 
     type Cluster = {
-      def newNode(nodeAddress: NodeAddress, zkServerAddresses: String): ClusterNode
+      def node: ClusterNode
     }
 
     type Mailbox = {
