@@ -15,6 +15,7 @@ import akka.util. {ReflectiveAccess, Duration}
 import akka.remoteinterface.RemoteSupport
 import akka.japi. {Creator, Procedure}
 import java.lang.reflect.InvocationTargetException
+import java.util.concurrent.TimeUnit
 
 /**
  * Life-cycle messages for the Actors
@@ -117,7 +118,18 @@ object Actor extends ListenerManagement {
       .getOrElse(throw new UnsupportedOperationException("You need to have akka-remote.jar on classpath"))
   }
 
+  case class Timeout(duration: Duration) {
+    def this(timeout: Long) = this(Duration(timeout, TimeUnit.MILLISECONDS))
+    def this(length: Long, unit: TimeUnit) = this(Duration(length, unit))
+  }
+  object Timeout {
+    def apply(timeout: Long) = new Timeout(timeout)
+    def apply(length: Long, unit: TimeUnit) = new Timeout(length, unit)
+    implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
+  }
+
   private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
+  val defaultTimeout = Timeout(TIMEOUT)
   private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**

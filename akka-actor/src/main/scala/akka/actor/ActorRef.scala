@@ -1325,6 +1325,7 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
    * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>self.reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
+  @deprecated("use `(actor ? msg).as[T]` instead", "1.2")
   def !!(message: Any, timeout: Long = this.timeout)(implicit channel: UntypedChannel = NullChannel): Option[Any] = {
     if (isRunning) {
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
@@ -1357,8 +1358,11 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
   def !!![T](message: Any, timeout: Long = this.timeout)(implicit channel: UntypedChannel = NullChannel): Future[T] =
     this.?(message, timeout)(channel).asInstanceOf[Future[T]]
 
-  def ?(message: Any, timeout: Long = this.timeout)(implicit channel: UntypedChannel = NullChannel): ActorCompletableFuture = {
-    if (isRunning) postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
+  /**
+   * Sends a message asynchronously, returning a future which may eventually hold the reply.
+   */
+  def ?(message: Any)(implicit channel: UntypedChannel = NullChannel, timeout: Actor.Timeout = Actor.defaultTimeout): ActorCompletableFuture = {
+    if (isRunning) postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout.duration.toMillis, channel)
     else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
