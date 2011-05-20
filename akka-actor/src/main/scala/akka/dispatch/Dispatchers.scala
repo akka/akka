@@ -68,16 +68,10 @@ object Dispatchers {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(actor: ActorRef) = new ThreadBasedDispatcher(actor)
-
-  /**
-   * Creates an thread based dispatcher serving a single actor through the same single thread.
-   * Uses the default timeout
-   * If capacity is negative, it's Integer.MAX_VALUE
-   * <p/>
-   * E.g. each actor consumes its own thread.
-   */
-  def newThreadBasedDispatcher(actor: ActorRef, mailboxCapacity: Int) = new ThreadBasedDispatcher(actor, mailboxCapacity)
+  def newThreadBasedDispatcher(actor: ActorRef) = actor match {
+    case null ⇒ new ThreadBasedDispatcher()
+    case some ⇒ new ThreadBasedDispatcher(some)
+  }
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
@@ -85,8 +79,26 @@ object Dispatchers {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(actor: ActorRef, mailboxCapacity: Int, pushTimeOut: Duration) =
-    new ThreadBasedDispatcher(actor, mailboxCapacity, pushTimeOut)
+  def newThreadBasedDispatcher(actor: ActorRef, mailboxType: MailboxType) = actor match {
+    case null ⇒ new ThreadBasedDispatcher(mailboxType)
+    case some ⇒ new ThreadBasedDispatcher(some, mailboxType)
+  }
+
+  /**
+   * Creates an thread based dispatcher serving a single actor through the same single thread.
+   * <p/>
+   * E.g. each actor consumes its own thread.
+   */
+  def newThreadBasedDispatcher(name: String, mailboxType: MailboxType) =
+    new ThreadBasedDispatcher(name, mailboxType)
+
+  /**
+   * Creates an thread based dispatcher serving a single actor through the same single thread.
+   * <p/>
+   * E.g. each actor consumes its own thread.
+   */
+  def newThreadBasedDispatcher(name: String) =
+    new ThreadBasedDispatcher(name)
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
