@@ -134,7 +134,7 @@ class LocalActorRegistry(
    */
   def shutdownAll() {
     foreach(_.stop)
-    if (RemoteModule.isEnabled) Actor.remote.clear //TODO: REVISIT: Should this be here?
+    if (ClusterModule.isEnabled) Actor.remote.clear //FIXME: Should this be here?
     actorsByAddress.clear
     actorsByUuid.clear
     typedActorsByUuid.clear

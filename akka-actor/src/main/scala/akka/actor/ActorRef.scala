@@ -615,7 +615,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
           currentMessage = null
           Actor.registry.unregister(this)
 
-          if (isRemotingEnabled)
+          if (ClusterModule.isEnabled && isRemotingEnabled)
             Actor.remote.unregister(this)
 
           setActorSelfFields(actorInstance.get, null)
