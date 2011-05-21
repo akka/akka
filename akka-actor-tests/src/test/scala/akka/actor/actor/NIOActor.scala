@@ -8,84 +8,73 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterEach
 
-import java.nio.ByteBuffer
-import java.nio.channels.{ SelectableChannel, SocketChannel, ServerSocketChannel, SelectionKey }
-import java.io.IOException
-import java.net.InetSocketAddress
+import akka.config.Supervision.Temporary
 
+import java.nio.ByteBuffer
+import java.nio.channels.SocketChannel
+
+import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
 object NIOActorSpec {
 
-  class NIOTestActor(val nioHandler: NIOHandler) extends Actor with NIO {
+  class EchoServer(val host: String, val port: Int) extends Actor with NIOSimpleServer {
 
-    val readBuffer = ByteBuffer.allocate(8192)
-
-    var writeBuffers = Map.empty[SocketChannel, Queue[ByteBuffer]].withDefaultValue(Queue.empty)
-
-    override def preStart = {
-      val inetAddress = new InetSocketAddress("localhost", 8064)
-      val channel = ServerSocketChannel.open()
-      channel.configureBlocking(false)
-      channel.socket.bind(inetAddress)
-
-      nioHandler.register(channel, SelectionKey.OP_ACCEPT)
-    }
-
-    def accept(channel: SelectableChannel): Unit = channel match {
-      case serverChannel: ServerSocketChannel ⇒
-        val ch = serverChannel.accept()
-        ch.configureBlocking(false)
-        nioHandler.register(ch, SelectionKey.OP_READ)
-    }
-
-    def read(channel: SelectableChannel): Unit = channel match {
-      case ch: SocketChannel ⇒
-        readBuffer.clear
-        try {
-          val readLen = ch.read(readBuffer)
-          if (readLen == -1) {
-            nioHandler.unregister(ch)
-            ch.close
-          } else {
-            val ar = new Array[Byte](readLen)
-            readBuffer.flip
-            readBuffer.get(ar)
-            writeBuffers += (ch -> writeBuffers(ch).enqueue(ByteBuffer.wrap(ar)))
-            nioHandler.interestOps(ch, SelectionKey.OP_WRITE)
-          }
-        } catch {
-          case e: IOException ⇒
-            nioHandler.unregister(ch)
-            ch.close
-        }
-    }
-
-    def write(channel: SelectableChannel): Unit = {
-      def writeChannel(ch: SocketChannel): Unit = {
-        val queue = writeBuffers(ch)
-        if (queue.nonEmpty) {
-          val (buf, bufs) = writeBuffers(ch).dequeue
-          ch.write(buf)
-          if (buf.remaining == 0) {
-            if (bufs.isEmpty) {
-              writeBuffers -= ch
-              nioHandler.interestOps(ch, SelectionKey.OP_READ)
-            } else {
-              writeBuffers += (ch -> bufs)
-              writeChannel(ch)
-            }
-          }
-        }
-      }
-      channel match {
-        case ch: SocketChannel ⇒
-          writeChannel(channel.asInstanceOf[SocketChannel])
-      }
-    }
+    def createWorker = new EchoServerWorker(nioHandler)
 
     def receive = {
-      case msg ⇒ println(msg)
+      case "Ping" ⇒ self reply_? "Pong"
+    }
+
+  }
+
+  class EchoServerWorker(val nioHandler: NIOHandler) extends Actor with NIO {
+    val readBuffer = ByteBuffer allocate 8192
+    var writeBuffers = Queue.empty[ByteBuffer]
+
+    self.lifeCycle = Temporary
+
+    def receive = {
+      case "Ping" ⇒ self reply_? "Pong"
+    }
+
+    def receiveIO = {
+      case NIO.Read(client: SocketChannel)  ⇒ read(client)
+      case NIO.Write(client: SocketChannel) ⇒ write(client)
+    }
+
+    @tailrec
+    final def read(client: SocketChannel): Unit = {
+      readBuffer clear ()
+      val readLen = client read readBuffer
+      if (readLen == -1) {
+        nioHandler unregister client
+        client close ()
+        self stop ()
+      } else {
+        val bytes = new Array[Byte](readLen)
+        readBuffer flip ()
+        readBuffer get bytes
+        writeBuffers = writeBuffers enqueue (ByteBuffer wrap bytes)
+        nioHandler interestOps (client, NIO.Read, NIO.Write)
+        if (readLen == readBuffer.capacity) read(client)
+      }
+    }
+
+    @tailrec
+    final def write(client: SocketChannel): Unit = {
+      if (writeBuffers.nonEmpty) {
+        val (buf, bufs) = writeBuffers.dequeue
+        val writeLen = client write buf
+        if (buf.remaining == 0) {
+          writeBuffers = bufs
+          if (writeBuffers.isEmpty) {
+            nioHandler interestOps (client, NIO.Read)
+          } else {
+            write(client)
+          }
+        }
+      }
     }
   }
 }
@@ -95,8 +84,7 @@ class NIOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
 
   "an NIO Actor" must {
     "run" in {
-      val nioHandler = new NIOHandler
-      val actor = Actor.actorOf(new NIOTestActor(nioHandler)).start
+      val actor = Actor.actorOf(new EchoServer("localhost", 8064)).start
       Thread.sleep(600000)
     }
   }
