@@ -53,46 +53,39 @@ object Router {
   trait Router {
     def connections: Map[InetSocketAddress, ActorRef]
 
-    def route(message: Any)(implicit sender: Option[ActorRef])
+    def route(message: Any)(implicit sender: Option[ActorRef]): Unit
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T]
   }
 
-  /**
-   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
-   */
-  trait Direct extends Router {
-    lazy val connection: Option[ActorRef] = {
-      if (connections.isEmpty) throw new IllegalStateException("DirectRouter need a single replica connection found [0]")
-      connections.values.headOption
+  trait BasicRouter extends Router {
+    def route(message: Any)(implicit sender: Option[ActorRef]): Unit = next match {
+      case Some(actor) ⇒ actor.!(message)(sender)
+      case _           ⇒ throw new RoutingException("No node connections for router")
     }
 
-    def route(message: Any)(implicit sender: Option[ActorRef]) {
-      if (connection.isDefined) connection.get.!(message)(sender)
-      else throw new RoutingException("No node connections for router")
+    def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] = next match {
+      case Some(actor) ⇒ actor.!!!(message, timeout)(sender)
+      case _           ⇒ throw new RoutingException("No node connections for router")
     }
 
-    def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] =
-      if (connection.isDefined) connection.get.!!!(message, timeout)(sender)
-      else throw new RoutingException("No node connections for router")
+    protected def next: Option[ActorRef]
   }
 
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  trait Random extends Router {
+  trait Direct extends BasicRouter {
+    lazy val next: Option[ActorRef] = connections.values.headOption
+  }
+
+  /**
+   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+   */
+  trait Random extends BasicRouter {
     private val random = new java.util.Random(System.currentTimeMillis)
 
-    def route(message: Any)(implicit sender: Option[ActorRef]) {
-      if (next.isDefined) next.get.!(message)(sender)
-      else throw new RoutingException("No node connections for router")
-    }
-
-    def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] =
-      if (next.isDefined) next.get.!!!(message, timeout)(sender)
-      else throw new RoutingException("No node connections for router")
-
-    private def next: Option[ActorRef] =
+    def next: Option[ActorRef] =
       if (connections.isEmpty) None
       else Some(connections.valuesIterator.drop(random.nextInt(connections.size)).next)
   }
@@ -100,23 +93,14 @@ object Router {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  trait RoundRobin extends Router {
+  trait RoundRobin extends BasicRouter {
     private def items: List[ActorRef] = connections.values.toList
 
     private var current = items
 
-    def route(message: Any)(implicit sender: Option[ActorRef]) {
-      if (next.isDefined) next.get.!(message)(sender)
-      else throw new RoutingException("No node connections for router")
-    }
-
-    def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] =
-      if (next.isDefined) next.get.!!!(message, timeout)(sender)
-      else throw new RoutingException("No node connections for router")
-
     private def hasNext = items != Nil
 
-    private def next: Option[ActorRef] = synchronized {
+    def next: Option[ActorRef] = synchronized {
       val rest = if (current == Nil) items else current
       current = rest.tail
       rest.headOption
