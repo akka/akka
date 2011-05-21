@@ -1356,7 +1356,7 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
    */
   @deprecated("return type is an illusion, use the more honest ? method", "1.2")
   def !!![T](message: Any, timeout: Long = this.timeout)(implicit channel: UntypedChannel = NullChannel): Future[T] =
-    this.?(message, timeout)(channel).asInstanceOf[Future[T]]
+    this.?(message)(channel, Actor.Timeout(timeout)).asInstanceOf[Future[T]]
 
   /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
