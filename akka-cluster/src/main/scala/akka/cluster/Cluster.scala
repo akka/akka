@@ -955,7 +955,9 @@ class ClusterNode private[akka] (
    */
   def uuidsForActorAddress(actorAddress: String): Array[UUID] = if (isConnected.isOn) {
     try {
-      zkClient.getChildren(actorAddressToUuidsPathFor(actorAddress)).toList.map(new UUID(_)).toArray.asInstanceOf[Array[UUID]]
+      zkClient.getChildren(actorAddressToUuidsPathFor(actorAddress)).toArray map {
+        case c: CharSequence ⇒ new UUID(c)
+      }
     } catch {
       case e: ZkNoNodeException ⇒ Array[UUID]()
     }
@@ -966,7 +968,7 @@ class ClusterNode private[akka] (
    */
   def nodesForActorsInUseWithUuid(uuid: UUID): Array[String] = if (isConnected.isOn) {
     try {
-      zkClient.getChildren(actorLocationsPathFor(uuid)).toList.toArray.asInstanceOf[Array[String]]
+      zkClient.getChildren(actorLocationsPathFor(uuid)).toArray.asInstanceOf[Array[String]]
     } catch {
       case e: ZkNoNodeException ⇒ Array[String]()
     }
@@ -979,8 +981,7 @@ class ClusterNode private[akka] (
     flatten {
       actorUuidsForActorAddress(address) map { uuid ⇒
         try {
-          val list = zkClient.getChildren(actorLocationsPathFor(uuid))
-          list.toList.toArray.asInstanceOf[Array[String]]
+          zkClient.getChildren(actorLocationsPathFor(uuid)).toArray.asInstanceOf[Array[String]]
         } catch {
           case e: ZkNoNodeException ⇒ Array[String]()
         }
@@ -993,7 +994,9 @@ class ClusterNode private[akka] (
    */
   def uuidsForActorsInUseOnNode(nodeName: String): Array[UUID] = if (isConnected.isOn) {
     try {
-      zkClient.getChildren(actorsAtNodePathFor(nodeName)).toList.map(new UUID(_)).toArray.asInstanceOf[Array[UUID]]
+      zkClient.getChildren(actorsAtNodePathFor(nodeName)).toArray map {
+        case c: CharSequence ⇒ new UUID(c)
+      }
     } catch {
       case e: ZkNoNodeException ⇒ Array[UUID]()
     }
@@ -1005,7 +1008,9 @@ class ClusterNode private[akka] (
   def addressesForActorsInUseOnNode(nodeName: String): Array[String] = if (isConnected.isOn) {
     val uuids =
       try {
-        zkClient.getChildren(actorsAtNodePathFor(nodeName)).toList.map(new UUID(_)).toArray.asInstanceOf[Array[UUID]]
+        zkClient.getChildren(actorsAtNodePathFor(nodeName)).toArray map {
+          case c: CharSequence ⇒ new UUID(c)
+        }
       } catch {
         case e: ZkNoNodeException ⇒ Array[UUID]()
       }
