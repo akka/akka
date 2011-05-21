@@ -358,19 +358,11 @@ object LocalDeployer {
     }
   }
 
-  private[akka] def undeploy(deployment: Deploy) {
-    deployments.remove(deployment.address)
-  }
+  private[akka] def undeploy(deployment: Deploy): Unit = deployments.remove(deployment.address)
 
-  private[akka] def undeployAll() {
-    deployments.clear()
-  }
+  private[akka] def undeployAll(): Unit = deployments.clear()
 
-  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = {
-    val deployment = deployments.get(address)
-    if (deployment eq null) None
-    else Some(deployment)
-  }
+  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = Option(deployments.get(address))
 }
 
 /**
