@@ -414,7 +414,7 @@ sealed trait Future[+T] {
    * Future. If the Future has already been completed, this will apply
    * immediately.
    */
-  def onComplete(func: Future[T] => Unit): Future[T]
+  def onComplete(func: Future[T] => Unit): this.type
 
   /**
    * When the future is completed with a valid result, apply the provided
@@ -426,7 +426,7 @@ sealed trait Future[+T] {
    *   }.await.result
    * </pre>
    */
-  final def receive(pf: PartialFunction[Any, Unit]): Future[T] = onComplete { f =>
+  final def receive(pf: PartialFunction[Any, Unit]): this.type = onComplete { f =>
     val optr = f.result
     if (optr.isDefined) {
       val r = optr.get
@@ -634,7 +634,7 @@ sealed trait Future[+T] {
   }
 
   /* Java API */
-  final def onComplete[A >: T](proc: Procedure[Future[A]]): Future[T] = onComplete(proc(_))
+  final def onComplete[A >: T](proc: Procedure[Future[A]]): this.type = onComplete(proc(_))
 
   final def map[A >: T, B](f: JFunc[A,B]): Future[B] = map(f(_))
 
@@ -662,26 +662,26 @@ trait CompletableFuture[T] extends Future[T] {
    * Completes this Future with the specified result, if not already completed.
    * @return this
    */
-  def complete(value: Either[Throwable, T]): Future[T]
+  def complete(value: Either[Throwable, T]): this.type
 
   /**
    * Completes this Future with the specified result, if not already completed.
    * @return this
    */
-  final def completeWithResult(result: T): Future[T] = complete(Right(result))
+  final def completeWithResult(result: T): this.type = complete(Right(result))
 
   /**
    * Completes this Future with the specified exception, if not already completed.
    * @return this
    */
-  final def completeWithException(exception: Throwable): Future[T] = complete(Left(exception))
+  final def completeWithException(exception: Throwable): this.type = complete(Left(exception))
 
   /**
    * Completes this Future with the specified other Future, when that Future is completed,
    * unless this Future has already been completed.
    * @return this.
    */
-  final def completeWith(other: Future[T]): Future[T] = {
+  final def completeWith(other: Future[T]): this.type = {
     other onComplete { f => complete(f.value.get) }
     this
   }
@@ -774,7 +774,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     }
   }
 
-  def complete(value: Either[Throwable, T]): DefaultCompletableFuture[T] = {
+  def complete(value: Either[Throwable, T]): this.type = {
     _lock.lock
     val notifyTheseListeners = try {
       if (_value.isEmpty && !isExpired) { //Only complete if we aren't expired
@@ -815,7 +815,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     this
   }
 
-  def onComplete(func: Future[T] => Unit): CompletableFuture[T] = {
+  def onComplete(func: Future[T] => Unit): this.type = {
     _lock.lock
     val notifyNow = try {
       if (_value.isEmpty) {
@@ -881,11 +881,11 @@ object ActorCompletableFuture {
 sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T]) extends CompletableFuture[T] {
   val value = Some(suppliedValue)
 
-  def complete(value: Either[Throwable, T]): CompletableFuture[T] = this
-  def onComplete(func: Future[T] => Unit): Future[T] = { func(this); this }
-  def await(atMost: Duration): Future[T] = this
-  def await : Future[T] = this
-  def awaitBlocking : Future[T] = this
+  def complete(value: Either[Throwable, T]): this.type = this
+  def onComplete(func: Future[T] => Unit): this.type = { func(this); this }
+  def await(atMost: Duration): this.type = this
+  def await : this.type = this
+  def awaitBlocking : this.type = this
   def isExpired: Boolean = true
   def timeoutInNanos: Long = 0
 }

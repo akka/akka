@@ -11,7 +11,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import akka.dispatch.DefaultCompletableFuture;
+import akka.dispatch.ActorCompletableFuture;
 
 @RunWith(classOf[JUnitRunner])
 class TypedActorContextSpec extends
@@ -32,7 +32,7 @@ class TypedActorContextSpec extends
       val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
       val pojoCaller = TypedActor.newInstance(classOf[SimpleJavaPojoCaller], classOf[SimpleJavaPojoCallerImpl])
       pojoCaller.setPojo(pojo)
-      pojoCaller.getSenderFutureFromSimpleJavaPojo.getClass.getName should equal (classOf[DefaultCompletableFuture[_]].getName)
+      pojoCaller.getSenderFutureFromSimpleJavaPojo.getClass.getName should equal (classOf[ActorCompletableFuture].getName)
     }
   }
 }

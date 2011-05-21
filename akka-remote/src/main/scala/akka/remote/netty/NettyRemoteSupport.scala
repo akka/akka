@@ -4,7 +4,7 @@
 
 package akka.remote.netty
 
-import akka.dispatch.{DefaultCompletableFuture, CompletableFuture, Future}
+import akka.dispatch.{ActorCompletableFuture, DefaultCompletableFuture, CompletableFuture, Future}
 import akka.remote.{MessageSerializer, RemoteClientSettings, RemoteServerSettings}
 import akka.remote.protocol.RemoteProtocol._
 import akka.remote.protocol.RemoteProtocol.ActorType._
@@ -982,8 +982,8 @@ class RemoteServerHandler(
         else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(
           message,
           request.getActorInfo.getTimeout,
-          new DefaultCompletableFuture[Any](request.getActorInfo.getTimeout).
-            onComplete(_.value.get match {
+          new ActorCompletableFuture(request.getActorInfo.getTimeout).
+            onComplete((fa : Future[Any]) => fa.value.get match {
               case l: Left[Throwable, Any] => write(channel, createErrorReplyMessage(l.a, request, AkkaActorType.ScalaActor))
               case r: Right[Throwable, Any] =>
                  val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
