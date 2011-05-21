@@ -14,6 +14,8 @@ import akka.AkkaException
 import java.net.InetSocketAddress
 
 import com.eaio.uuid.UUID
+import annotation.tailrec
+import java.util.concurrent.atomic.AtomicReference
 
 class RoutingException(message: String) extends AkkaException(message)
 
@@ -96,14 +98,24 @@ object Router {
   trait RoundRobin extends BasicRouter {
     private def items: List[ActorRef] = connections.values.toList
 
-    private var current = items
+    private val current = new AtomicReference[List[ActorRef]](items)
 
-    private def hasNext = items != Nil
+    private def hasNext = connections.nonEmpty
 
-    def next: Option[ActorRef] = synchronized {
-      val rest = if (current == Nil) items else current
-      current = rest.tail
-      rest.headOption
+    def next: Option[ActorRef] = {
+      @tailrec
+      def findNext: Option[ActorRef] = {
+        val currentItems = current.get
+        val newItems = currentItems match {
+          case Nil ⇒ items
+          case xs  ⇒ xs
+        }
+
+        if (current.compareAndSet(currentItems, newItems.tail)) newItems.headOption
+        else findNext
+      }
+
+      findNext
     }
   }
 }
