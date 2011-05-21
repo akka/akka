@@ -80,18 +80,17 @@ trait InfiniteIterator[T] extends Iterator[T] {
 case class CyclicIterator[T](val items: Seq[T]) extends InfiniteIterator[T] {
   def this(items: java.util.List[T]) = this(items.toList)
 
-  @volatile
   private[this] var current: Seq[T] = items
 
   def hasNext = items != Nil
 
-  def next = {
+  def next = synchronized {
     val nc = if (current == Nil) items else current
     current = nc.tail
     nc.head
   }
 
-  override def exists(f: T ⇒ Boolean): Boolean = items.exists(f)
+  override def exists(f: T ⇒ Boolean): Boolean = items exists f
 }
 
 /**
