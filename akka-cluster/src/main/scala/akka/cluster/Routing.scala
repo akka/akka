@@ -63,8 +63,8 @@ object Router {
    */
   trait Direct extends Router {
     lazy val connection: Option[ActorRef] = {
-      if (connections.size == 0) throw new IllegalStateException("DirectRouter need a single replica connection found [0]")
-      connections.toList.map({ case (address, actor) ⇒ actor }).headOption
+      if (connections.isEmpty) throw new IllegalStateException("DirectRouter need a single replica connection found [0]")
+      connections.values.headOption
     }
 
     def route(message: Any)(implicit sender: Option[ActorRef]) {
@@ -92,20 +92,17 @@ object Router {
       if (next.isDefined) next.get.!!!(message, timeout)(sender)
       else throw new RoutingException("No node connections for router")
 
-    private def next: Option[ActorRef] = {
-      val nrOfConnections = connections.size
-      if (nrOfConnections == 0) None
-      else Some(connections.toArray.apply(random.nextInt(nrOfConnections))._2)
-    }
+    private def next: Option[ActorRef] =
+      if (connections.isEmpty) None
+      else Some(connections.valuesIterator.drop(random.nextInt(connections.size)).next)
   }
 
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   trait RoundRobin extends Router {
-    private def items: List[ActorRef] = connections.toList.map({ case (address, actor) ⇒ actor })
+    private def items: List[ActorRef] = connections.values.toList
 
-    @volatile
     private var current = items
 
     def route(message: Any)(implicit sender: Option[ActorRef]) {
@@ -119,7 +116,7 @@ object Router {
 
     private def hasNext = items != Nil
 
-    private def next: Option[ActorRef] = {
+    private def next: Option[ActorRef] = synchronized {
       val rest = if (current == Nil) items else current
       current = rest.tail
       rest.headOption
