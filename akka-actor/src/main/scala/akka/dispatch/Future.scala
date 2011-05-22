@@ -7,7 +7,7 @@ package akka.dispatch
 import akka.AkkaException
 import akka.event.EventHandler
 import akka.actor.{Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef}
-import akka.util.Duration
+import akka.util.{Duration, BoxedType}
 import akka.japi.{ Procedure, Function => JFunc }
 
 import scala.util.continuations._
@@ -351,7 +351,7 @@ sealed trait Future[+T] {
       value match {
         case None => None
         case Some(_ : Left[_, _]) => None
-        case Some(Right(v)) => Some(m.erasure.cast(v).asInstanceOf[A])
+        case Some(Right(v)) => Some(BoxedType(m.erasure).cast(v).asInstanceOf[A])
       }
     } catch {
       case _ : Exception => None
@@ -546,7 +546,7 @@ sealed trait Future[+T] {
         case l : Left[_, _] => l.asInstanceOf[Either[Throwable, A]]
         case Right(t) =>
           try {
-            Right(m.erasure.cast(t).asInstanceOf[A])
+            Right(BoxedType(m.erasure).cast(t).asInstanceOf[A])
           } catch {
             case e : ClassCastException => Left(e)
           }
