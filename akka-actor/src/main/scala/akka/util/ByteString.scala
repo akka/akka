@@ -11,6 +11,12 @@ object ByteString {
 
   def apply(bytes: Array[Byte]): ByteString = new ByteString(bytes.clone)
 
+  def apply(bytes: Byte*): ByteString = {
+    val ar = new Array[Byte](bytes.size)
+    bytes.copyToArray(ar)
+    new ByteString(ar)
+  }
+
   def apply[T](bytes: T*)(implicit num: Integral[T]): ByteString =
     new ByteString(bytes.map(x ⇒ num.toInt(x).toByte)(collection.breakOut))
 
