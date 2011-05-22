@@ -32,25 +32,7 @@ object ByteString {
 
   val empty: ByteString = new ByteString(Array.empty[Byte])
 
-  def newBuilder = new Builder[Byte, ByteString] {
-    private val arrayBuilder = new ArrayBuilder.ofByte
-
-    override def sizeHint(size: Int): Unit = arrayBuilder.sizeHint(size)
-
-    def +=(elem: Byte): this.type = {
-      arrayBuilder += elem
-      this
-    }
-
-    override def ++=(xs: TraversableOnce[Byte]): this.type = {
-      arrayBuilder ++= xs
-      this
-    }
-
-    def clear(): Unit = arrayBuilder.clear
-
-    def result: ByteString = apply(arrayBuilder.result)
-  }
+  def newBuilder: Builder[Byte, ByteString] = new ArrayBuilder.ofByte mapResult apply
 
   implicit def canBuildFrom = new CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] {
     def apply(from: TraversableOnce[Byte]) = newBuilder
@@ -61,18 +43,20 @@ object ByteString {
 
 final class ByteString private (private val bytes: Array[Byte]) extends IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
 
-  override def newBuilder = ByteString.newBuilder
-
-  //def seq = this
+  override protected[this] def newBuilder = ByteString.newBuilder
 
   def apply(idx: Int): Byte = bytes(idx)
 
   def length: Int = bytes.length
+
+  override def clone: ByteString = ByteString(bytes)
 
   def toArray: Array[Byte] = bytes.clone
 
   def asByteBuffer: ByteBuffer = ByteBuffer.wrap(bytes).asReadOnlyBuffer
 
   def toByteBuffer: ByteBuffer = ByteBuffer.wrap(bytes.clone)
+
+  def mapI(f: Byte ⇒ Int): ByteString = map(f andThen (_.toByte))
 
 }
