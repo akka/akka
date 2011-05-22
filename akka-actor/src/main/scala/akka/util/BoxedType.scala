@@ -14,7 +14,8 @@ object BoxedType {
     classOf[Int] -> classOf[jl.Integer],
     classOf[Long] -> classOf[jl.Long],
     classOf[Float] -> classOf[jl.Float],
-    classOf[Double] -> classOf[jl.Double]
+    classOf[Double] -> classOf[jl.Double],
+    classOf[Unit] -> classOf[scala.runtime.BoxedUnit]
   )
 
   def apply(c: Class[_]): Class[_] = {
