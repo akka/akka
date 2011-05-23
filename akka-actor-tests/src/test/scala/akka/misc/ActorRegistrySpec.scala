@@ -41,6 +41,7 @@ class ActorRegistrySpec extends JUnitSuite {
     assert(actor2.get.address === actor1.address)
     assert(actor2.get.address === "test-actor-1")
     actor2.get.stop
+    assert(Actor.registry.actorFor(actor1.address).isEmpty)
   }
 
   @Test
@@ -54,6 +55,7 @@ class ActorRegistrySpec extends JUnitSuite {
     assert(actorOrNone.get.uuid === uuid)
     assert(actorOrNone.get.address === "test-actor-1")
     actor.stop
+    assert(Actor.registry.local.actorFor(uuid).isEmpty)
   }
 
   @Test
