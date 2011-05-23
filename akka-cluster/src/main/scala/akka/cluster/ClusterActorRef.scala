@@ -8,7 +8,7 @@ import Cluster._
 import akka.actor._
 import akka.actor.Actor._
 import akka.event.EventHandler
-import akka.dispatch.CompletableFuture
+import akka.dispatch.Promise
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
@@ -42,8 +42,8 @@ class ClusterActorRef private[akka] (
     message: Any,
     timeout: Long,
     senderOption: Option[ActorRef],
-    senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] =
-    route[T](message, timeout)(senderOption).asInstanceOf[CompletableFuture[T]]
+    senderFuture: Option[Promise[T]]): Promise[T] =
+    route[T](message, timeout)(senderOption).asInstanceOf[Promise[T]]
 
   private[akka] def failOver(from: InetSocketAddress, to: InetSocketAddress) {
     addresses set (addresses.get map {

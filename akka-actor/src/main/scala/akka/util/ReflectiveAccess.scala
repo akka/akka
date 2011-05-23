@@ -4,7 +4,7 @@
 
 package akka.util
 
-import akka.dispatch.{ Future, CompletableFuture, MessageInvocation }
+import akka.dispatch.{ Future, Promise, MessageInvocation }
 import akka.config.{ Config, ModuleNotAvailableException }
 import akka.remoteinterface.RemoteSupport
 import akka.actor._

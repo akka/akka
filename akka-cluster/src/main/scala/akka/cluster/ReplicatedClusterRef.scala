@@ -86,7 +86,7 @@ class ReplicatedActorRef private[akka] (actorRef: ActorRef, val address: String)
     message: Any,
     timeout: Long,
     senderOption: Option[ActorRef],
-    senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, senderOption, senderFuture)
+    senderFuture: Option[Promise[T]]): Promise[T] = actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, senderOption, senderFuture)
   protected[akka] def actorInstance: AtomicReference[Actor] = actorRef.actorInstance
   protected[akka] def supervisor_=(sup: Option[ActorRef]) {
     actorRef.supervisor_=(sup)

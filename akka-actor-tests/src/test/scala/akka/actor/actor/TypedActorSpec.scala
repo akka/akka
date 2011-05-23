@@ -11,7 +11,7 @@ import org.scalatest.{ BeforeAndAfterAll, WordSpec, BeforeAndAfterEach }
 import akka.actor.TypedActor._
 import akka.japi.{ Option ⇒ JOption }
 import akka.util.Duration
-import akka.dispatch.{ Dispatchers, Future, AlreadyCompletedFuture }
+import akka.dispatch.{ Dispatchers, Future, KeptPromise }
 import akka.routing.CyclicIterator
 
 object TypedActorSpec {
@@ -43,7 +43,7 @@ object TypedActorSpec {
 
     def pigdog = "Pigdog"
 
-    def futurePigdog(): Future[String] = new AlreadyCompletedFuture(Right(pigdog))
+    def futurePigdog(): Future[String] = new KeptPromise(Right(pigdog))
     def futurePigdog(delay: Long): Future[String] = {
       Thread.sleep(delay)
       futurePigdog
@@ -51,7 +51,7 @@ object TypedActorSpec {
 
     def futurePigdog(delay: Long, numbered: Int): Future[String] = {
       Thread.sleep(delay)
-      new AlreadyCompletedFuture(Right(pigdog + numbered))
+      new KeptPromise(Right(pigdog + numbered))
     }
 
     def futureComposePigdogFrom(foo: Foo): Future[String] =
@@ -130,6 +130,12 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
     "not stop non-started ones" in {
       stop(null) must be(false)
+    }
+
+    "throw an IllegalStateExcpetion when TypedActor.self is called in the wrong scope" in {
+      (intercept[IllegalStateException] {
+        TypedActor.self[Foo]
+      }).getMessage must equal("Calling TypedActor.self outside of a TypedActor implementation method!")
     }
 
     "have access to itself when executing a method call" in {

@@ -7,7 +7,7 @@ package akka.agent
 import akka.stm._
 import akka.actor.Actor
 import akka.japi.{ Function ⇒ JFunc, Procedure ⇒ JProc }
-import akka.dispatch.{ DefaultCompletableFuture, Dispatchers, Future }
+import akka.dispatch.{ DefaultPromise, Dispatchers, Future }
 
 /**
  * Used internally to send functions.
@@ -122,7 +122,7 @@ class Agent[T](initialValue: T) {
   def alter(f: T ⇒ T)(timeout: Long): Future[T] = {
     def dispatch = updater.!!!(Update(f), timeout)
     if (Stm.activeTransaction) {
-      val result = new DefaultCompletableFuture[T](timeout)
+      val result = new DefaultPromise[T](timeout)
       get //Join xa
       deferred {
         result completeWith dispatch
@@ -164,7 +164,7 @@ class Agent[T](initialValue: T) {
    * still be executed in order.
    */
   def alterOff(f: T ⇒ T)(timeout: Long): Future[T] = {
-    val result = new DefaultCompletableFuture[T](timeout)
+    val result = new DefaultPromise[T](timeout)
     send((value: T) ⇒ {
       suspend
       val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this)).start()

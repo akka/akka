@@ -34,7 +34,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
 
   //private val isClusterEnabled = ReflectiveAccess.isClusterEnabled
   private val actorsByAddress = new ConcurrentHashMap[String, ActorRef]
-  private val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
+  private val actorsByUuid = new ConcurrentHashMap[Uuid, ActorRef]
   private val typedActorsByUuid = new ConcurrentHashMap[Uuid, AnyRef]
   private val guard = new ReadWriteGuard
 
@@ -66,7 +66,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
     //  throw new IllegalStateException("Actor 'address' [" + address + "] is already in use, can't register actor [" + actor + "]")
 
     actorsByAddress.put(address, actor)
-    actorsByUuid.put(actor.uuid.toString, actor)
+    actorsByUuid.put(actor.uuid, actor)
     notifyListeners(ActorRegistered(address, actor))
   }
 
@@ -121,7 +121,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
  */
 class LocalActorRegistry(
   private val actorsByAddress: ConcurrentHashMap[String, ActorRef],
-  private val actorsByUuid: ConcurrentHashMap[String, ActorRef],
+  private val actorsByUuid: ConcurrentHashMap[Uuid, ActorRef],
   private val typedActorsByUuid: ConcurrentHashMap[Uuid, AnyRef]) {
 
   /**
@@ -153,11 +153,8 @@ class LocalActorRegistry(
   /**
    * Finds the actor that have a specific uuid.
    */
-  private[akka] def actorFor(uuid: Uuid): Option[ActorRef] = {
-    val uuidAsString = uuid.toString
-    if (actorsByUuid.containsKey(uuidAsString)) Some(actorsByUuid.get(uuidAsString))
-    else None
-  }
+  private[akka] def actorFor(uuid: Uuid): Option[ActorRef] =
+    Option(actorsByUuid.get(uuid))
 
   /**
    * Finds the typed actor that have a specific address.

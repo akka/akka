@@ -19,7 +19,7 @@ import akka.actor._
 final case class MessageInvocation(receiver: ActorRef,
                                    message: Any,
                                    sender: Option[ActorRef],
-                                   senderFuture: Option[CompletableFuture[Any]]) {
+                                   senderFuture: Option[Promise[Any]]) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
 
   def invoke() {
@@ -32,7 +32,7 @@ final case class MessageInvocation(receiver: ActorRef,
   }
 }
 
-final case class FutureInvocation[T](future: CompletableFuture[T], function: () ⇒ T, cleanup: () ⇒ Unit) extends Runnable {
+final case class FutureInvocation[T](future: Promise[T], function: () ⇒ T, cleanup: () ⇒ Unit) extends Runnable {
   def run() {
     future complete (try {
       Right(function())
@@ -99,7 +99,7 @@ trait MessageDispatcher {
   private[akka] final def dispatchFuture[T](block: () ⇒ T, timeout: Long): Future[T] = {
     futures.getAndIncrement()
     try {
-      val future = new DefaultCompletableFuture[T](timeout)
+      val future = new DefaultPromise[T](timeout)
 
       if (active.isOff)
         guard withGuard {
