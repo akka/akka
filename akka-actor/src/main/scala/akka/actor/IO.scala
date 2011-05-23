@@ -33,10 +33,10 @@ object IO {
   }
 
   trait IOMessage { def token: Token }
-  case class Listen(token: Token, host: String, port: Int) extends IOMessage
+  case class Listen(token: Token, address: InetSocketAddress) extends IOMessage
   case class NewConnection(token: Token) extends IOMessage
   case class Accept(token: Token, source: Token) extends IOMessage
-  case class Connect(token: Token, host: String, port: Int) extends IOMessage
+  case class Connect(token: Token, address: InetSocketAddress) extends IOMessage
   case class Connected(token: Token) extends IOMessage
   case class Close(token: Token) extends IOMessage
   case class Closed(token: Token) extends IOMessage
@@ -48,15 +48,21 @@ object IO {
 trait IO {
   this: Actor ⇒
 
-  def listen(ioManager: ActorRef, host: String, port: Int): IO.Token = {
+  def listen(ioManager: ActorRef, host: String, port: Int): IO.Token =
+    listen(ioManager, new InetSocketAddress(host, port))
+
+  def listen(ioManager: ActorRef, address: InetSocketAddress): IO.Token = {
     val token = IO.Token(self, ioManager)
-    ioManager ! IO.Listen(token, host, port)
+    ioManager ! IO.Listen(token, address)
     token
   }
 
-  def connect(ioManager: ActorRef, host: String, port: Int): IO.Token = {
+  def connect(ioManager: ActorRef, host: String, port: Int): IO.Token =
+    connect(ioManager, new InetSocketAddress(host, port))
+
+  def connect(ioManager: ActorRef, address: InetSocketAddress): IO.Token = {
     val token = IO.Token(self, ioManager)
-    ioManager ! IO.Connect(token, host, port)
+    ioManager ! IO.Connect(token, address)
     token
   }
 
@@ -87,11 +93,11 @@ class IOManager extends Actor {
   }
 
   def receive = {
-    case IO.Listen(token, host, port)  ⇒ worker.createServer(token, host, port)
-    case IO.Connect(token, host, port) ⇒ worker.createClient(token, host, port)
-    case IO.Accept(token, source)      ⇒ worker.acceptConnection(token, source)
-    case IO.Write(token, data)         ⇒ worker.write(token, data)
-    case IO.Close(token)               ⇒ worker.close(token)
+    case IO.Listen(token, address)  ⇒ worker.createServer(token, address)
+    case IO.Connect(token, address) ⇒ worker.createClient(token, address)
+    case IO.Accept(token, source)   ⇒ worker.acceptConnection(token, source)
+    case IO.Write(token, data)      ⇒ worker.write(token, data)
+    case IO.Close(token)            ⇒ worker.close(token)
   }
 
 }
@@ -115,19 +121,17 @@ private[akka] class IOWorker(ioManager: ActorRef) extends Runnable {
 
   val bufferSize = 8192 // make configurable
 
-  def createServer(token: IO.Token, host: String, port: Int): Unit = {
-    val inetAddress = new InetSocketAddress(host: String, port: Int)
+  def createServer(token: IO.Token, address: InetSocketAddress): Unit = {
     val server = ServerSocketChannel open ()
     server configureBlocking false
-    server.socket bind inetAddress
+    server.socket bind address
     addChangeRequest(Register(token, server, OP_ACCEPT))
   }
 
-  def createClient(token: IO.Token, host: String, port: Int): Unit = {
-    val inetAddress = new InetSocketAddress(host: String, port: Int)
+  def createClient(token: IO.Token, address: InetSocketAddress): Unit = {
     val client = SocketChannel open ()
     client configureBlocking false
-    client connect inetAddress
+    client connect address
     addChangeRequest(Register(token, client, OP_CONNECT | OP_READ))
   }
 
