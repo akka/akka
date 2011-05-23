@@ -122,71 +122,101 @@ Other good messages types are ``scala.Tuple2``, ``scala.List``, ``scala.Map`` wh
 Send messages
 -------------
 
-Messages are sent to an Actor through one of the “bang” methods.
+Messages are sent to an Actor through one of the following methods.
 
-* ! means “fire-and-forget”, e.g. send a message asynchronously and return immediately.
-* !! means “send-and-reply-eventually”, e.g. send a message asynchronously and wait for a reply through aFuture. Here you can specify a timeout. Using timeouts is very important. If no timeout is specified then the actor’s default timeout (set by the this.timeout variable in the actor) is used. This method returns an ``Option[Any]`` which will be either ``Some(result)`` if returning successfully or None if the call timed out.
-* ? sends a message asynchronously and returns a ``Future``.
+* ``!`` means “fire-and-forget”, e.g. send a message asynchronously and return
+  immediately.
+* ``?`` sends a message asynchronously and returns a :class:`Future`
+  representing a possible reply.
 
-You can check if an Actor can handle a specific message by invoking the ``isDefinedAt`` method:
+.. note::
 
-.. code-block:: scala
+  There used to be two more “bang” methods, which are deprecated and will be
+  removed in Akka 2.0:
 
-  if (actor.isDefinedAt(message)) actor ! message
-  else ...
+  * ``!!`` was similar to the current ``(actor ? msg).as[T]``; deprecation
+    followed from the change of timeout handling described below.
+  * ``!!![T]`` was similar to the current ``(actor ? msg).mapTo[T]``, with the
+    same change in the handling of :class:`Future`’s timeout as for ``!!``, but
+    additionally the old method could defer possible type cast problems into
+    seemingly unrelated parts of the code base.
 
 Fire-forget
 ^^^^^^^^^^^
 
-This is the preferred way of sending messages. No blocking waiting for a message. This gives the best concurrency and scalability characteristics.
+This is the preferred way of sending messages. No blocking waiting for a
+message. This gives the best concurrency and scalability characteristics.
 
 .. code-block:: scala
 
   actor ! "Hello"
 
-If invoked from within an Actor, then the sending actor reference will be implicitly passed along with the message and available to the receiving Actor in its ``sender: Option[AnyRef]`` member field. He can use this to reply to the original sender or use the ``reply(message: Any)`` method.
+If invoked from within an Actor, then the sending actor reference will be
+implicitly passed along with the message and available to the receiving Actor
+in its ``channel: UntypedChannel`` member field. The target actor can use this
+to reply to the original sender, e.g. by using the ``self.reply(message: Any)``
+method.
 
-If invoked from an instance that is **not** an Actor there will be no implicit sender passed along the message and you will get an IllegalStateException if you call ``self.reply(..)``.
-
-Send-And-Receive-Eventually
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Using ``!!`` will send a message to the receiving Actor asynchronously but it will wait for a reply on a ``Future``, blocking the sender Actor until either:
-
-* A reply is received, or
-* The Future times out
-
-You can pass an explicit time-out to the ``!!`` method and if none is specified then the default time-out defined in the sender Actor will be used.
-
-The ``!!`` method returns an ``Option[Any]`` which will be either ``Some(result)`` if returning successfully, or ``None`` if the call timed out.
-Here are some examples:
-
-.. code-block:: scala
-
-  val resultOption = actor !! ("Hello", 1000)
-  if (resultOption.isDefined) ... // handle reply
-  else ... // handle timeout
-
-  val result: Option[String] = actor !! "Hello"
-  resultOption match {
-    case Some(reply) => ... // handle reply
-    case None =>        ... // handle timeout
-  }
-
-  val result = (actor !! "Hello").getOrElse(throw new RuntimeException("TIMEOUT"))
-
-  (actor !! "Hello").foreach(result => ...) // handle result
+If invoked from an instance that is **not** an Actor there will be no implicit
+sender passed along with the message and you will get an
+IllegalActorStateException when calling ``self.reply(...)``.
 
 Send-And-Receive-Future
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Using ``?`` will send a message to the receiving Actor asynchronously and will return a 'Future':
+Using ``?`` will send a message to the receiving Actor asynchronously and
+will return a :class:`Future`:
 
 .. code-block:: scala
 
   val future = actor ? "Hello"
 
-See :ref:`futures-scala` for more information.
+The receiving actor should reply to this message, which will complete the
+future with the reply message as value; if the actor throws an exception while
+processing the invocation, this exception will also complete the future. If the
+actor does not complete the future, it will expire after the timeout period,
+which is taken from one of the following three locations in order of
+precedence:
+
+#. explicitly given timeout as in ``actor.?("hello")(timeout = 12 millis)``
+#. implicit argument of type :class:`Actor.Timeout`, e.g.
+
+   ::
+
+     implicit val timeout = Actor.Timeout(12 millis)
+     val future = actor ? "hello"
+
+#. default timeout from ``akka.conf``
+
+See :ref:`futures-scala` for more information on how to await or query a
+future.
+
+Send-And-Receive-Eventually
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The future returned from the ``?`` method can conveniently be passed around or
+chained with further processing steps, but sometimes you just need the value,
+even if that entails waiting for it (but keep in mind that waiting inside an
+actor is prone to dead-locks, e.g. if obtaining the result depends on
+processing another message on this actor).
+
+For this purpose, there is the method :meth:`Future.as[T]` which waits until
+either the future is completed or its timeout expires, whichever comes first.
+The result is then inspected and returned as :class:`Some[T]` if it was
+normally completed and the answer’s runtime type matches the desired type; in
+all other cases :class:`None` is returned.
+
+.. code-block:: scala
+
+  (actor ? msg).as[String] match {
+    case Some(answer) => ...
+    case None         => ...
+  }
+
+  val resultOption = (actor ? msg).as[String]
+  if (resultOption.isDefined) ... else ...
+
+  for (x <- (actor ? msg).as[Int]) yield { 2 * x }
 
 Forward message
 ^^^^^^^^^^^^^^^
