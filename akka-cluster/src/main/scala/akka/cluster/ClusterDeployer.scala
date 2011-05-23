@@ -4,7 +4,7 @@
 
 package akka.cluster
 
-import akka.actor.{ DeploymentConfig, Deployer, DeploymentException }
+import akka.actor.{ DeploymentConfig, Deployer, LocalDeployer, DeploymentException }
 import DeploymentConfig._
 import akka.event.EventHandler
 import akka.config.Config
@@ -119,17 +119,23 @@ object ClusterDeployer {
 
   private[akka] def deploy(deployment: Deploy) {
     ensureRunning {
-      val path = deploymentAddressPath.format(deployment.address)
-      try {
-        ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
-        zkClient.writeData(path, deployment)
+      deployment match {
+        case Deploy(_, _, _, Local) ⇒ // local deployment
+          LocalDeployer.deploy(deployment)
 
-        // FIXME trigger cluster-wide deploy action
-      } catch {
-        case e: NullPointerException ⇒
-          handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper since client session is closed"))
-        case e: Exception ⇒
-          handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper due to: " + e))
+        case _ ⇒ // cluster deployment
+          val path = deploymentAddressPath.format(deployment.address)
+          try {
+            ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
+            zkClient.writeData(path, deployment)
+
+            // FIXME trigger cluster-wide deploy action
+          } catch {
+            case e: NullPointerException ⇒
+              handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper since client session is closed"))
+            case e: Exception ⇒
+              handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper due to: " + e))
+          }
       }
     }
   }

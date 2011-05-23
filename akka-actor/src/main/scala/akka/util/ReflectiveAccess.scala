@@ -11,6 +11,7 @@ import akka.actor._
 import DeploymentConfig.Deploy
 import akka.event.EventHandler
 import akka.serialization.Format
+import akka.cluster.ClusterNode
 
 import java.net.InetSocketAddress
 
@@ -69,24 +70,6 @@ object ReflectiveAccess {
     lazy val clusterDeployer: ClusterDeployer = {
       ensureEnabled()
       clusterDeployerInstance.get
-    }
-
-    type ClusterNode = {
-      def start()
-      def shutdown()
-
-      def remoteService: RemoteSupport
-
-      def store(address: String, actorClass: Class[_ <: Actor], replicas: Int, serializeMailbox: Boolean, format: Serializer)
-      def store(actorRef: ActorRef, replicas: Int, serializeMailbox: Boolean, format: Serializer)
-
-      def remove(address: String)
-
-      def use(address: String, format: Serializer): Array[ActorRef]
-      def ref(address: String, router: RouterType): ActorRef
-
-      def isClustered(address: String): Boolean
-      def nrOfActors: Int
     }
 
     type ClusterDeployer = {

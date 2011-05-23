@@ -1006,8 +1006,10 @@ private[akka] case class RemoteActorRef private[akka] (
         case Node(nodeName) ⇒ Config.hostname
       }
       new InetSocketAddress(hostname, Config.remoteServerPort)
-    case _ ⇒ throw new IllegalStateException(
-      "Actor with Address [" + address + "] is not bound to a Clustered Deployment")
+    case _ ⇒
+      new InetSocketAddress(Config.hostname, Config.remoteServerPort)
+    //throw new IllegalStateException(
+    //  "Actor with Address [" + address + "] is not bound to a Clustered Deployment")
   }
 
   start()

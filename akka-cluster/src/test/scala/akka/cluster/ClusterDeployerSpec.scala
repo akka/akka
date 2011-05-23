@@ -39,12 +39,6 @@ class ClusterDeployerSpec extends WordSpec with MustMatchers with BeforeAndAfter
         oldDeployment must equal(newDeployment.get)
       }
     }
-
-    "be able to create an actor deployed using ClusterDeployer, add it to ZooKeeper and then check the actor out for use" in {
-      val pi = Actor.actorOf[HelloWorld]("service-hello")
-      pi must not equal (null)
-      pi.address must equal("service-hello")
-    }
   }
 
   override def beforeAll() {

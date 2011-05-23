@@ -41,19 +41,19 @@ like the following::
 
     package example
 
-    object TestMultiJvmNode1 {
+    object SampleMultiJvmNode1 {
       def main(args: Array[String]) {
         println("Hello from node 1")
       }
     }
 
-    object TestMultiJvmNode2 {
+    object SampleMultiJvmNode2 {
       def main(args: Array[String]) {
         println("Hello from node 2")
       }
     }
 
-    object TestMultiJvmNode3 {
+    object SampleMultiJvmNode3 {
       def main(args: Array[String]) {
         println("Hello from node 3")
       }
@@ -68,9 +68,9 @@ spawned, one for each node. It will look like this:
     ...
     [info] == multi-jvm-run ==
     [info] == multi-jvm / Test ==
-    [info] Starting JVM-Node1 for example.TestMultiJvmNode1
-    [info] Starting JVM-Node2 for example.TestMultiJvmNode2
-    [info] Starting JVM-Node3 for example.TestMultiJvmNode3
+    [info] Starting JVM-Node1 for example.SampleMultiJvmNode1
+    [info] Starting JVM-Node2 for example.SampleMultiJvmNode2
+    [info] Starting JVM-Node3 for example.SampleMultiJvmNode3
     [JVM-Node1] Hello from node 1
     [JVM-Node2] Hello from node 2
     [JVM-Node3] Hello from node 3
@@ -98,21 +98,22 @@ Setting JVM options
 -------------------
 
 You can define specific JVM options for each of the spawned JVMs. You do that by creating
-a file named after the node in the test with suffix ``.opts``.
+a file named after the node in the test with suffix ``.opts`` and put them in the same
+directory as the test.
 
 For example, to feed the JVM options ``-Dakka.cluster.nodename=node1`` and
-``-Dakka.cluster.port=9991`` to the ``TestMultiJvmNode1`` let's create three ``*.opts`` files
+``-Dakka.cluster.port=9991`` to the ``SampleMultiJvmNode1`` let's create three ``*.opts`` files
 and add the options to them.
 
-``TestMultiJvmNode1.opts``::
+``SampleMultiJvmNode1.opts``::
 
     -Dakka.cluster.nodename=node1 -Dakka.cluster.port=9991
 
-``TestMultiJvmNode2.opts``::
+``SampleMultiJvmNode2.opts``::
 
     -Dakka.cluster.nodename=node2 -Dakka.cluster.port=9992
 
-``TestMultiJvmNode3.opts``::
+``SampleMultiJvmNode3.opts``::
 
     -Dakka.cluster.nodename=node3 -Dakka.cluster.port=9993
 
@@ -120,20 +121,21 @@ Overriding akka.conf options
 ----------------------------
 
 You can also override the options in the ``akka.conf`` file with different options for each
-spawned JVM. You do that by creating a file named after the node in the test with suffix ``.conf``.
+spawned JVM. You do that by creating a file named after the node in the test with suffix
+``.conf`` and put them in the same  directory as the test .
 
-For example, to override the configuration option ``akka.cluster.name`` let's create three ``*.conf`` files
-and add the option to them.
+For example, to override the configuration option ``akka.cluster.name`` let's create three
+``*.conf`` files and add the option to them.
 
-``TestMultiJvmNode1.conf``::
-
-    akka.cluster.name = "test-cluster"
-
-``TestMultiJvmNode2.conf``::
+``SampleMultiJvmNode1.conf``::
 
     akka.cluster.name = "test-cluster"
 
-``TestMultiJvmNode3.conf``::
+``SampleMultiJvmNode2.conf``::
+
+    akka.cluster.name = "test-cluster"
+
+``SampleMultiJvmNode3.conf``::
 
     akka.cluster.name = "test-cluster"
 
@@ -175,10 +177,10 @@ Zookeeper Barrier
 ~~~~~~~~~~~~~~~~~
 
 When running multi-JVM tests it's common to need to coordinate timing across
-nodes. To do this there is a Zookeeper-based double-barrier (there is both an
+nodes. To do this there is a ZooKeeper-based double-barrier (there is both an
 entry barrier and an exit barrier). ClusterNodes also have support for creating
 barriers easily. To wait at the entry use the ``enter`` method. To wait at the
-exit use the ``leave`` method. It's also possible to pass a block of code which
+exit use the ``leave`` method. It's also possible t pass a block of code which
 will be run between the barriers.
 
 When creating a barrier you pass it a name and the number of nodes that are
@@ -188,60 +190,63 @@ timeout is 60 seconds.
 Here is an example of coordinating the starting of two nodes and then running
 something in coordination::
 
-    package example
+    import org.scalatest.WordSpec
+    import org.scalatest.matchers.MustMatchers
+    import org.scalatest.BeforeAndAfterAll
 
     import akka.cluster._
-    import akka.actor._
 
-    object TestMultiJvmNode1 {
+    object SampleMultiJvmSpec {
       val NrOfNodes = 2
+    }
 
-      def main(args: Array[String]) {
+    class SampleMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+      import SampleMultiJvmSpec._
+
+      override def beforeAll() = {
         Cluster.startLocalCluster()
+      }
 
-        val node = Cluster.newNode(NodeAddress("example", "node1", port = 9991))
+      override def afterAll() = {
+        Cluster.shutdownLocalCluster()
+      }
 
-        node.barrier("start-node1", NrOfNodes) {
-          node.start
+      "A cluster" must {
+
+        "have jvm options" in {
+          System.getProperty("akka.cluster.nodename", "") must be("node1")
+          System.getProperty("akka.cluster.port", "") must be("9991")
+          akka.config.Config.config.getString("test.name", "") must be("node1")
         }
 
-        node.barrier("start-node2", NrOfNodes) {
-          // wait for node 2 to start
+        "be able to start all nodes" in {
+          Cluster.barrier("start", NrOfNodes) {
+            Cluster.node.start()
+          }
+          Cluster.node.isRunning must be(true)
+          Cluster.node.shutdown()
         }
-
-        node.barrier("hello", NrOfNodes) {
-          println("Hello from node 1")
-        }
-
-        Actor.registry.local.shutdownAll
-
-        node.stop
-
-        Cluster.shutdownLocalCluster
       }
     }
 
-    object TestMultiJvmNode2 {
-      val NrOfNodes = 2
+    class SampleMultiJvmNode2 extends WordSpec with MustMatchers {
+      import SampleMultiJvmSpec._
 
-      def main(args: Array[String]) {
-        val node = Cluster.newNode(NodeAddress("example", "node2", port = 9992))
+      "A cluster" must {
 
-        node.barrier("start-node1", NrOfNodes) {
-          // wait for node 1 to start
+        "have jvm options" in {
+          System.getProperty("akka.cluster.nodename", "") must be("node2")
+          System.getProperty("akka.cluster.port", "") must be("9992")
+          akka.config.Config.config.getString("test.name", "") must be("node2")
         }
 
-        node.barrier("start-node2", NrOfNodes) {
-          node.start
+        "be able to start all nodes" in {
+          Cluster.barrier("start", NrOfNodes) {
+            Cluster.node.start()
+          }
+          Cluster.node.isRunning must be(true)
+          Cluster.node.shutdown()
         }
-
-        node.barrier("hello", NrOfNodes) {
-          println("Hello from node 2")
-        }
-
-        Actor.registry.local.shutdownAll
-
-        node.stop
       }
     }
 
@@ -253,8 +258,8 @@ An example output from this would be:
     ...
     [info] == multi-jvm-run ==
     [info] == multi-jvm / Test ==
-    [info] Starting JVM-Node1 for example.TestMultiJvmNode1
-    [info] Starting JVM-Node2 for example.TestMultiJvmNode2
+    [info] Starting JVM-Node1 for example.SampleMultiJvmNode1
+    [info] Starting JVM-Node2 for example.SampleMultiJvmNode2
     [JVM-Node1] Loading config [akka.conf] from the application classpath.
     [JVM-Node2] Loading config [akka.conf] from the application classpath.
     ...
