@@ -193,7 +193,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // Scaladocs
   // -------------------------------------------------------------------------------------------------------------------
 
-  override def apiProjectDependencies = dependencies.toList - akka_samples
+  override def apiProjectDependencies = dependencies.toList - akka_samples - akka_sbt_plugin
 
   // -------------------------------------------------------------------------------------------------------------------
   // Publishing
@@ -235,7 +235,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   override def deliverProjectDependencies = (super.deliverProjectDependencies.toList
                                              - akka_samples.projectID
                                              - akka_tutorials.projectID
-                                             - akkaDist.projectID)
+                                             - akkaDist.projectID
+                                             - akka_sbt_plugin.projectID)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Build release
