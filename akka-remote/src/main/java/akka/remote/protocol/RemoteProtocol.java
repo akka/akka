@@ -10,7 +10,8 @@ public final class RemoteProtocol {
   }
   public enum CommandType
       implements com.google.protobuf.ProtocolMessageEnum {
-    SHUTDOWN(0, 1),
+    CONNECT(0, 1),
+    SHUTDOWN(1, 2),
     ;
     
     
@@ -18,7 +19,8 @@ public final class RemoteProtocol {
     
     public static CommandType valueOf(int value) {
       switch (value) {
-        case 1: return SHUTDOWN;
+        case 1: return CONNECT;
+        case 2: return SHUTDOWN;
         default: return null;
       }
     }
@@ -49,7 +51,7 @@ public final class RemoteProtocol {
     }
     
     private static final CommandType[] VALUES = {
-      SHUTDOWN, 
+      CONNECT, SHUTDOWN, 
     };
     public static CommandType valueOf(
         com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
@@ -680,13 +682,6 @@ public final class RemoteProtocol {
       return metadata_.get(index);
     }
     
-    // optional string cookie = 9;
-    public static final int COOKIE_FIELD_NUMBER = 9;
-    private boolean hasCookie;
-    private java.lang.String cookie_ = "";
-    public boolean hasCookie() { return hasCookie; }
-    public java.lang.String getCookie() { return cookie_; }
-    
     private void initFields() {
       uuid_ = akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance();
       actorInfo_ = akka.remote.protocol.RemoteProtocol.ActorInfoProtocol.getDefaultInstance();
@@ -746,9 +741,6 @@ public final class RemoteProtocol {
       for (akka.remote.protocol.RemoteProtocol.MetadataEntryProtocol element : getMetadataList()) {
         output.writeMessage(8, element);
       }
-      if (hasCookie()) {
-        output.writeString(9, getCookie());
-      }
       getUnknownFields().writeTo(output);
     }
     
@@ -789,10 +781,6 @@ public final class RemoteProtocol {
       for (akka.remote.protocol.RemoteProtocol.MetadataEntryProtocol element : getMetadataList()) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(8, element);
-      }
-      if (hasCookie()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(9, getCookie());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -983,9 +971,6 @@ public final class RemoteProtocol {
           }
           result.metadata_.addAll(other.metadata_);
         }
-        if (other.hasCookie()) {
-          setCookie(other.getCookie());
-        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -1073,10 +1058,6 @@ public final class RemoteProtocol {
               akka.remote.protocol.RemoteProtocol.MetadataEntryProtocol.Builder subBuilder = akka.remote.protocol.RemoteProtocol.MetadataEntryProtocol.newBuilder();
               input.readMessage(subBuilder, extensionRegistry);
               addMetadata(subBuilder.buildPartial());
-              break;
-            }
-            case 74: {
-              setCookie(input.readString());
               break;
             }
           }
@@ -1375,27 +1356,6 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional string cookie = 9;
-      public boolean hasCookie() {
-        return result.hasCookie();
-      }
-      public java.lang.String getCookie() {
-        return result.getCookie();
-      }
-      public Builder setCookie(java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  result.hasCookie = true;
-        result.cookie_ = value;
-        return this;
-      }
-      public Builder clearCookie() {
-        result.hasCookie = false;
-        result.cookie_ = getDefaultInstance().getCookie();
-        return this;
-      }
-      
       // @@protoc_insertion_point(builder_scope:RemoteMessageProtocol)
     }
     
@@ -1450,7 +1410,7 @@ public final class RemoteProtocol {
     public akka.remote.protocol.RemoteProtocol.CommandType getCommandType() { return commandType_; }
     
     private void initFields() {
-      commandType_ = akka.remote.protocol.RemoteProtocol.CommandType.SHUTDOWN;
+      commandType_ = akka.remote.protocol.RemoteProtocol.CommandType.CONNECT;
     }
     public final boolean isInitialized() {
       if (!hasCommandType) return false;
@@ -1729,7 +1689,7 @@ public final class RemoteProtocol {
       }
       public Builder clearCommandType() {
         result.hasCommandType = false;
-        result.commandType_ = akka.remote.protocol.RemoteProtocol.CommandType.SHUTDOWN;
+        result.commandType_ = akka.remote.protocol.RemoteProtocol.CommandType.CONNECT;
         return this;
       }
       
@@ -5710,46 +5670,46 @@ public final class RemoteProtocol {
       "\n\024RemoteProtocol.proto\"j\n\022AkkaRemoteProt" +
       "ocol\022\'\n\007message\030\001 \001(\0132\026.RemoteMessagePro" +
       "tocol\022+\n\013instruction\030\002 \001(\0132\026.RemoteContr" +
-      "olProtocol\"\277\002\n\025RemoteMessageProtocol\022\033\n\004" +
+      "olProtocol\"\257\002\n\025RemoteMessageProtocol\022\033\n\004" +
       "uuid\030\001 \002(\0132\r.UuidProtocol\022%\n\tactorInfo\030\002" +
       " \002(\0132\022.ActorInfoProtocol\022\016\n\006oneWay\030\003 \002(\010" +
       "\022!\n\007message\030\004 \001(\0132\020.MessageProtocol\022%\n\te" +
       "xception\030\005 \001(\0132\022.ExceptionProtocol\022%\n\016su" +
       "pervisorUuid\030\006 \001(\0132\r.UuidProtocol\022\'\n\006sen" +
       "der\030\007 \001(\0132\027.RemoteActorRefProtocol\022(\n\010me",
-      "tadata\030\010 \003(\0132\026.MetadataEntryProtocol\022\016\n\006" +
-      "cookie\030\t \001(\t\"J\n\025RemoteControlProtocol\022\016\n" +
-      "\006cookie\030\001 \001(\t\022!\n\013commandType\030\002 \002(\0162\014.Com" +
-      "mandType\":\n\026RemoteActorRefProtocol\022\017\n\007ad" +
-      "dress\030\001 \002(\t\022\017\n\007timeout\030\002 \001(\004\"\323\002\n\032Seriali" +
-      "zedActorRefProtocol\022\033\n\004uuid\030\001 \002(\0132\r.Uuid" +
-      "Protocol\022\017\n\007address\030\002 \002(\t\022\026\n\016actorClassn" +
-      "ame\030\003 \002(\t\022\025\n\ractorInstance\030\004 \001(\014\022\033\n\023seri" +
-      "alizerClassname\030\005 \001(\t\022\017\n\007timeout\030\006 \001(\004\022\026" +
-      "\n\016receiveTimeout\030\007 \001(\004\022%\n\tlifeCycle\030\010 \001(",
-      "\0132\022.LifeCycleProtocol\022+\n\nsupervisor\030\t \001(" +
-      "\0132\027.RemoteActorRefProtocol\022\024\n\014hotswapSta" +
-      "ck\030\n \001(\014\022(\n\010messages\030\013 \003(\0132\026.RemoteMessa" +
-      "geProtocol\"g\n\037SerializedTypedActorRefPro" +
-      "tocol\022-\n\010actorRef\030\001 \002(\0132\033.SerializedActo" +
-      "rRefProtocol\022\025\n\rinterfaceName\030\002 \002(\t\"r\n\017M" +
-      "essageProtocol\0225\n\023serializationScheme\030\001 " +
-      "\002(\0162\030.SerializationSchemeType\022\017\n\007message" +
-      "\030\002 \002(\014\022\027\n\017messageManifest\030\003 \001(\014\"R\n\021Actor" +
-      "InfoProtocol\022\033\n\004uuid\030\001 \002(\0132\r.UuidProtoco",
-      "l\022\017\n\007timeout\030\002 \002(\004\022\017\n\007address\030\003 \001(\t\")\n\014U" +
-      "uidProtocol\022\014\n\004high\030\001 \002(\004\022\013\n\003low\030\002 \002(\004\"3" +
-      "\n\025MetadataEntryProtocol\022\013\n\003key\030\001 \002(\t\022\r\n\005" +
-      "value\030\002 \002(\014\"6\n\021LifeCycleProtocol\022!\n\tlife" +
-      "Cycle\030\001 \002(\0162\016.LifeCycleType\"1\n\017AddressPr" +
-      "otocol\022\020\n\010hostname\030\001 \002(\t\022\014\n\004port\030\002 \002(\r\"7" +
-      "\n\021ExceptionProtocol\022\021\n\tclassname\030\001 \002(\t\022\017" +
-      "\n\007message\030\002 \002(\t*\033\n\013CommandType\022\014\n\010SHUTDO" +
-      "WN\020\001*]\n\027SerializationSchemeType\022\010\n\004JAVA\020" +
-      "\001\022\013\n\007SBINARY\020\002\022\016\n\nSCALA_JSON\020\003\022\r\n\tJAVA_J",
-      "SON\020\004\022\014\n\010PROTOBUF\020\005*-\n\rLifeCycleType\022\r\n\t" +
-      "PERMANENT\020\001\022\r\n\tTEMPORARY\020\002B\030\n\024akka.remot" +
-      "e.protocolH\001"
+      "tadata\030\010 \003(\0132\026.MetadataEntryProtocol\"J\n\025" +
+      "RemoteControlProtocol\022\016\n\006cookie\030\001 \001(\t\022!\n" +
+      "\013commandType\030\002 \002(\0162\014.CommandType\":\n\026Remo" +
+      "teActorRefProtocol\022\017\n\007address\030\001 \002(\t\022\017\n\007t" +
+      "imeout\030\002 \001(\004\"\323\002\n\032SerializedActorRefProto" +
+      "col\022\033\n\004uuid\030\001 \002(\0132\r.UuidProtocol\022\017\n\007addr" +
+      "ess\030\002 \002(\t\022\026\n\016actorClassname\030\003 \002(\t\022\025\n\ract" +
+      "orInstance\030\004 \001(\014\022\033\n\023serializerClassname\030" +
+      "\005 \001(\t\022\017\n\007timeout\030\006 \001(\004\022\026\n\016receiveTimeout" +
+      "\030\007 \001(\004\022%\n\tlifeCycle\030\010 \001(\0132\022.LifeCyclePro",
+      "tocol\022+\n\nsupervisor\030\t \001(\0132\027.RemoteActorR" +
+      "efProtocol\022\024\n\014hotswapStack\030\n \001(\014\022(\n\010mess" +
+      "ages\030\013 \003(\0132\026.RemoteMessageProtocol\"g\n\037Se" +
+      "rializedTypedActorRefProtocol\022-\n\010actorRe" +
+      "f\030\001 \002(\0132\033.SerializedActorRefProtocol\022\025\n\r" +
+      "interfaceName\030\002 \002(\t\"r\n\017MessageProtocol\0225" +
+      "\n\023serializationScheme\030\001 \002(\0162\030.Serializat" +
+      "ionSchemeType\022\017\n\007message\030\002 \002(\014\022\027\n\017messag" +
+      "eManifest\030\003 \001(\014\"R\n\021ActorInfoProtocol\022\033\n\004" +
+      "uuid\030\001 \002(\0132\r.UuidProtocol\022\017\n\007timeout\030\002 \002",
+      "(\004\022\017\n\007address\030\003 \001(\t\")\n\014UuidProtocol\022\014\n\004h" +
+      "igh\030\001 \002(\004\022\013\n\003low\030\002 \002(\004\"3\n\025MetadataEntryP" +
+      "rotocol\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\014\"6\n\021L" +
+      "ifeCycleProtocol\022!\n\tlifeCycle\030\001 \002(\0162\016.Li" +
+      "feCycleType\"1\n\017AddressProtocol\022\020\n\010hostna" +
+      "me\030\001 \002(\t\022\014\n\004port\030\002 \002(\r\"7\n\021ExceptionProto" +
+      "col\022\021\n\tclassname\030\001 \002(\t\022\017\n\007message\030\002 \002(\t*" +
+      "(\n\013CommandType\022\013\n\007CONNECT\020\001\022\014\n\010SHUTDOWN\020" +
+      "\002*]\n\027SerializationSchemeType\022\010\n\004JAVA\020\001\022\013" +
+      "\n\007SBINARY\020\002\022\016\n\nSCALA_JSON\020\003\022\r\n\tJAVA_JSON",
+      "\020\004\022\014\n\010PROTOBUF\020\005*-\n\rLifeCycleType\022\r\n\tPER" +
+      "MANENT\020\001\022\r\n\tTEMPORARY\020\002B\030\n\024akka.remote.p" +
+      "rotocolH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -5769,7 +5729,7 @@ public final class RemoteProtocol {
           internal_static_RemoteMessageProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_RemoteMessageProtocol_descriptor,
-              new java.lang.String[] { "Uuid", "ActorInfo", "OneWay", "Message", "Exception", "SupervisorUuid", "Sender", "Metadata", "Cookie", },
+              new java.lang.String[] { "Uuid", "ActorInfo", "OneWay", "Message", "Exception", "SupervisorUuid", "Sender", "Metadata", },
               akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol.class,
               akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol.Builder.class);
           internal_static_RemoteControlProtocol_descriptor =

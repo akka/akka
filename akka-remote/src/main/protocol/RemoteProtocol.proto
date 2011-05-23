@@ -28,7 +28,6 @@ message RemoteMessageProtocol {
   optional UuidProtocol supervisorUuid = 6;
   optional RemoteActorRefProtocol sender = 7;
   repeated MetadataEntryProtocol metadata = 8;
-  optional string cookie = 9;
 }
 
 /**
@@ -43,7 +42,8 @@ message RemoteControlProtocol {
  * Defines the type of the RemoteControlProtocol command type
  */
 enum CommandType {
-  SHUTDOWN = 1;
+  CONNECT = 1;
+  SHUTDOWN = 2;
 }
 
 /**

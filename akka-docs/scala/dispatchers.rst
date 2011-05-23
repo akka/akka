@@ -22,7 +22,7 @@ For most scenarios the default settings are the best. Here we have one single ev
 
 .. code-block:: scala
 
-  Dispatchers.globalExecutorBasedEventDrivenDispatcher
+  Dispatchers.globalDispatcher
 
 But if you feel that you are starting to contend on the single dispatcher (the 'Executor' and its queue) or want to group a specific set of Actors for a dedicated dispatcher for better flexibility and configurability then you can override the defaults and define your own dispatcher. See below for details on which ones are available and how they can be configured.
 
@@ -61,7 +61,7 @@ Let's now walk through the different dispatchers in more detail.
 Thread-based
 ^^^^^^^^^^^^
 
-The 'ThreadBasedDispatcher' binds a dedicated OS thread to each specific Actor. The messages are posted to a 'LinkedBlockingQueue' which feeds the messages to the dispatcher one by one. A 'ThreadBasedDispatcher' cannot be shared between actors. This dispatcher has worse performance and scalability than the event-based dispatcher but works great for creating "daemon" Actors that consumes a low frequency of messages and are allowed to go off and do their own thing for a longer period of time. Another advantage with this dispatcher is that Actors do not block threads for each other.
+The 'PinnedDispatcher' binds a dedicated OS thread to each specific Actor. The messages are posted to a 'LinkedBlockingQueue' which feeds the messages to the dispatcher one by one. A 'PinnedDispatcher' cannot be shared between actors. This dispatcher has worse performance and scalability than the event-based dispatcher but works great for creating "daemon" Actors that consumes a low frequency of messages and are allowed to go off and do their own thing for a longer period of time. Another advantage with this dispatcher is that Actors do not block threads for each other.
 
 It would normally by used from within the actor like this:
 
@@ -69,7 +69,7 @@ It would normally by used from within the actor like this:
 
   class MyActor extends Actor {
     public MyActor() {
-      self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
+      self.dispatcher = Dispatchers.newPinnedDispatcher(self)
     }
     ...
   }
@@ -77,7 +77,7 @@ It would normally by used from within the actor like this:
 Event-based
 ^^^^^^^^^^^
 
-The 'ExecutorBasedEventDrivenDispatcher' binds a set of Actors to a thread pool backed up by a 'BlockingQueue'. This dispatcher is highly configurable and supports a fluent configuration API to configure the 'BlockingQueue' (type of queue, max items etc.) as well as the thread pool.
+The 'Dispatcher' binds a set of Actors to a thread pool backed up by a 'BlockingQueue'. This dispatcher is highly configurable and supports a fluent configuration API to configure the 'BlockingQueue' (type of queue, max items etc.) as well as the thread pool.
 
 The event-driven dispatchers **must be shared** between multiple Actors. One best practice is to let each top-level Actor, e.g. the Actors you define in the declarative supervisor config, to get their own dispatcher but reuse the dispatcher for each new Actor that the top-level Actor creates. But you can also share dispatcher between multiple top-level Actors. This is very use-case specific and needs to be tried out on a case by case basis. The important thing is that Akka tries to provide you with the freedom you need to design and implement your system in the most efficient way in regards to performance, throughput and latency.
 
@@ -106,7 +106,7 @@ Here is an example:
   import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 
   class MyActor extends Actor {
-    self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(name)
+    self.dispatcher = Dispatchers.newDispatcher(name)
       .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
       .setCorePoolSize(16)
       .setMaxPoolSize(128)
@@ -116,7 +116,7 @@ Here is an example:
      ...
   }
 
-This 'ExecutorBasedEventDrivenDispatcher' allows you to define the 'throughput' it should have. This defines the number of messages for a specific Actor the dispatcher should process in one single sweep.
+This 'Dispatcher' allows you to define the 'throughput' it should have. This defines the number of messages for a specific Actor the dispatcher should process in one single sweep.
 Setting this to a higher number will increase throughput but lower fairness, and vice versa. If you don't specify it explicitly then it uses the default value defined in the 'akka.conf' configuration file:
 
 .. code-block:: ruby
@@ -132,10 +132,10 @@ Browse the `ScalaDoc <scaladoc>`_ or look at the code for all the options availa
 Priority event-based
 ^^^^^^^^^^^^^^^^^^^^
 
-Sometimes it's useful to be able to specify priority order of messages, that is done by using PriorityExecutorBasedEventDrivenDispatcher and supply
+Sometimes it's useful to be able to specify priority order of messages, that is done by using PriorityDispatcher and supply
 a java.util.Comparator[MessageInvocation] or use a akka.dispatch.PriorityGenerator (recommended):
 
-Creating a PriorityExecutorBasedEventDrivenDispatcher using PriorityGenerator:
+Creating a PriorityDispatcher using PriorityGenerator:
 
 .. code-block:: scala
 
@@ -156,7 +156,7 @@ Creating a PriorityExecutorBasedEventDrivenDispatcher using PriorityGenerator:
     })
   
     // We create a new Priority dispatcher and seed it with the priority generator
-    a.dispatcher = new PriorityExecutorBasedEventDrivenDispatcher("foo", gen) 
+    a.dispatcher = new PriorityDispatcher("foo", gen)
     a.start // Start the Actor
 
     a.dispatcher.suspend(a) // Suspending the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
@@ -184,14 +184,14 @@ Prints:
 Work-stealing event-based
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The 'ExecutorBasedEventDrivenWorkStealingDispatcher' is a variation of the 'ExecutorBasedEventDrivenDispatcher' in which Actors of the same type can be set up to share this dispatcher and during execution time the different actors will steal messages from other actors if they have less messages to process. This can be a great way to improve throughput at the cost of a little higher latency.
+The 'BalancingDispatcher' is a variation of the 'Dispatcher' in which Actors of the same type can be set up to share this dispatcher and during execution time the different actors will steal messages from other actors if they have less messages to process. This can be a great way to improve throughput at the cost of a little higher latency.
 
 Normally the way you use it is to create an Actor companion object to hold the dispatcher and then set in in the Actor explicitly.
 
 .. code-block:: scala
 
   object MyActor {
-    val dispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher(name).build
+    val dispatcher = Dispatchers.newBalancingDispatcher(name).build
   }
 
   class MyActor extends Actor {
@@ -224,24 +224,24 @@ Per-instance based configuration
 
 You can also do it on a specific dispatcher instance.
 
-For the 'ExecutorBasedEventDrivenDispatcher' and the 'ExecutorBasedWorkStealingDispatcher' you can do it through their constructor
+For the 'Dispatcher' and the 'ExecutorBasedWorkStealingDispatcher' you can do it through their constructor
 
 .. code-block:: scala
 
   class MyActor extends Actor {
     val mailboxCapacity = BoundedMailbox(capacity = 100)
-    self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(name, throughput, mailboxCapacity).build
+    self.dispatcher = Dispatchers.newDispatcher(name, throughput, mailboxCapacity).build
      ...
   }
 
-For the 'ThreadBasedDispatcher', it is non-shareable between actors, and associates a dedicated Thread with the actor.
+For the 'PinnedDispatcher', it is non-shareable between actors, and associates a dedicated Thread with the actor.
 Making it bounded (by specifying a capacity) is optional, but if you do, you need to provide a pushTimeout (default is 10 seconds). When trying to send a message to the Actor it will throw a MessageQueueAppendFailedException("BlockingMessageTransferQueue transfer timed out") if the message cannot be added to the mailbox within the time specified by the pushTimeout.
 
 .. code-block:: scala
 
   class MyActor extends Actor {
     import akka.util.duration._
-    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 100,
+    self.dispatcher = Dispatchers.newPinnedDispatcher(self, mailboxCapacity = 100,
       pushTimeOut = 10 seconds)
      ...
   }

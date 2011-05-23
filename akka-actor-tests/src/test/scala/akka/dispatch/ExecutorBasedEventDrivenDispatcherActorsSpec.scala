@@ -12,7 +12,7 @@ import Actor._
  *
  * @author Jan Van Besien
  */
-class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustMatchers {
+class DispatcherActorsSpec extends JUnitSuite with MustMatchers {
   class SlowActor(finishedCounter: CountDownLatch) extends Actor {
 
     def receive = {

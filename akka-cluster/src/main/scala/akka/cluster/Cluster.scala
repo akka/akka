@@ -227,22 +227,19 @@ object Cluster {
     properties = properties + property
   }
 
-  private def nodename: String = {
-    val overridden = properties.get("akka.cluster.nodename")
-    if (overridden.isDefined) overridden.get
-    else Config.nodename
+  private def nodename: String = properties.get("akka.cluster.nodename") match {
+    case Some(uberride) ⇒ uberride
+    case None           ⇒ Config.nodename
   }
 
-  private def hostname: String = {
-    val overridden = properties.get("akka.cluster.hostname")
-    if (overridden.isDefined) overridden.get
-    else Config.hostname
+  private def hostname: String = properties.get("akka.cluster.hostname") match {
+    case Some(uberride) ⇒ uberride
+    case None           ⇒ Config.hostname
   }
 
-  private def port: Int = {
-    val overridden = properties.get("akka.cluster.port")
-    if (overridden.isDefined) overridden.get.toInt
-    else Config.remoteServerPort
+  private def port: Int = properties.get("akka.cluster.port") match {
+    case Some(uberride) ⇒ uberride.toInt
+    case None           ⇒ Config.remoteServerPort
   }
 
   val defaultSerializer = new SerializableSerializer
@@ -958,7 +955,9 @@ class ClusterNode private[akka] (
    */
   def uuidsForActorAddress(actorAddress: String): Array[UUID] = if (isConnected.isOn) {
     try {
-      zkClient.getChildren(actorAddressToUuidsPathFor(actorAddress)).toList.map(new UUID(_)).toArray.asInstanceOf[Array[UUID]]
+      zkClient.getChildren(actorAddressToUuidsPathFor(actorAddress)).toArray map {
+        case c: CharSequence ⇒ new UUID(c)
+      }
     } catch {
       case e: ZkNoNodeException ⇒ Array[UUID]()
     }
@@ -969,7 +968,7 @@ class ClusterNode private[akka] (
    */
   def nodesForActorsInUseWithUuid(uuid: UUID): Array[String] = if (isConnected.isOn) {
     try {
-      zkClient.getChildren(actorLocationsPathFor(uuid)).toList.toArray.asInstanceOf[Array[String]]
+      zkClient.getChildren(actorLocationsPathFor(uuid)).toArray.asInstanceOf[Array[String]]
     } catch {
       case e: ZkNoNodeException ⇒ Array[String]()
     }
@@ -982,8 +981,7 @@ class ClusterNode private[akka] (
     flatten {
       actorUuidsForActorAddress(address) map { uuid ⇒
         try {
-          val list = zkClient.getChildren(actorLocationsPathFor(uuid))
-          list.toList.toArray.asInstanceOf[Array[String]]
+          zkClient.getChildren(actorLocationsPathFor(uuid)).toArray.asInstanceOf[Array[String]]
         } catch {
           case e: ZkNoNodeException ⇒ Array[String]()
         }
@@ -996,7 +994,9 @@ class ClusterNode private[akka] (
    */
   def uuidsForActorsInUseOnNode(nodeName: String): Array[UUID] = if (isConnected.isOn) {
     try {
-      zkClient.getChildren(actorsAtNodePathFor(nodeName)).toList.map(new UUID(_)).toArray.asInstanceOf[Array[UUID]]
+      zkClient.getChildren(actorsAtNodePathFor(nodeName)).toArray map {
+        case c: CharSequence ⇒ new UUID(c)
+      }
     } catch {
       case e: ZkNoNodeException ⇒ Array[UUID]()
     }
@@ -1008,7 +1008,9 @@ class ClusterNode private[akka] (
   def addressesForActorsInUseOnNode(nodeName: String): Array[String] = if (isConnected.isOn) {
     val uuids =
       try {
-        zkClient.getChildren(actorsAtNodePathFor(nodeName)).toList.map(new UUID(_)).toArray.asInstanceOf[Array[UUID]]
+        zkClient.getChildren(actorsAtNodePathFor(nodeName)).toArray map {
+          case c: CharSequence ⇒ new UUID(c)
+        }
       } catch {
         case e: ZkNoNodeException ⇒ Array[UUID]()
       }
@@ -1024,11 +1026,10 @@ class ClusterNode private[akka] (
       zkClient.readData(actorRegistryFormatPathFor(uuid), new Stat).asInstanceOf[Serializer]
     }
 
-    val format = formats.head
     if (formats.isEmpty) throw new IllegalStateException("No Serializer found for [%s]".format(actorAddress))
-    if (formats map (_ == format) exists (_ == false)) throw new IllegalStateException(
-      "Multiple Serializer classes found for [%s]".format(actorAddress))
-    format
+    if (formats.forall(_ == formats.head) == false) throw new IllegalStateException("Multiple Serializer classes found for [%s]".format(actorAddress))
+
+    formats.head
   }
 
   /**
@@ -1126,9 +1127,7 @@ class ClusterNode private[akka] (
         }
       }
     }) match {
-      case Left(_) ⇒ {
-        /* do nothing */
-      }
+      case Left(_)          ⇒ /* do nothing */
       case Right(exception) ⇒ throw exception
     }
   }
@@ -1429,23 +1428,15 @@ class ClusterNode private[akka] (
 
       import Cluster._
 
-      override def start() {
-        self.start()
-      }
+      override def start(): Unit = self.start()
 
-      override def stop() {
-        self.shutdown()
-      }
+      override def stop(): Unit = self.shutdown()
 
       override def disconnect() = self.disconnect()
 
-      override def reconnect() {
-        self.reconnect()
-      }
+      override def reconnect(): Unit = self.reconnect()
 
-      override def resign() {
-        self.resign()
-      }
+      override def resign(): Unit = self.resign()
 
       override def isConnected = self.isConnected.isOn
 
@@ -1479,15 +1470,11 @@ class ClusterNode private[akka] (
 
       override def getAddressesForActorsInUseOnNode(nodeName: String) = self.addressesForActorsInUseOnNode(nodeName).map(_.toString).toArray
 
-      override def setConfigElement(key: String, value: String) {
-        self.setConfigElement(key, value.getBytes("UTF-8"))
-      }
+      override def setConfigElement(key: String, value: String): Unit = self.setConfigElement(key, value.getBytes("UTF-8"))
 
       override def getConfigElement(key: String) = new String(self.getConfigElement(key), "UTF-8")
 
-      override def removeConfigElement(key: String) {
-        self.removeConfigElement(key)
-      }
+      override def removeConfigElement(key: String): Unit = self.removeConfigElement(key)
 
       override def getConfigElementKeys = self.getConfigElementKeys.toArray
     }
@@ -1580,7 +1567,7 @@ object RemoteClusterDaemon {
   val ADDRESS = "akka-cluster-daemon".intern
 
   // FIXME configure functionServerDispatcher to what?
-  val functionServerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("akka:cloud:cluster:function:server").build
+  val functionServerDispatcher = Dispatchers.newDispatcher("akka:cloud:cluster:function:server").build
 }
 
 /**
@@ -1591,7 +1578,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
   import RemoteClusterDaemon._
   import Cluster._
 
-  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
+  self.dispatcher = Dispatchers.newPinnedDispatcher(self)
 
   def receive: Receive = {
     case message: RemoteDaemonMessageProtocol ⇒
@@ -1664,8 +1651,8 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
             self.dispatcher = functionServerDispatcher
 
             def receive = {
-              case t: Tuple2[Function1[Any, Unit], Any] ⇒ try {
-                t._1(t._2)
+              case (fun: Function[Any, Unit], param: Any) ⇒ try {
+                fun(param)
               } finally {
                 self.stop()
               }
@@ -1677,8 +1664,8 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
             self.dispatcher = functionServerDispatcher
 
             def receive = {
-              case t: Tuple2[Function1[Any, Any], Any] ⇒ try {
-                self.reply(t._1(t._2))
+              case (fun: Function[Any, Unit], param: Any) ⇒ try {
+                self.reply(fun(param))
               } finally {
                 self.stop()
               }

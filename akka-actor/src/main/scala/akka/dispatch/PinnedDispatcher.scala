@@ -4,30 +4,35 @@
 
 package akka.dispatch
 
-import akka.actor.{ ActorRef }
 import akka.util.Duration
 
 import java.util.concurrent.atomic.AtomicReference
+import akka.actor.{ Actor, ActorRef }
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ThreadBasedDispatcher(_actor: ActorRef, _mailboxType: MailboxType)
-  extends ExecutorBasedEventDrivenDispatcher(
-    _actor.uuid.toString, Dispatchers.THROUGHPUT, -1, _mailboxType, ThreadBasedDispatcher.oneThread) {
+class PinnedDispatcher(_actor: ActorRef, _name: String, _mailboxType: MailboxType)
+  extends Dispatcher(
+    _name, Dispatchers.THROUGHPUT, -1, _mailboxType, PinnedDispatcher.oneThread) {
+
+  def this(_name: String, _mailboxType: MailboxType) = this(null, _name, _mailboxType)
+
+  def this(_actor: ActorRef, _name: String) = this(_actor, _name, Dispatchers.MAILBOX_TYPE)
+
+  def this(_name: String) = this(null, _name, Dispatchers.MAILBOX_TYPE)
+
+  def this(_mailboxType: MailboxType) = this(null, "anon", _mailboxType)
+
+  def this(_actor: ActorRef, _mailboxType: MailboxType) = this(_actor, _actor.uuid.toString, _mailboxType)
+
+  def this(_actor: ActorRef) = this(_actor, _actor.uuid.toString, Dispatchers.MAILBOX_TYPE)
+
+  def this() = this(Dispatchers.MAILBOX_TYPE)
 
   private[akka] val owner = new AtomicReference[ActorRef](_actor)
-
-  def this(actor: ActorRef) =
-    this(actor, UnboundedMailbox()) // For Java API
-
-  def this(actor: ActorRef, capacity: Int) =
-    this(actor, BoundedMailbox(capacity)) //For Java API
-
-  def this(actor: ActorRef, capacity: Int, pushTimeOut: Duration) = //For Java API
-    this(actor, BoundedMailbox(capacity, pushTimeOut))
 
   override def register(actorRef: ActorRef) = {
     val actor = owner.get()
@@ -42,7 +47,7 @@ class ThreadBasedDispatcher(_actor: ActorRef, _mailboxType: MailboxType)
   }
 }
 
-object ThreadBasedDispatcher {
+object PinnedDispatcher {
   val oneThread: ThreadPoolConfig = ThreadPoolConfig(allowCorePoolTimeout = true, corePoolSize = 1, maxPoolSize = 1)
 }
 

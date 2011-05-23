@@ -13,7 +13,7 @@ import akka.config._
 import Config._
 import akka.util._
 import akka.event.EventHandler
-import akka.dispatch.{ DefaultCompletableFuture, CompletableFuture }
+import akka.dispatch.{ DefaultPromise, Promise }
 import akka.AkkaException
 
 import akka.cluster.zookeeper._
@@ -140,7 +140,7 @@ class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync:
         "Reading entries [%s -> %s] for log [%s]".format(from, to, logId))
 
       if (isAsync) {
-        val future = new DefaultCompletableFuture[Vector[Array[Byte]]](timeout)
+        val future = new DefaultPromise[Vector[Array[Byte]]](timeout)
         ledger.asyncReadEntries(
           from, to,
           new AsyncCallback.ReadCallback {
@@ -149,7 +149,7 @@ class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync:
               ledgerHandle: LedgerHandle,
               enumeration: Enumeration[LedgerEntry],
               ctx: AnyRef) {
-              val future = ctx.asInstanceOf[CompletableFuture[Vector[Array[Byte]]]]
+              val future = ctx.asInstanceOf[Promise[Vector[Array[Byte]]]]
               var entries = Vector[Array[Byte]]()
               while (enumeration.hasMoreElements) {
                 entries = entries :+ enumeration.nextElement.getEntry
@@ -362,7 +362,7 @@ object TransactionLog {
       if (zkClient.exists(txLogPath)) throw new ReplicationException(
         "Transaction log for UUID [" + id + "] already exists")
 
-      val future = new DefaultCompletableFuture[LedgerHandle](timeout)
+      val future = new DefaultPromise[LedgerHandle](timeout)
       if (isAsync) {
         bookieClient.asyncCreateLedger(
           ensembleSize, quorumSize, digestType, password,
@@ -371,7 +371,7 @@ object TransactionLog {
               returnCode: Int,
               ledgerHandle: LedgerHandle,
               ctx: AnyRef) {
-              val future = ctx.asInstanceOf[CompletableFuture[LedgerHandle]]
+              val future = ctx.asInstanceOf[Promise[LedgerHandle]]
               if (returnCode == BKException.Code.OK) future.completeWithResult(ledgerHandle)
               else future.completeWithException(BKException.create(returnCode))
             }
@@ -422,7 +422,7 @@ object TransactionLog {
 
     val ledger = try {
       if (isAsync) {
-        val future = new DefaultCompletableFuture[LedgerHandle](timeout)
+        val future = new DefaultPromise[LedgerHandle](timeout)
         bookieClient.asyncOpenLedger(
           logId, digestType, password,
           new AsyncCallback.OpenCallback {
@@ -430,7 +430,7 @@ object TransactionLog {
               returnCode: Int,
               ledgerHandle: LedgerHandle,
               ctx: AnyRef) {
-              val future = ctx.asInstanceOf[CompletableFuture[LedgerHandle]]
+              val future = ctx.asInstanceOf[Promise[LedgerHandle]]
               if (returnCode == BKException.Code.OK) future.completeWithResult(ledgerHandle)
               else future.completeWithException(BKException.create(returnCode))
             }
@@ -447,7 +447,7 @@ object TransactionLog {
     TransactionLog(ledger, id, isAsync)
   }
 
-  private[akka] def await[T](future: CompletableFuture[T]): T = {
+  private[akka] def await[T](future: Promise[T]): T = {
     future.await
     if (future.result.isDefined) future.result.get
     else if (future.exception.isDefined) handleError(future.exception.get)

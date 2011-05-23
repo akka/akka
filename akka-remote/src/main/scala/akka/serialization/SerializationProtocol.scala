@@ -78,10 +78,9 @@ object ActorSerialization {
             actorRef.timeout,
             Right(m.message),
             false,
-            actorRef.getSender,
-            RemoteClientSettings.SECURE_COOKIE).build)
+            actorRef.getSender))
 
-      requestProtocols.foreach(rp ⇒ builder.addMessages(rp))
+      requestProtocols.foreach(builder.addMessages(_))
     }
 
     actorRef.receiveTimeout.foreach(builder.setReceiveTimeout(_))
@@ -201,8 +200,7 @@ object RemoteActorSerialization {
     timeout: Long,
     message: Either[Throwable, Any],
     isOneWay: Boolean,
-    senderOption: Option[ActorRef],
-    secureCookie: Option[String]): RemoteMessageProtocol.Builder = {
+    senderOption: Option[ActorRef]): RemoteMessageProtocol.Builder = {
 
     val uuidProtocol = replyUuid match {
       case Left(uid)       ⇒ UuidProtocol.newBuilder.setHigh(uid.getTime).setLow(uid.getClockSeqAndNode).build
@@ -237,8 +235,6 @@ object RemoteActorSerialization {
       case null ⇒ ""
       case s    ⇒ s
     }
-
-    secureCookie.foreach(messageBuilder.setCookie(_))
 
     /* TODO invent new supervision strategy
       actorRef.foreach { ref =>

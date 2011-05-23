@@ -19,7 +19,7 @@ You can specify JVM options for the forked JVMs::
 There are two sbt commands: ``multi-jvm-run`` for running applications and
 ``multi-jvm-test`` for running ScalaTest tests.
 
-The ``MultiJvmTests`` trait resides in the ``project/build`` directory. 
+The ``MultiJvmTests`` trait resides in the ``project/build`` directory.
 
 Creating application tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -91,6 +91,51 @@ You can change what the ``MultiJvm`` identifier is. For example, to change it to
 
 Your tests should now be named ``{TestName}ClusterTest{NodeName}``.
 
+Configuration of the JVM instances
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Setting JVM options
+-------------------
+
+You can define specific JVM options for each of the spawned JVMs. You do that by creating
+a file named after the node in the test with suffix ``.opts``.
+
+For example, to feed the JVM options ``-Dakka.cluster.nodename=node1`` and
+``-Dakka.cluster.port=9991`` to the ``TestMultiJvmNode1`` let's create three ``*.opts`` files
+and add the options to them.
+
+``TestMultiJvmNode1.opts``::
+
+    -Dakka.cluster.nodename=node1 -Dakka.cluster.port=9991
+
+``TestMultiJvmNode2.opts``::
+
+    -Dakka.cluster.nodename=node2 -Dakka.cluster.port=9992
+
+``TestMultiJvmNode3.opts``::
+
+    -Dakka.cluster.nodename=node3 -Dakka.cluster.port=9993
+
+Overriding akka.conf options
+----------------------------
+
+You can also override the options in the ``akka.conf`` file with different options for each
+spawned JVM. You do that by creating a file named after the node in the test with suffix ``.conf``.
+
+For example, to override the configuration option ``akka.cluster.name`` let's create three ``*.conf`` files
+and add the option to them.
+
+``TestMultiJvmNode1.conf``::
+
+    akka.cluster.name = "test-cluster"
+
+``TestMultiJvmNode2.conf``::
+
+    akka.cluster.name = "test-cluster"
+
+``TestMultiJvmNode3.conf``::
+
+    akka.cluster.name = "test-cluster"
 
 ScalaTest
 ~~~~~~~~~

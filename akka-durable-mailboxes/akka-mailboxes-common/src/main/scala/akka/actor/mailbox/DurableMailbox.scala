@@ -37,8 +37,8 @@ abstract class DurableExecutableMailbox(owner: ActorRef) extends MessageQueue wi
 
   EventHandler.debug(this, "Creating %s mailbox [%s]".format(getClass.getName, name))
 
-  val dispatcher: ExecutorBasedEventDrivenDispatcher = owner.dispatcher match {
-    case e: ExecutorBasedEventDrivenDispatcher => e
+  val dispatcher: Dispatcher = owner.dispatcher match {
+    case e: Dispatcher => e
     case _ => null
   }
 

@@ -52,7 +52,7 @@ case object FileDurableMailboxStorage      extends DurableMailboxStorage("akka.a
 case object ZooKeeperDurableMailboxStorage extends DurableMailboxStorage("akka.actor.mailbox.ZooKeeperBasedMailbox")
 
 /**
- * The durable equivalent of ExecutorBasedEventDrivenDispatcher
+ * The durable equivalent of Dispatcher
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -62,7 +62,7 @@ case class DurableEventBasedDispatcher(
   _throughput: Int = Dispatchers.THROUGHPUT,
   _throughputDeadlineTime: Int = Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS,
   _mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
-  _config: ThreadPoolConfig = ThreadPoolConfig()) extends ExecutorBasedEventDrivenDispatcher(
+  _config: ThreadPoolConfig = ThreadPoolConfig()) extends Dispatcher(
   _name,
   _throughput,
   _throughputDeadlineTime,
@@ -101,14 +101,14 @@ case class DurableEventBasedDispatcher(
 }
 
 /**
- * The durable equivalent of ThreadBasedDispatcher
+ * The durable equivalent of PinnedDispatcher
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-case class DurableThreadBasedDispatcher(
+case class DurablePinnedDispatcher(
       _actor: ActorRef,
       _storage: DurableMailboxStorage,
-      _mailboxType: MailboxType) extends ThreadBasedDispatcher(_actor,_mailboxType) {
+      _mailboxType: MailboxType) extends PinnedDispatcher(_actor,_mailboxType) {
 
   def this(actor: ActorRef, _storage: DurableMailboxStorage) =
     this(actor, _storage, UnboundedMailbox()) // For Java API
