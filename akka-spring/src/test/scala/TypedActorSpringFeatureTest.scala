@@ -3,8 +3,7 @@
  */
 package akka.spring
 
-
-import foo.{PingActor, IMyPojo, MyPojo}
+import foo.{ PingActor, IMyPojo, MyPojo }
 import akka.dispatch.FutureTimeoutException
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
@@ -13,16 +12,15 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader
 import org.springframework.context.ApplicationContext
 import org.springframework.context.support.ClassPathXmlApplicationContext
-import org.springframework.core.io.{ClassPathResource, Resource}
-import org.scalatest.{BeforeAndAfterAll, FeatureSpec}
+import org.springframework.core.io.{ ClassPathResource, Resource }
+import org.scalatest.{ BeforeAndAfterAll, FeatureSpec }
 import java.util.concurrent.CountDownLatch
 import akka.remote.netty.NettyRemoteSupport
 import akka.actor._
 import akka.actor.Actor._
 
-
 object RemoteTypedActorLog {
-  import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
+  import java.util.concurrent.{ LinkedBlockingQueue, TimeUnit, BlockingQueue }
   val messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
   val oneWayLog = new LinkedBlockingQueue[String]
 
@@ -43,7 +41,7 @@ class TypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with B
 
   override def beforeAll {
     remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(false) //Can't run the test if we're eliminating all remote calls
-    remote.start("localhost",9990)
+    remote.start("localhost", 9990)
     val typedActor = TypedActor.newInstance(classOf[RemoteTypedActorOne], classOf[RemoteTypedActorOneImpl], 1000)
     remote.registerTypedActor("typed-actor-service", typedActor)
   }
@@ -55,7 +53,7 @@ class TypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with B
     Thread.sleep(1000)
   }
 
-  def getTypedActorFromContext(config: String, id: String) : IMyPojo = {
+  def getTypedActorFromContext(config: String, id: String): IMyPojo = {
     MyPojo.latch = new CountDownLatch(1)
     val context = new ClassPathXmlApplicationContext(config)
     val myPojo: IMyPojo = context.getBean(id).asInstanceOf[IMyPojo]
@@ -93,7 +91,7 @@ class TypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with B
 
     scenario("FutureTimeoutException when timed out") {
       val myPojo = getTypedActorFromContext("/typed-actor-config.xml", "simple-typed-actor")
-      evaluating {myPojo.longRunning()} should produce[FutureTimeoutException]
+      evaluating { myPojo.longRunning() } should produce[FutureTimeoutException]
     }
 
     scenario("typed-actor with timeout") {
@@ -147,7 +145,6 @@ class TypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with B
       myPojoProxy.oneWay("hello")
       MyPojo.latch.await
     }
-
 
   }
 

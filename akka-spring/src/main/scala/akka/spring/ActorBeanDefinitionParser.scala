@@ -9,7 +9,6 @@ import org.springframework.beans.factory.xml.ParserContext
 import AkkaSpringConfigurationTags._
 import org.w3c.dom.Element
 
-
 /**
  * Parser for custom namespace configuration.
  * @author michaelkober
@@ -30,7 +29,6 @@ class TypedActorBeanDefinitionParser extends AbstractSingleBeanDefinitionParser 
   override def getBeanClass(element: Element): Class[_] = classOf[ActorFactoryBean]
 }
 
-
 /**
  * Parser for custom namespace configuration.
  * @author michaelkober
@@ -50,7 +48,6 @@ class UntypedActorBeanDefinitionParser extends AbstractSingleBeanDefinitionParse
    */
   override def getBeanClass(element: Element): Class[_] = classOf[ActorFactoryBean]
 }
-
 
 /**
  * Parser for custom namespace configuration.
@@ -80,7 +77,7 @@ class ConfigBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#doParse(org.w3c.dom.Element, org.springframework.beans.factory.xml.ParserContext, org.springframework.beans.factory.support.BeanDefinitionBuilder)
    */
   override def doParse(element: Element, parserContext: ParserContext, builder: BeanDefinitionBuilder) {
-    val location  = element.getAttribute(LOCATION)
+    val location = element.getAttribute(LOCATION)
     builder.addPropertyValue(LOCATION, location)
   }
 

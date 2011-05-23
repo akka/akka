@@ -4,14 +4,12 @@
 package akka.spring
 
 import org.springframework.beans.factory.support.BeanDefinitionBuilder
-import org.springframework.beans.factory.xml.{ParserContext, AbstractSingleBeanDefinitionParser}
+import org.springframework.beans.factory.xml.{ ParserContext, AbstractSingleBeanDefinitionParser }
 import akka.config.Supervision._
 import AkkaSpringConfigurationTags._
 
-
 import org.w3c.dom.Element
 import org.springframework.util.xml.DomUtils
-
 
 /**
  * Parser for custom namespace for Akka declarative supervisor configuration.
@@ -53,9 +51,9 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
     val trapExceptions = parseTrapExits(trapExitsElement)
 
     val restartStrategy = failover match {
-      case "AllForOne" => new AllForOneStrategy(trapExceptions, retries, timeRange)
-      case "OneForOne" => new OneForOneStrategy(trapExceptions, retries, timeRange)
-      case _           => new OneForOneStrategy(trapExceptions, retries, timeRange) //Default to OneForOne
+      case "AllForOne" ⇒ new AllForOneStrategy(trapExceptions, retries, timeRange)
+      case "OneForOne" ⇒ new OneForOneStrategy(trapExceptions, retries, timeRange)
+      case _           ⇒ new OneForOneStrategy(trapExceptions, retries, timeRange) //Default to OneForOne
     }
     builder.addPropertyValue("restartStrategy", restartStrategy)
   }

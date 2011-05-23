@@ -26,10 +26,10 @@ class ConfiggyPropertyPlaceholderConfigurer extends PropertyPlaceholderConfigure
   /**
    * Load the akka.conf and transform to properties.
    */
-  private def loadAkkaConfig(configgyResource: Resource) : Properties = {
+  private def loadAkkaConfig(configgyResource: Resource): Properties = {
     val config = Configuration.fromFile(configgyResource.getFile.getPath)
     val properties = new Properties()
-    config.map.foreach {case (k, v) => properties.put(k, v.asInstanceOf[AnyRef]); println("(k,v)=" + k + ", " + v)}
+    config.map.foreach { case (k, v) ⇒ properties.put(k, v.asInstanceOf[AnyRef]); println("(k,v)=" + k + ", " + v) }
     properties
   }
 

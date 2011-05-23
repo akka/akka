@@ -11,7 +11,7 @@ object TypedCamelTestSupport {
 
   trait TestActor extends Actor {
     def receive = {
-      case msg => {
+      case msg ⇒ {
         handler(msg)
       }
     }
@@ -19,48 +19,48 @@ object TypedCamelTestSupport {
     def handler: Handler
   }
 
-  trait Countdown { this: Actor =>
+  trait Countdown { this: Actor ⇒
     var latch: CountDownLatch = new CountDownLatch(0)
     def countdown: Handler = {
-      case SetExpectedMessageCount(num) => {
+      case SetExpectedMessageCount(num) ⇒ {
         latch = new CountDownLatch(num)
         self.reply(latch)
       }
-      case msg => latch.countDown
+      case msg ⇒ latch.countDown
     }
   }
 
-  trait Respond { this: Actor =>
+  trait Respond { this: Actor ⇒
     def respond: Handler = {
-      case msg: Message => self.reply(response(msg))
+      case msg: Message ⇒ self.reply(response(msg))
     }
 
     def response(msg: Message): Any = "Hello %s" format msg.body
   }
 
-  trait Retain { this: Actor =>
+  trait Retain { this: Actor ⇒
     val messages = Buffer[Any]()
 
     def retain: Handler = {
-      case GetRetainedMessage     => self.reply(messages.last)
-      case GetRetainedMessages(p) => self.reply(messages.toList.filter(p))
-      case msg => {
+      case GetRetainedMessage     ⇒ self.reply(messages.last)
+      case GetRetainedMessages(p) ⇒ self.reply(messages.toList.filter(p))
+      case msg ⇒ {
         messages += msg
         msg
       }
     }
   }
 
-  trait Noop  { this: Actor =>
+  trait Noop { this: Actor ⇒
     def noop: Handler = {
-      case msg => msg
+      case msg ⇒ msg
     }
   }
 
   case class SetExpectedMessageCount(num: Int)
   case class GetRetainedMessage()
-  case class GetRetainedMessages(p: Any => Boolean) {
-    def this() = this(_ => true)
+  case class GetRetainedMessages(p: Any ⇒ Boolean) {
+    def this() = this(_ ⇒ true)
   }
 }
 

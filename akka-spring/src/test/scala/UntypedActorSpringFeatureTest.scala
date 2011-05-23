@@ -3,7 +3,6 @@
  */
 package akka.spring
 
-
 import foo.PingActor
 import akka.dispatch.ExecutorBasedEventDrivenWorkStealingDispatcher
 import org.scalatest.matchers.ShouldMatchers
@@ -11,10 +10,10 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import org.springframework.context.support.ClassPathXmlApplicationContext
 import akka.remote.netty.NettyRemoteSupport
-import org.scalatest.{BeforeAndAfterAll, FeatureSpec}
+import org.scalatest.{ BeforeAndAfterAll, FeatureSpec }
 
 import java.util.concurrent.CountDownLatch
-import akka.actor.{RemoteActorRef, Actor, ActorRef, TypedActor}
+import akka.actor.{ RemoteActorRef, Actor, ActorRef, TypedActor }
 import akka.actor.Actor._
 
 /**
@@ -28,7 +27,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
 
   override def beforeAll {
     remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(false) //Can't run the test if we're eliminating all remote calls
-    remote.start("localhost",9990)
+    remote.start("localhost", 9990)
   }
 
   override def afterAll {
@@ -38,15 +37,13 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
     Thread.sleep(1000)
   }
 
-
-  def getPingActorFromContext(config: String, id: String) : ActorRef = {
+  def getPingActorFromContext(config: String, id: String): ActorRef = {
     PingActor.latch = new CountDownLatch(1)
     val context = new ClassPathXmlApplicationContext(config)
     val pingActor = context.getBean(id).asInstanceOf[ActorRef]
     assert(pingActor.getActorClassName() === "akka.spring.foo.PingActor")
     pingActor.start()
   }
-
 
   feature("parse Spring application context") {
 

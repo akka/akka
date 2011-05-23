@@ -4,9 +4,9 @@
 package akka.spring
 
 import org.apache.camel.CamelContext
-import org.springframework.beans.factory.{DisposableBean, InitializingBean, FactoryBean}
+import org.springframework.beans.factory.{ DisposableBean, InitializingBean, FactoryBean }
 
-import akka.camel.{CamelContextManager, CamelService, CamelServiceFactory}
+import akka.camel.{ CamelContextManager, CamelService, CamelServiceFactory }
 
 /**
  * Factory bean for a {@link CamelService}.
@@ -14,7 +14,8 @@ import akka.camel.{CamelContextManager, CamelService, CamelServiceFactory}
  * @author Martin Krasser
  */
 class CamelServiceFactoryBean extends FactoryBean[CamelService] with InitializingBean with DisposableBean {
-  @scala.reflect.BeanProperty var camelContext: CamelContext = _
+  @scala.reflect.BeanProperty
+  var camelContext: CamelContext = _
 
   var instance: CamelService = _
 

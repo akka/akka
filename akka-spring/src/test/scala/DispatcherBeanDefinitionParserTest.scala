@@ -20,30 +20,20 @@ class DispatcherBeanDefinitionParserTest extends Spec with ShouldMatchers {
 
     it("should be able to parse the dispatcher configuration") {
       // executor-based-event-driven
-      val xml = <akka:dispatcher id="dispatcher"
-                                 type="executor-based-event-driven"
-                                 name="myDispatcher"/>
+      val xml = <akka:dispatcher id="dispatcher" type="executor-based-event-driven" name="myDispatcher"/>
       var props = parser.parseDispatcher(dom(xml).getDocumentElement);
       assert(props ne null)
       assert(props.dispatcherType === "executor-based-event-driven")
       assert(props.name === "myDispatcher")
 
       // executor-based-event-driven-work-stealing
-      val xml2 = <akka:dispatcher id="dispatcher"
-                                  type="executor-based-event-driven-work-stealing"
-                                  name="myDispatcher"/>
+      val xml2 = <akka:dispatcher id="dispatcher" type="executor-based-event-driven-work-stealing" name="myDispatcher"/>
       props = parser.parseDispatcher(dom(xml2).getDocumentElement);
       assert(props.dispatcherType === "executor-based-event-driven-work-stealing")
     }
 
     it("should be able to parse the thread pool configuration") {
-      val xml = <akka:thread-pool queue="bounded-array-blocking-queue"
-                                  capacity="100"
-                                  fairness="true"
-                                  max-pool-size="40"
-                                  core-pool-size="6"
-                                  keep-alive="2000"
-                                  rejection-policy="caller-runs-policy"/>
+      val xml = <akka:thread-pool queue="bounded-array-blocking-queue" capacity="100" fairness="true" max-pool-size="40" core-pool-size="6" keep-alive="2000" rejection-policy="caller-runs-policy"/>
       val props = parser.parseThreadPool(dom(xml).getDocumentElement);
       assert(props ne null)
       assert(props.queue == "bounded-array-blocking-queue")
@@ -56,15 +46,9 @@ class DispatcherBeanDefinitionParserTest extends Spec with ShouldMatchers {
     }
 
     it("should be able to parse the dispatcher with a thread pool configuration") {
-      val xml = <akka:dispatcher id="dispatcher"
-                                 type="executor-based-event-driven"
-                                 name="myDispatcher">
-          <akka:thread-pool queue="linked-blocking-queue"
-                            capacity="50"
-                            max-pool-size="10"
-                            core-pool-size="2"
-                            keep-alive="1000"/>
-      </akka:dispatcher>
+      val xml = <akka:dispatcher id="dispatcher" type="executor-based-event-driven" name="myDispatcher">
+                  <akka:thread-pool queue="linked-blocking-queue" capacity="50" max-pool-size="10" core-pool-size="2" keep-alive="1000"/>
+                </akka:dispatcher>
       val props = parser.parseDispatcher(dom(xml).getDocumentElement);
       assert(props ne null)
       assert(props.dispatcherType == "executor-based-event-driven")
@@ -77,20 +61,18 @@ class DispatcherBeanDefinitionParserTest extends Spec with ShouldMatchers {
 
     it("should throw IllegalArgumentException on not existing reference") {
       val xml = <akka:dispatcher ref="dispatcher"/>
-      evaluating {parser.parseDispatcher(dom(xml).getDocumentElement)} should produce[IllegalArgumentException]
+      evaluating { parser.parseDispatcher(dom(xml).getDocumentElement) } should produce[IllegalArgumentException]
     }
 
     it("should throw IllegalArgumentException on missing mandatory attributes") {
-      val xml = <akka:dispatcher id="dispatcher"
-                                 name="myDispatcher"/>
-      evaluating {parser.parseDispatcher(dom(xml).getDocumentElement)} should produce[IllegalArgumentException]
+      val xml = <akka:dispatcher id="dispatcher" name="myDispatcher"/>
+      evaluating { parser.parseDispatcher(dom(xml).getDocumentElement) } should produce[IllegalArgumentException]
     }
 
     it("should throw IllegalArgumentException when configuring a thread based dispatcher without TypedActor or UntypedActor") {
       val xml = <akka:dispatcher id="dispatcher" type="thread-based" name="myDispatcher"/>
-      evaluating {parser.parseDispatcher(dom(xml).getDocumentElement)} should produce[IllegalArgumentException]
+      evaluating { parser.parseDispatcher(dom(xml).getDocumentElement) } should produce[IllegalArgumentException]
     }
   }
 }
-
 

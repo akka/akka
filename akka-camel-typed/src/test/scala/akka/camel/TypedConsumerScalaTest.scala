@@ -2,7 +2,7 @@ package akka.camel
 
 import org.apache.camel.CamelExecutionException
 
-import org.scalatest.{BeforeAndAfterAll, WordSpec}
+import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Actor._
@@ -33,17 +33,17 @@ class TypedConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMa
       "support in-out message exchanges via its endpoints" in {
         service.awaitEndpointActivation(3) {
           actor = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
-        } must be (true)
-        mandatoryTemplate.requestBodyAndHeader("direct:m2", "x", "test", "y") must equal ("m2: x y")
-        mandatoryTemplate.requestBodyAndHeader("direct:m3", "x", "test", "y") must equal ("m3: x y")
-        mandatoryTemplate.requestBodyAndHeader("direct:m4", "x", "test", "y") must equal ("m4: x y")
+        } must be(true)
+        mandatoryTemplate.requestBodyAndHeader("direct:m2", "x", "test", "y") must equal("m2: x y")
+        mandatoryTemplate.requestBodyAndHeader("direct:m3", "x", "test", "y") must equal("m3: x y")
+        mandatoryTemplate.requestBodyAndHeader("direct:m4", "x", "test", "y") must equal("m4: x y")
       }
     }
     "stopped" must {
       "not support in-out message exchanges via its endpoints" in {
         service.awaitEndpointDeactivation(3) {
           TypedActor.stop(actor)
-        } must be (true)
+        } must be(true)
         intercept[CamelExecutionException] {
           mandatoryTemplate.requestBodyAndHeader("direct:m2", "x", "test", "y")
         }
@@ -63,16 +63,16 @@ class TypedConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMa
       "support in-out message exchanges via its endpoints" in {
         service.awaitEndpointActivation(2) {
           actor = TypedActor.newInstance(classOf[TestTypedConsumer], classOf[TestTypedConsumerImpl])
-        } must be (true)
-        mandatoryTemplate.requestBody("direct:publish-test-3", "x") must equal ("foo: x")
-        mandatoryTemplate.requestBody("direct:publish-test-4", "x") must equal ("bar: x")
+        } must be(true)
+        mandatoryTemplate.requestBody("direct:publish-test-3", "x") must equal("foo: x")
+        mandatoryTemplate.requestBody("direct:publish-test-4", "x") must equal("bar: x")
       }
     }
     "stopped" must {
       "not support in-out message exchanges via its endpoints" in {
         service.awaitEndpointDeactivation(2) {
           TypedActor.stop(actor)
-        } must be (true)
+        } must be(true)
         intercept[CamelExecutionException] {
           mandatoryTemplate.requestBody("direct:publish-test-3", "x")
         }

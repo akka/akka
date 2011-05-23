@@ -18,7 +18,7 @@ class SupervisionFactoryBeanTest extends Spec with ShouldMatchers {
   val faultHandlingStrategy = new AllForOneStrategy(List(classOf[Exception]), 3, 1000)
   val typedActors = List(createTypedActorProperties("akka.spring.Foo", "1000"))
 
-  private def createTypedActorProperties(target: String, timeout: String) : ActorProperties = {
+  private def createTypedActorProperties(target: String, timeout: String): ActorProperties = {
     val properties = new ActorProperties()
     properties.target = target
     properties.timeoutStr = timeout

@@ -2,10 +2,10 @@ package akka.camel.component
 
 import org.apache.camel._
 import org.apache.camel.builder.RouteBuilder
-import org.apache.camel.impl.{DefaultCamelContext, SimpleRegistry}
-import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec}
+import org.apache.camel.impl.{ DefaultCamelContext, SimpleRegistry }
+import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec }
 
-import akka.actor.{Actor, TypedActor}
+import akka.actor.{ Actor, TypedActor }
 import akka.camel._
 import akka.util.ReflectiveAccess.TypedActorModule
 
@@ -19,8 +19,8 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
   var typedConsumerUuid: String = _
 
   override protected def beforeAll = {
-    val typedActor     = TypedActor.newInstance(classOf[SampleTypedActor], classOf[SampleTypedActorImpl]) // not a consumer
-    val typedConsumer  = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
+    val typedActor = TypedActor.newInstance(classOf[SampleTypedActor], classOf[SampleTypedActorImpl]) // not a consumer
+    val typedConsumer = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
 
     typedConsumerUuid = TypedActorModule.typedActorObjectInstance.get.actorFor(typedConsumer).get.uuid.toString
 

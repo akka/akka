@@ -28,7 +28,6 @@ class PropertyEntry {
   var value: String = null
   var ref: String = null
 
-
   override def toString(): String = {
     format("name = %s,value =  %s, ref = %s", name, value, ref)
   }

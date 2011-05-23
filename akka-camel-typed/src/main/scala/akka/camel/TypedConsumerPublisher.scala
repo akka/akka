@@ -19,8 +19,8 @@ import akka.camel.component.TypedActorComponent
  */
 private[camel] class TypedConsumerPublishRequestor extends PublishRequestor {
   def receiveActorRegistryEvent = {
-    case ActorRegistered(actor)    => for (event <- ConsumerMethodRegistered.eventsFor(actor)) deliverCurrentEvent(event)
-    case ActorUnregistered(actor)  => for (event <- ConsumerMethodUnregistered.eventsFor(actor)) deliverCurrentEvent(event)
+    case ActorRegistered(actor)   ⇒ for (event ← ConsumerMethodRegistered.eventsFor(actor)) deliverCurrentEvent(event)
+    case ActorUnregistered(actor) ⇒ for (event ← ConsumerMethodUnregistered.eventsFor(actor)) deliverCurrentEvent(event)
   }
 }
 
@@ -36,15 +36,15 @@ private[camel] class TypedConsumerPublisher(activationTracker: ActorRef) extends
   import TypedConsumerPublisher._
 
   def receive = {
-    case mr: ConsumerMethodRegistered => {
+    case mr: ConsumerMethodRegistered ⇒ {
       handleConsumerMethodRegistered(mr)
       activationTracker ! EndpointActivated
     }
-    case mu: ConsumerMethodUnregistered => {
+    case mu: ConsumerMethodUnregistered ⇒ {
       handleConsumerMethodUnregistered(mu)
       activationTracker ! EndpointDeactivated
     }
-    case _ => { /* ignore */}
+    case _ ⇒ { /* ignore */ }
   }
 }
 
@@ -117,8 +117,8 @@ private[camel] object ConsumerMethodRegistered {
    * list if <code>actorRef</code> doesn't reference a typed consumer actor.
    */
   def eventsFor(actorRef: ActorRef): List[ConsumerMethodRegistered] = {
-    TypedConsumer.withTypedConsumer(actorRef: ActorRef) {
-      m => ConsumerMethodRegistered(actorRef, m)
+    TypedConsumer.withTypedConsumer(actorRef: ActorRef) { m ⇒
+      ConsumerMethodRegistered(actorRef, m)
     }
   }
 }
@@ -132,8 +132,8 @@ private[camel] object ConsumerMethodUnregistered {
    * list if <code>actorRef</code> doesn't reference a typed consumer actor.
    */
   def eventsFor(actorRef: ActorRef): List[ConsumerMethodUnregistered] = {
-    TypedConsumer.withTypedConsumer(actorRef) {
-      m => ConsumerMethodUnregistered(actorRef, m)
+    TypedConsumer.withTypedConsumer(actorRef) { m ⇒
+      ConsumerMethodUnregistered(actorRef, m)
     }
   }
 }

@@ -5,8 +5,7 @@ package akka.spring
 
 import org.w3c.dom.Element
 import org.springframework.beans.factory.support.BeanDefinitionBuilder
-import org.springframework.beans.factory.xml.{ParserContext, AbstractSingleBeanDefinitionParser}
-
+import org.springframework.beans.factory.xml.{ ParserContext, AbstractSingleBeanDefinitionParser }
 
 /**
  * Parser for custom namespace configuration.

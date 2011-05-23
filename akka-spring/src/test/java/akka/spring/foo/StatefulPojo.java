@@ -1,6 +1,4 @@
-package akka.spring.foo;
-
-/*
+package akka.spring.foo; /*
 import akka.stm.TransactionalMap;
 import akka.stm.TransactionalVector;
 import akka.stm.Ref;
@@ -55,4 +53,4 @@ public class StatefulPojo extends TypedActor {
       return isInitialized;
     }
 }
-*/
+*/ 

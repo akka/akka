@@ -56,6 +56,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val glassfishModuleConfig   = ModuleConfiguration("org.glassfish", GlassfishRepo)
   lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
+  lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsRelRepo)
@@ -168,7 +169,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val akka_camel             = project("akka-camel",             "akka-camel",             new AkkaCamelProject(_),                  akka_actor, akka_slf4j)
   lazy val akka_camel_typed       = project("akka-camel-typed",       "akka-camel-typed",       new AkkaCamelTypedProject(_),             akka_actor, akka_slf4j, akka_camel)
 
-  lazy val akka_spring            = project("akka-spring",            "akka-spring",            new AkkaSpringProject(_),                 akka_remote, akka_actor)
+  lazy val akka_spring            = project("akka-spring",            "akka-spring",            new AkkaSpringProject(_),                 akka_remote, akka_actor, akka_camel)
   lazy val akka_sbt_plugin        = project("akka-sbt-plugin",        "akka-sbt-plugin",        new AkkaSbtPluginProject(_))
 
   lazy val akka_kernel            = project("akka-kernel",            "akka-kernel",            new AkkaKernelProject(_),                 akka_stm, akka_remote, akka_http, akka_slf4j, akka_camel)
@@ -567,12 +568,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
        |  val akkaVersion = "%s"
        |
        |
-       |  def akkaModule(module: String) = "se.scalablesolutions.akka" %% ("akka-" + module) %% {
-       |    if (Set(%s).contains(module))
-       |      akkaModulesVersion
-       |    else
-       |      akkaVersion
-       |  }
+       |  def akkaModule(module: String) = "se.scalablesolutions.akka" %% ("akka-" + module) %% akkaVersion
        |
        |  val akkaActor = akkaModule("actor")
        |}

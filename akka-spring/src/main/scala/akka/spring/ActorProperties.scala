@@ -25,7 +25,7 @@ class ActorProperties {
   var autostart: Boolean = false
   var serviceName: String = ""
   var lifecycle: String = ""
-  var scope:String = VAL_SCOPE_SINGLETON
+  var scope: String = VAL_SCOPE_SINGLETON
   var dispatcher: DispatcherProperties = _
   var propertyEntries = new PropertyEntries()
   var dependsOn: Array[String] = Array[String]()
@@ -47,13 +47,13 @@ class ActorProperties {
     builder.addPropertyValue(LIFECYCLE, lifecycle)
     builder.addPropertyValue(SCOPE, scope)
     builder.addPropertyValue(DISPATCHER_TAG, dispatcher)
-    builder.addPropertyValue(PROPERTYENTRY_TAG,propertyEntries)
+    builder.addPropertyValue(PROPERTYENTRY_TAG, propertyEntries)
     builder.addPropertyValue("id", id)
     builder.addPropertyValue(AUTOSTART, autostart)
-    dependsOn foreach { dep => builder.addDependsOn(dep) }
+    dependsOn foreach { dep ⇒ builder.addDependsOn(dep) }
   }
 
-  def timeout() : Long = {
+  def timeout(): Long = {
     if (!timeoutStr.isEmpty) timeoutStr.toLong else -1L
   }
 

@@ -37,7 +37,7 @@ private[camel] object TypedCamel {
 
     registerPublishRequestor
 
-    for (event <- PublishRequestor.pastActorRegisteredEvents) publishRequestor ! event
+    for (event ← PublishRequestor.pastActorRegisteredEvents) publishRequestor ! event
     publishRequestor ! InitPublishRequestor(consumerPublisher.start)
   }
 

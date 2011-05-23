@@ -71,9 +71,9 @@ object AkkaSpringConfigurationTags {
   val CORE_POOL_SIZE = "core-pool-size"
   val MAX_POOL_SIZE = "max-pool-size"
   val KEEP_ALIVE = "keep-alive"
-  val BOUND ="bound"
-  val REJECTION_POLICY ="rejection-policy"
-  val MAILBOX_CAPACITY ="mailbox-capacity"
+  val BOUND = "bound"
+  val REJECTION_POLICY = "rejection-policy"
+  val MAILBOX_CAPACITY = "mailbox-capacity"
 
   // config attribute
   val LOCATION = "location"

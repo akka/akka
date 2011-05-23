@@ -24,11 +24,11 @@ class DispatcherProperties {
     builder.addPropertyValue("properties", this)
   }
 
-  override def toString : String = {
+  override def toString: String = {
     "DispatcherProperties[ref=" + ref +
-          ", dispatcher-type=" + dispatcherType +
-          ", name=" + name +
-          ", threadPool=" + threadPool + "]"
+      ", dispatcher-type=" + dispatcherType +
+      ", name=" + name +
+      ", threadPool=" + threadPool + "]"
   }
 }
 
@@ -47,15 +47,15 @@ class ThreadPoolProperties {
   var rejectionPolicy = ""
   var mailboxCapacity = -1
 
-  override def toString : String = {
+  override def toString: String = {
     "ThreadPoolProperties[queue=" + queue +
-          ", bound=" + bound +
-          ", capacity=" + capacity +
-          ", fairness=" + fairness +
-          ", corePoolSize=" + corePoolSize +
-          ", maxPoolSize=" + maxPoolSize +
-          ", keepAlive=" + keepAlive +
-          ", policy=" + rejectionPolicy +
-          ", mailboxCapacity=" + mailboxCapacity + "]"
+      ", bound=" + bound +
+      ", capacity=" + capacity +
+      ", fairness=" + fairness +
+      ", corePoolSize=" + corePoolSize +
+      ", maxPoolSize=" + maxPoolSize +
+      ", keepAlive=" + keepAlive +
+      ", policy=" + rejectionPolicy +
+      ", mailboxCapacity=" + mailboxCapacity + "]"
   }
 }

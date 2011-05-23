@@ -3,8 +3,7 @@
  */
 package akka.spring
 
-
-import foo.{IMyPojo, MyPojo, PingActor}
+import foo.{ IMyPojo, MyPojo, PingActor }
 import akka.dispatch._
 import org.scalatest.FeatureSpec
 import org.scalatest.matchers.ShouldMatchers
@@ -14,12 +13,9 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader
 import org.springframework.context.ApplicationContext
 import org.springframework.context.support.ClassPathXmlApplicationContext
-import org.springframework.core.io.{ClassPathResource, Resource}
+import org.springframework.core.io.{ ClassPathResource, Resource }
 import java.util.concurrent._
-import akka.actor.{UntypedActor, Actor, ActorRef}
-
-
-
+import akka.actor.{ UntypedActor, Actor, ActorRef }
 
 /**
  * Tests for spring configuration of typed actors.

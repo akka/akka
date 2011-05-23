@@ -5,19 +5,22 @@ package akka.spring
 
 import org.springframework.beans.factory.config.AbstractFactoryBean
 import akka.config.Supervision._
-import akka.actor.{Supervisor, SupervisorFactory, Actor, ActorRegistry}
+import akka.actor.{ Supervisor, SupervisorFactory, Actor, ActorRegistry }
 import AkkaSpringConfigurationTags._
 import reflect.BeanProperty
-import akka.config.{TypedActorConfigurator, RemoteAddress}
+import akka.config.{ TypedActorConfigurator, RemoteAddress }
 
 /**
  * Factory bean for supervisor configuration.
  * @author michaelkober
  */
 class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
-  @BeanProperty var restartStrategy: FaultHandlingStrategy = _
-  @BeanProperty var supervised: List[ActorProperties] = _
-  @BeanProperty var typed: String = ""
+  @BeanProperty
+  var restartStrategy: FaultHandlingStrategy = _
+  @BeanProperty
+  var supervised: List[ActorProperties] = _
+  @BeanProperty
+  var typed: String = ""
 
   /*
    * @see org.springframework.beans.factory.FactoryBean#getObjectType()
@@ -28,20 +31,19 @@ class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
    * @see org.springframework.beans.factory.config.AbstractFactoryBean#createInstance()
    */
   def createInstance: AnyRef = typed match {
-    case AkkaSpringConfigurationTags.TYPED_ACTOR_TAG => createInstanceForTypedActors
-    case AkkaSpringConfigurationTags.UNTYPED_ACTOR_TAG => createInstanceForUntypedActors
+    case AkkaSpringConfigurationTags.TYPED_ACTOR_TAG   ⇒ createInstanceForTypedActors
+    case AkkaSpringConfigurationTags.UNTYPED_ACTOR_TAG ⇒ createInstanceForUntypedActors
   }
 
-  private def createInstanceForTypedActors() : TypedActorConfigurator = {
+  private def createInstanceForTypedActors(): TypedActorConfigurator = {
     val configurator = new TypedActorConfigurator()
     configurator.configure(
       restartStrategy,
-      supervised.map(createComponent(_)).toArray
-      ).supervise
+      supervised.map(createComponent(_)).toArray).supervise
 
   }
 
-  private def createInstanceForUntypedActors() : Supervisor = {
+  private def createInstanceForUntypedActors(): Supervisor = {
     val factory = new SupervisorFactory(
       new SupervisorConfig(
         restartStrategy,

@@ -11,7 +11,7 @@ import ScalaDom._
 
 import org.w3c.dom.Element
 import org.springframework.beans.factory.support.BeanDefinitionBuilder
-import akka.config.Supervision. {FaultHandlingStrategy, AllForOneStrategy}
+import akka.config.Supervision.{ FaultHandlingStrategy, AllForOneStrategy }
 
 /**
  * Test for SupervisionBeanDefinitionParser
@@ -60,67 +60,64 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
     }
 
     it("should throw IllegalArgumentException on missing mandatory attributes") {
-      evaluating { parser.parseSupervisor(createSupervisorMissingAttribute, builder) } should produce [IllegalArgumentException]
+      evaluating { parser.parseSupervisor(createSupervisorMissingAttribute, builder) } should produce[IllegalArgumentException]
     }
 
     it("should throw IllegalArgumentException on missing mandatory elements") {
-      evaluating { parser.parseSupervisor(createSupervisorMissingElement, builder) } should produce [IllegalArgumentException]
+      evaluating { parser.parseSupervisor(createSupervisorMissingElement, builder) } should produce[IllegalArgumentException]
     }
   }
 
-  private def createTypedActorElement : Element = {
-    val xml = <akka:typed-actor id="typed-actor1"
-                                        implementation="foo.bar.MyPojo"
-                                        timeout="1000"/>
+  private def createTypedActorElement: Element = {
+    val xml = <akka:typed-actor id="typed-actor1" implementation="foo.bar.MyPojo" timeout="1000"/>
     dom(xml).getDocumentElement
   }
 
-  private def createSupervisorElement : Element = {
+  private def createSupervisorElement: Element = {
     val xml = <akka:supervision id="supervision1">
                 <akka:restart-strategy failover="AllForOne" retries="3" timerange="1000">
                   <akka:trap-exits>
-                      <akka:trap-exit>java.io.IOException</akka:trap-exit>
-                      <akka:trap-exit>java.lang.NullPointerException</akka:trap-exit>
+                    <akka:trap-exit>java.io.IOException</akka:trap-exit>
+                    <akka:trap-exit>java.lang.NullPointerException</akka:trap-exit>
                   </akka:trap-exits>
                 </akka:restart-strategy>
                 <akka:typed-actors>
-                          <akka:typed-actor implementation="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
-                          <akka:typed-actor interface="foo.bar.IBar" implementation="foo.bar.Bar" lifecycle="permanent" timeout="1000"/>
-                          <akka:typed-actor implementation="foo.bar.MyPojo" lifecycle="temporary" timeout="1000">
-                                  <akka:restart-callbacks pre="preRestart" post="postRestart"/>
-                          </akka:typed-actor>
-                          <akka:typed-actor implementation="foo.bar.MyPojo" lifecycle="temporary" timeout="1000">
-                                  <akka:shutdown-callback method="shutdown"/>
-                          </akka:typed-actor>
-                  </akka:typed-actors>
-    </akka:supervision>
+                  <akka:typed-actor implementation="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
+                  <akka:typed-actor interface="foo.bar.IBar" implementation="foo.bar.Bar" lifecycle="permanent" timeout="1000"/>
+                  <akka:typed-actor implementation="foo.bar.MyPojo" lifecycle="temporary" timeout="1000">
+                    <akka:restart-callbacks pre="preRestart" post="postRestart"/>
+                  </akka:typed-actor>
+                  <akka:typed-actor implementation="foo.bar.MyPojo" lifecycle="temporary" timeout="1000">
+                    <akka:shutdown-callback method="shutdown"/>
+                  </akka:typed-actor>
+                </akka:typed-actors>
+              </akka:supervision>
     dom(xml).getDocumentElement
   }
 
-
-  private def createSupervisorMissingAttribute : Element = {
+  private def createSupervisorMissingAttribute: Element = {
     val xml = <akka:supervision id="supervision1">
                 <akka:restart-strategy failover="AllForOne" retries="3">
                   <akka:trap-exits>
-                      <akka:trap-exit>java.io.IOException</akka:trap-exit>
+                    <akka:trap-exit>java.io.IOException</akka:trap-exit>
                   </akka:trap-exits>
                 </akka:restart-strategy>
                 <akka:typed-actors>
-                          <akka:typed-actor implementation="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
-                  </akka:typed-actors>
-    </akka:supervision>
+                  <akka:typed-actor implementation="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
+                </akka:typed-actors>
+              </akka:supervision>
     dom(xml).getDocumentElement
   }
 
-  private def createSupervisorMissingElement : Element = {
+  private def createSupervisorMissingElement: Element = {
     val xml = <akka:supervision id="supervision1">
                 <akka:restart-strategy failover="AllForOne" retries="3" timerange="1000">
                 </akka:restart-strategy>
                 <akka:typed-actors>
-                          <akka:typed-actor implementation="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
-                          <akka:typed-actor interface="foo.bar.IBar" implementation="foo.bar.Bar" lifecycle="permanent" timeout="1000"/>
-                  </akka:typed-actors>
-    </akka:supervision>
+                  <akka:typed-actor implementation="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
+                  <akka:typed-actor interface="foo.bar.IBar" implementation="foo.bar.Bar" lifecycle="permanent" timeout="1000"/>
+                </akka:typed-actors>
+              </akka:supervision>
     dom(xml).getDocumentElement
   }
 }

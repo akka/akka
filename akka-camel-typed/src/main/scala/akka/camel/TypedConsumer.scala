@@ -6,7 +6,7 @@ package akka.camel
 
 import java.lang.reflect.Method
 
-import akka.actor.{TypedActor, ActorRef}
+import akka.actor.{ TypedActor, ActorRef }
 
 /**
  * @author Martin Krasser
@@ -21,7 +21,7 @@ private[camel] object TypedConsumer {
    * is called with the corresponding <code>method</code> instance and the return value is
    * added to a list which is then returned by this method.
    */
-  def withTypedConsumer[T](actorRef: ActorRef)(f: Method => T): List[T] = {
+  def withTypedConsumer[T](actorRef: ActorRef)(f: Method ⇒ T): List[T] = {
     if (!actorRef.actor.isInstanceOf[TypedActor]) Nil
     else if (actorRef.homeAddress.isDefined) Nil
     else {
@@ -31,8 +31,8 @@ private[camel] object TypedConsumer {
       // - visit implemented method declarations in interfaces
       val intfClass = typedActor.proxy.getClass
       val implClass = typedActor.getClass
-      (for (m <- intfClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(m)) ++
-      (for (m <- implClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(m))
+      (for (m ← intfClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(m)) ++
+        (for (m ← implClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(m))
     }
   }
 }

@@ -3,8 +3,7 @@
  */
 package akka.spring
 
-
-import akka.spring.foo.{IMyPojo, MyPojo, IFoo, IBar}
+import akka.spring.foo.{ IMyPojo, MyPojo, IFoo, IBar }
 import akka.dispatch._
 import akka.config.TypedActorConfigurator
 import akka.actor.Supervisor
@@ -17,7 +16,7 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader
 import org.springframework.context.ApplicationContext
 import org.springframework.context.support.ClassPathXmlApplicationContext
-import org.springframework.core.io.{ClassPathResource, Resource}
+import org.springframework.core.io.{ ClassPathResource, Resource }
 import java.util.concurrent._
 
 /**

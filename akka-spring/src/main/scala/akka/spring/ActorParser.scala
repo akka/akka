@@ -43,7 +43,7 @@ trait ActorParser extends BeanParser with DispatcherParser {
       objectProperties.dispatcher = dispatcherProperties
     }
 
-    for (element <- propertyEntries) {
+    for (element ← propertyEntries) {
       val entry = new PropertyEntry
       entry.name = element.getAttribute("name");
       entry.value = element.getAttribute("value")
@@ -56,12 +56,12 @@ trait ActorParser extends BeanParser with DispatcherParser {
     objectProperties.beanRef = if (element.getAttribute(BEANREF).isEmpty) null else element.getAttribute(BEANREF)
     objectProperties.id = element.getAttribute("id")
     objectProperties.autostart = element.getAttribute(AUTOSTART) match {
-      case null|"" => false
-      case other   => other.toBoolean
+      case null | "" ⇒ false
+      case other     ⇒ other.toBoolean
     }
     objectProperties.dependsOn = element.getAttribute(DEPENDS_ON) match {
-      case null|"" => Array[String]()
-      case other   => for (dep <- other.split(",")) yield dep.trim
+      case null | "" ⇒ Array[String]()
+      case other     ⇒ for (dep ← other.split(",")) yield dep.trim
     }
 
     if (objectProperties.target == null && objectProperties.beanRef == null) {
@@ -142,7 +142,6 @@ trait BeanParser {
   }
 
 }
-
 
 /**
  * Parser trait for custom namespace for Akka dispatcher configuration.

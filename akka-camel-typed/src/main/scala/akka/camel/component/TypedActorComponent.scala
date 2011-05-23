@@ -62,7 +62,7 @@ class TypedActorComponent extends BeanComponent {
  * @author Martin Krasser
  */
 class TypedActorHolder(uri: String, context: CamelContext, name: String)
-    extends RegistryBean(context, name) {
+  extends RegistryBean(context, name) {
 
   /**
    * Returns an <code>akka.camel.component.TypedActorInfo</code> instance.
@@ -90,7 +90,7 @@ class TypedActorHolder(uri: String, context: CamelContext, name: String)
  * @author Martin Krasser
  */
 class TypedActorInfo(context: CamelContext, clazz: Class[_], strategy: ParameterMappingStrategy)
-    extends BeanInfo(context, clazz, strategy) {
+  extends BeanInfo(context, clazz, strategy) {
 
   /**
    * Introspects AspectWerkz proxy classes.
@@ -105,7 +105,7 @@ class TypedActorInfo(context: CamelContext, clazz: Class[_], strategy: Parameter
     // created from interfaces with AspectWerkz. Once the fix is in
     // place this method can be removed.
 
-    for (method <- clazz.getDeclaredMethods) {
+    for (method ← clazz.getDeclaredMethods) {
       if (isValidMethod(clazz, method)) {
         introspect(clazz, method)
       }

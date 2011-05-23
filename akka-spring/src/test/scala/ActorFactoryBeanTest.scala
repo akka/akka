@@ -3,13 +3,13 @@
  */
 package akka.spring
 
-import akka.actor.{Actor, ActorRef, ActorInitializationException}
+import akka.actor.{ Actor, ActorRef, ActorInitializationException }
 import akka.spring.foo.PingActor
 
 import org.junit.runner.RunWith
 import org.springframework.context.support.ClassPathXmlApplicationContext
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.{BeforeAndAfterAll, Spec}
+import org.scalatest.{ BeforeAndAfterAll, Spec }
 import org.scalatest.matchers.ShouldMatchers
 
 /**
@@ -99,7 +99,7 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
       val target = ctx.getBean("bean-singleton").asInstanceOf[SampleBeanIntf]
       assert(!target.down)
       ctx.close
-      evaluating { target.down } should produce [ActorInitializationException]
+      evaluating { target.down } should produce[ActorInitializationException]
     }
 
     it("should not stop the created typed actor when scope is prototype and the context is closed") {

@@ -4,12 +4,11 @@
 package akka.spring
 
 import org.springframework.beans.factory.support.BeanDefinitionBuilder
-import org.springframework.beans.factory.xml.{ParserContext, AbstractSingleBeanDefinitionParser}
+import org.springframework.beans.factory.xml.{ ParserContext, AbstractSingleBeanDefinitionParser }
 import org.springframework.util.xml.DomUtils
 import org.w3c.dom.Element
 
 import akka.spring.AkkaSpringConfigurationTags._
-
 
 /**
  * Parser for &lt;camel-service&gt; elements.
