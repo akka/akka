@@ -10,6 +10,7 @@ import akka.actor._
 import akka.dispatch.Future
 import akka.config.Config
 import akka.util._
+import akka.AkkaException
 
 import com.eaio.uuid.UUID
 
@@ -19,6 +20,8 @@ import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
 
 import scala.collection.mutable.ConcurrentMap
 import scala.collection.JavaConversions._
+
+class ClusterException(message: String) extends AkkaException(message)
 
 object ChangeListener {
 
