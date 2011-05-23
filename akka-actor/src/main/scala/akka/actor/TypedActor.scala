@@ -56,7 +56,12 @@ object TypedActor {
     }
   }
 
-  case class Configuration(timeout: Duration = Duration(Actor.TIMEOUT, "millis"), dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher)
+  object Configuration {
+    val defaultTimeout = Duration(Actor.TIMEOUT, "millis")
+    val defaultConfiguration = new Configuration(defaultTimeout, Dispatchers.defaultGlobalDispatcher)
+    def apply(): Configuration = defaultConfiguration
+  }
+  case class Configuration(timeout: Duration = Configuration.defaultTimeout, dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher)
 
   case class MethodCall(method: Method, parameters: Array[AnyRef]) {
     def isOneWay = method.getReturnType == java.lang.Void.TYPE
