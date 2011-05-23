@@ -6,27 +6,72 @@ package akka.actor
 import akka.config.Supervision.Permanent
 import akka.util.ByteString
 
-import java.nio.ByteBuffer
-import java.nio.channels.{ SelectableChannel, ReadableByteChannel, WritableByteChannel, ServerSocketChannel, Selector, SelectionKey, CancelledKeyException }
 import java.net.InetSocketAddress
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicReference
-import java.util.Collections.synchronizedSet
-import java.util.HashSet
+import java.nio.ByteBuffer
+import java.nio.channels.{
+  SelectableChannel,
+  ReadableByteChannel,
+  WritableByteChannel,
+  SocketChannel,
+  ServerSocketChannel,
+  Selector,
+  SelectionKey,
+  CancelledKeyException
+}
 
 import scala.collection.immutable.Queue
 import scala.annotation.tailrec
 
+import com.eaio.uuid.UUID
+
 object IO {
 
-  case class CreateServer(owner: ActorRef, host: String, port: Int)
-  case object NewConnection
-  case class AcceptConnection(server: ActorRef, owner: ActorRef)
-  case object Close
-  case object Closed
+  case class Token(owner: ActorRef, ioManager: ActorRef, uuid: UUID = new UUID()) {
+    override lazy val hashCode = scala.runtime.ScalaRunTime._hashCode(this)
+  }
 
-  case class Read(bytes: ByteString)
-  case class Write(owner: ActorRef, bytes: ByteString)
+  trait IOMessage { def token: Token }
+  case class Listen(token: Token, host: String, port: Int) extends IOMessage
+  case class NewConnection(token: Token) extends IOMessage
+  case class Accept(token: Token, source: Token) extends IOMessage
+  case class Connect(token: Token, host: String, port: Int) extends IOMessage
+  case class Connected(token: Token) extends IOMessage
+  case class Close(token: Token) extends IOMessage
+  case class Closed(token: Token) extends IOMessage
+  case class Read(token: Token, bytes: ByteString) extends IOMessage
+  case class Write(token: Token, bytes: ByteString) extends IOMessage
+
+}
+
+trait IO {
+  this: Actor ⇒
+
+  def listen(ioManager: ActorRef, host: String, port: Int): IO.Token = {
+    val token = IO.Token(self, ioManager)
+    ioManager ! IO.Listen(token, host, port)
+    token
+  }
+
+  def connect(ioManager: ActorRef, host: String, port: Int): IO.Token = {
+    val token = IO.Token(self, ioManager)
+    ioManager ! IO.Connect(token, host, port)
+    token
+  }
+
+  def accept(source: IO.Token, owner: ActorRef): IO.Token = {
+    val ioManager = source.ioManager
+    val token = IO.Token(owner, ioManager)
+    ioManager ! IO.Accept(token, source)
+    token
+  }
+
+  def write(token: IO.Token, bytes: ByteString): Unit =
+    token.ioManager ! IO.Write(token, bytes)
+
+  def close(token: IO.Token): Unit =
+    token.ioManager ! IO.Close(token)
 
 }
 
@@ -42,19 +87,21 @@ class IOManager extends Actor {
   }
 
   def receive = {
-    case IO.CreateServer(owner, host, port) ⇒ worker.createServer(owner, host, port)
-    case IO.AcceptConnection(server, owner) ⇒ worker.acceptConnection(server, owner)
-    case IO.Write(owner, data)              ⇒ worker.write(owner, data)
+    case IO.Listen(token, host, port)  ⇒ worker.createServer(token, host, port)
+    case IO.Connect(token, host, port) ⇒ worker.createClient(token, host, port)
+    case IO.Accept(token, source)      ⇒ worker.acceptConnection(token, source)
+    case IO.Write(token, data)         ⇒ worker.write(token, data)
+    case IO.Close(token)               ⇒ worker.close(token)
   }
 
 }
 
 private[akka] object IOWorker {
-  sealed trait ChangeRequest
-  case class Register(owner: ActorRef, channel: SelectableChannel, ops: Int) extends ChangeRequest
-  case class Accepted(server: ActorRef, owner: ActorRef) extends ChangeRequest
-  case class QueueWrite(owner: ActorRef, data: ByteBuffer) extends ChangeRequest
-  case class InterestOps(channel: SelectableChannel, interestOps: Int) extends ChangeRequest
+  sealed trait ChangeRequest { def token: IO.Token }
+  case class Register(token: IO.Token, channel: SelectableChannel, ops: Int) extends ChangeRequest
+  case class Accepted(token: IO.Token, serverToken: IO.Token) extends ChangeRequest
+  case class QueueWrite(token: IO.Token, data: ByteBuffer) extends ChangeRequest
+  case class Close(token: IO.Token) extends ChangeRequest
 }
 
 private[akka] class IOWorker(ioManager: ActorRef) extends Runnable {
@@ -68,19 +115,30 @@ private[akka] class IOWorker(ioManager: ActorRef) extends Runnable {
 
   val bufferSize = 8192 // make configurable
 
-  def createServer(owner: ActorRef, host: String, port: Int): Unit = {
+  def createServer(token: IO.Token, host: String, port: Int): Unit = {
     val inetAddress = new InetSocketAddress(host: String, port: Int)
     val server = ServerSocketChannel open ()
     server configureBlocking false
     server.socket bind inetAddress
-    addChangeRequest(Register(owner, server, OP_ACCEPT))
+    addChangeRequest(Register(token, server, OP_ACCEPT))
   }
 
-  def acceptConnection(server: ActorRef, owner: ActorRef): Unit =
-    addChangeRequest(Accepted(server, owner))
+  def createClient(token: IO.Token, host: String, port: Int): Unit = {
+    val inetAddress = new InetSocketAddress(host: String, port: Int)
+    val client = SocketChannel open ()
+    client configureBlocking false
+    client connect inetAddress
+    addChangeRequest(Register(token, client, OP_CONNECT | OP_READ))
+  }
 
-  def write(owner: ActorRef, data: ByteString): Unit =
-    addChangeRequest(QueueWrite(owner, data.asByteBuffer))
+  def acceptConnection(token: IO.Token, source: IO.Token): Unit =
+    addChangeRequest(Accepted(token, source))
+
+  def write(token: IO.Token, data: ByteString): Unit =
+    addChangeRequest(QueueWrite(token, data.asByteBuffer))
+
+  def close(token: IO.Token): Unit =
+    addChangeRequest(Close(token))
 
   // private
 
@@ -88,11 +146,11 @@ private[akka] class IOWorker(ioManager: ActorRef) extends Runnable {
 
   private val _changeRequests = new AtomicReference(List.empty[ChangeRequest])
 
-  private var acceptedChannels = Map.empty[ActorRef, Queue[SelectableChannel]].withDefaultValue(Queue.empty)
+  private var acceptedChannels = Map.empty[IO.Token, Queue[SelectableChannel]].withDefaultValue(Queue.empty)
 
-  private var channels = Map.empty[ActorRef, SelectableChannel]
+  private var channels = Map.empty[IO.Token, SelectableChannel]
 
-  private var writeQueues = Map.empty[ActorRef, Queue[ByteBuffer]].withDefaultValue(Queue.empty)
+  private var writeQueues = Map.empty[IO.Token, Queue[ByteBuffer]].withDefaultValue(Queue.empty)
 
   private val buffer = ByteBuffer.allocate(bufferSize)
 
@@ -105,80 +163,111 @@ private[akka] class IOWorker(ioManager: ActorRef) extends Runnable {
         if (key.isValid) { process(key) }
       }
       _changeRequests.getAndSet(Nil).reverse foreach {
-        case Register(owner, channel, ops) ⇒ channel register (selector, ops, owner)
-        case Accepted(server, owner) ⇒
-          val (channel, rest) = acceptedChannels(server).dequeue
-          if (rest.isEmpty) acceptedChannels -= server
-          else acceptedChannels += (server -> rest)
-          channels += (owner -> channel)
-          channel register (selector, OP_READ, owner)
-        case QueueWrite(owner, data) ⇒
-          if (channels contains owner) {
-            val queue = writeQueues(owner)
-            if (queue.isEmpty) channels(owner) keyFor selector interestOps OP_WRITE
-            writeQueues += (owner -> queue.enqueue(data))
+        case Register(token, channel, ops) ⇒
+          channels += (token -> channel)
+          channel register (selector, ops, token)
+        case Accepted(token, serverToken) ⇒
+          val (channel, rest) = acceptedChannels(serverToken).dequeue
+          if (rest.isEmpty) acceptedChannels -= serverToken
+          else acceptedChannels += (serverToken -> rest)
+          channels += (token -> channel)
+          channel register (selector, OP_READ, token)
+        case QueueWrite(token, data) ⇒
+          if (channels contains token) {
+            val queue = writeQueues(token)
+            if (queue.isEmpty) addOps(token, OP_WRITE)
+            writeQueues += (token -> queue.enqueue(data))
           }
-        case InterestOps(channel, ops) ⇒ channel keyFor selector interestOps ops
+        case Close(token) ⇒
+          channels(token).close
+          channels -= token
+          token.owner ! IO.Closed(token)
       }
       selector select ()
     }
   }
 
-  private def process(key: SelectionKey): Unit = try {
-    val owner = key.attachment.asInstanceOf[ActorRef]
-    //if (key.isConnectable) connected(key)
-    if (key.isAcceptable) key.channel match {
-      case server: ServerSocketChannel ⇒ accept(owner, server)
+  private def process(key: SelectionKey): Unit = {
+    val token = key.attachment.asInstanceOf[IO.Token]
+    try {
+      if (key.isConnectable) key.channel match {
+        case client: SocketChannel ⇒ connected(token, client)
+      }
+      if (key.isAcceptable) key.channel match {
+        case server: ServerSocketChannel ⇒ accept(token, server)
+      }
+      if (key.isReadable) key.channel match {
+        case channel: ReadChannel ⇒ read(token, channel)
+      }
+      if (key.isWritable) key.channel match {
+        case channel: WriteChannel ⇒ write(token, channel)
+      }
+    } catch {
+      // TODO: Perform cleanup due to closed connection
+      case e: CancelledKeyException ⇒
     }
-    if (key.isReadable) key.channel match {
-      case channel: ReadChannel ⇒ read(owner, channel)
-    }
-    if (key.isWritable) key.channel match {
-      case channel: WriteChannel ⇒ write(owner, channel)
-    }
-  } catch {
-    case e: CancelledKeyException ⇒ println("Got " + e)
+  }
+
+  private def setOps(token: IO.Token, ops: Int): Unit =
+    channels(token) keyFor selector interestOps ops
+
+  private def addOps(token: IO.Token, ops: Int): Unit = {
+    val key = channels(token) keyFor selector
+    val cur = key.interestOps
+    key interestOps (cur | ops)
+  }
+
+  private def removeOps(token: IO.Token, ops: Int): Unit = {
+    val key = channels(token) keyFor selector
+    val cur = key.interestOps
+    key interestOps (cur - (cur & ops))
+  }
+
+  private def connected(token: IO.Token, client: SocketChannel): Unit = {
+    client.finishConnect
+    removeOps(token, OP_CONNECT)
+    token.owner ! IO.Connected(token)
   }
 
   @tailrec
-  final def accept(owner: ActorRef, server: ServerSocketChannel): Unit = {
+  private def accept(token: IO.Token, server: ServerSocketChannel): Unit = {
     val client = server.accept
     if (client ne null) {
       client configureBlocking false
-      acceptedChannels += (owner -> (acceptedChannels(owner) enqueue client))
-      owner ! IO.NewConnection
-      accept(owner, server)
+      acceptedChannels += (token -> (acceptedChannels(token) enqueue client))
+      token.owner ! IO.NewConnection(token)
+      accept(token, server)
     }
   }
 
   @tailrec
-  final def read(owner: ActorRef, channel: ReadChannel): Unit = {
+  private def read(token: IO.Token, channel: ReadChannel): Unit = {
     buffer.clear
     val readLen = channel read buffer
     if (readLen == -1) {
       channel.close
-      channels -= owner
-      owner ! IO.Closed
+      channels -= token
+      token.owner ! IO.Closed(token)
     } else if (readLen > 0) {
       buffer.flip
-      owner ! IO.Read(ByteString(buffer))
-      if (readLen == buffer.capacity) read(owner, channel)
+      token.owner ! IO.Read(token, ByteString(buffer))
+      if (readLen == buffer.capacity) read(token, channel)
     }
   }
 
   @tailrec
-  final def write(owner: ActorRef, channel: WriteChannel): Unit = {
-    val queue = writeQueues(owner)
+  private def write(token: IO.Token, channel: WriteChannel): Unit = {
+    val queue = writeQueues(token)
     if (queue.nonEmpty) {
       val (buf, bufs) = queue.dequeue
       val writeLen = channel write buf
       if (buf.remaining == 0) {
         if (bufs.isEmpty) {
-          writeQueues -= owner
-          addChangeRequest(InterestOps(channel, OP_READ))
+          writeQueues -= token
+          removeOps(token, OP_WRITE)
         } else {
-          writeQueues += (owner -> bufs)
-          write(owner, channel)
+          writeQueues += (token -> bufs)
+          write(token, channel)
         }
       }
     }
