@@ -285,13 +285,12 @@ trait ActorRef extends ActorRefShared
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef): AnyRef = {
-    !!(message, timeout)(sender).getOrElse(throw new ActorTimeoutException(
+    ?(message)(sender, Actor.Timeout(timeout)).as[AnyRef].getOrElse(throw new ActorTimeoutException(
       "Message [" + message +
       "]\n\tsent to [" + actorClassName +
       "]\n\tfrom [" + (if (sender ne null) sender.actorClassName else "nowhere") +
       "]\n\twith timeout [" + timeout +
       "]\n\ttimed out."))
-      .asInstanceOf[AnyRef]
   }
 
   /**
@@ -299,15 +298,14 @@ trait ActorRef extends ActorRefShared
    * @see sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the Actors default timeout (setTimeout()) and omits the sender
    */
-  def sendRequestReplyFuture(message: AnyRef): Future[Any] = !!!(message)
+  def sendRequestReplyFuture(message: AnyRef): Future[Any] = ?(message)
 
   /**
    * Akka Java API. <p/>
    * @see sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the Actors default timeout (setTimeout())
    */
-  def sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[Any] =
-    sendRequestReplyFuture(message, timeout, sender)
+  def sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[Any] = ?(message)(sender)
 
   /**
    *  Akka Java API. <p/>
@@ -320,8 +318,7 @@ trait ActorRef extends ActorRefShared
    * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def sendRequestReplyFuture(message: AnyRef, timeout: Long, sender: ActorRef): Future[Any] =
-    !!!(message, timeout)(sender)
+  def sendRequestReplyFuture(message: AnyRef, timeout: Long, sender: ActorRef): Future[Any] = ?(message)(sender, Actor.Timeout(timeout))
 
   /**
    * Akka Java API. <p/>

@@ -869,6 +869,7 @@ class ActorCompletableFuture(timeout: Long, timeunit: TimeUnit)
 object ActorCompletableFuture {
   def apply(f: CompletableFuture[Any]): ActorCompletableFuture =
     new ActorCompletableFuture(f.timeoutInNanos, NANOS) {
+      completeWith(f)
       override def !(message: Any)(implicit channel: UntypedChannel) = f completeWithResult message
       override def sendException(ex: Throwable) = f completeWithException ex
     }
