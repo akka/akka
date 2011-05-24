@@ -30,6 +30,24 @@ object ByteString {
 
   def apply(string: String, charset: String): ByteString = new ByteString(string.getBytes(charset))
 
+  def concat(xss: Traversable[Byte]*): ByteString = {
+    var length = 0
+    val li = xss.iterator
+    while (li.hasNext) {
+      length += li.next.size
+    }
+    val ar = new Array[Byte](length)
+    var pos = 0
+    val i = xss.iterator
+    while (i.hasNext) {
+      val cur = i.next
+      val len = cur.size
+      cur.copyToArray(ar, pos, len)
+      pos += len
+    }
+    new ByteString(ar)
+  }
+
   val empty: ByteString = new ByteString(Array.empty[Byte])
 
   def newBuilder: Builder[Byte, ByteString] = new ArrayBuilder.ofByte mapResult apply
