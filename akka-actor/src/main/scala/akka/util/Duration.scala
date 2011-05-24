@@ -96,6 +96,15 @@ object Duration {
     case "ns"  | "nano"   | "nanos"  | "nanosecond"  | "nanoseconds"  => NANOSECONDS
   }
 
+  /*
+   * Testing facilities
+   */
+  val timeFactor: Double = {
+    val factor = System.getProperty("akka.test.timefactor", "1.0")
+    try { factor.toDouble }
+    catch { case e: java.lang.NumberFormatException => 1.0 }
+  }
+
   val Zero : Duration = new FiniteDuration(0, NANOSECONDS)
 
   trait Infinite {
@@ -240,6 +249,9 @@ abstract class Duration {
   def /(other : Duration) : Double
   def unary_- : Duration
   def finite_? : Boolean
+  def dilated : Duration = this * Duration.timeFactor
+  def min(other : Duration) : Duration = if (this < other) this else other
+  def max(other : Duration) : Duration = if (this > other) this else other
 
   // Java API
   def lt(other : Duration) = this < other

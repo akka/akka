@@ -8,8 +8,8 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterEach
 
-import akka.testing._
-import akka.testing.Testing.sleepFor
+import akka.testkit._
+import akka.testkit.Testing.sleepFor
 import akka.util.duration._
 
 import Actor._

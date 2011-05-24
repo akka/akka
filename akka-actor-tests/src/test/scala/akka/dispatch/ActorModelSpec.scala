@@ -6,7 +6,7 @@ package akka.actor.dispatch
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import org.scalatest.Assertions._
-import akka.testing._
+import akka.testkit.Testing
 import akka.dispatch._
 import akka.actor.{ActorRef, Actor}
 import akka.actor.Actor._

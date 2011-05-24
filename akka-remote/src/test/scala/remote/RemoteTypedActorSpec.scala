@@ -10,7 +10,7 @@ import akka.actor._
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
 import akka.config. {RemoteAddress, Config, TypedActorConfigurator}
 
-import akka.testing._
+import akka.testkit.Testing
 
 object RemoteTypedActorLog {
   val messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]

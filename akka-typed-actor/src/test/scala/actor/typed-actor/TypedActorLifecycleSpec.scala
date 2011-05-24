@@ -12,7 +12,7 @@ import akka.config.Supervision._
 import java.util.concurrent.CountDownLatch
 import akka.config.TypedActorConfigurator
 
-import akka.testing._
+import akka.testkit.Testing
 import akka.util.duration._
 
 

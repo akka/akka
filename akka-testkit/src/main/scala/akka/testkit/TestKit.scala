@@ -82,6 +82,10 @@ class TestActor(queue : BlockingDeque[TestActor.Message]) extends Actor with FSM
  *    constructor as shown above, which makes this a non-issue, otherwise take
  *    care not to run tests within a single test class instance in parallel.
  *
+ * It should be noted that for CI servers and the like all maximum Durations
+ * are scaled using their Duration.dilated method, which uses the
+ * Duration.timeFactor settable via akka.conf entry "akka.test.timefactor".
+ *
  * @author Roland Kuhn
  * @since 1.1
  */
@@ -156,10 +160,37 @@ trait TestKit {
   def remaining : Duration = end - now
 
   /**
+   * Block until the given condition evaluates to `true` or the timeout
+   * expires, whichever comes first.
+   *
+   * If no timeout is given, take it from the innermost enclosing `within`
+   * block.
+   *
+   * Note that the timeout is scaled using Duration.timeFactor.
+   */
+  def awaitCond(p : => Boolean, max : Duration = Duration.MinusInf, interval : Duration = 100.millis) {
+    val _max = if (max eq Duration.MinusInf) remaining else max.dilated
+    val stop = now + _max
+
+    @tailrec def poll(t : Duration) {
+      if (!p) {
+        assert (now < stop, "timeout "+_max+" expired")
+        Thread.sleep(t.toMillis)
+        poll((stop - now) min interval)
+      }
+    }
+
+    poll(_max min interval)
+  }
+
+  /**
    * Execute code block while bounding its execution time between `min` and
    * `max`. `within` blocks may be nested. All methods in this trait which
    * take maximum wait times are available in a version which implicitly uses
    * the remaining time governed by the innermost enclosing `within` block.
+   *
+   * Note that the max Duration is scaled by Duration.timeFactor while the min
+   * Duration is not.
    *
    * <pre>
    * val ret = within(50 millis) {
@@ -169,11 +200,12 @@ trait TestKit {
    * </pre>
    */
   def within[T](min : Duration, max : Duration)(f : => T) : T = {
+    val _max = max.dilated
     val start = now
     val rem = end - start
     assert (rem >= min, "required min time "+min+" not possible, only "+format(min.unit, rem)+" left")
 
-    val max_diff = if (max < rem) max else rem
+    val max_diff = _max min rem
     val prev_end = end
     end = start + max_diff
 
@@ -185,7 +217,7 @@ trait TestKit {
      * caution: HACK AHEAD
      */
     if (now - lastSoftTimeout > 5.millis) {
-      assert (diff <= max_diff, "block took "+format(max.unit, diff)+", exceeding "+format(max.unit, max_diff))
+      assert (diff <= max_diff, "block took "+format(_max.unit, diff)+", exceeding "+format(_max.unit, max_diff))
     } else {
       lastSoftTimeout -= 5.millis
     }
@@ -207,10 +239,9 @@ trait TestKit {
   def reply(msg : AnyRef) { lastMessage.channel ! msg }
 
   /**
-   * Same as `expectMsg`, but takes the maximum wait time from the innermost
-   * enclosing `within` block.
+   * Same as `expectMsg(remaining, obj)`, but correctly treating the timeFactor.
    */
-  def expectMsg(obj : Any) : AnyRef = expectMsg(remaining, obj)
+  def expectMsg(obj : Any) : AnyRef = expectMsg_internal(remaining, obj)
 
   /**
    * Receive one message from the test actor and assert that it equals the
@@ -219,7 +250,9 @@ trait TestKit {
    *
    * @return the received object
    */
-  def expectMsg(max : Duration, obj : Any) : AnyRef = {
+  def expectMsg(max : Duration, obj : Any) : AnyRef = expectMsg_internal(max.dilated, obj)
+
+  private def expectMsg_internal(max : Duration, obj : Any) : AnyRef = {
     val o = receiveOne(max)
     assert (o ne null, "timeout during expectMsg")
     assert (obj == o, "expected "+obj+", found "+o)
@@ -227,10 +260,15 @@ trait TestKit {
   }
 
   /**
-   * Same as `expectMsg`, but takes the maximum wait time from the innermost
-   * enclosing `within` block.
+   * Same as `expectMsg(remaining)(f)`, but correctly treating the timeFactor.
    */
-  def expectMsg[T](f : PartialFunction[Any, T]) : T = expectMsg(remaining)(f)
+  @deprecated("use expectMsgPF instead", "1.2")
+  def expectMsg[T](f : PartialFunction[Any, T]) : T = expectMsgPF_internal(remaining)(f)
+
+  /**
+   * Same as `expectMsgPF(remaining)(f)`, but correctly treating the timeFactor.
+   */
+  def expectMsgPF[T](f : PartialFunction[Any, T]) : T = expectMsgPF_internal(remaining)(f)
 
   /**
    * Receive one message from the test actor and assert that the given
@@ -242,7 +280,22 @@ trait TestKit {
    *
    * @return the received object as transformed by the partial function
    */
-  def expectMsg[T](max : Duration)(f : PartialFunction[Any, T]) : T = {
+  @deprecated("use expectMsgPF instead", "1.2")
+  def expectMsg[T](max : Duration)(f : PartialFunction[Any, T]) : T = expectMsgPF_internal(max.dilated)(f)
+
+  /**
+   * Receive one message from the test actor and assert that the given
+   * partial function accepts it. Wait time is bounded by the given duration,
+   * with an AssertionFailure being thrown in case of timeout.
+   *
+   * Use this variant to implement more complicated or conditional
+   * processing.
+   *
+   * @return the received object as transformed by the partial function
+   */
+  def expectMsgPF[T](max : Duration)(f : PartialFunction[Any, T]) : T = expectMsgPF_internal(max.dilated)(f)
+
+  private def expectMsgPF_internal[T](max : Duration)(f : PartialFunction[Any, T]) : T = {
     val o = receiveOne(max)
     assert (o ne null, "timeout during expectMsg")
     assert (f.isDefinedAt(o), "does not match: "+o)
@@ -250,10 +303,9 @@ trait TestKit {
   }
 
   /**
-   * Same as `expectMsgClass`, but takes the maximum wait time from the innermost
-   * enclosing `within` block.
+   * Same as `expectMsgClass(remaining, c)`, but correctly treating the timeFactor.
    */
-  def expectMsgClass[C](c : Class[C]) : C = expectMsgClass(remaining, c)
+  def expectMsgClass[C](c : Class[C]) : C = expectMsgClass_internal(remaining, c)
 
   /**
    * Receive one message from the test actor and assert that it conforms to
@@ -262,7 +314,9 @@ trait TestKit {
    *
    * @return the received object
    */
-  def expectMsgClass[C](max : Duration, c : Class[C]) : C = {
+  def expectMsgClass[C](max : Duration, c : Class[C]) : C = expectMsgClass_internal(max.dilated, c)
+  
+  private def expectMsgClass_internal[C](max : Duration, c : Class[C]) : C = {
     val o = receiveOne(max)
     assert (o ne null, "timeout during expectMsgClass")
     assert (c isInstance o, "expected "+c+", found "+o.getClass)
@@ -270,10 +324,9 @@ trait TestKit {
   }
 
   /**
-   * Same as `expectMsgAnyOf`, but takes the maximum wait time from the innermost
-   * enclosing `within` block.
+   * Same as `expectMsgAnyOf(remaining, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAnyOf(obj : Any*) : AnyRef = expectMsgAnyOf(remaining, obj : _*)
+  def expectMsgAnyOf(obj : Any*) : AnyRef = expectMsgAnyOf_internal(remaining, obj : _*)
 
   /**
    * Receive one message from the test actor and assert that it equals one of
@@ -282,7 +335,9 @@ trait TestKit {
    *
    * @return the received object
    */
-  def expectMsgAnyOf(max : Duration, obj : Any*) : AnyRef = {
+  def expectMsgAnyOf(max : Duration, obj : Any*) : AnyRef = expectMsgAnyOf_internal(max.dilated, obj : _*)
+
+  private def expectMsgAnyOf_internal(max : Duration, obj : Any*) : AnyRef = {
     val o = receiveOne(max)
     assert (o ne null, "timeout during expectMsgAnyOf")
     assert (obj exists (_ == o), "found unexpected "+o)
@@ -290,10 +345,9 @@ trait TestKit {
   }
 
   /**
-   * Same as `expectMsgAnyClassOf`, but takes the maximum wait time from the innermost
-   * enclosing `within` block.
+   * Same as `expectMsgAnyClassOf(remaining, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAnyClassOf(obj : Class[_]*) : AnyRef = expectMsgAnyClassOf(remaining, obj : _*)
+  def expectMsgAnyClassOf(obj : Class[_]*) : AnyRef = expectMsgAnyClassOf_internal(remaining, obj : _*)
 
   /**
    * Receive one message from the test actor and assert that it conforms to
@@ -302,7 +356,9 @@ trait TestKit {
    *
    * @return the received object
    */
-  def expectMsgAnyClassOf(max : Duration, obj : Class[_]*) : AnyRef = {
+  def expectMsgAnyClassOf(max : Duration, obj : Class[_]*) : AnyRef = expectMsgAnyClassOf_internal(max.dilated, obj : _*)
+
+  private def expectMsgAnyClassOf_internal(max : Duration, obj : Class[_]*) : AnyRef = {
     val o = receiveOne(max)
     assert (o ne null, "timeout during expectMsgAnyClassOf")
     assert (obj exists (_ isInstance o), "found unexpected "+o)
@@ -310,10 +366,9 @@ trait TestKit {
   }
 
   /**
-   * Same as `expectMsgAllOf`, but takes the maximum wait time from the innermost
-   * enclosing `within` block.
+   * Same as `expectMsgAllOf(remaining, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllOf(obj : Any*) { expectMsgAllOf(remaining, obj : _*) }
+  def expectMsgAllOf(obj : Any*) { expectMsgAllOf_internal(remaining, obj : _*) }
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -330,16 +385,17 @@ trait TestKit {
    * }
    * </pre>
    */
-  def expectMsgAllOf(max : Duration, obj : Any*) {
+  def expectMsgAllOf(max : Duration, obj : Any*) { expectMsgAllOf_internal(max.dilated, obj : _*) }
+
+  private def expectMsgAllOf_internal(max : Duration, obj : Any*) {
     val recv = receiveN(obj.size, now + max)
     assert (obj forall (x => recv exists (x == _)), "not found all")
   }
 
   /**
-   * Same as `expectMsgAllClassOf`, but takes the maximum wait time from the innermost
-   * enclosing `within` block.
+   * Same as `expectMsgAllClassOf(remaining, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllClassOf(obj : Class[_]*) { expectMsgAllClassOf(remaining, obj : _*) }
+  def expectMsgAllClassOf(obj : Class[_]*) { expectMsgAllClassOf_internal(remaining, obj : _*) }
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -349,16 +405,17 @@ trait TestKit {
    * Wait time is bounded by the given duration, with an AssertionFailure
    * being thrown in case of timeout.
    */
-  def expectMsgAllClassOf(max : Duration, obj : Class[_]*) {
+  def expectMsgAllClassOf(max : Duration, obj : Class[_]*) { expectMsgAllClassOf_internal(max.dilated, obj : _* ) }
+
+  private def expectMsgAllClassOf_internal(max : Duration, obj : Class[_]*) {
     val recv = receiveN(obj.size, now + max)
     assert (obj forall (x => recv exists (_.getClass eq x)), "not found all")
   }
 
   /**
-   * Same as `expectMsgAllConformingOf`, but takes the maximum wait time from the innermost
-   * enclosing `within` block.
+   * Same as `expectMsgAllConformingOf(remaining, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllConformingOf(obj : Class[_]*) { expectMsgAllClassOf(remaining, obj : _*) }
+  def expectMsgAllConformingOf(obj : Class[_]*) { expectMsgAllClassOf_internal(remaining, obj : _*) }
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -371,40 +428,40 @@ trait TestKit {
    * Beware that one object may satisfy all given class constraints, which
    * may be counter-intuitive.
    */
-  def expectMsgAllConformingOf(max : Duration, obj : Class[_]*) {
+  def expectMsgAllConformingOf(max : Duration, obj : Class[_]*) { expectMsgAllConformingOf(max.dilated, obj : _* ) }
+
+  private def expectMsgAllConformingOf_internal(max : Duration, obj : Class[_]*) {
     val recv = receiveN(obj.size, now + max)
     assert (obj forall (x => recv exists (x isInstance _)), "not found all")
   }
 
   /**
-   * Same as `expectNoMsg`, but takes the maximum wait time from the innermost
-   * enclosing `within` block.
+   * Same as `expectNoMsg(remaining)`, but correctly treating the timeFactor.
    */
-  def expectNoMsg { expectNoMsg(remaining) }
+  def expectNoMsg { expectNoMsg_internal(remaining) }
 
   /**
    * Assert that no message is received for the specified time.
    */
-  def expectNoMsg(max : Duration) {
+  def expectNoMsg(max : Duration) { expectNoMsg_internal(max.dilated) }
+
+  private def expectNoMsg_internal(max : Duration) {
     val o = receiveOne(max)
     assert (o eq null, "received unexpected message "+o)
     lastSoftTimeout = now
   }
 
   /**
-   * Same as `receiveWhile`, but takes the maximum wait time from the innermost
-   * enclosing `within` block.
+   * Same as `receiveWhile(remaining)(f)`, but correctly treating the timeFactor.
    */
-  def receiveWhile[T](f : PartialFunction[AnyRef, T]) : Seq[T] = receiveWhile(remaining)(f)
+  def receiveWhile[T](f : PartialFunction[AnyRef, T]) : Seq[T] = receiveWhile_internal(remaining)(f)
 
   /**
    * Receive a series of messages as long as the given partial function
    * accepts them or the idle timeout is met or the overall maximum duration
    * is elapsed. Returns the sequence of messages.
    *
-   * Beware that the maximum duration is not implicitly bounded by or taken
-   * from the innermost enclosing `within` block, as it is not an error to
-   * hit the `max` duration in this case.
+   * Note that it is not an error to hit the `max` duration in this case.
    *
    * One possible use of this method is for testing whether messages of
    * certain characteristics are generated at a certain rate:
@@ -417,7 +474,9 @@ trait TestKit {
    * assert(series == (1 to 7).toList)
    * </pre>
    */
-  def receiveWhile[T](max : Duration)(f : PartialFunction[AnyRef, T]) : Seq[T] = {
+  def receiveWhile[T](max : Duration)(f : PartialFunction[AnyRef, T]) : Seq[T] = receiveWhile_internal(max.dilated)(f)
+
+  private def receiveWhile_internal[T](max : Duration)(f : PartialFunction[AnyRef, T]) : Seq[T] = {
     val stop = now + max
     var msg : Message = NullMessage
 
@@ -457,6 +516,8 @@ trait TestKit {
   /**
    * Receive one message from the internal queue of the TestActor. If the given
    * duration is zero, the queue is polled (non-blocking).
+   *
+   * This method does NOT automatically scale its Duration parameter!
    */
   def receiveOne(max : Duration) : AnyRef = {
     val message =

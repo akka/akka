@@ -7,7 +7,7 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
 import akka.util.duration._
-import akka.testing.Testing.sleepFor
+import akka.testkit.Testing.sleepFor
 import akka.dispatch.Dispatchers
 import akka.config.Supervision.{SupervisorConfig, OneForOneStrategy, Supervise, Permanent}
 import Actor._

@@ -3,8 +3,8 @@ package akka.actor.routing
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
-import akka.testing._
-import akka.testing.Testing.{sleepFor, testMillis}
+import akka.testkit._
+import akka.testkit.Testing.sleepFor
 import akka.util.duration._
 
 import akka.actor.Actor
@@ -42,10 +42,11 @@ class RoutingSpec extends WordSpec with MustMatchers {
         case Test3 => t2
       }.start()
 
+      val timeout = (5 seconds).dilated.toMillis
       val result = for {
-        a <- (d !! (Test1, testMillis(5 seconds))).as[Int]
-        b <- (d !! (Test2, testMillis(5 seconds))).as[Int]
-        c <- (d !! (Test3, testMillis(5 seconds))).as[Int]
+        a <- (d !! (Test1, timeout)).as[Int]
+        b <- (d !! (Test2, timeout)).as[Int]
+        c <- (d !! (Test3, timeout)).as[Int]
       } yield a + b + c
 
       result.isDefined must be (true)

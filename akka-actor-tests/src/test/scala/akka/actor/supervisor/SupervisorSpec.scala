@@ -8,8 +8,8 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterEach
 
-import akka.testing._
-import akka.testing.Testing.{testMillis, sleepFor}
+import akka.testkit._
+import akka.testkit.Testing.sleepFor
 import akka.util.duration._
 import akka.config.Supervision._
 import akka.{Die, Ping}
@@ -21,7 +21,7 @@ import java.util.concurrent.LinkedBlockingQueue
 
 object SupervisorSpec {
   val Timeout = 5 seconds
-  val TimeoutMillis = testMillis(Timeout).toInt
+  val TimeoutMillis = Timeout.dilated.toMillis.toInt
 
   // =====================================================
   // Message logs
@@ -58,7 +58,7 @@ object SupervisorSpec {
   }
 
   class Master extends Actor {
-    self.faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, testMillis(1 second).toInt)
+    self.faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, (1 second).dilated.toMillis.toInt)
 
     val temp = self.spawnLink[TemporaryActor]
 

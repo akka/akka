@@ -7,9 +7,9 @@ package akka.actor
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
-import akka.testing._
+import akka.testkit._
 import akka.util.duration._
-import akka.testing.Testing.sleepFor
+import akka.testkit.Testing.sleepFor
 import akka.config.Supervision.{OneForOneStrategy}
 import akka.actor._
 import akka.dispatch.Future
