@@ -10,6 +10,7 @@ import akka.actor._
 import akka.dispatch.Future
 import akka.config.Config
 import akka.util._
+import akka.routing.RouterType
 import akka.AkkaException
 
 import com.eaio.uuid.UUID

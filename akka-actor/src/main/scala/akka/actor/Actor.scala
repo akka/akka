@@ -389,23 +389,12 @@ object Actor extends ListenerManagement {
   private def newClusterActorRef[T <: Actor](factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef = {
     deploy match {
       case Deploy(_, router, serializerClassName, Clustered(home, replication: Replication, state: State)) ⇒
-        ClusterModule.ensureEnabled()
 
+        ClusterModule.ensureEnabled()
         if (!Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
 
-        val isHomeNode = home match {
-          case Host(hostname) ⇒ hostname == Config.hostname
-          case IP(address)    ⇒ address == "0.0.0.0" // FIXME checking if IP address is on home node is missing
-          case Node(nodename) ⇒ nodename == Config.nodename
-        }
-
-        val replicas = replication match {
-          case Replicate(replicas) ⇒ replicas
-          case AutoReplicate       ⇒ -1
-          case AutoReplicate()     ⇒ -1
-          case NoReplicas          ⇒ 0
-          case NoReplicas()        ⇒ 0
-        }
+        val isHomeNode = DeploymentConfig.isHomeNode(home)
+        val replicas = DeploymentConfig.replicaValueFor(replication)
 
         if (isHomeNode) { // home node for clustered actor
 
@@ -438,26 +427,14 @@ object Actor extends ListenerManagement {
 
           if (!cluster.isClustered(address)) cluster.store(factory().start(), replicas, false, serializer) // add actor to cluster registry (if not already added)
 
+          // home node, check out as LocalActorRef
           cluster
             .use(address, serializer)
             .getOrElse(throw new ConfigurationException("Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
 
         } else {
-          val routerType = router match {
-            case Direct          ⇒ RouterType.Direct
-            case Direct()        ⇒ RouterType.Direct
-            case RoundRobin      ⇒ RouterType.RoundRobin
-            case RoundRobin()    ⇒ RouterType.RoundRobin
-            case Random          ⇒ RouterType.Random
-            case Random()        ⇒ RouterType.Random
-            case LeastCPU        ⇒ RouterType.LeastCPU
-            case LeastCPU()      ⇒ RouterType.LeastCPU
-            case LeastRAM        ⇒ RouterType.LeastRAM
-            case LeastRAM()      ⇒ RouterType.LeastRAM
-            case LeastMessages   ⇒ RouterType.LeastMessages
-            case LeastMessages() ⇒ RouterType.LeastMessages
-          }
-          cluster.ref(address, routerType)
+          // remote node (not home node), check out as ClusterActorRef
+          cluster.ref(address, DeploymentConfig.routerTypeFor(router))
         }
 
       /*

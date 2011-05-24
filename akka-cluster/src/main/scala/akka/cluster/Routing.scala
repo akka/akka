@@ -6,18 +6,17 @@ package akka.cluster
 import Cluster._
 
 import akka.actor._
-import akka.actor.Actor._
-import akka.actor.RouterType._
+import Actor._
 import akka.dispatch.Future
-import akka.AkkaException
-
-import java.net.InetSocketAddress
+import akka.routing.{ RouterType, RoutingException }
+import RouterType._
 
 import com.eaio.uuid.UUID
-import annotation.tailrec
-import java.util.concurrent.atomic.AtomicReference
 
-class RoutingException(message: String) extends AkkaException(message)
+import annotation.tailrec
+
+import java.net.InetSocketAddress
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -25,24 +24,14 @@ class RoutingException(message: String) extends AkkaException(message)
 object Router {
   def newRouter(
     routerType: RouterType,
-    addresses: Array[Tuple2[UUID, InetSocketAddress]],
-    serviceId: String,
+    inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
+    actorAddress: String,
     timeout: Long,
     replicationStrategy: ReplicationStrategy = ReplicationStrategy.WriteThrough): ClusterActorRef = {
-
     routerType match {
-      case Direct ⇒ new ClusterActorRef(
-        addresses, serviceId, timeout,
-        replicationStrategy) with Direct
-
-      case Random ⇒ new ClusterActorRef(
-        addresses, serviceId, timeout,
-        replicationStrategy) with Random
-
-      case RoundRobin ⇒ new ClusterActorRef(
-        addresses, serviceId, timeout,
-        replicationStrategy) with RoundRobin
-
+      case Direct        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, replicationStrategy) with Direct
+      case Random        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, replicationStrategy) with Random
+      case RoundRobin    ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, replicationStrategy) with RoundRobin
       case LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
       case LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
       case LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")

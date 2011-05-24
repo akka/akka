@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.event.EventHandler
 import akka.actor.DeploymentConfig._
 import akka.config.{ ConfigurationException, Config }
+import akka.routing.RouterType
 import akka.util.ReflectiveAccess._
 import akka.serialization.Format
 import akka.AkkaException
@@ -106,6 +107,39 @@ object DeploymentConfig {
   // For Scala API
   case object Stateless extends State
   case object Stateful extends State
+
+  // --------------------------------
+  // --- Helper methods for parsing
+  // --------------------------------
+
+  def isHomeNode(home: Home): Boolean = home match {
+    case Host(hostname) ⇒ hostname == Config.hostname
+    case IP(address)    ⇒ address == "0.0.0.0" // FIXME checking if IP address is on home node is missing
+    case Node(nodename) ⇒ nodename == Config.nodename
+  }
+
+  def replicaValueFor(replication: Replication): Int = replication match {
+    case Replicate(replicas) ⇒ replicas
+    case AutoReplicate       ⇒ -1
+    case AutoReplicate()     ⇒ -1
+    case NoReplicas          ⇒ 0
+    case NoReplicas()        ⇒ 0
+  }
+
+  def routerTypeFor(routing: Routing): RouterType = routing match {
+    case Direct          ⇒ RouterType.Direct
+    case Direct()        ⇒ RouterType.Direct
+    case RoundRobin      ⇒ RouterType.RoundRobin
+    case RoundRobin()    ⇒ RouterType.RoundRobin
+    case Random          ⇒ RouterType.Random
+    case Random()        ⇒ RouterType.Random
+    case LeastCPU        ⇒ RouterType.LeastCPU
+    case LeastCPU()      ⇒ RouterType.LeastCPU
+    case LeastRAM        ⇒ RouterType.LeastRAM
+    case LeastRAM()      ⇒ RouterType.LeastRAM
+    case LeastMessages   ⇒ RouterType.LeastMessages
+    case LeastMessages() ⇒ RouterType.LeastMessages
+  }
 }
 
 /**

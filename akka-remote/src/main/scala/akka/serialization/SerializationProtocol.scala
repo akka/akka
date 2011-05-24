@@ -156,6 +156,7 @@ object ActorSerialization {
 }
 
 object RemoteActorSerialization {
+
   /**
    * Deserializes a byte array (Array[Byte]) into an RemoteActorRef instance.
    */
@@ -172,23 +173,29 @@ object RemoteActorSerialization {
    * Deserializes a RemoteActorRefProtocol Protocol Buffers (protobuf) Message into an RemoteActorRef instance.
    */
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
-    val ref = RemoteActorRef(
+    RemoteActorRef(
+      Serializers.Java.fromBinary(protocol.getInetSocketAddress.toByteArray, Some(classOf[InetSocketAddress])).asInstanceOf[InetSocketAddress],
       protocol.getAddress,
       protocol.getTimeout,
       loader)
-    ref
   }
 
   /**
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
   def toRemoteActorRefProtocol(actor: ActorRef): RemoteActorRefProtocol = {
-    actor match {
-      case ar: LocalActorRef ⇒ Actor.remote.registerByUuid(ar)
-      case _                 ⇒ {}
+    val remoteAddress = actor match {
+      case ar: RemoteActorRef ⇒
+        ar.remoteAddress
+      case ar: LocalActorRef ⇒
+        Actor.remote.registerByUuid(ar)
+        ReflectiveAccess.RemoteModule.configDefaultAddress
+      case _ ⇒
+        ReflectiveAccess.RemoteModule.configDefaultAddress
     }
     RemoteActorRefProtocol.newBuilder
-      .setAddress("uuid:" + actor.uuid.toString)
+      .setInetSocketAddress(ByteString.copyFrom(Serializers.Java.toBinary(remoteAddress)))
+      .setAddress(actor.address)
       .setTimeout(actor.timeout)
       .build
   }
