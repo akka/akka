@@ -6,7 +6,7 @@ package akka.actor
 
 import DeploymentConfig._
 import akka.dispatch._
-import akka.config.Config
+import akka.config._
 import Config._
 import akka.util.{ ListenerManagement, ReflectiveAccess, Duration, Helpers }
 import ReflectiveAccess._
@@ -15,6 +15,7 @@ import akka.remoteinterface.RemoteSupport
 import akka.japi.{ Creator, Procedure }
 import akka.AkkaException
 import akka.serialization.{ Format, Serializer }
+import akka.cluster.ClusterNode
 import akka.event.EventHandler
 
 import scala.reflect.BeanProperty
@@ -137,7 +138,11 @@ object Actor extends ListenerManagement {
   /**
    * Handle to the ClusterNode. API for the cluster client.
    */
-  lazy val cluster: ClusterModule.ClusterNode = ClusterModule.node
+  lazy val cluster: ClusterNode = {
+    val node = ClusterModule.node
+    node.start()
+    node
+  }
 
   /**
    * Handle to the RemoteSupport. API for the remote client/server.
@@ -146,7 +151,7 @@ object Actor extends ListenerManagement {
   private[akka] lazy val remote: RemoteSupport = cluster.remoteService
 
   // start up a cluster node to join the ZooKeeper cluster
-  if (ClusterModule.isEnabled) cluster.start()
+  //if (ClusterModule.isEnabled) cluster.start()
 
   /**
    * Creates an ActorRef out of the Actor with type T.
@@ -388,10 +393,10 @@ object Actor extends ListenerManagement {
 
         if (!Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
 
-        val hostname = home match {
-          case Host(hostname) ⇒ hostname
-          case IP(address)    ⇒ address
-          case Node(nodeName) ⇒ Config.hostname
+        val isHomeNode = home match {
+          case Host(hostname) ⇒ hostname == Config.hostname
+          case IP(address)    ⇒ address == "0.0.0.0" // FIXME checking if IP address is on home node is missing
+          case Node(nodename) ⇒ nodename == Config.nodename
         }
 
         val replicas = replication match {
@@ -402,7 +407,7 @@ object Actor extends ListenerManagement {
           case NoReplicas()        ⇒ 0
         }
 
-        if (hostname == Config.hostname) { // home node for clustered actor
+        if (isHomeNode) { // home node for clustered actor
 
           def serializerErrorDueTo(reason: String) =
             throw new akka.config.ConfigurationException(
@@ -433,7 +438,9 @@ object Actor extends ListenerManagement {
 
           if (!cluster.isClustered(address)) cluster.store(factory().start(), replicas, false, serializer) // add actor to cluster registry (if not already added)
 
-          cluster.use(address, serializer)
+          cluster
+            .use(address, serializer)
+            .getOrElse(throw new ConfigurationException("Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
 
         } else {
           val routerType = router match {
@@ -453,7 +460,7 @@ object Actor extends ListenerManagement {
           cluster.ref(address, routerType)
         }
 
-        /*
+      /*
           Misc stuff:
             - How to define a single ClusterNode to use? Where should it be booted up? How should it be configured?
             - ClusterNode API and Actor.remote API should be made private[akka]
@@ -464,7 +471,7 @@ object Actor extends ListenerManagement {
 
          */
 
-        RemoteActorRef(address, Actor.TIMEOUT, None)
+      //        RemoteActorRef(address, Actor.TIMEOUT, None)
 
       case invalid ⇒ throw new IllegalActorStateException(
         "Could not create actor with address [" + address +

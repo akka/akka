@@ -115,6 +115,8 @@ object Config {
     case value ⇒ value.toInt
   }
 
+  val clusterName = config.getString("akka.cluster.name", "default")
+
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
 }
