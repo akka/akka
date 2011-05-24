@@ -71,9 +71,9 @@ class LoggingReceiveSpec
       actor ! HotSwap(_ => r, false)
       actor ! "bah"
       within (300 millis) {
-        expectMsg( {
-          case EventHandler.Error(ex : UnhandledMessageException, ref, "bah") if ref eq actor =>
-        } : PartialFunction[Any, Unit])
+        expectMsgPF() {
+          case EventHandler.Error(ex : UnhandledMessageException, ref, "bah") if ref eq actor => true
+        }
       }
       actor.stop()
     }
