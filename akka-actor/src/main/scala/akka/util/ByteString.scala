@@ -41,22 +41,51 @@ object ByteString {
 
 }
 
-final class ByteString private (private val bytes: Array[Byte]) extends IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
+final class ByteString private (bytes: Array[Byte], startIndex: Int, endIndex: Int) extends IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
+
+  private def this(bytes: Array[Byte]) = this(bytes, 0, bytes.length)
 
   override protected[this] def newBuilder = ByteString.newBuilder
 
-  def apply(idx: Int): Byte = bytes(idx)
+  def apply(idx: Int): Byte = bytes(checkRangeConvert(idx))
 
-  def length: Int = bytes.length
+  private def checkRangeConvert(index: Int) = {
+    val idx = index + startIndex
+    if (0 <= index && idx < endIndex)
+      idx
+    else
+      throw new IndexOutOfBoundsException(index.toString)
+  }
 
-  override def clone: ByteString = ByteString(bytes)
+  def length: Int = endIndex - startIndex
 
-  def toArray: Array[Byte] = bytes.clone
+  override def clone: ByteString = ByteString(toArray)
 
-  def asByteBuffer: ByteBuffer = ByteBuffer.wrap(bytes).asReadOnlyBuffer
+  def toArray: Array[Byte] = {
+    val ar = new Array[Byte](length)
+    Array.copy(bytes, startIndex, ar, 0, length)
+    ar
+  }
 
-  def toByteBuffer: ByteBuffer = ByteBuffer.wrap(bytes.clone)
+  def asByteBuffer: ByteBuffer = {
+    val buffer = ByteBuffer.wrap(bytes, startIndex, length).asReadOnlyBuffer
+    if (buffer.remaining < bytes.length) buffer.slice
+    else buffer
+  }
+
+  def toByteBuffer: ByteBuffer = ByteBuffer.wrap(toArray)
 
   def mapI(f: Byte ⇒ Int): ByteString = map(f andThen (_.toByte))
+
+  override def slice(from: Int, until: Int): ByteString = {
+    val newStartIndex = math.max(from, 0) + startIndex
+    val newEndIndex = math.min(until, length) + startIndex
+    val newLength = math.max(newEndIndex - newStartIndex, 0)
+    if (newEndIndex - newStartIndex <= 0) ByteString.empty
+    else new ByteString(bytes, newStartIndex, newEndIndex)
+  }
+
+  override def copyToArray[A >: Byte](xs: Array[A], start: Int, len: Int): Unit =
+    Array.copy(bytes, startIndex, xs, start, math.min(math.min(length, len), xs.length - start))
 
 }
