@@ -35,8 +35,7 @@ object TypedActor {
     }
   }
 
-  class TypedActorInvocationHandler(val interfaces: immutable.Seq[Class[_]], implementationVar: AtomVar[Class[_]], val actor: ActorRef) extends InvocationHandler {
-    def implementation: Class[_] = implementationVar.get
+  case class TypedActorInvocationHandler(actor: ActorRef) extends InvocationHandler {
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
       case "toString" ⇒ actor.toString
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
@@ -147,21 +146,12 @@ object TypedActor {
     createProxy[R](extractInterfaces(interface), (ref: AtomVar[R]) ⇒ new TypedActor[R, T](ref, constructor), config, loader)
 
   protected def configureAndProxyLocalActorRef[T <: AnyRef](interfaces: Array[Class[_]], proxyRef: AtomVar[T], actor: ⇒ Actor, config: Configuration, loader: ClassLoader): T = {
-    val implementationVar = new AtomVar[Class[_]]
-    val ref = actorOf({
-      val instance = actor
-      implementationVar.set(instance match {
-        case null                   ⇒ null
-        case some: TypedActor[_, _] ⇒ some.me.getClass
-        case some                   ⇒ some.getClass
-      })
-      instance
-    })
+    val ref = actorOf(actor)
 
     ref.timeout = config.timeout.toMillis
     ref.dispatcher = config.dispatcher
 
-    val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(interfaces.toList, implementationVar, ref)).asInstanceOf[T]
+    val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(ref)).asInstanceOf[T]
     proxyRef.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
     Actor.registry.registerTypedActor(ref.start, proxy) //We only have access to the proxy from the outside, so register it with the ActorRegistry, will be removed on actor.stop
     proxy
