@@ -20,7 +20,7 @@ class DeployerSpec extends WordSpec with MustMatchers {
           LeastCPU,
           "akka.serialization.Format$Default$",
           Clustered(
-            Node("test-1"),
+            Node("node1"),
             Replicate(3),
             Stateless))))
     }

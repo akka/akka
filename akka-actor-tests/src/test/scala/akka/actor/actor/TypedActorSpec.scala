@@ -132,6 +132,12 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       stop(null) must be(false)
     }
 
+    "throw an IllegalStateExcpetion when TypedActor.self is called in the wrong scope" in {
+      (intercept[IllegalStateException] {
+        TypedActor.self[Foo]
+      }).getMessage must equal("Calling TypedActor.self outside of a TypedActor implementation method!")
+    }
+
     "have access to itself when executing a method call" in {
       val t = newFooBar
       t.self must be(t)

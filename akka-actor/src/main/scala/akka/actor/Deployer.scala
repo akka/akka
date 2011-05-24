@@ -265,6 +265,7 @@ object Deployer {
             // --------------------------------
             // akka.actor.deployment.<address>.clustered.home
             // --------------------------------
+
             val home = clusteredConfig.getString("home", "") match {
               case "" ⇒ Host("localhost")
               case home ⇒

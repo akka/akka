@@ -56,5 +56,5 @@ class ClusterActorRef private[akka] (
 
   // clustered refs are always registered and looked up by UUID
   private def createRemoteActorRef(uuid: UUID, address: InetSocketAddress) =
-    RemoteActorRef(UUID_PREFIX + uuidToString(uuid), Actor.TIMEOUT, None)
+    RemoteActorRef(uuidToString(uuid), Actor.TIMEOUT, None)
 }

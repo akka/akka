@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.cluster.multi
+package akka.cluster.sample
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
@@ -10,16 +10,15 @@ import org.scalatest.BeforeAndAfterAll
 
 import akka.cluster._
 
-object ClusterMultiJvmSpec {
+object SampleMultiJvmSpec {
   val NrOfNodes = 2
 }
 
-class ClusterMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
-  import ClusterMultiJvmSpec._
+class SampleMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+  import SampleMultiJvmSpec._
 
   override def beforeAll() = {
     Cluster.startLocalCluster()
-    // resetCluster()
   }
 
   override def afterAll() = {
@@ -45,23 +44,17 @@ class ClusterMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfte
     }
 
     "be able to start all nodes" in {
-      Cluster.node.barrier("start", NrOfNodes) {
-        // Cluster.node.start()
+      Cluster.barrier("start", NrOfNodes) {
+        Cluster.node.start()
       }
-      // Cluster.node.isRunning must be(true)
-    }
-
-    "be able to shutdown all nodes" in {
-      Cluster.node.barrier("shutdown", NrOfNodes) {
-        // Cluster.node.shutdown()
-      }
-      // Cluster.node.isRunning must be(false)
+      Cluster.node.isRunning must be(true)
+      Cluster.node.shutdown()
     }
   }
 }
 
-class ClusterMultiJvmNode2 extends WordSpec with MustMatchers {
-  import ClusterMultiJvmSpec._
+class SampleMultiJvmNode2 extends WordSpec with MustMatchers {
+  import SampleMultiJvmSpec._
 
   "A cluster" must {
 
@@ -72,17 +65,11 @@ class ClusterMultiJvmNode2 extends WordSpec with MustMatchers {
     }
 
     "be able to start all nodes" in {
-      Cluster.node.barrier("start", NrOfNodes) {
-        // Cluster.node.start()
+      Cluster.barrier("start", NrOfNodes) {
+        Cluster.node.start()
       }
-      // Cluster.node.isRunning must be(true)
-    }
-
-    "be able to shutdown all nodes" in {
-      Cluster.node.barrier("shutdown", NrOfNodes) {
-        // Cluster.node.shutdown()
-      }
-      // Cluster.node.isRunning must be(false)
+      Cluster.node.isRunning must be(true)
+      Cluster.node.shutdown()
     }
   }
 }
