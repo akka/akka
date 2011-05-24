@@ -81,13 +81,13 @@ trait IO {
 
 }
 
-class IOManager extends Actor {
+class IOManager(bufferSize: Int = 8192) extends Actor {
 
   var worker: IOWorker = _
   var workerThread: Thread = _
 
   override def preStart: Unit = {
-    worker = new IOWorker(self)
+    worker = new IOWorker(self, bufferSize)
     workerThread = new Thread(worker)
     workerThread.start
   }
@@ -100,17 +100,22 @@ class IOManager extends Actor {
     case IO.Close(token)            ⇒ worker.close(token)
   }
 
+  override def postStop: Unit = {
+    worker.shutdown
+  }
+
 }
 
 private[akka] object IOWorker {
-  sealed trait ChangeRequest { def token: IO.Token }
+  sealed trait ChangeRequest
   case class Register(token: IO.Token, channel: SelectableChannel, ops: Int) extends ChangeRequest
   case class Accepted(token: IO.Token, serverToken: IO.Token) extends ChangeRequest
   case class QueueWrite(token: IO.Token, data: ByteBuffer) extends ChangeRequest
   case class Close(token: IO.Token) extends ChangeRequest
+  case object Shutdown extends ChangeRequest
 }
 
-private[akka] class IOWorker(ioManager: ActorRef) extends Runnable {
+private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) extends Runnable {
   import SelectionKey.{ OP_READ, OP_WRITE, OP_ACCEPT, OP_CONNECT }
   import IOWorker._
 
@@ -118,8 +123,6 @@ private[akka] class IOWorker(ioManager: ActorRef) extends Runnable {
   type WriteChannel = WritableByteChannel with SelectableChannel
 
   implicit val optionIOManager: Some[ActorRef] = Some(ioManager)
-
-  val bufferSize = 8192 // make configurable
 
   def createServer(token: IO.Token, address: InetSocketAddress): Unit = {
     val server = ServerSocketChannel open ()
@@ -144,6 +147,9 @@ private[akka] class IOWorker(ioManager: ActorRef) extends Runnable {
   def close(token: IO.Token): Unit =
     addChangeRequest(Close(token))
 
+  def shutdown(): Unit =
+    addChangeRequest(Shutdown)
+
   // private
 
   private val selector: Selector = Selector open ()
@@ -160,6 +166,7 @@ private[akka] class IOWorker(ioManager: ActorRef) extends Runnable {
 
   def run(): Unit = {
     while (selector.isOpen) {
+      selector select ()
       val keys = selector.selectedKeys.iterator
       while (keys.hasNext) {
         val key = keys next ()
@@ -183,11 +190,11 @@ private[akka] class IOWorker(ioManager: ActorRef) extends Runnable {
             writeQueues += (token -> queue.enqueue(data))
           }
         case Close(token) ⇒
-          channels(token).close
-          channels -= token
-          token.owner ! IO.Closed(token)
+          cleanup(token)
+        case Shutdown ⇒
+          channels.values foreach (_.close)
+          selector.close
       }
-      selector select ()
     }
   }
 
@@ -207,8 +214,19 @@ private[akka] class IOWorker(ioManager: ActorRef) extends Runnable {
         case channel: WriteChannel ⇒ write(token, channel)
       }
     } catch {
-      // TODO: Perform cleanup due to closed connection
-      case e: CancelledKeyException ⇒
+      case e: CancelledKeyException ⇒ cleanup(token)
+    }
+  }
+
+  private def cleanup(token: IO.Token): Unit = {
+    acceptedChannels -= token
+    writeQueues -= token
+    channels.get(token) match {
+      case Some(channel) ⇒
+        channel.close
+        channels -= token
+        token.owner ! IO.Closed(token)
+      case None ⇒
     }
   }
 
@@ -249,9 +267,7 @@ private[akka] class IOWorker(ioManager: ActorRef) extends Runnable {
     buffer.clear
     val readLen = channel read buffer
     if (readLen == -1) {
-      channel.close
-      channels -= token
-      token.owner ! IO.Closed(token)
+      cleanup(token)
     } else if (readLen > 0) {
       buffer.flip
       token.owner ! IO.Read(token, ByteString(buffer))

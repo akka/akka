@@ -70,7 +70,7 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
 
   "an IO Actor" must {
     "run" in {
-      val ioManager = Actor.actorOf(new IOManager).start
+      val ioManager = Actor.actorOf(new IOManager()).start
       val server = Actor.actorOf(new SimpleEchoServer("localhost", 8064, ioManager)).start
       val client = Actor.actorOf(new SimpleEchoClient("localhost", 8064, ioManager)).start
       val promise = client !!! ByteString("Hello World!")
