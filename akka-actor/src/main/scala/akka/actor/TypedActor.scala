@@ -146,6 +146,7 @@ object TypedActor {
     createProxy[R](extractInterfaces(interface), (ref: AtomVar[R]) ⇒ new TypedActor[R, T](ref, constructor), config, loader)
 
   private[akka] def configureAndProxyLocalActorRef[T <: AnyRef](interfaces: Array[Class[_]], proxyRef: AtomVar[T], actor: ⇒ Actor, config: Configuration, loader: ClassLoader): T = {
+
     val ref = actorOf(actor)
 
     ref.timeout = config.timeout.toMillis
