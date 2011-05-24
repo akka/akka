@@ -65,6 +65,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val vscaladocModuleConfig   = ModuleConfiguration("org.scala-tools", "vscaladoc", "1.1-md-3", AkkaRepo)
   lazy val aspectWerkzModuleConfig = ModuleConfiguration("org.codehaus.aspectwerkz", "aspectwerkz", "2.2.3", AkkaRepo)
   lazy val objenesisModuleConfig   = ModuleConfiguration("org.objenesis", sbt.DefaultMavenRepository)
+  lazy val jsr311ModuleConfig      = ModuleConfiguration("javax.ws.rs", JavaNetRepo)
   lazy val localMavenRepo          = LocalMavenRepo // Second exception, also fast! ;-)
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -119,8 +120,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile" //New BSD
 
-    lazy val sjson      = "net.debasishg" %% "sjson" % "0.11" % "compile" //ApacheV2
-    lazy val sjson_test = "net.debasishg" %% "sjson" % "0.11" % "test" //ApacheV2
+    lazy val sjson      = "net.debasishg" % "sjson_2.9.0" % "0.11" % "compile" //ApacheV2
+    lazy val sjson_test = "net.debasishg" % "sjson_2.9.0" % "0.11" % "test" //ApacheV2
 
     lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % SLF4J_VERSION
     lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.28" % "runtime"
@@ -134,7 +135,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test" //Common Public License 1.0
     lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test" //MIT
-    lazy val scalatest      = "org.scalatest"          %% "scalatest"          % SCALATEST_VERSION % "test" //ApacheV2
+    lazy val scalatest      = "org.scalatest"          % "scalatest_2.9.0"          % SCALATEST_VERSION % "test" //ApacheV2
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -346,6 +347,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
+    override val spde = "us.technically.spde" % "spde-core_2.9.0" % spdeVersion.value
     override def disableCrossPaths = true
     override def spdeSourcePath = mainSourcePath / "spde"
 
