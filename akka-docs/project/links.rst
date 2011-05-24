@@ -1,9 +1,9 @@
 .. _support:
 
-`Support <http://scalablesolutions.se>`__
+`Support <http://typesafe.com>`__
 =========================================
 
-`Scalable Solutions <http://scalablesolutions.se>`_
+`Typesafe <http://typesafe.com>`_
 
 `Mailing List <http://groups.google.com/group/akka-user>`_
 ==========================================================

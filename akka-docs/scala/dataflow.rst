@@ -29,7 +29,7 @@ Scala's Delimited Continuations plugin is required to use the Dataflow API. To e
   import sbt._
 
   class MyAkkaProject(info: ProjectInfo) extends DefaultProject(info) with AkkaProject with AutoCompilerPlugins {
-    val continuationsPlugin = compilerPlugin("org.scala-lang.plugins" % "continuations" % "2.9.0")
+    val continuationsPlugin = compilerPlugin("org.scala-lang.plugins" % "continuations" % "2.9.0-1")
     override def compileOptions = super.compileOptions ++ compileOptions("-P:continuations:enable")
   }
 
