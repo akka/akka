@@ -26,7 +26,7 @@ Links
 
 * :ref:`other-doc`
 
-* `Akka Modules Documentation <http://akka.io/docs/akka-modules/1.1/>`_
+* `Akka Modules Documentation <http://akka.io/docs/akka-modules/1.1.1/>`_
 
 * :ref:`issue_tracking`
 
