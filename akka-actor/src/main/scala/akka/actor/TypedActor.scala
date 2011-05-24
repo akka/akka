@@ -132,6 +132,9 @@ object TypedActor {
   def createProxy[R <: AnyRef](constructor: ⇒ Actor, config: Configuration = Configuration(), loader: ClassLoader = null)(implicit m: Manifest[R]): R =
     createProxy[R](extractInterfaces(m.erasure), (ref: AtomVar[R]) ⇒ constructor, config, if (loader eq null) m.erasure.getClassLoader else loader)
 
+  def createProxy[R <: AnyRef](interfaces: Array[Class[_]], constructor: Creator[Actor], config: Configuration, loader: ClassLoader): R =
+    createProxy(interfaces, (ref: AtomVar[R]) ⇒ constructor.create, config, loader)
+
   def createProxy[R <: AnyRef](interfaces: Array[Class[_]], constructor: ⇒ Actor, config: Configuration, loader: ClassLoader): R =
     createProxy[R](interfaces, (ref: AtomVar[R]) ⇒ constructor, config, loader)
 
