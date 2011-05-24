@@ -7,11 +7,25 @@ import akka.testing._
 import akka.testing.Testing.{ sleepFor, testMillis }
 import akka.util.duration._
 
-import akka.actor.Actor
 import akka.actor.Actor._
 import akka.routing._
 
 import java.util.concurrent.atomic.AtomicInteger
+import akka.dispatch.{ KeptPromise, Future }
+import akka.actor.{ TypedActor, Actor }
+
+object RoutingSpec {
+  trait Foo {
+    def sq(x: Int, sleep: Long): Future[Int]
+  }
+
+  class FooImpl extends Foo {
+    def sq(x: Int, sleep: Long): Future[Int] = {
+      if (sleep > 0) Thread.sleep(sleep)
+      new KeptPromise(Right(x * x))
+    }
+  }
+}
 
 class RoutingSpec extends WordSpec with MustMatchers {
   import Routing._
@@ -36,7 +50,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       }).start()
 
-      val d = dispatcherActor {
+      val d = routerActor {
         case Test1 | Test2 ⇒ t1
         case Test3         ⇒ t2
       }.start()
@@ -490,6 +504,29 @@ class RoutingSpec extends WordSpec with MustMatchers {
       (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be <= (z)
 
       pool.stop()
+    }
+
+    "support typed actors" in {
+      import RoutingSpec._
+      import TypedActor._
+      def createPool = new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
+        def lowerBound = 1
+        def upperBound = 5
+        def pressureThreshold = 1
+        def partialFill = true
+        def selectionCount = 1
+        def rampupRate = 0.1
+        def backoffRate = 0.50
+        def backoffThreshold = 0.50
+        def instance = getActorRefFor(typedActorOf[Foo, FooImpl]())
+        def receive = _route
+      }
+
+      val pool = createProxy[Foo](createPool)
+
+      val results = for (i ← 1 to 100) yield (i, pool.sq(i, 100))
+
+      for ((i, r) ← results) r.get must equal(i * i)
     }
   }
 }

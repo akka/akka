@@ -7,7 +7,7 @@ package akka.remoteinterface
 import akka.japi.Creator
 import akka.actor._
 import akka.util._
-import akka.dispatch.CompletableFuture
+import akka.dispatch.Promise
 import akka.serialization._
 import akka.AkkaException
 
@@ -300,10 +300,10 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule ⇒
 
   protected[akka] def send[T](message: Any,
                               senderOption: Option[ActorRef],
-                              senderFuture: Option[CompletableFuture[T]],
+                              senderFuture: Option[Promise[T]],
                               remoteAddress: InetSocketAddress,
                               timeout: Long,
                               isOneWay: Boolean,
                               actorRef: ActorRef,
-                              loader: Option[ClassLoader]): Option[CompletableFuture[T]]
+                              loader: Option[ClassLoader]): Option[Promise[T]]
 }

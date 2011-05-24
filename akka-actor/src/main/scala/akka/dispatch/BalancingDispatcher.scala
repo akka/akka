@@ -19,18 +19,18 @@ import util.DynamicVariable
  * The preferred way of creating dispatchers is to use
  * the {@link akka.dispatch.Dispatchers} factory object.
  *
- * @see akka.dispatch.ExecutorBasedEventDrivenWorkStealingDispatcher
+ * @see akka.dispatch.BalancingDispatcher
  * @see akka.dispatch.Dispatchers
  *
  * @author Viktor Klang
  */
-class ExecutorBasedEventDrivenWorkStealingDispatcher(
+class BalancingDispatcher(
   _name: String,
   throughput: Int = Dispatchers.THROUGHPUT,
   throughputDeadlineTime: Int = Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS,
   mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
   config: ThreadPoolConfig = ThreadPoolConfig())
-  extends ExecutorBasedEventDrivenDispatcher(_name, throughput, throughputDeadlineTime, mailboxType, config) {
+  extends Dispatcher(_name, throughput, throughputDeadlineTime, mailboxType, config) {
 
   def this(_name: String, throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
     this(_name, throughput, throughputDeadlineTime, mailboxType, ThreadPoolConfig()) // Needed for Java API usage

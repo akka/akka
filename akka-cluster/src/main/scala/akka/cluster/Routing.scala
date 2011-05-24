@@ -14,6 +14,8 @@ import akka.AkkaException
 import java.net.InetSocketAddress
 
 import com.eaio.uuid.UUID
+import annotation.tailrec
+import java.util.concurrent.atomic.AtomicReference
 
 class RoutingException(message: String) extends AkkaException(message)
 
@@ -53,76 +55,67 @@ object Router {
   trait Router {
     def connections: Map[InetSocketAddress, ActorRef]
 
-    def route(message: Any)(implicit sender: Option[ActorRef])
+    def route(message: Any)(implicit sender: Option[ActorRef]): Unit
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T]
   }
 
-  /**
-   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
-   */
-  trait Direct extends Router {
-    lazy val connection: Option[ActorRef] = {
-      if (connections.size == 0) throw new IllegalStateException("DirectRouter need a single replica connection found [0]")
-      connections.toList.map({ case (address, actor) ⇒ actor }).headOption
+  trait BasicRouter extends Router {
+    def route(message: Any)(implicit sender: Option[ActorRef]): Unit = next match {
+      case Some(actor) ⇒ actor.!(message)(sender)
+      case _           ⇒ throw new RoutingException("No node connections for router")
     }
 
-    def route(message: Any)(implicit sender: Option[ActorRef]) {
-      if (connection.isDefined) connection.get.!(message)(sender)
-      else throw new RoutingException("No node connections for router")
+    def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] = next match {
+      case Some(actor) ⇒ actor.!!!(message, timeout)(sender)
+      case _           ⇒ throw new RoutingException("No node connections for router")
     }
 
-    def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] =
-      if (connection.isDefined) connection.get.!!!(message, timeout)(sender)
-      else throw new RoutingException("No node connections for router")
+    protected def next: Option[ActorRef]
   }
 
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  trait Random extends Router {
+  trait Direct extends BasicRouter {
+    lazy val next: Option[ActorRef] = connections.values.headOption
+  }
+
+  /**
+   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+   */
+  trait Random extends BasicRouter {
     private val random = new java.util.Random(System.currentTimeMillis)
 
-    def route(message: Any)(implicit sender: Option[ActorRef]) {
-      if (next.isDefined) next.get.!(message)(sender)
-      else throw new RoutingException("No node connections for router")
-    }
-
-    def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] =
-      if (next.isDefined) next.get.!!!(message, timeout)(sender)
-      else throw new RoutingException("No node connections for router")
-
-    private def next: Option[ActorRef] = {
-      val nrOfConnections = connections.size
-      if (nrOfConnections == 0) None
-      else Some(connections.toArray.apply(random.nextInt(nrOfConnections))._2)
-    }
+    def next: Option[ActorRef] =
+      if (connections.isEmpty) None
+      else Some(connections.valuesIterator.drop(random.nextInt(connections.size)).next)
   }
 
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  trait RoundRobin extends Router {
-    private def items: List[ActorRef] = connections.toList.map({ case (address, actor) ⇒ actor })
+  trait RoundRobin extends BasicRouter {
+    private def items: List[ActorRef] = connections.values.toList
 
-    @volatile
-    private var current = items
+    private val current = new AtomicReference[List[ActorRef]](items)
 
-    def route(message: Any)(implicit sender: Option[ActorRef]) {
-      if (next.isDefined) next.get.!(message)(sender)
-      else throw new RoutingException("No node connections for router")
-    }
+    private def hasNext = connections.nonEmpty
 
-    def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] =
-      if (next.isDefined) next.get.!!!(message, timeout)(sender)
-      else throw new RoutingException("No node connections for router")
+    def next: Option[ActorRef] = {
+      @tailrec
+      def findNext: Option[ActorRef] = {
+        val currentItems = current.get
+        val newItems = currentItems match {
+          case Nil ⇒ items
+          case xs  ⇒ xs
+        }
 
-    private def hasNext = items != Nil
+        if (current.compareAndSet(currentItems, newItems.tail)) newItems.headOption
+        else findNext
+      }
 
-    private def next: Option[ActorRef] = {
-      val rest = if (current == Nil) items else current
-      current = rest.tail
-      rest.headOption
+      findNext
     }
   }
 }

@@ -5,6 +5,7 @@
 package akka.event
 
 import akka.actor._
+import akka.dispatch.Dispatchers
 import akka.config.Config._
 import akka.config.ConfigurationException
 import akka.util.{ ListenerManagement, ReflectiveAccess }
@@ -20,11 +21,11 @@ import akka.AkkaException
  *   self.dispatcher = EventHandler.EventHandlerDispatcher
  *
  *   def receive = {
- *     case EventHandler.Error(cause, instance, message) => ...
- *     case EventHandler.Warning(instance, message)      => ...
- *     case EventHandler.Info(instance, message)         => ...
- *     case EventHandler.Debug(instance, message)        => ...
- *     case genericEvent                                 => ...
+ *     case EventHandler.Error(cause, instance, message) ⇒ ...
+ *     case EventHandler.Warning(instance, message)      ⇒ ...
+ *     case EventHandler.Info(instance, message)         ⇒ ...
+ *     case EventHandler.Debug(instance, message)        ⇒ ...
+ *     case genericEvent                                 ⇒ ...
  *   }
  * })
  *
@@ -53,11 +54,6 @@ import akka.AkkaException
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object EventHandler extends ListenerManagement {
-  import java.io.{ StringWriter, PrintWriter }
-  import java.text.DateFormat
-  import java.util.Date
-  import akka.dispatch.Dispatchers
-
   val ErrorLevel = 1
   val WarningLevel = 2
   val InfoLevel = 3
@@ -68,15 +64,19 @@ object EventHandler extends ListenerManagement {
     val thread: Thread = Thread.currentThread
     val level: Int
   }
+
   case class Error(cause: Throwable, instance: AnyRef, message: Any = "") extends Event {
     override val level = ErrorLevel
   }
+
   case class Warning(instance: AnyRef, message: Any = "") extends Event {
     override val level = WarningLevel
   }
+
   case class Info(instance: AnyRef, message: Any = "") extends Event {
     override val level = InfoLevel
   }
+
   case class Debug(instance: AnyRef, message: Any = "") extends Event {
     override val level = DebugLevel
   }
@@ -89,7 +89,7 @@ object EventHandler extends ListenerManagement {
 
   class EventHandlerException extends AkkaException
 
-  lazy val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("event:handler").build
+  lazy val EventHandlerDispatcher = Dispatchers.newDispatcher("event:handler").build
 
   implicit object defaultListenerFormat extends StatelessActorFormat[DefaultListener]
 
@@ -192,9 +192,8 @@ object EventHandler extends ListenerManagement {
 
   def isDebugEnabled = level >= DebugLevel
 
-  def formattedTimestamp = DateFormat.getInstance.format(new Date)
-
   def stackTraceFor(e: Throwable) = {
+    import java.io.{ StringWriter, PrintWriter }
     val sw = new StringWriter
     val pw = new PrintWriter(sw)
     e.printStackTrace(pw)
@@ -210,36 +209,47 @@ object EventHandler extends ListenerManagement {
   }
 
   class DefaultListener extends Actor {
+    import java.text.SimpleDateFormat
+    import java.util.Date
+
     self.dispatcher = EventHandlerDispatcher
+
+    val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.S")
+
+    def timestamp = dateFormat.format(new Date)
 
     def receive = {
       case event@Error(cause, instance, message) ⇒
         println(error.format(
-          formattedTimestamp,
+          timestamp,
           event.thread.getName,
           instance.getClass.getSimpleName,
           message,
           stackTraceFor(cause)))
+
       case event@Warning(instance, message) ⇒
         println(warning.format(
-          formattedTimestamp,
+          timestamp,
           event.thread.getName,
           instance.getClass.getSimpleName,
           message))
+
       case event@Info(instance, message) ⇒
         println(info.format(
-          formattedTimestamp,
+          timestamp,
           event.thread.getName,
           instance.getClass.getSimpleName,
           message))
+
       case event@Debug(instance, message) ⇒
         println(debug.format(
-          formattedTimestamp,
+          timestamp,
           event.thread.getName,
           instance.getClass.getSimpleName,
           message))
+
       case event ⇒
-        println(generic.format(formattedTimestamp, event.toString))
+        println(generic.format(timestamp, event.toString))
     }
   }
 

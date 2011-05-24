@@ -68,7 +68,7 @@ abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfte
 
   //CANDIDATE FOR TESTKIT
   def spawn[T <: AnyRef](fun: ⇒ T)(implicit within: Duration): Future[T] = {
-    val result = new DefaultCompletableFuture[T](within.length, within.unit)
+    val result = new DefaultPromise[T](within.length, within.unit)
     val t = new Thread(new Runnable {
       def run = try {
         result.completeWithResult(fun)

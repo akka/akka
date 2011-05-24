@@ -324,7 +324,20 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val clusterTest = multiJvmTest
     lazy val clusterRun  = multiJvmRun
 
+    // test task runs normal tests and then all multi-jvm tests
+    lazy val normalTest = super.testAction
+    override def multiJvmTestAllAction = super.multiJvmTestAllAction dependsOn (normalTest)
+    override def testAction = task { None } dependsOn (normalTest, multiJvmTestAll)
+
     override def multiJvmOptions = Seq("-Xmx256M")
+
+    override def multiJvmExtraOptions(className: String) = {
+      val confFiles = (testSourcePath ** (className + ".conf")).get
+      if (!confFiles.isEmpty) {
+        val filePath = confFiles.toList.head.absolutePath
+        Seq("-Dakka.config=" + filePath)
+      } else Seq.empty
+    }
 
     lazy val replicationTestsEnabled = systemOptional[Boolean]("cluster.test.replication", false)
 
@@ -433,10 +446,10 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
       new AkkaSampleAntsProject(_), akka_stm)
     lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
       new AkkaSampleFSMProject(_), akka_actor)
-    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
-      new AkkaSampleRemoteProject(_), akka_remote)
-    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
-      new AkkaSampleChatProject(_), akka_remote)
+//    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
+//      new AkkaSampleRemoteProject(_), akka_remote)
+//    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
+//      new AkkaSampleChatProject(_), akka_remote)
     lazy val akka_sample_osgi = project("akka-sample-osgi", "akka-sample-osgi",
       new AkkaSampleOsgiProject(_), akka_actor)
 

@@ -344,12 +344,12 @@ abstract class ActorModelSpec extends JUnitSuite {
   }
 }
 
-class ExecutorBasedEventDrivenDispatcherModelTest extends ActorModelSpec {
+class DispatcherModelTest extends ActorModelSpec {
   def newInterceptedDispatcher =
-    new ExecutorBasedEventDrivenDispatcher("foo") with MessageDispatcherInterceptor
+    new Dispatcher("foo") with MessageDispatcherInterceptor
 }
 
-class ExecutorBasedEventDrivenWorkStealingDispatcherModelTest extends ActorModelSpec {
+class BalancingDispatcherModelTest extends ActorModelSpec {
   def newInterceptedDispatcher =
-    new ExecutorBasedEventDrivenWorkStealingDispatcher("foo") with MessageDispatcherInterceptor
+    new BalancingDispatcher("foo") with MessageDispatcherInterceptor
 }

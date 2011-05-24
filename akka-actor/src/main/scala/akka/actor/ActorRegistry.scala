@@ -34,7 +34,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
 
   //private val isClusterEnabled = ReflectiveAccess.isClusterEnabled
   private val actorsByAddress = new ConcurrentHashMap[String, ActorRef]
-  private val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
+  private val actorsByUuid = new ConcurrentHashMap[Uuid, ActorRef]
   private val typedActorsByUuid = new ConcurrentHashMap[Uuid, AnyRef]
   private val guard = new ReadWriteGuard
 
@@ -66,7 +66,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
     //  throw new IllegalStateException("Actor 'address' [" + address + "] is already in use, can't register actor [" + actor + "]")
 
     actorsByAddress.put(address, actor)
-    actorsByUuid.put(actor.uuid.toString, actor)
+    actorsByUuid.put(actor.uuid, actor)
     notifyListeners(ActorRegistered(address, actor))
   }
 
@@ -98,8 +98,8 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
    *  Registers an actor in the Cluster ActorRegistry.
    */
   private[akka] def registerInCluster[T <: Actor](
-    address: String, actor: ActorRef, replicas: Int, serializeMailbox: Boolean = false)(implicit format: Format[T]) {
-    ClusterModule.node.store(address, actor, replicas, serializeMailbox)
+    address: String, actorRef: ActorRef, replicas: Int, serializeMailbox: Boolean = false)(implicit format: Serializer) {
+    ClusterModule.node.store(actorRef, replicas, serializeMailbox, format)
   }
 
   /**
@@ -121,7 +121,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
  */
 class LocalActorRegistry(
   private val actorsByAddress: ConcurrentHashMap[String, ActorRef],
-  private val actorsByUuid: ConcurrentHashMap[String, ActorRef],
+  private val actorsByUuid: ConcurrentHashMap[Uuid, ActorRef],
   private val typedActorsByUuid: ConcurrentHashMap[Uuid, AnyRef]) {
 
   /**
@@ -134,7 +134,7 @@ class LocalActorRegistry(
    */
   def shutdownAll() {
     foreach(_.stop)
-    if (RemoteModule.isEnabled) Actor.remote.clear //TODO: REVISIT: Should this be here?
+    if (ClusterModule.isEnabled) Actor.remote.clear //FIXME: Should this be here?
     actorsByAddress.clear
     actorsByUuid.clear
     typedActorsByUuid.clear
@@ -153,11 +153,8 @@ class LocalActorRegistry(
   /**
    * Finds the actor that have a specific uuid.
    */
-  private[akka] def actorFor(uuid: Uuid): Option[ActorRef] = {
-    val uuidAsString = uuid.toString
-    if (actorsByUuid.containsKey(uuidAsString)) Some(actorsByUuid.get(uuidAsString))
-    else None
-  }
+  private[akka] def actorFor(uuid: Uuid): Option[ActorRef] =
+    Option(actorsByUuid.get(uuid))
 
   /**
    * Finds the typed actor that have a specific address.

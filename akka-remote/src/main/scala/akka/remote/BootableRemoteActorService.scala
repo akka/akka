@@ -8,9 +8,9 @@ import akka.actor.{ Actor, BootableActorLoaderService }
 import akka.util.{ ReflectiveAccess, Bootable }
 
 /**
- * This bundle/service is responsible for booting up and shutting down the remote actors facility
+ * This bundle/service is responsible for booting up and shutting down the remote actors facility.
  * <p/>
- * It is used in Kernel
+ * It is used in Kernel.
  */
 trait BootableRemoteActorService extends Bootable {
   self: BootableActorLoaderService ⇒
@@ -22,7 +22,7 @@ trait BootableRemoteActorService extends Bootable {
   def startRemoteService() { remoteServerThread.start() }
 
   abstract override def onLoad() {
-    if (ReflectiveAccess.isRemotingEnabled && RemoteServerSettings.isRemotingEnabled) {
+    if (ReflectiveAccess.ClusterModule.isEnabled && RemoteServerSettings.isRemotingEnabled) {
       startRemoteService()
     }
     super.onLoad()

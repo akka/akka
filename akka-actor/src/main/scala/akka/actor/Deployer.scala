@@ -11,13 +11,14 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.event.EventHandler
 import akka.actor.DeploymentConfig._
 import akka.config.{ ConfigurationException, Config }
-import akka.util.ReflectiveAccess
+import akka.util.ReflectiveAccess._
+import akka.serialization.Format
 import akka.AkkaException
 
 /**
- * Programmatic deployment configuration classes. Most values have defaults and can be left out.
- *
- * todo: what does the concept Deploy
+ * Module holding the programmatic deployment configuration classes.
+ * Defines the deployment specification.
+ * Most values have defaults and can be left out.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -26,7 +27,11 @@ object DeploymentConfig {
   // --------------------------------
   // --- Deploy
   // --------------------------------
-  case class Deploy(address: String, routing: Routing = Direct, format: String = "N/A", scope: Scope = Local)
+  case class Deploy(
+    address: String,
+    routing: Routing = Direct,
+    format: String = Format.defaultSerializerName,
+    scope: Scope = Local)
 
   // --------------------------------
   // --- Routing
@@ -112,9 +117,9 @@ object Deployer {
 
   val defaultAddress = Host(Config.hostname)
 
-  lazy val instance: ReflectiveAccess.ClusterModule.ClusterDeployer = {
+  lazy val instance: ClusterModule.ClusterDeployer = {
     val deployer =
-      if (ReflectiveAccess.ClusterModule.isEnabled) ReflectiveAccess.ClusterModule.clusterDeployer
+      if (ClusterModule.isEnabled) ClusterModule.clusterDeployer
       else LocalDeployer
     deployer.init(deploymentsInConfig)
     deployer
@@ -219,7 +224,7 @@ object Deployer {
     // --------------------------------
     val addressPath = "akka.actor.deployment." + address
     Config.config.getSection(addressPath) match {
-      case None ⇒ Some(Deploy(address, Direct, "N/A", Local))
+      case None ⇒ Some(Deploy(address, Direct, Format.defaultSerializerName, Local))
       case Some(addressConfig) ⇒
 
         // --------------------------------
@@ -246,20 +251,21 @@ object Deployer {
         // --------------------------------
         // akka.actor.deployment.<address>.format
         // --------------------------------
-        val format = addressConfig.getString("format", "N/A")
+        val format = addressConfig.getString("format", Format.defaultSerializerName)
 
         // --------------------------------
         // akka.actor.deployment.<address>.clustered
         // --------------------------------
         addressConfig.getSection("clustered") match {
           case None ⇒
-            Some(Deploy(address, router, "N/A", Local)) // deploy locally
+            Some(Deploy(address, router, Format.defaultSerializerName, Local)) // deploy locally
 
           case Some(clusteredConfig) ⇒
 
             // --------------------------------
             // akka.actor.deployment.<address>.clustered.home
             // --------------------------------
+
             val home = clusteredConfig.getString("home", "") match {
               case "" ⇒ Host("localhost")
               case home ⇒
@@ -353,19 +359,11 @@ object LocalDeployer {
     }
   }
 
-  private[akka] def undeploy(deployment: Deploy) {
-    deployments.remove(deployment.address)
-  }
+  private[akka] def undeploy(deployment: Deploy): Unit = deployments.remove(deployment.address)
 
-  private[akka] def undeployAll() {
-    deployments.clear()
-  }
+  private[akka] def undeployAll(): Unit = deployments.clear()
 
-  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = {
-    val deployment = deployments.get(address)
-    if (deployment eq null) None
-    else Some(deployment)
-  }
+  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = Option(deployments.get(address))
 }
 
 /**

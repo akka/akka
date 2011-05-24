@@ -59,13 +59,13 @@ actor is oblivious to which type of mailbox it is using. Here is an example::
 
 or for a thread-based durable dispatcher::
 
-    self.dispatcher = DurableThreadBasedDispatcher(
+    self.dispatcher = DurablePinnedDispatcher(
       self,
       FileDurableMailboxStorage)
 
 There are 2 different durable dispatchers, ``DurableEventBasedDispatcher`` and
-``DurableThreadBasedDispatcher``, which are durable versions of
-``ExecutorBasedEventDrivenDispatcher`` and ``ThreadBasedDispatcher``.
+``DurablePinnedDispatcher``, which are durable versions of
+``Dispatcher`` and ``PinnedDispatcher``.
 
 This gives you an excellent way of creating bulkheads in your application, where
 groups of actors sharing the same dispatcher also share the same backing
@@ -120,7 +120,7 @@ Here is an example of how you can configure your dispatcher to use this mailbox:
 
 or for a thread-based durable dispatcher::
 
-    self.dispatcher = DurableThreadBasedDispatcher(
+    self.dispatcher = DurablePinnedDispatcher(
       self,
       RedisDurableMailboxStorage)
 
@@ -164,7 +164,7 @@ Here is an example of how you can configure your dispatcher to use this mailbox:
 
 or for a thread-based durable dispatcher::
 
-    self.dispatcher = DurableThreadBasedDispatcher(
+    self.dispatcher = DurablePinnedDispatcher(
       self,
       ZooKeeperDurableMailboxStorage)
 
@@ -202,7 +202,7 @@ Beanstalk documentation on how to do that. ::
 
 or for a thread-based durable dispatcher. ::
 
-    self.dispatcher = DurableThreadBasedDispatcher(
+    self.dispatcher = DurablePinnedDispatcher(
       self,
       BeanstalkDurableMailboxStorage)
 

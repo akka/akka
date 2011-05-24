@@ -7,9 +7,10 @@ import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import org.I0Itec.zkclient._
 
 import akka.actor._
+import Actor._
 
 object ClusterDeployerSpec {
-  class Pi extends Actor {
+  class HelloWorld extends Actor with Serializable {
     def receive = {
       case "Hello" ⇒ self.reply("World")
     }
@@ -24,8 +25,10 @@ class ClusterDeployerSpec extends WordSpec with MustMatchers with BeforeAndAfter
 
   var zkServer: ZkServer = _
 
+  // FIXME create multi-jvm test for ClusterDeployer to make sure that only one node can make the deployment and that all other nicely waits until he is done
+
   "A ClusterDeployer" should {
-    "be able to deploy deployments in configuration file" in {
+    "be able to deploy deployments in akka.conf into ZooKeeper and then lookup the deployments by 'address'" in {
       val deployments = Deployer.deploymentsInConfig
       deployments must not equal (Nil)
       ClusterDeployer.init(deployments)
@@ -36,29 +39,20 @@ class ClusterDeployerSpec extends WordSpec with MustMatchers with BeforeAndAfter
         oldDeployment must equal(newDeployment.get)
       }
     }
-
-    /*
-    "be able to create an actor deployed using ClusterDeployer" in {
-      val pi = Actor.actorOf[Pi]("service-pi")
-      pi must not equal(null)
-    }
-*/
   }
 
   override def beforeAll() {
     try {
       zkServer = Cluster.startLocalCluster(dataPath, logPath)
       Thread.sleep(5000)
+      Actor.cluster.start()
     } catch {
       case e ⇒ e.printStackTrace()
     }
   }
 
-  override def beforeEach() {
-    Cluster.reset()
-  }
-
   override def afterAll() {
+    Actor.cluster.shutdown()
     ClusterDeployer.shutdown()
     Cluster.shutdownLocalCluster()
     Actor.registry.local.shutdownAll()

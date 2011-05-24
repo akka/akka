@@ -3,14 +3,14 @@ package akka.actor.dispatch
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import akka.dispatch.{ Dispatchers, ExecutorBasedEventDrivenDispatcher }
+import akka.dispatch.{ Dispatchers, Dispatcher }
 import akka.actor.Actor
 import Actor._
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 
-object ExecutorBasedEventDrivenDispatcherActorSpec {
+object DispatcherActorSpec {
   class TestActor extends Actor {
-    self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(self.uuid.toString).build
+    self.dispatcher = Dispatchers.newDispatcher(self.uuid.toString).build
     def receive = {
       case "Hello" ⇒
         self.reply("World")
@@ -23,14 +23,14 @@ object ExecutorBasedEventDrivenDispatcherActorSpec {
     val oneWay = new CountDownLatch(1)
   }
   class OneWayTestActor extends Actor {
-    self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(self.uuid.toString).build
+    self.dispatcher = Dispatchers.newDispatcher(self.uuid.toString).build
     def receive = {
       case "OneWay" ⇒ OneWayTestActor.oneWay.countDown()
     }
   }
 }
-class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
-  import ExecutorBasedEventDrivenDispatcherActorSpec._
+class DispatcherActorSpec extends JUnitSuite {
+  import DispatcherActorSpec._
 
   private val unit = TimeUnit.MILLISECONDS
 
@@ -74,7 +74,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
   @Test
   def shouldRespectThroughput {
     val throughputDispatcher = Dispatchers.
-      newExecutorBasedEventDrivenDispatcher("THROUGHPUT", 101, 0, Dispatchers.MAILBOX_TYPE).
+      newDispatcher("THROUGHPUT", 101, 0, Dispatchers.MAILBOX_TYPE).
       setCorePoolSize(1).
       build
 
@@ -110,7 +110,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
   def shouldRespectThroughputDeadline {
     val deadlineMs = 100
     val throughputDispatcher = Dispatchers.
-      newExecutorBasedEventDrivenDispatcher("THROUGHPUT", 2, deadlineMs, Dispatchers.MAILBOX_TYPE).
+      newDispatcher("THROUGHPUT", 2, deadlineMs, Dispatchers.MAILBOX_TYPE).
       setCorePoolSize(1).
       build
     val works = new AtomicBoolean(true)

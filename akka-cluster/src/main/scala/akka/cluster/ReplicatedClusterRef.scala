@@ -14,7 +14,6 @@ import akka.dispatch._
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 import java.util.{ Map ⇒ JMap }
-import akka.cluster.TransactionLog
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -87,7 +86,7 @@ class ReplicatedActorRef private[akka] (actorRef: ActorRef, val address: String)
     message: Any,
     timeout: Long,
     senderOption: Option[ActorRef],
-    senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, senderOption, senderFuture)
+    senderFuture: Option[Promise[T]]): Promise[T] = actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, senderOption, senderFuture)
   protected[akka] def actorInstance: AtomicReference[Actor] = actorRef.actorInstance
   protected[akka] def supervisor_=(sup: Option[ActorRef]) {
     actorRef.supervisor_=(sup)

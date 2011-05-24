@@ -4,7 +4,7 @@
 
 package akka.cluster
 
-import akka.actor.{ DeploymentConfig, Deployer, DeploymentException }
+import akka.actor.{ DeploymentConfig, Deployer, LocalDeployer, DeploymentException }
 import DeploymentConfig._
 import akka.event.EventHandler
 import akka.config.Config
@@ -22,6 +22,7 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
 import com.eaio.uuid.UUID
 
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * A ClusterDeployer is responsible for deploying a Deploy.
@@ -42,15 +43,11 @@ object ClusterDeployer {
   private val isConnected = new Switch(false)
   private val deploymentCompleted = new CountDownLatch(1)
 
-  private lazy val zkClient = {
-    val zk = new AkkaZkClient(
-      Cluster.zooKeeperServers,
-      Cluster.sessionTimeout,
-      Cluster.connectionTimeout,
-      Cluster.defaultSerializer)
-    EventHandler.info(this, "ClusterDeployer started")
-    zk
-  }
+  private val zkClient = new AkkaZkClient(
+    Cluster.zooKeeperServers,
+    Cluster.sessionTimeout,
+    Cluster.connectionTimeout,
+    Cluster.defaultSerializer)
 
   private val clusterDeploymentLockListener = new LockListener {
     def lockAcquired() {
@@ -63,7 +60,7 @@ object ClusterDeployer {
     }
   }
 
-  private lazy val deploymentLock = new WriteLock(
+  private val deploymentLock = new WriteLock(
     zkClient.connection.getZookeeper, clusterDeploymentLockPath, null, clusterDeploymentLockListener) {
     private val ownerIdField = classOf[WriteLock].getDeclaredField("ownerId")
     ownerIdField.setAccessible(true)
@@ -71,15 +68,11 @@ object ClusterDeployer {
     def leader: String = ownerIdField.get(this).asInstanceOf[String]
   }
 
-  private val systemDeployments = List(
-    Deploy(
-      address = RemoteClusterDaemon.ADDRESS,
-      routing = Direct,
-      scope = Clustered(Deployer.defaultAddress, NoReplicas, Stateless)))
+  private val systemDeployments: List[Deploy] = Nil
 
   private[akka] def init(deployments: List[Deploy]) {
-    isConnected.switchOn {
-      baseNodes.foreach { path ⇒
+    isConnected switchOn {
+      baseNodes foreach { path ⇒
         try {
           ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
           EventHandler.debug(this, "Created node [%s]".format(path))
@@ -106,50 +99,48 @@ object ClusterDeployer {
 
   def shutdown() {
     isConnected switchOff {
-      undeployAll()
+      // undeploy all
+      try {
+        for {
+          child ← collectionAsScalaIterable(zkClient.getChildren(deploymentPath))
+          deployment ← zkClient.readData(deploymentAddressPath.format(child)).asInstanceOf[Deploy]
+        } zkClient.delete(deploymentAddressPath.format(deployment.address))
+
+      } catch {
+        case e: Exception ⇒
+          handleError(new DeploymentException("Could not undeploy all deployment data in ZooKeeper due to: " + e))
+      }
+
+      // shut down ZooKeeper client
       zkClient.close()
+      EventHandler.info(this, "ClusterDeployer shut down successfully")
     }
   }
 
   private[akka] def deploy(deployment: Deploy) {
-    val path = deploymentAddressPath.format(deployment.address)
-    try {
-      ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
-      zkClient.writeData(path, deployment)
+    ensureRunning {
+      deployment match {
+        case Deploy(_, _, _, Local) ⇒ // local deployment
+          LocalDeployer.deploy(deployment)
 
-      // FIXME trigger cluster-wide deploy action
-    } catch {
-      case e: NullPointerException ⇒
-        handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper since client session is closed"))
-      case e: Exception ⇒
-        handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper due to: " + e))
+        case _ ⇒ // cluster deployment
+          val path = deploymentAddressPath.format(deployment.address)
+          try {
+            ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
+            zkClient.writeData(path, deployment)
+
+            // FIXME trigger cluster-wide deploy action
+          } catch {
+            case e: NullPointerException ⇒
+              handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper since client session is closed"))
+            case e: Exception ⇒
+              handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper due to: " + e))
+          }
+      }
     }
   }
 
-  private[akka] def undeploy(deployment: Deploy) {
-    try {
-      zkClient.delete(deploymentAddressPath.format(deployment.address))
-
-      // FIXME trigger cluster-wide undeployment action
-    } catch {
-      case e: Exception ⇒
-        handleError(new DeploymentException("Could not undeploy deployment [" + deployment + "] in ZooKeeper due to: " + e))
-    }
-  }
-
-  private[akka] def undeployAll() {
-    try {
-      for {
-        child ← collectionAsScalaIterable(zkClient.getChildren(deploymentPath))
-        deployment ← lookupDeploymentFor(child)
-      } undeploy(deployment)
-    } catch {
-      case e: Exception ⇒
-        handleError(new DeploymentException("Could not undeploy all deployment data in ZooKeeper due to: " + e))
-    }
-  }
-
-  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = {
+  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = ensureRunning {
     try {
       Some(zkClient.readData(deploymentAddressPath.format(address)).asInstanceOf[Deploy])
     } catch {
@@ -158,6 +149,11 @@ object ClusterDeployer {
         EventHandler.warning(this, e.toString)
         None
     }
+  }
+
+  private def ensureRunning[T](body: ⇒ T): T = {
+    if (isConnected.isOn) body
+    else throw new IllegalStateException("ClusterDeployer is not running")
   }
 
   private[akka] def handleError(e: Throwable): Nothing = {

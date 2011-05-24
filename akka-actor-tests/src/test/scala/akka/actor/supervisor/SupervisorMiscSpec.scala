@@ -16,7 +16,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
       val countDownLatch = new CountDownLatch(4)
 
       val actor1 = Actor.actorOf(new Actor {
-        self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
+        self.dispatcher = Dispatchers.newPinnedDispatcher(self)
         override def postRestart(cause: Throwable) { countDownLatch.countDown() }
 
         protected def receive = {
@@ -26,7 +26,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
       }).start()
 
       val actor2 = Actor.actorOf(new Actor {
-        self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
+        self.dispatcher = Dispatchers.newPinnedDispatcher(self)
         override def postRestart(cause: Throwable) { countDownLatch.countDown() }
 
         protected def receive = {
@@ -36,7 +36,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
       }).start()
 
       val actor3 = Actor.actorOf(new Actor {
-        self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("test").build
+        self.dispatcher = Dispatchers.newDispatcher("test").build
         override def postRestart(cause: Throwable) { countDownLatch.countDown() }
 
         protected def receive = {
@@ -46,7 +46,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
       }).start()
 
       val actor4 = Actor.actorOf(new Actor {
-        self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
+        self.dispatcher = Dispatchers.newPinnedDispatcher(self)
         override def postRestart(cause: Throwable) { countDownLatch.countDown() }
 
         protected def receive = {

@@ -24,21 +24,21 @@ trait PromiseStreamOut[A] {
 
   def dequeue(): Future[A]
 
-  def dequeue(promise: CompletableFuture[A]): Future[A]
+  def dequeue(promise: Promise[A]): Future[A]
 
   def apply(): A @cps[Future[Any]]
 
-  def apply(promise: CompletableFuture[A]): A @cps[Future[Any]]
+  def apply(promise: Promise[A]): A @cps[Future[Any]]
 
   final def map[B](f: (A) ⇒ B): PromiseStreamOut[B] = new PromiseStreamOut[B] {
 
     def dequeue(): Future[B] = self.dequeue().map(f)
 
-    def dequeue(promise: CompletableFuture[B]): Future[B] = self.dequeue().flatMap(a ⇒ promise.complete(Right(f(a))))
+    def dequeue(promise: Promise[B]): Future[B] = self.dequeue().flatMap(a ⇒ promise.complete(Right(f(a))))
 
     def apply(): B @cps[Future[Any]] = this.dequeue().apply()
 
-    def apply(promise: CompletableFuture[B]): B @cps[Future[Any]] = this.dequeue(promise).apply()
+    def apply(promise: Promise[B]): B @cps[Future[Any]] = this.dequeue(promise).apply()
 
   }
 
@@ -110,8 +110,8 @@ class PromiseStream[A](timeout: Long) extends PromiseStreamOut[A] with PromiseSt
 
   private val _elemOut: AtomicReference[List[A]] = new AtomicReference(Nil)
   private val _elemIn: AtomicReference[List[A]] = new AtomicReference(Nil)
-  private val _pendOut: AtomicReference[List[CompletableFuture[A]]] = new AtomicReference(null)
-  private val _pendIn: AtomicReference[List[CompletableFuture[A]]] = new AtomicReference(null)
+  private val _pendOut: AtomicReference[List[Promise[A]]] = new AtomicReference(null)
+  private val _pendIn: AtomicReference[List[Promise[A]]] = new AtomicReference(null)
   private val _state: AtomicReference[State] = new AtomicReference(Normal)
 
   @tailrec
@@ -127,7 +127,7 @@ class PromiseStream[A](timeout: Long) extends PromiseStreamOut[A] with PromiseSt
       }
     } else apply(Promise[A](timeout))
 
-  final def apply(promise: CompletableFuture[A]): A @cps[Future[Any]] =
+  final def apply(promise: Promise[A]): A @cps[Future[Any]] =
     shift { cont: (A ⇒ Future[Any]) ⇒ dequeue(promise) flatMap cont }
 
   @tailrec
@@ -185,14 +185,14 @@ class PromiseStream[A](timeout: Long) extends PromiseStreamOut[A] with PromiseSt
       if (eo eq null) dequeue()
       else {
         if (eo.nonEmpty) {
-          if (_elemOut.compareAndSet(eo, eo.tail)) new AlreadyCompletedFuture(Right(eo.head))
+          if (_elemOut.compareAndSet(eo, eo.tail)) new KeptPromise(Right(eo.head))
           else dequeue()
         } else dequeue(Promise[A](timeout))
       }
     } else dequeue(Promise[A](timeout))
 
   @tailrec
-  final def dequeue(promise: CompletableFuture[A]): Future[A] = _state.get match {
+  final def dequeue(promise: Promise[A]): Future[A] = _state.get match {
     case Pending ⇒
       val pi = _pendIn.get
       if ((pi ne null) && _pendIn.compareAndSet(pi, promise :: pi)) promise else dequeue(promise)

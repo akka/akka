@@ -6,7 +6,7 @@ package akka.actor
 
 import DeploymentConfig._
 import akka.dispatch._
-import akka.config.Config
+import akka.config._
 import Config._
 import akka.util.{ ListenerManagement, ReflectiveAccess, Duration, Helpers }
 import ReflectiveAccess._
@@ -15,6 +15,7 @@ import akka.remoteinterface.RemoteSupport
 import akka.japi.{ Creator, Procedure }
 import akka.AkkaException
 import akka.serialization.{ Format, Serializer }
+import akka.cluster.ClusterNode
 import akka.event.EventHandler
 
 import scala.reflect.BeanProperty
@@ -99,6 +100,15 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception 
  */
 object Actor extends ListenerManagement {
 
+  private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
+  private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
+
+  /**
+   * A Receive is a convenience type that defines actor message behavior currently modeled as
+   * a PartialFunction[Any, Unit].
+   */
+  type Receive = PartialFunction[Any, Unit]
+
   /**
    * Add shutdown cleanups
    */
@@ -116,28 +126,32 @@ object Actor extends ListenerManagement {
     hook
   }
 
-  val registry = new ActorRegistry
-
-  lazy val remote: RemoteSupport = {
-    ReflectiveAccess
-      .RemoteModule
-      .defaultRemoteSupport
-      .map(_())
-      .getOrElse(throw new UnsupportedOperationException("You need to have akka-remote.jar on classpath"))
-  }
-
-  private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
-  private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
-
-  /**
-   * A Receive is a convenience type that defines actor message behavior currently modeled as
-   * a PartialFunction[Any, Unit].
-   */
-  type Receive = PartialFunction[Any, Unit]
-
   private[actor] val actorRefInCreation = new ThreadLocal[Option[ActorRef]] {
     override def initialValue = None
   }
+
+  /**
+   * Handle to the ActorRegistry.
+   */
+  val registry = new ActorRegistry
+
+  /**
+   * Handle to the ClusterNode. API for the cluster client.
+   */
+  lazy val cluster: ClusterNode = {
+    val node = ClusterModule.node
+    node.start()
+    node
+  }
+
+  /**
+   * Handle to the RemoteSupport. API for the remote client/server.
+   * Only for internal use.
+   */
+  private[akka] lazy val remote: RemoteSupport = cluster.remoteService
+
+  // start up a cluster node to join the ZooKeeper cluster
+  //if (ClusterModule.isEnabled) cluster.start()
 
   /**
    * Creates an ActorRef out of the Actor with type T.
@@ -377,12 +391,12 @@ object Actor extends ListenerManagement {
       case Deploy(_, router, serializerClassName, Clustered(home, replication: Replication, state: State)) ⇒
         ClusterModule.ensureEnabled()
 
-        if (Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
+        if (!Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
 
-        val hostname = home match {
-          case Host(hostname) ⇒ hostname
-          case IP(address)    ⇒ address
-          case Node(nodeName) ⇒ Config.hostname
+        val isHomeNode = home match {
+          case Host(hostname) ⇒ hostname == Config.hostname
+          case IP(address)    ⇒ address == "0.0.0.0" // FIXME checking if IP address is on home node is missing
+          case Node(nodename) ⇒ nodename == Config.nodename
         }
 
         val replicas = replication match {
@@ -393,9 +407,7 @@ object Actor extends ListenerManagement {
           case NoReplicas()        ⇒ 0
         }
 
-        import ClusterModule.node
-
-        if (hostname == Config.hostname) { // home node for clustered actor
+        if (isHomeNode) { // home node for clustered actor
 
           def serializerErrorDueTo(reason: String) =
             throw new akka.config.ConfigurationException(
@@ -403,29 +415,33 @@ object Actor extends ListenerManagement {
                 "] for serialization of actor [" + address +
                 "] since " + reason)
 
-          //todo: serializer is not used.
           val serializer: Serializer = {
-            if (serializerClassName == "N/A") serializerErrorDueTo("no class name defined in configuration")
-            val clazz: Class[_] = ReflectiveAccess.getClassFor(serializerClassName) match {
-              case Right(clazz) ⇒ clazz
-              case Left(exception) ⇒
-                val cause = exception match {
-                  case i: InvocationTargetException ⇒ i.getTargetException
-                  case _                            ⇒ exception
-                }
-                serializerErrorDueTo(cause.toString)
+            if ((serializerClassName eq null) ||
+              (serializerClassName == "") ||
+              (serializerClassName == Format.defaultSerializerName)) {
+              Format.Default
+            } else {
+              val clazz: Class[_] = ReflectiveAccess.getClassFor(serializerClassName) match {
+                case Right(clazz) ⇒ clazz
+                case Left(exception) ⇒
+                  val cause = exception match {
+                    case i: InvocationTargetException ⇒ i.getTargetException
+                    case _                            ⇒ exception
+                  }
+                  serializerErrorDueTo(cause.toString)
+              }
+              val f = clazz.newInstance.asInstanceOf[AnyRef]
+              if (f.isInstanceOf[Serializer]) f.asInstanceOf[Serializer]
+              else serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
             }
-            val f = clazz.newInstance.asInstanceOf[AnyRef]
-            if (f.isInstanceOf[Serializer]) f.asInstanceOf[Serializer]
-            else serializerErrorDueTo("class must be of type [akka.serialization.Serializer")
           }
 
-          // FIXME use the serializer above instead of dummy Format, but then the ClusterNode AND ActorRef serialization needs to be rewritten
-          implicit val format: Format[T] = null
-          sys.error("FIXME use the serializer above instead of dummy Format, but then the ClusterNode AND ActorRef serialization needs to be rewritten")
+          if (!cluster.isClustered(address)) cluster.store(factory().start(), replicas, false, serializer) // add actor to cluster registry (if not already added)
 
-          if (!node.isClustered(address)) node.store(address, factory(), replicas, false)
-          node.use(address)
+          cluster
+            .use(address, serializer)
+            .getOrElse(throw new ConfigurationException("Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
+
         } else {
           val routerType = router match {
             case Direct          ⇒ RouterType.Direct
@@ -441,21 +457,21 @@ object Actor extends ListenerManagement {
             case LeastMessages   ⇒ RouterType.LeastMessages
             case LeastMessages() ⇒ RouterType.LeastMessages
           }
-          node.ref(address, routerType)
+          cluster.ref(address, routerType)
         }
 
-        /*
+      /*
           Misc stuff:
             - How to define a single ClusterNode to use? Where should it be booted up? How should it be configured?
             - ClusterNode API and Actor.remote API should be made private[akka]
             - Rewrite ClusterSpec or remove it
-            - Actor.stop on home node (actor checked out with node.use(..)) should do node.remove(..) of actor
+            - Actor.stop on home node (actor checked out with cluster.use(..)) should do cluster.remove(..) of actor
             - Should we allow configuring of session-scoped remote actors? How?
 
 
          */
 
-        RemoteActorRef(address, Actor.TIMEOUT, None)
+      //        RemoteActorRef(address, Actor.TIMEOUT, None)
 
       case invalid ⇒ throw new IllegalActorStateException(
         "Could not create actor with address [" + address +

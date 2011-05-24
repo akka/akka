@@ -160,7 +160,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
 
   /**
    * Akka Java API. <p/>
-   * The default dispatcher is the <tt>Dispatchers.globalExecutorBasedEventDrivenDispatcher</tt>.
+   * The default dispatcher is the <tt>Dispatchers.globalDispatcher</tt>.
    * This means that all actors will share the same event-driven executor based dispatcher.
    * <p/>
    * You can override it so it fits the specific use-case that the actor is used for.
@@ -208,7 +208,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * The reference sender future of the last received message.
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
-  def getSenderFuture: Option[CompletableFuture[Any]] = senderFuture
+  def getSenderFuture: Option[Promise[Any]] = senderFuture
 
   /**
    * Is the actor being restarted?
@@ -482,7 +482,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
     message: Any,
     timeout: Long,
     senderOption: Option[ActorRef],
-    senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T]
+    senderFuture: Option[Promise[T]]): Promise[T]
 
   protected[akka] def actorInstance: AtomicReference[Actor]
 
@@ -614,8 +614,8 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
         } finally {
           currentMessage = null
           Actor.registry.unregister(this)
-          if (isRemotingEnabled)
-            Actor.remote.unregister(this)
+
+          if (ClusterModule.isEnabled) Actor.remote.unregister(this)
 
           setActorSelfFields(actorInstance.get, null)
         }
@@ -698,10 +698,10 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     message: Any,
     timeout: Long,
     senderOption: Option[ActorRef],
-    senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-    val future = if (senderFuture.isDefined) senderFuture else Some(new DefaultCompletableFuture[T](timeout))
+    senderFuture: Option[Promise[T]]): Promise[T] = {
+    val future = if (senderFuture.isDefined) senderFuture else Some(new DefaultPromise[T](timeout))
     dispatcher dispatchMessage new MessageInvocation(
-      this, message, senderOption, future.asInstanceOf[Some[CompletableFuture[Any]]])
+      this, message, senderOption, future.asInstanceOf[Some[Promise[Any]]])
     future.get
   }
 
@@ -991,7 +991,8 @@ private[akka] case class RemoteActorRef private[akka] (
   loader: Option[ClassLoader])
   extends ActorRef with ScalaActorRef {
 
-  ensureRemotingEnabled()
+  ClusterModule.ensureEnabled()
+
   timeout = _timeout
 
   // FIXME BAD, we should not have different ActorRefs
@@ -1005,8 +1006,10 @@ private[akka] case class RemoteActorRef private[akka] (
         case Node(nodeName) ⇒ Config.hostname
       }
       new InetSocketAddress(hostname, Config.remoteServerPort)
-    case _ ⇒ throw new IllegalStateException(
-      "Actor with Address [" + address + "] is not bound to a Clustered Deployment")
+    case _ ⇒
+      new InetSocketAddress(Config.hostname, Config.remoteServerPort)
+    //throw new IllegalStateException(
+    //  "Actor with Address [" + address + "] is not bound to a Clustered Deployment")
   }
 
   start()
@@ -1019,7 +1022,7 @@ private[akka] case class RemoteActorRef private[akka] (
     message: Any,
     timeout: Long,
     senderOption: Option[ActorRef],
-    senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
+    senderFuture: Option[Promise[T]]): Promise[T] = {
     val future = Actor.remote.send[T](
       message, senderOption, senderFuture,
       remoteAddress, timeout, false, this, loader)
@@ -1154,7 +1157,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef ⇒
    * The reference sender future of the last received message.
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
-  def senderFuture(): Option[CompletableFuture[Any]] = {
+  def senderFuture(): Option[Promise[Any]] = {
     val msg = currentMessage
     if (msg eq null) None
     else msg.senderFuture

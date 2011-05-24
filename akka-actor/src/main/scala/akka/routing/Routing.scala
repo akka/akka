@@ -10,6 +10,8 @@ import akka.actor.Actor._
 import akka.actor.ActorRef
 import scala.collection.JavaConversions._
 import scala.collection.immutable.Seq
+import java.util.concurrent.atomic.AtomicReference
+import annotation.tailrec
 
 object Routing {
 
@@ -32,8 +34,8 @@ object Routing {
   /**
    * Interceptor is a filter(x,y) where x.isDefinedAt is considered to be always true.
    */
-  def intercept[A, B](interceptor: (A) ⇒ Unit, interceptee: PF[A, B]): PF[A, B] =
-    filter({ case a if a.isInstanceOf[A] ⇒ interceptor(a) }, interceptee)
+  def intercept[A: Manifest, B](interceptor: (A) ⇒ Unit, interceptee: PF[A, B]): PF[A, B] =
+    filter({ case a ⇒ interceptor(a) }, interceptee)
 
   /**
    * Creates a LoadBalancer from the thunk-supplied InfiniteIterator.
@@ -44,18 +46,18 @@ object Routing {
     }).start()
 
   /**
-   * Creates a Dispatcher given a routing and a message-transforming function.
+   * Creates a Router given a routing and a message-transforming function.
    */
-  def dispatcherActor(routing: PF[Any, ActorRef], msgTransformer: (Any) ⇒ Any): ActorRef =
-    actorOf(new Actor with Dispatcher {
+  def routerActor(routing: PF[Any, ActorRef], msgTransformer: (Any) ⇒ Any): ActorRef =
+    actorOf(new Actor with Router {
       override def transform(msg: Any) = msgTransformer(msg)
       def routes = routing
     }).start()
 
   /**
-   * Creates a Dispatcher given a routing.
+   * Creates a Router given a routing.
    */
-  def dispatcherActor(routing: PF[Any, ActorRef]): ActorRef = actorOf(new Actor with Dispatcher {
+  def routerActor(routing: PF[Any, ActorRef]): ActorRef = actorOf(new Actor with Router {
     def routes = routing
   }).start()
 
@@ -64,7 +66,7 @@ object Routing {
    * both another actor and through the supplied function
    */
   def loggerActor(actorToLog: ActorRef, logger: (Any) ⇒ Unit): ActorRef =
-    dispatcherActor({ case _ ⇒ actorToLog }, logger)
+    routerActor({ case _ ⇒ actorToLog }, logger)
 }
 
 /**
@@ -80,18 +82,27 @@ trait InfiniteIterator[T] extends Iterator[T] {
 case class CyclicIterator[T](val items: Seq[T]) extends InfiniteIterator[T] {
   def this(items: java.util.List[T]) = this(items.toList)
 
-  @volatile
-  private[this] var current: Seq[T] = items
+  private[this] val current: AtomicReference[Seq[T]] = new AtomicReference(items)
 
   def hasNext = items != Nil
 
-  def next = {
-    val nc = if (current == Nil) items else current
-    current = nc.tail
-    nc.head
+  def next: T = {
+    @tailrec
+    def findNext: T = {
+      val currentItems = current.get
+      val newItems = currentItems match {
+        case Nil ⇒ items
+        case xs  ⇒ xs
+      }
+
+      if (current.compareAndSet(currentItems, newItems.tail)) newItems.head
+      else findNext
+    }
+
+    findNext
   }
 
-  override def exists(f: T ⇒ Boolean): Boolean = items.exists(f)
+  override def exists(f: T ⇒ Boolean): Boolean = items exists f
 }
 
 /**
@@ -108,9 +119,9 @@ case class SmallestMailboxFirstIterator(val items: Seq[ActorRef]) extends Infini
 }
 
 /**
- * A Dispatcher is a trait whose purpose is to route incoming messages to actors.
+ * A Router is a trait whose purpose is to route incoming messages to actors.
  */
-trait Dispatcher { this: Actor ⇒
+trait Router { this: Actor ⇒
 
   protected def transform(msg: Any): Any = msg
 
@@ -132,9 +143,9 @@ trait Dispatcher { this: Actor ⇒
 }
 
 /**
- * An UntypedDispatcher is an abstract class whose purpose is to route incoming messages to actors.
+ * An UntypedRouter is an abstract class whose purpose is to route incoming messages to actors.
  */
-abstract class UntypedDispatcher extends UntypedActor {
+abstract class UntypedRouter extends UntypedActor {
   protected def transform(msg: Any): Any = msg
 
   protected def route(msg: Any): ActorRef
@@ -144,22 +155,21 @@ abstract class UntypedDispatcher extends UntypedActor {
   private def isSenderDefined = self.senderFuture.isDefined || self.sender.isDefined
 
   @throws(classOf[Exception])
-  def onReceive(msg: Any): Unit = {
-    if (msg.isInstanceOf[Routing.Broadcast]) broadcast(msg.asInstanceOf[Routing.Broadcast].message)
-    else {
+  def onReceive(msg: Any): Unit = msg match {
+    case m: Routing.Broadcast ⇒ broadcast(m.message)
+    case _ ⇒
       val r = route(msg)
       if (r eq null) throw new IllegalStateException("No route for " + msg + " defined!")
       if (isSenderDefined) r.forward(transform(msg))(someSelf)
       else r.!(transform(msg))(None)
-    }
   }
 }
 
 /**
- * A LoadBalancer is a specialized kind of Dispatcher, that is supplied an InfiniteIterator of targets
+ * A LoadBalancer is a specialized kind of Router, that is supplied an InfiniteIterator of targets
  * to dispatch incoming messages to.
  */
-trait LoadBalancer extends Dispatcher { self: Actor ⇒
+trait LoadBalancer extends Router { self: Actor ⇒
   protected def seq: InfiniteIterator[ActorRef]
 
   protected def routes = {
@@ -172,10 +182,10 @@ trait LoadBalancer extends Dispatcher { self: Actor ⇒
 }
 
 /**
- * A UntypedLoadBalancer is a specialized kind of UntypedDispatcher, that is supplied an InfiniteIterator of targets
+ * A UntypedLoadBalancer is a specialized kind of UntypedRouter, that is supplied an InfiniteIterator of targets
  * to dispatch incoming messages to.
  */
-abstract class UntypedLoadBalancer extends UntypedDispatcher {
+abstract class UntypedLoadBalancer extends UntypedRouter {
   protected def seq: InfiniteIterator[ActorRef]
 
   protected def route(msg: Any) =

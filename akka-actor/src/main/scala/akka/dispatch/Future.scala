@@ -20,8 +20,6 @@ import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
 
 import scala.annotation.tailrec
-import scala.collection.generic.CanBuildFrom
-import scala.collection.mutable.Builder
 import scala.collection.mutable.Stack
 
 class FutureTimeoutException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
@@ -56,7 +54,7 @@ object Futures {
    * Returns a Future to the result of the first future in the list that is completed
    */
   def firstCompletedOf[T](futures: Iterable[Future[T]], timeout: Long = Long.MaxValue): Future[T] = {
-    val futureResult = new DefaultCompletableFuture[T](timeout)
+    val futureResult = new DefaultPromise[T](timeout)
 
     val completeFirst: Future[T] ⇒ Unit = _.value.foreach(futureResult complete _)
     for (f ← futures) f onComplete completeFirst
@@ -83,9 +81,9 @@ object Futures {
    */
   def fold[T, R](zero: R, timeout: Long = Actor.TIMEOUT)(futures: Iterable[Future[T]])(foldFun: (R, T) ⇒ R): Future[R] = {
     if (futures.isEmpty) {
-      new AlreadyCompletedFuture[R](Right(zero))
+      new KeptPromise[R](Right(zero))
     } else {
-      val result = new DefaultCompletableFuture[R](timeout)
+      val result = new DefaultPromise[R](timeout)
       val results = new ConcurrentLinkedQueue[T]()
       val allDone = futures.size
 
@@ -135,9 +133,9 @@ object Futures {
    */
   def reduce[T, R >: T](futures: Iterable[Future[T]], timeout: Long = Actor.TIMEOUT)(op: (R, T) ⇒ T): Future[R] = {
     if (futures.isEmpty)
-      new AlreadyCompletedFuture[R](Left(new UnsupportedOperationException("empty reduce left")))
+      new KeptPromise[R](Left(new UnsupportedOperationException("empty reduce left")))
     else {
-      val result = new DefaultCompletableFuture[R](timeout)
+      val result = new DefaultPromise[R](timeout)
       val seedFound = new AtomicBoolean(false)
       val seedFold: Future[T] ⇒ Unit = f ⇒ {
         if (seedFound.compareAndSet(false, true)) { //Only the first completed should trigger the fold
@@ -202,7 +200,7 @@ object Futures {
    * in parallel.
    *
    * def traverse[A, B, M[_] <: Traversable[_]](in: M[A], timeout: Long = Actor.TIMEOUT)(fn: A => Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]]): Future[M[B]] =
-   * in.foldLeft(new DefaultCompletableFuture[Builder[B, M[B]]](timeout).completeWithResult(cbf(in)): Future[Builder[B, M[B]]]) { (fr, a) =>
+   * in.foldLeft(new DefaultPromise[Builder[B, M[B]]](timeout).completeWithResult(cbf(in)): Future[Builder[B, M[B]]]) { (fr, a) =>
    * val fb = fn(a.asInstanceOf[A])
    * for (r <- fr; b <-fb) yield (r += b)
    * }.map(_.result)
@@ -230,7 +228,7 @@ object Future {
   /**
    * Create an empty Future with default timeout
    */
-  def empty[T](timeout: Long = Actor.TIMEOUT) = new DefaultCompletableFuture[T](timeout)
+  def empty[T](timeout: Long = Actor.TIMEOUT) = new DefaultPromise[T](timeout)
 
   import scala.collection.mutable.Builder
   import scala.collection.generic.CanBuildFrom
@@ -240,7 +238,7 @@ object Future {
    * Useful for reducing many Futures into a single Future.
    */
   def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]], timeout: Long = Actor.TIMEOUT)(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]]): Future[M[A]] =
-    in.foldLeft(new DefaultCompletableFuture[Builder[A, M[A]]](timeout).completeWithResult(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) ⇒ for (r ← fr; a ← fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
+    in.foldLeft(new DefaultPromise[Builder[A, M[A]]](timeout).completeWithResult(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) ⇒ for (r ← fr; a ← fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
 
   /**
    * Transforms a Traversable[A] into a Future[Traversable[B]] using the provided Function A => Future[B].
@@ -251,7 +249,7 @@ object Future {
    * </pre>
    */
   def traverse[A, B, M[_] <: Traversable[_]](in: M[A], timeout: Long = Actor.TIMEOUT)(fn: A ⇒ Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]]): Future[M[B]] =
-    in.foldLeft(new DefaultCompletableFuture[Builder[B, M[B]]](timeout).completeWithResult(cbf(in)): Future[Builder[B, M[B]]]) { (fr, a) ⇒
+    in.foldLeft(new DefaultPromise[Builder[B, M[B]]](timeout).completeWithResult(cbf(in)): Future[Builder[B, M[B]]]) { (fr, a) ⇒
       val fb = fn(a.asInstanceOf[A])
       for (r ← fr; b ← fb) yield (r += b)
     }.map(_.result)
@@ -267,22 +265,18 @@ object Future {
    *
    * This allows working with Futures in an imperative style without blocking for each result.
    *
-   * Completing a Future using 'CompletableFuture << Future' will also suspend execution until the
+   * Completing a Future using 'Promise << Future' will also suspend execution until the
    * value of the other Future is available.
    *
    * The Delimited Continuations compiler plugin must be enabled in order to use this method.
    */
   def flow[A](body: ⇒ A @cps[Future[Any]], timeout: Long = Actor.TIMEOUT): Future[A] = {
     val future = Promise[A](timeout)
-    (reset(future.asInstanceOf[CompletableFuture[Any]].completeWithResult(body)): Future[Any]) onComplete { f ⇒
+    (reset(future.asInstanceOf[Promise[Any]].completeWithResult(body)): Future[Any]) onComplete { f ⇒
       val opte = f.exception
       if (opte.isDefined) future completeWithException (opte.get)
     }
     future
-  }
-
-  private[akka] val callbacksPendingExecution = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
-    override def initialValue = None
   }
 }
 
@@ -497,16 +491,19 @@ sealed trait Future[+T] {
 
 object Promise {
 
-  def apply[A](timeout: Long): CompletableFuture[A] = new DefaultCompletableFuture[A](timeout)
+  def apply[A](timeout: Long): Promise[A] = new DefaultPromise[A](timeout)
 
-  def apply[A](): CompletableFuture[A] = apply(Actor.TIMEOUT)
+  def apply[A](): Promise[A] = apply(Actor.TIMEOUT)
 
+  private[akka] val callbacksPendingExecution = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
+    override def initialValue = None
+  }
 }
 
 /**
  * Essentially this is the Promise (or write-side) of a Future (read-side).
  */
-trait CompletableFuture[T] extends Future[T] {
+trait Promise[T] extends Future[T] {
   /**
    * Completes this Future with the specified result, if not already completed.
    * @return this
@@ -538,7 +535,7 @@ trait CompletableFuture[T] extends Future[T] {
   final def <<(value: T): Future[T] @cps[Future[Any]] = shift { cont: (Future[T] ⇒ Future[Any]) ⇒ cont(complete(Right(value))) }
 
   final def <<(other: Future[T]): Future[T] @cps[Future[Any]] = shift { cont: (Future[T] ⇒ Future[Any]) ⇒
-    val fr = new DefaultCompletableFuture[Any](Actor.TIMEOUT)
+    val fr = new DefaultPromise[Any](Actor.TIMEOUT)
     this completeWith other onComplete { f ⇒
       try {
         fr completeWith cont(f)
@@ -570,7 +567,7 @@ trait CompletableFuture[T] extends Future[T] {
 /**
  * The default concrete Future implementation.
  */
-class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends CompletableFuture[T] {
+class DefaultPromise[T](timeout: Long, timeunit: TimeUnit) extends Promise[T] {
 
   def this() = this(0, MILLIS)
 
@@ -637,7 +634,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
     }
   }
 
-  def complete(value: Either[Throwable, T]): DefaultCompletableFuture[T] = {
+  def complete(value: Either[Throwable, T]): DefaultPromise[T] = {
     _lock.lock
     val notifyTheseListeners = try {
       if (_value.isEmpty && !isExpired) { //Only complete if we aren't expired
@@ -661,7 +658,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
         }
       }
 
-      val pending = Future.callbacksPendingExecution.get
+      val pending = Promise.callbacksPendingExecution.get
       if (pending.isDefined) { //Instead of nesting the calls to the callbacks (leading to stack overflow)
         pending.get.push(() ⇒ { // Linearize/aggregate callbacks at top level and then execute
           val doNotify = notifyCompleted _ //Hoist closure to avoid garbage
@@ -670,16 +667,16 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
       } else {
         try {
           val callbacks = Stack[() ⇒ Unit]() // Allocate new aggregator for pending callbacks
-          Future.callbacksPendingExecution.set(Some(callbacks)) // Specify the callback aggregator
+          Promise.callbacksPendingExecution.set(Some(callbacks)) // Specify the callback aggregator
           runCallbacks(notifyTheseListeners, callbacks) // Execute callbacks, if they trigger new callbacks, they are aggregated
-        } finally { Future.callbacksPendingExecution.set(None) } // Ensure cleanup
+        } finally { Promise.callbacksPendingExecution.set(None) } // Ensure cleanup
       }
     }
 
     this
   }
 
-  def onComplete(func: Future[T] ⇒ Unit): CompletableFuture[T] = {
+  def onComplete(func: Future[T] ⇒ Unit): Promise[T] = {
     _lock.lock
     val notifyNow = try {
       if (_value.isEmpty) {
@@ -706,7 +703,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   final def collect[A](pf: PartialFunction[Any, A]): Future[A] = {
-    val future = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    val future = new DefaultPromise[A](timeoutInNanos, NANOS)
     onComplete { self ⇒
       future complete {
         self.value.get match {
@@ -727,7 +724,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   final def failure[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
-    val future = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    val future = new DefaultPromise[A](timeoutInNanos, NANOS)
     onComplete { self ⇒
       future complete {
         self.value.get match {
@@ -748,7 +745,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   final def map[A](f: T ⇒ A): Future[A] = {
-    val future = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    val future = new DefaultPromise[A](timeoutInNanos, NANOS)
     onComplete { self ⇒
       future complete {
         self.value.get match {
@@ -768,7 +765,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   final def flatMap[A](f: T ⇒ Future[A]): Future[A] = {
-    val future = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
+    val future = new DefaultPromise[A](timeoutInNanos, NANOS)
     onComplete {
       _.value.get match {
         case Right(r) ⇒
@@ -786,7 +783,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   final def filter(p: Any ⇒ Boolean): Future[Any] = {
-    val future = new DefaultCompletableFuture[T](timeoutInNanos, NANOS)
+    val future = new DefaultPromise[T](timeoutInNanos, NANOS)
     onComplete { self ⇒
       future complete {
         self.value.get match {
@@ -818,10 +815,10 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
  * An already completed Future is seeded with it's result at creation, is useful for when you are participating in
  * a Future-composition but you already have a value to contribute.
  */
-sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T]) extends CompletableFuture[T] {
+sealed class KeptPromise[T](suppliedValue: Either[Throwable, T]) extends Promise[T] {
   val value = Some(suppliedValue)
 
-  def complete(value: Either[Throwable, T]): CompletableFuture[T] = this
+  def complete(value: Either[Throwable, T]): Promise[T] = this
   def onComplete(func: Future[T] ⇒ Unit): Future[T] = { func(this); this }
   def await(atMost: Duration): Future[T] = this
   def await: Future[T] = this
@@ -831,7 +828,7 @@ sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T]) exte
 
   final def collect[A](pf: PartialFunction[Any, A]): Future[A] = value.get match {
     case Right(r) ⇒
-      new AlreadyCompletedFuture(try {
+      new KeptPromise(try {
         if (pf isDefinedAt r)
           Right(pf(r))
         else
@@ -841,34 +838,34 @@ sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T]) exte
           EventHandler.error(e, this, e.getMessage)
           Left(e)
       })
-    case _ ⇒ this.asInstanceOf[AlreadyCompletedFuture[A]]
+    case _ ⇒ this.asInstanceOf[KeptPromise[A]]
   }
 
   final def failure[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = value.get match {
     case Left(e) ⇒
       try {
         if (pf isDefinedAt e)
-          new AlreadyCompletedFuture(Right(pf(e)))
+          new KeptPromise(Right(pf(e)))
         else
-          this.asInstanceOf[AlreadyCompletedFuture[A]]
+          this.asInstanceOf[KeptPromise[A]]
       } catch {
         case e: Exception ⇒
           EventHandler.error(e, this, e.getMessage)
-          new AlreadyCompletedFuture(Left(e))
+          new KeptPromise(Left(e))
       }
-    case _ ⇒ this.asInstanceOf[AlreadyCompletedFuture[A]]
+    case _ ⇒ this.asInstanceOf[KeptPromise[A]]
   }
 
   final def map[A](f: T ⇒ A): Future[A] = value.get match {
     case Right(r) ⇒
-      new AlreadyCompletedFuture(try {
+      new KeptPromise(try {
         Right(f(r))
       } catch {
         case e: Exception ⇒
           EventHandler.error(e, this, e.getMessage)
           Left(e)
       })
-    case _ ⇒ this.asInstanceOf[AlreadyCompletedFuture[A]]
+    case _ ⇒ this.asInstanceOf[KeptPromise[A]]
   }
 
   final def flatMap[A](f: T ⇒ Future[A]): Future[A] = value.get match {
@@ -878,9 +875,9 @@ sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T]) exte
       } catch {
         case e: Exception ⇒
           EventHandler.error(e, this, e.getMessage)
-          new AlreadyCompletedFuture(Left(e))
+          new KeptPromise(Left(e))
       }
-    case _ ⇒ this.asInstanceOf[AlreadyCompletedFuture[A]]
+    case _ ⇒ this.asInstanceOf[KeptPromise[A]]
   }
 
   final def filter(p: Any ⇒ Boolean): Future[Any] = value.get match {
@@ -889,11 +886,11 @@ sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T]) exte
         if (p(r))
           this
         else
-          new AlreadyCompletedFuture(Left(new MatchError(r)))
+          new KeptPromise(Left(new MatchError(r)))
       } catch {
         case e: Exception ⇒
           EventHandler.error(e, this, e.getMessage)
-          new AlreadyCompletedFuture(Left(e))
+          new KeptPromise(Left(e))
       }
     case _ ⇒ this
   }

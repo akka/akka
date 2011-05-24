@@ -58,7 +58,7 @@ A custom ``akka.conf`` might look like this:
             "sample.myservice.Boot"]
 
     actor {
-      throughput = 10  # Throughput for ExecutorBasedEventDrivenDispatcher, set to 1 for complete fairness
+      throughput = 10  # Throughput for Dispatcher, set to 1 for complete fairness
     }
 
     remote {

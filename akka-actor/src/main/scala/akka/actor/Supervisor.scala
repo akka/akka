@@ -140,7 +140,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (Act
             _childActors.put(className, actorRef :: currentActors)
             actorRef.lifeCycle = lifeCycle
             supervisor.link(actorRef)
-            if (registerAsRemoteService)
+            if (ClusterModule.isEnabled && registerAsRemoteService)
               Actor.remote.register(actorRef)
           case supervisorConfig@SupervisorConfig(_, _, _) ⇒ // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)

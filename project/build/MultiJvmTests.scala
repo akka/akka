@@ -6,9 +6,10 @@ import java.io.{BufferedReader, Closeable, InputStream, InputStreamReader, IOExc
 import java.io.{PipedInputStream, PipedOutputStream}
 import scala.concurrent.SyncVar
 
-trait MultiJvmTests extends BasicScalaProject {
+trait MultiJvmTests extends DefaultProject {
   def multiJvmTestName = "MultiJvm"
-  def multiJvmOptions: Seq[String] = Nil
+  def multiJvmOptions: Seq[String] = Seq.empty
+  def multiJvmExtraOptions(className: String): Seq[String] = Seq.empty
 
   val MultiJvmTestName = multiJvmTestName
 
@@ -25,30 +26,36 @@ trait MultiJvmTests extends BasicScalaProject {
 
   lazy val multiJvmTest = multiJvmTestAction
   lazy val multiJvmRun = multiJvmRunAction
+  lazy val multiJvmTestAll = multiJvmTestAllAction
 
-  def multiJvmTestAction = multiJvmAction(getMultiJvmTests, testScalaOptions)
-  def multiJvmRunAction = multiJvmAction(getMultiJvmApps, runScalaOptions)
+  def multiJvmTestAction = multiJvmMethod(getMultiJvmTests, testScalaOptions)
+  def multiJvmRunAction = multiJvmMethod(getMultiJvmApps, runScalaOptions)
+  def multiJvmTestAllAction = multiJvmTask(Nil, getMultiJvmTests, testScalaOptions)
 
-  def multiJvmAction(getMultiTestsMap: => Map[String, Seq[String]], scalaOptions: String => Seq[String]) = {
+  def multiJvmMethod(getMultiTestsMap: => Map[String, Seq[String]], scalaOptions: String => Seq[String]) = {
     task { args =>
-      task {
-        val multiTestsMap = getMultiTestsMap
-        def process(tests: List[String]): Option[String] = {
-          if (tests.isEmpty) {
-            None
-          } else {
-            val testName = tests(0)
-            val failed = multiTestsMap.get(testName) match {
-              case Some(testClasses) => runMulti(testName, testClasses, scalaOptions)
-              case None => Some("No multi jvm test called " + testName)
-            }
-            failed orElse process(tests.tail)
-          }
-        }
-        val tests = if (args.size > 0) args.toList else multiTestsMap.keys.toList.asInstanceOf[List[String]]
-        process(tests)
-      } dependsOn (testCompile)
+      multiJvmTask(args.toList, getMultiTestsMap, scalaOptions)
     } completeWith(getMultiTestsMap.keys.toList)
+  }
+
+  def multiJvmTask(tests: List[String], getMultiTestsMap: => Map[String, Seq[String]], scalaOptions: String => Seq[String]) = {
+    task {
+      val multiTestsMap = getMultiTestsMap
+      def process(runTests: List[String]): Option[String] = {
+        if (runTests.isEmpty) {
+          None
+        } else {
+          val testName = runTests(0)
+          val failed = multiTestsMap.get(testName) match {
+            case Some(testClasses) => runMulti(testName, testClasses, scalaOptions)
+            case None => Some("No multi jvm test called " + testName)
+          }
+          failed orElse process(runTests.tail)
+        }
+      }
+      val runTests = if (tests.size > 0) tests else multiTestsMap.keys.toList.asInstanceOf[List[String]]
+      process(runTests)
+    } dependsOn (testCompile)
   }
 
   def getMultiJvmTests(): Map[String, Seq[String]] = {
@@ -80,6 +87,10 @@ trait MultiJvmTests extends BasicScalaProject {
     className.substring(i + l)
   }
 
+  def testSimpleName(className: String) = {
+    className.split("\\.").last
+  }
+
   def testScalaOptions(testClass: String) = {
     val scalaTestJars = testClasspath.get.filter(_.name.contains("scalatest"))
     val cp = Path.makeString(scalaTestJars)
@@ -98,8 +109,23 @@ trait MultiJvmTests extends BasicScalaProject {
       case (testClass, index) => {
         val jvmName = "JVM-" + testIdentifier(testClass)
         val jvmLogger = new JvmLogger(jvmName)
+        val className = testSimpleName(testClass)
+        val optionsFiles = (testSourcePath ** (className + ".opts")).get
+        val optionsFromFile: Seq[String] = {
+          if (!optionsFiles.isEmpty) {
+            val file = optionsFiles.toList.head.asFile
+            log.info("Reading JVM options from %s" + file)
+            FileUtilities.readString(file, log) match {
+              case Right(opts: String) => opts.trim.split(" ").toSeq
+              case _ => Seq.empty
+            }
+          } else Seq.empty
+        }
+        val extraOptions = multiJvmExtraOptions(className)
+        val jvmOptions = multiJvmOptions ++ optionsFromFile ++ extraOptions
         log.info("Starting %s for %s" format (jvmName, testClass))
-        (testClass, startJvm(multiJvmOptions, scalaOptions(testClass), jvmLogger, index == 0))
+        log.info("  with JVM options: %s" format jvmOptions.mkString(" "))
+        (testClass, startJvm(jvmOptions, scalaOptions(testClass), jvmLogger, index == 0))
       }
     }
     val exitCodes = processes map {

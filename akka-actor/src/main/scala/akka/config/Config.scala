@@ -106,10 +106,16 @@ object Config {
     case value     ⇒ value
   }
 
-  val remoteServerPort = System.getProperty("akka.cluster.remote-server-port") match {
-    case null | "" ⇒ config.getInt("akka.cluster.remote-server-port", 2552)
-    case value     ⇒ value.toInt
+  val remoteServerPort = System.getProperty("akka.cluster.port") match {
+    case null | "" ⇒
+      System.getProperty("akka.cluster.remote-server-port") match {
+        case null | "" ⇒ config.getInt("akka.cluster.remote-server-port", 2552)
+        case value     ⇒ value.toInt
+      }
+    case value ⇒ value.toInt
   }
+
+  val clusterName = config.getString("akka.cluster.name", "default")
 
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
