@@ -195,10 +195,15 @@ object Endpoint {
    */
   val Dispatcher = Dispatchers.fromConfig("akka.http.mist-dispatcher")
 
-  type Hook = Function[String, Boolean]
-  type Provider = Function[String, ActorRef]
+  type Hook = PartialFunction[String, ActorRef]
 
-  case class Attach(hook: Hook, provider: Provider)
+  case class Attach(hook: Hook) {
+    //Only here for backwards compat, can possibly be thrown away
+    def this(hook: String ⇒ Boolean, provider: String ⇒ ActorRef) = this({
+      case x if hook(x) ⇒ provider(x)
+    })
+  }
+
   case class NoneAvailable(uri: String, req: RequestMethod)
 }
 
@@ -218,12 +223,12 @@ trait Endpoint { this: Actor ⇒
    * The list of connected endpoints to which this one should/could forward the request.
    * If the hook func returns true, the message will be sent to the actor returned from provider.
    */
-  protected var _attachments = List[Tuple2[Hook, Provider]]()
+  protected var _attachments = List[Hook]()
 
   /**
    *
    */
-  protected def _attach(hook: Hook, provider: Provider) = _attachments = (hook, provider) :: _attachments
+  protected def _attach(hook: Hook) = _attachments ::= hook
 
   /**
    * Message handling common to all endpoints, must be chained
@@ -232,14 +237,14 @@ trait Endpoint { this: Actor ⇒
 
     // add the endpoint - the if the uri hook matches,
     // the message will be sent to the actor returned by the provider func
-    case Attach(hook, provider) ⇒ _attach(hook, provider)
+    case Attach(hook) ⇒ _attach(hook)
 
     // dispatch the suspended requests
     case req: RequestMethod ⇒ {
       val uri = req.request.getPathInfo
-      val endpoints = _attachments.filter { _._1(uri) }
+      val endpoints = _attachments.filter { _ isDefinedAt uri }
 
-      if (!endpoints.isEmpty) endpoints.foreach { _._2(uri) ! req }
+      if (!endpoints.isEmpty) endpoints.foreach { _.apply(uri) ! req }
       else {
         self.sender match {
           case Some(s) ⇒ s reply NoneAvailable(uri, req)
@@ -267,7 +272,7 @@ class RootEndpoint extends Actor with Endpoint {
   self.dispatcher = Endpoint.Dispatcher
 
   override def preStart() =
-    _attachments = Tuple2((uri: String) ⇒ { uri eq Root }, (uri: String) ⇒ this.actor) :: _attachments
+    _attachments ::= { case `Root` ⇒ this.actor }
 
   def recv: Receive = {
     case NoneAvailable(uri, req) ⇒ _na(uri, req)
