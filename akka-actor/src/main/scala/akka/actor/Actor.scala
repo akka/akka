@@ -199,7 +199,7 @@ object Actor extends ListenerManagement {
    * Wrap a Receive partial function in a logging enclosure, which sends a
    * debug message to the EventHandler each time before a message is matched.
    * This includes messages which are not handled.
-   * 
+   *
    * <pre><code>
    * def receive = loggable {
    *   case x => ...

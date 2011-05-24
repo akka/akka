@@ -263,12 +263,7 @@ trait TestKit {
    * Same as `expectMsg(remaining)(f)`, but correctly treating the timeFactor.
    */
   @deprecated("use expectMsgPF instead", "1.2")
-  def expectMsg[T](f: PartialFunction[Any, T]): T = expectMsgPF_internal(remaining)(f)
-
-  /**
-   * Same as `expectMsgPF(remaining)(f)`, but correctly treating the timeFactor.
-   */
-  def expectMsgPF[T](f: PartialFunction[Any, T]): T = expectMsgPF_internal(remaining)(f)
+  def expectMsg[T](f: PartialFunction[Any, T]): T = expectMsgPF()(f)
 
   /**
    * Receive one message from the test actor and assert that the given
@@ -281,7 +276,7 @@ trait TestKit {
    * @return the received object as transformed by the partial function
    */
   @deprecated("use expectMsgPF instead", "1.2")
-  def expectMsg[T](max: Duration)(f: PartialFunction[Any, T]): T = expectMsgPF_internal(max.dilated)(f)
+  def expectMsg[T](max: Duration)(f: PartialFunction[Any, T]): T = expectMsgPF(max)(f)
 
   /**
    * Receive one message from the test actor and assert that the given
@@ -293,10 +288,9 @@ trait TestKit {
    *
    * @return the received object as transformed by the partial function
    */
-  def expectMsgPF[T](max: Duration)(f: PartialFunction[Any, T]): T = expectMsgPF_internal(max.dilated)(f)
-
-  private def expectMsgPF_internal[T](max: Duration)(f: PartialFunction[Any, T]): T = {
-    val o = receiveOne(max)
+  def expectMsgPF[T](max: Duration = Duration.MinusInf)(f: PartialFunction[Any, T]): T = {
+    val _max = if (max eq Duration.MinusInf) remaining else max.dilated
+    val o = receiveOne(_max)
     assert(o ne null, "timeout during expectMsg")
     assert(f.isDefinedAt(o), "does not match: " + o)
     f(o)
