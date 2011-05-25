@@ -52,6 +52,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   import Repositories._
   lazy val jettyModuleConfig       = ModuleConfiguration("org.eclipse.jetty", sbt.DefaultMavenRepository)
+  lazy val camelJettyModuleConfig  = ModuleConfiguration("org.apache.camel", "camel-jetty", AkkaRepo)
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
   lazy val glassfishModuleConfig   = ModuleConfiguration("org.glassfish", GlassfishRepo)
   lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
@@ -99,12 +100,14 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
 
      // Compile
+    lazy val activemq         = "org.apache.activemq"         % "activemq-core"           % "5.4.2" % "compile" // ApacheV2
     lazy val aopalliance      = "aopalliance"                 % "aopalliance"             % "1.0" % "compile" //Public domain
     lazy val aspectwerkz      = "org.codehaus.aspectwerkz"    % "aspectwerkz"             % "2.2.3" % "compile" //ApacheV2
     lazy val beanstalk        = "beanstalk"                   % "beanstalk_client"        % "1.4.5" //New BSD
     lazy val bookkeeper       = "org.apache.hadoop.zookeeper" % "bookkeeper"              % ZOOKEEPER_VERSION //ApacheV2
     lazy val camel_core       = "org.apache.camel"            % "camel-core"              % CAMEL_VERSION % "compile" //ApacheV2
-
+    lazy val camel_jetty      = "org.apache.camel"            % "camel-jetty"             % "2.7.1.1" % "compile"
+    lazy val camel_jms        = "org.apache.camel"            % "camel-jms"               % CAMEL_VERSION % "compile" //ApacheV2
     lazy val commons_codec    = "commons-codec"               % "commons-codec"           % "1.4" % "compile" //ApacheV2
     lazy val commons_io       = "commons-io"                  % "commons-io"              % "2.0.1" % "compile" //ApacheV2
     lazy val javax_servlet_30 = "org.glassfish"               % "javax.servlet"           % JAVAX_SERVLET_VERSION % "provided" //CDDL v1
@@ -134,7 +137,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val slf4j            = "org.slf4j"                   % "slf4j-api"               % SLF4J_VERSION        // MIT
     lazy val spring_beans     = "org.springframework"         % "spring-beans"            % SPRING_VERSION % "compile" //ApacheV2
     lazy val spring_context   = "org.springframework"         % "spring-context"          % SPRING_VERSION % "compile" //ApacheV2
-
+    lazy val spring_jms       = "org.springframework"         % "spring-jms"              % SPRING_VERSION % "compile" //ApacheV2
     lazy val stax_api         = "javax.xml.stream"            % "stax-api"                % "1.0-2"        % "compile" //ApacheV2
     lazy val logback          = "ch.qos.logback"              % "logback-classic"         % "0.9.28" % "runtime" //MIT
     lazy val log4j            = "log4j"                       % "log4j"                   % "1.2.15"          //ApacheV2
@@ -604,6 +607,22 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   class AkkaSampleFSMProject(info: ProjectInfo) extends AkkaDefaultProject(info)
 
+  class AkkaSampleCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    val activemq      = Dependencies.activemq
+    val camel_jetty   = Dependencies.camel_jetty
+    val camel_jms     = Dependencies.camel_jms
+    val spring_jms    = Dependencies.spring_jms
+    val commons_codec = Dependencies.commons_codec
+
+    override def ivyXML = {
+      <dependencies>
+        <exclude module="slf4j-api" />
+      </dependencies>
+    }
+
+    override def testOptions = createTestFilter( _.endsWith("Test"))
+  }
+
   class AkkaSampleOsgiProject(info: ProjectInfo) extends AkkaDefaultProject(info) with BNDPlugin {
     val osgiCore = Dependencies.osgi_core
     override protected def bndPrivatePackage = List("sample.osgi.*")
@@ -623,6 +642,10 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 //      new AkkaSampleChatProject(_), akka_remote)
     lazy val akka_sample_osgi = project("akka-sample-osgi", "akka-sample-osgi",
       new AkkaSampleOsgiProject(_), akka_actor)
+
+    lazy val akka_sample_camel = project("akka-sample-camel", "akka-sample-camel",
+      new AkkaSampleCamelProject(_), akka_actor, akka_kernel)
+
 
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
