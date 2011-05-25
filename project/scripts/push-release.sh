@@ -22,8 +22,8 @@ fi
 ref=$(git symbolic-ref HEAD 2> /dev/null)
 branch=${ref#refs/heads/}
 
-# git push origin $branch
-# git push origin --tags
+git push origin $branch
+git push origin --tags
 
 release="target/release/${VERSION}"
 tmp="/tmp/akka-release-${VERSION}"
