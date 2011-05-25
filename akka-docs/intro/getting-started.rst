@@ -47,23 +47,23 @@ Akka is split up into two different parts:
 
 Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
 
-- ``akka-actor-1.1.1.jar`` -- Standard Actors
-- ``akka-typed-actor-1.1.1.jar`` -- Typed Actors
-- ``akka-remote-1.1.1.jar`` -- Remote Actors
-- ``akka-stm-1.1.1.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-- ``akka-http-1.1.1.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
-- ``akka-slf4j-1.1.1.jar`` -- SLF4J Event Handler Listener
-- ``akka-testkit-1.1.1.jar`` -- Toolkit for testing Actors
+- ``akka-actor-1.1.2.jar`` -- Standard Actors
+- ``akka-typed-actor-1.1.2.jar`` -- Typed Actors
+- ``akka-remote-1.1.2.jar`` -- Remote Actors
+- ``akka-stm-1.1.2.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+- ``akka-http-1.1.2.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
+- ``akka-slf4j-1.1.2.jar`` -- SLF4J Event Handler Listener
+- ``akka-testkit-1.1.2.jar`` -- Toolkit for testing Actors
 
 We also have Akka Modules containing add-on modules outside the core of Akka.
 
-- ``akka-kernel-1.1.1.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
-- ``akka-amqp-1.1.1.jar`` -- AMQP integration
-- ``akka-camel-1.1.1.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-- ``akka-camel-typed-1.1.1.jar`` -- Apache Camel Typed Actors integration
-- ``akka-scalaz-1.1.1.jar`` -- Support for the Scalaz library
-- ``akka-spring-1.1.1.jar`` -- Spring framework integration
-- ``akka-osgi-dependencies-bundle-1.1.1.jar`` -- OSGi support
+- ``akka-kernel-1.1.2.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
+- ``akka-amqp-1.1.2.jar`` -- AMQP integration
+- ``akka-camel-1.1.2.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+- ``akka-camel-typed-1.1.2.jar`` -- Apache Camel Typed Actors integration
+- ``akka-scalaz-1.1.2.jar`` -- Support for the Scalaz library
+- ``akka-spring-1.1.2.jar`` -- Spring framework integration
+- ``akka-osgi-dependencies-bundle-1.1.2.jar`` -- OSGi support
 
 
 How to see the JARs dependencies of each Akka module is described in the :ref:`dependencies` section. Worth noting
@@ -107,14 +107,14 @@ Summary of the essential parts for using Akka with Maven:
     <url>http://akka.io/repository/ </url>
   </repository>
 
-2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 1.1.1:
+2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 1.1.2:
 
 .. code-block:: xml
 
   <dependency>
     <groupId>se.scalablesolutions.akka</groupId>
     <artifactId>akka-actor</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
   </dependency>
 
 
@@ -129,7 +129,7 @@ Summary of the essential parts for using Akka with SBT:
 
 1) Akka has an SBT plugin which makes it very easy to get started with Akka and SBT.
 
-The Scala version in your SBT project needs to match the version that Akka is built against. For Akka 1.1.1 this is
+The Scala version in your SBT project needs to match the version that Akka is built against. For Akka 1.1.2 this is
 Scala version 2.9.0-1.
 
 To use the plugin, first add a plugin definition to your SBT project by creating project/plugins/Plugins.scala with:
@@ -140,10 +140,10 @@ To use the plugin, first add a plugin definition to your SBT project by creating
 
   class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
     val akkaRepo = "Akka Repo" at "http://akka.io/repository"
-    val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "1.1.1"
+    val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "1.1.2"
   }
 
-*Note: the plugin version matches the Akka version provided. The current release is 1.1.1.*
+*Note: the plugin version matches the Akka version provided. The current release is 1.1.2.*
 
 2) Then mix the AkkaProject trait into your project definition. For example:
 

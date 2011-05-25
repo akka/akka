@@ -66,7 +66,7 @@ To build and run the tutorial sample from the command line, you have to download
 Akka. If you prefer to use SBT to build and run the sample then you can skip
 this section and jump to the next one.
 
-Let's get the ``akka-actors-1.1.1.zip`` distribution of Akka from
+Let's get the ``akka-actors-1.1.2.zip`` distribution of Akka from
 http://akka.io/downloads/ which includes everything we need for this
 tutorial. Once you have downloaded the distribution unzip it in the folder you
 would like to have Akka installed in. In my case I choose to install it in
@@ -77,10 +77,10 @@ You need to do one more thing in order to install Akka properly: set the
 I'm opening up a shell, navigating down to the distribution, and setting the
 ``AKKA_HOME`` variable::
 
-    $ cd /Users/jboner/tools/akka-actors-1.1.1
+    $ cd /Users/jboner/tools/akka-actors-1.1.2
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
-    /Users/jboner/tools/akka-actors-1.1.1
+    /Users/jboner/tools/akka-actors-1.1.2
 
 The distribution looks like this::
 
@@ -98,32 +98,32 @@ The distribution looks like this::
 
 
 The only JAR we will need for this tutorial (apart from the
-``scala-library.jar`` JAR) is the ``akka-actor-1.1.1.jar`` JAR in the ``lib/akka``
+``scala-library.jar`` JAR) is the ``akka-actor-1.1.2.jar`` JAR in the ``lib/akka``
 directory. This is a self-contained JAR with zero dependencies and contains
 everything we need to write a system using Actors.
 
 Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
 
-- ``akka-actor-1.1.1.jar`` -- Standard Actors
-- ``akka-typed-actor-1.1.1.jar`` -- Typed Actors
-- ``akka-remote-1.1.1.jar`` -- Remote Actors
-- ``akka-stm-1.1.1.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-- ``akka-http-1.1.1.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
-- ``akka-slf4j-1.1.1.jar`` -- SLF4J Event Handler Listener for logging with SLF4J
-- ``akka-testkit-1.1.1.jar`` -- Toolkit for testing Actors
+- ``akka-actor-1.1.2.jar`` -- Standard Actors
+- ``akka-typed-actor-1.1.2.jar`` -- Typed Actors
+- ``akka-remote-1.1.2.jar`` -- Remote Actors
+- ``akka-stm-1.1.2.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+- ``akka-http-1.1.2.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
+- ``akka-slf4j-1.1.2.jar`` -- SLF4J Event Handler Listener for logging with SLF4J
+- ``akka-testkit-1.1.2.jar`` -- Toolkit for testing Actors
 
 We also have Akka Modules containing add-on modules outside the core of
 Akka. You can download the Akka Modules distribution from `<http://akka.io/downloads/>`_. It contains Akka
 core as well. We will not be needing any modules there today, but for your
 information the module JARs are these:
 
-- ``akka-kernel-1.1.1.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
-- ``akka-amqp-1.1.1.jar`` -- AMQP integration
-- ``akka-camel-1.1.1.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-- ``akka-camel-typed-1.1.1.jar`` -- Apache Camel Typed Actors integration
-- ``akka-scalaz-1.1.1.jar`` -- Support for the Scalaz library
-- ``akka-spring-1.1.1.jar`` -- Spring framework integration
-- ``akka-osgi-dependencies-bundle-1.1.1.jar`` -- OSGi support
+- ``akka-kernel-1.1.2.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
+- ``akka-amqp-1.1.2.jar`` -- AMQP integration
+- ``akka-camel-1.1.2.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+- ``akka-camel-typed-1.1.2.jar`` -- Apache Camel Typed Actors integration
+- ``akka-scalaz-1.1.2.jar`` -- Support for the Scalaz library
+- ``akka-spring-1.1.2.jar`` -- Spring framework integration
+- ``akka-osgi-dependencies-bundle-1.1.2.jar`` -- OSGi support
 
 
 Downloading and installing Maven
@@ -186,7 +186,7 @@ We also need to edit the ``pom.xml`` build file. Let's add the dependency we nee
             <dependency>
                 <groupId>se.scalablesolutions.akka</groupId>
                 <artifactId>akka-actor</artifactId>
-                <version>1.1.1</version>
+                <version>1.1.2</version>
             </dependency>
         </dependencies>
 
@@ -721,22 +721,22 @@ time. When that's done open up a shell and step in to the Akka distribution
 (``cd $AKKA_HOME``).
 
 First we need to compile the source file. That is done with Java's compiler
-``javac``. Our application depends on the ``akka-actor-1.1.1.jar`` and the
+``javac``. Our application depends on the ``akka-actor-1.1.2.jar`` and the
 ``scala-library.jar`` JAR files, so let's add them to the compiler classpath
 when we compile the source::
 
-    $ javac -cp lib/scala-library.jar:lib/akka/akka-actor-1.1.1.jar tutorial/akka/tutorial/first/java/Pi.java
+    $ javac -cp lib/scala-library.jar:lib/akka/akka-actor-1.1.2.jar tutorial/akka/tutorial/first/java/Pi.java
 
 When we have compiled the source file we are ready to run the application. This
-is done with ``java`` but yet again we need to add the ``akka-actor-1.1.1.jar``
+is done with ``java`` but yet again we need to add the ``akka-actor-1.1.2.jar``
 and the ``scala-library.jar`` JAR files to the classpath as well as the classes
 we compiled ourselves::
 
     $ java \
-        -cp lib/scala-library.jar:lib/akka/akka-actor-1.1.1.jar:tutorial \
+        -cp lib/scala-library.jar:lib/akka/akka-actor-1.1.2.jar:tutorial \
         akka.tutorial.java.first.Pi
-    AKKA_HOME is defined as [/Users/jboner/tools/akka-actors-1.1.1]
-    loading config from [/Users/jboner/tools/akka-actors-1.1.1/config/akka.conf].
+    AKKA_HOME is defined as [/Users/jboner/tools/akka-actors-1.1.2]
+    loading config from [/Users/jboner/tools/akka-actors-1.1.2/config/akka.conf].
 
     Pi estimate:        3.1435501812459323
     Calculation time:   822 millis
