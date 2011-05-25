@@ -832,7 +832,7 @@ class RemoteServerHandler(
     // stop all session actors
     for (
       map ← Option(sessionActors.remove(event.getChannel));
-      actor ← collectionAsScalaIterable(map.values)gddd
+      actor ← collectionAsScalaIterable(map.values)
     ) {
       try { actor ! PoisonPill } catch { case e: Exception ⇒ }
     }
