@@ -84,12 +84,10 @@ trait IO {
 class IOManager(bufferSize: Int = 8192) extends Actor {
 
   var worker: IOWorker = _
-  var workerThread: Thread = _
 
   override def preStart: Unit = {
     worker = new IOWorker(self, bufferSize)
-    workerThread = new Thread(worker)
-    workerThread.start
+    worker.start
   }
 
   def receive = {
@@ -115,7 +113,7 @@ private[akka] object IOWorker {
   case object Shutdown extends ChangeRequest
 }
 
-private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) extends Runnable {
+private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
   import SelectionKey.{ OP_READ, OP_WRITE, OP_ACCEPT, OP_CONNECT }
   import IOWorker._
 
@@ -150,6 +148,9 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) extends R
   def shutdown(): Unit =
     addChangeRequest(Shutdown)
 
+  def start(): Unit =
+    thread.start
+
   // private
 
   private val selector: Selector = Selector open ()
@@ -164,36 +165,38 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) extends R
 
   private val buffer = ByteBuffer.allocate(bufferSize)
 
-  def run(): Unit = {
-    while (selector.isOpen) {
-      selector select ()
-      val keys = selector.selectedKeys.iterator
-      while (keys.hasNext) {
-        val key = keys next ()
-        keys remove ()
-        if (key.isValid) { process(key) }
-      }
-      _changeRequests.getAndSet(Nil).reverse foreach {
-        case Register(token, channel, ops) ⇒
-          channels += (token -> channel)
-          channel register (selector, ops, token)
-        case Accepted(token, serverToken) ⇒
-          val (channel, rest) = acceptedChannels(serverToken).dequeue
-          if (rest.isEmpty) acceptedChannels -= serverToken
-          else acceptedChannels += (serverToken -> rest)
-          channels += (token -> channel)
-          channel register (selector, OP_READ, token)
-        case QueueWrite(token, data) ⇒
-          if (channels contains token) {
-            val queue = writeQueues(token)
-            if (queue.isEmpty) addOps(token, OP_WRITE)
-            writeQueues += (token -> queue.enqueue(data))
-          }
-        case Close(token) ⇒
-          cleanup(token)
-        case Shutdown ⇒
-          channels.values foreach (_.close)
-          selector.close
+  private val thread = new Thread() {
+    override def run(): Unit = {
+      while (selector.isOpen) {
+        selector select ()
+        val keys = selector.selectedKeys.iterator
+        while (keys.hasNext) {
+          val key = keys next ()
+          keys remove ()
+          if (key.isValid) { process(key) }
+        }
+        _changeRequests.getAndSet(Nil).reverse foreach {
+          case Register(token, channel, ops) ⇒
+            channels += (token -> channel)
+            channel register (selector, ops, token)
+          case Accepted(token, serverToken) ⇒
+            val (channel, rest) = acceptedChannels(serverToken).dequeue
+            if (rest.isEmpty) acceptedChannels -= serverToken
+            else acceptedChannels += (serverToken -> rest)
+            channels += (token -> channel)
+            channel register (selector, OP_READ, token)
+          case QueueWrite(token, data) ⇒
+            if (channels contains token) {
+              val queue = writeQueues(token)
+              if (queue.isEmpty) addOps(token, OP_WRITE)
+              writeQueues += (token -> queue.enqueue(data))
+            }
+          case Close(token) ⇒
+            cleanup(token)
+          case Shutdown ⇒
+            channels.values foreach (_.close)
+            selector.close
+        }
       }
     }
   }
