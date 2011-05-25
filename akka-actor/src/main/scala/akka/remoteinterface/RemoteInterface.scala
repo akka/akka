@@ -29,6 +29,20 @@ trait RemoteModule {
   private[akka] def actorsByUuid: ConcurrentHashMap[String, ActorRef] // FIXME remove actorsByUuid map?
   private[akka] def actorsFactories: ConcurrentHashMap[String, () ⇒ ActorRef] // FIXME what to do wit actorsFactories map?
 
+  private[akka] def findActorByAddress(address: String): ActorRef = actors.get(address)
+
+  private[akka] def findActorByUuid(uuid: String): ActorRef = actorsByUuid.get(uuid)
+
+  private[akka] def findActorFactory(address: String): () ⇒ ActorRef = actorsFactories.get(address)
+
+  private[akka] def findActorByAddressOrUuid(address: String, uuid: String): ActorRef = {
+    var actorRefOrNull = if (address.startsWith(UUID_PREFIX)) findActorByUuid(address.substring(UUID_PREFIX.length))
+    else findActorByAddress(address)
+    if (actorRefOrNull eq null) actorRefOrNull = findActorByUuid(uuid)
+    actorRefOrNull
+  }
+
+  /*
   private[akka] def findActorByAddress(address: String): ActorRef = {
     val cachedActorRef = actors.get(address)
     if (cachedActorRef ne null) cachedActorRef
@@ -71,6 +85,7 @@ trait RemoteModule {
     if (actorRefOrNull eq null) actorRefOrNull = findActorByUuid(uuid)
     actorRefOrNull
   }
+  */
 }
 
 /**

@@ -94,6 +94,15 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception 
 }
 
 /**
+ * Classes for passing status back to the sender.
+ */
+object Status {
+  sealed trait Status extends Serializable
+  case object Success extends Status
+  case class Failure(cause: Throwable) extends Status
+}
+
+/**
  * Actor factory module with factory methods for creating various kinds of Actors.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -221,18 +230,7 @@ object Actor extends ListenerManagement {
    * </pre>
    */
   def actorOf[T <: Actor](clazz: Class[T], address: String): ActorRef = {
-    Address.validate(address)
-    val actorRefFactory = () ⇒ newLocalActorRef(clazz, address)
-    try {
-      Deployer.deploymentFor(address) match {
-        case Deploy(_, router, _, Local) ⇒ actorRefFactory() // FIXME handle 'router' in 'Local' actors
-        case deploy                      ⇒ newClusterActorRef[T](actorRefFactory, address, deploy)
-      }
-    } catch {
-      case e: DeploymentException ⇒
-        EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
-        actorRefFactory() // if deployment fails, fall back to local actors
-    }
+    createActor(address, () ⇒ newLocalActorRef(clazz, address))
   }
 
   /**
@@ -274,18 +272,7 @@ object Actor extends ListenerManagement {
    * </pre>
    */
   def actorOf[T <: Actor](creator: ⇒ T, address: String): ActorRef = {
-    Address.validate(address)
-    val actorRefFactory = () ⇒ new LocalActorRef(() ⇒ creator, address)
-    try {
-      Deployer.deploymentFor(address) match {
-        case Deploy(_, router, _, Local) ⇒ actorRefFactory() // FIXME handle 'router' in 'Local' actors
-        case deploy                      ⇒ newClusterActorRef[T](actorRefFactory, address, deploy)
-      }
-    } catch {
-      case e: DeploymentException ⇒
-        EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
-        actorRefFactory() // if deployment fails, fall back to local actors
-    }
+    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator, address))
   }
 
   /**
@@ -308,18 +295,7 @@ object Actor extends ListenerManagement {
    * JAVA API
    */
   def actorOf[T <: Actor](creator: Creator[T], address: String): ActorRef = {
-    Address.validate(address)
-    val actorRefFactory = () ⇒ new LocalActorRef(() ⇒ creator.create, address)
-    try {
-      Deployer.deploymentFor(address) match {
-        case Deploy(_, router, _, Local) ⇒ actorRefFactory() // FIXME handle 'router' in 'Local' actors
-        case deploy                      ⇒ newClusterActorRef[T](actorRefFactory, address, deploy)
-      }
-    } catch {
-      case e: DeploymentException ⇒
-        EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
-        actorRefFactory() // if deployment fails, fall back to local actors
-    }
+    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator.create, address))
   }
 
   /**
@@ -366,6 +342,24 @@ object Actor extends ListenerManagement {
     anyFuture.resultOrException
   })
 
+  private[akka] def createActor(address: String, actorFactory: () ⇒ ActorRef): ActorRef = {
+    Address.validate(address)
+    registry.actorFor(address) match { // check if the actor for the address is already in the registry
+      case Some(actorRef) ⇒ actorRef // it is -> return it
+      case None ⇒ // it is not -> create it
+        try {
+          Deployer.deploymentFor(address) match {
+            case Deploy(_, router, _, Local) ⇒ actorFactory() // create a local actor
+            case deploy                      ⇒ newClusterActorRef(actorFactory, address, deploy)
+          }
+        } catch {
+          case e: DeploymentException ⇒
+            EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
+            actorFactory() // if deployment fails, fall back to local actors
+        }
+    }
+  }
+
   private[akka] def newLocalActorRef(clazz: Class[_ <: Actor], address: String): ActorRef = {
     new LocalActorRef(() ⇒ {
       import ReflectiveAccess.{ createInstance, noParams, noArgs }
@@ -386,7 +380,7 @@ object Actor extends ListenerManagement {
     }, address)
   }
 
-  private def newClusterActorRef[T <: Actor](factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef = {
+  private def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef = {
     deploy match {
       case Deploy(_, router, serializerClassName, Clustered(home, replication: Replication, state: State)) ⇒
 
@@ -396,43 +390,45 @@ object Actor extends ListenerManagement {
         val isHomeNode = DeploymentConfig.isHomeNode(home)
         val replicas = DeploymentConfig.replicaValueFor(replication)
 
-        if (isHomeNode) { // home node for clustered actor
+        def serializerErrorDueTo(reason: String) =
+          throw new akka.config.ConfigurationException(
+            "Could not create Serializer object [" + serializerClassName +
+              "] for serialization of actor [" + address +
+              "] since " + reason)
 
-          def serializerErrorDueTo(reason: String) =
-            throw new akka.config.ConfigurationException(
-              "Could not create Serializer object [" + serializerClassName +
-                "] for serialization of actor [" + address +
-                "] since " + reason)
-
-          val serializer: Serializer = {
-            if ((serializerClassName eq null) ||
-              (serializerClassName == "") ||
-              (serializerClassName == Format.defaultSerializerName)) {
-              Format.Default
-            } else {
-              val clazz: Class[_] = ReflectiveAccess.getClassFor(serializerClassName) match {
-                case Right(clazz) ⇒ clazz
-                case Left(exception) ⇒
-                  val cause = exception match {
-                    case i: InvocationTargetException ⇒ i.getTargetException
-                    case _                            ⇒ exception
-                  }
-                  serializerErrorDueTo(cause.toString)
-              }
-              val f = clazz.newInstance.asInstanceOf[AnyRef]
-              if (f.isInstanceOf[Serializer]) f.asInstanceOf[Serializer]
-              else serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
+        val serializer: Serializer = {
+          if ((serializerClassName eq null) ||
+            (serializerClassName == "") ||
+            (serializerClassName == Format.defaultSerializerName)) {
+            Format.Default
+          } else {
+            val clazz: Class[_] = ReflectiveAccess.getClassFor(serializerClassName) match {
+              case Right(clazz) ⇒ clazz
+              case Left(exception) ⇒
+                val cause = exception match {
+                  case i: InvocationTargetException ⇒ i.getTargetException
+                  case _                            ⇒ exception
+                }
+                serializerErrorDueTo(cause.toString)
             }
+            val f = clazz.newInstance.asInstanceOf[AnyRef]
+            if (f.isInstanceOf[Serializer]) f.asInstanceOf[Serializer]
+            else serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
           }
+        }
 
-          if (!cluster.isClustered(address)) cluster.store(factory().start(), replicas, false, serializer) // add actor to cluster registry (if not already added)
-
+        if (isHomeNode) { // home node for clustered actor
           // home node, check out as LocalActorRef
           cluster
             .use(address, serializer)
-            .getOrElse(throw new ConfigurationException("Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
+            .getOrElse(throw new ConfigurationException(
+              "Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
 
         } else {
+          if (!cluster.isClustered(address)) {
+            cluster.store(factory().start(), replicas, false, serializer) // add actor to cluster registry (if not already added)
+          }
+          // Thread.sleep(5000)
           // remote node (not home node), check out as ClusterActorRef
           cluster.ref(address, DeploymentConfig.routerTypeFor(router))
         }

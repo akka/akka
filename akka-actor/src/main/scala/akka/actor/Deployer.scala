@@ -159,6 +159,10 @@ object Deployer {
     deployer
   }
 
+  def start() {
+    instance.toString
+  }
+
   def shutdown() {
     instance.shutdown()
   }
@@ -325,9 +329,9 @@ object Deployer {
             // --------------------------------
             // akka.actor.deployment.<address>.clustered.replicas
             // --------------------------------
-            val replicas = clusteredConfig.getAny("replicas", "1") match {
+            val replicas = clusteredConfig.getAny("replicas", "0") match {
               case "auto" ⇒ AutoReplicate
-              case "1"    ⇒ NoReplicas
+              case "0"    ⇒ NoReplicas
               case nrOfReplicas: String ⇒
                 try {
                   Replicate(nrOfReplicas.toInt)
@@ -335,7 +339,7 @@ object Deployer {
                   case e: NumberFormatException ⇒
                     throw new ConfigurationException(
                       "Config option [" + addressPath +
-                        ".clustered.replicas] needs to be either [\"auto\"] or [1-N] - was [" +
+                        ".clustered.replicas] needs to be either [\"auto\"] or [0-N] - was [" +
                         nrOfReplicas + "]")
                 }
             }
