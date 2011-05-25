@@ -5,6 +5,7 @@ package akka.actor
 
 import akka.config.Supervision.Permanent
 import akka.util.ByteString
+import akka.dispatch.MessageInvocation
 
 import java.net.InetSocketAddress
 import java.io.IOException
@@ -23,6 +24,7 @@ import java.nio.channels.{
 
 import scala.collection.immutable.Queue
 import scala.annotation.tailrec
+import scala.util.continuations._
 
 import com.eaio.uuid.UUID
 
@@ -78,6 +80,63 @@ trait IO {
 
   def close(token: IO.Token): Unit =
     token.ioManager ! IO.Close(token)
+
+}
+
+trait IOActor extends Actor with IO {
+
+  var messages: Queue[MessageInvocation] = Queue.empty
+
+  var readBytes: ByteString = ByteString.empty
+
+  var waitingCont: Option[ByteString ⇒ Unit] = None
+
+  var waitingLen: Int = 0
+
+  var token: IO.Token = _
+
+  var currentMessage: MessageInvocation = _
+
+  def read(len: Int): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
+    waitingLen = len
+    waitingCont = Some(cont)
+    run()
+  }
+
+  def write(bytes: ByteString): Unit = write(token, bytes)
+
+  def receive = {
+    case IO.Read(t, newBytes) if token == t ⇒
+      readBytes ++= newBytes
+      run()
+    case IO.Connected(t) if token == t ⇒ ()
+    case IO.Closed(t) if token == t    ⇒ self.stop
+    case msg if waitingCont.isDefined ⇒
+      messages = messages.enqueue(self.currentMessage)
+    case msg if receiveIO.isDefinedAt(msg) ⇒
+      currentMessage = self.currentMessage
+      reset { receiveIO(msg) }
+      ()
+  }
+
+  def receiveIO: PartialFunction[Any, Unit @suspendable]
+
+  def run(): Unit = {
+    self.currentMessage = currentMessage
+    while (readBytes.length >= waitingLen && waitingCont.isDefined) {
+      val bytes = readBytes.take(waitingLen).clone
+      readBytes = readBytes.drop(waitingLen).clone
+      val cont = waitingCont.get
+      waitingCont = None
+      waitingLen = 0
+      cont(bytes)
+    }
+    if (waitingCont.isEmpty && messages.nonEmpty) {
+      val (msg, rest) = messages.dequeue
+      messages = rest
+      self.invoke(msg)
+    }
+  }
 
 }
 

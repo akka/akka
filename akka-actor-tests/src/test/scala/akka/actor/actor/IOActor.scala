@@ -36,31 +36,17 @@ object IOActorSpec {
 
   }
 
-  class SimpleEchoClient(host: String, port: Int, ioManager: ActorRef) extends Actor with IO {
+  class SimpleEchoClient(host: String, port: Int, ioManager: ActorRef) extends IOActor {
 
-    var requests: Map[IO.Token, (ByteString, Int, Promise[Any])] = Map.empty
+    override def preStart: Unit = {
+      token = connect(ioManager, host, port)
+    }
 
-    def receive = {
+    def receiveIO = {
       case bytes: ByteString ⇒
-        println("C: New request")
-        val token = connect(ioManager, host, port)
-        write(token, bytes)
-        requests += (token -> (ByteString.empty, bytes.length, self.senderFuture.get))
-      case IO.Connected(token) ⇒
-        println("C: Connected to server")
-      case IO.Read(token, bytes) ⇒
-        val (result, size, promise) = requests(token)
-        if (bytes.length + result.length == size) {
-          println("C: Received complete result")
-          requests -= token
-          close(token)
-          promise complete Right(result ++ bytes)
-        } else {
-          println("C: Received partial result")
-          requests += (token -> (result ++ bytes, size, promise))
-        }
-      case IO.Closed(token) ⇒
-        println("C: Connection closed")
+        write(bytes)
+        val echo = read(bytes.length)
+        self reply echo
     }
   }
 }
@@ -70,11 +56,15 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
 
   "an IO Actor" must {
     "run" in {
-      val ioManager = Actor.actorOf(new IOManager()).start
+      val ioManager = Actor.actorOf(new IOManager(2)).start
       val server = Actor.actorOf(new SimpleEchoServer("localhost", 8064, ioManager)).start
       val client = Actor.actorOf(new SimpleEchoClient("localhost", 8064, ioManager)).start
-      val promise = client !!! ByteString("Hello World!")
-      (promise.get: ByteString) must equal(ByteString("Hello World!"))
+      val promise1 = client !!! ByteString("Hello World!1")
+      val promise2 = client !!! ByteString("Hello World!2")
+      val promise3 = client !!! ByteString("Hello World!3")
+      (promise1.get: ByteString) must equal(ByteString("Hello World!1"))
+      (promise2.get: ByteString) must equal(ByteString("Hello World!2"))
+      (promise3.get: ByteString) must equal(ByteString("Hello World!3"))
       client.stop
       server.stop
       ioManager.stop
