@@ -6,18 +6,6 @@
 #############
 
 
-Download Akka Modules
-=====================
-
-Download the full Akka Modules distribution from http://akka.io/downloads
-
-
-Build latest version from source
-================================
-
-To build the latest version see :ref:`building-akka-modules`.
-
-
 Run the microkernel
 ===================
 
