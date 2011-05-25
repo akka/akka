@@ -45,8 +45,7 @@ object IOActorSpec {
     def receiveIO = {
       case bytes: ByteString ⇒
         write(bytes)
-        val echo = read(bytes.length)
-        self reply echo
+        self reply read(bytes.length)
     }
   }
 }
