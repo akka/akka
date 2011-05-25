@@ -31,6 +31,7 @@ import Actor._
 import akka.event.EventHandler
 import akka.dispatch.{ Dispatchers, Future }
 import akka.remoteinterface._
+import akka.routing.RouterType
 import akka.config.Config
 import Config._
 import akka.serialization.{ Format, Serializers, Serializer, Compression }
@@ -776,7 +777,8 @@ class DefaultClusterNode private[akka] (
       actor
     }
 
-    refByAddress(actorAddress)
+    refByAddress(actorAddress).start()
+
   } else throw new ClusterException("Not connected to cluster")
 
   /**

@@ -986,6 +986,7 @@ object RemoteActorSystemMessage {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] case class RemoteActorRef private[akka] (
+  val remoteAddress: InetSocketAddress,
   val address: String,
   _timeout: Long,
   loader: Option[ClassLoader])
@@ -996,7 +997,7 @@ private[akka] case class RemoteActorRef private[akka] (
   timeout = _timeout
 
   // FIXME BAD, we should not have different ActorRefs
-
+  /*
   import DeploymentConfig._
   val remoteAddress = Deployer.deploymentFor(address) match {
     case Deploy(_, _, _, Clustered(home, _, _)) ⇒
@@ -1011,7 +1012,7 @@ private[akka] case class RemoteActorRef private[akka] (
     //throw new IllegalStateException(
     //  "Actor with Address [" + address + "] is not bound to a Clustered Deployment")
   }
-
+*/
   start()
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]) {

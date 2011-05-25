@@ -6,6 +6,7 @@ package akka.remoteinterface
 
 import akka.japi.Creator
 import akka.actor._
+import DeploymentConfig._
 import akka.util._
 import akka.dispatch.Promise
 import akka.serialization._
@@ -24,21 +25,49 @@ trait RemoteModule {
   def optimizeLocalScoped_?(): Boolean //Apply optimizations for remote operations in local scope
   protected[akka] def notifyListeners(message: ⇒ Any): Unit
 
-  private[akka] def actors: ConcurrentHashMap[String, ActorRef]
-  private[akka] def actorsByUuid: ConcurrentHashMap[String, ActorRef]
-  private[akka] def actorsFactories: ConcurrentHashMap[String, () ⇒ ActorRef]
+  private[akka] def actors: ConcurrentHashMap[String, ActorRef] // FIXME need to invalidate this cache on replication
+  private[akka] def actorsByUuid: ConcurrentHashMap[String, ActorRef] // FIXME remove actorsByUuid map?
+  private[akka] def actorsFactories: ConcurrentHashMap[String, () ⇒ ActorRef] // FIXME what to do wit actorsFactories map?
 
-  /** Lookup methods **/
+  private[akka] def findActorByAddress(address: String): ActorRef = {
+    val cachedActorRef = actors.get(address)
+    if (cachedActorRef ne null) cachedActorRef
+    else {
+      val actorRef =
+        Deployer.lookupDeploymentFor(address) match {
+          case Some(Deploy(_, router, _, Clustered(home, _, _))) ⇒
 
-  private[akka] def findActorByAddress(address: String): ActorRef = actors.get(address)
+            if (DeploymentConfig.isHomeNode(home)) { // on home node
+              Actor.registry.actorFor(address) match { // try to look up in actor registry
+                case Some(actorRef) ⇒ // in registry -> DONE
+                  actorRef
+                case None ⇒ // not in registry -> check out as 'ref' from cluster (which puts it in actor registry for next time around)
+                  Actor.cluster.ref(address, DeploymentConfig.routerTypeFor(router))
+              }
+            } else throw new IllegalActorStateException("Trying to look up remote actor on non-home node. FIXME: fix this behavior")
+
+          case Some(Deploy(_, _, _, Local)) ⇒
+            Actor.registry.actorFor(address).getOrElse(throw new IllegalActorStateException("Could not lookup locally deployed actor in actor registry"))
+
+          case _ ⇒
+            actors.get(address) // FIXME do we need to fall back to local here? If it is not clustered then it should not be a remote actor in the first place. Throw exception.
+        }
+
+      actors.put(address, actorRef) // cache it for next time around
+      actorRef
+    }
+  }
 
   private[akka] def findActorByUuid(uuid: String): ActorRef = actorsByUuid.get(uuid)
 
   private[akka] def findActorFactory(address: String): () ⇒ ActorRef = actorsFactories.get(address)
 
   private[akka] def findActorByAddressOrUuid(address: String, uuid: String): ActorRef = {
-    var actorRefOrNull = if (address.startsWith(UUID_PREFIX)) findActorByUuid(address.substring(UUID_PREFIX.length))
-    else findActorByAddress(address)
+    // find by address
+    var actorRefOrNull =
+      if (address.startsWith(UUID_PREFIX)) findActorByUuid(address.substring(UUID_PREFIX.length)) // FIXME remove lookup by UUID? probably
+      else findActorByAddress(address)
+    // find by uuid
     if (actorRefOrNull eq null) actorRefOrNull = findActorByUuid(uuid)
     actorRefOrNull
   }

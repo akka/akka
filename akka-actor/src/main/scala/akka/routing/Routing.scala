@@ -13,6 +13,103 @@ import scala.collection.immutable.Seq
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 
+import akka.AkkaException
+
+class RoutingException(message: String) extends AkkaException(message)
+
+sealed trait RouterType
+
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object RouterType {
+  object Direct extends RouterType
+  object Random extends RouterType
+  object RoundRobin extends RouterType
+  object LeastCPU extends RouterType
+  object LeastRAM extends RouterType
+  object LeastMessages extends RouterType
+}
+
+/**
+ * A Router is a trait whose purpose is to route incoming messages to actors.
+ */
+trait Router { this: Actor ⇒
+
+  protected def transform(msg: Any): Any = msg
+
+  protected def routes: PartialFunction[Any, ActorRef]
+
+  protected def broadcast(message: Any) {}
+
+  protected def dispatch: Receive = {
+    case Routing.Broadcast(message) ⇒
+      broadcast(message)
+    case a if routes.isDefinedAt(a) ⇒
+      if (isSenderDefined) routes(a).forward(transform(a))(someSelf)
+      else routes(a).!(transform(a))(None)
+  }
+
+  def receive = dispatch
+
+  private def isSenderDefined = self.senderFuture.isDefined || self.sender.isDefined
+}
+
+/**
+ * An UntypedRouter is an abstract class whose purpose is to route incoming messages to actors.
+ */
+abstract class UntypedRouter extends UntypedActor {
+  protected def transform(msg: Any): Any = msg
+
+  protected def route(msg: Any): ActorRef
+
+  protected def broadcast(message: Any) {}
+
+  private def isSenderDefined = self.senderFuture.isDefined || self.sender.isDefined
+
+  @throws(classOf[Exception])
+  def onReceive(msg: Any): Unit = msg match {
+    case m: Routing.Broadcast ⇒ broadcast(m.message)
+    case _ ⇒
+      val r = route(msg)
+      if (r eq null) throw new IllegalStateException("No route for " + msg + " defined!")
+      if (isSenderDefined) r.forward(transform(msg))(someSelf)
+      else r.!(transform(msg))(None)
+  }
+}
+
+/**
+ * A LoadBalancer is a specialized kind of Router, that is supplied an InfiniteIterator of targets
+ * to dispatch incoming messages to.
+ */
+trait LoadBalancer extends Router { self: Actor ⇒
+  protected def seq: InfiniteIterator[ActorRef]
+
+  protected def routes = {
+    case x if seq.hasNext ⇒ seq.next
+  }
+
+  override def broadcast(message: Any) = seq.items.foreach(_ ! message)
+
+  override def isDefinedAt(msg: Any) = seq.exists(_.isDefinedAt(msg))
+}
+
+/**
+ * A UntypedLoadBalancer is a specialized kind of UntypedRouter, that is supplied an InfiniteIterator of targets
+ * to dispatch incoming messages to.
+ */
+abstract class UntypedLoadBalancer extends UntypedRouter {
+  protected def seq: InfiniteIterator[ActorRef]
+
+  protected def route(msg: Any) =
+    if (seq.hasNext) seq.next
+    else null
+
+  override def broadcast(message: Any) = seq.items.foreach(_ ! message)
+
+  override def isDefinedAt(msg: Any) = seq.exists(_.isDefinedAt(msg))
+}
+
 object Routing {
 
   sealed trait RoutingMessage
@@ -116,84 +213,5 @@ case class SmallestMailboxFirstIterator(val items: Seq[ActorRef]) extends Infini
   def next = items.reduceLeft((a1, a2) ⇒ if (a1.mailboxSize < a2.mailboxSize) a1 else a2)
 
   override def exists(f: ActorRef ⇒ Boolean): Boolean = items.exists(f)
-}
-
-/**
- * A Router is a trait whose purpose is to route incoming messages to actors.
- */
-trait Router { this: Actor ⇒
-
-  protected def transform(msg: Any): Any = msg
-
-  protected def routes: PartialFunction[Any, ActorRef]
-
-  protected def broadcast(message: Any) {}
-
-  protected def dispatch: Receive = {
-    case Routing.Broadcast(message) ⇒
-      broadcast(message)
-    case a if routes.isDefinedAt(a) ⇒
-      if (isSenderDefined) routes(a).forward(transform(a))(someSelf)
-      else routes(a).!(transform(a))(None)
-  }
-
-  def receive = dispatch
-
-  private def isSenderDefined = self.senderFuture.isDefined || self.sender.isDefined
-}
-
-/**
- * An UntypedRouter is an abstract class whose purpose is to route incoming messages to actors.
- */
-abstract class UntypedRouter extends UntypedActor {
-  protected def transform(msg: Any): Any = msg
-
-  protected def route(msg: Any): ActorRef
-
-  protected def broadcast(message: Any) {}
-
-  private def isSenderDefined = self.senderFuture.isDefined || self.sender.isDefined
-
-  @throws(classOf[Exception])
-  def onReceive(msg: Any): Unit = msg match {
-    case m: Routing.Broadcast ⇒ broadcast(m.message)
-    case _ ⇒
-      val r = route(msg)
-      if (r eq null) throw new IllegalStateException("No route for " + msg + " defined!")
-      if (isSenderDefined) r.forward(transform(msg))(someSelf)
-      else r.!(transform(msg))(None)
-  }
-}
-
-/**
- * A LoadBalancer is a specialized kind of Router, that is supplied an InfiniteIterator of targets
- * to dispatch incoming messages to.
- */
-trait LoadBalancer extends Router { self: Actor ⇒
-  protected def seq: InfiniteIterator[ActorRef]
-
-  protected def routes = {
-    case x if seq.hasNext ⇒ seq.next
-  }
-
-  override def broadcast(message: Any) = seq.items.foreach(_ ! message)
-
-  override def isDefinedAt(msg: Any) = seq.exists(_.isDefinedAt(msg))
-}
-
-/**
- * A UntypedLoadBalancer is a specialized kind of UntypedRouter, that is supplied an InfiniteIterator of targets
- * to dispatch incoming messages to.
- */
-abstract class UntypedLoadBalancer extends UntypedRouter {
-  protected def seq: InfiniteIterator[ActorRef]
-
-  protected def route(msg: Any) =
-    if (seq.hasNext) seq.next
-    else null
-
-  override def broadcast(message: Any) = seq.items.foreach(_ ! message)
-
-  override def isDefinedAt(msg: Any) = seq.exists(_.isDefinedAt(msg))
 }
 
