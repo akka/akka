@@ -644,7 +644,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
       new AkkaSampleOsgiProject(_), akka_actor)
 
     lazy val akka_sample_camel = project("akka-sample-camel", "akka-sample-camel",
-      new AkkaSampleCamelProject(_), akka_actor, akka_kernel)
+      new AkkaSampleCamelProject(_), akka_actor, akka_camel,akka_kernel)
 
 
     lazy val publishRelease = {
