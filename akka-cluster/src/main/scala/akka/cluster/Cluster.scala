@@ -28,6 +28,7 @@ import akka.util._
 import Helpers._
 import akka.actor._
 import Actor._
+import Status._
 import akka.event.EventHandler
 import akka.dispatch.{ Dispatchers, Future }
 import akka.remoteinterface._
@@ -124,6 +125,8 @@ object Cluster {
   val maxTimeToWaitUntilConnected = Duration(config.getInt("akka.cluster.max-time-to-wait-until-connected", 30), TIME_UNIT).toMillis.toInt
   val shouldCompressData = config.getBool("akka.cluster.use-compression", false)
   val enableJMX = config.getBool("akka.enable-jmx", true)
+  val remoteDaemonAckTimeout = Duration(config.getInt("akka.cluster.remote-daemon-ack-timeout", 30), TIME_UNIT).toMillis.toInt
+  val excludeRefNodeInReplicaSet = config.getBool("akka.cluster.exclude-ref-node-in-replica-set", true)
 
   @volatile
   private var properties = Map.empty[String, String]
@@ -518,7 +521,7 @@ class DefaultClusterNode private[akka] (
 
     val uuid = actorRef.uuid
     EventHandler.debug(this,
-      "Clustering actor [%s] with UUID [%s]".format(actorRef.address, uuid))
+      "Storing actor [%s] with UUID [%s] in cluster".format(actorRef.address, uuid))
 
     val actorBytes = if (shouldCompressData) LZF.compress(toBinary(actorRef, serializeMailbox)(format))
     else toBinary(actorRef)(format)
@@ -565,12 +568,30 @@ class DefaultClusterNode private[akka] (
       ignore[ZkNodeExistsException](zkClient.createPersistent("%s/%s".format(actorAddressToUuidsPathFor(actorRef.address), uuid)))
     }
 
+    import RemoteClusterDaemon._
     val command = RemoteDaemonMessageProtocol.newBuilder
       .setMessageType(USE)
       .setActorUuid(uuidToUuidProtocol(uuid))
       .build
+
     replicaConnectionsForReplicationFactor(replicationFactor) foreach { connection ⇒
-      connection ! command
+      (connection !! (command, remoteDaemonAckTimeout)) match {
+
+        case Some(Success) ⇒
+          EventHandler.debug(this,
+            "Replica for [%s] successfully created on [%s]"
+              .format(actorRef.address, connection))
+
+        case Some(Failure(cause)) ⇒
+          EventHandler.error(cause, this, cause.toString)
+          throw cause
+
+        case None ⇒
+          val error = new ClusterException(
+            "Operation to instantiate replicas throughout the cluster timed out, cause of error unknow")
+          EventHandler.error(error, this, error.toString)
+          throw error
+      }
     }
 
     this
@@ -596,7 +617,7 @@ class DefaultClusterNode private[akka] (
   def remove(address: String): ClusterNode = {
     isConnected ifOn {
       EventHandler.debug(this,
-        "Removing actor(s) with ADDRESS [%s] from cluster".format(address))
+        "Removing actor(s) with address [%s] from cluster".format(address))
       uuidsForActorAddress(address) foreach (uuid ⇒ remove(uuid))
     }
     this
@@ -641,7 +662,8 @@ class DefaultClusterNode private[akka] (
 
     actorUuidsForActorAddress(actorAddress) map { uuid ⇒
       EventHandler.debug(this,
-        "Checking out actor with UUID [%s] to be used on node [%s]".format(uuid, nodeAddress.nodeName))
+        "Checking out actor with UUID [%s] to be used on node [%s] as local actor"
+          .format(uuid, nodeAddress.nodeName))
 
       ignore[ZkNodeExistsException](zkClient.createPersistent(actorAtNodePathFor(nodeAddress.nodeName, uuid), true))
       ignore[ZkNodeExistsException](zkClient.createEphemeral(actorLocationsPathFor(uuid, nodeAddress)))
@@ -750,34 +772,14 @@ class DefaultClusterNode private[akka] (
    * Creates an ActorRef with a Router to a set of clustered actors.
    */
   def ref(actorAddress: String, router: RouterType): ActorRef = if (isConnected.isOn) {
-
     val addresses = addressesForActor(actorAddress)
-
     EventHandler.debug(this,
-      "Creating cluster actor ref with router [%s] for actors [%s]".format(router, addresses.mkString(", ")))
+      "Checking out cluster actor ref with address [%s] and router [%s] connected to [\n\t%s]"
+        .format(actorAddress, router, addresses.mkString("\n\t")))
 
-    def registerClusterActorRefForAddress(actorRef: ClusterActorRef, addresses: Array[(UUID, InetSocketAddress)]) {
-      addresses foreach {
-        case (_, address) ⇒ clusterActorRefs.put(address, actorRef)
-      }
-    }
-
-    // FIXME remove?
-    def refByUuid(uuid: UUID): ActorRef = {
-      val actor = Router newRouter (router, addresses, uuidToString(uuid), Actor.TIMEOUT)
-      registerClusterActorRefForAddress(actor, addresses)
-      actor
-    }
-
-    def refByAddress(actorAddress: String): ActorRef = {
-      //FIXME: unused uuids
-      val uuids = uuidsForActorAddress(actorAddress)
-      val actor = Router newRouter (router, addresses, actorAddress, Actor.TIMEOUT)
-      registerClusterActorRefForAddress(actor, addresses)
-      actor
-    }
-
-    refByAddress(actorAddress).start()
+    val actorRef = Router newRouter (router, addresses, actorAddress, Actor.TIMEOUT)
+    addresses foreach { case (_, address) ⇒ clusterActorRefs.put(address, actorRef) }
+    actorRef.start()
 
   } else throw new ClusterException("Not connected to cluster")
 
@@ -1103,7 +1105,8 @@ class DefaultClusterNode private[akka] (
     new InetSocketAddress(hostname, port)
   }
 
-  private def actorUuidsForActorAddress(actorAddress: String): Array[UUID] = uuidsForActorAddress(actorAddress) filter (_ ne null)
+  private def actorUuidsForActorAddress(actorAddress: String): Array[UUID] =
+    uuidsForActorAddress(actorAddress) filter (_ ne null)
 
   /**
    * Returns a random set with replica connections of size 'replicationFactor'.
@@ -1113,7 +1116,7 @@ class DefaultClusterNode private[akka] (
     var replicas = HashSet.empty[ActorRef]
     if (replicationFactor < 1) return replicas
 
-    connectToAllReplicas()
+    connectToAllMembershipNodesInCluster()
 
     val numberOfReplicas = replicaConnections.size
     val replicaConnectionsAsArray = replicaConnections.toList map {
@@ -1138,12 +1141,16 @@ class DefaultClusterNode private[akka] (
   /**
    * Connect to all available replicas unless already connected).
    */
-  private def connectToAllReplicas() {
+  private def connectToAllMembershipNodesInCluster() {
     membershipNodes foreach { node ⇒
-      if (!replicaConnections.contains(node)) {
-        val address = addressForNode(node)
-        val clusterDaemon = Actor.remote.actorFor(RemoteClusterDaemon.ADDRESS, address.getHostName, address.getPort)
-        replicaConnections.put(node, (address, clusterDaemon))
+      if ((node != Config.nodename)) { // no replica on the "home" node of the ref
+        if (!replicaConnections.contains(node)) { // only connect to each replica once
+          val address = addressForNode(node)
+          EventHandler.debug(this,
+            "Connecting to replica with nodename [%s] and address [%s]".format(node, address))
+          val clusterDaemon = Actor.remote.actorFor(RemoteClusterDaemon.ADDRESS, address.getHostName, address.getPort)
+          replicaConnections.put(node, (address, clusterDaemon))
+        }
       }
     }
   }
@@ -1453,6 +1460,8 @@ object RemoteClusterDaemon {
   val functionServerDispatcher = Dispatchers.newDispatcher("akka:cloud:cluster:function:server").build
 }
 
+// FIXME supervise RemoteClusterDaemon
+
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -1466,28 +1475,42 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
   def receive: Receive = {
     case message: RemoteDaemonMessageProtocol ⇒
       EventHandler.debug(this, "Received command to RemoteClusterDaemon [%s]".format(message))
+
       message.getMessageType match {
 
         case USE ⇒
-          if (message.hasActorUuid) {
-            val uuid = uuidProtocolToUuid(message.getActorUuid)
-            val address = cluster.actorAddressForUuid(uuid)
-            implicit val format: Serializer = cluster formatForActor address
-            val actors = cluster use address
-          } else if (message.hasActorAddress) {
-            val address = message.getActorAddress
-            implicit val format: Serializer = cluster formatForActor address
-            val actors = cluster use address
-          } else EventHandler.warning(this,
-            "None of 'uuid', or 'address' is specified, ignoring remote cluster daemon command [%s]".format(message))
+          try {
+            if (message.hasActorUuid) {
+              val uuid = uuidProtocolToUuid(message.getActorUuid)
+              val address = cluster.actorAddressForUuid(uuid)
+              implicit val format: Serializer = cluster formatForActor address
+              val actors = cluster use address
+            } else if (message.hasActorAddress) {
+              val address = message.getActorAddress
+              implicit val format: Serializer = cluster formatForActor address
+              val actors = cluster use address
+            } else {
+              EventHandler.warning(this,
+                "None of 'uuid', or 'address' is specified, ignoring remote cluster daemon command [%s]"
+                  .format(message))
+            }
+            self.reply(Success)
+          } catch {
+            case error ⇒
+              self.reply(Failure(error))
+              throw error
+          }
 
         case RELEASE ⇒
           if (message.hasActorUuid) {
             cluster release cluster.actorAddressForUuid(uuidProtocolToUuid(message.getActorUuid))
           } else if (message.hasActorAddress) {
             cluster release message.getActorAddress
-          } else EventHandler.warning(this,
-            "None of 'uuid' or 'actorAddress'' is specified, ignoring remote cluster daemon command [%s]".format(message))
+          } else {
+            EventHandler.warning(this,
+              "None of 'uuid' or 'actorAddress'' is specified, ignoring remote cluster daemon command [%s]"
+                .format(message))
+          }
 
         case START      ⇒ cluster.start()
 

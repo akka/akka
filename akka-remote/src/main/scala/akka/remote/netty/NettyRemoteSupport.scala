@@ -209,7 +209,7 @@ abstract class RemoteClient private[akka] (
     senderFuture: Option[Promise[T]]): Option[Promise[T]] = {
 
     if (isRunning) {
-      EventHandler.debug(this, "Sending remote message [%s]".format(request))
+      EventHandler.debug(this, "Sending to connection [%s] message [%s]".format(remoteAddress, request))
 
       if (request.getOneWay) {
         try {
@@ -550,16 +550,28 @@ class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with
 
   def optimizeLocalScoped_?() = optimizeLocal.get
 
-  protected[akka] def actorFor(actorAddress: String, timeout: Long, host: String, port: Int, loader: Option[ClassLoader]): ActorRef = {
-    val inetSocketAddress = this.address
+  protected[akka] def actorFor(
+    actorAddress: String,
+    timeout: Long,
+    host: String,
+    port: Int,
+    loader: Option[ClassLoader]): ActorRef = {
+
+    val homeInetSocketAddress = this.address
     if (optimizeLocalScoped_?) {
-      if ((host == inetSocketAddress.getAddress.getHostAddress || host == inetSocketAddress.getHostName) && port == inetSocketAddress.getPort) { //TODO: switch to InetSocketAddress.equals?
+      if ((host == homeInetSocketAddress.getAddress.getHostAddress ||
+        host == homeInetSocketAddress.getHostName) &&
+        port == homeInetSocketAddress.getPort) { //TODO: switch to InetSocketAddress.equals?
         val localRef = findActorByAddressOrUuid(actorAddress, actorAddress)
         if (localRef ne null) return localRef //Code significantly simpler with the return statement
       }
     }
 
-    RemoteActorRef(inetSocketAddress, actorAddress, timeout, loader)
+    val remoteInetSocketAddress = new InetSocketAddress(host, port)
+    EventHandler.debug(this,
+      "Creating RemoteActorRef with address [%s] connected to [%s]"
+        .format(actorAddress, remoteInetSocketAddress))
+    RemoteActorRef(remoteInetSocketAddress, actorAddress, timeout, loader)
   }
 }
 
@@ -923,11 +935,27 @@ class RemoteServerHandler(
     }
   }
 
-  private def findSessionActor(id: String, channel: Channel): ActorRef =
-    sessionActors.get(channel) match {
-      case null ⇒ null
-      case map  ⇒ map get id
-    }
+  /**
+   * Creates a new instance of the actor with name, uuid and timeout specified as arguments.
+   *
+   * If actor already created then just return it from the registry.
+   *
+   * Does not start the actor.
+   */
+  private def createActor(actorInfo: ActorInfoProtocol, channel: Channel): ActorRef = {
+    val uuid = actorInfo.getUuid
+    val address = actorInfo.getAddress
+
+    EventHandler.debug(this,
+      "Creating an remotely available actor for address [%s] on node [%s]"
+        .format(address, Config.nodename))
+
+    val actorRef = Actor.createActor(address, () ⇒ createSessionActor(actorInfo, channel))
+
+    if (actorRef eq null) throw new IllegalActorStateException(
+      "Could not find a remote actor with address [" + address + "] or uuid [" + uuid + "]")
+    actorRef
+  }
 
   /**
    * gets the actor from the session, or creates one if there is a factory for it
@@ -950,28 +978,11 @@ class RemoteServerHandler(
     }
   }
 
-  /**
-   * Creates a new instance of the actor with name, uuid and timeout specified as arguments.
-   *
-   * If actor already created then just return it from the registry.
-   *
-   * Does not start the actor.
-   */
-  private def createActor(actorInfo: ActorInfoProtocol, channel: Channel): ActorRef = {
-    val uuid = actorInfo.getUuid
-    val address = actorInfo.getAddress
-
-    EventHandler.debug(this, "Creating an remotely available actor for address [%s] on node [%s]".format(address, Config.nodename))
-
-    val actorRef = server.findActorByAddressOrUuid(address, parseUuid(uuid).toString) match {
-      // the actor has not been registered globally. See if we have it in the session
-      case null     ⇒ createSessionActor(actorInfo, channel) // FIXME now session scoped actors are disabled, how to introduce them?
-      case actorRef ⇒ actorRef
+  private def findSessionActor(id: String, channel: Channel): ActorRef =
+    sessionActors.get(channel) match {
+      case null ⇒ null
+      case map  ⇒ map get id
     }
-
-    if (actorRef eq null) throw new IllegalActorStateException("Could not find a remote actor with address [" + address + "] or uuid [" + uuid + "]")
-    actorRef
-  }
 
   private def createErrorReplyMessage(exception: Throwable, request: RemoteMessageProtocol): AkkaRemoteProtocol = {
     val actorInfo = request.getActorInfo

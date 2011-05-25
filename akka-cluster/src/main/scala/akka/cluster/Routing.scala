@@ -8,6 +8,7 @@ import Cluster._
 import akka.actor._
 import Actor._
 import akka.dispatch.Future
+import akka.event.EventHandler
 import akka.routing.{ RouterType, RoutingException }
 import RouterType._
 
@@ -52,22 +53,32 @@ object Router {
   trait BasicRouter extends Router {
     def route(message: Any)(implicit sender: Option[ActorRef]): Unit = next match {
       case Some(actor) ⇒ actor.!(message)(sender)
-      case _           ⇒ throw new RoutingException("No node connections for router")
+      case _           ⇒ throwNoConnectionsError()
     }
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] = next match {
       case Some(actor) ⇒ actor.!!!(message, timeout)(sender)
-      case _           ⇒ throw new RoutingException("No node connections for router")
+      case _           ⇒ throwNoConnectionsError()
     }
 
     protected def next: Option[ActorRef]
+
+    private def throwNoConnectionsError() = {
+      val error = new RoutingException("No replica connections for router")
+      EventHandler.error(error, this, error.toString)
+      throw error
+    }
   }
 
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   trait Direct extends BasicRouter {
-    lazy val next: Option[ActorRef] = connections.values.headOption
+    lazy val next: Option[ActorRef] = {
+      val connection = connections.values.headOption
+      if (connection.isEmpty) EventHandler.warning(this, "Router has no replica connection")
+      connection
+    }
   }
 
   /**
@@ -77,8 +88,10 @@ object Router {
     private val random = new java.util.Random(System.currentTimeMillis)
 
     def next: Option[ActorRef] =
-      if (connections.isEmpty) None
-      else Some(connections.valuesIterator.drop(random.nextInt(connections.size)).next)
+      if (connections.isEmpty) {
+        EventHandler.warning(this, "Router has no replica connections")
+        None
+      } else Some(connections.valuesIterator.drop(random.nextInt(connections.size)).next)
   }
 
   /**
@@ -100,8 +113,13 @@ object Router {
           case xs  ⇒ xs
         }
 
-        if (current.compareAndSet(currentItems, newItems.tail)) newItems.headOption
-        else findNext
+        if (newItems.isEmpty) {
+          EventHandler.warning(this, "Router has no replica connections")
+          None
+        } else {
+          if (current.compareAndSet(currentItems, newItems.tail)) newItems.headOption
+          else findNext
+        }
       }
 
       findNext

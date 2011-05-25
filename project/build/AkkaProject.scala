@@ -79,7 +79,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
-  lazy val CAMEL_VERSION         = "2.7.0"
+  lazy val CAMEL_VERSION         = "2.7.1"
   lazy val SPRING_VERSION        = "3.0.5.RELEASE"
   lazy val JACKSON_VERSION       = "1.8.0"
   lazy val JERSEY_VERSION        = "1.3"
@@ -163,18 +163,18 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val akka_testkit           = project("akka-testkit",           "akka-testkit",           new AkkaTestkitProject(_),                akka_actor)
   lazy val akka_actor_tests       = project("akka-actor-tests",       "akka-actor-tests",       new AkkaActorTestsProject(_),             akka_testkit)
   lazy val akka_stm               = project("akka-stm",               "akka-stm",               new AkkaStmProject(_),                    akka_actor)
+  lazy val akka_http              = project("akka-http",              "akka-http",              new AkkaHttpProject(_),                   akka_actor)
+  lazy val akka_slf4j             = project("akka-slf4j",             "akka-slf4j",             new AkkaSlf4jProject(_),                  akka_actor)
   lazy val akka_remote            = project("akka-remote",            "akka-remote",            new AkkaRemoteProject(_),                 akka_stm, akka_actor_tests)
   lazy val akka_cluster           = project("akka-cluster",           "akka-cluster",           new AkkaClusterProject(_),                akka_remote)
   lazy val akka_durable_mailboxes = project("akka-durable-mailboxes", "akka-durable-mailboxes", new AkkaDurableMailboxesParentProject(_), akka_remote)
+
   lazy val akka_camel             = project("akka-camel",             "akka-camel",             new AkkaCamelProject(_),                  akka_actor, akka_slf4j)
   //lazy val akka_camel_typed       = project("akka-camel-typed",       "akka-camel-typed",       new AkkaCamelTypedProject(_),             akka_actor, akka_slf4j, akka_camel)
-
   //lazy val akka_spring            = project("akka-spring",            "akka-spring",            new AkkaSpringProject(_),                 akka_remote, akka_actor, akka_camel)
-  lazy val akka_sbt_plugin        = project("akka-sbt-plugin",        "akka-sbt-plugin",        new AkkaSbtPluginProject(_))
-
   lazy val akka_kernel            = project("akka-kernel",            "akka-kernel",            new AkkaKernelProject(_),                 akka_stm, akka_remote, akka_http, akka_slf4j, akka_camel)
-  lazy val akka_http              = project("akka-http",              "akka-http",              new AkkaHttpProject(_),                   akka_actor)
-  lazy val akka_slf4j             = project("akka-slf4j",             "akka-slf4j",             new AkkaSlf4jProject(_),                  akka_actor)
+
+  lazy val akka_sbt_plugin        = project("akka-sbt-plugin",        "akka-sbt-plugin",        new AkkaSbtPluginProject(_))
   lazy val akka_tutorials         = project("akka-tutorials",         "akka-tutorials",         new AkkaTutorialsParentProject(_),        akka_actor)
   lazy val akka_samples           = project("akka-samples",           "akka-samples",           new AkkaSamplesParentProject(_))
 
@@ -186,8 +186,6 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   // add the sh action since it doesn't exist in ParentProject
   lazy val sh = task { args =>  execOut { Process("sh" :: "-c" :: args.mkString(" ") :: Nil) } }
-
-
 
   // -------------------------------------------------------------------------------------------------------------------
   // Scaladocs
