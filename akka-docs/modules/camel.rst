@@ -114,7 +114,7 @@ representations`__ which are used by Consumer and Producer actors for pattern
 matching, transformation, serialization or storage, for example.
 
 __ https://svn.apache.org/repos/asf/camel/trunk/camel-core/src/main/java/org/apache/camel/Message.java
-__ http://github.com/jboner/akka-modules/blob/v0.8/akka-camel/src/main/scala/akka/Message.scala#L17
+__ http://github.com/jboner/akka/blob/v0.8/akka-camel/src/main/scala/akka/Message.scala#L17
 
 
 Dependencies
@@ -159,7 +159,7 @@ messages from the ``file:data/input/actor`` Camel endpoint. Untyped actors
 (Java) need to extend the abstract UntypedConsumerActor class and implement the
 getEndpointUri() and onReceive(Object) methods.
 
-.. _Consumer: http://github.com/jboner/akka-modules/blob/master/akka-camel/src/main/scala/akka/camel/Consumer.scala
+.. _Consumer: http://github.com/jboner/akka/blob/master/akka-camel/src/main/scala/akka/camel/Consumer.scala
 
 **Scala**
 
@@ -201,12 +201,12 @@ actor. Messages consumed by actors from Camel endpoints are of type
 `Message`_. These are immutable representations of Camel messages.
 
 .. _file component: http://camel.apache.org/file2.html
-.. _Message: http://github.com/jboner/akka-modules/blob/master/akka-camel/src/main/scala/akka/camel/Message.scala
+.. _Message: http://github.com/jboner/akka/blob/master/akka-camel/src/main/scala/akka/camel/Message.scala
 
 For Message usage examples refer to the unit tests:
 
-* Message unit tests - `Scala API <http://github.com/jboner/akka-modules/blob/master/akka-camel/src/test/scala/akka/MessageScalaTest.scala>`_
-* Message unit tests - `Java API <http://github.com/jboner/akka-modules/blob/master/akka-camel/src/test/java/akka/camel/MessageJavaTestBase.java>`_
+* Message unit tests - `Scala API <http://github.com/jboner/akka/blob/master/akka-camel/src/test/scala/akka/MessageScalaTest.scala>`_
+* Message unit tests - `Java API <http://github.com/jboner/akka/blob/master/akka-camel/src/test/java/akka/camel/MessageJavaTestBase.java>`_
 
 Here's another example that sets the endpointUri to
 ``jetty:http://localhost:8877/camel/default``. It causes Camel's `Jetty
@@ -257,7 +257,7 @@ client the response type should be `Message`_. For any other response type, a
 new Message object is created by akka-camel with the actor response as message
 body.
 
-.. _Message: http://github.com/jboner/akka-modules/blob/master/akka-camel/src/main/scala/akka/camel/Message.scala
+.. _Message: http://github.com/jboner/akka/blob/master/akka-camel/src/main/scala/akka/camel/Message.scala
 
 
 Typed actors
@@ -271,7 +271,7 @@ exposed as Camel endpoint it must be annotated with the `@consume
 annotation`_. For example, the following typed consumer actor defines two
 methods, foo and bar.
 
-.. _@consume annotation: http://github.com/jboner/akka-modules/blob/master/akka-camel/src/main/java/akka/camel/consume.java
+.. _@consume annotation: http://github.com/jboner/akka/blob/master/akka-camel/src/main/java/akka/camel/consume.java
 
 **Scala**
 
@@ -862,7 +862,7 @@ following consumer actor class.
 On the remote node, start a `CamelService`_, start a remote server, create the
 actor and register it at the remote server.
 
-.. _CamelService: http://github.com/jboner/akka-modules/blob/master/akka-camel/src/main/scala/akka/camel/CamelService.scala
+.. _CamelService: http://github.com/jboner/akka/blob/master/akka-camel/src/main/scala/akka/camel/CamelService.scala
 
 **Scala**
 
@@ -985,7 +985,7 @@ For sending messages to Camel endpoints, actors
   implement the getEndpointUri() method. By extending the UntypedProducerActor
   class, untyped actors (Java) inherit the behaviour of the Producer trait.
 
-.. _Producer: http://github.com/jboner/akka-modules/blob/master/akka-camel/src/main/scala/akka/camel/Producer.scala
+.. _Producer: http://github.com/jboner/akka/blob/master/akka-camel/src/main/scala/akka/camel/Producer.scala
 
 **Scala**
 
@@ -1324,7 +1324,7 @@ asynchronous message exchanges (such as Jetty endpoints that internally use
 `Jetty's asynchronous HTTP client`_) then usage of the Producer trait is highly
 recommended (see also :ref:`camel-asynchronous-routing`).
 
-.. _Producer: http://github.com/jboner/akka-modules/blob/master/akka-camel/src/main/scala/akka/camel/Producer.scala
+.. _Producer: http://github.com/jboner/akka/blob/master/akka-camel/src/main/scala/akka/camel/Producer.scala
 .. _ProducerTemplate: http://camel.apache.org/maven/camel-2.2.0/camel-core/apidocs/index.html
 .. _Jetty's asynchronous HTTP client: http://wiki.eclipse.org/Jetty/Tutorial/HttpClient
 
@@ -1847,8 +1847,8 @@ Akka actors can be access from Camel routes using the `actor`_ and
 access any Akka actor (not only consumer actors) from Camel routes, as described
 in the following sections.
 
-.. _actor: http://github.com/jboner/akka-modules/blob/master/akka-camel/src/main/scala/akka/camel/component/ActorComponent.scala
-.. _typed-actor: http://github.com/jboner/akka-modules/blob/master/akka-camel/src/main/scala/akka/camel/component/TypedActorComponent.scala
+.. _actor: http://github.com/jboner/akka/blob/master/akka-camel/src/main/scala/akka/camel/component/ActorComponent.scala
+.. _typed-actor: http://github.com/jboner/akka/blob/master/akka-camel/src/main/scala/akka/camel/component/TypedActorComponent.scala
 
 
 Access to actors
@@ -1858,7 +1858,7 @@ To access (untyped) actors from custom Camel routes, the `actor`_ Camel
 component should be used. It fully supports Camel's `asynchronous routing
 engine`_.
 
-.. _actor: http://github.com/jboner/akka-modules/blob/master/akka-camel/src/main/scala/akka/camel/component/ActorComponent.scala
+.. _actor: http://github.com/jboner/akka/blob/master/akka-camel/src/main/scala/akka/camel/component/ActorComponent.scala
 .. _asynchronous routing engine: http://camel.apache.org/asynchronous-routing-engine.html
 
 This component accepts the following enpoint URI formats:
@@ -2026,7 +2026,7 @@ described in the bean component documentation but with the typed-actor schema.
 Typed Actors must be added to a `Camel registry`_ for being accessible by the
 typed-actor component.
 
-.. _typed-actor: http://github.com/jboner/akka-modules/blob/master/akka-camel/src/main/scala/akka/camel/component/TypedActorComponent.scala
+.. _typed-actor: http://github.com/jboner/akka/blob/master/akka-camel/src/main/scala/akka/camel/component/TypedActorComponent.scala
 .. _bean: http://camel.apache.org/bean.html
 .. _Camel registry: http://camel.apache.org/registry.html
 
@@ -2445,8 +2445,8 @@ For all features described so far, there's running sample code in
 Kernel startup because this class has been added to the boot configuration in
 akka-reference.conf.
 
-.. _akka-sample-camel: http://github.com/jboner/akka-modules/tree/master/akka-modules-samples/akka-sample-camel/
-.. _sample.camel.Boot: http://github.com/jboner/akka-modules/blob/master/akka-modules-samples/akka-sample-camel/src/main/scala/sample/camel/Boot.scala
+.. _akka-sample-camel: http://github.com/jboner/akka/tree/master/akka-samples/akka-sample-camel/
+.. _sample.camel.Boot: http://github.com/jboner/akka/blob/master/akka-samples/akka-sample-camel/src/main/scala/sample/camel/Boot.scala
 
 .. code-block:: none
 
@@ -2466,7 +2466,7 @@ main method) that can be started from `sbt`_.
 .. code-block:: none
 
    $ sbt
-   [info] Building project akka-modules 2.0-SNAPSHOT against Scala 2.9.0
+   [info] Building project akka 2.0-SNAPSHOT against Scala 2.9.0
    [info]    using AkkaModulesParentProject with sbt 0.7.7 and Scala 2.7.7
    > project akka-sample-camel
    Set current project to akka-sample-camel 2.0-SNAPSHOT
