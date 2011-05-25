@@ -144,7 +144,9 @@ object ClusterDeployer {
       println("------------ INIT 2")
       val allDeployments = deployments ::: systemDeployments
 
-      // FIXME need to wrap in if (!deploymentDone) { .. }
+      ///===========================================================
+      // FIXME need a flag 'deploymentDone' in ZK and to wrap the deployment in 'if (!deploymentDone) { .. }', since now the deployment is only protected by lock during the actual deployment, if node comes in later then deployment is repeated on that node again
+      ///===========================================================
 
       if (deploymentLock.lock()) {
         println("------------ INIT 3")

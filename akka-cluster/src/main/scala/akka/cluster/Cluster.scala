@@ -1142,15 +1142,15 @@ class DefaultClusterNode private[akka] (
    * Connect to all available replicas unless already connected).
    */
   private def connectToAllMembershipNodesInCluster() {
-    val runOnThisNode = false // (node: String) ⇒ !excludeRefNodeInReplicaSet && node != Config.nodename
     membershipNodes foreach { node ⇒
-      //      if (runOnThisNode(node) && !replicaConnections.contains(node)) { // only connect to each replica once
-      if (!replicaConnections.contains(node)) { // only connect to each replica once
-        val address = addressForNode(node)
-        EventHandler.debug(this,
-          "Connecting to replica with nodename [%s] and address [%s]".format(node, address))
-        val clusterDaemon = Actor.remote.actorFor(RemoteClusterDaemon.ADDRESS, address.getHostName, address.getPort)
-        replicaConnections.put(node, (address, clusterDaemon))
+      if ((node != Config.nodename)) { // no replica on the "home" node of the ref
+        if (!replicaConnections.contains(node)) { // only connect to each replica once
+          val address = addressForNode(node)
+          EventHandler.debug(this,
+            "Connecting to replica with nodename [%s] and address [%s]".format(node, address))
+          val clusterDaemon = Actor.remote.actorFor(RemoteClusterDaemon.ADDRESS, address.getHostName, address.getPort)
+          replicaConnections.put(node, (address, clusterDaemon))
+        }
       }
     }
   }

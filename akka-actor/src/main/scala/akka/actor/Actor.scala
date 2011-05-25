@@ -418,7 +418,6 @@ object Actor extends ListenerManagement {
         }
 
         if (isHomeNode) { // home node for clustered actor
-          // home node, check out as LocalActorRef
           cluster
             .use(address, serializer)
             .getOrElse(throw new ConfigurationException(
@@ -428,23 +427,10 @@ object Actor extends ListenerManagement {
           if (!cluster.isClustered(address)) {
             cluster.store(factory().start(), replicas, false, serializer) // add actor to cluster registry (if not already added)
           }
-          // Thread.sleep(5000)
+
           // remote node (not home node), check out as ClusterActorRef
           cluster.ref(address, DeploymentConfig.routerTypeFor(router))
         }
-
-      /*
-          Misc stuff:
-            - How to define a single ClusterNode to use? Where should it be booted up? How should it be configured?
-            - ClusterNode API and Actor.remote API should be made private[akka]
-            - Rewrite ClusterSpec or remove it
-            - Actor.stop on home node (actor checked out with cluster.use(..)) should do cluster.remove(..) of actor
-            - Should we allow configuring of session-scoped remote actors? How?
-
-
-         */
-
-      //        RemoteActorRef(address, Actor.TIMEOUT, None)
 
       case invalid ⇒ throw new IllegalActorStateException(
         "Could not create actor with address [" + address +
