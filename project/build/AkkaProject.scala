@@ -8,6 +8,7 @@ import java.util.jar.Attributes
 import java.util.jar.Attributes.Name._
 import sbt._
 import sbt.CompileOrder._
+import sbt.ScalaProject._
 import spde._
 
 class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with ExecProject with DocParentProject { akkaParent =>
@@ -55,6 +56,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val glassfishModuleConfig   = ModuleConfiguration("org.glassfish", GlassfishRepo)
   lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
+  lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsRelRepo)
@@ -77,13 +79,15 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
-
+  lazy val CAMEL_VERSION         = "2.7.0"
+  lazy val SPRING_VERSION        = "3.0.5.RELEASE"
   lazy val JACKSON_VERSION       = "1.8.0"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.2"
   lazy val SCALATEST_VERSION     = "1.4.1"
   lazy val JETTY_VERSION         = "7.4.0.v20110414"
   lazy val JAVAX_SERVLET_VERSION = "3.0"
+  lazy val LOGBACK_VERSION       = "0.9.28"
   lazy val SLF4J_VERSION         = "1.6.0"
   lazy val ZOOKEEPER_VERSION     = "3.4.0"
 
@@ -93,20 +97,31 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   object Dependencies {
 
-    // Compile
+
+     // Compile
     lazy val aopalliance      = "aopalliance"                 % "aopalliance"             % "1.0" % "compile" //Public domain
     lazy val aspectwerkz      = "org.codehaus.aspectwerkz"    % "aspectwerkz"             % "2.2.3" % "compile" //ApacheV2
     lazy val beanstalk        = "beanstalk"                   % "beanstalk_client"        % "1.4.5" //New BSD
     lazy val bookkeeper       = "org.apache.hadoop.zookeeper" % "bookkeeper"              % ZOOKEEPER_VERSION //ApacheV2
+    lazy val camel_core       = "org.apache.camel"            % "camel-core"              % CAMEL_VERSION % "compile" //ApacheV2
+
     lazy val commons_codec    = "commons-codec"               % "commons-codec"           % "1.4" % "compile" //ApacheV2
     lazy val commons_io       = "commons-io"                  % "commons-io"              % "2.0.1" % "compile" //ApacheV2
     lazy val javax_servlet_30 = "org.glassfish"               % "javax.servlet"           % JAVAX_SERVLET_VERSION % "provided" //CDDL v1
     lazy val jetty            = "org.eclipse.jetty"           % "jetty-server"            % JETTY_VERSION % "provided" //Eclipse license
+    lazy val jetty_util       = "org.eclipse.jetty"           % "jetty-util"              % JETTY_VERSION % "compile" //Eclipse license
+    lazy val jetty_xml        = "org.eclipse.jetty"           % "jetty-xml"               % JETTY_VERSION % "compile" //Eclipse license
+    lazy val jetty_servlet    = "org.eclipse.jetty"           % "jetty-servlet"           % JETTY_VERSION % "compile" //Eclipse license
+
     lazy val guicey           = "org.guiceyfruit"             % "guice-all"               % "2.0" % "compile" //ApacheV2
     lazy val h2_lzf           = "voldemort.store.compress"    % "h2-lzf"                  % "1.0" % "compile" //ApacheV2
     lazy val jackson          = "org.codehaus.jackson"        % "jackson-mapper-asl"      % JACKSON_VERSION % "compile" //ApacheV2
     lazy val jackson_core     = "org.codehaus.jackson"        % "jackson-core-asl"        % JACKSON_VERSION % "compile" //ApacheV2
     lazy val jersey_server    = "com.sun.jersey"              % "jersey-server"           % JERSEY_VERSION % "provided" //CDDL v1
+    lazy val jersey           = "com.sun.jersey"              % "jersey-core"             % JERSEY_VERSION % "compile" //CDDL v1
+    lazy val jersey_json      = "com.sun.jersey"              % "jersey-json"             % JERSEY_VERSION % "compile" //CDDL v1
+    lazy val jersey_contrib   = "com.sun.jersey.contribs"     % "jersey-scala"            % JERSEY_VERSION % "compile" //CDDL v1
+
     lazy val jsr250           = "javax.annotation"            % "jsr250-api"              % "1.0" % "compile" //CDDL v1
     lazy val jsr311           = "javax.ws.rs"                 % "jsr311-api"              % "1.1" % "compile" //CDDL v1
     lazy val multiverse       = "org.multiverse"              % "multiverse-alpha"        % MULTIVERSE_VERSION % "compile" //ApacheV2
@@ -117,6 +132,10 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val sjson            = "net.debasishg"               %% "sjson"                  % "0.11" % "compile" //ApacheV2
     lazy val sjson_test       = "net.debasishg"               %% "sjson"                  % "0.11" % "test"    //ApacheV2
     lazy val slf4j            = "org.slf4j"                   % "slf4j-api"               % SLF4J_VERSION        // MIT
+    lazy val spring_beans     = "org.springframework"         % "spring-beans"            % SPRING_VERSION % "compile" //ApacheV2
+    lazy val spring_context   = "org.springframework"         % "spring-context"          % SPRING_VERSION % "compile" //ApacheV2
+
+    lazy val stax_api         = "javax.xml.stream"            % "stax-api"                % "1.0-2"        % "compile" //ApacheV2
     lazy val logback          = "ch.qos.logback"              % "logback-classic"         % "0.9.28" % "runtime" //MIT
     lazy val log4j            = "log4j"                       % "log4j"                   % "1.2.15"          //ApacheV2
     lazy val zookeeper        = "org.apache.hadoop.zookeeper" % "zookeeper"               % ZOOKEEPER_VERSION //ApacheV2
@@ -131,6 +150,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val junit            = "junit"                       % "junit"                   % "4.5"             % "test" //Common Public License 1.0
     lazy val mockito          = "org.mockito"                 % "mockito-all"             % "1.8.1"           % "test" //MIT
     lazy val scalatest        = "org.scalatest"               %% "scalatest"              % SCALATEST_VERSION % "test" //ApacheV2
+    lazy val testLogback      = "ch.qos.logback"              % "logback-classic"         % LOGBACK_VERSION   % "test" // EPL 1.0 / LGPL 2.1
+    lazy val camel_spring     = "org.apache.camel"            % "camel-spring"            % CAMEL_VERSION     % "test" //ApacheV2
+
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -144,7 +166,13 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val akka_remote            = project("akka-remote",            "akka-remote",            new AkkaRemoteProject(_),                 akka_stm, akka_actor_tests)
   lazy val akka_cluster           = project("akka-cluster",           "akka-cluster",           new AkkaClusterProject(_),                akka_remote)
   lazy val akka_durable_mailboxes = project("akka-durable-mailboxes", "akka-durable-mailboxes", new AkkaDurableMailboxesParentProject(_), akka_remote)
+  lazy val akka_camel             = project("akka-camel",             "akka-camel",             new AkkaCamelProject(_),                  akka_actor, akka_slf4j)
+  //lazy val akka_camel_typed       = project("akka-camel-typed",       "akka-camel-typed",       new AkkaCamelTypedProject(_),             akka_actor, akka_slf4j, akka_camel)
 
+  //lazy val akka_spring            = project("akka-spring",            "akka-spring",            new AkkaSpringProject(_),                 akka_remote, akka_actor, akka_camel)
+  lazy val akka_sbt_plugin        = project("akka-sbt-plugin",        "akka-sbt-plugin",        new AkkaSbtPluginProject(_))
+
+  lazy val akka_kernel            = project("akka-kernel",            "akka-kernel",            new AkkaKernelProject(_),                 akka_stm, akka_remote, akka_http, akka_slf4j, akka_camel)
   lazy val akka_http              = project("akka-http",              "akka-http",              new AkkaHttpProject(_),                   akka_actor)
   lazy val akka_slf4j             = project("akka-slf4j",             "akka-slf4j",             new AkkaSlf4jProject(_),                  akka_actor)
   lazy val akka_tutorials         = project("akka-tutorials",         "akka-tutorials",         new AkkaTutorialsParentProject(_),        akka_actor)
@@ -159,11 +187,13 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // add the sh action since it doesn't exist in ParentProject
   lazy val sh = task { args =>  execOut { Process("sh" :: "-c" :: args.mkString(" ") :: Nil) } }
 
+
+
   // -------------------------------------------------------------------------------------------------------------------
   // Scaladocs
   // -------------------------------------------------------------------------------------------------------------------
 
-  override def apiProjectDependencies = dependencies.toList - akka_samples
+  override def apiProjectDependencies = dependencies.toList - akka_samples - akka_sbt_plugin
 
   // -------------------------------------------------------------------------------------------------------------------
   // Publishing
@@ -205,7 +235,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   override def deliverProjectDependencies = (super.deliverProjectDependencies.toList
                                              - akka_samples.projectID
                                              - akka_tutorials.projectID
-                                             - akkaDist.projectID)
+                                             - akkaDist.projectID
+                                             - akka_sbt_plugin.projectID)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Build release
@@ -408,6 +439,148 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   class AkkaZooKeeperMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info)
 
   // -------------------------------------------------------------------------------------------------------------------
+  // akka-camel subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+
+    val camel_core = Dependencies.camel_core
+
+    // testing
+    val junit     = Dependencies.junit
+    val scalatest = Dependencies.scalatest
+    val logback   = Dependencies.testLogback
+
+    override def testOptions = createTestFilter( _.endsWith("Test"))
+  }
+
+   // -------------------------------------------------------------------------------------------------------------------
+  // akka-camel-typed subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaCamelTypedProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    val camel_core       = Dependencies.camel_core
+
+    // testing
+    val junit     = Dependencies.junit
+    val scalatest = Dependencies.scalatest
+    val logback   = Dependencies.testLogback
+
+    override def testOptions = createTestFilter( _.endsWith("Test"))
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-kernel subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaKernelProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    val jetty            = Dependencies.jetty
+    val jetty_util       = Dependencies.jetty_util
+    val jetty_xml        = Dependencies.jetty_xml
+    val jetty_servlet    = Dependencies.jetty_servlet
+    val jackson_core     = Dependencies.jackson_core
+    val jersey           = Dependencies.jersey
+    val jersey_contrib   = Dependencies.jersey_contrib
+    val jersey_json      = Dependencies.jersey_json
+    val jersey_server    = Dependencies.jersey_server
+    val stax_api         = Dependencies.stax_api
+  }
+
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-spring subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaSpringProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    val spring_beans     = Dependencies.spring_beans
+    val spring_context   = Dependencies.spring_context
+
+    // testing
+    val camel_spring = Dependencies.camel_spring
+    val junit        = Dependencies.junit
+    val scalatest    = Dependencies.scalatest
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-sbt-plugin subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaSbtPluginProject(info: ProjectInfo) extends PluginProject(info) {
+    val srcManagedScala = "src_managed" / "main" / "scala"
+
+    lazy val addAkkaConfig = systemOptional[Boolean]("akka.release", false)
+
+    lazy val generateAkkaSbtPlugin = {
+      val cleanSrcManaged = cleanTask(srcManagedScala) named ("clean src_managed")
+      task {
+        info.parent match {
+          case Some(project: ParentProject) =>
+            xsbt.FileUtilities.write((srcManagedScala / "AkkaProject.scala").asFile,
+                                     GenerateAkkaSbtPlugin(project, addAkkaConfig.value))
+          case _ =>
+        }
+        None
+      } dependsOn cleanSrcManaged
+    }
+
+    override def mainSourceRoots = super.mainSourceRoots +++ (srcManagedScala ##)
+    override def compileAction = super.compileAction dependsOn(generateAkkaSbtPlugin)
+
+    lazy val publishRelease = {
+      val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
+      publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
+    }
+  }
+
+  object GenerateAkkaSbtPlugin {
+  def apply(project: ParentProject, addAkkaConfig: Boolean): String = {
+    val extraConfigs = {
+      if (addAkkaConfig) Set(ModuleConfiguration("se.scalablesolutions.akka", Repositories.AkkaRepo))
+      else Set.empty[ModuleConfiguration]
+    }
+    val akkaModules = project.subProjects.values.map(_.name).flatMap{
+      case "akka-sbt-plugin" => Iterator.empty
+      case s if s.startsWith("akka-") => Iterator.single(s.drop(5))
+      case _ => Iterator.empty
+    }
+    val (repos, configs) = (project.moduleConfigurations ++ extraConfigs).foldLeft((Set.empty[String], Set.empty[String])){
+      case ((repos, configs), ModuleConfiguration(org, name, ver, MavenRepository(repoName, repoPath))) =>
+        val repoId = repoName.replaceAll("""[^a-zA-Z]""", "_")
+        val configId = org.replaceAll("""[^a-zA-Z]""", "_") +
+                         (if (name == "*") "" else ("_" + name.replaceAll("""[^a-zA-Z0-9]""", "_") +
+                           (if (ver == "*") "" else ("_" + ver.replaceAll("""[^a-zA-Z0-9]""", "_")))))
+        (repos + ("  lazy val "+repoId+" = MavenRepository(\""+repoName+"\", \""+repoPath+"\")"),
+        configs + ("  lazy val "+configId+" = ModuleConfiguration(\""+org+"\", \""+name+"\", \""+ver+"\", "+repoId+")"))
+      case (x, _) => x
+    }
+    """|import sbt._
+       |
+       |object AkkaRepositories {
+       |%s
+       |}
+       |
+       |trait AkkaBaseProject extends BasicScalaProject {
+       |  import AkkaRepositories._
+       |
+       |%s
+       |}
+       |
+       |trait AkkaProject extends AkkaBaseProject {
+       |  val akkaVersion = "%s"
+       |
+       |
+       |  def akkaModule(module: String) = "se.scalablesolutions.akka" %% ("akka-" + module) %% akkaVersion
+       |
+       |  val akkaActor = akkaModule("actor")
+       |}
+       |""".stripMargin.format(repos.mkString("\n"),
+                               configs.mkString("\n"),
+                               project.version.toString,
+                               akkaModules.map("\"" + _ + "\"").mkString(", "))
+    }
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
   // Samples
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -522,6 +695,13 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   }
 
   // -------------------------------------------------------------------------------------------------------------------
+  // Test options
+  // -------------------------------------------------------------------------------------------------------------------
+
+  lazy val integrationTestsEnabled = systemOptional[Boolean]("integration.tests",false)
+  lazy val stressTestsEnabled = systemOptional[Boolean]("stress.tests",false)
+
+  // -------------------------------------------------------------------------------------------------------------------
   // Default project
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -576,6 +756,21 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
       publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
+    }
+
+    /**
+     * Used for testOptions, possibility to enable the running of integration and or stresstests
+     *
+     * To enable set true and disable set false
+     * set integration.tests true
+     * set stress.tests true
+     */
+    def createTestFilter(defaultTests: (String) => Boolean) = { TestFilter({
+        case s: String if defaultTests(s) => true
+        case s: String if integrationTestsEnabled.value => s.endsWith("TestIntegration")
+        case s: String if stressTestsEnabled.value      => s.endsWith("TestStress")
+        case _ => false
+      }) :: Nil
     }
   }
 
