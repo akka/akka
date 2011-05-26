@@ -1,3 +1,4 @@
+set akka.release true
 clean
 clean-lib
 script find-replace.sh {{project.version}} {{test-release.arg1}}
@@ -8,4 +9,5 @@ test-compile
 test
 build-release
 sh git reset --hard
+sh git clean -f
 reload
