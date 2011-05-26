@@ -533,13 +533,23 @@ sealed trait Future[+T] {
     fa
   }
 
-  final def foreach(f: T ⇒ Unit): Unit = onComplete { ft ⇒
-    val optr = ft.result
-    if (optr.isDefined)
-      f(optr.get)
+  final def foreach(f: T ⇒ Unit): Unit = onComplete {
+    _.result match {
+      case Some(v) ⇒ f(v)
+      case None    ⇒
+    }
   }
 
-  final def filter(p: Any ⇒ Boolean): Future[Any] = {
+  final def withFilter(p: T ⇒ Boolean) = new FutureWithFilter[T](this, p)
+
+  final class FutureWithFilter[+A](self: Future[A], p: A ⇒ Boolean) {
+    def foreach(f: A ⇒ Unit): Unit = self filter p foreach f
+    def map[B](f: A ⇒ B): Future[B] = self filter p map f
+    def flatMap[B](f: A ⇒ Future[B]): Future[B] = self filter p flatMap f
+    def withFilter(q: A ⇒ Boolean): FutureWithFilter[A] = new FutureWithFilter[A](self, x ⇒ p(x) && q(x))
+  }
+
+  final def filter(p: T ⇒ Boolean): Future[T] = {
     val f = new DefaultPromise[T](timeoutInNanos, NANOS)
     onComplete { ft ⇒
       val optv = ft.value
