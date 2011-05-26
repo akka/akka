@@ -8,6 +8,7 @@ import java.{lang => jl}
 object BoxedType {
   
   private val toBoxed = Map[Class[_], Class[_]](
+    classOf[Boolean] -> classOf[jl.Boolean],
     classOf[Byte] -> classOf[jl.Byte],
     classOf[Char] -> classOf[jl.Character],
     classOf[Short] -> classOf[jl.Short],

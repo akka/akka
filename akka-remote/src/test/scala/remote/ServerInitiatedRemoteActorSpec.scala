@@ -184,8 +184,8 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
 
       val latch = new CountDownLatch(100)
 
-      def testDone() = (remoteFoo !! "done").as[Boolean].getOrElse(false) &&
-                       (remoteBar !! "done").as[Boolean].getOrElse(false)
+      def testDone() = (remoteFoo ? "done").as[Boolean].getOrElse(false) &&
+                       (remoteBar ? "done").as[Boolean].getOrElse(false)
 
       while(!testDone()) {
         if (latch.await(200, TimeUnit.MILLISECONDS))

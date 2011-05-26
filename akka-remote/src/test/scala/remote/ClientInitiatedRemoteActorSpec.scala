@@ -86,7 +86,7 @@ class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
     "shouldSendOneWayAndReceiveReply" in {
       val latch = new CountDownLatch(1)
       val actor = remote.actorOf[SendOneWayAndReplyReceiverActor](host,port).start()
-      implicit val sender = Some(actorOf(new CountDownActor(latch)).start())
+      implicit val sender = actorOf(new CountDownActor(latch)).start()
 
       actor ! "Hello"
 

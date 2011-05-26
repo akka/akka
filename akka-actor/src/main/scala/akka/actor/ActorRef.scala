@@ -1381,7 +1381,7 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
    * <p/>
    * Throws an IllegalStateException if unable to determine what to reply to.
    */
-  def reply(message: Any) = channel ! message
+  def reply(message: Any) = channel.!(message)(this)
 
   /**
    * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
@@ -1389,7 +1389,7 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
    * <p/>
    * Returns true if reply was sent, and false if unable to determine what to reply to.
    */
-  def reply_?(message: Any): Boolean = channel safe_! message
+  def reply_?(message: Any): Boolean = channel.safe_!(message)(this)
 
   /**
    * Atomically create (from actor class) and start an actor.
