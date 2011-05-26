@@ -19,21 +19,23 @@ import com.eaio.uuid.UUID
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ClusterActorRef private[akka] (
-  actorAddresses: Array[Tuple2[UUID, InetSocketAddress]],
-  address: String,
+  inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
+  actorAddress: String,
   timeout: Long,
   val replicationStrategy: ReplicationStrategy)
-  extends RemoteActorRef(address, timeout, None) {
+  extends RemoteActorRef(null, actorAddress, timeout, None) { // FIXME UGLY HACK - should not extend RemoteActorRef
   this: ClusterActorRef with Router.Router ⇒
 
-  EventHandler.debug(this, "Creating a ClusterActorRef for actor with address [%s]".format(address))
+  EventHandler.debug(this,
+    "Creating a ClusterActorRef for actor with address [%s] with connections [\n\t%s]"
+      .format(actorAddress, inetSocketAddresses.mkString("\n\t")))
 
-  private[akka] val addresses = new AtomicReference[Map[InetSocketAddress, ActorRef]](
-    (Map[InetSocketAddress, ActorRef]() /: actorAddresses) {
-      case (map, (uuid, address)) ⇒ map + (address -> createRemoteActorRef(uuid, address))
+  private[akka] val inetSocketAddressToActorRefMap = new AtomicReference[Map[InetSocketAddress, ActorRef]](
+    (Map[InetSocketAddress, ActorRef]() /: inetSocketAddresses) {
+      case (map, (uuid, inetSocketAddress)) ⇒ map + (inetSocketAddress -> createRemoteActorRef(actorAddress, inetSocketAddress))
     })
 
-  def connections: Map[InetSocketAddress, ActorRef] = addresses.get
+  def connections: Map[InetSocketAddress, ActorRef] = inetSocketAddressToActorRefMap.get
 
   override def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
     route(message)(senderOption)
@@ -42,19 +44,20 @@ class ClusterActorRef private[akka] (
     message: Any,
     timeout: Long,
     senderOption: Option[ActorRef],
-    senderFuture: Option[Promise[T]]): Promise[T] =
+    senderFuture: Option[Promise[T]]): Promise[T] = {
     route[T](message, timeout)(senderOption).asInstanceOf[Promise[T]]
+  }
 
-  private[akka] def failOver(from: InetSocketAddress, to: InetSocketAddress) {
-    addresses set (addresses.get map {
-      case (`from`, actorRef) ⇒
+  private[akka] def failOver(fromInetSocketAddress: InetSocketAddress, toInetSocketAddress: InetSocketAddress) {
+    inetSocketAddressToActorRefMap set (inetSocketAddressToActorRefMap.get map {
+      case (`fromInetSocketAddress`, actorRef) ⇒
         actorRef.stop()
-        (to, createRemoteActorRef(actorRef.uuid, to))
+        (toInetSocketAddress, createRemoteActorRef(actorRef.address, toInetSocketAddress))
       case other ⇒ other
     })
   }
 
-  // clustered refs are always registered and looked up by UUID
-  private def createRemoteActorRef(uuid: UUID, address: InetSocketAddress) =
-    RemoteActorRef(uuidToString(uuid), Actor.TIMEOUT, None)
+  private def createRemoteActorRef(actorAddress: String, inetSocketAddress: InetSocketAddress) = {
+    RemoteActorRef(inetSocketAddress, actorAddress, Actor.TIMEOUT, None)
+  }
 }

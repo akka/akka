@@ -10,6 +10,7 @@ Contents
    scala/index
    java/index
    cluster/index
+   modules/index
    dev/index
    project/index
    additional/index

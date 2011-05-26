@@ -116,6 +116,8 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (Act
 
   def link(child: ActorRef) = supervisor.link(child)
 
+  def startLink(child: ActorRef) = supervisor.startLink(child)
+
   def unlink(child: ActorRef) = supervisor.unlink(child)
 
   def children: List[ActorRef] =

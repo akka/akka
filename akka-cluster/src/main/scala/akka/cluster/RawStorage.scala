@@ -1,11 +1,12 @@
 package akka.cluster
 
 import zookeeper.AkkaZkClient
-import java.lang.UnsupportedOperationException
 import akka.AkkaException
 import org.apache.zookeeper.{ KeeperException, CreateMode }
 import org.apache.zookeeper.data.Stat
 import scala.Some
+import java.util.concurrent.ConcurrentHashMap
+import org.apache.zookeeper.KeeperException.NoNodeException
 
 /**
  * Simple abstraction to store an Array of bytes based on some String key.
@@ -23,15 +24,14 @@ trait RawStorage {
   /**
    * Inserts a byte-array based on some key.
    *
-   * TODO: What happens when given key already exists
-   * @throws NodeExistsException
+   * @throws NodeExistsException when a Node with the given Key already exists.
    */
   def insert(key: String, bytes: Array[Byte]): Unit
 
   /**
    * Stores a array of bytes based on some key.
    *
-   * TODO: What happens when the given key doesn't exist yet
+   * @throws MissingNodeException when the Node with the given key doesn't exist.
    */
   def update(key: String, bytes: Array[Byte]): Unit
 
@@ -69,6 +69,13 @@ class NodeExistsException(msg: String = null, cause: java.lang.Throwable = null)
  */
 class ZooKeeperRawStorage(zkClient: AkkaZkClient) extends RawStorage {
 
+  override def load(key: String) = try {
+    Some(zkClient.connection.readData(key, new Stat, false))
+  } catch {
+    case e: KeeperException.NoNodeException ⇒ None
+    case e: KeeperException                 ⇒ throw new RawStorageException("failed to load key" + key, e)
+  }
+
   override def insert(key: String, bytes: Array[Byte]) {
     try {
       zkClient.connection.create(key, bytes, CreateMode.PERSISTENT);
@@ -76,13 +83,6 @@ class ZooKeeperRawStorage(zkClient: AkkaZkClient) extends RawStorage {
       case e: KeeperException.NodeExistsException ⇒ throw new NodeExistsException("failed to insert key" + key, e)
       case e: KeeperException                     ⇒ throw new RawStorageException("failed to insert key" + key, e)
     }
-  }
-
-  override def load(key: String) = try {
-    Some(zkClient.connection.readData(key, new Stat, false))
-  } catch {
-    case e: KeeperException.NoNodeException ⇒ None
-    case e: KeeperException                 ⇒ throw new RawStorageException("failed to load key" + key, e)
   }
 
   override def update(key: String, bytes: Array[Byte]) {
@@ -95,17 +95,42 @@ class ZooKeeperRawStorage(zkClient: AkkaZkClient) extends RawStorage {
   }
 }
 
-class VoldemortRawStorage extends RawStorage {
+/**
+ * An in memory {@link RawStore} implementation. Useful for testing purposes.
+ */
+class InMemoryRawStorage extends RawStorage {
 
-  def load(Key: String) = {
-    throw new UnsupportedOperationException()
-  }
+  private val map = new ConcurrentHashMap[String, Array[Byte]]()
 
-  override def insert(key: String, bytes: Array[Byte]) {
-    throw new UnsupportedOperationException()
+  def load(key: String) = Option(map.get(key))
+
+  def insert(key: String, bytes: Array[Byte]) {
+    val previous = map.putIfAbsent(key, bytes)
+    if (previous != null) throw new NodeExistsException("failed to insert key " + key)
   }
 
   def update(key: String, bytes: Array[Byte]) {
-    throw new UnsupportedOperationException()
+    val previous = map.put(key, bytes)
+    if (previous == null) throw new NoNodeException("failed to update key " + key)
   }
 }
+
+//TODO: To minimize the number of dependencies, should the RawStorage not be placed in a seperate module?
+//class VoldemortRawStorage(storeClient: StoreClient) extends RawStorage {
+//
+//  def load(Key: String) = {
+//    try {
+//
+//    } catch {
+//      case
+//    }
+//  }
+//
+//  override def insert(key: String, bytes: Array[Byte]) {
+//    throw new UnsupportedOperationException()
+//  }
+//
+//  def update(key: String, bytes: Array[Byte]) {
+//    throw new UnsupportedOperationException()
+//  }
+//}

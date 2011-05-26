@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.cluster.store_actor
+package akka.cluster.routing.roundrobin_1_replica
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
@@ -11,19 +11,21 @@ import org.scalatest.BeforeAndAfterAll
 import akka.cluster._
 import akka.actor._
 import Actor._
+import akka.config.Config
 
-object StoreActorMultiJvmSpec {
+object RoundRobin1ReplicaMultiJvmSpec {
   val NrOfNodes = 2
 
   class HelloWorld extends Actor with Serializable {
     def receive = {
-      case "Hello" ⇒ self.reply("World")
+      case "Hello" ⇒
+        self.reply("World from node [" + Config.nodename + "]")
     }
   }
 }
 
-class StoreActorMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
-  import StoreActorMultiJvmSpec._
+class RoundRobin1ReplicaMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+  import RoundRobin1ReplicaMultiJvmSpec._
 
   "A cluster" must {
 
@@ -37,14 +39,9 @@ class StoreActorMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndA
 
       Cluster.barrier("start-node2", NrOfNodes) {}
 
-      Cluster.barrier("create-clustered-actor-node1", NrOfNodes) {
-        val pi = Actor.actorOf[HelloWorld]("service-hello")
-        pi must not equal (null)
-        pi.address must equal("service-hello")
-        pi.isInstanceOf[LocalActorRef] must be(true)
-      }
-
       Cluster.barrier("get-ref-to-actor-on-node2", NrOfNodes) {}
+
+      Cluster.barrier("send-message-from-node2-to-node1", NrOfNodes) {}
 
       Cluster.node.shutdown()
     }
@@ -59,8 +56,8 @@ class StoreActorMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndA
   }
 }
 
-class StoreActorMultiJvmNode2 extends WordSpec with MustMatchers {
-  import StoreActorMultiJvmSpec._
+class RoundRobin1ReplicaMultiJvmNode2 extends WordSpec with MustMatchers {
+  import RoundRobin1ReplicaMultiJvmSpec._
 
   "A cluster" must {
 
@@ -74,13 +71,18 @@ class StoreActorMultiJvmNode2 extends WordSpec with MustMatchers {
         Cluster.node.start()
       }
 
-      Cluster.barrier("create-clustered-actor-node1", NrOfNodes) {}
-
+      var hello: ActorRef = null
       Cluster.barrier("get-ref-to-actor-on-node2", NrOfNodes) {
-        val pi = Actor.actorOf[HelloWorld]("service-hello")
-        pi must not equal (null)
-        pi.address must equal("service-hello")
-        pi.isInstanceOf[ClusterActorRef] must be(true)
+        hello = Actor.actorOf[HelloWorld]("service-hello")
+        hello must not equal (null)
+        hello.address must equal("service-hello")
+        hello.isInstanceOf[ClusterActorRef] must be(true)
+      }
+
+      Cluster.barrier("send-message-from-node2-to-node1", NrOfNodes) {
+        hello must not equal (null)
+        val reply = (hello !! "Hello").as[String].getOrElse(fail("Should have recieved reply from node1"))
+        reply must equal("World from node [node1]")
       }
 
       Cluster.node.shutdown()

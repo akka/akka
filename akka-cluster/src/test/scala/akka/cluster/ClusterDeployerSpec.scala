@@ -39,6 +39,16 @@ class ClusterDeployerSpec extends WordSpec with MustMatchers with BeforeAndAfter
         oldDeployment must equal(newDeployment.get)
       }
     }
+
+    "be able to fetch deployments from ZooKeeper" in {
+      val deployments1 = Deployer.deploymentsInConfig
+      deployments1 must not equal (Nil)
+      ClusterDeployer.init(deployments1)
+
+      val deployments2 = ClusterDeployer.fetchDeploymentsFromCluster
+      deployments2.size must equal(1)
+      deployments2.first must equal(deployments1.first)
+    }
   }
 
   override def beforeAll() {
