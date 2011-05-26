@@ -479,3 +479,55 @@ has to offer:
    exception stack traces
  - Exclusion of certain classes of dead-lock scenarios
 
+Tracing Actor Invocations
+=========================
+
+The testing facilities described up to this point were aiming at formulating
+assertions about a system’s behavior. If a test fails, it is usually your job
+to find the cause, fix it and verify the test again. This process is supported
+by debuggers as well as logging, where the Akka toolkit offers the following
+options:
+
+* Logging of exceptions thrown within Actor instances
+  
+  This is always on.
+
+* Logging of message invocations on certain actors
+
+  This is enabled by a setting in ``akka.conf`` — namely
+  ``akka.actor.debug.receive`` — which enables the :meth:`loggingReceive`
+  statement to be applied to an actor’s :meth:`receive` function::
+
+    def receive = loggingReceive {
+      case msg => ...
+    } 
+
+  This feature is not enabled on all actors uniformly because that is not
+  usually what you need, and it could lead to endless loops if it were applied
+  to :class:`EventHandler` listeners.
+
+* Logging of special messages
+
+  Actors handle certain special messages automatically, e.g. :obj:`Kill`,
+  :obj:`PoisonPill`, etc. Tracing of these message invocations is enabled by
+  the setting ``akka.actor.debug.autoreceive``.
+
+* Logging of the actor lifecycle
+
+  Actor creation, start, restart, link, unlink and stop may be traced by
+  enabling the setting ``akka.actor.debug.lifecycle``.
+
+All these messages are logged at ``DEBUG`` level. To summarize, you can enable
+full logging of actor activities using this configuration fragment::
+
+  akka {
+    event-handler-level = "DEBUG"
+    actor {
+      debug {
+        receive = "true"
+        autoreceive = "true"
+        lifecycle = "true"
+      }
+    }
+  }
+
