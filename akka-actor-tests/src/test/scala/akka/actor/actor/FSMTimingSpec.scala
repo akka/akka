@@ -79,21 +79,21 @@ class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
 
     "notify unhandled messages" in {
       fsm ! TestUnhandled
-      within(100 millis) {
+      within(200 millis) {
         fsm ! Tick
         expectNoMsg
       }
-      within(100 millis) {
+      within(200 millis) {
         fsm ! SetHandler
         fsm ! Tick
         expectMsg(Unhandled(Tick))
         expectNoMsg
       }
-      within(100 millis) {
+      within(200 millis) {
         fsm ! Unhandled("test")
         expectNoMsg
       }
-      within(100 millis) {
+      within(200 millis) {
         fsm ! Cancel
         expectMsg(Transition(fsm, TestUnhandled, Initial))
       }
