@@ -52,7 +52,8 @@ enum CommandType {
  */
 message RemoteActorRefProtocol {
   required string address = 1;
-  optional uint64 timeout = 2;
+  required bytes inetSocketAddress = 2;
+  optional uint64 timeout = 3;
 }
 
 /**
