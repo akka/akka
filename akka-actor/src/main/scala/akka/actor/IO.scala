@@ -87,19 +87,21 @@ trait IOActor extends Actor with IO {
 
   var messages: Queue[MessageInvocation] = Queue.empty
 
-  var readBytes: ByteString = ByteString.empty
+  var readBytes: Queue[ByteString] = Queue.empty
 
-  var waitingCont: Option[ByteString ⇒ Unit] = None
+  var readBytesLength: Int = 0
 
-  var waitingLen: Int = 0
+  var next: Option[ByteString ⇒ Unit] = None
+
+  var waitingFor: Int = 0
 
   var token: IO.Token = _
 
   var currentMessage: MessageInvocation = _
 
   def read(len: Int): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
-    waitingLen = len
-    waitingCont = Some(cont)
+    waitingFor = len
+    next = Some(cont)
     run()
   }
 
@@ -107,11 +109,12 @@ trait IOActor extends Actor with IO {
 
   def receive = {
     case IO.Read(t, newBytes) if token == t ⇒
-      readBytes ++= newBytes
+      readBytes :+= newBytes
+      readBytesLength += newBytes.length
       run()
     case IO.Connected(t) if token == t ⇒ ()
     case IO.Closed(t) if token == t    ⇒ self.stop
-    case msg if waitingCont.isDefined ⇒
+    case msg if next.isDefined ⇒
       messages = messages.enqueue(self.currentMessage)
     case msg if receiveIO.isDefinedAt(msg) ⇒
       currentMessage = self.currentMessage
@@ -123,15 +126,27 @@ trait IOActor extends Actor with IO {
 
   def run(): Unit = {
     self.currentMessage = currentMessage
-    while (readBytes.length >= waitingLen && waitingCont.isDefined) {
-      val bytes = readBytes.take(waitingLen).clone
-      readBytes = readBytes.drop(waitingLen).clone
-      val cont = waitingCont.get
-      waitingCont = None
-      waitingLen = 0
-      cont(bytes)
+    while (next.isDefined && readBytesLength >= waitingFor) {
+      var left = waitingFor
+      var take: Queue[ByteString] = Queue.empty
+      while (left > 0 && left >= readBytes.head.length) {
+        left -= readBytes.head.length
+        take :+= readBytes.head
+        readBytes = readBytes.tail
+      }
+      if (left > 0) {
+        val last = readBytes.head
+        take :+= last.take(left)
+        readBytes = last.drop(left) +: readBytes.tail
+      }
+      val bytes = ByteString.concat(take: _*)
+      readBytesLength -= waitingFor
+      val continuation = next.get
+      next = None
+      waitingFor = 0
+      continuation(bytes)
     }
-    if (waitingCont.isEmpty && messages.nonEmpty) {
+    if (next.isEmpty && messages.nonEmpty) {
       val (msg, rest) = messages.dequeue
       messages = rest
       self.invoke(msg)
