@@ -159,6 +159,7 @@ object Actor extends ListenerManagement {
 
   private[akka] val addLoggingReceive = config.getBool("akka.actor.debug.receive", false)
   private[akka] val debugAutoReceive = config.getBool("akka.actor.debug.autoreceive", false)
+  private[akka] val debugLifecycle = config.getBool("akka.actor.debug.lifecycle", false)
 
   private[actor] val actorRefInCreation = new ThreadLocal[Option[ActorRef]]{
     override def initialValue = None

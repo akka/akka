@@ -648,6 +648,8 @@ class LocalActorRef private[akka] (
 
       _status = ActorRefInternals.RUNNING
 
+      if (Actor.debugLifecycle) EventHandler.debug(this, "starting")
+
       // If we are not currently creating this ActorRef instance
       if ((actorInstance ne null) && (actorInstance.get ne null))
         initializeActorInstance
@@ -669,6 +671,7 @@ class LocalActorRef private[akka] (
       cancelReceiveTimeout
       dispatcher.detach(this)
       _status = ActorRefInternals.SHUTDOWN
+      if (Actor.debugLifecycle) EventHandler.debug(this, "stopping")
       try {
         actor.postStop
       } finally {
@@ -704,6 +707,7 @@ class LocalActorRef private[akka] (
       _linkedActors.put(actorRef.uuid, actorRef)
       actorRef.supervisor = Some(this)
     }
+    if (Actor.debugLifecycle) EventHandler.debug(this, "now supervising "+actorRef)
   }
 
   /**
@@ -716,6 +720,7 @@ class LocalActorRef private[akka] (
       throw new IllegalActorStateException("Actor [" + actorRef + "] is not a linked actor, can't unlink")
 
     actorRef.supervisor = None
+    if (Actor.debugLifecycle) EventHandler.debug(this, "stopped supervising "+actorRef)
   }
 
   /**
@@ -908,6 +913,8 @@ class LocalActorRef private[akka] (
      def performRestart() {
       val failedActor = actorInstance.get
 
+      if (Actor.debugLifecycle) EventHandler.debug(this, "restarting")
+
       failedActor match {
         case p: Proxyable =>
           failedActor.preRestart(reason)
@@ -1078,6 +1085,7 @@ class LocalActorRef private[akka] (
   }
 
   private def initializeActorInstance = {
+    if (Actor.debugLifecycle) EventHandler.debug(this, "created")
     actor.preStart // run actor preStart
     Actor.registry.register(this)
   }
