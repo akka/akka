@@ -32,7 +32,7 @@ abstract class DurableMailboxSpec(val backendName: String, val storage: DurableM
   WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll {
   import DurableMailboxSpecActorFactory._
 
-  implicit val dispatcher = DurableEventBasedDispatcher(backendName, storage, 1)
+  implicit val dispatcher = DurableDispatcher(backendName, storage, 1)
 
   "A " + backendName + " based mailbox backed actor" should {
 
