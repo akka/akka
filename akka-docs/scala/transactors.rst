@@ -71,7 +71,7 @@ Here is an example of coordinating two simple counter Actors so that they both i
 
   ...
 
-  counter1 !! GetCount // Some(1)
+  (counter1 ? GetCount).as[Int] // Some(1)
 
   counter1.stop()
   counter2.stop()
