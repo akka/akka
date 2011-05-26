@@ -155,7 +155,22 @@ Client: Sending messages
 
 Our client wraps each message send in a function, making it a bit easier to use. Here we assume that we have a reference to the chat service so we can communicate with it by sending messages. Messages are sent with the '!' operator (pronounced "bang"). This sends a message of asynchronously and do not wait for a reply.
 
-Sometimes however, there is a need for sequential logic, sending a message and wait for the reply before doing anything else. In Akka we can achieve that using the '!!' ("bangbang") operator. When sending a message with '!!' we do not return immediately but wait for a reply using a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_. A 'Future' is a promise that we will get a result later but with the difference from regular method dispatch that the OS thread we are running on is put to sleep while waiting and that we can set a time-out for how long we wait before bailing out, retrying or doing something else. The '!!' function returns a `scala.Option <http://www.codecommit.com/blog/scala/the-option-pattern>`_ which implements the `Null Object pattern <http://en.wikipedia.org/wiki/Null_Object_pattern>`_. It has two subclasses; 'None' which means no result and 'Some(value)' which means that we got a reply. The 'Option' class has a lot of great methods to work with the case of not getting a defined result. F.e. as you can see below we are using the 'getOrElse' method which will try to return the result and if there is no result defined invoke the "...OrElse" statement.
+Sometimes however, there is a need for sequential logic, sending a message and
+wait for the reply before doing anything else. In Akka we can achieve that
+using the '?' operator. When sending a message with '?' we get back a `Future
+<http://en.wikipedia.org/wiki/Futures_and_promises>`_. A 'Future' is a promise
+that we will get a result later but with the difference from regular method
+dispatch that the OS thread we are running on is put to sleep while waiting and
+that we can set a time-out for how long we wait before bailing out, retrying or
+doing something else. This waiting is achieved with the :meth:`Future.as[T]`
+method, which returns a `scala.Option
+<http://www.codecommit.com/blog/scala/the-option-pattern>`_ which implements
+the `Null Object pattern <http://en.wikipedia.org/wiki/Null_Object_pattern>`_.
+It has two subclasses; 'None' which means no result and 'Some(value)' which
+means that we got a reply. The 'Option' class has a lot of great methods to
+work with the case of not getting a defined result. F.e. as you can see below
+we are using the 'getOrElse' method which will try to return the result and if
+there is no result defined invoke the "...OrElse" statement.
 
 .. code-block:: scala
 
@@ -165,7 +180,7 @@ Sometimes however, there is a need for sequential logic, sending a message and w
     def login                 = chat ! Login(name)
     def logout                = chat ! Logout(name)
     def post(message: String) = chat ! ChatMessage(name, name + ": " + message)
-    def chatLog               = (chat !! GetChatLog(name)).as[ChatLog]
+    def chatLog               = (chat ? GetChatLog(name)).as[ChatLog]
                                   .getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
   }
 

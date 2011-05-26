@@ -17,11 +17,11 @@ Use with Actors
 
 There are generally two ways of getting a reply from an ``Actor``: the first is by a sent message (``actor ! msg``), which only works if the original sender was an ``Actor``) and the second is through a ``Future``.
 
-Using an ``Actor``\'s ``!!!`` method to send a message will return a Future. To wait for and retrieve the actual result the simplest method is:
+Using an ``Actor``\'s ``?`` method to send a message will return a Future. To wait for and retrieve the actual result the simplest method is:
 
 .. code-block:: scala
 
-  val future = actor !!! msg
+  val future = actor ? msg
   val result: Any = future.get()
 
 This will cause the current thread to block and wait for the ``Actor`` to 'complete' the ``Future`` with it's reply. Due to the dynamic nature of Akka's ``Actor``\s this result will be untyped and will default to ``Nothing``. The safest way to deal with this is to cast the result to an ``Any`` as is shown in the above example. You can also use the expected result type instead of ``Any``, but if an unexpected type were to be returned you will get a ``ClassCastException``. For more elegant ways to deal with this and to use the result without blocking, refer to `Functional Futures`_.
@@ -141,13 +141,13 @@ The example for comprehension above is an example of composing ``Future``\s. A c
 
 .. code-block:: scala
 
-  val f1 = actor1 !!! msg1
-  val f2 = actor2 !!! msg2
+  val f1 = actor1 ? msg1
+  val f2 = actor2 ? msg2
 
   val a: Int = f1.get()
   val b: Int = f2.get()
 
-  val f3 = actor3 !!! (a + b)
+  val f3 = actor3 ? (a + b)
 
   val result: String = f3.get()
 
@@ -155,13 +155,13 @@ Here we wait for the results from the first 2 ``Actor``\s before sending that re
 
 .. code-block:: scala
 
-  val f1 = actor1 !!! msg1
-  val f2 = actor2 !!! msg2
+  val f1 = actor1 ? msg1
+  val f2 = actor2 ? msg2
 
   val f3 = for {
     a: Int    <- f1
     b: Int    <- f2
-    c: String <- actor3 !!! (a + b)
+    c: String <- actor3 ? (a + b)
   } yield c
 
   val result = f3.get()
@@ -173,7 +173,7 @@ This is fine when dealing with a known amount of Actors, but can grow unwieldy i
 .. code-block:: scala
 
   // oddActor returns odd numbers sequentially from 1
-  val listOfFutures: List[Future[Int]] = List.fill(100)(oddActor !!! GetNext)
+  val listOfFutures: List[Future[Int]] = List.fill(100)(oddActor ? GetNext)
 
   // now we have a Future[List[Int]]
   val futureList = Future.sequence(listOfFutures)
@@ -237,7 +237,7 @@ It is also possible to handle an ``Exception`` by returning a different result. 
 
 .. code-block:: scala
 
-  val future = actor !!! msg1 failure {
+  val future = actor ? msg1 failure {
     case e: ArithmeticException => 0
   }
 

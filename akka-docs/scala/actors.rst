@@ -265,7 +265,7 @@ The Actor trait contains almost no member fields or methods to invoke, you just 
   #. preRestart
   #. postRestart
 
-The ``Actor`` trait has one single member field (apart from the ``log`` field from the mixed in ``Logging`` trait):
+The ``Actor`` trait has one single member field:
 
 .. code-block:: scala
 
@@ -333,58 +333,29 @@ The ``reply`` method throws an ``IllegalStateException`` if unable to determine 
     if (self.reply_?(result)) ...// success
     else ... // handle failure
 
-Reply using the sender reference
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If the sender is an Actor then its reference will be implicitly passed along together with the message and will end up in the ``sender: Option[ActorRef]`` member field in the ``ActorRef``. This means that you can use this field to send a message back to the sender.
-
-.. code-block:: scala
-
-  // receiver code
-  case request =>
-    val result = process(request)
-    self.sender.get ! result
-
-It's important to know that ``sender.get`` will throw an exception if the ``sender`` is not defined, e.g. the ``Option`` is ``None``. You can check if it is defined by invoking the ``sender.isDefined`` method, but a more elegant solution is to use ``foreach`` which will only be executed if the sender is defined in the ``sender`` member ``Option`` field. If it is not, then the operation in the ``foreach`` method is ignored.
-
-.. code-block:: scala
-
-  // receiver code
-  case request =>
-    val result = process(request)
-    self.sender.foreach(_ ! result)
-
-The same pattern holds for using the ``senderFuture`` in the section below.
-
-Reply using the sender future
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If a message was sent with the ``!!`` or ``!!!`` methods, which both implements request-reply semantics using Future's, then you either have the option of replying using the ``reply`` method as above. This method will then resolve the Future. But you can also get a reference to the Future directly and resolve it yourself or if you would like to store it away to resolve it later, or pass it on to some other Actor to resolve it.
-
-The reference to the Future resides in the ``senderFuture: Option[CompletableFuture[_]]`` member field in the ``ActorRef`` class.
-
-Here is an example of how it can be used:
-
-.. code-block:: scala
-
-  case request =>
-    try {
-      val result = process(request)
-      self.senderFuture.foreach(_.completeWithResult(result))
-    } catch {
-      case e =>
-        senderFuture.foreach(_.completeWithException(this, e))
-    }
-
-
 Summary of reply semantics and options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* ``self.reply(...)`` can be used to reply to an ``Actor`` or a ``Future``.
-* ``self.sender`` is a reference to the ``Actor`` you can reply to, if it exists
-* ``self.senderFuture`` is a reference to the ``Future`` you can reply to, if it exists
-* ``self.channel`` is a reference providing an abstraction to either ``self.sender`` or ``self.senderFuture`` if one is set, providing a single reference to store and reply to (the reference equivalent to the ``reply(...)`` method).
-* ``self.sender`` and ``self.senderFuture`` will never be set at the same time, as there can only be one reference to accept a reply.
+* ``self.reply(...)`` can be used to reply to an ``Actor`` or a ``Future`` from
+  within an actor; the current actor will be passed as reply channel if the
+  current channel supports this.
+* ``self.channel`` is a reference providing an abstraction for the reply
+  channel; this reference may be passed to other actors or used by non-actor
+  code.
+
+.. note::
+
+  There used to be two methods for determining the sending Actor or Future for the current invocation:
+
+  * ``self.sender`` yielded a :class:`Option[ActorRef]`
+  * ``self.senderFuture`` yielded a :class:`Option[CompletableFuture[Any]]`
+
+  These two concepts have been unified into the ``channel``. If you need to know the nature of the channel, you may do so using pattern matching::
+
+    channel match {
+      case ref : ActorRef => ...
+      case f : ActorCompletableFuture => ...
+    }
 
 Initial receive timeout
 -----------------------
@@ -457,7 +428,7 @@ PoisonPill
 
 You can also send an actor the ``akka.actor.PoisonPill`` message, which will stop the actor when the message is processed.
 
-If the sender is a ``Future`` (e.g. the message is sent with ``!!`` or ``!!!``), the ``Future`` will be completed with an ``akka.actor.ActorKilledException("PoisonPill")``.
+If the sender is a ``Future`` (e.g. the message is sent with ``?``), the ``Future`` will be completed with an ``akka.actor.ActorKilledException("PoisonPill")``.
 
 HotSwap
 -------

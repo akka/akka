@@ -104,8 +104,8 @@ into a :class:`TestActorRef`.
 .. code-block:: scala
 
    val actorRef = TestActorRef(new MyActor)
-   val result = actorRef !! Say42 // hypothetical message stimulating a '42' answer
-   result must be (42)
+   val result = (actorRef ? Say42).as[Int] // hypothetical message stimulating a '42' answer
+   result must be (Some(42))
 
 As the :class:`TestActorRef` is a subclass of :class:`LocalActorRef` with a few
 special extras, also aspects like linking to a supervisor and restarting work
@@ -325,7 +325,7 @@ The probes keep track of the communications channel for replies, if possible,
 so they can also reply::
 
   val probe = TestProbe()
-  val future = probe.ref !!! "hello"
+  val future = probe.ref ? "hello"
   probe.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
   probe.reply("world")
   assert (future.isCompleted && future.as[String] == "world")
