@@ -4,27 +4,7 @@
 
 import sbt._
 
-trait DistBaseProject extends DefaultProject {
-  def distOutputPath: Path
-  def distLibPath: Path
-  def distSrcPath: Path
-  def distDocPath: Path
-  def dist: Task
-
-  override def disableCrossPaths = true
-
-  def doNothing = task { None }
-  override def compileAction = doNothing
-  override def testCompileAction = doNothing
-  override def testAction = doNothing
-  override def packageAction = doNothing
-  override def publishLocalAction = doNothing
-  override def deliverLocalAction = doNothing
-  override def publishAction = doNothing
-  override def deliverAction = doNothing
-}
-
-trait DistProject extends DistBaseProject {
+trait DistProject extends DefaultProject {
   def distName: String
 
   val distFullName = distName + "-" + version
@@ -38,7 +18,6 @@ trait DistProject extends DistBaseProject {
   val distSrcPath = distOutputPath / "src" / "akka"
   val distDocPath = distOutputPath / "doc" / "akka"
   val distDocJarsPath = distDocPath / "api" / "jars"
-  val distSharePath = Path.userHome / ".ivy2" / "dist" / distFullName
   val distArchiveName = distFullName + ".zip"
   val distArchive = (distOutputBasePath ##) / distArchiveName
 
@@ -58,7 +37,7 @@ trait DistProject extends DistBaseProject {
 
   def distDependencies = {
     allProjectDependencies.flatMap( p => p match {
-      case adp: DistBaseProject => Some(adp)
+      case dp: DistProject => Some(dp)
       case _ => None
     })
   }
@@ -92,8 +71,6 @@ trait DistProject extends DistBaseProject {
 
   def distDocJars = dependencyJars(isDocJar) +++ projectDependencyJars(_.packageDocsJar)
 
-  def distShareSources = ((distOutputPath ##) ***)
-
   lazy val dist = (distAction dependsOn (distBase, `package`, packageSrc, packageDocs)
                    describedAs("Create a distribution."))
 
@@ -116,7 +93,6 @@ trait DistProject extends DistBaseProject {
     copyFiles(distDocJars, distDocJarsPath) orElse
     copyPaths(distConfigSources, distConfigPath) orElse
     copyScripts(distScriptSources, distBinPath) orElse
-    copyPaths(distShareSources, distSharePath) orElse
     FileUtilities.zip(List(distOutputPath), distArchive, true, log) orElse
     exclusiveDist
   }
@@ -136,8 +112,7 @@ trait DistProject extends DistBaseProject {
                         describedAs "Clean the dist target dir.")
 
   def distCleanAction = task {
-    FileUtilities.clean(distOutputPath, log) orElse
-    FileUtilities.clean(distSharePath, log)
+    FileUtilities.clean(distOutputPath, log)
   }
 
   def copyFiles(from: PathFinder, to: Path): Option[String] = {
@@ -162,6 +137,18 @@ trait DistProject extends DistBaseProject {
     val success = target.asFile.setExecutable(executable, false)
     if (success) None else Some("Couldn't set permissions of " + target)
   }
+
+  override def disableCrossPaths = true
+
+  def doNothing = task { None }
+  override def compileAction = doNothing
+  override def testCompileAction = doNothing
+  override def testAction = doNothing
+  override def packageAction = doNothing
+  override def publishLocalAction = doNothing
+  override def deliverLocalAction = doNothing
+  override def publishAction = doNothing
+  override def deliverAction = doNothing
 }
 
 trait DistDocProject extends DistProject {
@@ -196,20 +183,4 @@ trait DistDocProject extends DistProject {
     copyPaths(docsHtmlSources, docsHtmlPath) orElse
     copyPaths(docsPdfSources, docsPdfPath)
   } dependsOn (distBase, docParent.docs)
-}
-
-/*
- * For wiring together akka and akka-modules.
- */
-trait DistSharedProject extends DistBaseProject {
-  def distName: String
-
-  val distFullName = distName + "-" + version
-  val distOutputPath = Path.userHome / ".ivy2" / "dist" / distFullName
-
-  val distLibPath = distOutputPath / "lib" / "akka"
-  val distSrcPath = distOutputPath / "src" / "akka"
-  val distDocPath = distOutputPath / "doc" / "akka"
-
-  lazy val dist = task { None }
 }
