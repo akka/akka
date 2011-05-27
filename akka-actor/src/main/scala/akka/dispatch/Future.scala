@@ -420,17 +420,47 @@ sealed trait Future[+T] {
    * When the future is completed with a valid result, apply the provided
    * PartialFunction to the result.
    * <pre>
-   *   val result = future receive {
-   *     case Foo => "foo"
-   *     case Bar => "bar"
-   *   }.await.result
+   *   future receive {
+   *     case Foo => target ! "foo"
+   *     case Bar => target ! "bar"
+   *   }
    * </pre>
    */
-  final def receive(pf: PartialFunction[Any, Unit]): this.type = onComplete { f =>
+  @deprecated("will be replaced by `onResult`", "1.2")
+  final def receive(pf: PartialFunction[Any, Unit]): this.type = onResult(pf)
+
+  /**
+   * When the future is completed with a valid result, apply the provided
+   * PartialFunction to the result.
+   * <pre>
+   *   future onResult {
+   *     case Foo => target ! "foo"
+   *     case Bar => target ! "bar"
+   *   }
+   * </pre>
+   */
+  final def onResult(pf: PartialFunction[Any, Unit]): this.type = onComplete { f =>
     val optr = f.result
     if (optr.isDefined) {
       val r = optr.get
       if (pf.isDefinedAt(r)) pf(r)
+    }
+  }
+
+  /**
+   * When the future is completed with an exception, apply the provided
+   * PartialFunction to that.
+   * <pre>
+   *   future onException {
+   *     case NumberFormatException => target ! "wrong format"
+   *   }
+   * </pre>
+   */
+  final def onException(pf: PartialFunction[Throwable, Unit]): this.type = onComplete { f =>
+    val optex = f.exception
+    if (optex.isDefined) {
+      val ex = optex.get
+      if (pf.isDefinedAt(ex)) pf(ex)
     }
   }
 
@@ -481,7 +511,21 @@ sealed trait Future[+T] {
    * Future(6 / 2) failure { case e: ArithmeticException => 0 } // result: 3
    * </pre>
    */
-  final def failure[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
+  @deprecated("will be replaced by `recover`", "1.2")
+  final def failure[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = recover(pf)
+
+  /**
+   * Creates a new Future that will handle any matching Throwable that this
+   * Future might contain. If there is no match, or if this Future contains
+   * a valid result then the new Future will contain the same.
+   * Example:
+   * <pre>
+   * Future(6 / 0) failure { case e: ArithmeticException => 0 } // result: 0
+   * Future(6 / 0) failure { case e: NotFoundException   => 0 } // result: exception
+   * Future(6 / 2) failure { case e: ArithmeticException => 0 } // result: 3
+   * </pre>
+   */
+  final def recover[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
     val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
     onComplete { ft =>
       val opte = ft.exception
