@@ -3,16 +3,18 @@
  */
 package akka.actor
 
-import org.scalatest.{ WordSpec, BeforeAndAfterAll }
+import org.scalatest.{ WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit.{ TestKit, TestActorRef }
 import akka.event.EventHandler
 import Actor._
 import akka.util.duration._
 import akka.config.Config.config
+import akka.config.Supervision._
 
 class LoggingReceiveSpec
     extends WordSpec
+    with BeforeAndAfterEach
     with BeforeAndAfterAll
     with MustMatchers
     with TestKit {
@@ -27,17 +29,28 @@ class LoggingReceiveSpec
   override def afterAll {
     EventHandler.removeListener(testActor)
     EventHandler.level = level
+  }
+
+  override def afterEach {
     val f1 = Actor.getClass.getDeclaredField("addLoggingReceive")
     f1.setAccessible(true)
     f1.setBoolean(Actor, false)
     val f2 = Actor.getClass.getDeclaredField("debugAutoReceive")
     f2.setAccessible(true)
     f2.setBoolean(Actor, false)
+    val f3 = Actor.getClass.getDeclaredField("debugLifecycle")
+    f3.setAccessible(true)
+    f3.setBoolean(Actor, false)
   }
 
   ignoreMsg {
-    case EventHandler.Debug(_, s : String) if s.startsWith("received") => false
+    case EventHandler.Debug(_, s : String) =>
+      !s.startsWith("received") && s != "created" && s != "starting" &&
+        s != "stopping" && s != "restarting" && !s.startsWith("now supervising") &&
+        !s.startsWith("stopped supervising")
     case EventHandler.Debug(_, _) => true
+    case EventHandler.Error(_ : UnhandledMessageException, _, _) => false
+    case _ : EventHandler.Error => true
   }
 
   "A LoggingReceive" must {
@@ -55,14 +68,14 @@ class LoggingReceiveSpec
       val f = Actor.getClass.getDeclaredField("addLoggingReceive")
       f.setAccessible(true)
       f.setBoolean(Actor, true)
-      val actor = TestActorRef(new Actor {
-          def receive = loggingReceive {
+      val actor = actorOf(new Actor {
+          def receive = loggable(self) {
             case _ => self reply "x"
           }
         }).start()
       actor ! "buh"
       within (1 second) {
-        expectMsg(EventHandler.Debug(actor.underlyingActor, "received handled message buh"))
+        expectMsg(EventHandler.Debug(actor, "received handled message buh"))
         expectMsg("x")
       }
       val r : Receive = {
@@ -79,15 +92,17 @@ class LoggingReceiveSpec
     }
 
     "not duplicate logging" in {
-      // addLoggingReceive is still on from previous test
-      val actor = TestActorRef(new Actor {
-          def receive = loggingReceive(loggingReceive {
+      val f = Actor.getClass.getDeclaredField("addLoggingReceive")
+      f.setAccessible(true)
+      f.setBoolean(Actor, true)
+      val actor = actorOf(new Actor {
+          def receive = loggable(self)(loggable(self) {
             case _ => self reply "x"
           })
         }).start()
       actor ! "buh"
       within (1 second) {
-        expectMsg(EventHandler.Debug(actor.underlyingActor, "received handled message buh"))
+        expectMsg(EventHandler.Debug(actor, "received handled message buh"))
         expectMsg("x")
       }
     }
@@ -100,13 +115,47 @@ class LoggingReceiveSpec
       val f = Actor.getClass.getDeclaredField("debugAutoReceive")
       f.setAccessible(true)
       f.setBoolean(Actor, true)
-      val actor = TestActorRef(new Actor {
+      val actor = actorOf(new Actor {
           def receive = {
             case _ =>
           }
         }).start()
       actor ! PoisonPill
-      expectMsg(300 millis, EventHandler.Debug(actor.underlyingActor, "received AutoReceiveMessage PoisonPill"))
+      expectMsg(300 millis, EventHandler.Debug(actor, "received AutoReceiveMessage PoisonPill"))
+    }
+
+    "log LifeCycle changes if requested" in {
+      val supervisor = actorOf(new Actor {
+          self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), 5, 5000)
+          def receive = {
+            case _ =>
+          }
+        }).start()
+      val f = Actor.getClass.getDeclaredField("debugLifecycle")
+      f.setAccessible(true)
+      f.setBoolean(Actor, true)
+      val actor = actorOf(new Actor {
+          def receive = {
+            case _ =>
+          }
+        }).start()
+      expectMsg(EventHandler.Debug(actor, "starting"))
+      expectMsg(EventHandler.Debug(actor, "created"))
+      supervisor link actor
+      expectMsgPF() {
+        case EventHandler.Debug(ref, msg : String) =>
+          ref == supervisor && msg.startsWith("now supervising")
+      }
+      actor ! Kill
+      expectMsg(EventHandler.Debug(actor, "restarting"))
+      supervisor unlink actor
+      expectMsgPF() {
+        case EventHandler.Debug(ref, msg : String) =>
+          ref == supervisor && msg.startsWith("stopped supervising")
+      }
+      actor.stop()
+      expectMsg(EventHandler.Debug(actor, "stopping"))
+      supervisor.stop()
     }
 
   }

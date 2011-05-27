@@ -157,6 +157,22 @@ object Actor extends ListenerManagement {
     }
   }
 
+  /**
+   * Wrap a Receive partial function in a logging enclosure, which sends a
+   * debug message to the EventHandler each time before a message is matched.
+   * This includes messages which are not handled.
+   * 
+   * <pre><code>
+   * def receive = loggable {
+   *   case x => ...
+   * }
+   * </code></pre>
+   *
+   * This method does NOT modify the given Receive unless
+   * akka.actor.debug.receive is set within akka.conf.
+   */
+  def loggable(self: AnyRef)(r: Receive): Receive = if (addLoggingReceive) LoggingReceive(self, r) else r
+
   private[akka] val addLoggingReceive = config.getBool("akka.actor.debug.receive", false)
   private[akka] val debugAutoReceive = config.getBool("akka.actor.debug.autoreceive", false)
   private[akka] val debugLifecycle = config.getBool("akka.actor.debug.lifecycle", false)
@@ -515,7 +531,7 @@ trait Actor {
 
   private final def autoReceiveMessage(msg: AutoReceivedMessage): Unit = {
     if (debugAutoReceive)
-      EventHandler.debug(this, "received AutoReceiveMessage " + msg)
+      EventHandler.debug(self, "received AutoReceiveMessage " + msg)
     msg match {
       case HotSwap(code, discardOld) => become(code(self), discardOld)
       case RevertHotSwap             => unbecome()
@@ -533,22 +549,6 @@ trait Actor {
   }
 
   private lazy val processingBehavior = receive //ProcessingBehavior is the original behavior
-
-  /**
-   * Wrap a Receive partial function in a logging enclosure, which sends a
-   * debug message to the EventHandler each time before a message is matched.
-   * This includes messages which are not handled.
-   * 
-   * <pre><code>
-   * def receive = loggingReceive {
-   *   case x => ...
-   * }
-   * </code></pre>
-   *
-   * This method does NOT modify the given Receive unless
-   * akka.actor.debug.receive is set within akka.conf.
-   */
-  protected def loggingReceive(r: Receive): Receive = if (addLoggingReceive) LoggingReceive(this, r) else r
 }
 
 private[actor] class AnyOptionAsTypedOption(anyOption: Option[Any]) {
