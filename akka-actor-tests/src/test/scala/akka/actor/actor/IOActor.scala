@@ -15,23 +15,23 @@ object IOActorSpec {
 
   class SimpleEchoServer(host: String, port: Int, ioManager: ActorRef) extends Actor with IO {
 
-    var serverToken: Option[IO.Token] = None
-    var clientTokens: Set[IO.Token] = Set.empty
+    var serverHandle: Option[IO.Handle] = None
+    var clientHandles: Set[IO.Handle] = Set.empty
 
     override def preStart = {
-      serverToken = Some(listen(ioManager, host, port))
+      serverHandle = Some(listen(ioManager, host, port))
     }
 
     def receive = {
-      case IO.NewConnection(token) ⇒
+      case IO.NewConnection(handle) ⇒
         println("S: Client connected")
-        clientTokens += accept(token, self)
-      case IO.Read(token, bytes) ⇒
+        clientHandles += accept(handle, self)
+      case IO.Read(handle, bytes) ⇒
         println("S: Echoing data")
-        write(token, bytes)
-      case IO.Closed(token) ⇒
+        write(handle, bytes)
+      case IO.Closed(handle) ⇒
         println("S: Connection closed")
-        clientTokens -= token
+        clientHandles -= handle
     }
 
   }
@@ -40,17 +40,17 @@ object IOActorSpec {
 
     sequentialIO = false
 
-    var token: IO.Token = _
+    var handle: IO.Handle = _
 
     override def preStart: Unit = {
-      token = connect(ioManager, host, port)
+      handle = connect(ioManager, host, port)
     }
 
     def receiveIO = {
       case bytes: ByteString ⇒
         println("C: Sending Request")
-        write(token, bytes)
-        self reply read(token, bytes.length)
+        write(handle, bytes)
+        self reply read(handle, bytes.length)
         println("C: Got Response")
     }
   }

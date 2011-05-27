@@ -31,61 +31,61 @@ import com.eaio.uuid.UUID
 
 object IO {
 
-  case class Token(owner: ActorRef, ioManager: ActorRef, uuid: UUID = new UUID()) {
+  case class Handle(owner: ActorRef, ioManager: ActorRef, uuid: UUID = new UUID()) {
     override lazy val hashCode = scala.runtime.ScalaRunTime._hashCode(this)
   }
 
-  trait IOMessage { def token: Token }
-  case class Listen(token: Token, address: InetSocketAddress) extends IOMessage
-  case class NewConnection(token: Token) extends IOMessage
-  case class Accept(token: Token, source: Token) extends IOMessage
-  case class Connect(token: Token, address: InetSocketAddress) extends IOMessage
-  case class Connected(token: Token) extends IOMessage
-  case class Close(token: Token) extends IOMessage
-  case class Closed(token: Token) extends IOMessage
-  case class Read(token: Token, bytes: ByteString) extends IOMessage
-  case class Write(token: Token, bytes: ByteString) extends IOMessage
+  trait IOMessage { def handle: Handle }
+  case class Listen(handle: Handle, address: InetSocketAddress) extends IOMessage
+  case class NewConnection(handle: Handle) extends IOMessage
+  case class Accept(handle: Handle, source: Handle) extends IOMessage
+  case class Connect(handle: Handle, address: InetSocketAddress) extends IOMessage
+  case class Connected(handle: Handle) extends IOMessage
+  case class Close(handle: Handle) extends IOMessage
+  case class Closed(handle: Handle) extends IOMessage
+  case class Read(handle: Handle, bytes: ByteString) extends IOMessage
+  case class Write(handle: Handle, bytes: ByteString) extends IOMessage
 
 }
 
 trait IO {
   this: Actor ⇒
 
-  def listen(ioManager: ActorRef, host: String, port: Int): IO.Token =
+  def listen(ioManager: ActorRef, host: String, port: Int): IO.Handle =
     listen(ioManager, new InetSocketAddress(host, port))
 
-  def listen(ioManager: ActorRef, address: InetSocketAddress): IO.Token = {
-    val token = IO.Token(self, ioManager)
-    ioManager ! IO.Listen(token, address)
-    token
+  def listen(ioManager: ActorRef, address: InetSocketAddress): IO.Handle = {
+    val handle = IO.Handle(self, ioManager)
+    ioManager ! IO.Listen(handle, address)
+    handle
   }
 
-  def connect(ioManager: ActorRef, host: String, port: Int): IO.Token =
+  def connect(ioManager: ActorRef, host: String, port: Int): IO.Handle =
     connect(ioManager, new InetSocketAddress(host, port))
 
-  def connect(ioManager: ActorRef, address: InetSocketAddress): IO.Token = {
-    val token = IO.Token(self, ioManager)
-    ioManager ! IO.Connect(token, address)
-    token
+  def connect(ioManager: ActorRef, address: InetSocketAddress): IO.Handle = {
+    val handle = IO.Handle(self, ioManager)
+    ioManager ! IO.Connect(handle, address)
+    handle
   }
 
-  def accept(source: IO.Token, owner: ActorRef): IO.Token = {
+  def accept(source: IO.Handle, owner: ActorRef): IO.Handle = {
     val ioManager = source.ioManager
-    val token = IO.Token(owner, ioManager)
-    ioManager ! IO.Accept(token, source)
-    token
+    val handle = IO.Handle(owner, ioManager)
+    ioManager ! IO.Accept(handle, source)
+    handle
   }
 
-  def write(token: IO.Token, bytes: ByteString): Unit =
-    token.ioManager ! IO.Write(token, bytes)
+  def write(handle: IO.Handle, bytes: ByteString): Unit =
+    handle.ioManager ! IO.Write(handle, bytes)
 
-  def close(token: IO.Token): Unit =
-    token.ioManager ! IO.Close(token)
+  def close(handle: IO.Handle): Unit =
+    handle.ioManager ! IO.Close(handle)
 
 }
 
 object IOActor {
-  class TokenState(val messages: mutable.Queue[MessageInvocation], val readBytes: mutable.Queue[ByteString], var readBytesLength: Int) {
+  class HandleState(val messages: mutable.Queue[MessageInvocation], val readBytes: mutable.Queue[ByteString], var readBytesLength: Int) {
     def this() = this(mutable.Queue.empty, mutable.Queue.empty, 0)
   }
 }
@@ -97,32 +97,35 @@ trait IOActor extends Actor with IO {
 
   private val _messages: mutable.Queue[MessageInvocation] = mutable.Queue.empty
 
-  private var _state: Map[IO.Token, TokenState] = Map.empty
+  private var _state: Map[IO.Handle, HandleState] = Map.empty
 
   private var _continuations: Map[MessageInvocation, (Int, ByteString ⇒ Unit)] = Map.empty
 
-  private def state(token: IO.Token): TokenState = _state.get(token) match {
+  private def state(handle: IO.Handle): HandleState = _state.get(handle) match {
     case Some(s) ⇒ s
     case _ ⇒
-      val s = new TokenState()
-      _state += (token -> s)
+      val s = new HandleState()
+      _state += (handle -> s)
       s
   }
 
-  protected def read(token: IO.Token, len: Int): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
-    state(token).messages enqueue self.currentMessage
+  protected def read(handle: IO.Handle, len: Int): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
+    state(handle).messages enqueue self.currentMessage
     _continuations += (self.currentMessage -> (len, cont))
-    run(token)
+    run(handle)
   }
 
+  // TODO: read(handle): ByteString, to read at least 1 byte
+  // TODO: read(handle, until: ByteString): ByteString, to read until match
+
   final def receive = {
-    case IO.Read(token, newBytes) ⇒
-      val st = state(token)
+    case IO.Read(handle, newBytes) ⇒
+      val st = state(handle)
       st.readBytes enqueue newBytes
       st.readBytesLength += newBytes.length
-      run(token)
-    case IO.Connected(token) ⇒ ()
-    case IO.Closed(token)    ⇒ _state -= token // TODO: clean up better
+      run(handle)
+    case IO.Connected(handle) ⇒ ()
+    case IO.Closed(handle)    ⇒ _state -= handle // TODO: clean up better
     case msg if sequentialIO && _continuations.nonEmpty ⇒
       _messages enqueue self.currentMessage
     case msg if _receiveIO.isDefinedAt(msg) ⇒
@@ -135,8 +138,8 @@ trait IOActor extends Actor with IO {
   private lazy val _receiveIO = receiveIO
 
   @tailrec
-  private def run(token: IO.Token): Unit = {
-    val st = state(token)
+  private def run(handle: IO.Handle): Unit = {
+    val st = state(handle)
     if (st.messages.nonEmpty) {
       val msg = st.messages.head
       self.currentMessage = msg
@@ -160,7 +163,7 @@ trait IOActor extends Actor with IO {
         val bytes = ByteString.concat(take.reverse: _*)
         _continuations -= msg
         continuation(bytes)
-        run(token)
+        run(handle)
       }
     } else {
       while ((_continuations.isEmpty || !sequentialIO) && _messages.nonEmpty) {
@@ -180,11 +183,11 @@ class IOManager(bufferSize: Int = 8192) extends Actor {
   }
 
   def receive = {
-    case IO.Listen(token, address)  ⇒ worker.createServer(token, address)
-    case IO.Connect(token, address) ⇒ worker.createClient(token, address)
-    case IO.Accept(token, source)   ⇒ worker.acceptConnection(token, source)
-    case IO.Write(token, data)      ⇒ worker.write(token, data)
-    case IO.Close(token)            ⇒ worker.close(token)
+    case IO.Listen(handle, address)  ⇒ worker.createServer(handle, address)
+    case IO.Connect(handle, address) ⇒ worker.createClient(handle, address)
+    case IO.Accept(handle, source)   ⇒ worker.acceptConnection(handle, source)
+    case IO.Write(handle, data)      ⇒ worker.write(handle, data)
+    case IO.Close(handle)            ⇒ worker.close(handle)
   }
 
   override def postStop: Unit = {
@@ -195,10 +198,10 @@ class IOManager(bufferSize: Int = 8192) extends Actor {
 
 private[akka] object IOWorker {
   sealed trait ChangeRequest
-  case class Register(token: IO.Token, channel: SelectableChannel, ops: Int) extends ChangeRequest
-  case class Accepted(token: IO.Token, serverToken: IO.Token) extends ChangeRequest
-  case class QueueWrite(token: IO.Token, data: ByteBuffer) extends ChangeRequest
-  case class Close(token: IO.Token) extends ChangeRequest
+  case class Register(handle: IO.Handle, channel: SelectableChannel, ops: Int) extends ChangeRequest
+  case class Accepted(handle: IO.Handle, serverHandle: IO.Handle) extends ChangeRequest
+  case class QueueWrite(handle: IO.Handle, data: ByteBuffer) extends ChangeRequest
+  case class Close(handle: IO.Handle) extends ChangeRequest
   case object Shutdown extends ChangeRequest
 }
 
@@ -211,28 +214,28 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
 
   implicit val optionIOManager: Some[ActorRef] = Some(ioManager)
 
-  def createServer(token: IO.Token, address: InetSocketAddress): Unit = {
+  def createServer(handle: IO.Handle, address: InetSocketAddress): Unit = {
     val server = ServerSocketChannel open ()
     server configureBlocking false
     server.socket bind address
-    addChangeRequest(Register(token, server, OP_ACCEPT))
+    addChangeRequest(Register(handle, server, OP_ACCEPT))
   }
 
-  def createClient(token: IO.Token, address: InetSocketAddress): Unit = {
+  def createClient(handle: IO.Handle, address: InetSocketAddress): Unit = {
     val client = SocketChannel open ()
     client configureBlocking false
     client connect address
-    addChangeRequest(Register(token, client, OP_CONNECT | OP_READ))
+    addChangeRequest(Register(handle, client, OP_CONNECT | OP_READ))
   }
 
-  def acceptConnection(token: IO.Token, source: IO.Token): Unit =
-    addChangeRequest(Accepted(token, source))
+  def acceptConnection(handle: IO.Handle, source: IO.Handle): Unit =
+    addChangeRequest(Accepted(handle, source))
 
-  def write(token: IO.Token, data: ByteString): Unit =
-    addChangeRequest(QueueWrite(token, data.asByteBuffer))
+  def write(handle: IO.Handle, data: ByteString): Unit =
+    addChangeRequest(QueueWrite(handle, data.asByteBuffer))
 
-  def close(token: IO.Token): Unit =
-    addChangeRequest(Close(token))
+  def close(handle: IO.Handle): Unit =
+    addChangeRequest(Close(handle))
 
   def shutdown(): Unit =
     addChangeRequest(Shutdown)
@@ -246,11 +249,11 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
 
   private val _changeRequests = new AtomicReference(List.empty[ChangeRequest])
 
-  private var acceptedChannels = Map.empty[IO.Token, Queue[SelectableChannel]].withDefaultValue(Queue.empty)
+  private var acceptedChannels = Map.empty[IO.Handle, Queue[SelectableChannel]].withDefaultValue(Queue.empty)
 
-  private var channels = Map.empty[IO.Token, SelectableChannel]
+  private var channels = Map.empty[IO.Handle, SelectableChannel]
 
-  private var writeQueues = Map.empty[IO.Token, Queue[ByteBuffer]].withDefaultValue(Queue.empty)
+  private var writeQueues = Map.empty[IO.Handle, Queue[ByteBuffer]].withDefaultValue(Queue.empty)
 
   private val buffer = ByteBuffer.allocate(bufferSize)
 
@@ -265,23 +268,23 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
           if (key.isValid) { process(key) }
         }
         _changeRequests.getAndSet(Nil).reverse foreach {
-          case Register(token, channel, ops) ⇒
-            channels += (token -> channel)
-            channel register (selector, ops, token)
-          case Accepted(token, serverToken) ⇒
-            val (channel, rest) = acceptedChannels(serverToken).dequeue
-            if (rest.isEmpty) acceptedChannels -= serverToken
-            else acceptedChannels += (serverToken -> rest)
-            channels += (token -> channel)
-            channel register (selector, OP_READ, token)
-          case QueueWrite(token, data) ⇒
-            if (channels contains token) {
-              val queue = writeQueues(token)
-              if (queue.isEmpty) addOps(token, OP_WRITE)
-              writeQueues += (token -> queue.enqueue(data))
+          case Register(handle, channel, ops) ⇒
+            channels += (handle -> channel)
+            channel register (selector, ops, handle)
+          case Accepted(handle, serverHandle) ⇒
+            val (channel, rest) = acceptedChannels(serverHandle).dequeue
+            if (rest.isEmpty) acceptedChannels -= serverHandle
+            else acceptedChannels += (serverHandle -> rest)
+            channels += (handle -> channel)
+            channel register (selector, OP_READ, handle)
+          case QueueWrite(handle, data) ⇒
+            if (channels contains handle) {
+              val queue = writeQueues(handle)
+              if (queue.isEmpty) addOps(handle, OP_WRITE)
+              writeQueues += (handle -> queue.enqueue(data))
             }
-          case Close(token) ⇒
-            cleanup(token)
+          case Close(handle) ⇒
+            cleanup(handle)
           case Shutdown ⇒
             channels.values foreach (_.close)
             selector.close
@@ -291,95 +294,95 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
   }
 
   private def process(key: SelectionKey): Unit = {
-    val token = key.attachment.asInstanceOf[IO.Token]
+    val handle = key.attachment.asInstanceOf[IO.Handle]
     try {
       if (key.isConnectable) key.channel match {
-        case client: SocketChannel ⇒ connected(token, client)
+        case client: SocketChannel ⇒ connected(handle, client)
       }
       if (key.isAcceptable) key.channel match {
-        case server: ServerSocketChannel ⇒ accept(token, server)
+        case server: ServerSocketChannel ⇒ accept(handle, server)
       }
       if (key.isReadable) key.channel match {
-        case channel: ReadChannel ⇒ read(token, channel)
+        case channel: ReadChannel ⇒ read(handle, channel)
       }
       if (key.isWritable) key.channel match {
-        case channel: WriteChannel ⇒ write(token, channel)
+        case channel: WriteChannel ⇒ write(handle, channel)
       }
     } catch {
-      case e: CancelledKeyException ⇒ cleanup(token)
+      case e: CancelledKeyException ⇒ cleanup(handle)
     }
   }
 
-  private def cleanup(token: IO.Token): Unit = {
-    acceptedChannels -= token
-    writeQueues -= token
-    channels.get(token) match {
+  private def cleanup(handle: IO.Handle): Unit = {
+    acceptedChannels -= handle
+    writeQueues -= handle
+    channels.get(handle) match {
       case Some(channel) ⇒
         channel.close
-        channels -= token
-        token.owner ! IO.Closed(token)
+        channels -= handle
+        handle.owner ! IO.Closed(handle)
       case None ⇒
     }
   }
 
-  private def setOps(token: IO.Token, ops: Int): Unit =
-    channels(token) keyFor selector interestOps ops
+  private def setOps(handle: IO.Handle, ops: Int): Unit =
+    channels(handle) keyFor selector interestOps ops
 
-  private def addOps(token: IO.Token, ops: Int): Unit = {
-    val key = channels(token) keyFor selector
+  private def addOps(handle: IO.Handle, ops: Int): Unit = {
+    val key = channels(handle) keyFor selector
     val cur = key.interestOps
     key interestOps (cur | ops)
   }
 
-  private def removeOps(token: IO.Token, ops: Int): Unit = {
-    val key = channels(token) keyFor selector
+  private def removeOps(handle: IO.Handle, ops: Int): Unit = {
+    val key = channels(handle) keyFor selector
     val cur = key.interestOps
     key interestOps (cur - (cur & ops))
   }
 
-  private def connected(token: IO.Token, client: SocketChannel): Unit = {
+  private def connected(handle: IO.Handle, client: SocketChannel): Unit = {
     client.finishConnect
-    removeOps(token, OP_CONNECT)
-    token.owner ! IO.Connected(token)
+    removeOps(handle, OP_CONNECT)
+    handle.owner ! IO.Connected(handle)
   }
 
   @tailrec
-  private def accept(token: IO.Token, server: ServerSocketChannel): Unit = {
+  private def accept(handle: IO.Handle, server: ServerSocketChannel): Unit = {
     val client = server.accept
     if (client ne null) {
       client configureBlocking false
-      acceptedChannels += (token -> (acceptedChannels(token) enqueue client))
-      token.owner ! IO.NewConnection(token)
-      accept(token, server)
+      acceptedChannels += (handle -> (acceptedChannels(handle) enqueue client))
+      handle.owner ! IO.NewConnection(handle)
+      accept(handle, server)
     }
   }
 
   @tailrec
-  private def read(token: IO.Token, channel: ReadChannel): Unit = {
+  private def read(handle: IO.Handle, channel: ReadChannel): Unit = {
     buffer.clear
     val readLen = channel read buffer
     if (readLen == -1) {
-      cleanup(token)
+      cleanup(handle)
     } else if (readLen > 0) {
       buffer.flip
-      token.owner ! IO.Read(token, ByteString(buffer))
-      if (readLen == buffer.capacity) read(token, channel)
+      handle.owner ! IO.Read(handle, ByteString(buffer))
+      if (readLen == buffer.capacity) read(handle, channel)
     }
   }
 
   @tailrec
-  private def write(token: IO.Token, channel: WriteChannel): Unit = {
-    val queue = writeQueues(token)
+  private def write(handle: IO.Handle, channel: WriteChannel): Unit = {
+    val queue = writeQueues(handle)
     if (queue.nonEmpty) {
       val (buf, bufs) = queue.dequeue
       val writeLen = channel write buf
       if (buf.remaining == 0) {
         if (bufs.isEmpty) {
-          writeQueues -= token
-          removeOps(token, OP_WRITE)
+          writeQueues -= handle
+          removeOps(handle, OP_WRITE)
         } else {
-          writeQueues += (token -> bufs)
-          write(token, channel)
+          writeQueues += (handle -> bufs)
+          write(handle, channel)
         }
       }
     }
