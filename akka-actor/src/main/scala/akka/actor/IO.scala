@@ -83,50 +83,40 @@ trait IO {
 
 }
 
+object IOActor {
+  case class TokenState(messages: Queue[MessageInvocation], readBytes: Queue[ByteString], readBytesLength: Int)
+  val emptyTokenState = TokenState(Queue.empty, Queue.empty, 0)
+}
+
 trait IOActor extends Actor with IO {
+  import IOActor._
 
   var sequentialIO = true
 
-  var messages: Queue[MessageInvocation] = Queue.empty
+  private var _messages: Queue[MessageInvocation] = Queue.empty
 
-  var continuations: Map[MessageInvocation, (Int, ByteString ⇒ Unit)] = Map.empty
+  private var _state: Map[IO.Token, TokenState] = Map.empty.withDefaultValue(emptyTokenState)
 
-  var readBytes: Queue[ByteString] = Queue.empty
+  private var _continuations: Map[MessageInvocation, (Int, ByteString ⇒ Unit)] = Map.empty
 
-  var readBytesLength: Int = 0
-
-  var next: Option[ByteString ⇒ Unit] = None
-
-  var waitingFor: Int = 0
-
-  var token: IO.Token = _
-
-  var currentMessage: MessageInvocation = _
-
-  def read(len: Int): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
-    if (next.isEmpty) {
-      waitingFor = len
-      next = Some(cont)
-    } else {
-      messages :+= self.currentMessage
-      continuations += (self.currentMessage -> (len, cont))
-    }
-    run()
+  def read(token: IO.Token, len: Int): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
+    val state = _state(token)
+    _state += (token -> state.copy(messages = state.messages :+ self.currentMessage))
+    _continuations += (self.currentMessage -> (len, cont))
+    run(token)
   }
 
-  def write(bytes: ByteString): Unit = write(token, bytes)
-
   final def receive = {
-    case IO.Read(t, newBytes) if token == t ⇒
-      readBytes :+= newBytes
-      readBytesLength += newBytes.length
-      run()
-    case IO.Connected(t) if token == t ⇒ ()
-    case IO.Closed(t) if token == t    ⇒ self.stop
-    case msg if next.isDefined && sequentialIO ⇒
-      messages :+= self.currentMessage
+    case IO.Read(token, newBytes) ⇒
+      val state = _state(token)
+      _state += (token -> state.copy(readBytes = state.readBytes :+ newBytes,
+        readBytesLength = state.readBytesLength + newBytes.length))
+      run(token)
+    case IO.Connected(token) ⇒ ()
+    case IO.Closed(token)    ⇒ _state -= token // TODO: clean up better
+    case msg if sequentialIO && _continuations.nonEmpty ⇒
+      _messages :+= self.currentMessage
     case msg if _receiveIO.isDefinedAt(msg) ⇒
-      if (next.isEmpty) currentMessage = self.currentMessage
       reset { _receiveIO(msg) }
       ()
   }
@@ -136,40 +126,38 @@ trait IOActor extends Actor with IO {
   private lazy val _receiveIO = receiveIO
 
   @tailrec
-  private def run(): Unit = {
-    self.currentMessage = currentMessage
-    while (next.isDefined && readBytesLength >= waitingFor) {
-      var left = waitingFor
-      var take: Queue[ByteString] = Queue.empty
-      while (left > 0 && left >= readBytes.head.length) {
-        left -= readBytes.head.length
-        take :+= readBytes.head
-        readBytes = readBytes.tail
+  private def run(token: IO.Token): Unit = {
+    val TokenState(messages, readBytes, readBytesLength) = _state(token)
+    if (messages.nonEmpty) {
+      val msg = messages.head
+      self.currentMessage = msg
+      val Some((waitingFor, continuation)) = _continuations.get(msg)
+      if (readBytesLength >= waitingFor) {
+        var left = waitingFor
+        var take: List[ByteString] = Nil
+        var rest = readBytes
+        while (left > 0 && left >= rest.head.length) {
+          left -= rest.head.length
+          take ::= rest.head
+          rest = rest.tail
+        }
+        if (left > 0) {
+          val last = rest.head
+          take ::= last.take(left)
+          rest = last.drop(left) +: rest.tail
+        }
+        val bytes = ByteString.concat(take.reverse: _*)
+        _state += (token -> TokenState(messages.tail, rest, readBytesLength - waitingFor))
+        _continuations -= msg
+        continuation(bytes)
+        run(token)
       }
-      if (left > 0) {
-        val last = readBytes.head
-        take :+= last.take(left)
-        readBytes = last.drop(left) +: readBytes.tail
+    } else {
+      while ((_continuations.isEmpty || !sequentialIO) && _messages.nonEmpty) {
+        val (msg, rest) = _messages.dequeue
+        _messages = rest
+        self invoke msg
       }
-      val bytes = ByteString.concat(take: _*)
-      readBytesLength -= waitingFor
-      val continuation = next.get
-      next = None
-      waitingFor = 0
-      continuation(bytes)
-    }
-    if (next.isEmpty && messages.nonEmpty) {
-      val (msg, rest) = messages.dequeue
-      messages = rest
-      continuations.get(msg) match {
-        case Some((len, cont)) ⇒
-          continuations -= msg
-          currentMessage = msg
-          next = Some(cont)
-          waitingFor = len
-        case _ ⇒ self.invoke(msg)
-      }
-      run()
     }
   }
 }

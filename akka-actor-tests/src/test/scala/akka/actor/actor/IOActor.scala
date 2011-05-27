@@ -40,6 +40,8 @@ object IOActorSpec {
 
     sequentialIO = false
 
+    var token: IO.Token = _
+
     override def preStart: Unit = {
       token = connect(ioManager, host, port)
     }
@@ -47,8 +49,8 @@ object IOActorSpec {
     def receiveIO = {
       case bytes: ByteString ⇒
         println("C: Sending Request")
-        write(bytes)
-        self reply read(bytes.length)
+        write(token, bytes)
+        self reply read(token, bytes.length)
         println("C: Got Response")
     }
   }
