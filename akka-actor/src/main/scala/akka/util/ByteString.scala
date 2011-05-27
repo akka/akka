@@ -98,7 +98,6 @@ final class ByteString private (bytes: Array[Byte], startIndex: Int, endIndex: I
   override def slice(from: Int, until: Int): ByteString = {
     val newStartIndex = math.max(from, 0) + startIndex
     val newEndIndex = math.min(until, length) + startIndex
-    val newLength = math.max(newEndIndex - newStartIndex, 0)
     if (newEndIndex - newStartIndex <= 0) ByteString.empty
     else new ByteString(bytes, newStartIndex, newEndIndex)
   }
