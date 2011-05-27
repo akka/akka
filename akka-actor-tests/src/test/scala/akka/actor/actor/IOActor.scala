@@ -38,14 +38,18 @@ object IOActorSpec {
 
   class SimpleEchoClient(host: String, port: Int, ioManager: ActorRef) extends IOActor {
 
+    sequentialIO = false
+
     override def preStart: Unit = {
       token = connect(ioManager, host, port)
     }
 
     def receiveIO = {
       case bytes: ByteString ⇒
+        println("C: Sending Request")
         write(bytes)
         self reply read(bytes.length)
+        println("C: Got Response")
     }
   }
 }
@@ -55,7 +59,7 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
 
   "an IO Actor" must {
     "run" in {
-      val ioManager = Actor.actorOf(new IOManager(2)).start
+      val ioManager = Actor.actorOf(new IOManager(2)).start // teeny tiny buffer
       val server = Actor.actorOf(new SimpleEchoServer("localhost", 8064, ioManager)).start
       val client = Actor.actorOf(new SimpleEchoClient("localhost", 8064, ioManager)).start
       val promise1 = client !!! ByteString("Hello World!1")
