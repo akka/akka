@@ -131,7 +131,7 @@ trait IOActor extends Actor with IO {
     run(handle)
   }
 
-  protected def read(handle: IO.Handle, delimiter: ByteString, inclusive: Boolean = true): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
+  protected def read(handle: IO.Handle, delimiter: ByteString, inclusive: Boolean = false): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
     state(handle).messages enqueue self.currentMessage
     _continuations += (self.currentMessage -> ByteStringDelimited(cont, delimiter, inclusive, 0))
     run(handle)
@@ -180,7 +180,7 @@ trait IOActor extends Actor with IO {
             st.messages.dequeue
             val index = if (inclusive) idx + delimiter.length else idx
             val bytes = st.readBytes.take(index).toByteString
-            st.readBytes = st.readBytes.drop(index)
+            st.readBytes = st.readBytes.drop(idx + delimiter.length)
             _continuations -= msg
             continuation(bytes)
             run(handle)

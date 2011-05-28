@@ -62,16 +62,16 @@ object IOActorSpec {
       case IO.NewConnection(handle) ⇒
         accept(handle)
       case IO.WakeUp(handle) ⇒
-        val cmd = read(handle, ByteString(" ")).utf8String.trim
+        val cmd = read(handle, ByteString(" ")).utf8String
         cmd match {
           case "SET" ⇒
-            val key = read(handle, ByteString(" ")).utf8String.trim
-            val len = read(handle, ByteString("\r\n")).utf8String.trim
+            val key = read(handle, ByteString(" ")).utf8String
+            val len = read(handle, ByteString("\r\n")).utf8String
             val value = read(handle, len.toInt)
             kvs += (key -> value)
             write(handle, ByteString("+OK\r\n"))
           case "GET" ⇒
-            val key = read(handle, ByteString("\r\n")).utf8String.trim
+            val key = read(handle, ByteString("\r\n")).utf8String
             write(handle, kvs.get(key).map(v ⇒ ByteString("$" + v.length + "\r\n") ++ v).getOrElse(ByteString("$-1\r\n")))
         }
     }
@@ -95,13 +95,13 @@ object IOActorSpec {
         val resultType = read(handle, 1).utf8String
         if (resultType != "+") sys.error("Unexpected response")
         val status = read(handle, ByteString("\r\n"))
-        self reply status.take(status.length - 2)
+        self reply status
 
       case ('get, key: String) ⇒
         write(handle, ByteString("GET " + key + "\r\n"))
         val resultType = read(handle, 1).utf8String
         if (resultType != "$") sys.error("Unexpected response")
-        val len = read(handle, ByteString("\r\n")).utf8String.trim
+        val len = read(handle, ByteString("\r\n")).utf8String
         val value = read(handle, len.toInt)
         self reply value
     }
