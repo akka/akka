@@ -15,23 +15,23 @@ object IOActorSpec {
 
   class SimpleEchoServer(host: String, port: Int, ioManager: ActorRef) extends Actor with IO {
 
-    var serverHandle: Option[IO.Handle] = None
-    var clientHandles: Set[IO.Handle] = Set.empty
+    var server: Option[IO.Handle] = None
+    var clients: Set[IO.Handle] = Set.empty
 
     override def preStart = {
-      serverHandle = Some(listen(ioManager, host, port))
+      server = Some(listen(ioManager, host, port))
     }
 
     def receive = {
       case IO.NewConnection(handle) ⇒
         println("S: Client connected")
-        clientHandles += accept(handle, self)
+        clients += accept(handle, self)
       case IO.Read(handle, bytes) ⇒
         println("S: Echoing data")
         write(handle, bytes)
       case IO.Closed(handle) ⇒
         println("S: Connection closed")
-        clientHandles -= handle
+        clients -= handle
     }
 
   }
