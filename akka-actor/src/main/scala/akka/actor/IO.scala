@@ -45,6 +45,7 @@ object IO {
   case class Closed(handle: Handle) extends IOMessage
   case class Read(handle: Handle, bytes: ByteString) extends IOMessage
   case class Write(handle: Handle, bytes: ByteString) extends IOMessage
+  case class WakeUp(handle: Handle) extends IOMessage
 
 }
 
@@ -76,6 +77,8 @@ trait IO {
     handle
   }
 
+  def accept(source: IO.Handle): Unit = accept(source, self)
+
   def write(handle: IO.Handle, bytes: ByteString): Unit =
     handle.ioManager ! IO.Write(handle, bytes)
 
@@ -99,6 +102,8 @@ trait IOActor extends Actor with IO {
   import IOActor._
 
   protected var sequentialIO = true
+
+  protected var idleWakeup = false
 
   private val _messages: mutable.Queue[MessageInvocation] = mutable.Queue.empty
 
@@ -136,7 +141,8 @@ trait IOActor extends Actor with IO {
     case IO.Read(handle, newBytes) ⇒
       val st = state(handle)
       st.readBytes :+= newBytes
-      run(handle)
+      if (st.messages.isEmpty && idleWakeup) reset { _receiveIO(IO.WakeUp(handle)) }
+      else run(handle)
     case IO.Connected(handle) ⇒
       state(handle).connected = true
     case IO.Closed(handle) ⇒

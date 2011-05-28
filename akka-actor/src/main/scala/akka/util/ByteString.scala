@@ -93,6 +93,8 @@ final class ByteString private (bytes: Array[Byte], startIndex: Int, endIndex: I
 
   def toByteBuffer: ByteBuffer = ByteBuffer.wrap(toArray)
 
+  def utf8String: String = new String(bytes, "UTF-8")
+
   def mapI(f: Byte ⇒ Int): ByteString = map(f andThen (_.toByte))
 
   override def slice(from: Int, until: Int): ByteString = {
