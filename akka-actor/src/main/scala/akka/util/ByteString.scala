@@ -106,3 +106,77 @@ final class ByteString private (bytes: Array[Byte], startIndex: Int, endIndex: I
     Array.copy(bytes, startIndex, xs, start, math.min(math.min(length, len), xs.length - start))
 
 }
+
+object ByteRope {
+
+  def apply(bytes: Array[Byte]): ByteRope = new ByteRope(Vector(ByteString(bytes)))
+
+  def apply(bytes: Byte*): ByteRope = new ByteRope(Vector(ByteString(bytes: _*)))
+
+  def apply[T](bytes: T*)(implicit num: Integral[T]): ByteRope = new ByteRope(Vector(ByteString(bytes: _*)(num)))
+
+  def apply(bytes: ByteBuffer): ByteRope = new ByteRope(Vector(ByteString(bytes)))
+
+  def apply(string: String): ByteRope = new ByteRope(Vector(ByteString(string)))
+
+  def apply(string: String, charset: String): ByteRope = new ByteRope(Vector(ByteString(string, charset)))
+
+  def empty: ByteRope = new ByteRope(Vector.empty)
+
+  def newBuilder: Builder[Byte, ByteRope] = new ArrayBuilder.ofByte mapResult apply
+
+  implicit def canBuildFrom = new CanBuildFrom[TraversableOnce[Byte], Byte, ByteRope] {
+    def apply(from: TraversableOnce[Byte]) = newBuilder
+    def apply() = newBuilder
+  }
+
+}
+
+final class ByteRope private (bytestrings: Vector[ByteString]) extends IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteRope] {
+
+  override protected[this] def newBuilder = ByteRope.newBuilder
+
+  def apply(idx: Int): Byte =
+    if (0 <= idx && idx < length) {
+      var pos = 0
+      var seen = 0
+      while (idx >= seen + bytestrings(pos).length) {
+        seen += bytestrings(pos).length
+        pos += 1
+      }
+      bytestrings(pos)(idx - seen)
+    } else throw new IndexOutOfBoundsException(idx.toString)
+
+  val length: Int = (0 /: bytestrings)(_ + _.length)
+
+  override def slice(from: Int, until: Int): ByteRope = {
+    val start = math.max(from, 0)
+    val end = math.min(until, length)
+    if (end - start <= 0)
+      ByteRope.empty
+    else {
+      var pos = 0
+      var seen = 0
+      while (from >= seen + bytestrings(pos).length) {
+        seen += bytestrings(pos).length
+        pos += 1
+      }
+      val startpos = pos
+      val startidx = start - seen
+      while (until > seen + bytestrings(pos).length) {
+        seen += bytestrings(pos).length
+        pos += 1
+      }
+      val endpos = pos
+      val endidx = end - seen
+      if (startpos == endpos)
+        new ByteRope(Vector(bytestrings(startpos).slice(startidx, endidx)))
+      else
+        new ByteRope(bytestrings(startpos).drop(startpos) +: bytestrings.slice(startpos + 1, endpos) :+ bytestrings(endpos).take(endidx))
+    }
+  }
+
+  def :+(that: ByteString): ByteRope = new ByteRope(bytestrings :+ that)
+
+  def toByteString: ByteString = ByteString.concat(bytestrings: _*)
+}
