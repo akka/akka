@@ -390,10 +390,7 @@ trait FSM[S, D] extends ListenerManagement {
   /*
    * termination handling
    */
-  private var terminateEvent: PartialFunction[StopEvent[S, D], Unit] = {
-    case StopEvent(Failure(cause), _, _) ⇒
-    case StopEvent(reason, _, _)         ⇒
-  }
+  private var terminateEvent: PartialFunction[StopEvent[S, D], Unit] = NullFunction
 
   /*
    * transition handling
@@ -431,7 +428,7 @@ trait FSM[S, D] extends ListenerManagement {
         actorRef ! CurrentState(self, currentState.stateName)
       } catch {
         case e: ActorInitializationException ⇒
-          EventHandler.warning(this, "trying to register not running listener")
+          EventHandler.warning(self, "trying to register not running listener")
       }
     case UnsubscribeTransitionCallBack(actorRef) ⇒
       removeListener(actorRef)
@@ -484,7 +481,13 @@ trait FSM[S, D] extends ListenerManagement {
   }
 
   private def terminate(reason: Reason) = {
-    terminateEvent.apply(StopEvent(reason, currentState.stateName, currentState.stateData))
+    reason match {
+      case Failure(ex: Throwable) ⇒ EventHandler.error(ex, self, "terminating due to Failure")
+      case Failure(msg)           ⇒ EventHandler.error(self, msg)
+      case _                      ⇒
+    }
+    val stopEvent = StopEvent(reason, currentState.stateName, currentState.stateData)
+    if (terminateEvent.isDefinedAt(stopEvent)) terminateEvent(stopEvent)
     self.stop()
   }
 
