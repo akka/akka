@@ -20,6 +20,9 @@ class AkkaException(message: String = "", cause: Throwable = null) extends Runti
   val uuid = "%s_%s".format(AkkaException.hostname, newUuid)
 
   override lazy val toString =
+    "%s: %s\n[%s]".format(getClass.getName, message, uuid)
+
+  lazy val toLongString =
     "%s: %s\n[%s]\n%s".format(getClass.getName, message, uuid, stackTraceToString)
 
   def stackTraceToString = {
