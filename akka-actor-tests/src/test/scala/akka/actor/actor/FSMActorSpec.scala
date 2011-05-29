@@ -12,7 +12,7 @@ import akka.testkit._
 import FSM._
 import akka.util.Duration
 import akka.util.duration._
-
+import akka.event._
 
 object FSMActorSpec {
 
@@ -58,8 +58,9 @@ object FSMActorSpec {
     }
 
     whenUnhandled {
-      case Event(_, stateData) => {
+      case Ev(msg) => {
         unhandledLatch.open
+        EventHandler.info(this, "unhandled event "+msg+" in state "+stateName+" with data "+stateData)
         stay
       }
     }

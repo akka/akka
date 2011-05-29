@@ -304,7 +304,7 @@ trait FSM[S, D] extends ListenerManagement {
    * function literal. To be used with onTransition.
    */
   implicit protected final def total2pf(transitionHandler: (S, S) => Unit) =
-    new PartialFunction[(S, S), Unit] {
+    new TransitionHandler {
       def isDefinedAt(in : (S, S)) = true
       def apply(in : (S, S)) { transitionHandler(in._1, in._2) }
     }
@@ -330,6 +330,16 @@ trait FSM[S, D] extends ListenerManagement {
   def initialize {
     makeTransition(currentState)
   }
+
+  /**
+   * Return current state name (i.e. object of type S)
+   */
+  def stateName = currentState.stateName
+
+  /**
+   * Return current state data (i.e. object of type D)
+   */
+  def stateData = currentState.stateData
 
   /******************************************************************
    *                PRIVATE IMPLEMENTATION DETAILS
