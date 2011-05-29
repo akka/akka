@@ -387,6 +387,23 @@ invariably lead to spurious test failures on the heavily loaded Jenkins server
 internally scaled by a factor taken from ``akka.conf``,
 ``akka.test.timefactor``, which defaults to 1.
 
+Resolving Conflicts with Implicit ActorRef
+------------------------------------------
+
+The :class:`TestKit` trait contains an implicit value of type :class:`ActorRef`
+to enable the magic reply handling. This value is named ``self`` so that e.g.
+anonymous actors may be declared within a test class without having to care
+about the ambiguous implicit issues which would otherwise arise. If you find
+yourself in a situation where the implicit you need comes from a different
+trait than :class:`TestKit` and is not named ``self``, then use
+:class:`TestKitLight`, which differs only in not having any implicit members.
+You would then need to make an implicit available in locally confined scopes
+which need it, e.g. different test cases. If this cannot be done, you will need
+to resort to explicitly specifying the sender reference::
+
+  val actor = actorOf[MyWorker].start()
+  actor.!(msg)(testActor)
+
 Using Multiple Probe Actors
 ---------------------------
 
