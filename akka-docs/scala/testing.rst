@@ -212,6 +212,125 @@ classes, receiving nothing for some time, etc.
    The test actor shuts itself down by default after 5 seconds (configurable)
    of inactivity, relieving you of the duty of explicitly managing it.
 
+Built-In Assertions
+-------------------
+
+The abovementioned :meth:`expectMsg` is not the only method for formulating
+assertions concerning received messages. Here is the full list:
+
+  * :meth:`expectMsg[T](d: Duration, msg: T): T`
+
+    The given message object must be received within the specified time; the
+    object will be returned.
+
+  * :meth:`expectMsgPF[T](d: Duration)(pf: PartialFunction[Any, T]): T`
+
+    Within the given time period, a message must be received and the given
+    partial function must be defined for that message; the result from applying
+    the partial function to the received message is returned. The duration may
+    be left unspecified (empty parentheses are required in this case) to use
+    the deadline from the innermost enclosing :ref:`within <TestKit.within>`
+    block instead.
+
+  * :meth:`expectMsgClass[T](d: Duration, c: Class[T]): T`
+
+    An object which is an instance of the given :class:`Class` must be received
+    within the allotted time frame; the object will be returned. Note that this
+    does a conformance check; if you need the class to be equal, have a look at
+    :meth:`expectMsgAllClassOf` with a single given class argument.
+
+  * :meth:`expectMsgAnyOf[T](d: Duration, obj: T*): T`
+
+    An object must be received within the given time, and it must be equal (
+    compared with ``==``) to at least one of the passed reference objects; the
+    received object will be returned.
+
+  * :meth:`expectMsgAnyClassOf[T](d: Duration, obj: Class[_ <: T]*): T`
+
+    An object must be received within the given time, and it must be an
+    instance of at least one of the supplied :class:`Class` objects; the
+    received object will be returned.
+
+  * :meth:`expectMsgAllOf[T](d: Duration, obj: T*): Seq[T]`
+
+    A number of objects matching the size of the supplied object array must be
+    received within the given time, and for each of the given objects there
+    must exist at least one among the received ones which equals (compared with
+    ``==``) it. The full sequence of received objects is returned.
+
+  * :meth:`expectMsgAllClassOf[T](d: Duration, c: Class[_ <: T]*): Seq[T]`
+
+    A number of objects matching the size of the supplied :class:`Class` array
+    must be received within the given time, and for each of the given classes
+    there must exist at least one among the received objects whose class equals
+    (compared with ``==``) it (this is *not* a conformance check). The full
+    sequence of received objects is returned.
+
+  * :meth:`expectMsgAllConformingOf[T](d: Duration, c: Class[_ <: T]*): Seq[T]`
+
+    A number of objects matching the size of the supplied :class:`Class` array
+    must be received within the given time, and for each of the given classes
+    there must exist at least one among the received objects which is an
+    instance of this class. The full sequence of received objects is returned.
+
+  * :meth:`expectNoMsg(d: Duration)`
+
+    No message must be received within the given time. This also fails if a
+    message has been received before calling this method which has not been
+    removed from the queue using one of the other methods.
+
+  * :meth:`receiveN(n: Int, d: Duration): Seq[AnyRef]`
+
+    ``n`` messages must be received within the given time; the received
+    messages are returned.
+
+In addition to message reception assertions there are also methods which help
+with message flows:
+
+  * :meth:`receiveOne(d: Duration): AnyRef`
+
+    Tries to receive one message for at most the given time interval and
+    returns ``null`` in case of failure. If the given Duration is zero, the
+    call is non-blocking (polling mode).
+
+  * :meth:`receiveWhile[T](max: Duration, idle: Duration)(pf: PartialFunction[Any, T]): Seq[T]`
+
+    Collect messages as long as
+    
+    * they are matching the given partial function
+    * the given time interval is not used up
+    * the next message is received within the idle timeout
+      
+    All collected messages are returned. The maximum duration defaults to the
+    time remaining in the innermost enclosing :ref:`within <TestKit.within>`
+    block and the idle duration defaults to infinity (thereby disabling the
+    idle timeout feature).
+
+  * :meth:`awaitCond(p: => Boolean, max: Duration, interval: Duration)`
+
+    Poll the given condition every :obj:`interval` until it returns ``true`` or
+    the :obj:`max` duration is used up. The interval defaults to 100 ms and the
+    maximum defaults to the time remaining in the innermost enclosing
+    :ref:`within <TestKit.within>` block.
+
+  * :meth:`ignoreMsg(pf: PartialFunction[AnyRef, Boolean])`
+    
+    :meth:`ignoreNoMsg`
+
+    The internal :obj:`testActor` contains a partial function for ignoring
+    messages: it will only enqueue messages which do not match the function or
+    for which the function returns ``false``. This function can be set and
+    reset using the methods given above; each invocation replaces the previous
+    function, they are not composed.
+
+    This feature is useful e.g. when testing a logging system, where you want
+    to ignore regular messages and are only interested in your specific ones.
+
+.. _TestKit.within:
+
+Timing Assertions
+-----------------
+
 Another important part of functional testing concerns timing: certain events
 must not happen immediately (like a timer), others need to happen before a
 deadline. Therefore, all examination methods accept an upper time limit within

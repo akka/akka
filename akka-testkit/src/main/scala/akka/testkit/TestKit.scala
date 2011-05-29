@@ -149,7 +149,7 @@ trait TestKit {
   def ignoreNoMsg { testActor ! TestActor.SetIgnore(None) }
 
   /**
-   * Obtain current time (`System.currentTimeMillis`) as Duration.
+   * Obtain current time (`System.nanoTime`) as Duration.
    */
   def now: Duration = System.nanoTime.nanos
 
@@ -241,7 +241,7 @@ trait TestKit {
   /**
    * Same as `expectMsg(remaining, obj)`, but correctly treating the timeFactor.
    */
-  def expectMsg(obj: Any): AnyRef = expectMsg_internal(remaining, obj)
+  def expectMsg[T](obj: T): T = expectMsg_internal(remaining, obj)
 
   /**
    * Receive one message from the test actor and assert that it equals the
@@ -250,13 +250,13 @@ trait TestKit {
    *
    * @return the received object
    */
-  def expectMsg(max: Duration, obj: Any): AnyRef = expectMsg_internal(max.dilated, obj)
+  def expectMsg[T](max: Duration, obj: T): T = expectMsg_internal(max.dilated, obj)
 
-  private def expectMsg_internal(max: Duration, obj: Any): AnyRef = {
+  private def expectMsg_internal[T](max: Duration, obj: T): T = {
     val o = receiveOne(max)
     assert(o ne null, "timeout during expectMsg")
     assert(obj == o, "expected " + obj + ", found " + o)
-    o
+    o.asInstanceOf[T]
   }
 
   /**
@@ -320,7 +320,7 @@ trait TestKit {
   /**
    * Same as `expectMsgAnyOf(remaining, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAnyOf(obj: Any*): AnyRef = expectMsgAnyOf_internal(remaining, obj: _*)
+  def expectMsgAnyOf[T](obj: T*): T = expectMsgAnyOf_internal(remaining, obj: _*)
 
   /**
    * Receive one message from the test actor and assert that it equals one of
@@ -329,19 +329,19 @@ trait TestKit {
    *
    * @return the received object
    */
-  def expectMsgAnyOf(max: Duration, obj: Any*): AnyRef = expectMsgAnyOf_internal(max.dilated, obj: _*)
+  def expectMsgAnyOf[T](max: Duration, obj: T*): T = expectMsgAnyOf_internal(max.dilated, obj: _*)
 
-  private def expectMsgAnyOf_internal(max: Duration, obj: Any*): AnyRef = {
+  private def expectMsgAnyOf_internal[T](max: Duration, obj: T*): T = {
     val o = receiveOne(max)
     assert(o ne null, "timeout during expectMsgAnyOf")
     assert(obj exists (_ == o), "found unexpected " + o)
-    o
+    o.asInstanceOf[T]
   }
 
   /**
    * Same as `expectMsgAnyClassOf(remaining, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAnyClassOf(obj: Class[_]*): AnyRef = expectMsgAnyClassOf_internal(remaining, obj: _*)
+  def expectMsgAnyClassOf[C](obj: Class[_ <: C]*): C = expectMsgAnyClassOf_internal(remaining, obj: _*)
 
   /**
    * Receive one message from the test actor and assert that it conforms to
@@ -350,26 +350,26 @@ trait TestKit {
    *
    * @return the received object
    */
-  def expectMsgAnyClassOf(max: Duration, obj: Class[_]*): AnyRef = expectMsgAnyClassOf_internal(max.dilated, obj: _*)
+  def expectMsgAnyClassOf[C](max: Duration, obj: Class[_ <: C]*): C = expectMsgAnyClassOf_internal(max.dilated, obj: _*)
 
-  private def expectMsgAnyClassOf_internal(max: Duration, obj: Class[_]*): AnyRef = {
+  private def expectMsgAnyClassOf_internal[C](max: Duration, obj: Class[_ <: C]*): C = {
     val o = receiveOne(max)
     assert(o ne null, "timeout during expectMsgAnyClassOf")
     assert(obj exists (_ isInstance o), "found unexpected " + o)
-    o
+    o.asInstanceOf[C]
   }
 
   /**
    * Same as `expectMsgAllOf(remaining, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllOf(obj: Any*) { expectMsgAllOf_internal(remaining, obj: _*) }
+  def expectMsgAllOf[T](obj: T*): Seq[T] = expectMsgAllOf_internal(remaining, obj: _*)
 
   /**
    * Receive a number of messages from the test actor matching the given
    * number of objects and assert that for each given object one is received
-   * which equals it. This construct is useful when the order in which the
-   * objects are received is not fixed. Wait time is bounded by the given
-   * duration, with an AssertionFailure being thrown in case of timeout.
+   * which equals it and vice versa. This construct is useful when the order in
+   * which the objects are received is not fixed. Wait time is bounded by the
+   * given duration, with an AssertionFailure being thrown in case of timeout.
    *
    * <pre>
    * within(1 second) {
@@ -379,17 +379,19 @@ trait TestKit {
    * }
    * </pre>
    */
-  def expectMsgAllOf(max: Duration, obj: Any*) { expectMsgAllOf_internal(max.dilated, obj: _*) }
+  def expectMsgAllOf[T](max: Duration, obj: T*): Seq[T] = expectMsgAllOf_internal(max.dilated, obj: _*)
 
-  private def expectMsgAllOf_internal(max: Duration, obj: Any*) {
-    val recv = receiveN(obj.size, now + max)
-    assert(obj forall (x ⇒ recv exists (x == _)), "not found all")
+  private def expectMsgAllOf_internal[T](max: Duration, obj: T*): Seq[T] = {
+    val recv = receiveN_internal(obj.size, max)
+    obj foreach (x ⇒ assert(recv exists (x == _), "not found " + x))
+    recv foreach (x ⇒ assert(obj exists (x == _), "found unexpected " + x))
+    recv.asInstanceOf[Seq[T]]
   }
 
   /**
    * Same as `expectMsgAllClassOf(remaining, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllClassOf(obj: Class[_]*) { expectMsgAllClassOf_internal(remaining, obj: _*) }
+  def expectMsgAllClassOf[T](obj: Class[_ <: T]*): Seq[T] = expectMsgAllClassOf_internal(remaining, obj: _*)
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -399,34 +401,38 @@ trait TestKit {
    * Wait time is bounded by the given duration, with an AssertionFailure
    * being thrown in case of timeout.
    */
-  def expectMsgAllClassOf(max: Duration, obj: Class[_]*) { expectMsgAllClassOf_internal(max.dilated, obj: _*) }
+  def expectMsgAllClassOf[T](max: Duration, obj: Class[_ <: T]*): Seq[T] = expectMsgAllClassOf_internal(max.dilated, obj: _*)
 
-  private def expectMsgAllClassOf_internal(max: Duration, obj: Class[_]*) {
-    val recv = receiveN(obj.size, now + max)
-    assert(obj forall (x ⇒ recv exists (_.getClass eq x)), "not found all")
+  private def expectMsgAllClassOf_internal[T](max: Duration, obj: Class[_ <: T]*): Seq[T] = {
+    val recv = receiveN_internal(obj.size, max)
+    obj foreach (x ⇒ assert(recv exists (_.getClass eq x), "not found " + x))
+    recv foreach (x ⇒ assert(obj exists (_ eq x.getClass), "found non-matching object " + x))
+    recv.asInstanceOf[Seq[T]]
   }
 
   /**
    * Same as `expectMsgAllConformingOf(remaining, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllConformingOf(obj: Class[_]*) { expectMsgAllClassOf_internal(remaining, obj: _*) }
+  def expectMsgAllConformingOf[T](obj: Class[_ <: T]*): Seq[T] = expectMsgAllClassOf_internal(remaining, obj: _*)
 
   /**
    * Receive a number of messages from the test actor matching the given
    * number of classes and assert that for each given class one is received
-   * which conforms to that class. This construct is useful when the order in
-   * which the objects are received is not fixed.  Wait time is bounded by
-   * the given duration, with an AssertionFailure being thrown in case of
-   * timeout.
+   * which conforms to that class (and vice versa). This construct is useful
+   * when the order in which the objects are received is not fixed.  Wait time
+   * is bounded by the given duration, with an AssertionFailure being thrown in
+   * case of timeout.
    *
    * Beware that one object may satisfy all given class constraints, which
    * may be counter-intuitive.
    */
-  def expectMsgAllConformingOf(max: Duration, obj: Class[_]*) { expectMsgAllConformingOf(max.dilated, obj: _*) }
+  def expectMsgAllConformingOf[T](max: Duration, obj: Class[_ <: T]*): Seq[T] = expectMsgAllConformingOf(max.dilated, obj: _*)
 
-  private def expectMsgAllConformingOf_internal(max: Duration, obj: Class[_]*) {
-    val recv = receiveN(obj.size, now + max)
-    assert(obj forall (x ⇒ recv exists (x isInstance _)), "not found all")
+  private def expectMsgAllConformingOf_internal[T](max: Duration, obj: Class[_ <: T]*): Seq[T] = {
+    val recv = receiveN_internal(obj.size, max)
+    obj foreach (x ⇒ assert(recv exists (x isInstance _), "not found " + x))
+    recv foreach (x ⇒ assert(obj exists (_ isInstance x), "found non-matching object " + x))
+    recv.asInstanceOf[Seq[T]]
   }
 
   /**
@@ -448,12 +454,13 @@ trait TestKit {
   /**
    * Same as `receiveWhile(remaining)(f)`, but correctly treating the timeFactor.
    */
-  def receiveWhile[T](f: PartialFunction[AnyRef, T]): Seq[T] = receiveWhile_internal(remaining)(f)
+  @deprecated("insert empty first parameter list", "1.2")
+  def receiveWhile[T](f: PartialFunction[AnyRef, T]): Seq[T] = receiveWhile(remaining / Duration.timeFactor)(f)
 
   /**
-   * Receive a series of messages as long as the given partial function
-   * accepts them or the idle timeout is met or the overall maximum duration
-   * is elapsed. Returns the sequence of messages.
+   * Receive a series of messages until one does not match the given partial
+   * function or the idle timeout is met (disabled by default) or the overall
+   * maximum duration is elapsed. Returns the sequence of messages.
    *
    * Note that it is not an error to hit the `max` duration in this case.
    *
@@ -468,15 +475,13 @@ trait TestKit {
    * assert(series == (1 to 7).toList)
    * </pre>
    */
-  def receiveWhile[T](max: Duration)(f: PartialFunction[AnyRef, T]): Seq[T] = receiveWhile_internal(max.dilated)(f)
-
-  private def receiveWhile_internal[T](max: Duration)(f: PartialFunction[AnyRef, T]): Seq[T] = {
-    val stop = now + max
+  def receiveWhile[T](max: Duration = Duration.MinusInf, idle: Duration = Duration.Inf)(f: PartialFunction[AnyRef, T]): Seq[T] = {
+    val stop = now + (if (max == Duration.MinusInf) remaining else max.dilated)
     var msg: Message = NullMessage
 
     @tailrec
     def doit(acc: List[T]): List[T] = {
-      receiveOne(stop - now)
+      receiveOne((stop - now) min idle)
       lastMessage match {
         case NullMessage ⇒
           lastMessage = msg
@@ -497,9 +502,18 @@ trait TestKit {
   }
 
   /**
+   * Same as `receiveN(n, remaining)` but correctly taking into account
+   * Duration.timeFactor.
+   */
+  def receiveN(n: Int): Seq[AnyRef] = receiveN_internal(n, remaining)
+
+  /**
    * Receive N messages in a row before the given deadline.
    */
-  def receiveN(n: Int, stop: Duration): Seq[AnyRef] = {
+  def receiveN(n: Int, max: Duration): Seq[AnyRef] = receiveN_internal(n, max.dilated)
+
+  private def receiveN_internal(n: Int, max: Duration): Seq[AnyRef] = {
+    val stop = max + now
     for { x ← 1 to n } yield {
       val timeout = stop - now
       val o = receiveOne(timeout)
