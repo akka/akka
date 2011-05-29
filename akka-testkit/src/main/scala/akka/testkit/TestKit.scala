@@ -480,7 +480,7 @@ trait TestKit {
     var msg : Message = NullMessage
 
     @tailrec def doit(acc : List[T]) : List[T] = {
-      receiveOne(math.min(stop - now), idle)
+      receiveOne((stop - now) min idle)
       lastMessage match {
         case NullMessage =>
           lastMessage = msg
