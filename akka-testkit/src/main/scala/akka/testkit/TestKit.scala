@@ -89,7 +89,7 @@ class TestActor(queue : BlockingDeque[TestActor.Message]) extends Actor with FSM
  * @author Roland Kuhn
  * @since 1.1
  */
-trait TestKit {
+trait TestKitLight {
 
   import TestActor.{Message, RealMessage, NullMessage}
 
@@ -100,7 +100,7 @@ trait TestKit {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  implicit val testActor = actorOf(new TestActor(queue)).start()
+  val testActor = actorOf(new TestActor(queue)).start()
 
   /**
    * Implicit sender reference so that replies are possible for messages sent
@@ -547,6 +547,10 @@ trait TestKit {
   }
 
   private def format(u : TimeUnit, d : Duration) = "%.3f %s".format(d.toUnit(u), u.toString.toLowerCase)
+}
+
+trait TestKit extends TestKitLight {
+  implicit val self = testActor
 }
 
 /**
