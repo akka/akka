@@ -259,6 +259,15 @@ Ray Roestenburg has written a great article on using the TestKit:
 `<http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html>`_.
 His full example is also available :ref:`here <testkit-example>`.
 
+Accounting for Slow Test Systems
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The tight timeouts you use during testing on your lightning-fast notebook will
+invariably lead to spurious test failures on the heavily loaded Jenkins server
+(or similar). To account for this situation, all maximum durations are
+internally scaled by a factor taken from ``akka.conf``,
+``akka.test.timefactor``, which defaults to 1.
+
 Using Multiple Probe Actors
 ---------------------------
 
@@ -488,34 +497,42 @@ to find the cause, fix it and verify the test again. This process is supported
 by debuggers as well as logging, where the Akka toolkit offers the following
 options:
 
-* Logging of exceptions thrown within Actor instances
+* *Logging of exceptions thrown within Actor instances*
   
-  This is always on.
+  This is always on; in contrast to the other logging mechanisms, this logs at
+  ``ERROR`` level.
 
-* Logging of message invocations on certain actors
+* *Logging of message invocations on certain actors*
 
   This is enabled by a setting in ``akka.conf`` — namely
-  ``akka.actor.debug.receive`` — which enables the :meth:`loggingReceive`
+  ``akka.actor.debug.receive`` — which enables the :meth:`loggable`
   statement to be applied to an actor’s :meth:`receive` function::
 
-    def receive = loggingReceive {
+    def receive = Actor.loggable { // `Actor` unnecessary with import Actor._
       case msg => ...
     } 
 
-  This feature is not enabled on all actors uniformly because that is not
-  usually what you need, and it could lead to endless loops if it were applied
-  to :class:`EventHandler` listeners.
+  If the abovementioned setting is not given in ``akka.conf``, this will pass
+  through the given :class:`Receive` function unmodified, meaning that there is
+  no runtime cost unless actually enabled.
 
-* Logging of special messages
+  The logging feature is coupled to this specific local mark-up because
+  enabling it uniformly on all actors is not usually what you need, and it
+  would lead to endless loops if it were applied to :class:`EventHandler`
+  listeners.
+
+* *Logging of special messages*
 
   Actors handle certain special messages automatically, e.g. :obj:`Kill`,
   :obj:`PoisonPill`, etc. Tracing of these message invocations is enabled by
-  the setting ``akka.actor.debug.autoreceive``.
+  the setting ``akka.actor.debug.autoreceive``, which enables this on all
+  actors.
 
-* Logging of the actor lifecycle
+* *Logging of the actor lifecycle*
 
   Actor creation, start, restart, link, unlink and stop may be traced by
-  enabling the setting ``akka.actor.debug.lifecycle``.
+  enabling the setting ``akka.actor.debug.lifecycle``; this, too, is enabled
+  uniformly on all actors.
 
 All these messages are logged at ``DEBUG`` level. To summarize, you can enable
 full logging of actor activities using this configuration fragment::
