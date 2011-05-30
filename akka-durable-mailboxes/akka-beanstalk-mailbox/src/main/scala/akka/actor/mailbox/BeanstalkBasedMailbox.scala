@@ -23,7 +23,7 @@ class BeanstalkBasedMailboxException(message: String) extends AkkaException(mess
 class BeanstalkBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbox(owner) {
 
   val hostname             = config.getString("akka.actor.mailbox.beanstalk.hostname", "0.0.0.0")
-  val port                 = config.getInt("akka.enterprise.beanstalk.port", 11300)
+  val port                 = config.getInt("akka.actor.mailbox.beanstalk.port", 11300)
   val reconnectWindow      = Duration(config.getInt("akka.actor.mailbox.beanstalk.reconnect-window", 5), TIME_UNIT).toSeconds.toInt
   val messageSubmitDelay   = Duration(config.getInt("akka.actor.mailbox.beanstalk.message-submit-delay", 0), TIME_UNIT).toSeconds.toInt
   val messageSubmitTimeout = Duration(config.getInt("akka.actor.mailbox.beanstalk.message-submit-timeout", 5), TIME_UNIT).toSeconds.toInt

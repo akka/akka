@@ -1,4 +1,4 @@
-Migration guide from 0.10.x to 1.0.x
+Migration Guide 0.10.x to 1.0.x
 ====================================
 
 Akka & Akka Modules separated into two different repositories and distributions
@@ -15,7 +15,7 @@ Download the release you need (Akka core or Akka Modules) from `<http://akka.io/
 Changed Akka URI
 ----------------
 
-http:*akkasource.org changed to http:*akka.io
+http://akkasource.org changed to http://akka.io
 
 Reflects XSDs, Maven repositories, ScalaDoc etc.
 
@@ -144,7 +144,7 @@ Important changes from RC2-RC3
 Important change from RC3 to RC4
 --------------------------------
 
-The Akka-Spring namespace has changed from akkasource.org and scalablesolutions.se to http:*akka.io/schema and http:*akka.io/akka-<version>.xsd
+The Akka-Spring namespace has changed from akkasource.org and scalablesolutions.se to http://akka.io/schema and http://akka.io/akka-<version>.xsd
 
 Module akka-actor
 -----------------

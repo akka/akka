@@ -147,6 +147,7 @@ trait MessageDispatcher {
 
   private[akka] def unregister(actorRef: ActorRef) = {
     if (uuids remove actorRef.uuid) {
+      cleanUpMailboxFor(actorRef)
       actorRef.mailbox = null
       if (uuids.isEmpty && futures.get == 0) {
         shutdownSchedule match {
@@ -160,6 +161,12 @@ trait MessageDispatcher {
       }
     }
   }
+
+  /**
+   * Overridable callback to clean up the mailbox for a given actor,
+   * called when an actor is unregistered.
+   */
+  protected def cleanUpMailboxFor(actorRef: ActorRef) {}
 
   /**
    * Traverses the list of actors (uuids) currently being attached to this dispatcher and stops those actors

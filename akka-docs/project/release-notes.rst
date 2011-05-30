@@ -3,7 +3,7 @@ Release Notes
 
 Changes listed in no particular order.
 
-Current Development 1.1-SNAPSHOT
+1.1
 ----------------------------------------
 
 - **UPD** - improve FSM DSL: make onTransition syntax nicer (Roland Kuhn)
