@@ -45,7 +45,6 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
    */
   def actorFor(address: String): Option[ActorRef] = {
     if (actorsByAddress.containsKey(address)) Some(actorsByAddress.get(address))
-    //    else if (isClusterEnabled)                ClusterModule.node.use(address) // FIXME uncomment and fix
     else None
   }
 
@@ -135,9 +134,9 @@ class LocalActorRegistry(
   def shutdownAll() {
     foreach(_.stop)
     if (ClusterModule.isEnabled) Actor.remote.clear //FIXME: Should this be here?
-    actorsByAddress.clear
-    actorsByUuid.clear
-    typedActorsByUuid.clear
+    actorsByAddress.clear()
+    actorsByUuid.clear()
+    typedActorsByUuid.clear()
   }
 
   //============== ACTORS ==============

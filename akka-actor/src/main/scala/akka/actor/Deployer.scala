@@ -356,7 +356,7 @@ object Deployer {
     }
   }
 
-  private def throwDeploymentBoundException(deployment: Deploy): Nothing = {
+  private[akka] def throwDeploymentBoundException(deployment: Deploy): Nothing = {
     val e = new DeploymentAlreadyBoundException(
       "Address [" + deployment.address +
         "] already bound to [" + deployment +
@@ -365,7 +365,7 @@ object Deployer {
     throw e
   }
 
-  private def thrownNoDeploymentBoundException(address: String): Nothing = {
+  private[akka] def thrownNoDeploymentBoundException(address: String): Nothing = {
     val e = new NoDeploymentBoundException("Address [" + address + "] is not bound to a deployment")
     EventHandler.error(e, this, e.getMessage)
     throw e
@@ -392,8 +392,7 @@ object LocalDeployer {
 
   private[akka] def deploy(deployment: Deploy) {
     if (deployments.putIfAbsent(deployment.address, deployment) != deployment) {
-      // FIXME do automatic 'undeploy' and redeploy (perhaps have it configurable if redeploy should be done or exception thrown)
-      // throwDeploymentBoundException(deployment)
+      //Deployer.throwDeploymentBoundException(deployment) // FIXME uncomment this and fix the issue with multiple deployments
     }
   }
 

@@ -33,7 +33,8 @@ import akka.event.EventHandler
 import akka.dispatch.{ Dispatchers, Future }
 import akka.remoteinterface._
 import akka.routing.RouterType
-import akka.config.Config
+import akka.config.{ Config, Supervision }
+import Supervision._
 import Config._
 import akka.serialization.{ Format, Serializers, Serializer, Compression }
 import Compression.LZF
@@ -225,7 +226,7 @@ object Cluster {
   /**
    * Creates a new AkkaZkClient.
    */
-  def newZkClient: AkkaZkClient = new AkkaZkClient(zooKeeperServers, sessionTimeout, connectionTimeout, defaultSerializer)
+  def newZkClient(): AkkaZkClient = new AkkaZkClient(zooKeeperServers, sessionTimeout, connectionTimeout, defaultSerializer)
 
   def createQueue(rootPath: String, blocking: Boolean = true) = new ZooKeeperQueue(node.zkClient, rootPath, blocking)
 
@@ -282,8 +283,18 @@ class DefaultClusterNode private[akka] (
       case RemoteClientDisconnected(client, address) ⇒ client.shutdownClientModule()
       case _                                         ⇒ //ignore other
     }
-  }, "akka.cluster.remoteClientLifeCycleListener").start()
+  }, "akka.cluster.RemoteClientLifeCycleListener").start()
+
   lazy val remoteDaemon = actorOf(new RemoteClusterDaemon(this), RemoteClusterDaemon.ADDRESS).start()
+
+  lazy val remoteDaemonSupervisor = Supervisor(
+    SupervisorConfig(
+      OneForOneStrategy(List(classOf[Exception]), Int.MaxValue, Int.MaxValue), // is infinite restart what we want?
+      Supervise(
+        remoteDaemon,
+        Permanent)
+        :: Nil))
+
   lazy val remoteService: RemoteSupport = {
     val remote = new akka.remote.netty.NettyRemoteSupport
     remote.start(nodeAddress.hostname, nodeAddress.port)
@@ -291,6 +302,7 @@ class DefaultClusterNode private[akka] (
     remote.addListener(remoteClientLifeCycleListener)
     remote
   }
+
   lazy val remoteServerAddress: InetSocketAddress = remoteService.address
 
   // static nodes
@@ -688,12 +700,12 @@ class DefaultClusterNode private[akka] (
           // FIXME switch to ReplicatedActorRef here
           // val actor = new ReplicatedActorRef(fromBinary[T](bytes, remoteServerAddress)(format))
           val actor = fromBinary[T](bytes, remoteServerAddress)(format)
-          remoteService.register(UUID_PREFIX + uuid, actor) // clustered refs are always registered and looked up by UUID
+          //          remoteService.register(UUID_PREFIX + uuid, actor) // FIXME is Actor.remote.register(UUID, ..) correct here?
           actor.start()
           actor.asInstanceOf[LocalActorRef]
         case Right(exception) ⇒ throw exception
       }
-    } headOption // FIXME should not be an array at all coming here
+    } headOption // FIXME should not be an array at all coming here but an Option[ActorRef]
   } else None
 
   /**
@@ -1086,9 +1098,9 @@ class DefaultClusterNode private[akka] (
         .format(nodeAddress.clusterName, nodeAddress.nodeName, nodeAddress.port, zkServerAddresses, serializer))
     EventHandler.info(this, "Starting up remote server [%s]".format(remoteServerAddress.toString))
     createRootClusterNode()
-    val isLeader = joinLeaderElection
+    val isLeader = joinLeaderElection()
     if (isLeader) createNodeStructureIfNeeded()
-    registerListeners
+    registerListeners()
     joinMembershipNode()
     joinActorsAtAddressNode()
     fetchMembershipChildrenNodes()
@@ -1125,7 +1137,8 @@ class DefaultClusterNode private[akka] (
 
     if (numberOfReplicas < replicationFactor) {
       throw new IllegalArgumentException(
-        "Replication factor [" + replicationFactor + "] is greater than the number of available nodes [" + numberOfReplicas + "]")
+        "Replication factor [" + replicationFactor +
+          "] is greater than the number of available nodes [" + numberOfReplicas + "]")
     } else if (numberOfReplicas == replicationFactor) {
       replicas = replicas ++ replicaConnectionsAsArray
     } else {
@@ -1164,7 +1177,7 @@ class DefaultClusterNode private[akka] (
     } catch {
       case e: ZkNodeExistsException ⇒
         val error = new ClusterException("Can't join the cluster. The node name [" + nodeAddress.nodeName + "] is already in by another node")
-        EventHandler.error(error, this, "")
+        EventHandler.error(error, this, error.toString)
         throw error
     }
   }
@@ -1173,7 +1186,7 @@ class DefaultClusterNode private[akka] (
     ignore[ZkNodeExistsException](zkClient.createPersistent(actorsAtNodePathFor(nodeAddress.nodeName)))
   }
 
-  private[cluster] def joinLeaderElection: Boolean = {
+  private[cluster] def joinLeaderElection(): Boolean = {
     EventHandler.info(this, "Node [%s] is joining leader election".format(nodeAddress.nodeName))
     leaderLock.lock
   }
@@ -1217,7 +1230,7 @@ class DefaultClusterNode private[akka] (
             homeAddress.setAccessible(true)
             homeAddress.set(actor, Some(remoteServerAddress))
 
-            remoteService.register(uuid, actor)
+            remoteService.register(uuid, actor) // FIXME is Actor.remote.register(UUID, ..) correct here?
           }
         }
 
@@ -1302,7 +1315,7 @@ class DefaultClusterNode private[akka] (
     }
   }
 
-  private def registerListeners = {
+  private def registerListeners() = {
     zkClient.subscribeStateChanges(stateListener)
     zkClient.subscribeChildChanges(MEMBERSHIP_NODE, membershipListener)
   }
@@ -1456,8 +1469,8 @@ trait ErrorHandler {
 object RemoteClusterDaemon {
   val ADDRESS = "akka-cluster-daemon".intern
 
-  // FIXME configure functionServerDispatcher to what?
-  val functionServerDispatcher = Dispatchers.newDispatcher("akka:cloud:cluster:function:server").build
+  // FIXME configure computeGridDispatcher to what?
+  val computeGridDispatcher = Dispatchers.newDispatcher("akka:cloud:cluster:compute-grid").build
 }
 
 // FIXME supervise RemoteClusterDaemon
@@ -1471,6 +1484,10 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
   import Cluster._
 
   self.dispatcher = Dispatchers.newPinnedDispatcher(self)
+
+  override def preRestart(reason: Throwable) {
+    EventHandler.debug(this, "RemoteClusterDaemon failed due to [%s] restarting...".format(reason))
+  }
 
   def receive: Receive = {
     case message: RemoteDaemonMessageProtocol ⇒
@@ -1528,7 +1545,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
         case FUNCTION_FUN0_UNIT ⇒
           actorOf(new Actor() {
-            self.dispatcher = functionServerDispatcher
+            self.dispatcher = computeGridDispatcher
 
             def receive = {
               case f: Function0[Unit] ⇒ try {
@@ -1541,7 +1558,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
         case FUNCTION_FUN0_ANY ⇒
           actorOf(new Actor() {
-            self.dispatcher = functionServerDispatcher
+            self.dispatcher = computeGridDispatcher
 
             def receive = {
               case f: Function0[Any] ⇒ try {
@@ -1554,7 +1571,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
         case FUNCTION_FUN1_ARG_UNIT ⇒
           actorOf(new Actor() {
-            self.dispatcher = functionServerDispatcher
+            self.dispatcher = computeGridDispatcher
 
             def receive = {
               case (fun: Function[Any, Unit], param: Any) ⇒ try {
@@ -1567,7 +1584,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
         case FUNCTION_FUN1_ARG_ANY ⇒
           actorOf(new Actor() {
-            self.dispatcher = functionServerDispatcher
+            self.dispatcher = computeGridDispatcher
 
             def receive = {
               case (fun: Function[Any, Unit], param: Any) ⇒ try {

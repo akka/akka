@@ -44,7 +44,7 @@ class SupervisorException private[akka] (message: String, cause: Throwable = nul
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Supervisor {
-  def apply(config: SupervisorConfig): Supervisor = SupervisorFactory(config).newInstance.start
+  def apply(config: SupervisorConfig): Supervisor = SupervisorFactory(config).newInstance.start()
 }
 
 /**
@@ -108,7 +108,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (Act
 
   def uuid = supervisor.uuid
 
-  def start: Supervisor = {
+  def start(): Supervisor = {
     this
   }
 
