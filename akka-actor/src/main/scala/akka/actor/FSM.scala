@@ -480,6 +480,8 @@ trait FSM[S, D] extends ListenerManagement {
     }
   }
 
+  override def postStop { terminate(Shutdown) }
+
   private def terminate(reason: Reason) = {
     reason match {
       case Failure(ex: Throwable) ⇒ EventHandler.error(ex, self, "terminating due to Failure")

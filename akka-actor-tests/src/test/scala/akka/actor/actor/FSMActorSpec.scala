@@ -155,7 +155,6 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit {
           case Ev("go") ⇒ goto(2)
         }
       }).start()
-      val reff = testActor
       val logger = Actor.actorOf(new Actor {
         def receive = {
           case x ⇒ testActor forward x
@@ -167,6 +166,19 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit {
         case EventHandler.Error(_: EventHandler.EventHandlerException, `fsm`, "Next state 2 does not exist") ⇒ true
       }
       EventHandler.removeListener(logger)
+    }
+
+    "run onTermination upon ActorRef.stop()" in {
+      lazy val fsm = new Actor with FSM[Int, Null] {
+        startWith(1, null)
+        when(1) { NullFunction }
+        onTermination {
+          case x ⇒ testActor ! x
+        }
+      }
+      val ref = Actor.actorOf(fsm).start()
+      ref.stop()
+      expectMsg(fsm.StopEvent(Shutdown, 1, null))
     }
 
   }
