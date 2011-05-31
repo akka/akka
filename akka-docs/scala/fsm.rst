@@ -430,8 +430,8 @@ queued it. The status of any timer may be inquired with
 These named timers complement state timeouts because they are not affected by
 intervening reception of other messages.
 
-Termination
------------
+Termination from Inside
+-----------------------
 
 The FSM is stopped by specifying the result state as
 
@@ -470,6 +470,21 @@ a :class:`StopEvent(reason, stateName, stateData)` as argument:
 
 As for the :func:`whenUnhandled` case, this handler is not stacked, so each
 invocation of :func:`onTermination` replaces the previously installed handler.
+
+Termination from Outside
+------------------------
+
+When an :class:`ActorRef` associated to a FSM is stopped using the
+:meth:`stop()` method, its :meth:`postStop` hook will be executed. The default
+implementation by the :class:`FSM` trait is to execute the
+:meth:`onTermination` handler if that is prepared to handle a
+:obj:`StopEvent(Shutdown, ...)`.
+
+.. warning::
+
+  In case you override :meth:`postStop` and want to have your
+  :meth:`onTermination` handler called, do not forget to call
+  ``super.postStop``.
 
 Examples
 ========
