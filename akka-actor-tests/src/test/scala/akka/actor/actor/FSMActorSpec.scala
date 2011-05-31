@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import org.scalatest.WordSpec
+import org.scalatest.{WordSpec, BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.matchers.MustMatchers
 
 import akka.testkit._
@@ -97,8 +97,26 @@ object FSMActorSpec {
   case class CodeState(soFar: String, code: String)
 }
 
-class FSMActorSpec extends WordSpec with MustMatchers with TestKit {
+class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAndAfterAll with BeforeAndAfterEach {
   import FSMActorSpec._
+
+  val eh_level = EventHandler.level
+
+  override def afterEach {
+    EventHandler.level = eh_level
+  }
+
+  override def beforeAll {
+    val f = FSM.getClass.getDeclaredField("debugEvent")
+    f.setAccessible(true)
+    f.setBoolean(FSM, true)
+  }
+
+  override def afterAll {
+    val f = FSM.getClass.getDeclaredField("debugEvent")
+    f.setAccessible(true)
+    f.setBoolean(FSM, false)
+  }
 
   "An FSM Actor" must {
 
@@ -160,7 +178,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit {
         })
       EventHandler.addListener(logger)
       fsm ! "go"
-      expectMsgPF() {
+      expectMsgPF(1 second) {
         case EventHandler.Error(_ : EventHandler.EventHandlerException, `fsm`, "Next state 2 does not exist") => true
       }
       EventHandler.removeListener(logger)
@@ -176,7 +194,42 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit {
         }
       val ref = Actor.actorOf(fsm).start()
       ref.stop()
-      expectMsg(fsm.StopEvent(Shutdown, 1, null))
+      expectMsg(1 second, fsm.StopEvent(Shutdown, 1, null))
+    }
+
+    "log events and transitions if asked to do so" in {
+      val fsm = Actor.actorOf(new Actor with FSM[Int, Null] {
+          debug
+          startWith(1, null)
+          when(1) {
+            case Ev("go") =>
+              setTimer("t", Shutdown, 1.5 seconds, false)
+              goto(2)
+          }
+          when(2) {
+            case Ev("stop") =>
+              cancelTimer("t")
+              stop
+          }
+          onTermination {
+            case StopEvent(r, _, _) => testActor ! r
+          }
+        }).start()
+      val logger = Actor.actorOf(new Actor {
+          def receive = {
+            case x => testActor forward x
+          }
+        })
+      EventHandler.addListener(logger)
+      EventHandler.level = EventHandler.DebugLevel
+      fsm ! "go"
+      expectMsg(1 second, EventHandler.Debug(fsm, "processing event go"))
+      expectMsg(1 second, EventHandler.Debug(fsm, "setting timer 't'/1500 milliseconds: Shutdown"))
+      expectMsg(1 second, EventHandler.Debug(fsm, "transition 1 -> 2"))
+      fsm ! "stop"
+      expectMsg(1 second, EventHandler.Debug(fsm, "processing event stop"))
+      expectMsg(1 second, EventHandler.Debug(fsm, "canceling timer 't'"))
+      expectMsg(1 second, Normal)
     }
 
   }

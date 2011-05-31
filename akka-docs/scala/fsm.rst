@@ -283,11 +283,11 @@ Initiating Transitions
 ----------------------
 
 The result of any :obj:`stateFunction` must be a definition of the next state
-unless terminating the FSM, which is described in `Termination`_.  The state
-definition can either be the current state, as described by the :func:`stay`
-directive, or it is a different state as given by :func:`goto(state)`. The
-resulting object allows further qualification by way of the modifiers described
-in the following:
+unless terminating the FSM, which is described in `Termination from Inside`_.
+The state definition can either be the current state, as described by the
+:func:`stay` directive, or it is a different state as given by
+:func:`goto(state)`. The resulting object allows further qualification by way
+of the modifiers described in the following:
 
 :meth:`forMax(duration)`
   This modifier sets a state timeout on the next state. This means that a timer
@@ -485,6 +485,27 @@ implementation by the :class:`FSM` trait is to execute the
   In case you override :meth:`postStop` and want to have your
   :meth:`onTermination` handler called, do not forget to call
   ``super.postStop``.
+
+Logging
+-------
+
+The setting ``akka.actor.debug.fsm`` in ``akka.conf`` enables logging of an
+event trace by :class:`FSM` instances which turn this feature on::
+
+  class MyFSM extends Actor with FSM[X, Z] {
+    debug
+    ...
+  }
+
+This FSM will log at DEBUG level:
+
+  * all processed events, including :obj:`StateTimeout` and scheduled timer
+    messages
+  * every setting and cancellation of named timers
+  * all state transitions
+
+Life cycle changes and special messages can be logged as described for
+:ref:`Actors <actor.logging>`.
 
 Examples
 ========
