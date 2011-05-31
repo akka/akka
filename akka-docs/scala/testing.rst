@@ -624,6 +624,8 @@ has to offer:
    exception stack traces
  - Exclusion of certain classes of dead-lock scenarios
 
+.. _actor.logging:
+
 Tracing Actor Invocations
 =========================
 

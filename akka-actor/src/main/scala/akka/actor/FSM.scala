@@ -5,6 +5,7 @@ package akka.actor
 
 import akka.util._
 import akka.event.EventHandler
+import akka.config.Config.config
 
 import scala.collection.mutable
 import java.util.concurrent.ScheduledFuture
@@ -62,6 +63,8 @@ object FSM {
   * for derived classes.
   */
   implicit def d2od(d: Duration): Option[Duration] = Some(d)
+
+  val debugEvent = config.getBool("akka.actor.debug.fsm", false)
 }
 
 /**
@@ -241,6 +244,7 @@ trait FSM[S, D] extends ListenerManagement {
       timers(name).cancel
     }
     val timer = Timer(name, msg, repeat, timerGen.next)
+    if (doDebug) EventHandler.debug(self, "setting " + (if (repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
     timer.schedule(self, timeout)
     timers(name) = timer
     stay
@@ -252,6 +256,7 @@ trait FSM[S, D] extends ListenerManagement {
    */
   protected final def cancelTimer(name: String) = {
     if (timers contains name) {
+      if (doDebug) EventHandler.debug(self, "canceling timer '" + name + "'")
       timers(name).cancel
       timers -= name
     }
@@ -343,6 +348,14 @@ trait FSM[S, D] extends ListenerManagement {
    */
   def stateData: D = currentState.stateData
 
+  /**
+   * Set the debug flag (if enabled in akka.conf "akka.actor.debug.fsm"), which
+   * means that received events as well as state transitions are logged at
+   * DEBUG level. Do NOT enable this on actors which take part in event logging
+   * (i.e. which directly or indirectly receive messages from the EventHandler)
+   */
+  def debug { doDebug = debugEvent }
+
   /*
    * ****************************************************************
    *                PRIVATE IMPLEMENTATION DETAILS
@@ -404,6 +417,9 @@ trait FSM[S, D] extends ListenerManagement {
   // ListenerManagement shall not start() or stop() listener actors
   override protected val manageLifeCycleOfListeners = false
 
+  // debug messages enabled?
+  private var doDebug = false
+
   /**
    * *******************************************
    *       Main actor receive() method
@@ -412,10 +428,12 @@ trait FSM[S, D] extends ListenerManagement {
   override final protected def receive: Receive = {
     case TimeoutMarker(gen) ⇒
       if (generation == gen) {
+        if (doDebug) EventHandler.debug(self, "processing StateTimeout")
         processEvent(StateTimeout)
       }
     case t@Timer(name, msg, repeat, generation) ⇒
       if ((timers contains name) && (timers(name).generation == generation)) {
+        if (doDebug) EventHandler.debug(self, "processing timer '" + name + "' sending event " + msg)
         processEvent(msg)
         if (!repeat) {
           timers -= name
@@ -438,6 +456,7 @@ trait FSM[S, D] extends ListenerManagement {
         timeoutFuture = None
       }
       generation += 1
+      if (doDebug) EventHandler.debug(self, "processing event " + value)
       processEvent(value)
     }
   }
@@ -462,6 +481,7 @@ trait FSM[S, D] extends ListenerManagement {
       terminate(Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
       if (currentState.stateName != nextState.stateName) {
+        if (doDebug) EventHandler.debug(self, "transition " + currentState.stateName + " -> " + nextState.stateName)
         handleTransition(currentState.stateName, nextState.stateName)
         notifyListeners(Transition(self, currentState.stateName, nextState.stateName))
       }
