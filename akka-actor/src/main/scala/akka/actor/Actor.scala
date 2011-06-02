@@ -9,6 +9,7 @@ import akka.config.Config._
 import akka.util.Helpers.{narrow, narrowSilently}
 import akka.util.ListenerManagement
 import akka.AkkaException
+import scala.collection.immutable.Stack
 
 import scala.reflect.BeanProperty
 import akka.util. {ReflectiveAccess, Duration}
@@ -107,6 +108,11 @@ object Actor extends ListenerManagement {
     hook
   }
 
+
+
+  /**
+   * Handle to the ActorRegistry.
+   */
   val registry = new ActorRegistry
 
   lazy val remote: RemoteSupport = {
@@ -126,8 +132,8 @@ object Actor extends ListenerManagement {
    */
   type Receive = PartialFunction[Any, Unit]
 
-  private[actor] val actorRefInCreation = new ThreadLocal[Option[ActorRef]]{
-    override def initialValue = None
+  private[actor] val actorRefInCreation = new ThreadLocal[Stack[ActorRef]] {
+    override def initialValue = Stack[ActorRef]()
   }
 
    /**
@@ -313,18 +319,20 @@ trait Actor {
    * Mainly for internal use, functions as the implicit sender references when invoking
    * the 'forward' function.
    */
-  @transient implicit val someSelf: Some[ActorRef] = {
-    val optRef = Actor.actorRefInCreation.get
-    if (optRef.isEmpty) throw new ActorInitializationException(
+  @transient
+  implicit val someSelf: Some[ActorRef] = {
+    val refStack = Actor.actorRefInCreation.get
+    if (refStack.isEmpty) throw new ActorInitializationException(
       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
-      "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
-      "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
-      "\n\tEither use:" +
-      "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
-      "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
-     Actor.actorRefInCreation.set(None)
-     optRef.asInstanceOf[Some[ActorRef]].get.id = getClass.getName  //FIXME: Is this needed?
-     optRef.asInstanceOf[Some[ActorRef]]
+        "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
+        "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
+        "\n\tEither use:" +
+        "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
+        "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
+    val ref = refStack.head
+    ref.id = getClass.getName
+    Actor.actorRefInCreation.set(refStack.pop)
+    Some(ref)
   }
 
    /*
