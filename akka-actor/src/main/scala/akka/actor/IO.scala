@@ -47,101 +47,58 @@ object IO {
   case class Write(handle: Handle, bytes: ByteString) extends IOMessage
   case class WakeUp(handle: Handle) extends IOMessage
 
-}
-
-trait IO {
-  this: Actor ⇒
-
-  def listen(ioManager: ActorRef, host: String, port: Int): IO.Handle =
+  def listen(ioManager: ActorRef, host: String, port: Int)(implicit sender: Some[ActorRef]): Handle =
     listen(ioManager, new InetSocketAddress(host, port))
 
-  def listen(ioManager: ActorRef, address: InetSocketAddress): IO.Handle = {
-    val handle = IO.Handle(self, ioManager)
-    ioManager ! IO.Listen(handle, address)
+  def listen(ioManager: ActorRef, address: InetSocketAddress)(implicit sender: Some[ActorRef]): Handle = {
+    val handle = Handle(sender.get, ioManager)
+    ioManager ! Listen(handle, address)
     handle
   }
 
-  def connect(ioManager: ActorRef, host: String, port: Int): IO.Handle =
+  def connect(ioManager: ActorRef, host: String, port: Int)(implicit sender: Some[ActorRef]): Handle =
     connect(ioManager, new InetSocketAddress(host, port))
 
-  def connect(ioManager: ActorRef, address: InetSocketAddress): IO.Handle = {
-    val handle = IO.Handle(self, ioManager)
-    ioManager ! IO.Connect(handle, address)
+  def connect(ioManager: ActorRef, address: InetSocketAddress)(implicit sender: Some[ActorRef]): Handle = {
+    val handle = Handle(sender.get, ioManager)
+    ioManager ! Connect(handle, address)
     handle
   }
 
-  def accept(source: IO.Handle, owner: ActorRef): IO.Handle = {
+  def accept(source: Handle, owner: ActorRef): Handle = {
     val ioManager = source.ioManager
-    val handle = IO.Handle(owner, ioManager)
-    ioManager ! IO.Accept(handle, source)
+    val handle = Handle(owner, ioManager)
+    ioManager ! Accept(handle, source)
     handle
   }
 
-  def accept(source: IO.Handle): IO.Handle = accept(source, self)
+  def accept(source: Handle)(implicit sender: Some[ActorRef]): Handle = accept(source, sender.get)
 
-  def write(handle: IO.Handle, bytes: ByteString): Unit =
-    handle.ioManager ! IO.Write(handle, bytes)
+  def write(handle: Handle, bytes: ByteString): Unit =
+    handle.ioManager ! Write(handle, bytes)
 
-  def close(handle: IO.Handle): Unit =
-    handle.ioManager ! IO.Close(handle)
+  def close(handle: Handle): Unit =
+    handle.ioManager ! Close(handle)
 
-}
-
-object IOActor {
-  class HandleState(val messages: mutable.Queue[MessageInvocation], var readBytes: ByteRope, var connected: Boolean) {
-    def this() = this(mutable.Queue.empty, ByteRope.empty, false)
+  def read(handle: Handle, len: Int)(implicit actor: Actor with IO): ByteString @cps[Any] = shift { cont: (ByteString ⇒ Any) ⇒
+    actor.state(handle).messages enqueue actor.self.currentMessage
+    actor._continuations += (actor.self.currentMessage -> ByteStringLength(cont, len))
+    actor.run(handle)
   }
 
-  sealed trait IOContinuation[A] { def continuation: (A) ⇒ Any }
-  case class ByteStringLength(continuation: (ByteString) ⇒ Any, length: Int) extends IOContinuation[ByteString]
-  case class ByteStringDelimited(continuation: (ByteString) ⇒ Any, delimter: ByteString, inclusive: Boolean, scanned: Int) extends IOContinuation[ByteString]
-  case class ByteStringAny(continuation: (ByteString) ⇒ Any) extends IOContinuation[ByteString]
-
-  sealed trait TailRec[A]
-  case class Return[A](result: A) extends TailRec[A]
-  case class Call[A](thunk: () ⇒ TailRec[A] @cps[Any]) extends TailRec[A]
-  def tailrec[A](comp: TailRec[A]): A @cps[Any] = comp match {
-    case Call(thunk) ⇒ tailrec(thunk())
-    case Return(x)   ⇒ x
-  }
-}
-
-trait IOActor extends Actor with IO {
-  import IOActor._
-
-  private val _messages: mutable.Queue[MessageInvocation] = mutable.Queue.empty
-
-  private var _state: Map[IO.Handle, HandleState] = Map.empty
-
-  private var _continuations: Map[MessageInvocation, IOContinuation[_]] = Map.empty
-
-  private def state(handle: IO.Handle): HandleState = _state.get(handle) match {
-    case Some(s) ⇒ s
-    case _ ⇒
-      val s = new HandleState()
-      _state += (handle -> s)
-      s
+  def read(handle: Handle)(implicit actor: Actor with IO): ByteString @cps[Any] = shift { cont: (ByteString ⇒ Any) ⇒
+    actor.state(handle).messages enqueue actor.self.currentMessage
+    actor._continuations += (actor.self.currentMessage -> ByteStringAny(cont))
+    actor.run(handle)
   }
 
-  protected def read(handle: IO.Handle, len: Int): ByteString @cps[Any] = shift { cont: (ByteString ⇒ Any) ⇒
-    state(handle).messages enqueue self.currentMessage
-    _continuations += (self.currentMessage -> ByteStringLength(cont, len))
-    run(handle)
+  def read(handle: Handle, delimiter: ByteString, inclusive: Boolean = false)(implicit actor: Actor with IO): ByteString @cps[Any] = shift { cont: (ByteString ⇒ Any) ⇒
+    actor.state(handle).messages enqueue actor.self.currentMessage
+    actor._continuations += (actor.self.currentMessage -> ByteStringDelimited(cont, delimiter, inclusive, 0))
+    actor.run(handle)
   }
 
-  protected def read(handle: IO.Handle): ByteString @cps[Any] = shift { cont: (ByteString ⇒ Any) ⇒
-    state(handle).messages enqueue self.currentMessage
-    _continuations += (self.currentMessage -> ByteStringAny(cont))
-    run(handle)
-  }
-
-  protected def read(handle: IO.Handle, delimiter: ByteString, inclusive: Boolean = false): ByteString @cps[Any] = shift { cont: (ByteString ⇒ Any) ⇒
-    state(handle).messages enqueue self.currentMessage
-    _continuations += (self.currentMessage -> ByteStringDelimited(cont, delimiter, inclusive, 0))
-    run(handle)
-  }
-
-  protected def loop(block: ⇒ Any @cps[Any]): Unit @cps[Any] = {
+  def loop(block: ⇒ Any @cps[Any]): Unit @cps[Any] = {
     def f(): TailRec[Unit] @cps[Any] = {
       block
       Call(() ⇒ f())
@@ -149,7 +106,7 @@ trait IOActor extends Actor with IO {
     tailrec(f())
   }
 
-  protected def loopWhile(test: ⇒ Boolean)(block: ⇒ Any @cps[Any]): Unit @cps[Any] = {
+  def loopWhile(test: ⇒ Boolean)(block: ⇒ Any @cps[Any]): Unit @cps[Any] = {
     def f(): TailRec[Unit] @cps[Any] = {
       if (test) {
         block
@@ -159,15 +116,54 @@ trait IOActor extends Actor with IO {
     tailrec(f())
   }
 
-  final def receive = {
-    case IO.Read(handle, newBytes) ⇒
+  private class HandleState(val messages: mutable.Queue[MessageInvocation], var readBytes: ByteRope, var connected: Boolean) {
+    def this() = this(mutable.Queue.empty, ByteRope.empty, false)
+  }
+
+  private sealed trait IOContinuation[A] { def continuation: (A) ⇒ Any }
+  private case class ByteStringLength(continuation: (ByteString) ⇒ Any, length: Int) extends IOContinuation[ByteString]
+  private case class ByteStringDelimited(continuation: (ByteString) ⇒ Any, delimter: ByteString, inclusive: Boolean, scanned: Int) extends IOContinuation[ByteString]
+  private case class ByteStringAny(continuation: (ByteString) ⇒ Any) extends IOContinuation[ByteString]
+
+  private sealed trait TailRec[A]
+  private case class Return[A](result: A) extends TailRec[A]
+  private case class Call[A](thunk: () ⇒ TailRec[A] @cps[Any]) extends TailRec[A]
+  private def tailrec[A](comp: TailRec[A]): A @cps[Any] = comp match {
+    case Call(thunk) ⇒ tailrec(thunk())
+    case Return(x)   ⇒ x
+  }
+
+}
+
+trait IO {
+  this: Actor ⇒
+  import IO._
+
+  implicit protected def ioActor: Actor with IO = this
+
+  private val _messages: mutable.Queue[MessageInvocation] = mutable.Queue.empty
+
+  private var _state: Map[Handle, HandleState] = Map.empty
+
+  private var _continuations: Map[MessageInvocation, IOContinuation[_]] = Map.empty
+
+  private def state(handle: Handle): HandleState = _state.get(handle) match {
+    case Some(s) ⇒ s
+    case _ ⇒
+      val s = new HandleState()
+      _state += (handle -> s)
+      s
+  }
+
+  final def receive: Receive = {
+    case Read(handle, newBytes) ⇒
       val st = state(handle)
       st.readBytes :+= newBytes
       run(handle)
-    case msg@IO.Connected(handle) ⇒
+    case msg@Connected(handle) ⇒
       state(handle).connected = true
       if (_receiveIO.isDefinedAt(msg)) reset { _receiveIO(msg) }
-    case msg@IO.Closed(handle) ⇒
+    case msg@Closed(handle) ⇒
       _state -= handle // TODO: clean up better
       if (_receiveIO.isDefinedAt(msg)) reset { _receiveIO(msg) }
     case msg if _continuations.nonEmpty ⇒
@@ -182,7 +178,7 @@ trait IOActor extends Actor with IO {
   private lazy val _receiveIO = receiveIO
 
   @tailrec
-  private def run(handle: IO.Handle): Unit = {
+  private def run(handle: Handle): Unit = {
     val st = state(handle)
     if (st.messages.nonEmpty) {
       val msg = st.messages.head
@@ -219,6 +215,7 @@ trait IOActor extends Actor with IO {
             continuation(bytes)
             run(handle)
           }
+        case _ ⇒ sys error "Unhandled or missing IOContinuation"
       }
     } else {
       while (_continuations.isEmpty && _messages.nonEmpty) {
