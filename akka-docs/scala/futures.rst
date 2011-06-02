@@ -223,10 +223,15 @@ Same as with ``fold``, the execution will be done by the Thread that completes t
 
 This is just a sample of what can be done, but to use more advanced techniques it is easier to take advantage of Scalaz, which Akka has support for in its akka-scalaz module.
 
+
 Scalaz
 ^^^^^^
 
-Akka also has a Scalaz module (:ref:`add-on-modules`) for a more complete support of programming in a functional style.
+There is also an `Akka-Scalaz`_ project created by Derek Williams for a more
+complete support of programming in a functional style.
+
+.. _Akka-Scalaz: https://github.com/derekjw/akka-scalaz
+
 
 Exceptions
 ----------

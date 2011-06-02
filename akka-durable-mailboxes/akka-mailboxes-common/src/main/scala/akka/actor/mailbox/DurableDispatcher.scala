@@ -56,7 +56,7 @@ case object ZooKeeperDurableMailboxStorage extends DurableMailboxStorage("akka.a
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-case class DurableEventBasedDispatcher(
+case class DurableDispatcher(
   _name: String,
   _storage: DurableMailboxStorage,
   _throughput: Int = Dispatchers.THROUGHPUT,
@@ -98,6 +98,8 @@ case class DurableEventBasedDispatcher(
       throw new IllegalArgumentException("Durable mailboxes do not support Future-based messages from !! and !!!")
     super.dispatch(invocation)
   }
+
+  protected override def cleanUpMailboxFor(actorRef: ActorRef) {} //No need to clean up Futures since we don't support them
 }
 
 /**
@@ -136,14 +138,14 @@ case class DurablePinnedDispatcher(
 }
 
 /**
- * Configurator for the DurableEventBasedDispatcher
+ * Configurator for the DurableDispatcher
  * Do not forget to specify the "storage", valid values are "redis", "beanstalkd", "zookeeper" and "file"
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class DurableEventBasedDispatcherConfigurator extends MessageDispatcherConfigurator {
+class DurableDispatcherConfigurator extends MessageDispatcherConfigurator {
   def configure(config: Configuration): MessageDispatcher = {
-    configureThreadPool(config, threadPoolConfig => new DurableEventBasedDispatcher(
+    configureThreadPool(config, threadPoolConfig => new DurableDispatcher(
       config.getString("name", newUuid.toString),
       getStorage(config),
       config.getInt("throughput", Dispatchers.THROUGHPUT),
@@ -161,6 +163,6 @@ class DurableEventBasedDispatcherConfigurator extends MessageDispatcherConfigura
       case unknown     => throw new IllegalArgumentException("[%s] is not a valid storage, valid options are [redis, beanstalk, zookeeper, file]" format unknown)
     }
 
-    storage.getOrElse(throw new DurableMailboxException("No 'storage' defined for DurableEventBasedDispatcherConfigurator"))
+    storage.getOrElse(throw new DurableMailboxException("No 'storage' defined for DurableDispatcherConfigurator"))
   }
 }

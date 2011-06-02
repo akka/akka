@@ -124,15 +124,15 @@ class FutureSpec extends JUnitSuite {
     }).start()
 
     val future1 = for {
-      Res(a: Int) ← actor !!! Req("Hello")
-      Res(b: String) ← actor !!! Req(a)
-      Res(c: String) ← actor !!! Req(7)
+      Res(a: Int) ← actor.!!![Res[Int]](Req("Hello"))
+      Res(b: String) ← actor.!!![Res[String]](Req(a))
+      Res(c: String) ← actor.!!![Res[String]](Req(7))
     } yield b + "-" + c
 
     val future2 = for {
-      Res(a: Int) ← actor !!! Req("Hello")
-      Res(b: Int) ← actor !!! Req(a)
-      Res(c: Int) ← actor !!! Req(7)
+      Res(a: Int) ← actor.!!![Any](Req("Hello"))
+      Res(b: Int) ← actor.!!![Res[Int]](Req(a))
+      Res(c: Int) ← actor.!!![Res[Int]](Req(7))
     } yield b + "-" + c
 
     assert(future1.get === "10-14")

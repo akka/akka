@@ -4,7 +4,6 @@ Additional Information
 .. toctree::
    :maxdepth: 2
 
-   add-on-modules
    articles
    benchmarks
    recipies

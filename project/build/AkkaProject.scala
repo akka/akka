@@ -598,11 +598,11 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     }
   }
 
-  class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info)
-
   class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info)
 
   class AkkaSampleFSMProject(info: ProjectInfo) extends AkkaDefaultProject(info)
+
+  class AkkaSampleHelloProject(info: ProjectInfo) extends AkkaDefaultProject(info)
 
   class AkkaSampleOsgiProject(info: ProjectInfo) extends AkkaDefaultProject(info) with BNDPlugin {
     val osgiCore = Dependencies.osgi_core
@@ -610,19 +610,23 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     override protected def bndBundleActivator = Some("sample.osgi.Activator")
   }
 
+  class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info)
+
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
     override def disableCrossPaths = true
 
     lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
       new AkkaSampleAntsProject(_), akka_stm)
-    lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
-      new AkkaSampleFSMProject(_), akka_actor)
-//    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
-//      new AkkaSampleRemoteProject(_), akka_remote)
 //    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
 //      new AkkaSampleChatProject(_), akka_remote)
+    lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
+      new AkkaSampleFSMProject(_), akka_actor)
+    lazy val akka_sample_hello = project("akka-sample-hello", "akka-sample-hello",
+      new AkkaSampleHelloProject(_), akka_kernel)
     lazy val akka_sample_osgi = project("akka-sample-osgi", "akka-sample-osgi",
       new AkkaSampleOsgiProject(_), akka_actor)
+//    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
+//      new AkkaSampleRemoteProject(_), akka_remote)
 
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
@@ -784,6 +788,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val akkaCoreDist = project("core", "akka-dist-core", new AkkaCoreDistProject(_),
                                     akkaActorsDist, akka_remote, akka_http, akka_slf4j, akka_testkit, akka_actor_tests)
 
+    lazy val akkaMicrokernelDist = project("microkernel", "akka-dist-microkernel", new AkkaMicrokernelDistProject(_),
+                                           akkaCoreDist, akka_kernel, akka_samples)
+
     def doNothing = task { None }
     override def publishLocalAction = doNothing
     override def deliverLocalAction = doNothing
@@ -792,6 +799,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     class AkkaActorsDistProject(info: ProjectInfo) extends DefaultProject(info) with DistDocProject {
       def distName = "akka-actors"
+
       override def distDocName = "akka"
 
       override def distConfigSources = (akkaParent.info.projectPath / "config" ##) * "*"
@@ -816,6 +824,51 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     class AkkaCoreDistProject(info: ProjectInfo)extends DefaultProject(info) with DistProject {
       def distName = "akka-core"
+    }
+
+    class AkkaMicrokernelDistProject(info: ProjectInfo) extends DefaultProject(info) with DistProject {
+      def distName = "akka-microkernel"
+
+      override def distScriptSources = akkaParent.info.projectPath / "scripts" / "microkernel" * "*"
+
+      override def distClasspath = akka_kernel.runClasspath
+
+      override def projectDependencies = akka_kernel.topologicalSort
+
+      override def distAction = super.distAction dependsOn (distSamples)
+
+      val distSamplesPath = distDocPath / "samples"
+
+      lazy val distSamples = task {
+        val demo = akka_samples.akka_sample_hello.jarPath
+        val samples = Set(//akka_samples.akka_sample_camel
+                          akka_samples.akka_sample_hello)
+                          //akka_samples.akka_sample_security)
+
+        def copySamples[P <: DefaultProject](samples: Set[P]) = {
+          samples.map { sample =>
+            val sampleOutputPath = distSamplesPath / sample.name
+            val binPath = sampleOutputPath / "bin"
+            val configPath = sampleOutputPath / "config"
+            val deployPath = sampleOutputPath / "deploy"
+            val libPath = sampleOutputPath / "lib"
+            val srcPath = sampleOutputPath / "src"
+            val confs = sample.info.projectPath / "config" ** "*.*"
+            val scripts = akkaParent.info.projectPath / "scripts" / "samples" * "*"
+            val libs = sample.managedClasspath(Configurations.Runtime)
+            val deployed = sample.jarPath
+            val sources = sample.packageSourcePaths
+            copyFiles(confs, configPath) orElse
+            copyScripts(scripts, binPath) orElse
+            copyFiles(libs, libPath) orElse
+            copyFiles(deployed, deployPath) orElse
+            copyPaths(sources, srcPath)
+          }.foldLeft(None: Option[String])(_ orElse _)
+        }
+
+        copyFiles(demo, distDeployPath) orElse
+        copySamples(samples)
+      } dependsOn (distBase)
     }
   }
 }

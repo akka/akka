@@ -166,7 +166,7 @@ object ReflectiveAccess {
                         classloader: ClassLoader = loader): Either[Exception, T] = try {
     assert(params ne null)
     assert(args ne null)
-    getClassFor(fqn) match {
+    getClassFor(fqn, classloader) match {
       case Right(value) ⇒
         val ctor = value.getDeclaredConstructor(params: _*)
         ctor.setAccessible(true)
@@ -180,7 +180,7 @@ object ReflectiveAccess {
 
   //Obtains a reference to fqn.MODULE$
   def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception, T] = try {
-    getClassFor(fqn) match {
+    getClassFor(fqn, classloader) match {
       case Right(value) ⇒
         val instance = value.getDeclaredField("MODULE$")
         instance.setAccessible(true)

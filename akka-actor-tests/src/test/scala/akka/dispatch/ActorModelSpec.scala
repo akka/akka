@@ -8,13 +8,13 @@ import org.junit.Test
 import org.scalatest.Assertions._
 import akka.testing._
 import akka.dispatch._
-import akka.actor.{ ActorRef, Actor }
 import akka.actor.Actor._
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch, TimeUnit }
 import akka.actor.dispatch.ActorModelSpec.MessageDispatcherInterceptor
 import akka.util.{ Duration, Switch }
 import org.multiverse.api.latches.StandardLatch
+import akka.actor.{ ActorKilledException, PoisonPill, ActorRef, Actor }
 
 object ActorModelSpec {
 
@@ -341,6 +341,22 @@ abstract class ActorModelSpec extends JUnitSuite {
       await(dispatcher.stops.get == run)(withinMs = 10000)
       assertDispatcher(dispatcher)(starts = run, stops = run)
     }
+  }
+
+  @Test
+  def dispatcherShouldCompleteAllUncompletedSenderFuturesOnDeregister {
+    implicit val dispatcher = newInterceptedDispatcher
+    val a = newTestActor.start()
+    dispatcher.suspend(a)
+    val f1: Future[String] = a !!! Reply("foo")
+    val stopped = a !!! PoisonPill
+    val shouldBeCompleted = for (i ← 1 to 10) yield a !!! Reply(i)
+    dispatcher.resume(a)
+    assert(f1.get === "foo")
+    stopped.await
+    for (each ← shouldBeCompleted)
+      assert(each.exception.get.isInstanceOf[ActorKilledException])
+    a.stop()
   }
 }
 

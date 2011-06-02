@@ -159,9 +159,6 @@ object Actor extends ListenerManagement {
    */
   private[akka] lazy val remote: RemoteSupport = cluster.remoteService
 
-  // start up a cluster node to join the ZooKeeper cluster
-  //if (ClusterModule.isEnabled) cluster.start()
-
   /**
    * Creates an ActorRef out of the Actor with type T.
    * <pre>
@@ -382,10 +379,13 @@ object Actor extends ListenerManagement {
 
   private def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef = {
     deploy match {
-      case Deploy(_, router, serializerClassName, Clustered(home, replication: Replication, state: State)) ⇒
-
+      case Deploy(configAdress, router, serializerClassName, Clustered(home, replication: Replication, state: State)) ⇒
         ClusterModule.ensureEnabled()
-        if (!Actor.remote.isRunning) throw new IllegalStateException("Remote server is not running")
+
+        if (configAdress != address) throw new IllegalStateException(
+          "Deployment config for [" + address + "] is wrong [" + deploy + "]")
+        if (!Actor.remote.isRunning) throw new IllegalStateException(
+          "Remote server is not running")
 
         val isHomeNode = DeploymentConfig.isHomeNode(home)
         val replicas = DeploymentConfig.replicaValueFor(replication)
@@ -417,15 +417,20 @@ object Actor extends ListenerManagement {
           }
         }
 
-        if (isHomeNode) { // home node for clustered actor
+        val isStateful = state match {
+          case Stateless ⇒ false
+          case Stateful  ⇒ true
+        }
+
+        if (isStateful && isHomeNode) { // stateful actor's home node
           cluster
             .use(address, serializer)
             .getOrElse(throw new ConfigurationException(
               "Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
 
         } else {
-          if (!cluster.isClustered(address)) {
-            cluster.store(factory().start(), replicas, false, serializer) // add actor to cluster registry (if not already added)
+          if (!cluster.isClustered(address)) { // add actor to cluster registry (if not already added)
+            cluster.store(factory().start(), replicas, false, serializer)
           }
 
           // remote node (not home node), check out as ClusterActorRef
@@ -651,14 +656,21 @@ trait Actor {
   private[akka] final def apply(msg: Any) = {
     if (msg.isInstanceOf[AnyRef] && (msg.asInstanceOf[AnyRef] eq null))
       throw new InvalidMessageException("Message from [" + self.sender + "] to [" + self.toString + "] is null")
+
     val behaviorStack = self.hotswap
+
     msg match {
-      case l: AutoReceivedMessage ⇒ autoReceiveMessage(l)
-      case msg if behaviorStack.nonEmpty &&
-        behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
-      case msg if behaviorStack.isEmpty &&
-        processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
-      case unknown ⇒ unhandled(unknown) //This is the only line that differs from processingbehavior
+      case l: AutoReceivedMessage ⇒
+        autoReceiveMessage(l)
+
+      case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒
+        behaviorStack.head.apply(msg)
+
+      case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒
+        processingBehavior.apply(msg)
+
+      case unknown ⇒
+        unhandled(unknown) //This is the only line that differs from processingbehavior
     }
   }
 
