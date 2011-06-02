@@ -12,39 +12,40 @@ import akka.util.ByteString
 import akka.dispatch.Promise
 
 object IOActorSpec {
+  import IO._
 
   class SimpleEchoServer(host: String, port: Int, ioManager: ActorRef) extends Actor with IO {
 
     override def preStart = {
-      IO.listen(ioManager, host, port)
+      listen(ioManager, host, port)
     }
 
     def createWorker = Actor.actorOf(new Actor with IO {
       def receiveIO = {
-        case IO.NewConnection(handle) ⇒
-          val client = IO.accept(handle)
-          IO.loop(IO.write(client, IO.read(client)))
+        case NewClient(server) ⇒
+          val socket = server.accept()
+          loop { socket write socket.read() }
       }
     })
 
     def receiveIO = {
-      case msg: IO.NewConnection ⇒ self startLink createWorker forward msg
+      case msg: NewClient ⇒ self startLink createWorker forward msg
     }
 
   }
 
   class SimpleEchoClient(host: String, port: Int, ioManager: ActorRef) extends Actor with IO {
 
-    var handle: IO.Handle = _
+    var socket: SocketHandle = _
 
     override def preStart: Unit = {
-      handle = IO.connect(ioManager, host, port)
+      socket = connect(ioManager, host, port)
     }
 
     def receiveIO = {
       case bytes: ByteString ⇒
-        IO.write(handle, bytes)
-        self reply IO.read(handle, bytes.length)
+        socket write bytes
+        self reply socket.read(bytes.length)
     }
   }
 
@@ -54,33 +55,32 @@ object IOActorSpec {
     var kvs: Map[String, ByteString] = Map.empty
 
     override def preStart = {
-      IO.listen(ioManager, host, port)
+      listen(ioManager, host, port)
     }
 
     def createWorker = Actor.actorOf(new Actor with IO {
       def receiveIO = {
-        case IO.NewConnection(handle) ⇒
-          val server = handle.owner
-          val client = IO.accept(handle)
-          IO.loop {
-            val cmd = IO.read(client, ByteString(" ")).utf8String
+        case NewClient(server) ⇒
+          val socket = server.accept()
+          loop {
+            val cmd = socket.read(ByteString(" ")).utf8String
             cmd match {
               case "SET" ⇒
-                val key = IO.read(client, ByteString(" ")).utf8String
-                val len = IO.read(client, ByteString("\r\n")).utf8String
-                val value = IO.read(client, len.toInt)
-                server ! ('set, key, value)
-                IO.write(client, ByteString("+OK\r\n"))
+                val key = socket.read(ByteString(" ")).utf8String
+                val len = socket.read(ByteString("\r\n")).utf8String
+                val value = socket read len.toInt
+                server.owner ! ('set, key, value)
+                socket write ByteString("+OK\r\n")
               case "GET" ⇒
-                val key = IO.read(client, ByteString("\r\n")).utf8String
-                server !!! (('get, key)) map { value: Option[ByteString] ⇒
+                val key = socket.read(ByteString("\r\n")).utf8String
+                server.owner !!! (('get, key)) map { value: Option[ByteString] ⇒
                   value map { bytes ⇒
                     ByteString("$" + bytes.length + "\r\n") ++ bytes
                   } getOrElse ByteString("$-1\r\n")
                 } failure {
                   case e ⇒ ByteString("-" + e.getClass.toString + "\r\n")
                 } foreach { bytes: ByteString ⇒
-                  IO.write(client, bytes)
+                  socket write bytes
                 }
             }
           }
@@ -88,7 +88,7 @@ object IOActorSpec {
     })
 
     def receiveIO = {
-      case msg: IO.NewConnection                  ⇒ self startLink createWorker forward msg
+      case msg: NewClient                         ⇒ self startLink createWorker forward msg
       case ('set, key: String, value: ByteString) ⇒ kvs += (key -> value)
       case ('get, key: String)                    ⇒ self reply_? kvs.get(key)
     }
@@ -97,26 +97,26 @@ object IOActorSpec {
 
   class KVClient(host: String, port: Int, ioManager: ActorRef) extends Actor with IO {
 
-    var handle: IO.Handle = _
+    var socket: SocketHandle = _
 
     override def preStart: Unit = {
-      handle = IO.connect(ioManager, host, port)
+      socket = connect(ioManager, host, port)
     }
 
     def receiveIO = {
       case ('set, key: String, value: ByteString) ⇒
-        IO.write(handle, ByteString("SET " + key + " " + value.length + "\r\n") ++ value)
-        val resultType = IO.read(handle, 1).utf8String
+        socket write (ByteString("SET " + key + " " + value.length + "\r\n") ++ value)
+        val resultType = socket.read(1).utf8String
         if (resultType != "+") sys.error("Unexpected response")
-        val status = IO.read(handle, ByteString("\r\n"))
+        val status = socket read ByteString("\r\n")
         self reply status
 
       case ('get, key: String) ⇒
-        IO.write(handle, ByteString("GET " + key + "\r\n"))
-        val resultType = IO.read(handle, 1).utf8String
+        socket write ByteString("GET " + key + "\r\n")
+        val resultType = socket.read(1).utf8String
         if (resultType != "$") sys.error("Unexpected response")
-        val len = IO.read(handle, ByteString("\r\n")).utf8String
-        val value = IO.read(handle, len.toInt)
+        val len = socket.read(ByteString("\r\n")).utf8String
+        val value = socket read len.toInt
         self reply value
     }
   }
