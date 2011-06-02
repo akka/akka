@@ -77,7 +77,7 @@ trait IO {
     handle
   }
 
-  def accept(source: IO.Handle): Unit = accept(source, self)
+  def accept(source: IO.Handle): IO.Handle = accept(source, self)
 
   def write(handle: IO.Handle, bytes: ByteString): Unit =
     handle.ioManager ! IO.Write(handle, bytes)
@@ -92,10 +92,10 @@ object IOActor {
     def this() = this(mutable.Queue.empty, ByteRope.empty, false)
   }
 
-  sealed trait IOContinuation[A] { def continuation: (A) ⇒ Unit }
-  case class ByteStringLength(continuation: (ByteString) ⇒ Unit, length: Int) extends IOContinuation[ByteString]
-  case class ByteStringDelimited(continuation: (ByteString) ⇒ Unit, delimter: ByteString, inclusive: Boolean, scanned: Int) extends IOContinuation[ByteString]
-  case class ByteStringAny(continuation: (ByteString) ⇒ Unit) extends IOContinuation[ByteString]
+  sealed trait IOContinuation[A] { def continuation: (A) ⇒ Any }
+  case class ByteStringLength(continuation: (ByteString) ⇒ Any, length: Int) extends IOContinuation[ByteString]
+  case class ByteStringDelimited(continuation: (ByteString) ⇒ Any, delimter: ByteString, inclusive: Boolean, scanned: Int) extends IOContinuation[ByteString]
+  case class ByteStringAny(continuation: (ByteString) ⇒ Any) extends IOContinuation[ByteString]
 }
 
 trait IOActor extends Actor with IO {
@@ -119,19 +119,19 @@ trait IOActor extends Actor with IO {
       s
   }
 
-  protected def read(handle: IO.Handle, len: Int): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
+  protected def read(handle: IO.Handle, len: Int): ByteString @cps[Any] = shift { cont: (ByteString ⇒ Any) ⇒
     state(handle).messages enqueue self.currentMessage
     _continuations += (self.currentMessage -> ByteStringLength(cont, len))
     run(handle)
   }
 
-  protected def read(handle: IO.Handle): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
+  protected def read(handle: IO.Handle): ByteString @cps[Any] = shift { cont: (ByteString ⇒ Any) ⇒
     state(handle).messages enqueue self.currentMessage
     _continuations += (self.currentMessage -> ByteStringAny(cont))
     run(handle)
   }
 
-  protected def read(handle: IO.Handle, delimiter: ByteString, inclusive: Boolean = false): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
+  protected def read(handle: IO.Handle, delimiter: ByteString, inclusive: Boolean = false): ByteString @cps[Any] = shift { cont: (ByteString ⇒ Any) ⇒
     state(handle).messages enqueue self.currentMessage
     _continuations += (self.currentMessage -> ByteStringDelimited(cont, delimiter, inclusive, 0))
     run(handle)
@@ -154,7 +154,7 @@ trait IOActor extends Actor with IO {
       ()
   }
 
-  def receiveIO: PartialFunction[Any, Unit @suspendable]
+  def receiveIO: PartialFunction[Any, Any @cps[Any]]
 
   private lazy val _receiveIO = receiveIO
 
