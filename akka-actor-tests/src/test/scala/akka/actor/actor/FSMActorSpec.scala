@@ -167,7 +167,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
     }
 
     "log termination" in {
-      val fsm = Actor.actorOf(new Actor with FSM[Int, Null] {
+      val fsm = TestActorRef(new Actor with FSM[Int, Null] {
         startWith(1, null)
         when(1) {
           case Ev("go") ⇒ goto(2)
@@ -181,7 +181,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
       EventHandler.addListener(logger)
       fsm ! "go"
       expectMsgPF(1 second) {
-        case EventHandler.Error(_: EventHandler.EventHandlerException, `fsm`, "Next state 2 does not exist") ⇒ true
+        case EventHandler.Error(_: EventHandler.EventHandlerException, ref, "Next state 2 does not exist") if ref eq fsm.underlyingActor ⇒ true
       }
       EventHandler.removeListener(logger)
     }
@@ -200,7 +200,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
     }
 
     "log events and transitions if asked to do so" in {
-      val fsm = Actor.actorOf(new Actor with FSM[Int, Null] {
+      val fsmref = TestActorRef(new Actor with FSM[Int, Null] {
         debug
         startWith(1, null)
         when(1) {
@@ -217,6 +217,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
           case StopEvent(r, _, _) ⇒ testActor ! r
         }
       }).start()
+      val fsm = fsmref.underlyingActor
       val logger = Actor.actorOf(new Actor {
         def receive = {
           case x ⇒ testActor forward x
@@ -224,11 +225,11 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
       })
       EventHandler.addListener(logger)
       EventHandler.level = EventHandler.DebugLevel
-      fsm ! "go"
+      fsmref ! "go"
       expectMsg(1 second, EventHandler.Debug(fsm, "processing event go"))
       expectMsg(1 second, EventHandler.Debug(fsm, "setting timer 't'/1500 milliseconds: Shutdown"))
       expectMsg(1 second, EventHandler.Debug(fsm, "transition 1 -> 2"))
-      fsm ! "stop"
+      fsmref ! "stop"
       expectMsg(1 second, EventHandler.Debug(fsm, "processing event stop"))
       expectMsg(1 second, EventHandler.Debug(fsm, "canceling timer 't'"))
       expectMsg(1 second, Normal)

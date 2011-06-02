@@ -646,13 +646,16 @@ options:
   ``akka.actor.debug.receive`` — which enables the :meth:`loggable`
   statement to be applied to an actor’s :meth:`receive` function::
 
-    def receive = Actor.loggable { // `Actor` unnecessary with import Actor._
+    def receive = Actor.loggable(this) { // `Actor` unnecessary with import Actor._
       case msg => ...
     } 
 
-  If the abovementioned setting is not given in ``akka.conf``, this will pass
-  through the given :class:`Receive` function unmodified, meaning that there is
-  no runtime cost unless actually enabled.
+  The first argument to :meth:`loggable` defines the source to be used in the
+  logging events, which should be the current actor.
+
+  If the abovementioned setting is not given in ``akka.conf``, this method will
+  pass through the given :class:`Receive` function unmodified, meaning that
+  there is no runtime cost unless actually enabled.
 
   The logging feature is coupled to this specific local mark-up because
   enabling it uniformly on all actors is not usually what you need, and it

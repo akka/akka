@@ -159,6 +159,11 @@ trait TestKitLight {
   def remaining: Duration = end - now
 
   /**
+   * Query queue status.
+   */
+  def msgAvailable = !queue.isEmpty
+
+  /**
    * Block until the given condition evaluates to `true` or the timeout
    * expires, whichever comes first.
    *
