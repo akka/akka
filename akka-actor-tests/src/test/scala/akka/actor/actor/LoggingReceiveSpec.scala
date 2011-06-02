@@ -69,7 +69,7 @@ class LoggingReceiveSpec
       f.setAccessible(true)
       f.setBoolean(Actor, true)
       val actor = actorOf(new Actor {
-          def receive = loggable(self) {
+          def receive = loggable(this) {
             case _ => self reply "x"
           }
         }).start()
@@ -96,7 +96,7 @@ class LoggingReceiveSpec
       f.setAccessible(true)
       f.setBoolean(Actor, true)
       val actor = actorOf(new Actor {
-          def receive = loggable(self)(loggable(self) {
+          def receive = loggable(this)(loggable(this) {
             case _ => self reply "x"
           })
         }).start()

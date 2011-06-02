@@ -242,7 +242,7 @@ trait FSM[S, D] extends ListenerManagement {
       timers(name).cancel
     }
     val timer = Timer(name, msg, repeat, timerGen.next)
-    if (doDebug) EventHandler.debug(self, "setting "+(if (repeat) "repeating " else "")+"timer '"+name+"'/"+timeout+": "+msg)
+    if (doDebug) EventHandler.debug(this, "setting "+(if (repeat) "repeating " else "")+"timer '"+name+"'/"+timeout+": "+msg)
     timer.schedule(self, timeout)
     timers(name) = timer
     stay
@@ -254,7 +254,7 @@ trait FSM[S, D] extends ListenerManagement {
    */
   protected final def cancelTimer(name: String) = {
     if (timers contains name) {
-      if (doDebug) EventHandler.debug(self, "canceling timer '"+name+"'")
+      if (doDebug) EventHandler.debug(this, "canceling timer '"+name+"'")
       timers(name).cancel
       timers -= name
     }
@@ -422,12 +422,12 @@ trait FSM[S, D] extends ListenerManagement {
   override final protected def receive: Receive = {
     case TimeoutMarker(gen) =>
       if (generation == gen) {
-        if (doDebug) EventHandler.debug(self, "processing StateTimeout")
+        if (doDebug) EventHandler.debug(this, "processing StateTimeout")
         processEvent(StateTimeout)
       }
     case t @ Timer(name, msg, repeat, generation) =>
       if ((timers contains name) && (timers(name).generation == generation)) {
-        if (doDebug) EventHandler.debug(self, "processing timer '"+name+"' sending event "+msg)
+        if (doDebug) EventHandler.debug(this, "processing timer '"+name+"' sending event "+msg)
         processEvent(msg)
         if (!repeat) {
           timers -= name
@@ -440,7 +440,7 @@ trait FSM[S, D] extends ListenerManagement {
         actorRef ! CurrentState(self, currentState.stateName)
       } catch {
         case e : ActorInitializationException =>
-          EventHandler.warning(self, "trying to register not running listener")
+          EventHandler.warning(this, "trying to register not running listener")
       }
     case UnsubscribeTransitionCallBack(actorRef) =>
       removeListener(actorRef)
@@ -450,7 +450,7 @@ trait FSM[S, D] extends ListenerManagement {
         timeoutFuture = None
       }
       generation += 1
-      if (doDebug) EventHandler.debug(self, "processing event "+value)
+      if (doDebug) EventHandler.debug(this, "processing event "+value)
       processEvent(value)
     }
   }
@@ -475,7 +475,7 @@ trait FSM[S, D] extends ListenerManagement {
       terminate(Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
       if (currentState.stateName != nextState.stateName) {
-        if (doDebug) EventHandler.debug(self, "transition "+currentState.stateName+" -> "+nextState.stateName)
+        if (doDebug) EventHandler.debug(this, "transition "+currentState.stateName+" -> "+nextState.stateName)
         handleTransition(currentState.stateName, nextState.stateName)
         notifyListeners(Transition(self, currentState.stateName, nextState.stateName))
       }
@@ -498,8 +498,8 @@ trait FSM[S, D] extends ListenerManagement {
 
   private def terminate(reason: Reason) = {
     reason match {
-      case Failure(ex : Throwable) => EventHandler.error(ex,self, "terminating due to Failure")
-      case Failure(msg) => EventHandler.error(self, msg)
+      case Failure(ex : Throwable) => EventHandler.error(ex, this, "terminating due to Failure")
+      case Failure(msg) => EventHandler.error(this, msg)
       case _ =>
     }
     val stopEvent = StopEvent(reason, currentState.stateName, currentState.stateData)

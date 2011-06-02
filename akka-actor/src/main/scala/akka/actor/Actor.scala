@@ -531,7 +531,7 @@ trait Actor {
 
   private final def autoReceiveMessage(msg: AutoReceivedMessage): Unit = {
     if (debugAutoReceive)
-      EventHandler.debug(self, "received AutoReceiveMessage " + msg)
+      EventHandler.debug(this, "received AutoReceiveMessage " + msg)
     msg match {
       case HotSwap(code, discardOld) => become(code(self), discardOld)
       case RevertHotSwap             => unbecome()
