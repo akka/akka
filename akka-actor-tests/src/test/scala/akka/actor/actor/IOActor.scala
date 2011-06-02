@@ -131,12 +131,12 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
       val ioManager = Actor.actorOf(new IOManager(2)).start // teeny tiny buffer
       val server = Actor.actorOf(new SimpleEchoServer("localhost", 8064, ioManager)).start
       val client = Actor.actorOf(new SimpleEchoClient("localhost", 8064, ioManager)).start
-      val promise1 = client !!! ByteString("Hello World!1")
-      val promise2 = client !!! ByteString("Hello World!2")
-      val promise3 = client !!! ByteString("Hello World!3")
-      (promise1.get: ByteString) must equal(ByteString("Hello World!1"))
-      (promise2.get: ByteString) must equal(ByteString("Hello World!2"))
-      (promise3.get: ByteString) must equal(ByteString("Hello World!3"))
+      val f1 = client !!! ByteString("Hello World!1")
+      val f2 = client !!! ByteString("Hello World!2")
+      val f3 = client !!! ByteString("Hello World!3")
+      (f1.get: ByteString) must equal(ByteString("Hello World!1"))
+      (f2.get: ByteString) must equal(ByteString("Hello World!2"))
+      (f3.get: ByteString) must equal(ByteString("Hello World!3"))
       client.stop
       server.stop
       ioManager.stop
@@ -147,18 +147,18 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
       val server = Actor.actorOf(new KVStore("localhost", 8064, ioManager)).start
       val client1 = Actor.actorOf(new KVClient("localhost", 8064, ioManager)).start
       val client2 = Actor.actorOf(new KVClient("localhost", 8064, ioManager)).start
-      val promise1 = client1 !!! (('set, "hello", ByteString("World")))
-      val promise2 = client1 !!! (('set, "test", ByteString("No one will read me")))
-      val promise3 = client1 !!! (('get, "hello"))
-      promise2.await
-      val promise4 = client2 !!! (('set, "test", ByteString("I'm a test!")))
-      promise4.await
-      val promise5 = client1 !!! (('get, "test"))
-      (promise1.get: ByteString) must equal(ByteString("OK"))
-      (promise2.get: ByteString) must equal(ByteString("OK"))
-      (promise3.get: ByteString) must equal(ByteString("World"))
-      (promise4.get: ByteString) must equal(ByteString("OK"))
-      (promise5.get: ByteString) must equal(ByteString("I'm a test!"))
+      val f1 = client1 !!! (('set, "hello", ByteString("World")))
+      val f2 = client1 !!! (('set, "test", ByteString("No one will read me")))
+      val f3 = client1 !!! (('get, "hello"))
+      f2.await
+      val f4 = client2 !!! (('set, "test", ByteString("I'm a test!")))
+      f4.await
+      val f5 = client1 !!! (('get, "test"))
+      (f1.get: ByteString) must equal(ByteString("OK"))
+      (f2.get: ByteString) must equal(ByteString("OK"))
+      (f3.get: ByteString) must equal(ByteString("World"))
+      (f4.get: ByteString) must equal(ByteString("OK"))
+      (f5.get: ByteString) must equal(ByteString("I'm a test!"))
       client1.stop
       client2.stop
       server.stop
