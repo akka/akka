@@ -96,14 +96,18 @@ object IOActor {
   case class ByteStringLength(continuation: (ByteString) ⇒ Any, length: Int) extends IOContinuation[ByteString]
   case class ByteStringDelimited(continuation: (ByteString) ⇒ Any, delimter: ByteString, inclusive: Boolean, scanned: Int) extends IOContinuation[ByteString]
   case class ByteStringAny(continuation: (ByteString) ⇒ Any) extends IOContinuation[ByteString]
+
+  sealed trait TailRec[A]
+  case class Return[A](result: A) extends TailRec[A]
+  case class Call[A](thunk: () ⇒ TailRec[A] @cps[Any]) extends TailRec[A]
+  def tailrec[A](comp: TailRec[A]): A @cps[Any] = comp match {
+    case Call(thunk) ⇒ tailrec(thunk())
+    case Return(x)   ⇒ x
+  }
 }
 
 trait IOActor extends Actor with IO {
   import IOActor._
-
-  protected var sequentialIO = true
-
-  protected var idleWakeup = false
 
   private val _messages: mutable.Queue[MessageInvocation] = mutable.Queue.empty
 
@@ -137,17 +141,36 @@ trait IOActor extends Actor with IO {
     run(handle)
   }
 
+  protected def loop(block: ⇒ Any @cps[Any]): Unit @cps[Any] = {
+    def f(): TailRec[Unit] @cps[Any] = {
+      block
+      Call(() ⇒ f())
+    }
+    tailrec(f())
+  }
+
+  protected def loopWhile(test: ⇒ Boolean)(block: ⇒ Any @cps[Any]): Unit @cps[Any] = {
+    def f(): TailRec[Unit] @cps[Any] = {
+      if (test) {
+        block
+        Call(() ⇒ f())
+      } else Return(())
+    }
+    tailrec(f())
+  }
+
   final def receive = {
     case IO.Read(handle, newBytes) ⇒
       val st = state(handle)
       st.readBytes :+= newBytes
-      if (st.messages.isEmpty && idleWakeup) reset { _receiveIO(IO.WakeUp(handle)) }
-      else run(handle)
-    case IO.Connected(handle) ⇒
+      run(handle)
+    case msg@IO.Connected(handle) ⇒
       state(handle).connected = true
-    case IO.Closed(handle) ⇒
+      if (_receiveIO.isDefinedAt(msg)) reset { _receiveIO(msg) }
+    case msg@IO.Closed(handle) ⇒
       _state -= handle // TODO: clean up better
-    case msg if sequentialIO && _continuations.nonEmpty ⇒
+      if (_receiveIO.isDefinedAt(msg)) reset { _receiveIO(msg) }
+    case msg if _continuations.nonEmpty ⇒
       _messages enqueue self.currentMessage
     case msg if _receiveIO.isDefinedAt(msg) ⇒
       reset { _receiveIO(msg) }
@@ -198,7 +221,7 @@ trait IOActor extends Actor with IO {
           }
       }
     } else {
-      while ((_continuations.isEmpty || !sequentialIO) && _messages.nonEmpty) {
+      while (_continuations.isEmpty && _messages.nonEmpty) {
         self invoke _messages.dequeue
       }
     }
