@@ -65,7 +65,7 @@ object IOActorSpec {
           val socket = server.accept()
           loop {
             val cmd = socket.read(ByteString("\r\n")).utf8String
-            val result: Future[ByteString] @cps[Any] = cmd.split(' ') match {
+            val result: Future[ByteString] @suspendable = cmd.split(' ') match {
               case Array("SET", key, length) ⇒
                 val value = socket read length.toInt
                 server.owner !!! (('set, key, value)) map ((_: Unit) ⇒ ByteString("+OK\r\n"))

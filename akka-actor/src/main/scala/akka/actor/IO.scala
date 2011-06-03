@@ -49,19 +49,19 @@ object IO {
   sealed trait ReadHandle extends Handle with Product {
     override def asReadable = this
 
-    def read(len: Int)(implicit actor: Actor with IO): ByteString @cps[Any] = shift { cont: (ByteString ⇒ Any) ⇒
+    def read(len: Int)(implicit actor: Actor with IO): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
       actor.state(this).messages enqueue actor.self.currentMessage
       actor._continuations += (actor.self.currentMessage -> ByteStringLength(cont, len))
       actor.run(this)
     }
 
-    def read()(implicit actor: Actor with IO): ByteString @cps[Any] = shift { cont: (ByteString ⇒ Any) ⇒
+    def read()(implicit actor: Actor with IO): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
       actor.state(this).messages enqueue actor.self.currentMessage
       actor._continuations += (actor.self.currentMessage -> ByteStringAny(cont))
       actor.run(this)
     }
 
-    def read(delimiter: ByteString, inclusive: Boolean = false)(implicit actor: Actor with IO): ByteString @cps[Any] = shift { cont: (ByteString ⇒ Any) ⇒
+    def read(delimiter: ByteString, inclusive: Boolean = false)(implicit actor: Actor with IO): ByteString @suspendable = shift { cont: (ByteString ⇒ Unit) ⇒
       actor.state(this).messages enqueue actor.self.currentMessage
       actor._continuations += (actor.self.currentMessage -> ByteStringDelimited(cont, delimiter, inclusive, 0))
       actor.run(this)
@@ -119,16 +119,16 @@ object IO {
     socket
   }
 
-  def loop(block: ⇒ Any @cps[Any]): Unit @cps[Any] = {
-    def f(): TailRec[Unit] @cps[Any] = {
+  def loop(block: ⇒ Any @suspendable): Unit @suspendable = {
+    def f(): TailRec[Unit] @suspendable = {
       block
       Call(() ⇒ f())
     }
     tailrec(f())
   }
 
-  def loopWhile(test: ⇒ Boolean)(block: ⇒ Any @cps[Any]): Unit @cps[Any] = {
-    def f(): TailRec[Unit] @cps[Any] = {
+  def loopWhile(test: ⇒ Boolean)(block: ⇒ Any @suspendable): Unit @suspendable = {
+    def f(): TailRec[Unit] @suspendable = {
       if (test) {
         block
         Call(() ⇒ f())
@@ -137,9 +137,9 @@ object IO {
     tailrec(f())
   }
 
-  def loopTimes(times: Int)(block: ⇒ Any @cps[Any]): Unit @cps[Any] = {
+  def loopTimes(times: Int)(block: ⇒ Any @suspendable): Unit @suspendable = {
     var i = 0
-    def f(): TailRec[Unit] @cps[Any] = {
+    def f(): TailRec[Unit] @suspendable = {
       if (i < times) {
         i += 1
         block
@@ -153,15 +153,18 @@ object IO {
     def this() = this(mutable.Queue.empty, ByteRope.empty, false)
   }
 
-  private sealed trait IOContinuation[A] { def continuation: (A) ⇒ Any }
-  private case class ByteStringLength(continuation: (ByteString) ⇒ Any, length: Int) extends IOContinuation[ByteString]
-  private case class ByteStringDelimited(continuation: (ByteString) ⇒ Any, delimter: ByteString, inclusive: Boolean, scanned: Int) extends IOContinuation[ByteString]
-  private case class ByteStringAny(continuation: (ByteString) ⇒ Any) extends IOContinuation[ByteString]
+  private sealed trait IOContinuation[A] { def continuation: (A) ⇒ Unit }
+  private case class ByteStringLength(continuation: (ByteString) ⇒ Unit, length: Int) extends IOContinuation[ByteString]
+  private case class ByteStringDelimited(continuation: (ByteString) ⇒ Unit, delimter: ByteString, inclusive: Boolean, scanned: Int) extends IOContinuation[ByteString]
+  private case class ByteStringAny(continuation: (ByteString) ⇒ Unit) extends IOContinuation[ByteString]
+  private case object Done extends IOContinuation[Nothing] {
+    def continuation: (Nothing) ⇒ Unit = sys error "No continuation"
+  }
 
   private sealed trait TailRec[A]
   private case class Return[A](result: A) extends TailRec[A]
-  private case class Call[A](thunk: () ⇒ TailRec[A] @cps[Any]) extends TailRec[A]
-  private def tailrec[A](comp: TailRec[A]): A @cps[Any] = comp match {
+  private case class Call[A](thunk: () ⇒ TailRec[A] @suspendable) extends TailRec[A]
+  private def tailrec[A](comp: TailRec[A]): A @suspendable = comp match {
     case Call(thunk) ⇒ tailrec(thunk())
     case Return(x)   ⇒ x
   }
@@ -172,7 +175,7 @@ trait IO {
   this: Actor ⇒
   import IO._
 
-  type ReceiveIO = PartialFunction[Any, Any @cps[Any]]
+  type ReceiveIO = PartialFunction[Any, Any @suspendable]
 
   implicit protected def ioActor: Actor with IO = this
 
@@ -197,15 +200,14 @@ trait IO {
       run(handle)
     case msg@Connected(socket) ⇒
       state(socket).connected = true
-      if (_receiveIO.isDefinedAt(msg)) reset { _receiveIO(msg) }
+      if (_receiveIO.isDefinedAt(msg)) reset { _receiveIO(msg); () }
     case msg@Closed(handle) ⇒
       _state -= handle // TODO: clean up better
-      if (_receiveIO.isDefinedAt(msg)) reset { _receiveIO(msg) }
+      if (_receiveIO.isDefinedAt(msg)) reset { _receiveIO(msg); () }
     case msg if _continuations.nonEmpty ⇒
       _messages enqueue self.currentMessage
     case msg if _receiveIO.isDefinedAt(msg) ⇒
-      reset { _receiveIO(msg) }
-      ()
+      reset { _receiveIO(msg); () }
   }
 
   def receiveIO: ReceiveIO
@@ -218,8 +220,8 @@ trait IO {
     if (st.messages.nonEmpty) {
       val msg = st.messages.head
       self.currentMessage = msg
-      _continuations.get(msg) match {
-        case Some(ByteStringLength(continuation, waitingFor)) ⇒
+      _continuations(msg) match {
+        case ByteStringLength(continuation, waitingFor) ⇒
           if (st.readBytes.length >= waitingFor) {
             st.messages.dequeue
             val bytes = st.readBytes.take(waitingFor).toByteString
@@ -228,7 +230,7 @@ trait IO {
             continuation(bytes)
             run(handle)
           }
-        case Some(ByteStringDelimited(continuation, delimiter, inclusive, scanned)) ⇒
+        case ByteStringDelimited(continuation, delimiter, inclusive, scanned) ⇒
           val idx = st.readBytes.indexOfSlice(delimiter, scanned)
           if (idx >= 0) {
             st.messages.dequeue
@@ -241,7 +243,7 @@ trait IO {
           } else {
             _continuations += (msg -> ByteStringDelimited(continuation, delimiter, inclusive, math.min(idx - delimiter.length, 0)))
           }
-        case Some(ByteStringAny(continuation)) ⇒
+        case ByteStringAny(continuation) ⇒
           if (st.readBytes.length > 0) {
             st.messages.dequeue
             val bytes = st.readBytes.toByteString
@@ -250,7 +252,9 @@ trait IO {
             continuation(bytes)
             run(handle)
           }
-        case _ ⇒ sys error "Unhandled or missing IOContinuation"
+        case Done =>
+          st.messages.dequeue
+          _continuations -= msg
       }
     } else {
       while (_continuations.isEmpty && _messages.nonEmpty) {
