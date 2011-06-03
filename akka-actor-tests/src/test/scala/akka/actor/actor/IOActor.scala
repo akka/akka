@@ -9,12 +9,13 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterEach
 
 import akka.util.ByteString
-import akka.dispatch.Promise
+import akka.dispatch.Future
+import scala.util.continuations._
 
 object IOActorSpec {
   import IO._
 
-  class SimpleEchoServer(host: String, port: Int, ioManager: ActorRef) extends Actor with IO {
+  class SimpleEchoServer(host: String, port: Int, ioManager: ActorRef) extends Actor {
 
     override def preStart = {
       listen(ioManager, host, port)
@@ -28,7 +29,7 @@ object IOActorSpec {
       }
     })
 
-    def receiveIO = {
+    def receive = {
       case msg: NewClient ⇒ self startLink createWorker forward msg
     }
 
@@ -50,7 +51,7 @@ object IOActorSpec {
   }
 
   // Basic Redis-style protocol
-  class KVStore(host: String, port: Int, ioManager: ActorRef) extends Actor with IO {
+  class KVStore(host: String, port: Int, ioManager: ActorRef) extends Actor {
 
     var kvs: Map[String, ByteString] = Map.empty
 
@@ -63,34 +64,46 @@ object IOActorSpec {
         case NewClient(server) ⇒
           val socket = server.accept()
           loop {
-            val cmd = socket.read(ByteString(" ")).utf8String
-            cmd match {
-              case "SET" ⇒
-                val key = socket.read(ByteString(" ")).utf8String
-                val len = socket.read(ByteString("\r\n")).utf8String
-                val value = socket read len.toInt
-                server.owner ! ('set, key, value)
-                socket write ByteString("+OK\r\n")
-              case "GET" ⇒
-                val key = socket.read(ByteString("\r\n")).utf8String
-                server.owner !!! (('get, key)) map { value: Option[ByteString] ⇒
-                  value map { bytes ⇒
-                    ByteString("$" + bytes.length + "\r\n") ++ bytes
-                  } getOrElse ByteString("$-1\r\n")
-                } failure {
-                  case e ⇒ ByteString("-" + e.getClass.toString + "\r\n")
-                } foreach { bytes: ByteString ⇒
-                  socket write bytes
+            val cmd = socket.read(ByteString("\r\n")).utf8String
+            val result: Future[ByteString] @cps[Any] = cmd.split(' ') match {
+              case Array("SET", key, length) ⇒
+                val value = socket read length.toInt
+                server.owner !!! (('set, key, value)) map ((_: Unit) ⇒ ByteString("+OK\r\n"))
+              case Array("GET", key) ⇒
+                shiftUnit {
+                  server.owner !!! (('get, key)) map { value: Option[ByteString] ⇒
+                    value map { bytes ⇒
+                      ByteString("$" + bytes.length + "\r\n") ++ bytes
+                    } getOrElse ByteString("$-1\r\n")
+                  }
                 }
+              case Array("GETALL") ⇒
+                shiftUnit {
+                  server.owner !!! 'getall map { all: Map[String, ByteString] ⇒
+                    (ByteString("*" + (all.size * 2) + "\r\n") /: all) {
+                      case (result, (k, v)) ⇒
+                        val kBytes = ByteString(k)
+                        ByteString.concat(result, ByteString("$" + kBytes.length + "\r\n"), kBytes, ByteString("$" + v.length + "\r\n"), v)
+                    }
+                  }
+                }
+            }
+            result failure {
+              case e ⇒ ByteString("-" + e.getClass.toString + "\r\n")
+            } foreach { bytes ⇒
+              socket write bytes
             }
           }
       }
     })
 
-    def receiveIO = {
-      case msg: NewClient                         ⇒ self startLink createWorker forward msg
-      case ('set, key: String, value: ByteString) ⇒ kvs += (key -> value)
-      case ('get, key: String)                    ⇒ self reply_? kvs.get(key)
+    def receive = {
+      case msg: NewClient ⇒ self startLink createWorker forward msg
+      case ('set, key: String, value: ByteString) ⇒
+        kvs += (key -> value)
+        self reply_? (())
+      case ('get, key: String) ⇒ self reply_? kvs.get(key)
+      case 'getall             ⇒ self reply_? kvs
     }
 
   }
@@ -106,18 +119,43 @@ object IOActorSpec {
     def receiveIO = {
       case ('set, key: String, value: ByteString) ⇒
         socket write (ByteString("SET " + key + " " + value.length + "\r\n") ++ value)
-        val resultType = socket.read(1).utf8String
-        if (resultType != "+") sys.error("Unexpected response")
-        val status = socket read ByteString("\r\n")
-        self reply status
+        self reply_? readResult
 
       case ('get, key: String) ⇒
         socket write ByteString("GET " + key + "\r\n")
-        val resultType = socket.read(1).utf8String
-        if (resultType != "$") sys.error("Unexpected response")
-        val len = socket.read(ByteString("\r\n")).utf8String
-        val value = socket read len.toInt
-        self reply value
+        self reply_? readResult
+
+      case 'getall ⇒
+        socket write ByteString("GETALL\r\n")
+        self reply_? readResult
+    }
+
+    def readResult = {
+      val resultType = socket.read(1).utf8String
+      resultType match {
+        case "+" ⇒ socket.read(ByteString("\r\n")).utf8String
+        case "-" ⇒ sys error socket.read(ByteString("\r\n")).utf8String
+        case "$" ⇒
+          val length = socket.read(ByteString("\r\n")).utf8String
+          socket.read(length.toInt)
+        case "*" ⇒
+          val count = socket.read(ByteString("\r\n")).utf8String
+          var result: Map[String, ByteString] = Map.empty
+          loopTimes(count.toInt / 2) {
+            val k = readBytes
+            val v = readBytes
+            result += (k.utf8String -> v)
+          }
+          result
+        case _ ⇒ sys error "Unexpected response"
+      }
+    }
+
+    def readBytes = {
+      val resultType = socket.read(1).utf8String
+      if (resultType != "$") sys error "Unexpected response"
+      val length = socket.read(ByteString("\r\n")).utf8String
+      socket.read(length.toInt)
     }
   }
 
@@ -154,11 +192,13 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
       val f4 = client2 !!! (('set, "test", ByteString("I'm a test!")))
       f4.await
       val f5 = client1 !!! (('get, "test"))
-      (f1.get: ByteString) must equal(ByteString("OK"))
-      (f2.get: ByteString) must equal(ByteString("OK"))
+      val f6 = client2 !!! 'getall
+      (f1.get: String) must equal("OK")
+      (f2.get: String) must equal("OK")
       (f3.get: ByteString) must equal(ByteString("World"))
-      (f4.get: ByteString) must equal(ByteString("OK"))
+      (f4.get: String) must equal("OK")
       (f5.get: ByteString) must equal(ByteString("I'm a test!"))
+      (f6.get: Map[String, ByteString]) must equal(Map("hello" -> ByteString("World"), "test" -> ByteString("I'm a test!")))
       client1.stop
       client2.stop
       server.stop

@@ -137,6 +137,18 @@ object IO {
     tailrec(f())
   }
 
+  def loopTimes(times: Int)(block: ⇒ Any @cps[Any]): Unit @cps[Any] = {
+    var i = 0
+    def f(): TailRec[Unit] @cps[Any] = {
+      if (i < times) {
+        i += 1
+        block
+        Call(() ⇒ f())
+      } else Return(())
+    }
+    tailrec(f())
+  }
+
   private class HandleState(val messages: mutable.Queue[MessageInvocation], var readBytes: ByteRope, var connected: Boolean) {
     def this() = this(mutable.Queue.empty, ByteRope.empty, false)
   }
@@ -159,6 +171,8 @@ object IO {
 trait IO {
   this: Actor ⇒
   import IO._
+
+  type ReceiveIO = PartialFunction[Any, Any @cps[Any]]
 
   implicit protected def ioActor: Actor with IO = this
 
@@ -194,7 +208,7 @@ trait IO {
       ()
   }
 
-  def receiveIO: PartialFunction[Any, Any @cps[Any]]
+  def receiveIO: ReceiveIO
 
   private lazy val _receiveIO = receiveIO
 
