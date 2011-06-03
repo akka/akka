@@ -419,6 +419,11 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * Returns the mailbox size.
    */
   def mailboxSize = dispatcher.mailboxSize(this)
+  
+  /**
+   * Returns if the mailbox is empty or not
+   */
+  def mailboxIsEmpty: Boolean = dispatcher.mailboxIsEmpty(this)
 
   /**
    * Akka Java API. <p/>

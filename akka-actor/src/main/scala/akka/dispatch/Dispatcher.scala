@@ -111,6 +111,8 @@ class Dispatcher(
   protected def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
+  
+  override def mailboxIsEmpty(actorRef: ActorRef) = getMailbox(actorRef).isEmpty
 
   def createMailbox(actorRef: ActorRef): AnyRef = mailboxType match {
     case b: UnboundedMailbox ⇒
