@@ -170,7 +170,6 @@ The 'Future' interface looks like this:
 
   interface Future<T> {
     void await();
-    void awaitBlocking();
     boolean isCompleted();
     boolean isExpired();
     long timeoutInNanos();
