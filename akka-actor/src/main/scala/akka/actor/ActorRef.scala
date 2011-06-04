@@ -679,6 +679,11 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
   def supervisor: Option[ActorRef] = _supervisor
 
   // ========= AKKA PROTECTED FUNCTIONS =========
+  @throws(classOf[java.io.ObjectStreamException])
+  private def writeReplace(): AnyRef = {
+    val inetaddr = Actor.remote.address
+    SerializedActorRef(uuid, address, inetaddr.getAddress.getHostAddress, inetaddr.getPort, timeout)
+  }
 
   protected[akka] def supervisor_=(sup: Option[ActorRef]) {
     _supervisor = sup
@@ -1028,6 +1033,12 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   // ==== NOT SUPPORTED ====
+
+  @throws(classOf[java.io.ObjectStreamException])
+  private def writeReplace(): AnyRef = {
+    SerializedActorRef(uuid, address, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, timeout)
+  }
+
   @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
   def actorClass: Class[_ <: Actor] = unsupported
   def dispatcher_=(md: MessageDispatcher) {
@@ -1246,5 +1257,17 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef ⇒
       sender.get.!(message)(Some(this))
       true
     } else false
+  }
+}
+
+case class SerializedActorRef(val uuid: Uuid,
+                              val address: String,
+                              val hostname: String,
+                              val port: Int,
+                              val timeout: Long) {
+  @throws(classOf[java.io.ObjectStreamException])
+  def readResolve(): AnyRef = Actor.registry.local.actorFor(uuid) match {
+    case Some(actor) ⇒ actor
+    case None        ⇒ RemoteActorRef(new InetSocketAddress(hostname, port), address, timeout, None)
   }
 }

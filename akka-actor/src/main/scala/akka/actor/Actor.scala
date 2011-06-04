@@ -419,8 +419,8 @@ object Actor extends ListenerManagement {
         }
 
         val isStateful = state match {
-          case Stateless ⇒ false
-          case Stateful  ⇒ true
+          case _: Stateless | Stateless ⇒ false
+          case _: Stateful | Stateful   ⇒ true
         }
 
         if (isStateful && isHomeNode) { // stateful actor's home node
