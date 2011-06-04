@@ -620,6 +620,32 @@ class FutureSpec extends JUnitSuite {
   }
 
   @Test
+  def futureFlowLoops {
+    import Future.flow
+    import akka.util.cps._
+
+    val promises = List.fill(1000)(Promise[Int]())
+
+    flow {
+      var i = 0
+      val iter = promises.iterator
+      whileC(iter.hasNext) {
+        iter.next << i
+        i += 1
+      }
+    }
+
+    var i = 0
+    promises foreach { p ⇒
+      assert(p.get === i)
+      i += 1
+    }
+
+    assert(i === 1000)
+
+  }
+
+  @Test
   def ticket812FutureDispatchCleanup {
     val dispatcher = implicitly[MessageDispatcher]
     assert(dispatcher.pendingFutures === 0)
