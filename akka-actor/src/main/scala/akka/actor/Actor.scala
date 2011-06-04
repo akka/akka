@@ -620,21 +620,6 @@ trait Actor {
   }
 
   /**
-   * Is the actor able to handle the message passed in as arguments?
-   */
-  def isDefinedAt(message: Any): Boolean = {
-    val behaviorStack = self.hotswap
-    message match { //Same logic as apply(msg) but without the unhandled catch-all
-      case l: AutoReceivedMessage ⇒ true
-      case msg if behaviorStack.nonEmpty &&
-        behaviorStack.head.isDefinedAt(msg) ⇒ true
-      case msg if behaviorStack.isEmpty &&
-        processingBehavior.isDefinedAt(msg) ⇒ true
-      case _ ⇒ false
-    }
-  }
-
-  /**
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * Puts the behavior on top of the hotswap stack.
    * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack

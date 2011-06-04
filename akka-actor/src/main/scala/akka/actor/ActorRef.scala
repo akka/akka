@@ -234,12 +234,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   def isUnstarted: Boolean = _status == ActorRefInternals.UNSTARTED
 
   /**
-   * Is the actor able to handle the message passed in as arguments?
-   */
-  @deprecated("Will be removed without replacement, it's just not reliable in the face of `become` and `unbecome`", "1.1")
-  def isDefinedAt(message: Any): Boolean = actor.isDefinedAt(message)
-
-  /**
    * Only for internal use. UUID is effectively final.
    */
   protected[akka] def uuid_=(uid: Uuid) {
@@ -801,11 +795,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     }
 
     def tooManyRestarts() {
-      _supervisor.foreach { sup ⇒
-        // can supervisor handle the notification?
-        val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
-        if (sup.isDefinedAt(notification)) notifySupervisorWithMessage(notification)
-      }
+      notifySupervisorWithMessage(MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason))
       stop()
     }
 

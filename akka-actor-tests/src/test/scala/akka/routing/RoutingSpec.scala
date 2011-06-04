@@ -166,38 +166,6 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       for (a ← List(broadcast, a1, a2, a3)) a.stop()
     }
-
-    "be defined at" in {
-      import akka.actor.ActorRef
-
-      val Yes = "yes"
-      val No = "no"
-
-      def testActor() = actorOf(new Actor() {
-        def receive = {
-          case Yes ⇒ "yes"
-        }
-      }).start()
-
-      val t1 = testActor()
-      val t2 = testActor()
-      val t3 = testActor()
-      val t4 = testActor()
-
-      val d1 = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
-      val d2 = loadBalancerActor(new CyclicIterator[ActorRef](t3 :: t4 :: Nil))
-
-      t1.isDefinedAt(Yes) must be(true)
-      t1.isDefinedAt(No) must be(false)
-      t2.isDefinedAt(Yes) must be(true)
-      t2.isDefinedAt(No) must be(false)
-      d1.isDefinedAt(Yes) must be(true)
-      d1.isDefinedAt(No) must be(false)
-      d2.isDefinedAt(Yes) must be(true)
-      d2.isDefinedAt(No) must be(false)
-
-      for (a ← List(t1, t2, d1, d2)) a.stop()
-    }
   }
 
   "Actor Pool" must {
