@@ -85,7 +85,7 @@ object IOActorSpec {
                   }
                 }
             }
-            result failure {
+            result recover {
               case e ⇒ ByteString("-" + e.getClass.toString + "\r\n")
             } foreach { bytes ⇒
               socket write bytes
