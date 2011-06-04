@@ -9,6 +9,7 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterEach
 
 import akka.util.ByteString
+import akka.util.cps._
 import akka.dispatch.Future
 import scala.util.continuations._
 
@@ -25,7 +26,7 @@ object IOActorSpec {
       def receiveIO = {
         case NewClient(server) ⇒
           val socket = server.accept()
-          loop { socket write socket.read() }
+          loopC { socket write socket.read() }
       }
     })
 
@@ -63,28 +64,24 @@ object IOActorSpec {
       def receiveIO = {
         case NewClient(server) ⇒
           val socket = server.accept()
-          loop {
+          loopC {
             val cmd = socket.read(ByteString("\r\n")).utf8String
-            val result: Future[ByteString] @suspendable = cmd.split(' ') match {
+            val result = matchC(cmd.split(' ')) {
               case Array("SET", key, length) ⇒
                 val value = socket read length.toInt
                 server.owner !!! (('set, key, value)) map ((_: Unit) ⇒ ByteString("+OK\r\n"))
               case Array("GET", key) ⇒
-                shiftUnit {
-                  server.owner !!! (('get, key)) map { value: Option[ByteString] ⇒
-                    value map { bytes ⇒
-                      ByteString("$" + bytes.length + "\r\n") ++ bytes
-                    } getOrElse ByteString("$-1\r\n")
-                  }
+                server.owner !!! (('get, key)) map { value: Option[ByteString] ⇒
+                  value map { bytes ⇒
+                    ByteString("$" + bytes.length + "\r\n") ++ bytes
+                  } getOrElse ByteString("$-1\r\n")
                 }
               case Array("GETALL") ⇒
-                shiftUnit {
-                  server.owner !!! 'getall map { all: Map[String, ByteString] ⇒
-                    (ByteString("*" + (all.size * 2) + "\r\n") /: all) {
-                      case (result, (k, v)) ⇒
-                        val kBytes = ByteString(k)
-                        ByteString.concat(result, ByteString("$" + kBytes.length + "\r\n"), kBytes, ByteString("$" + v.length + "\r\n"), v)
-                    }
+                server.owner !!! 'getall map { all: Map[String, ByteString] ⇒
+                  (ByteString("*" + (all.size * 2) + "\r\n") /: all) {
+                    case (result, (k, v)) ⇒
+                      val kBytes = ByteString(k)
+                      ByteString.concat(result, ByteString("$" + kBytes.length + "\r\n"), kBytes, ByteString("$" + v.length + "\r\n"), v)
                   }
                 }
             }
@@ -141,7 +138,7 @@ object IOActorSpec {
         case "*" ⇒
           val count = socket.read(ByteString("\r\n")).utf8String
           var result: Map[String, ByteString] = Map.empty
-          loopTimes(count.toInt / 2) {
+          repeatC(count.toInt / 2) {
             val k = readBytes
             val v = readBytes
             result += (k.utf8String -> v)
