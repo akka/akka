@@ -151,7 +151,7 @@ trait FSM[S, D] extends ListenerManagement {
 
   import FSM._
 
-  type StateFunction = scala.PartialFunction[Event[D], State]
+  type StateFunction = scala.PartialFunction[Event, State]
   type Timeout = Option[Duration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
 
@@ -237,12 +237,11 @@ trait FSM[S, D] extends ListenerManagement {
    * @param repeat send once if false, scheduleAtFixedRate if true
    * @return current state descriptor
    */
-  protected final def setTimer(name: String, msg: AnyRef, timeout: Duration, repeat: Boolean): State = {
+  protected def setTimer(name: String, msg: AnyRef, timeout: Duration, repeat: Boolean): State = {
     if (timers contains name) {
       timers(name).cancel
     }
     val timer = Timer(name, msg, repeat, timerGen.next)
-    if (doDebug) EventHandler.debug(this, "setting "+(if (repeat) "repeating " else "")+"timer '"+name+"'/"+timeout+": "+msg)
     timer.schedule(self, timeout)
     timers(name) = timer
     stay
@@ -252,9 +251,8 @@ trait FSM[S, D] extends ListenerManagement {
    * Cancel named timer, ensuring that the message is not subsequently delivered (no race).
    * @param name of the timer to cancel
    */
-  protected final def cancelTimer(name: String) = {
+  protected def cancelTimer(name: String) = {
     if (timers contains name) {
-      if (doDebug) EventHandler.debug(this, "canceling timer '"+name+"'")
       timers(name).cancel
       timers -= name
     }
@@ -346,14 +344,6 @@ trait FSM[S, D] extends ListenerManagement {
    */
   def stateData = currentState.stateData
 
-  /**
-   * Set the debug flag (if enabled in akka.conf "akka.actor.debug.fsm"), which
-   * means that received events as well as state transitions are logged at
-   * DEBUG level. Do NOT enable this on actors which take part in event logging
-   * (i.e. which directly or indirectly receive messages from the EventHandler)
-   */
-  def debug { doDebug = debugEvent }
-
   /******************************************************************
    *                PRIVATE IMPLEMENTATION DETAILS
    ******************************************************************/
@@ -413,22 +403,17 @@ trait FSM[S, D] extends ListenerManagement {
   // ListenerManagement shall not start() or stop() listener actors
   override protected val manageLifeCycleOfListeners = false
 
-  // debug messages enabled?
-  private var doDebug = false
-
   /*********************************************
    *       Main actor receive() method
    *********************************************/
   override final protected def receive: Receive = {
     case TimeoutMarker(gen) =>
       if (generation == gen) {
-        if (doDebug) EventHandler.debug(this, "processing StateTimeout")
-        processEvent(StateTimeout)
+        processMsg(StateTimeout, "state timeout")
       }
     case t @ Timer(name, msg, repeat, generation) =>
       if ((timers contains name) && (timers(name).generation == generation)) {
-        if (doDebug) EventHandler.debug(this, "processing timer '"+name+"' sending event "+msg)
-        processEvent(msg)
+        processMsg(msg, t)
         if (!repeat) {
           timers -= name
         }
@@ -450,13 +435,16 @@ trait FSM[S, D] extends ListenerManagement {
         timeoutFuture = None
       }
       generation += 1
-      if (doDebug) EventHandler.debug(this, "processing event "+value)
-      processEvent(value)
+      processMsg(value, self.channel)
     }
   }
 
-  private def processEvent(value: Any) = {
+  private def processMsg(value: Any, source: AnyRef): Unit = {
     val event = Event(value, currentState.stateData)
+    processEvent(event, source)
+  }
+
+  private[akka] def processEvent(event: Event, source: AnyRef): Unit = {
     val stateFunc = stateFunctions(currentState.stateName)
     val nextState = if (stateFunc isDefinedAt event) {
         stateFunc(event)
@@ -465,51 +453,50 @@ trait FSM[S, D] extends ListenerManagement {
         handleEvent(event)
       }
     nextState.stopReason match {
-      case Some(reason) => terminate(reason)
       case None => makeTransition(nextState)
+      case _ => terminate(nextState); self.stop()
     }
   }
 
-  private def makeTransition(nextState: State) = {
+  private def makeTransition(nextState: State): Unit = {
     if (!stateFunctions.contains(nextState.stateName)) {
-      terminate(Failure("Next state %s does not exist".format(nextState.stateName)))
+      terminate(stay withStopReason Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
       if (currentState.stateName != nextState.stateName) {
-        if (doDebug) EventHandler.debug(this, "transition "+currentState.stateName+" -> "+nextState.stateName)
         handleTransition(currentState.stateName, nextState.stateName)
         notifyListeners(Transition(self, currentState.stateName, nextState.stateName))
       }
-      applyState(nextState)
-    }
-  }
-
-  private def applyState(nextState: State) = {
-    currentState = nextState
-    val timeout = if (currentState.timeout.isDefined) currentState.timeout else stateTimeouts(currentState.stateName)
-    if (timeout.isDefined) {
-      val t = timeout.get
-      if (t.finite_? && t.length >= 0) {
-        timeoutFuture = Some(Scheduler.scheduleOnce(self, TimeoutMarker(generation), t.length, t.unit))
+      currentState = nextState
+      val timeout = if (currentState.timeout.isDefined) currentState.timeout else stateTimeouts(currentState.stateName)
+      if (timeout.isDefined) {
+        val t = timeout.get
+        if (t.finite_? && t.length >= 0) {
+          timeoutFuture = Some(Scheduler.scheduleOnce(self, TimeoutMarker(generation), t.length, t.unit))
+        }
       }
     }
   }
 
-  override def postStop { terminate(Shutdown) }
+  override def postStop { terminate(stay withStopReason Shutdown) }
 
-  private def terminate(reason: Reason) = {
-    reason match {
-      case Failure(ex : Throwable) => EventHandler.error(ex, this, "terminating due to Failure")
-      case Failure(msg) => EventHandler.error(this, msg)
-      case _ =>
+  private def terminate(nextState: State): Unit = {
+    if (!currentState.stopReason.isDefined) {
+      val reason = nextState.stopReason.get
+      reason match {
+        case Failure(ex : Throwable) => EventHandler.error(ex, this, "terminating due to Failure")
+        case Failure(msg) => EventHandler.error(this, msg)
+        case _ =>
+      }
+      val stopEvent = StopEvent(reason, currentState.stateName, currentState.stateData)
+      if (terminateEvent.isDefinedAt(stopEvent))
+        terminateEvent(stopEvent)
+      currentState = nextState
     }
-    val stopEvent = StopEvent(reason, currentState.stateName, currentState.stateData)
-    if (terminateEvent.isDefinedAt(stopEvent)) terminateEvent(stopEvent)
-    self.stop()
   }
 
-  case class Event[D](event: Any, stateData: D)
+  case class Event(event: Any, stateData: D)
   object Ev {
-    def unapply[D](e : Event[D]) : Option[Any] = Some(e.event)
+    def unapply[D](e : Event) : Option[Any] = Some(e.event)
   }
 
   case class State(stateName: S, stateData: D, timeout: Timeout = None) {
@@ -550,4 +537,80 @@ trait FSM[S, D] extends ListenerManagement {
   }
 
   case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D)
+}
+
+/**
+ * Stackable trait for FSM which adds a rolling event log.
+ *
+ * @author Roland Kuhn
+ */
+trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor =>
+
+  import FSM._
+
+  def logDepth: Int = 0
+
+  private val events = new Array[Event](logDepth)
+  private val states = new Array[AnyRef](logDepth)
+  private var pos = 0
+  private var full = false
+
+  private def advance() {
+    val n = pos + 1
+    if (n == logDepth) {
+      full = true
+      pos = 0
+    } else {
+      pos = n
+    }
+  }
+
+  protected abstract override def setTimer(name: String, msg: AnyRef, timeout: Duration, repeat: Boolean): State = {
+    if (debugEvent)
+      EventHandler.debug(this, "setting "+(if (repeat) "repeating " else "")+"timer '"+name+"'/"+timeout+": "+msg)
+    super.setTimer(name, msg, timeout, repeat)
+  }
+
+  protected abstract override def cancelTimer(name: String) = {
+    if (debugEvent)
+      EventHandler.debug(this, "canceling timer '"+name+"'")
+    super.cancelTimer(name)
+  }
+
+  private[akka] abstract override def processEvent(event: Event, source: AnyRef) {
+    if (debugEvent) {
+      val srcstr = source match {
+        case s : String => s
+        case Timer(name, _, _, _) => "timer "+name
+        case c : UntypedChannel => c.toString
+        case _ => "unknown"
+      }
+      EventHandler.debug(this, "processing "+event+" from "+srcstr)
+    }
+    
+    if (logDepth > 0) {
+      states(pos) = stateName.asInstanceOf[AnyRef]
+      events(pos) = event
+      advance()
+    }
+
+    val oldState = stateName
+    super.processEvent(event, source)
+    val newState = stateName
+
+    if (debugEvent && oldState != newState)
+      EventHandler.debug(this, "transition "+oldState+" -> "+newState)
+  }
+
+  protected def getLog: IndexedSeq[LogEntry] = {
+    val log = events zip states filter (_._1 ne null) map (x => LogEntry(x._2.asInstanceOf[S], x._1.stateData, x._1.event))
+    if (full) {
+      IndexedSeq() ++ log.drop(pos) ++ log.take(pos)
+    } else {
+      IndexedSeq() ++ log
+    }
+  }
+
+  case class LogEntry(stateName: S, stateData: D, event: Any)
+
 }

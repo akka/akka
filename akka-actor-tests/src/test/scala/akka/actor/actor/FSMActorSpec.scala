@@ -101,9 +101,14 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
   import FSMActorSpec._
 
   val eh_level = EventHandler.level
+  var logger : ActorRef = _
 
   override def afterEach {
     EventHandler.level = eh_level
+    if (logger ne null) {
+      EventHandler.removeListener(logger)
+      logger = null
+    }
   }
 
   override def beforeAll {
@@ -171,7 +176,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
             case Ev("go") => goto (2)
           }
         }).start()
-      val logger = Actor.actorOf(new Actor {
+      logger = Actor.actorOf(new Actor {
           def receive = {
             case x => testActor forward x
           }
@@ -181,7 +186,6 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
       expectMsgPF(1 second) {
         case EventHandler.Error(_ : EventHandler.EventHandlerException, ref, "Next state 2 does not exist") if ref eq fsm.underlyingActor => true
       }
-      EventHandler.removeListener(logger)
     }
 
     "run onTermination upon ActorRef.stop()" in {
@@ -198,8 +202,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
     }
 
     "log events and transitions if asked to do so" in {
-      val fsmref = TestActorRef(new Actor with FSM[Int, Null] {
-          debug
+      val fsmref = TestActorRef(new Actor with LoggingFSM[Int, Null] {
           startWith(1, null)
           when(1) {
             case Ev("go") =>
@@ -216,7 +219,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
           }
         }).start()
       val fsm = fsmref.underlyingActor
-      val logger = Actor.actorOf(new Actor {
+      logger = Actor.actorOf(new Actor {
           def receive = {
             case x => testActor forward x
           }
@@ -224,14 +227,39 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
       EventHandler.addListener(logger)
       EventHandler.level = EventHandler.DebugLevel
       fsmref ! "go"
-      expectMsg(1 second, EventHandler.Debug(fsm, "processing event go"))
+      expectMsgPF(1 second) {
+        case EventHandler.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[akka.testkit.TestActor") => true
+      }
       expectMsg(1 second, EventHandler.Debug(fsm, "setting timer 't'/1500 milliseconds: Shutdown"))
       expectMsg(1 second, EventHandler.Debug(fsm, "transition 1 -> 2"))
       fsmref ! "stop"
-      expectMsg(1 second, EventHandler.Debug(fsm, "processing event stop"))
-      expectMsg(1 second, EventHandler.Debug(fsm, "canceling timer 't'"))
-      expectMsg(1 second, Normal)
+      expectMsgPF(1 second) {
+        case EventHandler.Debug(`fsm`, s: String) if s.startsWith("processing Event(stop,null) from Actor[akka.testkit.TestActor") => true
+      }
+      expectMsgAllOf(1 second, EventHandler.Debug(fsm, "canceling timer 't'"), Normal)
+      expectNoMsg(1 second)
+    }
+
+    "fill rolling event log and hand it out" in {
+      val fsmref = TestActorRef(new Actor with LoggingFSM[Int, Int] {
+          override def logDepth = 3
+          startWith(1, 0)
+          when (1) {
+            case Event("count", c) => stay using (c + 1)
+            case Event("log", _) => stay replying getLog
+          }
+        }).start()
+      fsmref ! "log"
+      val fsm = fsmref.underlyingActor
+      expectMsg(1 second, IndexedSeq(fsm.LogEntry(1, 0, "log")))
+      fsmref ! "count"
+      fsmref ! "log"
+      expectMsg(1 second, IndexedSeq(fsm.LogEntry(1, 0, "log"), fsm.LogEntry(1, 0, "count"), fsm.LogEntry(1, 1, "log")))
+      fsmref ! "count"
+      fsmref ! "log"
+      expectMsg(1 second, IndexedSeq(fsm.LogEntry(1, 1, "log"), fsm.LogEntry(1, 1, "count"), fsm.LogEntry(1, 2, "log")))
     }
 
   }
+
 }
