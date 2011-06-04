@@ -624,7 +624,9 @@ class FutureSpec extends JUnitSuite {
     import Future.flow
     import akka.util.cps._
 
-    val promises = List.fill(1000)(Promise[Int]())
+    val count = 10000
+
+    val promises = List.fill(count)(Promise[Int]())
 
     flow {
       var i = 0
@@ -641,7 +643,7 @@ class FutureSpec extends JUnitSuite {
       i += 1
     }
 
-    assert(i === 1000)
+    assert(i === count)
 
   }
 
