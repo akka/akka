@@ -489,11 +489,13 @@ implementation by the :class:`FSM` trait is to execute the
 Logging
 -------
 
-The setting ``akka.actor.debug.fsm`` in ``akka.conf`` enables logging of an
-event trace by :class:`FSM` instances which turn this feature on::
+Event Tracing
+^^^^^^^^^^^^^
 
-  class MyFSM extends Actor with FSM[X, Z] {
-    debug
+The setting ``akka.actor.debug.fsm`` in ``akka.conf`` enables logging of an
+event trace by :class:`LoggingFSM` instances::
+
+  class MyFSM extends Actor with LoggingFSM[X, Z] {
     ...
   }
 
@@ -506,6 +508,37 @@ This FSM will log at DEBUG level:
 
 Life cycle changes and special messages can be logged as described for
 :ref:`Actors <actor.logging>`.
+
+Rolling Event Log
+^^^^^^^^^^^^^^^^^
+
+The :class:`LoggingFSM` trait adds one more feature to the FSM: a rolling event
+log which may be used during debugging (for tracing how the FSM entered a
+certain failure state) or for other creative uses::
+
+  class MyFSM extends Actor with LoggingFSM[X, Z] {
+    override def logDepth = 12
+    onTermination {
+      case StopEvent(Failure(_), state, data) =>
+        EventHandler.warning(this, "Failure in state "+state+" with data "+data+"\n"+
+          "Events leading up to this point:\n\t"+getLog.mkString("\n\t"))
+    }
+    ...
+  }
+
+The :meth:`logDepth` defaults to zero, which turns off the event log.
+
+.. warning::
+
+  The log buffer is allocated during actor creation, which is why the
+  configuration is done using a virtual method call. If you want to override
+  with a ``val``, make sure that its initialization happens before the
+  initializer of :class:`LoggingFSM` runs, and do not change the value returned
+  by ``logDepth`` after the buffer has been allocated.
+
+The contents of the event log are available using method :meth:`getLog`, which
+returns an :class:`IndexedSeq[LogEntry]` where the oldest entry is at index
+zero.
 
 Examples
 ========
