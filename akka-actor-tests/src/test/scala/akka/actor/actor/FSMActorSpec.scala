@@ -253,13 +253,13 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
       }).start()
       fsmref ! "log"
       val fsm = fsmref.underlyingActor
-      expectMsg(1 second, IndexedSeq(fsm.LogEntry(1, 0, "log")))
+      expectMsg(1 second, IndexedSeq(FSMLogEntry(1, 0, "log")))
       fsmref ! "count"
       fsmref ! "log"
-      expectMsg(1 second, IndexedSeq(fsm.LogEntry(1, 0, "log"), fsm.LogEntry(1, 0, "count"), fsm.LogEntry(1, 1, "log")))
+      expectMsg(1 second, IndexedSeq(FSMLogEntry(1, 0, "log"), FSMLogEntry(1, 0, "count"), FSMLogEntry(1, 1, "log")))
       fsmref ! "count"
       fsmref ! "log"
-      expectMsg(1 second, IndexedSeq(fsm.LogEntry(1, 1, "log"), fsm.LogEntry(1, 1, "count"), fsm.LogEntry(1, 2, "log")))
+      expectMsg(1 second, IndexedSeq(FSMLogEntry(1, 1, "log"), FSMLogEntry(1, 1, "count"), FSMLogEntry(1, 2, "log")))
     }
 
   }

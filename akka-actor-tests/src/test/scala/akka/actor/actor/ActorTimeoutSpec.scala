@@ -29,7 +29,7 @@ class ActorTimeoutSpec
 
     "use the global default timeout if no implicit in scope" in {
       echo.timeout = 12
-      within((Actor.TIMEOUT - 100).millis, (Actor.TIMEOUT + 300).millis) {
+      within((Actor.TIMEOUT - 100).millis, (Actor.TIMEOUT + 400).millis) {
         val f = echo ? "hallo"
         intercept[FutureTimeoutException] { f.await }
       }
