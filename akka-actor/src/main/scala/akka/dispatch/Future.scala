@@ -217,20 +217,6 @@ object Future {
   def apply[T](body: ⇒ T, timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher): Future[T] =
     dispatcher.dispatchFuture(() ⇒ body, timeout)
 
-  /**
-   * Construct a completable channel
-   */
-  def channel(timeout: Long = Actor.TIMEOUT) = new Channel[Any] {
-    val future = empty[Any](timeout)
-    def !(msg: Any) = future completeWithResult msg
-  }
-
-  /**
-   * Create an empty Future with default timeout
-   */
-  @deprecated("Superceded by Promise.apply", "1.2")
-  def empty[T](timeout: Long = Actor.TIMEOUT) = new DefaultPromise[T](timeout)
-
   import scala.collection.mutable.Builder
   import scala.collection.generic.CanBuildFrom
 
@@ -273,9 +259,11 @@ object Future {
    */
   def flow[A](body: ⇒ A @cps[Future[Any]], timeout: Long = Actor.TIMEOUT): Future[A] = {
     val future = Promise[A](timeout)
-    (reset(future.asInstanceOf[Promise[Any]].completeWithResult(body)): Future[Any]) onComplete { f ⇒
-      val opte = f.exception
-      if (opte.isDefined) future completeWithException (opte.get)
+    (reset(future.asInstanceOf[Promise[Any]].completeWithResult(body)): Future[Any]) onComplete {
+      _.exception match {
+        case Some(e) ⇒ future completeWithException e
+        case None    ⇒
+      }
     }
     future
   }
@@ -616,6 +604,14 @@ object Promise {
 
   def apply[A](): Promise[A] = apply(Actor.TIMEOUT)
 
+  /**
+   * Construct a completable channel
+   */
+  def channel(timeout: Long = Actor.TIMEOUT) = new Channel[Any] {
+    val promise = Promise[Any](timeout)
+    def !(msg: Any) = promise completeWithResult msg
+  }
+
   private[akka] val callbacksPendingExecution = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
     override def initialValue = None
   }
@@ -732,11 +728,16 @@ class DefaultPromise[T](timeout: Long, timeunit: TimeUnit) extends Promise[T] {
   def complete(value: Either[Throwable, T]): DefaultPromise[T] = {
     _lock.lock
     val notifyTheseListeners = try {
-      if (_value.isEmpty && !isExpired) { //Only complete if we aren't expired
-        _value = Some(value)
-        val existingListeners = _listeners
-        _listeners = Nil
-        existingListeners
+      if (_value.isEmpty) { //Only complete if we aren't expired
+        if (!isExpired) {
+          _value = Some(value)
+          val existingListeners = _listeners
+          _listeners = Nil
+          existingListeners
+        } else {
+          _listeners = Nil
+          Nil
+        }
       } else Nil
     } finally {
       _signal.signalAll

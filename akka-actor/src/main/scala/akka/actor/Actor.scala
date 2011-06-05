@@ -419,8 +419,8 @@ object Actor extends ListenerManagement {
         }
 
         val isStateful = state match {
-          case Stateless ⇒ false
-          case Stateful  ⇒ true
+          case _: Stateless | Stateless ⇒ false
+          case _: Stateful | Stateful   ⇒ true
         }
 
         if (isStateful && isHomeNode) { // stateful actor's home node
@@ -617,21 +617,6 @@ trait Actor {
    */
   def unhandled(msg: Any) {
     throw new UnhandledMessageException(msg, self)
-  }
-
-  /**
-   * Is the actor able to handle the message passed in as arguments?
-   */
-  def isDefinedAt(message: Any): Boolean = {
-    val behaviorStack = self.hotswap
-    message match { //Same logic as apply(msg) but without the unhandled catch-all
-      case l: AutoReceivedMessage ⇒ true
-      case msg if behaviorStack.nonEmpty &&
-        behaviorStack.head.isDefinedAt(msg) ⇒ true
-      case msg if behaviorStack.isEmpty &&
-        processingBehavior.isDefinedAt(msg) ⇒ true
-      case _ ⇒ false
-    }
   }
 
   /**
