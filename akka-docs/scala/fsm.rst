@@ -11,6 +11,8 @@ FSM
    :synopsis: Finite State Machine DSL on top of Actors
 .. moduleauthor:: Irmo Manie, Roland Kuhn
 .. versionadded:: 1.0
+.. versionchanged:: 1.2
+   added Tracing and Logging
 
 Module stability: **STABLE**
 
@@ -486,11 +488,15 @@ implementation by the :class:`FSM` trait is to execute the
   :meth:`onTermination` handler called, do not forget to call
   ``super.postStop``.
 
-Logging
--------
+Testing and Debugging Finite State Machines
+===========================================
+
+During development and for trouble shooting FSMs need care just as any other
+actor. There are specialized tools available as described in :ref:`TestFSMRef`
+and in the following.
 
 Event Tracing
-^^^^^^^^^^^^^
+-------------
 
 The setting ``akka.actor.debug.fsm`` in ``akka.conf`` enables logging of an
 event trace by :class:`LoggingFSM` instances::
@@ -510,7 +516,7 @@ Life cycle changes and special messages can be logged as described for
 :ref:`Actors <actor.logging>`.
 
 Rolling Event Log
-^^^^^^^^^^^^^^^^^
+-----------------
 
 The :class:`LoggingFSM` trait adds one more feature to the FSM: a rolling event
 log which may be used during debugging (for tracing how the FSM entered a
