@@ -73,11 +73,6 @@ class TestFSMRef[S, D, T <: Actor](factory: () => T)(implicit ev: T <:< FSM[S, D
    */
   def timerActive_?(name: String) = fsm.timerActive_?(name)
 
-  override def start(): this.type = {
-    super.start()
-    this
-  }
-
 }
 
 object TestFSMRef {

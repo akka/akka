@@ -41,14 +41,6 @@ class TestActorRef[T <: Actor](factory: () => T) extends LocalActorRef(factory, 
    */
   def underlyingActor : T = actor.asInstanceOf[T]
 
-  /**
-   * Override to return the more specific static type.
-   */
-  override def start() = {
-    super.start()
-    this
-  }
-
   override def toString = "TestActor[" + id + ":" + uuid + "]"
 
   override def equals(other : Any) =
