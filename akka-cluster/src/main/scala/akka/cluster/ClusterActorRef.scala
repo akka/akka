@@ -73,7 +73,7 @@ class ClusterActorRef private[akka] (
     RemoteActorRef(inetSocketAddress, actorAddress, Actor.TIMEOUT, None)
   }
 
-  def start(): ActorRef = synchronized {
+  def start(): this.type = synchronized[this.type] {
     _status = ActorRefInternals.RUNNING
     this
   }

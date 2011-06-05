@@ -293,7 +293,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
   /**
    * Starts up the actor and its message queue.
    */
-  def start(): ActorRef
+  def start(): this.type
 
   /**
    * Shuts down the actor its dispatcher and message queue.
@@ -542,7 +542,7 @@ class LocalActorRef private[akka] (
   /**
    * Starts up the actor and its message queue.
    */
-  def start(): ActorRef = guard.withGuard {
+  def start(): this.type = guard.withGuard[this.type] {
     if (isShutdown) throw new ActorStartException(
       "Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
@@ -1002,7 +1002,7 @@ private[akka] case class RemoteActorRef private[akka] (
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
 
-  def start(): ActorRef = synchronized {
+  def start(): this.type = synchronized[this.type] {
     _status = ActorRefInternals.RUNNING
     this
   }
