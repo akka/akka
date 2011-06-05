@@ -4,7 +4,7 @@
 package akka.actor
 
 import akka.config.Supervision.Permanent
-import akka.util.{ ByteString, ByteRope }
+import akka.util.ByteString
 import akka.dispatch.MessageInvocation
 
 import java.net.InetSocketAddress
@@ -113,8 +113,8 @@ object IO {
     socket
   }
 
-  private class HandleState(var readBytes: ByteRope, var connected: Boolean) {
-    def this() = this(ByteRope.empty, false)
+  private class HandleState(var readBytes: ByteString, var connected: Boolean) {
+    def this() = this(ByteString.empty, false)
   }
 
   sealed trait IOSuspendable[+A]
@@ -150,7 +150,7 @@ trait IO {
   final def receive: Receive = {
     case Read(handle, newBytes) ⇒
       val st = state(handle)
-      st.readBytes :+= newBytes
+      st.readBytes ++= newBytes
       run()
     case Connected(socket) ⇒
       state(socket).connected = true
@@ -169,6 +169,19 @@ trait IO {
 
   private lazy val _receiveIO = receiveIO
 
+  // only reinvoke messages from the original message to avoid stack overflow
+  private var reinvoked = false
+  private def reinvoke(): Unit = {
+    if (!reinvoked && (_next eq Idle) && _messages.nonEmpty) {
+      try {
+        reinvoked = true
+        while ((_next eq Idle) && _messages.nonEmpty) self invoke _messages.dequeue
+      } finally {
+        reinvoked = false
+      }
+    }
+  }
+
   @tailrec
   private def run(): Unit = {
     _next match {
@@ -176,7 +189,7 @@ trait IO {
         self.currentMessage = message
         val st = state(handle)
         if (st.readBytes.length >= waitingFor) {
-          val bytes = st.readBytes.take(waitingFor).toByteString
+          val bytes = st.readBytes.take(waitingFor) //.compact
           st.readBytes = st.readBytes.drop(waitingFor)
           _next = continuation(bytes)
           run()
@@ -187,7 +200,7 @@ trait IO {
         val idx = st.readBytes.indexOfSlice(delimiter, scanned)
         if (idx >= 0) {
           val index = if (inclusive) idx + delimiter.length else idx
-          val bytes = st.readBytes.take(index).toByteString
+          val bytes = st.readBytes.take(index) //.compact
           st.readBytes = st.readBytes.drop(idx + delimiter.length)
           _next = continuation(bytes)
           run()
@@ -198,12 +211,12 @@ trait IO {
         self.currentMessage = message
         val st = state(handle)
         if (st.readBytes.length > 0) {
-          val bytes = st.readBytes.toByteString
-          st.readBytes = ByteRope.empty
+          val bytes = st.readBytes //.compact
+          st.readBytes = ByteString.empty
           _next = continuation(bytes)
           run()
         }
-      case Idle ⇒ if (_messages.nonEmpty) self invoke _messages.dequeue
+      case Idle ⇒ reinvoke()
     }
   }
 }

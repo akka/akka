@@ -89,7 +89,7 @@ object IOActorSpec {
                   (ByteString("*" + (all.size * 2) + "\r\n") /: all) {
                     case (result, (k, v)) ⇒
                       val kBytes = ByteString(k)
-                      ByteString.concat(result, ByteString("$" + kBytes.length + "\r\n"), kBytes, ByteString("$" + v.length + "\r\n"), v)
+                      result ++ ByteString("$" + kBytes.length + "\r\n") ++ kBytes ++ ByteString("$" + v.length + "\r\n") ++ v
                   }
                 }
             }
@@ -233,7 +233,6 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
       server.stop
       ioManager.stop
     }
-
   }
 
 }
