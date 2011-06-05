@@ -18,6 +18,8 @@ Testing Actor Systems
 .. versionadded:: 1.0
 .. versionchanged:: 1.1
    added :class:`TestActorRef`
+.. versionchanged:: 1.2
+   added :class:`TestFSMRef`
 
 As with any piece of software, automated tests are a very important part of the
 development cycle. The actor model presents a different view on how units of
@@ -82,6 +84,53 @@ reference is done like this:
 Since :class:`TestActorRef` is generic in the actor type it returns the
 underlying actor with its proper static type. From this point on you may bring
 any unit testing tool to bear on your actor as usual.
+
+.. _TestFSMRef:
+
+Testing Finite State Machines
+-----------------------------
+
+If your actor under test is a :class:`FSM`, you may use the special
+:class:`TestFSMRef` which offers all features of a normal :class:`TestActorRef`
+and in addition allows access to the internal state::
+
+  import akka.testkit.TestFSMRef
+  import akka.util.duration._
+
+  val fsm = TestFSMRef(new Actor with FSM[Int, String] {
+      startWith(1, "")
+      when (1) {
+        case Ev("go") => goto(2) using "go"
+      }
+      when (2) {
+        case Ev("back") => goto(1) using "back"
+      }
+    }).start()
+  
+  assert (fsm.stateName == 1)
+  assert (fsm.stateData == "")
+  fsm ! "go"                      // being a TestActorRef, this runs also on the CallingThreadDispatcher
+  assert (fsm.stateName == 2)
+  assert (fsm.stateData == "go")
+  
+  fsm.setState(stateName = 1)
+  assert (fsm.stateName == 1)
+
+  assert (fsm.timerActive_?("test") == false)
+  fsm.setTimer("test", 12, 10 millis, true)
+  assert (fsm.timerActive_?("test") == true)
+  fsm.cancelTimer("test")
+  assert (fsm.timerActive_?("test") == false)
+
+Due to a limitation in Scala’s type inference, there is only the factory method
+shown above, so you will probably write code like ``TestFSMRef(new MyFSM)``
+instead of the hypothetical :class:`ActorRef`-inspired ``TestFSMRef[MyFSM]``.
+All methods shown above directly access the FSM state without any
+synchronization; this is perfectly alright if the
+:class:`CallingThreadDispatcher` is used (which is the default for
+:class:`TestFSMRef`) and no other threads are involved, but it may lead to
+surprises if you were to actually exercise timer events, because those are
+executed on the :obj:`Scheduler` thread.
 
 Testing the Actor's Behavior
 ----------------------------
