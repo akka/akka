@@ -66,6 +66,8 @@ object FSM {
 
   val debugEvent = config.getBool("akka.actor.debug.fsm", false)
 
+  case class LogEntry[S, D](stateName: S, stateData: D, event: Any)
+
   case class State[S, D](stateName: S, stateData: D, timeout: Option[Duration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil) {
 
     /**
@@ -613,8 +615,8 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor =>
    * Retrieve current rolling log in oldest-first order. The log is filled with
    * each incoming event before processing by the user supplied state handler.
    */
-  protected def getLog: IndexedSeq[FSMLogEntry[S, D]] = {
-    val log = events zip states filter (_._1 ne null) map (x => FSMLogEntry(x._2.asInstanceOf[S], x._1.stateData, x._1.event))
+  protected def getLog: IndexedSeq[LogEntry[S, D]] = {
+    val log = events zip states filter (_._1 ne null) map (x => LogEntry(x._2.asInstanceOf[S], x._1.stateData, x._1.event))
     if (full) {
       IndexedSeq() ++ log.drop(pos) ++ log.take(pos)
     } else {
@@ -623,6 +625,4 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor =>
   }
 
 }
-
-case class FSMLogEntry[S, D](stateName: S, stateData: D, event: Any)
 
