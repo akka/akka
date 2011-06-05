@@ -5,7 +5,7 @@
 package akka.testkit
 
 import akka.actor._
-import akka.util.Duration
+import akka.util._
 
 /**
  * This is a specialised form of the TestActorRef with support for querying and
@@ -32,7 +32,7 @@ import akka.util.Duration
  * @author Roland Kuhn
  * @since 1.2
  */
-class TestFSMRef[S, D, T <: Actor with FSM[S, D]](factory: () => T) extends TestActorRef(factory) {
+class TestFSMRef[S, D, T <: Actor](factory: () => T)(implicit ev: T <:< FSM[S, D]) extends TestActorRef(factory) {
 
   private def fsm = underlyingActor
 
@@ -52,9 +52,8 @@ class TestFSMRef[S, D, T <: Actor with FSM[S, D]](factory: () => T) extends Test
    * corresponding transition initiated from within the FSM, including timeout
    * and stop handling.
    */
-  def setState(stateName: S = fsm.stateName, stateData: D = fsm.stateData, timeout: Option[Duration] = None) {
-    val f = fsm // needed to make the following type-check
-    f.applyState(f.State(stateName, stateData, timeout))
+  def setState(stateName: S = fsm.stateName, stateData: D = fsm.stateData, timeout: Option[Duration] = None, stopReason: Option[FSM.Reason] = None) {
+    fsm.applyState(FSM.State(stateName, stateData, timeout, stopReason))
   }
 
   /**
@@ -73,5 +72,16 @@ class TestFSMRef[S, D, T <: Actor with FSM[S, D]](factory: () => T) extends Test
    * Proxy for FSM.timerActive_?.
    */
   def timerActive_?(name: String) = fsm.timerActive_?(name)
+
+  override def start(): this.type = {
+    super.start()
+    this
+  }
+
+}
+
+object TestFSMRef {
+
+  def apply[S, D, T <: Actor](factory: => T)(implicit ev: T <:< FSM[S, D]): TestFSMRef[S, D, T] = new TestFSMRef(() => factory)
 
 }
