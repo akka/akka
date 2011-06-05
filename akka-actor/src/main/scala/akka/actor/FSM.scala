@@ -65,6 +65,40 @@ object FSM {
   implicit def d2od(d: Duration): Option[Duration] = Some(d)
 
   val debugEvent = config.getBool("akka.actor.debug.fsm", false)
+
+  case class State[S, D](stateName: S, stateData: D, timeout: Option[Duration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil) {
+
+    /**
+     * Modify state transition descriptor to include a state timeout for the
+     * next state. This timeout overrides any default timeout set for the next
+     * state.
+     */
+    def forMax(timeout: Duration): State[S, D] = {
+      copy(timeout = Some(timeout))
+    }
+
+    /**
+     * Send reply to sender of the current message, if available.
+     *
+     * @return this state transition descriptor
+     */
+    def replying(replyValue: Any): State[S, D] = {
+      copy(replies = replyValue :: replies)
+    }
+
+    /**
+     * Modify state transition descriptor with new state data. The data will be
+     * set when transitioning to the new state.
+     */
+    def using(nextStateDate: D): State[S, D] = {
+      copy(stateData = nextStateDate)
+    }
+
+    private[akka] def withStopReason(reason: Reason): State[S, D] = {
+      copy(stopReason = Some(reason))
+    }
+  }
+
 }
 
 /**
@@ -151,6 +185,7 @@ trait FSM[S, D] extends ListenerManagement {
 
   import FSM._
 
+  type State = FSM.State[S, D]
   type StateFunction = scala.PartialFunction[Event, State]
   type Timeout = Option[Duration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
@@ -185,7 +220,7 @@ trait FSM[S, D] extends ListenerManagement {
   protected final def startWith(stateName: S,
                                 stateData: D,
                                 timeout: Timeout = None) = {
-    currentState = State(stateName, stateData, timeout)
+    currentState = FSM.State(stateName, stateData, timeout)
   }
 
   /**
@@ -196,7 +231,7 @@ trait FSM[S, D] extends ListenerManagement {
    * @return state transition descriptor
    */
   protected final def goto(nextStateName: S): State = {
-    State(nextStateName, currentState.stateData)
+    FSM.State(nextStateName, currentState.stateData)
   }
 
   /**
@@ -464,7 +499,10 @@ trait FSM[S, D] extends ListenerManagement {
   private[akka] def applyState(nextState: State): Unit = {
     nextState.stopReason match {
       case None ⇒ makeTransition(nextState)
-      case _    ⇒ terminate(nextState); self.stop()
+      case _ ⇒
+        nextState.replies.reverse foreach (self reply _)
+        terminate(nextState)
+        self.stop()
     }
   }
 
@@ -472,6 +510,7 @@ trait FSM[S, D] extends ListenerManagement {
     if (!stateFunctions.contains(nextState.stateName)) {
       terminate(stay withStopReason Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
+      nextState.replies.reverse foreach (self reply _)
       if (currentState.stateName != nextState.stateName) {
         handleTransition(currentState.stateName, nextState.stateName)
         notifyListeners(Transition(self, currentState.stateName, nextState.stateName))
@@ -507,43 +546,6 @@ trait FSM[S, D] extends ListenerManagement {
   case class Event(event: Any, stateData: D)
   object Ev {
     def unapply[D](e: Event): Option[Any] = Some(e.event)
-  }
-
-  case class State(stateName: S, stateData: D, timeout: Timeout = None) {
-
-    /**
-     * Modify state transition descriptor to include a state timeout for the
-     * next state. This timeout overrides any default timeout set for the next
-     * state.
-     */
-    def forMax(timeout: Duration): State = {
-      copy(timeout = Some(timeout))
-    }
-
-    /**
-     * Send reply to sender of the current message, if available.
-     *
-     * @return this state transition descriptor
-     */
-    def replying(replyValue: Any): State = {
-      self.channel safe_! replyValue
-      this
-    }
-
-    /**
-     * Modify state transition descriptor with new state data. The data will be
-     * set when transitioning to the new state.
-     */
-    def using(nextStateDate: D): State = {
-      copy(stateData = nextStateDate)
-    }
-
-    private[akka] var stopReason: Option[Reason] = None
-
-    private[akka] def withStopReason(reason: Reason): State = {
-      stopReason = Some(reason)
-      this
-    }
   }
 
   case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D)

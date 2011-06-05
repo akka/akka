@@ -230,13 +230,13 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
       EventHandler.level = EventHandler.DebugLevel
       fsmref ! "go"
       expectMsgPF(1 second) {
-        case EventHandler.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[") ⇒ true
+        case EventHandler.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[testActor") ⇒ true
       }
       expectMsg(1 second, EventHandler.Debug(fsm, "setting timer 't'/1500 milliseconds: Shutdown"))
       expectMsg(1 second, EventHandler.Debug(fsm, "transition 1 -> 2"))
       fsmref ! "stop"
       expectMsgPF(1 second) {
-        case EventHandler.Debug(`fsm`, s: String) if s.startsWith("processing Event(stop,null) from Actor[") ⇒ true
+        case EventHandler.Debug(`fsm`, s: String) if s.startsWith("processing Event(stop,null) from Actor[testActor") ⇒ true
       }
       expectMsgAllOf(1 second, EventHandler.Debug(fsm, "canceling timer 't'"), Normal)
       expectNoMsg(1 second)

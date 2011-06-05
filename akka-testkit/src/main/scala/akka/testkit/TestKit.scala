@@ -8,7 +8,8 @@ import Actor._
 import akka.util.Duration
 import akka.util.duration._
 
-import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit }
+import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
+import atomic.AtomicInteger
 
 import scala.annotation.tailrec
 
@@ -99,7 +100,7 @@ trait TestKitLight {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor = actorOf(new TestActor(queue)).start()
+  val testActor = actorOf(new TestActor(queue), "testActor" + TestKit.testActorId.incrementAndGet()).start()
 
   /**
    * Implicit sender reference so that replies are possible for messages sent
@@ -553,6 +554,10 @@ trait TestKitLight {
   }
 
   private def format(u: TimeUnit, d: Duration) = "%.3f %s".format(d.toUnit(u), u.toString.toLowerCase)
+}
+
+object TestKit {
+  private[testkit] val testActorId = new AtomicInteger(0)
 }
 
 trait TestKit extends TestKitLight {
