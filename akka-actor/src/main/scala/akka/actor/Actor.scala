@@ -397,14 +397,15 @@ object Actor extends ListenerManagement {
               "] for serialization of actor [" + address +
               "] since " + reason)
 
-        val serializer: Serializer = {
-          if ((serializerClassName eq null) ||
-            (serializerClassName == "") ||
-            (serializerClassName == Format.defaultSerializerName)) {
-            Format.Default
-          } else {
-            val clazz: Class[_] = ReflectiveAccess.getClassFor(serializerClassName) match {
-              case Right(clazz) ⇒ clazz
+        val serializer: Serializer = serializerClassName match {
+          case null | "" | Format.`defaultSerializerName` ⇒ Format.Default
+          case specialSerializer ⇒
+            ReflectiveAccess.getClassFor(specialSerializer) match {
+              case Right(clazz) ⇒
+                clazz.newInstance match {
+                  case s: Serializer ⇒ s
+                  case other         ⇒ serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
+                }
               case Left(exception) ⇒
                 val cause = exception match {
                   case i: InvocationTargetException ⇒ i.getTargetException
@@ -412,10 +413,6 @@ object Actor extends ListenerManagement {
                 }
                 serializerErrorDueTo(cause.toString)
             }
-            val f = clazz.newInstance.asInstanceOf[AnyRef]
-            if (f.isInstanceOf[Serializer]) f.asInstanceOf[Serializer]
-            else serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
-          }
         }
 
         val isStateful = state match {
