@@ -45,8 +45,8 @@ trait Servlet30Context extends AsyncListener {
   //
   def onComplete(e: AsyncEvent) {}
   def onError(e: AsyncEvent) = e.getThrowable match {
-    case null ⇒ {}
-    case t    ⇒ {}
+    case null ⇒
+    case t    ⇒ EventHandler.error(t, this, t.getMessage)
   }
   def onStartAsync(e: AsyncEvent) {}
   def onTimeout(e: AsyncEvent) = {
