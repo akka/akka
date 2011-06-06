@@ -193,6 +193,10 @@ In order to use Mist you have to register the MistServlet in *web.xml* or do the
   <servlet>
     <servlet-name>akkaMistServlet</servlet-name>
     <servlet-class>akka.http.AkkaMistServlet</servlet-class>
+    <init-param> <!-- Optional, if empty or omitted, it will use the default in the akka.conf -->
+      <param-name>root-endpoint</param-name>
+      <param-value>address_of_root_endpoint_actor</param-value>
+    </init-param>
     <!-- <async-supported>true</async-supported> Enable this for Servlet 3.0 support -->
   </servlet>
 
