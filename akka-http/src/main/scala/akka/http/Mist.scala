@@ -341,24 +341,22 @@ trait RequestMethod {
   def request = context.get.getRequest.asInstanceOf[HttpServletRequest]
   def response = context.get.getResponse.asInstanceOf[HttpServletResponse]
 
-  def getHeaderOrElse(name: String, default: Function[Any, String]): String =
+  def getHeaderOrElse(name: String, default: ⇒ String): String =
     request.getHeader(name) match {
-      case null ⇒ default(null)
+      case null ⇒ default
       case s    ⇒ s
     }
 
-  def getParameterOrElse(name: String, default: Function[Any, String]): String =
+  def getParameterOrElse(name: String, default: ⇒ String): String =
     request.getParameter(name) match {
-      case null ⇒ default(null)
+      case null ⇒ default
       case s    ⇒ s
     }
 
-  def complete(status: Int, body: String): Boolean = complete(status, body, Headers())
-
-  def complete(status: Int, body: String, headers: Headers): Boolean =
+  def complete(status: Int, body: String, headers: Headers = Headers()): Boolean =
     rawComplete { res ⇒
       res.setStatus(status)
-      headers foreach { h ⇒ response.setHeader(h._1, h._2) }
+      headers foreach { case (name, value) ⇒ response.setHeader(name, value) }
       res.getWriter.write(body)
       res.getWriter.close
       res.flushBuffer
