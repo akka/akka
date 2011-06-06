@@ -11,9 +11,10 @@ import akka.testing._
 import akka.util.duration._
 import akka.testing.Testing.sleepFor
 import akka.config.Supervision.{ OneForOneStrategy }
-import akka.actor._
 import akka.dispatch.Future
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
+import akka.actor.ActorRefSpec.FailingOuterActor
+import akka.actor.ActorRefSpec.InnerActor
 
 object ActorRefSpec {
 
@@ -68,25 +69,121 @@ object ActorRefSpec {
       }
     }
   }
+
+  class OuterActor(val inner: ActorRef) extends Actor {
+    def receive = {
+      case "self" ⇒ self reply self
+      case x      ⇒ inner forward x
+    }
+  }
+
+  class FailingOuterActor(val inner: ActorRef) extends Actor {
+    val fail = new InnerActor
+
+    def receive = {
+      case "self" ⇒ self reply self
+      case x      ⇒ inner forward x
+    }
+  }
+
+  class FailingInheritingOuterActor(_inner: ActorRef) extends OuterActor(_inner) {
+    val fail = new InnerActor
+  }
+
+  class InnerActor extends Actor {
+    def receive = {
+      case "innerself" ⇒ self reply self
+      case other       ⇒ self reply other
+    }
+  }
+
+  class FailingInnerActor extends Actor {
+    val fail = new InnerActor
+
+    def receive = {
+      case "innerself" ⇒ self reply self
+      case other       ⇒ self reply other
+    }
+  }
+
+  class FailingInheritingInnerActor extends InnerActor {
+    val fail = new InnerActor
+  }
 }
 
 class ActorRefSpec extends WordSpec with MustMatchers {
-  import ActorRefSpec._
+  import akka.actor.ActorRefSpec._
 
   "An ActorRef" must {
 
     "not allow Actors to be created outside of an actorOf" in {
       intercept[akka.actor.ActorInitializationException] {
         new Actor { def receive = { case _ ⇒ } }
-        fail("shouldn't get here")
       }
 
       intercept[akka.actor.ActorInitializationException] {
-        val a = Actor.actorOf(new Actor {
+        Actor.actorOf(new Actor {
           val nested = new Actor { def receive = { case _ ⇒ } }
           def receive = { case _ ⇒ }
         }).start()
-        fail("shouldn't get here")
+      }
+
+      def refStackMustBeEmpty = Actor.actorRefInCreation.get.headOption must be === None
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new FailingOuterActor(Actor.actorOf(new InnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new OuterActor(Actor.actorOf(new FailingInnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new FailingInheritingOuterActor(Actor.actorOf(new InnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new FailingOuterActor(Actor.actorOf(new FailingInheritingInnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new FailingInheritingOuterActor(Actor.actorOf(new FailingInheritingInnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new FailingInheritingOuterActor(Actor.actorOf(new FailingInnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new OuterActor(Actor.actorOf(new InnerActor {
+          val a = new InnerActor
+        }).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new FailingOuterActor(Actor.actorOf(new FailingInheritingInnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new OuterActor(Actor.actorOf(new FailingInheritingInnerActor).start)).start()
       }
     }
 
@@ -100,6 +197,17 @@ class ActorRefSpec extends WordSpec with MustMatchers {
       a must not be null
       nested must not be null
       (a ne nested) must be === true
+    }
+
+    "support advanced nested actorOfs" in {
+      val a = Actor.actorOf(new OuterActor(Actor.actorOf(new InnerActor).start)).start
+      val inner = (a !! "innerself").get
+
+      (a !! a).get must be(a)
+      (a !! "self").get must be(a)
+      inner must not be a
+
+      (a !! "msg").get must be === "msg"
     }
 
     "support reply via channel" in {

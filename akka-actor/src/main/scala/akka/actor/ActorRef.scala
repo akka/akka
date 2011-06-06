@@ -865,17 +865,17 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
 
   private[this] def newActor: Actor = {
     import Actor.{ actorRefInCreation ⇒ refStack }
-    (try {
-      refStack.set(refStack.get.push(this))
-      actorFactory()
-    } catch {
-      case e ⇒
-        val stack = refStack.get
-        //Clean up if failed
-        if ((stack.nonEmpty) && (stack.head eq this)) refStack.set(stack.pop)
-        //Then rethrow
-        throw e
-    }) match {
+    {
+      val stackBefore = refStack.get
+      refStack.set(stackBefore.push(this))
+      try {
+        actorFactory()
+      } finally {
+        val stackAfter = refStack.get
+        if (stackAfter.nonEmpty)
+          refStack.set(if (stackAfter.head eq null) stackAfter.pop.pop else stackAfter.pop) //pop null marker plus self
+      }
+    } match {
       case null  ⇒ throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
       case valid ⇒ valid
     }
