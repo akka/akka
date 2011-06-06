@@ -75,11 +75,13 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val jsr311ModuleConfig      = ModuleConfiguration("javax.ws.rs", "jsr311-api", sbt.DefaultMavenRepository)
   lazy val zookeeperModuleConfig   = ModuleConfiguration("org.apache.hadoop.zookeeper", AkkaRepo)
   lazy val zkclientModuleConfig    = ModuleConfiguration("zkclient", AkkaRepo)
+  lazy val camelModuleConfig       = ModuleConfiguration("org.apache.camel", "camel-core", AkkaRepo)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
   lazy val CAMEL_VERSION         = "2.7.1"
+  lazy val CAMEL_PATCH_VERSION   = "2.7.1.1"
   lazy val SPRING_VERSION        = "3.0.5.RELEASE"
   lazy val JACKSON_VERSION       = "1.8.0"
   lazy val JERSEY_VERSION        = "1.3"
@@ -103,7 +105,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val aspectwerkz      = "org.codehaus.aspectwerkz"    % "aspectwerkz"             % "2.2.3" % "compile" //ApacheV2
     lazy val beanstalk        = "beanstalk"                   % "beanstalk_client"        % "1.4.5" //New BSD
     lazy val bookkeeper       = "org.apache.hadoop.zookeeper" % "bookkeeper"              % ZOOKEEPER_VERSION //ApacheV2
-    lazy val camel_core       = "org.apache.camel"            % "camel-core"              % CAMEL_VERSION % "compile" //ApacheV2
+    lazy val camel_core       = "org.apache.camel"            % "camel-core"              % CAMEL_PATCH_VERSION % "compile" //ApacheV2
 
     lazy val commons_codec    = "commons-codec"               % "commons-codec"           % "1.4" % "compile" //ApacheV2
     lazy val commons_io       = "commons-io"                  % "commons-io"              % "2.0.1" % "compile" //ApacheV2
@@ -170,7 +172,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val akka_durable_mailboxes = project("akka-durable-mailboxes", "akka-durable-mailboxes", new AkkaDurableMailboxesParentProject(_), akka_remote)
 
   lazy val akka_camel             = project("akka-camel",             "akka-camel",             new AkkaCamelProject(_),                  akka_actor, akka_slf4j)
-  //lazy val akka_camel_typed       = project("akka-camel-typed",       "akka-camel-typed",       new AkkaCamelTypedProject(_),             akka_actor, akka_slf4j, akka_camel)
+  lazy val akka_camel_typed       = project("akka-camel-typed",       "akka-camel-typed",       new AkkaCamelTypedProject(_),             akka_actor, akka_slf4j, akka_camel)
   //lazy val akka_spring            = project("akka-spring",            "akka-spring",            new AkkaSpringProject(_),                 akka_remote, akka_actor, akka_camel)
   lazy val akka_kernel            = project("akka-kernel",            "akka-kernel",            new AkkaKernelProject(_),                 akka_stm, akka_remote, akka_http, akka_slf4j, akka_camel)
 

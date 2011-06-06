@@ -21,8 +21,8 @@ import akka.serialization._
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 sealed trait ActorRegistryEvent
-case class ActorRegistered(address: String, actor: ActorRef) extends ActorRegistryEvent
-case class ActorUnregistered(address: String, actor: ActorRef) extends ActorRegistryEvent
+case class ActorRegistered(address: String, actor: ActorRef, typedActor: Option[AnyRef]) extends ActorRegistryEvent
+case class ActorUnregistered(address: String, actor: ActorRef, typedActor: Option[AnyRef]) extends ActorRegistryEvent
 
 /**
  * Registry holding all Actor instances in the whole system.
@@ -66,11 +66,12 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
 
     actorsByAddress.put(address, actor)
     actorsByUuid.put(actor.uuid, actor)
-    notifyListeners(ActorRegistered(address, actor))
+    notifyListeners(ActorRegistered(address, actor, Option(typedActorsByUuid get actor.uuid)))
   }
 
   private[akka] def registerTypedActor(actorRef: ActorRef, interface: AnyRef) {
     typedActorsByUuid.put(actorRef.uuid, interface)
+    actorRef.start // register actorRef
   }
 
   /**
@@ -79,7 +80,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
   private[akka] def unregister(address: String) {
     val actor = actorsByAddress remove address
     actorsByUuid remove actor.uuid
-    notifyListeners(ActorUnregistered(address, actor))
+    notifyListeners(ActorUnregistered(address, actor, None))
   }
 
   /**
@@ -89,8 +90,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
     val address = actor.address
     actorsByAddress remove address
     actorsByUuid remove actor.uuid
-    typedActorsByUuid remove actor.uuid
-    notifyListeners(ActorUnregistered(address, actor))
+    notifyListeners(ActorUnregistered(address, actor, Option(typedActorsByUuid remove actor.uuid)))
   }
 
   /**

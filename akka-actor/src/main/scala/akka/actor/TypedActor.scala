@@ -36,6 +36,7 @@ object TypedActor {
   }
 
   case class TypedActorInvocationHandler(actor: ActorRef) extends InvocationHandler {
+    val impl = actor.actor.asInstanceOf[TypedActor[_, _]].me
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
       case "toString" ⇒ actor.toString
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
@@ -157,7 +158,7 @@ object TypedActor {
 
     val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(ref)).asInstanceOf[T]
     proxyRef.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
-    Actor.registry.registerTypedActor(ref.start, proxy) //We only have access to the proxy from the outside, so register it with the ActorRegistry, will be removed on actor.stop
+    Actor.registry.registerTypedActor(ref, proxy) //We only have access to the proxy from the outside, so register it with the ActorRegistry, will be removed on actor.stop
     proxy
   }
 

@@ -65,10 +65,10 @@ class TypedActorHolder(uri: String, context: CamelContext, name: String)
   extends RegistryBean(context, name) {
 
   /**
-   * Returns an <code>akka.camel.component.TypedActorInfo</code> instance.
+   * Returns an <code>akka.camel.component.BeanInfo</code> instance.
    */
   override def getBeanInfo: BeanInfo =
-    new TypedActorInfo(getContext, getBean.getClass, getParameterMappingStrategy)
+    new BeanInfo(getContext, getBean.getClass, getParameterMappingStrategy)
 
   /**
    * Obtains a typed actor from <code>Actor.registry</code> if the schema is
@@ -80,39 +80,6 @@ class TypedActorHolder(uri: String, context: CamelContext, name: String)
    */
   override def getBean: AnyRef = {
     val internal = uri.startsWith(TypedActorComponent.InternalSchema)
-    if (internal) Actor.registry.typedActorFor(uuidFrom(getName)) getOrElse null else super.getBean
-  }
-}
-
-/**
- * Typed actor meta information.
- *
- * @author Martin Krasser
- */
-class TypedActorInfo(context: CamelContext, clazz: Class[_], strategy: ParameterMappingStrategy)
-  extends BeanInfo(context, clazz, strategy) {
-
-  /**
-   * Introspects AspectWerkz proxy classes.
-   *
-   * @param clazz AspectWerkz proxy class.
-   */
-  protected override def introspect(clazz: Class[_]): Unit = {
-
-    // TODO: fix target class detection in BeanInfo.introspect(Class)
-    // Camel assumes that classes containing a '$$' in the class name
-    // are classes generated with CGLIB. This conflicts with proxies
-    // created from interfaces with AspectWerkz. Once the fix is in
-    // place this method can be removed.
-
-    for (method ← clazz.getDeclaredMethods) {
-      if (isValidMethod(clazz, method)) {
-        introspect(clazz, method)
-      }
-    }
-    val superclass = clazz.getSuperclass
-    if ((superclass ne null) && !superclass.equals(classOf[AnyRef])) {
-      introspect(superclass)
-    }
+    if (internal) Actor.registry.local.typedActorFor(uuidFrom(getName)) getOrElse null else super.getBean
   }
 }
