@@ -17,6 +17,7 @@ import akka.AkkaException
 import akka.serialization.{ Format, Serializer }
 import akka.cluster.ClusterNode
 import akka.event.EventHandler
+import scala.collection.immutable.Stack
 
 import scala.reflect.BeanProperty
 
@@ -135,8 +136,8 @@ object Actor extends ListenerManagement {
     hook
   }
 
-  private[actor] val actorRefInCreation = new ThreadLocal[Option[ActorRef]] {
-    override def initialValue = None
+  private[actor] val actorRefInCreation = new ThreadLocal[Stack[ActorRef]] {
+    override def initialValue = Stack[ActorRef]()
   }
 
   /**
@@ -396,14 +397,15 @@ object Actor extends ListenerManagement {
               "] for serialization of actor [" + address +
               "] since " + reason)
 
-        val serializer: Serializer = {
-          if ((serializerClassName eq null) ||
-            (serializerClassName == "") ||
-            (serializerClassName == Format.defaultSerializerName)) {
-            Format.Default
-          } else {
-            val clazz: Class[_] = ReflectiveAccess.getClassFor(serializerClassName) match {
-              case Right(clazz) ⇒ clazz
+        val serializer: Serializer = serializerClassName match {
+          case null | "" | Format.`defaultSerializerName` ⇒ Format.Default
+          case specialSerializer ⇒
+            ReflectiveAccess.getClassFor(specialSerializer) match {
+              case Right(clazz) ⇒
+                clazz.newInstance match {
+                  case s: Serializer ⇒ s
+                  case other         ⇒ serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
+                }
               case Left(exception) ⇒
                 val cause = exception match {
                   case i: InvocationTargetException ⇒ i.getTargetException
@@ -411,15 +413,11 @@ object Actor extends ListenerManagement {
                 }
                 serializerErrorDueTo(cause.toString)
             }
-            val f = clazz.newInstance.asInstanceOf[AnyRef]
-            if (f.isInstanceOf[Serializer]) f.asInstanceOf[Serializer]
-            else serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
-          }
         }
 
         val isStateful = state match {
-          case Stateless ⇒ false
-          case Stateful  ⇒ true
+          case _: Stateless | Stateless ⇒ false
+          case _: Stateful | Stateful   ⇒ true
         }
 
         if (isStateful && isHomeNode) { // stateful actor's home node
@@ -505,16 +503,18 @@ trait Actor {
    */
   @transient
   implicit val someSelf: Some[ActorRef] = {
-    val optRef = Actor.actorRefInCreation.get
-    if (optRef.isEmpty) throw new ActorInitializationException(
+    val refStack = Actor.actorRefInCreation.get
+    if (refStack.isEmpty) throw new ActorInitializationException(
       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
         "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
         "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
         "\n\tEither use:" +
         "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
         "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
-    Actor.actorRefInCreation.set(None)
-    optRef.asInstanceOf[Some[ActorRef]]
+
+    val ref = refStack.head
+    Actor.actorRefInCreation.set(refStack.pop)
+    Some(ref)
   }
 
   /*
@@ -614,21 +614,6 @@ trait Actor {
    */
   def unhandled(msg: Any) {
     throw new UnhandledMessageException(msg, self)
-  }
-
-  /**
-   * Is the actor able to handle the message passed in as arguments?
-   */
-  def isDefinedAt(message: Any): Boolean = {
-    val behaviorStack = self.hotswap
-    message match { //Same logic as apply(msg) but without the unhandled catch-all
-      case l: AutoReceivedMessage ⇒ true
-      case msg if behaviorStack.nonEmpty &&
-        behaviorStack.head.isDefinedAt(msg) ⇒ true
-      case msg if behaviorStack.isEmpty &&
-        processingBehavior.isDefinedAt(msg) ⇒ true
-      case _ ⇒ false
-    }
   }
 
   /**

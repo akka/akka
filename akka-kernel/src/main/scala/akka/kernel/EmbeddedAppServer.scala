@@ -40,7 +40,7 @@ trait EmbeddedAppServer extends Bootable {
     super.onLoad
     if (isRestEnabled) {
 
-      val configuration = new XmlConfiguration(findJettyConfigXML.getOrElse(error("microkernel-server.xml not found!")))
+      val configuration = new XmlConfiguration(findJettyConfigXML.getOrElse(sys.error("microkernel-server.xml not found!")))
 
       System.setProperty("jetty.port", REST_PORT.toString)
       System.setProperty("jetty.host", REST_HOSTNAME)

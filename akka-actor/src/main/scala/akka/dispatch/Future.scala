@@ -217,20 +217,6 @@ object Future {
   def apply[T](body: ⇒ T, timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher): Future[T] =
     dispatcher.dispatchFuture(() ⇒ body, timeout)
 
-  /**
-   * Construct a completable channel
-   */
-  def channel(timeout: Long = Actor.TIMEOUT) = new Channel[Any] {
-    val future = empty[Any](timeout)
-    def !(msg: Any) = future completeWithResult msg
-  }
-
-  /**
-   * Create an empty Future with default timeout
-   */
-  @deprecated("Superceded by Promise.apply", "1.2")
-  def empty[T](timeout: Long = Actor.TIMEOUT) = new DefaultPromise[T](timeout)
-
   import scala.collection.mutable.Builder
   import scala.collection.generic.CanBuildFrom
 
@@ -273,9 +259,11 @@ object Future {
    */
   def flow[A](body: ⇒ A @cps[Future[Any]], timeout: Long = Actor.TIMEOUT): Future[A] = {
     val future = Promise[A](timeout)
-    (reset(future.asInstanceOf[Promise[Any]].completeWithResult(body)): Future[Any]) onComplete { f ⇒
-      val opte = f.exception
-      if (opte.isDefined) future completeWithException (opte.get)
+    (reset(future.asInstanceOf[Promise[Any]].completeWithResult(body)): Future[Any]) onComplete {
+      _.exception match {
+        case Some(e) ⇒ future completeWithException e
+        case None    ⇒
+      }
     }
     future
   }
@@ -319,14 +307,6 @@ sealed trait Future[+T] {
    * In the case of the timeout expiring a FutureTimeoutException will be thrown.
    */
   def await(atMost: Duration): Future[T]
-
-  /**
-   * Blocks the current thread until the Future has been completed. Use
-   * caution with this method as it ignores the timeout and will block
-   * indefinitely if the Future is never completed.
-   */
-  @deprecated("Will be removed after 1.1, it's dangerous and can cause deadlocks, agony and insanity.", "1.1")
-  def awaitBlocking: Future[T]
 
   /**
    * Tests whether this Future has been completed.
@@ -383,17 +363,35 @@ sealed trait Future[+T] {
    * When the future is completed with a valid result, apply the provided
    * PartialFunction to the result.
    * <pre>
-   *   val result = future receive {
+   *   val result = future onResult {
    *     case Foo => "foo"
    *     case Bar => "bar"
-   *   }.await.result
+   *   }
    * </pre>
    */
-  final def receive(pf: PartialFunction[Any, Unit]): Future[T] = onComplete { f ⇒
+  final def onResult(pf: PartialFunction[Any, Unit]): Future[T] = onComplete { f ⇒
     val optr = f.result
     if (optr.isDefined) {
       val r = optr.get
-      if (pf.isDefinedAt(r)) pf(r)
+      if (pf isDefinedAt r) pf(r)
+    }
+  }
+
+  /**
+   * When the future is completed with an exception, apply the provided
+   * PartialFunction to the exception.
+   * <pre>
+   *   val result = future onException {
+   *     case Foo => "foo"
+   *     case Bar => "bar"
+   *   }
+   * </pre>
+   */
+  final def onException(pf: PartialFunction[Throwable, Unit]): Future[T] = onComplete { f ⇒
+    val opte = f.exception
+    if (opte.isDefined) {
+      val e = opte.get
+      if (pf isDefinedAt e) pf(e)
     }
   }
 
@@ -439,12 +437,12 @@ sealed trait Future[+T] {
    * a valid result then the new Future will contain the same.
    * Example:
    * <pre>
-   * Future(6 / 0) failure { case e: ArithmeticException => 0 } // result: 0
-   * Future(6 / 0) failure { case e: NotFoundException   => 0 } // result: exception
-   * Future(6 / 2) failure { case e: ArithmeticException => 0 } // result: 3
+   * Future(6 / 0) recover { case e: ArithmeticException => 0 } // result: 0
+   * Future(6 / 0) recover { case e: NotFoundException   => 0 } // result: exception
+   * Future(6 / 2) recover { case e: ArithmeticException => 0 } // result: 3
    * </pre>
    */
-  final def failure[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
+  final def recover[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
     val fa = new DefaultPromise[A](timeoutInNanos, NANOS)
     onComplete { ft ⇒
       val opte = ft.exception
@@ -606,6 +604,14 @@ object Promise {
 
   def apply[A](): Promise[A] = apply(Actor.TIMEOUT)
 
+  /**
+   * Construct a completable channel
+   */
+  def channel(timeout: Long = Actor.TIMEOUT) = new Channel[Any] {
+    val promise = Promise[Any](timeout)
+    def !(msg: Any) = promise completeWithResult msg
+  }
+
   private[akka] val callbacksPendingExecution = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
     override def initialValue = None
   }
@@ -708,18 +714,6 @@ class DefaultPromise[T](timeout: Long, timeunit: TimeUnit) extends Promise[T] {
     else throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(timeoutInNanos) + "] milliseconds")
   }
 
-  def awaitBlocking = {
-    _lock.lock
-    try {
-      while (_value.isEmpty) {
-        _signal.await
-      }
-      this
-    } finally {
-      _lock.unlock
-    }
-  }
-
   def isExpired: Boolean = timeLeft() <= 0
 
   def value: Option[Either[Throwable, T]] = {
@@ -734,11 +728,16 @@ class DefaultPromise[T](timeout: Long, timeunit: TimeUnit) extends Promise[T] {
   def complete(value: Either[Throwable, T]): DefaultPromise[T] = {
     _lock.lock
     val notifyTheseListeners = try {
-      if (_value.isEmpty && !isExpired) { //Only complete if we aren't expired
-        _value = Some(value)
-        val existingListeners = _listeners
-        _listeners = Nil
-        existingListeners
+      if (_value.isEmpty) { //Only complete if we aren't expired
+        if (!isExpired) {
+          _value = Some(value)
+          val existingListeners = _listeners
+          _listeners = Nil
+          existingListeners
+        } else {
+          _listeners = Nil
+          Nil
+        }
       } else Nil
     } finally {
       _signal.signalAll
@@ -816,7 +815,6 @@ sealed class KeptPromise[T](suppliedValue: Either[Throwable, T]) extends Promise
   def onComplete(func: Future[T] ⇒ Unit): Future[T] = { func(this); this }
   def await(atMost: Duration): Future[T] = this
   def await: Future[T] = this
-  def awaitBlocking: Future[T] = this
   def isExpired: Boolean = true
   def timeoutInNanos: Long = 0
 }

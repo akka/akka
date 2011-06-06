@@ -234,12 +234,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   def isUnstarted: Boolean = _status == ActorRefInternals.UNSTARTED
 
   /**
-   * Is the actor able to handle the message passed in as arguments?
-   */
-  @deprecated("Will be removed without replacement, it's just not reliable in the face of `become` and `unbecome`", "1.1")
-  def isDefinedAt(message: Any): Boolean = actor.isDefinedAt(message)
-
-  /**
    * Only for internal use. UUID is effectively final.
    */
   protected[akka] def uuid_=(uid: Uuid) {
@@ -685,6 +679,11 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
   def supervisor: Option[ActorRef] = _supervisor
 
   // ========= AKKA PROTECTED FUNCTIONS =========
+  @throws(classOf[java.io.ObjectStreamException])
+  private def writeReplace(): AnyRef = {
+    val inetaddr = Actor.remote.address
+    SerializedActorRef(uuid, address, inetaddr.getAddress.getHostAddress, inetaddr.getPort, timeout)
+  }
 
   protected[akka] def supervisor_=(sup: Option[ActorRef]) {
     _supervisor = sup
@@ -801,11 +800,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     }
 
     def tooManyRestarts() {
-      _supervisor.foreach { sup ⇒
-        // can supervisor handle the notification?
-        val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
-        if (sup.isDefinedAt(notification)) notifySupervisorWithMessage(notification)
-      }
+      notifySupervisorWithMessage(MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason))
       stop()
     }
 
@@ -869,13 +864,20 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
   // ========= PRIVATE FUNCTIONS =========
 
   private[this] def newActor: Actor = {
-    try {
-      Actor.actorRefInCreation.set(Some(this))
-      val a = actorFactory()
-      if (a eq null) throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
-      a
-    } finally {
-      Actor.actorRefInCreation.set(None)
+    import Actor.{ actorRefInCreation ⇒ refStack }
+    (try {
+      refStack.set(refStack.get.push(this))
+      actorFactory()
+    } catch {
+      case e ⇒
+        val stack = refStack.get
+        //Clean up if failed
+        if ((stack.nonEmpty) && (stack.head eq this)) refStack.set(stack.pop)
+        //Then rethrow
+        throw e
+    }) match {
+      case null  ⇒ throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
+      case valid ⇒ valid
     }
   }
 
@@ -1031,6 +1033,12 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   // ==== NOT SUPPORTED ====
+
+  @throws(classOf[java.io.ObjectStreamException])
+  private def writeReplace(): AnyRef = {
+    SerializedActorRef(uuid, address, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, timeout)
+  }
+
   @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
   def actorClass: Class[_ <: Actor] = unsupported
   def dispatcher_=(md: MessageDispatcher) {
@@ -1249,5 +1257,17 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef ⇒
       sender.get.!(message)(Some(this))
       true
     } else false
+  }
+}
+
+case class SerializedActorRef(val uuid: Uuid,
+                              val address: String,
+                              val hostname: String,
+                              val port: Int,
+                              val timeout: Long) {
+  @throws(classOf[java.io.ObjectStreamException])
+  def readResolve(): AnyRef = Actor.registry.local.actorFor(uuid) match {
+    case Some(actor) ⇒ actor
+    case None        ⇒ RemoteActorRef(new InetSocketAddress(hostname, port), address, timeout, None)
   }
 }

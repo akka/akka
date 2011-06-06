@@ -90,8 +90,6 @@ trait LoadBalancer extends Router { self: Actor ⇒
   }
 
   override def broadcast(message: Any) = seq.items.foreach(_ ! message)
-
-  override def isDefinedAt(msg: Any) = seq.exists(_.isDefinedAt(msg))
 }
 
 /**
@@ -106,8 +104,6 @@ abstract class UntypedLoadBalancer extends UntypedRouter {
     else null
 
   override def broadcast(message: Any) = seq.items.foreach(_ ! message)
-
-  override def isDefinedAt(msg: Any) = seq.exists(_.isDefinedAt(msg))
 }
 
 object Routing {

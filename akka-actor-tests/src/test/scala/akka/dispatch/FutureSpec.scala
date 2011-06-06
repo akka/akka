@@ -146,30 +146,30 @@ class FutureSpec extends JUnitSuite {
     val future2 = future1 map (_ / 0)
     val future3 = future2 map (_.toString)
 
-    val future4 = future1 failure {
+    val future4 = future1 recover {
       case e: ArithmeticException ⇒ 0
     } map (_.toString)
 
-    val future5 = future2 failure {
+    val future5 = future2 recover {
       case e: ArithmeticException ⇒ 0
     } map (_.toString)
 
-    val future6 = future2 failure {
+    val future6 = future2 recover {
       case e: MatchError ⇒ 0
     } map (_.toString)
 
-    val future7 = future3 failure { case e: ArithmeticException ⇒ "You got ERROR" }
+    val future7 = future3 recover { case e: ArithmeticException ⇒ "You got ERROR" }
 
     val actor = actorOf[TestActor].start()
 
     val future8 = actor !!! "Failure"
-    val future9 = actor !!! "Failure" failure {
+    val future9 = actor !!! "Failure" recover {
       case e: RuntimeException ⇒ "FAIL!"
     }
-    val future10 = actor !!! "Hello" failure {
+    val future10 = actor !!! "Hello" recover {
       case e: RuntimeException ⇒ "FAIL!"
     }
-    val future11 = actor !!! "Failure" failure { case _ ⇒ "Oops!" }
+    val future11 = actor !!! "Failure" recover { case _ ⇒ "Oops!" }
 
     assert(future1.get === 5)
     intercept[ArithmeticException] { future2.get }
@@ -269,7 +269,7 @@ class FutureSpec extends JUnitSuite {
   def receiveShouldExecuteOnComplete {
     val latch = new StandardLatch
     val actor = actorOf[TestActor].start()
-    actor !!! "Hello" receive { case "World" ⇒ latch.open }
+    actor !!! "Hello" onResult { case "World" ⇒ latch.open }
     assert(latch.tryAwait(5, TimeUnit.SECONDS))
     actor.stop()
   }
@@ -304,13 +304,13 @@ class FutureSpec extends JUnitSuite {
     val latch = new StandardLatch
     val f2 = Future { latch.tryAwait(5, TimeUnit.SECONDS); "success" }
     f2 foreach (_ ⇒ throw new ThrowableTest("dispatcher foreach"))
-    f2 receive { case _ ⇒ throw new ThrowableTest("dispatcher receive") }
+    f2 onResult { case _ ⇒ throw new ThrowableTest("dispatcher receive") }
     val f3 = f2 map (s ⇒ s.toUpperCase)
     latch.open
     f2.await
     assert(f2.resultOrException === Some("success"))
     f2 foreach (_ ⇒ throw new ThrowableTest("current thread foreach"))
-    f2 receive { case _ ⇒ throw new ThrowableTest("current thread receive") }
+    f2 onResult { case _ ⇒ throw new ThrowableTest("current thread receive") }
     f3.await
     assert(f3.resultOrException === Some("SUCCESS"))
 
