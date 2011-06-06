@@ -71,8 +71,7 @@ trait Mist {
   /**
    * The root endpoint actor
    */
-  protected val _root = Actor.registry.actorFor(RootActorID).getOrElse(
-    throw new ConfigurationException("akka.http.root-actor-id configuration option does not have a valid actor address [" + RootActorID + "]"))
+  def _root: ActorRef
 
   /**
    * Server-specific method factory
@@ -121,11 +120,23 @@ trait Mist {
   }
 }
 
+trait RootEndpointLocator {
+  var _root: ActorRef = null
+
+  def configureRoot(id: String) {
+    def findRoot(id: String): ActorRef =
+      Actor.registry.actorFor(id).getOrElse(
+        throw new ConfigurationException("akka.http.root-actor-id configuration option does not have a valid actor address [" + id + "]"))
+
+    _root = if ((id eq null) || id == "") findRoot(MistSettings.RootActorID) else findRoot(id)
+  }
+}
+
 /**
  * AkkaMistServlet adds support to bridge Http and Actors in an asynchronous fashion
  * Async impls currently supported: Servlet3.0, Jetty Continuations
  */
-class AkkaMistServlet extends HttpServlet with Mist {
+class AkkaMistServlet extends HttpServlet with Mist with RootEndpointLocator {
   import javax.servlet.{ ServletConfig }
 
   /**
@@ -134,6 +145,7 @@ class AkkaMistServlet extends HttpServlet with Mist {
   override def init(config: ServletConfig) {
     super.init(config)
     initMist(config.getServletContext)
+    configureRoot(config.getServletContext.getInitParameter("root-endpoint"))
   }
 
   protected override def doDelete(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Delete)
@@ -149,7 +161,7 @@ class AkkaMistServlet extends HttpServlet with Mist {
  * Proof-of-concept, use at own risk
  * Will be officially supported in a later release
  */
-class AkkaMistFilter extends Filter with Mist {
+class AkkaMistFilter extends Filter with Mist with RootEndpointLocator {
   import javax.servlet.{ ServletRequest, ServletResponse, FilterConfig, FilterChain }
 
   /**
@@ -157,6 +169,7 @@ class AkkaMistFilter extends Filter with Mist {
    */
   def init(config: FilterConfig) {
     initMist(config.getServletContext)
+    configureRoot(config.getServletContext.getInitParameter("root-endpoint"))
   }
 
   /**
