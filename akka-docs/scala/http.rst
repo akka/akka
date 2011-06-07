@@ -10,43 +10,10 @@ HTTP
 
 Module stability: **SOLID**
 
-When using Akkas embedded servlet container
--------------------------------------------
-
-Akka supports the JSR for REST called JAX-RS (JSR-311). It allows you to create interaction with your actors through HTTP + REST
-
-You can deploy your REST services directly into the Akka kernel. All you have to do is to drop the JAR with your application containing the REST services into the ‘$AKKA_HOME/deploy’ directory and specify in your akka.conf what resource packages to scan for (more on that below) and optionally define a “boot class” (if you need to create any actors or do any config). WAR deployment is coming soon.
-
-Boot configuration class
-------------------------
-
-The boot class is needed for Akka to bootstrap the application and should contain the initial supervisor configuration of any actors in the module.
-
-The boot class should be a regular POJO with a default constructor in which the initial configuration is done. The boot class then needs to be defined in the ‘$AKKA_HOME/config/akka.conf’ config file like this:
-
-.. code-block:: ruby
-
-  akka {
-    boot = ["sample.java.Boot", "sample.scala.Boot"]   # FQN to the class doing initial actor
-                                                       # supervisor bootstrap, should be defined in default constructor
-    ...
-  }
-
-After you've placed your service-jar into the $AKKA_HOME/deploy directory, you'll need to tell Akka where to look for your services, and you do that by specifying what packages you want Akka to scan for services, and that's done in akka.conf in the http-section:
-
-.. code-block:: ruby
-
-  akka {
-    http {
-      ...
-      resource-packages = ["com.bar","com.foo.bar"] # List with all resource packages for your Jersey services
-      ...
-  }
-
-When deploying in another servlet container:
+When deploying in a servlet container:
 --------------------------------------------
 
-If you deploy Akka in another JEE container, don't forget to create an Akka initialization and cleanup hook:
+If you deploy Akka in a JEE container, don't forget to create an Akka initialization and cleanup hook:
 
 .. code-block:: scala
 
@@ -86,32 +53,6 @@ Then you just declare it in your web.xml:
   ...
   </web-app>
 
-Also, you need to map the servlet that will handle your Jersey/JAX-RS calls, you use Jerseys ServletContainer servlet.
-
-.. code-block:: xml
-
-  <web-app>
-  ...
-    <servlet>
-      <servlet-name>Akka</servlet-name>
-      <servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
-      <!-- And you want to configure your services -->
-      <init-param>
-        <param-name>com.sun.jersey.config.property.resourceConfigClass</param-name>
-        <param-value>com.sun.jersey.api.core.PackagesResourceConfig</param-value>
-      </init-param>
-      <init-param>
-         <param-name>com.sun.jersey.config.property.packages</param-name>
-         <param-value>your.resource.package.here;and.another.here;and.so.on</param-value>
-      </init-param>
-    </servlet>
-    <servlet-mapping>
-      <url-pattern>*</url-pattern>
-      <servlet-name>Akka</servlet-name>
-    </servlet-mapping>
-  ...
-  </web-app>
-
 Adapting your own Akka Initializer for the Servlet Container
 ------------------------------------------------------------
 
@@ -141,16 +82,6 @@ If you want to use akka-camel or any other modules that have their own "Bootable
      def contextInitialized(e: ServletContextEvent): Unit =
        loader.boot(true, new BootableActorLoaderService with BootableRemoteActorService with CamelService) //<--- Important
    }
-
-Java API: Typed Actors
-----------------------
-
-`Sample module for REST services with Actors in Java <https://github.com/jboner/akka-modules/tree/v1.0/akka-samples/akka-sample-rest-java/src/main/java/sample/rest/java>`_
-
-Scala API: Actors
------------------
-
-`Sample module for REST services with Actors in Scala <https://github.com/jboner/akka-modules/blob/v1.0/akka-samples/akka-sample-rest-scala/src/main/scala/SimpleService.scala>`_
 
 Using Akka with the Pinky REST/MVC framework
 --------------------------------------------
