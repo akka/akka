@@ -9,16 +9,23 @@ import org.apache.zookeeper.CreateMode
 
 import org.I0Itec.zkclient.exception._
 
+import akka.AkkaException
 import akka.config._
 import Config._
 import akka.util._
+import akka.actor._
+import DeploymentConfig.{ ReplicationStrategy, Transient, WriteThrough, WriteBehind }
 import akka.event.EventHandler
-import akka.dispatch.{ DefaultPromise, Promise }
-import akka.AkkaException
-
+import akka.dispatch.{ DefaultPromise, Promise, MessageInvocation }
+import akka.remote.MessageSerializer
+import akka.serialization.ActorSerialization._
 import akka.cluster.zookeeper._
+import akka.serialization.{ Serializer, Compression }
+import Compression.LZF
+import akka.serialization.ActorSerialization._
 
 import java.util.Enumeration
+import java.util.concurrent.atomic.AtomicLong
 
 // FIXME allow user to choose dynamically between 'async' and 'sync' tx logging (asyncAddEntry(byte[] data, AddCallback cb, Object ctx))
 // FIXME clean up old entries in log after doing a snapshot
@@ -41,25 +48,45 @@ class ReplicationException(message: String) extends AkkaException(message)
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync: Boolean) {
+class TransactionLog private (
+  ledger: LedgerHandle,
+  val id: String,
+  val isAsync: Boolean) {
 
   import TransactionLog._
 
   val logId = ledger.getId
   val txLogPath = transactionLogNode + "/" + id
   val snapshotPath = txLogPath + "/snapshot"
+  val nrOfEntries = new AtomicLong(0)
 
   private val isOpen = new Switch(true)
 
   /**
    * TODO document method
    */
+  def recordEntry(messageHandle: MessageInvocation, actorRef: ActorRef, format: Serializer) {
+    if (nrOfEntries.incrementAndGet % snapshotFrequency == 0) {
+      val snapshot =
+        // FIXME ReplicationStrategy Transient is always used
+        if (Cluster.shouldCompressData) LZF.compress(toBinary(actorRef, false, Transient)(format))
+        else toBinary(actorRef, false, Transient)(format)
+      recordSnapshot(snapshot)
+    }
+    recordEntry(MessageSerializer.serialize(messageHandle.message).toByteArray)
+  }
+
+  /**
+   * TODO document method
+   */
   def recordEntry(entry: Array[Byte]) {
     if (isOpen.isOn) {
+      val bytes = if (Cluster.shouldCompressData) LZF.compress(entry)
+      else entry
       try {
         if (isAsync) {
           ledger.asyncAddEntry(
-            entry,
+            bytes,
             new AsyncCallback.AddCallback {
               def addComplete(
                 returnCode: Int,
@@ -73,7 +100,7 @@ class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync:
             },
             null)
         } else {
-          handleReturnCode(ledger.addEntry(entry))
+          handleReturnCode(ledger.addEntry(bytes))
           val entryId = ledger.getLastAddPushed
           EventHandler.debug(this, "Writing entry [%s] to log [%s]".format(entryId, logId))
         }
@@ -88,10 +115,12 @@ class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync:
    */
   def recordSnapshot(snapshot: Array[Byte]) {
     if (isOpen.isOn) {
+      val bytes = if (Cluster.shouldCompressData) LZF.compress(snapshot)
+      else snapshot
       try {
         if (isAsync) {
           ledger.asyncAddEntry(
-            snapshot,
+            bytes,
             new AsyncCallback.AddCallback {
               def addComplete(
                 returnCode: Int,
@@ -104,7 +133,7 @@ class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync:
             },
             null)
         } else {
-          handleReturnCode(ledger.addEntry(snapshot))
+          handleReturnCode(ledger.addEntry(bytes))
           storeSnapshotMetaDataInZooKeeper(ledger.getLastAddPushed)
         }
       } catch {
@@ -121,7 +150,7 @@ class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync:
   /**
    * TODO document method
    */
-  def entriesFromLatestSnapshot: Tuple2[Array[Byte], Vector[Array[Byte]]] = {
+  def toByteArraysLatestSnapshot: (Array[Byte], Vector[Array[Byte]]) = {
     val snapshotId = latestSnapshotId
     EventHandler.debug(this,
       "Reading entries from snapshot id [%s] for log [%s]".format(snapshotId, logId))
@@ -133,9 +162,9 @@ class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync:
    */
   def entriesInRange(from: Long, to: Long): Vector[Array[Byte]] = if (isOpen.isOn) {
     try {
-      if (from < 0) throw new IllegalArgumentException("'from' can't be negative [" + from + "]")
-      if (to < 0) throw new IllegalArgumentException("'to' can't be negative [" + from + "]")
-      if (to < from) throw new IllegalArgumentException("'to' can't be smaller than 'from' [" + from + "," + to + "]")
+      if (from < 0) throw new IllegalArgumentException("'from' index can't be negative [" + from + "]")
+      if (to < 0) throw new IllegalArgumentException("'to' index can't be negative [" + from + "]")
+      if (to < from) throw new IllegalArgumentException("'to' index can't be smaller than 'from' index [" + from + "," + to + "]")
       EventHandler.debug(this,
         "Reading entries [%s -> %s] for log [%s]".format(from, to, logId))
 
@@ -150,10 +179,7 @@ class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync:
               enumeration: Enumeration[LedgerEntry],
               ctx: AnyRef) {
               val future = ctx.asInstanceOf[Promise[Vector[Array[Byte]]]]
-              var entries = Vector[Array[Byte]]()
-              while (enumeration.hasMoreElements) {
-                entries = entries :+ enumeration.nextElement.getEntry
-              }
+              val entries = toByteArrays(enumeration)
               if (returnCode == BKException.Code.OK) future.completeWithResult(entries)
               else future.completeWithException(BKException.create(returnCode))
             }
@@ -161,12 +187,7 @@ class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync:
           future)
         await(future)
       } else {
-        val enumeration = ledger.readEntries(from, to)
-        var entries = Vector[Array[Byte]]()
-        while (enumeration.hasMoreElements) {
-          entries = entries :+ enumeration.nextElement.getEntry
-        }
-        entries
+        toByteArrays(ledger.readEntries(from, to))
       }
     } catch {
       case e ⇒ handleError(e)
@@ -190,8 +211,7 @@ class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync:
     } catch {
       case e: ZkNoNodeException ⇒
         handleError(new ReplicationException(
-          "Transaction log for UUID [" + id +
-            "] does not have a snapshot recorded in ZooKeeper"))
+          "Transaction log for UUID [" + id + "] does not have a snapshot recorded in ZooKeeper"))
       case e ⇒ handleError(e)
     }
   }
@@ -208,7 +228,7 @@ class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync:
             logId,
             new AsyncCallback.DeleteCallback {
               def deleteComplete(returnCode: Int, ctx: AnyRef) {
-                handleReturnCode(returnCode)
+                (returnCode)
               }
             },
             null)
@@ -248,6 +268,18 @@ class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync:
     }
   }
 
+  private def toByteArrays(enumeration: Enumeration[LedgerEntry]): Vector[Array[Byte]] = {
+    var entries = Vector[Array[Byte]]()
+    while (enumeration.hasMoreElements) {
+      val bytes = enumeration.nextElement.getEntry
+      val entry =
+        if (Cluster.shouldCompressData) LZF.uncompress(bytes)
+        else bytes
+      entries = entries :+ entry
+    }
+    entries
+  }
+
   private def storeSnapshotMetaDataInZooKeeper(snapshotId: Long) {
     if (isOpen.isOn) {
       try {
@@ -265,8 +297,7 @@ class TransactionLog private (ledger: LedgerHandle, val id: String, val isAsync:
             "Could not store transaction log snapshot meta-data in ZooKeeper for UUID [" +
               id + "]"))
       }
-      EventHandler.debug(this,
-        "Writing snapshot [%s] to log [%s]".format(snapshotId, logId))
+      EventHandler.debug(this, "Writing snapshot [%s] to log [%s]".format(snapshotId, logId))
     } else transactionClosedError
   }
 
@@ -292,12 +323,13 @@ object TransactionLog {
     case "CRC32" ⇒ BookKeeper.DigestType.CRC32
     case "MAC"   ⇒ BookKeeper.DigestType.MAC
     case unknown ⇒ throw new ConfigurationException(
-      "akka.cluster.replication.digest-type is invalid [" + unknown + "]")
+      "akka.cluster.replication.digest-type is invalid [" + unknown + "], must be either 'CRC32' or 'MAC'")
   }
   val password = config.getString("akka.cluster.replication.password", "secret").getBytes("UTF-8")
   val ensembleSize = config.getInt("akka.cluster.replication.ensemble-size", 3)
   val quorumSize = config.getInt("akka.cluster.replication.quorum-size", 2)
-  val timeout = 5000 // FIXME make configurable
+  val snapshotFrequency = config.getInt("akka.cluster.replication.snapshot-frequency", 1000)
+  val timeout = Duration(config.getInt("akka.cluster.replication.timeout", 30), TIME_UNIT).toMillis
 
   private[akka] val transactionLogNode = "/transaction-log-ids"
 
@@ -489,15 +521,10 @@ object LocalBookKeeperEnsemble {
   def shutdown() {
     isRunning switchOff {
       EventHandler.info(this, "Shutting down LocalBookKeeperEnsemble...")
-      println("***************************** 1")
       localBookKeeper.bs.foreach(_.shutdown()) // stop bookies
-      println("***************************** 2")
       localBookKeeper.zkc.close() // stop zk client
-      println("***************************** 3")
       localBookKeeper.zks.shutdown() // stop zk server
-      println("***************************** 4")
       localBookKeeper.serverFactory.shutdown() // stop zk NIOServer
-      println("***************************** 5")
       EventHandler.info(this, "LocalBookKeeperEnsemble shut down successfully")
     }
   }

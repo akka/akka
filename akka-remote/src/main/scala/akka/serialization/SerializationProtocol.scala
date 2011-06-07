@@ -4,20 +4,21 @@
 
 package akka.serialization
 
-import akka.dispatch.MessageInvocation
-import akka.remote.protocol.RemoteProtocol._
-import akka.remote.protocol.RemoteProtocol
-
 import akka.config.Supervision._
 import akka.actor.{ uuidFrom, newUuid }
 import akka.actor._
+import DeploymentConfig.{ ReplicationStrategy, Transient, WriteThrough, WriteBehind }
+import akka.dispatch.MessageInvocation
+import akka.util.ReflectiveAccess
+import akka.remote.{ RemoteClientSettings, MessageSerializer }
+import akka.remote.protocol.RemoteProtocol
+import RemoteProtocol._
 
 import scala.collection.immutable.Stack
 
-import com.google.protobuf.ByteString
-import akka.util.ReflectiveAccess
 import java.net.InetSocketAddress
-import akka.remote.{ RemoteClientSettings, MessageSerializer }
+
+import com.google.protobuf.ByteString
 
 /**
  * Module for local actor serialization.
@@ -31,19 +32,29 @@ object ActorSerialization {
   def fromBinary[T <: Actor](bytes: Array[Byte])(implicit format: Serializer): ActorRef =
     fromBinaryToLocalActorRef(bytes, None, format)
 
-  def toBinary[T <: Actor](a: ActorRef, serializeMailBox: Boolean = true)(implicit format: Serializer): Array[Byte] =
-    toSerializedActorRefProtocol(a, format, serializeMailBox).toByteArray
+  def toBinary[T <: Actor](
+    a: ActorRef,
+    serializeMailBox: Boolean = true,
+    replicationStrategy: ReplicationStrategy = Transient)(implicit format: Serializer): Array[Byte] =
+    toSerializedActorRefProtocol(a, format, serializeMailBox, replicationStrategy).toByteArray
 
   // wrapper for implicits to be used by Java
   def fromBinaryJ[T <: Actor](bytes: Array[Byte], format: Serializer): ActorRef =
     fromBinary(bytes)(format)
 
   // wrapper for implicits to be used by Java
-  def toBinaryJ[T <: Actor](a: ActorRef, format: Serializer, srlMailBox: Boolean = true): Array[Byte] =
-    toBinary(a, srlMailBox)(format)
+  def toBinaryJ[T <: Actor](
+    a: ActorRef,
+    format: Serializer,
+    srlMailBox: Boolean,
+    replicationStrategy: ReplicationStrategy): Array[Byte] =
+    toBinary(a, srlMailBox, replicationStrategy)(format)
 
   private[akka] def toSerializedActorRefProtocol[T <: Actor](
-    actorRef: ActorRef, format: Serializer, serializeMailBox: Boolean = true): SerializedActorRefProtocol = {
+    actorRef: ActorRef,
+    format: Serializer,
+    serializeMailBox: Boolean,
+    replicationStrategy: ReplicationStrategy): SerializedActorRefProtocol = {
     val lifeCycleProtocol: Option[LifeCycleProtocol] = {
       actorRef.lifeCycle match {
         case Permanent          ⇒ Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.PERMANENT).build)
@@ -52,11 +63,18 @@ object ActorSerialization {
       }
     }
 
+    val replicationStrategyType = replicationStrategy match {
+      case WriteBehind  ⇒ ReplicationStrategyType.WRITE_BEHIND
+      case WriteThrough ⇒ ReplicationStrategyType.WRITE_THROUGH
+      case Transient    ⇒ ReplicationStrategyType.TRANSIENT
+    }
+
     val builder = SerializedActorRefProtocol.newBuilder
       .setUuid(UuidProtocol.newBuilder.setHigh(actorRef.uuid.getTime).setLow(actorRef.uuid.getClockSeqAndNode).build)
       .setAddress(actorRef.address)
       .setActorClassname(actorRef.actorInstance.get.getClass.getName)
       .setTimeout(actorRef.timeout)
+      .setReplicationStrategy(replicationStrategyType)
 
     if (serializeMailBox == true) {
       if (actorRef.mailbox eq null) throw new IllegalActorStateException("Can't serialize an actor that has not been started.")
@@ -115,6 +133,16 @@ object ActorSerialization {
       if (protocol.hasSupervisor) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
       else None
 
+    import ReplicationStrategyType._
+    val replicationStrategy =
+      if (protocol.hasReplicationStrategy) {
+        protocol.getReplicationStrategy match {
+          case TRANSIENT     ⇒ Transient
+          case WRITE_THROUGH ⇒ WriteThrough
+          case WRITE_BEHIND  ⇒ WriteBehind
+        }
+      } else Transient
+
     val hotswap =
       try {
         format
@@ -124,7 +152,7 @@ object ActorSerialization {
         case e: Exception ⇒ Stack[PartialFunction[Any, Unit]]()
       }
 
-    val classLoader = loader.getOrElse(getClass.getClassLoader)
+    val classLoader = loader.getOrElse(this.getClass.getClassLoader)
 
     val factory = () ⇒ {
       val actorClass = classLoader.loadClass(protocol.getActorClassname)
@@ -143,7 +171,8 @@ object ActorSerialization {
       lifeCycle,
       supervisor,
       hotswap,
-      factory)
+      factory,
+      replicationStrategy)
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
     messages.foreach(message ⇒ ar ! MessageSerializer.deserialize(message.getMessage))

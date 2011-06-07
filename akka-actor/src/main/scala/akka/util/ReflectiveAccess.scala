@@ -62,6 +62,13 @@ object ReflectiveAccess {
         None
     }
 
+    lazy val transactionLogInstance: Option[TransactionLogObject] = getObjectFor("akka.cluster.TransactionLog$") match {
+      case Right(value) ⇒ Some(value)
+      case Left(exception) ⇒
+        EventHandler.debug(this, exception.toString)
+        None
+    }
+
     lazy val node: ClusterNode = {
       ensureEnabled()
       clusterInstance.get.node
@@ -70,6 +77,11 @@ object ReflectiveAccess {
     lazy val clusterDeployer: ClusterDeployer = {
       ensureEnabled()
       clusterDeployerInstance.get
+    }
+
+    lazy val transactionLog: TransactionLogObject = {
+      ensureEnabled()
+      transactionLogInstance.get
     }
 
     type ClusterDeployer = {
@@ -93,6 +105,25 @@ object ReflectiveAccess {
     type Serializer = {
       def toBinary(obj: AnyRef): Array[Byte]
       def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
+    }
+
+    type TransactionLogObject = {
+      def newLogFor(id: String, isAsync: Boolean): TransactionLog
+      def logFor(id: String, isAsync: Boolean): TransactionLog
+      def shutdown()
+    }
+
+    type TransactionLog = {
+      def recordEntry(messageHandle: MessageInvocation, actorRef: ActorRef, serializer: Serializer)
+      def recordEntry(entry: Array[Byte])
+      def recordSnapshot(snapshot: Array[Byte])
+      def entries: Vector[Array[Byte]]
+      def entriesFromLatestSnapshot: Tuple2[Array[Byte], Vector[Array[Byte]]]
+      def entriesInRange(from: Long, to: Long): Vector[Array[Byte]]
+      def latestEntryId: Long
+      def latestSnapshotId: Long
+      def delete()
+      def close()
     }
   }
 

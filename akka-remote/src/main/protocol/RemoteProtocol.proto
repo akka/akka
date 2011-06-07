@@ -47,6 +47,15 @@ enum CommandType {
 }
 
 /**
+ * Defines the type of the ReplicationStrategy
+ */
+enum ReplicationStrategyType {
+  TRANSIENT = 1;
+  WRITE_THROUGH = 2;
+  WRITE_BEHIND = 3;
+}
+
+/**
  * Defines a remote ActorRef that "remembers" and uses its original Actor instance
  * on the original node.
  */
@@ -72,7 +81,8 @@ message SerializedActorRefProtocol {
   optional LifeCycleProtocol lifeCycle = 8;
   optional RemoteActorRefProtocol supervisor = 9;
   optional bytes hotswapStack = 10;
-  repeated RemoteMessageProtocol messages = 11;
+  optional ReplicationStrategyType replicationStrategy = 11;
+  repeated RemoteMessageProtocol messages = 12;
 }
 
 /**

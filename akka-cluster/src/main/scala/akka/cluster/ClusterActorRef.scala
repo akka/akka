@@ -6,7 +6,7 @@ package akka.cluster
 import Cluster._
 
 import akka.actor._
-import akka.actor.Actor._
+import Actor._
 import akka.event.EventHandler
 import akka.dispatch.Promise
 
@@ -21,14 +21,9 @@ import com.eaio.uuid.UUID
 class ClusterActorRef private[akka] (
   inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
   actorAddress: String,
-  timeout: Long,
-  val replicationStrategy: ReplicationStrategy)
+  timeout: Long)
   extends RemoteActorRef(null, actorAddress, timeout, None) { // FIXME UGLY HACK - should not extend RemoteActorRef
   this: ClusterActorRef with Router.Router ⇒
-
-  EventHandler.debug(this,
-    "Creating a ClusterActorRef for actor with address [%s] with connections [\n\t%s]"
-      .format(actorAddress, inetSocketAddresses.mkString("\n\t")))
 
   private[akka] val inetSocketAddressToActorRefMap = new AtomicReference[Map[InetSocketAddress, ActorRef]](
     (Map[InetSocketAddress, ActorRef]() /: inetSocketAddresses) {

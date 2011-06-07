@@ -9,7 +9,10 @@ import akka.dispatch._
 import akka.config.Config
 import akka.config.Supervision._
 import akka.util._
+import akka.serialization.{ Format, Serializer }
 import ReflectiveAccess._
+import ClusterModule._
+import DeploymentConfig.{ ReplicationStrategy, Transient, WriteThrough, WriteBehind }
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
@@ -506,7 +509,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
       that.asInstanceOf[ActorRef].uuid == uuid
   }
 
-  override def toString = "Actor[" + address + ":" + uuid + "]"
+  override def toString = "Actor[%s:%s]".format(address, uuid)
 }
 
 /**
@@ -514,26 +517,56 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor, val address: String)
+class LocalActorRef private[akka] (
+  private[this] val actorFactory: () ⇒ Actor,
+  val address: String,
+  replicationStrategy: ReplicationStrategy)
   extends ActorRef with ScalaActorRef {
+
   protected[akka] val guard = new ReentrantGuard
 
   @volatile
   protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
+
   @volatile
   private[akka] lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
+
   @volatile
   private[akka] var _supervisor: Option[ActorRef] = None
+
   @volatile
   private var maxNrOfRetriesCount: Int = 0
+
   @volatile
   private var restartTimeWindowStartNanos: Long = 0L
+
   @volatile
   private var _mailbox: AnyRef = _
+
   @volatile
   private[akka] var _dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
 
   protected[akka] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
+
+  private val isReplicated: Boolean = replicationStrategy match {
+    case Transient ⇒ false
+    case _         ⇒ true
+  }
+
+  // FIXME how to get the matching serializerClassName? Now default is used
+  private val serializer = Actor.serializerFor(address, Format.defaultSerializerName)
+
+  private lazy val txLog: TransactionLog = {
+    val log = replicationStrategy match {
+      case Transient    ⇒ throw new IllegalStateException("Can not replicate 'transient' actor [" + toString + "]")
+      case WriteThrough ⇒ transactionLog.newLogFor(_uuid.toString, false)
+      case WriteBehind  ⇒ transactionLog.newLogFor(_uuid.toString, true)
+    }
+    EventHandler.debug(this,
+      "Creating a transaction log for Actor [%s] with replication strategy [%s]"
+        .format(address, replicationStrategy))
+    log
+  }
 
   //If it was started inside "newActor", initialize it
   if (isRunning) initializeActorInstance
@@ -547,8 +580,11 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     __lifeCycle: LifeCycle,
     __supervisor: Option[ActorRef],
     __hotswap: Stack[PartialFunction[Any, Unit]],
-    __factory: () ⇒ Actor) = {
-    this(__factory, __address)
+    __factory: () ⇒ Actor,
+    __replicationStrategy: ReplicationStrategy) = {
+
+    this(__factory, __address, __replicationStrategy)
+
     _uuid = __uuid
     timeout = __timeout
     receiveTimeout = __receiveTimeout
@@ -620,6 +656,8 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
           setActorSelfFields(actorInstance.get, null)
         }
       } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
+
+      if (isReplicated) txLog.delete()
     }
   }
 
@@ -656,7 +694,6 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     guard.withGuard {
       if (_linkedActors.remove(actorRef.uuid) eq null)
         throw new IllegalActorStateException("Actor [" + actorRef + "] is not a linked actor, can't unlink")
-
       actorRef.supervisor = None
     }
   }
@@ -733,7 +770,12 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
             throw e
         }
       }
-    } finally { guard.lock.unlock() }
+    } finally {
+      guard.lock.unlock()
+      if (isReplicated) {
+        txLog.recordEntry(messageHandle, this, serializer)
+      }
+    }
   }
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable) {

@@ -106,7 +106,7 @@ class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll 
       txlog1.close
 
       val txlog2 = TransactionLog.logFor(uuid)
-      val (snapshotAsBytes, entriesAsBytes) = txlog2.entriesFromLatestSnapshot
+      val (snapshotAsBytes, entriesAsBytes) = txlog2.toByteArraysLatestSnapshot
       new String(snapshotAsBytes, "UTF-8") must equal("snapshot")
 
       val entries = entriesAsBytes.map(bytes ⇒ new String(bytes, "UTF-8"))
@@ -135,7 +135,7 @@ class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll 
       txlog1.close
 
       val txlog2 = TransactionLog.logFor(uuid)
-      val (snapshotAsBytes, entriesAsBytes) = txlog2.entriesFromLatestSnapshot
+      val (snapshotAsBytes, entriesAsBytes) = txlog2.toByteArraysLatestSnapshot
       new String(snapshotAsBytes, "UTF-8") must equal("snapshot")
 
       val entries = entriesAsBytes.map(bytes ⇒ new String(bytes, "UTF-8"))
@@ -230,7 +230,7 @@ class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll 
       txlog1.close
 
       val txlog2 = TransactionLog.logFor(uuid, true)
-      val (snapshotAsBytes, entriesAsBytes) = txlog2.entriesFromLatestSnapshot
+      val (snapshotAsBytes, entriesAsBytes) = txlog2.toByteArraysLatestSnapshot
       new String(snapshotAsBytes, "UTF-8") must equal("snapshot")
 
       val entries = entriesAsBytes.map(bytes ⇒ new String(bytes, "UTF-8"))
@@ -259,7 +259,7 @@ class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll 
       txlog1.close
 
       val txlog2 = TransactionLog.logFor(uuid, true)
-      val (snapshotAsBytes, entriesAsBytes) = txlog2.entriesFromLatestSnapshot
+      val (snapshotAsBytes, entriesAsBytes) = txlog2.toByteArraysLatestSnapshot
       new String(snapshotAsBytes, "UTF-8") must equal("snapshot")
       val entries = entriesAsBytes.map(bytes ⇒ new String(bytes, "UTF-8"))
       entries.size must equal(2)

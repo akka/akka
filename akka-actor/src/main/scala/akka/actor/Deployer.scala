@@ -63,7 +63,7 @@ object DeploymentConfig {
   case class Clustered(
     home: Home = Host("localhost"),
     replication: Replication = NoReplicas,
-    state: State = Stateful) extends Scope
+    state: State = Stateless) extends Scope
 
   // For Java API
   case class Local() extends Scope
@@ -102,11 +102,40 @@ object DeploymentConfig {
 
   // For Java API
   case class Stateless() extends State
-  case class Stateful() extends State
 
   // For Scala API
   case object Stateless extends State
-  case object Stateful extends State
+  case class Stateful(
+    storage: ReplicationStorage,
+    strategy: ReplicationStrategy) extends State
+
+  // --------------------------------
+  // --- ReplicationStorage
+  // --------------------------------
+  sealed trait ReplicationStorage
+
+  // For Java API
+  case class TransactionLog() extends ReplicationStorage
+  case class DataGrid() extends ReplicationStorage
+
+  // For Scala API
+  case object TransactionLog extends ReplicationStorage
+  case object DataGrid extends ReplicationStorage
+
+  // --------------------------------
+  // --- ReplicationStrategy
+  // --------------------------------
+  sealed trait ReplicationStrategy
+
+  // For Java API
+  case class WriteBehind() extends ReplicationStrategy
+  case class WriteThrough() extends ReplicationStrategy
+  case class Transient() extends ReplicationStrategy
+
+  // For Scala API
+  case object WriteBehind extends ReplicationStrategy
+  case object WriteThrough extends ReplicationStrategy
+  case object Transient extends ReplicationStrategy
 
   // --------------------------------
   // --- Helper methods for parsing
@@ -345,13 +374,28 @@ object Deployer {
             }
 
             // --------------------------------
-            // akka.actor.deployment.<address>.clustered.stateless
+            // akka.actor.deployment.<address>.clustered.stateful
             // --------------------------------
-            val state =
-              if (clusteredConfig.getBool("stateless", false)) Stateless
-              else Stateful
+            clusteredConfig.getSection("stateful") match {
+              case None ⇒
+                Some(Deploy(address, router, format, Clustered(home, replicas, Stateless)))
 
-            Some(Deploy(address, router, format, Clustered(home, replicas, state)))
+              case Some(statefulConfig) ⇒
+                val storage = statefulConfig.getString("replication-storage", "transaction-log") match {
+                  case "transaction-log" ⇒ TransactionLog
+                  case "data-grid"       ⇒ DataGrid
+                  case unknown ⇒
+                    throw new ConfigurationException("Config option [" + addressPath +
+                      ".clustered.stateful.replication-storage] needs to be either [\"transaction-log\"] or [\"data-grid\"] - was [" +
+                      unknown + "]")
+                }
+                val strategy = statefulConfig.getString("replication-strategy", "write-through") match {
+                  case "write-through" ⇒ WriteThrough
+                  case "write-behind"  ⇒ WriteBehind
+                  case unknown         ⇒ Transient
+                }
+                Some(Deploy(address, router, format, Clustered(home, replicas, Stateful(storage, strategy))))
+            }
         }
     }
   }

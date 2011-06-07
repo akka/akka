@@ -22,7 +22,9 @@ class DeployerSpec extends WordSpec with MustMatchers {
           Clustered(
             Node("node1"),
             Replicate(3),
-            Stateless))))
+            Stateful(
+              TransactionLog,
+              WriteThrough)))))
     }
   }
 }
