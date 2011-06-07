@@ -139,6 +139,7 @@ object DeploymentConfig {
     case LeastRAM()      ⇒ RouterType.LeastRAM
     case LeastMessages   ⇒ RouterType.LeastMessages
     case LeastMessages() ⇒ RouterType.LeastMessages
+    case c: CustomRouter ⇒ throw new UnsupportedOperationException("routerTypeFor: " + c)
   }
 }
 

@@ -19,6 +19,7 @@ import java.util.{ Map ⇒ JMap }
 import scala.reflect.BeanProperty
 import scala.collection.immutable.Stack
 import scala.annotation.tailrec
+import java.lang.IllegalStateException
 
 private[akka] object ActorRefInternals {
 
@@ -85,14 +86,14 @@ abstract class Channel[T] {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scalaRef: ScalaActorRef ⇒
+trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] with Serializable { scalaRef: ScalaActorRef ⇒
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile
   protected[akka] var _uuid = newUuid
   @volatile
   protected[this] var _status: ActorRefInternals.StatusType = ActorRefInternals.UNSTARTED
 
-  val address: String
+  def address: String
 
   /**
    * User overridable callback/setting.
@@ -232,12 +233,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * Is the actor ever started?
    */
   def isUnstarted: Boolean = _status == ActorRefInternals.UNSTARTED
-
-  /**
-   * Is the actor able to handle the message passed in as arguments?
-   */
-  @deprecated("Will be removed without replacement, it's just not reliable in the face of `become` and `unbecome`", "1.1")
-  def isDefinedAt(message: Any): Boolean = actor.isDefinedAt(message)
 
   /**
    * Only for internal use. UUID is effectively final.
@@ -690,13 +685,20 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
   def supervisor: Option[ActorRef] = _supervisor
 
   // ========= AKKA PROTECTED FUNCTIONS =========
+  @throws(classOf[java.io.ObjectStreamException])
+  private def writeReplace(): AnyRef = {
+    val inetaddr =
+      if (ReflectiveAccess.RemoteModule.isEnabled) Actor.remote.address
+      else ReflectiveAccess.RemoteModule.configDefaultAddress
+    SerializedActorRef(uuid, address, inetaddr.getAddress.getHostAddress, inetaddr.getPort, timeout)
+  }
 
   protected[akka] def supervisor_=(sup: Option[ActorRef]) {
     _supervisor = sup
   }
 
   protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]) {
-    dispatcher dispatchMessage new MessageInvocation(this, message, senderOption, None)
+    dispatcher dispatchMessage MessageInvocation(this, message, senderOption, None)
   }
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
@@ -705,8 +707,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     senderOption: Option[ActorRef],
     senderFuture: Option[Promise[T]]): Promise[T] = {
     val future = if (senderFuture.isDefined) senderFuture else Some(new DefaultPromise[T](timeout))
-    dispatcher dispatchMessage new MessageInvocation(
-      this, message, senderOption, future.asInstanceOf[Some[Promise[Any]]])
+    dispatcher dispatchMessage MessageInvocation(this, message, senderOption, future.asInstanceOf[Some[Promise[Any]]])
     future.get
   }
 
@@ -790,27 +791,16 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
     def performRestart() {
       val failedActor = actorInstance.get
-
-      failedActor match {
-        case p: Proxyable ⇒
-          failedActor.preRestart(reason)
-          failedActor.postRestart(reason)
-        case _ ⇒
-          failedActor.preRestart(reason)
-          val freshActor = newActor
-          setActorSelfFields(failedActor, null) // Only null out the references if we could instantiate the new actor
-          actorInstance.set(freshActor) // Assign it here so if preStart fails, we can null out the sef-refs next call
-          freshActor.preStart()
-          freshActor.postRestart(reason)
-      }
+      failedActor.preRestart(reason)
+      val freshActor = newActor
+      setActorSelfFields(failedActor, null) // Only null out the references if we could instantiate the new actor
+      actorInstance.set(freshActor) // Assign it here so if preStart fails, we can null out the sef-refs next call
+      freshActor.preStart()
+      freshActor.postRestart(reason)
     }
 
     def tooManyRestarts() {
-      _supervisor.foreach { sup ⇒
-        // can supervisor handle the notification?
-        val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
-        if (sup.isDefinedAt(notification)) notifySupervisorWithMessage(notification)
-      }
+      notifySupervisorWithMessage(MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason))
       stop()
     }
 
@@ -874,14 +864,19 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
   // ========= PRIVATE FUNCTIONS =========
 
   private[this] def newActor: Actor = {
+    import Actor.{ actorRefInCreation ⇒ refStack }
+    val stackBefore = refStack.get
+    refStack.set(stackBefore.push(this))
     try {
-      Actor.actorRefInCreation.set(Some(this))
-      val a = actorFactory()
-      if (a eq null) throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
-      a
+      actorFactory()
     } finally {
-      Actor.actorRefInCreation.set(None)
+      val stackAfter = refStack.get
+      if (stackAfter.nonEmpty)
+        refStack.set(if (stackAfter.head eq null) stackAfter.pop.pop else stackAfter.pop) //pop null marker plus self
     }
+  } match {
+    case null  ⇒ throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
+    case valid ⇒ valid
   }
 
   private def shutDownTemporaryActor(temporaryActor: ActorRef) {
@@ -1036,6 +1031,12 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   // ==== NOT SUPPORTED ====
+
+  @throws(classOf[java.io.ObjectStreamException])
+  private def writeReplace(): AnyRef = {
+    SerializedActorRef(uuid, address, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, timeout)
+  }
+
   @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
   def actorClass: Class[_ <: Actor] = unsupported
   def dispatcher_=(md: MessageDispatcher) {
@@ -1254,5 +1255,21 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef ⇒
       sender.get.!(message)(Some(this))
       true
     } else false
+  }
+}
+
+case class SerializedActorRef(val uuid: Uuid,
+                              val address: String,
+                              val hostname: String,
+                              val port: Int,
+                              val timeout: Long) {
+  @throws(classOf[java.io.ObjectStreamException])
+  def readResolve(): AnyRef = Actor.registry.local.actorFor(uuid) match {
+    case Some(actor) ⇒ actor
+    case None ⇒
+      if (ReflectiveAccess.RemoteModule.isEnabled)
+        RemoteActorRef(new InetSocketAddress(hostname, port), address, timeout, None)
+      else
+        throw new IllegalStateException("Trying to deserialize ActorRef (" + this + ") but it's not found in the local registry and remoting is not enabled!")
   }
 }

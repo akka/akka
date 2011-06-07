@@ -47,7 +47,7 @@ class ClusterDeployerSpec extends WordSpec with MustMatchers with BeforeAndAfter
 
       val deployments2 = ClusterDeployer.fetchDeploymentsFromCluster
       deployments2.size must equal(1)
-      deployments2.first must equal(deployments1.first)
+      deployments2.head must equal(deployments1.head)
     }
   }
 

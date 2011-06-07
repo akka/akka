@@ -12,7 +12,7 @@ import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
 import java.util.{ Set ⇒ JSet }
 
 import akka.util.ReflectiveAccess._
-import akka.util.{ ReflectiveAccess, ReadWriteGuard, ListenerManagement }
+import akka.util.ListenerManagement
 import akka.serialization._
 
 /**
@@ -36,7 +36,6 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
   private val actorsByAddress = new ConcurrentHashMap[String, ActorRef]
   private val actorsByUuid = new ConcurrentHashMap[Uuid, ActorRef]
   private val typedActorsByUuid = new ConcurrentHashMap[Uuid, AnyRef]
-  private val guard = new ReadWriteGuard
 
   val local = new LocalActorRegistry(actorsByAddress, actorsByUuid, typedActorsByUuid)
 
@@ -340,9 +339,7 @@ class Index[K <: AnyRef, V <: AnyRef: Manifest] {
    */
   def foreach(fun: (K, V) ⇒ Unit) {
     import scala.collection.JavaConversions._
-    container.entrySet foreach { (e) ⇒
-      e.getValue.foreach(fun(e.getKey, _))
-    }
+    container.entrySet foreach { e ⇒ e.getValue.foreach(fun(e.getKey, _)) }
   }
 
   /**
