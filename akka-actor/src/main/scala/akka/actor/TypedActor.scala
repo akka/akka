@@ -10,8 +10,8 @@ import akka.dispatch.{ MessageDispatcher, Dispatchers, Future }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
-import collection.immutable
 
+//TODO Document this class, not only in Scaladoc, but also in a dedicated typed-actor.rst, for both java and scala
 object TypedActor {
   private val selfReference = new ThreadLocal[AnyRef]
 
@@ -58,7 +58,7 @@ object TypedActor {
     }
   }
 
-  object Configuration {
+  object Configuration { //TODO: Replace this with the new ActorConfiguration when it exists
     val defaultTimeout = Duration(Actor.TIMEOUT, "millis")
     val defaultConfiguration = new Configuration(defaultTimeout, Dispatchers.defaultGlobalDispatcher)
     def apply(): Configuration = defaultConfiguration
@@ -83,6 +83,8 @@ object TypedActor {
   }
 
   case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], parameterValues: Array[AnyRef]) {
+    //TODO implement writeObject and readObject to serialize
+    //TODO Possible optimization is to special encode the parameter-types to conserve space
     private def readResolve(): AnyRef = MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes: _*), parameterValues)
   }
 
