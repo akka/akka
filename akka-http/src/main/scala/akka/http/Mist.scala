@@ -137,12 +137,12 @@ trait Mist {
 trait RootEndpointLocator {
   var root: ActorRef = null
 
-  def configureRoot(id: String) {
-    def findRoot(id: String): ActorRef =
-      Actor.registry.actorFor(id).getOrElse(
-        throw new ConfigurationException("akka.http.root-actor-id configuration option does not have a valid actor address [" + id + "]"))
+  def configureRoot(address: String) {
+    def findRoot(address: String): ActorRef =
+      Actor.registry.actorFor(address).getOrElse(
+        throw new ConfigurationException("akka.http.root-actor-id configuration option does not have a valid actor address [" + address + "]"))
 
-    root = if ((id eq null) || id == "") findRoot(MistSettings.RootActorID) else findRoot(id)
+    root = if ((address eq null) || address == "") findRoot(MistSettings.RootActorID) else findRoot(address)
   }
 }
 
@@ -288,7 +288,7 @@ class RootEndpoint extends Actor with Endpoint {
 
   def recv: Receive = {
     case NoneAvailable(uri, req) ⇒ _na(uri, req)
-    case unknown                 ⇒ {}
+    case unknown                 ⇒
   }
 
   /**
