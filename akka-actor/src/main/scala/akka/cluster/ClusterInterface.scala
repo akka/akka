@@ -129,13 +129,13 @@ object NodeAddress {
 trait ClusterNode {
   import ChangeListener._
 
-  val nodeAddress: NodeAddress
-  val zkServerAddresses: String
+  def nodeAddress: NodeAddress
+  def zkServerAddresses: String
 
-  val remoteClientLifeCycleListener: ActorRef
-  val remoteDaemon: ActorRef
-  val remoteService: RemoteSupport
-  val remoteServerAddress: InetSocketAddress
+  def remoteClientLifeCycleListener: ActorRef
+  def remoteDaemon: ActorRef
+  def remoteService: RemoteSupport
+  def remoteServerAddress: InetSocketAddress
 
   val isConnected = new Switch(false)
   val isLeader = new AtomicBoolean(false)

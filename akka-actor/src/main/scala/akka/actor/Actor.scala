@@ -513,8 +513,13 @@ trait Actor {
         "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
 
     val ref = refStack.head
-    Actor.actorRefInCreation.set(refStack.pop)
-    Some(ref)
+
+    if (ref eq null)
+      throw new ActorInitializationException("Trying to create an instance of an Actor outside of a wrapping 'actorOf'")
+    else {
+      Actor.actorRefInCreation.set(refStack.push(null)) //Push a null marker so any subsequent calls to new Actor doesn't reuse this actor ref
+      Some(ref)
+    }
   }
 
   /*
@@ -692,13 +697,4 @@ private[actor] class AnyOptionAsTypedOption(anyOption: Option[Any]) {
    * ClassCastException and return None in that case.
    */
   def asSilently[T: Manifest]: Option[T] = narrowSilently[T](anyOption)
-}
-
-/**
- * Marker interface for proxyable actors (such as typed actor).
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait Proxyable {
-  private[actor] def swapProxiedActor(newInstance: Actor)
 }
