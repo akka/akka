@@ -234,7 +234,7 @@ trait MessageDispatcher {
    * Returns the size of the mailbox for the specified actor
    */
   def mailboxSize(actorRef: ActorRef): Int
-  
+
   /**
    * Checks for emptiness of the mailbox for the specified actor
    */
