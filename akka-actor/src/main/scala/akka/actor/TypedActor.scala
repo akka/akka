@@ -20,7 +20,7 @@ object TypedActor {
     case some ⇒ some
   }
 
-  private class TypedActor[R <: AnyRef, T <: R](val proxyRef: AtomVar[R], createInstance: ⇒ T) extends Actor {
+  private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyRef: AtomVar[R], createInstance: ⇒ T) extends Actor {
     val me = createInstance
     def receive = {
       case m: MethodCall ⇒
@@ -36,7 +36,6 @@ object TypedActor {
   }
 
   case class TypedActorInvocationHandler(actor: ActorRef) extends InvocationHandler {
-    val impl = actor.actor.asInstanceOf[TypedActor[_, _]].me
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
       case "toString" ⇒ actor.toString
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean

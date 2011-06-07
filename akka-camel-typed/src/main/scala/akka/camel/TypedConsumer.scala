@@ -8,6 +8,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Proxy._
 
 import akka.actor.{ TypedActor, ActorRef }
+import akka.actor.TypedActor._
 
 /**
  * @author Martin Krasser
@@ -28,7 +29,7 @@ private[camel] object TypedConsumer {
       case None ⇒ Nil
       case Some(tc) ⇒ {
         withConsumeAnnotatedMethodsOnInterfaces(tc, f) ++
-          withConsumeAnnotatedMethodsonImplClass(tc, f)
+          withConsumeAnnotatedMethodsonImplClass(tc, actorRef, f)
       }
     }
   }
@@ -41,8 +42,8 @@ private[camel] object TypedConsumer {
     if (m.isAnnotationPresent(classOf[consume]))
   } yield f(tc, m)
 
-  private def withConsumeAnnotatedMethodsonImplClass[T](tc: AnyRef, f: (AnyRef, Method) ⇒ T): List[T] = {
-    val implClass = getInvocationHandler(tc).asInstanceOf[TypedActor.TypedActorInvocationHandler].impl.asInstanceOf[AnyRef].getClass
+  private def withConsumeAnnotatedMethodsonImplClass[T](tc: AnyRef, actorRef: ActorRef, f: (AnyRef, Method) ⇒ T): List[T] = {
+    val implClass = actorRef.actor.asInstanceOf[TypedActor.TypedActor[AnyRef, AnyRef]].me.getClass
     for (m ← implClass.getDeclaredMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(tc, m)
 
   }
