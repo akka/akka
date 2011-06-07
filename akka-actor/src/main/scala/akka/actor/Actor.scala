@@ -698,12 +698,3 @@ private[actor] class AnyOptionAsTypedOption(anyOption: Option[Any]) {
    */
   def asSilently[T: Manifest]: Option[T] = narrowSilently[T](anyOption)
 }
-
-/**
- * Marker interface for proxyable actors (such as typed actor).
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait Proxyable {
-  private[actor] def swapProxiedActor(newInstance: Actor)
-}

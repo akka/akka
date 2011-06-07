@@ -13,8 +13,8 @@ import akka.testing.Testing.sleepFor
 import akka.config.Supervision.{ OneForOneStrategy }
 import akka.dispatch.Future
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
-import akka.actor.ActorRefSpec.FailingOuterActor
-import akka.actor.ActorRefSpec.InnerActor
+import java.lang.IllegalStateException
+import akka.util.ReflectiveAccess
 
 object ActorRefSpec {
 
@@ -185,6 +185,73 @@ class ActorRefSpec extends WordSpec with MustMatchers {
       intercept[akka.actor.ActorInitializationException] {
         Actor.actorOf(new OuterActor(Actor.actorOf(new FailingInheritingInnerActor).start)).start()
       }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new OuterActor(Actor.actorOf({ new InnerActor; new InnerActor }).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      (intercept[java.lang.IllegalStateException] {
+        Actor.actorOf(new OuterActor(Actor.actorOf({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor }).start)).start()
+      }).getMessage must be === "Ur state be b0rked"
+
+      refStackMustBeEmpty
+    }
+
+    "be serializable using Java Serialization on local node" in {
+      val a = Actor.actorOf[InnerActor].start
+
+      import java.io._
+
+      val baos = new ByteArrayOutputStream(8192 * 32)
+      val out = new ObjectOutputStream(baos)
+
+      out.writeObject(a)
+
+      out.flush
+      out.close
+
+      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+      val readA = in.readObject
+
+      a.isInstanceOf[LocalActorRef] must be === true
+      readA.isInstanceOf[LocalActorRef] must be === true
+      (readA eq a) must be === true
+    }
+
+    "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
+      ReflectiveAccess.RemoteModule.isEnabled must be === false
+
+      val a = Actor.actorOf[InnerActor].start
+
+      val inetAddress = ReflectiveAccess.RemoteModule.configDefaultAddress
+
+      val expectedSerializedRepresentation = SerializedActorRef(
+        a.uuid,
+        a.address,
+        inetAddress.getAddress.getHostAddress,
+        inetAddress.getPort,
+        a.timeout)
+
+      Actor.registry.unregister(a)
+
+      import java.io._
+
+      val baos = new ByteArrayOutputStream(8192 * 32)
+      val out = new ObjectOutputStream(baos)
+
+      out.writeObject(a)
+
+      out.flush
+      out.close
+
+      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+      (intercept[java.lang.IllegalStateException] {
+        in.readObject
+      }).getMessage must be === "Trying to deserialize ActorRef (" + expectedSerializedRepresentation + ") but it's not found in the local registry and remoting is not enabled!"
     }
 
     "support nested actorOfs" in {
