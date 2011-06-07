@@ -93,7 +93,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] with S
   @volatile
   protected[this] var _status: ActorRefInternals.StatusType = ActorRefInternals.UNSTARTED
 
-  val address: String
+  def address: String
 
   /**
    * User overridable callback/setting.
