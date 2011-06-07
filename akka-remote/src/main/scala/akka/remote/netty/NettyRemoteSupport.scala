@@ -84,7 +84,7 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
 
   private[akka] def withClientFor[T](
     address: InetSocketAddress, loader: Option[ClassLoader])(fun: RemoteClient ⇒ T): T = {
-    loader.foreach(MessageSerializer.setClassLoader(_))
+    // loader.foreach(MessageSerializer.setClassLoader(_))
     val key = Address(address)
     lock.readLock.lock
     try {
@@ -804,7 +804,7 @@ class RemoteServerHandler(
   val server: NettyRemoteServerModule) extends SimpleChannelUpstreamHandler {
   import RemoteServerSettings._
 
-  applicationLoader.foreach(MessageSerializer.setClassLoader(_)) //TODO: REVISIT: THIS FEELS A BIT DODGY
+  // applicationLoader.foreach(MessageSerializer.setClassLoader(_)) //TODO: REVISIT: THIS FEELS A BIT DODGY
 
   val sessionActors = new ChannelLocal[ConcurrentHashMap[String, ActorRef]]()
 

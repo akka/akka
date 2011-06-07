@@ -36,7 +36,7 @@ import akka.routing.RouterType
 import akka.config.{ Config, Supervision }
 import Supervision._
 import Config._
-import akka.serialization.{ Format, Serializers, Serializer, Compression }
+import akka.serialization.{ Format, Serializer, Compression }
 import Compression.LZF
 import akka.AkkaException
 
@@ -524,7 +524,7 @@ class DefaultClusterNode private[akka] (
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorRef: ActorRef, replicationFactor: Int, serializeMailbox: Boolean, format: Serializer): ClusterNode = if (isConnected.isOn) {
+  def store(actorRef: ActorRef, replicationFactor: Int, serializeMailbox: Boolean): ClusterNode = if (isConnected.isOn) {
 
     import akka.serialization.ActorSerialization._
 
@@ -535,8 +535,8 @@ class DefaultClusterNode private[akka] (
     EventHandler.debug(this,
       "Storing actor [%s] with UUID [%s] in cluster".format(actorRef.address, uuid))
 
-    val actorBytes = if (shouldCompressData) LZF.compress(toBinary(actorRef, serializeMailbox)(format))
-    else toBinary(actorRef)(format)
+    val actorBytes = if (shouldCompressData) LZF.compress(toBinary(actorRef, serializeMailbox))
+    else toBinary(actorRef)
     val actorRegistryPath = actorRegistryPathFor(uuid)
 
     // create UUID -> Array[Byte] for actor registry
@@ -668,7 +668,7 @@ class DefaultClusterNode private[akka] (
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
    * for remote access through lookup by its UUID.
    */
-  def use[T <: Actor](actorAddress: String, format: Serializer): Option[LocalActorRef] = if (isConnected.isOn) {
+  def use[T <: Actor](actorAddress: String): Option[LocalActorRef] = if (isConnected.isOn) {
 
     import akka.serialization.ActorSerialization._
 
@@ -699,7 +699,7 @@ class DefaultClusterNode private[akka] (
           locallyCheckedOutActors += (uuid -> bytes)
           // FIXME switch to ReplicatedActorRef here
           // val actor = new ReplicatedActorRef(fromBinary[T](bytes, remoteServerAddress)(format))
-          val actor = fromBinary[T](bytes, remoteServerAddress)(format)
+          val actor = fromBinary[T](bytes, remoteServerAddress)
           //          remoteService.register(UUID_PREFIX + uuid, actor) // FIXME is Actor.remote.register(UUID, ..) correct here?
           actor.start()
           actor.asInstanceOf[LocalActorRef]

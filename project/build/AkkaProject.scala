@@ -682,6 +682,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     val junit           = Dependencies.junit
     val scalatest       = Dependencies.scalatest
     val multiverse_test = Dependencies.multiverse_test // StandardLatch
+    val protobuf        = Dependencies.protobuf
+    val jackson         = Dependencies.jackson
+    val sjson           = Dependencies.sjson
     override def compileOptions = super.compileOptions ++ compileOptions("-P:continuations:enable")
   }
 

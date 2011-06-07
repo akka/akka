@@ -3280,32 +3280,23 @@ public final class RemoteProtocol {
       return akka.remote.protocol.RemoteProtocol.internal_static_MessageProtocol_fieldAccessorTable;
     }
     
-    // required .SerializationSchemeType serializationScheme = 1;
-    public static final int SERIALIZATIONSCHEME_FIELD_NUMBER = 1;
-    private boolean hasSerializationScheme;
-    private akka.remote.protocol.RemoteProtocol.SerializationSchemeType serializationScheme_;
-    public boolean hasSerializationScheme() { return hasSerializationScheme; }
-    public akka.remote.protocol.RemoteProtocol.SerializationSchemeType getSerializationScheme() { return serializationScheme_; }
-    
-    // required bytes message = 2;
-    public static final int MESSAGE_FIELD_NUMBER = 2;
+    // required bytes message = 1;
+    public static final int MESSAGE_FIELD_NUMBER = 1;
     private boolean hasMessage;
     private com.google.protobuf.ByteString message_ = com.google.protobuf.ByteString.EMPTY;
     public boolean hasMessage() { return hasMessage; }
     public com.google.protobuf.ByteString getMessage() { return message_; }
     
-    // optional bytes messageManifest = 3;
-    public static final int MESSAGEMANIFEST_FIELD_NUMBER = 3;
+    // optional bytes messageManifest = 2;
+    public static final int MESSAGEMANIFEST_FIELD_NUMBER = 2;
     private boolean hasMessageManifest;
     private com.google.protobuf.ByteString messageManifest_ = com.google.protobuf.ByteString.EMPTY;
     public boolean hasMessageManifest() { return hasMessageManifest; }
     public com.google.protobuf.ByteString getMessageManifest() { return messageManifest_; }
     
     private void initFields() {
-      serializationScheme_ = akka.remote.protocol.RemoteProtocol.SerializationSchemeType.JAVA;
     }
     public final boolean isInitialized() {
-      if (!hasSerializationScheme) return false;
       if (!hasMessage) return false;
       return true;
     }
@@ -3313,14 +3304,11 @@ public final class RemoteProtocol {
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
-      if (hasSerializationScheme()) {
-        output.writeEnum(1, getSerializationScheme().getNumber());
-      }
       if (hasMessage()) {
-        output.writeBytes(2, getMessage());
+        output.writeBytes(1, getMessage());
       }
       if (hasMessageManifest()) {
-        output.writeBytes(3, getMessageManifest());
+        output.writeBytes(2, getMessageManifest());
       }
       getUnknownFields().writeTo(output);
     }
@@ -3331,17 +3319,13 @@ public final class RemoteProtocol {
       if (size != -1) return size;
     
       size = 0;
-      if (hasSerializationScheme()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeEnumSize(1, getSerializationScheme().getNumber());
-      }
       if (hasMessage()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(2, getMessage());
+          .computeBytesSize(1, getMessage());
       }
       if (hasMessageManifest()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(3, getMessageManifest());
+          .computeBytesSize(2, getMessageManifest());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -3501,9 +3485,6 @@ public final class RemoteProtocol {
       
       public Builder mergeFrom(akka.remote.protocol.RemoteProtocol.MessageProtocol other) {
         if (other == akka.remote.protocol.RemoteProtocol.MessageProtocol.getDefaultInstance()) return this;
-        if (other.hasSerializationScheme()) {
-          setSerializationScheme(other.getSerializationScheme());
-        }
         if (other.hasMessage()) {
           setMessage(other.getMessage());
         }
@@ -3535,21 +3516,11 @@ public final class RemoteProtocol {
               }
               break;
             }
-            case 8: {
-              int rawValue = input.readEnum();
-              akka.remote.protocol.RemoteProtocol.SerializationSchemeType value = akka.remote.protocol.RemoteProtocol.SerializationSchemeType.valueOf(rawValue);
-              if (value == null) {
-                unknownFields.mergeVarintField(1, rawValue);
-              } else {
-                setSerializationScheme(value);
-              }
-              break;
-            }
-            case 18: {
+            case 10: {
               setMessage(input.readBytes());
               break;
             }
-            case 26: {
+            case 18: {
               setMessageManifest(input.readBytes());
               break;
             }
@@ -3558,28 +3529,7 @@ public final class RemoteProtocol {
       }
       
       
-      // required .SerializationSchemeType serializationScheme = 1;
-      public boolean hasSerializationScheme() {
-        return result.hasSerializationScheme();
-      }
-      public akka.remote.protocol.RemoteProtocol.SerializationSchemeType getSerializationScheme() {
-        return result.getSerializationScheme();
-      }
-      public Builder setSerializationScheme(akka.remote.protocol.RemoteProtocol.SerializationSchemeType value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        result.hasSerializationScheme = true;
-        result.serializationScheme_ = value;
-        return this;
-      }
-      public Builder clearSerializationScheme() {
-        result.hasSerializationScheme = false;
-        result.serializationScheme_ = akka.remote.protocol.RemoteProtocol.SerializationSchemeType.JAVA;
-        return this;
-      }
-      
-      // required bytes message = 2;
+      // required bytes message = 1;
       public boolean hasMessage() {
         return result.hasMessage();
       }
@@ -3600,7 +3550,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional bytes messageManifest = 3;
+      // optional bytes messageManifest = 2;
       public boolean hasMessageManifest() {
         return result.hasMessageManifest();
       }
@@ -5736,23 +5686,22 @@ public final class RemoteProtocol {
       "RemoteMessageProtocol\"g\n\037SerializedTyped" +
       "ActorRefProtocol\022-\n\010actorRef\030\001 \002(\0132\033.Ser" +
       "ializedActorRefProtocol\022\025\n\rinterfaceName" +
-      "\030\002 \002(\t\"r\n\017MessageProtocol\0225\n\023serializati" +
-      "onScheme\030\001 \002(\0162\030.SerializationSchemeType" +
-      "\022\017\n\007message\030\002 \002(\014\022\027\n\017messageManifest\030\003 \001" +
-      "(\014\"R\n\021ActorInfoProtocol\022\033\n\004uuid\030\001 \002(\0132\r.",
-      "UuidProtocol\022\017\n\007timeout\030\002 \002(\004\022\017\n\007address" +
-      "\030\003 \001(\t\")\n\014UuidProtocol\022\014\n\004high\030\001 \002(\004\022\013\n\003" +
-      "low\030\002 \002(\004\"3\n\025MetadataEntryProtocol\022\013\n\003ke" +
-      "y\030\001 \002(\t\022\r\n\005value\030\002 \002(\014\"6\n\021LifeCycleProto" +
-      "col\022!\n\tlifeCycle\030\001 \002(\0162\016.LifeCycleType\"1" +
-      "\n\017AddressProtocol\022\020\n\010hostname\030\001 \002(\t\022\014\n\004p" +
-      "ort\030\002 \002(\r\"7\n\021ExceptionProtocol\022\021\n\tclassn" +
-      "ame\030\001 \002(\t\022\017\n\007message\030\002 \002(\t*(\n\013CommandTyp" +
-      "e\022\013\n\007CONNECT\020\001\022\014\n\010SHUTDOWN\020\002*]\n\027Serializ" +
-      "ationSchemeType\022\010\n\004JAVA\020\001\022\013\n\007SBINARY\020\002\022\016",
-      "\n\nSCALA_JSON\020\003\022\r\n\tJAVA_JSON\020\004\022\014\n\010PROTOBU" +
-      "F\020\005*-\n\rLifeCycleType\022\r\n\tPERMANENT\020\001\022\r\n\tT" +
-      "EMPORARY\020\002B\030\n\024akka.remote.protocolH\001"
+      "\030\002 \002(\t\";\n\017MessageProtocol\022\017\n\007message\030\001 \002" +
+      "(\014\022\027\n\017messageManifest\030\002 \001(\014\"R\n\021ActorInfo" +
+      "Protocol\022\033\n\004uuid\030\001 \002(\0132\r.UuidProtocol\022\017\n" +
+      "\007timeout\030\002 \002(\004\022\017\n\007address\030\003 \001(\t\")\n\014UuidP",
+      "rotocol\022\014\n\004high\030\001 \002(\004\022\013\n\003low\030\002 \002(\004\"3\n\025Me" +
+      "tadataEntryProtocol\022\013\n\003key\030\001 \002(\t\022\r\n\005valu" +
+      "e\030\002 \002(\014\"6\n\021LifeCycleProtocol\022!\n\tlifeCycl" +
+      "e\030\001 \002(\0162\016.LifeCycleType\"1\n\017AddressProtoc" +
+      "ol\022\020\n\010hostname\030\001 \002(\t\022\014\n\004port\030\002 \002(\r\"7\n\021Ex" +
+      "ceptionProtocol\022\021\n\tclassname\030\001 \002(\t\022\017\n\007me" +
+      "ssage\030\002 \002(\t*(\n\013CommandType\022\013\n\007CONNECT\020\001\022" +
+      "\014\n\010SHUTDOWN\020\002*]\n\027SerializationSchemeType" +
+      "\022\010\n\004JAVA\020\001\022\013\n\007SBINARY\020\002\022\016\n\nSCALA_JSON\020\003\022" +
+      "\r\n\tJAVA_JSON\020\004\022\014\n\010PROTOBUF\020\005*-\n\rLifeCycl",
+      "eType\022\r\n\tPERMANENT\020\001\022\r\n\tTEMPORARY\020\002B\030\n\024a" +
+      "kka.remote.protocolH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -5812,7 +5761,7 @@ public final class RemoteProtocol {
           internal_static_MessageProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_MessageProtocol_descriptor,
-              new java.lang.String[] { "SerializationScheme", "Message", "MessageManifest", },
+              new java.lang.String[] { "Message", "MessageManifest", },
               akka.remote.protocol.RemoteProtocol.MessageProtocol.class,
               akka.remote.protocol.RemoteProtocol.MessageProtocol.Builder.class);
           internal_static_ActorInfoProtocol_descriptor =
