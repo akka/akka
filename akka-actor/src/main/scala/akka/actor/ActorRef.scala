@@ -411,17 +411,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] with S
   def startLink(actorRef: ActorRef): ActorRef
 
   /**
-   * Returns the mailbox size.
-   */
-  def mailboxSize = dispatcher.mailboxSize(this)
-
-  /**
-   * Akka Java API. <p/>
-   * Returns the mailbox size.
-   */
-  def getMailboxSize: Int = mailboxSize
-
-  /**
    * Returns the supervisor, if there is one.
    */
   def supervisor: Option[ActorRef]
@@ -952,7 +941,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
 
   protected[akka] def checkReceiveTimeout() {
     cancelReceiveTimeout()
-    if (receiveTimeout.isDefined && dispatcher.mailboxSize(this) <= 0) { //Only reschedule if desired and there are currently no more messages to be processed
+    if (receiveTimeout.isDefined && dispatcher.mailboxIsEmpty(this)) { //Only reschedule if desired and there are currently no more messages to be processed
       _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, receiveTimeout.get, TimeUnit.MILLISECONDS))
     }
   }
