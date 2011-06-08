@@ -143,7 +143,7 @@ object DeploymentConfig {
 
   def isHomeNode(home: Home): Boolean = home match {
     case Host(hostname) ⇒ hostname == Config.hostname
-    case IP(address)    ⇒ address == "0.0.0.0" // FIXME checking if IP address is on home node is missing
+    case IP(address)    ⇒ address == "0.0.0.0" || address == "127.0.0.1" // FIXME look up IP address from the system
     case Node(nodename) ⇒ nodename == Config.nodename
   }
 

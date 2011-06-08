@@ -618,7 +618,7 @@ class DefaultClusterNode private[akka] (
     val actorRegistryPath = actorRegistryPathFor(uuid)
 
     // create UUID -> Array[Byte] for actor registry
-    if (zkClient.exists(actorRegistryPath)) zkClient.writeData(actorRegistryPath, actorBytes) // FIXME Store in Data Grid not ZooKeeper
+    if (zkClient.exists(actorRegistryPath)) zkClient.writeData(actorRegistryPath, actorBytes) // FIXME Store actor bytes in Data Grid not ZooKeeper
     else {
       zkClient.retryUntilConnected(new Callable[Either[String, Exception]]() {
         def call: Either[String, Exception] = {
@@ -789,14 +789,15 @@ class DefaultClusterNode private[akka] (
     isConnected ifOn {
       EventHandler.debug(this,
         "Using (checking out) all actors with UUID [%s] on all nodes in cluster".format(uuid))
+
       val command = RemoteDaemonMessageProtocol.newBuilder
         .setMessageType(USE)
         .setActorUuid(uuidToUuidProtocol(uuid))
         .build
+
       membershipNodes foreach { node ⇒
         replicaConnections.get(node) foreach {
-          case (_, connection) ⇒
-            connection ! command
+          case (_, connection) ⇒ connection ! command
         }
       }
     }
@@ -1304,7 +1305,7 @@ class DefaultClusterNode private[akka] (
             homeAddress.setAccessible(true)
             homeAddress.set(actor, Some(remoteServerAddress))
 
-            remoteService.register(uuid, actor) // FIXME is Actor.remote.register(UUID, ..) correct here?
+            remoteService.register(actorAddress, actor)
           }
         }
 
@@ -1546,8 +1547,6 @@ object RemoteClusterDaemon {
   // FIXME configure computeGridDispatcher to what?
   val computeGridDispatcher = Dispatchers.newDispatcher("akka:cloud:cluster:compute-grid").build
 }
-
-// FIXME supervise RemoteClusterDaemon
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

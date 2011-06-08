@@ -116,7 +116,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
 }
 
 /**
- * View over the local actor registry.
+ * Projection over the local actor registry.
  */
 class LocalActorRegistry(
   private val actorsByAddress: ConcurrentHashMap[String, ActorRef],

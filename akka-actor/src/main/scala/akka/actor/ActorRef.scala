@@ -553,14 +553,14 @@ class LocalActorRef private[akka] (
     case _         ⇒ true
   }
 
-  // FIXME how to get the matching serializerClassName? Now default is used
+  // FIXME how to get the matching serializerClassName? Now default is used. Needed for transaction log snapshot
   private val serializer = Actor.serializerFor(address, Format.defaultSerializerName)
 
   private lazy val txLog: TransactionLog = {
     val log = replicationStrategy match {
       case Transient    ⇒ throw new IllegalStateException("Can not replicate 'transient' actor [" + toString + "]")
-      case WriteThrough ⇒ transactionLog.newLogFor(_uuid.toString, false)
-      case WriteBehind  ⇒ transactionLog.newLogFor(_uuid.toString, true)
+      case WriteThrough ⇒ transactionLog.newLogFor(_uuid.toString, false, replicationStrategy, serializer)
+      case WriteBehind  ⇒ transactionLog.newLogFor(_uuid.toString, true, replicationStrategy, serializer)
     }
     EventHandler.debug(this,
       "Creating a transaction log for Actor [%s] with replication strategy [%s]"
@@ -773,7 +773,7 @@ class LocalActorRef private[akka] (
     } finally {
       guard.lock.unlock()
       if (isReplicated) {
-        txLog.recordEntry(messageHandle, this, serializer)
+        txLog.recordEntry(messageHandle, this)
       }
     }
   }
@@ -1038,8 +1038,6 @@ private[akka] case class RemoteActorRef private[akka] (
 
   timeout = _timeout
 
-  // FIXME BAD, we should not have different ActorRefs
-
   start()
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]) {
@@ -1073,8 +1071,6 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   // ==== NOT SUPPORTED ====
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
-  def actorClass: Class[_ <: Actor] = unsupported
   def dispatcher_=(md: MessageDispatcher) {
     unsupported
   }

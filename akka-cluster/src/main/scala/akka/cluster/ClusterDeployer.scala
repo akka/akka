@@ -177,11 +177,11 @@ object ClusterDeployer {
             case e: NullPointerException ⇒
               handleError(new DeploymentException(
                 "Could not store deployment data [" + deployment +
-                "] in ZooKeeper since client session is closed"))
+                  "] in ZooKeeper since client session is closed"))
             case e: Exception ⇒
               handleError(new DeploymentException(
                 "Could not store deployment data [" +
-                deployment + "] in ZooKeeper due to: " + e))
+                  deployment + "] in ZooKeeper due to: " + e))
           }
       }
     }

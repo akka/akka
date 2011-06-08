@@ -411,7 +411,7 @@ object Actor extends ListenerManagement {
                 .getOrElse(throw new ConfigurationException(
                   "Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
             } else {
-              // FIXME later managed different 'storage' as well
+              // FIXME later manage different 'storage' (data grid) as well
               storeActorAndGetClusterRef(strategy, serializer)
             }
         }

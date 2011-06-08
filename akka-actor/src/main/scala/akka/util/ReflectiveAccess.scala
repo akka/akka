@@ -8,7 +8,7 @@ import akka.dispatch.{ Future, Promise, MessageInvocation }
 import akka.config.{ Config, ModuleNotAvailableException }
 import akka.remoteinterface.RemoteSupport
 import akka.actor._
-import DeploymentConfig.Deploy
+import DeploymentConfig.{ Deploy, ReplicationStrategy }
 import akka.event.EventHandler
 import akka.serialization.Format
 import akka.cluster.ClusterNode
@@ -108,13 +108,23 @@ object ReflectiveAccess {
     }
 
     type TransactionLogObject = {
-      def newLogFor(id: String, isAsync: Boolean): TransactionLog
-      def logFor(id: String, isAsync: Boolean): TransactionLog
+      def newLogFor(
+        id: String,
+        isAsync: Boolean,
+        replicationStrategy: ReplicationStrategy,
+        format: Serializer): TransactionLog
+
+      def logFor(
+        id: String,
+        isAsync: Boolean,
+        replicationStrategy: ReplicationStrategy,
+        format: Serializer): TransactionLog
+
       def shutdown()
     }
 
     type TransactionLog = {
-      def recordEntry(messageHandle: MessageInvocation, actorRef: ActorRef, serializer: Serializer)
+      def recordEntry(messageHandle: MessageInvocation, actorRef: ActorRef)
       def recordEntry(entry: Array[Byte])
       def recordSnapshot(snapshot: Array[Byte])
       def entries: Vector[Array[Byte]]

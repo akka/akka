@@ -51,7 +51,9 @@ class ReplicationException(message: String) extends AkkaException(message)
 class TransactionLog private (
   ledger: LedgerHandle,
   val id: String,
-  val isAsync: Boolean) {
+  val isAsync: Boolean,
+  replicationStrategy: ReplicationStrategy,
+  format: Serializer) {
 
   import TransactionLog._
 
@@ -65,12 +67,12 @@ class TransactionLog private (
   /**
    * TODO document method
    */
-  def recordEntry(messageHandle: MessageInvocation, actorRef: ActorRef, format: Serializer) {
+  def recordEntry(messageHandle: MessageInvocation, actorRef: ActorRef) {
     if (nrOfEntries.incrementAndGet % snapshotFrequency == 0) {
       val snapshot =
         // FIXME ReplicationStrategy Transient is always used
-        if (Cluster.shouldCompressData) LZF.compress(toBinary(actorRef, false, Transient)(format))
-        else toBinary(actorRef, false, Transient)(format)
+        if (Cluster.shouldCompressData) LZF.compress(toBinary(actorRef, false, replicationStrategy)(format))
+        else toBinary(actorRef, false, replicationStrategy)(format)
       recordSnapshot(snapshot)
     }
     recordEntry(MessageSerializer.serialize(messageHandle.message).toByteArray)
@@ -365,8 +367,13 @@ object TransactionLog {
     (bk, zk)
   }
 
-  private[akka] def apply(ledger: LedgerHandle, id: String, isAsync: Boolean = false) =
-    new TransactionLog(ledger, id, isAsync)
+  private[akka] def apply(
+    ledger: LedgerHandle,
+    id: String,
+    isAsync: Boolean,
+    replicationStrategy: ReplicationStrategy,
+    format: Serializer) =
+    new TransactionLog(ledger, id, isAsync, replicationStrategy, format)
 
   /**
    * Shuts down the transaction log.
@@ -387,7 +394,12 @@ object TransactionLog {
   /**
    * TODO document method
    */
-  def newLogFor(id: String, isAsync: Boolean = false): TransactionLog = {
+  def newLogFor(
+    id: String,
+    isAsync: Boolean,
+    replicationStrategy: ReplicationStrategy,
+    format: Serializer): TransactionLog = {
+
     val txLogPath = transactionLogNode + "/" + id
 
     val ledger = try {
@@ -431,13 +443,18 @@ object TransactionLog {
     }
 
     EventHandler.info(this, "Created new transaction log [%s] for UUID [%s]".format(logId, id))
-    TransactionLog(ledger, id, isAsync)
+    TransactionLog(ledger, id, isAsync, replicationStrategy, format)
   }
 
   /**
    * TODO document method
    */
-  def logFor(id: String, isAsync: Boolean = false): TransactionLog = {
+  def logFor(
+    id: String,
+    isAsync: Boolean,
+    replicationStrategy: ReplicationStrategy,
+    format: Serializer): TransactionLog = {
+
     val txLogPath = transactionLogNode + "/" + id
 
     val logId = try {
@@ -476,7 +493,7 @@ object TransactionLog {
       case e ⇒ handleError(e)
     }
 
-    TransactionLog(ledger, id, isAsync)
+    TransactionLog(ledger, id, isAsync, replicationStrategy, format)
   }
 
   private[akka] def await[T](future: Promise[T]): T = {
