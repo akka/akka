@@ -505,8 +505,7 @@ trait Actor {
   implicit val someSelf: Some[ActorRef] = {
     val refStack = Actor.actorRefInCreation.get
     if (refStack.isEmpty) throw new ActorInitializationException(
-      "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
-        "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
+      "\n\tYou can not create an instance of an " + getClass.getName + " explicitly using 'new MyActor'." +
         "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
         "\n\tEither use:" +
         "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
@@ -515,7 +514,7 @@ trait Actor {
     val ref = refStack.head
 
     if (ref eq null)
-      throw new ActorInitializationException("Trying to create an instance of an Actor outside of a wrapping 'actorOf'")
+      throw new ActorInitializationException("Trying to create an instance of " + getClass.getName + " outside of a wrapping 'actorOf'")
     else {
       Actor.actorRefInCreation.set(refStack.push(null)) //Push a null marker so any subsequent calls to new Actor doesn't reuse this actor ref
       Some(ref)
@@ -650,17 +649,10 @@ trait Actor {
     val behaviorStack = self.hotswap
 
     msg match {
-      case l: AutoReceivedMessage ⇒
-        autoReceiveMessage(l)
-
-      case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒
-        behaviorStack.head.apply(msg)
-
-      case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒
-        processingBehavior.apply(msg)
-
-      case unknown ⇒
-        unhandled(unknown) //This is the only line that differs from processingbehavior
+      case l: AutoReceivedMessage ⇒ autoReceiveMessage(l)
+      case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
+      case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
+      case unknown ⇒ unhandled(unknown) //This is the only line that differs from processingbehavior
     }
   }
 
