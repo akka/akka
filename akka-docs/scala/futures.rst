@@ -238,12 +238,12 @@ Exceptions
 
 Since the result of a ``Future`` is created concurrently to the rest of the program, exceptions must be handled differently. It doesn't matter if an ``Actor`` or the dispatcher is completing the ``Future``, if an ``Exception`` is caught the ``Future`` will contain it instead of a valid result. If a ``Future`` does contain an ``Exception``, calling ``get`` will cause it to be thrown again so it can be handled properly.
 
-It is also possible to handle an ``Exception`` by returning a different result. This is done with the ``failure`` method. For example:
+It is also possible to handle an ``Exception`` by returning a different result. This is done with the ``recover`` method. For example:
 
 .. code-block:: scala
 
-  val future = actor !!! msg1 failure {
+  val future = actor !!! msg1 recover {
     case e: ArithmeticException => 0
   }
 
-In this example, if an ``ArithmeticException`` was thrown while the ``Actor`` processed the message, our ``Future`` would have a result of 0. The ``failure`` method works very similarly to the standard try/catch blocks, so multiple ``Exception``\s can be handled in this manner, and if an ``Exception`` is not handled this way it will be behave as if we hadn't used the ``failure`` method.
+In this example, if an ``ArithmeticException`` was thrown while the ``Actor`` processed the message, our ``Future`` would have a result of 0. The ``recover`` method works very similarly to the standard try/catch blocks, so multiple ``Exception``\s can be handled in this manner, and if an ``Exception`` is not handled this way it will be behave as if we hadn't used the ``recover`` method.

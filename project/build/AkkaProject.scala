@@ -67,7 +67,6 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val beanstalkModuleConfig   = ModuleConfiguration("beanstalk", AkkaRepo)
   lazy val lzfModuleConfig         = ModuleConfiguration("voldemort.store.compress", "h2-lzf", AkkaRepo)
   lazy val vscaladocModuleConfig   = ModuleConfiguration("org.scala-tools", "vscaladoc", "1.1-md-3", AkkaRepo)
-  lazy val aspectWerkzModuleConfig = ModuleConfiguration("org.codehaus.aspectwerkz", "aspectwerkz", "2.2.3", AkkaRepo)
   lazy val objenesisModuleConfig   = ModuleConfiguration("org.objenesis", sbt.DefaultMavenRepository)
   lazy val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", SunJDMKRepo)
   lazy val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", SunJDMKRepo)
@@ -76,11 +75,13 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val zookeeperModuleConfig   = ModuleConfiguration("org.apache.hadoop.zookeeper", AkkaRepo)
   lazy val protobufModuleConfig    = ModuleConfiguration("com.google.protobuf", AkkaRepo)
   lazy val zkclientModuleConfig    = ModuleConfiguration("zkclient", AkkaRepo)
+  lazy val camelModuleConfig       = ModuleConfiguration("org.apache.camel", "camel-core", AkkaRepo)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
   lazy val CAMEL_VERSION         = "2.7.1"
+  lazy val CAMEL_PATCH_VERSION   = "2.7.1.1"
   lazy val SPRING_VERSION        = "3.0.5.RELEASE"
   lazy val JACKSON_VERSION       = "1.8.0"
   lazy val JERSEY_VERSION        = "1.3"
@@ -100,11 +101,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
 
      // Compile
-    lazy val aopalliance      = "aopalliance"                 % "aopalliance"             % "1.0"   % "compile" //Public domain
-    lazy val aspectwerkz      = "org.codehaus.aspectwerkz"    % "aspectwerkz"             % "2.2.3" % "compile" //ApacheV2
     lazy val beanstalk        = "beanstalk"                   % "beanstalk_client"        % "1.4.5" //New BSD
     lazy val bookkeeper       = "org.apache.hadoop.zookeeper" % "bookkeeper"              % ZOOKEEPER_VERSION //ApacheV2
-    lazy val camel_core       = "org.apache.camel"            % "camel-core"              % CAMEL_VERSION % "compile" //ApacheV2
+    lazy val camel_core       = "org.apache.camel"            % "camel-core"              % CAMEL_PATCH_VERSION % "compile" //ApacheV2
 
     lazy val commons_codec    = "commons-codec"               % "commons-codec"           % "1.4" % "compile" //ApacheV2
     lazy val commons_io       = "commons-io"                  % "commons-io"              % "2.0.1" % "compile" //ApacheV2

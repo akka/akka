@@ -10,8 +10,8 @@ import akka.dispatch.{ MessageDispatcher, Dispatchers, Future }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
-import collection.immutable
 
+//TODO Document this class, not only in Scaladoc, but also in a dedicated typed-actor.rst, for both java and scala
 object TypedActor {
   private val selfReference = new ThreadLocal[AnyRef]
 
@@ -20,7 +20,7 @@ object TypedActor {
     case some ⇒ some
   }
 
-  private class TypedActor[R <: AnyRef, T <: R](val proxyRef: AtomVar[R], createInstance: ⇒ T) extends Actor {
+  private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyRef: AtomVar[R], createInstance: ⇒ T) extends Actor {
     val me = createInstance
     def receive = {
       case m: MethodCall ⇒
@@ -58,7 +58,7 @@ object TypedActor {
     }
   }
 
-  object Configuration {
+  object Configuration { //TODO: Replace this with the new ActorConfiguration when it exists
     val defaultTimeout = Duration(Actor.TIMEOUT, "millis")
     val defaultConfiguration = new Configuration(defaultTimeout, Dispatchers.defaultGlobalDispatcher)
     def apply(): Configuration = defaultConfiguration
@@ -83,6 +83,8 @@ object TypedActor {
   }
 
   case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], parameterValues: Array[AnyRef]) {
+    //TODO implement writeObject and readObject to serialize
+    //TODO Possible optimization is to special encode the parameter-types to conserve space
     private def readResolve(): AnyRef = MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes: _*), parameterValues)
   }
 
@@ -157,7 +159,7 @@ object TypedActor {
 
     val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(ref)).asInstanceOf[T]
     proxyRef.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
-    Actor.registry.registerTypedActor(ref.start, proxy) //We only have access to the proxy from the outside, so register it with the ActorRegistry, will be removed on actor.stop
+    Actor.registry.registerTypedActor(ref, proxy) //We only have access to the proxy from the outside, so register it with the ActorRegistry, will be removed on actor.stop
     proxy
   }
 

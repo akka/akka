@@ -8,7 +8,7 @@ import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import akka.config.Supervision.OneForOneStrategy
 import akka.event.EventHandler
-import akka.dispatch.Future
+import akka.dispatch.{ Future, Promise }
 
 /**
  * Test whether TestActorRef behaves as an ActorRef should, besides its own spec.
@@ -234,14 +234,12 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       EventHandler.removeListener(log)
     }
 
-    "proxy isDefinedAt/apply for the underlying actor" in {
+    "proxy apply for the underlying actor" in {
       val ref = TestActorRef[WorkerActor].start()
-      ref.isDefinedAt("work") must be(true)
-      ref.isDefinedAt("sleep") must be(false)
       intercept[IllegalActorStateException] { ref("work") }
-      val ch = Future.channel()
+      val ch = Promise.channel()
       ref ! ch
-      val f = ch.future
+      val f = ch.promise
       f must be('completed)
       f.get must be("complexReply")
     }

@@ -295,7 +295,6 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   }
 
   def actorClass: Class[_ <: Actor] = unsupported
-  def actorClassName = unsupported
   def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported
   def makeRemote(hostname: String, port: Int): Unit = unsupported

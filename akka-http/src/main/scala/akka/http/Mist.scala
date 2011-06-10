@@ -11,6 +11,7 @@ import akka.config.ConfigurationException
 import javax.servlet.http.{ HttpServletResponse, HttpServletRequest }
 import javax.servlet.http.HttpServlet
 import javax.servlet.Filter
+import java.lang.UnsupportedOperationException
 
 /**
  * @author Garrick Evans
@@ -71,27 +72,39 @@ trait Mist {
   /**
    * The root endpoint actor
    */
-  protected val _root = Actor.registry.actorFor(RootActorID).getOrElse(
-    throw new ConfigurationException("akka.http.root-actor-id configuration option does not have a valid actor address [" + RootActorID + "]"))
+  def root: ActorRef
 
   /**
    * Server-specific method factory
    */
-  protected var _factory: Option[RequestMethodFactory] = None
+  protected var factory: Option[RequestMethodFactory] = None
 
   /**
    *   Handles all servlet requests
    */
   protected def mistify(request: HttpServletRequest,
-                        response: HttpServletResponse)(builder: (() ⇒ tAsyncRequestContext) ⇒ RequestMethod) = {
-    def suspend: tAsyncRequestContext = {
+                        response: HttpServletResponse) = {
+
+    val builder: (() ⇒ tAsyncRequestContext) ⇒ RequestMethod =
+      request.getMethod.toUpperCase match {
+        case "DELETE"  ⇒ factory.get.Delete
+        case "GET"     ⇒ factory.get.Get
+        case "HEAD"    ⇒ factory.get.Head
+        case "OPTIONS" ⇒ factory.get.Options
+        case "POST"    ⇒ factory.get.Post
+        case "PUT"     ⇒ factory.get.Put
+        case "TRACE"   ⇒ factory.get.Trace
+        case unknown   ⇒ throw new UnsupportedOperationException(unknown)
+      }
+
+    def suspend(closeConnection: Boolean): tAsyncRequestContext = {
 
       // set to right now, which is effectively "already expired"
       response.setDateHeader("Expires", System.currentTimeMillis)
       response.setHeader("Cache-Control", "no-cache, must-revalidate")
 
       // no keep-alive?
-      if (ConnectionClose) response.setHeader("Connection", "close")
+      if (closeConnection) response.setHeader("Connection", "close")
 
       // suspend the request
       // TODO: move this out to the specialized support if jetty asyncstart doesnt let us update TOs
@@ -100,8 +113,8 @@ trait Mist {
 
     // shoot the message to the root endpoint for processing
     // IMPORTANT: the suspend method is invoked on the server thread not in the actor
-    val method = builder(suspend _)
-    if (method.go) _root ! method
+    val method = builder(() ⇒ suspend(ConnectionClose))
+    if (method.go) root ! method
   }
 
   /**
@@ -111,7 +124,7 @@ trait Mist {
   def initMist(context: ServletContext) {
     val server = context.getServerInfo
     val (major, minor) = (context.getMajorVersion, context.getMinorVersion)
-    _factory = if (major >= 3) {
+    factory = if (major >= 3) {
       Some(Servlet30ContextMethodFactory)
     } else if (server.toLowerCase startsWith JettyServer) {
       Some(JettyContinuationMethodFactory)
@@ -121,11 +134,23 @@ trait Mist {
   }
 }
 
+trait RootEndpointLocator {
+  var root: ActorRef = null
+
+  def configureRoot(address: String) {
+    def findRoot(address: String): ActorRef =
+      Actor.registry.actorFor(address).getOrElse(
+        throw new ConfigurationException("akka.http.root-actor-id configuration option does not have a valid actor address [" + address + "]"))
+
+    root = if ((address eq null) || address == "") findRoot(MistSettings.RootActorID) else findRoot(address)
+  }
+}
+
 /**
  * AkkaMistServlet adds support to bridge Http and Actors in an asynchronous fashion
  * Async impls currently supported: Servlet3.0, Jetty Continuations
  */
-class AkkaMistServlet extends HttpServlet with Mist {
+class AkkaMistServlet extends HttpServlet with Mist with RootEndpointLocator {
   import javax.servlet.{ ServletConfig }
 
   /**
@@ -134,22 +159,17 @@ class AkkaMistServlet extends HttpServlet with Mist {
   override def init(config: ServletConfig) {
     super.init(config)
     initMist(config.getServletContext)
+    configureRoot(config.getServletContext.getInitParameter("root-endpoint"))
   }
 
-  protected override def doDelete(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Delete)
-  protected override def doGet(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Get)
-  protected override def doHead(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Head)
-  protected override def doOptions(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Options)
-  protected override def doPost(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Post)
-  protected override def doPut(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Put)
-  protected override def doTrace(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Trace)
+  protected override def service(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)
 }
 
 /**
  * Proof-of-concept, use at own risk
  * Will be officially supported in a later release
  */
-class AkkaMistFilter extends Filter with Mist {
+class AkkaMistFilter extends Filter with Mist with RootEndpointLocator {
   import javax.servlet.{ ServletRequest, ServletResponse, FilterConfig, FilterChain }
 
   /**
@@ -157,6 +177,7 @@ class AkkaMistFilter extends Filter with Mist {
    */
   def init(config: FilterConfig) {
     initMist(config.getServletContext)
+    configureRoot(config.getServletContext.getInitParameter("root-endpoint"))
   }
 
   /**
@@ -165,16 +186,7 @@ class AkkaMistFilter extends Filter with Mist {
   override def doFilter(req: ServletRequest, res: ServletResponse, chain: FilterChain) {
     (req, res) match {
       case (hreq: HttpServletRequest, hres: HttpServletResponse) ⇒
-        hreq.getMethod.toUpperCase match {
-          case "DELETE"  ⇒ mistify(hreq, hres)(_factory.get.Delete)
-          case "GET"     ⇒ mistify(hreq, hres)(_factory.get.Get)
-          case "HEAD"    ⇒ mistify(hreq, hres)(_factory.get.Head)
-          case "OPTIONS" ⇒ mistify(hreq, hres)(_factory.get.Options)
-          case "POST"    ⇒ mistify(hreq, hres)(_factory.get.Post)
-          case "PUT"     ⇒ mistify(hreq, hres)(_factory.get.Put)
-          case "TRACE"   ⇒ mistify(hreq, hres)(_factory.get.Trace)
-          case unknown   ⇒ {}
-        }
+        mistify(hreq, hres)
         chain.doFilter(req, res)
       case _ ⇒ chain.doFilter(req, res)
     }
@@ -276,7 +288,7 @@ class RootEndpoint extends Actor with Endpoint {
 
   def recv: Receive = {
     case NoneAvailable(uri, req) ⇒ _na(uri, req)
-    case unknown                 ⇒ {}
+    case unknown                 ⇒
   }
 
   /**
@@ -329,24 +341,22 @@ trait RequestMethod {
   def request = context.get.getRequest.asInstanceOf[HttpServletRequest]
   def response = context.get.getResponse.asInstanceOf[HttpServletResponse]
 
-  def getHeaderOrElse(name: String, default: Function[Any, String]): String =
+  def getHeaderOrElse(name: String, default: ⇒ String): String =
     request.getHeader(name) match {
-      case null ⇒ default(null)
+      case null ⇒ default
       case s    ⇒ s
     }
 
-  def getParameterOrElse(name: String, default: Function[Any, String]): String =
+  def getParameterOrElse(name: String, default: ⇒ String): String =
     request.getParameter(name) match {
-      case null ⇒ default(null)
+      case null ⇒ default
       case s    ⇒ s
     }
 
-  def complete(status: Int, body: String): Boolean = complete(status, body, Headers())
-
-  def complete(status: Int, body: String, headers: Headers): Boolean =
+  def complete(status: Int, body: String, headers: Headers = Headers()): Boolean =
     rawComplete { res ⇒
       res.setStatus(status)
-      headers foreach { h ⇒ response.setHeader(h._1, h._2) }
+      headers foreach { case (name, value) ⇒ response.setHeader(name, value) }
       res.getWriter.write(body)
       res.getWriter.close
       res.flushBuffer

@@ -25,11 +25,6 @@ class TestActorRef[T <: Actor](factory: () ⇒ T, address: String)
   receiveTimeout = None
 
   /**
-   * Query actor's current receive behavior.
-   */
-  override def isDefinedAt(o: Any) = actor.isDefinedAt(o)
-
-  /**
    * Directly inject messages into actor receive behavior. Any exceptions
    * thrown will be available to you, while still being able to use
    * become/unbecome and their message counterparts.
