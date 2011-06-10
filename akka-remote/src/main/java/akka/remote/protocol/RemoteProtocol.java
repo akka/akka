@@ -77,25 +77,94 @@ public final class RemoteProtocol {
     // @@protoc_insertion_point(enum_scope:CommandType)
   }
   
-  public enum ReplicationStrategyType
+  public enum ReplicationStorageType
       implements com.google.protobuf.ProtocolMessageEnum {
     TRANSIENT(0, 1),
-    WRITE_THROUGH(1, 2),
-    WRITE_BEHIND(2, 3),
+    TRANSACTION_LOG(1, 2),
+    DATA_GRID(2, 3),
     ;
     
     public static final int TRANSIENT_VALUE = 1;
-    public static final int WRITE_THROUGH_VALUE = 2;
-    public static final int WRITE_BEHIND_VALUE = 3;
+    public static final int TRANSACTION_LOG_VALUE = 2;
+    public static final int DATA_GRID_VALUE = 3;
+    
+    
+    public final int getNumber() { return value; }
+    
+    public static ReplicationStorageType valueOf(int value) {
+      switch (value) {
+        case 1: return TRANSIENT;
+        case 2: return TRANSACTION_LOG;
+        case 3: return DATA_GRID;
+        default: return null;
+      }
+    }
+    
+    public static com.google.protobuf.Internal.EnumLiteMap<ReplicationStorageType>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static com.google.protobuf.Internal.EnumLiteMap<ReplicationStorageType>
+        internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<ReplicationStorageType>() {
+            public ReplicationStorageType findValueByNumber(int number) {
+              return ReplicationStorageType.valueOf(number);
+            }
+          };
+    
+    public final com.google.protobuf.Descriptors.EnumValueDescriptor
+        getValueDescriptor() {
+      return getDescriptor().getValues().get(index);
+    }
+    public final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptorForType() {
+      return getDescriptor();
+    }
+    public static final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptor() {
+      return akka.remote.protocol.RemoteProtocol.getDescriptor().getEnumTypes().get(1);
+    }
+    
+    private static final ReplicationStorageType[] VALUES = {
+      TRANSIENT, TRANSACTION_LOG, DATA_GRID, 
+    };
+    
+    public static ReplicationStorageType valueOf(
+        com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+      if (desc.getType() != getDescriptor()) {
+        throw new java.lang.IllegalArgumentException(
+          "EnumValueDescriptor is not for this type.");
+      }
+      return VALUES[desc.getIndex()];
+    }
+    
+    private final int index;
+    private final int value;
+    
+    private ReplicationStorageType(int index, int value) {
+      this.index = index;
+      this.value = value;
+    }
+    
+    // @@protoc_insertion_point(enum_scope:ReplicationStorageType)
+  }
+  
+  public enum ReplicationStrategyType
+      implements com.google.protobuf.ProtocolMessageEnum {
+    WRITE_THROUGH(0, 1),
+    WRITE_BEHIND(1, 2),
+    ;
+    
+    public static final int WRITE_THROUGH_VALUE = 1;
+    public static final int WRITE_BEHIND_VALUE = 2;
     
     
     public final int getNumber() { return value; }
     
     public static ReplicationStrategyType valueOf(int value) {
       switch (value) {
-        case 1: return TRANSIENT;
-        case 2: return WRITE_THROUGH;
-        case 3: return WRITE_BEHIND;
+        case 1: return WRITE_THROUGH;
+        case 2: return WRITE_BEHIND;
         default: return null;
       }
     }
@@ -122,11 +191,11 @@ public final class RemoteProtocol {
     }
     public static final com.google.protobuf.Descriptors.EnumDescriptor
         getDescriptor() {
-      return akka.remote.protocol.RemoteProtocol.getDescriptor().getEnumTypes().get(1);
+      return akka.remote.protocol.RemoteProtocol.getDescriptor().getEnumTypes().get(2);
     }
     
     private static final ReplicationStrategyType[] VALUES = {
-      TRANSIENT, WRITE_THROUGH, WRITE_BEHIND, 
+      WRITE_THROUGH, WRITE_BEHIND, 
     };
     
     public static ReplicationStrategyType valueOf(
@@ -200,7 +269,7 @@ public final class RemoteProtocol {
     }
     public static final com.google.protobuf.Descriptors.EnumDescriptor
         getDescriptor() {
-      return akka.remote.protocol.RemoteProtocol.getDescriptor().getEnumTypes().get(2);
+      return akka.remote.protocol.RemoteProtocol.getDescriptor().getEnumTypes().get(3);
     }
     
     private static final SerializationSchemeType[] VALUES = {
@@ -269,7 +338,7 @@ public final class RemoteProtocol {
     }
     public static final com.google.protobuf.Descriptors.EnumDescriptor
         getDescriptor() {
-      return akka.remote.protocol.RemoteProtocol.getDescriptor().getEnumTypes().get(3);
+      return akka.remote.protocol.RemoteProtocol.getDescriptor().getEnumTypes().get(4);
     }
     
     private static final LifeCycleType[] VALUES = {
@@ -3459,11 +3528,15 @@ public final class RemoteProtocol {
     boolean hasHotswapStack();
     com.google.protobuf.ByteString getHotswapStack();
     
-    // optional .ReplicationStrategyType replicationStrategy = 11;
+    // optional .ReplicationStorageType replicationStorage = 11;
+    boolean hasReplicationStorage();
+    akka.remote.protocol.RemoteProtocol.ReplicationStorageType getReplicationStorage();
+    
+    // optional .ReplicationStrategyType replicationStrategy = 12;
     boolean hasReplicationStrategy();
     akka.remote.protocol.RemoteProtocol.ReplicationStrategyType getReplicationStrategy();
     
-    // repeated .RemoteMessageProtocol messages = 12;
+    // repeated .RemoteMessageProtocol messages = 13;
     java.util.List<akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol> 
         getMessagesList();
     akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol getMessages(int index);
@@ -3677,18 +3750,28 @@ public final class RemoteProtocol {
       return hotswapStack_;
     }
     
-    // optional .ReplicationStrategyType replicationStrategy = 11;
-    public static final int REPLICATIONSTRATEGY_FIELD_NUMBER = 11;
+    // optional .ReplicationStorageType replicationStorage = 11;
+    public static final int REPLICATIONSTORAGE_FIELD_NUMBER = 11;
+    private akka.remote.protocol.RemoteProtocol.ReplicationStorageType replicationStorage_;
+    public boolean hasReplicationStorage() {
+      return ((bitField0_ & 0x00000400) == 0x00000400);
+    }
+    public akka.remote.protocol.RemoteProtocol.ReplicationStorageType getReplicationStorage() {
+      return replicationStorage_;
+    }
+    
+    // optional .ReplicationStrategyType replicationStrategy = 12;
+    public static final int REPLICATIONSTRATEGY_FIELD_NUMBER = 12;
     private akka.remote.protocol.RemoteProtocol.ReplicationStrategyType replicationStrategy_;
     public boolean hasReplicationStrategy() {
-      return ((bitField0_ & 0x00000400) == 0x00000400);
+      return ((bitField0_ & 0x00000800) == 0x00000800);
     }
     public akka.remote.protocol.RemoteProtocol.ReplicationStrategyType getReplicationStrategy() {
       return replicationStrategy_;
     }
     
-    // repeated .RemoteMessageProtocol messages = 12;
-    public static final int MESSAGES_FIELD_NUMBER = 12;
+    // repeated .RemoteMessageProtocol messages = 13;
+    public static final int MESSAGES_FIELD_NUMBER = 13;
     private java.util.List<akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol> messages_;
     public java.util.List<akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol> getMessagesList() {
       return messages_;
@@ -3719,7 +3802,8 @@ public final class RemoteProtocol {
       lifeCycle_ = akka.remote.protocol.RemoteProtocol.LifeCycleProtocol.getDefaultInstance();
       supervisor_ = akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.getDefaultInstance();
       hotswapStack_ = com.google.protobuf.ByteString.EMPTY;
-      replicationStrategy_ = akka.remote.protocol.RemoteProtocol.ReplicationStrategyType.TRANSIENT;
+      replicationStorage_ = akka.remote.protocol.RemoteProtocol.ReplicationStorageType.TRANSIENT;
+      replicationStrategy_ = akka.remote.protocol.RemoteProtocol.ReplicationStrategyType.WRITE_THROUGH;
       messages_ = java.util.Collections.emptyList();
     }
     private byte memoizedIsInitialized = -1;
@@ -3799,10 +3883,13 @@ public final class RemoteProtocol {
         output.writeBytes(10, hotswapStack_);
       }
       if (((bitField0_ & 0x00000400) == 0x00000400)) {
-        output.writeEnum(11, replicationStrategy_.getNumber());
+        output.writeEnum(11, replicationStorage_.getNumber());
+      }
+      if (((bitField0_ & 0x00000800) == 0x00000800)) {
+        output.writeEnum(12, replicationStrategy_.getNumber());
       }
       for (int i = 0; i < messages_.size(); i++) {
-        output.writeMessage(12, messages_.get(i));
+        output.writeMessage(13, messages_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -3855,11 +3942,15 @@ public final class RemoteProtocol {
       }
       if (((bitField0_ & 0x00000400) == 0x00000400)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeEnumSize(11, replicationStrategy_.getNumber());
+          .computeEnumSize(11, replicationStorage_.getNumber());
+      }
+      if (((bitField0_ & 0x00000800) == 0x00000800)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeEnumSize(12, replicationStrategy_.getNumber());
       }
       for (int i = 0; i < messages_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(12, messages_.get(i));
+          .computeMessageSize(13, messages_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -4021,11 +4112,13 @@ public final class RemoteProtocol {
         bitField0_ = (bitField0_ & ~0x00000100);
         hotswapStack_ = com.google.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000200);
-        replicationStrategy_ = akka.remote.protocol.RemoteProtocol.ReplicationStrategyType.TRANSIENT;
+        replicationStorage_ = akka.remote.protocol.RemoteProtocol.ReplicationStorageType.TRANSIENT;
         bitField0_ = (bitField0_ & ~0x00000400);
+        replicationStrategy_ = akka.remote.protocol.RemoteProtocol.ReplicationStrategyType.WRITE_THROUGH;
+        bitField0_ = (bitField0_ & ~0x00000800);
         if (messagesBuilder_ == null) {
           messages_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000800);
+          bitField0_ = (bitField0_ & ~0x00001000);
         } else {
           messagesBuilder_.clear();
         }
@@ -4122,11 +4215,15 @@ public final class RemoteProtocol {
         if (((from_bitField0_ & 0x00000400) == 0x00000400)) {
           to_bitField0_ |= 0x00000400;
         }
+        result.replicationStorage_ = replicationStorage_;
+        if (((from_bitField0_ & 0x00000800) == 0x00000800)) {
+          to_bitField0_ |= 0x00000800;
+        }
         result.replicationStrategy_ = replicationStrategy_;
         if (messagesBuilder_ == null) {
-          if (((bitField0_ & 0x00000800) == 0x00000800)) {
+          if (((bitField0_ & 0x00001000) == 0x00001000)) {
             messages_ = java.util.Collections.unmodifiableList(messages_);
-            bitField0_ = (bitField0_ & ~0x00000800);
+            bitField0_ = (bitField0_ & ~0x00001000);
           }
           result.messages_ = messages_;
         } else {
@@ -4178,6 +4275,9 @@ public final class RemoteProtocol {
         if (other.hasHotswapStack()) {
           setHotswapStack(other.getHotswapStack());
         }
+        if (other.hasReplicationStorage()) {
+          setReplicationStorage(other.getReplicationStorage());
+        }
         if (other.hasReplicationStrategy()) {
           setReplicationStrategy(other.getReplicationStrategy());
         }
@@ -4185,7 +4285,7 @@ public final class RemoteProtocol {
           if (!other.messages_.isEmpty()) {
             if (messages_.isEmpty()) {
               messages_ = other.messages_;
-              bitField0_ = (bitField0_ & ~0x00000800);
+              bitField0_ = (bitField0_ & ~0x00001000);
             } else {
               ensureMessagesIsMutable();
               messages_.addAll(other.messages_);
@@ -4198,7 +4298,7 @@ public final class RemoteProtocol {
               messagesBuilder_.dispose();
               messagesBuilder_ = null;
               messages_ = other.messages_;
-              bitField0_ = (bitField0_ & ~0x00000800);
+              bitField0_ = (bitField0_ & ~0x00001000);
               messagesBuilder_ = 
                 com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getMessagesFieldBuilder() : null;
@@ -4336,16 +4436,27 @@ public final class RemoteProtocol {
             }
             case 88: {
               int rawValue = input.readEnum();
-              akka.remote.protocol.RemoteProtocol.ReplicationStrategyType value = akka.remote.protocol.RemoteProtocol.ReplicationStrategyType.valueOf(rawValue);
+              akka.remote.protocol.RemoteProtocol.ReplicationStorageType value = akka.remote.protocol.RemoteProtocol.ReplicationStorageType.valueOf(rawValue);
               if (value == null) {
                 unknownFields.mergeVarintField(11, rawValue);
               } else {
                 bitField0_ |= 0x00000400;
+                replicationStorage_ = value;
+              }
+              break;
+            }
+            case 96: {
+              int rawValue = input.readEnum();
+              akka.remote.protocol.RemoteProtocol.ReplicationStrategyType value = akka.remote.protocol.RemoteProtocol.ReplicationStrategyType.valueOf(rawValue);
+              if (value == null) {
+                unknownFields.mergeVarintField(12, rawValue);
+              } else {
+                bitField0_ |= 0x00000800;
                 replicationStrategy_ = value;
               }
               break;
             }
-            case 98: {
+            case 106: {
               akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol.Builder subBuilder = akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol.newBuilder();
               input.readMessage(subBuilder, extensionRegistry);
               addMessages(subBuilder.buildPartial());
@@ -4825,10 +4936,34 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional .ReplicationStrategyType replicationStrategy = 11;
-      private akka.remote.protocol.RemoteProtocol.ReplicationStrategyType replicationStrategy_ = akka.remote.protocol.RemoteProtocol.ReplicationStrategyType.TRANSIENT;
-      public boolean hasReplicationStrategy() {
+      // optional .ReplicationStorageType replicationStorage = 11;
+      private akka.remote.protocol.RemoteProtocol.ReplicationStorageType replicationStorage_ = akka.remote.protocol.RemoteProtocol.ReplicationStorageType.TRANSIENT;
+      public boolean hasReplicationStorage() {
         return ((bitField0_ & 0x00000400) == 0x00000400);
+      }
+      public akka.remote.protocol.RemoteProtocol.ReplicationStorageType getReplicationStorage() {
+        return replicationStorage_;
+      }
+      public Builder setReplicationStorage(akka.remote.protocol.RemoteProtocol.ReplicationStorageType value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000400;
+        replicationStorage_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearReplicationStorage() {
+        bitField0_ = (bitField0_ & ~0x00000400);
+        replicationStorage_ = akka.remote.protocol.RemoteProtocol.ReplicationStorageType.TRANSIENT;
+        onChanged();
+        return this;
+      }
+      
+      // optional .ReplicationStrategyType replicationStrategy = 12;
+      private akka.remote.protocol.RemoteProtocol.ReplicationStrategyType replicationStrategy_ = akka.remote.protocol.RemoteProtocol.ReplicationStrategyType.WRITE_THROUGH;
+      public boolean hasReplicationStrategy() {
+        return ((bitField0_ & 0x00000800) == 0x00000800);
       }
       public akka.remote.protocol.RemoteProtocol.ReplicationStrategyType getReplicationStrategy() {
         return replicationStrategy_;
@@ -4837,25 +4972,25 @@ public final class RemoteProtocol {
         if (value == null) {
           throw new NullPointerException();
         }
-        bitField0_ |= 0x00000400;
+        bitField0_ |= 0x00000800;
         replicationStrategy_ = value;
         onChanged();
         return this;
       }
       public Builder clearReplicationStrategy() {
-        bitField0_ = (bitField0_ & ~0x00000400);
-        replicationStrategy_ = akka.remote.protocol.RemoteProtocol.ReplicationStrategyType.TRANSIENT;
+        bitField0_ = (bitField0_ & ~0x00000800);
+        replicationStrategy_ = akka.remote.protocol.RemoteProtocol.ReplicationStrategyType.WRITE_THROUGH;
         onChanged();
         return this;
       }
       
-      // repeated .RemoteMessageProtocol messages = 12;
+      // repeated .RemoteMessageProtocol messages = 13;
       private java.util.List<akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol> messages_ =
         java.util.Collections.emptyList();
       private void ensureMessagesIsMutable() {
-        if (!((bitField0_ & 0x00000800) == 0x00000800)) {
+        if (!((bitField0_ & 0x00001000) == 0x00001000)) {
           messages_ = new java.util.ArrayList<akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol>(messages_);
-          bitField0_ |= 0x00000800;
+          bitField0_ |= 0x00001000;
          }
       }
       
@@ -4971,7 +5106,7 @@ public final class RemoteProtocol {
       public Builder clearMessages() {
         if (messagesBuilder_ == null) {
           messages_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000800);
+          bitField0_ = (bitField0_ & ~0x00001000);
           onChanged();
         } else {
           messagesBuilder_.clear();
@@ -5027,7 +5162,7 @@ public final class RemoteProtocol {
           messagesBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
               akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol, akka.remote.protocol.RemoteProtocol.RemoteMessageProtocol.Builder, akka.remote.protocol.RemoteProtocol.RemoteMessageProtocolOrBuilder>(
                   messages_,
-                  ((bitField0_ & 0x00000800) == 0x00000800),
+                  ((bitField0_ & 0x00001000) == 0x00001000),
                   getParentForChildren(),
                   isClean());
           messages_ = null;
@@ -8909,38 +9044,41 @@ public final class RemoteProtocol {
       "\013commandType\030\002 \002(\0162\014.CommandType\"U\n\026Remo" +
       "teActorRefProtocol\022\017\n\007address\030\001 \002(\t\022\031\n\021i" +
       "netSocketAddress\030\002 \002(\014\022\017\n\007timeout\030\003 \001(\004\"" +
-      "\212\003\n\032SerializedActorRefProtocol\022\033\n\004uuid\030\001" +
+      "\277\003\n\032SerializedActorRefProtocol\022\033\n\004uuid\030\001" +
       " \002(\0132\r.UuidProtocol\022\017\n\007address\030\002 \002(\t\022\026\n\016" +
       "actorClassname\030\003 \002(\t\022\025\n\ractorInstance\030\004 " +
       "\001(\014\022\033\n\023serializerClassname\030\005 \001(\t\022\017\n\007time" +
       "out\030\006 \001(\004\022\026\n\016receiveTimeout\030\007 \001(\004\022%\n\tlif",
       "eCycle\030\010 \001(\0132\022.LifeCycleProtocol\022+\n\nsupe" +
       "rvisor\030\t \001(\0132\027.RemoteActorRefProtocol\022\024\n" +
-      "\014hotswapStack\030\n \001(\014\0225\n\023replicationStrate" +
-      "gy\030\013 \001(\0162\030.ReplicationStrategyType\022(\n\010me" +
-      "ssages\030\014 \003(\0132\026.RemoteMessageProtocol\"g\n\037" +
-      "SerializedTypedActorRefProtocol\022-\n\010actor" +
-      "Ref\030\001 \002(\0132\033.SerializedActorRefProtocol\022\025" +
-      "\n\rinterfaceName\030\002 \002(\t\"r\n\017MessageProtocol" +
-      "\0225\n\023serializationScheme\030\001 \002(\0162\030.Serializ" +
-      "ationSchemeType\022\017\n\007message\030\002 \002(\014\022\027\n\017mess",
-      "ageManifest\030\003 \001(\014\"R\n\021ActorInfoProtocol\022\033" +
-      "\n\004uuid\030\001 \002(\0132\r.UuidProtocol\022\017\n\007timeout\030\002" +
-      " \002(\004\022\017\n\007address\030\003 \001(\t\")\n\014UuidProtocol\022\014\n" +
-      "\004high\030\001 \002(\004\022\013\n\003low\030\002 \002(\004\"3\n\025MetadataEntr" +
-      "yProtocol\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\014\"6\n" +
-      "\021LifeCycleProtocol\022!\n\tlifeCycle\030\001 \002(\0162\016." +
-      "LifeCycleType\"1\n\017AddressProtocol\022\020\n\010host" +
-      "name\030\001 \002(\t\022\014\n\004port\030\002 \002(\r\"7\n\021ExceptionPro" +
-      "tocol\022\021\n\tclassname\030\001 \002(\t\022\017\n\007message\030\002 \002(" +
-      "\t*(\n\013CommandType\022\013\n\007CONNECT\020\001\022\014\n\010SHUTDOW",
-      "N\020\002*M\n\027ReplicationStrategyType\022\r\n\tTRANSI" +
-      "ENT\020\001\022\021\n\rWRITE_THROUGH\020\002\022\020\n\014WRITE_BEHIND" +
-      "\020\003*]\n\027SerializationSchemeType\022\010\n\004JAVA\020\001\022" +
-      "\013\n\007SBINARY\020\002\022\016\n\nSCALA_JSON\020\003\022\r\n\tJAVA_JSO" +
-      "N\020\004\022\014\n\010PROTOBUF\020\005*-\n\rLifeCycleType\022\r\n\tPE" +
-      "RMANENT\020\001\022\r\n\tTEMPORARY\020\002B\030\n\024akka.remote." +
-      "protocolH\001"
+      "\014hotswapStack\030\n \001(\014\0223\n\022replicationStorag" +
+      "e\030\013 \001(\0162\027.ReplicationStorageType\0225\n\023repl" +
+      "icationStrategy\030\014 \001(\0162\030.ReplicationStrat" +
+      "egyType\022(\n\010messages\030\r \003(\0132\026.RemoteMessag" +
+      "eProtocol\"g\n\037SerializedTypedActorRefProt" +
+      "ocol\022-\n\010actorRef\030\001 \002(\0132\033.SerializedActor" +
+      "RefProtocol\022\025\n\rinterfaceName\030\002 \002(\t\"r\n\017Me" +
+      "ssageProtocol\0225\n\023serializationScheme\030\001 \002",
+      "(\0162\030.SerializationSchemeType\022\017\n\007message\030" +
+      "\002 \002(\014\022\027\n\017messageManifest\030\003 \001(\014\"R\n\021ActorI" +
+      "nfoProtocol\022\033\n\004uuid\030\001 \002(\0132\r.UuidProtocol" +
+      "\022\017\n\007timeout\030\002 \002(\004\022\017\n\007address\030\003 \001(\t\")\n\014Uu" +
+      "idProtocol\022\014\n\004high\030\001 \002(\004\022\013\n\003low\030\002 \002(\004\"3\n" +
+      "\025MetadataEntryProtocol\022\013\n\003key\030\001 \002(\t\022\r\n\005v" +
+      "alue\030\002 \002(\014\"6\n\021LifeCycleProtocol\022!\n\tlifeC" +
+      "ycle\030\001 \002(\0162\016.LifeCycleType\"1\n\017AddressPro" +
+      "tocol\022\020\n\010hostname\030\001 \002(\t\022\014\n\004port\030\002 \002(\r\"7\n" +
+      "\021ExceptionProtocol\022\021\n\tclassname\030\001 \002(\t\022\017\n",
+      "\007message\030\002 \002(\t*(\n\013CommandType\022\013\n\007CONNECT" +
+      "\020\001\022\014\n\010SHUTDOWN\020\002*K\n\026ReplicationStorageTy" +
+      "pe\022\r\n\tTRANSIENT\020\001\022\023\n\017TRANSACTION_LOG\020\002\022\r" +
+      "\n\tDATA_GRID\020\003*>\n\027ReplicationStrategyType" +
+      "\022\021\n\rWRITE_THROUGH\020\001\022\020\n\014WRITE_BEHIND\020\002*]\n" +
+      "\027SerializationSchemeType\022\010\n\004JAVA\020\001\022\013\n\007SB" +
+      "INARY\020\002\022\016\n\nSCALA_JSON\020\003\022\r\n\tJAVA_JSON\020\004\022\014" +
+      "\n\010PROTOBUF\020\005*-\n\rLifeCycleType\022\r\n\tPERMANE" +
+      "NT\020\001\022\r\n\tTEMPORARY\020\002B\030\n\024akka.remote.proto" +
+      "colH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -8984,7 +9122,7 @@ public final class RemoteProtocol {
           internal_static_SerializedActorRefProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SerializedActorRefProtocol_descriptor,
-              new java.lang.String[] { "Uuid", "Address", "ActorClassname", "ActorInstance", "SerializerClassname", "Timeout", "ReceiveTimeout", "LifeCycle", "Supervisor", "HotswapStack", "ReplicationStrategy", "Messages", },
+              new java.lang.String[] { "Uuid", "Address", "ActorClassname", "ActorInstance", "SerializerClassname", "Timeout", "ReceiveTimeout", "LifeCycle", "Supervisor", "HotswapStack", "ReplicationStorage", "ReplicationStrategy", "Messages", },
               akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol.class,
               akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol.Builder.class);
           internal_static_SerializedTypedActorRefProtocol_descriptor =

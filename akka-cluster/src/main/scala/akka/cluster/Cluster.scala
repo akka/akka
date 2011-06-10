@@ -29,7 +29,7 @@ import Helpers._
 import akka.actor._
 import Actor._
 import Status._
-import DeploymentConfig.{ ReplicationStrategy, Transient, WriteThrough, WriteBehind }
+import DeploymentConfig.{ ReplicationScheme, ReplicationStrategy, Transient, WriteThrough, WriteBehind }
 import akka.event.EventHandler
 import akka.dispatch.{ Dispatchers, Future }
 import akka.remoteinterface._
@@ -471,8 +471,8 @@ class DefaultClusterNode private[akka] (
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](address: String, actorClass: Class[T], replicationStrategy: ReplicationStrategy, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, 0, replicationStrategy, false, format)
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationScheme: ReplicationScheme, format: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, 0, replicationScheme, false, format)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -487,8 +487,8 @@ class DefaultClusterNode private[akka] (
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, replicationStrategy: ReplicationStrategy, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, replicationFactor, replicationStrategy, false, format)
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, format: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, replicationFactor, replicationScheme, false, format)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -503,8 +503,8 @@ class DefaultClusterNode private[akka] (
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](address: String, actorClass: Class[T], replicationStrategy: ReplicationStrategy, serializeMailbox: Boolean, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, 0, replicationStrategy, serializeMailbox, format)
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, 0, replicationScheme, serializeMailbox, format)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -519,8 +519,8 @@ class DefaultClusterNode private[akka] (
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, replicationStrategy: ReplicationStrategy, serializeMailbox: Boolean, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, replicationFactor, replicationStrategy, serializeMailbox, format)
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, replicationFactor, replicationScheme, serializeMailbox, format)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
@@ -535,8 +535,8 @@ class DefaultClusterNode private[akka] (
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorRef: ActorRef, replicationStrategy: ReplicationStrategy, format: Serializer): ClusterNode =
-    store(actorRef, 0, replicationStrategy, false, format)
+  def store(actorRef: ActorRef, replicationScheme: ReplicationScheme, format: Serializer): ClusterNode =
+    store(actorRef, 0, replicationScheme, false, format)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
@@ -551,8 +551,8 @@ class DefaultClusterNode private[akka] (
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorRef: ActorRef, replicationFactor: Int, replicationStrategy: ReplicationStrategy, format: Serializer): ClusterNode =
-    store(actorRef, replicationFactor, replicationStrategy, false, format)
+  def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, format: Serializer): ClusterNode =
+    store(actorRef, replicationFactor, replicationScheme, false, format)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
@@ -575,14 +575,14 @@ class DefaultClusterNode private[akka] (
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorRef: ActorRef, replicationStrategy: ReplicationStrategy, serializeMailbox: Boolean, format: Serializer): ClusterNode =
-    store(actorRef, 0, replicationStrategy, serializeMailbox, format)
+  def store(actorRef: ActorRef, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: Serializer): ClusterNode =
+    store(actorRef, 0, replicationScheme, serializeMailbox, format)
 
   /**
    * Needed to have reflection through structural typing work.
    */
-  def store(actorRef: ActorRef, replicationFactor: Int, replicationStrategy: ReplicationStrategy, serializeMailbox: Boolean, format: AnyRef): ClusterNode =
-    store(actorRef, replicationFactor, replicationStrategy, serializeMailbox, format.asInstanceOf[Serializer])
+  def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: AnyRef): ClusterNode =
+    store(actorRef, replicationFactor, replicationScheme, serializeMailbox, format.asInstanceOf[Serializer])
 
   /**
    * Needed to have reflection through structural typing work.
@@ -598,7 +598,7 @@ class DefaultClusterNode private[akka] (
   def store(
     actorRef: ActorRef,
     replicationFactor: Int,
-    replicationStrategy: ReplicationStrategy,
+    replicationScheme: ReplicationScheme,
     serializeMailbox: Boolean,
     format: Serializer): ClusterNode = if (isConnected.isOn) {
 
@@ -612,8 +612,8 @@ class DefaultClusterNode private[akka] (
       "Storing actor [%s] with UUID [%s] in cluster".format(actorRef.address, uuid))
 
     val actorBytes =
-      if (shouldCompressData) LZF.compress(toBinary(actorRef, serializeMailbox, replicationStrategy)(format))
-      else toBinary(actorRef, serializeMailbox, replicationStrategy)(format)
+      if (shouldCompressData) LZF.compress(toBinary(actorRef, serializeMailbox, replicationScheme)(format))
+      else toBinary(actorRef, serializeMailbox, replicationScheme)(format)
 
     val actorRegistryPath = actorRegistryPathFor(uuid)
 

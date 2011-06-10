@@ -380,7 +380,13 @@ object Actor extends ListenerManagement {
 
   private def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef = {
     deploy match {
-      case Deploy(configAdress, router, serializerClassName, Clustered(home, replication: Replication, state: State)) ⇒
+      case Deploy(
+        configAdress, router, serializerClassName,
+        Clustered(
+          home,
+          replicas,
+          replication)) ⇒
+
         ClusterModule.ensureEnabled()
 
         if (configAdress != address) throw new IllegalStateException(
@@ -389,11 +395,12 @@ object Actor extends ListenerManagement {
           "Remote server is not running")
 
         val isHomeNode = DeploymentConfig.isHomeNode(home)
-        val replicas = DeploymentConfig.replicaValueFor(replication)
+        val nrOfReplicas = DeploymentConfig.replicaValueFor(replicas)
 
-        def storeActorAndGetClusterRef(replicationStrategy: ReplicationStrategy, serializer: Serializer): ActorRef = {
+        def storeActorAndGetClusterRef(replicationScheme: ReplicationScheme, serializer: Serializer): ActorRef = {
           // add actor to cluster registry (if not already added)
-          if (!cluster.isClustered(address)) cluster.store(factory().start(), replicas, replicationStrategy, false, serializer)
+          if (!cluster.isClustered(address))
+            cluster.store(factory().start(), nrOfReplicas, replicationScheme, false, serializer)
 
           // remote node (not home node), check out as ClusterActorRef
           cluster.ref(address, DeploymentConfig.routerTypeFor(router))
@@ -401,11 +408,11 @@ object Actor extends ListenerManagement {
 
         val serializer = serializerFor(address, serializerClassName)
 
-        state match {
-          case _: Stateless | Stateless ⇒
+        replication match {
+          case _: Transient | Transient ⇒
             storeActorAndGetClusterRef(Transient, serializer)
 
-          case Stateful(storage, strategy) ⇒
+          case replication: Replication ⇒
             if (isHomeNode) { // stateful actor's home node
               cluster
                 .use(address, serializer)
@@ -413,7 +420,7 @@ object Actor extends ListenerManagement {
                   "Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
             } else {
               // FIXME later manage different 'storage' (data grid) as well
-              storeActorAndGetClusterRef(strategy, serializer)
+              storeActorAndGetClusterRef(replication, serializer)
             }
         }
 

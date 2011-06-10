@@ -14,7 +14,7 @@ import akka.config._
 import Config._
 import akka.util._
 import akka.actor._
-import DeploymentConfig.{ ReplicationStrategy, Transient, WriteThrough, WriteBehind }
+import DeploymentConfig.{ ReplicationScheme, ReplicationStrategy, Transient, WriteThrough, WriteBehind }
 import akka.event.EventHandler
 import akka.dispatch.{ DefaultPromise, Promise, MessageInvocation }
 import akka.remote.MessageSerializer
@@ -52,7 +52,7 @@ class TransactionLog private (
   ledger: LedgerHandle,
   val id: String,
   val isAsync: Boolean,
-  replicationStrategy: ReplicationStrategy,
+  replicationScheme: ReplicationScheme,
   format: Serializer) {
 
   import TransactionLog._
@@ -71,8 +71,8 @@ class TransactionLog private (
     if (nrOfEntries.incrementAndGet % snapshotFrequency == 0) {
       val snapshot =
         // FIXME ReplicationStrategy Transient is always used
-        if (Cluster.shouldCompressData) LZF.compress(toBinary(actorRef, false, replicationStrategy)(format))
-        else toBinary(actorRef, false, replicationStrategy)(format)
+        if (Cluster.shouldCompressData) LZF.compress(toBinary(actorRef, false, replicationScheme)(format))
+        else toBinary(actorRef, false, replicationScheme)(format)
       recordSnapshot(snapshot)
     }
     recordEntry(MessageSerializer.serialize(messageHandle.message).toByteArray)
@@ -371,9 +371,9 @@ object TransactionLog {
     ledger: LedgerHandle,
     id: String,
     isAsync: Boolean,
-    replicationStrategy: ReplicationStrategy,
+    replicationScheme: ReplicationScheme,
     format: Serializer) =
-    new TransactionLog(ledger, id, isAsync, replicationStrategy, format)
+    new TransactionLog(ledger, id, isAsync, replicationScheme, format)
 
   /**
    * Shuts down the transaction log.
@@ -397,7 +397,7 @@ object TransactionLog {
   def newLogFor(
     id: String,
     isAsync: Boolean,
-    replicationStrategy: ReplicationStrategy,
+    replicationScheme: ReplicationScheme,
     format: Serializer): TransactionLog = {
 
     val txLogPath = transactionLogNode + "/" + id
@@ -443,7 +443,7 @@ object TransactionLog {
     }
 
     EventHandler.info(this, "Created new transaction log [%s] for UUID [%s]".format(logId, id))
-    TransactionLog(ledger, id, isAsync, replicationStrategy, format)
+    TransactionLog(ledger, id, isAsync, replicationScheme, format)
   }
 
   /**
@@ -452,7 +452,7 @@ object TransactionLog {
   def logFor(
     id: String,
     isAsync: Boolean,
-    replicationStrategy: ReplicationStrategy,
+    replicationScheme: ReplicationScheme,
     format: Serializer): TransactionLog = {
 
     val txLogPath = transactionLogNode + "/" + id
@@ -493,7 +493,7 @@ object TransactionLog {
       case e ⇒ handleError(e)
     }
 
-    TransactionLog(ledger, id, isAsync, replicationStrategy, format)
+    TransactionLog(ledger, id, isAsync, replicationScheme, format)
   }
 
   private[akka] def await[T](future: Promise[T]): T = {

@@ -47,12 +47,20 @@ enum CommandType {
 }
 
 /**
+ * Defines the type of the ReplicationStorage
+ */
+enum ReplicationStorageType {
+  TRANSIENT = 1;
+  TRANSACTION_LOG = 2;
+  DATA_GRID = 3;
+}
+
+/**
  * Defines the type of the ReplicationStrategy
  */
 enum ReplicationStrategyType {
-  TRANSIENT = 1;
-  WRITE_THROUGH = 2;
-  WRITE_BEHIND = 3;
+  WRITE_THROUGH = 1;
+  WRITE_BEHIND = 2;
 }
 
 /**
@@ -81,8 +89,9 @@ message SerializedActorRefProtocol {
   optional LifeCycleProtocol lifeCycle = 8;
   optional RemoteActorRefProtocol supervisor = 9;
   optional bytes hotswapStack = 10;
-  optional ReplicationStrategyType replicationStrategy = 11;
-  repeated RemoteMessageProtocol messages = 12;
+  optional ReplicationStorageType replicationStorage = 11;
+  optional ReplicationStrategyType replicationStrategy = 12;
+  repeated RemoteMessageProtocol messages = 13;
 }
 
 /**

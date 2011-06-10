@@ -6,13 +6,13 @@ package akka.actor
 
 import akka.event.EventHandler
 import akka.dispatch._
-import akka.config.Config
+import akka.config._
 import akka.config.Supervision._
 import akka.util._
 import akka.serialization.{ Format, Serializer }
 import ReflectiveAccess._
 import ClusterModule._
-import DeploymentConfig.{ ReplicationStrategy, Transient, WriteThrough, WriteBehind }
+import DeploymentConfig.{ ReplicationScheme, Replication, Transient, WriteThrough, WriteBehind }
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
@@ -515,7 +515,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] with S
 class LocalActorRef private[akka] (
   private[this] val actorFactory: () ⇒ Actor,
   val address: String,
-  replicationStrategy: ReplicationStrategy)
+  replicationScheme: ReplicationScheme)
   extends ActorRef with ScalaActorRef {
 
   protected[akka] val guard = new ReentrantGuard
@@ -543,24 +543,39 @@ class LocalActorRef private[akka] (
 
   protected[akka] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
 
-  private val isReplicated: Boolean = replicationStrategy match {
-    case Transient ⇒ false
-    case _         ⇒ true
+  private val isReplicated: Boolean = replicationScheme match {
+    case _: Transient | Transient ⇒ false
+    case _                        ⇒ true
   }
 
   // FIXME how to get the matching serializerClassName? Now default is used. Needed for transaction log snapshot
   private val serializer = Actor.serializerFor(address, Format.defaultSerializerName)
 
-  private lazy val txLog: TransactionLog = {
-    val log = replicationStrategy match {
-      case Transient    ⇒ throw new IllegalStateException("Can not replicate 'transient' actor [" + toString + "]")
-      case WriteThrough ⇒ transactionLog.newLogFor(_uuid.toString, false, replicationStrategy, serializer)
-      case WriteBehind  ⇒ transactionLog.newLogFor(_uuid.toString, true, replicationStrategy, serializer)
+  private lazy val replicationStorage: Either[TransactionLog, AnyRef] = {
+    replicationScheme match {
+      case _: Transient | Transient ⇒
+        throw new IllegalStateException("Can not replicate 'transient' actor [" + toString + "]")
+
+      case Replication(storage, strategy) ⇒
+        val isWriteBehind = strategy match {
+          case _: WriteBehind | WriteBehind   ⇒ true
+          case _: WriteThrough | WriteThrough ⇒ false
+        }
+
+        storage match {
+          case _: DeploymentConfig.TransactionLog | DeploymentConfig.TransactionLog ⇒
+            EventHandler.debug(this,
+              "Creating a transaction log for Actor [%s] with replication strategy [%s]"
+                .format(address, replicationScheme))
+            Left(transactionLog.newLogFor(_uuid.toString, isWriteBehind, replicationScheme, serializer))
+
+          case _: DeploymentConfig.DataGrid | DeploymentConfig.DataGrid ⇒
+            throw new ConfigurationException("Replication storage type \"data-grid\" is not yet supported")
+
+          case unknown ⇒
+            throw new ConfigurationException("Unknown replication storage type [" + unknown + "]")
+        }
     }
-    EventHandler.debug(this,
-      "Creating a transaction log for Actor [%s] with replication strategy [%s]"
-        .format(address, replicationStrategy))
-    log
   }
 
   //If it was started inside "newActor", initialize it
@@ -576,7 +591,7 @@ class LocalActorRef private[akka] (
     __supervisor: Option[ActorRef],
     __hotswap: Stack[PartialFunction[Any, Unit]],
     __factory: () ⇒ Actor,
-    __replicationStrategy: ReplicationStrategy) = {
+    __replicationStrategy: ReplicationScheme) = {
 
     this(__factory, __address, __replicationStrategy)
 
@@ -652,7 +667,9 @@ class LocalActorRef private[akka] (
         }
       } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
 
-      if (isReplicated) txLog.delete()
+      if (isReplicated) {
+        if (replicationStorage.isLeft) replicationStorage.left.get.delete()
+      }
     }
   }
 
@@ -774,7 +791,7 @@ class LocalActorRef private[akka] (
     } finally {
       guard.lock.unlock()
       if (isReplicated) {
-        txLog.recordEntry(messageHandle, this)
+        if (replicationStorage.isLeft) replicationStorage.left.get.recordEntry(messageHandle, this)
       }
     }
   }

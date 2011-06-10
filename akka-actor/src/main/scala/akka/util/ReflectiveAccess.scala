@@ -8,7 +8,7 @@ import akka.dispatch.{ Future, Promise, MessageInvocation }
 import akka.config.{ Config, ModuleNotAvailableException }
 import akka.remoteinterface.RemoteSupport
 import akka.actor._
-import DeploymentConfig.{ Deploy, ReplicationStrategy }
+import DeploymentConfig.{ Deploy, ReplicationScheme, ReplicationStrategy }
 import akka.event.EventHandler
 import akka.serialization.Format
 import akka.cluster.ClusterNode
@@ -111,13 +111,13 @@ object ReflectiveAccess {
       def newLogFor(
         id: String,
         isAsync: Boolean,
-        replicationStrategy: ReplicationStrategy,
+        replicationScheme: ReplicationScheme,
         format: Serializer): TransactionLog
 
       def logFor(
         id: String,
         isAsync: Boolean,
-        replicationStrategy: ReplicationStrategy,
+        replicationScheme: ReplicationScheme,
         format: Serializer): TransactionLog
 
       def shutdown()
