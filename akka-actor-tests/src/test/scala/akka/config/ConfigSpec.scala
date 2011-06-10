@@ -37,9 +37,8 @@ class ConfigSpec extends WordSpec with MustMatchers {
       getInt("akka.actor.throughput") must equal(Some(5))
       getInt("akka.actor.throughput-deadline-time") must equal(Some(-1))
 
-      getString("akka.remote.layer") must equal(Some("akka.remote.netty.NettyRemoteSupport"))
-      getString("akka.remote.server.hostname") must equal(Some("localhost"))
-      getInt("akka.remote.server.port") must equal(Some(2552))
+      getString("akka.cluster.layer") must equal(Some("akka.remote.netty.NettyRemoteSupport"))
+      getInt("akka.cluster.server.port") must equal(Some(2552))
     }
   }
 }
