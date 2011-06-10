@@ -21,7 +21,7 @@ object RemoteClientSettings {
 }
 
 object RemoteServerSettings {
-  val isRemotingEnabled = config.getList("akka.enabled-modules").exists(_ == "remote")
+  val isRemotingEnabled = config.getList("akka.enabled-modules").exists(_ == "cluster")
   val MESSAGE_FRAME_SIZE = config.getInt("akka.cluster.server.message-frame-size", 1048576)
   val SECURE_COOKIE = config.getString("akka.cluster.secure-cookie")
   val REQUIRE_COOKIE = {
