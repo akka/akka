@@ -73,10 +73,10 @@ case object Kill extends AutoReceivedMessage with LifeCycleMessage
 case object ReceiveTimeout extends LifeCycleMessage
 
 case class MaximumNumberOfRestartsWithinTimeRangeReached(
-  @BeanProperty val victim: ActorRef,
-  @BeanProperty val maxNrOfRetries: Option[Int],
-  @BeanProperty val withinTimeRange: Option[Int],
-  @BeanProperty val lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
+  @BeanProperty victim: ActorRef,
+  @BeanProperty maxNrOfRetries: Option[Int],
+  @BeanProperty withinTimeRange: Option[Int],
+  @BeanProperty lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
 
 // Exceptions for Actors
 class ActorStartException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
@@ -132,7 +132,7 @@ object Actor extends ListenerManagement {
         subclassAudits synchronized { subclassAudits.clear() }
       }
     }
-    Runtime.getRuntime.addShutdownHook(new Thread(hook))
+    Runtime.getRuntime.addShutdownHook(new Thread(hook, "akka-shutdown-hook"))
     hook
   }
 
@@ -270,7 +270,7 @@ object Actor extends ListenerManagement {
    * </pre>
    */
   def actorOf[T <: Actor](creator: ⇒ T, address: String): ActorRef = {
-    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator, address))
+    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator, address, Transient))
   }
 
   /**
@@ -293,7 +293,7 @@ object Actor extends ListenerManagement {
    * JAVA API
    */
   def actorOf[T <: Actor](creator: Creator[T], address: String): ActorRef = {
-    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator.create, address))
+    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator.create, address, Transient))
   }
 
   /**
@@ -375,12 +375,18 @@ object Actor extends ListenerManagement {
               "\nif so put it outside the class/trait, f.e. in a companion object," +
               "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
       }
-    }, address)
+    }, address, Transient)
   }
 
   private def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef = {
     deploy match {
-      case Deploy(configAdress, router, serializerClassName, Clustered(home, replication: Replication, state: State)) ⇒
+      case Deploy(
+        configAdress, router, serializerClassName,
+        Clustered(
+          home,
+          replicas,
+          replication)) ⇒
+
         ClusterModule.ensureEnabled()
 
         if (configAdress != address) throw new IllegalStateException(
@@ -389,56 +395,67 @@ object Actor extends ListenerManagement {
           "Remote server is not running")
 
         val isHomeNode = DeploymentConfig.isHomeNode(home)
-        val replicas = DeploymentConfig.replicaValueFor(replication)
+        val nrOfReplicas = DeploymentConfig.replicaValueFor(replicas)
 
-        def serializerErrorDueTo(reason: String) =
-          throw new akka.config.ConfigurationException(
-            "Could not create Serializer object [" + serializerClassName +
-              "] for serialization of actor [" + address +
-              "] since " + reason)
-
-        val serializer: Serializer = serializerClassName match {
-          case null | "" | Format.`defaultSerializerName` ⇒ Format.Default
-          case specialSerializer ⇒
-            ReflectiveAccess.getClassFor(specialSerializer) match {
-              case Right(clazz) ⇒
-                clazz.newInstance match {
-                  case s: Serializer ⇒ s
-                  case other         ⇒ serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
-                }
-              case Left(exception) ⇒
-                val cause = exception match {
-                  case i: InvocationTargetException ⇒ i.getTargetException
-                  case _                            ⇒ exception
-                }
-                serializerErrorDueTo(cause.toString)
-            }
-        }
-
-        val isStateful = state match {
-          case _: Stateless | Stateless ⇒ false
-          case _: Stateful | Stateful   ⇒ true
-        }
-
-        if (isStateful && isHomeNode) { // stateful actor's home node
-          cluster
-            .use(address, serializer)
-            .getOrElse(throw new ConfigurationException(
-              "Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
-
-        } else {
-          if (!cluster.isClustered(address)) { // add actor to cluster registry (if not already added)
-            cluster.store(factory().start(), replicas, false, serializer)
-          }
+        def storeActorAndGetClusterRef(replicationScheme: ReplicationScheme, serializer: Serializer): ActorRef = {
+          // add actor to cluster registry (if not already added)
+          if (!cluster.isClustered(address))
+            cluster.store(factory().start(), nrOfReplicas, replicationScheme, false, serializer)
 
           // remote node (not home node), check out as ClusterActorRef
           cluster.ref(address, DeploymentConfig.routerTypeFor(router))
+        }
+
+        val serializer = serializerFor(address, serializerClassName)
+
+        replication match {
+          case _: Transient | Transient ⇒
+            storeActorAndGetClusterRef(Transient, serializer)
+
+          case replication: Replication ⇒
+            if (isHomeNode) { // stateful actor's home node
+              cluster
+                .use(address, serializer)
+                .getOrElse(throw new ConfigurationException(
+                  "Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
+            } else {
+              // FIXME later manage different 'storage' (data grid) as well
+              storeActorAndGetClusterRef(replication, serializer)
+            }
         }
 
       case invalid ⇒ throw new IllegalActorStateException(
         "Could not create actor with address [" + address +
           "], not bound to a valid deployment scheme [" + invalid + "]")
     }
+  }
+
+  // FIXME move serializerFor method to ...?
+  def serializerFor(address: String, serializerClassName: String): Serializer = {
+    def serializerErrorDueTo(reason: String) =
+      throw new akka.config.ConfigurationException(
+        "Could not create Serializer object [" + serializerClassName +
+          "] for serialization of actor [" + address +
+          "] since " + reason)
+
+    val serializer: Serializer = serializerClassName match {
+      case null | "" | Format.`defaultSerializerName` ⇒ Format.Default
+      case specialSerializer ⇒
+        ReflectiveAccess.getClassFor(specialSerializer) match {
+          case Right(clazz) ⇒
+            clazz.newInstance match {
+              case s: Serializer ⇒ s
+              case other         ⇒ serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
+            }
+          case Left(exception) ⇒
+            val cause = exception match {
+              case i: InvocationTargetException ⇒ i.getTargetException
+              case _                            ⇒ exception
+            }
+            serializerErrorDueTo(cause.toString)
+        }
+    }
+    serializer
   }
 }
 
@@ -516,7 +533,8 @@ trait Actor {
     if (ref eq null)
       throw new ActorInitializationException("Trying to create an instance of " + getClass.getName + " outside of a wrapping 'actorOf'")
     else {
-      Actor.actorRefInCreation.set(refStack.push(null)) //Push a null marker so any subsequent calls to new Actor doesn't reuse this actor ref
+      // Push a null marker so any subsequent calls to new Actor doesn't reuse this actor ref
+      Actor.actorRefInCreation.set(refStack.push(null))
       Some(ref)
     }
   }

@@ -8,11 +8,32 @@ public final class MailboxProtocol {
   public static void registerAllExtensions(
       com.google.protobuf.ExtensionRegistry registry) {
   }
+  public interface DurableMailboxMessageProtocolOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required string ownerAddress = 1;
+    boolean hasOwnerAddress();
+    String getOwnerAddress();
+    
+    // optional string senderAddress = 2;
+    boolean hasSenderAddress();
+    String getSenderAddress();
+    
+    // optional .UuidProtocol futureUuid = 3;
+    boolean hasFutureUuid();
+    akka.actor.mailbox.MailboxProtocol.UuidProtocol getFutureUuid();
+    akka.actor.mailbox.MailboxProtocol.UuidProtocolOrBuilder getFutureUuidOrBuilder();
+    
+    // required bytes message = 4;
+    boolean hasMessage();
+    com.google.protobuf.ByteString getMessage();
+  }
   public static final class DurableMailboxMessageProtocol extends
-      com.google.protobuf.GeneratedMessage {
+      com.google.protobuf.GeneratedMessage
+      implements DurableMailboxMessageProtocolOrBuilder {
     // Use DurableMailboxMessageProtocol.newBuilder() to construct.
-    private DurableMailboxMessageProtocol() {
-      initFields();
+    private DurableMailboxMessageProtocol(Builder builder) {
+      super(builder);
     }
     private DurableMailboxMessageProtocol(boolean noInit) {}
     
@@ -35,60 +56,137 @@ public final class MailboxProtocol {
       return akka.actor.mailbox.MailboxProtocol.internal_static_DurableMailboxMessageProtocol_fieldAccessorTable;
     }
     
+    private int bitField0_;
     // required string ownerAddress = 1;
     public static final int OWNERADDRESS_FIELD_NUMBER = 1;
-    private boolean hasOwnerAddress;
-    private java.lang.String ownerAddress_ = "";
-    public boolean hasOwnerAddress() { return hasOwnerAddress; }
-    public java.lang.String getOwnerAddress() { return ownerAddress_; }
+    private java.lang.Object ownerAddress_;
+    public boolean hasOwnerAddress() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public String getOwnerAddress() {
+      java.lang.Object ref = ownerAddress_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          ownerAddress_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getOwnerAddressBytes() {
+      java.lang.Object ref = ownerAddress_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        ownerAddress_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
     
     // optional string senderAddress = 2;
     public static final int SENDERADDRESS_FIELD_NUMBER = 2;
-    private boolean hasSenderAddress;
-    private java.lang.String senderAddress_ = "";
-    public boolean hasSenderAddress() { return hasSenderAddress; }
-    public java.lang.String getSenderAddress() { return senderAddress_; }
+    private java.lang.Object senderAddress_;
+    public boolean hasSenderAddress() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public String getSenderAddress() {
+      java.lang.Object ref = senderAddress_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          senderAddress_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getSenderAddressBytes() {
+      java.lang.Object ref = senderAddress_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        senderAddress_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
     
     // optional .UuidProtocol futureUuid = 3;
     public static final int FUTUREUUID_FIELD_NUMBER = 3;
-    private boolean hasFutureUuid;
     private akka.actor.mailbox.MailboxProtocol.UuidProtocol futureUuid_;
-    public boolean hasFutureUuid() { return hasFutureUuid; }
-    public akka.actor.mailbox.MailboxProtocol.UuidProtocol getFutureUuid() { return futureUuid_; }
+    public boolean hasFutureUuid() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    public akka.actor.mailbox.MailboxProtocol.UuidProtocol getFutureUuid() {
+      return futureUuid_;
+    }
+    public akka.actor.mailbox.MailboxProtocol.UuidProtocolOrBuilder getFutureUuidOrBuilder() {
+      return futureUuid_;
+    }
     
     // required bytes message = 4;
     public static final int MESSAGE_FIELD_NUMBER = 4;
-    private boolean hasMessage;
-    private com.google.protobuf.ByteString message_ = com.google.protobuf.ByteString.EMPTY;
-    public boolean hasMessage() { return hasMessage; }
-    public com.google.protobuf.ByteString getMessage() { return message_; }
+    private com.google.protobuf.ByteString message_;
+    public boolean hasMessage() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    public com.google.protobuf.ByteString getMessage() {
+      return message_;
+    }
     
     private void initFields() {
+      ownerAddress_ = "";
+      senderAddress_ = "";
       futureUuid_ = akka.actor.mailbox.MailboxProtocol.UuidProtocol.getDefaultInstance();
+      message_ = com.google.protobuf.ByteString.EMPTY;
     }
+    private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
-      if (!hasOwnerAddress) return false;
-      if (!hasMessage) return false;
-      if (hasFutureUuid()) {
-        if (!getFutureUuid().isInitialized()) return false;
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasOwnerAddress()) {
+        memoizedIsInitialized = 0;
+        return false;
       }
+      if (!hasMessage()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (hasFutureUuid()) {
+        if (!getFutureUuid().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      memoizedIsInitialized = 1;
       return true;
     }
     
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
-      if (hasOwnerAddress()) {
-        output.writeString(1, getOwnerAddress());
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeBytes(1, getOwnerAddressBytes());
       }
-      if (hasSenderAddress()) {
-        output.writeString(2, getSenderAddress());
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeBytes(2, getSenderAddressBytes());
       }
-      if (hasFutureUuid()) {
-        output.writeMessage(3, getFutureUuid());
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeMessage(3, futureUuid_);
       }
-      if (hasMessage()) {
-        output.writeBytes(4, getMessage());
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBytes(4, message_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -99,25 +197,32 @@ public final class MailboxProtocol {
       if (size != -1) return size;
     
       size = 0;
-      if (hasOwnerAddress()) {
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(1, getOwnerAddress());
+          .computeBytesSize(1, getOwnerAddressBytes());
       }
-      if (hasSenderAddress()) {
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(2, getSenderAddress());
+          .computeBytesSize(2, getSenderAddressBytes());
       }
-      if (hasFutureUuid()) {
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(3, getFutureUuid());
+          .computeMessageSize(3, futureUuid_);
       }
-      if (hasMessage()) {
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(4, getMessage());
+          .computeBytesSize(4, message_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
       return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
     }
     
     public static akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol parseFrom(
@@ -194,34 +299,62 @@ public final class MailboxProtocol {
     }
     public Builder toBuilder() { return newBuilder(this); }
     
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> {
-      private akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol result;
-      
-      // Construct using akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol.newBuilder()
-      private Builder() {}
-      
-      private static Builder create() {
-        Builder builder = new Builder();
-        builder.result = new akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol();
-        return builder;
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocolOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.actor.mailbox.MailboxProtocol.internal_static_DurableMailboxMessageProtocol_descriptor;
       }
       
-      protected akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol internalGetResult() {
-        return result;
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.actor.mailbox.MailboxProtocol.internal_static_DurableMailboxMessageProtocol_fieldAccessorTable;
+      }
+      
+      // Construct using akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getFutureUuidFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
       }
       
       public Builder clear() {
-        if (result == null) {
-          throw new IllegalStateException(
-            "Cannot call clear() after build().");
+        super.clear();
+        ownerAddress_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        senderAddress_ = "";
+        bitField0_ = (bitField0_ & ~0x00000002);
+        if (futureUuidBuilder_ == null) {
+          futureUuid_ = akka.actor.mailbox.MailboxProtocol.UuidProtocol.getDefaultInstance();
+        } else {
+          futureUuidBuilder_.clear();
         }
-        result = new akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol();
+        bitField0_ = (bitField0_ & ~0x00000004);
+        message_ = com.google.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
       
       public Builder clone() {
-        return create().mergeFrom(result);
+        return create().mergeFrom(buildPartial());
       }
       
       public com.google.protobuf.Descriptors.Descriptor
@@ -233,33 +366,51 @@ public final class MailboxProtocol {
         return akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol.getDefaultInstance();
       }
       
-      public boolean isInitialized() {
-        return result.isInitialized();
-      }
       public akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol build() {
-        if (result != null && !isInitialized()) {
+        akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol result = buildPartial();
+        if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
-        return buildPartial();
+        return result;
       }
       
       private akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
-        if (!isInitialized()) {
+        akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol result = buildPartial();
+        if (!result.isInitialized()) {
           throw newUninitializedMessageException(
             result).asInvalidProtocolBufferException();
         }
-        return buildPartial();
+        return result;
       }
       
       public akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol buildPartial() {
-        if (result == null) {
-          throw new IllegalStateException(
-            "build() has already been called on this Builder.");
+        akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol result = new akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
         }
-        akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol returnMe = result;
-        result = null;
-        return returnMe;
+        result.ownerAddress_ = ownerAddress_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.senderAddress_ = senderAddress_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        if (futureUuidBuilder_ == null) {
+          result.futureUuid_ = futureUuid_;
+        } else {
+          result.futureUuid_ = futureUuidBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.message_ = message_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
       }
       
       public Builder mergeFrom(com.google.protobuf.Message other) {
@@ -289,6 +440,24 @@ public final class MailboxProtocol {
         return this;
       }
       
+      public final boolean isInitialized() {
+        if (!hasOwnerAddress()) {
+          
+          return false;
+        }
+        if (!hasMessage()) {
+          
+          return false;
+        }
+        if (hasFutureUuid()) {
+          if (!getFutureUuid().isInitialized()) {
+            
+            return false;
+          }
+        }
+        return true;
+      }
+      
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -301,21 +470,25 @@ public final class MailboxProtocol {
           switch (tag) {
             case 0:
               this.setUnknownFields(unknownFields.build());
+              onChanged();
               return this;
             default: {
               if (!parseUnknownField(input, unknownFields,
                                      extensionRegistry, tag)) {
                 this.setUnknownFields(unknownFields.build());
+                onChanged();
                 return this;
               }
               break;
             }
             case 10: {
-              setOwnerAddress(input.readString());
+              bitField0_ |= 0x00000001;
+              ownerAddress_ = input.readBytes();
               break;
             }
             case 18: {
-              setSenderAddress(input.readString());
+              bitField0_ |= 0x00000002;
+              senderAddress_ = input.readBytes();
               break;
             }
             case 26: {
@@ -328,111 +501,199 @@ public final class MailboxProtocol {
               break;
             }
             case 34: {
-              setMessage(input.readBytes());
+              bitField0_ |= 0x00000008;
+              message_ = input.readBytes();
               break;
             }
           }
         }
       }
       
+      private int bitField0_;
       
       // required string ownerAddress = 1;
+      private java.lang.Object ownerAddress_ = "";
       public boolean hasOwnerAddress() {
-        return result.hasOwnerAddress();
+        return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public java.lang.String getOwnerAddress() {
-        return result.getOwnerAddress();
+      public String getOwnerAddress() {
+        java.lang.Object ref = ownerAddress_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          ownerAddress_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
       }
-      public Builder setOwnerAddress(java.lang.String value) {
+      public Builder setOwnerAddress(String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  result.hasOwnerAddress = true;
-        result.ownerAddress_ = value;
+  bitField0_ |= 0x00000001;
+        ownerAddress_ = value;
+        onChanged();
         return this;
       }
       public Builder clearOwnerAddress() {
-        result.hasOwnerAddress = false;
-        result.ownerAddress_ = getDefaultInstance().getOwnerAddress();
+        bitField0_ = (bitField0_ & ~0x00000001);
+        ownerAddress_ = getDefaultInstance().getOwnerAddress();
+        onChanged();
         return this;
+      }
+      void setOwnerAddress(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000001;
+        ownerAddress_ = value;
+        onChanged();
       }
       
       // optional string senderAddress = 2;
+      private java.lang.Object senderAddress_ = "";
       public boolean hasSenderAddress() {
-        return result.hasSenderAddress();
+        return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      public java.lang.String getSenderAddress() {
-        return result.getSenderAddress();
+      public String getSenderAddress() {
+        java.lang.Object ref = senderAddress_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          senderAddress_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
       }
-      public Builder setSenderAddress(java.lang.String value) {
+      public Builder setSenderAddress(String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  result.hasSenderAddress = true;
-        result.senderAddress_ = value;
+  bitField0_ |= 0x00000002;
+        senderAddress_ = value;
+        onChanged();
         return this;
       }
       public Builder clearSenderAddress() {
-        result.hasSenderAddress = false;
-        result.senderAddress_ = getDefaultInstance().getSenderAddress();
+        bitField0_ = (bitField0_ & ~0x00000002);
+        senderAddress_ = getDefaultInstance().getSenderAddress();
+        onChanged();
         return this;
+      }
+      void setSenderAddress(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000002;
+        senderAddress_ = value;
+        onChanged();
       }
       
       // optional .UuidProtocol futureUuid = 3;
+      private akka.actor.mailbox.MailboxProtocol.UuidProtocol futureUuid_ = akka.actor.mailbox.MailboxProtocol.UuidProtocol.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.actor.mailbox.MailboxProtocol.UuidProtocol, akka.actor.mailbox.MailboxProtocol.UuidProtocol.Builder, akka.actor.mailbox.MailboxProtocol.UuidProtocolOrBuilder> futureUuidBuilder_;
       public boolean hasFutureUuid() {
-        return result.hasFutureUuid();
+        return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       public akka.actor.mailbox.MailboxProtocol.UuidProtocol getFutureUuid() {
-        return result.getFutureUuid();
+        if (futureUuidBuilder_ == null) {
+          return futureUuid_;
+        } else {
+          return futureUuidBuilder_.getMessage();
+        }
       }
       public Builder setFutureUuid(akka.actor.mailbox.MailboxProtocol.UuidProtocol value) {
-        if (value == null) {
-          throw new NullPointerException();
+        if (futureUuidBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          futureUuid_ = value;
+          onChanged();
+        } else {
+          futureUuidBuilder_.setMessage(value);
         }
-        result.hasFutureUuid = true;
-        result.futureUuid_ = value;
+        bitField0_ |= 0x00000004;
         return this;
       }
-      public Builder setFutureUuid(akka.actor.mailbox.MailboxProtocol.UuidProtocol.Builder builderForValue) {
-        result.hasFutureUuid = true;
-        result.futureUuid_ = builderForValue.build();
+      public Builder setFutureUuid(
+          akka.actor.mailbox.MailboxProtocol.UuidProtocol.Builder builderForValue) {
+        if (futureUuidBuilder_ == null) {
+          futureUuid_ = builderForValue.build();
+          onChanged();
+        } else {
+          futureUuidBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000004;
         return this;
       }
       public Builder mergeFutureUuid(akka.actor.mailbox.MailboxProtocol.UuidProtocol value) {
-        if (result.hasFutureUuid() &&
-            result.futureUuid_ != akka.actor.mailbox.MailboxProtocol.UuidProtocol.getDefaultInstance()) {
-          result.futureUuid_ =
-            akka.actor.mailbox.MailboxProtocol.UuidProtocol.newBuilder(result.futureUuid_).mergeFrom(value).buildPartial();
+        if (futureUuidBuilder_ == null) {
+          if (((bitField0_ & 0x00000004) == 0x00000004) &&
+              futureUuid_ != akka.actor.mailbox.MailboxProtocol.UuidProtocol.getDefaultInstance()) {
+            futureUuid_ =
+              akka.actor.mailbox.MailboxProtocol.UuidProtocol.newBuilder(futureUuid_).mergeFrom(value).buildPartial();
+          } else {
+            futureUuid_ = value;
+          }
+          onChanged();
         } else {
-          result.futureUuid_ = value;
+          futureUuidBuilder_.mergeFrom(value);
         }
-        result.hasFutureUuid = true;
+        bitField0_ |= 0x00000004;
         return this;
       }
       public Builder clearFutureUuid() {
-        result.hasFutureUuid = false;
-        result.futureUuid_ = akka.actor.mailbox.MailboxProtocol.UuidProtocol.getDefaultInstance();
+        if (futureUuidBuilder_ == null) {
+          futureUuid_ = akka.actor.mailbox.MailboxProtocol.UuidProtocol.getDefaultInstance();
+          onChanged();
+        } else {
+          futureUuidBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
+      }
+      public akka.actor.mailbox.MailboxProtocol.UuidProtocol.Builder getFutureUuidBuilder() {
+        bitField0_ |= 0x00000004;
+        onChanged();
+        return getFutureUuidFieldBuilder().getBuilder();
+      }
+      public akka.actor.mailbox.MailboxProtocol.UuidProtocolOrBuilder getFutureUuidOrBuilder() {
+        if (futureUuidBuilder_ != null) {
+          return futureUuidBuilder_.getMessageOrBuilder();
+        } else {
+          return futureUuid_;
+        }
+      }
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.actor.mailbox.MailboxProtocol.UuidProtocol, akka.actor.mailbox.MailboxProtocol.UuidProtocol.Builder, akka.actor.mailbox.MailboxProtocol.UuidProtocolOrBuilder> 
+          getFutureUuidFieldBuilder() {
+        if (futureUuidBuilder_ == null) {
+          futureUuidBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              akka.actor.mailbox.MailboxProtocol.UuidProtocol, akka.actor.mailbox.MailboxProtocol.UuidProtocol.Builder, akka.actor.mailbox.MailboxProtocol.UuidProtocolOrBuilder>(
+                  futureUuid_,
+                  getParentForChildren(),
+                  isClean());
+          futureUuid_ = null;
+        }
+        return futureUuidBuilder_;
       }
       
       // required bytes message = 4;
+      private com.google.protobuf.ByteString message_ = com.google.protobuf.ByteString.EMPTY;
       public boolean hasMessage() {
-        return result.hasMessage();
+        return ((bitField0_ & 0x00000008) == 0x00000008);
       }
       public com.google.protobuf.ByteString getMessage() {
-        return result.getMessage();
+        return message_;
       }
       public Builder setMessage(com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  result.hasMessage = true;
-        result.message_ = value;
+  bitField0_ |= 0x00000008;
+        message_ = value;
+        onChanged();
         return this;
       }
       public Builder clearMessage() {
-        result.hasMessage = false;
-        result.message_ = getDefaultInstance().getMessage();
+        bitField0_ = (bitField0_ & ~0x00000008);
+        message_ = getDefaultInstance().getMessage();
+        onChanged();
         return this;
       }
       
@@ -441,18 +702,29 @@ public final class MailboxProtocol {
     
     static {
       defaultInstance = new DurableMailboxMessageProtocol(true);
-      akka.actor.mailbox.MailboxProtocol.internalForceInit();
       defaultInstance.initFields();
     }
     
     // @@protoc_insertion_point(class_scope:DurableMailboxMessageProtocol)
   }
   
+  public interface UuidProtocolOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required uint64 high = 1;
+    boolean hasHigh();
+    long getHigh();
+    
+    // required uint64 low = 2;
+    boolean hasLow();
+    long getLow();
+  }
   public static final class UuidProtocol extends
-      com.google.protobuf.GeneratedMessage {
+      com.google.protobuf.GeneratedMessage
+      implements UuidProtocolOrBuilder {
     // Use UuidProtocol.newBuilder() to construct.
-    private UuidProtocol() {
-      initFields();
+    private UuidProtocol(Builder builder) {
+      super(builder);
     }
     private UuidProtocol(boolean noInit) {}
     
@@ -475,36 +747,56 @@ public final class MailboxProtocol {
       return akka.actor.mailbox.MailboxProtocol.internal_static_UuidProtocol_fieldAccessorTable;
     }
     
+    private int bitField0_;
     // required uint64 high = 1;
     public static final int HIGH_FIELD_NUMBER = 1;
-    private boolean hasHigh;
-    private long high_ = 0L;
-    public boolean hasHigh() { return hasHigh; }
-    public long getHigh() { return high_; }
+    private long high_;
+    public boolean hasHigh() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public long getHigh() {
+      return high_;
+    }
     
     // required uint64 low = 2;
     public static final int LOW_FIELD_NUMBER = 2;
-    private boolean hasLow;
-    private long low_ = 0L;
-    public boolean hasLow() { return hasLow; }
-    public long getLow() { return low_; }
+    private long low_;
+    public boolean hasLow() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public long getLow() {
+      return low_;
+    }
     
     private void initFields() {
+      high_ = 0L;
+      low_ = 0L;
     }
+    private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
-      if (!hasHigh) return false;
-      if (!hasLow) return false;
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasHigh()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasLow()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
       return true;
     }
     
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
-      if (hasHigh()) {
-        output.writeUInt64(1, getHigh());
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeUInt64(1, high_);
       }
-      if (hasLow()) {
-        output.writeUInt64(2, getLow());
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeUInt64(2, low_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -515,17 +807,24 @@ public final class MailboxProtocol {
       if (size != -1) return size;
     
       size = 0;
-      if (hasHigh()) {
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(1, getHigh());
+          .computeUInt64Size(1, high_);
       }
-      if (hasLow()) {
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(2, getLow());
+          .computeUInt64Size(2, low_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
       return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
     }
     
     public static akka.actor.mailbox.MailboxProtocol.UuidProtocol parseFrom(
@@ -602,34 +901,53 @@ public final class MailboxProtocol {
     }
     public Builder toBuilder() { return newBuilder(this); }
     
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> {
-      private akka.actor.mailbox.MailboxProtocol.UuidProtocol result;
-      
-      // Construct using akka.actor.mailbox.MailboxProtocol.UuidProtocol.newBuilder()
-      private Builder() {}
-      
-      private static Builder create() {
-        Builder builder = new Builder();
-        builder.result = new akka.actor.mailbox.MailboxProtocol.UuidProtocol();
-        return builder;
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.actor.mailbox.MailboxProtocol.UuidProtocolOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.actor.mailbox.MailboxProtocol.internal_static_UuidProtocol_descriptor;
       }
       
-      protected akka.actor.mailbox.MailboxProtocol.UuidProtocol internalGetResult() {
-        return result;
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.actor.mailbox.MailboxProtocol.internal_static_UuidProtocol_fieldAccessorTable;
+      }
+      
+      // Construct using akka.actor.mailbox.MailboxProtocol.UuidProtocol.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
       }
       
       public Builder clear() {
-        if (result == null) {
-          throw new IllegalStateException(
-            "Cannot call clear() after build().");
-        }
-        result = new akka.actor.mailbox.MailboxProtocol.UuidProtocol();
+        super.clear();
+        high_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        low_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
       
       public Builder clone() {
-        return create().mergeFrom(result);
+        return create().mergeFrom(buildPartial());
       }
       
       public com.google.protobuf.Descriptors.Descriptor
@@ -641,33 +959,39 @@ public final class MailboxProtocol {
         return akka.actor.mailbox.MailboxProtocol.UuidProtocol.getDefaultInstance();
       }
       
-      public boolean isInitialized() {
-        return result.isInitialized();
-      }
       public akka.actor.mailbox.MailboxProtocol.UuidProtocol build() {
-        if (result != null && !isInitialized()) {
+        akka.actor.mailbox.MailboxProtocol.UuidProtocol result = buildPartial();
+        if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
-        return buildPartial();
+        return result;
       }
       
       private akka.actor.mailbox.MailboxProtocol.UuidProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
-        if (!isInitialized()) {
+        akka.actor.mailbox.MailboxProtocol.UuidProtocol result = buildPartial();
+        if (!result.isInitialized()) {
           throw newUninitializedMessageException(
             result).asInvalidProtocolBufferException();
         }
-        return buildPartial();
+        return result;
       }
       
       public akka.actor.mailbox.MailboxProtocol.UuidProtocol buildPartial() {
-        if (result == null) {
-          throw new IllegalStateException(
-            "build() has already been called on this Builder.");
+        akka.actor.mailbox.MailboxProtocol.UuidProtocol result = new akka.actor.mailbox.MailboxProtocol.UuidProtocol(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
         }
-        akka.actor.mailbox.MailboxProtocol.UuidProtocol returnMe = result;
-        result = null;
-        return returnMe;
+        result.high_ = high_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.low_ = low_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
       }
       
       public Builder mergeFrom(com.google.protobuf.Message other) {
@@ -691,6 +1015,18 @@ public final class MailboxProtocol {
         return this;
       }
       
+      public final boolean isInitialized() {
+        if (!hasHigh()) {
+          
+          return false;
+        }
+        if (!hasLow()) {
+          
+          return false;
+        }
+        return true;
+      }
+      
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -703,61 +1039,72 @@ public final class MailboxProtocol {
           switch (tag) {
             case 0:
               this.setUnknownFields(unknownFields.build());
+              onChanged();
               return this;
             default: {
               if (!parseUnknownField(input, unknownFields,
                                      extensionRegistry, tag)) {
                 this.setUnknownFields(unknownFields.build());
+                onChanged();
                 return this;
               }
               break;
             }
             case 8: {
-              setHigh(input.readUInt64());
+              bitField0_ |= 0x00000001;
+              high_ = input.readUInt64();
               break;
             }
             case 16: {
-              setLow(input.readUInt64());
+              bitField0_ |= 0x00000002;
+              low_ = input.readUInt64();
               break;
             }
           }
         }
       }
       
+      private int bitField0_;
       
       // required uint64 high = 1;
+      private long high_ ;
       public boolean hasHigh() {
-        return result.hasHigh();
+        return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       public long getHigh() {
-        return result.getHigh();
+        return high_;
       }
       public Builder setHigh(long value) {
-        result.hasHigh = true;
-        result.high_ = value;
+        bitField0_ |= 0x00000001;
+        high_ = value;
+        onChanged();
         return this;
       }
       public Builder clearHigh() {
-        result.hasHigh = false;
-        result.high_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        high_ = 0L;
+        onChanged();
         return this;
       }
       
       // required uint64 low = 2;
+      private long low_ ;
       public boolean hasLow() {
-        return result.hasLow();
+        return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       public long getLow() {
-        return result.getLow();
+        return low_;
       }
       public Builder setLow(long value) {
-        result.hasLow = true;
-        result.low_ = value;
+        bitField0_ |= 0x00000002;
+        low_ = value;
+        onChanged();
         return this;
       }
       public Builder clearLow() {
-        result.hasLow = false;
-        result.low_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        low_ = 0L;
+        onChanged();
         return this;
       }
       
@@ -766,7 +1113,6 @@ public final class MailboxProtocol {
     
     static {
       defaultInstance = new UuidProtocol(true);
-      akka.actor.mailbox.MailboxProtocol.internalForceInit();
       defaultInstance.initFields();
     }
     
@@ -828,8 +1174,6 @@ public final class MailboxProtocol {
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
-  
-  public static void internalForceInit() {}
   
   // @@protoc_insertion_point(outer_class_scope)
 }

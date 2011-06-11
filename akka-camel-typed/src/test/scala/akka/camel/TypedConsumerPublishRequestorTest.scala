@@ -7,6 +7,7 @@ import org.scalatest.junit.JUnitSuite
 
 import akka.actor._
 import akka.actor.Actor._
+import akka.actor.TypedActor.Configuration._
 import akka.camel.TypedCamelTestSupport.{ SetExpectedMessageCount ⇒ SetExpectedTestMessageCount, _ }
 
 class TypedConsumerPublishRequestorTest extends JUnitSuite {
@@ -33,14 +34,14 @@ class TypedConsumerPublishRequestorTest extends JUnitSuite {
   @After
   def tearDown = {
     Actor.registry.removeListener(requestor);
-    Actor.registry.shutdownAll
+    Actor.registry.local.shutdownAll
   }
 
   @Test
   def shouldReceiveOneConsumerMethodRegisteredEvent = {
     Actor.registry.addListener(requestor)
     val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get
-    val obj = TypedActor.newInstance(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl])
+    val obj = TypedActor.typedActorOf(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl], defaultConfiguration)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     val event = (publisher !! GetRetainedMessage).as[ConsumerMethodRegistered].get
     assert(event.endpointUri === "direct:foo")
@@ -50,7 +51,7 @@ class TypedConsumerPublishRequestorTest extends JUnitSuite {
 
   @Test
   def shouldReceiveOneConsumerMethodUnregisteredEvent = {
-    val obj = TypedActor.newInstance(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl])
+    val obj = TypedActor.typedActorOf(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl], defaultConfiguration)
     val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get
     Actor.registry.addListener(requestor)
     TypedActor.stop(obj)
@@ -65,7 +66,7 @@ class TypedConsumerPublishRequestorTest extends JUnitSuite {
   def shouldReceiveThreeConsumerMethodRegisteredEvents = {
     Actor.registry.addListener(requestor)
     val latch = (publisher !! SetExpectedTestMessageCount(3)).as[CountDownLatch].get
-    val obj = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
+    val obj = TypedActor.typedActorOf(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl], defaultConfiguration)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     val request = GetRetainedMessages(_.isInstanceOf[ConsumerMethodRegistered])
     val events = (publisher !! request).as[List[ConsumerMethodRegistered]].get
@@ -74,7 +75,7 @@ class TypedConsumerPublishRequestorTest extends JUnitSuite {
 
   @Test
   def shouldReceiveThreeConsumerMethodUnregisteredEvents = {
-    val obj = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
+    val obj = TypedActor.typedActorOf(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl], defaultConfiguration)
     val latch = (publisher !! SetExpectedTestMessageCount(3)).as[CountDownLatch].get
     Actor.registry.addListener(requestor)
     TypedActor.stop(obj)

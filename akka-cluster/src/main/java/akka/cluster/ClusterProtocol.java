@@ -26,6 +26,21 @@ public final class ClusterProtocol {
     FUNCTION_FUN1_ARG_ANY(13, 14),
     ;
     
+    public static final int START_VALUE = 1;
+    public static final int STOP_VALUE = 2;
+    public static final int USE_VALUE = 3;
+    public static final int RELEASE_VALUE = 4;
+    public static final int MAKE_AVAILABLE_VALUE = 5;
+    public static final int MAKE_UNAVAILABLE_VALUE = 6;
+    public static final int DISCONNECT_VALUE = 7;
+    public static final int RECONNECT_VALUE = 8;
+    public static final int RESIGN_VALUE = 9;
+    public static final int FAIL_OVER_CONNECTIONS_VALUE = 10;
+    public static final int FUNCTION_FUN0_UNIT_VALUE = 11;
+    public static final int FUNCTION_FUN0_ANY_VALUE = 12;
+    public static final int FUNCTION_FUN1_ARG_UNIT_VALUE = 13;
+    public static final int FUNCTION_FUN1_ARG_ANY_VALUE = 14;
+    
     
     public final int getNumber() { return value; }
     
@@ -57,8 +72,8 @@ public final class ClusterProtocol {
         internalValueMap =
           new com.google.protobuf.Internal.EnumLiteMap<RemoteDaemonMessageType>() {
             public RemoteDaemonMessageType findValueByNumber(int number) {
-              return RemoteDaemonMessageType.valueOf(number)
-    ;        }
+              return RemoteDaemonMessageType.valueOf(number);
+            }
           };
     
     public final com.google.protobuf.Descriptors.EnumValueDescriptor
@@ -77,6 +92,7 @@ public final class ClusterProtocol {
     private static final RemoteDaemonMessageType[] VALUES = {
       START, STOP, USE, RELEASE, MAKE_AVAILABLE, MAKE_UNAVAILABLE, DISCONNECT, RECONNECT, RESIGN, FAIL_OVER_CONNECTIONS, FUNCTION_FUN0_UNIT, FUNCTION_FUN0_ANY, FUNCTION_FUN1_ARG_UNIT, FUNCTION_FUN1_ARG_ANY, 
     };
+    
     public static RemoteDaemonMessageType valueOf(
         com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
       if (desc.getType() != getDescriptor()) {
@@ -85,25 +101,44 @@ public final class ClusterProtocol {
       }
       return VALUES[desc.getIndex()];
     }
+    
     private final int index;
     private final int value;
+    
     private RemoteDaemonMessageType(int index, int value) {
       this.index = index;
       this.value = value;
     }
     
-    static {
-      akka.cluster.ClusterProtocol.getDescriptor();
-    }
-    
     // @@protoc_insertion_point(enum_scope:RemoteDaemonMessageType)
   }
   
+  public interface RemoteDaemonMessageProtocolOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required .RemoteDaemonMessageType messageType = 1;
+    boolean hasMessageType();
+    akka.cluster.ClusterProtocol.RemoteDaemonMessageType getMessageType();
+    
+    // optional .UuidProtocol actorUuid = 2;
+    boolean hasActorUuid();
+    akka.cluster.ClusterProtocol.UuidProtocol getActorUuid();
+    akka.cluster.ClusterProtocol.UuidProtocolOrBuilder getActorUuidOrBuilder();
+    
+    // optional string actorAddress = 3;
+    boolean hasActorAddress();
+    String getActorAddress();
+    
+    // optional bytes payload = 5;
+    boolean hasPayload();
+    com.google.protobuf.ByteString getPayload();
+  }
   public static final class RemoteDaemonMessageProtocol extends
-      com.google.protobuf.GeneratedMessage {
+      com.google.protobuf.GeneratedMessage
+      implements RemoteDaemonMessageProtocolOrBuilder {
     // Use RemoteDaemonMessageProtocol.newBuilder() to construct.
-    private RemoteDaemonMessageProtocol() {
-      initFields();
+    private RemoteDaemonMessageProtocol(Builder builder) {
+      super(builder);
     }
     private RemoteDaemonMessageProtocol(boolean noInit) {}
     
@@ -126,60 +161,111 @@ public final class ClusterProtocol {
       return akka.cluster.ClusterProtocol.internal_static_RemoteDaemonMessageProtocol_fieldAccessorTable;
     }
     
+    private int bitField0_;
     // required .RemoteDaemonMessageType messageType = 1;
     public static final int MESSAGETYPE_FIELD_NUMBER = 1;
-    private boolean hasMessageType;
     private akka.cluster.ClusterProtocol.RemoteDaemonMessageType messageType_;
-    public boolean hasMessageType() { return hasMessageType; }
-    public akka.cluster.ClusterProtocol.RemoteDaemonMessageType getMessageType() { return messageType_; }
+    public boolean hasMessageType() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public akka.cluster.ClusterProtocol.RemoteDaemonMessageType getMessageType() {
+      return messageType_;
+    }
     
     // optional .UuidProtocol actorUuid = 2;
     public static final int ACTORUUID_FIELD_NUMBER = 2;
-    private boolean hasActorUuid;
     private akka.cluster.ClusterProtocol.UuidProtocol actorUuid_;
-    public boolean hasActorUuid() { return hasActorUuid; }
-    public akka.cluster.ClusterProtocol.UuidProtocol getActorUuid() { return actorUuid_; }
+    public boolean hasActorUuid() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public akka.cluster.ClusterProtocol.UuidProtocol getActorUuid() {
+      return actorUuid_;
+    }
+    public akka.cluster.ClusterProtocol.UuidProtocolOrBuilder getActorUuidOrBuilder() {
+      return actorUuid_;
+    }
     
     // optional string actorAddress = 3;
     public static final int ACTORADDRESS_FIELD_NUMBER = 3;
-    private boolean hasActorAddress;
-    private java.lang.String actorAddress_ = "";
-    public boolean hasActorAddress() { return hasActorAddress; }
-    public java.lang.String getActorAddress() { return actorAddress_; }
+    private java.lang.Object actorAddress_;
+    public boolean hasActorAddress() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    public String getActorAddress() {
+      java.lang.Object ref = actorAddress_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          actorAddress_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getActorAddressBytes() {
+      java.lang.Object ref = actorAddress_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        actorAddress_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
     
     // optional bytes payload = 5;
     public static final int PAYLOAD_FIELD_NUMBER = 5;
-    private boolean hasPayload;
-    private com.google.protobuf.ByteString payload_ = com.google.protobuf.ByteString.EMPTY;
-    public boolean hasPayload() { return hasPayload; }
-    public com.google.protobuf.ByteString getPayload() { return payload_; }
+    private com.google.protobuf.ByteString payload_;
+    public boolean hasPayload() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    public com.google.protobuf.ByteString getPayload() {
+      return payload_;
+    }
     
     private void initFields() {
       messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.START;
       actorUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
+      actorAddress_ = "";
+      payload_ = com.google.protobuf.ByteString.EMPTY;
     }
+    private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
-      if (!hasMessageType) return false;
-      if (hasActorUuid()) {
-        if (!getActorUuid().isInitialized()) return false;
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasMessageType()) {
+        memoizedIsInitialized = 0;
+        return false;
       }
+      if (hasActorUuid()) {
+        if (!getActorUuid().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      memoizedIsInitialized = 1;
       return true;
     }
     
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
-      if (hasMessageType()) {
-        output.writeEnum(1, getMessageType().getNumber());
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeEnum(1, messageType_.getNumber());
       }
-      if (hasActorUuid()) {
-        output.writeMessage(2, getActorUuid());
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeMessage(2, actorUuid_);
       }
-      if (hasActorAddress()) {
-        output.writeString(3, getActorAddress());
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeBytes(3, getActorAddressBytes());
       }
-      if (hasPayload()) {
-        output.writeBytes(5, getPayload());
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBytes(5, payload_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -190,25 +276,32 @@ public final class ClusterProtocol {
       if (size != -1) return size;
     
       size = 0;
-      if (hasMessageType()) {
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeEnumSize(1, getMessageType().getNumber());
+          .computeEnumSize(1, messageType_.getNumber());
       }
-      if (hasActorUuid()) {
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(2, getActorUuid());
+          .computeMessageSize(2, actorUuid_);
       }
-      if (hasActorAddress()) {
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(3, getActorAddress());
+          .computeBytesSize(3, getActorAddressBytes());
       }
-      if (hasPayload()) {
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(5, getPayload());
+          .computeBytesSize(5, payload_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
       return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
     }
     
     public static akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol parseFrom(
@@ -285,34 +378,62 @@ public final class ClusterProtocol {
     }
     public Builder toBuilder() { return newBuilder(this); }
     
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> {
-      private akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol result;
-      
-      // Construct using akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol.newBuilder()
-      private Builder() {}
-      
-      private static Builder create() {
-        Builder builder = new Builder();
-        builder.result = new akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol();
-        return builder;
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocolOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.cluster.ClusterProtocol.internal_static_RemoteDaemonMessageProtocol_descriptor;
       }
       
-      protected akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol internalGetResult() {
-        return result;
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.cluster.ClusterProtocol.internal_static_RemoteDaemonMessageProtocol_fieldAccessorTable;
+      }
+      
+      // Construct using akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getActorUuidFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
       }
       
       public Builder clear() {
-        if (result == null) {
-          throw new IllegalStateException(
-            "Cannot call clear() after build().");
+        super.clear();
+        messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.START;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        if (actorUuidBuilder_ == null) {
+          actorUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
+        } else {
+          actorUuidBuilder_.clear();
         }
-        result = new akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol();
+        bitField0_ = (bitField0_ & ~0x00000002);
+        actorAddress_ = "";
+        bitField0_ = (bitField0_ & ~0x00000004);
+        payload_ = com.google.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
       
       public Builder clone() {
-        return create().mergeFrom(result);
+        return create().mergeFrom(buildPartial());
       }
       
       public com.google.protobuf.Descriptors.Descriptor
@@ -324,33 +445,51 @@ public final class ClusterProtocol {
         return akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol.getDefaultInstance();
       }
       
-      public boolean isInitialized() {
-        return result.isInitialized();
-      }
       public akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol build() {
-        if (result != null && !isInitialized()) {
+        akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol result = buildPartial();
+        if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
-        return buildPartial();
+        return result;
       }
       
       private akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
-        if (!isInitialized()) {
+        akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol result = buildPartial();
+        if (!result.isInitialized()) {
           throw newUninitializedMessageException(
             result).asInvalidProtocolBufferException();
         }
-        return buildPartial();
+        return result;
       }
       
       public akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol buildPartial() {
-        if (result == null) {
-          throw new IllegalStateException(
-            "build() has already been called on this Builder.");
+        akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol result = new akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
         }
-        akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol returnMe = result;
-        result = null;
-        return returnMe;
+        result.messageType_ = messageType_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        if (actorUuidBuilder_ == null) {
+          result.actorUuid_ = actorUuid_;
+        } else {
+          result.actorUuid_ = actorUuidBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.actorAddress_ = actorAddress_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.payload_ = payload_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
       }
       
       public Builder mergeFrom(com.google.protobuf.Message other) {
@@ -380,6 +519,20 @@ public final class ClusterProtocol {
         return this;
       }
       
+      public final boolean isInitialized() {
+        if (!hasMessageType()) {
+          
+          return false;
+        }
+        if (hasActorUuid()) {
+          if (!getActorUuid().isInitialized()) {
+            
+            return false;
+          }
+        }
+        return true;
+      }
+      
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -392,11 +545,13 @@ public final class ClusterProtocol {
           switch (tag) {
             case 0:
               this.setUnknownFields(unknownFields.build());
+              onChanged();
               return this;
             default: {
               if (!parseUnknownField(input, unknownFields,
                                      extensionRegistry, tag)) {
                 this.setUnknownFields(unknownFields.build());
+                onChanged();
                 return this;
               }
               break;
@@ -407,7 +562,8 @@ public final class ClusterProtocol {
               if (value == null) {
                 unknownFields.mergeVarintField(1, rawValue);
               } else {
-                setMessageType(value);
+                bitField0_ |= 0x00000001;
+                messageType_ = value;
               }
               break;
             }
@@ -421,115 +577,192 @@ public final class ClusterProtocol {
               break;
             }
             case 26: {
-              setActorAddress(input.readString());
+              bitField0_ |= 0x00000004;
+              actorAddress_ = input.readBytes();
               break;
             }
             case 42: {
-              setPayload(input.readBytes());
+              bitField0_ |= 0x00000008;
+              payload_ = input.readBytes();
               break;
             }
           }
         }
       }
       
+      private int bitField0_;
       
       // required .RemoteDaemonMessageType messageType = 1;
+      private akka.cluster.ClusterProtocol.RemoteDaemonMessageType messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.START;
       public boolean hasMessageType() {
-        return result.hasMessageType();
+        return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       public akka.cluster.ClusterProtocol.RemoteDaemonMessageType getMessageType() {
-        return result.getMessageType();
+        return messageType_;
       }
       public Builder setMessageType(akka.cluster.ClusterProtocol.RemoteDaemonMessageType value) {
         if (value == null) {
           throw new NullPointerException();
         }
-        result.hasMessageType = true;
-        result.messageType_ = value;
+        bitField0_ |= 0x00000001;
+        messageType_ = value;
+        onChanged();
         return this;
       }
       public Builder clearMessageType() {
-        result.hasMessageType = false;
-        result.messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.START;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.START;
+        onChanged();
         return this;
       }
       
       // optional .UuidProtocol actorUuid = 2;
+      private akka.cluster.ClusterProtocol.UuidProtocol actorUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.cluster.ClusterProtocol.UuidProtocol, akka.cluster.ClusterProtocol.UuidProtocol.Builder, akka.cluster.ClusterProtocol.UuidProtocolOrBuilder> actorUuidBuilder_;
       public boolean hasActorUuid() {
-        return result.hasActorUuid();
+        return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       public akka.cluster.ClusterProtocol.UuidProtocol getActorUuid() {
-        return result.getActorUuid();
+        if (actorUuidBuilder_ == null) {
+          return actorUuid_;
+        } else {
+          return actorUuidBuilder_.getMessage();
+        }
       }
       public Builder setActorUuid(akka.cluster.ClusterProtocol.UuidProtocol value) {
-        if (value == null) {
-          throw new NullPointerException();
+        if (actorUuidBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          actorUuid_ = value;
+          onChanged();
+        } else {
+          actorUuidBuilder_.setMessage(value);
         }
-        result.hasActorUuid = true;
-        result.actorUuid_ = value;
+        bitField0_ |= 0x00000002;
         return this;
       }
-      public Builder setActorUuid(akka.cluster.ClusterProtocol.UuidProtocol.Builder builderForValue) {
-        result.hasActorUuid = true;
-        result.actorUuid_ = builderForValue.build();
+      public Builder setActorUuid(
+          akka.cluster.ClusterProtocol.UuidProtocol.Builder builderForValue) {
+        if (actorUuidBuilder_ == null) {
+          actorUuid_ = builderForValue.build();
+          onChanged();
+        } else {
+          actorUuidBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000002;
         return this;
       }
       public Builder mergeActorUuid(akka.cluster.ClusterProtocol.UuidProtocol value) {
-        if (result.hasActorUuid() &&
-            result.actorUuid_ != akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance()) {
-          result.actorUuid_ =
-            akka.cluster.ClusterProtocol.UuidProtocol.newBuilder(result.actorUuid_).mergeFrom(value).buildPartial();
+        if (actorUuidBuilder_ == null) {
+          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+              actorUuid_ != akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance()) {
+            actorUuid_ =
+              akka.cluster.ClusterProtocol.UuidProtocol.newBuilder(actorUuid_).mergeFrom(value).buildPartial();
+          } else {
+            actorUuid_ = value;
+          }
+          onChanged();
         } else {
-          result.actorUuid_ = value;
+          actorUuidBuilder_.mergeFrom(value);
         }
-        result.hasActorUuid = true;
+        bitField0_ |= 0x00000002;
         return this;
       }
       public Builder clearActorUuid() {
-        result.hasActorUuid = false;
-        result.actorUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
+        if (actorUuidBuilder_ == null) {
+          actorUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
+          onChanged();
+        } else {
+          actorUuidBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
+      }
+      public akka.cluster.ClusterProtocol.UuidProtocol.Builder getActorUuidBuilder() {
+        bitField0_ |= 0x00000002;
+        onChanged();
+        return getActorUuidFieldBuilder().getBuilder();
+      }
+      public akka.cluster.ClusterProtocol.UuidProtocolOrBuilder getActorUuidOrBuilder() {
+        if (actorUuidBuilder_ != null) {
+          return actorUuidBuilder_.getMessageOrBuilder();
+        } else {
+          return actorUuid_;
+        }
+      }
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.cluster.ClusterProtocol.UuidProtocol, akka.cluster.ClusterProtocol.UuidProtocol.Builder, akka.cluster.ClusterProtocol.UuidProtocolOrBuilder> 
+          getActorUuidFieldBuilder() {
+        if (actorUuidBuilder_ == null) {
+          actorUuidBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              akka.cluster.ClusterProtocol.UuidProtocol, akka.cluster.ClusterProtocol.UuidProtocol.Builder, akka.cluster.ClusterProtocol.UuidProtocolOrBuilder>(
+                  actorUuid_,
+                  getParentForChildren(),
+                  isClean());
+          actorUuid_ = null;
+        }
+        return actorUuidBuilder_;
       }
       
       // optional string actorAddress = 3;
+      private java.lang.Object actorAddress_ = "";
       public boolean hasActorAddress() {
-        return result.hasActorAddress();
+        return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      public java.lang.String getActorAddress() {
-        return result.getActorAddress();
+      public String getActorAddress() {
+        java.lang.Object ref = actorAddress_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          actorAddress_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
       }
-      public Builder setActorAddress(java.lang.String value) {
+      public Builder setActorAddress(String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  result.hasActorAddress = true;
-        result.actorAddress_ = value;
+  bitField0_ |= 0x00000004;
+        actorAddress_ = value;
+        onChanged();
         return this;
       }
       public Builder clearActorAddress() {
-        result.hasActorAddress = false;
-        result.actorAddress_ = getDefaultInstance().getActorAddress();
+        bitField0_ = (bitField0_ & ~0x00000004);
+        actorAddress_ = getDefaultInstance().getActorAddress();
+        onChanged();
         return this;
+      }
+      void setActorAddress(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000004;
+        actorAddress_ = value;
+        onChanged();
       }
       
       // optional bytes payload = 5;
+      private com.google.protobuf.ByteString payload_ = com.google.protobuf.ByteString.EMPTY;
       public boolean hasPayload() {
-        return result.hasPayload();
+        return ((bitField0_ & 0x00000008) == 0x00000008);
       }
       public com.google.protobuf.ByteString getPayload() {
-        return result.getPayload();
+        return payload_;
       }
       public Builder setPayload(com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  result.hasPayload = true;
-        result.payload_ = value;
+  bitField0_ |= 0x00000008;
+        payload_ = value;
+        onChanged();
         return this;
       }
       public Builder clearPayload() {
-        result.hasPayload = false;
-        result.payload_ = getDefaultInstance().getPayload();
+        bitField0_ = (bitField0_ & ~0x00000008);
+        payload_ = getDefaultInstance().getPayload();
+        onChanged();
         return this;
       }
       
@@ -538,18 +771,38 @@ public final class ClusterProtocol {
     
     static {
       defaultInstance = new RemoteDaemonMessageProtocol(true);
-      akka.cluster.ClusterProtocol.internalForceInit();
       defaultInstance.initFields();
     }
     
     // @@protoc_insertion_point(class_scope:RemoteDaemonMessageProtocol)
   }
   
+  public interface DurableMailboxMessageProtocolOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required string ownerActorAddress = 1;
+    boolean hasOwnerActorAddress();
+    String getOwnerActorAddress();
+    
+    // optional string senderActorAddress = 2;
+    boolean hasSenderActorAddress();
+    String getSenderActorAddress();
+    
+    // optional .UuidProtocol futureUuid = 3;
+    boolean hasFutureUuid();
+    akka.cluster.ClusterProtocol.UuidProtocol getFutureUuid();
+    akka.cluster.ClusterProtocol.UuidProtocolOrBuilder getFutureUuidOrBuilder();
+    
+    // required bytes message = 4;
+    boolean hasMessage();
+    com.google.protobuf.ByteString getMessage();
+  }
   public static final class DurableMailboxMessageProtocol extends
-      com.google.protobuf.GeneratedMessage {
+      com.google.protobuf.GeneratedMessage
+      implements DurableMailboxMessageProtocolOrBuilder {
     // Use DurableMailboxMessageProtocol.newBuilder() to construct.
-    private DurableMailboxMessageProtocol() {
-      initFields();
+    private DurableMailboxMessageProtocol(Builder builder) {
+      super(builder);
     }
     private DurableMailboxMessageProtocol(boolean noInit) {}
     
@@ -572,60 +825,137 @@ public final class ClusterProtocol {
       return akka.cluster.ClusterProtocol.internal_static_DurableMailboxMessageProtocol_fieldAccessorTable;
     }
     
+    private int bitField0_;
     // required string ownerActorAddress = 1;
     public static final int OWNERACTORADDRESS_FIELD_NUMBER = 1;
-    private boolean hasOwnerActorAddress;
-    private java.lang.String ownerActorAddress_ = "";
-    public boolean hasOwnerActorAddress() { return hasOwnerActorAddress; }
-    public java.lang.String getOwnerActorAddress() { return ownerActorAddress_; }
+    private java.lang.Object ownerActorAddress_;
+    public boolean hasOwnerActorAddress() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public String getOwnerActorAddress() {
+      java.lang.Object ref = ownerActorAddress_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          ownerActorAddress_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getOwnerActorAddressBytes() {
+      java.lang.Object ref = ownerActorAddress_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        ownerActorAddress_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
     
     // optional string senderActorAddress = 2;
     public static final int SENDERACTORADDRESS_FIELD_NUMBER = 2;
-    private boolean hasSenderActorAddress;
-    private java.lang.String senderActorAddress_ = "";
-    public boolean hasSenderActorAddress() { return hasSenderActorAddress; }
-    public java.lang.String getSenderActorAddress() { return senderActorAddress_; }
+    private java.lang.Object senderActorAddress_;
+    public boolean hasSenderActorAddress() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public String getSenderActorAddress() {
+      java.lang.Object ref = senderActorAddress_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          senderActorAddress_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getSenderActorAddressBytes() {
+      java.lang.Object ref = senderActorAddress_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        senderActorAddress_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
     
     // optional .UuidProtocol futureUuid = 3;
     public static final int FUTUREUUID_FIELD_NUMBER = 3;
-    private boolean hasFutureUuid;
     private akka.cluster.ClusterProtocol.UuidProtocol futureUuid_;
-    public boolean hasFutureUuid() { return hasFutureUuid; }
-    public akka.cluster.ClusterProtocol.UuidProtocol getFutureUuid() { return futureUuid_; }
+    public boolean hasFutureUuid() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    public akka.cluster.ClusterProtocol.UuidProtocol getFutureUuid() {
+      return futureUuid_;
+    }
+    public akka.cluster.ClusterProtocol.UuidProtocolOrBuilder getFutureUuidOrBuilder() {
+      return futureUuid_;
+    }
     
     // required bytes message = 4;
     public static final int MESSAGE_FIELD_NUMBER = 4;
-    private boolean hasMessage;
-    private com.google.protobuf.ByteString message_ = com.google.protobuf.ByteString.EMPTY;
-    public boolean hasMessage() { return hasMessage; }
-    public com.google.protobuf.ByteString getMessage() { return message_; }
+    private com.google.protobuf.ByteString message_;
+    public boolean hasMessage() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    public com.google.protobuf.ByteString getMessage() {
+      return message_;
+    }
     
     private void initFields() {
+      ownerActorAddress_ = "";
+      senderActorAddress_ = "";
       futureUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
+      message_ = com.google.protobuf.ByteString.EMPTY;
     }
+    private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
-      if (!hasOwnerActorAddress) return false;
-      if (!hasMessage) return false;
-      if (hasFutureUuid()) {
-        if (!getFutureUuid().isInitialized()) return false;
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasOwnerActorAddress()) {
+        memoizedIsInitialized = 0;
+        return false;
       }
+      if (!hasMessage()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (hasFutureUuid()) {
+        if (!getFutureUuid().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      memoizedIsInitialized = 1;
       return true;
     }
     
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
-      if (hasOwnerActorAddress()) {
-        output.writeString(1, getOwnerActorAddress());
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeBytes(1, getOwnerActorAddressBytes());
       }
-      if (hasSenderActorAddress()) {
-        output.writeString(2, getSenderActorAddress());
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeBytes(2, getSenderActorAddressBytes());
       }
-      if (hasFutureUuid()) {
-        output.writeMessage(3, getFutureUuid());
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeMessage(3, futureUuid_);
       }
-      if (hasMessage()) {
-        output.writeBytes(4, getMessage());
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBytes(4, message_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -636,25 +966,32 @@ public final class ClusterProtocol {
       if (size != -1) return size;
     
       size = 0;
-      if (hasOwnerActorAddress()) {
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(1, getOwnerActorAddress());
+          .computeBytesSize(1, getOwnerActorAddressBytes());
       }
-      if (hasSenderActorAddress()) {
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(2, getSenderActorAddress());
+          .computeBytesSize(2, getSenderActorAddressBytes());
       }
-      if (hasFutureUuid()) {
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(3, getFutureUuid());
+          .computeMessageSize(3, futureUuid_);
       }
-      if (hasMessage()) {
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(4, getMessage());
+          .computeBytesSize(4, message_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
       return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
     }
     
     public static akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol parseFrom(
@@ -731,34 +1068,62 @@ public final class ClusterProtocol {
     }
     public Builder toBuilder() { return newBuilder(this); }
     
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> {
-      private akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol result;
-      
-      // Construct using akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol.newBuilder()
-      private Builder() {}
-      
-      private static Builder create() {
-        Builder builder = new Builder();
-        builder.result = new akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol();
-        return builder;
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.cluster.ClusterProtocol.DurableMailboxMessageProtocolOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.cluster.ClusterProtocol.internal_static_DurableMailboxMessageProtocol_descriptor;
       }
       
-      protected akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol internalGetResult() {
-        return result;
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.cluster.ClusterProtocol.internal_static_DurableMailboxMessageProtocol_fieldAccessorTable;
+      }
+      
+      // Construct using akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getFutureUuidFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
       }
       
       public Builder clear() {
-        if (result == null) {
-          throw new IllegalStateException(
-            "Cannot call clear() after build().");
+        super.clear();
+        ownerActorAddress_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        senderActorAddress_ = "";
+        bitField0_ = (bitField0_ & ~0x00000002);
+        if (futureUuidBuilder_ == null) {
+          futureUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
+        } else {
+          futureUuidBuilder_.clear();
         }
-        result = new akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol();
+        bitField0_ = (bitField0_ & ~0x00000004);
+        message_ = com.google.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
       
       public Builder clone() {
-        return create().mergeFrom(result);
+        return create().mergeFrom(buildPartial());
       }
       
       public com.google.protobuf.Descriptors.Descriptor
@@ -770,33 +1135,51 @@ public final class ClusterProtocol {
         return akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol.getDefaultInstance();
       }
       
-      public boolean isInitialized() {
-        return result.isInitialized();
-      }
       public akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol build() {
-        if (result != null && !isInitialized()) {
+        akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol result = buildPartial();
+        if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
-        return buildPartial();
+        return result;
       }
       
       private akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
-        if (!isInitialized()) {
+        akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol result = buildPartial();
+        if (!result.isInitialized()) {
           throw newUninitializedMessageException(
             result).asInvalidProtocolBufferException();
         }
-        return buildPartial();
+        return result;
       }
       
       public akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol buildPartial() {
-        if (result == null) {
-          throw new IllegalStateException(
-            "build() has already been called on this Builder.");
+        akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol result = new akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
         }
-        akka.cluster.ClusterProtocol.DurableMailboxMessageProtocol returnMe = result;
-        result = null;
-        return returnMe;
+        result.ownerActorAddress_ = ownerActorAddress_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.senderActorAddress_ = senderActorAddress_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        if (futureUuidBuilder_ == null) {
+          result.futureUuid_ = futureUuid_;
+        } else {
+          result.futureUuid_ = futureUuidBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.message_ = message_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
       }
       
       public Builder mergeFrom(com.google.protobuf.Message other) {
@@ -826,6 +1209,24 @@ public final class ClusterProtocol {
         return this;
       }
       
+      public final boolean isInitialized() {
+        if (!hasOwnerActorAddress()) {
+          
+          return false;
+        }
+        if (!hasMessage()) {
+          
+          return false;
+        }
+        if (hasFutureUuid()) {
+          if (!getFutureUuid().isInitialized()) {
+            
+            return false;
+          }
+        }
+        return true;
+      }
+      
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -838,21 +1239,25 @@ public final class ClusterProtocol {
           switch (tag) {
             case 0:
               this.setUnknownFields(unknownFields.build());
+              onChanged();
               return this;
             default: {
               if (!parseUnknownField(input, unknownFields,
                                      extensionRegistry, tag)) {
                 this.setUnknownFields(unknownFields.build());
+                onChanged();
                 return this;
               }
               break;
             }
             case 10: {
-              setOwnerActorAddress(input.readString());
+              bitField0_ |= 0x00000001;
+              ownerActorAddress_ = input.readBytes();
               break;
             }
             case 18: {
-              setSenderActorAddress(input.readString());
+              bitField0_ |= 0x00000002;
+              senderActorAddress_ = input.readBytes();
               break;
             }
             case 26: {
@@ -865,111 +1270,199 @@ public final class ClusterProtocol {
               break;
             }
             case 34: {
-              setMessage(input.readBytes());
+              bitField0_ |= 0x00000008;
+              message_ = input.readBytes();
               break;
             }
           }
         }
       }
       
+      private int bitField0_;
       
       // required string ownerActorAddress = 1;
+      private java.lang.Object ownerActorAddress_ = "";
       public boolean hasOwnerActorAddress() {
-        return result.hasOwnerActorAddress();
+        return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public java.lang.String getOwnerActorAddress() {
-        return result.getOwnerActorAddress();
+      public String getOwnerActorAddress() {
+        java.lang.Object ref = ownerActorAddress_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          ownerActorAddress_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
       }
-      public Builder setOwnerActorAddress(java.lang.String value) {
+      public Builder setOwnerActorAddress(String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  result.hasOwnerActorAddress = true;
-        result.ownerActorAddress_ = value;
+  bitField0_ |= 0x00000001;
+        ownerActorAddress_ = value;
+        onChanged();
         return this;
       }
       public Builder clearOwnerActorAddress() {
-        result.hasOwnerActorAddress = false;
-        result.ownerActorAddress_ = getDefaultInstance().getOwnerActorAddress();
+        bitField0_ = (bitField0_ & ~0x00000001);
+        ownerActorAddress_ = getDefaultInstance().getOwnerActorAddress();
+        onChanged();
         return this;
+      }
+      void setOwnerActorAddress(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000001;
+        ownerActorAddress_ = value;
+        onChanged();
       }
       
       // optional string senderActorAddress = 2;
+      private java.lang.Object senderActorAddress_ = "";
       public boolean hasSenderActorAddress() {
-        return result.hasSenderActorAddress();
+        return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      public java.lang.String getSenderActorAddress() {
-        return result.getSenderActorAddress();
+      public String getSenderActorAddress() {
+        java.lang.Object ref = senderActorAddress_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          senderActorAddress_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
       }
-      public Builder setSenderActorAddress(java.lang.String value) {
+      public Builder setSenderActorAddress(String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  result.hasSenderActorAddress = true;
-        result.senderActorAddress_ = value;
+  bitField0_ |= 0x00000002;
+        senderActorAddress_ = value;
+        onChanged();
         return this;
       }
       public Builder clearSenderActorAddress() {
-        result.hasSenderActorAddress = false;
-        result.senderActorAddress_ = getDefaultInstance().getSenderActorAddress();
+        bitField0_ = (bitField0_ & ~0x00000002);
+        senderActorAddress_ = getDefaultInstance().getSenderActorAddress();
+        onChanged();
         return this;
+      }
+      void setSenderActorAddress(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000002;
+        senderActorAddress_ = value;
+        onChanged();
       }
       
       // optional .UuidProtocol futureUuid = 3;
+      private akka.cluster.ClusterProtocol.UuidProtocol futureUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.cluster.ClusterProtocol.UuidProtocol, akka.cluster.ClusterProtocol.UuidProtocol.Builder, akka.cluster.ClusterProtocol.UuidProtocolOrBuilder> futureUuidBuilder_;
       public boolean hasFutureUuid() {
-        return result.hasFutureUuid();
+        return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       public akka.cluster.ClusterProtocol.UuidProtocol getFutureUuid() {
-        return result.getFutureUuid();
+        if (futureUuidBuilder_ == null) {
+          return futureUuid_;
+        } else {
+          return futureUuidBuilder_.getMessage();
+        }
       }
       public Builder setFutureUuid(akka.cluster.ClusterProtocol.UuidProtocol value) {
-        if (value == null) {
-          throw new NullPointerException();
+        if (futureUuidBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          futureUuid_ = value;
+          onChanged();
+        } else {
+          futureUuidBuilder_.setMessage(value);
         }
-        result.hasFutureUuid = true;
-        result.futureUuid_ = value;
+        bitField0_ |= 0x00000004;
         return this;
       }
-      public Builder setFutureUuid(akka.cluster.ClusterProtocol.UuidProtocol.Builder builderForValue) {
-        result.hasFutureUuid = true;
-        result.futureUuid_ = builderForValue.build();
+      public Builder setFutureUuid(
+          akka.cluster.ClusterProtocol.UuidProtocol.Builder builderForValue) {
+        if (futureUuidBuilder_ == null) {
+          futureUuid_ = builderForValue.build();
+          onChanged();
+        } else {
+          futureUuidBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000004;
         return this;
       }
       public Builder mergeFutureUuid(akka.cluster.ClusterProtocol.UuidProtocol value) {
-        if (result.hasFutureUuid() &&
-            result.futureUuid_ != akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance()) {
-          result.futureUuid_ =
-            akka.cluster.ClusterProtocol.UuidProtocol.newBuilder(result.futureUuid_).mergeFrom(value).buildPartial();
+        if (futureUuidBuilder_ == null) {
+          if (((bitField0_ & 0x00000004) == 0x00000004) &&
+              futureUuid_ != akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance()) {
+            futureUuid_ =
+              akka.cluster.ClusterProtocol.UuidProtocol.newBuilder(futureUuid_).mergeFrom(value).buildPartial();
+          } else {
+            futureUuid_ = value;
+          }
+          onChanged();
         } else {
-          result.futureUuid_ = value;
+          futureUuidBuilder_.mergeFrom(value);
         }
-        result.hasFutureUuid = true;
+        bitField0_ |= 0x00000004;
         return this;
       }
       public Builder clearFutureUuid() {
-        result.hasFutureUuid = false;
-        result.futureUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
+        if (futureUuidBuilder_ == null) {
+          futureUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
+          onChanged();
+        } else {
+          futureUuidBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
+      }
+      public akka.cluster.ClusterProtocol.UuidProtocol.Builder getFutureUuidBuilder() {
+        bitField0_ |= 0x00000004;
+        onChanged();
+        return getFutureUuidFieldBuilder().getBuilder();
+      }
+      public akka.cluster.ClusterProtocol.UuidProtocolOrBuilder getFutureUuidOrBuilder() {
+        if (futureUuidBuilder_ != null) {
+          return futureUuidBuilder_.getMessageOrBuilder();
+        } else {
+          return futureUuid_;
+        }
+      }
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.cluster.ClusterProtocol.UuidProtocol, akka.cluster.ClusterProtocol.UuidProtocol.Builder, akka.cluster.ClusterProtocol.UuidProtocolOrBuilder> 
+          getFutureUuidFieldBuilder() {
+        if (futureUuidBuilder_ == null) {
+          futureUuidBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              akka.cluster.ClusterProtocol.UuidProtocol, akka.cluster.ClusterProtocol.UuidProtocol.Builder, akka.cluster.ClusterProtocol.UuidProtocolOrBuilder>(
+                  futureUuid_,
+                  getParentForChildren(),
+                  isClean());
+          futureUuid_ = null;
+        }
+        return futureUuidBuilder_;
       }
       
       // required bytes message = 4;
+      private com.google.protobuf.ByteString message_ = com.google.protobuf.ByteString.EMPTY;
       public boolean hasMessage() {
-        return result.hasMessage();
+        return ((bitField0_ & 0x00000008) == 0x00000008);
       }
       public com.google.protobuf.ByteString getMessage() {
-        return result.getMessage();
+        return message_;
       }
       public Builder setMessage(com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  result.hasMessage = true;
-        result.message_ = value;
+  bitField0_ |= 0x00000008;
+        message_ = value;
+        onChanged();
         return this;
       }
       public Builder clearMessage() {
-        result.hasMessage = false;
-        result.message_ = getDefaultInstance().getMessage();
+        bitField0_ = (bitField0_ & ~0x00000008);
+        message_ = getDefaultInstance().getMessage();
+        onChanged();
         return this;
       }
       
@@ -978,18 +1471,29 @@ public final class ClusterProtocol {
     
     static {
       defaultInstance = new DurableMailboxMessageProtocol(true);
-      akka.cluster.ClusterProtocol.internalForceInit();
       defaultInstance.initFields();
     }
     
     // @@protoc_insertion_point(class_scope:DurableMailboxMessageProtocol)
   }
   
+  public interface UuidProtocolOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required uint64 high = 1;
+    boolean hasHigh();
+    long getHigh();
+    
+    // required uint64 low = 2;
+    boolean hasLow();
+    long getLow();
+  }
   public static final class UuidProtocol extends
-      com.google.protobuf.GeneratedMessage {
+      com.google.protobuf.GeneratedMessage
+      implements UuidProtocolOrBuilder {
     // Use UuidProtocol.newBuilder() to construct.
-    private UuidProtocol() {
-      initFields();
+    private UuidProtocol(Builder builder) {
+      super(builder);
     }
     private UuidProtocol(boolean noInit) {}
     
@@ -1012,36 +1516,56 @@ public final class ClusterProtocol {
       return akka.cluster.ClusterProtocol.internal_static_UuidProtocol_fieldAccessorTable;
     }
     
+    private int bitField0_;
     // required uint64 high = 1;
     public static final int HIGH_FIELD_NUMBER = 1;
-    private boolean hasHigh;
-    private long high_ = 0L;
-    public boolean hasHigh() { return hasHigh; }
-    public long getHigh() { return high_; }
+    private long high_;
+    public boolean hasHigh() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public long getHigh() {
+      return high_;
+    }
     
     // required uint64 low = 2;
     public static final int LOW_FIELD_NUMBER = 2;
-    private boolean hasLow;
-    private long low_ = 0L;
-    public boolean hasLow() { return hasLow; }
-    public long getLow() { return low_; }
+    private long low_;
+    public boolean hasLow() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public long getLow() {
+      return low_;
+    }
     
     private void initFields() {
+      high_ = 0L;
+      low_ = 0L;
     }
+    private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
-      if (!hasHigh) return false;
-      if (!hasLow) return false;
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasHigh()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasLow()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
       return true;
     }
     
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
-      if (hasHigh()) {
-        output.writeUInt64(1, getHigh());
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeUInt64(1, high_);
       }
-      if (hasLow()) {
-        output.writeUInt64(2, getLow());
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeUInt64(2, low_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -1052,17 +1576,24 @@ public final class ClusterProtocol {
       if (size != -1) return size;
     
       size = 0;
-      if (hasHigh()) {
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(1, getHigh());
+          .computeUInt64Size(1, high_);
       }
-      if (hasLow()) {
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(2, getLow());
+          .computeUInt64Size(2, low_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
       return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
     }
     
     public static akka.cluster.ClusterProtocol.UuidProtocol parseFrom(
@@ -1139,34 +1670,53 @@ public final class ClusterProtocol {
     }
     public Builder toBuilder() { return newBuilder(this); }
     
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> {
-      private akka.cluster.ClusterProtocol.UuidProtocol result;
-      
-      // Construct using akka.cluster.ClusterProtocol.UuidProtocol.newBuilder()
-      private Builder() {}
-      
-      private static Builder create() {
-        Builder builder = new Builder();
-        builder.result = new akka.cluster.ClusterProtocol.UuidProtocol();
-        return builder;
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.cluster.ClusterProtocol.UuidProtocolOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.cluster.ClusterProtocol.internal_static_UuidProtocol_descriptor;
       }
       
-      protected akka.cluster.ClusterProtocol.UuidProtocol internalGetResult() {
-        return result;
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.cluster.ClusterProtocol.internal_static_UuidProtocol_fieldAccessorTable;
+      }
+      
+      // Construct using akka.cluster.ClusterProtocol.UuidProtocol.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
       }
       
       public Builder clear() {
-        if (result == null) {
-          throw new IllegalStateException(
-            "Cannot call clear() after build().");
-        }
-        result = new akka.cluster.ClusterProtocol.UuidProtocol();
+        super.clear();
+        high_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        low_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
       
       public Builder clone() {
-        return create().mergeFrom(result);
+        return create().mergeFrom(buildPartial());
       }
       
       public com.google.protobuf.Descriptors.Descriptor
@@ -1178,33 +1728,39 @@ public final class ClusterProtocol {
         return akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
       }
       
-      public boolean isInitialized() {
-        return result.isInitialized();
-      }
       public akka.cluster.ClusterProtocol.UuidProtocol build() {
-        if (result != null && !isInitialized()) {
+        akka.cluster.ClusterProtocol.UuidProtocol result = buildPartial();
+        if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
-        return buildPartial();
+        return result;
       }
       
       private akka.cluster.ClusterProtocol.UuidProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
-        if (!isInitialized()) {
+        akka.cluster.ClusterProtocol.UuidProtocol result = buildPartial();
+        if (!result.isInitialized()) {
           throw newUninitializedMessageException(
             result).asInvalidProtocolBufferException();
         }
-        return buildPartial();
+        return result;
       }
       
       public akka.cluster.ClusterProtocol.UuidProtocol buildPartial() {
-        if (result == null) {
-          throw new IllegalStateException(
-            "build() has already been called on this Builder.");
+        akka.cluster.ClusterProtocol.UuidProtocol result = new akka.cluster.ClusterProtocol.UuidProtocol(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
         }
-        akka.cluster.ClusterProtocol.UuidProtocol returnMe = result;
-        result = null;
-        return returnMe;
+        result.high_ = high_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.low_ = low_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
       }
       
       public Builder mergeFrom(com.google.protobuf.Message other) {
@@ -1228,6 +1784,18 @@ public final class ClusterProtocol {
         return this;
       }
       
+      public final boolean isInitialized() {
+        if (!hasHigh()) {
+          
+          return false;
+        }
+        if (!hasLow()) {
+          
+          return false;
+        }
+        return true;
+      }
+      
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -1240,61 +1808,72 @@ public final class ClusterProtocol {
           switch (tag) {
             case 0:
               this.setUnknownFields(unknownFields.build());
+              onChanged();
               return this;
             default: {
               if (!parseUnknownField(input, unknownFields,
                                      extensionRegistry, tag)) {
                 this.setUnknownFields(unknownFields.build());
+                onChanged();
                 return this;
               }
               break;
             }
             case 8: {
-              setHigh(input.readUInt64());
+              bitField0_ |= 0x00000001;
+              high_ = input.readUInt64();
               break;
             }
             case 16: {
-              setLow(input.readUInt64());
+              bitField0_ |= 0x00000002;
+              low_ = input.readUInt64();
               break;
             }
           }
         }
       }
       
+      private int bitField0_;
       
       // required uint64 high = 1;
+      private long high_ ;
       public boolean hasHigh() {
-        return result.hasHigh();
+        return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       public long getHigh() {
-        return result.getHigh();
+        return high_;
       }
       public Builder setHigh(long value) {
-        result.hasHigh = true;
-        result.high_ = value;
+        bitField0_ |= 0x00000001;
+        high_ = value;
+        onChanged();
         return this;
       }
       public Builder clearHigh() {
-        result.hasHigh = false;
-        result.high_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        high_ = 0L;
+        onChanged();
         return this;
       }
       
       // required uint64 low = 2;
+      private long low_ ;
       public boolean hasLow() {
-        return result.hasLow();
+        return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       public long getLow() {
-        return result.getLow();
+        return low_;
       }
       public Builder setLow(long value) {
-        result.hasLow = true;
-        result.low_ = value;
+        bitField0_ |= 0x00000002;
+        low_ = value;
+        onChanged();
         return this;
       }
       public Builder clearLow() {
-        result.hasLow = false;
-        result.low_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        low_ = 0L;
+        onChanged();
         return this;
       }
       
@@ -1303,7 +1882,6 @@ public final class ClusterProtocol {
     
     static {
       defaultInstance = new UuidProtocol(true);
-      akka.cluster.ClusterProtocol.internalForceInit();
       defaultInstance.initFields();
     }
     
@@ -1389,8 +1967,6 @@ public final class ClusterProtocol {
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
-  
-  public static void internalForceInit() {}
   
   // @@protoc_insertion_point(outer_class_scope)
 }

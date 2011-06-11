@@ -154,7 +154,7 @@ class MonitorableThreadFactory(val name: String) extends ThreadFactory {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object MonitorableThread {
-  val DEFAULT_NAME = "MonitorableThread"
+  val DEFAULT_NAME = "MonitorableThread".intern
 
   // FIXME use MonitorableThread.created and MonitorableThread.alive in monitoring
   val created = new AtomicInteger
