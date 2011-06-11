@@ -136,6 +136,8 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
 
   override def mailboxSize(actor: ActorRef) = getMailbox(actor).queue.size
 
+  def mailboxIsEmpty(actorRef: ActorRef): Boolean = getMailbox(actorRef).queue.isEmpty
+
   private[akka] override def dispatch(handle: MessageInvocation) {
     val mbox = getMailbox(handle.receiver)
     val queue = mbox.queue
@@ -214,7 +216,8 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
 class NestingQueue {
   private var q = new LinkedList[MessageInvocation]()
   def size = q.size
-  def push(handle : MessageInvocation) { q.offer(handle) }
+  def isEmpty = q.isEmpty
+  def push(handle: MessageInvocation) { q.offer(handle) }
   def peek = q.peek
   def pop = q.poll
 

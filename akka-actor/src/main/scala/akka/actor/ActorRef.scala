@@ -453,12 +453,14 @@ trait ActorRef extends ActorRefShared
   /**
    * Returns the mailbox size.
    */
+  @deprecated("Use actorref.dispatcher.mailboxSize(actorref)","1.2")
   def mailboxSize = dispatcher.mailboxSize(this)
 
   /**
    * Akka Java API. <p/>
    * Returns the mailbox size.
    */
+  @deprecated("Use actorref.dispatcher.mailboxSize(actorref)","1.2")
   def getMailboxSize(): Int = mailboxSize
 
   /**
@@ -1098,10 +1100,9 @@ class LocalActorRef private[akka] (
     Actor.registry.register(this)
   }
 
-
-  protected[akka] def checkReceiveTimeout = {
+  protected[akka] def checkReceiveTimeout() {
     cancelReceiveTimeout
-    if (receiveTimeout.isDefined && dispatcher.mailboxSize(this) <= 0) { //Only reschedule if desired and there are currently no more messages to be processed
+    if (receiveTimeout.isDefined && dispatcher.mailboxIsEmpty(this)) { //Only reschedule if desired and there are currently no more messages to be processed
       _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, receiveTimeout.get, TimeUnit.MILLISECONDS))
     }
   }
