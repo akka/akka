@@ -879,9 +879,13 @@ class RemoteServerHandler(
       case _                       ⇒ None
     }
 
-  private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = {
+  private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = try {
     EventHandler.debug(this, "Received remote message [%s]".format(request))
     dispatchToActor(request, channel)
+  } catch {
+    case e: Exception ⇒
+      server.notifyListeners(RemoteServerError(e, server))
+      EventHandler.error(e, this, e.getMessage)
   }
 
   private def dispatchToActor(request: RemoteMessageProtocol, channel: Channel) {
