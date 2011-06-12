@@ -944,13 +944,17 @@ class RemoteServerHandler(
       case _ => None
     }
 
-  private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = {
+  private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = try {
     request.getActorInfo.getActorType match {
       case SCALA_ACTOR => dispatchToActor(request, channel)
       case TYPED_ACTOR => dispatchToTypedActor(request, channel)
       case JAVA_ACTOR  => throw new IllegalActorStateException("ActorType JAVA_ACTOR is currently not supported")
       case other       => throw new IllegalActorStateException("Unknown ActorType [" + other + "]")
     }
+  } catch {
+    case e: Exception =>
+      server.notifyListeners(RemoteServerError(e, server))
+      EventHandler.error(e, this, e.getMessage)
   }
 
   private def dispatchToActor(request: RemoteMessageProtocol, channel: Channel) {
