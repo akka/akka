@@ -177,7 +177,6 @@ abstract class RemoteClient private[akka] (
   }
 
   private[remote] val runSwitch       = new Switch()
-  private[remote] val isAuthenticated = new AtomicBoolean(false)
 
   private[remote] def isRunning = runSwitch.isOn
 
@@ -214,7 +213,7 @@ abstract class RemoteClient private[akka] (
     isOneWay: Boolean,
     actorRef: ActorRef,
     typedActorInfo: Option[Tuple2[String, String]],
-    actorType: AkkaActorType): Option[CompletableFuture[T]] = synchronized { // FIXME: find better strategy to prevent race
+    actorType: AkkaActorType): Option[CompletableFuture[T]] = {
 
     send(createRemoteMessageProtocolBuilder(
         Some(actorRef),
@@ -227,7 +226,7 @@ abstract class RemoteClient private[akka] (
         senderOption,
         typedActorInfo,
         actorType,
-        if (isAuthenticated.compareAndSet(false, true)) RemoteClientSettings.SECURE_COOKIE else None
+        RemoteClientSettings.SECURE_COOKIE
       ).build, senderFuture)
   }
 
@@ -389,7 +388,6 @@ class ActiveRemoteClient private[akka] (
     } match {
       case true => true
       case false if reconnectIfAlreadyConnected =>
-        isAuthenticated.set(false)
         openChannels.remove(connection.getChannel)
         connection.getChannel.close
         connection = bootstrap.connect(remoteAddress)
