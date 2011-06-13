@@ -310,8 +310,8 @@ class ActorRefSpec extends WordSpec with MustMatchers {
           }
         }).start()
 
-      val ffive: Future[String] = ref !!! 5
-      val fnull: Future[String] = ref !!! null
+      val ffive: Future[String] = ref ? 5
+      val fnull: Future[String] = ref ? null
 
       intercept[ActorKilledException] {
         ref !! PoisonPill

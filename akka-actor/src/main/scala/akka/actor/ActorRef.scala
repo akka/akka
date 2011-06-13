@@ -101,8 +101,8 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] with S
   /**
    * User overridable callback/setting.
    * <p/>
-   * Defines the default timeout for '!!' and '!!!' invocations,
-   * e.g. the timeout for the future returned by the call to '!!' and '!!!'.
+   * Defines the default timeout for '!!' and '?' invocations,
+   * e.g. the timeout for the future returned by the call to '!!' and '?'.
    */
   @deprecated("Will be replaced by implicit-scoped timeout on all methods that needs it, will default to timeout specified in config", "1.1")
   @BeanProperty
@@ -210,7 +210,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] with S
   /**
    * Akka Java API. <p/>
    * The reference sender future of the last received message.
-   * Is defined if the message was sent with sent with '!!' or '!!!', else None.
+   * Is defined if the message was sent with sent with '!!' or '?', else None.
    */
   def getSenderFuture: Option[Promise[Any]] = senderFuture
 
@@ -297,7 +297,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] with S
    * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def ask[T <: AnyRef](message: AnyRef, timeout: Long, sender: ActorRef): Future[T] = !!!(message, timeout)(Option(sender)).asInstanceOf[Future[T]]
+  def ask[T <: AnyRef](message: AnyRef, timeout: Long, sender: ActorRef): Future[T] = ?(message, timeout)(Option(sender)).asInstanceOf[Future[T]]
 
   /**
    * Akka Java API. <p/>
@@ -1148,7 +1148,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef ⇒
 
   /**
    * The reference sender future of the last received message.
-   * Is defined if the message was sent with sent with '!!' or '!!!', else None.
+   * Is defined if the message was sent with sent with '!!' or '?', else None.
    */
   def senderFuture(): Option[Promise[Any]] = {
     val msg = currentMessage
@@ -1199,14 +1199,16 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef ⇒
 
   /**
    * Sends a message asynchronously returns a future holding the eventual reply message.
+   * Synonymous to: ask
+   * Pronounced: "ask"
    * <p/>
    * <b>NOTE:</b>
    * Use this method with care. In most cases it is better to use '!' together with the 'sender' member field to
    * implement request/response message exchanges.
-   * If you are sending messages using <code>!!!</code> then you <b>have to</b> use <code>self.reply(..)</code>
+   * If you are sending messages using <code>?</code> then you <b>have to</b> use <code>self.reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def !!![T](message: Any, timeout: Long = this.timeout)(implicit sender: Option[ActorRef] = None): Future[T] = {
+  def ?[T](message: Any, timeout: Long = this.timeout)(implicit sender: Option[ActorRef] = None): Future[T] = {
     if (isRunning) postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, sender, None)
     else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
@@ -1215,7 +1217,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef ⇒
   /**
    * Forwards the message and passes the original sender actor as the sender.
    * <p/>
-   * Works with '!', '!!' and '!!!'.
+   * Works with '!', '!!' and '?'.
    */
   def forward(message: Any)(implicit sender: Some[ActorRef]) = {
     if (isRunning) {

@@ -333,7 +333,7 @@ object Actor extends ListenerManagement {
    * This means that the following code is equivalent:
    *   (actor !! "foo").as[Int] (Deprecated)
    *   and
-   *   (actor !!! "foo").as[Int] (Recommended)
+   *   (actor ? "foo").as[Int] (Recommended)
    */
   implicit def futureToAnyOptionAsTypedOption(anyFuture: Future[_]) = new AnyOptionAsTypedOption({
     try { anyFuture.await } catch { case t: FutureTimeoutException ⇒ }
@@ -475,7 +475,7 @@ object Actor extends ListenerManagement {
  *
  * <p/>
  * Here you find functions like:
- *   - !, !!, !!! and forward
+ *   - !, !!, ? and forward
  *   - link, unlink, startLink etc
  *   - start, stop
  *   - etc.
@@ -543,7 +543,7 @@ trait Actor {
    * Option[ActorRef] representation of the 'self' ActorRef reference.
    * <p/>
    * Mainly for internal use, functions as the implicit sender references when invoking
-   * one of the message send functions ('!', '!!' and '!!!').
+   * one of the message send functions ('!', '!!' and '?').
    */
   implicit def optionSelf: Option[ActorRef] = someSelf
 

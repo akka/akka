@@ -89,7 +89,7 @@ class ActorRegistrySpec extends JUnitSuite {
     val actor2 = actorOf[TestActor]("test-actor-2").start
     val results = new ConcurrentLinkedQueue[Future[String]]
 
-    Actor.registry.local.foreach(actor ⇒ results.add(actor.!!![String]("ping")))
+    Actor.registry.local.foreach(actor ⇒ results.add(actor.?[String]("ping")))
 
     assert(results.size === 2)
     val i = results.iterator

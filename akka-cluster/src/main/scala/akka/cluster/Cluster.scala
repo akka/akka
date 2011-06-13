@@ -1056,7 +1056,7 @@ class DefaultClusterNode private[akka] (
       .setMessageType(FUNCTION_FUN0_ANY)
       .setPayload(ByteString.copyFrom(Serializers.Java.toBinary(f)))
       .build
-    val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ !!! message)
+    val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ ? message)
     results.toList.asInstanceOf[List[Future[Any]]]
   }
 
@@ -1082,7 +1082,7 @@ class DefaultClusterNode private[akka] (
       .setMessageType(FUNCTION_FUN1_ARG_ANY)
       .setPayload(ByteString.copyFrom(Serializers.Java.toBinary((f, arg))))
       .build
-    val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ !!! message)
+    val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ ? message)
     results.toList.asInstanceOf[List[Future[Any]]]
   }
 

@@ -46,14 +46,14 @@ object TypedActor {
             actor ! m
             null
           case m if m.returnsFuture_? ⇒
-            actor !!! m
+            actor ? m
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
-            (actor !!! m).as[AnyRef] match {
+            (actor ? m).as[AnyRef] match {
               case Some(null) | None ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
               case Some(joption)     ⇒ joption
             }
           case m ⇒
-            (actor !!! m).get
+            (actor ? m).get
         }
     }
   }

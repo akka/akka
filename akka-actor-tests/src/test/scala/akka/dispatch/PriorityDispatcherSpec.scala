@@ -44,7 +44,7 @@ class PriorityDispatcherSpec extends WordSpec with MustMatchers {
 
     dispatcher.resume(actor) //Signal the actor to start treating it's message backlog
 
-    actor.!!![List[Int]]('Result).await.result.get must be === (msgs.reverse)
+    actor.?[List[Int]]('Result).await.result.get must be === (msgs.reverse)
   }
 
 }

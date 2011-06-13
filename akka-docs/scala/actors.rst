@@ -126,7 +126,7 @@ Messages are sent to an Actor through one of the “bang” methods.
 
 * ! means “fire-and-forget”, e.g. send a message asynchronously and return immediately.
 * !! means “send-and-reply-eventually”, e.g. send a message asynchronously and wait for a reply through aFuture. Here you can specify a timeout. Using timeouts is very important. If no timeout is specified then the actor’s default timeout (set by the this.timeout variable in the actor) is used. This method returns an ``Option[Any]`` which will be either ``Some(result)`` if returning successfully or None if the call timed out.
-* !!! sends a message asynchronously and returns a ``Future``.
+* ? sends a message asynchronously and returns a ``Future``.
 
 You can check if an Actor can handle a specific message by invoking the ``isDefinedAt`` method:
 
@@ -180,11 +180,11 @@ Here are some examples:
 Send-And-Receive-Future
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Using ``!!!`` will send a message to the receiving Actor asynchronously and will return a 'Future':
+Using ``?`` will send a message to the receiving Actor asynchronously and will return a 'Future':
 
 .. code-block:: scala
 
-  val future = actor !!! "Hello"
+  val future = actor ? "Hello"
 
 See :ref:`futures-scala` for more information.
 
@@ -329,7 +329,7 @@ The same pattern holds for using the ``senderFuture`` in the section below.
 Reply using the sender future
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If a message was sent with the ``!!`` or ``!!!`` methods, which both implements request-reply semantics using Future's, then you either have the option of replying using the ``reply`` method as above. This method will then resolve the Future. But you can also get a reference to the Future directly and resolve it yourself or if you would like to store it away to resolve it later, or pass it on to some other Actor to resolve it.
+If a message was sent with the ``!!`` or ``?`` methods, which both implements request-reply semantics using Future's, then you either have the option of replying using the ``reply`` method as above. This method will then resolve the Future. But you can also get a reference to the Future directly and resolve it yourself or if you would like to store it away to resolve it later, or pass it on to some other Actor to resolve it.
 
 The reference to the Future resides in the ``senderFuture: Option[Promise[_]]`` member field in the ``ActorRef`` class.
 
@@ -427,7 +427,7 @@ PoisonPill
 
 You can also send an actor the ``akka.actor.PoisonPill`` message, which will stop the actor when the message is processed.
 
-If the sender is a ``Future`` (e.g. the message is sent with ``!!`` or ``!!!``), the ``Future`` will be completed with an ``akka.actor.ActorKilledException("PoisonPill")``.
+If the sender is a ``Future`` (e.g. the message is sent with ``!!`` or ``?``), the ``Future`` will be completed with an ``akka.actor.ActorKilledException("PoisonPill")``.
 
 HotSwap
 -------
@@ -457,7 +457,7 @@ To hotswap the Actor using ``become``:
 .. code-block:: scala
 
   def angry: Receive = {
-    case "foo" => self reply "I am already angry!!!"
+    case "foo" => self reply "I am already angry?"
     case "bar" => become(happy)
   }
 

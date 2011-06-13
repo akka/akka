@@ -237,7 +237,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }).start()
 
       try {
-        (for (count ← 1 to 500) yield pool.!!![String]("Test", 20000)) foreach {
+        (for (count ← 1 to 500) yield pool.?[String]("Test", 20000)) foreach {
           _.await.resultOrException.get must be("Response")
         }
       } finally {
@@ -283,7 +283,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         latch = TestLatch(loops)
         count.set(0)
         for (m ← 0 until loops) {
-          pool !!! t
+          pool ? t
           sleepFor(50 millis)
         }
       }
