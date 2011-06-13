@@ -254,6 +254,7 @@ trait ActorRef extends ActorRefShared
    * @see sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef)
    * Uses the default timeout of the Actor (setTimeout()) and omits the sender reference
    */
+  @deprecated("Will be removed in 2.0, use 'ask().get()' for blocking calls","1.2")
   def sendRequestReply(message: AnyRef): AnyRef = {
     !!(message, timeout).getOrElse(throw new ActorTimeoutException(
       "Message [" + message +
@@ -268,6 +269,7 @@ trait ActorRef extends ActorRefShared
    * @see sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef)
    * Uses the default timeout of the Actor (setTimeout())
    */
+  @deprecated("Will be removed in 2.0, use 'ask().get()' for blocking calls","1.2")
   def sendRequestReply(message: AnyRef, sender: ActorRef): AnyRef = sendRequestReply(message, timeout, sender)
 
   /**
@@ -284,6 +286,7 @@ trait ActorRef extends ActorRefShared
    * If you are sending messages using <code>sendRequestReply</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
+  @deprecated("Will be removed in 2.0, use 'ask().get()' for blocking calls","1.2")
   def sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef): AnyRef = {
     ?(message)(sender, Actor.Timeout(timeout)).as[AnyRef].getOrElse(throw new ActorTimeoutException(
       "Message [" + message +
@@ -298,6 +301,7 @@ trait ActorRef extends ActorRefShared
    * @see sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the Actors default timeout (setTimeout()) and omits the sender
    */
+  @deprecated("Use 'ask' instead, this method will be removed in the future","1.2")
   def sendRequestReplyFuture(message: AnyRef): Future[Any] = ?(message)
 
   /**
@@ -305,6 +309,7 @@ trait ActorRef extends ActorRefShared
    * @see sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the Actors default timeout (setTimeout())
    */
+  @deprecated("Use 'ask' instead, this method will be removed in the future","1.2")
   def sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[Any] = ?(message)(sender)
 
   /**
@@ -318,7 +323,35 @@ trait ActorRef extends ActorRefShared
    * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
+  @deprecated("Use 'ask' instead, this method will be removed in the future","1.2")
   def sendRequestReplyFuture(message: AnyRef, timeout: Long, sender: ActorRef): Future[Any] = ?(message)(sender, Actor.Timeout(timeout))
+
+    /**
+   * Akka Java API. <p/>
+   * @see ask(message: AnyRef, sender: ActorRef): Future[_]
+   * Uses the Actors default timeout (setTimeout()) and omits the sender
+   */
+  def ask(message: AnyRef): Future[Any] = ?(message)
+
+  /**
+   * Akka Java API. <p/>
+   * @see ask(message: AnyRef, sender: ActorRef): Future[_]
+   * Uses the Actors default timeout (setTimeout())
+   */
+  def ask(message: AnyRef, sender: ActorRef): Future[Any] = ?(message)(sender)
+
+  /**
+   *  Akka Java API. <p/>
+   * Sends a message asynchronously returns a future holding the eventual reply message.
+   * <p/>
+   * <b>NOTE:</b>
+   * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'getContext().getSender()' to
+   * implement request/response message exchanges.
+   * <p/>
+   * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
+   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
+   */
+  def ask(message: AnyRef, timeout: Long, sender: ActorRef): Future[Any] = ?(message)(sender, Actor.Timeout(timeout))
 
   /**
    * Akka Java API. <p/>
