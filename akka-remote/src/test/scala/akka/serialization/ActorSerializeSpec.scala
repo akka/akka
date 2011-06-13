@@ -47,15 +47,15 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
       (actor1 ! "hello")
       (actor1 ! "hello")
       (actor1 ! "hello")
-      actor1.mailboxSize should be > (0)
+      actor1.getDispatcher.mailboxSize(actor1) should be > (0)
       val actor2 = fromBinary(toBinary(actor1))
       Thread.sleep(1000)
-      actor2.mailboxSize should be > (0)
+      actor2.getDispatcher.mailboxSize(actor1) should be > (0)
       (actor2 !! "hello-reply").getOrElse("_") should equal("world")
 
       val actor3 = fromBinary(toBinary(actor1, false))
       Thread.sleep(1000)
-      actor3.mailboxSize should equal(0)
+      actor3.getDispatcher.mailboxSize(actor1) should equal(0)
       (actor3 !! "hello-reply").getOrElse("_") should equal("world")
     }
 
@@ -73,15 +73,15 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
       (actor1 ! p1)
       (actor1 ! p1)
       (actor1 ! p1)
-      actor1.mailboxSize should be > (0)
+      actor1.getDispatcher.mailboxSize(actor1) should be > (0)
       val actor2 = fromBinary(toBinary(actor1))
       Thread.sleep(1000)
-      actor2.mailboxSize should be > (0)
+      actor2.getDispatcher.mailboxSize(actor1) should be > (0)
       (actor2 !! "hello-reply").getOrElse("_") should equal("hello")
 
       val actor3 = fromBinary(toBinary(actor1, false))
       Thread.sleep(1000)
-      actor3.mailboxSize should equal(0)
+      actor3.getDispatcher.mailboxSize(actor1) should equal(0)
       (actor3 !! "hello-reply").getOrElse("_") should equal("hello")
     }
   }
@@ -119,15 +119,15 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
       (actor1 ! b)
       (actor1 ! b)
       (actor1 ! b)
-      actor1.mailboxSize should be > (0)
+      actor1.getDispatcher.mailboxSize(actor1) should be > (0)
       val actor2 = fromBinary(toBinary(actor1))
       Thread.sleep(1000)
-      actor2.mailboxSize should be > (0)
+      actor2.getDispatcher.mailboxSize(actor1) should be > (0)
       (actor2 !! "hello-reply").getOrElse("_") should equal("world")
 
       val actor3 = fromBinary(toBinary(actor1, false))
       Thread.sleep(1000)
-      actor3.mailboxSize should equal(0)
+      actor3.getDispatcher.mailboxSize(actor1) should equal(0)
       (actor3 !! "hello-reply").getOrElse("_") should equal("world")
     }
   }

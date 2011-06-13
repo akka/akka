@@ -538,7 +538,15 @@ class LocalActorRef private[akka] (
   }
 
   // FIXME how to get the matching serializerClassName? Now default is used. Needed for transaction log snapshot
-  private val serializer = Actor.serializerFor(address, Format.defaultSerializerName)
+  // private val serializer = Actor.serializerFor(address, Format.defaultSerializerName)
+
+  def serializerErrorDueTo(reason: String) =
+    throw new akka.config.ConfigurationException(
+      "Could not create Serializer object [" + this.getClass.getName +
+        "]")
+
+  private val serializer: Serializer =
+    akka.serialization.Serialization.getSerializer(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
 
   private lazy val replicationStorage: Either[TransactionLog, AnyRef] = {
     replicationScheme match {
@@ -556,7 +564,9 @@ class LocalActorRef private[akka] (
             EventHandler.debug(this,
               "Creating a transaction log for Actor [%s] with replication strategy [%s]"
                 .format(address, replicationScheme))
-            Left(transactionLog.newLogFor(_uuid.toString, isWriteBehind, replicationScheme, serializer))
+            // Left(transactionLog.newLogFor(_uuid.toString, isWriteBehind, replicationScheme, serializer))
+            // to fix null
+            Left(transactionLog.newLogFor(_uuid.toString, isWriteBehind, replicationScheme, null))
 
           case _: DeploymentConfig.DataGrid | DeploymentConfig.DataGrid ⇒
             throw new ConfigurationException("Replication storage type \"data-grid\" is not yet supported")

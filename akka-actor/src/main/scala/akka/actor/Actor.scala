@@ -395,7 +395,7 @@ object Actor extends ListenerManagement {
           "Remote server is not running")
 
         val isHomeNode = DeploymentConfig.isHomeNode(home)
-        val replicas = DeploymentConfig.replicaValueFor(replication)
+        val nrOfReplicas = DeploymentConfig.replicaValueFor(replicas)
 
         def serializerErrorDueTo(reason: String) =
           throw new akka.config.ConfigurationException(
@@ -435,8 +435,6 @@ object Actor extends ListenerManagement {
           cluster.ref(address, DeploymentConfig.routerTypeFor(router))
         }
 
-        val serializer = serializerFor(address, serializerClassName)
-
         replication match {
           case _: Transient | Transient ⇒
             storeActorAndGetClusterRef(Transient, serializer)
@@ -458,6 +456,7 @@ object Actor extends ListenerManagement {
           "], not bound to a valid deployment scheme [" + invalid + "]")
     }
   }
+}
 
 /**
  * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
