@@ -274,54 +274,17 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] with S
 
   /**
    * Akka Java API. <p/>
-   * @see sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef)
-   * Uses the default timeout of the Actor (setTimeout()) and omits the sender reference
-   */
-  def sendRequestReply(message: AnyRef): AnyRef = sendRequestReply(message, timeout, null)
-
-  /**
-   * Akka Java API. <p/>
-   * @see sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef)
-   * Uses the default timeout of the Actor (setTimeout())
-   */
-  def sendRequestReply(message: AnyRef, sender: ActorRef): AnyRef = sendRequestReply(message, timeout, sender)
-
-  /**
-   * Akka Java API. <p/>
-   * Sends a message asynchronously and waits on a future for a reply message under the hood.
-   * <p/>
-   * It waits on the reply either until it receives it or until the timeout expires
-   * (which will throw an ActorTimeoutException). E.g. send-and-receive-eventually semantics.
-   * <p/>
-   * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with 'getContext().getSender()' to
-   * implement request/response message exchanges.
-   * <p/>
-   * If you are sending messages using <code>sendRequestReply</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
-   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
-   */
-  def sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef): AnyRef = {
-    !!(message, timeout)(Option(sender)).getOrElse(throw new ActorTimeoutException(
-      "Message [" + message +
-        "]\n\tfrom [" + (if (sender ne null) sender.address else "nowhere") +
-        "]\n\twith timeout [" + timeout +
-        "]\n\ttimed out."))
-      .asInstanceOf[AnyRef]
-  }
-
-  /**
-   * Akka Java API. <p/>
-   * @see sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[_]
+   * @see ask(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the Actors default timeout (setTimeout()) and omits the sender
    */
-  def sendRequestReplyFuture[T <: AnyRef](message: AnyRef): Future[T] = sendRequestReplyFuture(message, timeout, null).asInstanceOf[Future[T]]
+  def ask[T <: AnyRef](message: AnyRef): Future[T] = ask(message, timeout, null).asInstanceOf[Future[T]]
 
   /**
    * Akka Java API. <p/>
-   * @see sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[_]
+   * @see ask(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the Actors default timeout (setTimeout())
    */
-  def sendRequestReplyFuture[T <: AnyRef](message: AnyRef, sender: ActorRef): Future[T] = sendRequestReplyFuture(message, timeout, sender).asInstanceOf[Future[T]]
+  def ask[T <: AnyRef](message: AnyRef, sender: ActorRef): Future[T] = ask(message, timeout, sender).asInstanceOf[Future[T]]
 
   /**
    *  Akka Java API. <p/>
@@ -331,10 +294,10 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] with S
    * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
-   * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
+   * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def sendRequestReplyFuture[T <: AnyRef](message: AnyRef, timeout: Long, sender: ActorRef): Future[T] = !!!(message, timeout)(Option(sender)).asInstanceOf[Future[T]]
+  def ask[T <: AnyRef](message: AnyRef, timeout: Long, sender: ActorRef): Future[T] = !!!(message, timeout)(Option(sender)).asInstanceOf[Future[T]]
 
   /**
    * Akka Java API. <p/>
