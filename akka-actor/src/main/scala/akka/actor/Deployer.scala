@@ -62,8 +62,8 @@ object DeploymentConfig {
   sealed trait Scope
   case class Clustered(
     home: Home = Host("localhost"),
-    replication: Replication = NoReplicas,
-    state: State = Stateful) extends Scope
+    replicas: Replicas = NoReplicas,
+    replication: ReplicationScheme = Transient) extends Scope
 
   // For Java API
   case class Local() extends Scope
@@ -80,33 +80,60 @@ object DeploymentConfig {
   case class IP(ipAddress: String) extends Home
 
   // --------------------------------
-  // --- Replication
+  // --- Replicas
   // --------------------------------
-  sealed trait Replication
-  case class Replicate(factor: Int) extends Replication {
-    if (factor < 1) throw new IllegalArgumentException("Replication factor can not be negative or zero")
+  sealed trait Replicas
+  case class Replicate(factor: Int) extends Replicas {
+    if (factor < 1) throw new IllegalArgumentException("Replicas factor can not be negative or zero")
   }
 
   // For Java API
-  case class AutoReplicate() extends Replication
-  case class NoReplicas() extends Replication
+  case class AutoReplicate() extends Replicas
+  case class NoReplicas() extends Replicas
 
   // For Scala API
-  case object AutoReplicate extends Replication
-  case object NoReplicas extends Replication
+  case object AutoReplicate extends Replicas
+  case object NoReplicas extends Replicas
 
   // --------------------------------
-  // --- State
+  // --- Replication
   // --------------------------------
-  sealed trait State
+  sealed trait ReplicationScheme
 
   // For Java API
-  case class Stateless() extends State
-  case class Stateful() extends State
+  case class Transient() extends ReplicationScheme
 
   // For Scala API
-  case object Stateless extends State
-  case object Stateful extends State
+  case object Transient extends ReplicationScheme
+  case class Replication(
+    storage: ReplicationStorage,
+    strategy: ReplicationStrategy) extends ReplicationScheme
+
+  // --------------------------------
+  // --- ReplicationStorage
+  // --------------------------------
+  sealed trait ReplicationStorage
+
+  // For Java API
+  case class TransactionLog() extends ReplicationStorage
+  case class DataGrid() extends ReplicationStorage
+
+  // For Scala API
+  case object TransactionLog extends ReplicationStorage
+  case object DataGrid extends ReplicationStorage
+
+  // --------------------------------
+  // --- ReplicationStrategy
+  // --------------------------------
+  sealed trait ReplicationStrategy
+
+  // For Java API
+  case class WriteBehind() extends ReplicationStrategy
+  case class WriteThrough() extends ReplicationStrategy
+
+  // For Scala API
+  case object WriteBehind extends ReplicationStrategy
+  case object WriteThrough extends ReplicationStrategy
 
   // --------------------------------
   // --- Helper methods for parsing
@@ -114,11 +141,11 @@ object DeploymentConfig {
 
   def isHomeNode(home: Home): Boolean = home match {
     case Host(hostname) ⇒ hostname == Config.hostname
-    case IP(address)    ⇒ address == "0.0.0.0" // FIXME checking if IP address is on home node is missing
+    case IP(address)    ⇒ address == "0.0.0.0" || address == "127.0.0.1" // FIXME look up IP address from the system
     case Node(nodename) ⇒ nodename == Config.nodename
   }
 
-  def replicaValueFor(replication: Replication): Int = replication match {
+  def replicaValueFor(replicas: Replicas): Int = replicas match {
     case Replicate(replicas) ⇒ replicas
     case AutoReplicate       ⇒ -1
     case AutoReplicate()     ⇒ -1
@@ -140,6 +167,11 @@ object DeploymentConfig {
     case LeastMessages   ⇒ RouterType.LeastMessages
     case LeastMessages() ⇒ RouterType.LeastMessages
     case c: CustomRouter ⇒ throw new UnsupportedOperationException("routerTypeFor: " + c)
+  }
+
+  def isReplicationAsync(strategy: ReplicationStrategy): Boolean = strategy match {
+    case _: WriteBehind | WriteBehind   ⇒ true
+    case _: WriteThrough | WriteThrough ⇒ false
   }
 }
 
@@ -346,13 +378,31 @@ object Deployer {
             }
 
             // --------------------------------
-            // akka.actor.deployment.<address>.clustered.stateless
+            // akka.actor.deployment.<address>.clustered.replication
             // --------------------------------
-            val state =
-              if (clusteredConfig.getBool("stateless", false)) Stateless
-              else Stateful
+            clusteredConfig.getSection("replication") match {
+              case None ⇒
+                Some(Deploy(address, router, format, Clustered(home, replicas, Transient)))
 
-            Some(Deploy(address, router, format, Clustered(home, replicas, state)))
+              case Some(replicationConfig) ⇒
+                val storage = replicationConfig.getString("storage", "transaction-log") match {
+                  case "transaction-log" ⇒ TransactionLog
+                  case "data-grid"       ⇒ DataGrid
+                  case unknown ⇒
+                    throw new ConfigurationException("Config option [" + addressPath +
+                      ".clustered.replication.storage] needs to be either [\"transaction-log\"] or [\"data-grid\"] - was [" +
+                      unknown + "]")
+                }
+                val strategy = replicationConfig.getString("strategy", "write-through") match {
+                  case "write-through" ⇒ WriteThrough
+                  case "write-behind"  ⇒ WriteBehind
+                  case unknown ⇒
+                    throw new ConfigurationException("Config option [" + addressPath +
+                      ".clustered.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
+                      unknown + "]")
+                }
+                Some(Deploy(address, router, format, Clustered(home, replicas, Replication(storage, strategy))))
+            }
         }
     }
   }
@@ -415,7 +465,8 @@ object Address {
   def validate(address: String) {
     if (validAddressPattern.matcher(address).matches) true
     else {
-      val e = new IllegalArgumentException("Address [" + address + "] is not valid, need to follow pattern [0-9a-zA-Z\\-\\_\\$]+")
+      val e = new IllegalArgumentException(
+        "Address [" + address + "] is not valid, need to follow pattern [0-9a-zA-Z\\-\\_\\$]+")
       EventHandler.error(e, this, e.getMessage)
       throw e
     }

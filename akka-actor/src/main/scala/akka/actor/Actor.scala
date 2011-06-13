@@ -73,10 +73,10 @@ case object Kill extends AutoReceivedMessage with LifeCycleMessage
 case object ReceiveTimeout extends LifeCycleMessage
 
 case class MaximumNumberOfRestartsWithinTimeRangeReached(
-  @BeanProperty val victim: ActorRef,
-  @BeanProperty val maxNrOfRetries: Option[Int],
-  @BeanProperty val withinTimeRange: Option[Int],
-  @BeanProperty val lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
+  @BeanProperty victim: ActorRef,
+  @BeanProperty maxNrOfRetries: Option[Int],
+  @BeanProperty withinTimeRange: Option[Int],
+  @BeanProperty lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
 
 // Exceptions for Actors
 class ActorStartException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
@@ -132,7 +132,7 @@ object Actor extends ListenerManagement {
         subclassAudits synchronized { subclassAudits.clear() }
       }
     }
-    Runtime.getRuntime.addShutdownHook(new Thread(hook))
+    Runtime.getRuntime.addShutdownHook(new Thread(hook, "akka-shutdown-hook"))
     hook
   }
 
@@ -270,7 +270,7 @@ object Actor extends ListenerManagement {
    * </pre>
    */
   def actorOf[T <: Actor](creator: ⇒ T, address: String): ActorRef = {
-    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator, address))
+    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator, address, Transient))
   }
 
   /**
@@ -293,7 +293,7 @@ object Actor extends ListenerManagement {
    * JAVA API
    */
   def actorOf[T <: Actor](creator: Creator[T], address: String): ActorRef = {
-    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator.create, address))
+    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator.create, address, Transient))
   }
 
   /**
@@ -375,12 +375,18 @@ object Actor extends ListenerManagement {
               "\nif so put it outside the class/trait, f.e. in a companion object," +
               "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
       }
-    }, address)
+    }, address, Transient)
   }
 
   private def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef = {
     deploy match {
-      case Deploy(configAdress, router, serializerClassName, Clustered(home, replication: Replication, state: State)) ⇒
+      case Deploy(
+        configAdress, router, serializerClassName,
+        Clustered(
+          home,
+          replicas,
+          replication)) ⇒
+
         ClusterModule.ensureEnabled()
 
         if (configAdress != address) throw new IllegalStateException(
@@ -420,24 +426,31 @@ object Actor extends ListenerManagement {
          * }
          */
 
-        val isStateful = state match {
-          case _: Stateless | Stateless ⇒ false
-          case _: Stateful | Stateful   ⇒ true
-        }
-
-        if (isStateful && isHomeNode) { // stateful actor's home node
-          cluster
-            .use(address, serializer)
-            .getOrElse(throw new ConfigurationException(
-              "Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
-
-        } else {
-          if (!cluster.isClustered(address)) { // add actor to cluster registry (if not already added)
-            cluster.store(factory().start(), replicas, false, serializer)
-          }
+        def storeActorAndGetClusterRef(replicationScheme: ReplicationScheme, serializer: Serializer): ActorRef = {
+          // add actor to cluster registry (if not already added)
+          if (!cluster.isClustered(address))
+            cluster.store(factory().start(), nrOfReplicas, replicationScheme, false, serializer)
 
           // remote node (not home node), check out as ClusterActorRef
           cluster.ref(address, DeploymentConfig.routerTypeFor(router))
+        }
+
+        val serializer = serializerFor(address, serializerClassName)
+
+        replication match {
+          case _: Transient | Transient ⇒
+            storeActorAndGetClusterRef(Transient, serializer)
+
+          case replication: Replication ⇒
+            if (isHomeNode) { // stateful actor's home node
+              cluster
+                .use(address, serializer)
+                .getOrElse(throw new ConfigurationException(
+                  "Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
+            } else {
+              // FIXME later manage different 'storage' (data grid) as well
+              storeActorAndGetClusterRef(replication, serializer)
+            }
         }
 
       case invalid ⇒ throw new IllegalActorStateException(
@@ -445,7 +458,6 @@ object Actor extends ListenerManagement {
           "], not bound to a valid deployment scheme [" + invalid + "]")
     }
   }
-}
 
 /**
  * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
@@ -510,16 +522,21 @@ trait Actor {
   implicit val someSelf: Some[ActorRef] = {
     val refStack = Actor.actorRefInCreation.get
     if (refStack.isEmpty) throw new ActorInitializationException(
-      "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
-        "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
+      "\n\tYou can not create an instance of an " + getClass.getName + " explicitly using 'new MyActor'." +
         "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
         "\n\tEither use:" +
         "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
         "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
 
     val ref = refStack.head
-    Actor.actorRefInCreation.set(refStack.pop)
-    Some(ref)
+
+    if (ref eq null)
+      throw new ActorInitializationException("Trying to create an instance of " + getClass.getName + " outside of a wrapping 'actorOf'")
+    else {
+      // Push a null marker so any subsequent calls to new Actor doesn't reuse this actor ref
+      Actor.actorRefInCreation.set(refStack.push(null))
+      Some(ref)
+    }
   }
 
   /*
@@ -650,17 +667,10 @@ trait Actor {
     val behaviorStack = self.hotswap
 
     msg match {
-      case l: AutoReceivedMessage ⇒
-        autoReceiveMessage(l)
-
-      case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒
-        behaviorStack.head.apply(msg)
-
-      case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒
-        processingBehavior.apply(msg)
-
-      case unknown ⇒
-        unhandled(unknown) //This is the only line that differs from processingbehavior
+      case l: AutoReceivedMessage ⇒ autoReceiveMessage(l)
+      case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
+      case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
+      case unknown ⇒ unhandled(unknown) //This is the only line that differs from processingbehavior
     }
   }
 
@@ -697,13 +707,4 @@ private[actor] class AnyOptionAsTypedOption(anyOption: Option[Any]) {
    * ClassCastException and return None in that case.
    */
   def asSilently[T: Manifest]: Option[T] = narrowSilently[T](anyOption)
-}
-
-/**
- * Marker interface for proxyable actors (such as typed actor).
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait Proxyable {
-  private[actor] def swapProxiedActor(newInstance: Actor)
 }

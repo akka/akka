@@ -8,6 +8,9 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 
+import org.apache.bookkeeper.client.{ BookKeeper, BKException }
+import BKException._
+
 import akka.cluster._
 import akka.actor._
 import Actor._
@@ -26,6 +29,9 @@ object RoundRobin1ReplicaMultiJvmSpec {
 
 class RoundRobin1ReplicaMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import RoundRobin1ReplicaMultiJvmSpec._
+
+  private var bookKeeper: BookKeeper = _
+  private var localBookKeeper: LocalBookKeeper = _
 
   "A cluster" must {
 
@@ -49,10 +55,13 @@ class RoundRobin1ReplicaMultiJvmNode1 extends WordSpec with MustMatchers with Be
 
   override def beforeAll() = {
     Cluster.startLocalCluster()
+    LocalBookKeeperEnsemble.start()
   }
 
   override def afterAll() = {
     Cluster.shutdownLocalCluster()
+    TransactionLog.shutdown()
+    LocalBookKeeperEnsemble.shutdown()
   }
 }
 

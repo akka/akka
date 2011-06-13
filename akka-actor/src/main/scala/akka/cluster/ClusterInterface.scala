@@ -7,6 +7,7 @@ package akka.cluster
 import akka.remoteinterface.RemoteSupport
 import akka.serialization.Serializer
 import akka.actor._
+import DeploymentConfig._
 import akka.dispatch.Future
 import akka.config.Config
 import akka.util._
@@ -129,13 +130,13 @@ object NodeAddress {
 trait ClusterNode {
   import ChangeListener._
 
-  val nodeAddress: NodeAddress
-  val zkServerAddresses: String
+  def nodeAddress: NodeAddress
+  def zkServerAddresses: String
 
-  val remoteClientLifeCycleListener: ActorRef
-  val remoteDaemon: ActorRef
-  val remoteService: RemoteSupport
-  val remoteServerAddress: InetSocketAddress
+  def remoteClientLifeCycleListener: ActorRef
+  def remoteDaemon: ActorRef
+  def remoteService: RemoteSupport
+  def remoteServerAddress: InetSocketAddress
 
   val isConnected = new Switch(false)
   val isLeader = new AtomicBoolean(false)
@@ -184,7 +185,21 @@ trait ClusterNode {
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationScheme: ReplicationScheme, format: Serializer): ClusterNode
+
+  /**
+   * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
   def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, format: Serializer): ClusterNode
+
+  /**
+   * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, format: Serializer): ClusterNode
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -198,7 +213,21 @@ trait ClusterNode {
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: Serializer): ClusterNode
+
+  /**
+   * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
   def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, serializeMailbox: Boolean, format: Serializer): ClusterNode
+
+  /**
+   * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: Serializer): ClusterNode
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
@@ -212,7 +241,21 @@ trait ClusterNode {
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
+  def store(actorRef: ActorRef, replicationScheme: ReplicationScheme, format: Serializer): ClusterNode
+
+  /**
+   * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
   def store(actorRef: ActorRef, replicationFactor: Int, format: Serializer): ClusterNode
+
+  /**
+   * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
+  def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, format: Serializer): ClusterNode
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
@@ -222,9 +265,21 @@ trait ClusterNode {
   def store(actorRef: ActorRef, serializeMailbox: Boolean, format: Serializer): ClusterNode
 
   /**
+   * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
+  def store(actorRef: ActorRef, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: Serializer): ClusterNode
+
+  /**
    * Needed to have reflection through structural typing work.
    */
   def store(actorRef: ActorRef, replicationFactor: Int, serializeMailbox: Boolean, format: AnyRef): ClusterNode
+
+  /**
+   * Needed to have reflection through structural typing work.
+   */
+  def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: AnyRef): ClusterNode
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
@@ -232,6 +287,13 @@ trait ClusterNode {
    * available durable store.
    */
   def store(actorRef: ActorRef, replicationFactor: Int, serializeMailbox: Boolean, format: Serializer): ClusterNode
+
+  /**
+   * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
+  def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: Serializer): ClusterNode
 
   /**
    * Removes actor with uuid from the cluster.
@@ -262,13 +324,13 @@ trait ClusterNode {
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
    * for remote access through lookup by its UUID.
    */
-  def use[T <: Actor](actorAddress: String): Option[LocalActorRef]
+  def use[T <: Actor](actorAddress: String): Option[ActorRef]
 
   /**
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
    * for remote access through lookup by its UUID.
    */
-  def use[T <: Actor](actorAddress: String, format: Serializer): Option[LocalActorRef]
+  def use[T <: Actor](actorAddress: String, format: Serializer): Option[ActorRef]
 
   /**
    * Using (checking out) all actors with a specific UUID on all nodes in the cluster.

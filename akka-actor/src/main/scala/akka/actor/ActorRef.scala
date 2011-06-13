@@ -6,10 +6,13 @@ package akka.actor
 
 import akka.event.EventHandler
 import akka.dispatch._
-import akka.config.Config
+import akka.config._
 import akka.config.Supervision._
 import akka.util._
+import akka.serialization.{ Format, Serializer }
 import ReflectiveAccess._
+import ClusterModule._
+import DeploymentConfig.{ ReplicationScheme, Replication, Transient, WriteThrough, WriteBehind }
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
@@ -19,6 +22,7 @@ import java.util.{ Map ⇒ JMap }
 import scala.reflect.BeanProperty
 import scala.collection.immutable.Stack
 import scala.annotation.tailrec
+import java.lang.IllegalStateException
 
 private[akka] object ActorRefInternals {
 
@@ -85,14 +89,14 @@ abstract class Channel[T] {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scalaRef: ScalaActorRef ⇒
+trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] with Serializable { scalaRef: ScalaActorRef ⇒
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile
   protected[akka] var _uuid = newUuid
   @volatile
   protected[this] var _status: ActorRefInternals.StatusType = ActorRefInternals.UNSTARTED
 
-  val address: String
+  def address: String
 
   /**
    * User overridable callback/setting.
@@ -410,17 +414,6 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
   def startLink(actorRef: ActorRef): ActorRef
 
   /**
-   * Returns the mailbox size.
-   */
-  def mailboxSize = dispatcher.mailboxSize(this)
-
-  /**
-   * Akka Java API. <p/>
-   * Returns the mailbox size.
-   */
-  def getMailboxSize: Int = mailboxSize
-
-  /**
    * Returns the supervisor, if there is one.
    */
   def supervisor: Option[ActorRef]
@@ -500,7 +493,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
       that.asInstanceOf[ActorRef].uuid == uuid
   }
 
-  override def toString = "Actor[" + address + ":" + uuid + "]"
+  override def toString = "Actor[%s:%s]".format(address, uuid)
 }
 
 /**
@@ -508,26 +501,71 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor, val address: String)
+class LocalActorRef private[akka] (
+  private[this] val actorFactory: () ⇒ Actor,
+  val address: String,
+  replicationScheme: ReplicationScheme)
   extends ActorRef with ScalaActorRef {
+
   protected[akka] val guard = new ReentrantGuard
 
   @volatile
   protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
+
   @volatile
   private[akka] lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
+
   @volatile
   private[akka] var _supervisor: Option[ActorRef] = None
+
   @volatile
   private var maxNrOfRetriesCount: Int = 0
+
   @volatile
   private var restartTimeWindowStartNanos: Long = 0L
+
   @volatile
   private var _mailbox: AnyRef = _
+
   @volatile
   private[akka] var _dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
 
   protected[akka] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
+
+  private val isReplicated: Boolean = replicationScheme match {
+    case _: Transient | Transient ⇒ false
+    case _                        ⇒ true
+  }
+
+  // FIXME how to get the matching serializerClassName? Now default is used. Needed for transaction log snapshot
+  private val serializer = Actor.serializerFor(address, Format.defaultSerializerName)
+
+  private lazy val replicationStorage: Either[TransactionLog, AnyRef] = {
+    replicationScheme match {
+      case _: Transient | Transient ⇒
+        throw new IllegalStateException("Can not replicate 'transient' actor [" + toString + "]")
+
+      case Replication(storage, strategy) ⇒
+        val isWriteBehind = strategy match {
+          case _: WriteBehind | WriteBehind   ⇒ true
+          case _: WriteThrough | WriteThrough ⇒ false
+        }
+
+        storage match {
+          case _: DeploymentConfig.TransactionLog | DeploymentConfig.TransactionLog ⇒
+            EventHandler.debug(this,
+              "Creating a transaction log for Actor [%s] with replication strategy [%s]"
+                .format(address, replicationScheme))
+            Left(transactionLog.newLogFor(_uuid.toString, isWriteBehind, replicationScheme, serializer))
+
+          case _: DeploymentConfig.DataGrid | DeploymentConfig.DataGrid ⇒
+            throw new ConfigurationException("Replication storage type \"data-grid\" is not yet supported")
+
+          case unknown ⇒
+            throw new ConfigurationException("Unknown replication storage type [" + unknown + "]")
+        }
+    }
+  }
 
   //If it was started inside "newActor", initialize it
   if (isRunning) initializeActorInstance
@@ -541,8 +579,11 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     __lifeCycle: LifeCycle,
     __supervisor: Option[ActorRef],
     __hotswap: Stack[PartialFunction[Any, Unit]],
-    __factory: () ⇒ Actor) = {
-    this(__factory, __address)
+    __factory: () ⇒ Actor,
+    __replicationStrategy: ReplicationScheme) = {
+
+    this(__factory, __address, __replicationStrategy)
+
     _uuid = __uuid
     timeout = __timeout
     receiveTimeout = __receiveTimeout
@@ -614,6 +655,10 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
           setActorSelfFields(actorInstance.get, null)
         }
       } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
+
+      if (isReplicated) {
+        if (replicationStorage.isLeft) replicationStorage.left.get.delete()
+      }
     }
   }
 
@@ -650,7 +695,6 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     guard.withGuard {
       if (_linkedActors.remove(actorRef.uuid) eq null)
         throw new IllegalActorStateException("Actor [" + actorRef + "] is not a linked actor, can't unlink")
-
       actorRef.supervisor = None
     }
   }
@@ -681,7 +725,9 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
   // ========= AKKA PROTECTED FUNCTIONS =========
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = {
-    val inetaddr = Actor.remote.address
+    val inetaddr =
+      if (ReflectiveAccess.RemoteModule.isEnabled) Actor.remote.address
+      else ReflectiveAccess.RemoteModule.configDefaultAddress
     SerializedActorRef(uuid, address, inetaddr.getAddress.getHostAddress, inetaddr.getPort, timeout)
   }
 
@@ -690,7 +736,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
   }
 
   protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]) {
-    dispatcher dispatchMessage new MessageInvocation(this, message, senderOption, None)
+    dispatcher dispatchMessage MessageInvocation(this, message, senderOption, None)
   }
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
@@ -699,8 +745,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     senderOption: Option[ActorRef],
     senderFuture: Option[Promise[T]]): Promise[T] = {
     val future = if (senderFuture.isDefined) senderFuture else Some(new DefaultPromise[T](timeout))
-    dispatcher dispatchMessage new MessageInvocation(
-      this, message, senderOption, future.asInstanceOf[Some[Promise[Any]]])
+    dispatcher dispatchMessage MessageInvocation(this, message, senderOption, future.asInstanceOf[Some[Promise[Any]]])
     future.get
   }
 
@@ -732,7 +777,12 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
             throw e
         }
       }
-    } finally { guard.lock.unlock() }
+    } finally {
+      guard.lock.unlock()
+      if (isReplicated) {
+        if (replicationStorage.isLeft) replicationStorage.left.get.recordEntry(messageHandle, this)
+      }
+    }
   }
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable) {
@@ -784,19 +834,12 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
     def performRestart() {
       val failedActor = actorInstance.get
-
-      failedActor match {
-        case p: Proxyable ⇒
-          failedActor.preRestart(reason)
-          failedActor.postRestart(reason)
-        case _ ⇒
-          failedActor.preRestart(reason)
-          val freshActor = newActor
-          setActorSelfFields(failedActor, null) // Only null out the references if we could instantiate the new actor
-          actorInstance.set(freshActor) // Assign it here so if preStart fails, we can null out the sef-refs next call
-          freshActor.preStart()
-          freshActor.postRestart(reason)
-      }
+      failedActor.preRestart(reason)
+      val freshActor = newActor
+      setActorSelfFields(failedActor, null) // Only null out the references if we could instantiate the new actor
+      actorInstance.set(freshActor) // Assign it here so if preStart fails, we can null out the sef-refs next call
+      freshActor.preStart()
+      freshActor.postRestart(reason)
     }
 
     def tooManyRestarts() {
@@ -865,20 +908,18 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
 
   private[this] def newActor: Actor = {
     import Actor.{ actorRefInCreation ⇒ refStack }
-    (try {
-      refStack.set(refStack.get.push(this))
+    val stackBefore = refStack.get
+    refStack.set(stackBefore.push(this))
+    try {
       actorFactory()
-    } catch {
-      case e ⇒
-        val stack = refStack.get
-        //Clean up if failed
-        if ((stack.nonEmpty) && (stack.head eq this)) refStack.set(stack.pop)
-        //Then rethrow
-        throw e
-    }) match {
-      case null  ⇒ throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
-      case valid ⇒ valid
+    } finally {
+      val stackAfter = refStack.get
+      if (stackAfter.nonEmpty)
+        refStack.set(if (stackAfter.head eq null) stackAfter.pop.pop else stackAfter.pop) //pop null marker plus self
     }
+  } match {
+    case null  ⇒ throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
+    case valid ⇒ valid
   }
 
   private def shutDownTemporaryActor(temporaryActor: ActorRef) {
@@ -959,7 +1000,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
 
   protected[akka] def checkReceiveTimeout() {
     cancelReceiveTimeout()
-    if (receiveTimeout.isDefined && dispatcher.mailboxSize(this) <= 0) { //Only reschedule if desired and there are currently no more messages to be processed
+    if (receiveTimeout.isDefined && dispatcher.mailboxIsEmpty(this)) { //Only reschedule if desired and there are currently no more messages to be processed
       _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, receiveTimeout.get, TimeUnit.MILLISECONDS))
     }
   }
@@ -998,8 +1039,6 @@ private[akka] case class RemoteActorRef private[akka] (
 
   timeout = _timeout
 
-  // FIXME BAD, we should not have different ActorRefs
-
   start()
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]) {
@@ -1032,15 +1071,12 @@ private[akka] case class RemoteActorRef private[akka] (
     }
   }
 
-  // ==== NOT SUPPORTED ====
-
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = {
     SerializedActorRef(uuid, address, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, timeout)
   }
 
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
-  def actorClass: Class[_ <: Actor] = unsupported
+  // ==== NOT SUPPORTED ====
   def dispatcher_=(md: MessageDispatcher) {
     unsupported
   }
@@ -1268,6 +1304,12 @@ case class SerializedActorRef(val uuid: Uuid,
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = Actor.registry.local.actorFor(uuid) match {
     case Some(actor) ⇒ actor
-    case None        ⇒ RemoteActorRef(new InetSocketAddress(hostname, port), address, timeout, None)
+    case None ⇒
+      if (ReflectiveAccess.RemoteModule.isEnabled)
+        RemoteActorRef(new InetSocketAddress(hostname, port), address, timeout, None)
+      else
+        throw new IllegalStateException(
+          "Trying to deserialize ActorRef (" + this +
+            ") but it's not found in the local registry and remoting is not enabled!")
   }
 }

@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * A ClusterDeployer is responsible for deploying a Deploy.
  *
- * big question is: what does Deploy mean?
+ * FIXME Document: what does Deploy mean?
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -35,10 +35,15 @@ object ClusterDeployer {
   val clusterName = Cluster.name
   val nodeName = Config.nodename
   val clusterPath = "/%s" format clusterName
-  val clusterDeploymentLockPath = clusterPath + "/deployment-lock"
+
   val deploymentPath = clusterPath + "/deployment"
-  val baseNodes = List(clusterPath, clusterDeploymentLockPath, deploymentPath)
   val deploymentAddressPath = deploymentPath + "/%s"
+
+  val deploymentCoordinationPath = clusterPath + "/deployment-coordination"
+  val deploymentInProgressLockPath = deploymentCoordinationPath + "/in-progress"
+  val isDeploymentCompletedInClusterLockPath = deploymentCoordinationPath + "/completed" // should not be part of baseNodes
+
+  val baseNodes = List(clusterPath, deploymentPath, deploymentCoordinationPath, deploymentInProgressLockPath)
 
   private val isConnected = new Switch(false)
   private val deploymentCompleted = new CountDownLatch(1)
@@ -49,7 +54,7 @@ object ClusterDeployer {
     Cluster.connectionTimeout,
     Cluster.defaultSerializer)
 
-  private val clusterDeploymentLockListener = new LockListener {
+  private val deploymentInProgressLockListener = new LockListener {
     def lockAcquired() {
       EventHandler.debug(this, "Clustered deployment started")
     }
@@ -60,13 +65,11 @@ object ClusterDeployer {
     }
   }
 
-  private val deploymentLock = new WriteLock(
-    zkClient.connection.getZookeeper, clusterDeploymentLockPath, null, clusterDeploymentLockListener) {
-    private val ownerIdField = classOf[WriteLock].getDeclaredField("ownerId")
-    ownerIdField.setAccessible(true)
-
-    def leader: String = ownerIdField.get(this).asInstanceOf[String]
-  }
+  private val deploymentInProgressLock = new WriteLock(
+    zkClient.connection.getZookeeper,
+    deploymentInProgressLockPath,
+    null,
+    deploymentInProgressLockListener)
 
   private val systemDeployments: List[Deploy] = Nil
 
@@ -79,6 +82,7 @@ object ClusterDeployer {
           deployment ← zkClient.readData(deploymentAddressPath.format(child)).asInstanceOf[Deploy]
         } zkClient.delete(deploymentAddressPath.format(deployment.address))
 
+        invalidateDeploymentInCluster()
       } catch {
         case e: Exception ⇒
           handleError(new DeploymentException("Could not undeploy all deployment data in ZooKeeper due to: " + e))
@@ -124,8 +128,6 @@ object ClusterDeployer {
   }
 
   private[akka] def init(deployments: List[Deploy]) {
-    println("===============================================================")
-    println("------------ INIT 1")
     isConnected switchOn {
       EventHandler.info(this, "Initializing cluster deployer")
 
@@ -141,31 +143,21 @@ object ClusterDeployer {
         }
       }
 
-      println("------------ INIT 2")
       val allDeployments = deployments ::: systemDeployments
 
-      ///===========================================================
-      // FIXME need a flag 'deploymentDone' in ZK and to wrap the deployment in 'if (!deploymentDone) { .. }', since now the deployment is only protected by lock during the actual deployment, if node comes in later then deployment is repeated on that node again
-      ///===========================================================
+      if (!isDeploymentCompletedInCluster) {
+        if (deploymentInProgressLock.lock()) {
+          // try to be the one doing the clustered deployment
+          EventHandler.info(this, "Deploying to cluster [\n" + allDeployments.mkString("\n\t") + "\n]")
+          allDeployments foreach (deploy(_)) // deploy
+          markDeploymentCompletedInCluster()
+          deploymentInProgressLock.unlock() // signal deployment complete
 
-      if (deploymentLock.lock()) {
-        println("------------ INIT 3")
-        // try to be the one doing the clustered deployment
-        EventHandler.info(this, "Deploying to cluster [\n" + allDeployments.mkString("\n\t") + "\n]")
-
-        println("------------ INIT 4")
-        allDeployments foreach (deploy(_)) // deploy
-        println("------------ INIT 5")
-
-        // FIXME need to set deployment done flag
-
-        deploymentLock.unlock() // signal deployment complete
-      } else {
-        println("------------ INIT WAITING")
-        deploymentCompleted.await() // wait until deployment is completed by other "master" node
+        } else {
+          deploymentCompleted.await() // wait until deployment is completed by other "master" node
+        }
       }
 
-      println("------------ INIT 6")
       // fetch clustered deployments and deploy them locally
       fetchDeploymentsFromCluster foreach (LocalDeployer.deploy(_))
     }
@@ -183,12 +175,27 @@ object ClusterDeployer {
             zkClient.writeData(path, deployment)
           } catch {
             case e: NullPointerException ⇒
-              handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper since client session is closed"))
+              handleError(new DeploymentException(
+                "Could not store deployment data [" + deployment +
+                  "] in ZooKeeper since client session is closed"))
             case e: Exception ⇒
-              handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper due to: " + e))
+              handleError(new DeploymentException(
+                "Could not store deployment data [" +
+                  deployment + "] in ZooKeeper due to: " + e))
           }
       }
     }
+  }
+
+  private def markDeploymentCompletedInCluster() {
+    ignore[ZkNodeExistsException](zkClient.create(isDeploymentCompletedInClusterLockPath, null, CreateMode.PERSISTENT))
+  }
+
+  private def isDeploymentCompletedInCluster = zkClient.exists(isDeploymentCompletedInClusterLockPath)
+
+  // FIXME in future - add watch to this path to be able to trigger redeployment, and use this method to trigger redeployment
+  private def invalidateDeploymentInCluster() {
+    ignore[ZkNoNodeException](zkClient.delete(isDeploymentCompletedInClusterLockPath))
   }
 
   private def ensureRunning[T](body: ⇒ T): T = {
