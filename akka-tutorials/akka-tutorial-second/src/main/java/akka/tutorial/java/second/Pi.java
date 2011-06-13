@@ -184,7 +184,7 @@ public class Pi {
 
     // send calculate message
     long timeout = 60000;
-    Future<Object> replyFuture = master.sendRequestReplyFuture(new Calculate(), timeout, null);
+    Future<Object> replyFuture = master.ask(new Calculate(), timeout, null);
     Option<Object> result = replyFuture.await().resultOrException();
     if (result.isDefined()) {
       double pi = (Double) result.get();

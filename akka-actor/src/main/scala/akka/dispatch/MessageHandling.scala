@@ -235,6 +235,11 @@ trait MessageDispatcher {
   def mailboxSize(actorRef: ActorRef): Int
 
   /**
+   * Returns the "current" emptiness status of the mailbox for the specified actor
+   */
+  def mailboxIsEmpty(actorRef: ActorRef): Boolean
+
+  /**
    * Returns the amount of futures queued for execution
    */
   def pendingFutures: Long = futures.get

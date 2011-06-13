@@ -148,8 +148,8 @@ abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) {
 
-  val useTransactionLog = config.getBool("akka.remote.client.buffering.retry-message-send-on-failure", true)
-  val transactionLogCapacity = config.getInt("akka.remote.client.buffering.capacity", -1)
+  val useTransactionLog = config.getBool("akka.cluster.client.buffering.retry-message-send-on-failure", true)
+  val transactionLogCapacity = config.getInt("akka.cluster.client.buffering.capacity", -1)
 
   val name = this.getClass.getSimpleName + "@" +
     remoteAddress.getAddress.getHostAddress + "::" +
@@ -879,9 +879,13 @@ class RemoteServerHandler(
       case _                       ⇒ None
     }
 
-  private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = {
+  private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = try {
     EventHandler.debug(this, "Received remote message [%s]".format(request))
     dispatchToActor(request, channel)
+  } catch {
+    case e: Exception ⇒
+      server.notifyListeners(RemoteServerError(e, server))
+      EventHandler.error(e, this, e.getMessage)
   }
 
   private def dispatchToActor(request: RemoteMessageProtocol, channel: Channel) {

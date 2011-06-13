@@ -6,10 +6,13 @@ package akka.actor
 
 import akka.event.EventHandler
 import akka.dispatch._
-import akka.config.Config
+import akka.config._
 import akka.config.Supervision._
 import akka.util._
+import akka.serialization.{ Format, Serializer }
 import ReflectiveAccess._
+import ClusterModule._
+import DeploymentConfig.{ ReplicationScheme, Replication, Transient, WriteThrough, WriteBehind }
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
@@ -77,8 +80,8 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
   /**
    * User overridable callback/setting.
    * <p/>
-   * Defines the default timeout for '!!' and '!!!' invocations,
-   * e.g. the timeout for the future returned by the call to '!!' and '!!!'.
+   * Defines the default timeout for '?'/'ask' invocations,
+   * e.g. the timeout for the future returned by the call to '?'/'ask'.
    */
   @deprecated("Will be replaced by implicit-scoped timeout on all methods that needs it, will default to timeout specified in config", "1.1")
   @BeanProperty
@@ -186,7 +189,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
   /**
    * Akka Java API. <p/>
    * The reference sender future of the last received message.
-   * Is defined if the message was sent with sent with '!!' or '!!!', else None.
+   * Is defined if the message was sent with sent with '?'/'ask', else None.
    */
   def getSenderFuture: Option[Promise[Any]] = senderFuture
 
@@ -222,60 +225,17 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
 
   /**
    * Akka Java API. <p/>
-   * @see sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef)
-   * Uses the default timeout of the Actor (setTimeout()) and omits the sender reference
-   */
-  def sendRequestReply(message: AnyRef): AnyRef = {
-    !!(message, timeout).getOrElse(throw new ActorTimeoutException(
-      "Message [" + message +
-        "]\n\tfrom [nowhere]\n\twith timeout [" + timeout +
-        "]\n\ttimed out."))
-      .asInstanceOf[AnyRef]
-  }
-
-  /**
-   * Akka Java API. <p/>
-   * @see sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef)
-   * Uses the default timeout of the Actor (setTimeout())
-   */
-  def sendRequestReply(message: AnyRef, sender: ActorRef): AnyRef = sendRequestReply(message, timeout, sender)
-
-  /**
-   * Akka Java API. <p/>
-   * Sends a message asynchronously and waits on a future for a reply message under the hood.
-   * <p/>
-   * It waits on the reply either until it receives it or until the timeout expires
-   * (which will throw an ActorTimeoutException). E.g. send-and-receive-eventually semantics.
-   * <p/>
-   * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with 'getContext().getSender()' to
-   * implement request/response message exchanges.
-   * <p/>
-   * If you are sending messages using <code>sendRequestReply</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
-   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
-   */
-  def sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef): AnyRef = {
-    ?(message)(sender, Actor.Timeout(timeout)).as[AnyRef].getOrElse(throw new ActorTimeoutException(
-      "Message [" + message +
-        "]\n\tfrom [" + (if (sender ne null) sender.address else "nowhere") +
-        "]\n\twith timeout [" + timeout +
-        "]\n\ttimed out."))
-      .asInstanceOf[AnyRef]
-  }
-
-  /**
-   * Akka Java API. <p/>
-   * @see sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[_]
+   * @see ask(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the Actors default timeout (setTimeout()) and omits the sender
    */
-  def sendRequestReplyFuture(message: AnyRef): Future[Any] = ?(message)
+  def ask(message: AnyRef): Future[AnyRef] = ask(message, timeout, null)
 
   /**
    * Akka Java API. <p/>
-   * @see sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[_]
+   * @see ask(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the Actors default timeout (setTimeout())
    */
-  def sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[Any] = ?(message)(sender)
+  def ask(message: AnyRef, sender: ActorRef): Future[AnyRef] = ask(message, timeout, sender)
 
   /**
    *  Akka Java API. <p/>
@@ -285,10 +245,10 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
-   * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
+   * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def sendRequestReplyFuture(message: AnyRef, timeout: Long, sender: ActorRef): Future[Any] = ?(message)(sender, Actor.Timeout(timeout))
+  def ask(message: AnyRef, timeout: Long, sender: ActorRef): Future[AnyRef] = ?(message)(sender, Actor.Timeout(timeout)).asInstanceOf[Future[AnyRef]]
 
   /**
    * Akka Java API. <p/>
@@ -366,17 +326,6 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * Atomically start and link an actor.
    */
   def startLink(actorRef: ActorRef): ActorRef
-
-  /**
-   * Returns the mailbox size.
-   */
-  def mailboxSize = dispatcher.mailboxSize(this)
-
-  /**
-   * Akka Java API. <p/>
-   * Returns the mailbox size.
-   */
-  def getMailboxSize: Int = mailboxSize
 
   /**
    * Returns the supervisor, if there is one.
@@ -458,7 +407,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
       that.asInstanceOf[ActorRef].uuid == uuid
   }
 
-  override def toString = "Actor[" + address + ":" + uuid + "]"
+  override def toString = "Actor[%s:%s]".format(address, uuid)
 }
 
 /**
@@ -466,26 +415,71 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor, val address: String)
+class LocalActorRef private[akka] (
+  private[this] val actorFactory: () ⇒ Actor,
+  val address: String,
+  replicationScheme: ReplicationScheme)
   extends ActorRef with ScalaActorRef {
+
   protected[akka] val guard = new ReentrantGuard
 
   @volatile
   protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
+
   @volatile
   private[akka] lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
+
   @volatile
   private[akka] var _supervisor: Option[ActorRef] = None
+
   @volatile
   private var maxNrOfRetriesCount: Int = 0
+
   @volatile
   private var restartTimeWindowStartNanos: Long = 0L
+
   @volatile
   private var _mailbox: AnyRef = _
+
   @volatile
   private[akka] var _dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
 
   protected[akka] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
+
+  private val isReplicated: Boolean = replicationScheme match {
+    case _: Transient | Transient ⇒ false
+    case _                        ⇒ true
+  }
+
+  // FIXME how to get the matching serializerClassName? Now default is used. Needed for transaction log snapshot
+  private val serializer = Actor.serializerFor(address, Format.defaultSerializerName)
+
+  private lazy val replicationStorage: Either[TransactionLog, AnyRef] = {
+    replicationScheme match {
+      case _: Transient | Transient ⇒
+        throw new IllegalStateException("Can not replicate 'transient' actor [" + toString + "]")
+
+      case Replication(storage, strategy) ⇒
+        val isWriteBehind = strategy match {
+          case _: WriteBehind | WriteBehind   ⇒ true
+          case _: WriteThrough | WriteThrough ⇒ false
+        }
+
+        storage match {
+          case _: DeploymentConfig.TransactionLog | DeploymentConfig.TransactionLog ⇒
+            EventHandler.debug(this,
+              "Creating a transaction log for Actor [%s] with replication strategy [%s]"
+                .format(address, replicationScheme))
+            Left(transactionLog.newLogFor(_uuid.toString, isWriteBehind, replicationScheme, serializer))
+
+          case _: DeploymentConfig.DataGrid | DeploymentConfig.DataGrid ⇒
+            throw new ConfigurationException("Replication storage type \"data-grid\" is not yet supported")
+
+          case unknown ⇒
+            throw new ConfigurationException("Unknown replication storage type [" + unknown + "]")
+        }
+    }
+  }
 
   //If it was started inside "newActor", initialize it
   if (isRunning) initializeActorInstance
@@ -499,8 +493,11 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     __lifeCycle: LifeCycle,
     __supervisor: Option[ActorRef],
     __hotswap: Stack[PartialFunction[Any, Unit]],
-    __factory: () ⇒ Actor) = {
-    this(__factory, __address)
+    __factory: () ⇒ Actor,
+    __replicationStrategy: ReplicationScheme) = {
+
+    this(__factory, __address, __replicationStrategy)
+
     _uuid = __uuid
     timeout = __timeout
     receiveTimeout = __receiveTimeout
@@ -572,6 +569,10 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
           setActorSelfFields(actorInstance.get, null)
         }
       } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
+
+      if (isReplicated) {
+        if (replicationStorage.isLeft) replicationStorage.left.get.delete()
+      }
     }
   }
 
@@ -608,7 +609,6 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     guard.withGuard {
       if (_linkedActors.remove(actorRef.uuid) eq null)
         throw new IllegalActorStateException("Actor [" + actorRef + "] is not a linked actor, can't unlink")
-
       actorRef.supervisor = None
     }
   }
@@ -692,7 +692,12 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
             throw e
         }
       }
-    } finally { guard.lock.unlock() }
+    } finally {
+      guard.lock.unlock()
+      if (isReplicated) {
+        if (replicationStorage.isLeft) replicationStorage.left.get.recordEntry(messageHandle, this)
+      }
+    }
   }
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable) {
@@ -910,7 +915,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
 
   protected[akka] def checkReceiveTimeout() {
     cancelReceiveTimeout()
-    if (receiveTimeout.isDefined && dispatcher.mailboxSize(this) <= 0) { //Only reschedule if desired and there are currently no more messages to be processed
+    if (receiveTimeout.isDefined && dispatcher.mailboxIsEmpty(this)) { //Only reschedule if desired and there are currently no more messages to be processed
       _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, receiveTimeout.get, TimeUnit.MILLISECONDS))
     }
   }
@@ -948,8 +953,6 @@ private[akka] case class RemoteActorRef private[akka] (
   ClusterModule.ensureEnabled()
 
   timeout = _timeout
-
-  // FIXME BAD, we should not have different ActorRefs
 
   start()
 
@@ -992,15 +995,12 @@ private[akka] case class RemoteActorRef private[akka] (
     }
   }
 
-  // ==== NOT SUPPORTED ====
-
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = {
     SerializedActorRef(uuid, address, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, timeout)
   }
 
-  @deprecated("Will be removed without replacement, doesn't make any sense to have in the face of `become` and `unbecome`", "1.1")
-  def actorClass: Class[_ <: Actor] = unsupported
+  // ==== NOT SUPPORTED ====
   def dispatcher_=(md: MessageDispatcher) {
     unsupported
   }
@@ -1113,7 +1113,7 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
 
   /**
    * The reference sender future of the last received message.
-   * Is defined if the message was sent with sent with '!!' or '!!!', else None.
+   * Is defined if the message was sent with sent with '?'/'ask', else None.
    */
   @deprecated("will be removed in 2.0, use channel instead", "1.2")
   def senderFuture(): Option[Promise[Any]] = {
@@ -1168,19 +1168,6 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
   }
 
   /**
-   * Sends a message asynchronously returns a future holding the eventual reply message.
-   * <p/>
-   * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use '!' together with the 'sender' member field to
-   * implement request/response message exchanges.
-   * If you are sending messages using <code>!!!</code> then you <b>have to</b> use <code>self.reply(..)</code>
-   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
-   */
-  @deprecated("return type is an illusion, use the more honest ? method", "1.2")
-  def !!![T](message: Any, timeout: Long = this.timeout)(implicit channel: UntypedChannel = NullChannel): Future[T] =
-    this.?(message)(channel, Actor.Timeout(timeout)).asInstanceOf[Future[T]]
-
-  /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
    */
   def ?(message: Any)(implicit channel: UntypedChannel = NullChannel, timeout: Actor.Timeout = Actor.defaultTimeout): Future[Any] = {
@@ -1192,7 +1179,7 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
   /**
    * Forwards the message and passes the original sender actor as the sender.
    * <p/>
-   * Works with '!', '!!' and '!!!'.
+   * Works with '!' and '?'/'ask'.
    */
   def forward(message: Any)(implicit channel: ForwardableChannel) = {
     if (isRunning) {
@@ -1229,6 +1216,8 @@ case class SerializedActorRef(val uuid: Uuid,
       if (ReflectiveAccess.RemoteModule.isEnabled)
         RemoteActorRef(new InetSocketAddress(hostname, port), address, timeout, None)
       else
-        throw new IllegalStateException("Trying to deserialize ActorRef (" + this + ") but it's not found in the local registry and remoting is not enabled!")
+        throw new IllegalStateException(
+          "Trying to deserialize ActorRef (" + this +
+            ") but it's not found in the local registry and remoting is not enabled!")
   }
 }

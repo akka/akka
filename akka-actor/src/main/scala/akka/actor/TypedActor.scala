@@ -5,7 +5,7 @@ package akka.actor
  */
 
 import akka.japi.{ Creator, Option ⇒ JOption }
-import akka.actor.Actor.{ actorOf, futureToAnyOptionAsTypedOption }
+import akka.actor.Actor._
 import akka.dispatch.{ MessageDispatcher, Dispatchers, Future, FutureTimeoutException }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration }
@@ -47,7 +47,7 @@ object TypedActor {
             actor ! m
             null
           case m if m.returnsFuture_? ⇒
-            actor !!! m
+            actor ? m
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
             val f = actor ? m
             try { f.await } catch { case _: FutureTimeoutException ⇒ }
@@ -57,7 +57,7 @@ object TypedActor {
               case Some(Left(ex))               ⇒ throw ex
             }
           case m ⇒
-            (actor !!! m).get
+            (actor ? m).get.asInstanceOf[AnyRef]
         }
     }
   }
