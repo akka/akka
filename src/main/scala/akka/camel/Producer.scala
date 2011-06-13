@@ -10,6 +10,7 @@ import org.apache.camel._
 import org.apache.camel.processor.SendProcessor
 
 import akka.actor.{Actor, ActorRef, UntypedActor}
+import akka.dispatch.ActorCompletableFuture
 
 /**
  * Support trait for producing messages to Camel endpoints.
@@ -98,8 +99,7 @@ trait ProducerSupport { this: Actor =>
       val producer = self
       // Need copies of sender and senderFuture references here
       // since the callback could be done later by another thread.
-      val sender = self.sender
-      val senderFuture = self.senderFuture
+      val channel = self.channel
 
       def done(doneSync: Boolean): Unit = {
         (doneSync, exchange.isFailed) match {
@@ -114,10 +114,12 @@ trait ProducerSupport { this: Actor =>
         receiveAfterProduce(result)
 
       private def dispatchAsync(result: Any) = {
-        if (senderFuture.isDefined)
-          producer.postMessageToMailboxAndCreateFutureResultWithTimeout(result, producer.timeout, sender, senderFuture)
-        else
-          producer.postMessageToMailbox(result, sender)
+        channel match {
+          case _ : ActorCompletableFuture =>
+            producer.postMessageToMailboxAndCreateFutureResultWithTimeout(result, producer.timeout, channel)
+          case _ =>
+            producer.postMessageToMailbox(result, channel)
+        }
       }
     })
   }
