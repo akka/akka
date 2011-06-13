@@ -6,7 +6,7 @@ package akka.actor
 
 import akka.japi.{ Creator, Option ⇒ JOption }
 import akka.actor.Actor.{ actorOf, futureToAnyOptionAsTypedOption }
-import akka.dispatch.{ MessageDispatcher, Dispatchers, Future }
+import akka.dispatch.{ MessageDispatcher, Dispatchers, Future, FutureTimeoutException }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
@@ -41,6 +41,7 @@ object TypedActor {
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
+        implicit val timeout = Actor.Timeout(actor.timeout)
         MethodCall(method, args) match {
           case m if m.isOneWay ⇒
             actor ! m
@@ -48,9 +49,12 @@ object TypedActor {
           case m if m.returnsFuture_? ⇒
             actor !!! m
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
-            (actor !!! m).as[AnyRef] match {
-              case Some(null) | None ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
-              case Some(joption)     ⇒ joption
+            val f = actor ? m
+            try { f.await } catch { case _: FutureTimeoutException ⇒ }
+            f.value match {
+              case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
+              case Some(Right(joption: AnyRef)) ⇒ joption
+              case Some(Left(ex))               ⇒ throw ex
             }
           case m ⇒
             (actor !!! m).get

@@ -94,7 +94,7 @@ case class DurableDispatcher(
   override def createMailbox(actorRef: ActorRef): AnyRef = _storage.createFor(actorRef)
 
   private[akka] override def dispatch(invocation: MessageInvocation): Unit = {
-    if (invocation.senderFuture.isDefined)
+    if (invocation.channel.isInstanceOf[ActorPromise])
       throw new IllegalArgumentException("Durable mailboxes do not support Future-based messages from !! and !!!")
     super.dispatch(invocation)
   }
@@ -131,7 +131,7 @@ case class DurablePinnedDispatcher(
   override def createMailbox(actorRef: ActorRef): AnyRef = _storage.createFor(actorRef)
 
   private[akka] override def dispatch(invocation: MessageInvocation): Unit = {
-    if (invocation.senderFuture.isDefined)
+    if (invocation.channel.isInstanceOf[ActorPromise])
       throw new IllegalArgumentException("Actor has a durable mailbox that does not support !! or !!!")
     super.dispatch(invocation)
   }

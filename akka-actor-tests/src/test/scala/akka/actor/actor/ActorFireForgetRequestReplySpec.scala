@@ -23,7 +23,7 @@ object ActorFireForgetRequestReplySpec {
       case "Send" ⇒
         self.reply("Reply")
       case "SendImplicit" ⇒
-        self.sender.get ! "ReplyImplicit"
+        self.channel ! "ReplyImplicit"
     }
   }
 

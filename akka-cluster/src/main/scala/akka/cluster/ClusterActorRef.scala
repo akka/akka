@@ -8,7 +8,7 @@ import Cluster._
 import akka.actor._
 import akka.actor.Actor._
 import akka.event.EventHandler
-import akka.dispatch.Promise
+import akka.dispatch.Future
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
@@ -37,15 +37,23 @@ class ClusterActorRef private[akka] (
 
   def connections: Map[InetSocketAddress, ActorRef] = inetSocketAddressToActorRefMap.get
 
-  override def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
-    route(message)(senderOption)
+  override def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
+    val sender = channel match {
+      case ref: ActorRef ⇒ Some(ref)
+      case _             ⇒ None
+    }
+    route(message)(sender)
+  }
 
-  override def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
+  override def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
     timeout: Long,
-    senderOption: Option[ActorRef],
-    senderFuture: Option[Promise[T]]): Promise[T] = {
-    route[T](message, timeout)(senderOption).asInstanceOf[Promise[T]]
+    channel: UntypedChannel): Future[Any] = {
+    val sender = channel match {
+      case ref: ActorRef ⇒ Some(ref)
+      case _             ⇒ None
+    }
+    route[Any](message, timeout)(sender)
   }
 
   private[akka] def failOver(fromInetSocketAddress: InetSocketAddress, toInetSocketAddress: InetSocketAddress) {

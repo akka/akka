@@ -79,14 +79,13 @@ class ReplicatedActorRef private[akka] (actorRef: ActorRef, val address: String)
   def startLink(actorRef: ActorRef): ActorRef = actorRef.startLink(actorRef)
   def supervisor: Option[ActorRef] = actorRef.supervisor
   def linkedActors: JMap[Uuid, ActorRef] = actorRef.linkedActors
-  protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]) {
-    actorRef.postMessageToMailbox(message, senderOption)
+  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel) {
+    actorRef.postMessageToMailbox(message, channel)
   }
-  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
+  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
     timeout: Long,
-    senderOption: Option[ActorRef],
-    senderFuture: Option[Promise[T]]): Promise[T] = actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, senderOption, senderFuture)
+    channel: UntypedChannel): Future[Any] = actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
   protected[akka] def actorInstance: AtomicReference[Actor] = actorRef.actorInstance
   protected[akka] def supervisor_=(sup: Option[ActorRef]) {
     actorRef.supervisor_=(sup)

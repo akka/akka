@@ -190,7 +190,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
 
     "support futures" in {
       val a = TestActorRef[WorkerActor].start()
-      val f: Future[String] = a !!! "work"
+      val f = a ? "work" mapTo manifest[String]
       f must be('completed)
       f.get must equal("workDone")
     }
@@ -239,9 +239,8 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       intercept[IllegalActorStateException] { ref("work") }
       val ch = Promise.channel()
       ref ! ch
-      val f = ch.promise
-      f must be('completed)
-      f.get must be("complexReply")
+      ch must be('completed)
+      ch.get must be("complexReply")
     }
 
   }

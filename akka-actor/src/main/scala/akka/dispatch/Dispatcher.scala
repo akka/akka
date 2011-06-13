@@ -164,10 +164,7 @@ class Dispatcher(
       var invocation = m.dequeue
       lazy val exception = new ActorKilledException("Actor has been stopped")
       while (invocation ne null) {
-        val f = invocation.senderFuture
-        if (f.isDefined)
-          f.get.completeWithException(exception)
-
+        invocation.channel.sendException(exception)
         invocation = m.dequeue
       }
     }

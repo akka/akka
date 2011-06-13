@@ -24,6 +24,7 @@ import scala.reflect.BeanProperty
 import com.eaio.uuid.UUID
 
 import java.lang.reflect.InvocationTargetException
+import java.util.concurrent.TimeUnit
 
 /**
  * Life-cycle messages for the Actors
@@ -110,9 +111,6 @@ object Status {
  */
 object Actor extends ListenerManagement {
 
-  private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
-  private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
-
   /**
    * A Receive is a convenience type that defines actor message behavior currently modeled as
    * a PartialFunction[Any, Unit].
@@ -139,6 +137,20 @@ object Actor extends ListenerManagement {
   private[actor] val actorRefInCreation = new ThreadLocal[Stack[ActorRef]] {
     override def initialValue = Stack[ActorRef]()
   }
+
+  case class Timeout(duration: Duration) {
+    def this(timeout: Long) = this(Duration(timeout, TimeUnit.MILLISECONDS))
+    def this(length: Long, unit: TimeUnit) = this(Duration(length, unit))
+  }
+  object Timeout {
+    def apply(timeout: Long) = new Timeout(timeout)
+    def apply(length: Long, unit: TimeUnit) = new Timeout(length, unit)
+    implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
+  }
+
+  private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
+  val defaultTimeout = Timeout(TIMEOUT)
+  private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**
    * Handle to the ActorRegistry.
@@ -495,14 +507,14 @@ trait Actor {
    */
   type Receive = Actor.Receive
 
-  /*
+  /**
    * Some[ActorRef] representation of the 'self' ActorRef reference.
    * <p/>
    * Mainly for internal use, functions as the implicit sender references when invoking
    * the 'forward' function.
    */
   @transient
-  implicit val someSelf: Some[ActorRef] = {
+  val someSelf: Some[ActorRef] = {
     val refStack = Actor.actorRefInCreation.get
     if (refStack.isEmpty) throw new ActorInitializationException(
       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
@@ -528,7 +540,7 @@ trait Actor {
    * Mainly for internal use, functions as the implicit sender references when invoking
    * one of the message send functions ('!', '!!' and '!!!').
    */
-  implicit def optionSelf: Option[ActorRef] = someSelf
+  def optionSelf: Option[ActorRef] = someSelf
 
   /**
    * The 'self' field holds the ActorRef for this actor.
@@ -558,7 +570,7 @@ trait Actor {
    * </pre>
    */
   @transient
-  val self: ScalaActorRef = someSelf.get
+  implicit val self: ScalaActorRef = someSelf.get
 
   /**
    * User overridable callback/setting.
@@ -645,8 +657,7 @@ trait Actor {
 
   private[akka] final def apply(msg: Any) = {
     if (msg.isInstanceOf[AnyRef] && (msg.asInstanceOf[AnyRef] eq null))
-      throw new InvalidMessageException("Message from [" + self.sender + "] to [" + self.toString + "] is null")
-
+      throw new InvalidMessageException("Message from [" + self.channel + "] to [" + self.toString + "] is null")
     val behaviorStack = self.hotswap
 
     msg match {
@@ -675,9 +686,9 @@ trait Actor {
       case Restart(reason)           ⇒ throw reason
       case Kill                      ⇒ throw new ActorKilledException("Kill")
       case PoisonPill ⇒
-        val f = self.senderFuture()
+        val ch = self.channel
         self.stop()
-        if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
+        ch.sendException(new ActorKilledException("PoisonPill"))
     }
   }
 
