@@ -11,7 +11,7 @@ The Dispatcher is an important piece that allows you to configure the right sema
 
 Akka supports dispatchers for both event-driven lightweight threads, allowing creation of millions threads on a single workstation, and thread-based Actors, where each dispatcher is bound to a dedicated OS thread.
 
-The event-based Actors currently consume ~600 bytes per Actor which means that you can create more than 6.5 million Actors on 4 G RAM.
+The event-based Actors currently consume ~600 bytes per Actor which means that you can create more than 6.5 million Actors on 4 GB RAM.
 
 Default dispatcher
 ------------------
@@ -82,6 +82,7 @@ The 'ExecutorBasedEventDrivenDispatcher' binds a set of Actors to a thread pool 
 The event-driven dispatchers **must be shared** between multiple Typed Actors and/or Actors. One best practice is to let each top-level Actor, e.g. the Actors you define in the declarative supervisor config, to get their own dispatcher but reuse the dispatcher for each new Actor that the top-level Actor creates. But you can also share dispatcher between multiple top-level Actors. This is very use-case specific and needs to be tried out on a case by case basis. The important thing is that Akka tries to provide you with the freedom you need to design and implement your system in the most efficient way in regards to performance, throughput and latency.
 
 It comes with many different predefined BlockingQueue configurations:
+
 * Bounded LinkedBlockingQueue
 * Unbounded LinkedBlockingQueue
 * Bounded ArrayBlockingQueue

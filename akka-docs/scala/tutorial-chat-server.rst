@@ -72,7 +72,7 @@ The 'actorOf' factory method can be imported like this:
 
 From now on we will assume that it is imported like this and can use it directly.
 
-Akka Actors are extremely lightweight. Each Actor consume ~600 bytes, which means that you can create 6.5 million on 4 G RAM.
+Akka Actors are extremely lightweight. Each Actor consume ~600 bytes, which means that you can create 6.5 million on 4 GB RAM.
 
 Messages are sent using the '!' operator:
 
