@@ -53,8 +53,8 @@ class DispatcherActorSpec extends JUnitSuite {
   @Test
   def shouldSendReplyAsync = {
     val actor = actorOf[TestActor].start()
-    val result = actor !! "Hello"
-    assert("World" === result.get.asInstanceOf[String])
+    val result = (actor ? "Hello").as[String]
+    assert("World" === result.get)
     actor.stop()
   }
 
@@ -62,7 +62,7 @@ class DispatcherActorSpec extends JUnitSuite {
   def shouldSendReceiveException = {
     val actor = actorOf[TestActor].start()
     try {
-      actor !! "Failure"
+      (actor ? "Failure").get
       fail("Should have thrown an exception")
     } catch {
       case e ⇒

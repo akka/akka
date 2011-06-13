@@ -208,7 +208,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       count.get must be(2)
 
-      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be(2)
+      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
 
       pool.stop()
     }
@@ -276,7 +276,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       pool ! 1
 
-      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be(2)
+      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
 
       var loops = 0
       def loop(t: Int) = {
@@ -296,7 +296,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       latch.await
       count.get must be(loops)
 
-      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be(2)
+      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
 
       // a whole bunch should max it out
 
@@ -305,7 +305,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       latch.await
       count.get must be(loops)
 
-      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be(4)
+      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(4)
 
       pool.stop()
     }
@@ -353,7 +353,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       latch.await
       count.get must be(loops)
 
-      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be(2)
+      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
 
       // send a bunch over the theshold and observe an increment
       loops = 15
@@ -362,7 +362,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       latch.await(10 seconds)
       count.get must be(loops)
 
-      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be >= (3)
+      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be >= (3)
 
       pool.stop()
     }
@@ -458,7 +458,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       sleepFor(5 millis)
 
-      val z = (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size
+      val z = (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size
 
       z must be >= (2)
 
@@ -469,7 +469,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         sleepFor(500 millis)
       }
 
-      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be <= (z)
+      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be <= (z)
 
       pool.stop()
     }

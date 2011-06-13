@@ -92,7 +92,7 @@ class TransactorSpec extends WordSpec with MustMatchers {
       counters(0) ! Increment(counters.tail, incrementLatch)
       incrementLatch.await(timeout.length, timeout.unit)
       for (counter ← counters) {
-        (counter !! GetCount).get must be === 1
+        (counter ? GetCount).as[Int].get must be === 1
       }
       counters foreach (_.stop())
       failer.stop()
@@ -104,7 +104,7 @@ class TransactorSpec extends WordSpec with MustMatchers {
       counters(0) ! Increment(counters.tail :+ failer, failLatch)
       failLatch.await(timeout.length, timeout.unit)
       for (counter ← counters) {
-        (counter !! GetCount).get must be === 0
+        (counter ? GetCount).as[Int].get must be === 0
       }
       counters foreach (_.stop())
       failer.stop()

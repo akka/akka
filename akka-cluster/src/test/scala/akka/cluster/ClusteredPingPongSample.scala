@@ -42,7 +42,7 @@ object PingPong {
           count += 1
           self reply Ball
         } else {
-          self.sender.foreach(_ !! Stop)
+          self.sender.foreach(s ⇒ (s ? Stop).await)
           gameOverLatch.countDown
           self.stop
         }

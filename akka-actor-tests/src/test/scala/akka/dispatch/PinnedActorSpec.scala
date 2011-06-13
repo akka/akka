@@ -60,7 +60,7 @@ class PinnedActorSpec extends JUnitSuite {
   def shouldSendReceiveException = {
     val actor = actorOf[TestActor].start()
     try {
-      actor !! "Failure"
+      (actor ? "Failure").get
       fail("Should have thrown an exception")
     } catch {
       case e ⇒

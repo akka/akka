@@ -665,7 +665,7 @@ class DefaultClusterNode private[akka] (
       .build
 
     replicaConnectionsForReplicationFactor(replicationFactor) foreach { connection ⇒
-      (connection !! (command, remoteDaemonAckTimeout)) match {
+      (connection ? (command, remoteDaemonAckTimeout)).as[Status] match {
 
         case Some(Success) ⇒
           EventHandler.debug(this, "Replica for [%s] successfully created".format(actorRef.address))
