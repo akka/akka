@@ -10,7 +10,6 @@ import akka.config._
 import Config._
 import akka.util.{ ListenerManagement, ReflectiveAccess, Duration, Helpers }
 import ReflectiveAccess._
-import Helpers.{ narrow, narrowSilently }
 import akka.remoteinterface.RemoteSupport
 import akka.japi.{ Creator, Procedure }
 import akka.AkkaException
@@ -321,25 +320,6 @@ object Actor extends ListenerManagement {
     }).start() ! Spawn
   }
 
-  /**
-   * Implicitly converts the given Option[Any] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
-   * to convert an Option[Any] to an Option[T].
-   */
-  implicit def toAnyOptionAsTypedOption(anyOption: Option[Any]) = new AnyOptionAsTypedOption(anyOption)
-
-  /**
-   * Implicitly converts the given Future[_] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
-   * to convert an Option[Any] to an Option[T].
-   * This means that the following code is equivalent:
-   *   (actor !! "foo").as[Int] (Deprecated)
-   *   and
-   *   (actor ? "foo").as[Int] (Recommended)
-   */
-  implicit def futureToAnyOptionAsTypedOption(anyFuture: Future[_]) = new AnyOptionAsTypedOption({
-    try { anyFuture.await } catch { case t: FutureTimeoutException ⇒ }
-    anyFuture.resultOrException
-  })
-
   private[akka] def createActor(address: String, actorFactory: () ⇒ ActorRef): ActorRef = {
     Address.validate(address)
     registry.actorFor(address) match { // check if the actor for the address is already in the registry
@@ -475,7 +455,7 @@ object Actor extends ListenerManagement {
  *
  * <p/>
  * Here you find functions like:
- *   - !, !!, ? and forward
+ *   - !, ? and forward
  *   - link, unlink, startLink etc
  *   - start, stop
  *   - etc.
@@ -543,7 +523,7 @@ trait Actor {
    * Option[ActorRef] representation of the 'self' ActorRef reference.
    * <p/>
    * Mainly for internal use, functions as the implicit sender references when invoking
-   * one of the message send functions ('!', '!!' and '?').
+   * one of the message send functions ('!' and '?').
    */
   implicit def optionSelf: Option[ActorRef] = someSelf
 
@@ -692,19 +672,4 @@ trait Actor {
   }
 
   private lazy val processingBehavior = receive //ProcessingBehavior is the original behavior
-}
-
-private[actor] class AnyOptionAsTypedOption(anyOption: Option[Any]) {
-
-  /**
-   * Convenience helper to cast the given Option of Any to an Option of the given type. Will throw a ClassCastException
-   * if the actual type is not assignable from the given one.
-   */
-  def as[T]: Option[T] = narrow[T](anyOption)
-
-  /**
-   * Convenience helper to cast the given Option of Any to an Option of the given type. Will swallow a possible
-   * ClassCastException and return None in that case.
-   */
-  def asSilently[T: Manifest]: Option[T] = narrowSilently[T](anyOption)
 }

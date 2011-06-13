@@ -5,7 +5,7 @@ package akka.actor
  */
 
 import akka.japi.{ Creator, Option ⇒ JOption }
-import akka.actor.Actor.{ actorOf, futureToAnyOptionAsTypedOption }
+import akka.actor.Actor._
 import akka.dispatch.{ MessageDispatcher, Dispatchers, Future }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration }

@@ -7,12 +7,12 @@ import akka.testing._
 import akka.testing.Testing.{ sleepFor, testMillis }
 import akka.util.duration._
 
+import akka.actor._
 import akka.actor.Actor._
 import akka.routing._
 
 import java.util.concurrent.atomic.AtomicInteger
 import akka.dispatch.{ KeptPromise, Future }
-import akka.actor.{ TypedActor, Actor }
 
 object RoutingSpec {
   trait Foo {
@@ -56,9 +56,9 @@ class RoutingSpec extends WordSpec with MustMatchers {
       }.start()
 
       val result = for {
-        a ← (d !! (Test1, testMillis(5 seconds))).as[Int]
-        b ← (d !! (Test2, testMillis(5 seconds))).as[Int]
-        c ← (d !! (Test3, testMillis(5 seconds))).as[Int]
+        a ← (d ? (Test1, testMillis(5 seconds))).as[Int]
+        b ← (d ? (Test2, testMillis(5 seconds))).as[Int]
+        c ← (d ? (Test3, testMillis(5 seconds))).as[Int]
       } yield a + b + c
 
       result.isDefined must be(true)

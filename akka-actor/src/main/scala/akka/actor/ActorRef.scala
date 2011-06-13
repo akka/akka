@@ -101,8 +101,8 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] with S
   /**
    * User overridable callback/setting.
    * <p/>
-   * Defines the default timeout for '!!' and '?' invocations,
-   * e.g. the timeout for the future returned by the call to '!!' and '?'.
+   * Defines the default timeout for '?'/'ask' invocations,
+   * e.g. the timeout for the future returned by the call to '?'/'ask'.
    */
   @deprecated("Will be replaced by implicit-scoped timeout on all methods that needs it, will default to timeout specified in config", "1.1")
   @BeanProperty
@@ -210,7 +210,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] with S
   /**
    * Akka Java API. <p/>
    * The reference sender future of the last received message.
-   * Is defined if the message was sent with sent with '!!' or '?', else None.
+   * Is defined if the message was sent with sent with '?'/'ask', else None.
    */
   def getSenderFuture: Option[Promise[Any]] = senderFuture
 
@@ -1148,7 +1148,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef ⇒
 
   /**
    * The reference sender future of the last received message.
-   * Is defined if the message was sent with sent with '!!' or '?', else None.
+   * Is defined if the message was sent with sent with '?'/'ask', else None.
    */
   def senderFuture(): Option[Promise[Any]] = {
     val msg = currentMessage
@@ -1188,6 +1188,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef ⇒
    * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>self.reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
+  @deprecated("DELETE ME AND UPDATE DOCS!")
   def !!(message: Any, timeout: Long = this.timeout)(implicit sender: Option[ActorRef] = None): Option[Any] = {
     if (isRunning) {
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout[Any](message, timeout, sender, None)
@@ -1217,9 +1218,9 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef ⇒
   /**
    * Forwards the message and passes the original sender actor as the sender.
    * <p/>
-   * Works with '!', '!!' and '?'.
+   * Works with '!' and '?'/'ask'.
    */
-  def forward(message: Any)(implicit sender: Some[ActorRef]) = {
+  def forward(message: Any)(implicit sender: Some[ActorRef]) {
     if (isRunning) {
       if (sender.get.senderFuture.isDefined)
         postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, sender.get.sender, sender.get.senderFuture)

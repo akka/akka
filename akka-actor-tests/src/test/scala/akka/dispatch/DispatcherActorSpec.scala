@@ -45,7 +45,7 @@ class DispatcherActorSpec extends JUnitSuite {
   @Test
   def shouldSendReplySync = {
     val actor = actorOf[TestActor].start()
-    val result = (actor !! ("Hello", 10000)).as[String]
+    val result = (actor ? ("Hello", 10000)).as[String]
     assert("World" === result.get)
     actor.stop()
   }

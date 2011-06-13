@@ -13,7 +13,7 @@ import BKException._
 
 import akka.cluster._
 import akka.actor._
-import Actor._
+import akka.actor.Actor._
 import akka.config.Config
 
 object RoundRobin1ReplicaMultiJvmSpec {
@@ -90,7 +90,7 @@ class RoundRobin1ReplicaMultiJvmNode2 extends WordSpec with MustMatchers {
 
       Cluster.barrier("send-message-from-node2-to-node1", NrOfNodes) {
         hello must not equal (null)
-        val reply = (hello !! "Hello").as[String].getOrElse(fail("Should have recieved reply from node1"))
+        val reply = (hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node1"))
         reply must equal("World from node [node1]")
       }
 

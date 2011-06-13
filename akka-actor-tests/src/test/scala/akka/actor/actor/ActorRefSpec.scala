@@ -260,7 +260,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         def receive = { case _ ⇒ self reply nested }
       }).start()
 
-      val nested = (a !! "any").get.asInstanceOf[ActorRef]
+      val nested: ActorRef = (a ? "any").get
       a must not be null
       nested must not be null
       (a ne nested) must be === true
@@ -268,13 +268,13 @@ class ActorRefSpec extends WordSpec with MustMatchers {
 
     "support advanced nested actorOfs" in {
       val a = Actor.actorOf(new OuterActor(Actor.actorOf(new InnerActor).start)).start
-      val inner = (a !! "innerself").get
+      val inner = (a ? "innerself").as[Any].get
 
-      (a !! a).get must be(a)
-      (a !! "self").get must be(a)
+      (a ? a).as[ActorRef].get must be(a)
+      (a ? "self").as[ActorRef].get must be(a)
       inner must not be a
 
-      (a !! "msg").get must be === "msg"
+      (a ? "msg").as[String] must be === Some("msg")
     }
 
     "support reply via channel" in {
@@ -314,7 +314,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
       val fnull: Future[String] = ref ? null
 
       intercept[ActorKilledException] {
-        ref !! PoisonPill
+        (ref ? PoisonPill).get
         fail("shouldn't get here")
       }
 
