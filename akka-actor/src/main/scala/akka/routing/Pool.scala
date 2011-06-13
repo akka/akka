@@ -5,6 +5,7 @@
 package akka.routing
 
 import akka.actor.{ Actor, ActorRef, PoisonPill }
+import akka.dispatch.{ Promise }
 
 /**
  * Actor pooling
@@ -116,7 +117,7 @@ trait SmallestMailboxSelector {
     var take = if (partialFill) math.min(selectionCount, delegates.length) else selectionCount
 
     while (take > 0) {
-      set = delegates.sortWith(_.mailboxSize < _.mailboxSize).take(take) ++ set //Question, doesn't this risk selecting the same actor multiple times?
+      set = delegates.sortWith((a, b) ⇒ a.dispatcher.mailboxSize(a) < b.dispatcher.mailboxSize(b)).take(take) ++ set //Question, doesn't this risk selecting the same actor multiple times?
       take -= set.size
     }
 
@@ -187,7 +188,7 @@ trait BoundedCapacitor {
 trait MailboxPressureCapacitor {
   def pressureThreshold: Int
   def pressure(delegates: Seq[ActorRef]): Int =
-    delegates count { _.mailboxSize > pressureThreshold }
+    delegates count { a ⇒ a.dispatcher.mailboxSize(a) > pressureThreshold }
 }
 
 /**
@@ -195,7 +196,7 @@ trait MailboxPressureCapacitor {
  */
 trait ActiveFuturesPressureCapacitor {
   def pressure(delegates: Seq[ActorRef]): Int =
-    delegates count { _.senderFuture.isDefined }
+    delegates count { _.channel.isInstanceOf[Promise[Any]] }
 }
 
 /**

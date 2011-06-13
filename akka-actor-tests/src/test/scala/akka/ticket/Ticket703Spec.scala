@@ -8,7 +8,7 @@ import org.scalatest.matchers.MustMatchers
 
 class Ticket703Spec extends WordSpec with MustMatchers {
 
-  "A !!! call to an actor pool" should {
+  "A ? call to an actor pool" should {
     "reuse the proper timeout" in {
       val actorPool = actorOf(
         new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
@@ -28,7 +28,7 @@ class Ticket703Spec extends WordSpec with MustMatchers {
             }
           })
         }).start()
-      (actorPool.!!![String]("Ping", 7000)).await.result must be === Some("Response")
+      (actorPool.?("Ping")(timeout = 7000)).await.result must be === Some("Response")
     }
   }
 }

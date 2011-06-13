@@ -109,9 +109,9 @@ class FickleFriendsSpec extends WordSpec with MustMatchers {
       val latch = new CountDownLatch(1)
       coordinator ! FriendlyIncrement(counters, latch)
       latch.await // this could take a while
-      (coordinator !! GetCount).get must be === 1
+      (coordinator ? GetCount).as[Int].get must be === 1
       for (counter ← counters) {
-        (counter !! GetCount).get must be === 1
+        (counter ? GetCount).as[Int].get must be === 1
       }
       counters foreach (_.stop())
       coordinator.stop()

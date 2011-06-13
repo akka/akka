@@ -4,7 +4,7 @@
 
 package akka.remote.netty
 
-import akka.dispatch.{ DefaultPromise, Promise, Future }
+import akka.dispatch.{ ActorPromise, DefaultPromise, Promise, Future }
 import akka.remote.{ MessageSerializer, RemoteClientSettings, RemoteServerSettings }
 import akka.remote.protocol.RemoteProtocol._
 import akka.serialization.RemoteActorSerialization
@@ -148,8 +148,8 @@ abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) {
 
-  val useTransactionLog = config.getBool("akka.remote.client.buffering.retry-message-send-on-failure", true)
-  val transactionLogCapacity = config.getInt("akka.remote.client.buffering.capacity", -1)
+  val useTransactionLog = config.getBool("akka.cluster.client.buffering.retry-message-send-on-failure", true)
+  val transactionLogCapacity = config.getInt("akka.cluster.client.buffering.capacity", -1)
 
   val name = this.getClass.getSimpleName + "@" +
     remoteAddress.getAddress.getHostAddress + "::" +
@@ -879,9 +879,13 @@ class RemoteServerHandler(
       case _                       ⇒ None
     }
 
-  private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = {
+  private def handleRemoteMessageProtocol(request: RemoteMessageProtocol, channel: Channel) = try {
     EventHandler.debug(this, "Received remote message [%s]".format(request))
     dispatchToActor(request, channel)
+  } catch {
+    case e: Exception ⇒
+      server.notifyListeners(RemoteServerError(e, server))
+      EventHandler.error(e, this, e.getMessage)
   }
 
   private def dispatchToActor(request: RemoteMessageProtocol, channel: Channel) {
@@ -913,8 +917,7 @@ class RemoteServerHandler(
         else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(
           message,
           request.getActorInfo.getTimeout,
-          None,
-          Some(new DefaultPromise[Any](request.getActorInfo.getTimeout).
+          new ActorPromise(request.getActorInfo.getTimeout).
             onComplete(_.value.get match {
               case l: Left[Throwable, Any] ⇒ write(channel, createErrorReplyMessage(l.a, request))
               case r: Right[Throwable, Any] ⇒
@@ -931,7 +934,7 @@ class RemoteServerHandler(
                 if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
 
                 write(channel, RemoteEncoder.encode(messageBuilder.build))
-            })))
+            }))
     }
   }
 

@@ -184,10 +184,10 @@ public class Pi {
 
     // send calculate message
     long timeout = 60000;
-    Future<Double> replyFuture = master.sendRequestReplyFuture(new Calculate(), timeout, null);
-    Option<Double> result = replyFuture.await().resultOrException();
+    Future<Object> replyFuture = master.ask(new Calculate(), timeout, null);
+    Option<Object> result = replyFuture.await().resultOrException();
     if (result.isDefined()) {
-      double pi = result.get();
+      double pi = (Double) result.get();
       // TODO java api for EventHandler?
 //      EventHandler.info(this, String.format("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis", pi, (currentTimeMillis() - start)));
       System.out.println(String.format("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis", pi, (currentTimeMillis() - start)));

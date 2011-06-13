@@ -110,6 +110,8 @@ class Dispatcher(
    */
   protected def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
 
+  def mailboxIsEmpty(actorRef: ActorRef): Boolean = getMailbox(actorRef).isEmpty
+
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
   def createMailbox(actorRef: ActorRef): AnyRef = mailboxType match {
@@ -164,10 +166,7 @@ class Dispatcher(
       var invocation = m.dequeue
       lazy val exception = new ActorKilledException("Actor has been stopped")
       while (invocation ne null) {
-        val f = invocation.senderFuture
-        if (f.isDefined)
-          f.get.completeWithException(exception)
-
+        invocation.channel.sendException(exception)
         invocation = m.dequeue
       }
     }

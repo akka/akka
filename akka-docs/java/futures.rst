@@ -17,11 +17,11 @@ Use with Actors
 
 There are generally two ways of getting a reply from an ``UntypedActor``: the first is by a sent message (``actorRef.sendOneWay(msg);``), which only works if the original sender was an ``UntypedActor``) and the second is through a ``Future``.
 
-Using the ``ActorRef``\'s ``sendRequestReplyFuture`` method to send a message will return a Future. To wait for and retrieve the actual result the simplest method is:
+Using the ``ActorRef``\'s ``ask`` method to send a message will return a Future. To wait for and retrieve the actual result the simplest method is:
 
 .. code-block:: java
 
-  Future[Object] future = actorRef.sendRequestReplyFuture[Object](msg);
+  Future[Object] future = actorRef.ask[Object](msg);
   Object result = future.get(); //Block until result is available, usually bad practice
 
 This will cause the current thread to block and wait for the ``UntypedActor`` to 'complete' the ``Future`` with it's reply. Due to the dynamic nature of Akka's ``UntypedActor``\s this result can be anything. The safest way to deal with this is to specify the result to an ``Object`` as is shown in the above example. You can also use the expected result type instead of ``Any``, but if an unexpected type were to be returned you will get a ``ClassCastException``. For more elegant ways to deal with this and to use the result without blocking, refer to `Functional Futures`_.

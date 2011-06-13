@@ -348,9 +348,9 @@ abstract class ActorModelSpec extends JUnitSuite {
     implicit val dispatcher = newInterceptedDispatcher
     val a = newTestActor.start()
     dispatcher.suspend(a)
-    val f1: Future[String] = a !!! Reply("foo")
-    val stopped = a !!! PoisonPill
-    val shouldBeCompleted = for (i ← 1 to 10) yield a !!! Reply(i)
+    val f1: Future[String] = a ? Reply("foo") mapTo manifest[String]
+    val stopped = a ? PoisonPill
+    val shouldBeCompleted = for (i ← 1 to 10) yield a ? Reply(i)
     dispatcher.resume(a)
     assert(f1.get === "foo")
     stopped.await

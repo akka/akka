@@ -114,7 +114,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
           def receive = { case _ ⇒ self reply nested }
         }).start()
         a must not be (null)
-        val nested = (a !! "any").get.asInstanceOf[ActorRef]
+        val nested = (a ? "any").as[ActorRef].get
         nested must not be (null)
         a must not be theSameInstanceAs(nested)
       }
@@ -125,7 +125,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
           def receive = { case _ ⇒ self reply nested }
         }).start()
         a must not be (null)
-        val nested = (a !! "any").get.asInstanceOf[ActorRef]
+        val nested = (a ? "any").as[ActorRef].get
         nested must not be (null)
         a must not be theSameInstanceAs(nested)
       }
@@ -160,7 +160,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
     "stop when sent a poison pill" in {
       val a = TestActorRef[WorkerActor].start()
       intercept[ActorKilledException] {
-        a !! PoisonPill
+        (a ? PoisonPill).get
       }
       a must not be ('running)
       a must be('shutdown)
@@ -190,7 +190,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
 
     "support futures" in {
       val a = TestActorRef[WorkerActor].start()
-      val f: Future[String] = a !!! "work"
+      val f = a ? "work" mapTo manifest[String]
       f must be('completed)
       f.get must equal("workDone")
     }
@@ -239,9 +239,8 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       intercept[IllegalActorStateException] { ref("work") }
       val ch = Promise.channel()
       ref ! ch
-      val f = ch.promise
-      f must be('completed)
-      f.get must be("complexReply")
+      ch must be('completed)
+      ch.get must be("complexReply")
     }
 
   }

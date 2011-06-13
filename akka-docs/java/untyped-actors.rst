@@ -109,7 +109,7 @@ Send messages
 Messages are sent to an Actor through one of the 'send' methods.
 * 'sendOneWay' means “fire-and-forget”, e.g. send a message asynchronously and return immediately.
 * 'sendRequestReply' means “send-and-reply-eventually”, e.g. send a message asynchronously and wait for a reply through a Future. Here you can specify a timeout. Using timeouts is very important. If no timeout is specified then the actor’s default timeout (set by the 'getContext().setTimeout(..)' method in the 'ActorRef') is used. This method throws an 'ActorTimeoutException' if the call timed out.
-* 'sendRequestReplyFuture' sends a message asynchronously and returns a 'Future'.
+* 'ask' sends a message asynchronously and returns a 'Future'.
 
 In all these methods you have the option of passing along your 'ActorRef' context variable. Make it a practice of doing so because it will allow the receiver actors to be able to respond to your message, since the sender reference is sent along with the message.
 
@@ -158,11 +158,11 @@ Here are some examples:
 Send-And-Receive-Future
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Using 'sendRequestReplyFuture' will send a message to the receiving Actor asynchronously and will immediately return a 'Future'.
+Using 'ask' will send a message to the receiving Actor asynchronously and will immediately return a 'Future'.
 
 .. code-block:: java
 
-  Future future = actorRef.sendRequestReplyFuture("Hello", getContext(), 1000);
+  Future future = actorRef.ask("Hello", getContext(), 1000);
 
 The 'Future' interface looks like this:
 
@@ -182,7 +182,7 @@ So the normal way of working with futures is something like this:
 
 .. code-block:: java
 
-  Future future = actorRef.sendRequestReplyFuture("Hello", getContext(), 1000);
+  Future future = actorRef.ask("Hello", getContext(), 1000);
   future.await();
   if (future.isCompleted()) {
     Option resultOption = future.result();
@@ -305,7 +305,7 @@ On this 'Option' you can invoke 'boolean isDefined()' or 'boolean isEmpty()' to 
 Reply using the sender future
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If a message was sent with the 'sendRequestReply' or 'sendRequestReplyFuture' methods, which both implements request-reply semantics using Future's, then you either have the option of replying using the 'reply' method as above. This method will then resolve the Future. But you can also get a reference to the Future directly and resolve it yourself or if you would like to store it away to resolve it later, or pass it on to some other Actor to resolve it.
+If a message was sent with the 'sendRequestReply' or 'ask' methods, which both implements request-reply semantics using Future's, then you either have the option of replying using the 'reply' method as above. This method will then resolve the Future. But you can also get a reference to the Future directly and resolve it yourself or if you would like to store it away to resolve it later, or pass it on to some other Actor to resolve it.
 
 The reference to the Future resides in the 'ActorRef' instance and can be retrieved using 'Option<Promise> getSenderFuture()'.
 

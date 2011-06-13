@@ -27,12 +27,11 @@ object Router {
     routerType: RouterType,
     inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
     actorAddress: String,
-    timeout: Long,
-    replicationStrategy: ReplicationStrategy = ReplicationStrategy.WriteThrough): ClusterActorRef = {
+    timeout: Long): ClusterActorRef = {
     routerType match {
-      case Direct        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, replicationStrategy) with Direct
-      case Random        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, replicationStrategy) with Random
-      case RoundRobin    ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, replicationStrategy) with RoundRobin
+      case Direct        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with Direct
+      case Random        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with Random
+      case RoundRobin    ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with RoundRobin
       case LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
       case LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
       case LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
@@ -57,7 +56,7 @@ object Router {
     }
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] = next match {
-      case Some(actor) ⇒ actor.!!!(message, timeout)(sender)
+      case Some(actor) ⇒ actor.?(message, timeout)(sender).asInstanceOf[Future[T]]
       case _           ⇒ throwNoConnectionsError()
     }
 

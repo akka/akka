@@ -5,13 +5,13 @@ package akka.actor
  */
 
 import akka.japi.{ Creator, Option ⇒ JOption }
-import akka.actor.Actor.{ actorOf, futureToAnyOptionAsTypedOption }
-import akka.dispatch.{ MessageDispatcher, Dispatchers, Future }
+import akka.actor.Actor._
+import akka.dispatch.{ MessageDispatcher, Dispatchers, Future, FutureTimeoutException }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
-import collection.immutable
 
+//TODO Document this class, not only in Scaladoc, but also in a dedicated typed-actor.rst, for both java and scala
 object TypedActor {
   private val selfReference = new ThreadLocal[AnyRef]
 
@@ -20,7 +20,7 @@ object TypedActor {
     case some ⇒ some
   }
 
-  private class TypedActor[R <: AnyRef, T <: R](val proxyRef: AtomVar[R], createInstance: ⇒ T) extends Actor {
+  private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyRef: AtomVar[R], createInstance: ⇒ T) extends Actor {
     val me = createInstance
     def receive = {
       case m: MethodCall ⇒
@@ -41,24 +41,28 @@ object TypedActor {
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
+        implicit val timeout = Actor.Timeout(actor.timeout)
         MethodCall(method, args) match {
           case m if m.isOneWay ⇒
             actor ! m
             null
           case m if m.returnsFuture_? ⇒
-            actor !!! m
+            actor ? m
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
-            (actor !!! m).as[AnyRef] match {
-              case Some(null) | None ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
-              case Some(joption)     ⇒ joption
+            val f = actor ? m
+            try { f.await } catch { case _: FutureTimeoutException ⇒ }
+            f.value match {
+              case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
+              case Some(Right(joption: AnyRef)) ⇒ joption
+              case Some(Left(ex))               ⇒ throw ex
             }
           case m ⇒
-            (actor !!! m).get
+            (actor ? m).get.asInstanceOf[AnyRef]
         }
     }
   }
 
-  object Configuration {
+  object Configuration { //TODO: Replace this with the new ActorConfiguration when it exists
     val defaultTimeout = Duration(Actor.TIMEOUT, "millis")
     val defaultConfiguration = new Configuration(defaultTimeout, Dispatchers.defaultGlobalDispatcher)
     def apply(): Configuration = defaultConfiguration
@@ -83,6 +87,8 @@ object TypedActor {
   }
 
   case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], parameterValues: Array[AnyRef]) {
+    //TODO implement writeObject and readObject to serialize
+    //TODO Possible optimization is to special encode the parameter-types to conserve space
     private def readResolve(): AnyRef = MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes: _*), parameterValues)
   }
 
@@ -157,7 +163,7 @@ object TypedActor {
 
     val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(ref)).asInstanceOf[T]
     proxyRef.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
-    Actor.registry.registerTypedActor(ref.start, proxy) //We only have access to the proxy from the outside, so register it with the ActorRegistry, will be removed on actor.stop
+    Actor.registry.registerTypedActor(ref, proxy) //We only have access to the proxy from the outside, so register it with the ActorRegistry, will be removed on actor.stop
     proxy
   }
 

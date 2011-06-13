@@ -10,7 +10,6 @@ import akka.config._
 import Config._
 import akka.util.{ ListenerManagement, ReflectiveAccess, Duration, Helpers }
 import ReflectiveAccess._
-import Helpers.{ narrow, narrowSilently }
 import akka.remoteinterface.RemoteSupport
 import akka.japi.{ Creator, Procedure }
 import akka.AkkaException
@@ -24,6 +23,7 @@ import scala.reflect.BeanProperty
 import com.eaio.uuid.UUID
 
 import java.lang.reflect.InvocationTargetException
+import java.util.concurrent.TimeUnit
 
 /**
  * Life-cycle messages for the Actors
@@ -73,10 +73,10 @@ case object Kill extends AutoReceivedMessage with LifeCycleMessage
 case object ReceiveTimeout extends LifeCycleMessage
 
 case class MaximumNumberOfRestartsWithinTimeRangeReached(
-  @BeanProperty val victim: ActorRef,
-  @BeanProperty val maxNrOfRetries: Option[Int],
-  @BeanProperty val withinTimeRange: Option[Int],
-  @BeanProperty val lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
+  @BeanProperty victim: ActorRef,
+  @BeanProperty maxNrOfRetries: Option[Int],
+  @BeanProperty withinTimeRange: Option[Int],
+  @BeanProperty lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
 
 // Exceptions for Actors
 class ActorStartException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
@@ -110,9 +110,6 @@ object Status {
  */
 object Actor extends ListenerManagement {
 
-  private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
-  private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
-
   /**
    * A Receive is a convenience type that defines actor message behavior currently modeled as
    * a PartialFunction[Any, Unit].
@@ -132,13 +129,29 @@ object Actor extends ListenerManagement {
         subclassAudits synchronized { subclassAudits.clear() }
       }
     }
-    Runtime.getRuntime.addShutdownHook(new Thread(hook))
+    Runtime.getRuntime.addShutdownHook(new Thread(hook, "akka-shutdown-hook"))
     hook
   }
 
   private[actor] val actorRefInCreation = new ThreadLocal[Stack[ActorRef]] {
     override def initialValue = Stack[ActorRef]()
   }
+
+  case class Timeout(duration: Duration) {
+    def this(timeout: Long) = this(Duration(timeout, TimeUnit.MILLISECONDS))
+    def this(length: Long, unit: TimeUnit) = this(Duration(length, unit))
+  }
+  object Timeout {
+    def apply(timeout: Long) = new Timeout(timeout)
+    def apply(length: Long, unit: TimeUnit) = new Timeout(length, unit)
+    implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
+    implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
+    implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
+  }
+
+  private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
+  val defaultTimeout = Timeout(TIMEOUT)
+  private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**
    * Handle to the ActorRegistry.
@@ -270,7 +283,7 @@ object Actor extends ListenerManagement {
    * </pre>
    */
   def actorOf[T <: Actor](creator: ⇒ T, address: String): ActorRef = {
-    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator, address))
+    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator, address, Transient))
   }
 
   /**
@@ -293,7 +306,7 @@ object Actor extends ListenerManagement {
    * JAVA API
    */
   def actorOf[T <: Actor](creator: Creator[T], address: String): ActorRef = {
-    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator.create, address))
+    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator.create, address, Transient))
   }
 
   /**
@@ -320,25 +333,6 @@ object Actor extends ListenerManagement {
       }
     }).start() ! Spawn
   }
-
-  /**
-   * Implicitly converts the given Option[Any] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
-   * to convert an Option[Any] to an Option[T].
-   */
-  implicit def toAnyOptionAsTypedOption(anyOption: Option[Any]) = new AnyOptionAsTypedOption(anyOption)
-
-  /**
-   * Implicitly converts the given Future[_] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
-   * to convert an Option[Any] to an Option[T].
-   * This means that the following code is equivalent:
-   *   (actor !! "foo").as[Int] (Deprecated)
-   *   and
-   *   (actor !!! "foo").as[Int] (Recommended)
-   */
-  implicit def futureToAnyOptionAsTypedOption(anyFuture: Future[_]) = new AnyOptionAsTypedOption({
-    try { anyFuture.await } catch { case t: FutureTimeoutException ⇒ }
-    anyFuture.resultOrException
-  })
 
   private[akka] def createActor(address: String, actorFactory: () ⇒ ActorRef): ActorRef = {
     Address.validate(address)
@@ -375,12 +369,18 @@ object Actor extends ListenerManagement {
               "\nif so put it outside the class/trait, f.e. in a companion object," +
               "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
       }
-    }, address)
+    }, address, Transient)
   }
 
   private def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef = {
     deploy match {
-      case Deploy(configAdress, router, serializerClassName, Clustered(home, replication: Replication, state: State)) ⇒
+      case Deploy(
+        configAdress, router, serializerClassName,
+        Clustered(
+          home,
+          replicas,
+          replication)) ⇒
+
         ClusterModule.ensureEnabled()
 
         if (configAdress != address) throw new IllegalStateException(
@@ -389,59 +389,67 @@ object Actor extends ListenerManagement {
           "Remote server is not running")
 
         val isHomeNode = DeploymentConfig.isHomeNode(home)
-        val replicas = DeploymentConfig.replicaValueFor(replication)
+        val nrOfReplicas = DeploymentConfig.replicaValueFor(replicas)
 
-        def serializerErrorDueTo(reason: String) =
-          throw new akka.config.ConfigurationException(
-            "Could not create Serializer object [" + serializerClassName +
-              "] for serialization of actor [" + address +
-              "] since " + reason)
-
-        val serializer: Serializer = {
-          if ((serializerClassName eq null) ||
-            (serializerClassName == "") ||
-            (serializerClassName == Format.defaultSerializerName)) {
-            Format.Default
-          } else {
-            val clazz: Class[_] = ReflectiveAccess.getClassFor(serializerClassName) match {
-              case Right(clazz) ⇒ clazz
-              case Left(exception) ⇒
-                val cause = exception match {
-                  case i: InvocationTargetException ⇒ i.getTargetException
-                  case _                            ⇒ exception
-                }
-                serializerErrorDueTo(cause.toString)
-            }
-            val f = clazz.newInstance.asInstanceOf[AnyRef]
-            if (f.isInstanceOf[Serializer]) f.asInstanceOf[Serializer]
-            else serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
-          }
-        }
-
-        val isStateful = state match {
-          case _: Stateless | Stateless ⇒ false
-          case _: Stateful | Stateful   ⇒ true
-        }
-
-        if (isStateful && isHomeNode) { // stateful actor's home node
-          cluster
-            .use(address, serializer)
-            .getOrElse(throw new ConfigurationException(
-              "Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
-
-        } else {
-          if (!cluster.isClustered(address)) { // add actor to cluster registry (if not already added)
-            cluster.store(factory().start(), replicas, false, serializer)
-          }
+        def storeActorAndGetClusterRef(replicationScheme: ReplicationScheme, serializer: Serializer): ActorRef = {
+          // add actor to cluster registry (if not already added)
+          if (!cluster.isClustered(address))
+            cluster.store(factory().start(), nrOfReplicas, replicationScheme, false, serializer)
 
           // remote node (not home node), check out as ClusterActorRef
           cluster.ref(address, DeploymentConfig.routerTypeFor(router))
+        }
+
+        val serializer = serializerFor(address, serializerClassName)
+
+        replication match {
+          case _: Transient | Transient ⇒
+            storeActorAndGetClusterRef(Transient, serializer)
+
+          case replication: Replication ⇒
+            if (isHomeNode) { // stateful actor's home node
+              cluster
+                .use(address, serializer)
+                .getOrElse(throw new ConfigurationException(
+                  "Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
+            } else {
+              // FIXME later manage different 'storage' (data grid) as well
+              storeActorAndGetClusterRef(replication, serializer)
+            }
         }
 
       case invalid ⇒ throw new IllegalActorStateException(
         "Could not create actor with address [" + address +
           "], not bound to a valid deployment scheme [" + invalid + "]")
     }
+  }
+
+  // FIXME move serializerFor method to ...?
+  def serializerFor(address: String, serializerClassName: String): Serializer = {
+    def serializerErrorDueTo(reason: String) =
+      throw new akka.config.ConfigurationException(
+        "Could not create Serializer object [" + serializerClassName +
+          "] for serialization of actor [" + address +
+          "] since " + reason)
+
+    val serializer: Serializer = serializerClassName match {
+      case null | "" | Format.`defaultSerializerName` ⇒ Format.Default
+      case specialSerializer ⇒
+        ReflectiveAccess.getClassFor(specialSerializer) match {
+          case Right(clazz) ⇒
+            clazz.newInstance match {
+              case s: Serializer ⇒ s
+              case other         ⇒ serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
+            }
+          case Left(exception) ⇒
+            val cause = exception match {
+              case i: InvocationTargetException ⇒ i.getTargetException
+              case _                            ⇒ exception
+            }
+            serializerErrorDueTo(cause.toString)
+        }
+    }
+    serializer
   }
 }
 
@@ -461,7 +469,7 @@ object Actor extends ListenerManagement {
  *
  * <p/>
  * Here you find functions like:
- *   - !, !!, !!! and forward
+ *   - !, ? and forward
  *   - link, unlink, startLink etc
  *   - start, stop
  *   - etc.
@@ -498,35 +506,40 @@ trait Actor {
    */
   type Receive = Actor.Receive
 
-  /*
+  /**
    * Some[ActorRef] representation of the 'self' ActorRef reference.
    * <p/>
    * Mainly for internal use, functions as the implicit sender references when invoking
    * the 'forward' function.
    */
   @transient
-  implicit val someSelf: Some[ActorRef] = {
+  val someSelf: Some[ActorRef] = {
     val refStack = Actor.actorRefInCreation.get
     if (refStack.isEmpty) throw new ActorInitializationException(
-      "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
-        "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
+      "\n\tYou can not create an instance of an " + getClass.getName + " explicitly using 'new MyActor'." +
         "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
         "\n\tEither use:" +
         "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
         "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
 
     val ref = refStack.head
-    Actor.actorRefInCreation.set(refStack.pop)
-    Some(ref)
+
+    if (ref eq null)
+      throw new ActorInitializationException("Trying to create an instance of " + getClass.getName + " outside of a wrapping 'actorOf'")
+    else {
+      // Push a null marker so any subsequent calls to new Actor doesn't reuse this actor ref
+      Actor.actorRefInCreation.set(refStack.push(null))
+      Some(ref)
+    }
   }
 
   /*
    * Option[ActorRef] representation of the 'self' ActorRef reference.
    * <p/>
    * Mainly for internal use, functions as the implicit sender references when invoking
-   * one of the message send functions ('!', '!!' and '!!!').
+   * one of the message send functions ('!' and '?').
    */
-  implicit def optionSelf: Option[ActorRef] = someSelf
+  def optionSelf: Option[ActorRef] = someSelf
 
   /**
    * The 'self' field holds the ActorRef for this actor.
@@ -556,7 +569,7 @@ trait Actor {
    * </pre>
    */
   @transient
-  val self: ScalaActorRef = someSelf.get
+  implicit val self: ScalaActorRef = someSelf.get
 
   /**
    * User overridable callback/setting.
@@ -643,22 +656,14 @@ trait Actor {
 
   private[akka] final def apply(msg: Any) = {
     if (msg.isInstanceOf[AnyRef] && (msg.asInstanceOf[AnyRef] eq null))
-      throw new InvalidMessageException("Message from [" + self.sender + "] to [" + self.toString + "] is null")
-
+      throw new InvalidMessageException("Message from [" + self.channel + "] to [" + self.toString + "] is null")
     val behaviorStack = self.hotswap
 
     msg match {
-      case l: AutoReceivedMessage ⇒
-        autoReceiveMessage(l)
-
-      case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒
-        behaviorStack.head.apply(msg)
-
-      case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒
-        processingBehavior.apply(msg)
-
-      case unknown ⇒
-        unhandled(unknown) //This is the only line that differs from processingbehavior
+      case l: AutoReceivedMessage ⇒ autoReceiveMessage(l)
+      case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
+      case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
+      case unknown ⇒ unhandled(unknown) //This is the only line that differs from processingbehavior
     }
   }
 
@@ -673,35 +678,11 @@ trait Actor {
       case Restart(reason)           ⇒ throw reason
       case Kill                      ⇒ throw new ActorKilledException("Kill")
       case PoisonPill ⇒
-        val f = self.senderFuture()
+        val ch = self.channel
         self.stop()
-        if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
+        ch.sendException(new ActorKilledException("PoisonPill"))
     }
   }
 
   private lazy val processingBehavior = receive //ProcessingBehavior is the original behavior
-}
-
-private[actor] class AnyOptionAsTypedOption(anyOption: Option[Any]) {
-
-  /**
-   * Convenience helper to cast the given Option of Any to an Option of the given type. Will throw a ClassCastException
-   * if the actual type is not assignable from the given one.
-   */
-  def as[T]: Option[T] = narrow[T](anyOption)
-
-  /**
-   * Convenience helper to cast the given Option of Any to an Option of the given type. Will swallow a possible
-   * ClassCastException and return None in that case.
-   */
-  def asSilently[T: Manifest]: Option[T] = narrowSilently[T](anyOption)
-}
-
-/**
- * Marker interface for proxyable actors (such as typed actor).
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait Proxyable {
-  private[actor] def swapProxiedActor(newInstance: Actor)
 }
