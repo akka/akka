@@ -620,6 +620,17 @@ sealed trait Future[+T] {
     } else None
   }
 
+  /* Java API */
+  final def onComplete[A >: T](proc: Procedure[Future[A]]): this.type = onComplete(proc(_))
+
+  final def map[A >: T, B](f: JFunc[A, B]): Future[B] = map(f(_))
+
+  final def flatMap[A >: T, B](f: JFunc[A, Future[B]]): Future[B] = flatMap(f(_))
+
+  final def foreach[A >: T](proc: Procedure[A]): Unit = foreach(proc(_))
+
+  final def filter(p: JFunc[Any, Boolean]): Future[Any] = filter(p(_))
+
 }
 
 object Promise {

@@ -62,8 +62,8 @@ class FutureSpec extends JUnitSuite {
   def shouldFutureCompose {
     val actor1 = actorOf[TestActor].start()
     val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply s.toUpperCase } }).start()
-    val future1 = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
-    val future2 = actor1 ? "Hello" flatMap { case i: Int ⇒ actor2 ? i }
+    val future1 = actor1 ? "Hello" flatMap { _ match { case s: String ⇒ actor2 ? s } }
+    val future2 = actor1 ? "Hello" flatMap { _ match { case i: Int ⇒ actor2 ? i } }
     assert((future1.get: Any) === "WORLD")
     intercept[MatchError] { future2.get }
     actor1.stop()
