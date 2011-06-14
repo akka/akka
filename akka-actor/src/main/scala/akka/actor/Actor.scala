@@ -403,26 +403,6 @@ object Actor extends ListenerManagement {
         val serializer: Serializer =
           akka.serialization.Serialization.getSerializer(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
 
-        /**
-         * val serializer: Serializer = serializerClassName match {
-         * case null | "" | Format.`defaultSerializerName` ⇒ Format.Default
-         * case specialSerializer ⇒
-         * ReflectiveAccess.getClassFor(specialSerializer) match {
-         * case Right(clazz) ⇒
-         * clazz.newInstance match {
-         * case s: Serializer ⇒ s
-         * case other         ⇒ serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
-         * }
-         * case Left(exception) ⇒
-         * val cause = exception match {
-         * case i: InvocationTargetException ⇒ i.getTargetException
-         * case _                            ⇒ exception
-         * }
-         * serializerErrorDueTo(cause.toString)
-         * }
-         * }
-         */
-
         def storeActorAndGetClusterRef(replicationScheme: ReplicationScheme, serializer: Serializer): ActorRef = {
           // add actor to cluster registry (if not already added)
           if (!cluster.isClustered(address))

@@ -44,7 +44,7 @@ abstract class DurableExecutableMailbox(owner: ActorRef) extends MessageQueue wi
 
   //TODO: switch to RemoteProtocol
   def serialize(durableMessage: MessageInvocation) = {
-    val message = MessageSerializer.serialize(durableMessage.message)
+    val message = MessageSerializer.serialize(durableMessage.message.asInstanceOf[AnyRef])
     val builder = DurableMailboxMessageProtocol.newBuilder
       .setOwnerAddress(ownerAddress)
       .setMessage(message.toByteString)

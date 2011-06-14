@@ -71,11 +71,11 @@ class TransactionLog private (
     if (nrOfEntries.incrementAndGet % snapshotFrequency == 0) {
       val snapshot =
         // FIXME ReplicationStrategy Transient is always used
-        if (Cluster.shouldCompressData) LZF.compress(toBinary(actorRef, false, replicationScheme)(format))
-        else toBinary(actorRef, false, replicationScheme)(format)
+        if (Cluster.shouldCompressData) LZF.compress(toBinary(actorRef, false, replicationScheme))
+        else toBinary(actorRef, false, replicationScheme)
       recordSnapshot(snapshot)
     }
-    recordEntry(MessageSerializer.serialize(messageHandle.message).toByteArray)
+    recordEntry(MessageSerializer.serialize(messageHandle.message.asInstanceOf[AnyRef]).toByteArray)
   }
 
   /**

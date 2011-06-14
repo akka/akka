@@ -35,8 +35,8 @@ object ActorSerialization {
   def toBinary[T <: Actor](
     a: ActorRef,
     serializeMailBox: Boolean = true,
-    replicationScheme: ReplicationScheme = Transient)(implicit format: Serializer): Array[Byte] =
-    toSerializedActorRefProtocol(a, format, serializeMailBox, replicationScheme).toByteArray
+    replicationScheme: ReplicationScheme = Transient): Array[Byte] =
+    toSerializedActorRefProtocol(a, serializeMailBox, replicationScheme).toByteArray
 
   // wrapper for implicits to be used by Java
   def fromBinaryJ[T <: Actor](bytes: Array[Byte]): ActorRef =
@@ -45,14 +45,12 @@ object ActorSerialization {
   // wrapper for implicits to be used by Java
   def toBinaryJ[T <: Actor](
     a: ActorRef,
-    format: Serializer,
     srlMailBox: Boolean,
     replicationScheme: ReplicationScheme): Array[Byte] =
-    toBinary(a, srlMailBox, replicationScheme)(format)
+    toBinary(a, srlMailBox, replicationScheme)
 
   private[akka] def toSerializedActorRefProtocol[T <: Actor](
     actorRef: ActorRef,
-    format: Serializer,
     serializeMailBox: Boolean,
     replicationScheme: ReplicationScheme): SerializedActorRefProtocol = {
 
@@ -114,7 +112,6 @@ object ActorSerialization {
     }
 
     actorRef.receiveTimeout.foreach(builder.setReceiveTimeout(_))
-    // builder.setActorInstance(ByteString.copyFrom(format.toBinary(actorRef.actor.asInstanceOf[T])))
     Serialization.serialize(actorRef.actor.asInstanceOf[T]) match {
       case Right(bytes)    ⇒ builder.setActorInstance(ByteString.copyFrom(bytes))
       case Left(exception) ⇒ throw new Exception("Error serializing : " + actorRef.actor.getClass.getName)
@@ -175,13 +172,13 @@ object ActorSerialization {
 
     val hotswap =
       try {
-        Serialization.deserialize(protocol.getHotswapStack.toByteArray, classOf[Stack[PartialFunction[Any, Unit]]], loader) match {
-          case Right(r) ⇒ r.asInstanceOf[Stack[PartialFunction[Any, Unit]]]
-          case Left(ex) ⇒ throw new Exception("Cannot de-serialize hotswapstack")
-        }
-        // format
-        // .fromBinary(protocol.getHotswapStack.toByteArray, Some(classOf[Stack[PartialFunction[Any, Unit]]]))
-        // .asInstanceOf[Stack[PartialFunction[Any, Unit]]]
+        Serialization.deserialize(
+          protocol.getHotswapStack.toByteArray,
+          classOf[Stack[PartialFunction[Any, Unit]]],
+          loader) match {
+            case Right(r) ⇒ r.asInstanceOf[Stack[PartialFunction[Any, Unit]]]
+            case Left(ex) ⇒ throw new Exception("Cannot de-serialize hotswapstack")
+          }
       } catch {
         case e: Exception ⇒ Stack[PartialFunction[Any, Unit]]()
       }
@@ -195,7 +192,6 @@ object ActorSerialization {
           case Right(r) ⇒ r.asInstanceOf[Actor]
           case Left(ex) ⇒ throw new Exception("Cannot de-serialize : " + actorClass)
         }
-        // format.fromBinary(protocol.getActorInstance.toByteArray, Some(actorClass)).asInstanceOf[Actor]
       } catch {
         case e: Exception ⇒ actorClass.newInstance.asInstanceOf[Actor]
       }

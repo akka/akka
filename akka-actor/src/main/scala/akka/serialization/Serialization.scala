@@ -13,12 +13,12 @@ object Serialization {
   case class NoSerializerFoundException(m: String) extends Exception(m)
 
   def serialize(o: AnyRef): Either[Exception, Array[Byte]] =
-    getSerializer(o.getClass)
-      .fold((ex) ⇒ Left(ex),
-        (ser) ⇒ Right(ser.toBinary(o)))
+    getSerializer(o.getClass).fold((ex) ⇒ Left(ex), (ser) ⇒ Right(ser.toBinary(o)))
 
-  def deserialize(bytes: Array[Byte], clazz: Class[_],
-                  classLoader: Option[ClassLoader]): Either[Exception, AnyRef] =
+  def deserialize(
+    bytes: Array[Byte],
+    clazz: Class[_],
+    classLoader: Option[ClassLoader]): Either[Exception, AnyRef] =
     getSerializer(clazz)
       .fold((ex) ⇒ Left(ex),
         (ser) ⇒ Right(ser.fromBinary(bytes, Some(clazz), classLoader)))
@@ -27,10 +27,8 @@ object Serialization {
     Config.serializerMap.get(clazz.getName) match {
       case Some(serializerName: String) ⇒
         getClassFor(serializerName) match {
-          case Right(serializer) ⇒ {
-            Right(serializer.newInstance.asInstanceOf[Serializer])
-          }
-          case Left(exception) ⇒ Left(exception)
+          case Right(serializer) ⇒ Right(serializer.newInstance.asInstanceOf[Serializer])
+          case Left(exception)   ⇒ Left(exception)
         }
       case _ ⇒
         getDefaultSerializer match {
@@ -44,32 +42,29 @@ object Serialization {
     Config.serializers.get("default") match {
       case Some(ser: String) ⇒
         getClassFor(ser) match {
-          case Right(srializer) ⇒ {
-            Some(srializer.newInstance.asInstanceOf[Serializer])
-          }
-          case Left(exception) ⇒ None
+          case Right(srializer) ⇒ Some(srializer.newInstance.asInstanceOf[Serializer])
+          case Left(exception)  ⇒ None
         }
       case None ⇒ None
     }
   }
 
-  private def getSerializerInstanceForBestMatchClass(configMap: collection.mutable.Map[String, String], cl: Class[_]) = {
+  private def getSerializerInstanceForBestMatchClass(
+    configMap: collection.mutable.Map[String, String],
+    cl: Class[_]) = {
     configMap
       .find {
         case (clazzName, ser) ⇒
           getClassFor(clazzName) match {
-            case Right(clazz) ⇒
-              clazz.isAssignableFrom(cl)
-            case _ ⇒ false
+            case Right(clazz) ⇒ clazz.isAssignableFrom(cl)
+            case _            ⇒ false
           }
       }
       .map {
         case (_, ser) ⇒
           getClassFor(ser) match {
-            case Right(s) ⇒
-              val instance = s.newInstance.asInstanceOf[Serializer]
-              Right(instance)
-            case _ ⇒ Left(new Exception("Error instantiating " + ser))
+            case Right(s) ⇒ Right(s.newInstance.asInstanceOf[Serializer])
+            case _        ⇒ Left(new Exception("Error instantiating " + ser))
           }
       }.getOrElse(Left(NoSerializerFoundException("No mapping serializer found for " + cl)))
   }
