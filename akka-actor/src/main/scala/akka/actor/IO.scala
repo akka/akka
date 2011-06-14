@@ -81,7 +81,7 @@ object IO {
       socket
     }
 
-    def accept()(implicit sender: Some[ActorRef]): SocketHandle = accept(sender.get)
+    def accept()(implicit socketOwner: ScalaActorRef): SocketHandle = accept(socketOwner)
   }
 
   sealed trait IOMessage
@@ -95,23 +95,35 @@ object IO {
   case class Read(handle: ReadHandle, bytes: ByteString) extends IOMessage
   case class Write(handle: WriteHandle, bytes: ByteString) extends IOMessage
 
-  def listen(ioManager: ActorRef, host: String, port: Int)(implicit sender: Some[ActorRef]): ServerHandle =
-    listen(ioManager, new InetSocketAddress(host, port))
-
-  def listen(ioManager: ActorRef, address: InetSocketAddress)(implicit sender: Some[ActorRef]): ServerHandle = {
-    val server = ServerHandle(sender.get, ioManager)
+  def listen(ioManager: ActorRef, address: InetSocketAddress, owner: ActorRef): ServerHandle = {
+    val server = ServerHandle(owner, ioManager)
     ioManager ! Listen(server, address)
     server
   }
 
-  def connect(ioManager: ActorRef, host: String, port: Int)(implicit sender: Some[ActorRef]): SocketHandle =
-    connect(ioManager, new InetSocketAddress(host, port))
+  def listen(ioManager: ActorRef, address: InetSocketAddress)(implicit sender: ScalaActorRef): ServerHandle =
+    listen(ioManager, address, sender)
 
-  def connect(ioManager: ActorRef, address: InetSocketAddress)(implicit sender: Some[ActorRef]): SocketHandle = {
-    val socket = SocketHandle(sender.get, ioManager)
+  def listen(ioManager: ActorRef, host: String, port: Int, owner: ActorRef): ServerHandle =
+    listen(ioManager, new InetSocketAddress(host, port), owner)
+
+  def listen(ioManager: ActorRef, host: String, port: Int)(implicit sender: ScalaActorRef): ServerHandle =
+    listen(ioManager, new InetSocketAddress(host, port), sender)
+
+  def connect(ioManager: ActorRef, address: InetSocketAddress, owner: ActorRef): SocketHandle = {
+    val socket = SocketHandle(owner, ioManager)
     ioManager ! Connect(socket, address)
     socket
   }
+
+  def connect(ioManager: ActorRef, address: InetSocketAddress)(implicit sender: ScalaActorRef): SocketHandle =
+    connect(ioManager, address, sender)
+
+  def connect(ioManager: ActorRef, host: String, port: Int, owner: ActorRef): SocketHandle =
+    connect(ioManager, new InetSocketAddress(host, port), owner)
+
+  def connect(ioManager: ActorRef, host: String, port: Int)(implicit sender: ScalaActorRef): SocketHandle =
+    connect(ioManager, new InetSocketAddress(host, port), sender)
 
   private class HandleState(var readBytes: ByteString, var connected: Boolean) {
     def this() = this(ByteString.empty, false)
