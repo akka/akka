@@ -575,7 +575,7 @@ sealed trait Future[+T] {
     }
   }
 
-  /*final def withFilter(p: T ⇒ Boolean) = new FutureWithFilter[T](this, p)
+  final def withFilter(p: T ⇒ Boolean) = new FutureWithFilter[T](this, p)
 
   final class FutureWithFilter[+A](self: Future[A], p: A ⇒ Boolean) {
     def foreach(f: A ⇒ Unit): Unit = self filter p foreach f
@@ -584,8 +584,7 @@ sealed trait Future[+T] {
     def withFilter(q: A ⇒ Boolean): FutureWithFilter[A] = new FutureWithFilter[A](self, x ⇒ p(x) && q(x))
   }
 
-  final def filter(p: T ⇒ Boolean): Future[T] = { */
-  final def filter(p: Any ⇒ Boolean): Future[T] = {
+  final def filter(p: T ⇒ Boolean): Future[T] = {
     val f = new DefaultPromise[T](timeoutInNanos, NANOS)
     onComplete { ft ⇒
       val optv = ft.value
