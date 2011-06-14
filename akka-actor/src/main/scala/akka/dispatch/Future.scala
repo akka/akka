@@ -311,18 +311,19 @@ sealed trait Future[+T] {
   /**
    * Await completion of this Future (as `await`) and return its value if it
    * conforms to A's erased type.
+   *
+   * def as[A](implicit m: Manifest[A]): Option[A] =
+   * try {
+   * await
+   * value match {
+   * case None                ⇒ None
+   * case Some(_: Left[_, _]) ⇒ None
+   * case Some(Right(v))      ⇒ Some(BoxedType(m.erasure).cast(v).asInstanceOf[A])
+   * }
+   * } catch {
+   * case _: Exception ⇒ None
+   * }
    */
-  def as[A](implicit m: Manifest[A]): Option[A] =
-    try {
-      await
-      value match {
-        case None                ⇒ None
-        case Some(_: Left[_, _]) ⇒ None
-        case Some(Right(v))      ⇒ Some(BoxedType(m.erasure).cast(v).asInstanceOf[A])
-      }
-    } catch {
-      case _: Exception ⇒ None
-    }
 
   /**
    * Tests whether this Future has been completed.
