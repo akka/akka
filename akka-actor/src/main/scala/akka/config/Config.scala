@@ -119,4 +119,12 @@ object Config {
 
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
+
+  val serializers = config.getSection("akka.actor.serializers").map(_.map).getOrElse(Map("default" -> "akka.serialization.JavaSerializer"))
+
+  val bindings = config.getSection("akka.actor.bindings")
+    .map(_.map)
+    .map(m ⇒ Map() ++ m.map { case (k, v: List[String]) ⇒ Map() ++ v.map((_, k)) }.flatten)
+
+  val serializerMap = bindings.map(m ⇒ m.map { case (k, v: String) ⇒ (k, serializers(v)) }).getOrElse(Map())
 }

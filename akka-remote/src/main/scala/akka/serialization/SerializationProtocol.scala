@@ -24,35 +24,33 @@ import com.google.protobuf.ByteString
  * Module for local actor serialization.
  */
 object ActorSerialization {
-  implicit val defaultSerializer = Format.Default
+  implicit val defaultSerializer = akka.serialization.JavaSerializer // Format.Default
 
-  def fromBinary[T <: Actor](bytes: Array[Byte], homeAddress: InetSocketAddress)(implicit format: Serializer): ActorRef =
-    fromBinaryToLocalActorRef(bytes, Some(homeAddress), format)
+  def fromBinary[T <: Actor](bytes: Array[Byte], homeAddress: InetSocketAddress): ActorRef =
+    fromBinaryToLocalActorRef(bytes, Some(homeAddress))
 
-  def fromBinary[T <: Actor](bytes: Array[Byte])(implicit format: Serializer): ActorRef =
-    fromBinaryToLocalActorRef(bytes, None, format)
+  def fromBinary[T <: Actor](bytes: Array[Byte]): ActorRef =
+    fromBinaryToLocalActorRef(bytes, None)
 
   def toBinary[T <: Actor](
     a: ActorRef,
     serializeMailBox: Boolean = true,
-    replicationScheme: ReplicationScheme = Transient)(implicit format: Serializer): Array[Byte] =
-    toSerializedActorRefProtocol(a, format, serializeMailBox, replicationScheme).toByteArray
+    replicationScheme: ReplicationScheme = Transient): Array[Byte] =
+    toSerializedActorRefProtocol(a, serializeMailBox, replicationScheme).toByteArray
 
   // wrapper for implicits to be used by Java
-  def fromBinaryJ[T <: Actor](bytes: Array[Byte], format: Serializer): ActorRef =
-    fromBinary(bytes)(format)
+  def fromBinaryJ[T <: Actor](bytes: Array[Byte]): ActorRef =
+    fromBinary(bytes)
 
   // wrapper for implicits to be used by Java
   def toBinaryJ[T <: Actor](
     a: ActorRef,
-    format: Serializer,
     srlMailBox: Boolean,
     replicationScheme: ReplicationScheme): Array[Byte] =
-    toBinary(a, srlMailBox, replicationScheme)(format)
+    toBinary(a, srlMailBox, replicationScheme)
 
   private[akka] def toSerializedActorRefProtocol[T <: Actor](
     actorRef: ActorRef,
-    format: Serializer,
     serializeMailBox: Boolean,
     replicationScheme: ReplicationScheme): SerializedActorRefProtocol = {
 
@@ -114,23 +112,27 @@ object ActorSerialization {
     }
 
     actorRef.receiveTimeout.foreach(builder.setReceiveTimeout(_))
-    builder.setActorInstance(ByteString.copyFrom(format.toBinary(actorRef.actor.asInstanceOf[T])))
+    Serialization.serialize(actorRef.actor.asInstanceOf[T]) match {
+      case Right(bytes)    ⇒ builder.setActorInstance(ByteString.copyFrom(bytes))
+      case Left(exception) ⇒ throw new Exception("Error serializing : " + actorRef.actor.getClass.getName)
+    }
+
     lifeCycleProtocol.foreach(builder.setLifeCycle(_))
     actorRef.supervisor.foreach(s ⇒ builder.setSupervisor(RemoteActorSerialization.toRemoteActorRefProtocol(s)))
-    if (!actorRef.hotswap.isEmpty) builder.setHotswapStack(ByteString.copyFrom(Serializers.Java.toBinary(actorRef.hotswap)))
+    // if (!actorRef.hotswap.isEmpty) builder.setHotswapStack(ByteString.copyFrom(Serializers.Java.toBinary(actorRef.hotswap)))
+    if (!actorRef.hotswap.isEmpty) builder.setHotswapStack(ByteString.copyFrom(akka.serialization.JavaSerializer.toBinary(actorRef.hotswap)))
     builder.build
   }
 
   private def fromBinaryToLocalActorRef[T <: Actor](
     bytes: Array[Byte],
-    homeAddress: Option[InetSocketAddress],
-    format: Serializer): ActorRef = {
+    homeAddress: Option[InetSocketAddress]): ActorRef = {
     val builder = SerializedActorRefProtocol.newBuilder.mergeFrom(bytes)
-    fromProtobufToLocalActorRef(builder.build, format, None)
+    fromProtobufToLocalActorRef(builder.build, None)
   }
 
   private[akka] def fromProtobufToLocalActorRef[T <: Actor](
-    protocol: SerializedActorRefProtocol, format: Serializer, loader: Option[ClassLoader]): ActorRef = {
+    protocol: SerializedActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
 
     val lifeCycle =
       if (protocol.hasLifeCycle) {
@@ -170,9 +172,13 @@ object ActorSerialization {
 
     val hotswap =
       try {
-        format
-          .fromBinary(protocol.getHotswapStack.toByteArray, Some(classOf[Stack[PartialFunction[Any, Unit]]]))
-          .asInstanceOf[Stack[PartialFunction[Any, Unit]]]
+        Serialization.deserialize(
+          protocol.getHotswapStack.toByteArray,
+          classOf[Stack[PartialFunction[Any, Unit]]],
+          loader) match {
+            case Right(r) ⇒ r.asInstanceOf[Stack[PartialFunction[Any, Unit]]]
+            case Left(ex) ⇒ throw new Exception("Cannot de-serialize hotswapstack")
+          }
       } catch {
         case e: Exception ⇒ Stack[PartialFunction[Any, Unit]]()
       }
@@ -182,7 +188,10 @@ object ActorSerialization {
     val factory = () ⇒ {
       val actorClass = classLoader.loadClass(protocol.getActorClassname)
       try {
-        format.fromBinary(protocol.getActorInstance.toByteArray, Some(actorClass)).asInstanceOf[Actor]
+        Serialization.deserialize(protocol.getActorInstance.toByteArray, actorClass, loader) match {
+          case Right(r) ⇒ r.asInstanceOf[Actor]
+          case Left(ex) ⇒ throw new Exception("Cannot de-serialize : " + actorClass)
+        }
       } catch {
         case e: Exception ⇒ actorClass.newInstance.asInstanceOf[Actor]
       }
@@ -200,11 +209,7 @@ object ActorSerialization {
       replicationScheme)
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
-    messages.foreach(message ⇒ ar ! MessageSerializer.deserialize(message.getMessage))
-
-    //if (format.isInstanceOf[SerializerBasedActorFormat[_]] == false)
-    //  format.fromBinary(protocol.getActorInstance.toByteArray, ar.actor.asInstanceOf[T])
-    //ar
+    messages.foreach(message ⇒ ar ! MessageSerializer.deserialize(message.getMessage, Some(classLoader)))
     ar
   }
 }
@@ -228,7 +233,7 @@ object RemoteActorSerialization {
    */
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
     RemoteActorRef(
-      Serializers.Java.fromBinary(protocol.getInetSocketAddress.toByteArray, Some(classOf[InetSocketAddress])).asInstanceOf[InetSocketAddress],
+      JavaSerializer.fromBinary(protocol.getInetSocketAddress.toByteArray, Some(classOf[InetSocketAddress]), loader).asInstanceOf[InetSocketAddress],
       protocol.getAddress,
       protocol.getTimeout,
       loader)
@@ -248,7 +253,7 @@ object RemoteActorSerialization {
         ReflectiveAccess.RemoteModule.configDefaultAddress
     }
     RemoteActorRefProtocol.newBuilder
-      .setInetSocketAddress(ByteString.copyFrom(Serializers.Java.toBinary(remoteAddress)))
+      .setInetSocketAddress(ByteString.copyFrom(JavaSerializer.toBinary(remoteAddress)))
       .setAddress(actor.address)
       .setTimeout(actor.timeout)
       .build
@@ -284,7 +289,7 @@ object RemoteActorSerialization {
 
     message match {
       case Right(message) ⇒
-        messageBuilder.setMessage(MessageSerializer.serialize(message))
+        messageBuilder.setMessage(MessageSerializer.serialize(message.asInstanceOf[AnyRef]))
       case Left(exception) ⇒
         messageBuilder.setException(ExceptionProtocol.newBuilder
           .setClassname(exception.getClass.getName)

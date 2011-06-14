@@ -46,10 +46,8 @@ class ActorTimeoutSpec
 
     "use explicitly supplied timeout" in {
       within(testTimeout - 100.millis, testTimeout + 300.millis) {
-        (echo.?("hallo")(timeout = testTimeout)).as[String] must be(None)
+        (echo.?("hallo", testTimeout)).as[String] must be(None)
       }
     }
-
   }
-
 }

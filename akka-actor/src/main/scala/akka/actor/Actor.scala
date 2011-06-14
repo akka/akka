@@ -89,8 +89,11 @@ class InvalidMessageException private[akka] (message: String, cause: Throwable =
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message
  */
-case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception {
-  override def getMessage = "Actor %s does not handle [%s]".format(ref, msg)
+case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Exception {
+  // constructor with 'null' ActorRef needed to work with client instantiation of remote exception
+  override def getMessage =
+    if (ref ne null) "Actor %s does not handle [%s]".format(ref, msg)
+    else "Actor does not handle [%s]".format(msg)
   override def fillInStackTrace() = this //Don't waste cycles generating stack trace
 }
 
@@ -151,6 +154,7 @@ object Actor extends ListenerManagement {
 
   private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
   val defaultTimeout = Timeout(TIMEOUT)
+  val noTimeoutGiven = Timeout(-123456789)
   private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**
@@ -391,6 +395,15 @@ object Actor extends ListenerManagement {
         val isHomeNode = DeploymentConfig.isHomeNode(home)
         val nrOfReplicas = DeploymentConfig.replicaValueFor(replicas)
 
+        def serializerErrorDueTo(reason: String) =
+          throw new akka.config.ConfigurationException(
+            "Could not create Serializer object [" + serializerClassName +
+              "] for serialization of actor [" + address +
+              "] since " + reason)
+
+        val serializer: Serializer =
+          akka.serialization.Serialization.getSerializer(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
+
         def storeActorAndGetClusterRef(replicationScheme: ReplicationScheme, serializer: Serializer): ActorRef = {
           // add actor to cluster registry (if not already added)
           if (!cluster.isClustered(address))
@@ -399,8 +412,6 @@ object Actor extends ListenerManagement {
           // remote node (not home node), check out as ClusterActorRef
           cluster.ref(address, DeploymentConfig.routerTypeFor(router))
         }
-
-        val serializer = serializerFor(address, serializerClassName)
 
         replication match {
           case _: Transient | Transient ⇒
@@ -422,34 +433,6 @@ object Actor extends ListenerManagement {
         "Could not create actor with address [" + address +
           "], not bound to a valid deployment scheme [" + invalid + "]")
     }
-  }
-
-  // FIXME move serializerFor method to ...?
-  def serializerFor(address: String, serializerClassName: String): Serializer = {
-    def serializerErrorDueTo(reason: String) =
-      throw new akka.config.ConfigurationException(
-        "Could not create Serializer object [" + serializerClassName +
-          "] for serialization of actor [" + address +
-          "] since " + reason)
-
-    val serializer: Serializer = serializerClassName match {
-      case null | "" | Format.`defaultSerializerName` ⇒ Format.Default
-      case specialSerializer ⇒
-        ReflectiveAccess.getClassFor(specialSerializer) match {
-          case Right(clazz) ⇒
-            clazz.newInstance match {
-              case s: Serializer ⇒ s
-              case other         ⇒ serializerErrorDueTo("class must be of type [akka.serialization.Serializer]")
-            }
-          case Left(exception) ⇒
-            val cause = exception match {
-              case i: InvocationTargetException ⇒ i.getTargetException
-              case _                            ⇒ exception
-            }
-            serializerErrorDueTo(cause.toString)
-        }
-    }
-    serializer
   }
 }
 

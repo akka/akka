@@ -108,9 +108,8 @@ message SerializedTypedActorRefProtocol {
  * Defines a message.
  */
 message MessageProtocol {
-  required SerializationSchemeType serializationScheme = 1;
-  required bytes message = 2;
-  optional bytes messageManifest = 3;
+  required bytes message = 1;
+  optional bytes messageManifest = 2;
 }
 
 /**

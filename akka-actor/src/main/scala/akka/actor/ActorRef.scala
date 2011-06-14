@@ -248,7 +248,8 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def ask(message: AnyRef, timeout: Long, sender: ActorRef): Future[AnyRef] = ?(message)(sender, Actor.Timeout(timeout)).asInstanceOf[Future[AnyRef]]
+  def ask(message: AnyRef, timeout: Long, sender: ActorRef): Future[AnyRef] =
+    ?(message, Actor.Timeout(timeout))(sender).asInstanceOf[Future[AnyRef]]
 
   /**
    * Akka Java API. <p/>
@@ -452,7 +453,15 @@ class LocalActorRef private[akka] (
   }
 
   // FIXME how to get the matching serializerClassName? Now default is used. Needed for transaction log snapshot
-  private val serializer = Actor.serializerFor(address, Format.defaultSerializerName)
+  // private val serializer = Actor.serializerFor(address, Format.defaultSerializerName)
+
+  def serializerErrorDueTo(reason: String) =
+    throw new akka.config.ConfigurationException(
+      "Could not create Serializer object [" + this.getClass.getName +
+        "]")
+
+  private val serializer: Serializer =
+    akka.serialization.Serialization.getSerializer(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
 
   private lazy val replicationStorage: Either[TransactionLog, AnyRef] = {
     replicationScheme match {
@@ -470,7 +479,9 @@ class LocalActorRef private[akka] (
             EventHandler.debug(this,
               "Creating a transaction log for Actor [%s] with replication strategy [%s]"
                 .format(address, replicationScheme))
-            Left(transactionLog.newLogFor(_uuid.toString, isWriteBehind, replicationScheme, serializer))
+            // Left(transactionLog.newLogFor(_uuid.toString, isWriteBehind, replicationScheme, serializer))
+            // to fix null
+            Left(transactionLog.newLogFor(_uuid.toString, isWriteBehind, replicationScheme, null))
 
           case _: DeploymentConfig.DataGrid | DeploymentConfig.DataGrid ⇒
             throw new ConfigurationException("Replication storage type \"data-grid\" is not yet supported")
@@ -758,7 +769,8 @@ class LocalActorRef private[akka] (
     }
 
     def tooManyRestarts() {
-      notifySupervisorWithMessage(MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason))
+      notifySupervisorWithMessage(
+        MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason))
       stop()
     }
 
@@ -1170,8 +1182,9 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
   /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
    */
-  def ?(message: Any)(implicit channel: UntypedChannel = NullChannel, timeout: Actor.Timeout = Actor.defaultTimeout): Future[Any] = {
-    if (isRunning) postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout.duration.toMillis, channel)
+  def ?(message: Any, timeout: Actor.Timeout = Actor.noTimeoutGiven)(implicit channel: UntypedChannel = NullChannel, implicitTimeout: Actor.Timeout = Actor.defaultTimeout): Future[Any] = {
+    val realTimeout = if (timeout eq Actor.noTimeoutGiven) implicitTimeout else timeout
+    if (isRunning) postMessageToMailboxAndCreateFutureResultWithTimeout(message, realTimeout.duration.toMillis, channel)
     else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
@@ -1184,7 +1197,8 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
   def forward(message: Any)(implicit channel: ForwardableChannel) = {
     if (isRunning) {
       postMessageToMailbox(message, channel.channel)
-    } else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start()' before using it")
+    } else throw new ActorInitializationException(
+      "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
 
   /**
