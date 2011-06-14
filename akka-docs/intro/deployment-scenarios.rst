@@ -41,7 +41,7 @@ Using Akka as a stand alone microkernel
 ---------------------------------------
 
 Akka can also be run as a stand-alone microkernel. It implements a full
-enterprise stack. See the :ref:`add-on-modules` for more information.
+enterprise stack. See the :ref:`microkernel` for more information.
 
 Using the Akka sbt plugin to package your application
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -56,7 +56,7 @@ To use the plugin, first add a plugin definition to your SBT project by creating
 
    class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
      val akkaRepo = "Akka Repo" at "http://akka.io/repository"
-     val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "1.1"
+     val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "2.0-SNAPSHOT"
    }
 
 Then mix the ``AkkaKernelProject`` trait into your project definition. For

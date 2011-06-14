@@ -1,0 +1,16 @@
+/**
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
+package akka.util
+
+import java.io.{ InputStream, ObjectInputStream, ObjectStreamClass }
+
+class ClassLoaderObjectInputStream(classLoader: ClassLoader, is: InputStream) extends ObjectInputStream(is) {
+  override protected def resolveClass(objectStreamClass: ObjectStreamClass): Class[_] = {
+    Class.forName(objectStreamClass.getName, false, classLoader) match {
+      case null  ⇒ super.resolveClass(objectStreamClass)
+      case clazz ⇒ clazz
+    }
+  }
+}

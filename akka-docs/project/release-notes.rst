@@ -3,7 +3,7 @@ Release Notes
 
 Changes listed in no particular order.
 
-Current Development 1.1-SNAPSHOT
+1.1
 ----------------------------------------
 
 - **UPD** - improve FSM DSL: make onTransition syntax nicer (Roland Kuhn)
@@ -524,7 +524,7 @@ Release 0.6 - January 5th 2010
 - **ADD** - New and much improved docs (Jonas Bonér)
 - **ADD** - Enhanced trapping of failures: 'trapExit = List(classOf[..], classOf[..])' (Jonas Bonér)
 - **ADD** - Upgraded to Netty 3.2, Protobuf 2.2, ScalaTest 1.0, Jersey 1.1.3, Atmosphere 0.4.1, Cassandra 0.4.1, Configgy 1.4 (Jonas Bonér)
-- **FIX** - Lowered actor memory footprint; now an actor consumes ~600 bytes, which mean that you can create 6.5 million on 4 G RAM (Jonas Bonér)
+- **FIX** - Lowered actor memory footprint; now an actor consumes ~600 bytes, which mean that you can create 6.5 million on 4 GB RAM (Jonas Bonér)
 - **FIX** - Remote actors are now defined by their UUID (not class name) (Jonas Bonér)
 - **FIX** - Fixed dispatcher bugs (Jonas Bonér)
 - **FIX** - Cleaned up Maven scripts and distribution in general (Jonas Bonér)

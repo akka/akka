@@ -5,10 +5,9 @@
 package akka.dispatch
 
 import akka.event.EventHandler
-import akka.actor.{ ActorRef }
-
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue }
+import akka.actor.{ ActorKilledException, ActorRef }
 
 /**
  * Default settings are:
@@ -111,6 +110,8 @@ class Dispatcher(
    */
   protected def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
 
+  def mailboxIsEmpty(actorRef: ActorRef): Boolean = getMailbox(actorRef).isEmpty
+
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
   def createMailbox(actorRef: ActorRef): AnyRef = mailboxType match {
@@ -158,6 +159,18 @@ class Dispatcher(
 
   private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
     registerForExecution(mbox)
+
+  protected override def cleanUpMailboxFor(actorRef: ActorRef) {
+    val m = getMailbox(actorRef)
+    if (!m.isEmpty) {
+      var invocation = m.dequeue
+      lazy val exception = new ActorKilledException("Actor has been stopped")
+      while (invocation ne null) {
+        invocation.channel.sendException(exception)
+        invocation = m.dequeue
+      }
+    }
+  }
 
   override val toString = getClass.getSimpleName + "[" + name + "]"
 

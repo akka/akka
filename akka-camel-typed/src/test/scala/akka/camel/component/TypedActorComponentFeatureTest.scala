@@ -6,8 +6,8 @@ import org.apache.camel.impl.{ DefaultCamelContext, SimpleRegistry }
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec }
 
 import akka.actor.{ Actor, TypedActor }
+import akka.actor.TypedActor.Configuration._
 import akka.camel._
-import akka.util.ReflectiveAccess.TypedActorModule
 
 /**
  * @author Martin Krasser
@@ -19,10 +19,14 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
   var typedConsumerUuid: String = _
 
   override protected def beforeAll = {
-    val typedActor = TypedActor.newInstance(classOf[SampleTypedActor], classOf[SampleTypedActorImpl]) // not a consumer
-    val typedConsumer = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
+    val typedActor = TypedActor.typedActorOf(
+      classOf[SampleTypedActor],
+      classOf[SampleTypedActorImpl], defaultConfiguration) // not a consumer
+    val typedConsumer = TypedActor.typedActorOf(
+      classOf[SampleTypedConsumer],
+      classOf[SampleTypedConsumerImpl], defaultConfiguration)
 
-    typedConsumerUuid = TypedActorModule.typedActorObjectInstance.get.actorFor(typedConsumer).get.uuid.toString
+    typedConsumerUuid = TypedActor.getActorRefFor(typedConsumer).uuid.toString
 
     val registry = new SimpleRegistry
     // external registration
@@ -35,7 +39,7 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
 
   override protected def afterAll = {
     CamelContextManager.stop
-    Actor.registry.shutdownAll
+    Actor.registry.local.shutdownAll
   }
 
   feature("Communicate with an internally-registered typed actor using typed-actor-internal endpoint URIs") {

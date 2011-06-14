@@ -18,8 +18,8 @@ in its mailbox.
 .. sidebar:: **IMPORTANT**
 
    None of these mailboxes work with blocking message send, e.g. the message
-   send operations that are relying on futures; ``!!``, ``!!!``,
-   ``sendRequestReply`` and ``sendRequestReplyFuture``. If the node has crashed
+   send operations that are relying on futures; ``!!``, ``?``,
+   ``sendRequestReply`` and ``ask``. If the node has crashed
    and then restarted, the thread that was blocked waiting for the reply is gone
    and there is no way we can deliver the message.
 
@@ -52,7 +52,7 @@ The durable dispatchers and their configuration options reside in the
 You configure durable mailboxes through the "Akka"-only durable dispatchers, the
 actor is oblivious to which type of mailbox it is using. Here is an example::
 
-    val dispatcher = DurableEventBasedDispatcher(
+    val dispatcher = DurableDispatcher(
       "my:service",
       FileDurableMailboxStorage)
     // Then set the actors dispatcher to this dispatcher
@@ -63,7 +63,7 @@ or for a thread-based durable dispatcher::
       self,
       FileDurableMailboxStorage)
 
-There are 2 different durable dispatchers, ``DurableEventBasedDispatcher`` and
+There are 2 different durable dispatchers, ``DurableDispatcher`` and
 ``DurablePinnedDispatcher``, which are durable versions of
 ``Dispatcher`` and ``PinnedDispatcher``.
 
@@ -114,7 +114,7 @@ mailboxes. Read more in the Redis documentation on how to do that.
 
 Here is an example of how you can configure your dispatcher to use this mailbox::
 
-    val dispatcher = DurableEventBasedDispatcher(
+    val dispatcher = DurableDispatcher(
       "my:service",
       RedisDurableMailboxStorage)
 
@@ -158,7 +158,7 @@ there will not be that much more work to set up this durable mailbox.
 
 Here is an example of how you can configure your dispatcher to use this mailbox::
 
-    val dispatcher = DurableEventBasedDispatcher(
+    val dispatcher = DurableDispatcher(
       "my:service",
       ZooKeeperDurableMailboxStorage)
 
@@ -196,7 +196,7 @@ Beanstalk is a simple, fast work queue. This means that you have to start up a
 Beanstalk server that can host these durable mailboxes. Read more in the
 Beanstalk documentation on how to do that. ::
 
-    val dispatcher = DurableEventBasedDispatcher(
+    val dispatcher = DurableDispatcher(
       "my:service",
       BeanstalkDurableMailboxStorage)
 

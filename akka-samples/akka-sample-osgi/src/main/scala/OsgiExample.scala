@@ -3,8 +3,8 @@
  */
 package sample.osgi
 
-import akka.actor.{ Actor, ActorRegistry }
-import Actor._
+import akka.actor.Actor
+import akka.actor.Actor._
 
 import org.osgi.framework.{ BundleActivator, BundleContext }
 
@@ -13,7 +13,7 @@ class Activator extends BundleActivator {
   def start(context: BundleContext) {
     println("Starting the OSGi example ...")
     val echo = actorOf[EchoActor].start()
-    val answer = (echo !! "OSGi example")
+    val answer = (echo ? "OSGi example").as[String]
     println(answer getOrElse "No answer!")
   }
 

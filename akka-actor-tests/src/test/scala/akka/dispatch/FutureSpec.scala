@@ -40,7 +40,7 @@ class FutureSpec extends JUnitSuite {
   def shouldActorReplyResultThroughExplicitFuture {
     val actor = actorOf[TestActor]
     actor.start()
-    val future = actor !!! "Hello"
+    val future = actor ? "Hello"
     future.await
     assert(future.result.isDefined)
     assert("World" === future.result.get)
@@ -51,7 +51,7 @@ class FutureSpec extends JUnitSuite {
   def shouldActorReplyExceptionThroughExplicitFuture {
     val actor = actorOf[TestActor]
     actor.start()
-    val future = actor !!! "Failure"
+    val future = actor ? "Failure"
     future.await
     assert(future.exception.isDefined)
     assert("Expected exception; to test fault-tolerance" === future.exception.get.getMessage)
@@ -62,22 +62,8 @@ class FutureSpec extends JUnitSuite {
   def shouldFutureCompose {
     val actor1 = actorOf[TestActor].start()
     val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply s.toUpperCase } }).start()
-    val future1 = actor1 !!! "Hello" flatMap ((s: String) ⇒ actor2 !!! s)
-    val future2 = actor1 !!! "Hello" flatMap (actor2 !!! (_: String))
-    val future3 = actor1 !!! "Hello" flatMap (actor2 !!! (_: Int))
-    assert((future1.get: Any) === "WORLD")
-    assert((future2.get: Any) === "WORLD")
-    intercept[ClassCastException] { future3.get }
-    actor1.stop()
-    actor2.stop()
-  }
-
-  @Test
-  def shouldFutureComposePatternMatch {
-    val actor1 = actorOf[TestActor].start()
-    val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply s.toUpperCase } }).start()
-    val future1 = actor1 !!! "Hello" collect { case (s: String) ⇒ s } flatMap (actor2 !!! _)
-    val future2 = actor1 !!! "Hello" collect { case (n: Int) ⇒ n } flatMap (actor2 !!! _)
+    val future1 = actor1 ? "Hello" flatMap { _ match { case s: String ⇒ actor2 ? s } }
+    val future2 = actor1 ? "Hello" flatMap { _ match { case i: Int ⇒ actor2 ? i } }
     assert((future1.get: Any) === "WORLD")
     intercept[MatchError] { future2.get }
     actor1.stop()
@@ -93,18 +79,18 @@ class FutureSpec extends JUnitSuite {
       }
     }).start()
 
-    val future0 = actor !!! "Hello"
+    val future0 = actor ? "Hello"
 
     val future1 = for {
-      a: Int ← future0 // returns 5
-      b: String ← actor !!! a // returns "10"
-      c: String ← actor !!! 7 // returns "14"
+      a: Int ← future0.mapTo[Int] // returns 5
+      b: String ← (actor ? a).mapTo[String] // returns "10"
+      c: String ← (actor ? 7).mapTo[String] // returns "14"
     } yield b + "-" + c
 
     val future2 = for {
-      a: Int ← future0
-      b: Int ← actor !!! a
-      c: String ← actor !!! 7
+      a: Int ← future0.mapTo[Int]
+      b: Int ← (actor ? a).mapTo[Int]
+      c: String ← (actor ? 7).mapTo[String]
     } yield b + "-" + c
 
     assert(future1.get === "10-14")
@@ -124,15 +110,15 @@ class FutureSpec extends JUnitSuite {
     }).start()
 
     val future1 = for {
-      Res(a: Int) ← actor !!! Req("Hello")
-      Res(b: String) ← actor !!! Req(a)
-      Res(c: String) ← actor !!! Req(7)
+      Res(a: Int) ← actor ? Req("Hello")
+      Res(b: String) ← actor ? Req(a)
+      Res(c: String) ← actor ? Req(7)
     } yield b + "-" + c
 
     val future2 = for {
-      Res(a: Int) ← actor !!! Req("Hello")
-      Res(b: Int) ← actor !!! Req(a)
-      Res(c: Int) ← actor !!! Req(7)
+      Res(a: Int) ← actor ? Req("Hello")
+      Res(b: Int) ← actor ? Req(a)
+      Res(c: Int) ← actor ? Req(7)
     } yield b + "-" + c
 
     assert(future1.get === "10-14")
@@ -146,30 +132,30 @@ class FutureSpec extends JUnitSuite {
     val future2 = future1 map (_ / 0)
     val future3 = future2 map (_.toString)
 
-    val future4 = future1 failure {
+    val future4 = future1 recover {
       case e: ArithmeticException ⇒ 0
     } map (_.toString)
 
-    val future5 = future2 failure {
+    val future5 = future2 recover {
       case e: ArithmeticException ⇒ 0
     } map (_.toString)
 
-    val future6 = future2 failure {
+    val future6 = future2 recover {
       case e: MatchError ⇒ 0
     } map (_.toString)
 
-    val future7 = future3 failure { case e: ArithmeticException ⇒ "You got ERROR" }
+    val future7 = future3 recover { case e: ArithmeticException ⇒ "You got ERROR" }
 
     val actor = actorOf[TestActor].start()
 
-    val future8 = actor !!! "Failure"
-    val future9 = actor !!! "Failure" failure {
+    val future8 = actor ? "Failure"
+    val future9 = actor ? "Failure" recover {
       case e: RuntimeException ⇒ "FAIL!"
     }
-    val future10 = actor !!! "Hello" failure {
+    val future10 = actor ? "Hello" recover {
       case e: RuntimeException ⇒ "FAIL!"
     }
-    val future11 = actor !!! "Failure" failure { case _ ⇒ "Oops!" }
+    val future11 = actor ? "Failure" recover { case _ ⇒ "Oops!" }
 
     assert(future1.get === 5)
     intercept[ArithmeticException] { future2.get }
@@ -194,7 +180,7 @@ class FutureSpec extends JUnitSuite {
       }).start()
     }
     val timeout = 10000
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.!!![Int]((idx, idx * 200), timeout) }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), timeout).mapTo[Int] }
     assert(Futures.fold(0, timeout)(futures)(_ + _).await.result.get === 45)
   }
 
@@ -205,7 +191,7 @@ class FutureSpec extends JUnitSuite {
         def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); self reply_? add }
       }).start()
     }
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.!!![Int]((idx, idx * 200), 10000) }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), 10000).mapTo[Int] }
     assert(futures.foldLeft(Future(0))((fr, fa) ⇒ for (r ← fr; a ← fa) yield (r + a)).get === 45)
   }
 
@@ -222,7 +208,7 @@ class FutureSpec extends JUnitSuite {
       }).start()
     }
     val timeout = 10000
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.!!![Int]((idx, idx * 100), timeout) }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100), timeout).mapTo[Int] }
     assert(Futures.fold(0, timeout)(futures)(_ + _).await.exception.get.getMessage === "shouldFoldResultsWithException: expected")
   }
 
@@ -239,7 +225,7 @@ class FutureSpec extends JUnitSuite {
       }).start()
     }
     val timeout = 10000
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.!!![Int]((idx, idx * 200), timeout) }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), timeout).mapTo[Int] }
     assert(Futures.reduce(futures, timeout)(_ + _).get === 45)
   }
 
@@ -256,7 +242,7 @@ class FutureSpec extends JUnitSuite {
       }).start()
     }
     val timeout = 10000
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.!!![Int]((idx, idx * 100), timeout) }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100), timeout).mapTo[Int] }
     assert(Futures.reduce(futures, timeout)(_ + _).await.exception.get.getMessage === "shouldFoldResultsWithException: expected")
   }
 
@@ -269,7 +255,7 @@ class FutureSpec extends JUnitSuite {
   def receiveShouldExecuteOnComplete {
     val latch = new StandardLatch
     val actor = actorOf[TestActor].start()
-    actor !!! "Hello" receive { case "World" ⇒ latch.open }
+    actor ? "Hello" onResult { case "World" ⇒ latch.open }
     assert(latch.tryAwait(5, TimeUnit.SECONDS))
     actor.stop()
   }
@@ -285,7 +271,7 @@ class FutureSpec extends JUnitSuite {
       }
     }).start()
 
-    val oddFutures: List[Future[Int]] = List.fill(100)(oddActor !!! 'GetNext)
+    val oddFutures = List.fill(100)(oddActor ? 'GetNext mapTo manifest[Int])
     assert(Future.sequence(oddFutures).get.sum === 10000)
     oddActor.stop()
 
@@ -304,13 +290,13 @@ class FutureSpec extends JUnitSuite {
     val latch = new StandardLatch
     val f2 = Future { latch.tryAwait(5, TimeUnit.SECONDS); "success" }
     f2 foreach (_ ⇒ throw new ThrowableTest("dispatcher foreach"))
-    f2 receive { case _ ⇒ throw new ThrowableTest("dispatcher receive") }
+    f2 onResult { case _ ⇒ throw new ThrowableTest("dispatcher receive") }
     val f3 = f2 map (s ⇒ s.toUpperCase)
     latch.open
     f2.await
     assert(f2.resultOrException === Some("success"))
     f2 foreach (_ ⇒ throw new ThrowableTest("current thread foreach"))
-    f2 receive { case _ ⇒ throw new ThrowableTest("current thread receive") }
+    f2 onResult { case _ ⇒ throw new ThrowableTest("current thread receive") }
     f3.await
     assert(f3.resultOrException === Some("SUCCESS"))
 
@@ -342,9 +328,9 @@ class FutureSpec extends JUnitSuite {
     val actor = actorOf[TestActor].start
 
     val x = Future("Hello")
-    val y = x flatMap (actor !!! _)
+    val y = x flatMap (actor ? _) mapTo manifest[String]
 
-    val r = flow(x() + " " + y[String]() + "!")
+    val r = flow(x() + " " + y() + "!")
 
     assert(r.get === "Hello World!")
 
@@ -370,9 +356,9 @@ class FutureSpec extends JUnitSuite {
     val actor = actorOf[TestActor].start
 
     val x = Future(3)
-    val y = actor !!! "Hello"
+    val y = (actor ? "Hello").mapTo[Int]
 
-    val r = flow(x() + y[Int](), 100)
+    val r = flow(x() + y(), 100)
 
     intercept[ClassCastException](r.get)
   }
@@ -384,7 +370,7 @@ class FutureSpec extends JUnitSuite {
     val actor = actorOf[TestActor].start
 
     val x = Future("Hello")
-    val y = actor !!! "Hello"
+    val y = actor ? "Hello" mapTo manifest[Nothing]
 
     val r = flow(x() + y())
 

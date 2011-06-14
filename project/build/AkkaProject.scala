@@ -67,19 +67,21 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val beanstalkModuleConfig   = ModuleConfiguration("beanstalk", AkkaRepo)
   lazy val lzfModuleConfig         = ModuleConfiguration("voldemort.store.compress", "h2-lzf", AkkaRepo)
   lazy val vscaladocModuleConfig   = ModuleConfiguration("org.scala-tools", "vscaladoc", "1.1-md-3", AkkaRepo)
-  lazy val aspectWerkzModuleConfig = ModuleConfiguration("org.codehaus.aspectwerkz", "aspectwerkz", "2.2.3", AkkaRepo)
   lazy val objenesisModuleConfig   = ModuleConfiguration("org.objenesis", sbt.DefaultMavenRepository)
   lazy val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", SunJDMKRepo)
   lazy val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", SunJDMKRepo)
   lazy val jmsModuleConfig         = ModuleConfiguration("javax.jms", JBossRepo)
   lazy val jsr311ModuleConfig      = ModuleConfiguration("javax.ws.rs", "jsr311-api", sbt.DefaultMavenRepository)
   lazy val zookeeperModuleConfig   = ModuleConfiguration("org.apache.hadoop.zookeeper", AkkaRepo)
+  lazy val protobufModuleConfig    = ModuleConfiguration("com.google.protobuf", AkkaRepo)
   lazy val zkclientModuleConfig    = ModuleConfiguration("zkclient", AkkaRepo)
+  lazy val camelModuleConfig       = ModuleConfiguration("org.apache.camel", "camel-core", AkkaRepo)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
   lazy val CAMEL_VERSION         = "2.7.1"
+  lazy val CAMEL_PATCH_VERSION   = "2.7.1.1"
   lazy val SPRING_VERSION        = "3.0.5.RELEASE"
   lazy val JACKSON_VERSION       = "1.8.0"
   lazy val JERSEY_VERSION        = "1.3"
@@ -99,11 +101,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
 
      // Compile
-    lazy val aopalliance      = "aopalliance"                 % "aopalliance"             % "1.0" % "compile" //Public domain
-    lazy val aspectwerkz      = "org.codehaus.aspectwerkz"    % "aspectwerkz"             % "2.2.3" % "compile" //ApacheV2
     lazy val beanstalk        = "beanstalk"                   % "beanstalk_client"        % "1.4.5" //New BSD
     lazy val bookkeeper       = "org.apache.hadoop.zookeeper" % "bookkeeper"              % ZOOKEEPER_VERSION //ApacheV2
-    lazy val camel_core       = "org.apache.camel"            % "camel-core"              % CAMEL_VERSION % "compile" //ApacheV2
+    lazy val camel_core       = "org.apache.camel"            % "camel-core"              % CAMEL_PATCH_VERSION % "compile" //ApacheV2
 
     lazy val commons_codec    = "commons-codec"               % "commons-codec"           % "1.4" % "compile" //ApacheV2
     lazy val commons_io       = "commons-io"                  % "commons-io"              % "2.0.1" % "compile" //ApacheV2
@@ -127,7 +127,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val multiverse       = "org.multiverse"              % "multiverse-alpha"        % MULTIVERSE_VERSION % "compile" //ApacheV2
     lazy val netty            = "org.jboss.netty"             % "netty"                   % "3.2.4.Final" % "compile" //ApacheV2
     lazy val osgi_core        = "org.osgi"                    % "org.osgi.core"           % "4.2.0" //ApacheV2
-    lazy val protobuf         = "com.google.protobuf"         % "protobuf-java"           % "2.3.0" % "compile" //New BSD
+    lazy val protobuf         = "com.google.protobuf"         % "protobuf-java"           % "2.4.1" % "compile" //New BSD
     lazy val redis            = "net.debasishg"               % "redisclient_2.9.0"       % "2.3.1"            //ApacheV2
     lazy val sjson            = "net.debasishg"               %% "sjson"                  % "0.11" % "compile" //ApacheV2
     lazy val sjson_test       = "net.debasishg"               %% "sjson"                  % "0.11" % "test"    //ApacheV2
@@ -136,7 +136,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val spring_context   = "org.springframework"         % "spring-context"          % SPRING_VERSION % "compile" //ApacheV2
 
     lazy val stax_api         = "javax.xml.stream"            % "stax-api"                % "1.0-2"        % "compile" //ApacheV2
-    lazy val logback          = "ch.qos.logback"              % "logback-classic"         % "0.9.28" % "runtime" //MIT
+    lazy val logback          = "ch.qos.logback"              % "logback-classic"         % "0.9.28"       % "runtime" //MIT
     lazy val log4j            = "log4j"                       % "log4j"                   % "1.2.15"          //ApacheV2
     lazy val zookeeper        = "org.apache.hadoop.zookeeper" % "zookeeper"               % ZOOKEEPER_VERSION //ApacheV2
     lazy val zookeeper_lock   = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock"  % ZOOKEEPER_VERSION //ApacheV2
@@ -144,14 +144,14 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     // Test
     lazy val multiverse_test  = "org.multiverse"              % "multiverse-alpha"        % MULTIVERSE_VERSION % "test" //ApacheV2
-    lazy val commons_coll     = "commons-collections"         % "commons-collections"     % "3.2.1"           % "test" //ApacheV2
-    lazy val testJetty        = "org.eclipse.jetty"           % "jetty-server"            % JETTY_VERSION     % "test" //Eclipse license
-    lazy val testJettyWebApp  = "org.eclipse.jetty"           % "jetty-webapp"            % JETTY_VERSION     % "test" //Eclipse license
-    lazy val junit            = "junit"                       % "junit"                   % "4.5"             % "test" //Common Public License 1.0
-    lazy val mockito          = "org.mockito"                 % "mockito-all"             % "1.8.1"           % "test" //MIT
-    lazy val scalatest        = "org.scalatest"               %% "scalatest"              % SCALATEST_VERSION % "test" //ApacheV2
-    lazy val testLogback      = "ch.qos.logback"              % "logback-classic"         % LOGBACK_VERSION   % "test" // EPL 1.0 / LGPL 2.1
-    lazy val camel_spring     = "org.apache.camel"            % "camel-spring"            % CAMEL_VERSION     % "test" //ApacheV2
+    lazy val commons_coll     = "commons-collections"         % "commons-collections"     % "3.2.1"            % "test" //ApacheV2
+    lazy val testJetty        = "org.eclipse.jetty"           % "jetty-server"            % JETTY_VERSION      % "test" //Eclipse license
+    lazy val testJettyWebApp  = "org.eclipse.jetty"           % "jetty-webapp"            % JETTY_VERSION      % "test" //Eclipse license
+    lazy val junit            = "junit"                       % "junit"                   % "4.5"              % "test" //Common Public License 1.0
+    lazy val mockito          = "org.mockito"                 % "mockito-all"             % "1.8.1"            % "test" //MIT
+    lazy val scalatest        = "org.scalatest"               %% "scalatest"              % SCALATEST_VERSION  % "test" //ApacheV2
+    lazy val testLogback      = "ch.qos.logback"              % "logback-classic"         % LOGBACK_VERSION    % "test" // EPL 1.0 / LGPL 2.1
+    lazy val camel_spring     = "org.apache.camel"            % "camel-spring"            % CAMEL_VERSION      % "test" //ApacheV2
 
   }
 
@@ -169,10 +169,10 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val akka_cluster           = project("akka-cluster",           "akka-cluster",           new AkkaClusterProject(_),                akka_remote)
   lazy val akka_durable_mailboxes = project("akka-durable-mailboxes", "akka-durable-mailboxes", new AkkaDurableMailboxesParentProject(_), akka_remote)
 
-  lazy val akka_camel             = project("akka-camel",             "akka-camel",             new AkkaCamelProject(_),                  akka_actor, akka_slf4j)
+  //lazy val akka_camel             = project("akka-camel",             "akka-camel",             new AkkaCamelProject(_),                  akka_actor, akka_slf4j)
   //lazy val akka_camel_typed       = project("akka-camel-typed",       "akka-camel-typed",       new AkkaCamelTypedProject(_),             akka_actor, akka_slf4j, akka_camel)
   //lazy val akka_spring            = project("akka-spring",            "akka-spring",            new AkkaSpringProject(_),                 akka_remote, akka_actor, akka_camel)
-  lazy val akka_kernel            = project("akka-kernel",            "akka-kernel",            new AkkaKernelProject(_),                 akka_stm, akka_remote, akka_http, akka_slf4j, akka_camel)
+  //lazy val akka_kernel            = project("akka-kernel",            "akka-kernel",            new AkkaKernelProject(_),                 akka_stm, akka_remote, akka_http, akka_slf4j, akka_camel)
 
   lazy val akka_sbt_plugin        = project("akka-sbt-plugin",        "akka-sbt-plugin",        new AkkaSbtPluginProject(_))
   lazy val akka_tutorials         = project("akka-tutorials",         "akka-tutorials",         new AkkaTutorialsParentProject(_),        akka_actor)
@@ -598,11 +598,11 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     }
   }
 
-  class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info)
-
   class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info)
 
   class AkkaSampleFSMProject(info: ProjectInfo) extends AkkaDefaultProject(info)
+
+  class AkkaSampleHelloProject(info: ProjectInfo) extends AkkaDefaultProject(info)
 
   class AkkaSampleOsgiProject(info: ProjectInfo) extends AkkaDefaultProject(info) with BNDPlugin {
     val osgiCore = Dependencies.osgi_core
@@ -610,19 +610,23 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     override protected def bndBundleActivator = Some("sample.osgi.Activator")
   }
 
+  class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info)
+
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
     override def disableCrossPaths = true
 
     lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
       new AkkaSampleAntsProject(_), akka_stm)
+   // lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
+   //   new AkkaSampleChatProject(_), akka_remote)
     lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
       new AkkaSampleFSMProject(_), akka_actor)
-//    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
-//      new AkkaSampleRemoteProject(_), akka_remote)
-//    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
-//      new AkkaSampleChatProject(_), akka_remote)
+    // lazy val akka_sample_hello = project("akka-sample-hello", "akka-sample-hello",
+    //   new AkkaSampleHelloProject(_), akka_kernel)
     lazy val akka_sample_osgi = project("akka-sample-osgi", "akka-sample-osgi",
       new AkkaSampleOsgiProject(_), akka_actor)
+   // lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
+   //   new AkkaSampleRemoteProject(_), akka_remote)
 
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
@@ -681,6 +685,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     val junit           = Dependencies.junit
     val scalatest       = Dependencies.scalatest
     val multiverse_test = Dependencies.multiverse_test // StandardLatch
+    val protobuf        = Dependencies.protobuf
+    val jackson         = Dependencies.jackson
+    val sjson           = Dependencies.sjson
     override def compileOptions = super.compileOptions ++ compileOptions("-P:continuations:enable")
   }
 
@@ -784,6 +791,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val akkaCoreDist = project("core", "akka-dist-core", new AkkaCoreDistProject(_),
                                     akkaActorsDist, akka_remote, akka_http, akka_slf4j, akka_testkit, akka_actor_tests)
 
+//    lazy val akkaMicrokernelDist = project("microkernel", "akka-dist-microkernel", new AkkaMicrokernelDistProject(_),
+//                                           akkaCoreDist, akka_kernel, akka_samples)
+
     def doNothing = task { None }
     override def publishLocalAction = doNothing
     override def deliverLocalAction = doNothing
@@ -792,6 +802,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     class AkkaActorsDistProject(info: ProjectInfo) extends DefaultProject(info) with DistDocProject {
       def distName = "akka-actors"
+
       override def distDocName = "akka"
 
       override def distConfigSources = (akkaParent.info.projectPath / "config" ##) * "*"
@@ -816,6 +827,51 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     class AkkaCoreDistProject(info: ProjectInfo)extends DefaultProject(info) with DistProject {
       def distName = "akka-core"
+    }
+
+    class AkkaMicrokernelDistProject(info: ProjectInfo) extends DefaultProject(info) with DistProject {
+      def distName = "akka-microkernel"
+
+      override def distScriptSources = akkaParent.info.projectPath / "scripts" / "microkernel" * "*"
+
+//      override def distClasspath = akka_kernel.runClasspath
+
+//      override def projectDependencies = akka_kernel.topologicalSort
+
+//      override def distAction = super.distAction dependsOn (distSamples)
+
+//      val distSamplesPath = distDocPath / "samples"
+
+      // lazy val distSamples = task {
+      //   val demo = akka_samples.akka_sample_hello.jarPath
+      //   val samples = Set(//akka_samples.akka_sample_camel
+      //                     akka_samples.akka_sample_hello)
+      //                     //akka_samples.akka_sample_security)
+
+      //   def copySamples[P <: DefaultProject](samples: Set[P]) = {
+      //     samples.map { sample =>
+      //       val sampleOutputPath = distSamplesPath / sample.name
+      //       val binPath = sampleOutputPath / "bin"
+      //       val configPath = sampleOutputPath / "config"
+      //       val deployPath = sampleOutputPath / "deploy"
+      //       val libPath = sampleOutputPath / "lib"
+      //       val srcPath = sampleOutputPath / "src"
+      //       val confs = sample.info.projectPath / "config" ** "*.*"
+      //       val scripts = akkaParent.info.projectPath / "scripts" / "samples" * "*"
+      //       val libs = sample.managedClasspath(Configurations.Runtime)
+      //       val deployed = sample.jarPath
+      //       val sources = sample.packageSourcePaths
+      //       copyFiles(confs, configPath) orElse
+      //       copyScripts(scripts, binPath) orElse
+      //       copyFiles(libs, libPath) orElse
+      //       copyFiles(deployed, deployPath) orElse
+      //       copyPaths(sources, srcPath)
+      //     }.foldLeft(None: Option[String])(_ orElse _)
+      //   }
+
+      //   copyFiles(demo, distDeployPath) orElse
+      //   copySamples(samples)
+      // } dependsOn (distBase)
     }
   }
 }

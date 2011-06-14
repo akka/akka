@@ -19,8 +19,8 @@ public class UntypedCoordinatedExample {
 
         Thread.sleep(3000);
 
-        Future future1 = counter1.sendRequestReplyFuture("GetCount");
-        Future future2 = counter2.sendRequestReplyFuture("GetCount");
+        Future future1 = counter1.ask("GetCount");
+        Future future2 = counter2.ask("GetCount");
 
         future1.await();
         if (future1.isCompleted()) {

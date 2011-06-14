@@ -5,7 +5,7 @@ package akka.testkit
 
 import akka.event.EventHandler
 import akka.actor.ActorRef
-import akka.dispatch.{ MessageDispatcher, MessageInvocation, FutureInvocation }
+import akka.dispatch.{ MessageDispatcher, MessageInvocation, FutureInvocation, Promise, ActorPromise }
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
 import java.util.concurrent.RejectedExecutionException
@@ -135,19 +135,21 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
 
   override def mailboxSize(actor: ActorRef) = getMailbox(actor).queue.size
 
+  def mailboxIsEmpty(actorRef: ActorRef): Boolean = getMailbox(actorRef).queue.isEmpty
+
   private[akka] override def dispatch(handle: MessageInvocation) {
     val mbox = getMailbox(handle.receiver)
     val queue = mbox.queue
     val execute = mbox.suspended.ifElseYield {
       queue.push(handle)
-      if (warnings && handle.senderFuture.isDefined) {
+      if (warnings && handle.channel.isInstanceOf[Promise[_]]) {
         EventHandler.warning(this, "suspended, creating Future could deadlock; target: %s" format handle.receiver)
       }
       false
     } {
       queue.push(handle)
       if (queue.isActive) {
-        if (warnings && handle.senderFuture.isDefined) {
+        if (warnings && handle.channel.isInstanceOf[Promise[_]]) {
           EventHandler.warning(this, "blocked on this thread, creating Future could deadlock; target: %s" format handle.receiver)
         }
         false
@@ -186,14 +188,18 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
       if (handle ne null) {
         try {
           handle.invoke
-          val f = handle.senderFuture
-          if (warnings && f.isDefined && !f.get.isCompleted) {
-            EventHandler.warning(this, "calling %s with message %s did not reply as expected, might deadlock" format (handle.receiver, handle.message))
+          if (warnings) handle.channel match {
+            case f: ActorPromise if !f.isCompleted ⇒
+              EventHandler.warning(this, "calling %s with message %s did not reply as expected, might deadlock" format (handle.receiver, handle.message))
+            case _ ⇒
           }
+          true
         } catch {
-          case _ ⇒ queue.leave
+          case e ⇒
+            EventHandler.error(this, e)
+            queue.leave
+            false
         }
-        true
       } else if (queue.isActive) {
         queue.leave
         false
@@ -210,6 +216,7 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
 class NestingQueue {
   private var q = new LinkedList[MessageInvocation]()
   def size = q.size
+  def isEmpty = q.isEmpty
   def push(handle: MessageInvocation) { q.offer(handle) }
   def peek = q.peek
   def pop = q.poll

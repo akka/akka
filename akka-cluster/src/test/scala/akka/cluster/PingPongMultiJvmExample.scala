@@ -7,7 +7,6 @@ package example.cluster
 import akka.cluster._
 
 import akka.actor._
-import akka.serialization.{ Serializers, SerializerBasedActorFormat }
 import akka.util.duration._
 
 object PingPong {
@@ -60,20 +59,6 @@ object PingPong {
       case Ping ⇒
         println("---->> PONG")
         self reply Pong
-    }
-  }
-
-  // -----------------------------------------------
-  // Serialization
-  // -----------------------------------------------
-
-  object BinaryFormats {
-    implicit object PingActorFormat extends SerializerBasedActorFormat[PingActor] with Serializable {
-      val serializer = Serializers.Java
-    }
-
-    implicit object PongActorFormat extends SerializerBasedActorFormat[PongActor] with Serializable {
-      val serializer = Serializers.Java
     }
   }
 }

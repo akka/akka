@@ -16,19 +16,13 @@ import akka.actor._
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final case class MessageInvocation(receiver: ActorRef,
-                                   message: Any,
-                                   sender: Option[ActorRef],
-                                   senderFuture: Option[Promise[Any]]) {
+final case class MessageInvocation(val receiver: ActorRef,
+                                   val message: Any,
+                                   val channel: UntypedChannel) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
 
-  def invoke() {
-    try {
-      receiver.invoke(this)
-    } catch {
-      case e: NullPointerException ⇒ throw new ActorInitializationException(
-        "Don't call 'self ! message' in the Actor's constructor (in Scala this means in the body of the class).")
-    }
+  final def invoke() {
+    receiver invoke this
   }
 }
 
@@ -147,6 +141,7 @@ trait MessageDispatcher {
 
   private[akka] def unregister(actorRef: ActorRef) = {
     if (uuids remove actorRef.uuid) {
+      cleanUpMailboxFor(actorRef)
       actorRef.mailbox = null
       if (uuids.isEmpty && futures.get == 0) {
         shutdownSchedule match {
@@ -162,6 +157,12 @@ trait MessageDispatcher {
   }
 
   /**
+   * Overridable callback to clean up the mailbox for a given actor,
+   * called when an actor is unregistered.
+   */
+  protected def cleanUpMailboxFor(actorRef: ActorRef) {}
+
+  /**
    * Traverses the list of actors (uuids) currently being attached to this dispatcher and stops those actors
    */
   def stopAllAttachedActors() {
@@ -170,7 +171,7 @@ trait MessageDispatcher {
       val uuid = i.next()
       Actor.registry.local.actorFor(uuid) match {
         case Some(actor) ⇒ actor.stop()
-        case None        ⇒ {}
+        case None        ⇒
       }
     }
   }
@@ -232,6 +233,11 @@ trait MessageDispatcher {
    * Returns the size of the mailbox for the specified actor
    */
   def mailboxSize(actorRef: ActorRef): Int
+
+  /**
+   * Returns the "current" emptiness status of the mailbox for the specified actor
+   */
+  def mailboxIsEmpty(actorRef: ActorRef): Boolean
 
   /**
    * Returns the amount of futures queued for execution

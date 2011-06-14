@@ -62,7 +62,7 @@ like the following::
 When you call ``multi-jvm-run Test`` at the sbt prompt, three JVMs will be
 spawned, one for each node. It will look like this:
 
-.. code-block:: shell
+.. code-block:: none
 
     > multi-jvm-run Test
     ...
@@ -252,7 +252,7 @@ something in coordination::
 
 An example output from this would be:
 
-.. code-block:: shell
+.. code-block:: none
 
     > multi-jvm-run Test
     ...

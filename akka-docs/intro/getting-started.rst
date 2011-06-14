@@ -40,31 +40,19 @@ dependencies from the Akka Maven repository.
 Modules
 -------
 
-Akka is split up into two different parts:
+Akka is very modular and has many JARs for containing different features.
 
-* Akka - The core modules. Reflects all the sections under :ref:`scala-api` and :ref:`java-api`.
-* Akka Modules - The microkernel and add-on modules, described in :ref:`add-on-modules`.
-
-Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
-
-- ``akka-actor-1.1.jar`` -- Standard Actors
-- ``akka-typed-actor-1.1.jar`` -- Typed Actors
-- ``akka-remote-1.1.jar`` -- Remote Actors
-- ``akka-stm-1.1.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-- ``akka-http-1.1.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
-- ``akka-slf4j-1.1.jar`` -- SLF4J Event Handler Listener
-- ``akka-testkit-1.1.jar`` -- Toolkit for testing Actors
-
-We also have Akka Modules containing add-on modules outside the core of Akka.
-
-- ``akka-kernel-1.1.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
-- ``akka-amqp-1.1.jar`` -- AMQP integration
-- ``akka-camel-1.1.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-- ``akka-camel-typed-1.1.jar`` -- Apache Camel Typed Actors integration
-- ``akka-scalaz-1.1.jar`` -- Support for the Scalaz library
-- ``akka-spring-1.1.jar`` -- Spring framework integration
-- ``akka-osgi-dependencies-bundle-1.1.jar`` -- OSGi support
-
+- ``akka-actor-2.0-SNAPSHOT.jar`` -- Standard Actors
+- ``akka-typed-actor-2.0-SNAPSHOT.jar`` -- Typed Actors
+- ``akka-remote-2.0-SNAPSHOT.jar`` -- Remote Actors
+- ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+- ``akka-http-2.0-SNAPSHOT.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
+- ``akka-slf4j-2.0-SNAPSHOT.jar`` -- SLF4J Event Handler Listener
+- ``akka-testkit-2.0-SNAPSHOT.jar`` -- Toolkit for testing Actors
+- ``akka-camel-2.0-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+- ``akka-camel-typed-2.0-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
+- ``akka-spring-2.0-SNAPSHOT.jar`` -- Spring framework integration
+- ``akka-kernel-2.0-SNAPSHOT.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
 
 How to see the JARs dependencies of each Akka module is described in the :ref:`dependencies` section. Worth noting
 is that ``akka-actor`` has zero external dependencies (apart from the ``scala-library.jar`` JAR).
@@ -82,7 +70,7 @@ The Akka Modules distribution includes the microkernel. To run the microkernel:
 * Set the AKKA_HOME environment variable to the root of the Akka distribution.
 * To start the kernel use the scripts in the ``bin`` directory and deploy all samples applications from ``./deploy`` dir.
 
-More information is available in the documentation of the Microkernel in :ref:`add-on-modules`.
+More information is available in the documentation of the :ref:`microkernel`.
 
 Using a build tool
 ------------------
@@ -107,14 +95,14 @@ Summary of the essential parts for using Akka with Maven:
     <url>http://akka.io/repository/ </url>
   </repository>
 
-2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 1.1:
+2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 2.0-SNAPSHOT:
 
 .. code-block:: xml
 
   <dependency>
     <groupId>se.scalablesolutions.akka</groupId>
     <artifactId>akka-actor</artifactId>
-    <version>1.1</version>
+    <version>2.0-SNAPSHOT</version>
   </dependency>
 
 
@@ -129,7 +117,7 @@ Summary of the essential parts for using Akka with SBT:
 
 1) Akka has an SBT plugin which makes it very easy to get started with Akka and SBT.
 
-The Scala version in your SBT project needs to match the version that Akka is built against. For Akka 1.1 this is
+The Scala version in your SBT project needs to match the version that Akka is built against. For Akka 2.0-SNAPSHOT this is
 Scala version 2.9.0.
 
 To use the plugin, first add a plugin definition to your SBT project by creating project/plugins/Plugins.scala with:
@@ -140,10 +128,10 @@ To use the plugin, first add a plugin definition to your SBT project by creating
 
   class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
     val akkaRepo = "Akka Repo" at "http://akka.io/repository"
-    val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "1.1"
+    val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "2.0-SNAPSHOT"
   }
 
-*Note: the plugin version matches the Akka version provided. The current release is 1.1.*
+*Note: the plugin version matches the Akka version provided. The current release is 2.0-SNAPSHOT.*
 
 2) Then mix the AkkaProject trait into your project definition. For example:
 

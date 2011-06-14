@@ -10,44 +10,44 @@ import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, B
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * trait Serializer extends scala.Serializable {
+ * @volatile
+ * var classLoader: Option[ClassLoader] = None
+ * def deepClone(obj: AnyRef): AnyRef = fromBinary(toBinary(obj), Some(obj.getClass))
+ *
+ * def toBinary(obj: AnyRef): Array[Byte]
+ * def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
+ * }
  */
-trait Serializer extends scala.Serializable {
-  @volatile
-  var classLoader: Option[ClassLoader] = None
-  def deepClone(obj: AnyRef): AnyRef = fromBinary(toBinary(obj), Some(obj.getClass))
-
-  def toBinary(obj: AnyRef): Array[Byte]
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
-}
 
 /**
  *
+ * object Format {
+ * implicit object Default extends Serializer {
+ * import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
+ * //import org.apache.commons.io.input.ClassLoaderObjectInputStream
+ *
+ * def toBinary(obj: AnyRef): Array[Byte] = {
+ * val bos = new ByteArrayOutputStream
+ * val out = new ObjectOutputStream(bos)
+ * out.writeObject(obj)
+ * out.close()
+ * bos.toByteArray
+ * }
+ *
+ * def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]], classLoader: Option[ClassLoader] = None): AnyRef = {
+ * val in =
+ * //if (classLoader.isDefined) new ClassLoaderObjectInputStream(classLoader.get, new ByteArrayInputStream(bytes)) else
+ * new ObjectInputStream(new ByteArrayInputStream(bytes))
+ * val obj = in.readObject
+ * in.close()
+ * obj
+ * }
+ * }
+ *
+ * val defaultSerializerName = Default.getClass.getName
+ * }
  */
-object Format {
-  implicit object Default extends Serializer {
-    import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
-    //import org.apache.commons.io.input.ClassLoaderObjectInputStream
-
-    def toBinary(obj: AnyRef): Array[Byte] = {
-      val bos = new ByteArrayOutputStream
-      val out = new ObjectOutputStream(bos)
-      out.writeObject(obj)
-      out.close()
-      bos.toByteArray
-    }
-
-    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
-      val in =
-        //if (classLoader.isDefined) new ClassLoaderObjectInputStream(classLoader.get, new ByteArrayInputStream(bytes)) else
-        new ObjectInputStream(new ByteArrayInputStream(bytes))
-      val obj = in.readObject
-      in.close()
-      obj
-    }
-  }
-
-  val defaultSerializerName = Default.getClass.getName
-}
 
 trait FromBinary[T <: Actor] {
   def fromBinary(bytes: Array[Byte], act: T): T

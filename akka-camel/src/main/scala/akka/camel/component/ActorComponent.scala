@@ -285,7 +285,7 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
    * @param message reply message
    * @param sender ignored
    */
-  protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]) = {
+  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel) = {
     message match {
       case Ack          ⇒ { /* no response message to set */ }
       case msg: Failure ⇒ exchange.fromFailureMessage(msg)
@@ -295,7 +295,6 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   }
 
   def actorClass: Class[_ <: Actor] = unsupported
-  def actorClassName = unsupported
   def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported
   def makeRemote(hostname: String, port: Int): Unit = unsupported
@@ -313,7 +312,7 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   def shutdownLinkedActors: Unit = unsupported
   def supervisor: Option[ActorRef] = unsupported
   def homeAddress: Option[InetSocketAddress] = None
-  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](message: Any, timeout: Long, senderOption: Option[ActorRef], senderFuture: Option[Promise[T]]) = unsupported
+  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any, timeout: Long, channel: UntypedChannel) = unsupported
   protected[akka] def mailbox: AnyRef = unsupported
   protected[akka] def mailbox_=(msg: AnyRef): AnyRef = unsupported
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported

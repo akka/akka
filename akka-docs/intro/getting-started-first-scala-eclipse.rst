@@ -51,7 +51,7 @@ To build and run the tutorial sample from the command line, you have to download
 Akka. If you prefer to use SBT to build and run the sample then you can skip
 this section and jump to the next one.
 
-Let's get the ``akka-actors-1.1.zip`` distribution of Akka from
+Let's get the ``akka-actors-2.0-SNAPSHOT.zip`` distribution of Akka from
 http://akka.io/downloads/ which includes everything we need for this
 tutorial. Once you have downloaded the distribution unzip it in the folder you
 would like to have Akka installed in. In my case I choose to install it in
@@ -62,10 +62,10 @@ You need to do one more thing in order to install Akka properly: set the
 I'm opening up a shell, navigating down to the distribution, and setting the
 ``AKKA_HOME`` variable::
 
-    $ cd /Users/jboner/tools/akka-actors-1.1
+    $ cd /Users/jboner/tools/akka-actors-2.0-SNAPSHOT
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
-    /Users/jboner/tools/akka-actors-1.1
+    /Users/jboner/tools/akka-actors-2.0-SNAPSHOT
 
 The distribution looks like this::
 
@@ -83,32 +83,26 @@ The distribution looks like this::
 
 
 The only JAR we will need for this tutorial (apart from the
-``scala-library.jar`` JAR) is the ``akka-actor-1.1.jar`` JAR in the ``lib/akka``
+``scala-library.jar`` JAR) is the ``akka-actor-2.0-SNAPSHOT.jar`` JAR in the ``lib/akka``
 directory. This is a self-contained JAR with zero dependencies and contains
 everything we need to write a system using Actors.
 
 Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
 
-- ``akka-actor-1.1.jar`` -- Standard Actors
-- ``akka-typed-actor-1.1.jar`` -- Typed Actors
-- ``akka-remote-1.1.jar`` -- Remote Actors
-- ``akka-stm-1.1.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-- ``akka-http-1.1.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
-- ``akka-slf4j-1.1.jar`` -- SLF4J Event Handler Listener for logging with SLF4J
-- ``akka-testkit-1.1.jar`` -- Toolkit for testing Actors
+- ``akka-actor-2.0-SNAPSHOT.jar`` -- Standard Actors
+- ``akka-typed-actor-2.0-SNAPSHOT.jar`` -- Typed Actors
+- ``akka-remote-2.0-SNAPSHOT.jar`` -- Remote Actors
+- ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+- ``akka-http-2.0-SNAPSHOT.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
+- ``akka-slf4j-2.0-SNAPSHOT.jar`` -- SLF4J Event Handler Listener for logging with SLF4J
+- ``akka-testkit-2.0-SNAPSHOT.jar`` -- Toolkit for testing Actors
 
-We also have Akka Modules containing add-on modules outside the core of
-Akka. You can download the Akka Modules distribution from `<http://akka.io/downloads/>`_. It contains Akka
-core as well. We will not be needing any modules there today, but for your
-information the module JARs are these:
+The Akka Microkernel distribution also includes these jars:
 
-- ``akka-kernel-1.1.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
-- ``akka-amqp-1.1.jar`` -- AMQP integration
-- ``akka-camel-1.1.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-- ``akka-camel-typed-1.1.jar`` -- Apache Camel Typed Actors integration
-- ``akka-scalaz-1.1.jar`` -- Support for the Scalaz library
-- ``akka-spring-1.1.jar`` -- Spring framework integration
-- ``akka-osgi-dependencies-bundle-1.1.jar`` -- OSGi support
+- ``akka-kernel-2.0-SNAPSHOT.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
+- ``akka-camel-2.0-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+- ``akka-camel-typed-2.0-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
+- ``akka-spring-2.0-SNAPSHOT.jar`` -- Spring framework integration
 
 
 Downloading and installing the Scala IDE for Eclipse
@@ -173,7 +167,7 @@ If you are an `SBT <http://code.google.com/p/simple-build-tool/>`_ user, you can
       lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.7.0"
 
       val akkaRepo   = "Akka Repo" at "http://akka.io/repository"
-      val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "1.1"
+      val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "2.0-SNAPSHOT"
     }
 
 and then update your SBT project definition by mixing in ``Eclipsify`` in your project definition::
@@ -341,7 +335,7 @@ Here is the master actor::
 
 A couple of things are worth explaining further.
 
-First, we are passing in a ``java.util.concurrent.CountDownLatch`` to the ``Master`` actor. This latch is only used for plumbing (in this specific tutorial), to have a simple way of letting the outside world knowing when the master can deliver the result and shut down. In more idiomatic Akka code, as we will see in part two of this tutorial series, we would not use a latch but other abstractions and functions like ``Channel``, ``Future`` and ``!!!`` to achieve the same thing in a non-blocking way. But for simplicity let's stick to a ``CountDownLatch`` for now.
+First, we are passing in a ``java.util.concurrent.CountDownLatch`` to the ``Master`` actor. This latch is only used for plumbing (in this specific tutorial), to have a simple way of letting the outside world knowing when the master can deliver the result and shut down. In more idiomatic Akka code, as we will see in part two of this tutorial series, we would not use a latch but other abstractions and functions like ``Channel``, ``Future`` and ``?`` to achieve the same thing in a non-blocking way. But for simplicity let's stick to a ``CountDownLatch`` for now.
 
 Second, we are adding a couple of life-cycle callback methods; ``preStart`` and ``postStop``. In the ``preStart`` callback we are recording the time when the actor is started and in the ``postStop`` callback we are printing out the result (the approximation of Pi) and the time it took to calculate it. In this call we also invoke ``latch.countDown`` to tell the outside world that we are done.
 
@@ -412,8 +406,8 @@ Run it from Eclipse
 
 Eclipse builds your project on every save when ``Project/Build Automatically`` is set. If not, bring you project up to date by clicking ``Project/Build Project``. If there are no compilation errors, you can right-click in the editor where ``Pi`` is defined, and choose ``Run as.. /Scala application``. If everything works fine, you should see::
 
-    AKKA_HOME is defined as [/Users/jboner/tools/akka-actors-1.1]
-    loading config from [/Users/jboner/tools/akka-actors-1.1/config/akka.conf].
+    AKKA_HOME is defined as [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT]
+    loading config from [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT/config/akka.conf].
 
     Pi estimate:        3.1435501812459323
     Calculation time:   858 millis

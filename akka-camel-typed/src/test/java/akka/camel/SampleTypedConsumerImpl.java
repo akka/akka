@@ -1,11 +1,9 @@
 package akka.camel;
 
-import akka.actor.TypedActor;
-
 /**
  * @author Martin Krasser
  */
-public class SampleTypedConsumerImpl extends TypedActor implements SampleTypedConsumer {
+public class SampleTypedConsumerImpl implements SampleTypedConsumer {
 
     public String m1(String b, String h) {
         return "m1: " + b + " " + h;

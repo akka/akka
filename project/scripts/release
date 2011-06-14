@@ -1,8 +1,10 @@
 sh git checkout -b releasing-{{release.arg1}}
+set akka.release true
 clean
 script find-replace.sh {{project.version}} {{release.arg1}}
 script find-replace.sh //[[:space:]]*release:[[:space:]]*
 reload
 build-release
+sh git add .
 sh git commit -am 'Update version for release {{project.version}}'
 sh git tag -m 'Version {{project.version}}' v{{project.version}}

@@ -7,6 +7,7 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Actor._
 import akka.actor._
+import akka.actor.TypedActor.Configuration._
 
 /**
  * @author Martin Krasser
@@ -18,13 +19,13 @@ class TypedConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMa
   var service: CamelService = _
 
   override protected def beforeAll = {
-    registry.shutdownAll
+    registry.local.shutdownAll
     service = CamelServiceManager.startCamelService
   }
 
   override protected def afterAll = {
     service.stop
-    registry.shutdownAll
+    registry.local.shutdownAll
   }
 
   "A responding, typed consumer" when {
@@ -32,7 +33,7 @@ class TypedConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMa
     "started" must {
       "support in-out message exchanges via its endpoints" in {
         service.awaitEndpointActivation(3) {
-          actor = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
+          actor = TypedActor.typedActorOf(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl], defaultConfiguration)
         } must be(true)
         mandatoryTemplate.requestBodyAndHeader("direct:m2", "x", "test", "y") must equal("m2: x y")
         mandatoryTemplate.requestBodyAndHeader("direct:m3", "x", "test", "y") must equal("m3: x y")
@@ -62,7 +63,7 @@ class TypedConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMa
     "started" must {
       "support in-out message exchanges via its endpoints" in {
         service.awaitEndpointActivation(2) {
-          actor = TypedActor.newInstance(classOf[TestTypedConsumer], classOf[TestTypedConsumerImpl])
+          actor = TypedActor.typedActorOf(classOf[TestTypedConsumer], classOf[TestTypedConsumerImpl], defaultConfiguration)
         } must be(true)
         mandatoryTemplate.requestBody("direct:publish-test-3", "x") must equal("foo: x")
         mandatoryTemplate.requestBody("direct:publish-test-4", "x") must equal("bar: x")
@@ -91,7 +92,7 @@ object TypedConsumerScalaTest {
     def bar(s: String): String
   }
 
-  class TestTypedConsumerImpl extends TypedActor with TestTypedConsumer {
+  class TestTypedConsumerImpl extends TestTypedConsumer {
     def foo(s: String) = "foo: %s" format s
     @consume("direct:publish-test-4")
     def bar(s: String) = "bar: %s" format s

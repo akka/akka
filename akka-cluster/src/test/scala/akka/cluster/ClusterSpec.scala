@@ -1,3 +1,4 @@
+/*
 package akka.cluster
 
 import org.scalatest.WordSpec
@@ -33,7 +34,6 @@ object BinaryFormatMyJavaSerializableActor {
     val serializer = Serializers.Java
   }
 }
-/*
 class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
   import Cluster._
 

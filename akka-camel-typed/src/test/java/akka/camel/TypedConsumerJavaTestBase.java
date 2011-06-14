@@ -1,7 +1,11 @@
 package akka.camel;
 
+import akka.actor.Actor;
 import akka.actor.TypedActor;
+import akka.actor.TypedActor.Configuration;
+import akka.dispatch.Dispatchers;
 import akka.japi.SideEffect;
+import akka.util.FiniteDuration;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -28,16 +32,18 @@ public class TypedConsumerJavaTestBase {
     @AfterClass
     public static void tearDownAfterClass() {
         stopCamelService();
-        registry().shutdownAll();
+        registry().local().shutdownAll();
     }
 
     @Test
     public void shouldHandleExceptionThrownByTypedActorAndGenerateCustomResponse() {
         getMandatoryService().awaitEndpointActivation(1, new SideEffect() {
             public void apply() {
-                consumer = TypedActor.newInstance(
+                consumer = TypedActor.typedActorOf(
                         SampleErrorHandlingTypedConsumer.class,
-                        SampleErrorHandlingTypedConsumerImpl.class);
+                        SampleErrorHandlingTypedConsumerImpl.class,
+                        new Configuration(new FiniteDuration(5000, "millis"), Dispatchers.defaultGlobalDispatcher()
+                        ));
             }
         });
         String result = getMandatoryTemplate().requestBody("direct:error-handler-test-java-typed", "hello", String.class);

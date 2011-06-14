@@ -12,6 +12,7 @@ import org.I0Itec.zkclient._
 import org.I0Itec.zkclient.serialize._
 import org.I0Itec.zkclient.exception._
 
+import java.util.{ List ⇒ JList }
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference, AtomicInteger }
 import java.util.concurrent.{ ConcurrentSkipListSet, CopyOnWriteArrayList, Callable, ConcurrentHashMap }
 import java.net.InetSocketAddress
@@ -26,16 +27,22 @@ import RemoteDaemonMessageType._
 
 import akka.util._
 import Helpers._
+
 import akka.actor._
 import Actor._
 import Status._
+import DeploymentConfig.{ ReplicationScheme, ReplicationStrategy, Transient, WriteThrough, WriteBehind }
+
 import akka.event.EventHandler
 import akka.dispatch.{ Dispatchers, Future }
 import akka.remoteinterface._
 import akka.routing.RouterType
-import akka.config.Config
+
+import akka.config.{ Config, Supervision }
+import Supervision._
 import Config._
-import akka.serialization.{ Format, Serializers, Serializer, Compression }
+
+import akka.serialization.{ Serialization, Serializer, Compression }
 import Compression.LZF
 import akka.AkkaException
 
@@ -45,7 +52,6 @@ import akka.cluster.ChangeListener._
 import com.eaio.uuid.UUID
 
 import com.google.protobuf.ByteString
-import java.util.{ List ⇒ JList }
 
 // FIXME add watch for each node that when the entry for the node is removed then the node shuts itself down
 // FIXME Provisioning data in ZK (file names etc) and files in S3 and on disk
@@ -225,7 +231,7 @@ object Cluster {
   /**
    * Creates a new AkkaZkClient.
    */
-  def newZkClient: AkkaZkClient = new AkkaZkClient(zooKeeperServers, sessionTimeout, connectionTimeout, defaultSerializer)
+  def newZkClient(): AkkaZkClient = new AkkaZkClient(zooKeeperServers, sessionTimeout, connectionTimeout, defaultSerializer)
 
   def createQueue(rootPath: String, blocking: Boolean = true) = new ZooKeeperQueue(node.zkClient, rootPath, blocking)
 
@@ -282,8 +288,18 @@ class DefaultClusterNode private[akka] (
       case RemoteClientDisconnected(client, address) ⇒ client.shutdownClientModule()
       case _                                         ⇒ //ignore other
     }
-  }, "akka.cluster.remoteClientLifeCycleListener").start()
+  }, "akka.cluster.RemoteClientLifeCycleListener").start()
+
   lazy val remoteDaemon = actorOf(new RemoteClusterDaemon(this), RemoteClusterDaemon.ADDRESS).start()
+
+  lazy val remoteDaemonSupervisor = Supervisor(
+    SupervisorConfig(
+      OneForOneStrategy(List(classOf[Exception]), Int.MaxValue, Int.MaxValue), // is infinite restart what we want?
+      Supervise(
+        remoteDaemon,
+        Permanent)
+        :: Nil))
+
   lazy val remoteService: RemoteSupport = {
     val remote = new akka.remote.netty.NettyRemoteSupport
     remote.start(nodeAddress.hostname, nodeAddress.port)
@@ -291,6 +307,7 @@ class DefaultClusterNode private[akka] (
     remote.addListener(remoteClientLifeCycleListener)
     remote
   }
+
   lazy val remoteServerAddress: InetSocketAddress = remoteService.address
 
   // static nodes
@@ -451,7 +468,15 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store[T <: Actor](address: String, actorClass: Class[T], format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, 0, false, format)
+    store(Actor.actorOf(actorClass, address).start, 0, Transient, false, format)
+
+  /**
+   * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationScheme: ReplicationScheme, format: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, 0, replicationScheme, false, format)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -459,7 +484,15 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, replicationFactor, false, format)
+    store(Actor.actorOf(actorClass, address).start, replicationFactor, Transient, false, format)
+
+  /**
+   * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, format: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, replicationFactor, replicationScheme, false, format)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -467,7 +500,15 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store[T <: Actor](address: String, actorClass: Class[T], serializeMailbox: Boolean, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, 0, serializeMailbox, format)
+    store(Actor.actorOf(actorClass, address).start, 0, Transient, serializeMailbox, format)
+
+  /**
+   * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, 0, replicationScheme, serializeMailbox, format)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -475,7 +516,15 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, serializeMailbox: Boolean, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, replicationFactor, serializeMailbox, format)
+    store(Actor.actorOf(actorClass, address).start, replicationFactor, Transient, serializeMailbox, format)
+
+  /**
+   * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, replicationFactor, replicationScheme, serializeMailbox, format)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
@@ -483,7 +532,15 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store(actorRef: ActorRef, format: Serializer): ClusterNode =
-    store(actorRef, 0, false, format)
+    store(actorRef, 0, Transient, false, format)
+
+  /**
+   * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
+  def store(actorRef: ActorRef, replicationScheme: ReplicationScheme, format: Serializer): ClusterNode =
+    store(actorRef, 0, replicationScheme, false, format)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
@@ -491,7 +548,15 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store(actorRef: ActorRef, replicationFactor: Int, format: Serializer): ClusterNode =
-    store(actorRef, replicationFactor, false, format)
+    store(actorRef, replicationFactor, Transient, false, format)
+
+  /**
+   * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
+  def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, format: Serializer): ClusterNode =
+    store(actorRef, replicationFactor, replicationScheme, false, format)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
@@ -499,20 +564,47 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store(actorRef: ActorRef, serializeMailbox: Boolean, format: Serializer): ClusterNode =
-    store(actorRef, 0, serializeMailbox, format)
-
-  /**
-   * Needed to have reflection through structural typing work.
-   */
-  def store(actorRef: ActorRef, replicationFactor: Int, serializeMailbox: Boolean, format: AnyRef): ClusterNode =
-    store(actorRef, replicationFactor, serializeMailbox, format.asInstanceOf[Serializer])
+    store(actorRef, 0, Transient, serializeMailbox, format)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorRef: ActorRef, replicationFactor: Int, serializeMailbox: Boolean, format: Serializer): ClusterNode = if (isConnected.isOn) {
+  def store(actorRef: ActorRef, replicationFactor: Int, serializeMailbox: Boolean, format: Serializer): ClusterNode =
+    store(actorRef, replicationFactor, Transient, serializeMailbox, format)
+
+  /**
+   * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
+  def store(actorRef: ActorRef, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: Serializer): ClusterNode =
+    store(actorRef, 0, replicationScheme, serializeMailbox, format)
+
+  /**
+   * Needed to have reflection through structural typing work.
+   */
+  def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: AnyRef): ClusterNode =
+    store(actorRef, replicationFactor, replicationScheme, serializeMailbox, format.asInstanceOf[Serializer])
+
+  /**
+   * Needed to have reflection through structural typing work.
+   */
+  def store(actorRef: ActorRef, replicationFactor: Int, serializeMailbox: Boolean, format: AnyRef): ClusterNode =
+    store(actorRef, replicationFactor, Transient, serializeMailbox, format)
+
+  /**
+   * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
+  def store(
+    actorRef: ActorRef,
+    replicationFactor: Int,
+    replicationScheme: ReplicationScheme,
+    serializeMailbox: Boolean,
+    format: Serializer): ClusterNode = if (isConnected.isOn) {
 
     import akka.serialization.ActorSerialization._
 
@@ -523,12 +615,14 @@ class DefaultClusterNode private[akka] (
     EventHandler.debug(this,
       "Storing actor [%s] with UUID [%s] in cluster".format(actorRef.address, uuid))
 
-    val actorBytes = if (shouldCompressData) LZF.compress(toBinary(actorRef, serializeMailbox)(format))
-    else toBinary(actorRef)(format)
+    val actorBytes =
+      if (shouldCompressData) LZF.compress(toBinary(actorRef, serializeMailbox, replicationScheme))
+      else toBinary(actorRef, serializeMailbox, replicationScheme)
+
     val actorRegistryPath = actorRegistryPathFor(uuid)
 
     // create UUID -> Array[Byte] for actor registry
-    if (zkClient.exists(actorRegistryPath)) zkClient.writeData(actorRegistryPath, actorBytes) // FIXME check for size and warn if too big
+    if (zkClient.exists(actorRegistryPath)) zkClient.writeData(actorRegistryPath, actorBytes) // FIXME Store actor bytes in Data Grid not ZooKeeper
     else {
       zkClient.retryUntilConnected(new Callable[Either[String, Exception]]() {
         def call: Either[String, Exception] = {
@@ -575,12 +669,10 @@ class DefaultClusterNode private[akka] (
       .build
 
     replicaConnectionsForReplicationFactor(replicationFactor) foreach { connection ⇒
-      (connection !! (command, remoteDaemonAckTimeout)) match {
+      (connection ? (command, remoteDaemonAckTimeout)).as[Status] match {
 
         case Some(Success) ⇒
-          EventHandler.debug(this,
-            "Replica for [%s] successfully created on [%s]"
-              .format(actorRef.address, connection))
+          EventHandler.debug(this, "Replica for [%s] successfully created".format(actorRef.address))
 
         case Some(Failure(cause)) ⇒
           EventHandler.error(cause, this, cause.toString)
@@ -588,7 +680,7 @@ class DefaultClusterNode private[akka] (
 
         case None ⇒
           val error = new ClusterException(
-            "Operation to instantiate replicas throughout the cluster timed out, cause of error unknow")
+            "Operation to instantiate replicas throughout the cluster timed out")
           EventHandler.error(error, this, error.toString)
           throw error
       }
@@ -604,8 +696,9 @@ class DefaultClusterNode private[akka] (
     releaseActorOnAllNodes(uuid)
 
     locallyCheckedOutActors.remove(uuid)
+
     // warning: ordering matters here
-    ignore[ZkNoNodeException](zkClient.deleteRecursive(actorAddressToUuidsPathFor(actorAddressForUuid(uuid)))) // remove ADDRESS to UUID mapping
+    ignore[ZkNoNodeException](zkClient.deleteRecursive(actorAddressToUuidsPathFor(actorAddressForUuid(uuid)))) // FIXME remove ADDRESS to UUID mapping?
     ignore[ZkNoNodeException](zkClient.deleteRecursive(actorAtNodePathFor(nodeAddress.nodeName, uuid)))
     ignore[ZkNoNodeException](zkClient.deleteRecursive(actorRegistryPathFor(uuid)))
     ignore[ZkNoNodeException](zkClient.deleteRecursive(actorLocationsPathFor(uuid)))
@@ -650,20 +743,17 @@ class DefaultClusterNode private[akka] (
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
    * for remote access through lookup by its UUID.
    */
-  def use[T <: Actor](actorAddress: String): Option[LocalActorRef] = use(actorAddress, formatForActor(actorAddress))
+  def use[T <: Actor](actorAddress: String): Option[ActorRef] = use(actorAddress, formatForActor(actorAddress))
 
   /**
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
    * for remote access through lookup by its UUID.
    */
-  def use[T <: Actor](actorAddress: String, format: Serializer): Option[LocalActorRef] = if (isConnected.isOn) {
+  def use[T <: Actor](actorAddress: String, format: Serializer): Option[ActorRef] = if (isConnected.isOn) {
 
     import akka.serialization.ActorSerialization._
 
     actorUuidsForActorAddress(actorAddress) map { uuid ⇒
-      EventHandler.debug(this,
-        "Checking out actor with UUID [%s] to be used on node [%s] as local actor"
-          .format(uuid, nodeAddress.nodeName))
 
       ignore[ZkNodeExistsException](zkClient.createPersistent(actorAtNodePathFor(nodeAddress.nodeName, uuid), true))
       ignore[ZkNodeExistsException](zkClient.createEphemeral(actorLocationsPathFor(uuid, nodeAddress)))
@@ -685,15 +775,15 @@ class DefaultClusterNode private[akka] (
       }) match {
         case Left(bytes) ⇒
           locallyCheckedOutActors += (uuid -> bytes)
-          // FIXME switch to ReplicatedActorRef here
-          // val actor = new ReplicatedActorRef(fromBinary[T](bytes, remoteServerAddress)(format))
-          val actor = fromBinary[T](bytes, remoteServerAddress)(format)
-          remoteService.register(UUID_PREFIX + uuid, actor) // clustered refs are always registered and looked up by UUID
+          val actor = fromBinary[T](bytes, remoteServerAddress)
+          EventHandler.debug(this,
+            "Checking out actor [%s] to be used on node [%s] as local actor"
+              .format(actor, nodeAddress.nodeName))
           actor.start()
-          actor.asInstanceOf[LocalActorRef]
+          actor
         case Right(exception) ⇒ throw exception
       }
-    } headOption // FIXME should not be an array at all coming here
+    } headOption // FIXME should not be an array at all coming here but an Option[ActorRef]
   } else None
 
   /**
@@ -703,14 +793,15 @@ class DefaultClusterNode private[akka] (
     isConnected ifOn {
       EventHandler.debug(this,
         "Using (checking out) all actors with UUID [%s] on all nodes in cluster".format(uuid))
+
       val command = RemoteDaemonMessageProtocol.newBuilder
         .setMessageType(USE)
         .setActorUuid(uuidToUuidProtocol(uuid))
         .build
+
       membershipNodes foreach { node ⇒
         replicaConnections.get(node) foreach {
-          case (_, connection) ⇒
-            connection ! command
+          case (_, connection) ⇒ connection ! command
         }
       }
     }
@@ -774,8 +865,8 @@ class DefaultClusterNode private[akka] (
   def ref(actorAddress: String, router: RouterType): ActorRef = if (isConnected.isOn) {
     val addresses = addressesForActor(actorAddress)
     EventHandler.debug(this,
-      "Checking out cluster actor ref with address [%s] and router [%s] connected to [\n\t%s]"
-        .format(actorAddress, router, addresses.mkString("\n\t")))
+      "Checking out cluster actor ref with address [%s] and router [%s] on [%s] connected to [\n\t%s]"
+        .format(actorAddress, router, remoteServerAddress, addresses.map(_._2).mkString("\n\t")))
 
     val actorRef = Router newRouter (router, addresses, actorAddress, Actor.TIMEOUT)
     addresses foreach { case (_, address) ⇒ clusterActorRefs.put(address, actorRef) }
@@ -953,11 +1044,15 @@ class DefaultClusterNode private[akka] (
    * Send a function 'Function0[Unit]' to be invoked on a random number of nodes (defined by 'replicationFactor' argument).
    */
   def send(f: Function0[Unit], replicationFactor: Int) {
-    val message = RemoteDaemonMessageProtocol.newBuilder
-      .setMessageType(FUNCTION_FUN0_UNIT)
-      .setPayload(ByteString.copyFrom(Serializers.Java.toBinary(f)))
-      .build
-    replicaConnectionsForReplicationFactor(replicationFactor) foreach (_ ! message)
+    Serialization.serialize(f) match {
+      case Left(error) ⇒ throw error
+      case Right(bytes) ⇒
+        val message = RemoteDaemonMessageProtocol.newBuilder
+          .setMessageType(FUNCTION_FUN0_UNIT)
+          .setPayload(ByteString.copyFrom(bytes))
+          .build
+        replicaConnectionsForReplicationFactor(replicationFactor) foreach (_ ! message)
+    }
   }
 
   /**
@@ -965,12 +1060,16 @@ class DefaultClusterNode private[akka] (
    * Returns an 'Array' with all the 'Future's from the computation.
    */
   def send(f: Function0[Any], replicationFactor: Int): List[Future[Any]] = {
-    val message = RemoteDaemonMessageProtocol.newBuilder
-      .setMessageType(FUNCTION_FUN0_ANY)
-      .setPayload(ByteString.copyFrom(Serializers.Java.toBinary(f)))
-      .build
-    val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ !!! message)
-    results.toList.asInstanceOf[List[Future[Any]]]
+    Serialization.serialize(f) match {
+      case Left(error) ⇒ throw error
+      case Right(bytes) ⇒
+        val message = RemoteDaemonMessageProtocol.newBuilder
+          .setMessageType(FUNCTION_FUN0_ANY)
+          .setPayload(ByteString.copyFrom(bytes))
+          .build
+        val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ ? message)
+        results.toList.asInstanceOf[List[Future[Any]]]
+    }
   }
 
   /**
@@ -978,11 +1077,15 @@ class DefaultClusterNode private[akka] (
    * with the argument speficied.
    */
   def send(f: Function1[Any, Unit], arg: Any, replicationFactor: Int) {
-    val message = RemoteDaemonMessageProtocol.newBuilder
-      .setMessageType(FUNCTION_FUN1_ARG_UNIT)
-      .setPayload(ByteString.copyFrom(Serializers.Java.toBinary((f, arg))))
-      .build
-    replicaConnectionsForReplicationFactor(replicationFactor) foreach (_ ! message)
+    Serialization.serialize((f, arg)) match {
+      case Left(error) ⇒ throw error
+      case Right(bytes) ⇒
+        val message = RemoteDaemonMessageProtocol.newBuilder
+          .setMessageType(FUNCTION_FUN1_ARG_UNIT)
+          .setPayload(ByteString.copyFrom(bytes))
+          .build
+        replicaConnectionsForReplicationFactor(replicationFactor) foreach (_ ! message)
+    }
   }
 
   /**
@@ -991,12 +1094,16 @@ class DefaultClusterNode private[akka] (
    * Returns an 'Array' with all the 'Future's from the computation.
    */
   def send(f: Function1[Any, Any], arg: Any, replicationFactor: Int): List[Future[Any]] = {
-    val message = RemoteDaemonMessageProtocol.newBuilder
-      .setMessageType(FUNCTION_FUN1_ARG_ANY)
-      .setPayload(ByteString.copyFrom(Serializers.Java.toBinary((f, arg))))
-      .build
-    val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ !!! message)
-    results.toList.asInstanceOf[List[Future[Any]]]
+    Serialization.serialize((f, arg)) match {
+      case Left(error) ⇒ throw error
+      case Right(bytes) ⇒
+        val message = RemoteDaemonMessageProtocol.newBuilder
+          .setMessageType(FUNCTION_FUN1_ARG_ANY)
+          .setPayload(ByteString.copyFrom(bytes))
+          .build
+        val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ ? message)
+        results.toList.asInstanceOf[List[Future[Any]]]
+    }
   }
 
   // =======================================
@@ -1086,9 +1193,9 @@ class DefaultClusterNode private[akka] (
         .format(nodeAddress.clusterName, nodeAddress.nodeName, nodeAddress.port, zkServerAddresses, serializer))
     EventHandler.info(this, "Starting up remote server [%s]".format(remoteServerAddress.toString))
     createRootClusterNode()
-    val isLeader = joinLeaderElection
+    val isLeader = joinLeaderElection()
     if (isLeader) createNodeStructureIfNeeded()
-    registerListeners
+    registerListeners()
     joinMembershipNode()
     joinActorsAtAddressNode()
     fetchMembershipChildrenNodes()
@@ -1125,7 +1232,8 @@ class DefaultClusterNode private[akka] (
 
     if (numberOfReplicas < replicationFactor) {
       throw new IllegalArgumentException(
-        "Replication factor [" + replicationFactor + "] is greater than the number of available nodes [" + numberOfReplicas + "]")
+        "Replication factor [" + replicationFactor +
+          "] is greater than the number of available nodes [" + numberOfReplicas + "]")
     } else if (numberOfReplicas == replicationFactor) {
       replicas = replicas ++ replicaConnectionsAsArray
     } else {
@@ -1164,7 +1272,7 @@ class DefaultClusterNode private[akka] (
     } catch {
       case e: ZkNodeExistsException ⇒
         val error = new ClusterException("Can't join the cluster. The node name [" + nodeAddress.nodeName + "] is already in by another node")
-        EventHandler.error(error, this, "")
+        EventHandler.error(error, this, error.toString)
         throw error
     }
   }
@@ -1173,7 +1281,7 @@ class DefaultClusterNode private[akka] (
     ignore[ZkNodeExistsException](zkClient.createPersistent(actorsAtNodePathFor(nodeAddress.nodeName)))
   }
 
-  private[cluster] def joinLeaderElection: Boolean = {
+  private[cluster] def joinLeaderElection(): Boolean = {
     EventHandler.info(this, "Node [%s] is joining leader election".format(nodeAddress.nodeName))
     leaderLock.lock
   }
@@ -1217,22 +1325,26 @@ class DefaultClusterNode private[akka] (
             homeAddress.setAccessible(true)
             homeAddress.set(actor, Some(remoteServerAddress))
 
-            remoteService.register(uuid, actor)
+            remoteService.register(actorAddress, actor)
           }
         }
 
         // notify all available nodes that they should fail-over all connections from 'from' to 'to'
         val from = nodeNameToAddress.get(failedNodeName)
         val to = remoteServerAddress
-        val command = RemoteDaemonMessageProtocol.newBuilder
-          .setMessageType(FAIL_OVER_CONNECTIONS)
-          .setPayload(ByteString.copyFrom(Serializers.Java.toBinary((from, to))))
-          .build
-        membershipNodes foreach { node ⇒
-          replicaConnections.get(node) foreach {
-            case (_, connection) ⇒
-              connection ! command
-          }
+        Serialization.serialize((from, to)) match {
+          case Left(error) ⇒ throw error
+          case Right(bytes) ⇒
+            val command = RemoteDaemonMessageProtocol.newBuilder
+              .setMessageType(FAIL_OVER_CONNECTIONS)
+              .setPayload(ByteString.copyFrom(bytes))
+              .build
+            membershipNodes foreach { node ⇒
+              replicaConnections.get(node) foreach {
+                case (_, connection) ⇒
+                  connection ! command
+              }
+            }
         }
       }
     }
@@ -1302,7 +1414,7 @@ class DefaultClusterNode private[akka] (
     }
   }
 
-  private def registerListeners = {
+  private def registerListeners() = {
     zkClient.subscribeStateChanges(stateListener)
     zkClient.subscribeChildChanges(MEMBERSHIP_NODE, membershipListener)
   }
@@ -1456,11 +1568,9 @@ trait ErrorHandler {
 object RemoteClusterDaemon {
   val ADDRESS = "akka-cluster-daemon".intern
 
-  // FIXME configure functionServerDispatcher to what?
-  val functionServerDispatcher = Dispatchers.newDispatcher("akka:cloud:cluster:function:server").build
+  // FIXME configure computeGridDispatcher to what?
+  val computeGridDispatcher = Dispatchers.newDispatcher("akka:cloud:cluster:compute-grid").build
 }
-
-// FIXME supervise RemoteClusterDaemon
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -1471,6 +1581,10 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
   import Cluster._
 
   self.dispatcher = Dispatchers.newPinnedDispatcher(self)
+
+  override def preRestart(reason: Throwable) {
+    EventHandler.debug(this, "RemoteClusterDaemon failed due to [%s] restarting...".format(reason))
+  }
 
   def receive: Receive = {
     case message: RemoteDaemonMessageProtocol ⇒
@@ -1528,7 +1642,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
         case FUNCTION_FUN0_UNIT ⇒
           actorOf(new Actor() {
-            self.dispatcher = functionServerDispatcher
+            self.dispatcher = computeGridDispatcher
 
             def receive = {
               case f: Function0[Unit] ⇒ try {
@@ -1541,7 +1655,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
         case FUNCTION_FUN0_ANY ⇒
           actorOf(new Actor() {
-            self.dispatcher = functionServerDispatcher
+            self.dispatcher = computeGridDispatcher
 
             def receive = {
               case f: Function0[Any] ⇒ try {
@@ -1554,7 +1668,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
         case FUNCTION_FUN1_ARG_UNIT ⇒
           actorOf(new Actor() {
-            self.dispatcher = functionServerDispatcher
+            self.dispatcher = computeGridDispatcher
 
             def receive = {
               case (fun: Function[Any, Unit], param: Any) ⇒ try {
@@ -1567,7 +1681,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
         case FUNCTION_FUN1_ARG_ANY ⇒
           actorOf(new Actor() {
-            self.dispatcher = functionServerDispatcher
+            self.dispatcher = computeGridDispatcher
 
             def receive = {
               case (fun: Function[Any, Unit], param: Any) ⇒ try {
@@ -1583,6 +1697,6 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
   }
 
   private def payloadFor[T](message: RemoteDaemonMessageProtocol, clazz: Class[T]): T = {
-    Serializers.Java.fromBinary(message.getPayload.toByteArray, Some(clazz)).asInstanceOf[T]
+    Serialization.serialize(message.getPayload.toByteArray, Some(clazz)).asInstanceOf[T]
   }
 }

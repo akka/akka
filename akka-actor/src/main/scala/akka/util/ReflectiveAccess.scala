@@ -8,7 +8,7 @@ import akka.dispatch.{ Future, Promise, MessageInvocation }
 import akka.config.{ Config, ModuleNotAvailableException }
 import akka.remoteinterface.RemoteSupport
 import akka.actor._
-import DeploymentConfig.Deploy
+import DeploymentConfig.{ Deploy, ReplicationScheme, ReplicationStrategy }
 import akka.event.EventHandler
 import akka.serialization.Format
 import akka.cluster.ClusterNode
@@ -62,6 +62,13 @@ object ReflectiveAccess {
         None
     }
 
+    lazy val transactionLogInstance: Option[TransactionLogObject] = getObjectFor("akka.cluster.TransactionLog$") match {
+      case Right(value) ⇒ Some(value)
+      case Left(exception) ⇒
+        EventHandler.debug(this, exception.toString)
+        None
+    }
+
     lazy val node: ClusterNode = {
       ensureEnabled()
       clusterInstance.get.node
@@ -70,6 +77,11 @@ object ReflectiveAccess {
     lazy val clusterDeployer: ClusterDeployer = {
       ensureEnabled()
       clusterDeployerInstance.get
+    }
+
+    lazy val transactionLog: TransactionLogObject = {
+      ensureEnabled()
+      transactionLogInstance.get
     }
 
     type ClusterDeployer = {
@@ -94,6 +106,35 @@ object ReflectiveAccess {
       def toBinary(obj: AnyRef): Array[Byte]
       def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
     }
+
+    type TransactionLogObject = {
+      def newLogFor(
+        id: String,
+        isAsync: Boolean,
+        replicationScheme: ReplicationScheme,
+        format: Serializer): TransactionLog
+
+      def logFor(
+        id: String,
+        isAsync: Boolean,
+        replicationScheme: ReplicationScheme,
+        format: Serializer): TransactionLog
+
+      def shutdown()
+    }
+
+    type TransactionLog = {
+      def recordEntry(messageHandle: MessageInvocation, actorRef: ActorRef)
+      def recordEntry(entry: Array[Byte])
+      def recordSnapshot(snapshot: Array[Byte])
+      def entries: Vector[Array[Byte]]
+      def entriesFromLatestSnapshot: Tuple2[Array[Byte], Vector[Array[Byte]]]
+      def entriesInRange(from: Long, to: Long): Vector[Array[Byte]]
+      def latestEntryId: Long
+      def latestSnapshotId: Long
+      def delete()
+      def close()
+    }
   }
 
   /**
@@ -104,7 +145,7 @@ object ReflectiveAccess {
   object RemoteModule {
     val TRANSPORT = Config.config.getString("akka.remote.layer", "akka.remote.netty.NettyRemoteSupport")
 
-    private[akka] val configDefaultAddress = new InetSocketAddress(Config.hostname, Config.remoteServerPort)
+    val configDefaultAddress = new InetSocketAddress(Config.hostname, Config.remoteServerPort)
 
     lazy val isEnabled = remoteSupportClass.isDefined
 
@@ -166,7 +207,7 @@ object ReflectiveAccess {
                         classloader: ClassLoader = loader): Either[Exception, T] = try {
     assert(params ne null)
     assert(args ne null)
-    getClassFor(fqn) match {
+    getClassFor(fqn, classloader) match {
       case Right(value) ⇒
         val ctor = value.getDeclaredConstructor(params: _*)
         ctor.setAccessible(true)
@@ -180,7 +221,7 @@ object ReflectiveAccess {
 
   //Obtains a reference to fqn.MODULE$
   def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception, T] = try {
-    getClassFor(fqn) match {
+    getClassFor(fqn, classloader) match {
       case Right(value) ⇒
         val instance = value.getDeclaredField("MODULE$")
         instance.setAccessible(true)

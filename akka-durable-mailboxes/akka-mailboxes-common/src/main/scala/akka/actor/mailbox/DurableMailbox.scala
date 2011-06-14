@@ -5,7 +5,7 @@ package akka.actor.mailbox
 
 import MailboxProtocol._
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{Actor, ActorRef, NullChannel}
 import akka.dispatch._
 import akka.event.EventHandler
 import akka.remote.MessageSerializer
@@ -44,11 +44,14 @@ abstract class DurableExecutableMailbox(owner: ActorRef) extends MessageQueue wi
 
   //TODO: switch to RemoteProtocol
   def serialize(durableMessage: MessageInvocation) = {
-    val message = MessageSerializer.serialize(durableMessage.message)
+    val message = MessageSerializer.serialize(durableMessage.message.asInstanceOf[AnyRef])
     val builder = DurableMailboxMessageProtocol.newBuilder
       .setOwnerAddress(ownerAddress)
       .setMessage(message.toByteString)
-    if (durableMessage.sender.isDefined) builder.setSenderAddress(durableMessage.sender.get.address)
+    durableMessage.channel match {
+      case a : ActorRef => builder.setSenderAddress(a.address)
+      case _ =>
+    }
     builder.build.toByteArray
   }
 
@@ -62,10 +65,14 @@ abstract class DurableExecutableMailbox(owner: ActorRef) extends MessageQueue wi
       throw new DurableMailboxException("No actor could be found for address [" + ownerAddress + "], could not deserialize message."))
 
 
-    val sender = if (durableMessage.hasSenderAddress) {
+    val senderOption = if (durableMessage.hasSenderAddress) {
       Actor.registry.actorFor(durableMessage.getSenderAddress)
     } else None
+    val sender = senderOption match {
+      case Some(ref) => ref
+      case None => NullChannel
+    }
 
-    new MessageInvocation(owner, message, sender, None)
+    new MessageInvocation(owner, message, sender)
   }
 }

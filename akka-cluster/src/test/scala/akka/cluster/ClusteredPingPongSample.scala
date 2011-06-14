@@ -8,7 +8,6 @@ import akka.cluster._
 
 import akka.actor._
 import akka.actor.Actor._
-import akka.serialization.{ Serializers, SerializerBasedActorFormat }
 
 import java.util.concurrent.CountDownLatch
 
@@ -42,7 +41,7 @@ object PingPong {
           count += 1
           self reply Ball
         } else {
-          self.sender.foreach(_ !! Stop)
+          self.sender.foreach(s ⇒ (s ? Stop).await)
           gameOverLatch.countDown
           self.stop
         }
@@ -58,20 +57,6 @@ object PingPong {
       case Stop ⇒
         self reply Stop
         self.stop
-    }
-  }
-
-  // ------------------------
-  // Serialization
-  // ------------------------
-
-  object BinaryFormats {
-    implicit object PingActorFormat extends SerializerBasedActorFormat[PingActor] with Serializable {
-      val serializer = Serializers.Java
-    }
-
-    implicit object PongActorFormat extends SerializerBasedActorFormat[PongActor] with Serializable {
-      val serializer = Serializers.Java
     }
   }
 }

@@ -11,9 +11,10 @@ import akka.testing._
 import akka.util.duration._
 import akka.testing.Testing.sleepFor
 import akka.config.Supervision.{ OneForOneStrategy }
-import akka.actor._
 import akka.dispatch.Future
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
+import java.lang.IllegalStateException
+import akka.util.ReflectiveAccess
 
 object ActorRefSpec {
 
@@ -68,26 +69,189 @@ object ActorRefSpec {
       }
     }
   }
+
+  class OuterActor(val inner: ActorRef) extends Actor {
+    def receive = {
+      case "self" ⇒ self reply self
+      case x      ⇒ inner forward x
+    }
+  }
+
+  class FailingOuterActor(val inner: ActorRef) extends Actor {
+    val fail = new InnerActor
+
+    def receive = {
+      case "self" ⇒ self reply self
+      case x      ⇒ inner forward x
+    }
+  }
+
+  class FailingInheritingOuterActor(_inner: ActorRef) extends OuterActor(_inner) {
+    val fail = new InnerActor
+  }
+
+  class InnerActor extends Actor {
+    def receive = {
+      case "innerself" ⇒ self reply self
+      case other       ⇒ self reply other
+    }
+  }
+
+  class FailingInnerActor extends Actor {
+    val fail = new InnerActor
+
+    def receive = {
+      case "innerself" ⇒ self reply self
+      case other       ⇒ self reply other
+    }
+  }
+
+  class FailingInheritingInnerActor extends InnerActor {
+    val fail = new InnerActor
+  }
 }
 
 class ActorRefSpec extends WordSpec with MustMatchers {
-  import ActorRefSpec._
+  import akka.actor.ActorRefSpec._
 
   "An ActorRef" must {
 
     "not allow Actors to be created outside of an actorOf" in {
       intercept[akka.actor.ActorInitializationException] {
         new Actor { def receive = { case _ ⇒ } }
-        fail("shouldn't get here")
       }
 
       intercept[akka.actor.ActorInitializationException] {
-        val a = Actor.actorOf(new Actor {
+        Actor.actorOf(new Actor {
           val nested = new Actor { def receive = { case _ ⇒ } }
           def receive = { case _ ⇒ }
         }).start()
-        fail("shouldn't get here")
       }
+
+      def refStackMustBeEmpty = Actor.actorRefInCreation.get.headOption must be === None
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new FailingOuterActor(Actor.actorOf(new InnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new OuterActor(Actor.actorOf(new FailingInnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new FailingInheritingOuterActor(Actor.actorOf(new InnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new FailingOuterActor(Actor.actorOf(new FailingInheritingInnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new FailingInheritingOuterActor(Actor.actorOf(new FailingInheritingInnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new FailingInheritingOuterActor(Actor.actorOf(new FailingInnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new OuterActor(Actor.actorOf(new InnerActor {
+          val a = new InnerActor
+        }).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new FailingOuterActor(Actor.actorOf(new FailingInheritingInnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new OuterActor(Actor.actorOf(new FailingInheritingInnerActor).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      intercept[akka.actor.ActorInitializationException] {
+        Actor.actorOf(new OuterActor(Actor.actorOf({ new InnerActor; new InnerActor }).start)).start()
+      }
+
+      refStackMustBeEmpty
+
+      (intercept[java.lang.IllegalStateException] {
+        Actor.actorOf(new OuterActor(Actor.actorOf({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor }).start)).start()
+      }).getMessage must be === "Ur state be b0rked"
+
+      refStackMustBeEmpty
+    }
+
+    "be serializable using Java Serialization on local node" in {
+      val a = Actor.actorOf[InnerActor].start
+
+      import java.io._
+
+      val baos = new ByteArrayOutputStream(8192 * 32)
+      val out = new ObjectOutputStream(baos)
+
+      out.writeObject(a)
+
+      out.flush
+      out.close
+
+      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+      val readA = in.readObject
+
+      a.isInstanceOf[LocalActorRef] must be === true
+      readA.isInstanceOf[LocalActorRef] must be === true
+      (readA eq a) must be === true
+    }
+
+    "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
+      ReflectiveAccess.RemoteModule.isEnabled must be === false
+
+      val a = Actor.actorOf[InnerActor].start
+
+      val inetAddress = ReflectiveAccess.RemoteModule.configDefaultAddress
+
+      val expectedSerializedRepresentation = SerializedActorRef(
+        a.uuid,
+        a.address,
+        inetAddress.getAddress.getHostAddress,
+        inetAddress.getPort,
+        a.timeout)
+
+      Actor.registry.unregister(a)
+
+      import java.io._
+
+      val baos = new ByteArrayOutputStream(8192 * 32)
+      val out = new ObjectOutputStream(baos)
+
+      out.writeObject(a)
+
+      out.flush
+      out.close
+
+      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+      (intercept[java.lang.IllegalStateException] {
+        in.readObject
+      }).getMessage must be === "Trying to deserialize ActorRef (" + expectedSerializedRepresentation + ") but it's not found in the local registry and remoting is not enabled!"
     }
 
     "support nested actorOfs" in {
@@ -96,10 +260,21 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         def receive = { case _ ⇒ self reply nested }
       }).start()
 
-      val nested = (a !! "any").get.asInstanceOf[ActorRef]
+      val nested = (a ? "any").as[ActorRef].get
       a must not be null
       nested must not be null
       (a ne nested) must be === true
+    }
+
+    "support advanced nested actorOfs" in {
+      val a = Actor.actorOf(new OuterActor(Actor.actorOf(new InnerActor).start)).start
+      val inner = (a ? "innerself").as[Any].get
+
+      (a ? a).as[ActorRef].get must be(a)
+      (a ? "self").as[ActorRef].get must be(a)
+      inner must not be a
+
+      (a ? "msg").as[String] must be === Some("msg")
     }
 
     "support reply via channel" in {
@@ -135,11 +310,11 @@ class ActorRefSpec extends WordSpec with MustMatchers {
           }
         }).start()
 
-      val ffive: Future[String] = ref !!! 5
-      val fnull: Future[String] = ref !!! null
+      val ffive = (ref ? 5).mapTo[String]
+      val fnull = (ref ? null).mapTo[String]
 
       intercept[ActorKilledException] {
-        ref !! PoisonPill
+        (ref ? PoisonPill).get
         fail("shouldn't get here")
       }
 

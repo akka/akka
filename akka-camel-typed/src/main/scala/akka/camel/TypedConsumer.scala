@@ -5,13 +5,16 @@
 package akka.camel
 
 import java.lang.reflect.Method
+import java.lang.reflect.Proxy._
 
 import akka.actor.{ TypedActor, ActorRef }
+import akka.actor.TypedActor._
 
 /**
  * @author Martin Krasser
  */
 private[camel] object TypedConsumer {
+
   /**
    * Applies a function <code>f</code> to <code>actorRef</code> if <code>actorRef</code>
    * references a typed consumer actor. A valid reference to a typed consumer actor is a
@@ -21,18 +24,35 @@ private[camel] object TypedConsumer {
    * is called with the corresponding <code>method</code> instance and the return value is
    * added to a list which is then returned by this method.
    */
-  def withTypedConsumer[T](actorRef: ActorRef)(f: Method ⇒ T): List[T] = {
-    if (!actorRef.actor.isInstanceOf[TypedActor]) Nil
-    else if (actorRef.homeAddress.isDefined) Nil
-    else {
-      val typedActor = actorRef.actor.asInstanceOf[TypedActor]
-      // TODO: support consumer annotation inheritance
-      // - visit overridden methods in superclasses
-      // - visit implemented method declarations in interfaces
-      val intfClass = typedActor.proxy.getClass
-      val implClass = typedActor.getClass
-      (for (m ← intfClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(m)) ++
-        (for (m ← implClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(m))
+  def withTypedConsumer[T](actorRef: ActorRef, typedActor: Option[AnyRef])(f: (AnyRef, Method) ⇒ T): List[T] = {
+    typedActor match {
+      case None ⇒ Nil
+      case Some(tc) ⇒ {
+        withConsumeAnnotatedMethodsOnInterfaces(tc, f) ++
+          withConsumeAnnotatedMethodsonImplClass(tc, actorRef, f)
+      }
+    }
+  }
+
+  private implicit def class2ProxyClass(c: Class[_]) = new ProxyClass(c)
+
+  private def withConsumeAnnotatedMethodsOnInterfaces[T](tc: AnyRef, f: (AnyRef, Method) ⇒ T): List[T] = for {
+    i ← tc.getClass.allInterfaces
+    m ← i.getDeclaredMethods.toList
+    if (m.isAnnotationPresent(classOf[consume]))
+  } yield f(tc, m)
+
+  private def withConsumeAnnotatedMethodsonImplClass[T](tc: AnyRef, actorRef: ActorRef, f: (AnyRef, Method) ⇒ T): List[T] = {
+    val implClass = actorRef.actor.asInstanceOf[TypedActor.TypedActor[AnyRef, AnyRef]].me.getClass
+    for (m ← implClass.getDeclaredMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(tc, m)
+
+  }
+
+  private class ProxyClass(c: Class[_]) {
+    def allInterfaces: List[Class[_]] = allInterfaces(c.getInterfaces.toList)
+    def allInterfaces(is: List[Class[_]]): List[Class[_]] = is match {
+      case Nil     ⇒ Nil
+      case x :: xs ⇒ x :: allInterfaces(x.getInterfaces.toList) ::: allInterfaces(xs)
     }
   }
 }
