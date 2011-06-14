@@ -50,10 +50,7 @@ object ForwardActorSpec {
     val latch = TestLatch()
     val forwardActor = actorOf[ForwardActor]
     forwardActor.start()
-    (forwardActor !! "SendBangBang") match {
-      case Some(_) ⇒ latch.countDown()
-      case None    ⇒ {}
-    }
+    forwardActor ? "SendBangBang" onComplete { _ ⇒ latch.countDown() }
     def receive = {
       case _ ⇒ {}
     }

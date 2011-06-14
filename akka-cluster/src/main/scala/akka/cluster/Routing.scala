@@ -56,7 +56,7 @@ object Router {
     }
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] = next match {
-      case Some(actor) ⇒ actor.!!!(message, timeout)(sender)
+      case Some(actor) ⇒ actor.?(message, timeout)(sender).asInstanceOf[Future[T]]
       case _           ⇒ throwNoConnectionsError()
     }
 

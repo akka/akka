@@ -64,7 +64,7 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers {
       counters(0) ! coordinated(Increment(counters.tail))
       coordinated.await
       for (counter ← counters) {
-        (counter !! GetCount).get must be === 1
+        (counter ? GetCount).as[Int].get must be === 1
       }
       counters foreach (_.stop())
       failer.stop()
@@ -76,7 +76,7 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers {
       counters(0) ! Coordinated(Increment(counters.tail :+ failer))
       coordinated.await
       for (counter ← counters) {
-        (counter !! GetCount).get must be === 0
+        (counter ? GetCount).as[Int].get must be === 0
       }
       counters foreach (_.stop())
       failer.stop()

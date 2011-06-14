@@ -665,7 +665,7 @@ class DefaultClusterNode private[akka] (
       .build
 
     replicaConnectionsForReplicationFactor(replicationFactor) foreach { connection ⇒
-      (connection !! (command, remoteDaemonAckTimeout)) match {
+      (connection ? (command, remoteDaemonAckTimeout)).as[Status] match {
 
         case Some(Success) ⇒
           EventHandler.debug(this, "Replica for [%s] successfully created".format(actorRef.address))
@@ -676,7 +676,7 @@ class DefaultClusterNode private[akka] (
 
         case None ⇒
           val error = new ClusterException(
-            "Operation to instantiate replicas throughout the cluster timed out, cause of error unknow")
+            "Operation to instantiate replicas throughout the cluster timed out")
           EventHandler.error(error, this, error.toString)
           throw error
       }
@@ -1056,7 +1056,7 @@ class DefaultClusterNode private[akka] (
       .setMessageType(FUNCTION_FUN0_ANY)
       .setPayload(ByteString.copyFrom(Serializers.Java.toBinary(f)))
       .build
-    val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ !!! message)
+    val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ ? message)
     results.toList.asInstanceOf[List[Future[Any]]]
   }
 
@@ -1082,7 +1082,7 @@ class DefaultClusterNode private[akka] (
       .setMessageType(FUNCTION_FUN1_ARG_ANY)
       .setPayload(ByteString.copyFrom(Serializers.Java.toBinary((f, arg))))
       .build
-    val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ !!! message)
+    val results = replicaConnectionsForReplicationFactor(replicationFactor) map (_ ? message)
     results.toList.asInstanceOf[List[Future[Any]]]
   }
 

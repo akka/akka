@@ -66,7 +66,7 @@ object SupervisorSpec {
     }
 
     override def receive = {
-      case Die ⇒ temp !! (Die, TimeoutMillis)
+      case Die ⇒ (temp.?(Die, TimeoutMillis)).get
     }
   }
 
@@ -200,13 +200,13 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
   }
 
   def ping(pingPongActor: ActorRef) = {
-    (pingPongActor !! (Ping, TimeoutMillis)).getOrElse("nil") must be(PongMessage)
-    messageLogPoll must be(PingMessage)
+    (pingPongActor.?(Ping, TimeoutMillis)).as[String].getOrElse("nil") must be === PongMessage
+    messageLogPoll must be === PingMessage
   }
 
   def kill(pingPongActor: ActorRef) = {
     intercept[RuntimeException] { pingPongActor !! (Die, TimeoutMillis) }
-    messageLogPoll must be(ExceptionMessage)
+    messageLogPoll must be === ExceptionMessage
   }
 
   "A supervisor" must {
@@ -215,7 +215,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       val master = actorOf[Master].start()
 
       intercept[RuntimeException] {
-        master !! (Die, TimeoutMillis)
+        (master.?(Die, TimeoutMillis)).get
       }
 
       sleepFor(1 second)
@@ -226,7 +226,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       val (temporaryActor, supervisor) = temporaryActorAllForOne
 
       intercept[RuntimeException] {
-        temporaryActor !! (Die, TimeoutMillis)
+        (temporaryActor.?(Die, TimeoutMillis)).get
       }
 
       sleepFor(1 second)
@@ -374,13 +374,13 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
             Supervise(dyingActor, Permanent) :: Nil))
 
       intercept[Exception] {
-        dyingActor !! (Die, TimeoutMillis)
+        (dyingActor.?(Die, TimeoutMillis)).get
       }
 
       // give time for restart
       sleepFor(3 seconds)
 
-      (dyingActor !! (Ping, TimeoutMillis)).getOrElse("nil") must be(PongMessage)
+      (dyingActor.?(Ping, TimeoutMillis)).as[String].getOrElse("nil") must be === PongMessage
 
       inits.get must be(3)
 

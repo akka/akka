@@ -10,7 +10,6 @@ import akka.config._
 import Config._
 import akka.util.{ ListenerManagement, ReflectiveAccess, Duration, Helpers }
 import ReflectiveAccess._
-import Helpers.{ narrow, narrowSilently }
 import akka.remoteinterface.RemoteSupport
 import akka.japi.{ Creator, Procedure }
 import akka.AkkaException
@@ -24,6 +23,7 @@ import scala.reflect.BeanProperty
 import com.eaio.uuid.UUID
 
 import java.lang.reflect.InvocationTargetException
+import java.util.concurrent.TimeUnit
 
 /**
  * Life-cycle messages for the Actors
@@ -89,8 +89,11 @@ class InvalidMessageException private[akka] (message: String, cause: Throwable =
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message
  */
-case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception {
-  override def getMessage = "Actor %s does not handle [%s]".format(ref, msg)
+case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Exception {
+  // constructor with 'null' ActorRef needed to work with client instantiation of remote exception
+  override def getMessage =
+    if (ref ne null) "Actor %s does not handle [%s]".format(ref, msg)
+    else "Actor does not handle [%s]".format(msg)
   override def fillInStackTrace() = this //Don't waste cycles generating stack trace
 }
 
@@ -109,9 +112,6 @@ object Status {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor extends ListenerManagement {
-
-  private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
-  private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**
    * A Receive is a convenience type that defines actor message behavior currently modeled as
@@ -139,6 +139,22 @@ object Actor extends ListenerManagement {
   private[actor] val actorRefInCreation = new ThreadLocal[Stack[ActorRef]] {
     override def initialValue = Stack[ActorRef]()
   }
+
+  case class Timeout(duration: Duration) {
+    def this(timeout: Long) = this(Duration(timeout, TimeUnit.MILLISECONDS))
+    def this(length: Long, unit: TimeUnit) = this(Duration(length, unit))
+  }
+  object Timeout {
+    def apply(timeout: Long) = new Timeout(timeout)
+    def apply(length: Long, unit: TimeUnit) = new Timeout(length, unit)
+    implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
+    implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
+    implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
+  }
+
+  private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
+  val defaultTimeout = Timeout(TIMEOUT)
+  private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**
    * Handle to the ActorRegistry.
@@ -321,25 +337,6 @@ object Actor extends ListenerManagement {
     }).start() ! Spawn
   }
 
-  /**
-   * Implicitly converts the given Option[Any] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
-   * to convert an Option[Any] to an Option[T].
-   */
-  implicit def toAnyOptionAsTypedOption(anyOption: Option[Any]) = new AnyOptionAsTypedOption(anyOption)
-
-  /**
-   * Implicitly converts the given Future[_] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
-   * to convert an Option[Any] to an Option[T].
-   * This means that the following code is equivalent:
-   *   (actor !! "foo").as[Int] (Deprecated)
-   *   and
-   *   (actor !!! "foo").as[Int] (Recommended)
-   */
-  implicit def futureToAnyOptionAsTypedOption(anyFuture: Future[_]) = new AnyOptionAsTypedOption({
-    try { anyFuture.await } catch { case t: FutureTimeoutException ⇒ }
-    anyFuture.resultOrException
-  })
-
   private[akka] def createActor(address: String, actorFactory: () ⇒ ActorRef): ActorRef = {
     Address.validate(address)
     registry.actorFor(address) match { // check if the actor for the address is already in the registry
@@ -474,7 +471,7 @@ object Actor extends ListenerManagement {
  *
  * <p/>
  * Here you find functions like:
- *   - !, !!, !!! and forward
+ *   - !, ? and forward
  *   - link, unlink, startLink etc
  *   - start, stop
  *   - etc.
@@ -511,14 +508,14 @@ trait Actor {
    */
   type Receive = Actor.Receive
 
-  /*
+  /**
    * Some[ActorRef] representation of the 'self' ActorRef reference.
    * <p/>
    * Mainly for internal use, functions as the implicit sender references when invoking
    * the 'forward' function.
    */
   @transient
-  implicit val someSelf: Some[ActorRef] = {
+  val someSelf: Some[ActorRef] = {
     val refStack = Actor.actorRefInCreation.get
     if (refStack.isEmpty) throw new ActorInitializationException(
       "\n\tYou can not create an instance of an " + getClass.getName + " explicitly using 'new MyActor'." +
@@ -542,9 +539,9 @@ trait Actor {
    * Option[ActorRef] representation of the 'self' ActorRef reference.
    * <p/>
    * Mainly for internal use, functions as the implicit sender references when invoking
-   * one of the message send functions ('!', '!!' and '!!!').
+   * one of the message send functions ('!' and '?').
    */
-  implicit def optionSelf: Option[ActorRef] = someSelf
+  def optionSelf: Option[ActorRef] = someSelf
 
   /**
    * The 'self' field holds the ActorRef for this actor.
@@ -574,7 +571,7 @@ trait Actor {
    * </pre>
    */
   @transient
-  val self: ScalaActorRef = someSelf.get
+  implicit val self: ScalaActorRef = someSelf.get
 
   /**
    * User overridable callback/setting.
@@ -661,8 +658,7 @@ trait Actor {
 
   private[akka] final def apply(msg: Any) = {
     if (msg.isInstanceOf[AnyRef] && (msg.asInstanceOf[AnyRef] eq null))
-      throw new InvalidMessageException("Message from [" + self.sender + "] to [" + self.toString + "] is null")
-
+      throw new InvalidMessageException("Message from [" + self.channel + "] to [" + self.toString + "] is null")
     val behaviorStack = self.hotswap
 
     msg match {
@@ -684,26 +680,11 @@ trait Actor {
       case Restart(reason)           ⇒ throw reason
       case Kill                      ⇒ throw new ActorKilledException("Kill")
       case PoisonPill ⇒
-        val f = self.senderFuture()
+        val ch = self.channel
         self.stop()
-        if (f.isDefined) f.get.completeWithException(new ActorKilledException("PoisonPill"))
+        ch.sendException(new ActorKilledException("PoisonPill"))
     }
   }
 
   private lazy val processingBehavior = receive //ProcessingBehavior is the original behavior
-}
-
-private[actor] class AnyOptionAsTypedOption(anyOption: Option[Any]) {
-
-  /**
-   * Convenience helper to cast the given Option of Any to an Option of the given type. Will throw a ClassCastException
-   * if the actual type is not assignable from the given one.
-   */
-  def as[T]: Option[T] = narrow[T](anyOption)
-
-  /**
-   * Convenience helper to cast the given Option of Any to an Option of the given type. Will swallow a possible
-   * ClassCastException and return None in that case.
-   */
-  def asSilently[T: Manifest]: Option[T] = narrowSilently[T](anyOption)
 }

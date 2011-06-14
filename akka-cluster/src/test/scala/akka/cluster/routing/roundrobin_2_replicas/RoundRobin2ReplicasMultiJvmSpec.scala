@@ -13,7 +13,7 @@ import BKException._
 
 import akka.cluster._
 import akka.actor._
-import Actor._
+import akka.actor.Actor._
 import akka.config.Config
 
 object RoundRobin2ReplicasMultiJvmSpec {
@@ -102,14 +102,14 @@ class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
           else replies.put(reply, replies(reply) + 1)
         }
 
-        count((hello !! "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
-        count((hello !! "Hello").as[String].getOrElse(fail("Should have recieved reply from node3")))
-        count((hello !! "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
-        count((hello !! "Hello").as[String].getOrElse(fail("Should have recieved reply from node3")))
-        count((hello !! "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
-        count((hello !! "Hello").as[String].getOrElse(fail("Should have recieved reply from node3")))
-        count((hello !! "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
-        count((hello !! "Hello").as[String].getOrElse(fail("Should have recieved reply from node3")))
+        count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
+        count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node3")))
+        count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
+        count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node3")))
+        count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
+        count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node3")))
+        count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
+        count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node3")))
 
         replies("World from node [node1]") must equal(4)
         replies("World from node [node3]") must equal(4)

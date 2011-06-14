@@ -48,7 +48,7 @@ public class UntypedTransactorTest {
             incrementLatch.await(timeout, TimeUnit.SECONDS);
         } catch (InterruptedException exception) {}
         for (ActorRef counter : counters) {
-            Future future = counter.sendRequestReplyFuture("GetCount");
+            Future future = counter.ask("GetCount");
             future.await();
             if (future.isCompleted()) {
                 Option resultOption = future.result();
@@ -71,7 +71,7 @@ public class UntypedTransactorTest {
             incrementLatch.await(timeout, TimeUnit.SECONDS);
         } catch (InterruptedException exception) {}
         for (ActorRef counter : counters) {
-            Future future = counter.sendRequestReplyFuture("GetCount");
+            Future future = counter.ask("GetCount");
             future.await();
             if (future.isCompleted()) {
                 Option resultOption = future.result();

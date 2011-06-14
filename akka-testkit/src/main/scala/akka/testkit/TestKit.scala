@@ -3,7 +3,7 @@
  */
 package akka.testkit
 
-import akka.actor.{ Actor, FSM }
+import akka.actor._
 import Actor._
 import akka.util.Duration
 import akka.util.duration._
@@ -17,9 +17,19 @@ object TestActor {
 
   case class SetTimeout(d: Duration)
   case class SetIgnore(i: Ignore)
+
+  trait Message {
+    def msg: AnyRef
+    def channel: UntypedChannel
+  }
+  case class RealMessage(msg: AnyRef, channel: UntypedChannel) extends Message
+  case object NullMessage extends Message {
+    override def msg: AnyRef = throw new IllegalActorStateException("last receive did not dequeue a message")
+    override def channel: UntypedChannel = throw new IllegalActorStateException("last receive did not dequeue a message")
+  }
 }
 
-class TestActor(queue: BlockingDeque[AnyRef]) extends Actor with FSM[Int, TestActor.Ignore] {
+class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor with FSM[Int, TestActor.Ignore] {
   import FSM._
   import TestActor._
 
@@ -36,7 +46,7 @@ class TestActor(queue: BlockingDeque[AnyRef]) extends Actor with FSM[Int, TestAc
     case Event(x: AnyRef, ign) ⇒
       val ignore = ign map (z ⇒ if (z isDefinedAt x) z(x) else false) getOrElse false
       if (!ignore) {
-        queue.offerLast(x)
+        queue.offerLast(RealMessage(x, self.channel))
       }
       stay
   }
@@ -76,19 +86,23 @@ class TestActor(queue: BlockingDeque[AnyRef]) extends Actor with FSM[Int, TestAc
  */
 trait TestKit {
 
-  private val queue = new LinkedBlockingDeque[AnyRef]()
+  import TestActor.{ Message, RealMessage, NullMessage }
+
+  private val queue = new LinkedBlockingDeque[Message]()
+  private[akka] var lastMessage: Message = NullMessage
 
   /**
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  protected val testActor = actorOf(new TestActor(queue)).start()
+  implicit val testActor = actorOf(new TestActor(queue)).start()
 
   /**
    * Implicit sender reference so that replies are possible for messages sent
    * from the test class.
    */
-  protected implicit val senderOption = Some(testActor)
+  @deprecated("will be removed after 1.2, replaced by implicit testActor", "1.2")
+  val senderOption = Some(testActor)
 
   private var end: Duration = Duration.Inf
   /*
@@ -182,6 +196,14 @@ trait TestKit {
    * Same as calling `within(0 seconds, max)(f)`.
    */
   def within[T](max: Duration)(f: ⇒ T): T = within(0 seconds, max)(f)
+
+  /**
+   * Send reply to the last dequeued message. Will throw
+   * IllegalActorStateException if no message has been dequeued, yet. Dequeuing
+   * means reception of the message as part of an expect... or receive... call,
+   * not reception by the testActor.
+   */
+  def reply(msg: AnyRef) { lastMessage.channel ! msg }
 
   /**
    * Same as `expectMsg`, but takes the maximum wait time from the innermost
@@ -396,16 +418,21 @@ trait TestKit {
    */
   def receiveWhile[T](max: Duration)(f: PartialFunction[AnyRef, T]): Seq[T] = {
     val stop = now + max
+    var msg: Message = NullMessage
 
     @tailrec
     def doit(acc: List[T]): List[T] = {
-      receiveOne(stop - now) match {
-        case null ⇒
+      receiveOne(stop - now)
+      lastMessage match {
+        case NullMessage ⇒
+          lastMessage = msg
           acc.reverse
-        case o if (f isDefinedAt o) ⇒
+        case RealMessage(o, _) if (f isDefinedAt o) ⇒
+          msg = lastMessage
           doit(f(o) :: acc)
-        case o ⇒
-          queue.offerFirst(o)
+        case RealMessage(o, _) ⇒
+          queue.offerFirst(lastMessage)
+          lastMessage = msg
           acc.reverse
       }
     }
@@ -415,7 +442,10 @@ trait TestKit {
     ret
   }
 
-  private def receiveN(n: Int, stop: Duration): Seq[AnyRef] = {
+  /**
+   * Receive N messages in a row before the given deadline.
+   */
+  def receiveN(n: Int, stop: Duration): Seq[AnyRef] = {
     for { x ← 1 to n } yield {
       val timeout = stop - now
       val o = receiveOne(timeout)
@@ -424,17 +454,65 @@ trait TestKit {
     }
   }
 
-  private def receiveOne(max: Duration): AnyRef = {
-    if (max == 0.seconds) {
-      queue.pollFirst
-    } else if (max.finite_?) {
-      queue.pollFirst(max.length, max.unit)
-    } else {
-      queue.takeFirst
+  /**
+   * Receive one message from the internal queue of the TestActor. If the given
+   * duration is zero, the queue is polled (non-blocking).
+   */
+  def receiveOne(max: Duration): AnyRef = {
+    val message =
+      if (max == 0.seconds) {
+        queue.pollFirst
+      } else if (max.finite_?) {
+        queue.pollFirst(max.length, max.unit)
+      } else {
+        queue.takeFirst
+      }
+    message match {
+      case null ⇒
+        lastMessage = NullMessage
+        null
+      case RealMessage(msg, _) ⇒
+        lastMessage = message
+        msg
     }
   }
 
   private def format(u: TimeUnit, d: Duration) = "%.3f %s".format(d.toUnit(u), u.toString.toLowerCase)
 }
 
-// vim: set ts=2 sw=2 et:
+/**
+ * TestKit-based probe which allows sending, reception and reply.
+ */
+class TestProbe extends TestKit {
+
+  /**
+   * Shorthand to get the testActor.
+   */
+  def ref = testActor
+
+  /**
+   * Send message to an actor while using the probe's TestActor as the sender.
+   * Replies will be available for inspection with all of TestKit's assertion
+   * methods.
+   */
+  def send(actor: ActorRef, msg: AnyRef) = {
+    actor ! msg
+  }
+
+  /**
+   * Forward this message as if in the TestActor's receive method with self.forward.
+   */
+  def forward(actor: ActorRef, msg: AnyRef = lastMessage.msg) {
+    actor.!(msg)(lastMessage.channel)
+  }
+
+  /**
+   * Get channel of last received message.
+   */
+  def channel = lastMessage.channel
+
+}
+
+object TestProbe {
+  def apply() = new TestProbe
+}

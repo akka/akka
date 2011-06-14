@@ -8,7 +8,7 @@ import akka.dispatch.Dispatchers
 import akka.actor.Actor
 import Actor._
 
-object ThreadBasedActorSpec {
+object PinnedActorSpec {
   class TestActor extends Actor {
     self.dispatcher = Dispatchers.newPinnedDispatcher(self)
 
@@ -21,8 +21,8 @@ object ThreadBasedActorSpec {
   }
 }
 
-class ThreadBasedActorSpec extends JUnitSuite {
-  import ThreadBasedActorSpec._
+class PinnedActorSpec extends JUnitSuite {
+  import PinnedActorSpec._
 
   private val unit = TimeUnit.MILLISECONDS
 
@@ -43,7 +43,7 @@ class ThreadBasedActorSpec extends JUnitSuite {
   @Test
   def shouldSendReplySync = {
     val actor = actorOf[TestActor].start()
-    val result = (actor !! ("Hello", 10000)).as[String]
+    val result = (actor.?("Hello", 10000)).as[String]
     assert("World" === result.get)
     actor.stop()
   }
@@ -51,8 +51,8 @@ class ThreadBasedActorSpec extends JUnitSuite {
   @Test
   def shouldSendReplyAsync = {
     val actor = actorOf[TestActor].start()
-    val result = actor !! "Hello"
-    assert("World" === result.get.asInstanceOf[String])
+    val result = (actor ? "Hello").as[String]
+    assert("World" === result.get)
     actor.stop()
   }
 
@@ -60,7 +60,7 @@ class ThreadBasedActorSpec extends JUnitSuite {
   def shouldSendReceiveException = {
     val actor = actorOf[TestActor].start()
     try {
-      actor !! "Failure"
+      (actor ? "Failure").get
       fail("Should have thrown an exception")
     } catch {
       case e ⇒

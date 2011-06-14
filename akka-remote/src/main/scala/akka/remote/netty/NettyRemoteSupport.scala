@@ -4,7 +4,7 @@
 
 package akka.remote.netty
 
-import akka.dispatch.{ DefaultPromise, Promise, Future }
+import akka.dispatch.{ ActorPromise, DefaultPromise, Promise, Future }
 import akka.remote.{ MessageSerializer, RemoteClientSettings, RemoteServerSettings }
 import akka.remote.protocol.RemoteProtocol._
 import akka.serialization.RemoteActorSerialization
@@ -917,8 +917,7 @@ class RemoteServerHandler(
         else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(
           message,
           request.getActorInfo.getTimeout,
-          None,
-          Some(new DefaultPromise[Any](request.getActorInfo.getTimeout).
+          new ActorPromise(request.getActorInfo.getTimeout).
             onComplete(_.value.get match {
               case l: Left[Throwable, Any] ⇒ write(channel, createErrorReplyMessage(l.a, request))
               case r: Right[Throwable, Any] ⇒
@@ -935,7 +934,7 @@ class RemoteServerHandler(
                 if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
 
                 write(channel, RemoteEncoder.encode(messageBuilder.build))
-            })))
+            }))
     }
   }
 
