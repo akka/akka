@@ -31,7 +31,7 @@ class RoundRobin1ReplicaMultiJvmNode1 extends WordSpec with MustMatchers with Be
   import RoundRobin1ReplicaMultiJvmSpec._
 
   private var bookKeeper: BookKeeper = _
-  private var localBookKeeper: LocalBookKeeper = _
+  //  private var localBookKeeper: LocalBookKeeper = _
 
   "A cluster" must {
 
@@ -55,13 +55,13 @@ class RoundRobin1ReplicaMultiJvmNode1 extends WordSpec with MustMatchers with Be
 
   override def beforeAll() = {
     Cluster.startLocalCluster()
-    LocalBookKeeperEnsemble.start()
+    //    LocalBookKeeperEnsemble.start()
   }
 
   override def afterAll() = {
     Cluster.shutdownLocalCluster()
-    TransactionLog.shutdown()
-    LocalBookKeeperEnsemble.shutdown()
+    //    TransactionLog.shutdown()
+    //    LocalBookKeeperEnsemble.shutdown()
   }
 }
 

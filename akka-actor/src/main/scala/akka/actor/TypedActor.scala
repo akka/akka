@@ -41,15 +41,15 @@ object TypedActor {
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
-        implicit val timeout = Actor.Timeout(actor.timeout)
+        val timeout = Actor.Timeout(actor.timeout)
         MethodCall(method, args) match {
           case m if m.isOneWay ⇒
             actor ! m
             null
           case m if m.returnsFuture_? ⇒
-            actor ? m
+            actor ? (m, timeout)
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
-            val f = actor ? m
+            val f = actor ? (m, timeout)
             try { f.await } catch { case _: FutureTimeoutException ⇒ }
             f.value match {
               case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
@@ -57,7 +57,7 @@ object TypedActor {
               case Some(Left(ex))               ⇒ throw ex
             }
           case m ⇒
-            (actor ? m).get.asInstanceOf[AnyRef]
+            (actor ? (m, timeout)).get.asInstanceOf[AnyRef]
         }
     }
   }

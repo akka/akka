@@ -11,7 +11,7 @@ class ZooKeeperStorageSpec extends WordSpec with MustMatchers with BeforeAndAfte
   val logPath = "_akka_cluster/log"
   var zkServer: ZkServer = _
   var zkClient: AkkaZkClient = _
-
+  /*
   override def beforeAll() {
     try {
       zkServer = Cluster.startLocalCluster(dataPath, logPath)
@@ -30,10 +30,10 @@ class ZooKeeperStorageSpec extends WordSpec with MustMatchers with BeforeAndAfte
     Cluster.shutdownLocalCluster()
     Actor.registry.local.shutdownAll()
   }
-
+*/
   "unversioned load" must {
     "throw MissingDataException if non existing key" in {
-      val store = new ZooKeeperStorage(zkClient)
+      //      val store = new ZooKeeperStorage(zkClient)
 
       //try {
       //  store.load("foo")

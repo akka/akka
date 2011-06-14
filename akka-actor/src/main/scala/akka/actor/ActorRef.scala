@@ -248,7 +248,8 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def ask(message: AnyRef, timeout: Long, sender: ActorRef): Future[AnyRef] = ?(message)(sender, Actor.Timeout(timeout)).asInstanceOf[Future[AnyRef]]
+  def ask(message: AnyRef, timeout: Long, sender: ActorRef): Future[AnyRef] =
+    ?(message, Actor.Timeout(timeout))(sender).asInstanceOf[Future[AnyRef]]
 
   /**
    * Akka Java API. <p/>
@@ -758,7 +759,8 @@ class LocalActorRef private[akka] (
     }
 
     def tooManyRestarts() {
-      notifySupervisorWithMessage(MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason))
+      notifySupervisorWithMessage(
+        MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason))
       stop()
     }
 
@@ -1170,7 +1172,7 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
   /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
    */
-  def ?(message: Any)(implicit channel: UntypedChannel = NullChannel, timeout: Actor.Timeout = Actor.defaultTimeout): Future[Any] = {
+  def ?(message: Any, timeout: Actor.Timeout = Actor.defaultTimeout)(implicit channel: UntypedChannel = NullChannel): Future[Any] = {
     if (isRunning) postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout.duration.toMillis, channel)
     else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
@@ -1184,7 +1186,8 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
   def forward(message: Any)(implicit channel: ForwardableChannel) = {
     if (isRunning) {
       postMessageToMailbox(message, channel.channel)
-    } else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start()' before using it")
+    } else throw new ActorInitializationException(
+      "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
 
   /**

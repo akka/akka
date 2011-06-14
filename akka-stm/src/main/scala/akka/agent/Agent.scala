@@ -120,7 +120,7 @@ class Agent[T](initialValue: T) {
    * within the given timeout
    */
   def alter(f: T ⇒ T)(timeout: Long): Future[T] = {
-    def dispatch = updater.?(Update(f))(timeout = timeout).asInstanceOf[Future[T]]
+    def dispatch = updater.?(Update(f), timeout).asInstanceOf[Future[T]]
     if (Stm.activeTransaction) {
       val result = new DefaultPromise[T](timeout)
       get //Join xa
@@ -168,7 +168,7 @@ class Agent[T](initialValue: T) {
     send((value: T) ⇒ {
       suspend
       val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this)).start()
-      result completeWith threadBased.?(Update(f))(timeout = timeout).asInstanceOf[Future[T]]
+      result completeWith threadBased.?(Update(f), timeout).asInstanceOf[Future[T]]
       value
     })
     result

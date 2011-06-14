@@ -180,7 +180,7 @@ class FutureSpec extends JUnitSuite {
       }).start()
     }
     val timeout = 10000
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200))(timeout = timeout).mapTo[Int] }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), timeout).mapTo[Int] }
     assert(Futures.fold(0, timeout)(futures)(_ + _).await.result.get === 45)
   }
 
@@ -191,7 +191,7 @@ class FutureSpec extends JUnitSuite {
         def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); self reply_? add }
       }).start()
     }
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200))(timeout = 10000).mapTo[Int] }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), 10000).mapTo[Int] }
     assert(futures.foldLeft(Future(0))((fr, fa) ⇒ for (r ← fr; a ← fa) yield (r + a)).get === 45)
   }
 
@@ -208,7 +208,7 @@ class FutureSpec extends JUnitSuite {
       }).start()
     }
     val timeout = 10000
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100))(timeout = timeout).mapTo[Int] }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100), timeout).mapTo[Int] }
     assert(Futures.fold(0, timeout)(futures)(_ + _).await.exception.get.getMessage === "shouldFoldResultsWithException: expected")
   }
 
@@ -225,7 +225,7 @@ class FutureSpec extends JUnitSuite {
       }).start()
     }
     val timeout = 10000
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200))(timeout = timeout).mapTo[Int] }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), timeout).mapTo[Int] }
     assert(Futures.reduce(futures, timeout)(_ + _).get === 45)
   }
 
@@ -242,7 +242,7 @@ class FutureSpec extends JUnitSuite {
       }).start()
     }
     val timeout = 10000
-    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100))(timeout = timeout).mapTo[Int] }
+    def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100), timeout).mapTo[Int] }
     assert(Futures.reduce(futures, timeout)(_ + _).await.exception.get.getMessage === "shouldFoldResultsWithException: expected")
   }
 

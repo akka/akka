@@ -66,7 +66,7 @@ object SupervisorSpec {
     }
 
     override def receive = {
-      case Die ⇒ (temp.?(Die)(timeout = TimeoutMillis)).get
+      case Die ⇒ (temp.?(Die, TimeoutMillis)).get
     }
   }
 
@@ -200,7 +200,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
   }
 
   def ping(pingPongActor: ActorRef) = {
-    (pingPongActor.?(Ping)(timeout = TimeoutMillis)).as[String].getOrElse("nil") must be === PongMessage
+    (pingPongActor.?(Ping, TimeoutMillis)).as[String].getOrElse("nil") must be === PongMessage
     messageLogPoll must be === PingMessage
   }
 
@@ -215,7 +215,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       val master = actorOf[Master].start()
 
       intercept[RuntimeException] {
-        (master.?(Die)(timeout = TimeoutMillis)).get
+        (master.?(Die, TimeoutMillis)).get
       }
 
       sleepFor(1 second)
@@ -226,7 +226,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       val (temporaryActor, supervisor) = temporaryActorAllForOne
 
       intercept[RuntimeException] {
-        (temporaryActor.?(Die)(timeout = TimeoutMillis)).get
+        (temporaryActor.?(Die, TimeoutMillis)).get
       }
 
       sleepFor(1 second)
@@ -374,13 +374,13 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
             Supervise(dyingActor, Permanent) :: Nil))
 
       intercept[Exception] {
-        (dyingActor.?(Die)(timeout = TimeoutMillis)).get
+        (dyingActor.?(Die, TimeoutMillis)).get
       }
 
       // give time for restart
       sleepFor(3 seconds)
 
-      (dyingActor.?(Ping)(timeout = TimeoutMillis)).as[String].getOrElse("nil") must be === PongMessage
+      (dyingActor.?(Ping, TimeoutMillis)).as[String].getOrElse("nil") must be === PongMessage
 
       inits.get must be(3)
 
