@@ -676,7 +676,7 @@ class DefaultClusterNode private[akka] (
 
         case None ⇒
           val error = new ClusterException(
-            "Operation to instantiate replicas throughout the cluster timed out, cause of error unknow")
+            "Operation to instantiate replicas throughout the cluster timed out")
           EventHandler.error(error, this, error.toString)
           throw error
       }
