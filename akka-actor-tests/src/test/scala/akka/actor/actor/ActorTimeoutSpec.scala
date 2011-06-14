@@ -35,6 +35,15 @@ class ActorTimeoutSpec
       }
     }
 
+    "use implicitly supplied timeout" in {
+      implicit val timeout = Actor.Timeout(testTimeout)
+      within(testTimeout - 100.millis, testTimeout + 300.millis) {
+        val f = (echo ? "hallo").mapTo[String]
+        intercept[FutureTimeoutException] { f.await }
+        f.value must be(None)
+      }
+    }
+
     "use explicitly supplied timeout" in {
       within(testTimeout - 100.millis, testTimeout + 300.millis) {
         (echo.?("hallo", testTimeout)).as[String] must be(None)
