@@ -460,21 +460,7 @@ sealed trait Future[+T] {
    * Creates a new Future[A] which is completed with this Future's result if
    * that conforms to A's erased type or a ClassCastException otherwise.
    */
-  final def mapTo[A](implicit m: Manifest[A]): Future[A] = {
-    val fa = new DefaultPromise[A](timeoutInNanos, NANOS)
-    onComplete { ft ⇒
-      fa complete (ft.value.get match {
-        case l: Left[_, _] ⇒ l.asInstanceOf[Either[Throwable, A]]
-        case Right(t) ⇒
-          try {
-            Right(BoxedType(m.erasure).cast(t).asInstanceOf[A])
-          } catch {
-            case e: ClassCastException ⇒ Left(e)
-          }
-      })
-    }
-    fa
-  }
+  def mapTo[A](implicit m: Manifest[A]): Future[A]
 
   /**
    * Creates a new Future by applying a function to the successful result of
@@ -807,6 +793,22 @@ class DefaultPromise[T](timeout: Long, timeunit: TimeUnit) extends Promise[T] {
     future
   }
 
+  final def mapTo[A](implicit m: Manifest[A]): Future[A] = {
+    val fa = new DefaultPromise[A](timeoutInNanos, NANOS)
+    onComplete { ft ⇒
+      fa complete (ft.value.get match {
+        case l: Left[_, _] ⇒ l.asInstanceOf[Either[Throwable, A]]
+        case Right(t) ⇒
+          try {
+            Right(BoxedType(m.erasure).cast(t).asInstanceOf[A])
+          } catch {
+            case e: ClassCastException ⇒ Left(e)
+          }
+      })
+    }
+    fa
+  }
+
   final def flatMap[A](f: T ⇒ Future[A]): Future[A] = {
     val future = new DefaultPromise[A](timeoutInNanos, NANOS)
     onComplete {
@@ -936,6 +938,16 @@ sealed class KeptPromise[T](suppliedValue: Either[Throwable, T]) extends Promise
         case e: Exception ⇒
           EventHandler.error(e, this, e.getMessage)
           Left(e)
+      })
+    case _ ⇒ this.asInstanceOf[KeptPromise[A]]
+  }
+
+  final def mapTo[A](implicit m: Manifest[A]): Future[A] = value.get match {
+    case Right(t) ⇒
+      new KeptPromise(try {
+        Right(BoxedType(m.erasure).cast(t).asInstanceOf[A])
+      } catch {
+        case e: ClassCastException ⇒ Left(e)
       })
     case _ ⇒ this.asInstanceOf[KeptPromise[A]]
   }
