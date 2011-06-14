@@ -62,22 +62,8 @@ class FutureSpec extends JUnitSuite {
   def shouldFutureCompose {
     val actor1 = actorOf[TestActor].start()
     val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply s.toUpperCase } }).start()
-    val future1 = actor1 ? "Hello" mapTo manifest[String] flatMap ((s: String) ⇒ actor2 ? s)
-    val future2 = actor1 ? "Hello" mapTo manifest[String] flatMap (actor2 ? (_: String))
-    val future3 = actor1 ? "Hello" mapTo manifest[Int] flatMap (actor2 ? (_: Int))
-    assert((future1.get: Any) === "WORLD")
-    assert((future2.get: Any) === "WORLD")
-    intercept[ClassCastException] { future3.get }
-    actor1.stop()
-    actor2.stop()
-  }
-
-  @Test
-  def shouldFutureComposePatternMatch {
-    val actor1 = actorOf[TestActor].start()
-    val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply s.toUpperCase } }).start()
-    val future1 = actor1 ? "Hello" collect { case (s: String) ⇒ s } flatMap (actor2 ? _)
-    val future2 = actor1 ? "Hello" collect { case (n: Int) ⇒ n } flatMap (actor2 ? _)
+    val future1 = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
+    val future2 = actor1 ? "Hello" flatMap { case i: Int ⇒ actor2 ? i }
     assert((future1.get: Any) === "WORLD")
     intercept[MatchError] { future2.get }
     actor1.stop()
@@ -124,15 +110,15 @@ class FutureSpec extends JUnitSuite {
     }).start()
 
     val future1 = for {
-      Res(a: Int) ← actor.?(Req("Hello")).mapTo[Res[Int]]
-      Res(b: String) ← actor.?(Req(a)).mapTo[Res[String]]
-      Res(c: String) ← actor.?(Req(7)).mapTo[Res[String]]
+      Res(a: Int) ← actor ? Req("Hello")
+      Res(b: String) ← actor ? Req(a)
+      Res(c: String) ← actor ? Req(7)
     } yield b + "-" + c
 
     val future2 = for {
-      Res(a: Int) ← actor.?(Req("Hello"))
-      Res(b: Int) ← actor.?(Req(a)).mapTo[Res[Int]]
-      Res(c: Int) ← actor.?(Req(7)).mapTo[Res[Int]]
+      Res(a: Int) ← actor ? Req("Hello")
+      Res(b: Int) ← actor ? Req(a)
+      Res(c: Int) ← actor ? Req(7)
     } yield b + "-" + c
 
     assert(future1.get === "10-14")

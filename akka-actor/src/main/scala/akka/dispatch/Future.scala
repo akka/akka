@@ -575,7 +575,7 @@ sealed trait Future[+T] {
     }
   }
 
-  /*final def withFilter(p: T ⇒ Boolean) = new FutureWithFilter[T](this, p)
+  final def withFilter(p: T ⇒ Boolean) = new FutureWithFilter[T](this, p)
 
   final class FutureWithFilter[+A](self: Future[A], p: A ⇒ Boolean) {
     def foreach(f: A ⇒ Unit): Unit = self filter p foreach f
@@ -584,8 +584,7 @@ sealed trait Future[+T] {
     def withFilter(q: A ⇒ Boolean): FutureWithFilter[A] = new FutureWithFilter[A](self, x ⇒ p(x) && q(x))
   }
 
-  final def filter(p: T ⇒ Boolean): Future[T] = { */
-  final def filter(p: Any ⇒ Boolean): Future[T] = {
+  final def filter(p: T ⇒ Boolean): Future[T] = {
     val f = new DefaultPromise[T](timeoutInNanos, NANOS)
     onComplete { ft ⇒
       val optv = ft.value
@@ -620,17 +619,6 @@ sealed trait Future[+T] {
       else r.right.toOption
     } else None
   }
-
-  /* Java API */
-  final def onComplete[A >: T](proc: Procedure[Future[A]]): this.type = onComplete(proc(_))
-
-  final def map[A >: T, B](f: JFunc[A, B]): Future[B] = map(f(_))
-
-  final def flatMap[A >: T, B](f: JFunc[A, Future[B]]): Future[B] = flatMap(f(_))
-
-  final def foreach[A >: T](proc: Procedure[A]): Unit = foreach(proc(_))
-
-  final def filter(p: JFunc[Any, Boolean]): Future[Any] = filter(p(_))
 
 }
 
