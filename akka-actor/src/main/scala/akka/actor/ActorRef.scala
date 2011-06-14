@@ -1172,8 +1172,9 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
   /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
    */
-  def ?(message: Any, timeout: Actor.Timeout = Actor.defaultTimeout)(implicit channel: UntypedChannel = NullChannel): Future[Any] = {
-    if (isRunning) postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout.duration.toMillis, channel)
+  def ?(message: Any, timeout: Actor.Timeout = Actor.noTimeoutGiven)(implicit channel: UntypedChannel = NullChannel, implicitTimeout: Actor.Timeout = Actor.defaultTimeout): Future[Any] = {
+    val realTimeout = if (timeout eq Actor.noTimeoutGiven) implicitTimeout else timeout
+    if (isRunning) postMessageToMailboxAndCreateFutureResultWithTimeout(message, realTimeout.duration.toMillis, channel)
     else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
