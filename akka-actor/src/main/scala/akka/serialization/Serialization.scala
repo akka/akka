@@ -33,7 +33,7 @@ object Serialization {
       case _ ⇒
         getDefaultSerializer match {
           case Some(s: Serializer) ⇒ Right(s)
-          case None                ⇒ Left(new Exception("No default serializer found for " + clazz))
+          case None                ⇒ Left(NoSerializerFoundException("No default serializer found for " + clazz))
         }
     }
   }
