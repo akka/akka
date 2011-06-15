@@ -18,7 +18,10 @@ The event-based Actors currently consume ~600 bytes per Actor which means that y
 Default dispatcher
 ------------------
 
-For most scenarios the default settings are the best. Here we have one single event-based dispatcher for all Actors created. The dispatcher used is globalDispatcher in akka.dispatch.Dispatchers.
+For most scenarios the default settings are the best. Here we have one single event-based dispatcher for all Actors created. The default dispatcher used is "GlobalDispatcher" which also is retrievable in ``akka.dispatch.Dispatchers.globalDispatcher``.
+The Dispatcher specified in the akka.conf as "default-dispatcher" is  as ``Dispatchers.defaultGlobalDispatcher``.
+
+The "GlobalDispatcher" is not configurable but will use default parameters given by Akka itself.
 
 But if you feel that you are starting to contend on the single dispatcher (the 'Executor' and its queue) or want to group a specific set of Actors for a dedicated dispatcher for better flexibility and configurability then you can override the defaults and define your own dispatcher. See below for details on which ones are available and how they can be configured.
 
