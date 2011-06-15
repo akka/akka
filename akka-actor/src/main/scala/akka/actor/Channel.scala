@@ -8,14 +8,11 @@ package akka.actor
  * Abstraction for unification of sender and senderFuture for later reply.
  * Can be stored away and used at a later point in time.
  *
- * Channel cannot be contravariant because of Future providing its value in
- * covariant position.
- *
  * The possible reply channel which can be passed into ! and safe_! is always
  * untyped, as there is no way to utilize its real static type without
  * requiring runtime-costly manifests.
  */
-trait Channel[T] {
+trait Channel[-T] {
 
   /**
    * Scala API. <p/>
@@ -105,7 +102,7 @@ trait Channel[T] {
  * i.e. ! is not guaranteed to fail (e.g. NullChannel would be a
  * counter-example).
  */
-trait AvailableChannel[T] { self: Channel[T] ⇒
+trait AvailableChannel[-T] { self: Channel[T] ⇒
   def safe_!(msg: T)(implicit channel: UntypedChannel = NullChannel): Boolean = {
     if (isUsable) {
       try {

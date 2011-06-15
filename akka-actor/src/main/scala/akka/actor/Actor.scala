@@ -154,7 +154,7 @@ object Actor extends ListenerManagement {
 
   private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
   val defaultTimeout = Timeout(TIMEOUT)
-  val noTimeoutGiven = Timeout(-123456789)
+  val noTimeoutGiven = Timeout(Long.MinValue)
   private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**

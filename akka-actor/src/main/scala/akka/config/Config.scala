@@ -122,7 +122,7 @@ object Config {
 
   val serializers = config.getSection("akka.actor.serializers").map(_.map).getOrElse(Map("default" -> "akka.serialization.JavaSerializer"))
 
-  val bindings = config.getSection("akka.actor.bindings")
+  val bindings = config.getSection("akka.actor.serialization-bindings")
     .map(_.map)
     .map(m ⇒ Map() ++ m.map { case (k, v: List[String]) ⇒ Map() ++ v.map((_, k)) }.flatten)
 
