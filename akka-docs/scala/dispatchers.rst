@@ -65,12 +65,10 @@ The 'PinnedDispatcher' binds a dedicated OS thread to each specific Actor. The m
 
 It would normally by used from within the actor like this:
 
-.. code-block:: java
+.. code-block:: scala
 
   class MyActor extends Actor {
-    public MyActor() {
       self.dispatcher = Dispatchers.newPinnedDispatcher(self)
-    }
     ...
   }
 
