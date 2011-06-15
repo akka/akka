@@ -13,6 +13,8 @@ import akka.japi.{ Option ⇒ JOption }
 import akka.util.Duration
 import akka.dispatch.{ Dispatchers, Future, KeptPromise }
 import akka.routing.CyclicIterator
+import java.io.{ ObjectInputStream, ObjectOutputStream, ByteArrayOutputStream }
+import akka.actor.TypedActorSpec.Foo
 
 object TypedActorSpec {
   trait Foo {
@@ -39,7 +41,7 @@ object TypedActorSpec {
     def read(): Int
   }
 
-  class Bar extends Foo {
+  class Bar extends Foo with Serializable {
 
     def pigdog = "Pigdog"
 
@@ -284,6 +286,42 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       for ((i, r) ← results) r.get must be("Pigdog" + i)
 
       for (t ← thais) mustStop(t)
+    }
+
+    "be able to serialize and deserialize invocations" in {
+      import java.io._
+      val m = MethodCall(classOf[Foo].getDeclaredMethod("pigdog"), Array[AnyRef]())
+      val baos = new ByteArrayOutputStream(8192 * 4)
+      val out = new ObjectOutputStream(baos)
+
+      out.writeObject(m)
+      out.close()
+
+      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+
+      val mNew = in.readObject().asInstanceOf[MethodCall]
+
+      mNew.method must be(m.method)
+    }
+
+    "be able to serialize and deserialize invocations' parameters" in {
+      import java.io._
+      val someFoo: Foo = new Bar
+      val m = MethodCall(classOf[Foo].getDeclaredMethod("futureComposePigdogFrom", Array[Class[_]](classOf[Foo]): _*), Array[AnyRef](someFoo))
+      val baos = new ByteArrayOutputStream(8192 * 4)
+      val out = new ObjectOutputStream(baos)
+
+      out.writeObject(m)
+      out.close()
+
+      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+
+      val mNew = in.readObject().asInstanceOf[MethodCall]
+
+      mNew.method must be(m.method)
+      mNew.parameters must have size 1
+      mNew.parameters(0) must not be null
+      mNew.parameters(0).getClass must be === classOf[Bar]
     }
   }
 }
