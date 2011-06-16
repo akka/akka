@@ -12,6 +12,7 @@ import akka.dispatch.Promise
 import akka.serialization._
 import akka.AkkaException
 
+import scala.collection.mutable.ConcurrentMap
 import scala.reflect.BeanProperty
 
 import java.net.InetSocketAddress
@@ -25,15 +26,15 @@ trait RemoteModule {
   def optimizeLocalScoped_?(): Boolean //Apply optimizations for remote operations in local scope
   protected[akka] def notifyListeners(message: ⇒ Any): Unit
 
-  private[akka] def actors: ConcurrentHashMap[String, ActorRef] // FIXME need to invalidate this cache on replication
-  private[akka] def actorsByUuid: ConcurrentHashMap[String, ActorRef] // FIXME remove actorsByUuid map?
-  private[akka] def actorsFactories: ConcurrentHashMap[String, () ⇒ ActorRef] // FIXME what to do wit actorsFactories map?
+  private[akka] def actors: ConcurrentMap[String, ActorRef] // FIXME need to invalidate this cache on replication
+  private[akka] def actorsByUuid: ConcurrentMap[String, ActorRef] // FIXME remove actorsByUuid map?
+  private[akka] def actorsFactories: ConcurrentMap[String, () ⇒ ActorRef] // FIXME what to do wit actorsFactories map?
 
-  private[akka] def findActorByAddress(address: String): ActorRef = actors.get(address)
+  private[akka] def findActorByAddress(address: String): ActorRef = actors(address)
 
-  private[akka] def findActorByUuid(uuid: String): ActorRef = actorsByUuid.get(uuid)
+  private[akka] def findActorByUuid(uuid: String): ActorRef = actorsByUuid(uuid)
 
-  private[akka] def findActorFactory(address: String): () ⇒ ActorRef = actorsFactories.get(address)
+  private[akka] def findActorFactory(address: String): () ⇒ ActorRef = actorsFactories(address)
 
   private[akka] def findActorByAddressOrUuid(address: String, uuid: String): ActorRef = {
     var actorRefOrNull = if (address.startsWith(UUID_PREFIX)) findActorByUuid(address.substring(UUID_PREFIX.length))
@@ -165,6 +166,7 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
 }
 
 abstract class RemoteSupport extends ListenerManagement with RemoteServerModule with RemoteClientModule {
+  import scala.collection.JavaConversions._
 
   val eventHandler: ActorRef = {
     implicit object format extends StatelessActorFormat[RemoteEventHandler]
@@ -186,9 +188,9 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   protected override def manageLifeCycleOfListeners = false
   protected[akka] override def notifyListeners(message: ⇒ Any): Unit = super.notifyListeners(message)
 
-  private[akka] val actors = new ConcurrentHashMap[String, ActorRef]
-  private[akka] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
-  private[akka] val actorsFactories = new ConcurrentHashMap[String, () ⇒ ActorRef]
+  private[akka] val actors: ConcurrentMap[String, ActorRef] = new ConcurrentHashMap[String, ActorRef]
+  private[akka] val actorsByUuid: ConcurrentMap[String, ActorRef] = new ConcurrentHashMap[String, ActorRef]
+  private[akka] val actorsFactories: ConcurrentMap[String, () ⇒ ActorRef] = new ConcurrentHashMap[String, () ⇒ ActorRef]
 
   def clear {
     actors.clear

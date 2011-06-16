@@ -42,7 +42,7 @@ import org.jboss.netty.handler.timeout.{ ReadTimeoutHandler, ReadTimeoutExceptio
 import org.jboss.netty.handler.execution.{ OrderedMemoryAwareThreadPoolExecutor, ExecutionHandler }
 import org.jboss.netty.util.{ TimerTask, Timeout, HashedWheelTimer }
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{ ConcurrentMap, HashMap }
 import scala.collection.JavaConversions._
 
 import java.net.InetSocketAddress
@@ -155,7 +155,7 @@ abstract class RemoteClient private[akka] (
     remoteAddress.getAddress.getHostAddress + "::" +
     remoteAddress.getPort
 
-  protected val futures = new ConcurrentHashMap[Uuid, Promise[_]]
+  protected val futures: ConcurrentMap[Uuid, Promise[_]] = new ConcurrentHashMap[Uuid, Promise[_]]
   protected val pendingRequests = {
     if (transactionLogCapacity < 0) new ConcurrentLinkedQueue[(Boolean, Uuid, RemoteMessageProtocol)]
     else new LinkedBlockingQueue[(Boolean, Uuid, RemoteMessageProtocol)](transactionLogCapacity)
@@ -243,7 +243,7 @@ abstract class RemoteClient private[akka] (
               throw new RemoteClientMessageBufferException("Buffer limit [" + transactionLogCapacity + "] reached")
           } else {
             val f = futures.remove(futureUuid) // Clean up future
-            if (f ne null) f.completeWithException(future.getCause)
+            f foreach (_ completeWithException (future.getCause))
           }
         }
 
@@ -286,7 +286,7 @@ abstract class RemoteClient private[akka] (
         if (future.isCancelled) futures.remove(futureUuid) // Clean up future
         else if (!future.isSuccess) {
           val f = futures.remove(futureUuid) // Clean up future
-          if (f ne null) f.completeWithException(future.getCause)
+          f foreach (_ completeWithException (future.getCause))
           notifyListeners(RemoteClientWriteFailed(message, future.getCause, module, remoteAddress))
         }
       }
@@ -675,7 +675,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule â‡
     register(actorRef.uuid.toString, actorRef, actorsByUuid)
   }
 
-  private def register[Key](id: Key, actorRef: ActorRef, registry: ConcurrentHashMap[Key, ActorRef]) {
+  private def register[Key](id: Key, actorRef: ActorRef, registry: ConcurrentMap[Key, ActorRef]) {
     if (_isRunning.isOn) {
       registry.put(id, actorRef) //TODO change to putIfAbsent
       if (!actorRef.isRunning) actorRef.start()
@@ -691,7 +691,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule â‡
     registerPerSession(id, () â‡’ factory, actorsFactories)
   }
 
-  private def registerPerSession[Key](id: Key, factory: () â‡’ ActorRef, registry: ConcurrentHashMap[Key, () â‡’ ActorRef]) {
+  private def registerPerSession[Key](id: Key, factory: () â‡’ ActorRef, registry: ConcurrentMap[Key, () â‡’ ActorRef]) {
     if (_isRunning.isOn)
       registry.put(id, factory) //TODO change to putIfAbsent
   }
@@ -715,7 +715,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule â‡
     if (_isRunning.isOn) {
       if (id.startsWith(UUID_PREFIX)) actorsByUuid.remove(id.substring(UUID_PREFIX.length))
       else {
-        val actorRef = actors get id
+        val actorRef = actors(id)
         actorsByUuid.remove(actorRef.uuid, actorRef)
         actors.remove(id, actorRef)
       }
