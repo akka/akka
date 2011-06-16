@@ -268,3 +268,20 @@ An example output from this would be:
     [info] == multi-jvm / Test ==
     [info] == multi-jvm-run ==
     [success] Successful.
+
+NetworkFailureTest
+^^^^^^^^^^^^^^^^^^
+
+You can use the 'NetworkFailureTest' trait to test network failure. See the 'RemoteErrorHandlingNetworkTest' test. Your tests needs to end with 'NetworkTest'. They are disabled by default. To run them you need to enable a flag.
+
+Example:
+
+::
+
+  project akka-remote
+  set akka.test.network true
+  test-only akka.actor.remote.RemoteErrorHandlingNetworkTest
+
+It uses 'ipfw' for network management. Mac OSX comes with it installed but if you are on another platform you might need to install it yourself. Here is a port:
+
+`<http://info.iet.unipi.it/~luigi/dummynet>`_
