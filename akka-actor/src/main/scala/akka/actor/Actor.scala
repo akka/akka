@@ -317,12 +317,24 @@ object Actor extends ListenerManagement {
     newLocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], new UUID().toString)
   }
 
+  def localActorOf[T <: Actor: Manifest](address: String): ActorRef = {
+    newLocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], address)
+  }
+
   def localActorOf[T <: Actor](clazz: Class[T]): ActorRef = {
     newLocalActorRef(clazz, new UUID().toString)
   }
 
+  def localActorOf[T <: Actor](clazz: Class[T], address: String): ActorRef = {
+    newLocalActorRef(clazz, address)
+  }
+
   def localActorOf[T <: Actor](factory: ⇒ T): ActorRef = {
     new LocalActorRef(() ⇒ factory, new UUID().toString, Transient)
+  }
+
+  def localActorOf[T <: Actor](factory: ⇒ T, address: String): ActorRef = {
+    new LocalActorRef(() ⇒ factory, address, Transient)
   }
 
   /**

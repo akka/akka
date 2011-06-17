@@ -283,7 +283,7 @@ class DefaultClusterNode private[akka] (
 
   import Cluster._
 
-  lazy val remoteClientLifeCycleListener = actorOf(new Actor {
+  lazy val remoteClientLifeCycleListener = localActorOf(new Actor {
     def receive = {
       case RemoteClientError(cause, client, address) ⇒ client.shutdownClientModule()
       case RemoteClientDisconnected(client, address) ⇒ client.shutdownClientModule()
@@ -291,7 +291,7 @@ class DefaultClusterNode private[akka] (
     }
   }, "akka.cluster.RemoteClientLifeCycleListener").start()
 
-  lazy val remoteDaemon = actorOf(new RemoteClusterDaemon(this), RemoteClusterDaemon.ADDRESS).start()
+  lazy val remoteDaemon = localActorOf(new RemoteClusterDaemon(this), RemoteClusterDaemon.ADDRESS).start()
 
   lazy val remoteDaemonSupervisor = Supervisor(
     SupervisorConfig(
