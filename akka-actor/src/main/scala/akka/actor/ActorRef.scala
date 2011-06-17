@@ -575,7 +575,8 @@ class LocalActorRef private[akka] (
           currentMessage = null
           Actor.registry.unregister(this)
 
-          if (ClusterModule.isEnabled) Actor.remote.unregister(this)
+          // This lines can trigger cluster start which makes cluster ZK client hang trying to reconnect indefinitely
+          //if (ClusterModule.isEnabled) Actor.remote.unregister(this)
 
           setActorSelfFields(actorInstance.get, null)
         }

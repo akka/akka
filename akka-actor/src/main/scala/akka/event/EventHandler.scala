@@ -17,7 +17,7 @@ import akka.AkkaException
  * <p/>
  * Create, add and remove a listener:
  * <pre>
- * val eventHandlerListener = Actor.actorOf(new Actor {
+ * val eventHandlerListener = Actor.localActorOf(new Actor {
  *   self.dispatcher = EventHandler.EventHandlerDispatcher
  *
  *   def receive = {
@@ -111,7 +111,7 @@ object EventHandler extends ListenerManagement {
       defaultListeners foreach { listenerName ⇒
         try {
           ReflectiveAccess.getClassFor[Actor](listenerName) match {
-            case r: Right[_, Class[Actor]] ⇒ addListener(Actor.actorOf(r.b, listenerName).start())
+            case r: Right[_, Class[Actor]] ⇒ addListener(Actor.localActorOf(r.b).start())
             case l: Left[Exception, _]     ⇒ throw l.a
           }
         } catch {

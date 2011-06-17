@@ -499,7 +499,7 @@ sealed trait Future[+T] {
   def filter(p: T ⇒ Boolean): Future[T]
 
   /**
-   * Returns the current result, throws the exception is one has been raised, else returns None
+   * Returns the current result, throws the exception if one has been raised, else returns None
    */
   final def resultOrException: Option[T] = {
     val v = value
@@ -525,8 +525,14 @@ sealed trait Future[+T] {
 
 object Promise {
 
+  /**
+   * Creates a non-completed, new, Promise with the supplied timeout in milliseconds
+   */
   def apply[A](timeout: Long): Promise[A] = new DefaultPromise[A](timeout)
 
+  /**
+   * Creates a non-completed, new, Promise with the default timeout (akka.actor.timeout in conf)
+   */
   def apply[A](): Promise[A] = apply(Actor.TIMEOUT)
 
   /**
@@ -882,9 +888,7 @@ class DefaultPromise[T](timeout: Long, timeunit: TimeUnit) extends Promise[T] {
   private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
 }
 
-class ActorPromise(timeout: Long, timeunit: TimeUnit)
-  extends DefaultPromise[Any](timeout, timeunit)
-  with ForwardableChannel {
+class ActorPromise(timeout: Long, timeunit: TimeUnit) extends DefaultPromise[Any](timeout, timeunit) with ForwardableChannel {
   def this() = this(0, MILLIS)
   def this(timeout: Long) = this(timeout, MILLIS)
 
