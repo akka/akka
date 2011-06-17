@@ -661,6 +661,33 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers {
         assert(z.get === 42)
       }
 
+      "futureFlowLoops" in {
+        import Future.flow
+        import akka.util.cps._
+
+        val count = 10000
+
+        val promises = List.fill(count)(Promise[Int]())
+
+        flow {
+          var i = 0
+          val iter = promises.iterator
+          whileC(iter.hasNext) {
+            iter.next << i
+            i += 1
+          }
+        }
+
+        var i = 0
+        promises foreach { p ⇒
+          assert(p.get === i)
+          i += 1
+        }
+
+        assert(i === count)
+
+      }
+
       "ticket812FutureDispatchCleanup" in {
         val dispatcher = implicitly[MessageDispatcher]
         assert(dispatcher.pendingFutures === 0)
