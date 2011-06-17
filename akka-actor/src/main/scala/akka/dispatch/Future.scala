@@ -6,7 +6,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef }
+import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef, Scheduler }
 import akka.util.{ Duration, BoxedType }
 import akka.japi.{ Procedure, Function ⇒ JFunc }
 
@@ -412,6 +412,8 @@ sealed trait Future[+T] {
     }
   }
 
+  def onTimeout(func: Future[T] ⇒ Unit): this.type
+
   /**
    * Creates a new Future by applying a PartialFunction to the successful
    * result of this Future if a match is found, or else return a MatchError.
@@ -605,6 +607,7 @@ trait Promise[T] extends Future[T] {
  * The default concrete Future implementation.
  */
 class DefaultPromise[T](timeout: Long, timeunit: TimeUnit) extends Promise[T] {
+  self ⇒
 
   def this() = this(0, MILLIS)
 
@@ -720,6 +723,29 @@ class DefaultPromise[T](timeout: Long, timeunit: TimeUnit) extends Promise[T] {
     }
 
     if (notifyNow) notifyCompleted(func)
+
+    this
+  }
+
+  def onTimeout(func: Future[T] ⇒ Unit): this.type = {
+    _lock.lock
+    val runNow = try {
+      if (_value.isEmpty) {
+        if (!isExpired) {
+          val runnable = new Runnable {
+            def run() {
+              if (!isCompleted) func(self)
+            }
+          }
+          Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
+          false
+        } else true
+      } else false
+    } finally {
+      _lock.unlock
+    }
+
+    if (runNow) func(this)
 
     this
   }
@@ -899,6 +925,8 @@ sealed class KeptPromise[T](suppliedValue: Either[Throwable, T]) extends Promise
   def await: this.type = this
   def isExpired: Boolean = true
   def timeoutInNanos: Long = 0
+
+  final def onTimeout(func: Future[T] ⇒ Unit): this.type = this
 
   final def collect[A](pf: PartialFunction[Any, A]): Future[A] = value.get match {
     case Right(r) ⇒
