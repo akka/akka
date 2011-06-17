@@ -6,7 +6,7 @@ package akka.actor
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
-import akka.testing._
+import akka.testkit._
 import akka.testkit._
 import akka.util.duration._
 import akka.config.Supervision._
