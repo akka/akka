@@ -610,7 +610,7 @@ sealed trait Future[+T] {
   }
 
   /**
-   * Returns the current result, throws the exception is one has been raised, else returns None
+   * Returns the current result, throws the exception if one has been raised, else returns None
    */
   final def resultOrException: Option[T] = {
     val v = value
