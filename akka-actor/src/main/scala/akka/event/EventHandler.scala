@@ -93,7 +93,8 @@ object EventHandler extends ListenerManagement {
 
   implicit object defaultListenerFormat extends StatelessActorFormat[DefaultListener]
 
-  val level: Int = config.getString("akka.event-handler-level", "INFO") match {
+  @volatile
+  var level: Int = config.getString("akka.event-handler-level", "INFO") match {
     case "ERROR"   ⇒ ErrorLevel
     case "WARNING" ⇒ WarningLevel
     case "INFO"    ⇒ InfoLevel
