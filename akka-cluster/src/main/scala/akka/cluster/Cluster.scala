@@ -435,10 +435,10 @@ class DefaultClusterNode private[akka] (
   /**
    * Registers a cluster change listener.
    */
-  def register(listener: ChangeListener): ClusterNode = if (isConnected.isOff) {
+  def register(listener: ChangeListener): ClusterNode = {
     changeListeners.add(listener)
     this
-  } else throw new IllegalStateException("Can not register 'ChangeListener' after the cluster node has been started")
+  }
 
   private[cluster] def publish(change: ChangeNotification) {
     changeListeners.iterator.foreach(_.notify(change, this))

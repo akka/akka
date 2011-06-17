@@ -17,8 +17,6 @@ import java.util.concurrent.{ CyclicBarrier, TimeUnit }
 
 import scala.collection.JavaConversions._
 
-// FIXME: Test sending all funs
-
 class MyJavaSerializableActor extends Actor with Serializable {
   var count = 0
 
