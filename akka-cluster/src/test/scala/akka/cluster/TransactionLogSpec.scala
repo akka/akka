@@ -24,7 +24,7 @@ import com.eaio.uuid.UUID
 
 import scala.collection.JavaConversions._
 
-class ReplicationSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   private var bookKeeper: BookKeeper = _
   private var localBookKeeper: LocalBookKeeper = _
 

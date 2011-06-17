@@ -390,7 +390,7 @@ trait ClusterNode {
   /**
    * Returns the actor id for the actor with a specific UUID.
    */
-  def actorAddressForUuid(uuid: UUID): String
+  def actorAddressForUuid(uuid: UUID): Option[String]
 
   /**
    * Returns the actor ids for all the actors with a specific UUID.
@@ -456,7 +456,7 @@ trait ClusterNode {
   /**
    * Returns the config element for the key or NULL if no element exists under the key.
    */
-  def getConfigElement(key: String): Array[Byte]
+  def getConfigElement(key: String): Option[Array[Byte]]
 
   def removeConfigElement(key: String)
 
@@ -464,7 +464,7 @@ trait ClusterNode {
 
   private[cluster] def initializeNode()
 
-  private[cluster] def addressForNode(node: String): InetSocketAddress
+  private[cluster] def addressForNode(node: String): Option[InetSocketAddress]
 
   private[cluster] def publish(change: ChangeNotification)
 
