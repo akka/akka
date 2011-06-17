@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.cluster.changelisteners.nodeconnected
+package akka.cluster.changelisteners.newleader
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
@@ -14,19 +14,19 @@ import Cluster._
 
 import java.util.concurrent._
 
-object NodeConnectedChangeListenerMultiJvmSpec {
+object NewLeaderChangeListenerMultiJvmSpec {
   var NrOfNodes = 2
 }
 
-class NodeConnectedChangeListenerMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
-  import NodeConnectedChangeListenerMultiJvmSpec._
+class NewLeaderChangeListenerMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+  import NewLeaderChangeListenerMultiJvmSpec._
 
-  "A NodeConnected change listener" must {
+  "A NewLeader change listener" must {
 
-    "be invoked when a new node joins the cluster" in {
+    "be invoked after leader election is completed" in {
       val latch = new CountDownLatch(1)
       node.register(new ChangeListener {
-        override def nodeConnected(node: String, client: ClusterNode) {
+        override def newLeader(node: String, client: ClusterNode) {
           latch.countDown
         }
       })
@@ -36,8 +36,9 @@ class NodeConnectedChangeListenerMultiJvmNode1 extends WordSpec with MustMatcher
       }
 
       barrier("start-node2", NrOfNodes) {
-        latch.await(5, TimeUnit.SECONDS) must be === true
       }
+
+      latch.await(10, TimeUnit.SECONDS) must be === true
     }
   }
 
@@ -50,13 +51,14 @@ class NodeConnectedChangeListenerMultiJvmNode1 extends WordSpec with MustMatcher
   }
 }
 
-class NodeConnectedChangeListenerMultiJvmNode2 extends WordSpec with MustMatchers {
-  import NodeConnectedChangeListenerMultiJvmSpec._
+class NewLeaderChangeListenerMultiJvmNode2 extends WordSpec with MustMatchers {
+  import NewLeaderChangeListenerMultiJvmSpec._
 
-  "A NodeConnected change listener" must {
+  "A NewLeader change listener" must {
 
-    "be invoked when a new node joins the cluster" in {
-      barrier("start-node1", NrOfNodes) {}
+    "be invoked when a new node leaves the cluster" in {
+      barrier("start-node1", NrOfNodes) {
+      }
 
       barrier("start-node2", NrOfNodes) {
         node.start()
