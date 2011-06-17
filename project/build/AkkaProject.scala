@@ -25,6 +25,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   val javaCompileSettings = Seq("-Xlint:unchecked")
 
+  system[String]("akka.mode").update("test")
+
   // -------------------------------------------------------------------------------------------------------------------
   // All repositories *must* go here! See ModuleConigurations below.
   // -------------------------------------------------------------------------------------------------------------------

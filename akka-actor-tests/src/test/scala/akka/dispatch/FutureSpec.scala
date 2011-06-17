@@ -3,6 +3,7 @@ package akka.dispatch
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.prop.Checkers
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
@@ -11,6 +12,8 @@ import org.scalacheck.Gen._
 
 import akka.actor.{ Actor, ActorRef }
 import Actor._
+import akka.event.EventHandler
+import akka.testkit.TestEvent._
 import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 
@@ -40,8 +43,16 @@ object FutureSpec {
 
 class JavaFutureSpec extends JavaFutureTests with JUnitSuite
 
-class FutureSpec extends WordSpec with MustMatchers with Checkers {
+class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAndAfterAll {
   import FutureSpec._
+
+  override def beforeAll() {
+    EventHandler.notify(Mute)
+  }
+
+  override def afterAll() {
+    EventHandler.notify(UnMute)
+  }
 
   "A Promise" when {
     "never completed" must {
