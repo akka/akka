@@ -10,7 +10,7 @@ import akka.dispatch.Futures
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object ComputeGridSample {
+object ClusteredFunctions {
   //sample.cluster.ClusteredFunctions.fun2
 
   // FIXME rewrite as multi-jvm test

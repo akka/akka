@@ -21,7 +21,7 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
 
 import com.eaio.uuid.UUID
 
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -154,7 +154,7 @@ object ClusterDeployer {
           deploymentInProgressLock.unlock() // signal deployment complete
 
         } else {
-          deploymentCompleted.await() // wait until deployment is completed by other "master" node
+          deploymentCompleted.await(30, TimeUnit.SECONDS) // wait until deployment is completed by other "master" node
         }
       }
 

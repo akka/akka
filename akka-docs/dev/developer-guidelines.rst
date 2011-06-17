@@ -8,10 +8,14 @@ Code Style
 
 The Akka code style follows `this document <http://davetron5000.github.com/scala-style/ScalaStyleGuide.pdf>`_ .
 
-Here is a code style settings file for ``IntelliJ IDEA``:
-`Download <../_static/akka-intellij-code-style.jar>`_
+Akka is using ``Scalariform`` to format the source code as part of the build. So just hack away and then run ``sbt compile`` and it will reformat the code according to Akka standards.
 
-Please follow the code style. Look at the code around you and mimic.
+Process
+-------
+
+* Pick a ticket, if there is no ticket for your work then create one first.
+* Start working in a feature branch. Name it something like ``wip-<descriptive name or ticket number>-<your username>``.
+* When you are done send a request for review to the Akka developer mailing list. If successfully review, merge into master.
 
 Testing
 -------
@@ -28,19 +32,14 @@ Actor TestKit
 
 There is a useful test kit for testing actors: `akka.util.TestKit <https://github.com/jboner/akka/tree/master/akka-testkit/src/main/scala/akka/testkit/TestKit.scala>`_. It enables assertions concerning replies received and their timing, there is more documentation in the :ref:`akka-testkit` module.
 
+Multi-JVM Testing
+^^^^^^^^^^^^^^^^^
+
+Included in the example is an sbt trait for multi-JVM testing which will fork
+JVMs for multi-node testing. There is support for running applications (objects
+with main methods) and running ScalaTest tests.
+
 NetworkFailureTest
 ^^^^^^^^^^^^^^^^^^
 
-You can use the 'NetworkFailureTest' trait to test network failure. See the 'RemoteErrorHandlingNetworkTest' test. Your tests needs to end with 'NetworkTest'. They are disabled by default. To run them you need to enable a flag.
-
-Example:
-
-::
-
-  project akka-remote
-  set akka.test.network true
-  test-only akka.actor.remote.RemoteErrorHandlingNetworkTest
-
-It uses 'ipfw' for network management. Mac OSX comes with it installed but if you are on another platform you might need to install it yourself. Here is a port:
-
-`<http://info.iet.unipi.it/~luigi/dummynet>`_
+You can use the 'NetworkFailureTest' trait to test network failure.

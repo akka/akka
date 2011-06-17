@@ -702,7 +702,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule â‡
   def unregister(actorRef: ActorRef): Unit = guard withGuard {
     if (_isRunning.isOn) {
       actors.remove(actorRef.address, actorRef)
-      actorsByUuid.remove(actorRef.uuid, actorRef)
+      actorsByUuid.remove(actorRef.uuid.toString, actorRef)
     }
   }
 
@@ -716,7 +716,7 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule â‡
       if (id.startsWith(UUID_PREFIX)) actorsByUuid.remove(id.substring(UUID_PREFIX.length))
       else {
         val actorRef = actors get id
-        actorsByUuid.remove(actorRef.uuid, actorRef)
+        actorsByUuid.remove(actorRef.uuid.toString, actorRef)
         actors.remove(id, actorRef)
       }
     }
