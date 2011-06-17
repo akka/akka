@@ -86,7 +86,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val JACKSON_VERSION       = "1.8.0"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.2"
-  lazy val SCALATEST_VERSION     = "1.4.1"
+  lazy val SCALATEST_VERSION     = "1.6.1"
   lazy val JETTY_VERSION         = "7.4.0.v20110414"
   lazy val JAVAX_SERVLET_VERSION = "3.0"
   lazy val LOGBACK_VERSION       = "0.9.28"
@@ -150,6 +150,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val junit            = "junit"                       % "junit"                   % "4.5"              % "test" //Common Public License 1.0
     lazy val mockito          = "org.mockito"                 % "mockito-all"             % "1.8.1"            % "test" //MIT
     lazy val scalatest        = "org.scalatest"               %% "scalatest"              % SCALATEST_VERSION  % "test" //ApacheV2
+    lazy val scalacheck       = "org.scala-tools.testing"     %% "scalacheck"             % "1.9"              % "test" //New BSD
     lazy val testLogback      = "ch.qos.logback"              % "logback-classic"         % LOGBACK_VERSION    % "test" // EPL 1.0 / LGPL 2.1
     lazy val camel_spring     = "org.apache.camel"            % "camel-spring"            % CAMEL_VERSION      % "test" //ApacheV2
 
@@ -674,6 +675,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   class AkkaTestkitProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
     val scalatest = Dependencies.scalatest
+    val scalacheck = Dependencies.scalacheck
   }
 
   // -------------------------------------------------------------------------------------------------------------------
