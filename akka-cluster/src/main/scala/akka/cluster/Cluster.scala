@@ -1281,7 +1281,7 @@ class DefaultClusterNode private[akka] (
   }
 
   private[cluster] def joinMembershipNode() {
-    nodeNameToAddress.put(nodeAddress.nodeName, remoteServerAddress)
+    nodeNameToAddress += (nodeAddress.nodeName -> remoteServerAddress)
     try {
       EventHandler.info(this,
         "Joining cluster as membership node [%s] on [%s]".format(nodeAddress, membershipNodePath))
@@ -1350,7 +1350,7 @@ class DefaultClusterNode private[akka] (
         }
 
         // notify all available nodes that they should fail-over all connections from 'from' to 'to'
-        val from = nodeNameToAddress.get(failedNodeName)
+        val from = nodeNameToAddress(failedNodeName)
         val to = remoteServerAddress
         Serialization.serialize((from, to)) match {
           case Left(error) ⇒ throw error
@@ -1527,12 +1527,12 @@ class MembershipChildListener(self: ClusterNode) extends IZkChildListener with E
           "MembershipChildListener at [%s] has children [%s]"
             .format(self.nodeAddress.nodeName, childList.mkString(" ")))
         self.findNewlyConnectedMembershipNodes(childList) foreach { name ⇒
-          self.nodeNameToAddress.put(name, self.addressForNode(name)) // update 'nodename-address' map
+          self.addressForNode(name) foreach (address ⇒ self.nodeNameToAddress += (name -> address)) // update 'nodename-address' map
           self.publish(NodeConnected(name))
         }
 
         self.findNewlyDisconnectedMembershipNodes(childList) foreach { name ⇒
-          self.nodeNameToAddress.remove(name) // update 'nodename-address' map
+          self.nodeNameToAddress - name // update 'nodename-address' map
           self.publish(NodeDisconnected(name))
         }
 
