@@ -10,13 +10,13 @@ object TestEvent {
   case class UnMute(filter: EventFilter = EventFilter.all) extends TestEvent
 }
 
-case class EventFilter(throwable: Class[_] = classOf[Throwable], source: Option[AnyRef] = None) {
+case class EventFilter(throwable: Class[_] = classOf[Throwable], source: Option[AnyRef] = None, message: String = "") {
   import EventHandler._
 
   def apply(event: Event): Boolean = event match {
-    case Error(cause, instance, _) ⇒
-      (throwable isInstance cause) &&
-        (source map (_ eq instance) getOrElse true)
+    case Error(cause, instance, message) ⇒
+      (throwable isInstance cause) && (source map (_ eq instance) getOrElse true) &&
+        ((message.toString startsWith this.message) || (Option(cause.getMessage) map (_ startsWith this.message) getOrElse false))
     case _ ⇒ false
   }
 }
