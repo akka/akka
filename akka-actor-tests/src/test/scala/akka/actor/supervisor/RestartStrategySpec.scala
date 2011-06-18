@@ -8,13 +8,25 @@ import java.lang.Thread.sleep
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+import org.scalatest.BeforeAndAfterAll
+import akka.event.EventHandler
+import akka.testkit.TestEvent._
+import akka.testkit.EventFilter
 
 import Actor._
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.config.Supervision.{ Permanent, LifeCycle, OneForOneStrategy }
 import org.multiverse.api.latches.StandardLatch
 
-class RestartStrategySpec extends JUnitSuite {
+class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
+
+  override def beforeAll() {
+    EventHandler.notify(Mute(EventFilter(message = "Crashing...")))
+  }
+
+  override def afterAll() {
+    EventHandler.notify(UnMute(EventFilter(message = "Crashing...")))
+  }
 
   object Ping
   object Crash

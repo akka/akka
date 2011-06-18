@@ -2,11 +2,15 @@ package akka.transactor.test
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
+import org.scalatest.BeforeAndAfterAll
 
 import akka.transactor.Coordinated
 import akka.actor.{ Actor, ActorRef }
 import akka.stm._
 import akka.util.duration._
+import akka.event.EventHandler
+import akka.testkit.EventFilter
+import akka.testkit.TestEvent._
 
 import scala.util.Random.{ nextInt ⇒ random }
 
@@ -91,8 +95,18 @@ object FickleFriends {
   }
 }
 
-class FickleFriendsSpec extends WordSpec with MustMatchers {
+class FickleFriendsSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import FickleFriends._
+
+  val ignoreEvents = List(EventFilter(classOf[RuntimeException], message = "Random fail"))
+
+  override def beforeAll() {
+    ignoreEvents foreach (f ⇒ EventHandler.notify(Mute(f)))
+  }
+
+  override def afterAll() {
+    ignoreEvents foreach (f ⇒ EventHandler.notify(UnMute(f)))
+  }
 
   val numCounters = 2
 

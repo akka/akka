@@ -2,11 +2,15 @@ package akka.transactor.test
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
+import org.scalatest.BeforeAndAfterAll
 
 import akka.transactor.Coordinated
 import akka.actor.{ Actor, ActorRef }
 import akka.stm.{ Ref, TransactionFactory }
 import akka.util.duration._
+import akka.event.EventHandler
+import akka.testkit.EventFilter
+import akka.testkit.TestEvent._
 
 object CoordinatedIncrement {
   case class Increment(friends: Seq[ActorRef])
@@ -44,8 +48,19 @@ object CoordinatedIncrement {
   }
 }
 
-class CoordinatedIncrementSpec extends WordSpec with MustMatchers {
+class CoordinatedIncrementSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import CoordinatedIncrement._
+
+  val ignoreEvents = List(EventFilter(classOf[RuntimeException], message = "Expected failure"),
+    EventFilter(classOf[org.multiverse.api.exceptions.DeadTransactionException]))
+
+  override def beforeAll() {
+    ignoreEvents foreach (f ⇒ EventHandler.notify(Mute(f)))
+  }
+
+  override def afterAll() {
+    ignoreEvents foreach (f ⇒ EventHandler.notify(UnMute(f)))
+  }
 
   val numCounters = 5
   val timeout = 5 seconds
