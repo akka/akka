@@ -14,6 +14,7 @@ import akka.actor.{ Actor, ActorRef }
 import Actor._
 import akka.event.EventHandler
 import akka.testkit.TestEvent._
+import akka.testkit.EventFilter
 import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 
@@ -106,10 +107,8 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           check({ (future: Future[Int], actions: List[FutureAction]) ⇒
             val result = (future /: actions)(_ /: _)
             val expected = (future.await.value.get /: actions)(_ /: _)
-            classify(expected.isRight, "Result", "Exception") {
-              result.await.value.get.toString == expected.toString
-            }
-          }, maxSize(10000))
+            (result.await.value.get.toString == expected.toString) :| (result.value.get.toString + " is expected to be " + expected.toString)
+          }, minSuccessful(10000), workers(4))
         }
       }
     }
@@ -774,52 +773,45 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
     "be expired" in { f(_ must be('expired)) }
   }
 
-  sealed trait IntAction
+  sealed trait IntAction { def apply(that: Int): Int }
+  case class IntAdd(n: Int) extends IntAction { def apply(that: Int) = that + n }
+  case class IntSub(n: Int) extends IntAction { def apply(that: Int) = that - n }
+  case class IntMul(n: Int) extends IntAction { def apply(that: Int) = that * n }
+  case class IntDiv(n: Int) extends IntAction { def apply(that: Int) = that / n }
 
   sealed trait FutureAction {
     def /:(that: Either[Throwable, Int]): Either[Throwable, Int]
     def /:(that: Future[Int]): Future[Int]
   }
 
-  case class MapAction(f: Int ⇒ Int) extends FutureAction {
+  case class MapAction(action: IntAction) extends FutureAction {
     def /:(that: Either[Throwable, Int]): Either[Throwable, Int] = that match {
       case Left(e)  ⇒ that
-      case Right(r) ⇒ try { Right(f(r)) } catch { case e ⇒ Left(e) }
+      case Right(r) ⇒ try { Right(action(r)) } catch { case e: RuntimeException ⇒ Left(e) }
     }
-    def /:(that: Future[Int]): Future[Int] = that map f
+    def /:(that: Future[Int]): Future[Int] = that map (action(_))
   }
 
-  case class FlatMapAction(f: Int ⇒ Future[Int]) extends FutureAction {
+  case class FlatMapAction(action: IntAction) extends FutureAction {
     def /:(that: Either[Throwable, Int]): Either[Throwable, Int] = that match {
       case Left(e)  ⇒ that
-      case Right(r) ⇒ try { f(r).await.value.get } catch { case e ⇒ Left(e) }
+      case Right(r) ⇒ try { Right(action(r)) } catch { case e: RuntimeException ⇒ Left(e) }
     }
-    def /:(that: Future[Int]): Future[Int] = that flatMap f
+    def /:(that: Future[Int]): Future[Int] = that flatMap (n ⇒ Future(action(n)))
   }
 
   implicit def arbFuture: Arbitrary[Future[Int]] = Arbitrary(for (n ← arbitrary[Int]) yield Future(n))
 
   implicit def arbFutureAction: Arbitrary[FutureAction] = Arbitrary {
 
-    val genMapAction = for {
+    val genIntAction = for {
       n ← arbitrary[Int]
-      a ← oneOf('a, 's, 'm, 'd)
-    } yield MapAction(a match {
-      case 'a ⇒ _ + n
-      case 's ⇒ _ - n
-      case 'm ⇒ _ * n
-      case 'd ⇒ _ / n
-    })
+      a ← oneOf(IntAdd(n), IntSub(n), IntMul(n), IntDiv(n))
+    } yield a
 
-    val genFlatMapAction = for {
-      n ← arbitrary[Int]
-      a ← oneOf('a, 's, 'm, 'd)
-    } yield FlatMapAction(a match {
-      case 'a ⇒ (r: Int) ⇒ Future(r + n)
-      case 's ⇒ (r: Int) ⇒ Future(r - n)
-      case 'm ⇒ (r: Int) ⇒ Future(r * n)
-      case 'd ⇒ (r: Int) ⇒ Future(r / n)
-    })
+    val genMapAction = genIntAction map (MapAction(_))
+
+    val genFlatMapAction = genIntAction map (FlatMapAction(_))
 
     oneOf(genMapAction, genFlatMapAction)
 
