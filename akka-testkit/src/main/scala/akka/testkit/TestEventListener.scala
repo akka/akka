@@ -16,7 +16,7 @@ case class EventFilter(throwable: Class[_] = classOf[Throwable], source: Option[
   def apply(event: Event): Boolean = event match {
     case Error(cause, instance, message) ⇒
       (throwable isInstance cause) && (source map (_ eq instance) getOrElse true) &&
-        ((message.toString startsWith this.message) || (Option(cause.getMessage) map (_ startsWith this.message) getOrElse false))
+        (if (this.message != "") ((Option(message) map (_.toString startsWith this.message) getOrElse false) || (Option(cause.getMessage) map (_ startsWith this.message) getOrElse false)) else true)
     case _ ⇒ false
   }
 }
