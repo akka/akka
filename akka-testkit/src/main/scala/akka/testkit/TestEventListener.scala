@@ -35,7 +35,7 @@ class TestEventListener extends EventHandler.DefaultListener {
     case Mute(filter)                  ⇒ addFilter(filter)
     case Mute                          ⇒ addFilter(EventFilter.all)
     case UnMute(filter)                ⇒ removeFilter(filter)
-    case UnMute                        ⇒ addFilter(EventFilter.all)
+    case UnMute                        ⇒ removeFilter(EventFilter.all)
     case event: Error if filter(event) ⇒ // Just test Error events
   }: Receive) orElse super.receive
 
