@@ -13,7 +13,6 @@ import akka.routing._
 
 import java.util.concurrent.atomic.AtomicInteger
 
-
 class RoutingSpec extends WordSpec with MustMatchers {
   import Routing._
 
@@ -26,33 +25,33 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       val t1 = actorOf(new Actor {
         def receive = {
-          case Test1 => self.reply(3)
-          case Test2 => self.reply(7)
+          case Test1 ⇒ self.reply(3)
+          case Test2 ⇒ self.reply(7)
         }
       }).start()
 
-      val t2 = actorOf( new Actor() {
+      val t2 = actorOf(new Actor() {
         def receive = {
-          case Test3 => self.reply(11)
+          case Test3 ⇒ self.reply(11)
         }
       }).start()
 
       val d = dispatcherActor {
-        case Test1 | Test2 => t1
-        case Test3 => t2
+        case Test1 | Test2 ⇒ t1
+        case Test3         ⇒ t2
       }.start()
 
       val timeout = (5 seconds).dilated.toMillis
       val result = for {
-        a <- (d !! (Test1, timeout)).as[Int]
-        b <- (d !! (Test2, timeout)).as[Int]
-        c <- (d !! (Test3, timeout)).as[Int]
+        a ← (d !! (Test1, timeout)).as[Int]
+        b ← (d !! (Test2, timeout)).as[Int]
+        c ← (d !! (Test3, timeout)).as[Int]
       } yield a + b + c
 
-      result.isDefined must be (true)
-      result.get must be (21)
+      result.isDefined must be(true)
+      result.get must be(21)
 
-      for(a <- List(t1, t2, d)) a.stop()
+      for (a ← List(t1, t2, d)) a.stop()
     }
 
     "have messages logged" in {
@@ -60,10 +59,10 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val latch = TestLatch(2)
 
       val actor = actorOf(new Actor {
-        def receive = { case _ => }
+        def receive = { case _ ⇒ }
       }).start()
 
-      val logger = loggerActor(actor, x => { msgs.add(x); latch.countDown() }).start()
+      val logger = loggerActor(actor, x ⇒ { msgs.add(x); latch.countDown() }).start()
 
       val foo: Any = "foo"
       val bar: Any = "bar"
@@ -73,7 +72,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       latch.await
 
-      msgs must ( have size (2) and contain (foo) and contain (bar) )
+      msgs must (have size (2) and contain(foo) and contain(bar))
 
       actor.stop()
       logger.stop()
@@ -86,7 +85,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       val t1 = actorOf(new Actor {
         def receive = {
-          case x =>
+          case x ⇒
             sleepFor(50 millis) // slow actor
             t1Count.incrementAndGet
             latch.countDown()
@@ -95,7 +94,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       val t2 = actorOf(new Actor {
         def receive = {
-          case x =>
+          case x ⇒
             t2Count.incrementAndGet
             latch.countDown()
         }
@@ -103,16 +102,15 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       val d = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
 
-      for (i <- 1 to 500) d ! i
+      for (i ← 1 to 500) d ! i
 
       latch.await(10 seconds)
 
       // because t1 is much slower and thus has a bigger mailbox all the time
       t1Count.get must be < (t2Count.get)
 
-      for(a <- List(t1, t2, d)) a.stop()
+      for (a ← List(t1, t2, d)) a.stop()
     }
-
 
     "listen" in {
       val fooLatch = TestLatch(2)
@@ -121,16 +119,16 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       val broadcast = actorOf(new Actor with Listeners {
         def receive = listenerManagement orElse {
-          case "foo" => gossip("bar")
+          case "foo" ⇒ gossip("bar")
         }
       }).start()
 
       def newListener = actorOf(new Actor {
         def receive = {
-          case "bar" =>
+          case "bar" ⇒
             barCount.incrementAndGet
             barLatch.countDown()
-          case "foo" =>
+          case "foo" ⇒
             fooLatch.countDown()
         }
       }).start()
@@ -149,22 +147,22 @@ class RoutingSpec extends WordSpec with MustMatchers {
       broadcast ! "foo"
 
       barLatch.await
-      barCount.get must be (2)
+      barCount.get must be(2)
 
       fooLatch.await
 
-      for(a <- List(broadcast, a1 ,a2 ,a3)) a.stop()
+      for (a ← List(broadcast, a1, a2, a3)) a.stop()
     }
 
     "be defined at" in {
       import akka.actor.ActorRef
 
       val Yes = "yes"
-      val No  = "no"
+      val No = "no"
 
-      def testActor() = actorOf( new Actor() {
+      def testActor() = actorOf(new Actor() {
         def receive = {
-          case Yes => "yes"
+          case Yes ⇒ "yes"
         }
       }).start()
 
@@ -176,16 +174,16 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val d1 = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
       val d2 = loadBalancerActor(new CyclicIterator[ActorRef](t3 :: t4 :: Nil))
 
-      t1.isDefinedAt(Yes) must be (true)
-      t1.isDefinedAt(No)  must be (false)
-      t2.isDefinedAt(Yes) must be (true)
-      t2.isDefinedAt(No)  must be (false)
-      d1.isDefinedAt(Yes) must be (true)
-      d1.isDefinedAt(No)  must be (false)
-      d2.isDefinedAt(Yes) must be (true)
-      d2.isDefinedAt(No)  must be (false)
+      t1.isDefinedAt(Yes) must be(true)
+      t1.isDefinedAt(No) must be(false)
+      t2.isDefinedAt(Yes) must be(true)
+      t2.isDefinedAt(No) must be(false)
+      d1.isDefinedAt(Yes) must be(true)
+      d1.isDefinedAt(No) must be(false)
+      d2.isDefinedAt(Yes) must be(true)
+      d2.isDefinedAt(No) must be(false)
 
-      for(a <- List(t1, t2, d1, d2)) a.stop()
+      for (a ← List(t1, t2, d1, d2)) a.stop()
     }
   }
 
@@ -196,13 +194,10 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val count = new AtomicInteger(0)
 
       val pool = actorOf(
-        new Actor with DefaultActorPool
-                  with FixedCapacityStrategy
-                  with SmallestMailboxSelector
-        {
+        new Actor with DefaultActorPool with FixedCapacityStrategy with SmallestMailboxSelector {
           def factory = actorOf(new Actor {
             def receive = {
-              case _ =>
+              case _ ⇒
                 count.incrementAndGet
                 latch.countDown()
                 self reply_? "success"
@@ -219,7 +214,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val successes = TestLatch(2)
       val successCounter = actorOf(new Actor {
         def receive = {
-          case "success" => successes.countDown()
+          case "success" ⇒ successes.countDown()
         }
       }).start()
 
@@ -230,22 +225,16 @@ class RoutingSpec extends WordSpec with MustMatchers {
       latch.await
       successes.await
 
-      count.get must be (2)
+      count.get must be(2)
 
-      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (2)
+      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be(2)
 
       pool.stop()
     }
 
-
     "pass ticket #705" in {
       val pool = actorOf(
-        new Actor with DefaultActorPool
-                  with BoundedCapacityStrategy
-                  with MailboxPressureCapacitor
-                  with SmallestMailboxSelector
-                  with BasicFilter
-        {
+        new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicFilter {
           def lowerBound = 2
           def upperBound = 20
           def rampupRate = 0.1
@@ -258,7 +247,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
           def pressureThreshold = 1
           def factory = actorOf(new Actor {
             def receive = {
-              case req: String => {
+              case req: String ⇒ {
                 sleepFor(10 millis)
                 self.reply_?("Response")
               }
@@ -267,8 +256,8 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }).start()
 
       try {
-        (for (count <- 1 to 500) yield pool.!!![String]("Test", 20000)) foreach {
-          _.await.resultOrException.get must be ("Response")
+        (for (count ← 1 to 500) yield pool.!!![String]("Test", 20000)) foreach {
+          _.await.resultOrException.get must be("Response")
         }
       } finally {
         pool.stop()
@@ -283,15 +272,10 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val count = new AtomicInteger(0)
 
       val pool = actorOf(
-        new Actor with DefaultActorPool
-                  with BoundedCapacityStrategy
-                  with ActiveFuturesPressureCapacitor
-                  with SmallestMailboxSelector
-                  with BasicNoBackoffFilter
-        {
+        new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
           def factory = actorOf(new Actor {
             def receive = {
-              case n: Int =>
+              case n: Int ⇒
                 sleepFor(n millis)
                 count.incrementAndGet
                 latch.countDown()
@@ -311,13 +295,13 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       pool ! 1
 
-      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (2)
+      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be(2)
 
       var loops = 0
       def loop(t: Int) = {
         latch = TestLatch(loops)
         count.set(0)
-        for (m <- 0 until loops) {
+        for (m ← 0 until loops) {
           pool !!! t
           sleepFor(50 millis)
         }
@@ -329,18 +313,18 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       loop(500)
       latch.await
-      count.get must be (loops)
+      count.get must be(loops)
 
-      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (2)
+      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be(2)
 
       // a whole bunch should max it out
 
       loops = 10
       loop(500)
       latch.await
-      count.get must be (loops)
+      count.get must be(loops)
 
-      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (4)
+      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be(4)
 
       pool.stop()
     }
@@ -353,15 +337,10 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val count = new AtomicInteger(0)
 
       val pool = actorOf(
-        new Actor with DefaultActorPool
-                  with BoundedCapacityStrategy
-                  with MailboxPressureCapacitor
-                  with SmallestMailboxSelector
-                  with BasicNoBackoffFilter
-        {
+        new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
           def factory = actorOf(new Actor {
             def receive = {
-              case n: Int =>
+              case n: Int ⇒
                 sleepFor(n millis)
                 count.incrementAndGet
                 latch.countDown()
@@ -382,7 +361,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       def loop(t: Int) = {
         latch = TestLatch(loops)
         count.set(0)
-        for (m <- 0 until loops) {
+        for (m ← 0 until loops) {
           pool ! t
         }
       }
@@ -391,16 +370,16 @@ class RoutingSpec extends WordSpec with MustMatchers {
       loops = 3
       loop(500)
       latch.await
-      count.get must be (loops)
+      count.get must be(loops)
 
-      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be (2)
+      (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be(2)
 
       // send a bunch over the theshold and observe an increment
       loops = 15
       loop(500)
 
       latch.await(10 seconds)
-      count.get must be (loops)
+      count.get must be(loops)
 
       (pool !! ActorPool.Stat).asInstanceOf[Option[ActorPool.Stats]].get.size must be >= (3)
 
@@ -412,15 +391,11 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val delegates = new java.util.concurrent.ConcurrentHashMap[String, String]
 
       val pool1 = actorOf(
-        new Actor with DefaultActorPool
-                  with FixedCapacityStrategy
-                  with RoundRobinSelector
-                  with BasicNoBackoffFilter
-        {
+        new Actor with DefaultActorPool with FixedCapacityStrategy with RoundRobinSelector with BasicNoBackoffFilter {
           def factory = actorOf(new Actor {
             def receive = {
-              case _ =>
-                delegates put(self.uuid.toString, "")
+              case _ ⇒
+                delegates put (self.uuid.toString, "")
                 latch1.countDown()
             }
           })
@@ -437,7 +412,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       pool1 ! "b"
 
       latch1.await
-      delegates.size must be (1)
+      delegates.size must be(1)
 
       pool1.stop()
 
@@ -445,15 +420,11 @@ class RoutingSpec extends WordSpec with MustMatchers {
       delegates.clear()
 
       val pool2 = actorOf(
-        new Actor with DefaultActorPool
-                  with FixedCapacityStrategy
-                  with RoundRobinSelector
-                  with BasicNoBackoffFilter
-        {
+        new Actor with DefaultActorPool with FixedCapacityStrategy with RoundRobinSelector with BasicNoBackoffFilter {
           def factory = actorOf(new Actor {
             def receive = {
-              case _ =>
-                delegates put(self.uuid.toString, "")
+              case _ ⇒
+                delegates put (self.uuid.toString, "")
                 latch2.countDown()
             }
           })
@@ -470,7 +441,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       pool2 ! "b"
 
       latch2.await
-      delegates.size must be (2)
+      delegates.size must be(2)
 
       pool2.stop()
     }
@@ -479,17 +450,10 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val latch = TestLatch(10)
 
       val pool = actorOf(
-        new Actor with DefaultActorPool
-                  with BoundedCapacityStrategy
-                  with MailboxPressureCapacitor
-                  with SmallestMailboxSelector
-                  with Filter
-                  with RunningMeanBackoff
-                  with BasicRampup
-        {
+        new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
           def factory = actorOf(new Actor {
             def receive = {
-              case n: Int =>
+              case n: Int ⇒
                 sleepFor(n millis)
                 latch.countDown()
             }
@@ -509,7 +473,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       // put some pressure on the pool
 
-      for (m <- 0 to 10) pool ! 250
+      for (m ← 0 to 10) pool ! 250
 
       sleepFor(5 millis)
 
@@ -519,7 +483,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       // let it cool down
 
-      for (m <- 0 to 3) {
+      for (m ← 0 to 3) {
         pool ! 1
         sleepFor(500 millis)
       }

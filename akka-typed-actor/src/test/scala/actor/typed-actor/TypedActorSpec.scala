@@ -15,19 +15,18 @@ import akka.japi.Option;
 import akka.dispatch.DefaultCompletableFuture
 import TypedActorSpec._
 
-
 object TypedActorSpec {
   trait MyTypedActor {
-    def sendOneWay(msg: String) : Unit
-    def sendRequestReply(msg: String) : String
+    def sendOneWay(msg: String): Unit
+    def sendRequestReply(msg: String): String
   }
 
   class MyTypedActorImpl extends TypedActor with MyTypedActor {
     self.id = "my-custom-id"
     def sendOneWay(msg: String) {
-      println("got " + msg )
+      println("got " + msg)
     }
-    def sendRequestReply(msg: String) : String = {
+    def sendRequestReply(msg: String): String = {
       "got " + msg
     }
   }
@@ -38,7 +37,7 @@ object TypedActorSpec {
       println("got " + msg + " " + aString + " " + aLong)
     }
 
-    def sendRequestReply(msg: String) : String = {
+    def sendRequestReply(msg: String): String = {
       msg + " " + aString + " " + aLong
     }
   }
@@ -46,18 +45,14 @@ object TypedActorSpec {
   class MyActor extends Actor {
     self.id = "my-custom-id"
     def receive = {
-        case msg: String => println("got " + msg)
+      case msg: String ⇒ println("got " + msg)
     }
   }
 
 }
 
-
 @RunWith(classOf[JUnitRunner])
-class TypedActorSpec extends
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterEach {
+class TypedActorSpec extends Spec with ShouldMatchers with BeforeAndAfterEach {
 
   var simplePojo: SimpleJavaPojo = null
   var pojo: MyTypedActor = null;
@@ -75,20 +70,20 @@ class TypedActorSpec extends
 
     it("should return POJO method return value when invoked") {
       val result = simplePojo.hello("POJO")
-      result should equal ("Hello POJO")
+      result should equal("Hello POJO")
     }
 
     it("should resolve Future return from method defined to return a Future") {
       val future = simplePojo.square(10)
       future.await
-      future.result.isDefined should equal (true)
-      future.result.get should equal (100)
+      future.result.isDefined should equal(true)
+      future.result.get should equal(100)
     }
 
     it("should return none instead of exception") {
       val someVal = Option.some("foo")
       val noneVal = Option.none[String]
-      val nullVal = null:Option[String]
+      val nullVal = null: Option[String]
 
       assert(simplePojo.passThru(someVal) === someVal)
       assert(simplePojo.passThru(noneVal) === Option.some(null))
@@ -139,7 +134,7 @@ class TypedActorSpec extends
     }
 
     it("should support to filter typed actors") {
-      val actors = Actor.registry.filterTypedActors(ta => ta.isInstanceOf[MyTypedActor])
+      val actors = Actor.registry.filterTypedActors(ta ⇒ ta.isInstanceOf[MyTypedActor])
       assert(actors.length === 1)
       assert(actors.contains(pojo))
     }

@@ -20,13 +20,13 @@ package object stm extends akka.stm.Stm with akka.stm.StmUtil {
   // Multiverse primitive refs
 
   type BooleanRef = org.multiverse.transactional.refs.BooleanRef
-  type ByteRef    = org.multiverse.transactional.refs.ByteRef
-  type CharRef    = org.multiverse.transactional.refs.CharRef
-  type DoubleRef  = org.multiverse.transactional.refs.DoubleRef
-  type FloatRef   = org.multiverse.transactional.refs.FloatRef
-  type IntRef     = org.multiverse.transactional.refs.IntRef
-  type LongRef    = org.multiverse.transactional.refs.LongRef
-  type ShortRef   = org.multiverse.transactional.refs.ShortRef
+  type ByteRef = org.multiverse.transactional.refs.ByteRef
+  type CharRef = org.multiverse.transactional.refs.CharRef
+  type DoubleRef = org.multiverse.transactional.refs.DoubleRef
+  type FloatRef = org.multiverse.transactional.refs.FloatRef
+  type IntRef = org.multiverse.transactional.refs.IntRef
+  type LongRef = org.multiverse.transactional.refs.LongRef
+  type ShortRef = org.multiverse.transactional.refs.ShortRef
 
   // Multiverse transactional datastructures
 

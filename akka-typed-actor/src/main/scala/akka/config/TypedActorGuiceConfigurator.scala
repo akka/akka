@@ -26,7 +26,7 @@ import com.google.inject._
  */
 private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBase {
   private var injector: Injector = _
-  private var supervisor: Option[Supervisor]  = None
+  private var supervisor: Option[Supervisor] = None
   private var faultHandlingStrategy: FaultHandlingStrategy = NoFaultHandlingStrategy
   private var components: List[SuperviseTypedActor] = _
   private var supervised: List[Supervise] = Nil
@@ -45,8 +45,8 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     if (injector eq null) throw new IllegalActorStateException(
       "inject() and/or supervise() must be called before invoking getInstance(clazz)")
     val (proxy, targetInstance, component) =
-        typedActorRegistry.getOrElse(clazz, throw new IllegalActorStateException(
-          "Class [" + clazz.getName + "] has not been put under supervision" +
+      typedActorRegistry.getOrElse(clazz, throw new IllegalActorStateException(
+        "Class [" + clazz.getName + "] has not been put under supervision" +
           "\n(by passing in the config to the 'configure' and then invoking 'supervise') method"))
     injector.injectMembers(targetInstance)
     List(proxy.asInstanceOf[T])
@@ -61,27 +61,26 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
   }
 
   def getComponentInterfaces: List[Class[_]] =
-    for (c <- components) yield {
+    for (c ← components) yield {
       if (c.intf.isDefined) c.intf.get
       else c.target
     }
 
-  override def configure(faultHandlingStrategy: FaultHandlingStrategy, components: List[SuperviseTypedActor]):
-    TypedActorConfiguratorBase = synchronized {
+  override def configure(faultHandlingStrategy: FaultHandlingStrategy, components: List[SuperviseTypedActor]): TypedActorConfiguratorBase = synchronized {
     this.faultHandlingStrategy = faultHandlingStrategy
     this.components = components.toArray.toList.asInstanceOf[List[SuperviseTypedActor]]
-    bindings = for (component <- this.components) yield {
+    bindings = for (component ← this.components) yield {
       newDelegatingProxy(component)
-//      if (component.intf.isDefined) newDelegatingProxy(component)
-//      else newSubclassingProxy(component)
+      //      if (component.intf.isDefined) newDelegatingProxy(component)
+      //      else newSubclassingProxy(component)
     }
     val deps = new java.util.ArrayList[DependencyBinding](bindings.size)
-    for (b <- bindings) deps.add(b)
+    for (b ← bindings) deps.add(b)
     modules.add(new TypedActorGuiceModule(deps))
     this
   }
 
-/*
+  /*
   private def newSubclassingProxy(component: SuperviseTypedActor): DependencyBinding = {
     val targetClass =
       if (component.target.isInstanceOf[Class[_ <: TypedActor]]) component.target.asInstanceOf[Class[_ <: TypedActor]]
@@ -102,18 +101,18 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
   private def newDelegatingProxy(component: SuperviseTypedActor): DependencyBinding = {
     component.target.getConstructor(Array[Class[_]](): _*).setAccessible(true)
     val interfaceClass = if (component.intf.isDefined) component.intf.get
-                         else throw new IllegalActorStateException("No interface for TypedActor specified")
+    else throw new IllegalActorStateException("No interface for TypedActor specified")
     val implementationClass = component.target
     val timeout = component.timeout
 
-    val (remoteAddress,actorRef) =
+    val (remoteAddress, actorRef) =
       component.remoteAddress match {
-        case Some(a) =>
+        case Some(a) ⇒
           (Some(new InetSocketAddress(a.hostname, a.port)),
-           Actor.remote.actorOf(TypedActor.newTypedActor(implementationClass), a.hostname, a.port))
-        case None =>
+            Actor.remote.actorOf(TypedActor.newTypedActor(implementationClass), a.hostname, a.port))
+        case None ⇒
           (None, Actor.actorOf(TypedActor.newTypedActor(implementationClass)))
-    }
+      }
 
     actorRef.timeout = timeout
     if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
@@ -157,7 +156,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
    *   }})
    * </pre>
    */
-  def addExternalGuiceModule(module: Module): TypedActorConfiguratorBase  = synchronized {
+  def addExternalGuiceModule(module: Module): TypedActorConfiguratorBase = synchronized {
     modules.add(module)
     this
   }

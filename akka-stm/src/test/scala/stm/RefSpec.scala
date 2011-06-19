@@ -18,7 +18,7 @@ class RefSpec extends WordSpec with MustMatchers {
       val ref = Ref(3)
       val value = atomic { ref.get }
 
-      value must be (3)
+      value must be(3)
     }
 
     "keep the initial value, even if the first transaction is rolled back" in {
@@ -30,12 +30,12 @@ class RefSpec extends WordSpec with MustMatchers {
           throw new Exception
         }
       } catch {
-        case e => {}
+        case e ⇒ {}
       }
 
       val value = atomic { ref.get }
 
-      value must be (3)
+      value must be(3)
     }
 
     "be settable using set" in {
@@ -45,7 +45,7 @@ class RefSpec extends WordSpec with MustMatchers {
 
       val value = atomic { ref.get }
 
-      value must be (3)
+      value must be(3)
     }
 
     "be settable using swap" in {
@@ -55,7 +55,7 @@ class RefSpec extends WordSpec with MustMatchers {
 
       val value = atomic { ref.get }
 
-      value must be (3)
+      value must be(3)
     }
 
     "be changeable using alter" in {
@@ -71,7 +71,7 @@ class RefSpec extends WordSpec with MustMatchers {
 
       val value = atomic { ref.get }
 
-      value must be (3)
+      value must be(3)
     }
 
     "be able to be mapped" in {
@@ -84,8 +84,8 @@ class RefSpec extends WordSpec with MustMatchers {
       val value1 = atomic { ref1.get }
       val value2 = atomic { ref2.get }
 
-      value1 must be (1)
-      value2 must be (2)
+      value1 must be(1)
+      value2 must be(2)
     }
 
     "be able to be used in a 'foreach' for comprehension" in {
@@ -94,24 +94,24 @@ class RefSpec extends WordSpec with MustMatchers {
       var result = 0
 
       atomic {
-        for (value <- ref) {
+        for (value ← ref) {
           result += value
         }
       }
 
-      result must be (3)
+      result must be(3)
     }
 
     "be able to be used in a 'map' for comprehension" in {
       val ref1 = Ref(1)
 
       val ref2 = atomic {
-        for (value <- ref1) yield value + 2
+        for (value ← ref1) yield value + 2
       }
 
       val value2 = atomic { ref2.get }
 
-      value2 must be (3)
+      value2 must be(3)
     }
 
     "be able to be used in a 'flatMap' for comprehension" in {
@@ -120,33 +120,33 @@ class RefSpec extends WordSpec with MustMatchers {
 
       val ref3 = atomic {
         for {
-          value1 <- ref1
-          value2 <- ref2
+          value1 ← ref1
+          value2 ← ref2
         } yield value1 + value2
       }
 
       val value3 = atomic { ref3.get }
 
-      value3 must be (3)
+      value3 must be(3)
     }
 
     "be able to be used in a 'filter' for comprehension" in {
       val ref1 = Ref(1)
 
       val refLess2 = atomic {
-        for (value <- ref1 if value < 2) yield value
+        for (value ← ref1 if value < 2) yield value
       }
 
       val optLess2 = atomic { refLess2.opt }
 
       val refGreater2 = atomic {
-        for (value <- ref1 if value > 2) yield value
+        for (value ← ref1 if value > 2) yield value
       }
 
       val optGreater2 = atomic { refGreater2.opt }
 
-      optLess2 must be (Some(1))
-      optGreater2 must be (None)
+      optLess2 must be(Some(1))
+      optGreater2 must be(None)
     }
   }
 }

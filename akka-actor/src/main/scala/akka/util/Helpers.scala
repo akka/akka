@@ -21,7 +21,7 @@ object Helpers {
   }
 
   def bytesToInt(bytes: Array[Byte], offset: Int): Int = {
-    (0 until 4).foldLeft(0)((value, index) => value + ((bytes(index + offset) & 0x000000FF) << ((4 - 1 - index) * 8)))
+    (0 until 4).foldLeft(0)((value, index) ⇒ value + ((bytes(index + offset) & 0x000000FF) << ((4 - 1 - index) * 8)))
   }
 
   /**
@@ -41,7 +41,7 @@ object Helpers {
     try {
       narrow(o)
     } catch {
-      case e: ClassCastException =>
+      case e: ClassCastException ⇒
         None
     }
 
@@ -54,7 +54,7 @@ object Helpers {
    * res0: ResultOrError[Int] = ResultOrError@a96606
    *
    * scala> res0()
-    res1: Int = 1
+   * res1: Int = 1
    *
    * scala> res0() = 3
    *
@@ -77,20 +77,20 @@ object Helpers {
    *    at Re...
    * </pre>
    */
-  class ResultOrError[R](result: R){
+  class ResultOrError[R](result: R) {
     private[this] var contents: Either[R, Throwable] = Left(result)
 
-    def update(value: => R) = {
+    def update(value: ⇒ R) = {
       contents = try {
         Left(value)
       } catch {
-        case (error : Throwable) => Right(error)
+        case (error: Throwable) ⇒ Right(error)
       }
     }
 
     def apply() = contents match {
-      case Left(result) => result
-      case Right(error) => throw error.fillInStackTrace
+      case Left(result) ⇒ result
+      case Right(error) ⇒ throw error.fillInStackTrace
     }
   }
   object ResultOrError {

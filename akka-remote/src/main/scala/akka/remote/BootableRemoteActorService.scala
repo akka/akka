@@ -4,8 +4,8 @@
 
 package akka.remote
 
-import akka.actor. {Actor, BootableActorLoaderService}
-import akka.util. {ReflectiveAccess, Bootable}
+import akka.actor.{ Actor, BootableActorLoaderService }
+import akka.util.{ ReflectiveAccess, Bootable }
 
 /**
  * This bundle/service is responsible for booting up and shutting down the remote actors facility
@@ -13,7 +13,7 @@ import akka.util. {ReflectiveAccess, Bootable}
  * It is used in Kernel
  */
 trait BootableRemoteActorService extends Bootable {
-  self: BootableActorLoaderService =>
+  self: BootableActorLoaderService ⇒
 
   protected lazy val remoteServerThread = new Thread(new Runnable() {
     def run = Actor.remote.start(self.applicationLoader.getOrElse(null)) //Use config host/port

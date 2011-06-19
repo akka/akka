@@ -1,29 +1,29 @@
 package akka.actor.remote
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.actor.Actor._
-import akka.actor.{ActorRegistry, ActorRef, Actor}
+import akka.actor.{ ActorRegistry, ActorRef, Actor }
 
 object ServerInitiatedRemoteActorSpec {
   case class Send(actor: ActorRef)
 
   class RemoteActorSpecActorUnidirectional extends Actor {
     def receive = {
-      case "Ping" => self.reply_?("Pong")
+      case "Ping" ⇒ self.reply_?("Pong")
     }
   }
 
   class Decrementer extends Actor {
     def receive = {
-      case "done" => self.reply_?(false)
-      case i: Int if i > 0 =>
+      case "done" ⇒ self.reply_?(false)
+      case i: Int if i > 0 ⇒
         self.reply_?(i - 1)
-      case i: Int =>
+      case i: Int ⇒
         self.reply_?(0)
         this become {
-          case "done" => self.reply_?(true)
-          case _ => //Do Nothing
+          case "done" ⇒ self.reply_?(true)
+          case _      ⇒ //Do Nothing
         }
     }
   }
@@ -31,18 +31,18 @@ object ServerInitiatedRemoteActorSpec {
   class RemoteActorSpecActorBidirectional extends Actor {
 
     def receive = {
-      case "Hello" =>
+      case "Hello" ⇒
         self.reply("World")
-      case "Failure" =>
+      case "Failure" ⇒
         throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
 
   class RemoteActorSpecActorAsyncSender(latch: CountDownLatch) extends Actor {
     def receive = {
-      case Send(actor: ActorRef) =>
+      case Send(actor: ActorRef) ⇒
         actor ! "Hello"
-      case "World" => latch.countDown()
+      case "World" ⇒ latch.countDown()
     }
   }
 }
@@ -55,39 +55,39 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
       val latch = new CountDownLatch(1)
       implicit val sender = replyHandler(latch, "Pong")
       remote.register(actorOf[RemoteActorSpecActorUnidirectional])
-      val actor = remote.actorFor("akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional",5000L,host, port)
+      val actor = remote.actorFor("akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional", 5000L, host, port)
 
       actor ! "Ping"
-      latch.await(1, TimeUnit.SECONDS) must be (true)
+      latch.await(1, TimeUnit.SECONDS) must be(true)
     }
 
     "sendWithBangBangAndGetReply" in {
       remote.register(actorOf[RemoteActorSpecActorBidirectional])
-      val actor = remote.actorFor("akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional", 5000L,host, port)
-      (actor !! "Hello").as[String].get must equal ("World")
+      val actor = remote.actorFor("akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional", 5000L, host, port)
+      (actor !! "Hello").as[String].get must equal("World")
     }
 
     "sendWithBangAndGetReplyThroughSenderRef" in {
       remote.register(actorOf[RemoteActorSpecActorBidirectional])
       implicit val timeout = 500000000L
       val actor = remote.actorFor(
-        "akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional", timeout,host, port)
+        "akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional", timeout, host, port)
       val latch = new CountDownLatch(1)
-      val sender = actorOf( new RemoteActorSpecActorAsyncSender(latch) ).start()
+      val sender = actorOf(new RemoteActorSpecActorAsyncSender(latch)).start()
       sender ! Send(actor)
-      latch.await(1, TimeUnit.SECONDS) must be (true)
+      latch.await(1, TimeUnit.SECONDS) must be(true)
     }
 
     "sendWithBangBangAndReplyWithException" in {
       remote.register(actorOf[RemoteActorSpecActorBidirectional])
       implicit val timeout = 500000000L
       val actor = remote.actorFor(
-          "akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional", timeout, host, port)
+        "akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional", timeout, host, port)
       try {
         actor !! "Failure"
         fail("Should have thrown an exception")
       } catch {
-        case e => e.getMessage must equal ("Expected exception; to test fault-tolerance")
+        case e ⇒ e.getMessage must equal("Expected exception; to test fault-tolerance")
       }
     }
 
@@ -98,8 +98,8 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
       val actor = remote.actorFor("akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional", host, port)
       val numberOfActorsInRegistry = Actor.registry.actors.length
       actor ! "Ping"
-      latch.await(1, TimeUnit.SECONDS) must be (true)
-      numberOfActorsInRegistry must equal (Actor.registry.actors.length)
+      latch.await(1, TimeUnit.SECONDS) must be(true)
+      numberOfActorsInRegistry must equal(Actor.registry.actors.length)
     }
 
     "UseServiceNameAsIdForRemoteActorRef" in {
@@ -115,11 +115,11 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
       actor2 ! "Ping"
       actor3 ! "Ping"
 
-      latch.await(1, TimeUnit.SECONDS) must be (true)
+      latch.await(1, TimeUnit.SECONDS) must be(true)
       actor1.uuid must not equal actor2.uuid
       actor1.uuid must not equal actor3.uuid
       actor1.id must not equal actor2.id
-      actor2.id must equal (actor3.id)
+      actor2.id must equal(actor3.id)
     }
 
     "shouldFindActorByUuid" in {
@@ -135,7 +135,7 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
 
       ref1 ! "Ping"
       ref2 ! "Ping"
-      latch.await(1, TimeUnit.SECONDS) must be (true)
+      latch.await(1, TimeUnit.SECONDS) must be(true)
     }
 
     "shouldRegisterAndUnregister" in {
@@ -145,7 +145,7 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
       remote.actors.get("my-service-1") must not be null
 
       remote.unregister("my-service-1")
-      remote.actors.get("my-service-1") must be (null)
+      remote.actors.get("my-service-1") must be(null)
     }
 
     "shouldRegisterAndUnregisterByUuid" in {
@@ -156,18 +156,18 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
       remote.actorsByUuid.get(actor1.uuid.toString) must not be null
 
       remote.unregister(uuid)
-      remote.actorsByUuid.get(actor1.uuid) must be (null)
+      remote.actorsByUuid.get(actor1.uuid) must be(null)
     }
 
     "shouldHandleOneWayReplyThroughPassiveRemoteClient" in {
       val actor1 = actorOf[RemoteActorSpecActorUnidirectional]
       remote.register("foo", actor1)
       val latch = new CountDownLatch(1)
-      val actor2 = actorOf(new Actor { def receive = { case "Pong" => latch.countDown() } }).start()
+      val actor2 = actorOf(new Actor { def receive = { case "Pong" ⇒ latch.countDown() } }).start()
 
       val remoteActor = remote.actorFor("foo", host, port)
       remoteActor.!("Ping")(Some(actor2))
-      latch.await(3,TimeUnit.SECONDS) must be (true)
+      latch.await(3, TimeUnit.SECONDS) must be(true)
     }
 
     "should be able to remotely communicate between 2 server-managed actors" in {
@@ -185,9 +185,9 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
       val latch = new CountDownLatch(100)
 
       def testDone() = (remoteFoo ? "done").as[Boolean].getOrElse(false) &&
-                       (remoteBar ? "done").as[Boolean].getOrElse(false)
+        (remoteBar ? "done").as[Boolean].getOrElse(false)
 
-      while(!testDone()) {
+      while (!testDone()) {
         if (latch.await(200, TimeUnit.MILLISECONDS))
           sys.error("Test didn't complete within 100 cycles")
         else
@@ -195,9 +195,9 @@ class ServerInitiatedRemoteActorSpec extends AkkaRemoteTest {
       }
 
       val decrementers = Actor.registry.actorsFor[Decrementer]
-      decrementers must have size(2) //No new are allowed to have been created
-      decrementers.find( _ eq localFoo) must equal (Some(localFoo))
-      decrementers.find( _ eq localBar) must equal (Some(localBar))
+      decrementers must have size (2) //No new are allowed to have been created
+      decrementers.find(_ eq localFoo) must equal(Some(localFoo))
+      decrementers.find(_ eq localBar) must equal(Some(localBar))
     }
   }
 }

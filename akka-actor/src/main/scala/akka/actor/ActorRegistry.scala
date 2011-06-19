@@ -4,15 +4,15 @@
 
 package akka.actor
 
-import scala.collection.mutable.{ListBuffer, Map}
+import scala.collection.mutable.{ ListBuffer, Map }
 import scala.reflect.Manifest
 
-import java.util.concurrent.{ConcurrentSkipListSet, ConcurrentHashMap}
-import java.util.{Set => JSet}
+import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
+import java.util.{ Set ⇒ JSet }
 
 import annotation.tailrec
 import akka.util.ReflectiveAccess._
-import akka.util. {ReflectiveAccess, ReadWriteGuard, ListenerManagement}
+import akka.util.{ ReflectiveAccess, ReadWriteGuard, ListenerManagement }
 
 /**
  * Base trait for ActorRegistry events, allows listen to when an actor is added and removed from the ActorRegistry.
@@ -38,14 +38,14 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
 
 final class ActorRegistry private[actor] () extends ListenerManagement {
 
-  private val actorsByUUID    = new ConcurrentHashMap[Uuid, ActorRef]
-  private val actorsById      = new Index[String,ActorRef]
-  private val guard           = new ReadWriteGuard
+  private val actorsByUUID = new ConcurrentHashMap[Uuid, ActorRef]
+  private val actorsById = new Index[String, ActorRef]
+  private val guard = new ReadWriteGuard
 
   /**
    * Returns all actors in the system.
    */
-  def actors: Array[ActorRef] = filter(_ => true)
+  def actors: Array[ActorRef] = filter(_ ⇒ true)
 
   /**
    * Returns the number of actors in the system.
@@ -55,7 +55,7 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
   /**
    * Invokes a function for all actors.
    */
-  def foreach(f: (ActorRef) => Unit) = {
+  def foreach(f: (ActorRef) ⇒ Unit) = {
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) f(elements.nextElement)
   }
@@ -64,7 +64,7 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
    * Invokes the function on all known actors until it returns Some
    * Returns None if the function never returns Some
    */
-  def find[T](f: PartialFunction[ActorRef,T]) : Option[T] = {
+  def find[T](f: PartialFunction[ActorRef, T]): Option[T] = {
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
       val element = elements.nextElement
@@ -76,14 +76,14 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
   /**
    * Finds all actors that are subtypes of the class passed in as the Manifest argument and supporting passed message.
    */
-  def actorsFor[T <: Actor](message: Any)(implicit manifest: Manifest[T] ): Array[ActorRef] =
-    filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass) && a.isDefinedAt(message))
+  def actorsFor[T <: Actor](message: Any)(implicit manifest: Manifest[T]): Array[ActorRef] =
+    filter(a ⇒ manifest.erasure.isAssignableFrom(a.actor.getClass) && a.isDefinedAt(message))
 
   /**
    * Finds all actors that satisfy a predicate.
    */
-  def filter(p: ActorRef => Boolean): Array[ActorRef] = {
-   val all = new ListBuffer[ActorRef]
+  def filter(p: ActorRef ⇒ Boolean): Array[ActorRef] = {
+    val all = new ListBuffer[ActorRef]
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
       val actorId = elements.nextElement
@@ -102,13 +102,13 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
    * Finds any actor that matches T. Very expensive, traverses ALL alive actors.
    */
   def actorFor[T <: Actor](implicit manifest: Manifest[T]): Option[ActorRef] =
-    find({ case a: ActorRef if manifest.erasure.isAssignableFrom(a.actor.getClass) => a })
+    find({ case a: ActorRef if manifest.erasure.isAssignableFrom(a.actor.getClass) ⇒ a })
 
   /**
    * Finds all actors of type or sub-type specified by the class passed in as the Class argument.
    */
   def actorsFor[T <: Actor](clazz: Class[T]): Array[ActorRef] =
-    filter(a => clazz.isAssignableFrom(a.actor.getClass))
+    filter(a ⇒ clazz.isAssignableFrom(a.actor.getClass))
 
   /**
    * Finds all actors that has a specific id.
@@ -123,12 +123,12 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
   /**
    * Returns all typed actors in the system.
    */
-  def typedActors: Array[AnyRef] = filterTypedActors(_ => true)
+  def typedActors: Array[AnyRef] = filterTypedActors(_ ⇒ true)
 
   /**
    * Invokes a function for all typed actors.
    */
-  def foreachTypedActor(f: (AnyRef) => Unit) = {
+  def foreachTypedActor(f: (AnyRef) ⇒ Unit) = {
     TypedActorModule.ensureEnabled
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
@@ -141,7 +141,7 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
    * Invokes the function on all known typed actors until it returns Some
    * Returns None if the function never returns Some
    */
-  def findTypedActor[T](f: PartialFunction[AnyRef,T]) : Option[T] = {
+  def findTypedActor[T](f: PartialFunction[AnyRef, T]): Option[T] = {
     TypedActorModule.ensureEnabled
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
@@ -154,7 +154,7 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
   /**
    * Finds all typed actors that satisfy a predicate.
    */
-  def filterTypedActors(p: AnyRef => Boolean): Array[AnyRef] = {
+  def filterTypedActors(p: AnyRef ⇒ Boolean): Array[AnyRef] = {
     TypedActorModule.ensureEnabled
     val all = new ListBuffer[AnyRef]
     val elements = actorsByUUID.elements
@@ -182,7 +182,7 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
       val actorRef = TypedActorModule.typedActorObjectInstance.get.actorFor(proxy)
       actorRef.isDefined && manifest.erasure.isAssignableFrom(actorRef.get.actor.getClass)
     }
-    findTypedActor({ case a: Some[AnyRef] if predicate(a.get) => a })
+    findTypedActor({ case a: Some[AnyRef] if predicate(a.get) ⇒ a })
   }
 
   /**
@@ -245,7 +245,7 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
     val uuid = actor.uuid
 
     actorsByUUID remove uuid
-    actorsById.remove(id,actor)
+    actorsById.remove(id, actor)
 
     // notify listeners
     notifyListeners(ActorUnregistered(actor))
@@ -279,7 +279,7 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
  *
  * @author Viktor Klang
  */
-class Index[K <: AnyRef,V <: AnyRef : Manifest] {
+class Index[K <: AnyRef, V <: AnyRef: Manifest] {
   private val Naught = Array[V]() //Nil for Arrays
   private val container = new ConcurrentHashMap[K, JSet[V]]
   private val emptySet = new ConcurrentSkipListSet[V]
@@ -290,7 +290,8 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
    */
   def put(key: K, value: V): Boolean = {
     //Tailrecursive spin-locking put
-    @tailrec def spinPut(k: K, v: V): Boolean = {
+    @tailrec
+    def spinPut(k: K, v: V): Boolean = {
       var retry = false
       var added = false
       val set = container get k
@@ -308,7 +309,7 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
         newSet add v
 
         // Parry for two simultaneous putIfAbsent(id,newSet)
-        val oldSet = container.putIfAbsent(k,newSet)
+        val oldSet = container.putIfAbsent(k, newSet)
         if (oldSet ne null) {
           oldSet.synchronized {
             if (oldSet.isEmpty) retry = true //IF the set is empty then it has been removed, so signal retry
@@ -340,7 +341,7 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
    * @return Some(value) for the first matching value where the supplied function returns true for the given key,
    * if no matches it returns None
    */
-  def findValue(key: K)(f: (V) => Boolean): Option[V] = {
+  def findValue(key: K)(f: (V) ⇒ Boolean): Option[V] = {
     import scala.collection.JavaConversions._
     val set = container get key
     if (set ne null) set.iterator.find(f)
@@ -350,10 +351,10 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
   /**
    * Applies the supplied function to all keys and their values
    */
-  def foreach(fun: (K,V) => Unit) {
+  def foreach(fun: (K, V) ⇒ Unit) {
     import scala.collection.JavaConversions._
-    container.entrySet foreach {
-      (e) => e.getValue.foreach(fun(e.getKey,_))
+    container.entrySet foreach { (e) ⇒
+      e.getValue.foreach(fun(e.getKey, _))
     }
   }
 
@@ -367,8 +368,8 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
     if (set ne null) {
       set.synchronized {
         if (set.remove(value)) { //If we can remove the value
-          if (set.isEmpty)       //and the set becomes empty
-            container.remove(key,emptySet) //We try to remove the key if it's mapped to an empty set
+          if (set.isEmpty) //and the set becomes empty
+            container.remove(key, emptySet) //We try to remove the key if it's mapped to an empty set
 
           true //Remove succeeded
         } else false //Remove failed
@@ -384,5 +385,5 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
   /**
    *  Removes all keys and all values
    */
-  def clear = foreach { case (k, v) => remove(k, v) }
+  def clear = foreach { case (k, v) ⇒ remove(k, v) }
 }

@@ -7,8 +7,8 @@ package akka.actor.remote
 import akka.config.Supervision._
 import akka.actor._
 
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
-import akka.config. {RemoteAddress, Config, TypedActorConfigurator}
+import java.util.concurrent.{ LinkedBlockingQueue, TimeUnit, BlockingQueue }
+import akka.config.{ RemoteAddress, Config, TypedActorConfigurator }
 
 import akka.testkit.Testing
 
@@ -40,14 +40,13 @@ class RemoteTypedActorSpec extends AkkaRemoteTest {
           classOf[RemoteTypedActorOneImpl],
           Permanent,
           Testing.testTime(20000),
-          RemoteAddress(host,port)),
+          RemoteAddress(host, port)),
         new SuperviseTypedActor(
           classOf[RemoteTypedActorTwo],
           classOf[RemoteTypedActorTwoImpl],
           Permanent,
           Testing.testTime(20000),
-          RemoteAddress(host,port))
-      ).toArray).supervise
+          RemoteAddress(host, port))).toArray).supervise
   }
 
   override def afterEach {
@@ -77,11 +76,11 @@ class RemoteTypedActorSpec extends AkkaRemoteTest {
       try {
         ta.requestReply("die")
         fail("Shouldn't get here")
-      } catch { case re: RuntimeException if re.getMessage == "Expected exception; to test fault-tolerance" => }
-      messageLog.poll(5, TimeUnit.SECONDS) must equal ("Expected exception; to test fault-tolerance")
+      } catch { case re: RuntimeException if re.getMessage == "Expected exception; to test fault-tolerance" ⇒ }
+      messageLog.poll(5, TimeUnit.SECONDS) must equal("Expected exception; to test fault-tolerance")
     }
 
-   /* "restarts linked friends on failure" in {
+    /* "restarts linked friends on failure" in {
       val ta1 = conf.getInstance(classOf[RemoteTypedActorOne])
       val ta2 = conf.getInstance(classOf[RemoteTypedActorTwo])
 

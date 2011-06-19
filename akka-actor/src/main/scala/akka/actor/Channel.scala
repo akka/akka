@@ -109,7 +109,7 @@ trait AvailableChannel[-T] { self: Channel[T] ⇒
         this ! msg
         true
       } catch {
-        case _ => false
+        case _ ⇒ false
       }
     } else false
   }
@@ -124,8 +124,8 @@ trait UntypedChannel extends Channel[Any]
 object UntypedChannel {
   implicit def senderOption2Channel(sender: Option[ActorRef]): UntypedChannel =
     sender match {
-      case Some(actor) => actor
-      case None => NullChannel
+      case Some(actor) ⇒ actor
+      case None        ⇒ NullChannel
     }
 }
 
@@ -166,5 +166,4 @@ object ForwardableChannel {
   implicit def someS2FC(sender: Some[ActorRef]): ForwardableChannel = sender.get
   implicit def someIS2FC(implicit sender: Some[ActorRef]): ForwardableChannel = sender.get
 }
-
 

@@ -20,7 +20,7 @@ class TypedActorRegistrySpec extends WordSpec with MustMatchers {
       Actor.registry.shutdownAll()
       val my = TypedActor.newInstance[My](classOf[My], classOf[MyImpl], 3000)
       val actors = Actor.registry.typedActorsFor(classOf[My])
-      actors.length must be (1)
+      actors.length must be(1)
       Actor.registry.shutdownAll()
     }
 
@@ -29,7 +29,7 @@ class TypedActorRegistrySpec extends WordSpec with MustMatchers {
       val my = TypedActor.newInstance[My](classOf[My], classOf[MyImpl], 3000)
       val option = Actor.registry.typedActorFor[My]
       option must not be (null)
-      option.isDefined must be (true)
+      option.isDefined must be(true)
       Actor.registry.shutdownAll()
     }
 
@@ -37,9 +37,9 @@ class TypedActorRegistrySpec extends WordSpec with MustMatchers {
       Actor.registry.shutdownAll()
       val my = TypedActor.newInstance[My](classOf[My], classOf[MyImpl], 3000)
       val actors1 = Actor.registry.typedActorsFor(classOf[My])
-      actors1.length must be (1)
+      actors1.length must be(1)
       val actors2 = Actor.registry.typedActorsFor(classOf[My])
-      actors2.length must be (1)
+      actors2.length must be(1)
       Actor.registry.shutdownAll()
     }
 
@@ -48,10 +48,10 @@ class TypedActorRegistrySpec extends WordSpec with MustMatchers {
       val my = TypedActor.newInstance[My](classOf[My], classOf[MyImpl], 3000)
       val option1 = Actor.registry.typedActorFor[My]
       option1 must not be (null)
-      option1.isDefined must be (true)
+      option1.isDefined must be(true)
       val option2 = Actor.registry.typedActorFor[My]
       option2 must not be (null)
-      option2.isDefined must be (true)
+      option2.isDefined must be(true)
       Actor.registry.shutdownAll()
     }
 
@@ -60,15 +60,14 @@ class TypedActorRegistrySpec extends WordSpec with MustMatchers {
       val manager = new TypedActorConfigurator
       manager.configure(
         OneForOneStrategy(classOf[Exception] :: Nil, 3, 1000),
-        Array(new SuperviseTypedActor(classOf[My], classOf[MyImpl], Permanent, 6000))
-      ).supervise
+        Array(new SuperviseTypedActor(classOf[My], classOf[MyImpl], Permanent, 6000))).supervise
 
       val option1 = Actor.registry.typedActorFor[My]
       option1 must not be (null)
-      option1.isDefined must be (true)
+      option1.isDefined must be(true)
       val option2 = Actor.registry.typedActorFor[My]
       option2 must not be (null)
-      option2.isDefined must be (true)
+      option2.isDefined must be(true)
       Actor.registry.shutdownAll()
     }
   }

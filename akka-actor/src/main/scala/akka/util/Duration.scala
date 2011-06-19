@@ -6,14 +6,14 @@ package akka.util
 
 import java.util.concurrent.TimeUnit
 import TimeUnit._
-import java.lang.{Long => JLong, Double => JDouble}
+import java.lang.{ Long ⇒ JLong, Double ⇒ JDouble }
 
 object Duration {
-  def apply(length: Long, unit: TimeUnit) : Duration = new FiniteDuration(length, unit)
-  def apply(length: Double, unit: TimeUnit) : Duration = fromNanos(unit.toNanos(1) * length)
-  def apply(length: Long, unit: String) : Duration = new FiniteDuration(length, timeUnit(unit))
+  def apply(length: Long, unit: TimeUnit): Duration = new FiniteDuration(length, unit)
+  def apply(length: Double, unit: TimeUnit): Duration = fromNanos(unit.toNanos(1) * length)
+  def apply(length: Long, unit: String): Duration = new FiniteDuration(length, timeUnit(unit))
 
-  def fromNanos(nanos : Long) : Duration = {
+  def fromNanos(nanos: Long): Duration = {
     if (nanos % 86400000000000L == 0) {
       Duration(nanos / 86400000000000L, DAYS)
     } else if (nanos % 3600000000000L == 0) {
@@ -31,18 +31,18 @@ object Duration {
     }
   }
 
-  def fromNanos(nanos : Double) : Duration = fromNanos((nanos + 0.5).asInstanceOf[Long])
+  def fromNanos(nanos: Double): Duration = fromNanos((nanos + 0.5).asInstanceOf[Long])
 
   /**
    * Construct a Duration by parsing a String. In case of a format error, a
    * RuntimeException is thrown. See `unapply(String)` for more information.
    */
-  def apply(s : String) : Duration = unapply(s) getOrElse sys.error("format error")
+  def apply(s: String): Duration = unapply(s) getOrElse sys.error("format error")
 
   /**
    * Deconstruct a Duration into length and unit if it is finite.
    */
-  def unapply(d : Duration) : Option[(Long, TimeUnit)] = {
+  def unapply(d: Duration): Option[(Long, TimeUnit)] = {
     if (d.finite_?) {
       Some((d.length, d.unit))
     } else {
@@ -50,15 +50,15 @@ object Duration {
     }
   }
 
-  private val RE = ("""^\s*(\d+(?:\.\d+)?)\s*"""+ // length part
-    "(?:"+ // units are distinguished in separate match groups
-    "(d|day|days)|"+
-    "(h|hour|hours)|"+
-    "(min|minute|minutes)|"+
-    "(s|sec|second|seconds)|"+
-    "(ms|milli|millis|millisecond|milliseconds)|"+
-    "(µs|micro|micros|microsecond|microseconds)|"+
-    "(ns|nano|nanos|nanosecond|nanoseconds)"+
+  private val RE = ("""^\s*(\d+(?:\.\d+)?)\s*""" + // length part
+    "(?:" + // units are distinguished in separate match groups
+    "(d|day|days)|" +
+    "(h|hour|hours)|" +
+    "(min|minute|minutes)|" +
+    "(s|sec|second|seconds)|" +
+    "(ms|milli|millis|millisecond|milliseconds)|" +
+    "(µs|micro|micros|microsecond|microseconds)|" +
+    "(ns|nano|nanos|nanosecond|nanoseconds)" +
     """)\s*$""").r // close the non-capturing group
   private val REinf = """^\s*Inf\s*$""".r
   private val REminf = """^\s*(?:-\s*|Minus)Inf\s*""".r
@@ -68,32 +68,26 @@ object Duration {
    * whitespace is allowed before, between and after the parts. Infinities are
    * designated by `"Inf"` and `"-Inf"` or `"MinusInf"`.
    */
-  def unapply(s : String) : Option[Duration] = s match {
-    case RE(length, d, h, m, s, ms, mus, ns) =>
-      if (  d ne null) Some(Duration(JDouble.parseDouble(length), DAYS)) else
-      if (  h ne null) Some(Duration(JDouble.parseDouble(length), HOURS)) else
-      if (  m ne null) Some(Duration(JDouble.parseDouble(length), MINUTES)) else
-      if (  s ne null) Some(Duration(JDouble.parseDouble(length), SECONDS)) else
-      if ( ms ne null) Some(Duration(JDouble.parseDouble(length), MILLISECONDS)) else
-      if (mus ne null) Some(Duration(JDouble.parseDouble(length), MICROSECONDS)) else
-      if ( ns ne null) Some(Duration(JDouble.parseDouble(length), NANOSECONDS)) else
-      sys.error("made some error in regex (should not be possible)")
-    case REinf() => Some(Inf)
-    case REminf() => Some(MinusInf)
-    case _ => None
+  def unapply(s: String): Option[Duration] = s match {
+    case RE(length, d, h, m, s, ms, mus, ns) ⇒
+      if (d ne null) Some(Duration(JDouble.parseDouble(length), DAYS)) else if (h ne null) Some(Duration(JDouble.parseDouble(length), HOURS)) else if (m ne null) Some(Duration(JDouble.parseDouble(length), MINUTES)) else if (s ne null) Some(Duration(JDouble.parseDouble(length), SECONDS)) else if (ms ne null) Some(Duration(JDouble.parseDouble(length), MILLISECONDS)) else if (mus ne null) Some(Duration(JDouble.parseDouble(length), MICROSECONDS)) else if (ns ne null) Some(Duration(JDouble.parseDouble(length), NANOSECONDS)) else
+        sys.error("made some error in regex (should not be possible)")
+    case REinf()  ⇒ Some(Inf)
+    case REminf() ⇒ Some(MinusInf)
+    case _        ⇒ None
   }
 
   /**
    * Parse TimeUnit from string representation.
    */
   def timeUnit(unit: String) = unit.toLowerCase match {
-    case "d"   | "day"    | "days"                                    => DAYS
-    case "h"   | "hour"   | "hours"                                   => HOURS
-    case "min" | "minute" | "minutes"                                 => MINUTES
-    case "s"   | "sec"    | "second" | "seconds"                      => SECONDS
-    case "ms"  | "milli"  | "millis" | "millisecond" | "milliseconds" => MILLISECONDS
-    case "µs"  | "micro"  | "micros" | "microsecond" | "microseconds" => MICROSECONDS
-    case "ns"  | "nano"   | "nanos"  | "nanosecond"  | "nanoseconds"  => NANOSECONDS
+    case "d" | "day" | "days"                                       ⇒ DAYS
+    case "h" | "hour" | "hours"                                     ⇒ HOURS
+    case "min" | "minute" | "minutes"                               ⇒ MINUTES
+    case "s" | "sec" | "second" | "seconds"                         ⇒ SECONDS
+    case "ms" | "milli" | "millis" | "millisecond" | "milliseconds" ⇒ MILLISECONDS
+    case "µs" | "micro" | "micros" | "microsecond" | "microseconds" ⇒ MICROSECONDS
+    case "ns" | "nano" | "nanos" | "nanosecond" | "nanoseconds"     ⇒ NANOSECONDS
   }
 
   /*
@@ -102,48 +96,48 @@ object Duration {
   val timeFactor: Double = {
     val factor = System.getProperty("akka.test.timefactor", "1.0")
     try { factor.toDouble }
-    catch { case e: java.lang.NumberFormatException => 1.0 }
+    catch { case e: java.lang.NumberFormatException ⇒ 1.0 }
   }
 
-  val Zero : Duration = new FiniteDuration(0, NANOSECONDS)
+  val Zero: Duration = new FiniteDuration(0, NANOSECONDS)
 
   trait Infinite {
-    this : Duration =>
+    this: Duration ⇒
 
-    override def equals(other : Any) = false
+    override def equals(other: Any) = false
 
-    def +(other : Duration) : Duration =
+    def +(other: Duration): Duration =
       other match {
-        case _ : this.type => this
-        case _ : Infinite => throw new IllegalArgumentException("illegal addition of infinities")
-        case _ => this
+        case _: this.type ⇒ this
+        case _: Infinite  ⇒ throw new IllegalArgumentException("illegal addition of infinities")
+        case _            ⇒ this
       }
-    def -(other : Duration) : Duration =
+    def -(other: Duration): Duration =
       other match {
-        case _ : this.type => throw new IllegalArgumentException("illegal subtraction of infinities")
-        case _ => this
+        case _: this.type ⇒ throw new IllegalArgumentException("illegal subtraction of infinities")
+        case _            ⇒ this
       }
-    def *(factor : Double) : Duration = this
-    def /(factor : Double) : Duration = this
-    def /(other : Duration) : Double =
+    def *(factor: Double): Duration = this
+    def /(factor: Double): Duration = this
+    def /(other: Duration): Double =
       other match {
-        case _ : Infinite => throw new IllegalArgumentException("illegal division of infinities")
+        case _: Infinite ⇒ throw new IllegalArgumentException("illegal division of infinities")
         // maybe questionable but pragmatic: Inf / 0 => Inf
-        case x => Double.PositiveInfinity * (if ((this > Zero) ^ (other >= Zero)) -1 else 1)
+        case x           ⇒ Double.PositiveInfinity * (if ((this > Zero) ^ (other >= Zero)) -1 else 1)
       }
-  
+
     def finite_? = false
-  
-    def length : Long = throw new IllegalArgumentException("length not allowed on infinite Durations")
-    def unit : TimeUnit = throw new IllegalArgumentException("unit not allowed on infinite Durations")
-    def toNanos : Long = throw new IllegalArgumentException("toNanos not allowed on infinite Durations")
-    def toMicros : Long = throw new IllegalArgumentException("toMicros not allowed on infinite Durations")
-    def toMillis : Long = throw new IllegalArgumentException("toMillis not allowed on infinite Durations")
-    def toSeconds : Long = throw new IllegalArgumentException("toSeconds not allowed on infinite Durations")
-    def toMinutes : Long = throw new IllegalArgumentException("toMinutes not allowed on infinite Durations")
-    def toHours : Long = throw new IllegalArgumentException("toHours not allowed on infinite Durations")
-    def toDays : Long = throw new IllegalArgumentException("toDays not allowed on infinite Durations")
-    def toUnit(unit : TimeUnit) : Double = throw new IllegalArgumentException("toUnit not allowed on infinite Durations")
+
+    def length: Long = throw new IllegalArgumentException("length not allowed on infinite Durations")
+    def unit: TimeUnit = throw new IllegalArgumentException("unit not allowed on infinite Durations")
+    def toNanos: Long = throw new IllegalArgumentException("toNanos not allowed on infinite Durations")
+    def toMicros: Long = throw new IllegalArgumentException("toMicros not allowed on infinite Durations")
+    def toMillis: Long = throw new IllegalArgumentException("toMillis not allowed on infinite Durations")
+    def toSeconds: Long = throw new IllegalArgumentException("toSeconds not allowed on infinite Durations")
+    def toMinutes: Long = throw new IllegalArgumentException("toMinutes not allowed on infinite Durations")
+    def toHours: Long = throw new IllegalArgumentException("toHours not allowed on infinite Durations")
+    def toDays: Long = throw new IllegalArgumentException("toDays not allowed on infinite Durations")
+    def toUnit(unit: TimeUnit): Double = throw new IllegalArgumentException("toUnit not allowed on infinite Durations")
 
     def printHMS = toString
   }
@@ -152,12 +146,12 @@ object Duration {
    * Infinite duration: greater than any other and not equal to any other,
    * including itself.
    */
-  val Inf : Duration = new Duration with Infinite {
+  val Inf: Duration = new Duration with Infinite {
     override def toString = "Duration.Inf"
-    def >(other : Duration) = true
-    def >=(other : Duration) = true
-    def <(other : Duration) = false
-    def <=(other : Duration) = false
+    def >(other: Duration) = true
+    def >=(other: Duration) = true
+    def <(other: Duration) = false
+    def <=(other: Duration) = false
     def unary_- : Duration = MinusInf
   }
 
@@ -165,20 +159,20 @@ object Duration {
    * Infinite negative duration: lesser than any other and not equal to any other,
    * including itself.
    */
-  val MinusInf : Duration = new Duration with Infinite {
+  val MinusInf: Duration = new Duration with Infinite {
     override def toString = "Duration.MinusInf"
-    def >(other : Duration) = false
-    def >=(other : Duration) = false
-    def <(other : Duration) = true
-    def <=(other : Duration) = true
+    def >(other: Duration) = false
+    def >=(other: Duration) = false
+    def <(other: Duration) = true
+    def <=(other: Duration) = true
     def unary_- : Duration = Inf
   }
 
   // Java Factories
-  def create(length : Long, unit : TimeUnit) : Duration = apply(length, unit)
-  def create(length : Double, unit : TimeUnit) : Duration = apply(length, unit)
-  def create(length : Long, unit : String) : Duration = apply(length, unit)
-  def parse(s : String) : Duration = unapply(s).get
+  def create(length: Long, unit: TimeUnit): Duration = apply(length, unit)
+  def create(length: Double, unit: TimeUnit): Duration = apply(length, unit)
+  def create(length: Long, unit: String): Duration = apply(length, unit)
+  def parse(s: String): Duration = unapply(s).get
 }
 
 /**
@@ -227,42 +221,42 @@ object Duration {
  * </pre>
  */
 abstract class Duration {
-  def length : Long
-  def unit : TimeUnit
-  def toNanos : Long
-  def toMicros : Long
-  def toMillis : Long
-  def toSeconds : Long
-  def toMinutes : Long
-  def toHours : Long
-  def toDays : Long
-  def toUnit(unit : TimeUnit) : Double
-  def printHMS : String
-  def <(other : Duration) : Boolean
-  def <=(other : Duration) : Boolean
-  def >(other : Duration) : Boolean
-  def >=(other : Duration) : Boolean
-  def +(other : Duration) : Duration
-  def -(other : Duration) : Duration
-  def *(factor : Double) : Duration
-  def /(factor : Double) : Duration
-  def /(other : Duration) : Double
+  def length: Long
+  def unit: TimeUnit
+  def toNanos: Long
+  def toMicros: Long
+  def toMillis: Long
+  def toSeconds: Long
+  def toMinutes: Long
+  def toHours: Long
+  def toDays: Long
+  def toUnit(unit: TimeUnit): Double
+  def printHMS: String
+  def <(other: Duration): Boolean
+  def <=(other: Duration): Boolean
+  def >(other: Duration): Boolean
+  def >=(other: Duration): Boolean
+  def +(other: Duration): Duration
+  def -(other: Duration): Duration
+  def *(factor: Double): Duration
+  def /(factor: Double): Duration
+  def /(other: Duration): Double
   def unary_- : Duration
   def finite_? : Boolean
-  def dilated : Duration = this * Duration.timeFactor
-  def min(other : Duration) : Duration = if (this < other) this else other
-  def max(other : Duration) : Duration = if (this > other) this else other
+  def dilated: Duration = this * Duration.timeFactor
+  def min(other: Duration): Duration = if (this < other) this else other
+  def max(other: Duration): Duration = if (this > other) this else other
 
   // Java API
-  def lt(other : Duration) = this < other
-  def lteq(other : Duration) = this <= other
-  def gt(other : Duration) = this > other
-  def gteq(other : Duration) = this >= other
-  def plus(other : Duration) = this + other
-  def minus(other : Duration) = this - other
-  def mul(factor : Double) = this * factor
-  def div(factor : Double) = this / factor
-  def div(other : Duration) = this / other
+  def lt(other: Duration) = this < other
+  def lteq(other: Duration) = this <= other
+  def gt(other: Duration) = this > other
+  def gteq(other: Duration) = this >= other
+  def plus(other: Duration) = this + other
+  def minus(other: Duration) = this - other
+  def mul(factor: Double) = this * factor
+  def div(factor: Double) = this / factor
+  def div(other: Duration) = this / other
   def neg() = -this
   def isFinite() = finite_?
 }
@@ -279,28 +273,28 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   def toMinutes = unit.toMinutes(length)
   def toHours = unit.toHours(length)
   def toDays = unit.toDays(length)
-  def toUnit(u : TimeUnit) = long2double(toNanos) / NANOSECONDS.convert(1, u)
+  def toUnit(u: TimeUnit) = long2double(toNanos) / NANOSECONDS.convert(1, u)
 
   override def toString = this match {
-    case Duration(1, DAYS) => "1 day"
-    case Duration(x, DAYS) => x+" days"
-    case Duration(1, HOURS) => "1 hour"
-    case Duration(x, HOURS) => x+" hours"
-    case Duration(1, MINUTES) => "1 minute"
-    case Duration(x, MINUTES) => x+" minutes"
-    case Duration(1, SECONDS) => "1 second"
-    case Duration(x, SECONDS) => x+" seconds"
-    case Duration(1, MILLISECONDS) => "1 millisecond"
-    case Duration(x, MILLISECONDS) => x+" milliseconds"
-    case Duration(1, MICROSECONDS) => "1 microsecond"
-    case Duration(x, MICROSECONDS) => x+" microseconds"
-    case Duration(1, NANOSECONDS) => "1 nanosecond"
-    case Duration(x, NANOSECONDS) => x+" nanoseconds"
+    case Duration(1, DAYS)         ⇒ "1 day"
+    case Duration(x, DAYS)         ⇒ x + " days"
+    case Duration(1, HOURS)        ⇒ "1 hour"
+    case Duration(x, HOURS)        ⇒ x + " hours"
+    case Duration(1, MINUTES)      ⇒ "1 minute"
+    case Duration(x, MINUTES)      ⇒ x + " minutes"
+    case Duration(1, SECONDS)      ⇒ "1 second"
+    case Duration(x, SECONDS)      ⇒ x + " seconds"
+    case Duration(1, MILLISECONDS) ⇒ "1 millisecond"
+    case Duration(x, MILLISECONDS) ⇒ x + " milliseconds"
+    case Duration(1, MICROSECONDS) ⇒ "1 microsecond"
+    case Duration(x, MICROSECONDS) ⇒ x + " microseconds"
+    case Duration(1, NANOSECONDS)  ⇒ "1 nanosecond"
+    case Duration(x, NANOSECONDS)  ⇒ x + " nanoseconds"
   }
 
   def printHMS = "%02d:%02d:%06.3f".format(toHours, toMinutes % 60, toMillis / 1000. % 60)
 
-  def <(other : Duration) = {
+  def <(other: Duration) = {
     if (other.finite_?) {
       toNanos < other.asInstanceOf[FiniteDuration].toNanos
     } else {
@@ -308,7 +302,7 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     }
   }
 
-  def <=(other : Duration) = {
+  def <=(other: Duration) = {
     if (other.finite_?) {
       toNanos <= other.asInstanceOf[FiniteDuration].toNanos
     } else {
@@ -316,7 +310,7 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     }
   }
 
-  def >(other : Duration) = {
+  def >(other: Duration) = {
     if (other.finite_?) {
       toNanos > other.asInstanceOf[FiniteDuration].toNanos
     } else {
@@ -324,7 +318,7 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     }
   }
 
-  def >=(other : Duration) = {
+  def >=(other: Duration) = {
     if (other.finite_?) {
       toNanos >= other.asInstanceOf[FiniteDuration].toNanos
     } else {
@@ -332,7 +326,7 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     }
   }
 
-  def +(other : Duration) = {
+  def +(other: Duration) = {
     if (!other.finite_?) {
       other
     } else {
@@ -341,7 +335,7 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     }
   }
 
-  def -(other : Duration) = {
+  def -(other: Duration) = {
     if (!other.finite_?) {
       other
     } else {
@@ -350,19 +344,19 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     }
   }
 
-  def *(factor : Double) = fromNanos(long2double(toNanos) * factor)
+  def *(factor: Double) = fromNanos(long2double(toNanos) * factor)
 
-  def /(factor : Double) = fromNanos(long2double(toNanos) / factor)
+  def /(factor: Double) = fromNanos(long2double(toNanos) / factor)
 
-  def /(other : Duration) = if (other.finite_?) long2double(toNanos) / other.toNanos else 0
+  def /(other: Duration) = if (other.finite_?) long2double(toNanos) / other.toNanos else 0
 
   def unary_- = Duration(-length, unit)
 
   def finite_? = true
 
-  override def equals(other : Any) =
+  override def equals(other: Any) =
     other.isInstanceOf[FiniteDuration] &&
-    toNanos == other.asInstanceOf[FiniteDuration].toNanos
+      toNanos == other.asInstanceOf[FiniteDuration].toNanos
 
   override def hashCode = toNanos.asInstanceOf[Int]
 }
@@ -374,13 +368,13 @@ class DurationInt(n: Int) {
   def nano = Duration(n, NANOSECONDS)
 
   def microseconds = Duration(n, MICROSECONDS)
-  def micros =  Duration(n, MICROSECONDS)
+  def micros = Duration(n, MICROSECONDS)
   def microsecond = Duration(n, MICROSECONDS)
-  def micro =  Duration(n, MICROSECONDS)
+  def micro = Duration(n, MICROSECONDS)
 
-  def milliseconds =  Duration(n, MILLISECONDS)
+  def milliseconds = Duration(n, MILLISECONDS)
   def millis = Duration(n, MILLISECONDS)
-  def millisecond =  Duration(n, MILLISECONDS)
+  def millisecond = Duration(n, MILLISECONDS)
   def milli = Duration(n, MILLISECONDS)
 
   def seconds = Duration(n, SECONDS)
@@ -403,13 +397,13 @@ class DurationLong(n: Long) {
   def nano = Duration(n, NANOSECONDS)
 
   def microseconds = Duration(n, MICROSECONDS)
-  def micros =  Duration(n, MICROSECONDS)
+  def micros = Duration(n, MICROSECONDS)
   def microsecond = Duration(n, MICROSECONDS)
-  def micro =  Duration(n, MICROSECONDS)
+  def micro = Duration(n, MICROSECONDS)
 
-  def milliseconds =  Duration(n, MILLISECONDS)
+  def milliseconds = Duration(n, MILLISECONDS)
   def millis = Duration(n, MILLISECONDS)
-  def millisecond =  Duration(n, MILLISECONDS)
+  def millisecond = Duration(n, MILLISECONDS)
   def milli = Duration(n, MILLISECONDS)
 
   def seconds = Duration(n, SECONDS)
@@ -432,13 +426,13 @@ class DurationDouble(d: Double) {
   def nano = Duration(d, NANOSECONDS)
 
   def microseconds = Duration(d, MICROSECONDS)
-  def micros =  Duration(d, MICROSECONDS)
+  def micros = Duration(d, MICROSECONDS)
   def microsecond = Duration(d, MICROSECONDS)
-  def micro =  Duration(d, MICROSECONDS)
+  def micro = Duration(d, MICROSECONDS)
 
-  def milliseconds =  Duration(d, MILLISECONDS)
+  def milliseconds = Duration(d, MILLISECONDS)
   def millis = Duration(d, MILLISECONDS)
-  def millisecond =  Duration(d, MILLISECONDS)
+  def millisecond = Duration(d, MILLISECONDS)
   def milli = Duration(d, MILLISECONDS)
 
   def seconds = Duration(d, SECONDS)

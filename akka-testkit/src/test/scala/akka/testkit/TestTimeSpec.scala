@@ -1,7 +1,7 @@
 package akka.testkit
 
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.{BeforeAndAfterEach, WordSpec}
+import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.util.Duration
 
 class TestTimeSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
@@ -21,7 +21,7 @@ class TestTimeSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
   }
 
   "A TestKit" must {
-  
+
     "correctly dilate times" in {
       val probe = TestProbe()
       val now = System.nanoTime
@@ -30,7 +30,7 @@ class TestTimeSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
       diff must be > 1700000000l
       diff must be < 3000000000l
     }
-  
+
   }
 
 }

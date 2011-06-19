@@ -9,8 +9,8 @@ import java.util.concurrent.atomic.AtomicLong
 import akka.event.EventHandler
 import akka.config.Configuration
 import akka.config.Config.TIME_UNIT
-import akka.util.{Duration, Switch, ReentrantGuard}
-import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy}
+import akka.util.{ Duration, Switch, ReentrantGuard }
+import java.util.concurrent.ThreadPoolExecutor.{ AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy }
 import akka.actor._
 
 /**
@@ -24,20 +24,21 @@ final case class MessageInvocation(val receiver: ActorRef,
   def invoke = try {
     receiver.invoke(this)
   } catch {
-    case e: NullPointerException => throw new ActorInitializationException(
+    case e: NullPointerException ⇒ throw new ActorInitializationException(
       "Don't call 'self ! message' in the Actor's constructor (in Scala this means in the body of the class).")
   }
 }
 
-final case class FutureInvocation[T](future: CompletableFuture[T], function: () => T, cleanup: () => Unit) extends Runnable {
+final case class FutureInvocation[T](future: CompletableFuture[T], function: () ⇒ T, cleanup: () ⇒ Unit) extends Runnable {
   def run = {
     future complete (try {
       Right(function())
     } catch {
-      case e =>
+      case e ⇒
         EventHandler.error(e, this, e.getMessage)
         Left(e)
-    } finally {
+    }
+    finally {
       cleanup()
     })
   }
@@ -45,7 +46,7 @@ final case class FutureInvocation[T](future: CompletableFuture[T], function: () 
 
 object MessageDispatcher {
   val UNSCHEDULED = 0
-  val SCHEDULED   = 1
+  val SCHEDULED = 1
   val RESCHEDULED = 2
 
   implicit def defaultGlobalDispatcher = Dispatchers.defaultGlobalDispatcher
@@ -57,10 +58,10 @@ object MessageDispatcher {
 trait MessageDispatcher {
   import MessageDispatcher._
 
-  protected val uuids   = new ConcurrentSkipListSet[Uuid]
+  protected val uuids = new ConcurrentSkipListSet[Uuid]
   protected val futures = new AtomicLong(0L)
-  protected val guard   = new ReentrantGuard
-  protected val active  = new Switch(false)
+  protected val guard = new ReentrantGuard
+  protected val active = new Switch(false)
 
   private var shutdownSchedule = UNSCHEDULED //This can be non-volatile since it is protected by guard withGuard
 
@@ -85,7 +86,7 @@ trait MessageDispatcher {
 
   private[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = dispatch(invocation)
 
-  private[akka] final def dispatchFuture[T](block: () => T, timeout: Long): Future[T] = {
+  private[akka] final def dispatchFuture[T](block: () ⇒ T, timeout: Long): Future[T] = {
     futures.getAndIncrement()
     try {
       val future = new DefaultCompletableFuture[T](timeout)
@@ -96,23 +97,23 @@ trait MessageDispatcher {
       executeFuture(FutureInvocation[T](future, block, futureCleanup))
       future
     } catch {
-      case e =>
+      case e ⇒
         futures.decrementAndGet
         throw e
     }
   }
 
-  private val futureCleanup: () => Unit =
-   () => if (futures.decrementAndGet() == 0) {
+  private val futureCleanup: () ⇒ Unit =
+    () ⇒ if (futures.decrementAndGet() == 0) {
       guard withGuard {
         if (futures.get == 0 && uuids.isEmpty) {
           shutdownSchedule match {
-            case UNSCHEDULED =>
+            case UNSCHEDULED ⇒
               shutdownSchedule = SCHEDULED
               Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
-            case SCHEDULED =>
+            case SCHEDULED ⇒
               shutdownSchedule = RESCHEDULED
-            case RESCHEDULED => //Already marked for reschedule
+            case RESCHEDULED ⇒ //Already marked for reschedule
           }
         }
       }
@@ -133,14 +134,14 @@ trait MessageDispatcher {
   private[akka] def unregister(actorRef: ActorRef) = {
     if (uuids remove actorRef.uuid) {
       actorRef.mailbox = null
-      if (uuids.isEmpty && futures.get == 0){
+      if (uuids.isEmpty && futures.get == 0) {
         shutdownSchedule match {
-          case UNSCHEDULED =>
+          case UNSCHEDULED ⇒
             shutdownSchedule = SCHEDULED
             Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
-          case SCHEDULED =>
+          case SCHEDULED ⇒
             shutdownSchedule = RESCHEDULED
-          case RESCHEDULED => //Already marked for reschedule
+          case RESCHEDULED ⇒ //Already marked for reschedule
         }
       }
     }
@@ -154,8 +155,8 @@ trait MessageDispatcher {
     while (i.hasNext()) {
       val uuid = i.next()
       Actor.registry.actorFor(uuid) match {
-        case Some(actor) => actor.stop()
-        case None        => {}
+        case Some(actor) ⇒ actor.stop()
+        case None        ⇒ {}
       }
     }
   }
@@ -163,17 +164,17 @@ trait MessageDispatcher {
   private val shutdownAction = new Runnable {
     def run = guard withGuard {
       shutdownSchedule match {
-        case RESCHEDULED =>
+        case RESCHEDULED ⇒
           shutdownSchedule = SCHEDULED
           Scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
-        case SCHEDULED =>
+        case SCHEDULED ⇒
           if (uuids.isEmpty && futures.get == 0) {
             active switchOff {
               shutdown // shut down in the dispatcher's references is zero
             }
           }
           shutdownSchedule = UNSCHEDULED
-        case UNSCHEDULED => //Do nothing
+        case UNSCHEDULED ⇒ //Do nothing
       }
     }
   }
@@ -242,22 +243,22 @@ abstract class MessageDispatcherConfigurator {
     else BoundedMailbox(capacity, Duration(config.getInt("mailbox-push-timeout-time", Dispatchers.MAILBOX_PUSH_TIME_OUT.toMillis.toInt), TIME_UNIT))
   }
 
-  def configureThreadPool(config: Configuration, createDispatcher: => (ThreadPoolConfig) => MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
+  def configureThreadPool(config: Configuration, createDispatcher: ⇒ (ThreadPoolConfig) ⇒ MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
     import ThreadPoolConfigDispatcherBuilder.conf_?
 
     //Apply the following options to the config if they are present in the config
-    ThreadPoolConfigDispatcherBuilder(createDispatcher,ThreadPoolConfig()).configure(
-      conf_?(config getInt    "keep-alive-time"      )(time   => _.setKeepAliveTime(Duration(time, TIME_UNIT))),
-      conf_?(config getDouble "core-pool-size-factor")(factor => _.setCorePoolSizeFromFactor(factor)),
-      conf_?(config getDouble "max-pool-size-factor" )(factor => _.setMaxPoolSizeFromFactor(factor)),
-      conf_?(config getInt    "executor-bounds"      )(bounds => _.setExecutorBounds(bounds)),
-      conf_?(config getBool   "allow-core-timeout"   )(allow  => _.setAllowCoreThreadTimeout(allow)),
+    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig()).configure(
+      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, TIME_UNIT))),
+      conf_?(config getDouble "core-pool-size-factor")(factor ⇒ _.setCorePoolSizeFromFactor(factor)),
+      conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
+      conf_?(config getInt "executor-bounds")(bounds ⇒ _.setExecutorBounds(bounds)),
+      conf_?(config getBool "allow-core-timeout")(allow ⇒ _.setAllowCoreThreadTimeout(allow)),
       conf_?(config getString "rejection-policy" map {
-        case "abort"          => new AbortPolicy()
-        case "caller-runs"    => new CallerRunsPolicy()
-        case "discard-oldest" => new DiscardOldestPolicy()
-        case "discard"        => new DiscardPolicy()
-        case x                => throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy!" format x)
-      })(policy => _.setRejectionPolicy(policy)))
+        case "abort"          ⇒ new AbortPolicy()
+        case "caller-runs"    ⇒ new CallerRunsPolicy()
+        case "discard-oldest" ⇒ new DiscardOldestPolicy()
+        case "discard"        ⇒ new DiscardPolicy()
+        case x                ⇒ throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy!" format x)
+      })(policy ⇒ _.setRejectionPolicy(policy)))
   }
 }

@@ -10,7 +10,6 @@ package akka.config
 
 import java.io.File
 
-
 object Configuration {
   val DefaultPath = new File(".").getCanonicalPath
   val DefaultImporter = new FilesystemImporter(DefaultPath)
@@ -77,7 +76,7 @@ class Configuration(val map: Map[String, Any]) {
     try {
       Some(map(key))
     } catch {
-      case _ => None
+      case _ ⇒ None
     }
   }
 
@@ -88,7 +87,7 @@ class Configuration(val map: Map[String, Any]) {
     try {
       map(key).asInstanceOf[Seq[Any]]
     } catch {
-      case _ => Seq.empty[Any]
+      case _ ⇒ Seq.empty[Any]
     }
   }
 
@@ -101,7 +100,7 @@ class Configuration(val map: Map[String, Any]) {
     try {
       map(key).asInstanceOf[Seq[String]]
     } catch {
-      case _ => Seq.empty[String]
+      case _ ⇒ Seq.empty[String]
     }
   }
 
@@ -109,7 +108,7 @@ class Configuration(val map: Map[String, Any]) {
     try {
       Some(map(key).toString.toInt)
     } catch {
-      case _ => None
+      case _ ⇒ None
     }
   }
 
@@ -120,7 +119,7 @@ class Configuration(val map: Map[String, Any]) {
     try {
       Some(map(key).toString.toLong)
     } catch {
-      case _ => None
+      case _ ⇒ None
     }
   }
 
@@ -131,7 +130,7 @@ class Configuration(val map: Map[String, Any]) {
     try {
       Some(map(key).toString.toFloat)
     } catch {
-      case _ => None
+      case _ ⇒ None
     }
   }
 
@@ -142,7 +141,7 @@ class Configuration(val map: Map[String, Any]) {
     try {
       Some(map(key).toString.toDouble)
     } catch {
-      case _ => None
+      case _ ⇒ None
     }
   }
 
@@ -150,7 +149,7 @@ class Configuration(val map: Map[String, Any]) {
     getDouble(key).getOrElse(outputIfDesiredAndReturnInput(key, defaultValue))
 
   def getBoolean(key: String): Option[Boolean] = {
-    getString(key) flatMap { s =>
+    getString(key) flatMap { s ⇒
       val isTrue = trueValues.contains(s)
       if (!isTrue && !falseValues.contains(s)) None
       else Some(isTrue)
@@ -166,8 +165,8 @@ class Configuration(val map: Map[String, Any]) {
     getBoolean(key, defaultValue)
 
   def apply(key: String): String = getString(key) match {
-    case None => throw new ConfigurationException("undefined config: " + key)
-    case Some(v) => v
+    case None    ⇒ throw new ConfigurationException("undefined config: " + key)
+    case Some(v) ⇒ v
   }
 
   def apply(key: String, defaultValue: String) = getString(key, defaultValue)
@@ -177,7 +176,7 @@ class Configuration(val map: Map[String, Any]) {
 
   def getSection(name: String): Option[Configuration] = {
     val l = name.length + 1
-    val m = map.collect { case (k, v) if k.startsWith(name) => (k.substring(l), v) }
+    val m = map.collect { case (k, v) if k.startsWith(name) ⇒ (k.substring(l), v) }
     if (m.isEmpty) None
     else Some(new Configuration(m))
   }

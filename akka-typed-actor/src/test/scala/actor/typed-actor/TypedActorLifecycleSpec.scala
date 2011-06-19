@@ -1,7 +1,7 @@
 package akka.actor
 
 import org.junit.runner.RunWith
-import org.scalatest.{BeforeAndAfterAll, Spec}
+import org.scalatest.{ BeforeAndAfterAll, Spec }
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.ShouldMatchers
 
@@ -14,7 +14,6 @@ import akka.config.TypedActorConfigurator
 
 import akka.testkit.Testing
 import akka.util.duration._
-
 
 /**
  * @author Martin Krasser
@@ -48,12 +47,12 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
         obj.fail
         fail("expected exception not thrown")
       } catch {
-        case e: RuntimeException => {
+        case e: RuntimeException ⇒ {
           cdl.await
           assert(SamplePojoImpl._pre)
           assert(SamplePojoImpl._post)
           assert(!SamplePojoImpl._down)
-//          assert(AspectInitRegistry.initFor(obj) ne null)
+          //          assert(AspectInitRegistry.initFor(obj) ne null)
         }
       }
     }
@@ -68,12 +67,12 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
         obj.fail
         fail("expected exception not thrown")
       } catch {
-        case e: RuntimeException => {
+        case e: RuntimeException ⇒ {
           cdl.await
           assert(!SamplePojoImpl._pre)
           assert(!SamplePojoImpl._post)
           assert(SamplePojoImpl._down)
- //         assert(AspectInitRegistry.initFor(obj) eq null)
+          //         assert(AspectInitRegistry.initFor(obj) eq null)
         }
       }
     }
@@ -107,20 +106,20 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
           first.fail
           fail("shouldn't get here")
         } catch {
-          case r: RuntimeException if r.getMessage == "expected" => //expected
+          case r: RuntimeException if r.getMessage == "expected" ⇒ //expected
         }
 
         // allow some time for the actor to be stopped
         Testing.sleepFor(3 seconds)
 
         val second = conf.getInstance(classOf[TypedActorFailer])
-        first should be (second)
+        first should be(second)
 
         try {
           second.fail
           fail("shouldn't get here")
         } catch {
-          case r: ActorInitializationException if r.getMessage == "Actor has not been started, you need to invoke 'actor.start()' before using it" => //expected
+          case r: ActorInitializationException if r.getMessage == "Actor has not been started, you need to invoke 'actor.start()' before using it" ⇒ //expected
         }
       } finally {
         conf.stop
@@ -128,29 +127,29 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
     }
 
     it("should be restarted when supervision handles the problem in") {
-     val actorSupervision = new SuperviseTypedActor(classOf[TypedActorFailer],classOf[TypedActorFailerImpl],permanent(), 30000)
-     val conf = new TypedActorConfigurator().configure(OneForOneStrategy(classOf[Throwable] :: Nil, 3, 500000), Array(actorSupervision)).inject.supervise
-     try {
-       val first = conf.getInstance(classOf[TypedActorFailer])
-       try {
-         first.fail
-         fail("shouldn't get here")
-       } catch {
-         case r: RuntimeException if r.getMessage == "expected" => //expected
-       }
-       val second = conf.getInstance(classOf[TypedActorFailer])
+      val actorSupervision = new SuperviseTypedActor(classOf[TypedActorFailer], classOf[TypedActorFailerImpl], permanent(), 30000)
+      val conf = new TypedActorConfigurator().configure(OneForOneStrategy(classOf[Throwable] :: Nil, 3, 500000), Array(actorSupervision)).inject.supervise
+      try {
+        val first = conf.getInstance(classOf[TypedActorFailer])
+        try {
+          first.fail
+          fail("shouldn't get here")
+        } catch {
+          case r: RuntimeException if r.getMessage == "expected" ⇒ //expected
+        }
+        val second = conf.getInstance(classOf[TypedActorFailer])
 
-       first should be (second)
+        first should be(second)
 
-       try {
-         second.fail
-         fail("shouldn't get here")
-       } catch {
-         case r: RuntimeException if r.getMessage == "expected" => //expected
-       }
-     } finally {
-       conf.stop
-     }
-   }
- }
+        try {
+          second.fail
+          fail("shouldn't get here")
+        } catch {
+          case r: RuntimeException if r.getMessage == "expected" ⇒ //expected
+        }
+      } finally {
+        conf.stop
+      }
+    }
+  }
 }

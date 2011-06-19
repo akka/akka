@@ -4,25 +4,21 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import akka.remote.netty.NettyRemoteSupport
-import akka.actor. {Actor, ActorRegistry}
-import java.util.concurrent. {TimeUnit, CountDownLatch}
-import org.scalatest.{Spec, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach}
+import akka.actor.{ Actor, ActorRegistry }
+import java.util.concurrent.{ TimeUnit, CountDownLatch }
+import org.scalatest.{ Spec, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
 import java.util.concurrent.atomic.AtomicBoolean
 
 object AkkaRemoteTest {
   class ReplyHandlerActor(latch: CountDownLatch, expect: String) extends Actor {
     def receive = {
-      case x: String if x == expect => latch.countDown()
+      case x: String if x == expect ⇒ latch.countDown()
     }
   }
 }
 
 @RunWith(classOf[JUnitRunner])
-class AkkaRemoteTest extends
-  WordSpec with
-  MustMatchers with
-  BeforeAndAfterAll with
-  BeforeAndAfterEach {
+class AkkaRemoteTest extends WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
   import AkkaRemoteTest._
 
   val remote = Actor.remote
@@ -46,7 +42,7 @@ class AkkaRemoteTest extends
   }
 
   override def beforeEach() {
-    remote.start(host,port)
+    remote.start(host, port)
     super.beforeEach
   }
 
@@ -61,14 +57,14 @@ class AkkaRemoteTest extends
   def replyHandler(latch: CountDownLatch, expect: String) = Actor.actorOf(new ReplyHandlerActor(latch, expect)).start()
 }
 
-trait NetworkFailureTest { self: WordSpec =>
+trait NetworkFailureTest { self: WordSpec ⇒
   import akka.actor.Actor._
   import akka.util.Duration
 
   // override is subclass if needed
   val BYTES_PER_SECOND = "60KByte/s"
-  val DELAY_MILLIS     = "350ms"
-  val PORT_RANGE       = "1024-65535"
+  val DELAY_MILLIS = "350ms"
+  val PORT_RANGE = "1024-65535"
 
   // FIXME add support for TCP FIN by hooking into Netty and do socket.close
 
@@ -80,7 +76,7 @@ trait NetworkFailureTest { self: WordSpec =>
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e =>
+        case e ⇒
           dead.set(true)
           e.printStackTrace
       }
@@ -95,7 +91,7 @@ trait NetworkFailureTest { self: WordSpec =>
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e =>
+        case e ⇒
           dead.set(true)
           e.printStackTrace
       }
@@ -110,7 +106,7 @@ trait NetworkFailureTest { self: WordSpec =>
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e =>
+        case e ⇒
           dead.set(true)
           e.printStackTrace
       }

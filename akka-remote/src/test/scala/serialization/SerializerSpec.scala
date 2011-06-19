@@ -15,7 +15,6 @@ case class MyMessage(val id: String, val value: Tuple2[String, Int]) {
   private def this() = this(null, null)
 }
 
-
 class SerializerSpec extends JUnitSuite {
   @Test
   def shouldSerializeString = {

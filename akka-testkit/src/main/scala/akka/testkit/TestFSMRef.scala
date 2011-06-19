@@ -32,7 +32,7 @@ import akka.util._
  * @author Roland Kuhn
  * @since 1.2
  */
-class TestFSMRef[S, D, T <: Actor](factory: () => T)(implicit ev: T <:< FSM[S, D]) extends TestActorRef(factory) {
+class TestFSMRef[S, D, T <: Actor](factory: () ⇒ T)(implicit ev: T <:< FSM[S, D]) extends TestActorRef(factory) {
 
   private def fsm = underlyingActor
 
@@ -77,6 +77,6 @@ class TestFSMRef[S, D, T <: Actor](factory: () => T)(implicit ev: T <:< FSM[S, D
 
 object TestFSMRef {
 
-  def apply[S, D, T <: Actor](factory: => T)(implicit ev: T <:< FSM[S, D]): TestFSMRef[S, D, T] = new TestFSMRef(() => factory)
+  def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D]): TestFSMRef[S, D, T] = new TestFSMRef(() ⇒ factory)
 
 }

@@ -18,26 +18,26 @@ object FSMTransitionSpec {
 
   class Supervisor extends Actor {
     self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), None, None)
-    def receive = { case _ => }
+    def receive = { case _ ⇒ }
   }
 
-  class MyFSM(target : ActorRef) extends Actor with FSM[Int, Unit] {
+  class MyFSM(target: ActorRef) extends Actor with FSM[Int, Unit] {
     startWith(0, Unit)
     when(0) {
-      case Ev("tick") => goto(1)
+      case Ev("tick") ⇒ goto(1)
     }
     when(1) {
-      case Ev("tick") => goto(0)
+      case Ev("tick") ⇒ goto(0)
     }
     whenUnhandled {
-      case Ev("reply") => stay replying "reply"
+      case Ev("reply") ⇒ stay replying "reply"
     }
     initialize
-    override def preRestart(reason : Throwable) { target ! "restarted" }
+    override def preRestart(reason: Throwable) { target ! "restarted" }
   }
 
-  class Forwarder(target : ActorRef) extends Actor {
-    def receive = { case x => target ! x }
+  class Forwarder(target: ActorRef) extends Actor {
+    def receive = { case x ⇒ target ! x }
   }
 
 }
@@ -45,7 +45,7 @@ object FSMTransitionSpec {
 class FSMTransitionSpec extends WordSpec with MustMatchers with TestKit {
 
   import FSMTransitionSpec._
-  
+
   "A FSM transition notifier" must {
 
     "notify listeners" in {

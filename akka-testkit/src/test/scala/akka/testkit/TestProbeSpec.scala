@@ -7,14 +7,14 @@ import akka.util.duration._
 class TestProbeSpec extends WordSpec with MustMatchers {
 
   "A TestProbe" must {
-  
+
     "reply to futures" in {
       val tk = TestProbe()
       val future = tk.ref ? "hello"
       tk.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
       tk.reply("world")
-      future must be ('completed)
-      future.get must equal ("world")
+      future must be('completed)
+      future.get must equal("world")
     }
 
     "reply to messages" in {
@@ -34,7 +34,7 @@ class TestProbeSpec extends WordSpec with MustMatchers {
       probe2.reply("world")
       probe1.expectMsg(0 millis, "world")
     }
-  
+
   }
 
 }

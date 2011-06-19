@@ -29,7 +29,7 @@ class StmSpec extends WordSpec with MustMatchers {
       increment
       increment
 
-      total must be (3)
+      total must be(3)
     }
 
     "be able to do nested atomic {..} statements" in {
@@ -50,7 +50,7 @@ class StmSpec extends WordSpec with MustMatchers {
 
       atomic {
         increment
-        total must be (3)
+        total must be(3)
       }
     }
 
@@ -72,10 +72,10 @@ class StmSpec extends WordSpec with MustMatchers {
           throw new Exception
         }
       } catch {
-        case e => {}
+        case e ⇒ {}
       }
 
-      total must be (0)
+      total must be(0)
     }
 
     "use the outer transaction settings by default" in {
@@ -98,8 +98,8 @@ class StmSpec extends WordSpec with MustMatchers {
           }
         }
 
-      writableOuter must be (1)
-      evaluating { readonlyOuter } must produce [ReadonlyException]
+      writableOuter must be(1)
+      evaluating { readonlyOuter } must produce[ReadonlyException]
     }
 
     "allow propagation settings for nested transactions" in {
@@ -122,8 +122,8 @@ class StmSpec extends WordSpec with MustMatchers {
           }
         }
 
-      writableOuter must be (1)
-      readonlyOuter must be (2)
+      writableOuter must be(1)
+      readonlyOuter must be(2)
     }
   }
 }

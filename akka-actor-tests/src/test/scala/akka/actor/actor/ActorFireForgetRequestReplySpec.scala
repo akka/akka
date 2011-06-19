@@ -16,14 +16,13 @@ import Actor._
 import akka.config.Supervision._
 import akka.dispatch.Dispatchers
 
-
 object ActorFireForgetRequestReplySpec {
 
   class ReplyActor extends Actor {
     def receive = {
-      case "Send" =>
+      case "Send" ⇒
         self.reply("Reply")
-      case "SendImplicit" =>
+      case "SendImplicit" ⇒
         self.channel ! "ReplyImplicit"
     }
   }
@@ -32,7 +31,7 @@ object ActorFireForgetRequestReplySpec {
     self.lifeCycle = Temporary
 
     def receive = {
-      case "Die" =>
+      case "Die" ⇒
         state.finished.await
         throw new Exception("Expected exception")
     }
@@ -40,14 +39,14 @@ object ActorFireForgetRequestReplySpec {
 
   class SenderActor(replyActor: ActorRef) extends Actor {
     def receive = {
-      case "Init" =>
+      case "Init" ⇒
         replyActor ! "Send"
-      case "Reply" => {
+      case "Reply" ⇒ {
         state.s = "Reply"
         state.finished.await
       }
-      case "InitImplicit" => replyActor ! "SendImplicit"
-      case "ReplyImplicit" => {
+      case "InitImplicit" ⇒ replyActor ! "SendImplicit"
+      case "ReplyImplicit" ⇒ {
         state.s = "ReplyImplicit"
         state.finished.await
       }
@@ -65,16 +64,16 @@ class ActorFireForgetRequestReplySpec extends WordSpec with MustMatchers with Be
 
   override def beforeEach() = {
     state.finished.reset
-  }   
-      
+  }
+
   "An Actor" must {
 
-    "reply to bang message using reply" in {  
+    "reply to bang message using reply" in {
       val replyActor = actorOf[ReplyActor].start()
       val senderActor = actorOf(new SenderActor(replyActor)).start()
       senderActor ! "Init"
       state.finished.await
-      state.s must be ("Reply")
+      state.s must be("Reply")
     }
 
     "reply to bang message using implicit sender" in {
@@ -82,16 +81,16 @@ class ActorFireForgetRequestReplySpec extends WordSpec with MustMatchers with Be
       val senderActor = actorOf(new SenderActor(replyActor)).start()
       senderActor ! "InitImplicit"
       state.finished.await
-      state.s must be ("ReplyImplicit")
+      state.s must be("ReplyImplicit")
     }
 
     "should shutdown crashed temporary actor" in {
       val actor = actorOf[CrashingTemporaryActor].start()
-      actor.isRunning must be (true)
+      actor.isRunning must be(true)
       actor ! "Die"
       state.finished.await
       sleepFor(1 second)
-      actor.isShutdown must be (true)
+      actor.isShutdown must be(true)
     }
   }
 }

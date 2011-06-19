@@ -5,7 +5,7 @@
 package akka
 
 import akka.actor.newUuid
-import java.net.{InetAddress, UnknownHostException}
+import java.net.{ InetAddress, UnknownHostException }
 
 /**
  * Akka base Exception. Each Exception gets:
@@ -29,8 +29,8 @@ class AkkaException(message: String = "", cause: Throwable = null) extends Runti
   def stackTraceToString = {
     val trace = getStackTrace
     val sb = new StringBuffer
-    for (i <- 0 until trace.length)
-      sb.append("\tat %s\n" format trace(i))   
+    for (i ← 0 until trace.length)
+      sb.append("\tat %s\n" format trace(i))
     sb.toString
   }
 }
@@ -39,6 +39,6 @@ object AkkaException {
   val hostname = try {
     InetAddress.getLocalHost.getHostName
   } catch {
-    case e: UnknownHostException => "unknown"
+    case e: UnknownHostException ⇒ "unknown"
   }
 }

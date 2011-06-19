@@ -6,12 +6,12 @@ package akka.actor.remote
 
 import akka.actor._
 import akka.actor.Actor._
-import java.util.concurrent. {ConcurrentSkipListSet, TimeUnit}
+import java.util.concurrent.{ ConcurrentSkipListSet, TimeUnit }
 import akka.remote.netty.NettyRemoteSupport
 
 object ServerInitiatedRemoteSessionActorSpec {
 
-  case class Login(user:String)
+  case class Login(user: String)
   case class GetUser()
   case class DoSomethingFunny()
 
@@ -24,9 +24,9 @@ object ServerInitiatedRemoteSessionActorSpec {
     var user: String = "anonymous"
 
     def receive = {
-      case Login(user) => this.user = user
-      case GetUser()   => self.reply(this.user)
-      case DoSomethingFunny() => throw new Exception("Bad boy")
+      case Login(user)        ⇒ this.user = user
+      case GetUser()          ⇒ self.reply(this.user)
+      case DoSomethingFunny() ⇒ throw new Exception("Bad boy")
     }
   }
 
@@ -42,11 +42,11 @@ class ServerInitiatedRemoteSessionActorSpec extends AkkaRemoteTest {
       val session1 = remote.actorFor("untyped-session-actor-service", 5000L, host, port)
 
       val default1 = session1 !! GetUser()
-      default1.as[String] must equal (Some("anonymous"))
+      default1.as[String] must equal(Some("anonymous"))
 
       session1 ! Login("session[1]")
       val result1 = session1 !! GetUser()
-      result1.as[String] must equal (Some("session[1]"))
+      result1.as[String] must equal(Some("session[1]"))
 
       remote.shutdownClientModule()
 
@@ -54,7 +54,7 @@ class ServerInitiatedRemoteSessionActorSpec extends AkkaRemoteTest {
 
       // since this is a new session, the server should reset the state
       val default2 = session2 !! GetUser()
-      default2.as[String] must equal (Some("anonymous"))
+      default2.as[String] must equal(Some("anonymous"))
     }
 
     "stop the actor when the client disconnects" in {
@@ -63,7 +63,7 @@ class ServerInitiatedRemoteSessionActorSpec extends AkkaRemoteTest {
       val session1 = remote.actorFor("untyped-session-actor-service", 5000L, host, port)
 
       val default1 = session1 !! GetUser()
-      default1.as[String] must equal (Some("anonymous"))
+      default1.as[String] must equal(Some("anonymous"))
 
       instantiatedSessionActors must have size (1)
       remote.shutdownClientModule()
@@ -87,7 +87,7 @@ class ServerInitiatedRemoteSessionActorSpec extends AkkaRemoteTest {
       remote.registerPerSession("my-service-1", actorOf[RemoteStatefullSessionActorSpec])
       remote.asInstanceOf[NettyRemoteSupport].actorsFactories.get("my-service-1") must not be (null)
       remote.unregisterPerSession("my-service-1")
-      remote.asInstanceOf[NettyRemoteSupport].actorsFactories.get("my-service-1") must be (null)
+      remote.asInstanceOf[NettyRemoteSupport].actorsFactories.get("my-service-1") must be(null)
     }
   }
 }

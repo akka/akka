@@ -29,37 +29,37 @@ class ServerInitiatedRemoteTypedActorSpec extends AkkaRemoteTest {
     "receive one-way message" in {
       val actor = createRemoteActorRef
       actor.oneWay
-      oneWayLog.poll(5, TimeUnit.SECONDS) must equal ("oneway")
+      oneWayLog.poll(5, TimeUnit.SECONDS) must equal("oneway")
     }
 
     "should respond to request-reply message" in {
       val actor = createRemoteActorRef
-      actor.requestReply("ping") must equal ("pong")
+      actor.requestReply("ping") must equal("pong")
     }
 
     "should not recreate registered actors" in {
       val actor = createRemoteActorRef
       val numberOfActorsInRegistry = Actor.registry.actors.length
       actor.oneWay
-      oneWayLog.poll(5, TimeUnit.SECONDS) must equal ("oneway")
-      numberOfActorsInRegistry must be (Actor.registry.actors.length)
+      oneWayLog.poll(5, TimeUnit.SECONDS) must equal("oneway")
+      numberOfActorsInRegistry must be(Actor.registry.actors.length)
     }
 
     "should support multiple variants to get the actor from client side" in {
       var actor = createRemoteActorRef
 
       actor.oneWay
-      oneWayLog.poll(5, TimeUnit.SECONDS) must equal ("oneway")
+      oneWayLog.poll(5, TimeUnit.SECONDS) must equal("oneway")
 
       actor = remote.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", host, port)
 
       actor.oneWay
-      oneWayLog.poll(5, TimeUnit.SECONDS) must equal ("oneway")
+      oneWayLog.poll(5, TimeUnit.SECONDS) must equal("oneway")
 
       actor = remote.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, host, port, this.getClass().getClassLoader)
 
       actor.oneWay
-      oneWayLog.poll(5, TimeUnit.SECONDS) must equal ("oneway")
+      oneWayLog.poll(5, TimeUnit.SECONDS) must equal("oneway")
     }
 
     "should register and unregister typed actors" in {
@@ -67,7 +67,7 @@ class ServerInitiatedRemoteTypedActorSpec extends AkkaRemoteTest {
       remote.registerTypedActor("my-test-service", typedActor)
       remote.typedActors.get("my-test-service") must not be (null)
       remote.unregisterTypedActor("my-test-service")
-      remote.typedActors.get("my-test-service") must be (null)
+      remote.typedActors.get("my-test-service") must be(null)
     }
 
     "should register and unregister typed actors by uuid" in {
@@ -79,7 +79,7 @@ class ServerInitiatedRemoteTypedActorSpec extends AkkaRemoteTest {
       remote.typedActorsByUuid.get(init.actorRef.uuid.toString) must not be (null)
 
       remote.unregisterTypedActor(uuid)
-      remote.typedActorsByUuid.get(init.actorRef.uuid.toString) must be (null)
+      remote.typedActorsByUuid.get(init.actorRef.uuid.toString) must be(null)
     }
 
     "should find typed actors by uuid" in {
@@ -92,7 +92,7 @@ class ServerInitiatedRemoteTypedActorSpec extends AkkaRemoteTest {
 
       val actor = remote.typedActorFor(classOf[RemoteTypedActorOne], uuid, host, port)
       actor.oneWay
-      oneWayLog.poll(5, TimeUnit.SECONDS) must equal ("oneway")
+      oneWayLog.poll(5, TimeUnit.SECONDS) must equal("oneway")
     }
   }
 }

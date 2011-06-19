@@ -12,7 +12,6 @@ import akka.util.duration._
 
 import Actor._
 
-
 object ForwardActorSpec {
   object ForwardState {
     var sender: Option[ActorRef] = None
@@ -21,21 +20,20 @@ object ForwardActorSpec {
   class ReceiverActor extends Actor {
     val latch = TestLatch()
     def receive = {
-      case "SendBang" => {
+      case "SendBang" ⇒ {
         ForwardState.sender = self.sender
         latch.countDown()
       }
-      case "SendBangBang" => self.reply("SendBangBang")
+      case "SendBangBang" ⇒ self.reply("SendBangBang")
     }
   }
-
 
   class ForwardActor extends Actor {
     val receiverActor = actorOf[ReceiverActor]
     receiverActor.start()
     def receive = {
-      case "SendBang" => receiverActor.forward("SendBang")
-      case "SendBangBang" => receiverActor.forward("SendBangBang")
+      case "SendBang"     ⇒ receiverActor.forward("SendBang")
+      case "SendBangBang" ⇒ receiverActor.forward("SendBangBang")
     }
   }
 
@@ -44,7 +42,7 @@ object ForwardActorSpec {
     forwardActor.start()
     forwardActor ! "SendBang"
     def receive = {
-      case _ => {}
+      case _ ⇒ {}
     }
   }
 
@@ -53,11 +51,11 @@ object ForwardActorSpec {
     val forwardActor = actorOf[ForwardActor]
     forwardActor.start()
     (forwardActor !! "SendBangBang") match {
-      case Some(_) => latch.countDown()
-      case None => {}
+      case Some(_) ⇒ latch.countDown()
+      case None    ⇒ {}
     }
     def receive = {
-      case _ => {}
+      case _ ⇒ {}
     }
   }
 }
@@ -69,13 +67,13 @@ class ForwardActorSpec extends WordSpec with MustMatchers {
     "forward actor reference when invoking forward on bang" in {
       val senderActor = actorOf[BangSenderActor]
       val latch = senderActor.actor.asInstanceOf[BangSenderActor]
-      .forwardActor.actor.asInstanceOf[ForwardActor]
-      .receiverActor.actor.asInstanceOf[ReceiverActor]
-      .latch
+        .forwardActor.actor.asInstanceOf[ForwardActor]
+        .receiverActor.actor.asInstanceOf[ReceiverActor]
+        .latch
       senderActor.start()
       latch.await
       ForwardState.sender must not be (null)
-      senderActor.toString must be (ForwardState.sender.get.toString)
+      senderActor.toString must be(ForwardState.sender.get.toString)
     }
 
     "forward actor reference when invoking forward on bang bang" in {

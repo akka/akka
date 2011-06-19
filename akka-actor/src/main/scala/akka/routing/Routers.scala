@@ -4,12 +4,12 @@
 
 package akka.routing
 
-import akka.actor.{UntypedActor, Actor, ActorRef, ForwardableChannel}
+import akka.actor.{ UntypedActor, Actor, ActorRef, ForwardableChannel }
 
 /**
  * A Dispatcher is a trait whose purpose is to route incoming messages to actors.
  */
-trait Dispatcher { this: Actor =>
+trait Dispatcher { this: Actor ⇒
 
   protected def transform(msg: Any): Any = msg
 
@@ -18,9 +18,9 @@ trait Dispatcher { this: Actor =>
   protected def broadcast(message: Any) {}
 
   protected def dispatch: Receive = {
-    case Routing.Broadcast(message) =>
+    case Routing.Broadcast(message) ⇒
       broadcast(message)
-    case a if routes.isDefinedAt(a) =>
+    case a if routes.isDefinedAt(a) ⇒
       if (isSenderDefined) routes(a).forward(transform(a))(someSelf)
       else routes(a).!(transform(a))(None)
   }
@@ -58,16 +58,16 @@ abstract class UntypedDispatcher extends UntypedActor {
  * A LoadBalancer is a specialized kind of Dispatcher, that is supplied an InfiniteIterator of targets
  * to dispatch incoming messages to.
  */
-trait LoadBalancer extends Dispatcher { self: Actor =>
+trait LoadBalancer extends Dispatcher { self: Actor ⇒
   protected def seq: InfiniteIterator[ActorRef]
 
   protected def routes = {
-    case x if seq.hasNext => seq.next
+    case x if seq.hasNext ⇒ seq.next
   }
 
   override def broadcast(message: Any) = seq.items.foreach(_ ! message)
 
-  override def isDefinedAt(msg: Any) = seq.exists( _.isDefinedAt(msg) )
+  override def isDefinedAt(msg: Any) = seq.exists(_.isDefinedAt(msg))
 }
 
 /**
@@ -83,5 +83,5 @@ abstract class UntypedLoadBalancer extends UntypedDispatcher {
 
   override def broadcast(message: Any) = seq.items.foreach(_ ! message)
 
-  override def isDefinedAt(msg: Any) = seq.exists( _.isDefinedAt(msg) )
+  override def isDefinedAt(msg: Any) = seq.exists(_.isDefinedAt(msg))
 }

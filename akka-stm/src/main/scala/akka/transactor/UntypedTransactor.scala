@@ -4,13 +4,12 @@
 
 package akka.transactor
 
-import akka.actor.{UntypedActor, ActorRef}
-import akka.stm.{DefaultTransactionConfig, TransactionFactory}
+import akka.actor.{ UntypedActor, ActorRef }
+import akka.stm.{ DefaultTransactionConfig, TransactionFactory }
 
-import java.util.{Set => JSet}
+import java.util.{ Set ⇒ JSet }
 
 import scala.collection.JavaConversions._
-
 
 /**
  * An UntypedActor version of transactor for using from Java.
@@ -29,16 +28,16 @@ abstract class UntypedTransactor extends UntypedActor {
   @throws(classOf[Exception])
   final def onReceive(message: Any): Unit = {
     message match {
-      case coordinated @ Coordinated(message) => {
+      case coordinated@Coordinated(message) ⇒ {
         val others = coordinate(message)
-        for (sendTo <- others) {
+        for (sendTo ← others) {
           sendTo.actor.sendOneWay(coordinated(sendTo.message.getOrElse(message)))
         }
         before(message)
         coordinated.atomic(txFactory) { atomically(message) }
         after(message)
       }
-      case message => {
+      case message ⇒ {
         val normal = normally(message)
         if (!normal) onReceive(Coordinated(message))
       }
@@ -70,7 +69,7 @@ abstract class UntypedTransactor extends UntypedActor {
    * For including one other actor in this coordinated transaction and specifying the
    * message to send. Use as the result in `coordinated`.
    */
-  def include(actor: ActorRef, message: Any): JSet[SendTo] =  Set(SendTo(actor, Some(message)))
+  def include(actor: ActorRef, message: Any): JSet[SendTo] = Set(SendTo(actor, Some(message)))
 
   /**
    * For including another actor in this coordinated transaction and sending
@@ -82,7 +81,7 @@ abstract class UntypedTransactor extends UntypedActor {
    * For including another actor in this coordinated transaction and specifying the
    * message to send. Use to create the result in `coordinated`.
    */
-  def sendTo(actor: ActorRef, message: Any): SendTo =  SendTo(actor, Some(message))
+  def sendTo(actor: ActorRef, message: Any): SendTo = SendTo(actor, Some(message))
 
   /**
    * A Receive block that runs before the coordinated transaction is entered.

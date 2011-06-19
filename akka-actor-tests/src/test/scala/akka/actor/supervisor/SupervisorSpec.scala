@@ -12,12 +12,11 @@ import akka.testkit._
 import akka.testkit.Testing.sleepFor
 import akka.util.duration._
 import akka.config.Supervision._
-import akka.{Die, Ping}
+import akka.{ Die, Ping }
 import Actor._
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
-
 
 object SupervisorSpec {
   val Timeout = 5 seconds
@@ -41,10 +40,10 @@ object SupervisorSpec {
 
   class PingPongActor extends Actor {
     def receive = {
-      case Ping =>
+      case Ping ⇒
         messageLog.put(PingMessage)
         self.reply_?(PongMessage)
-      case Die =>
+      case Die ⇒
         throw new RuntimeException(ExceptionMessage)
     }
 
@@ -63,7 +62,7 @@ object SupervisorSpec {
     val temp = self.spawnLink[TemporaryActor]
 
     override def receive = {
-      case Die => temp !! (Die, TimeoutMillis)
+      case Die ⇒ temp !! (Die, TimeoutMillis)
     }
   }
 
@@ -80,7 +79,7 @@ object SupervisorSpec {
         Supervise(
           temporaryActor,
           Temporary)
-        :: Nil))
+          :: Nil))
 
     (temporaryActor, supervisor)
   }
@@ -94,7 +93,7 @@ object SupervisorSpec {
         Supervise(
           pingpong,
           Permanent)
-        :: Nil))
+          :: Nil))
 
     (pingpong, supervisor)
   }
@@ -108,7 +107,7 @@ object SupervisorSpec {
         Supervise(
           pingpong,
           Permanent)
-        :: Nil))
+          :: Nil))
 
     (pingpong, supervisor)
   }
@@ -124,15 +123,15 @@ object SupervisorSpec {
         Supervise(
           pingpong1,
           Permanent)
-        ::
-        Supervise(
-          pingpong2,
-          Permanent)
-        ::
-        Supervise(
-          pingpong3,
-          Permanent)
-        :: Nil))
+          ::
+          Supervise(
+            pingpong2,
+            Permanent)
+            ::
+            Supervise(
+              pingpong3,
+              Permanent)
+              :: Nil))
 
     (pingpong1, pingpong2, pingpong3, supervisor)
   }
@@ -148,15 +147,15 @@ object SupervisorSpec {
         Supervise(
           pingpong1,
           Permanent)
-        ::
-        Supervise(
-          pingpong2,
-          Permanent)
-        ::
-        Supervise(
-          pingpong3,
-          Permanent)
-        :: Nil))
+          ::
+          Supervise(
+            pingpong2,
+            Permanent)
+            ::
+            Supervise(
+              pingpong3,
+              Permanent)
+              :: Nil))
 
     (pingpong1, pingpong2, pingpong3, supervisor)
   }
@@ -172,21 +171,21 @@ object SupervisorSpec {
         Supervise(
           pingpong1,
           Permanent)
-        ::
-        SupervisorConfig(
-          AllForOneStrategy(Nil, 3, TimeoutMillis),
-          Supervise(
-            pingpong2,
-            Permanent)
           ::
-          Supervise(
-            pingpong3,
-            Permanent)
-          :: Nil)
-      :: Nil))
+          SupervisorConfig(
+            AllForOneStrategy(Nil, 3, TimeoutMillis),
+            Supervise(
+              pingpong2,
+              Permanent)
+              ::
+              Supervise(
+                pingpong3,
+                Permanent)
+                :: Nil)
+            :: Nil))
 
     (pingpong1, pingpong2, pingpong3, supervisor)
-   }
+  }
 }
 
 class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
@@ -197,13 +196,13 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
   }
 
   def ping(pingPongActor: ActorRef) = {
-    (pingPongActor !! (Ping, TimeoutMillis)).getOrElse("nil") must be (PongMessage)
-    messageLogPoll must be (PingMessage)
+    (pingPongActor !! (Ping, TimeoutMillis)).getOrElse("nil") must be(PongMessage)
+    messageLogPoll must be(PingMessage)
   }
 
   def kill(pingPongActor: ActorRef) = {
     intercept[RuntimeException] { pingPongActor !! (Die, TimeoutMillis) }
-    messageLogPoll must be (ExceptionMessage)
+    messageLogPoll must be(ExceptionMessage)
   }
 
   "A supervisor" must {
@@ -216,7 +215,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       }
 
       sleepFor(1 second)
-      messageLog.size must be (0)
+      messageLog.size must be(0)
     }
 
     "not restart temporary actor" in {
@@ -227,7 +226,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       }
 
       sleepFor(1 second)
-      messageLog.size must be (0)
+      messageLog.size must be(0)
     }
 
     "start server for nested supervisor hierarchy" in {
@@ -289,10 +288,10 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       kill(actor2)
 
       // and two more exception messages
-      messageLogPoll must be (ExceptionMessage)
-      messageLogPoll must be (ExceptionMessage)
+      messageLogPoll must be(ExceptionMessage)
+      messageLogPoll must be(ExceptionMessage)
     }
-    
+
     "call-kill-call multiple actors AllForOne" in {
       val (actor1, actor2, actor3, supervisor) = multipleActorsAllForOne
 
@@ -303,8 +302,8 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       kill(actor2)
 
       // and two more exception messages
-      messageLogPoll must be (ExceptionMessage)
-      messageLogPoll must be (ExceptionMessage)
+      messageLogPoll must be(ExceptionMessage)
+      messageLogPoll must be(ExceptionMessage)
 
       ping(actor1)
       ping(actor2)
@@ -315,22 +314,22 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       val (actor, supervisor) = singleActorOneForOne
 
       actor ! Die
-      messageLogPoll must be (ExceptionMessage)
+      messageLogPoll must be(ExceptionMessage)
     }
 
     "one-way call-kill-call single actor OneForOne" in {
       val (actor, supervisor) = singleActorOneForOne
 
       actor ! Ping
-      messageLogPoll must be (PingMessage)
+      messageLogPoll must be(PingMessage)
 
       actor ! Die
-      messageLogPoll must be (ExceptionMessage)
+      messageLogPoll must be(ExceptionMessage)
 
       actor ! Ping
-      messageLogPoll must be (PingMessage)
+      messageLogPoll must be(PingMessage)
     }
-    
+
     "restart killed actors in nested superviser hierarchy" in {
       val (actor1, actor2, actor3, supervisor) = nestedSupervisorsAllForOne
 
@@ -341,8 +340,8 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       kill(actor2)
 
       // and two more exception messages
-      messageLogPoll must be (ExceptionMessage)
-      messageLogPoll must be (ExceptionMessage)
+      messageLogPoll must be(ExceptionMessage)
+      messageLogPoll must be(ExceptionMessage)
 
       ping(actor1)
       ping(actor2)
@@ -359,8 +358,8 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
         if (inits.get % 2 == 0) throw new IllegalStateException("Don't wanna!")
 
         def receive = {
-          case Ping => self.reply_?(PongMessage)
-          case Die => throw new Exception("expected")
+          case Ping ⇒ self.reply_?(PongMessage)
+          case Die  ⇒ throw new Exception("expected")
         }
       })
 
@@ -377,9 +376,9 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       // give time for restart
       sleepFor(3 seconds)
 
-      (dyingActor !! (Ping, TimeoutMillis)).getOrElse("nil") must be (PongMessage)
+      (dyingActor !! (Ping, TimeoutMillis)).getOrElse("nil") must be(PongMessage)
 
-      inits.get must be (3)
+      inits.get must be(3)
 
       supervisor.shutdown()
     }

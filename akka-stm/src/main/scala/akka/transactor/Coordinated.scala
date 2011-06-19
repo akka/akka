@@ -5,9 +5,9 @@
 package akka.transactor
 
 import akka.config.Config
-import akka.stm.{Atomic, DefaultTransactionConfig, TransactionFactory}
+import akka.stm.{ Atomic, DefaultTransactionConfig, TransactionFactory }
 
-import org.multiverse.api.{Transaction => MultiverseTransaction}
+import org.multiverse.api.{ Transaction ⇒ MultiverseTransaction }
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 import org.multiverse.templates.TransactionalCallable
 
@@ -119,14 +119,14 @@ class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
    * Delimits the coordinated transaction. The transaction will wait for all other transactions
    * in this coordination before committing. The timeout is specified by the transaction factory.
    */
-  def atomic[T](body: => T)(implicit factory: TransactionFactory = Coordinated.DefaultFactory): T =
+  def atomic[T](body: ⇒ T)(implicit factory: TransactionFactory = Coordinated.DefaultFactory): T =
     atomic(factory)(body)
 
   /**
    * Delimits the coordinated transaction. The transaction will wait for all other transactions
    * in this coordination before committing. The timeout is specified by the transaction factory.
    */
-  def atomic[T](factory: TransactionFactory)(body: => T): T = {
+  def atomic[T](factory: TransactionFactory)(body: ⇒ T): T = {
     factory.boilerplate.execute(new TransactionalCallable[T]() {
       def call(mtx: MultiverseTransaction): T = {
         val result = body

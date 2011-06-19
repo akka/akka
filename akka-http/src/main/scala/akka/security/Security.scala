@@ -22,18 +22,18 @@
 
 package akka.security
 
-import akka.actor.{Scheduler, Actor, ActorRef, ActorRegistry, IllegalActorStateException}
+import akka.actor.{ Scheduler, Actor, ActorRef, ActorRegistry, IllegalActorStateException }
 import akka.event.EventHandler
 import akka.actor.Actor._
 import akka.config.Config
 
 import com.sun.jersey.api.model.AbstractMethod
-import com.sun.jersey.spi.container.{ResourceFilterFactory, ContainerRequest, ContainerRequestFilter, ContainerResponse, ContainerResponseFilter, ResourceFilter}
+import com.sun.jersey.spi.container.{ ResourceFilterFactory, ContainerRequest, ContainerRequestFilter, ContainerResponse, ContainerResponseFilter, ResourceFilter }
 import com.sun.jersey.core.util.Base64
 
-import javax.ws.rs.core.{SecurityContext, Context, Response}
+import javax.ws.rs.core.{ SecurityContext, Context, Response }
 import javax.ws.rs.WebApplicationException
-import javax.annotation.security.{DenyAll, PermitAll, RolesAllowed}
+import javax.annotation.security.{ DenyAll, PermitAll, RolesAllowed }
 import java.security.Principal
 import java.util.concurrent.TimeUnit
 
@@ -71,7 +71,7 @@ case class SpnegoCredentials(token: Array[Byte]) extends Credentials
  */
 class AkkaSecurityFilterFactory extends ResourceFilterFactory {
   class Filter(actor: ActorRef, rolesAllowed: Option[List[String]])
-      extends ResourceFilter with ContainerRequestFilter {
+    extends ResourceFilter with ContainerRequestFilter {
 
     override def getRequestFilter: ContainerRequestFilter = this
 
@@ -83,19 +83,19 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory {
      */
     override def filter(request: ContainerRequest): ContainerRequest =
       rolesAllowed match {
-        case Some(roles) => {
+        case Some(roles) ⇒ {
           val result = (authenticator !! Authenticate(request, roles)).as[AnyRef]
           result match {
-            case Some(OK) => request
-            case Some(r) if r.isInstanceOf[Response] =>
+            case Some(OK) ⇒ request
+            case Some(r) if r.isInstanceOf[Response] ⇒
               throw new WebApplicationException(r.asInstanceOf[Response])
-            case None => throw new WebApplicationException(408)
-            case unknown => {
+            case None ⇒ throw new WebApplicationException(408)
+            case unknown ⇒ {
               throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR)
             }
           }
         }
-        case None => throw new WebApplicationException(Response.Status.FORBIDDEN)
+        case None ⇒ throw new WebApplicationException(Response.Status.FORBIDDEN)
       }
   }
 
@@ -168,7 +168,7 @@ trait AuthenticationActor[C <: Credentials] extends Actor {
   //This is the default security context factory
   def mkDefaultSecurityContext(r: Req, u: UserInfo, scheme: String): SecurityContext = {
     val n = u.username
-    val p = new Principal {def getName = n}
+    val p = new Principal { def getName = n }
 
     new SecurityContext {
       def getAuthenticationScheme = scheme
@@ -186,14 +186,14 @@ trait AuthenticationActor[C <: Credentials] extends Actor {
    * this should ensure good integration with current Jersey security
    */
   protected val authenticate: Receive = {
-    case Authenticate(req, roles) => {
+    case Authenticate(req, roles) ⇒ {
       verify(extractCredentials(req)) match {
-        case Some(u: UserInfo) => {
+        case Some(u: UserInfo) ⇒ {
           req.setSecurityContext(mkSecurityContext(req, u))
           if (roles.exists(req.isUserInRole(_))) self.reply(OK)
           else self.reply(Response.status(Response.Status.FORBIDDEN).build)
         }
-        case _ => self.reply(unauthorized)
+        case _ ⇒ self.reply(unauthorized)
       }
     }
   }
@@ -223,14 +223,14 @@ trait BasicAuthenticationActor extends AuthenticationActor[BasicCredentials] {
     val Authorization = """(.*):(.*)""".r
 
     authOption(r) match {
-      case Some(token) => {
+      case Some(token) ⇒ {
         val authResponse = new String(Base64.decode(token.substring(6).getBytes))
         authResponse match {
-          case Authorization(username, password) => Some(BasicCredentials(username, password))
-          case _ => None
+          case Authorization(username, password) ⇒ Some(BasicCredentials(username, password))
+          case _                                 ⇒ None
         }
       }
-      case _ => None
+      case _ ⇒ None
     }
   }
 
@@ -253,10 +253,10 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] {
 
   //Discards old nonces
   protected val invalidateNonces: Receive = {
-    case InvalidateNonces =>
+    case InvalidateNonces ⇒
       val ts = System.currentTimeMillis
-      nonceMap.filter(tuple => (ts - tuple._2) < nonceValidityPeriod)
-    case unknown => {}
+      nonceMap.filter(tuple ⇒ (ts - tuple._2) < nonceValidityPeriod)
+    case unknown ⇒ {}
   }
 
   //Schedule the invalidation of nonces
@@ -275,9 +275,9 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] {
     Response.status(401).header(
       "WWW-Authenticate",
       "Digest realm=\"" + realm + "\", " +
-      "qop=\"" + qop + "\", " +
-      "nonce=\"" + nonce + "\", " +
-      "opaque=\"" + opaque + "\"").build
+        "qop=\"" + qop + "\", " +
+        "nonce=\"" + nonce + "\", " +
+        "opaque=\"" + opaque + "\"").build
   }
 
   //Tests wether the specified credentials are valid
@@ -289,25 +289,25 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] {
 
     val response = h(
       ha1 + ":" + auth.nonce + ":" +
-      auth.nc + ":" + auth.cnonce + ":" +
-      auth.qop + ":" + ha2)
+        auth.nc + ":" + auth.cnonce + ":" +
+        auth.qop + ":" + ha2)
 
     (response == auth.response) && (nonceMap.getOrElse(auth.nonce, -1) != -1)
   }
 
   override def verify(odc: Option[DigestCredentials]): Option[UserInfo] = odc match {
-    case Some(dc) => {
+    case Some(dc) ⇒ {
       userInfo(dc.userName) match {
-        case Some(u) if validate(dc, u) =>
-          nonceMap.get(dc.nonce).map(t => (System.currentTimeMillis - t) < nonceValidityPeriod).map(_ => u)
-        case _ => None
+        case Some(u) if validate(dc, u) ⇒
+          nonceMap.get(dc.nonce).map(t ⇒ (System.currentTimeMillis - t) < nonceValidityPeriod).map(_ ⇒ u)
+        case _ ⇒ None
       }
     }
-    case _ => None
+    case _ ⇒ None
   }
 
   override def extractCredentials(r: Req): Option[DigestCredentials] = {
-    authOption(r).map(s => {
+    authOption(r).map(s ⇒ {
       val ? = splitNameValuePairs(s.substring(7, s.length))
       DigestCredentials(r.getMethod.toUpperCase,
         ?("username"), ?("realm"), ?("nonce"),
@@ -354,27 +354,26 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] {
     val AuthHeader = """Negotiate\s(.*)""".r
 
     authOption(r) match {
-      case Some(AuthHeader(token)) =>
+      case Some(AuthHeader(token)) ⇒
         Some(SpnegoCredentials(Base64.decodeBase64(token.trim.getBytes)))
-      case _ => None
+      case _ ⇒ None
     }
   }
 
-
   override def verify(odc: Option[SpnegoCredentials]): Option[UserInfo] = odc match {
-    case Some(dc) => {
+    case Some(dc) ⇒ {
       try {
         val principal = Subject.doAs(this.serviceSubject, new KerberosValidateAction(dc.token));
         val user = stripRealmFrom(principal)
         Some(UserInfo(user, null, rolesFor(user)))
       } catch {
-        case e: PrivilegedActionException => {
+        case e: PrivilegedActionException ⇒ {
           EventHandler.error(e, this, e.getMessage)
           None
         }
       }
     }
-    case _ => None
+    case _ ⇒ None
   }
 
   override def mkSecurityContext(r: Req, u: UserInfo): SecurityContext =
@@ -494,24 +493,24 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] {
 * limitations under the License.
 */
 object LiftUtils {
-  import java.security.{MessageDigest,SecureRandom}
+  import java.security.{ MessageDigest, SecureRandom }
   val random = new SecureRandom()
 
   def md5(in: Array[Byte]): Array[Byte] = (MessageDigest.getInstance("MD5")).digest(in)
 
   /**
-  * Create a random string of a given size
-  * @param size size of the string to create. Must be a positive or nul integer
-  * @return the generated string
-  */
+   * Create a random string of a given size
+   * @param size size of the string to create. Must be a positive or nul integer
+   * @return the generated string
+   */
   def randomString(size: Int): String = {
     def addChar(pos: Int, lastRand: Int, sb: StringBuilder): StringBuilder = {
       if (pos >= size) sb
       else {
         val randNum = if ((pos % 6) == 0) random.nextInt else lastRand
         sb.append((randNum & 0x1f) match {
-          case n if n < 26 => ('A' + n).toChar
-          case n => ('0' + (n - 26)).toChar
+          case n if n < 26 ⇒ ('A' + n).toChar
+          case n           ⇒ ('0' + (n - 26)).toChar
         })
         addChar(pos + 1, randNum >> 5, sb)
       }
@@ -519,7 +518,7 @@ object LiftUtils {
     addChar(0, 0, new StringBuilder(size)).toString
   }
 
-/** encode a Byte array as hexadecimal characters */
+  /** encode a Byte array as hexadecimal characters */
   def hexEncode(in: Array[Byte]): String = {
     val sb = new StringBuilder
     val len = in.length
@@ -537,15 +536,14 @@ object LiftUtils {
     sb.toString
   }
 
-
- /**
-  * Splits a string of the form &lt;name1=value1, name2=value2, ... &gt; and unquotes the quoted values.
-  * The result is a Map[String, String]
-  */
+  /**
+   * Splits a string of the form &lt;name1=value1, name2=value2, ... &gt; and unquotes the quoted values.
+   * The result is a Map[String, String]
+   */
   def splitNameValuePairs(props: String): Map[String, String] = {
-   /**
-    * If str is surrounded by quotes it return the content between the quotes
-    */
+    /**
+     * If str is surrounded by quotes it return the content between the quotes
+     */
     def unquote(str: String) = {
       if ((str ne null) && str.length >= 2 && str.charAt(0) == '\"' && str.charAt(str.length - 1) == '\"')
         str.substring(1, str.length - 1)
@@ -553,11 +551,11 @@ object LiftUtils {
         str
     }
 
-    val list = props.split(",").toList.map(in => {
-      val pair = in match { case null => Nil case s => s.split("=").toList.map(_.trim).filter(_.length > 0) }
-       (pair(0), unquote(pair(1)))
+    val list = props.split(",").toList.map(in ⇒ {
+      val pair = in match { case null ⇒ Nil case s ⇒ s.split("=").toList.map(_.trim).filter(_.length > 0) }
+      (pair(0), unquote(pair(1)))
     })
     val map: Map[String, String] = Map.empty
-            (map /: list)((m, next) => m + (next))
+    (map /: list)((m, next) ⇒ m + (next))
   }
 }
