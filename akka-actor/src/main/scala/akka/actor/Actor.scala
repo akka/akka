@@ -145,19 +145,37 @@ object Actor extends ListenerManagement {
     def this(length: Long, unit: TimeUnit) = this(Duration(length, unit))
   }
   object Timeout {
+    /**
+     * The default timeout, based on the config setting 'akka.actor.timeout'
+     */
+    implicit val default = new Timeout(TIMEOUT)
+
+    /**
+     * A timeout with zero duration, will cause most requests to always timeout.
+     */
+    val zero = new Timeout(Duration.Zero)
+
+    /**
+     * A Timeout with infinite duration. Will never timeout. Use extreme caution with this
+     * as it may cause memory leaks, blocked threads, or may not even be supported by
+     * the receiver, which would result in an exception.
+     */
+    val never = new Timeout(Duration.Inf)
+
+    /**
+     * Used to indicate that this timeout should not be used.
+     */
+    val none = new Timeout(Duration.MinusInf)
+
     def apply(timeout: Long) = new Timeout(timeout)
     def apply(length: Long, unit: TimeUnit) = new Timeout(length, unit)
-    implicit def default = defaultTimeout
-    val zero = new Timeout(Duration.Zero)
-    val never = new Timeout(Duration.Inf)
+
     implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
     implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
     implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
   }
 
   private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
-  val defaultTimeout = Timeout(TIMEOUT)
-  val noTimeoutGiven = Timeout(Long.MinValue)
   private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**

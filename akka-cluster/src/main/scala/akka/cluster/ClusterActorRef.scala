@@ -51,13 +51,13 @@ class ClusterActorRef private[akka] (
 
   override def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
-    timeout: Long,
+    timeout: Timeout,
     channel: UntypedChannel): Future[Any] = {
     val sender = channel match {
       case ref: ActorRef ⇒ Some(ref)
       case _             ⇒ None
     }
-    route[Any](message, timeout)(sender)
+    route[Any](message, timeout.duration.toMillis)(sender)
   }
 
   private[akka] def failOver(fromInetSocketAddress: InetSocketAddress, toInetSocketAddress: InetSocketAddress) {

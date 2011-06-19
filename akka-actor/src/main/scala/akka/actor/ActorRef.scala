@@ -13,6 +13,7 @@ import akka.serialization.{ Format, Serializer }
 import ReflectiveAccess._
 import ClusterModule._
 import DeploymentConfig.{ ReplicationScheme, Replication, Transient, WriteThrough, WriteBehind }
+import akka.actor.Actor.Timeout
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
@@ -383,7 +384,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
-    timeout: Long,
+    timeout: Timeout,
     channel: UntypedChannel): Future[Any]
 
   protected[akka] def actorInstance: AtomicReference[Actor]
@@ -666,7 +667,7 @@ class LocalActorRef private[akka] (
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
-    timeout: Long,
+    timeout: Timeout,
     channel: UntypedChannel): Future[Any] = {
     val future = channel match {
       case f: ActorPromise ⇒ f
@@ -979,7 +980,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
-    timeout: Long,
+    timeout: Timeout,
     channel: UntypedChannel): Future[Any] = {
     val chSender = channel match {
       case ref: ActorRef ⇒ Some(ref)
@@ -989,7 +990,7 @@ private[akka] case class RemoteActorRef private[akka] (
       case f: Promise[Any] ⇒ Some(f)
       case _               ⇒ None
     }
-    val future = Actor.remote.send[Any](message, chSender, chFuture, remoteAddress, timeout, false, this, loader)
+    val future = Actor.remote.send[Any](message, chSender, chFuture, remoteAddress, timeout.duration.toMillis, false, this, loader)
     if (future.isDefined) ActorPromise(future.get)
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
@@ -1183,10 +1184,10 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
   /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
    */
-  def ?(message: Any, timeout: Actor.Timeout = Actor.noTimeoutGiven)(implicit channel: UntypedChannel = NullChannel, implicitTimeout: Actor.Timeout = Actor.defaultTimeout): Future[Any] = {
+  def ?(message: Any, timeout: Timeout = Timeout.none)(implicit channel: UntypedChannel = NullChannel, implicitTimeout: Actor.Timeout = Timeout.default): Future[Any] = {
     if (isRunning) {
-      val realTimeout = if (timeout eq Actor.noTimeoutGiven) implicitTimeout else timeout
-      postMessageToMailboxAndCreateFutureResultWithTimeout(message, realTimeout.duration.toMillis, channel)
+      val realTimeout = if (timeout eq Timeout.none) implicitTimeout else timeout
+      postMessageToMailboxAndCreateFutureResultWithTimeout(message, realTimeout, channel)
     } else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }

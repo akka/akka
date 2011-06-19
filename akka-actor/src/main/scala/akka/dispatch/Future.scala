@@ -66,7 +66,7 @@ object Futures {
   /**
    * Returns a Future to the result of the first future in the list that is completed
    */
-  def firstCompletedOf[T](futures: Iterable[Future[T]], timeout: Timeout = Timeout.default): Future[T] = {
+  def firstCompletedOf[T](futures: Iterable[Future[T]], timeout: Timeout = Timeout.never): Future[T] = {
     val futureResult = new DefaultPromise[T](timeout)
 
     val completeFirst: Future[T] ⇒ Unit = _.value.foreach(futureResult complete _)
