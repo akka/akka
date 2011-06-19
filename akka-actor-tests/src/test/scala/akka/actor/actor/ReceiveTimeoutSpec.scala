@@ -13,7 +13,6 @@ import akka.util.duration._
 import Actor._
 import java.util.concurrent.atomic.AtomicInteger
 
-
 class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
   import Actor._
 
@@ -26,7 +25,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
         self.receiveTimeout = Some(500L)
 
         protected def receive = {
-          case ReceiveTimeout => timeoutLatch.open
+          case ReceiveTimeout ⇒ timeoutLatch.open
         }
       }).start()
 
@@ -41,7 +40,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
         self.receiveTimeout = Some(500L)
 
         protected def receive = {
-          case ReceiveTimeout => timeoutLatch.open
+          case ReceiveTimeout ⇒ timeoutLatch.open
         }
       }).start()
 
@@ -49,14 +48,14 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
 
       val swappedLatch = TestLatch()
 
-      timeoutActor ! HotSwap(self => {
-        case ReceiveTimeout => swappedLatch.open
-       })
+      timeoutActor ! HotSwap(self ⇒ {
+        case ReceiveTimeout ⇒ swappedLatch.open
+      })
 
       swappedLatch.await
       timeoutActor.stop()
     }
-    
+
     "reschedule timeout after regular receive" in {
       val timeoutLatch = TestLatch()
       case object Tick
@@ -65,8 +64,8 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
         self.receiveTimeout = Some(500L)
 
         protected def receive = {
-          case Tick => ()
-            case ReceiveTimeout => timeoutLatch.open
+          case Tick           ⇒ ()
+          case ReceiveTimeout ⇒ timeoutLatch.open
         }
       }).start()
 
@@ -85,8 +84,8 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
         self.receiveTimeout = Some(500L)
 
         protected def receive = {
-          case Tick => ()
-          case ReceiveTimeout =>
+          case Tick ⇒ ()
+          case ReceiveTimeout ⇒
             count.incrementAndGet
             timeoutLatch.open
             self.receiveTimeout = None
@@ -96,7 +95,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
       timeoutActor ! Tick
 
       timeoutLatch.await
-      count.get must be (1)
+      count.get must be(1)
       timeoutActor.stop()
     }
 
@@ -105,7 +104,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
 
       val timeoutActor = actorOf(new Actor {
         protected def receive = {
-          case ReceiveTimeout => timeoutLatch.open
+          case ReceiveTimeout ⇒ timeoutLatch.open
         }
       }).start()
 

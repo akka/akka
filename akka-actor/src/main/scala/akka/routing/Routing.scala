@@ -4,7 +4,7 @@
 
 package akka.routing
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{ Actor, ActorRef }
 import akka.actor.Actor._
 
 object Routing {
@@ -20,7 +20,7 @@ object Routing {
    * and then filtered.apply.
    */
   def filter[A, B](filter: PF[A, Unit], filtered: PF[A, B]): PF[A, B] = {
-    case a: A if filtered.isDefinedAt(a) && filter.isDefinedAt(a) =>
+    case a: A if filtered.isDefinedAt(a) && filter.isDefinedAt(a) ⇒
       filter(a)
       filtered(a)
   }
@@ -28,13 +28,13 @@ object Routing {
   /**
    * Interceptor is a filter(x,y) where x.isDefinedAt is considered to be always true.
    */
-  def intercept[A, B](interceptor: (A) => Unit, interceptee: PF[A, B]): PF[A, B] =
-    filter({case a if a.isInstanceOf[A] => interceptor(a)}, interceptee)
+  def intercept[A, B](interceptor: (A) ⇒ Unit, interceptee: PF[A, B]): PF[A, B] =
+    filter({ case a if a.isInstanceOf[A] ⇒ interceptor(a) }, interceptee)
 
   /**
    * Creates a LoadBalancer from the thunk-supplied InfiniteIterator.
    */
-  def loadBalancerActor(actors: => InfiniteIterator[ActorRef]): ActorRef =
+  def loadBalancerActor(actors: ⇒ InfiniteIterator[ActorRef]): ActorRef =
     actorOf(new Actor with LoadBalancer {
       val seq = actors
     }).start()
@@ -42,7 +42,7 @@ object Routing {
   /**
    * Creates a Dispatcher given a routing and a message-transforming function.
    */
-  def dispatcherActor(routing: PF[Any, ActorRef], msgTransformer: (Any) => Any): ActorRef =
+  def dispatcherActor(routing: PF[Any, ActorRef], msgTransformer: (Any) ⇒ Any): ActorRef =
     actorOf(new Actor with Dispatcher {
       override def transform(msg: Any) = msgTransformer(msg)
       def routes = routing
@@ -59,6 +59,6 @@ object Routing {
    * Creates an actor that pipes all incoming messages to
    * both another actor and through the supplied function
    */
-  def loggerActor(actorToLog: ActorRef, logger: (Any) => Unit): ActorRef =
-    dispatcherActor({case _ => actorToLog}, logger)
+  def loggerActor(actorToLog: ActorRef, logger: (Any) ⇒ Unit): ActorRef =
+    dispatcherActor({ case _ ⇒ actorToLog }, logger)
 }

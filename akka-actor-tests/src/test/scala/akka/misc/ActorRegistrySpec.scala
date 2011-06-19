@@ -3,14 +3,14 @@ package akka.actor
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import Actor._
-import java.util.concurrent.{CyclicBarrier, TimeUnit, CountDownLatch}
+import java.util.concurrent.{ CyclicBarrier, TimeUnit, CountDownLatch }
 
 object ActorRegistrySpec {
   var record = ""
   class TestActor extends Actor {
     self.id = "MyID"
     def receive = {
-      case "ping" =>
+      case "ping" ⇒
         record = "pong" + record
         self.reply("got ping")
     }
@@ -19,10 +19,10 @@ object ActorRegistrySpec {
   class TestActor2 extends Actor {
     self.id = "MyID2"
     def receive = {
-      case "ping" =>
+      case "ping" ⇒
         record = "pong" + record
         self.reply("got ping")
-      case "ping2" =>
+      case "ping2" ⇒
         record = "pong" + record
         self.reply("got ping")
     }
@@ -32,7 +32,8 @@ object ActorRegistrySpec {
 class ActorRegistrySpec extends JUnitSuite {
   import ActorRegistrySpec._
 
-  @Test def shouldGetActorByIdFromActorRegistry {
+  @Test
+  def shouldGetActorByIdFromActorRegistry {
     Actor.registry.shutdownAll()
     val actor = actorOf[TestActor]
     actor.start()
@@ -43,7 +44,8 @@ class ActorRegistrySpec extends JUnitSuite {
     actor.stop()
   }
 
-  @Test def shouldGetActorByUUIDFromActorRegistry {
+  @Test
+  def shouldGetActorByUUIDFromActorRegistry {
     Actor.registry.shutdownAll()
     val actor = actorOf[TestActor]
     val uuid = actor.uuid
@@ -54,7 +56,8 @@ class ActorRegistrySpec extends JUnitSuite {
     actor.stop()
   }
 
-  @Test def shouldGetActorByClassFromActorRegistry {
+  @Test
+  def shouldGetActorByClassFromActorRegistry {
     Actor.registry.shutdownAll()
     val actor = actorOf[TestActor]
     actor.start()
@@ -65,7 +68,8 @@ class ActorRegistrySpec extends JUnitSuite {
     actor.stop()
   }
 
-  @Test def shouldGetActorByManifestFromActorRegistry {
+  @Test
+  def shouldGetActorByManifestFromActorRegistry {
     Actor.registry.shutdownAll()
     val actor = actorOf[TestActor]
     actor.start()
@@ -76,18 +80,20 @@ class ActorRegistrySpec extends JUnitSuite {
     actor.stop()
   }
 
-  @Test def shouldFindThingsFromActorRegistry {
+  @Test
+  def shouldFindThingsFromActorRegistry {
     Actor.registry.shutdownAll()
     val actor = actorOf[TestActor]
     actor.start()
-    val found = Actor.registry.find({ case a: ActorRef if a.actor.isInstanceOf[TestActor] => a })
+    val found = Actor.registry.find({ case a: ActorRef if a.actor.isInstanceOf[TestActor] ⇒ a })
     assert(found.isDefined)
     assert(found.get.actor.isInstanceOf[TestActor])
     assert(found.get.id === "MyID")
     actor.stop()
   }
 
-  @Test def shouldGetActorsByIdFromActorRegistry {
+  @Test
+  def shouldGetActorsByIdFromActorRegistry {
     Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
@@ -103,7 +109,8 @@ class ActorRegistrySpec extends JUnitSuite {
     actor2.stop()
   }
 
-  @Test def shouldGetActorsByClassFromActorRegistry {
+  @Test
+  def shouldGetActorsByClassFromActorRegistry {
     Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
@@ -119,7 +126,8 @@ class ActorRegistrySpec extends JUnitSuite {
     actor2.stop()
   }
 
-  @Test def shouldGetActorsByManifestFromActorRegistry {
+  @Test
+  def shouldGetActorsByManifestFromActorRegistry {
     Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
@@ -135,7 +143,8 @@ class ActorRegistrySpec extends JUnitSuite {
     actor2.stop()
   }
 
-  @Test def shouldGetActorsByMessageFromActorRegistry {
+  @Test
+  def shouldGetActorsByMessageFromActorRegistry {
 
     Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
@@ -152,7 +161,6 @@ class ActorRegistrySpec extends JUnitSuite {
     val actorsForAcotr = Actor.registry.actorsFor[Actor]
     assert(actorsForAcotr.size === 2)
 
-
     val actorsForMessagePing2 = Actor.registry.actorsFor[Actor]("ping2")
     assert(actorsForMessagePing2.size === 1)
 
@@ -163,7 +171,8 @@ class ActorRegistrySpec extends JUnitSuite {
     actor2.stop()
   }
 
-  @Test def shouldGetAllActorsFromActorRegistry {
+  @Test
+  def shouldGetAllActorsFromActorRegistry {
     Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
@@ -179,20 +188,22 @@ class ActorRegistrySpec extends JUnitSuite {
     actor2.stop()
   }
 
-  @Test def shouldGetResponseByAllActorsInActorRegistryWhenInvokingForeach {
+  @Test
+  def shouldGetResponseByAllActorsInActorRegistryWhenInvokingForeach {
     Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
     val actor2 = actorOf[TestActor]
     actor2.start()
     record = ""
-    Actor.registry.foreach(actor => actor !! "ping")
+    Actor.registry.foreach(actor ⇒ actor !! "ping")
     assert(record === "pongpong")
     actor1.stop()
     actor2.stop()
   }
 
-  @Test def shouldShutdownAllActorsInActorRegistry {
+  @Test
+  def shouldShutdownAllActorsInActorRegistry {
     Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
@@ -202,7 +213,8 @@ class ActorRegistrySpec extends JUnitSuite {
     assert(Actor.registry.actors.size === 0)
   }
 
-  @Test def shouldRemoveUnregisterActorInActorRegistry {
+  @Test
+  def shouldRemoveUnregisterActorInActorRegistry {
     Actor.registry.shutdownAll()
     val actor1 = actorOf[TestActor]
     actor1.start()
@@ -215,12 +227,13 @@ class ActorRegistrySpec extends JUnitSuite {
     assert(Actor.registry.actors.size === 0)
   }
 
-  @Test def shouldBeAbleToRegisterActorsConcurrently {
+  @Test
+  def shouldBeAbleToRegisterActorsConcurrently {
     Actor.registry.shutdownAll()
 
-    def mkTestActors = for(i <- (1 to 10).toList;j <- 1 to 3000) yield actorOf( new Actor {
+    def mkTestActors = for (i ← (1 to 10).toList; j ← 1 to 3000) yield actorOf(new Actor {
       self.id = i.toString
-      def receive = { case _ => }
+      def receive = { case _ ⇒ }
     })
 
     val latch = new CountDownLatch(3)
@@ -234,18 +247,17 @@ class ActorRegistrySpec extends JUnitSuite {
         latch.countDown()
       }
     }
-    val a1,a2,a3 = mkTestActors
+    val a1, a2, a3 = mkTestActors
     val t1 = mkThread(a1)
     val t2 = mkThread(a2)
     val t3 = mkThread(a3)
 
+    assert(latch.await(30, TimeUnit.SECONDS) === true)
 
-    assert(latch.await(30,TimeUnit.SECONDS) === true)
-
-    for(i <- 1 to 10) {
+    for (i ← 1 to 10) {
       val theId = i.toString
       val actors = Actor.registry.actorsFor(theId).toSet
-      for(a <- actors if a.id == theId) assert(actors contains a)
+      for (a ← actors if a.id == theId) assert(actors contains a)
       assert(actors.size === 9000)
     }
   }

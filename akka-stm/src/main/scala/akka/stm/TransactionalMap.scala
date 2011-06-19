@@ -6,7 +6,7 @@ package akka.stm
 
 import scala.collection.immutable.HashMap
 
-import akka.actor.{newUuid}
+import akka.actor.{ newUuid }
 
 /**
  * Transactional map that implements the mutable Map interface with an underlying Ref and HashMap.
@@ -43,7 +43,7 @@ class TransactionalMap[K, V](initialValue: HashMap[K, V]) extends Transactional 
   def +=(key: K, value: V) = put(key, value)
 
   def +=(kv: (K, V)) = {
-    put(kv._1,kv._2)
+    put(kv._1, kv._2)
     this
   }
 
@@ -83,7 +83,7 @@ class TransactionalMap[K, V](initialValue: HashMap[K, V]) extends Transactional 
 
   override def equals(other: Any): Boolean =
     other.isInstanceOf[TransactionalMap[_, _]] &&
-    other.hashCode == hashCode
+      other.hashCode == hashCode
 
   override def toString = if (Stm.activeTransaction) super.toString else "<TransactionalMap>"
 }

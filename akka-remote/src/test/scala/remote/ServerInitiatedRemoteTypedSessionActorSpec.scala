@@ -9,7 +9,6 @@ import RemoteTypedActorLog._
 
 class ServerInitiatedRemoteTypedSessionActorSpec extends AkkaRemoteTest {
 
-
   override def beforeEach = {
     super.beforeEach
 
@@ -28,22 +27,22 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends AkkaRemoteTest {
 
       val session1 = remote.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, host, port)
 
-      session1.getUser() must equal ("anonymous")
+      session1.getUser() must equal("anonymous")
       session1.login("session[1]")
-      session1.getUser() must equal ("session[1]")
+      session1.getUser() must equal("session[1]")
 
       remote.shutdownClientModule()
 
       val session2 = remote.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, host, port)
 
-      session2.getUser() must equal ("anonymous")
+      session2.getUser() must equal("anonymous")
 
     }
 
     "stop the actor when the client disconnects" in {
       val session1 = remote.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, host, port)
 
-      session1.getUser() must equal ("anonymous")
+      session1.getUser() must equal("anonymous")
 
       RemoteTypedSessionActorImpl.getInstances() must have size (1)
       remote.shutdownClientModule()
@@ -62,13 +61,12 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends AkkaRemoteTest {
       RemoteTypedSessionActorImpl.getInstances() must have size (0)
     }
 
-
     "be able to unregister" in {
-      remote.registerTypedPerSessionActor("my-service-1",TypedActor.newInstance(classOf[RemoteTypedSessionActor], classOf[RemoteTypedSessionActorImpl], 1000))
+      remote.registerTypedPerSessionActor("my-service-1", TypedActor.newInstance(classOf[RemoteTypedSessionActor], classOf[RemoteTypedSessionActorImpl], 1000))
 
       remote.typedActorsFactories.get("my-service-1") must not be (null)
       remote.unregisterTypedPerSessionActor("my-service-1")
-      remote.typedActorsFactories.get("my-service-1") must be (null)
+      remote.typedActorsFactories.get("my-service-1") must be(null)
     }
   }
 }

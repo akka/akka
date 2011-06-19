@@ -5,8 +5,7 @@
 package akka.testing
 
 import akka.util.Duration
-import java.util.concurrent.{CountDownLatch, TimeUnit}
-
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 class TestLatchTimeoutException(message: String) extends RuntimeException(message)
 class TestLatchNoTimeoutException(message: String) extends RuntimeException(message)

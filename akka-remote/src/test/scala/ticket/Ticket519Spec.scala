@@ -6,14 +6,13 @@ package akka.actor.ticket
 import akka.actor._
 import akka.actor.remote.AkkaRemoteTest
 
-
 class Ticket519Spec extends AkkaRemoteTest {
   "A remote TypedActor" should {
     "should handle remote future replies" in {
-      val actor = TypedActor.newRemoteInstance(classOf[SamplePojo], classOf[SamplePojoImpl],7000,host,port)
+      val actor = TypedActor.newRemoteInstance(classOf[SamplePojo], classOf[SamplePojoImpl], 7000, host, port)
       val r = actor.someFutureString
 
-      r.await.result.get must equal ("foo")
+      r.await.result.get must equal("foo")
     }
   }
 }

@@ -12,12 +12,12 @@ class BoundedBlockingQueue[E <: AnyRef](
   val maxCapacity: Int, private val backing: Queue[E]) extends AbstractQueue[E] with BlockingQueue[E] {
 
   backing match {
-    case null => throw new IllegalArgumentException("Backing Queue may not be null")
-    case b: BlockingQueue[_] =>
+    case null ⇒ throw new IllegalArgumentException("Backing Queue may not be null")
+    case b: BlockingQueue[_] ⇒
       require(maxCapacity > 0)
       require(b.size() == 0)
       require(b.remainingCapacity >= maxCapacity)
-    case b: Queue[_] =>
+    case b: Queue[_] ⇒
       require(b.size() == 0)
       require(maxCapacity > 0)
   }
@@ -74,7 +74,7 @@ class BoundedBlockingQueue[E <: AnyRef](
     var nanos = unit.toNanos(timeout)
     lock.lockInterruptibly()
     try {
-      while(backing.size() == maxCapacity) {
+      while (backing.size() == maxCapacity) {
         if (nanos <= 0)
           return false
         else
@@ -94,21 +94,21 @@ class BoundedBlockingQueue[E <: AnyRef](
     try {
       var result: E = null.asInstanceOf[E]
       var hasResult = false
-      while(!hasResult) {
+      while (!hasResult) {
         hasResult = backing.poll() match {
-          case null if nanos <= 0 =>
+          case null if nanos <= 0 ⇒
             result = null.asInstanceOf[E]
             true
-          case null =>
+          case null ⇒
             try {
               nanos = notEmpty.awaitNanos(nanos)
             } catch {
-              case ie: InterruptedException =>
+              case ie: InterruptedException ⇒
                 notEmpty.signal()
                 throw ie
             }
             false
-          case e =>
+          case e ⇒
             notFull.signal()
             result = e
             true
@@ -124,8 +124,8 @@ class BoundedBlockingQueue[E <: AnyRef](
     lock.lock()
     try {
       backing.poll() match {
-        case null => null.asInstanceOf[E]
-        case e =>
+        case null ⇒ null.asInstanceOf[E]
+        case e ⇒
           notFull.signal()
           e
       }
@@ -204,10 +204,10 @@ class BoundedBlockingQueue[E <: AnyRef](
       try {
         var n = 0
         var e: E = null.asInstanceOf[E]
-        while(n < maxElements) {
+        while (n < maxElements) {
           backing.poll() match {
-            case null => return n
-            case e =>
+            case null ⇒ return n
+            case e ⇒
               c add e
               n += 1
           }
@@ -280,7 +280,7 @@ class BoundedBlockingQueue[E <: AnyRef](
           lock.lock()
           try {
             val i = backing.iterator()
-            while(i.hasNext) {
+            while (i.hasNext) {
               if (i.next eq target) {
                 i.remove()
                 notFull.signal()

@@ -9,7 +9,7 @@ import akka.stm.Atomic
 
 import scala.util.DynamicVariable
 
-class CoordinateException private[akka](message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class CoordinateException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * Coordinating transactions between typed actors.
@@ -50,7 +50,7 @@ object Coordination {
    * It's possible to specify whether or not this `coordinate` block waits for all of
    * the transactions to complete - the default is that it does.
    */
-  def coordinate[U](wait: Boolean = true)(body: => U): Unit = {
+  def coordinate[U](wait: Boolean = true)(body: ⇒ U): Unit = {
     firstParty.value = !wait
     coordinated.withValue(Coordinated()) {
       body
@@ -65,7 +65,7 @@ object Coordination {
    * Coordinated transactions will wait for all other transactions in the coordination
    * before committing. The timeout is specified by the default transaction factory.
    */
-  def coordinate[U](body: => U): Unit = coordinate(true)(body)
+  def coordinate[U](body: ⇒ U): Unit = coordinate(true)(body)
 
   /**
    * Java API: coordinate that accepts an [[akka.transactor.Atomically]].

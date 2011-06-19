@@ -4,8 +4,8 @@
 
 package akka.util
 
-import java.util.concurrent.locks.{ReentrantReadWriteLock, ReentrantLock}
-import java.util.concurrent.atomic. {AtomicBoolean}
+import java.util.concurrent.locks.{ ReentrantReadWriteLock, ReentrantLock }
+import java.util.concurrent.atomic.{ AtomicBoolean }
 import akka.event.EventHandler
 
 /**
@@ -14,7 +14,7 @@ import akka.event.EventHandler
 final class ReentrantGuard {
   val lock = new ReentrantLock
 
-  final def withGuard[T](body: => T): T = {
+  final def withGuard[T](body: ⇒ T): T = {
     lock.lock
     try {
       body
@@ -23,8 +23,8 @@ final class ReentrantGuard {
     }
   }
 
-  final def tryWithGuard[T](body: => T): T = {
-    while(!lock.tryLock) { Thread.sleep(10) } // wait on the monitor to be unlocked
+  final def tryWithGuard[T](body: ⇒ T): T = {
+    while (!lock.tryLock) { Thread.sleep(10) } // wait on the monitor to be unlocked
     try {
       body
     } finally {
@@ -41,7 +41,7 @@ class ReadWriteGuard {
   val readLock = rwl.readLock
   val writeLock = rwl.writeLock
 
-  def withWriteGuard[T](body: => T): T = {
+  def withWriteGuard[T](body: ⇒ T): T = {
     writeLock.lock
     try {
       body
@@ -50,7 +50,7 @@ class ReadWriteGuard {
     }
   }
 
-  def withReadGuard[T](body: => T): T = {
+  def withReadGuard[T](body: ⇒ T): T = {
     readLock.lock
     try {
       body
@@ -67,7 +67,7 @@ class ReadWriteGuard {
 class SimpleLock {
   val acquired = new AtomicBoolean(false)
 
-  def ifPossible(perform: () => Unit): Boolean = {
+  def ifPossible(perform: () ⇒ Unit): Boolean = {
     if (tryLock()) {
       try {
         perform
@@ -78,7 +78,7 @@ class SimpleLock {
     } else false
   }
 
-  def ifPossibleYield[T](perform: () => T): Option[T] = {
+  def ifPossibleYield[T](perform: () ⇒ T): Option[T] = {
     if (tryLock()) {
       try {
         Some(perform())
@@ -88,7 +88,7 @@ class SimpleLock {
     } else None
   }
 
-  def ifPossibleApply[T,R](value: T)(function: (T) => R): Option[R] = {
+  def ifPossibleApply[T, R](value: T)(function: (T) ⇒ R): Option[R] = {
     if (tryLock()) {
       try {
         Some(function(value))
@@ -100,11 +100,11 @@ class SimpleLock {
 
   def tryLock() = {
     if (acquired.get) false
-    else acquired.compareAndSet(false,true)
+    else acquired.compareAndSet(false, true)
   }
 
   def tryUnlock() = {
-    acquired.compareAndSet(true,false)
+    acquired.compareAndSet(true, false)
   }
 
   def locked = acquired.get
@@ -120,12 +120,12 @@ class SimpleLock {
 class Switch(startAsOn: Boolean = false) {
   private val switch = new AtomicBoolean(startAsOn)
 
-  protected def transcend(from: Boolean, action: => Unit): Boolean = synchronized {
+  protected def transcend(from: Boolean, action: ⇒ Unit): Boolean = synchronized {
     if (switch.compareAndSet(from, !from)) {
       try {
         action
       } catch {
-        case e: Throwable =>
+        case e: Throwable ⇒
           EventHandler.error(e, this, e.getMessage)
           switch.compareAndSet(!from, from) // revert status
           throw e
@@ -134,61 +134,61 @@ class Switch(startAsOn: Boolean = false) {
     } else false
   }
 
-  def switchOff(action: => Unit): Boolean = transcend(from = true, action)
-  def switchOn(action: => Unit): Boolean  = transcend(from = false, action)
+  def switchOff(action: ⇒ Unit): Boolean = transcend(from = true, action)
+  def switchOn(action: ⇒ Unit): Boolean = transcend(from = false, action)
 
   def switchOff: Boolean = synchronized { switch.compareAndSet(true, false) }
-  def switchOn: Boolean  = synchronized { switch.compareAndSet(false, true) }
+  def switchOn: Boolean = synchronized { switch.compareAndSet(false, true) }
 
-  def ifOnYield[T](action: => T): Option[T] = {
+  def ifOnYield[T](action: ⇒ T): Option[T] = {
     if (switch.get) Some(action)
     else None
   }
 
-  def ifOffYield[T](action: => T): Option[T] = {
+  def ifOffYield[T](action: ⇒ T): Option[T] = {
     if (!switch.get) Some(action)
     else None
   }
 
-  def ifOn(action: => Unit): Boolean = {
+  def ifOn(action: ⇒ Unit): Boolean = {
     if (switch.get) {
       action
       true
     } else false
   }
 
-   def ifOff(action: => Unit): Boolean = {
+  def ifOff(action: ⇒ Unit): Boolean = {
     if (!switch.get) {
       action
       true
     } else false
   }
 
-  def whileOnYield[T](action: => T): Option[T] = synchronized {
+  def whileOnYield[T](action: ⇒ T): Option[T] = synchronized {
     if (switch.get) Some(action)
     else None
   }
 
-  def whileOffYield[T](action: => T): Option[T] = synchronized {
+  def whileOffYield[T](action: ⇒ T): Option[T] = synchronized {
     if (!switch.get) Some(action)
     else None
   }
 
-  def whileOn(action: => Unit): Boolean = synchronized {
+  def whileOn(action: ⇒ Unit): Boolean = synchronized {
     if (switch.get) {
       action
       true
     } else false
   }
 
-  def whileOff(action: => Unit): Boolean = synchronized {
+  def whileOff(action: ⇒ Unit): Boolean = synchronized {
     if (switch.get) {
       action
       true
     } else false
   }
 
-  def ifElseYield[T](on: => T)(off: => T) = synchronized {
+  def ifElseYield[T](on: ⇒ T)(off: ⇒ T) = synchronized {
     if (switch.get) on else off
   }
 

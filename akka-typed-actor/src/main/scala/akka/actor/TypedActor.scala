@@ -5,19 +5,19 @@
 package akka.actor
 
 import Actor._
-import akka.dispatch.{MessageDispatcher, Future, CompletableFuture, Dispatchers}
+import akka.dispatch.{ MessageDispatcher, Future, CompletableFuture, Dispatchers }
 import akka.config.Supervision._
 import akka.util._
 import ReflectiveAccess._
-import akka.transactor.{Coordinated, Coordination, CoordinateException}
-import akka.transactor.annotation.{Coordinated => CoordinatedAnnotation}
+import akka.transactor.{ Coordinated, Coordination, CoordinateException }
+import akka.transactor.annotation.{ Coordinated ⇒ CoordinatedAnnotation }
 
-import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
+import org.codehaus.aspectwerkz.joinpoint.{ MethodRtti, JoinPoint }
 import org.codehaus.aspectwerkz.proxy.Proxy
-import org.codehaus.aspectwerkz.annotation.{Aspect, Around}
+import org.codehaus.aspectwerkz.annotation.{ Aspect, Around }
 
 import java.net.InetSocketAddress
-import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
+import java.lang.reflect.{ Method, Field, InvocationHandler, Proxy ⇒ JProxy }
 
 import scala.reflect.BeanProperty
 
@@ -114,8 +114,10 @@ import scala.reflect.BeanProperty
 abstract class TypedActor extends Actor with Proxyable {
   val DELEGATE_FIELD_NAME = "DELEGATE_0".intern
 
-  @volatile private[akka] var proxy: AnyRef = _
-  @volatile private var proxyDelegate: Field = _
+  @volatile
+  private[akka] var proxy: AnyRef = _
+  @volatile
+  private var proxyDelegate: Field = _
 
   /**
    * Holds RTTI (runtime type information) for the TypedActor, f.e. current 'sender'
@@ -205,21 +207,21 @@ abstract class TypedActor extends Actor with Proxyable {
    */
   def future[T](value: T): Future[T] =
     self.senderFuture
-      .map{f => f.completeWithResult(value); f }
+      .map { f ⇒ f.completeWithResult(value); f }
       .getOrElse(throw new IllegalActorStateException("No sender future in scope"))
       .asInstanceOf[Future[T]]
 
   def receive = {
-    case joinPoint: JoinPoint =>
+    case joinPoint: JoinPoint ⇒
       SenderContextInfo.senderActorRef.withValue(self) {
         SenderContextInfo.senderProxy.withValue(proxy) {
-          if (Actor.SERIALIZE_MESSAGES)       serializeArguments(joinPoint)
+          if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
           if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
-          else                                self.reply(joinPoint.proceed)
+          else self.reply(joinPoint.proceed)
         }
       }
 
-    case coordinated @ Coordinated(joinPoint: JoinPoint) =>
+    case coordinated@Coordinated(joinPoint: JoinPoint) ⇒
       SenderContextInfo.senderActorRef.withValue(self) {
         SenderContextInfo.senderProxy.withValue(proxy) {
           if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
@@ -227,9 +229,9 @@ abstract class TypedActor extends Actor with Proxyable {
         }
       }
 
-    case Link(proxy)   => self.link(proxy)
-    case Unlink(proxy) => self.unlink(proxy)
-    case unexpected    => throw new IllegalActorStateException(
+    case Link(proxy)   ⇒ self.link(proxy)
+    case Unlink(proxy) ⇒ self.unlink(proxy)
+    case unexpected ⇒ throw new IllegalActorStateException(
       "Unexpected message [" + unexpected + "] sent to [" + this + "]")
   }
 
@@ -251,29 +253,29 @@ abstract class TypedActor extends Actor with Proxyable {
     val args = joinPoint.getRtti.asInstanceOf[MethodRtti].getParameterValues
     var unserializable = false
     var hasMutableArgument = false
-    for (arg <- args.toList) {
+    for (arg ← args.toList) {
       if (!arg.isInstanceOf[String] &&
-          !arg.isInstanceOf[Byte] &&
-          !arg.isInstanceOf[Int] &&
-          !arg.isInstanceOf[Long] &&
-          !arg.isInstanceOf[Float] &&
-          !arg.isInstanceOf[Double] &&
-          !arg.isInstanceOf[Boolean] &&
-          !arg.isInstanceOf[Char] &&
-          !arg.isInstanceOf[java.lang.Byte] &&
-          !arg.isInstanceOf[java.lang.Integer] &&
-          !arg.isInstanceOf[java.lang.Long] &&
-          !arg.isInstanceOf[java.lang.Float] &&
-          !arg.isInstanceOf[java.lang.Double] &&
-          !arg.isInstanceOf[java.lang.Boolean] &&
-          !arg.isInstanceOf[java.lang.Character]) hasMutableArgument = true
+        !arg.isInstanceOf[Byte] &&
+        !arg.isInstanceOf[Int] &&
+        !arg.isInstanceOf[Long] &&
+        !arg.isInstanceOf[Float] &&
+        !arg.isInstanceOf[Double] &&
+        !arg.isInstanceOf[Boolean] &&
+        !arg.isInstanceOf[Char] &&
+        !arg.isInstanceOf[java.lang.Byte] &&
+        !arg.isInstanceOf[java.lang.Integer] &&
+        !arg.isInstanceOf[java.lang.Long] &&
+        !arg.isInstanceOf[java.lang.Float] &&
+        !arg.isInstanceOf[java.lang.Double] &&
+        !arg.isInstanceOf[java.lang.Boolean] &&
+        !arg.isInstanceOf[java.lang.Character]) hasMutableArgument = true
       if (arg.getClass.getName.contains(TypedActor.AW_PROXY_PREFIX)) unserializable = true
     }
     if (!unserializable && hasMutableArgument) {
 
       //FIXME serializeArguments
-  //    val copyOfArgs = Serializer.Java.deepClone(args)
-  //    joinPoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs.asInstanceOf[Array[AnyRef]])
+      //    val copyOfArgs = Serializer.Java.deepClone(args)
+      //    joinPoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs.asInstanceOf[Array[AnyRef]])
       joinPoint
     }
   }
@@ -321,7 +323,7 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   def getUuid() = actorRef.uuid
 
   /**
-5  * Returns the uuid for the actor.
+   * 5  * Returns the uuid for the actor.
    */
   def uuid = actorRef.uuid
 
@@ -333,7 +335,7 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   def getTimout = timeout
   def setTimout(timeout: Long) = actorRef.timeout = timeout
 
-  def id =  actorRef.id
+  def id = actorRef.id
 
   /**
    * @deprecated use 'id()'
@@ -383,10 +385,10 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
    * Java style getter.
    * @deprecated use 'sender()'
    */
-   def getSender: AnyRef = {
-     if (_sender eq null) throw new IllegalActorStateException("Sender reference should not be null.")
-     else _sender
-   }
+  def getSender: AnyRef = {
+    if (_sender eq null) throw new IllegalActorStateException("Sender reference should not be null.")
+    else _sender
+  }
 
   /**
    * Returns the current sender future TypedActor reference.
@@ -397,28 +399,28 @@ final class TypedActorContext(private[akka] val actorRef: ActorRef) {
   def getSenderFuture = senderFuture
 
   /**
-    * Returns the home address and port for this actor.
-    */
+   * Returns the home address and port for this actor.
+   */
   def homeAddress: InetSocketAddress = actorRef.homeAddress.getOrElse(null)
 }
 
 object TypedActorConfiguration {
 
-  def apply() : TypedActorConfiguration = {
+  def apply(): TypedActorConfiguration = {
     new TypedActorConfiguration()
   }
 
-  def apply(timeout: Long) : TypedActorConfiguration = {
+  def apply(timeout: Long): TypedActorConfiguration = {
     new TypedActorConfiguration().timeout(Duration(timeout, "millis"))
   }
 
   @deprecated("Will be removed after 1.1", "1.1")
-  def apply(host: String, port: Int) : TypedActorConfiguration = {
+  def apply(host: String, port: Int): TypedActorConfiguration = {
     new TypedActorConfiguration().makeRemote(host, port)
   }
 
   @deprecated("Will be removed after 1.1", "1.1")
-  def apply(host: String, port: Int, timeout: Long) : TypedActorConfiguration = {
+  def apply(host: String, port: Int, timeout: Long): TypedActorConfiguration = {
     new TypedActorConfiguration().makeRemote(host, port).timeout(Duration(timeout, "millis"))
   }
 }
@@ -436,7 +438,7 @@ final class TypedActorConfiguration {
   private[akka] var _id: Option[String] = None
 
   def timeout = _timeout
-  def timeout(timeout: Duration) : TypedActorConfiguration = {
+  def timeout(timeout: Duration): TypedActorConfiguration = {
     _timeout = timeout.toMillis
     this
   }
@@ -456,14 +458,14 @@ final class TypedActorConfiguration {
     this
   }
 
-  def dispatcher(messageDispatcher: MessageDispatcher) : TypedActorConfiguration = {
+  def dispatcher(messageDispatcher: MessageDispatcher): TypedActorConfiguration = {
     if (_threadBasedDispatcher.isDefined) throw new IllegalArgumentException(
       "Cannot specify both 'threadBasedDispatcher()' and 'dispatcher()'")
     _messageDispatcher = Some(messageDispatcher)
     this
   }
 
-  def threadBasedDispatcher() : TypedActorConfiguration = {
+  def threadBasedDispatcher(): TypedActorConfiguration = {
     if (_messageDispatcher.isDefined) throw new IllegalArgumentException(
       "Cannot specify both 'threadBasedDispatcher()' and 'dispatcher()'")
     _threadBasedDispatcher = Some(true)
@@ -477,7 +479,7 @@ final class TypedActorConfiguration {
  * @author michaelkober
  */
 trait TypedActorFactory {
- def create: TypedActor
+  def create: TypedActor
 }
 
 /**
@@ -507,7 +509,7 @@ object TypedActor {
    * @param intfClass interface the typed actor implements
    * @param factory factory method that constructs the typed actor
    */
-  def newInstance[T](intfClass: Class[T], factory: => AnyRef): T = {
+  def newInstance[T](intfClass: Class[T], factory: ⇒ AnyRef): T = {
     newInstance(intfClass, factory, TypedActorConfiguration())
   }
 
@@ -531,7 +533,7 @@ object TypedActor {
    * @param port port of the remote server
    */
   @deprecated("Will be removed after 1.1", "1.1")
-  def newRemoteInstance[T](intfClass: Class[T], factory: => AnyRef, hostname: String, port: Int): T = {
+  def newRemoteInstance[T](intfClass: Class[T], factory: ⇒ AnyRef, hostname: String, port: Int): T = {
     newInstance(intfClass, factory, TypedActorConfiguration(hostname, port))
   }
 
@@ -541,7 +543,7 @@ object TypedActor {
    * @param targetClass implementation class of the typed actor
    * @param timeout timeout for future
    */
-  def newInstance[T](intfClass: Class[T], targetClass: Class[_], timeout: Long) : T = {
+  def newInstance[T](intfClass: Class[T], targetClass: Class[_], timeout: Long): T = {
     newInstance(intfClass, targetClass, TypedActorConfiguration(timeout))
   }
 
@@ -551,7 +553,7 @@ object TypedActor {
    * @param factory factory method that constructs the typed actor
    * @param timeout timeout for future
    */
-  def newInstance[T](intfClass: Class[T], factory: => AnyRef, timeout: Long) : T = {
+  def newInstance[T](intfClass: Class[T], factory: ⇒ AnyRef, timeout: Long): T = {
     newInstance(intfClass, factory, TypedActorConfiguration(timeout))
   }
 
@@ -577,7 +579,7 @@ object TypedActor {
    * @param port port of the remote server
    */
   @deprecated("Will be removed after 1.1", "1.1")
-  def newRemoteInstance[T](intfClass: Class[T], factory: => AnyRef, timeout: Long, hostname: String, port: Int): T = {
+  def newRemoteInstance[T](intfClass: Class[T], factory: ⇒ AnyRef, timeout: Long, hostname: String, port: Int): T = {
     newInstance(intfClass, factory, TypedActorConfiguration(hostname, port, timeout))
   }
 
@@ -587,19 +589,19 @@ object TypedActor {
    * @param factory factory method that constructs the typed actor
    * @param config configuration object for the typed actor
    */
-  def newInstance[T](intfClass: Class[T], factory: => AnyRef, config: TypedActorConfiguration): T =
-    newInstance(intfClass, createActorRef(newTypedActor(factory),config), config)
+  def newInstance[T](intfClass: Class[T], factory: ⇒ AnyRef, config: TypedActorConfiguration): T =
+    newInstance(intfClass, createActorRef(newTypedActor(factory), config), config)
 
   /**
    * Creates an ActorRef, can be local only or client-managed-remote
    */
   @deprecated("Will be removed after 1.1", "1.1")
-  private[akka] def createActorRef(typedActor: => TypedActor, config: TypedActorConfiguration): ActorRef = {
+  private[akka] def createActorRef(typedActor: ⇒ TypedActor, config: TypedActorConfiguration): ActorRef = {
     config match {
-      case null => actorOf(typedActor)
-      case c: TypedActorConfiguration if (c._host.isDefined) =>
+      case null ⇒ actorOf(typedActor)
+      case c: TypedActorConfiguration if (c._host.isDefined) ⇒
         Actor.remote.actorOf(typedActor, c._host.get.getAddress.getHostAddress, c._host.get.getPort)
-      case _ => actorOf(typedActor)
+      case _ ⇒ actorOf(typedActor)
     }
   }
 
@@ -610,7 +612,7 @@ object TypedActor {
    * @param config configuration object for the typed actor
    */
   def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T =
-    newInstance(intfClass, createActorRef(newTypedActor(targetClass),config), config)
+    newInstance(intfClass, createActorRef(newTypedActor(targetClass), config), config)
 
   private[akka] def newInstance[T](intfClass: Class[T], actorRef: ActorRef): T = {
     if (!actorRef.actorInstance.get.isInstanceOf[TypedActor]) throw new IllegalArgumentException("ActorRef is not a ref to a typed actor")
@@ -624,7 +626,7 @@ object TypedActor {
     newInstance(intfClass, targetClass, config)
   }
 
-  private def newInstance[T](intfClass: Class[T], actorRef: ActorRef, config: TypedActorConfiguration) : T = {
+  private def newInstance[T](intfClass: Class[T], actorRef: ActorRef, config: TypedActorConfiguration): T = {
     val typedActor = actorRef.actorInstance.get.asInstanceOf[TypedActor]
     val proxy = Proxy.newInstance(Array(intfClass), Array(typedActor), true, false)
     typedActor.initialize(proxy)
@@ -635,9 +637,9 @@ object TypedActor {
     actorRef.timeout = config.timeout
 
     val remoteAddress = actorRef match {
-      case remote: RemoteActorRef => remote.homeAddress
-      case local: LocalActorRef if local.clientManaged => local.homeAddress
-      case _ => None
+      case remote: RemoteActorRef ⇒ remote.homeAddress
+      case local: LocalActorRef if local.clientManaged ⇒ local.homeAddress
+      case _ ⇒ None
     }
 
     AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, remoteAddress, actorRef.timeout))
@@ -663,27 +665,27 @@ object TypedActor {
    *   });
    * </pre>
    */
-  def newInstance[T](intfClass: Class[T], factory: TypedActorFactory) : T =
+  def newInstance[T](intfClass: Class[T], factory: TypedActorFactory): T =
     newInstance(intfClass, factory.create)
 
   /**
    * Java API.
    */
   @deprecated("Will be removed after 1.1", "1.1")
-  def newRemoteInstance[T](intfClass: Class[T], factory: TypedActorFactory, hostname: String, port: Int) : T =
+  def newRemoteInstance[T](intfClass: Class[T], factory: TypedActorFactory, hostname: String, port: Int): T =
     newRemoteInstance(intfClass, factory.create, hostname, port)
 
   /**
    * Java API.
    */
   @deprecated("Will be removed after 1.1", "1.1")
-  def newRemoteInstance[T](intfClass: Class[T], factory: TypedActorFactory, timeout: Long, hostname: String, port: Int) : T =
+  def newRemoteInstance[T](intfClass: Class[T], factory: TypedActorFactory, timeout: Long, hostname: String, port: Int): T =
     newRemoteInstance(intfClass, factory.create, timeout, hostname, port)
 
   /**
    * Java API.
    */
-  def newInstance[T](intfClass: Class[T], factory: TypedActorFactory, timeout: Long) : T =
+  def newInstance[T](intfClass: Class[T], factory: TypedActorFactory, timeout: Long): T =
     newInstance(intfClass, factory.create, timeout)
 
   /**
@@ -714,7 +716,6 @@ object TypedActor {
     awProxy.asInstanceOf[T]
   }
 
-
   /*
     // NOTE: currently not used - but keep it around
     private[akka] def newInstance[T <: TypedActor](targetClass: Class[T],
@@ -744,8 +745,8 @@ object TypedActor {
    */
   def actorFor(proxy: AnyRef): Option[ActorRef] =
     Actor.registry find {
-      case a if a.actor.isInstanceOf[TypedActor] && a.actor.asInstanceOf[TypedActor].proxy == proxy =>
-      a
+      case a if a.actor.isInstanceOf[TypedActor] && a.actor.asInstanceOf[TypedActor].proxy == proxy ⇒
+        a
     }
 
   /**
@@ -822,7 +823,7 @@ object TypedActor {
     typedActor
   }
 
-  private[akka] def newTypedActor(factory: => AnyRef): TypedActor = {
+  private[akka] def newTypedActor(factory: ⇒ AnyRef): TypedActor = {
     val instance = factory
     val typedActor =
       if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
@@ -857,7 +858,6 @@ object TypedActor {
 
   private[akka] def isJoinPoint(message: Any): Boolean = message.isInstanceOf[JoinPoint]
 }
-
 
 /**
  * AspectWerkz Aspect that is turning POJO into proxy to a server managed remote TypedActor.
@@ -931,13 +931,13 @@ private[akka] abstract class ActorAspect {
       isStopped switchOn {
         val proxy = TypedActor.proxyFor(actorRef)
         if (proxy ne null)
-        TypedActor.stop(proxy)
+          TypedActor.stop(proxy)
       }
     }
 
     if (isOneWay && isCoordinated) {
       val coordinatedOpt = Option(Coordination.coordinated.value)
-      val coordinated = coordinatedOpt.map( coord =>
+      val coordinated = coordinatedOpt.map(coord ⇒
         if (Coordination.firstParty.value) { // already included in coordination
           Coordination.firstParty.value = false
           coord.noIncrement(joinPoint)
@@ -956,11 +956,11 @@ private[akka] abstract class ActorAspect {
     } else if (TypedActor.returnsFuture_?(methodRtti)) {
       actorRef.!!!(joinPoint, timeout)(senderActorRef)
     } else if (TypedActor.returnsOption_?(methodRtti)) {
-        import akka.japi.{Option => JOption}
+      import akka.japi.{ Option ⇒ JOption }
       (actorRef.!!(joinPoint, timeout)(senderActorRef)).as[JOption[AnyRef]] match {
-        case None => JOption.none[AnyRef]
-        case Some(x) if ((x eq null) || x.isEmpty) => JOption.some[AnyRef](null)
-        case Some(x) => x
+        case None                                  ⇒ JOption.none[AnyRef]
+        case Some(x) if ((x eq null) || x.isEmpty) ⇒ JOption.some[AnyRef](null)
+        case Some(x)                               ⇒ x
       }
     } else {
       val result = (actorRef.!!(joinPoint, timeout)(senderActorRef)).as[AnyRef]
@@ -976,8 +976,8 @@ private[akka] abstract class ActorAspect {
 
     def extractOwnerTypeHint(s: String) =
       s.indexOf(TypedActor.AW_PROXY_PREFIX) match {
-        case -1 => s
-        case x => s.substring(0,x + TypedActor.AW_PROXY_PREFIX.length)
+        case -1 ⇒ s
+        case x  ⇒ s.substring(0, x + TypedActor.AW_PROXY_PREFIX.length)
       }
     //FIXME: Add ownerTypeHint and parameter types to the TypedActorInfo?
     val message: Tuple3[String, Array[Class[_]], Array[AnyRef]] =
@@ -999,16 +999,15 @@ private[akka] abstract class ActorAspect {
     else if (future.isEmpty) throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
     else if (TypedActor.returnsFuture_?(methodRtti)) future.get
     else if (TypedActor.returnsOption_?(methodRtti)) {
-      import akka.japi.{Option => JOption}
+      import akka.japi.{ Option ⇒ JOption }
       future.get.await.resultOrException.as[JOption[AnyRef]] match {
-        case None => JOption.none[AnyRef]
-        case Some(x) if ((x eq null) || x.isEmpty) => JOption.some[AnyRef](null)
-        case Some(x) => x
+        case None                                  ⇒ JOption.none[AnyRef]
+        case Some(x) if ((x eq null) || x.isEmpty) ⇒ JOption.some[AnyRef](null)
+        case Some(x)                               ⇒ x
       }
-    }
-    else {
+    } else {
       val result = future.get.await.resultOrException
-      if(result.isDefined) result.get
+      if (result.isDefined) result.get
       else throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
     }
   }
@@ -1026,7 +1025,6 @@ private[akka] abstract class ActorAspect {
   }
 }
 
-
 /**
  * Internal helper class to help pass the contextual information between threads.
  *
@@ -1035,7 +1033,7 @@ private[akka] abstract class ActorAspect {
 private[akka] object SenderContextInfo {
   import scala.util.DynamicVariable
   private[actor] val senderActorRef = new DynamicVariable[ActorRef](null)
-  private[actor] val senderProxy    = new DynamicVariable[AnyRef](null)
+  private[actor] val senderProxy = new DynamicVariable[AnyRef](null)
 }
 
 /**
@@ -1082,7 +1080,6 @@ private[akka] sealed case class AspectInit(
     this(interfaceClass, targetInstance, actorRef, None, timeout)
 
 }
-
 
 /**
  * Marker interface for server manager typed actors.

@@ -4,7 +4,7 @@
 
 package akka
 
-import actor.{ScalaActorRef, ActorRef}
+import actor.{ ScalaActorRef, ActorRef }
 
 package object actor {
   implicit def actorRef2Scala(ref: ActorRef): ScalaActorRef =

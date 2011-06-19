@@ -2,7 +2,7 @@ package akka.testkit
 
 import akka.event.EventHandler
 import akka.actor.ActorRef
-import akka.dispatch.{MessageDispatcher, MessageInvocation, FutureInvocation}
+import akka.dispatch.{ MessageDispatcher, MessageInvocation, FutureInvocation }
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
 import java.util.concurrent.RejectedExecutionException
@@ -40,7 +40,7 @@ object CallingThreadDispatcher {
     queues = queues mapValues (_ filter (_.get ne null)) filter (!_._2.isEmpty)
   }
 
-  private[akka] def registerQueue(mbox : CallingThreadMailbox, q : NestingQueue) : Unit = synchronized {
+  private[akka] def registerQueue(mbox: CallingThreadMailbox, q: NestingQueue): Unit = synchronized {
     if (queues contains mbox) {
       val newSet = queues(mbox) + new WeakReference(q)
       queues += mbox -> newSet
@@ -55,11 +55,11 @@ object CallingThreadDispatcher {
    * given mailbox. When this method returns, the queue will be entered
    * (active).
    */
-  private[akka] def gatherFromAllInactiveQueues(mbox : CallingThreadMailbox, own : NestingQueue) : Unit = synchronized {
+  private[akka] def gatherFromAllInactiveQueues(mbox: CallingThreadMailbox, own: NestingQueue): Unit = synchronized {
     if (!own.isActive) own.enter
     if (queues contains mbox) {
       for {
-        ref <- queues(mbox)
+        ref ← queues(mbox)
         q = ref.get
         if (q ne null) && !q.isActive
         /*
@@ -136,23 +136,23 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
     val mbox = getMailbox(handle.receiver)
     val queue = mbox.queue
     val execute = mbox.suspended.ifElseYield {
-        queue.push(handle)
+      queue.push(handle)
+      if (warnings && handle.senderFuture.isDefined) {
+        EventHandler.warning(this, "suspended, creating Future could deadlock; target: %s" format handle.receiver)
+      }
+      false
+    } {
+      queue.push(handle)
+      if (queue.isActive) {
         if (warnings && handle.senderFuture.isDefined) {
-          EventHandler.warning(this, "suspended, creating Future could deadlock; target: %s" format handle.receiver)
+          EventHandler.warning(this, "blocked on this thread, creating Future could deadlock; target: %s" format handle.receiver)
         }
         false
-      } {
-        queue.push(handle)
-        if (queue.isActive) {
-          if (warnings && handle.senderFuture.isDefined) {
-            EventHandler.warning(this, "blocked on this thread, creating Future could deadlock; target: %s" format handle.receiver)
-          }
-          false
-        } else {
-          queue.enter
-          true
-        }
+      } else {
+        queue.enter
+        true
       }
+    }
     if (execute) runQueue(mbox, queue)
   }
 
@@ -167,18 +167,19 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
    * there is no-one who cares to execute it before the next message is sent or
    * it is suspended and resumed.
    */
-  @tailrec private def runQueue(mbox : CallingThreadMailbox, queue : NestingQueue) {
+  @tailrec
+  private def runQueue(mbox: CallingThreadMailbox, queue: NestingQueue) {
     assert(queue.isActive)
     mbox.lock.lock
     val recurse = try {
       val handle = mbox.suspended.ifElseYield[MessageInvocation] {
-          queue.leave
-          null
-        } {
-          val ret = queue.pop
-          if (ret eq null) queue.leave
-          ret
-        }
+        queue.leave
+        null
+      } {
+        val ret = queue.pop
+        if (ret eq null) queue.leave
+        ret
+      }
       if (handle ne null) {
         try {
           handle.invoke
@@ -187,7 +188,7 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
             EventHandler.warning(this, "calling %s with message %s did not reply as expected, might deadlock" format (handle.receiver, handle.message))
           }
         } catch {
-          case _ => queue.leave
+          case _ ⇒ queue.leave
         }
         true
       } else if (queue.isActive) {
@@ -206,11 +207,12 @@ class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispa
 class NestingQueue {
   private var q = new LinkedList[MessageInvocation]()
   def size = q.size
-  def push(handle : MessageInvocation) { q.offer(handle) }
+  def push(handle: MessageInvocation) { q.offer(handle) }
   def peek = q.peek
   def pop = q.poll
 
-  @volatile private var active = false
+  @volatile
+  private var active = false
   def enter { if (active) sys.error("already active") else active = true }
   def leave { if (!active) sys.error("not active") else active = false }
   def isActive = active

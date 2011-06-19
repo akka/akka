@@ -17,7 +17,7 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
     self.id = "SlowActor"
 
     def receive = {
-      case x: Int => {
+      case x: Int ⇒ {
         Thread.sleep(50) // slow actor
         finishedCounter.countDown()
       }
@@ -28,25 +28,26 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
     self.id = "FastActor"
 
     def receive = {
-      case x: Int => {
+      case x: Int ⇒ {
         finishedCounter.countDown()
       }
     }
   }
 
-  @Test def slowActorShouldntBlockFastActor {
+  @Test
+  def slowActorShouldntBlockFastActor {
     val sFinished = new CountDownLatch(50)
     val fFinished = new CountDownLatch(10)
     val s = actorOf(new SlowActor(sFinished)).start()
     val f = actorOf(new FastActor(fFinished)).start()
 
     // send a lot of stuff to s
-    for (i <- 1 to 50) {
+    for (i ← 1 to 50) {
       s ! i
     }
 
     // send some messages to f
-    for (i <- 1 to 10) {
+    for (i ← 1 to 10) {
       f ! i
     }
 

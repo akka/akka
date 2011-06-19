@@ -11,8 +11,10 @@ import akka.transactor.Coordination._
 
 object TypedCoordinatedIncrement {
   trait Counter {
-    @Coordinated def increment: Unit
-    @Coordinated def incrementAndGet: Int
+    @Coordinated
+    def increment: Unit
+    @Coordinated
+    def incrementAndGet: Int
     def get: Int
   }
 
@@ -49,7 +51,7 @@ class TypedCoordinatedIncrementSpec extends WordSpec with MustMatchers {
       coordinate {
         counters foreach (_.increment)
       }
-      for (counter <- counters) {
+      for (counter ← counters) {
         counter.get must be === 1
       }
       counters foreach (TypedActor.stop)
@@ -64,9 +66,9 @@ class TypedCoordinatedIncrementSpec extends WordSpec with MustMatchers {
           failer.increment
         }
       } catch {
-        case _ => ()
+        case _ ⇒ ()
       }
-      for (counter <- counters) {
+      for (counter ← counters) {
         counter.get must be === 0
       }
       counters foreach (TypedActor.stop)
@@ -75,7 +77,7 @@ class TypedCoordinatedIncrementSpec extends WordSpec with MustMatchers {
 
     "fail when used with non-void methods" in {
       val counter = TypedActor.newInstance(classOf[Counter], classOf[CounterImpl])
-      evaluating { counter.incrementAndGet } must produce [CoordinateException]
+      evaluating { counter.incrementAndGet } must produce[CoordinateException]
       TypedActor.stop(counter)
     }
   }

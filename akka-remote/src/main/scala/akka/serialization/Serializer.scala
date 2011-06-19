@@ -4,7 +4,7 @@
 
 package akka.serialization
 
-import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream}
+import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
 
 import org.apache.commons.io.input.ClassLoaderObjectInputStream
 
@@ -12,13 +12,14 @@ import com.google.protobuf.Message
 
 import org.codehaus.jackson.map.ObjectMapper
 
-import sjson.json.{Serializer => SJSONSerializer}
+import sjson.json.{ Serializer ⇒ SJSONSerializer }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Serializer extends scala.Serializable {
-  @volatile var classLoader: Option[ClassLoader] = None
+  @volatile
+  var classLoader: Option[ClassLoader] = None
   def deepClone(obj: AnyRef): AnyRef = fromBinary(toBinary(obj), Some(obj.getClass))
 
   def toBinary(obj: AnyRef): Array[Byte]

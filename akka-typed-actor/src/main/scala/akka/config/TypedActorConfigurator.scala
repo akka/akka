@@ -6,8 +6,8 @@ package akka.config
 
 import Supervision._
 
-import java.util.{List => JList}
-import java.util.{ArrayList}
+import java.util.{ List ⇒ JList }
+import java.util.{ ArrayList }
 
 import com.google.inject._
 
@@ -33,7 +33,7 @@ class TypedActorConfigurator {
    * @return a list with all the typed actors for the class
    */
   def getInstances[T](clazz: Class[T]): JList[T] =
-    INSTANCE.getInstance(clazz).foldLeft(new ArrayList[T]){ (l, i) => l add i ; l }
+    INSTANCE.getInstance(clazz).foldLeft(new ArrayList[T]) { (l, i) ⇒ l add i; l }
 
   /**
    * Returns the first item in a list of all typed actors that has been put under supervision for the class specified.
@@ -67,7 +67,7 @@ class TypedActorConfigurator {
 
   def getComponentInterfaces: JList[Class[_]] = {
     val al = new ArrayList[Class[_]]
-    for (c <- INSTANCE.getComponentInterfaces) al.add(c)
+    for (c ← INSTANCE.getComponentInterfaces) al.add(c)
     al
   }
 

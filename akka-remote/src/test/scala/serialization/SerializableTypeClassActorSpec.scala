@@ -1,6 +1,5 @@
 package akka.actor.serialization
 
-
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.BeforeAndAfterAll
@@ -14,10 +13,7 @@ import ActorSerialization._
 import Actor._
 
 @RunWith(classOf[JUnitRunner])
-class SerializableTypeClassActorSpec extends
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterAll {
+class SerializableTypeClassActorSpec extends Spec with ShouldMatchers with BeforeAndAfterAll {
 
   object BinaryFormatMyActor {
     implicit object MyActorFormat extends Format[MyActor] {
@@ -114,7 +110,7 @@ class SerializableTypeClassActorSpec extends
       actor2.start()
       (actor2 !! "hello").getOrElse("_") should equal("world 3")
 
-      actor2.receiveTimeout should equal (Some(1000))
+      actor2.receiveTimeout should equal(Some(1000))
       actor1.stop()
       actor2.stop()
     }
@@ -162,7 +158,7 @@ class SerializableTypeClassActorSpec extends
       actor1 ! RevertHotSwap
       (actor2 !! "hello").getOrElse("_") should equal("world 3")
     }
-/*
+    /*
     it("should be able to serialize and de-serialize an hotswapped actor") {
       import BinaryFormatMyActor._
 
@@ -216,7 +212,7 @@ class SerializableTypeClassActorSpec extends
       val out = RemoteActorSerialization.toRemoteActorRefProtocol(a).toByteArray
       val in = RemoteActorSerialization.fromBinaryToRemoteActorRef(out)
 
-      in.id should equal("uuid:"+a.uuid)
+      in.id should equal("uuid:" + a.uuid)
       in.actorClassName should equal(a.actorClassName)
       in.timeout should equal(a.timeout)
       in.homeAddress should equal(Some(Actor.remote.address))
@@ -240,7 +236,7 @@ class MyActorWithDualCounter extends Actor {
   var count1 = 0
   var count2 = 0
   def receive = {
-    case "hello" =>
+    case "hello" ⇒
       count1 = count1 + 1
       count2 = count2 + 1
       self.reply("world " + count1 + " " + count2)
@@ -251,27 +247,27 @@ class MyActor extends Actor with scala.Serializable {
   var count = 0
 
   def receive = {
-    case "hello" =>
+    case "hello" ⇒
       count = count + 1
       self.reply("world " + count)
-    case "swap" =>
-      become { case "hello" => self.reply("swapped") }
+    case "swap" ⇒
+      become { case "hello" ⇒ self.reply("swapped") }
   }
 }
 
 class MyStatelessActor extends Actor {
   def receive = {
-    case "hello" =>
+    case "hello" ⇒
       self.reply("world")
   }
 }
 
 class MyStatelessActorWithMessagesInMailbox extends Actor {
   def receive = {
-    case "hello" =>
+    case "hello" ⇒
       //println("# messages in mailbox " + self.mailboxSize)
       Thread.sleep(500)
-    case "hello-reply" => self.reply("world")
+    case "hello-reply" ⇒ self.reply("world")
   }
 }
 
@@ -280,7 +276,7 @@ class MyJavaSerializableActor extends Actor with scala.Serializable {
   self.receiveTimeout = Some(1000)
 
   def receive = {
-    case "hello" =>
+    case "hello" ⇒
       count = count + 1
       self.reply("world " + count)
   }
@@ -288,10 +284,10 @@ class MyJavaSerializableActor extends Actor with scala.Serializable {
 
 class MyActorWithSerializableMessages extends Actor {
   def receive = {
-    case MyMessage(s, t) =>
+    case MyMessage(s, t) ⇒
       //println("# messages in mailbox " + self.mailboxSize)
       Thread.sleep(500)
-    case "hello-reply" => self.reply("world")
+    case "hello-reply" ⇒ self.reply("world")
   }
 }
 

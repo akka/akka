@@ -19,13 +19,13 @@ object Config {
 
   val HOME = {
     val envHome = System.getenv("AKKA_HOME") match {
-      case null | "" | "." => None
-      case value           => Some(value)
+      case null | "" | "." ⇒ None
+      case value           ⇒ Some(value)
     }
 
     val systemHome = System.getProperty("akka.home") match {
-      case null | "" => None
-      case value     => Some(value)
+      case null | "" ⇒ None
+      case value     ⇒ Some(value)
     }
 
     envHome orElse systemHome
@@ -34,13 +34,13 @@ object Config {
   val config: Configuration = try {
     val confName = {
       val envConf = System.getenv("AKKA_MODE") match {
-        case null | "" => None
-        case value     => Some(value)
+        case null | "" ⇒ None
+        case value     ⇒ Some(value)
       }
 
       val systemConf = System.getProperty("akka.mode") match {
-        case null | "" => None
-        case value     => Some(value)
+        case null | "" ⇒ None
+        case value     ⇒ Some(value)
       }
 
       (envConf orElse systemConf).map("akka." + _ + ".conf").getOrElse("akka.conf")
@@ -61,12 +61,12 @@ object Config {
       } else {
         println(
           "\nCan't load '" + confName + "'." +
-          "\nOne of the three ways of locating the '" + confName + "' file needs to be defined:" +
-          "\n\t1. Define the '-Dakka.config=...' system property option." +
-          "\n\t2. Put the '" + confName + "' file on the classpath." +
-          "\n\t3. Define 'AKKA_HOME' environment variable pointing to the root of the Akka distribution." +
-          "\nI have no way of finding the '" + confName + "' configuration file." +
-          "\nUsing default values everywhere.")
+            "\nOne of the three ways of locating the '" + confName + "' file needs to be defined:" +
+            "\n\t1. Define the '-Dakka.config=...' system property option." +
+            "\n\t2. Put the '" + confName + "' file on the classpath." +
+            "\n\t3. Define 'AKKA_HOME' environment variable pointing to the root of the Akka distribution." +
+            "\nI have no way of finding the '" + confName + "' configuration file." +
+            "\nUsing default values everywhere.")
         Configuration.fromString("akka {}") // default empty config
       }
 
@@ -77,7 +77,7 @@ object Config {
 
     newInstance
   } catch {
-    case e =>
+    case e ⇒
       System.err.println("Couldn't parse config, fatal error.")
       e.printStackTrace(System.err)
       System.exit(-1)
