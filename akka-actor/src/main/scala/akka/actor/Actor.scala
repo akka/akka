@@ -147,6 +147,9 @@ object Actor extends ListenerManagement {
   object Timeout {
     def apply(timeout: Long) = new Timeout(timeout)
     def apply(length: Long, unit: TimeUnit) = new Timeout(length, unit)
+    implicit def default = defaultTimeout
+    val zero = new Timeout(Duration.Zero)
+    val never = new Timeout(Duration.Inf)
     implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
     implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
     implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
