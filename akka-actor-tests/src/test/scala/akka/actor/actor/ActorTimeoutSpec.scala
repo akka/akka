@@ -21,7 +21,7 @@ class ActorTimeoutSpec
     }
   }).start()
 
-  val testTimeout = if (Actor.defaultTimeout.duration < 400.millis) 500 millis else 100 millis
+  val testTimeout = if (Actor.Timeout.default.duration < 400.millis) 500 millis else 100 millis
 
   override def afterAll { echo.stop() }
 

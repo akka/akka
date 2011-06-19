@@ -1,45 +1,90 @@
 package akka.testkit
 
 import akka.event.EventHandler
+import akka.event.EventHandler.{ Event, Error }
 import akka.actor.Actor
 
 sealed trait TestEvent
 
 object TestEvent {
-  case class Mute(filter: EventFilter = EventFilter.all) extends TestEvent
-  case class UnMute(filter: EventFilter = EventFilter.all) extends TestEvent
+  case class Mute(filter: EventFilter) extends TestEvent
+  case class UnMute(filter: EventFilter) extends TestEvent
+  case object UnMuteAll extends TestEvent
 }
 
-case class EventFilter(throwable: Class[_] = classOf[Throwable], source: Option[AnyRef] = None, message: String = "") {
-  import EventHandler._
+trait EventFilter {
+  def apply(event: Event): Boolean
+}
 
-  def apply(event: Event): Boolean = event match {
-    case Error(cause, instance, message) ⇒
-      (throwable isInstance cause) && (source map (_ eq instance) getOrElse true) &&
-        (if (this.message != "") ((Option(message) map (_.toString startsWith this.message) getOrElse false) || (Option(cause.getMessage) map (_ startsWith this.message) getOrElse false)) else true)
+object EventFilter {
+
+  def apply[A <: Throwable: Manifest](): EventFilter =
+    ErrorFilter(manifest[A].erasure)
+
+  def apply[A <: Throwable: Manifest](message: String): EventFilter =
+    ErrorMessageFilter(manifest[A].erasure, message)
+
+  def apply[A <: Throwable: Manifest](source: AnyRef): EventFilter =
+    ErrorSourceFilter(manifest[A].erasure, source)
+
+  def apply[A <: Throwable: Manifest](source: AnyRef, message: String): EventFilter =
+    ErrorSourceMessageFilter(manifest[A].erasure, source, message)
+
+  def apply(test: (Event) ⇒ Boolean): EventFilter =
+    CustomEventFilter(test)
+}
+
+case class ErrorFilter(throwable: Class[_]) extends EventFilter {
+  def apply(event: Event) = event match {
+    case Error(cause, _, _) ⇒ throwable isInstance cause
+    case _                  ⇒ false
+  }
+}
+
+case class ErrorMessageFilter(throwable: Class[_], message: String) extends EventFilter {
+  def apply(event: Event) = event match {
+    case Error(cause, _, _) if !(throwable isInstance cause) ⇒ false
+    case Error(cause, _, null) if cause.getMessage eq null ⇒ cause.getStackTrace.length == 0
+    case Error(cause, _, null) ⇒ cause.getMessage startsWith message
+    case Error(_, _, msg) ⇒ msg.toString startsWith message
     case _ ⇒ false
   }
 }
 
-object EventFilter {
-  val all = EventFilter()
+case class ErrorSourceFilter(throwable: Class[_], source: AnyRef) extends EventFilter {
+  def apply(event: Event) = event match {
+    case Error(cause, instance, _) ⇒ (throwable isInstance cause) && (source eq instance)
+    case _                         ⇒ false
+  }
+}
+
+case class ErrorSourceMessageFilter(throwable: Class[_], source: AnyRef, message: String) extends EventFilter {
+  def apply(event: Event) = event match {
+    case Error(cause, instance, _) if !((throwable isInstance cause) && (source eq instance)) ⇒ false
+    case Error(cause, _, null) if cause.getMessage eq null ⇒ cause.getStackTrace.length == 0
+    case Error(cause, _, null) ⇒ cause.getMessage startsWith message
+    case Error(_, _, msg) ⇒ msg.toString startsWith message
+    case _ ⇒ false
+  }
+}
+
+case class CustomEventFilter(test: (Event) ⇒ Boolean) extends EventFilter {
+  def apply(event: Event) = test(event)
 }
 
 class TestEventListener extends EventHandler.DefaultListener {
-  import EventHandler._
   import TestEvent._
 
   var filters: List[EventFilter] = Nil
 
   override def receive: Receive = ({
     case Mute(filter)                  ⇒ addFilter(filter)
-    case Mute                          ⇒ addFilter(EventFilter.all)
     case UnMute(filter)                ⇒ removeFilter(filter)
-    case UnMute                        ⇒ removeFilter(EventFilter.all)
-    case event: Error if filter(event) ⇒ // Just test Error events
+    case UnMuteAll                     ⇒ filters = Nil
+    case event: Event if filter(event) ⇒
   }: Receive) orElse super.receive
 
-  def filter(event: Event): Boolean = filters exists (_(event))
+  def filter(event: Event): Boolean = try { filters exists (_(event)) } catch { case e: Exception ⇒ false }
 
   def addFilter(filter: EventFilter): Unit = filters ::= filter
 

@@ -48,11 +48,11 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
   import FutureSpec._
 
   override def beforeAll() {
-    EventHandler.notify(Mute)
+    EventHandler.notify(Mute(EventFilter[RuntimeException]))
   }
 
   override def afterAll() {
-    EventHandler.notify(UnMute)
+    EventHandler.notify(UnMuteAll)
   }
 
   "A Promise" when {

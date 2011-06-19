@@ -21,11 +21,11 @@ import org.multiverse.api.latches.StandardLatch
 class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
   override def beforeAll() {
-    EventHandler.notify(Mute(EventFilter(message = "Crashing...")))
+    EventHandler.notify(Mute(EventFilter[Exception]("Crashing...")))
   }
 
   override def afterAll() {
-    EventHandler.notify(UnMute(EventFilter(message = "Crashing...")))
+    EventHandler.notify(UnMuteAll)
   }
 
   object Ping

@@ -51,15 +51,13 @@ object CoordinatedIncrement {
 class CoordinatedIncrementSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import CoordinatedIncrement._
 
-  val ignoreEvents = List(EventFilter(classOf[RuntimeException], message = "Expected failure"),
-    EventFilter(classOf[org.multiverse.api.exceptions.DeadTransactionException]))
-
   override def beforeAll() {
-    ignoreEvents foreach (f ⇒ EventHandler.notify(Mute(f)))
+    EventHandler notify Mute(EventFilter[RuntimeException]("Expected failure"))
+    EventHandler notify Mute(EventFilter[org.multiverse.api.exceptions.DeadTransactionException]())
   }
 
   override def afterAll() {
-    ignoreEvents foreach (f ⇒ EventHandler.notify(UnMute(f)))
+    EventHandler notify UnMuteAll
   }
 
   val numCounters = 5
