@@ -309,7 +309,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     val scalatest = Dependencies.scalatest
 
     override def deliverProjectDependencies =
-      super.deliverProjectDependencies.toList - akka_testkit.projectID ++ Seq(akka_testkit.projectID % "test->default")
+      super.deliverProjectDependencies.toList - akka_testkit.projectID
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -398,7 +398,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     val scalatest = Dependencies.scalatest
 
     override def deliverProjectDependencies =
-      super.deliverProjectDependencies.toList - akka_testkit.projectID ++ Seq(akka_testkit.projectID % "test->default")
+      super.deliverProjectDependencies.toList - akka_testkit.projectID
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -709,7 +709,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     val slf4j   = Dependencies.slf4j
 
     override def deliverProjectDependencies =
-      super.deliverProjectDependencies.toList - akka_testkit.projectID ++ Seq(akka_testkit.projectID % "test->default")
+      super.deliverProjectDependencies.toList - akka_testkit.projectID
   }
 
   // -------------------------------------------------------------------------------------------------------------------
