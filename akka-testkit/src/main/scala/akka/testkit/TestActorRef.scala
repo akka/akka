@@ -38,14 +38,6 @@ class TestActorRef[T <: Actor](factory: () ⇒ T, address: String)
    */
   def underlyingActor: T = actor.asInstanceOf[T]
 
-  /**
-   * Override to return the more specific static type.
-   */
-  override def start() = {
-    super.start()
-    this
-  }
-
   override def toString = "TestActor[" + address + ":" + uuid + "]"
 
   override def equals(other: Any) =

@@ -199,7 +199,45 @@ object Actor extends ListenerManagement {
   private[akka] lazy val remote: RemoteSupport = cluster.remoteService
 
   /**
-   * Creates an ActorRef out of the Actor with type T.
+   * This decorator adds invocation logging to a Receive function.
+   */
+  class LoggingReceive(source: AnyRef, r: Receive) extends Receive {
+    def isDefinedAt(o: Any) = {
+      val handled = r.isDefinedAt(o)
+      EventHandler.debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o)
+      handled
+    }
+    def apply(o: Any): Unit = r(o)
+  }
+  object LoggingReceive {
+    def apply(source: AnyRef, r: Receive): Receive = r match {
+      case _: LoggingReceive ⇒ r
+      case _                 ⇒ new LoggingReceive(source, r)
+    }
+  }
+
+  /**
+   * Wrap a Receive partial function in a logging enclosure, which sends a
+   * debug message to the EventHandler each time before a message is matched.
+   * This includes messages which are not handled.
+   *
+   * <pre><code>
+   * def receive = loggable {
+   *   case x => ...
+   * }
+   * </code></pre>
+   *
+   * This method does NOT modify the given Receive unless
+   * akka.actor.debug.receive is set within akka.conf.
+   */
+  def loggable(self: AnyRef)(r: Receive): Receive = if (addLoggingReceive) LoggingReceive(self, r) else r
+
+  private[akka] val addLoggingReceive = config.getBool("akka.actor.debug.receive", false)
+  private[akka] val debugAutoReceive = config.getBool("akka.actor.debug.autoreceive", false)
+  private[akka] val debugLifecycle = config.getBool("akka.actor.debug.lifecycle", false)
+
+  /**
+   *  Creates an ActorRef out of the Actor with type T.
    * <pre>
    *   import Actor._
    *   val actor = actorOf[MyActor]
@@ -529,6 +567,8 @@ object Actor extends ListenerManagement {
  */
 trait Actor {
 
+  import Actor.{ addLoggingReceive, debugAutoReceive, LoggingReceive }
+
   /**
    * Type alias because traits cannot have companion objects.
    */
@@ -696,6 +736,8 @@ trait Actor {
   }
 
   private final def autoReceiveMessage(msg: AutoReceivedMessage) {
+    if (debugAutoReceive)
+      EventHandler.debug(this, "received AutoReceiveMessage " + msg)
     msg match {
       case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
       case RevertHotSwap             ⇒ unbecome()

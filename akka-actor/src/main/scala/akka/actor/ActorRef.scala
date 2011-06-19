@@ -294,7 +294,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
   /**
    * Starts up the actor and its message queue.
    */
-  def start(): ActorRef
+  def start(): this.type
 
   /**
    * Shuts down the actor its dispatcher and message queue.
@@ -543,7 +543,7 @@ class LocalActorRef private[akka] (
   /**
    * Starts up the actor and its message queue.
    */
-  def start(): ActorRef = guard.withGuard {
+  def start(): this.type = guard.withGuard[this.type] {
     if (isShutdown) throw new ActorStartException(
       "Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
@@ -571,7 +571,9 @@ class LocalActorRef private[akka] (
         dispatcher.detach(this)
         _status = ActorRefInternals.SHUTDOWN
         try {
-          actor.postStop()
+          val a = actor
+          if (Actor.debugLifecycle) EventHandler.debug(a, "stopping")
+          a.postStop()
         } finally {
           currentMessage = null
           Actor.registry.unregister(this)
@@ -611,6 +613,7 @@ class LocalActorRef private[akka] (
         actorRef.supervisor = Some(this)
       }
     }
+    if (Actor.debugLifecycle) EventHandler.debug(actor, "now supervising " + actorRef)
   }
 
   /**
@@ -623,6 +626,7 @@ class LocalActorRef private[akka] (
       if (_linkedActors.remove(actorRef.uuid) eq null)
         throw new IllegalActorStateException("Actor [" + actorRef + "] is not a linked actor, can't unlink")
       actorRef.supervisor = None
+      if (Actor.debugLifecycle) EventHandler.debug(actor, "stopped supervising " + actorRef)
     }
   }
 
@@ -701,7 +705,7 @@ class LocalActorRef private[akka] (
           }
         } catch {
           case e ⇒
-            EventHandler.error(e, this, messageHandle.message.toString)
+            EventHandler.error(e, actor, messageHandle.message.toString)
             throw e
         }
       }
@@ -762,12 +766,14 @@ class LocalActorRef private[akka] (
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
     def performRestart() {
       val failedActor = actorInstance.get
+      if (Actor.debugLifecycle) EventHandler.debug(failedActor, "restarting")
       failedActor.preRestart(reason)
       val freshActor = newActor
       setActorSelfFields(failedActor, null) // Only null out the references if we could instantiate the new actor
       actorInstance.set(freshActor) // Assign it here so if preStart fails, we can null out the sef-refs next call
       freshActor.preStart()
       freshActor.postRestart(reason)
+      if (Actor.debugLifecycle) EventHandler.debug(freshActor, "restarted")
     }
 
     def tooManyRestarts() {
@@ -923,7 +929,9 @@ class LocalActorRef private[akka] (
   }
 
   private def initializeActorInstance() {
-    actor.preStart() // run actor preStart
+    val a = actor
+    if (Actor.debugLifecycle) EventHandler.debug(a, "started")
+    a.preStart() // run actor preStart
     Actor.registry.register(this)
   }
 
@@ -995,7 +1003,7 @@ private[akka] case class RemoteActorRef private[akka] (
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
 
-  def start(): ActorRef = synchronized {
+  def start(): this.type = synchronized[this.type] {
     _status = ActorRefInternals.RUNNING
     this
   }

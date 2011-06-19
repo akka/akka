@@ -11,6 +11,8 @@ FSM
    :synopsis: Finite State Machine DSL on top of Actors
 .. moduleauthor:: Irmo Manie, Roland Kuhn
 .. versionadded:: 1.0
+.. versionchanged:: 1.2
+   added Tracing and Logging
 
 Module stability: **STABLE**
 
@@ -283,11 +285,11 @@ Initiating Transitions
 ----------------------
 
 The result of any :obj:`stateFunction` must be a definition of the next state
-unless terminating the FSM, which is described in `Termination`_.  The state
-definition can either be the current state, as described by the :func:`stay`
-directive, or it is a different state as given by :func:`goto(state)`. The
-resulting object allows further qualification by way of the modifiers described
-in the following:
+unless terminating the FSM, which is described in `Termination from Inside`_.
+The state definition can either be the current state, as described by the
+:func:`stay` directive, or it is a different state as given by
+:func:`goto(state)`. The resulting object allows further qualification by way
+of the modifiers described in the following:
 
 :meth:`forMax(duration)`
   This modifier sets a state timeout on the next state. This means that a timer
@@ -430,8 +432,8 @@ queued it. The status of any timer may be inquired with
 These named timers complement state timeouts because they are not affected by
 intervening reception of other messages.
 
-Termination
------------
+Termination from Inside
+-----------------------
 
 The FSM is stopped by specifying the result state as
 
@@ -470,6 +472,79 @@ a :class:`StopEvent(reason, stateName, stateData)` as argument:
 
 As for the :func:`whenUnhandled` case, this handler is not stacked, so each
 invocation of :func:`onTermination` replaces the previously installed handler.
+
+Termination from Outside
+------------------------
+
+When an :class:`ActorRef` associated to a FSM is stopped using the
+:meth:`stop()` method, its :meth:`postStop` hook will be executed. The default
+implementation by the :class:`FSM` trait is to execute the
+:meth:`onTermination` handler if that is prepared to handle a
+:obj:`StopEvent(Shutdown, ...)`.
+
+.. warning::
+
+  In case you override :meth:`postStop` and want to have your
+  :meth:`onTermination` handler called, do not forget to call
+  ``super.postStop``.
+
+Testing and Debugging Finite State Machines
+===========================================
+
+During development and for trouble shooting FSMs need care just as any other
+actor. There are specialized tools available as described in :ref:`TestFSMRef`
+and in the following.
+
+Event Tracing
+-------------
+
+The setting ``akka.actor.debug.fsm`` in ``akka.conf`` enables logging of an
+event trace by :class:`LoggingFSM` instances::
+
+  class MyFSM extends Actor with LoggingFSM[X, Z] {
+    ...
+  }
+
+This FSM will log at DEBUG level:
+
+  * all processed events, including :obj:`StateTimeout` and scheduled timer
+    messages
+  * every setting and cancellation of named timers
+  * all state transitions
+
+Life cycle changes and special messages can be logged as described for
+:ref:`Actors <actor.logging>`.
+
+Rolling Event Log
+-----------------
+
+The :class:`LoggingFSM` trait adds one more feature to the FSM: a rolling event
+log which may be used during debugging (for tracing how the FSM entered a
+certain failure state) or for other creative uses::
+
+  class MyFSM extends Actor with LoggingFSM[X, Z] {
+    override def logDepth = 12
+    onTermination {
+      case StopEvent(Failure(_), state, data) =>
+        EventHandler.warning(this, "Failure in state "+state+" with data "+data+"\n"+
+          "Events leading up to this point:\n\t"+getLog.mkString("\n\t"))
+    }
+    ...
+  }
+
+The :meth:`logDepth` defaults to zero, which turns off the event log.
+
+.. warning::
+
+  The log buffer is allocated during actor creation, which is why the
+  configuration is done using a virtual method call. If you want to override
+  with a ``val``, make sure that its initialization happens before the
+  initializer of :class:`LoggingFSM` runs, and do not change the value returned
+  by ``logDepth`` after the buffer has been allocated.
+
+The contents of the event log are available using method :meth:`getLog`, which
+returns an :class:`IndexedSeq[LogEntry]` where the oldest entry is at index
+zero.
 
 Examples
 ========

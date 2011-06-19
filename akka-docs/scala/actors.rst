@@ -122,71 +122,101 @@ Other good messages types are ``scala.Tuple2``, ``scala.List``, ``scala.Map`` wh
 Send messages
 -------------
 
-Messages are sent to an Actor through one of the “bang” methods.
+Messages are sent to an Actor through one of the following methods.
 
-* ! means “fire-and-forget”, e.g. send a message asynchronously and return immediately.
-* !! means “send-and-reply-eventually”, e.g. send a message asynchronously and wait for a reply through aFuture. Here you can specify a timeout. Using timeouts is very important. If no timeout is specified then the actor’s default timeout (set by the this.timeout variable in the actor) is used. This method returns an ``Option[Any]`` which will be either ``Some(result)`` if returning successfully or None if the call timed out.
-* ? sends a message asynchronously and returns a ``Future``.
+* ``!`` means “fire-and-forget”, e.g. send a message asynchronously and return
+  immediately.
+* ``?`` sends a message asynchronously and returns a :class:`Future`
+  representing a possible reply.
 
-You can check if an Actor can handle a specific message by invoking the ``isDefinedAt`` method:
+.. note::
 
-.. code-block:: scala
+  There used to be two more “bang” methods, which are deprecated and will be
+  removed in Akka 2.0:
 
-  if (actor.isDefinedAt(message)) actor ! message
-  else ...
+  * ``!!`` was similar to the current ``(actor ? msg).as[T]``; deprecation
+    followed from the change of timeout handling described below.
+  * ``!!![T]`` was similar to the current ``(actor ? msg).mapTo[T]``, with the
+    same change in the handling of :class:`Future`’s timeout as for ``!!``, but
+    additionally the old method could defer possible type cast problems into
+    seemingly unrelated parts of the code base.
 
 Fire-forget
 ^^^^^^^^^^^
 
-This is the preferred way of sending messages. No blocking waiting for a message. This gives the best concurrency and scalability characteristics.
+This is the preferred way of sending messages. No blocking waiting for a
+message. This gives the best concurrency and scalability characteristics.
 
 .. code-block:: scala
 
   actor ! "Hello"
 
-If invoked from within an Actor, then the sending actor reference will be implicitly passed along with the message and available to the receiving Actor in its ``sender: Option[AnyRef]`` member field. He can use this to reply to the original sender or use the ``reply(message: Any)`` method.
+If invoked from within an Actor, then the sending actor reference will be
+implicitly passed along with the message and available to the receiving Actor
+in its ``channel: UntypedChannel`` member field. The target actor can use this
+to reply to the original sender, e.g. by using the ``self.reply(message: Any)``
+method.
 
-If invoked from an instance that is **not** an Actor there will be no implicit sender passed along the message and you will get an IllegalStateException if you call ``self.reply(..)``.
-
-Send-And-Receive-Eventually
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Using ``!!`` will send a message to the receiving Actor asynchronously but it will wait for a reply on a ``Future``, blocking the sender Actor until either:
-
-* A reply is received, or
-* The Future times out
-
-You can pass an explicit time-out to the ``!!`` method and if none is specified then the default time-out defined in the sender Actor will be used.
-
-The ``!!`` method returns an ``Option[Any]`` which will be either ``Some(result)`` if returning successfully, or ``None`` if the call timed out.
-Here are some examples:
-
-.. code-block:: scala
-
-  val resultOption = actor !! ("Hello", 1000)
-  if (resultOption.isDefined) ... // handle reply
-  else ... // handle timeout
-
-  val result: Option[String] = actor !! "Hello"
-  resultOption match {
-    case Some(reply) => ... // handle reply
-    case None =>        ... // handle timeout
-  }
-
-  val result = (actor !! "Hello").getOrElse(throw new RuntimeException("TIMEOUT"))
-
-  (actor !! "Hello").foreach(result => ...) // handle result
+If invoked from an instance that is **not** an Actor there will be no implicit
+sender passed along with the message and you will get an
+IllegalActorStateException when calling ``self.reply(...)``.
 
 Send-And-Receive-Future
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Using ``?`` will send a message to the receiving Actor asynchronously and will return a 'Future':
+Using ``?`` will send a message to the receiving Actor asynchronously and
+will return a :class:`Future`:
 
 .. code-block:: scala
 
   val future = actor ? "Hello"
 
-See :ref:`futures-scala` for more information.
+The receiving actor should reply to this message, which will complete the
+future with the reply message as value; if the actor throws an exception while
+processing the invocation, this exception will also complete the future. If the
+actor does not complete the future, it will expire after the timeout period,
+which is taken from one of the following three locations in order of
+precedence:
+
+#. explicitly given timeout as in ``actor.?("hello")(timeout = 12 millis)``
+#. implicit argument of type :class:`Actor.Timeout`, e.g.
+
+   ::
+
+     implicit val timeout = Actor.Timeout(12 millis)
+     val future = actor ? "hello"
+
+#. default timeout from ``akka.conf``
+
+See :ref:`futures-scala` for more information on how to await or query a
+future.
+
+Send-And-Receive-Eventually
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The future returned from the ``?`` method can conveniently be passed around or
+chained with further processing steps, but sometimes you just need the value,
+even if that entails waiting for it (but keep in mind that waiting inside an
+actor is prone to dead-locks, e.g. if obtaining the result depends on
+processing another message on this actor).
+
+For this purpose, there is the method :meth:`Future.as[T]` which waits until
+either the future is completed or its timeout expires, whichever comes first.
+The result is then inspected and returned as :class:`Some[T]` if it was
+normally completed and the answer’s runtime type matches the desired type; in
+all other cases :class:`None` is returned.
+
+.. code-block:: scala
+
+  (actor ? msg).as[String] match {
+    case Some(answer) => ...
+    case None         => ...
+  }
+
+  val resultOption = (actor ? msg).as[String]
+  if (resultOption.isDefined) ... else ...
+
+  for (x <- (actor ? msg).as[Int]) yield { 2 * x }
 
 Forward message
 ^^^^^^^^^^^^^^^
@@ -235,7 +265,7 @@ The Actor trait contains almost no member fields or methods to invoke, you just 
   #. preRestart
   #. postRestart
 
-The ``Actor`` trait has one single member field (apart from the ``log`` field from the mixed in ``Logging`` trait):
+The ``Actor`` trait has one single member field:
 
 .. code-block:: scala
 
@@ -314,58 +344,29 @@ The ``reply`` method throws an ``IllegalStateException`` if unable to determine 
     if (self.reply_?(result)) ...// success
     else ... // handle failure
 
-Reply using the sender reference
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If the sender is an Actor then its reference will be implicitly passed along together with the message and will end up in the ``sender: Option[ActorRef]`` member field in the ``ActorRef``. This means that you can use this field to send a message back to the sender.
-
-.. code-block:: scala
-
-  // receiver code
-  case request =>
-    val result = process(request)
-    self.sender.get ! result
-
-It's important to know that ``sender.get`` will throw an exception if the ``sender`` is not defined, e.g. the ``Option`` is ``None``. You can check if it is defined by invoking the ``sender.isDefined`` method, but a more elegant solution is to use ``foreach`` which will only be executed if the sender is defined in the ``sender`` member ``Option`` field. If it is not, then the operation in the ``foreach`` method is ignored.
-
-.. code-block:: scala
-
-  // receiver code
-  case request =>
-    val result = process(request)
-    self.sender.foreach(_ ! result)
-
-The same pattern holds for using the ``senderFuture`` in the section below.
-
-Reply using the sender future
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If a message was sent with the ``!!`` or ``?`` methods, which both implements request-reply semantics using Future's, then you either have the option of replying using the ``reply`` method as above. This method will then resolve the Future. But you can also get a reference to the Future directly and resolve it yourself or if you would like to store it away to resolve it later, or pass it on to some other Actor to resolve it.
-
-The reference to the Future resides in the ``senderFuture: Option[Promise[_]]`` member field in the ``ActorRef`` class.
-
-Here is an example of how it can be used:
-
-.. code-block:: scala
-
-  case request =>
-    try {
-      val result = process(request)
-      self.senderFuture.foreach(_.completeWithResult(result))
-    } catch {
-      case e =>
-        senderFuture.foreach(_.completeWithException(this, e))
-    }
-
-
 Summary of reply semantics and options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* ``self.reply(...)`` can be used to reply to an ``Actor`` or a ``Future``.
-* ``self.sender`` is a reference to the ``Actor`` you can reply to, if it exists
-* ``self.senderFuture`` is a reference to the ``Future`` you can reply to, if it exists
-* ``self.channel`` is a reference providing an abstraction to either ``self.sender`` or ``self.senderFuture`` if one is set, providing a single reference to store and reply to (the reference equivalent to the ``reply(...)`` method).
-* ``self.sender`` and ``self.senderFuture`` will never be set at the same time, as there can only be one reference to accept a reply.
+* ``self.reply(...)`` can be used to reply to an ``Actor`` or a ``Future`` from
+  within an actor; the current actor will be passed as reply channel if the
+  current channel supports this.
+* ``self.channel`` is a reference providing an abstraction for the reply
+  channel; this reference may be passed to other actors or used by non-actor
+  code.
+
+.. note::
+
+  There used to be two methods for determining the sending Actor or Future for the current invocation:
+
+  * ``self.sender`` yielded a :class:`Option[ActorRef]`
+  * ``self.senderFuture`` yielded a :class:`Option[CompletableFuture[Any]]`
+
+  These two concepts have been unified into the ``channel``. If you need to know the nature of the channel, you may do so using pattern matching::
+
+    self.channel match {
+      case ref : ActorRef => ...
+      case f : ActorCompletableFuture => ...
+    }
 
 Initial receive timeout
 -----------------------
@@ -438,7 +439,7 @@ PoisonPill
 
 You can also send an actor the ``akka.actor.PoisonPill`` message, which will stop the actor when the message is processed.
 
-If the sender is a ``Future`` (e.g. the message is sent with ``!!`` or ``?``), the ``Future`` will be completed with an ``akka.actor.ActorKilledException("PoisonPill")``.
+If the sender is a ``Future`` (e.g. the message is sent with ``?``), the ``Future`` will be completed with an ``akka.actor.ActorKilledException("PoisonPill")``.
 
 HotSwap
 -------
