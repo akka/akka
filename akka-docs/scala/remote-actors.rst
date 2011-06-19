@@ -344,7 +344,7 @@ Client side usage
 .. code-block:: scala
 
   val actor = remote.actorFor("hello-service", "localhost", 2552)
-  val result = actor !! "Hello"
+  val result = (actor ? "Hello").as[String]
 
 There are many variations on the 'remote#actorFor' method. Here are some of them:
 
@@ -394,7 +394,7 @@ Paste in the code below into two sbt concole shells. Then run:
 
     def run() {
       val actor = remote.actorFor("hello-service", "localhost", 2552)
-      val result = actor !! "Hello"
+      val result = (actor ? "Hello").as[AnyRef]
       EventHandler.info("Result from Remote Actor: %s", result)
     }
 
@@ -691,7 +691,7 @@ Using the generated message builder to send the message to a remote actor:
 
 .. code-block:: scala
 
-  val result = actor !! ProtobufPOJO.newBuilder
+  val resultFuture = actor ? ProtobufPOJO.newBuilder
       .setId(11)
       .setStatus(true)
       .setName("Coltrane")

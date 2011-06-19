@@ -199,7 +199,7 @@ object Actor extends ListenerManagement {
    * Wrap a Receive partial function in a logging enclosure, which sends a
    * debug message to the EventHandler each time before a message is matched.
    * This includes messages which are not handled.
-   * 
+   *
    * <pre><code>
    * def receive = loggable {
    *   case x => ...
@@ -716,7 +716,7 @@ trait Actor {
 
   private final def autoReceiveMessage(msg: AutoReceivedMessage) {
     if (debugAutoReceive)
-      EventHandler.debug(self, "received AutoReceiveMessage " + msg)
+      EventHandler.debug(this, "received AutoReceiveMessage " + msg)
     msg match {
       case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
       case RevertHotSwap             ⇒ unbecome()

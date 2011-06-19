@@ -12,7 +12,7 @@ Module stability: **SOLID**
 The `Actor Model <http://en.wikipedia.org/wiki/Actor_model>`_ provides a higher level of abstraction for writing concurrent and distributed systems. It alleviates the developer from having to deal with explicit locking and thread management, making it easier to write correct concurrent and parallel systems. Actors were defined in the 1973 paper by Carl Hewitt but have been popularized by the Erlang language, and used for example at Ericsson with great success to build highly concurrent and reliable telecom systems.
 
 Defining an Actor class
-^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 Actors in Java are created either by extending the 'UntypedActor' class and implementing the 'onReceive' method. This method takes the message as a parameter.
 
@@ -238,9 +238,9 @@ which you do by Channel.sendOneWay(msg)
   public void onReceive(Object message) throws Exception {
     if (message instanceof String) {
       String msg = (String)message;
-      if (msg.equals("Hello") && getContext().getSenderFuture().isDefined()) {
+      if (msg.equals("Hello")) {
         // Reply to original sender of message using the channel
-        getContext().channel().sendOneWay(msg + " from " + getContext().getUuid());
+        getContext().channel().sendOneWaySafe(msg + " from " + getContext().getUuid());
       }
     }
   }
@@ -281,61 +281,36 @@ The 'replyUnsafe' method throws an 'IllegalStateException' if unable to determin
     }
   }
 
-Reply using the sender reference
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If the sender reference (the sender's 'ActorRef') is passed into one of the 'send*' methods it will be implicitly passed along together with the message and will be available in the 'Option<ActorRef> getSender()' method on the 'ActorRef. This means that you can use this field to send a message back to the sender.
-
-On this 'Option' you can invoke 'boolean isDefined()' or 'boolean isEmpty()' to check if the sender is available or not, and if it is call 'get()' to get the reference. It's important to know that 'getSender().get()' will throw an exception if there is no sender in scope. The same pattern holds for using the 'getSenderFuture()' in the section below.
-
-.. code-block:: java
-
-  public void onReceive(Object message) throws Exception {
-    if (message instanceof String) {
-      String msg = (String)message;
-      if (msg.equals("Hello")) {
-        // Reply to original sender of message using the sender reference
-        // also passing along my own reference (the context)
-        if (getContext().getSender().isDefined)
-          getContext().getSender().get().sendOneWay(msg + " from " + getContext().getUuid(), getContext());
-      }
-    }
-  }
-
-Reply using the sender future
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If a message was sent with the 'sendRequestReply' or 'ask' methods, which both implements request-reply semantics using Future's, then you either have the option of replying using the 'reply' method as above. This method will then resolve the Future. But you can also get a reference to the Future directly and resolve it yourself or if you would like to store it away to resolve it later, or pass it on to some other Actor to resolve it.
-
-The reference to the Future resides in the 'ActorRef' instance and can be retrieved using 'Option<Promise> getSenderFuture()'.
-
-Promise is a future with methods for 'completing the future:
-* completeWithResult(..)
-* completeWithException(..)
-
-Here is an example of how it can be used:
-
-.. code-block:: java
-
-  public void onReceive(Object message) throws Exception {
-    if (message instanceof String) {
-      String msg = (String)message;
-      if (msg.equals("Hello") && getContext().getSenderFuture().isDefined()) {
-        // Reply to original sender of message using the sender future reference
-        getContext().getSenderFuture().get().completeWithResult(msg + " from " + getContext().getUuid());
-      }
-    }
-  }
-
-
 Summary of reply semantics and options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* getContext().reply(...) can be used to reply to an Actor or a Future.
-* getContext().getSender() is a reference to the actor you can reply to, if it exists
-* getContext().getSenderFuture() is a reference to the future you can reply to, if it exists
-* getContext().channel() is a reference providing an abstraction to either self.sender or self.senderFuture if one is set, providing a single reference to store and reply to (the reference equivalent to the 'reply(...)' method).
-* getContext().getSender() and getContext().getSenderFuture() will never be set at the same time, as there can only be one reference to accept a reply.
+* ``getContext().reply(...)`` can be used to reply to an ``Actor`` or a
+  ``Future`` from within an actor; the current actor will be passed as reply
+  channel if the current channel supports this.
+* ``getContext().channel`` is a reference providing an abstraction for the
+  reply channel; this reference may be passed to other actors or used by
+  non-actor code.
+
+.. note::
+
+  There used to be two methods for determining the sending Actor or Future for the current invocation:
+
+  * ``getContext().getSender()`` yielded a :class:`Option[ActorRef]`
+  * ``getContext().getSenderFuture()`` yielded a :class:`Option[CompletableFuture[Any]]`
+
+  These two concepts have been unified into the ``channel``. If you need to
+  know the nature of the channel, you may do so using instance tests::
+
+    if (getContext().channel() instanceof ActorRef) {
+      ...
+    } else if (getContext().channel() instanceof ActorPromise) {
+      ...
+    }
+
+Promise represents the write-side of a Future, enabled by the methods
+
+* completeWithResult(..)
+* completeWithException(..)
 
 Starting actors
 ---------------

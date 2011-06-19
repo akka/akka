@@ -96,13 +96,13 @@ Step 3: Import the type class module definition and serialize / de-serialize::
     import BinaryFormatMyActor._
 
     val actor1 = actorOf[MyActor].start()
-    (actor1 !! "hello").getOrElse("_") should equal("world 1")
-    (actor1 !! "hello").getOrElse("_") should equal("world 2")
+    (actor1 ? "hello").as[String].getOrElse("_") should equal("world 1")
+    (actor1 ? "hello").as[String].getOrElse("_") should equal("world 2")
 
     val bytes = toBinary(actor1)
     val actor2 = fromBinary(bytes)
     actor2.start()
-    (actor2 !! "hello").getOrElse("_") should equal("world 3")
+    (actor2 ? "hello").as[String].getOrElse("_") should equal("world 3")
   }
 
 Helper Type Class for Stateless Actors
@@ -138,13 +138,13 @@ and use it for serialization::
     import BinaryFormatMyStatelessActor._
 
     val actor1 = actorOf[MyStatelessActor].start()
-    (actor1 !! "hello").getOrElse("_") should equal("world")
-    (actor1 !! "hello").getOrElse("_") should equal("world")
+    (actor1 ? "hello").as[String].getOrElse("_") should equal("world")
+    (actor1 ? "hello").as[String].getOrElse("_") should equal("world")
 
     val bytes = toBinary(actor1)
     val actor2 = fromBinary(bytes)
     actor2.start()
-    (actor2 !! "hello").getOrElse("_") should equal("world")
+    (actor2 ? "hello").as[String].getOrElse("_") should equal("world")
   }
 
 
@@ -189,13 +189,13 @@ and serialize / de-serialize::
     import BinaryFormatMyJavaSerializableActor._
 
     val actor1 = actorOf[MyJavaSerializableActor].start()
-    (actor1 !! "hello").getOrElse("_") should equal("world 1")
-    (actor1 !! "hello").getOrElse("_") should equal("world 2")
+    (actor1 ? "hello").as[String].getOrElse("_") should equal("world 1")
+    (actor1 ? "hello").as[String].getOrElse("_") should equal("world 2")
 
     val bytes = toBinary(actor1)
     val actor2 = fromBinary(bytes)
     actor2.start()
-    (actor2 !! "hello").getOrElse("_") should equal("world 3")
+    (actor2 ? "hello").as[String].getOrElse("_") should equal("world 3")
   }
 
 
@@ -382,7 +382,7 @@ compiler::
 When you compile the spec you will among other things get a message builder. You
 then use this builder to create the messages to send over the wire::
 
-  val result = remoteActor !! ProtobufPOJO.newBuilder
+  val resultFuture = remoteActor ? ProtobufPOJO.newBuilder
       .setId(11)
       .setStatus(true)
       .setName("Coltrane")

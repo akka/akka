@@ -18,6 +18,8 @@ Testing Actor Systems
 .. versionadded:: 1.0
 .. versionchanged:: 1.1
    added :class:`TestActorRef`
+.. versionchanged:: 1.2
+   added :class:`TestFSMRef`
 
 As with any piece of software, automated tests are a very important part of the
 development cycle. The actor model presents a different view on how units of
@@ -83,6 +85,53 @@ Since :class:`TestActorRef` is generic in the actor type it returns the
 underlying actor with its proper static type. From this point on you may bring
 any unit testing tool to bear on your actor as usual.
 
+.. _TestFSMRef:
+
+Testing Finite State Machines
+-----------------------------
+
+If your actor under test is a :class:`FSM`, you may use the special
+:class:`TestFSMRef` which offers all features of a normal :class:`TestActorRef`
+and in addition allows access to the internal state::
+
+  import akka.testkit.TestFSMRef
+  import akka.util.duration._
+
+  val fsm = TestFSMRef(new Actor with FSM[Int, String] {
+      startWith(1, "")
+      when (1) {
+        case Ev("go") => goto(2) using "go"
+      }
+      when (2) {
+        case Ev("back") => goto(1) using "back"
+      }
+    }).start()
+  
+  assert (fsm.stateName == 1)
+  assert (fsm.stateData == "")
+  fsm ! "go"                      // being a TestActorRef, this runs also on the CallingThreadDispatcher
+  assert (fsm.stateName == 2)
+  assert (fsm.stateData == "go")
+  
+  fsm.setState(stateName = 1)
+  assert (fsm.stateName == 1)
+
+  assert (fsm.timerActive_?("test") == false)
+  fsm.setTimer("test", 12, 10 millis, true)
+  assert (fsm.timerActive_?("test") == true)
+  fsm.cancelTimer("test")
+  assert (fsm.timerActive_?("test") == false)
+
+Due to a limitation in Scala’s type inference, there is only the factory method
+shown above, so you will probably write code like ``TestFSMRef(new MyFSM)``
+instead of the hypothetical :class:`ActorRef`-inspired ``TestFSMRef[MyFSM]``.
+All methods shown above directly access the FSM state without any
+synchronization; this is perfectly alright if the
+:class:`CallingThreadDispatcher` is used (which is the default for
+:class:`TestFSMRef`) and no other threads are involved, but it may lead to
+surprises if you were to actually exercise timer events, because those are
+executed on the :obj:`Scheduler` thread.
+
 Testing the Actor's Behavior
 ----------------------------
 
@@ -104,8 +153,8 @@ into a :class:`TestActorRef`.
 .. code-block:: scala
 
    val actorRef = TestActorRef(new MyActor)
-   val result = actorRef !! Say42 // hypothetical message stimulating a '42' answer
-   result must be (42)
+   val result = (actorRef ? Say42).as[Int] // hypothetical message stimulating a '42' answer
+   result must be (Some(42))
 
 As the :class:`TestActorRef` is a subclass of :class:`LocalActorRef` with a few
 special extras, also aspects like linking to a supervisor and restarting work
@@ -212,6 +261,125 @@ classes, receiving nothing for some time, etc.
    The test actor shuts itself down by default after 5 seconds (configurable)
    of inactivity, relieving you of the duty of explicitly managing it.
 
+Built-In Assertions
+-------------------
+
+The abovementioned :meth:`expectMsg` is not the only method for formulating
+assertions concerning received messages. Here is the full list:
+
+  * :meth:`expectMsg[T](d: Duration, msg: T): T`
+
+    The given message object must be received within the specified time; the
+    object will be returned.
+
+  * :meth:`expectMsgPF[T](d: Duration)(pf: PartialFunction[Any, T]): T`
+
+    Within the given time period, a message must be received and the given
+    partial function must be defined for that message; the result from applying
+    the partial function to the received message is returned. The duration may
+    be left unspecified (empty parentheses are required in this case) to use
+    the deadline from the innermost enclosing :ref:`within <TestKit.within>`
+    block instead.
+
+  * :meth:`expectMsgClass[T](d: Duration, c: Class[T]): T`
+
+    An object which is an instance of the given :class:`Class` must be received
+    within the allotted time frame; the object will be returned. Note that this
+    does a conformance check; if you need the class to be equal, have a look at
+    :meth:`expectMsgAllClassOf` with a single given class argument.
+
+  * :meth:`expectMsgAnyOf[T](d: Duration, obj: T*): T`
+
+    An object must be received within the given time, and it must be equal (
+    compared with ``==``) to at least one of the passed reference objects; the
+    received object will be returned.
+
+  * :meth:`expectMsgAnyClassOf[T](d: Duration, obj: Class[_ <: T]*): T`
+
+    An object must be received within the given time, and it must be an
+    instance of at least one of the supplied :class:`Class` objects; the
+    received object will be returned.
+
+  * :meth:`expectMsgAllOf[T](d: Duration, obj: T*): Seq[T]`
+
+    A number of objects matching the size of the supplied object array must be
+    received within the given time, and for each of the given objects there
+    must exist at least one among the received ones which equals (compared with
+    ``==``) it. The full sequence of received objects is returned.
+
+  * :meth:`expectMsgAllClassOf[T](d: Duration, c: Class[_ <: T]*): Seq[T]`
+
+    A number of objects matching the size of the supplied :class:`Class` array
+    must be received within the given time, and for each of the given classes
+    there must exist at least one among the received objects whose class equals
+    (compared with ``==``) it (this is *not* a conformance check). The full
+    sequence of received objects is returned.
+
+  * :meth:`expectMsgAllConformingOf[T](d: Duration, c: Class[_ <: T]*): Seq[T]`
+
+    A number of objects matching the size of the supplied :class:`Class` array
+    must be received within the given time, and for each of the given classes
+    there must exist at least one among the received objects which is an
+    instance of this class. The full sequence of received objects is returned.
+
+  * :meth:`expectNoMsg(d: Duration)`
+
+    No message must be received within the given time. This also fails if a
+    message has been received before calling this method which has not been
+    removed from the queue using one of the other methods.
+
+  * :meth:`receiveN(n: Int, d: Duration): Seq[AnyRef]`
+
+    ``n`` messages must be received within the given time; the received
+    messages are returned.
+
+In addition to message reception assertions there are also methods which help
+with message flows:
+
+  * :meth:`receiveOne(d: Duration): AnyRef`
+
+    Tries to receive one message for at most the given time interval and
+    returns ``null`` in case of failure. If the given Duration is zero, the
+    call is non-blocking (polling mode).
+
+  * :meth:`receiveWhile[T](max: Duration, idle: Duration)(pf: PartialFunction[Any, T]): Seq[T]`
+
+    Collect messages as long as
+    
+    * they are matching the given partial function
+    * the given time interval is not used up
+    * the next message is received within the idle timeout
+      
+    All collected messages are returned. The maximum duration defaults to the
+    time remaining in the innermost enclosing :ref:`within <TestKit.within>`
+    block and the idle duration defaults to infinity (thereby disabling the
+    idle timeout feature).
+
+  * :meth:`awaitCond(p: => Boolean, max: Duration, interval: Duration)`
+
+    Poll the given condition every :obj:`interval` until it returns ``true`` or
+    the :obj:`max` duration is used up. The interval defaults to 100 ms and the
+    maximum defaults to the time remaining in the innermost enclosing
+    :ref:`within <TestKit.within>` block.
+
+  * :meth:`ignoreMsg(pf: PartialFunction[AnyRef, Boolean])`
+    
+    :meth:`ignoreNoMsg`
+
+    The internal :obj:`testActor` contains a partial function for ignoring
+    messages: it will only enqueue messages which do not match the function or
+    for which the function returns ``false``. This function can be set and
+    reset using the methods given above; each invocation replaces the previous
+    function, they are not composed.
+
+    This feature is useful e.g. when testing a logging system, where you want
+    to ignore regular messages and are only interested in your specific ones.
+
+.. _TestKit.within:
+
+Timing Assertions
+-----------------
+
 Another important part of functional testing concerns timing: certain events
 must not happen immediately (like a timer), others need to happen before a
 deadline. Therefore, all examination methods accept an upper time limit within
@@ -258,6 +426,137 @@ first; it follows that this examination usually is the last statement in a
 Ray Roestenburg has written a great article on using the TestKit:
 `<http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html>`_.
 His full example is also available :ref:`here <testkit-example>`.
+
+Accounting for Slow Test Systems
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The tight timeouts you use during testing on your lightning-fast notebook will
+invariably lead to spurious test failures on the heavily loaded Jenkins server
+(or similar). To account for this situation, all maximum durations are
+internally scaled by a factor taken from ``akka.conf``,
+``akka.test.timefactor``, which defaults to 1.
+
+Resolving Conflicts with Implicit ActorRef
+------------------------------------------
+
+The :class:`TestKit` trait contains an implicit value of type :class:`ActorRef`
+to enable the magic reply handling. This value is named ``self`` so that e.g.
+anonymous actors may be declared within a test class without having to care
+about the ambiguous implicit issues which would otherwise arise. If you find
+yourself in a situation where the implicit you need comes from a different
+trait than :class:`TestKit` and is not named ``self``, then use
+:class:`TestKitLight`, which differs only in not having any implicit members.
+You would then need to make an implicit available in locally confined scopes
+which need it, e.g. different test cases. If this cannot be done, you will need
+to resort to explicitly specifying the sender reference::
+
+  val actor = actorOf[MyWorker].start()
+  actor.!(msg)(testActor)
+
+Using Multiple Probe Actors
+---------------------------
+
+When the actors under test are supposed to send various messages to different
+destinations, it may be difficult distinguishing the message streams arriving
+at the :obj:`testActor` when using the :class:`TestKit` as a mixin. Another
+approach is to use it for creation of simple probe actors to be inserted in the
+message flows. To make this more powerful and convenient, there is a concrete
+implementation called :class:`TestProbe`. The functionality is best explained
+using a small example::
+
+  class MyDoubleEcho extends Actor {
+    var dest1 : ActorRef = _
+    var dest2 : ActorRef = _
+    def receive = {
+      case (d1, d2) =>
+        dest1 = d1
+        dest2 = d2
+      case x =>
+        dest1 ! x
+        dest2 ! x
+    }
+  }
+
+  val probe1 = TestProbe()
+  val probe2 = TestProbe()
+  val actor = Actor.actorOf[MyDoubleEcho].start()
+  actor ! (probe1.ref, probe2.ref)
+  actor ! "hello"
+  probe1.expectMsg(50 millis, "hello")
+  probe2.expectMsg(50 millis, "hello")
+
+Probes may also be equipped with custom assertions to make your test code even
+more concise and clear::
+
+  case class Update(id : Int, value : String)
+
+  val probe = new TestProbe {
+      def expectUpdate(x : Int) = {
+        expectMsg {
+          case Update(id, _) if id == x => true
+        }
+        reply("ACK")
+      }
+    }
+
+You have complete flexibility here in mixing and matching the :class:`TestKit`
+facilities with your own checks and choosing an intuitive name for it. In real
+life your code will probably be a bit more complicated than the example given
+above; just use the power!
+
+Replying to Messages Received by Probes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The probes keep track of the communications channel for replies, if possible,
+so they can also reply::
+
+  val probe = TestProbe()
+  val future = probe.ref ? "hello"
+  probe.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
+  probe.reply("world")
+  assert (future.isCompleted && future.as[String] == "world")
+
+Forwarding Messages Received by Probes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Given a destination actor ``dest`` which in the nominal actor network would
+receive a message from actor ``source``. If you arrange for the message to be
+sent to a :class:`TestProbe` ``probe`` instead, you can make assertions
+concerning volume and timing of the message flow while still keeping the
+network functioning::
+
+  val probe = TestProbe()
+  val source = Actor.actorOf(new Source(probe)).start()
+  val dest = Actor.actorOf[Destination].start()
+  source ! "start"
+  probe.expectMsg("work")
+  probe.forward(dest)
+
+The ``dest`` actor will receive the same message invocation as if no test probe
+had intervened.
+
+Caution about Timing Assertions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The behavior of :meth:`within` blocks when using test probes might be perceived
+as counter-intuitive: you need to remember that the nicely scoped deadline as
+described :ref:`above <TestKit.within>` is local to each probe. Hence, probes
+do not react to each other's deadlines or to the deadline set in an enclosing
+:class:`TestKit` instance::
+
+  class SomeTest extends TestKit {
+
+    val probe = TestProbe()
+
+    within(100 millis) {
+      probe.expectMsg("hallo")  // Will hang forever!
+    }
+  }
+
+This test will hang indefinitely, because the :meth:`expectMsg` call does not
+see any deadline. Currently, the only option is to use ``probe.within`` in the
+above code to make it work; later versions may include lexically scoped
+deadlines using implicit arguments.
 
 CallingThreadDispatcher
 =======================
@@ -373,4 +672,69 @@ has to offer:
  - Full message processing history leading up to the point of failure in
    exception stack traces
  - Exclusion of certain classes of dead-lock scenarios
+
+.. _actor.logging:
+
+Tracing Actor Invocations
+=========================
+
+The testing facilities described up to this point were aiming at formulating
+assertions about a system’s behavior. If a test fails, it is usually your job
+to find the cause, fix it and verify the test again. This process is supported
+by debuggers as well as logging, where the Akka toolkit offers the following
+options:
+
+* *Logging of exceptions thrown within Actor instances*
+  
+  This is always on; in contrast to the other logging mechanisms, this logs at
+  ``ERROR`` level.
+
+* *Logging of message invocations on certain actors*
+
+  This is enabled by a setting in ``akka.conf`` — namely
+  ``akka.actor.debug.receive`` — which enables the :meth:`loggable`
+  statement to be applied to an actor’s :meth:`receive` function::
+
+    def receive = Actor.loggable(this) { // `Actor` unnecessary with import Actor._
+      case msg => ...
+    } 
+
+  The first argument to :meth:`loggable` defines the source to be used in the
+  logging events, which should be the current actor.
+
+  If the abovementioned setting is not given in ``akka.conf``, this method will
+  pass through the given :class:`Receive` function unmodified, meaning that
+  there is no runtime cost unless actually enabled.
+
+  The logging feature is coupled to this specific local mark-up because
+  enabling it uniformly on all actors is not usually what you need, and it
+  would lead to endless loops if it were applied to :class:`EventHandler`
+  listeners.
+
+* *Logging of special messages*
+
+  Actors handle certain special messages automatically, e.g. :obj:`Kill`,
+  :obj:`PoisonPill`, etc. Tracing of these message invocations is enabled by
+  the setting ``akka.actor.debug.autoreceive``, which enables this on all
+  actors.
+
+* *Logging of the actor lifecycle*
+
+  Actor creation, start, restart, link, unlink and stop may be traced by
+  enabling the setting ``akka.actor.debug.lifecycle``; this, too, is enabled
+  uniformly on all actors.
+
+All these messages are logged at ``DEBUG`` level. To summarize, you can enable
+full logging of actor activities using this configuration fragment::
+
+  akka {
+    event-handler-level = "DEBUG"
+    actor {
+      debug {
+        receive = "true"
+        autoreceive = "true"
+        lifecycle = "true"
+      }
+    }
+  }
 
