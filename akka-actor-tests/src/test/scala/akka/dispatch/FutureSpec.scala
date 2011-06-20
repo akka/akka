@@ -107,7 +107,13 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           check({ (future: Future[Int], actions: List[FutureAction]) ⇒
             val result = (future /: actions)(_ /: _)
             val expected = (future.await.value.get /: actions)(_ /: _)
-            (result.await.value.get.toString == expected.toString) :| (result.value.get.toString + " is expected to be " + expected.toString)
+            ((result.await.value.get, expected) match {
+              case (Right(a), Right(b))                           ⇒ a == b
+              case (Left(a), Left(b)) if a.toString == b.toString ⇒ true
+              case (Left(a), Left(b)) if a.getStackTrace.isEmpty || b.getStackTrace.isEmpty ⇒
+                a.getClass.toString == b.getClass.toString
+              case _ ⇒ false
+            }) :| result.value.get.toString + " is expected to be " + expected.toString
           }, minSuccessful(10000), workers(4))
         }
       }

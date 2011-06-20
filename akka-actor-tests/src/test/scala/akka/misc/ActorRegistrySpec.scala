@@ -1,6 +1,7 @@
 package akka.actor
 
 import org.scalatest.junit.JUnitSuite
+import org.scalatest.BeforeAndAfterAll
 import org.junit.Test
 import Actor._
 import org.scalatest.Assertions._
@@ -25,8 +26,12 @@ object ActorRegistrySpec {
   }
 }
 
-class ActorRegistrySpec extends JUnitSuite {
+class ActorRegistrySpec extends JUnitSuite with BeforeAndAfterAll {
   import ActorRegistrySpec._
+
+  override def afterAll = {
+    akka.event.EventHandler.start
+  }
 
   @Test
   def shouldGetActorByAddressFromActorRegistry {

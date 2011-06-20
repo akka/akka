@@ -1,22 +1,32 @@
 package akka.actor
 
 import org.scalatest.junit.JUnitSuite
+import org.scalatest.BeforeAndAfterEach
+import akka.event.EventHandler
+import akka.testkit.TestEvent._
+import akka.testkit.EventFilter
 import Actor._
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.config.Supervision._
 import org.multiverse.api.latches.StandardLatch
-import org.junit.Test
+import org.junit.{ Test, Before, After }
 
 class SchedulerSpec extends JUnitSuite {
 
-  def withCleanEndState(action: ⇒ Unit) {
-    action
+  @Before
+  def beforeEach {
+    EventHandler.notify(Mute(EventFilter[Exception]("CRASH")))
+  }
+
+  @After
+  def afterEach {
     Scheduler.restart
     Actor.registry.local.shutdownAll
+    EventHandler.start()
   }
 
   @Test
-  def schedulerShouldScheduleMoreThanOnce = withCleanEndState {
+  def schedulerShouldScheduleMoreThanOnce = {
 
     case object Tick
     val countDownLatch = new CountDownLatch(3)
@@ -38,7 +48,7 @@ class SchedulerSpec extends JUnitSuite {
   }
 
   @Test
-  def schedulerShouldScheduleOnce = withCleanEndState {
+  def schedulerShouldScheduleOnce = {
     case object Tick
     val countDownLatch = new CountDownLatch(3)
     val tickActor = actorOf(new Actor {
@@ -58,7 +68,7 @@ class SchedulerSpec extends JUnitSuite {
    * ticket #372
    */
   @Test
-  def schedulerShouldntCreateActors = withCleanEndState {
+  def schedulerShouldntCreateActors = {
     object Ping
     val ticks = new CountDownLatch(1000)
     val actor = actorOf(new Actor {
@@ -74,7 +84,7 @@ class SchedulerSpec extends JUnitSuite {
    * ticket #372
    */
   @Test
-  def schedulerShouldBeCancellable = withCleanEndState {
+  def schedulerShouldBeCancellable = {
     object Ping
     val ticks = new CountDownLatch(1)
 
@@ -93,7 +103,7 @@ class SchedulerSpec extends JUnitSuite {
    * ticket #307
    */
   @Test
-  def actorRestartShouldPickUpScheduleAgain = withCleanEndState {
+  def actorRestartShouldPickUpScheduleAgain = {
 
     object Ping
     object Crash

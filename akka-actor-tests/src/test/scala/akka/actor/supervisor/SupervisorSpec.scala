@@ -7,6 +7,7 @@ package akka.actor
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.BeforeAndAfterAll
 
 import akka.testkit._
 import akka.testkit.Testing.sleepFor
@@ -14,6 +15,8 @@ import akka.util.duration._
 import akka.config.Supervision._
 import akka.{ Die, Ping }
 import Actor._
+import akka.event.EventHandler
+import akka.testkit.TestEvent._
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
@@ -192,8 +195,17 @@ object SupervisorSpec {
   }
 }
 
-class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
+class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll {
   import SupervisorSpec._
+
+  override def beforeAll() = {
+    EventHandler notify Mute(EventFilter[Exception]("Die"),
+      EventFilter[IllegalStateException]("Don't wanna!"))
+  }
+
+  override def afterAll() = {
+    EventHandler notify UnMuteAll
+  }
 
   override def beforeEach() = {
     messageLog.clear

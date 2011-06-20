@@ -7,8 +7,14 @@ import akka.actor.Actor
 sealed trait TestEvent
 
 object TestEvent {
-  case class Mute(filter: EventFilter) extends TestEvent
-  case class UnMute(filter: EventFilter) extends TestEvent
+  object Mute {
+    def apply(filter: EventFilter, filters: EventFilter*): Mute = new Mute(filter +: filters.toSeq)
+  }
+  case class Mute(filters: Seq[EventFilter]) extends TestEvent
+  object UnMute {
+    def apply(filter: EventFilter, filters: EventFilter*): UnMute = new UnMute(filter +: filters.toSeq)
+  }
+  case class UnMute(filters: Seq[EventFilter]) extends TestEvent
   case object UnMuteAll extends TestEvent
 }
 
@@ -44,9 +50,10 @@ case class ErrorFilter(throwable: Class[_]) extends EventFilter {
 case class ErrorMessageFilter(throwable: Class[_], message: String) extends EventFilter {
   def apply(event: Event) = event match {
     case Error(cause, _, _) if !(throwable isInstance cause) ⇒ false
-    case Error(cause, _, null) if cause.getMessage eq null ⇒ cause.getStackTrace.length == 0
-    case Error(cause, _, null) ⇒ cause.getMessage startsWith message
-    case Error(_, _, msg) ⇒ msg.toString startsWith message
+    case Error(cause, _, null) if cause.getMessage eq null   ⇒ cause.getStackTrace.length == 0
+    case Error(cause, _, null)                               ⇒ cause.getMessage startsWith message
+    case Error(cause, _, msg) ⇒
+      (msg.toString startsWith message) || (cause.getMessage startsWith message)
     case _ ⇒ false
   }
 }
@@ -63,7 +70,8 @@ case class ErrorSourceMessageFilter(throwable: Class[_], source: AnyRef, message
     case Error(cause, instance, _) if !((throwable isInstance cause) && (source eq instance)) ⇒ false
     case Error(cause, _, null) if cause.getMessage eq null ⇒ cause.getStackTrace.length == 0
     case Error(cause, _, null) ⇒ cause.getMessage startsWith message
-    case Error(_, _, msg) ⇒ msg.toString startsWith message
+    case Error(cause, _, msg) ⇒
+      (msg.toString startsWith message) || (cause.getMessage startsWith message)
     case _ ⇒ false
   }
 }
@@ -78,8 +86,8 @@ class TestEventListener extends EventHandler.DefaultListener {
   var filters: List[EventFilter] = Nil
 
   override def receive: Receive = ({
-    case Mute(filter)                  ⇒ addFilter(filter)
-    case UnMute(filter)                ⇒ removeFilter(filter)
+    case Mute(filters)                 ⇒ filters foreach addFilter
+    case UnMute(filters)               ⇒ filters foreach removeFilter
     case UnMuteAll                     ⇒ filters = Nil
     case event: Event if filter(event) ⇒
   }: Receive) orElse super.receive
