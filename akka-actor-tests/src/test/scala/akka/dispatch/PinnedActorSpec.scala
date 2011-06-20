@@ -2,11 +2,15 @@ package akka.actor.dispatch
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import org.scalatest.junit.JUnitSuite
-import org.junit.Test
+import org.junit.{ Test, Before, After }
 
 import akka.dispatch.Dispatchers
 import akka.actor.Actor
 import Actor._
+
+import akka.event.EventHandler
+import akka.testkit.TestEvent._
+import akka.testkit.EventFilter
 
 object PinnedActorSpec {
   class TestActor extends Actor {
@@ -25,6 +29,16 @@ class PinnedActorSpec extends JUnitSuite {
   import PinnedActorSpec._
 
   private val unit = TimeUnit.MILLISECONDS
+
+  @Before
+  def beforeEach {
+    EventHandler.notify(Mute(EventFilter[RuntimeException]("Failure")))
+  }
+
+  @After
+  def afterEach {
+    EventHandler.notify(UnMuteAll)
+  }
 
   @Test
   def shouldSendOneWay {
