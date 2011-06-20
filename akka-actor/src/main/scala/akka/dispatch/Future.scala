@@ -435,6 +435,8 @@ sealed trait Future[+T] {
 
   def onTimeout(func: Future[T] ⇒ Unit): this.type
 
+  def orElse[A >: T](fallback: ⇒ A): Future[A]
+
   /**
    * Creates a new Future by applying a PartialFunction to the successful
    * result of this Future if a match is found, or else return a MatchError.
@@ -968,6 +970,24 @@ class DefaultPromise[T](val timeout: Timeout) extends Promise[T] {
     this
   }
 
+  final def orElse[A >: T](fallback: ⇒ A): Future[A] =
+    if (timeout.duration.isFinite) {
+      value match {
+        case Some(_)        ⇒ this
+        case _ if isExpired ⇒ new KeptPromise[A](try { Right(fallback) } catch { case e: Exception ⇒ Left(e) })
+        case _ ⇒
+          val promise = new DefaultPromise[A](Timeout.never)
+          promise completeWith this
+          val runnable = new Runnable {
+            def run() {
+              if (!isCompleted) promise complete (try { Right(fallback) } catch { case e: Exception ⇒ Left(e) })
+            }
+          }
+          Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
+          promise
+      }
+    } else this
+
   private def notifyCompleted(func: Future[T] ⇒ Unit) {
     try {
       func(this)
@@ -1023,5 +1043,6 @@ sealed class KeptPromise[T](suppliedValue: Either[Throwable, T]) extends Promise
   def timeout: Timeout = Timeout.zero
 
   final def onTimeout(func: Future[T] ⇒ Unit): this.type = this
+  final def orElse[A >: T](fallback: ⇒ A): Future[A] = this
 
 }

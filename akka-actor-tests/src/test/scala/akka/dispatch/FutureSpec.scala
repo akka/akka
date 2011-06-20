@@ -58,6 +58,10 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
   "A Promise" when {
     "never completed" must {
       behave like emptyFuture(_(Promise()))
+      "return supplied value on timeout" in {
+        val promise = Promise[String](100) orElse "Timedout"
+        promise.get must be("Timedout")
+      }
     }
     "completed with a result" must {
       val result = "test value"
