@@ -6,7 +6,7 @@ package akka.actor.dispatch
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import org.scalatest.Assertions._
-import akka.testing._
+import akka.testkit.Testing
 import akka.dispatch._
 import akka.actor.Actor._
 import java.util.concurrent.atomic.AtomicLong

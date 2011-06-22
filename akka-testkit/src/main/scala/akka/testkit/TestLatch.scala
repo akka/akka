@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.testing
+package akka.testkit
 
 import akka.util.Duration
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
@@ -35,7 +35,7 @@ class TestLatch(count: Int = 1) {
   def await(timeout: Duration): Boolean = {
     val opened = latch.await(Testing.testTime(timeout.toNanos), TimeUnit.NANOSECONDS)
     if (!opened) throw new TestLatchTimeoutException(
-      "Timeout of %s with time factor of %s" format (timeout.toString, Testing.timeFactor))
+      "Timeout of %s with time factor of %s" format (timeout.toString, Duration.timeFactor))
     opened
   }
 
@@ -45,7 +45,7 @@ class TestLatch(count: Int = 1) {
   def awaitTimeout(timeout: Duration = TestLatch.DefaultTimeout) = {
     val opened = latch.await(Testing.testTime(timeout.toNanos), TimeUnit.NANOSECONDS)
     if (opened) throw new TestLatchNoTimeoutException(
-      "Latch opened before timeout of %s with time factor of %s" format (timeout.toString, Testing.timeFactor))
+      "Latch opened before timeout of %s with time factor of %s" format (timeout.toString, Duration.timeFactor))
     opened
   }
 

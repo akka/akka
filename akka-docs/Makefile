@@ -23,6 +23,12 @@ else
 endif
 export PYTHONPATH
 
+ifeq (,$(QUICK))
+	SPHINXFLAGS = -a
+else
+	SPHINXFLAGS =
+endif
+
 .PHONY: help clean pygments html singlehtml latex pdf
 
 help:
@@ -48,7 +54,7 @@ $(LOCALPACKAGES):
 	$(MAKE) pygments
 
 html: $(LOCALPACKAGES)
-	$(SPHINXBUILD) -a -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	$(SPHINXBUILD) $(SPHINXFLAGS) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
