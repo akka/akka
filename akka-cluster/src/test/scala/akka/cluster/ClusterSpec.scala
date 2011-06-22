@@ -305,38 +305,6 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
       node2.stop
     }
 
-    "be able to set and get config elements" in {
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "set-get-config-1", port = 9001))
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "set-get-config-2", port = 9002))
-      node1.start
-      node2.start
-
-      node1.setConfigElement("key1", "value1".getBytes)
-      node2.getConfigElement("key1") must be("value1".getBytes)
-
-      node2.setConfigElement("key2", "value2".getBytes)
-      node1.getConfigElement("key2") must be("value2".getBytes)
-
-      node1.stop
-      node2.stop
-    }
-
-    "be able to remove config elements" in {
-      val node1 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "remove-config-1", port = 9001))
-      val node2 = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "remove-config-2", port = 9002))
-      node1.start
-      node2.start
-
-      node1.setConfigElement("key1", "value1".getBytes)
-      node2.getConfigElement("key1") must be("value1".getBytes)
-
-      node2.removeConfigElement("key1")
-      node1.getConfigElement("key1") must be(null)
-
-      node1.stop
-      node2.stop
-    }
-
     "be able to replicate an actor" in {
       // create actor
       val actorRef = actorOf[MyJavaSerializableActor]("actor-address").start

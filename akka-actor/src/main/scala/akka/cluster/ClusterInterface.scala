@@ -465,13 +465,22 @@ trait ClusterNode {
    */
   def send(f: Function1[Any, Any], arg: Any, replicationFactor: Int): List[Future[Any]]
 
+  /**
+   * Stores a configuration element under a specific key.
+   * If the key already exists then it will be overwritten.
+   */
   def setConfigElement(key: String, bytes: Array[Byte])
 
   /**
    * Returns the config element for the key or NULL if no element exists under the key.
+   * Returns <code>Some(element)</code> if it exists else <code>None</code>
    */
   def getConfigElement(key: String): Option[Array[Byte]]
 
+  /**
+   * Removes configuration element for a specific key.
+   * Does nothing if the key does not exist.
+   */
   def removeConfigElement(key: String)
 
   def getConfigElementKeys: Array[String]

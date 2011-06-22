@@ -1143,6 +1143,10 @@ class DefaultClusterNode private[akka] (
   // Config
   // =======================================
 
+  /**
+   * Stores a configuration element under a specific key.
+   * If the key already exists then it will be overwritten.
+   */
   def setConfigElement(key: String, bytes: Array[Byte]) {
     val compressedBytes = if (shouldCompressData) LZF.compress(bytes) else bytes
     EventHandler.debug(this,
@@ -1168,6 +1172,7 @@ class DefaultClusterNode private[akka] (
 
   /**
    * Returns the config element for the key or NULL if no element exists under the key.
+   * Returns <code>Some(element)</code> if it exists else <code>None</code>
    */
   def getConfigElement(key: String): Option[Array[Byte]] = try {
     Some(zkClient.connection.readData(configurationPathFor(key), new Stat, true))
@@ -1175,6 +1180,10 @@ class DefaultClusterNode private[akka] (
     case e: KeeperException.NoNodeException ⇒ None
   }
 
+  /**
+   * Removes configuration element for a specific key.
+   * Does nothing if the key does not exist.
+   */
   def removeConfigElement(key: String) {
     ignore[ZkNoNodeException] {
       EventHandler.debug(this,
