@@ -95,7 +95,7 @@ trait TestKit {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  implicit val testActor = actorOf(new TestActor(queue)).start()
+  implicit val testActor = localActorOf(new TestActor(queue)).start()
 
   /**
    * Implicit sender reference so that replies are possible for messages sent

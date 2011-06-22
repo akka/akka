@@ -1,29 +1,34 @@
-package akka.serialization
-
 /**
  * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
+
+package akka.serialization
 
 import akka.util.ReflectiveAccess._
 import akka.config.Config
 import akka.config.Config._
 import akka.actor.{ ActorRef, Actor }
+import akka.AkkaException
 
+/**
+ * Serialization module. Contains methods for serialization and deserialization as well as
+ * locating a Serializer for a particular class as defined in the mapping in the 'akka.conf' file.
+ */
 object Serialization {
-  case class NoSerializerFoundException(m: String) extends Exception(m)
+  case class NoSerializerFoundException(m: String) extends AkkaException(m)
 
   def serialize(o: AnyRef): Either[Exception, Array[Byte]] =
-    getSerializer(o.getClass).fold((ex) ⇒ Left(ex), (ser) ⇒ Right(ser.toBinary(o)))
+    serializerFor(o.getClass).fold((ex) ⇒ Left(ex), (ser) ⇒ Right(ser.toBinary(o)))
 
   def deserialize(
     bytes: Array[Byte],
     clazz: Class[_],
     classLoader: Option[ClassLoader]): Either[Exception, AnyRef] =
-    getSerializer(clazz)
+    serializerFor(clazz)
       .fold((ex) ⇒ Left(ex),
         (ser) ⇒ Right(ser.fromBinary(bytes, Some(clazz), classLoader)))
 
-  def getSerializer(clazz: Class[_]): Either[Exception, Serializer] = {
+  def serializerFor(clazz: Class[_]): Either[Exception, Serializer] = {
     Config.serializerMap.get(clazz.getName) match {
       case Some(serializerName: String) ⇒
         getClassFor(serializerName) match {
@@ -31,14 +36,14 @@ object Serialization {
           case Left(exception)   ⇒ Left(exception)
         }
       case _ ⇒
-        getDefaultSerializer match {
+        defaultSerializer match {
           case Some(s: Serializer) ⇒ Right(s)
           case None                ⇒ Left(NoSerializerFoundException("No default serializer found for " + clazz))
         }
     }
   }
 
-  private def getDefaultSerializer = {
+  private def defaultSerializer = {
     Config.serializers.get("default") match {
       case Some(ser: String) ⇒
         getClassFor(ser) match {

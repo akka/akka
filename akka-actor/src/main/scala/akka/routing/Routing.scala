@@ -134,7 +134,7 @@ object Routing {
    * Creates a LoadBalancer from the thunk-supplied InfiniteIterator.
    */
   def loadBalancerActor(actors: ⇒ InfiniteIterator[ActorRef]): ActorRef =
-    actorOf(new Actor with LoadBalancer {
+    localActorOf(new Actor with LoadBalancer {
       val seq = actors
     }).start()
 
@@ -142,7 +142,7 @@ object Routing {
    * Creates a Router given a routing and a message-transforming function.
    */
   def routerActor(routing: PF[Any, ActorRef], msgTransformer: (Any) ⇒ Any): ActorRef =
-    actorOf(new Actor with Router {
+    localActorOf(new Actor with Router {
       override def transform(msg: Any) = msgTransformer(msg)
       def routes = routing
     }).start()
@@ -150,7 +150,7 @@ object Routing {
   /**
    * Creates a Router given a routing.
    */
-  def routerActor(routing: PF[Any, ActorRef]): ActorRef = actorOf(new Actor with Router {
+  def routerActor(routing: PF[Any, ActorRef]): ActorRef = localActorOf(new Actor with Router {
     def routes = routing
   }).start()
 

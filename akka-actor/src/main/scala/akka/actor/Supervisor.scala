@@ -104,7 +104,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (Act
   private val _childActors = new ConcurrentHashMap[String, List[ActorRef]]
   private val _childSupervisors = new CopyOnWriteArrayList[Supervisor]
 
-  private[akka] val supervisor = actorOf(new SupervisorActor(handler, maxRestartsHandler)).start()
+  private[akka] val supervisor = localActorOf(new SupervisorActor(handler, maxRestartsHandler)).start()
 
   def uuid = supervisor.uuid
 
