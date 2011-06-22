@@ -692,6 +692,13 @@ class DefaultClusterNode private[akka] (
   } else throw new ClusterException("Not connected to cluster")
 
   /**
+   * Removes actor from the cluster.
+   */
+  def remove(actorRef: ActorRef) {
+    remove(actorRef.uuid)
+  }
+
+  /**
    * Removes actor with uuid from the cluster.
    */
   def remove(uuid: UUID) {
@@ -828,7 +835,17 @@ class DefaultClusterNode private[akka] (
   /**
    * Checks in an actor after done using it on this node.
    */
+  def release(actorRef: ActorRef) {
+    release(actorRef.address)
+  }
+
+  /**
+   * Checks in an actor after done using it on this node.
+   */
   def release(actorAddress: String) {
+
+    // FIXME 'Cluster.release' needs to notify all existing ClusterActorRef's that are using the instance that it is no longer available. Then what to do? Should we even remove this method?
+
     isConnected ifOn {
       actorUuidsForActorAddress(actorAddress) foreach { uuid ⇒
         EventHandler.debug(this,

@@ -300,6 +300,11 @@ trait ClusterNode {
   def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, serializer: Serializer): ClusterNode
 
   /**
+   * Removes actor from the cluster.
+   */
+  def remove(actorRef: ActorRef)
+
+  /**
    * Removes actor with uuid from the cluster.
    */
   def remove(uuid: UUID)
@@ -345,6 +350,11 @@ trait ClusterNode {
    * Using (checking out) specific UUID on a specefic node.
    */
   def useActorOnNode(node: String, uuid: UUID)
+
+  /**
+   * Checks in an actor after done using it on this node.
+   */
+  def release(actorRef: ActorRef)
 
   /**
    * Checks in an actor after done using it on this node.
