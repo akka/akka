@@ -42,67 +42,6 @@ class ClusterSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with
 
   "A ClusterNode" should {
 
-    "be able to cluster an actor by ActorRef" in {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor]("actor-address").start
-
-      val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "cluster-actor-1", port = 9001))
-      node.start
-
-      // register actor
-      import BinaryFormatMyJavaSerializableActor._
-      var serializeMailbox = true
-      node.store(actorRef, serializeMailbox)
-
-      node.isClustered(actorRef.address) must be(true)
-      node.uuidsForClusteredActors.exists(_ == actorRef.uuid) must be(true)
-
-      node.stop
-    }
-
-    "be able to remove an actor by actor uuid" in {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor]("actor-address").start
-
-      val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "remove-actor-uuid", port = 9001))
-      node.start
-
-      // register actor
-      import BinaryFormatMyJavaSerializableActor._
-      var serializeMailbox = true
-      node.store(actorRef, serializeMailbox)
-
-      node.uuidsForClusteredActors.exists(_ == actorRef.uuid) must be(true)
-
-      // deregister actor
-      node.remove(actorRef.uuid)
-      node.uuidsForClusteredActors.exists(_ == actorRef.uuid) must be(false)
-
-      node.stop
-    }
-
-    "be able to remove an actor by actor address" in {
-      // create actor
-      val actorRef = actorOf[MyJavaSerializableActor]("actor-address").start
-
-      val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "remove-actor-id", port = 9001))
-      node.start
-
-      // register actor
-      import BinaryFormatMyJavaSerializableActor._
-      var serializeMailbox = true
-      node.store(actorRef, serializeMailbox)
-
-      node.isClustered(actorRef.address) must be(true)
-      node.addressesForClusteredActors.exists(_ == actorRef.address) must be(true)
-
-      // deregister actor
-      node.remove(actorRef.address)
-      node.addressesForClusteredActors.exists(_ == actorRef.address) must be(false)
-
-      node.stop
-    }
-
     "be able to use an actor by actor address" in {
       val node = Cluster.newNode(nodeAddress = NodeAddress("test-cluster", "use-actor-id", port = 9001))
       node.start

@@ -537,6 +537,14 @@ class DefaultClusterNode private[akka] (
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
+  def store(actorRef: ActorRef, serializeMailbox: Boolean, serializer: Serializer): ClusterNode =
+    store(actorRef, 0, Transient, serializeMailbox, serializer)
+
+  /**
+   * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
   def store(actorRef: ActorRef, replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode =
     store(actorRef, 0, replicationScheme, false, serializer)
 
@@ -555,14 +563,6 @@ class DefaultClusterNode private[akka] (
    */
   def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode =
     store(actorRef, replicationFactor, replicationScheme, false, serializer)
-
-  /**
-   * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
-   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
-   * available durable store.
-   */
-  def store(actorRef: ActorRef, serializeMailbox: Boolean, serializer: Serializer): ClusterNode =
-    store(actorRef, 0, Transient, serializeMailbox, serializer)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated

@@ -245,6 +245,13 @@ trait ClusterNode {
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
+  def store(actorRef: ActorRef, serializeMailbox: Boolean, serializer: Serializer): ClusterNode
+
+  /**
+   * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
+   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
+   * available durable store.
+   */
   def store(actorRef: ActorRef, replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode
 
   /**
@@ -260,13 +267,6 @@ trait ClusterNode {
    * available durable store.
    */
   def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode
-
-  /**
-   * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
-   * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
-   * available durable store.
-   */
-  def store(actorRef: ActorRef, serializeMailbox: Boolean, serializer: Serializer): ClusterNode
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated

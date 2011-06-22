@@ -21,10 +21,21 @@ import java.util.concurrent._
 object RegistryStoreMultiJvmSpec {
   var NrOfNodes = 2
 
-  class HelloWorld extends Actor with Serializable {
+  class HelloWorld1 extends Actor with Serializable {
     def receive = {
       case "Hello" ⇒
         self.reply("World from node [" + Config.nodename + "]")
+    }
+  }
+
+  class HelloWorld2 extends Actor with Serializable {
+    var counter = 0
+    def receive = {
+      case "Hello" ⇒
+        Thread.sleep(1000)
+        counter += 1
+      case "Count" ⇒
+        self.reply(counter)
     }
   }
 }
@@ -43,12 +54,34 @@ class RegistryStoreMultiJvmNode1 extends WordSpec with MustMatchers with BeforeA
       barrier("start-node-2", NrOfNodes) {
       }
 
-      barrier("store-in-node-1", NrOfNodes) {
-        val serializer = Serialization.serializerFor(classOf[HelloWorld]).fold(x ⇒ fail("No serializer found"), s ⇒ s)
-        node.store(actorOf[HelloWorld]("hello-world-1"), serializer)
+      barrier("store-1-in-node-1", NrOfNodes) {
+        val serializer = Serialization.serializerFor(classOf[HelloWorld1]).fold(x ⇒ fail("No serializer found"), s ⇒ s)
+        node.store(actorOf[HelloWorld1]("hello-world-1"), serializer)
       }
 
-      barrier("use-in-node-2", NrOfNodes) {
+      barrier("use-1-in-node-2", NrOfNodes) {
+      }
+
+      barrier("store-2-in-node-1", NrOfNodes) {
+        val serializer = Serialization.serializerFor(classOf[HelloWorld1]).fold(x ⇒ fail("No serializer found"), s ⇒ s)
+        node.store("hello-world-2", classOf[HelloWorld1], false, serializer)
+      }
+
+      barrier("use-2-in-node-2", NrOfNodes) {
+      }
+
+      barrier("store-3-in-node-1", NrOfNodes) {
+        val serializer = Serialization.serializerFor(classOf[HelloWorld2]).fold(x ⇒ fail("No serializer found"), s ⇒ s)
+        val actor = actorOf[HelloWorld2]("hello-world-3").start
+        actor ! "Hello"
+        actor ! "Hello"
+        actor ! "Hello"
+        actor ! "Hello"
+        actor ! "Hello"
+        node.store(actor, true, serializer)
+      }
+
+      barrier("use-3-in-node-2", NrOfNodes) {
       }
 
       node.shutdown()
@@ -78,14 +111,43 @@ class RegistryStoreMultiJvmNode2 extends WordSpec with MustMatchers {
         node.start()
       }
 
-      barrier("store-in-node-1", NrOfNodes) {
+      barrier("store-1-in-node-1", NrOfNodes) {
       }
 
-      barrier("use-in-node-2", NrOfNodes) {
+      barrier("use-1-in-node-2", NrOfNodes) {
         val actorOrOption = node.use("hello-world-1")
         if (actorOrOption.isEmpty) fail("Actor could not be retrieved")
+
         val actorRef = actorOrOption.get
         actorRef.address must be("hello-world-1")
+
+        (actorRef ? "Hello").as[String].get must be("World from node [node2]")
+      }
+
+      barrier("store-2-in-node-1", NrOfNodes) {
+      }
+
+      barrier("use-2-in-node-2", NrOfNodes) {
+        val actorOrOption = node.use("hello-world-2")
+        if (actorOrOption.isEmpty) fail("Actor could not be retrieved")
+
+        val actorRef = actorOrOption.get
+        actorRef.address must be("hello-world-2")
+
+        (actorRef ? "Hello").as[String].get must be("World from node [node2]")
+      }
+
+      barrier("store-3-in-node-1", NrOfNodes) {
+      }
+
+      barrier("use-3-in-node-2", NrOfNodes) {
+        val actorOrOption = node.use("hello-world-3")
+        if (actorOrOption.isEmpty) fail("Actor could not be retrieved")
+
+        val actorRef = actorOrOption.get
+        actorRef.address must be("hello-world-3")
+
+        (actorRef ? "Count").as[Int].get must be(4)
       }
 
       node.shutdown()
