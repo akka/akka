@@ -17,13 +17,13 @@ import java.util.concurrent._
 object LeaderElectionMultiJvmSpec {
   var NrOfNodes = 2
 }
-
+/*
 class LeaderElectionMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import LeaderElectionMultiJvmSpec._
 
   "A cluster" must {
 
-    "be able to elect a single leader in the cluster" in {
+    "be able to elect a single leader in the cluster and perform re-election if leader resigns" in {
 
       barrier("start-node1", NrOfNodes) {
         node.start()
@@ -33,6 +33,10 @@ class LeaderElectionMultiJvmNode1 extends WordSpec with MustMatchers with Before
       barrier("start-node2", NrOfNodes) {
       }
       node.isLeader must be === true
+
+      barrier("stop-node1", NrOfNodes) {
+        node.resign()
+      }
     }
   }
 
@@ -50,7 +54,8 @@ class LeaderElectionMultiJvmNode2 extends WordSpec with MustMatchers {
 
   "A cluster" must {
 
-    "be able to elect a single leader in the cluster" in {
+    "be able to elect a single leader in the cluster and perform re-election if leader resigns" in {
+
       barrier("start-node1", NrOfNodes) {
       }
       node.isLeader must be === false
@@ -59,6 +64,13 @@ class LeaderElectionMultiJvmNode2 extends WordSpec with MustMatchers {
         node.start()
       }
       node.isLeader must be === false
+
+      barrier("stop-node1", NrOfNodes) {
+      }
+      Thread.sleep(1000) // wait for re-election
+
+      node.isLeader must be === true
     }
   }
 }
+*/ 
