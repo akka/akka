@@ -111,8 +111,7 @@ object Futures {
                 case e: Exception ⇒
                   EventHandler.error(e, this, e.getMessage)
                   result completeWithException e
-              }
-              finally {
+              } finally {
                 results.clear
               }
             }
