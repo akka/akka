@@ -251,7 +251,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
       val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
       (intercept[java.lang.IllegalStateException] {
         in.readObject
-      }).getMessage must be === "Trying to deserialize ActorRef (" + expectedSerializedRepresentation + ") but it's not found in the local registry and remoting is not enabled!"
+      }).getMessage must be === "Trying to deserialize ActorRef [" + expectedSerializedRepresentation + "] but it's not found in the local registry and remoting is not enabled."
     }
 
     "support nested actorOfs" in {

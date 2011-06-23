@@ -25,7 +25,7 @@ import akka.AkkaException
 object Scheduler {
   import Actor._
 
-  case class SchedulerException(msg: String, e: Throwable) extends RuntimeException(msg, e)
+  case class SchedulerException(msg: String, e: Throwable) extends AkkaException(msg, e)
 
   @volatile
   private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)

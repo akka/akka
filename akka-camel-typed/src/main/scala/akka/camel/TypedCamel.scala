@@ -32,8 +32,8 @@ private[camel] object TypedCamel {
    * and re-uses the <code>activationTracker</code> of <code>service</code>.
    */
   def onCamelServiceStart(service: CamelService) {
-    consumerPublisher = actorOf(new TypedConsumerPublisher(service.activationTracker))
-    publishRequestor = actorOf(new TypedConsumerPublishRequestor)
+    consumerPublisher = localActorOf(new TypedConsumerPublisher(service.activationTracker))
+    publishRequestor = localActorOf(new TypedConsumerPublishRequestor)
 
     registerPublishRequestor
 

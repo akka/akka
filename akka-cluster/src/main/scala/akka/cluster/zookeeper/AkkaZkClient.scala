@@ -17,7 +17,6 @@ class AkkaZkClient(zkServers: String,
                    connectionTimeout: Int,
                    zkSerializer: ZkSerializer = new SerializableSerializer)
   extends ZkClient(zkServers, sessionTimeout, connectionTimeout, zkSerializer) {
-
   //  EventHandler.debug(this, "Connecting to ZooKeeper ensamble [%s]" format zkServers)
 
   def connection: ZkConnection = _connection.asInstanceOf[ZkConnection]

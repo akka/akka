@@ -462,7 +462,7 @@ class LocalActorRef private[akka] (
         "]")
 
   private val serializer: Serializer =
-    akka.serialization.Serialization.getSerializer(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
+    akka.serialization.Serialization.serializerFor(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
 
   private lazy val replicationStorage: Either[TransactionLog, AnyRef] = {
     replicationScheme match {
@@ -794,17 +794,19 @@ class LocalActorRef private[akka] (
               true
 
             case _ ⇒ // either permanent or none where default is permanent
-              val success = try {
-                performRestart()
-                true
-              } catch {
-                case e ⇒
-                  EventHandler.error(e, this, "Exception in restart of Actor [%s]".format(toString))
-                  false // an error or exception here should trigger a retry
-              }
-              finally {
-                currentMessage = null
-              }
+              val success =
+                try {
+                  performRestart()
+                  true
+                } catch {
+                  case e ⇒
+                    EventHandler.error(e, this, "Exception in restart of Actor [%s]".format(toString))
+                    false // an error or exception here should trigger a retry
+                }
+                finally {
+                  currentMessage = null
+                }
+
               if (success) {
                 _status = ActorRefInternals.RUNNING
                 dispatcher.resume(this)
@@ -1229,11 +1231,11 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
   def reply_?(message: Any): Boolean = channel.safe_!(message)(this)
 }
 
-case class SerializedActorRef(val uuid: Uuid,
-                              val address: String,
-                              val hostname: String,
-                              val port: Int,
-                              val timeout: Long) {
+case class SerializedActorRef(uuid: Uuid,
+                              address: String,
+                              hostname: String,
+                              port: Int,
+                              timeout: Long) {
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = Actor.registry.local.actorFor(uuid) match {
     case Some(actor) ⇒ actor
@@ -1242,7 +1244,7 @@ case class SerializedActorRef(val uuid: Uuid,
         RemoteActorRef(new InetSocketAddress(hostname, port), address, timeout, None)
       else
         throw new IllegalStateException(
-          "Trying to deserialize ActorRef (" + this +
-            ") but it's not found in the local registry and remoting is not enabled!")
+          "Trying to deserialize ActorRef [" + this +
+            "] but it's not found in the local registry and remoting is not enabled.")
   }
 }

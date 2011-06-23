@@ -100,7 +100,7 @@ trait TestKitLight {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor = actorOf(new TestActor(queue), "testActor" + TestKit.testActorId.incrementAndGet()).start()
+  val testActor = localActorOf(new TestActor(queue), "testActor" + TestKit.testActorId.incrementAndGet()).start()
 
   /**
    * Implicit sender reference so that replies are possible for messages sent

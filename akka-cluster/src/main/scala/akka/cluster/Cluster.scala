@@ -312,25 +312,25 @@ class DefaultClusterNode private[akka] (
   lazy val remoteServerAddress: InetSocketAddress = remoteService.address
 
   // static nodes
-  val CLUSTER_NODE = "/" + nodeAddress.clusterName
-  val MEMBERSHIP_NODE = CLUSTER_NODE + "/members"
-  val CONFIGURATION_NODE = CLUSTER_NODE + "/config"
-  val PROVISIONING_NODE = CLUSTER_NODE + "/provisioning"
-  val ACTOR_REGISTRY_NODE = CLUSTER_NODE + "/actor-registry"
-  val ACTOR_LOCATIONS_NODE = CLUSTER_NODE + "/actor-locations"
-  val ACTOR_ADDRESS_TO_UUIDS_NODE = CLUSTER_NODE + "/actor-address-to-uuids"
-  val ACTORS_AT_NODE_NODE = CLUSTER_NODE + "/actors-at-address"
-  val baseNodes = List(
-    CLUSTER_NODE,
-    MEMBERSHIP_NODE,
-    ACTOR_REGISTRY_NODE,
-    ACTOR_LOCATIONS_NODE,
-    ACTORS_AT_NODE_NODE,
-    ACTOR_ADDRESS_TO_UUIDS_NODE,
-    CONFIGURATION_NODE,
-    PROVISIONING_NODE)
+  val CLUSTER_PATH = "/" + nodeAddress.clusterName
+  val MEMBERSHIP_PATH = CLUSTER_PATH + "/members"
+  val CONFIGURATION_PATH = CLUSTER_PATH + "/config"
+  val PROVISIONING_PATH = CLUSTER_PATH + "/provisioning"
+  val ACTOR_REGISTRY_PATH = CLUSTER_PATH + "/actor-registry"
+  val ACTOR_LOCATIONS_PATH = CLUSTER_PATH + "/actor-locations"
+  val ACTOR_ADDRESS_TO_UUIDS_PATH = CLUSTER_PATH + "/actor-address-to-uuids"
+  val ACTORS_AT_PATH_PATH = CLUSTER_PATH + "/actors-at-address"
+  val basePaths = List(
+    CLUSTER_PATH,
+    MEMBERSHIP_PATH,
+    ACTOR_REGISTRY_PATH,
+    ACTOR_LOCATIONS_PATH,
+    ACTORS_AT_PATH_PATH,
+    ACTOR_ADDRESS_TO_UUIDS_PATH,
+    CONFIGURATION_PATH,
+    PROVISIONING_PATH)
 
-  val LEADER_ELECTION_NODE = CLUSTER_NODE + "/leader" // should NOT be part of 'baseNodes' only used by 'leaderLock'
+  val LEADER_ELECTION_PATH = CLUSTER_PATH + "/leader" // should NOT be part of 'basePaths' only used by 'leaderLock'
 
   private val membershipNodePath = membershipPathFor(nodeAddress.nodeName)
 
@@ -355,27 +355,18 @@ class DefaultClusterNode private[akka] (
   lazy private[cluster] val leaderElectionCallback = new LockListener {
     override def lockAcquired() {
       EventHandler.info(this, "Node [%s] is the new leader".format(self.nodeAddress.nodeName))
-      self.isLeader.set(true)
       self.publish(NewLeader(self.nodeAddress.nodeName))
     }
 
     override def lockReleased() {
-      EventHandler.info(this,
-        "Node [%s] is *NOT* the leader anymore".format(self.nodeAddress.nodeName))
-      self.isLeader.set(false)
-      // self.publish(Cluster.LeaderChange)
+      EventHandler.info(this, "Node [%s] is *NOT* the leader anymore".format(self.nodeAddress.nodeName))
     }
   }
 
   lazy private[cluster] val leaderLock = new WriteLock(
-    zkClient.connection.getZookeeper, LEADER_ELECTION_NODE, null, leaderElectionCallback) {
-
-    // ugly hack, but what do you do? <--- haha epic
-    private val ownerIdField = classOf[WriteLock].getDeclaredField("ownerId")
-    ownerIdField.setAccessible(true)
-
-    def leader: String = ownerIdField.get(this).asInstanceOf[String]
-  }
+    zkClient.connection.getZookeeper,
+    LEADER_ELECTION_PATH, null,
+    leaderElectionCallback)
 
   if (enableJMX) createMBean
 
@@ -449,15 +440,20 @@ class DefaultClusterNode private[akka] (
   // =======================================
 
   /**
-   * Returns the name of the current leader.
+   * Returns the name of the current leader lock.
    */
-  def leader: String = leaderLock.leader
+  def leader: String = leaderLock.getId
+
+  /**
+   * Returns true if 'this' node is the current leader.
+   */
+  def isLeader: Boolean = leaderLock.isOwner
 
   /**
    * Explicitly resign from being a leader. If this node is not a leader then this operation is a no-op.
    */
   def resign() {
-    if (isLeader.get) leaderLock.unlock()
+    if (isLeader) leaderLock.unlock()
   }
 
   // =======================================
@@ -469,132 +465,132 @@ class DefaultClusterNode private[akka] (
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](address: String, actorClass: Class[T], format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, 0, Transient, false, format)
+  def store[T <: Actor](address: String, actorClass: Class[T], serializer: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, 0, Transient, false, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](address: String, actorClass: Class[T], replicationScheme: ReplicationScheme, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, 0, replicationScheme, false, format)
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, 0, replicationScheme, false, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, replicationFactor, Transient, false, format)
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, serializer: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, replicationFactor, Transient, false, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, replicationFactor, replicationScheme, false, format)
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, replicationFactor, replicationScheme, false, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](address: String, actorClass: Class[T], serializeMailbox: Boolean, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, 0, Transient, serializeMailbox, format)
+  def store[T <: Actor](address: String, actorClass: Class[T], serializeMailbox: Boolean, serializer: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, 0, Transient, serializeMailbox, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](address: String, actorClass: Class[T], replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, 0, replicationScheme, serializeMailbox, format)
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationScheme: ReplicationScheme, serializeMailbox: Boolean, serializer: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, 0, replicationScheme, serializeMailbox, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, serializeMailbox: Boolean, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, replicationFactor, Transient, serializeMailbox, format)
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, serializeMailbox: Boolean, serializer: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, replicationFactor, Transient, serializeMailbox, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: Serializer): ClusterNode =
-    store(Actor.actorOf(actorClass, address).start, replicationFactor, replicationScheme, serializeMailbox, format)
+  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, serializer: Serializer): ClusterNode =
+    store(Actor.actorOf(actorClass, address).start, replicationFactor, replicationScheme, serializeMailbox, serializer)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorRef: ActorRef, format: Serializer): ClusterNode =
-    store(actorRef, 0, Transient, false, format)
+  def store(actorRef: ActorRef, serializer: Serializer): ClusterNode =
+    store(actorRef, 0, Transient, false, serializer)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorRef: ActorRef, replicationScheme: ReplicationScheme, format: Serializer): ClusterNode =
-    store(actorRef, 0, replicationScheme, false, format)
+  def store(actorRef: ActorRef, serializeMailbox: Boolean, serializer: Serializer): ClusterNode =
+    store(actorRef, 0, Transient, serializeMailbox, serializer)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorRef: ActorRef, replicationFactor: Int, format: Serializer): ClusterNode =
-    store(actorRef, replicationFactor, Transient, false, format)
+  def store(actorRef: ActorRef, replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode =
+    store(actorRef, 0, replicationScheme, false, serializer)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, format: Serializer): ClusterNode =
-    store(actorRef, replicationFactor, replicationScheme, false, format)
+  def store(actorRef: ActorRef, replicationFactor: Int, serializer: Serializer): ClusterNode =
+    store(actorRef, replicationFactor, Transient, false, serializer)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorRef: ActorRef, serializeMailbox: Boolean, format: Serializer): ClusterNode =
-    store(actorRef, 0, Transient, serializeMailbox, format)
+  def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode =
+    store(actorRef, replicationFactor, replicationScheme, false, serializer)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorRef: ActorRef, replicationFactor: Int, serializeMailbox: Boolean, format: Serializer): ClusterNode =
-    store(actorRef, replicationFactor, Transient, serializeMailbox, format)
+  def store(actorRef: ActorRef, replicationFactor: Int, serializeMailbox: Boolean, serializer: Serializer): ClusterNode =
+    store(actorRef, replicationFactor, Transient, serializeMailbox, serializer)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorRef: ActorRef, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: Serializer): ClusterNode =
-    store(actorRef, 0, replicationScheme, serializeMailbox, format)
+  def store(actorRef: ActorRef, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, serializer: Serializer): ClusterNode =
+    store(actorRef, 0, replicationScheme, serializeMailbox, serializer)
 
   /**
    * Needed to have reflection through structural typing work.
    */
-  def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, format: AnyRef): ClusterNode =
-    store(actorRef, replicationFactor, replicationScheme, serializeMailbox, format.asInstanceOf[Serializer])
+  def store(actorRef: ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, serializer: AnyRef): ClusterNode =
+    store(actorRef, replicationFactor, replicationScheme, serializeMailbox, serializer.asInstanceOf[Serializer])
 
   /**
    * Needed to have reflection through structural typing work.
    */
-  def store(actorRef: ActorRef, replicationFactor: Int, serializeMailbox: Boolean, format: AnyRef): ClusterNode =
-    store(actorRef, replicationFactor, Transient, serializeMailbox, format)
+  def store(actorRef: ActorRef, replicationFactor: Int, serializeMailbox: Boolean, serializer: AnyRef): ClusterNode =
+    store(actorRef, replicationFactor, Transient, serializeMailbox, serializer)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
@@ -606,12 +602,14 @@ class DefaultClusterNode private[akka] (
     replicationFactor: Int,
     replicationScheme: ReplicationScheme,
     serializeMailbox: Boolean,
-    format: Serializer): ClusterNode = if (isConnected.isOn) {
+    serializer: Serializer): ClusterNode = if (isConnected.isOn) {
 
     import akka.serialization.ActorSerialization._
 
     if (!actorRef.isInstanceOf[LocalActorRef]) throw new IllegalArgumentException(
       "'actorRef' must be an instance of 'LocalActorRef' [" + actorRef.getClass.getName + "]")
+
+    val serializerClassName = serializer.getClass.getName
 
     val uuid = actorRef.uuid
     EventHandler.debug(this,
@@ -641,11 +639,11 @@ class DefaultClusterNode private[akka] (
           case Right(exception) ⇒ actorRegistryPath
         }
 
-        // create UUID -> Format registry
+        // create UUID -> serializer class name registry
         try {
-          zkClient.createPersistent(actorRegistryFormatPathFor(uuid), format)
+          zkClient.createPersistent(actorRegistrySerializerPathFor(uuid), serializerClassName)
         } catch {
-          case e: ZkNodeExistsException ⇒ zkClient.writeData(actorRegistryFormatPathFor(uuid), format)
+          case e: ZkNodeExistsException ⇒ zkClient.writeData(actorRegistrySerializerPathFor(uuid), serializerClassName)
         }
 
         // create UUID -> ADDRESS registry
@@ -692,6 +690,13 @@ class DefaultClusterNode private[akka] (
 
     this
   } else throw new ClusterException("Not connected to cluster")
+
+  /**
+   * Removes actor from the cluster.
+   */
+  def remove(actorRef: ActorRef) {
+    remove(actorRef.uuid)
+  }
 
   /**
    * Removes actor with uuid from the cluster.
@@ -748,13 +753,13 @@ class DefaultClusterNode private[akka] (
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
    * for remote access through lookup by its UUID.
    */
-  def use[T <: Actor](actorAddress: String): Option[ActorRef] = use(actorAddress, formatForActor(actorAddress))
+  def use[T <: Actor](actorAddress: String): Option[ActorRef] = use(actorAddress, serializerForActor(actorAddress))
 
   /**
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
    * for remote access through lookup by its UUID.
    */
-  def use[T <: Actor](actorAddress: String, format: Serializer): Option[ActorRef] = if (isConnected.isOn) {
+  def use[T <: Actor](actorAddress: String, serializer: Serializer): Option[ActorRef] = if (isConnected.isOn) {
 
     import akka.serialization.ActorSerialization._
 
@@ -830,7 +835,17 @@ class DefaultClusterNode private[akka] (
   /**
    * Checks in an actor after done using it on this node.
    */
+  def release(actorRef: ActorRef) {
+    release(actorRef.address)
+  }
+
+  /**
+   * Checks in an actor after done using it on this node.
+   */
   def release(actorAddress: String) {
+
+    // FIXME 'Cluster.release' needs to notify all existing ClusterActorRef's that are using the instance that it is no longer available. Then what to do? Should we even remove this method?
+
     isConnected ifOn {
       actorUuidsForActorAddress(actorAddress) foreach { uuid ⇒
         EventHandler.debug(this,
@@ -916,7 +931,7 @@ class DefaultClusterNode private[akka] (
    * Returns the UUIDs of all actors registered in this cluster.
    */
   def uuidsForClusteredActors: Array[UUID] = if (isConnected.isOn) {
-    zkClient.getChildren(ACTOR_REGISTRY_NODE).toList.map(new UUID(_)).toArray.asInstanceOf[Array[UUID]]
+    zkClient.getChildren(ACTOR_REGISTRY_PATH).toList.map(new UUID(_)).toArray.asInstanceOf[Array[UUID]]
   } else Array.empty[UUID]
 
   /**
@@ -1009,22 +1024,30 @@ class DefaultClusterNode private[akka] (
   } else Array.empty[String]
 
   /**
-   * Returns Format for actor with UUID.
+   * Returns Serializer for actor with specific address.
    */
-  def formatForActor(actorAddress: String): Serializer = {
+  def serializerForActor(actorAddress: String): Serializer = {
+    // FIXME should only be 1 single class name per actor address - FIX IT
 
-    val formats = actorUuidsForActorAddress(actorAddress) map { uuid ⇒
+    val serializerClassNames = actorUuidsForActorAddress(actorAddress) map { uuid ⇒
       try {
-        Some(zkClient.readData(actorRegistryFormatPathFor(uuid), new Stat).asInstanceOf[Serializer])
+        Some(zkClient.readData(actorRegistrySerializerPathFor(uuid), new Stat).asInstanceOf[String])
       } catch {
         case e: ZkNoNodeException ⇒ None
       }
     } filter (_.isDefined) map (_.get)
 
-    if (formats.isEmpty) throw new IllegalStateException("No Serializer found for [%s]".format(actorAddress))
-    if (formats.forall(_ == formats.head) == false) throw new IllegalStateException("Multiple Serializer classes found for [%s]".format(actorAddress))
+    if (serializerClassNames.isEmpty) throw new IllegalStateException("No serializer found for actor with address [%s]".format(actorAddress))
+    if (serializerClassNames.forall(_ == serializerClassNames.head) == false)
+      throw new IllegalStateException("Multiple serializers found for actor with address [%s]".format(actorAddress))
 
-    formats.head
+    val serializerClassName = serializerClassNames.head
+    ReflectiveAccess.getClassFor(serializerClassName) match { // FIXME need to pass in a user provide class loader? Now using default in ReflectiveAccess.
+      case Right(clazz) ⇒ clazz.newInstance.asInstanceOf[Serializer]
+      case Left(error) ⇒
+        EventHandler.error(error, this, "Could not load serializer class [%s] due to: %s".format(serializerClassName, error.toString))
+        throw error
+    }
   }
 
   /**
@@ -1120,6 +1143,10 @@ class DefaultClusterNode private[akka] (
   // Config
   // =======================================
 
+  /**
+   * Stores a configuration element under a specific key.
+   * If the key already exists then it will be overwritten.
+   */
   def setConfigElement(key: String, bytes: Array[Byte]) {
     val compressedBytes = if (shouldCompressData) LZF.compress(bytes) else bytes
     EventHandler.debug(this,
@@ -1145,6 +1172,7 @@ class DefaultClusterNode private[akka] (
 
   /**
    * Returns the config element for the key or NULL if no element exists under the key.
+   * Returns <code>Some(element)</code> if it exists else <code>None</code>
    */
   def getConfigElement(key: String): Option[Array[Byte]] = try {
     Some(zkClient.connection.readData(configurationPathFor(key), new Stat, true))
@@ -1152,6 +1180,10 @@ class DefaultClusterNode private[akka] (
     case e: KeeperException.NoNodeException ⇒ None
   }
 
+  /**
+   * Removes configuration element for a specific key.
+   * Does nothing if the key does not exist.
+   */
   def removeConfigElement(key: String) {
     ignore[ZkNoNodeException] {
       EventHandler.debug(this,
@@ -1160,30 +1192,30 @@ class DefaultClusterNode private[akka] (
     }
   }
 
-  def getConfigElementKeys: Array[String] = zkClient.getChildren(CONFIGURATION_NODE).toList.toArray.asInstanceOf[Array[String]]
+  def getConfigElementKeys: Array[String] = zkClient.getChildren(CONFIGURATION_PATH).toList.toArray.asInstanceOf[Array[String]]
 
   // =======================================
   // Private
   // =======================================
 
-  private[cluster] def membershipPathFor(node: String) = "%s/%s".format(MEMBERSHIP_NODE, node)
+  private[cluster] def membershipPathFor(node: String) = "%s/%s".format(MEMBERSHIP_PATH, node)
 
-  private[cluster] def configurationPathFor(key: String) = "%s/%s".format(CONFIGURATION_NODE, key)
+  private[cluster] def configurationPathFor(key: String) = "%s/%s".format(CONFIGURATION_PATH, key)
 
-  private[cluster] def actorAddressToUuidsPathFor(actorAddress: String) = "%s/%s".format(ACTOR_ADDRESS_TO_UUIDS_NODE, actorAddress.replace('.', '_'))
+  private[cluster] def actorAddressToUuidsPathFor(actorAddress: String) = "%s/%s".format(ACTOR_ADDRESS_TO_UUIDS_PATH, actorAddress.replace('.', '_'))
 
-  private[cluster] def actorLocationsPathFor(uuid: UUID) = "%s/%s".format(ACTOR_LOCATIONS_NODE, uuid)
+  private[cluster] def actorLocationsPathFor(uuid: UUID) = "%s/%s".format(ACTOR_LOCATIONS_PATH, uuid)
 
   private[cluster] def actorLocationsPathFor(uuid: UUID, node: NodeAddress) =
-    "%s/%s/%s".format(ACTOR_LOCATIONS_NODE, uuid, node.nodeName)
+    "%s/%s/%s".format(ACTOR_LOCATIONS_PATH, uuid, node.nodeName)
 
-  private[cluster] def actorsAtNodePathFor(node: String) = "%s/%s".format(ACTORS_AT_NODE_NODE, node)
+  private[cluster] def actorsAtNodePathFor(node: String) = "%s/%s".format(ACTORS_AT_PATH_PATH, node)
 
-  private[cluster] def actorAtNodePathFor(node: String, uuid: UUID) = "%s/%s/%s".format(ACTORS_AT_NODE_NODE, node, uuid)
+  private[cluster] def actorAtNodePathFor(node: String, uuid: UUID) = "%s/%s/%s".format(ACTORS_AT_PATH_PATH, node, uuid)
 
-  private[cluster] def actorRegistryPathFor(uuid: UUID) = "%s/%s".format(ACTOR_REGISTRY_NODE, uuid)
+  private[cluster] def actorRegistryPathFor(uuid: UUID) = "%s/%s".format(ACTOR_REGISTRY_PATH, uuid)
 
-  private[cluster] def actorRegistryFormatPathFor(uuid: UUID) = "%s/%s".format(actorRegistryPathFor(uuid), "format")
+  private[cluster] def actorRegistrySerializerPathFor(uuid: UUID) = "%s/%s".format(actorRegistryPathFor(uuid), "serializer")
 
   private[cluster] def actorRegistryActorAddressPathFor(uuid: UUID) = "%s/%s".format(actorRegistryPathFor(uuid), "address")
 
@@ -1206,9 +1238,9 @@ class DefaultClusterNode private[akka] (
     val isLeader = joinLeaderElection()
     if (isLeader) createNodeStructureIfNeeded()
     registerListeners()
-    joinMembershipNode()
-    joinActorsAtAddressNode()
-    fetchMembershipChildrenNodes()
+    joinMembershipPath()
+    joinActorsAtAddressPath()
+    fetchMembershipNodes()
     EventHandler.info(this, "Cluster node [%s] started successfully".format(nodeAddress))
   }
 
@@ -1280,7 +1312,7 @@ class DefaultClusterNode private[akka] (
     }
   }
 
-  private[cluster] def joinMembershipNode() {
+  private[cluster] def joinMembershipPath() {
     nodeNameToAddress += (nodeAddress.nodeName -> remoteServerAddress)
     try {
       EventHandler.info(this,
@@ -1294,13 +1326,17 @@ class DefaultClusterNode private[akka] (
     }
   }
 
-  private[cluster] def joinActorsAtAddressNode() {
+  private[cluster] def joinActorsAtAddressPath() {
     ignore[ZkNodeExistsException](zkClient.createPersistent(actorsAtNodePathFor(nodeAddress.nodeName)))
   }
 
   private[cluster] def joinLeaderElection(): Boolean = {
     EventHandler.info(this, "Node [%s] is joining leader election".format(nodeAddress.nodeName))
-    leaderLock.lock
+    try {
+      leaderLock.lock
+    } catch {
+      case e: KeeperException.NodeExistsException ⇒ false
+    }
   }
 
   private[cluster] def failOverConnections(from: InetSocketAddress, to: InetSocketAddress) {
@@ -1336,8 +1372,8 @@ class DefaultClusterNode private[akka] (
             migrateWithoutCheckingThatActorResidesOnItsHomeNode( // since the ephemeral node is already gone, so can't check
               NodeAddress(nodeAddress.clusterName, failedNodeName), nodeAddress, actorAddress)
 
-            implicit val format: Serializer = formatForActor(actorAddress)
-            use(actorAddress) foreach { actor ⇒
+            val serializer: Serializer = serializerForActor(actorAddress)
+            use(actorAddress, serializer) foreach { actor ⇒
               // FIXME remove ugly reflection when we have 1.0 final which has 'fromBinary(byte, homeAddress)(format)'
               //actor.homeAddress = remoteServerAddress
               val homeAddress = classOf[LocalActorRef].getDeclaredField("homeAddress")
@@ -1417,13 +1453,13 @@ class DefaultClusterNode private[akka] (
 
   private def createRootClusterNode() {
     ignore[ZkNodeExistsException] {
-      zkClient.create(CLUSTER_NODE, null, CreateMode.PERSISTENT)
-      EventHandler.info(this, "Created node [%s]".format(CLUSTER_NODE))
+      zkClient.create(CLUSTER_PATH, null, CreateMode.PERSISTENT)
+      EventHandler.info(this, "Created node [%s]".format(CLUSTER_PATH))
     }
   }
 
   private def createNodeStructureIfNeeded() {
-    baseNodes.foreach { path ⇒
+    basePaths.foreach { path ⇒
       try {
         ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
         EventHandler.debug(this, "Created node [%s]".format(path))
@@ -1438,16 +1474,16 @@ class DefaultClusterNode private[akka] (
 
   private def registerListeners() = {
     zkClient.subscribeStateChanges(stateListener)
-    zkClient.subscribeChildChanges(MEMBERSHIP_NODE, membershipListener)
+    zkClient.subscribeChildChanges(MEMBERSHIP_PATH, membershipListener)
   }
 
   private def unregisterListeners() = {
     zkClient.unsubscribeStateChanges(stateListener)
-    zkClient.unsubscribeChildChanges(MEMBERSHIP_NODE, membershipListener)
+    zkClient.unsubscribeChildChanges(MEMBERSHIP_PATH, membershipListener)
   }
 
-  private def fetchMembershipChildrenNodes() {
-    val membershipChildren = zkClient.getChildren(MEMBERSHIP_NODE)
+  private def fetchMembershipNodes() {
+    val membershipChildren = zkClient.getChildren(MEMBERSHIP_PATH)
     locallyCachedMembershipNodes.clear()
     membershipChildren.iterator.foreach(locallyCachedMembershipNodes.add)
   }
@@ -1621,12 +1657,12 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
             if (message.hasActorUuid) {
               for {
                 address ← cluster.actorAddressForUuid(uuidProtocolToUuid(message.getActorUuid))
-                format ← cluster.formatForActor(address)
-              } cluster.use(address, format)
+                serializer ← cluster.serializerForActor(address)
+              } cluster.use(address, serializer)
 
             } else if (message.hasActorAddress) {
               val address = message.getActorAddress
-              cluster.formatForActor(address) foreach (format ⇒ cluster.use(address, format))
+              cluster.serializerForActor(address) foreach (serializer ⇒ cluster.use(address, serializer))
 
             } else {
               EventHandler.warning(this,
@@ -1669,7 +1705,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
           cluster.failOverConnections(from, to)
 
         case FUNCTION_FUN0_UNIT ⇒
-          actorOf(new Actor() {
+          localActorOf(new Actor() {
             self.dispatcher = computeGridDispatcher
 
             def receive = {
@@ -1682,7 +1718,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
           }).start ! payloadFor(message, classOf[Function0[Unit]])
 
         case FUNCTION_FUN0_ANY ⇒
-          actorOf(new Actor() {
+          localActorOf(new Actor() {
             self.dispatcher = computeGridDispatcher
 
             def receive = {
@@ -1695,7 +1731,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
           }).start forward payloadFor(message, classOf[Function0[Any]])
 
         case FUNCTION_FUN1_ARG_UNIT ⇒
-          actorOf(new Actor() {
+          localActorOf(new Actor() {
             self.dispatcher = computeGridDispatcher
 
             def receive = {
@@ -1708,7 +1744,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
           }).start ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
 
         case FUNCTION_FUN1_ARG_ANY ⇒
-          actorOf(new Actor() {
+          localActorOf(new Actor() {
             self.dispatcher = computeGridDispatcher
 
             def receive = {

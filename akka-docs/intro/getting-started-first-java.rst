@@ -767,6 +767,4 @@ We have learned how to create our first Akka project using Akka's actors to spee
 
 If you have a multi-core machine then I encourage you to try out different number of workers (number of working actors) by tweaking the ``nrOfWorkers`` variable to for example; 2, 4, 6, 8 etc. to see performance improvement by scaling up.
 
-Now we are ready to take on more advanced problems. In the next tutorial we will build on this one, refactor it into more idiomatic Akka and Scala code, and introduce a few new concepts and abstractions. Whenever you feel ready, join me in the `Getting Started Tutorial: Second Chapter <TODO>`_.
-
 Happy hakking.
