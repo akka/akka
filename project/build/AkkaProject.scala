@@ -165,14 +165,13 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val akka_stm               = project("akka-stm",               "akka-stm",               new AkkaStmProject(_),                    akka_actor)
   lazy val akka_http              = project("akka-http",              "akka-http",              new AkkaHttpProject(_),                   akka_actor)
   lazy val akka_slf4j             = project("akka-slf4j",             "akka-slf4j",             new AkkaSlf4jProject(_),                  akka_actor)
-  lazy val akka_remote            = project("akka-remote",            "akka-remote",            new AkkaRemoteProject(_),                 akka_stm, akka_actor_tests)
-  lazy val akka_cluster           = project("akka-cluster",           "akka-cluster",           new AkkaClusterProject(_),                akka_remote)
-  lazy val akka_durable_mailboxes = project("akka-durable-mailboxes", "akka-durable-mailboxes", new AkkaDurableMailboxesParentProject(_), akka_remote)
+  lazy val akka_cluster           = project("akka-cluster",           "akka-cluster",           new AkkaClusterProject(_),                akka_stm, akka_actor_tests)
+  lazy val akka_durable_mailboxes = project("akka-durable-mailboxes", "akka-durable-mailboxes", new AkkaDurableMailboxesParentProject(_), akka_cluster)
 
   //lazy val akka_camel             = project("akka-camel",             "akka-camel",             new AkkaCamelProject(_),                  akka_actor, akka_slf4j)
   //lazy val akka_camel_typed       = project("akka-camel-typed",       "akka-camel-typed",       new AkkaCamelTypedProject(_),             akka_actor, akka_slf4j, akka_camel)
-  //lazy val akka_spring            = project("akka-spring",            "akka-spring",            new AkkaSpringProject(_),                 akka_remote, akka_actor, akka_camel)
-  //lazy val akka_kernel            = project("akka-kernel",            "akka-kernel",            new AkkaKernelProject(_),                 akka_stm, akka_remote, akka_http, akka_slf4j, akka_camel)
+  //lazy val akka_spring            = project("akka-spring",            "akka-spring",            new AkkaSpringProject(_),                 akka_cluster, akka_camel)
+  //lazy val akka_kernel            = project("akka-kernel",            "akka-kernel",            new AkkaKernelProject(_),                 akka_cluster, akka_http, akka_slf4j, akka_camel)
 
   lazy val akka_sbt_plugin        = project("akka-sbt-plugin",        "akka-sbt-plugin",        new AkkaSbtPluginProject(_))
   lazy val akka_tutorials         = project("akka-tutorials",         "akka-tutorials",         new AkkaTutorialsParentProject(_),        akka_actor)
@@ -285,7 +284,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val dist = task { None } // dummy task
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-actor subproject
+  // akka-actor sub-project
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info) with OsgiProject with AutoCompilerPlugins {
@@ -295,7 +294,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-stm subproject
+  // akka-stm sub-project
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaStmProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
@@ -307,43 +306,24 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-remote subproject
-  // -------------------------------------------------------------------------------------------------------------------
-
-  class AkkaRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
-    val commons_codec = Dependencies.commons_codec
-    val commons_io    = Dependencies.commons_io
-    val guicey        = Dependencies.guicey
-    val h2_lzf        = Dependencies.h2_lzf
-    val jackson       = Dependencies.jackson
-    val jackson_core  = Dependencies.jackson_core
-    val netty         = Dependencies.netty
-    val protobuf      = Dependencies.protobuf
-    val sjson         = Dependencies.sjson
-
-    // testing
-    val junit     = Dependencies.junit
-    val scalatest = Dependencies.scalatest
-
-    lazy val networkTestsEnabled = systemOptional[Boolean]("akka.test.network", false)
-
-    override def testOptions = super.testOptions ++ {
-      if (!networkTestsEnabled.value) Seq(TestFilter(test => !test.endsWith("NetworkTest")))
-      else Seq.empty
-    }
-  }
-
-  // -------------------------------------------------------------------------------------------------------------------
-  // akka-cluster sub project
+  // akka-cluster sub-project
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaClusterProject(info: ProjectInfo) extends AkkaDefaultProject(info) with MultiJvmTests {
     val bookkeeper     = Dependencies.bookkeeper
+    val commons_codec  = Dependencies.commons_codec
+    val commons_io     = Dependencies.commons_io
+    val guicey         = Dependencies.guicey
+    val h2_lzf         = Dependencies.h2_lzf
+    val jackson        = Dependencies.jackson
+    val jackson_core   = Dependencies.jackson_core
+    val log4j          = Dependencies.log4j
+    val netty          = Dependencies.netty
+    val protobuf       = Dependencies.protobuf
+    val sjson          = Dependencies.sjson
     val zookeeper      = Dependencies.zookeeper
     val zookeeper_lock = Dependencies.zookeeper_lock
     val zkClient       = Dependencies.zkClient
-    val commons_io     = Dependencies.commons_io
-    val log4j          = Dependencies.log4j
 
     // test dependencies
     val scalatest      = Dependencies.scalatest
@@ -352,6 +332,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     // multi jvm tests
     lazy val clusterTest = multiJvmTest
     lazy val clusterRun  = multiJvmRun
+
+    lazy val networkTestsEnabled = systemOptional[Boolean]("akka.test.network", false)
 
     // test task runs normal tests and then all multi-jvm tests
     lazy val normalTest = super.testAction
@@ -371,11 +353,17 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val replicationTestsEnabled = systemOptional[Boolean]("cluster.test.replication", false)
 
     override def testOptions =
-      super.testOptions ++ (if (!replicationTestsEnabled.value) Seq(testFilter("Replication")) else Seq.empty)
+      super.testOptions ++ {
+        if (!replicationTestsEnabled.value) Seq(testFilter("Replication"))
+        else Seq.empty
+      } ++ {
+        if (!networkTestsEnabled.value) Seq(TestFilter(test => !test.endsWith("NetworkTest")))
+        else Seq.empty
+      }
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-http subproject
+  // akka-http sub-project
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaHttpProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
@@ -393,12 +381,12 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // The akka-durable-mailboxes subproject
+  // The akka-durable-mailboxes sub-project
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaDurableMailboxesParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_mailboxes_common =
-      project("akka-mailboxes-common",  "akka-mailboxes-common",  new AkkaMailboxesCommonProject(_),  akka_remote)
+      project("akka-mailboxes-common",  "akka-mailboxes-common",  new AkkaMailboxesCommonProject(_),  akka_cluster)
     lazy val akka_redis_mailbox =
       project("akka-redis-mailbox",     "akka-redis-mailbox",     new AkkaRedisMailboxProject(_),     akka_mailboxes_common)
     lazy val akka_file_mailbox =
@@ -406,7 +394,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val akka_beanstalk_mailbox =
       project("akka-beanstalk-mailbox", "akka-beanstalk-mailbox", new AkkaBeanstalkMailboxProject(_), akka_mailboxes_common)
     lazy val akka_zookeeper_mailbox =
-      project("akka-zookeeper-mailbox", "akka-zookeeper-mailbox", new AkkaZooKeeperMailboxProject(_), akka_mailboxes_common, akka_cluster)
+      project("akka-zookeeper-mailbox", "akka-zookeeper-mailbox", new AkkaZooKeeperMailboxProject(_), akka_mailboxes_common)
   }
 
   class AkkaMailboxesCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
@@ -437,7 +425,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   class AkkaZooKeeperMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info)
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-camel subproject
+  // akka-camel sub-project
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
@@ -453,7 +441,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   }
 
    // -------------------------------------------------------------------------------------------------------------------
-  // akka-camel-typed subproject
+  // akka-camel-typed sub-project
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaCamelTypedProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
@@ -468,7 +456,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-kernel subproject
+  // akka-kernel sub-project
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaKernelProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
@@ -486,7 +474,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-spring subproject
+  // akka-spring sub-project
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSpringProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
@@ -500,7 +488,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-sbt-plugin subproject
+  // akka-sbt-plugin sub-project
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSbtPluginProject(info: ProjectInfo) extends PluginProject(info) {
@@ -618,7 +606,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
       new AkkaSampleAntsProject(_), akka_stm)
    // lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
-   //   new AkkaSampleChatProject(_), akka_remote)
+   //   new AkkaSampleChatProject(_), akka_cluster)
     lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
       new AkkaSampleFSMProject(_), akka_actor)
     // lazy val akka_sample_hello = project("akka-sample-hello", "akka-sample-hello",
@@ -626,7 +614,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val akka_sample_osgi = project("akka-sample-osgi", "akka-sample-osgi",
       new AkkaSampleOsgiProject(_), akka_actor)
    // lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
-   //   new AkkaSampleRemoteProject(_), akka_remote)
+   //   new AkkaSampleRemoteProject(_), akka_cluster)
 
     lazy val publishRelease = {
       val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
@@ -669,7 +657,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-testkit subproject
+  // akka-testkit sub-project
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaTestkitProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
@@ -677,7 +665,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-actor-tests subproject
+  // akka-actor-tests sub-project
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaActorTestsProject(info: ProjectInfo) extends AkkaDefaultProject(info) with AutoCompilerPlugins {
@@ -692,7 +680,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-slf4j subproject
+  // akka-slf4j sub-project
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSlf4jProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
@@ -789,7 +777,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val akkaActorsDist = project("actors", "akka-dist-actors", new AkkaActorsDistProject(_), akka_actor)
 
     lazy val akkaCoreDist = project("core", "akka-dist-core", new AkkaCoreDistProject(_),
-                                    akkaActorsDist, akka_remote, akka_http, akka_slf4j, akka_testkit, akka_actor_tests)
+                                    akkaActorsDist, akka_cluster, akka_http, akka_slf4j, akka_testkit, akka_actor_tests)
 
 //    lazy val akkaMicrokernelDist = project("microkernel", "akka-dist-microkernel", new AkkaMicrokernelDistProject(_),
 //                                           akkaCoreDist, akka_kernel, akka_samples)

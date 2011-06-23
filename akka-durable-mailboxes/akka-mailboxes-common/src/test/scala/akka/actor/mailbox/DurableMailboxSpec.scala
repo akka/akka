@@ -22,7 +22,7 @@ object DurableMailboxSpecActorFactory {
   }
 
   def createMailboxTestActor(id: String)(implicit dispatcher: MessageDispatcher): ActorRef = {
-    val queueActor = actorOf[MailboxTestActor]
+    val queueActor = localActorOf[MailboxTestActor]
     queueActor.dispatcher = dispatcher
     queueActor.start
   }
@@ -39,7 +39,7 @@ abstract class DurableMailboxSpec(val backendName: String, val storage: DurableM
     "should handle reply to ! for 1 message" in {
       val latch = new CountDownLatch(1)
       val queueActor = createMailboxTestActor(backendName + " should handle reply to !")
-      val sender = actorOf( new Actor { def receive = { case "sum" => latch.countDown } } ).start
+      val sender = localActorOf( new Actor { def receive = { case "sum" => latch.countDown } } ).start
 
       queueActor.!("sum")(Some(sender))
       latch.await(10, TimeUnit.SECONDS) must be (true)
@@ -48,7 +48,7 @@ abstract class DurableMailboxSpec(val backendName: String, val storage: DurableM
     "should handle reply to ! for multiple messages" in {
       val latch = new CountDownLatch(5)
       val queueActor = createMailboxTestActor(backendName + " should handle reply to !")
-      val sender = actorOf( new Actor { def receive = { case "sum" => latch.countDown } } ).start
+      val sender = localActorOf( new Actor { def receive = { case "sum" => latch.countDown } } ).start
 
       queueActor.!("sum")(Some(sender))
       queueActor.!("sum")(Some(sender))

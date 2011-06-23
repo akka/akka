@@ -20,7 +20,7 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
   describe("Serializable actor") {
     it("should be able to serialize and de-serialize a stateful actor with a given serializer") {
 
-      val actor1 = actorOf[MyJavaSerializableActor].start()
+      val actor1 = localActorOf[MyJavaSerializableActor].start()
       (actor1 !! "hello").getOrElse("_") should equal("world 1")
       (actor1 !! "hello").getOrElse("_") should equal("world 2")
 
@@ -36,7 +36,7 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
 
     it("should be able to serialize and deserialize a MyStatelessActorWithMessagesInMailbox") {
 
-      val actor1 = actorOf[MyStatelessActorWithMessagesInMailbox].start()
+      val actor1 = localActorOf[MyStatelessActorWithMessagesInMailbox].start()
       (actor1 ! "hello")
       (actor1 ! "hello")
       (actor1 ! "hello")
@@ -62,7 +62,7 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
     it("should be able to serialize and deserialize a PersonActorWithMessagesInMailbox") {
 
       val p1 = Person("debasish ghosh", 25, SerializeSpec.Address("120", "Monroe Street", "Santa Clara", "95050"))
-      val actor1 = actorOf[PersonActorWithMessagesInMailbox].start()
+      val actor1 = localActorOf[PersonActorWithMessagesInMailbox].start()
       (actor1 ! p1)
       (actor1 ! p1)
       (actor1 ! p1)
@@ -106,7 +106,7 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
   describe("serialize actor that accepts protobuf message") {
     it("should serialize") {
 
-      val actor1 = actorOf[MyActorWithProtobufMessagesInMailbox].start()
+      val actor1 = localActorOf[MyActorWithProtobufMessagesInMailbox].start()
       val msg = MyMessage(123, "debasish ghosh", true)
       val b = ProtobufProtocol.MyMessage.newBuilder.setId(msg.id).setName(msg.name).setStatus(msg.status).build
       (actor1 ! b)
