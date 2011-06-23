@@ -165,9 +165,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val akka_actor             = project("akka-actor",             "akka-actor",             new AkkaActorProject(_))
   lazy val akka_testkit           = project("akka-testkit",           "akka-testkit",           new AkkaTestkitProject(_),                akka_actor)
   lazy val akka_actor_tests       = project("akka-actor-tests",       "akka-actor-tests",       new AkkaActorTestsProject(_),             akka_testkit)
-  lazy val akka_stm               = project("akka-stm",               "akka-stm",               new AkkaStmProject(_),                    akka_actor)
-  lazy val akka_http              = project("akka-http",              "akka-http",              new AkkaHttpProject(_),                   akka_actor)
-  lazy val akka_slf4j             = project("akka-slf4j",             "akka-slf4j",             new AkkaSlf4jProject(_),                  akka_actor)
+  lazy val akka_stm               = project("akka-stm",               "akka-stm",               new AkkaStmProject(_),                    akka_actor, akka_testkit)
+  lazy val akka_http              = project("akka-http",              "akka-http",              new AkkaHttpProject(_),                   akka_actor, akka_testkit)
+  lazy val akka_slf4j             = project("akka-slf4j",             "akka-slf4j",             new AkkaSlf4jProject(_),                  akka_actor, akka_testkit)
   lazy val akka_cluster           = project("akka-cluster",           "akka-cluster",           new AkkaClusterProject(_),                akka_stm, akka_actor_tests)
   lazy val akka_durable_mailboxes = project("akka-durable-mailboxes", "akka-durable-mailboxes", new AkkaDurableMailboxesParentProject(_), akka_cluster)
 
