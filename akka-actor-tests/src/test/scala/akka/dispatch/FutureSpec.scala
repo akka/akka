@@ -404,7 +404,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         latch.open
         assert(f2.get === 10)
 
-        val f3 = Future({ Thread.sleep(100); 5 }, 10)
+        val f3 = Future({ Thread.sleep(10); 5 }, 10)
         intercept[FutureTimeoutException] {
           f3.get
         }
@@ -431,7 +431,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         val x = Future("Hello")
         val y = x map (_.length)
 
-        val r = flow(x() + " " + y.map(_ / 0).map(_.toString)(), 100)
+        val r = flow(x() + " " + y.map(_ / 0).map(_.toString).apply, 100)
 
         intercept[java.lang.ArithmeticException](r.get)
       }
