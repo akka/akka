@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.cluster.leader.election
+package akka.cluster.api.leader.election
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
@@ -73,4 +73,4 @@ class LeaderElectionMultiJvmNode2 extends WordSpec with MustMatchers {
     }
   }
 }
-*/ 
+*/

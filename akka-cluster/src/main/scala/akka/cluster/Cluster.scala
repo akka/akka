@@ -812,9 +812,7 @@ class DefaultClusterNode private[akka] (
    */
   def useActorOnNode(node: String, uuid: UUID) {
     isConnected ifOn {
-
       connectToAllNewlyArrivedMembershipNodesInCluster()
-
       nodeConnections.get(node) foreach {
         case (_, connection) ⇒
           val command = RemoteDaemonMessageProtocol.newBuilder
@@ -1356,9 +1354,9 @@ class DefaultClusterNode private[akka] (
   }
 
   // FIXME makes use of automaticMigrationFromFailedNodes method, why is it not used?
-  private[cluster] def automaticMigrationFromFailedNodes() {
+  private[cluster] def automaticMigrationFromFailedNodes](currentSetOfClusterNodes: List[String]) {
     connectToAllNewlyArrivedMembershipNodesInCluster()
-    findFailedNodes(membershipNodes.toList).foreach { failedNodeName ⇒
+    findFailedNodes(currentSetOfClusterNodes).foreach { failedNodeName ⇒
 
       val allNodes = locallyCachedMembershipNodes.toList
       val myIndex = allNodes.indexWhere(_.endsWith(nodeAddress.nodeName))

@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package sample.cluster
+package akka.cluster.sample
 
 import akka.cluster._
 
@@ -131,4 +131,4 @@ object ClusteredPingPongSample {
     Cluster.shutdownLocalCluster()
   }
 }
-*/ 
+*/

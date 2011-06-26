@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package sample.cluster
+package akka.cluster.sample
 
 import akka.cluster._
 import akka.dispatch.Futures
@@ -11,7 +11,7 @@ import akka.dispatch.Futures
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ComputeGridSample {
-  //sample.cluster.ClusteredFunctions.fun2
+  //sample.cluster.ComputeGridSample.fun2
 
   // FIXME rewrite as multi-jvm test
 

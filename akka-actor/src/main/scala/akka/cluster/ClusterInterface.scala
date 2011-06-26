@@ -497,7 +497,7 @@ trait ClusterNode {
 
   private[cluster] def failOverConnections(from: InetSocketAddress, to: InetSocketAddress)
 
-  private[cluster] def automaticMigrationFromFailedNodes()
+  private[cluster] def automaticMigrationFromFailedNodes](currentSetOfClusterNodes: List[String])
 
   private[cluster] def membershipPathFor(node: String): String
 

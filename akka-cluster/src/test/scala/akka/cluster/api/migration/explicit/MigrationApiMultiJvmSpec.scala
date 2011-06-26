@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.cluster.migration.api
+package akka.cluster.api.migration.explicit
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
@@ -18,7 +18,7 @@ import akka.serialization.Serialization
 
 import java.util.concurrent._
 
-object MigrationApiMultiJvmSpec {
+object MigrationExplicitMultiJvmSpec {
   var NrOfNodes = 2
 
   class HelloWorld extends Actor with Serializable {
@@ -29,8 +29,8 @@ object MigrationApiMultiJvmSpec {
   }
 }
 
-class MigrationApiMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
-  import MigrationApiMultiJvmSpec._
+class MigrationExplicitMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+  import MigrationExplicitMultiJvmSpec._
 
   "A cluster" must {
 
@@ -73,8 +73,8 @@ class MigrationApiMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAn
   }
 }
 
-class MigrationApiMultiJvmNode2 extends WordSpec with MustMatchers {
-  import MigrationApiMultiJvmSpec._
+class MigrationExplicitMultiJvmNode2 extends WordSpec with MustMatchers {
+  import MigrationExplicitMultiJvmSpec._
 
   "A cluster" must {
 

@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package example.cluster
+package akka.cluster.sample
 
 import akka.cluster._
 
@@ -224,4 +224,4 @@ class PongNode(number: Int) {
     node.stop
   }
 }
-*/ 
+*/

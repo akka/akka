@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.cluster.changelisteners.nodeconnected
+package akka.cluster.api.changelisteners.nodeconnected
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
