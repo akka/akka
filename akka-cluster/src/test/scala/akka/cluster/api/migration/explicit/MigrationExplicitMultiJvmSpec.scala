@@ -61,6 +61,8 @@ class MigrationExplicitMultiJvmNode1 extends WordSpec with MustMatchers with Bef
         actorRef.address must be("hello-world")
         (actorRef ? "Hello").as[String].get must be("World from node [node1]")
       }
+
+      node.shutdown()
     }
   }
 
@@ -107,6 +109,8 @@ class MigrationExplicitMultiJvmNode2 extends WordSpec with MustMatchers {
 
       barrier("check-actor-is-moved-to-node1", NrOfNodes) {
       }
+
+      node.shutdown()
     }
   }
 }

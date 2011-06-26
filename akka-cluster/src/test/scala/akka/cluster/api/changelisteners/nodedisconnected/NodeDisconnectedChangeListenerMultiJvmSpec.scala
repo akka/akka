@@ -40,6 +40,8 @@ class NodeDisconnectedChangeListenerMultiJvmNode1 extends WordSpec with MustMatc
 
       latch.await(10, TimeUnit.SECONDS) must be === true
     }
+
+    node.shutdown()
   }
 
   override def beforeAll() = {

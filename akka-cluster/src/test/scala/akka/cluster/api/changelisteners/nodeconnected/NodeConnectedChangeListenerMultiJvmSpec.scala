@@ -38,6 +38,8 @@ class NodeConnectedChangeListenerMultiJvmNode1 extends WordSpec with MustMatcher
       barrier("start-node2", NrOfNodes) {
         latch.await(5, TimeUnit.SECONDS) must be === true
       }
+
+      node.shutdown()
     }
   }
 
@@ -61,6 +63,8 @@ class NodeConnectedChangeListenerMultiJvmNode2 extends WordSpec with MustMatcher
       barrier("start-node2", NrOfNodes) {
         node.start()
       }
+
+      node.shutdown()
     }
   }
 }
