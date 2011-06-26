@@ -110,13 +110,12 @@ trait TestKitLight {
   val senderOption = Some(testActor)
 
   private var end: Duration = Duration.Inf
-  /*
-   * THIS IS A HACK: expectNoMsg and receiveWhile are bounded by `end`, but
-   * running them should not trigger an AssertionError, so mark their end
-   * time here and do not fail at the end of `within` if that time is not
-   * long gone.
+
+  /**
+   * if last assertion was expectNoMsg, disable timing failure upon within()
+   * block end.
    */
-  private var lastSoftTimeout: Duration = now - 5.millis
+  private var lastWasNoMsg = false
 
   /**
    * Stop test actor. Should be done at the end of the test unless relying on
@@ -206,6 +205,8 @@ trait TestKitLight {
     val rem = end - start
     assert(rem >= min, "required min time " + min + " not possible, only " + format(min.unit, rem) + " left")
 
+    lastWasNoMsg = false
+
     val max_diff = _max min rem
     val prev_end = end
     end = start + max_diff
@@ -214,13 +215,8 @@ trait TestKitLight {
 
     val diff = now - start
     assert(min <= diff, "block took " + format(min.unit, diff) + ", should at least have been " + min)
-    /*
-     * caution: HACK AHEAD
-     */
-    if (now - lastSoftTimeout > 5.millis) {
+    if (!lastWasNoMsg) {
       assert(diff <= max_diff, "block took " + format(_max.unit, diff) + ", exceeding " + format(_max.unit, max_diff))
-    } else {
-      lastSoftTimeout -= 5.millis
     }
 
     ret
@@ -296,6 +292,20 @@ trait TestKitLight {
     assert(f.isDefinedAt(o), "does not match: " + o)
     f(o)
   }
+
+  /**
+   * Same as `expectMsgType[T](remaining)`, but correctly treating the timeFactor.
+   */
+  def expectMsgType[T](implicit m: Manifest[T]): T = expectMsgClass_internal(remaining, m.erasure.asInstanceOf[Class[T]])
+
+  /**
+   * Receive one message from the test actor and assert that it conforms to the
+   * given type (after erasure). Wait time is bounded by the given duration,
+   * with an AssertionFailure being thrown in case of timeout.
+   *
+   * @return the received object
+   */
+  def expectMsgType[T](max: Duration)(implicit m: Manifest[T]): T = expectMsgClass_internal(max.dilated, m.erasure.asInstanceOf[Class[T]])
 
   /**
    * Same as `expectMsgClass(remaining, c)`, but correctly treating the timeFactor.
@@ -449,7 +459,7 @@ trait TestKitLight {
   private def expectNoMsg_internal(max: Duration) {
     val o = receiveOne(max)
     assert(o eq null, "received unexpected message " + o)
-    lastSoftTimeout = now
+    lastWasNoMsg = true
   }
 
   /**
@@ -498,7 +508,7 @@ trait TestKitLight {
     }
 
     val ret = doit(Nil)
-    lastSoftTimeout = now
+    lastWasNoMsg = true
     ret
   }
 
@@ -538,6 +548,7 @@ trait TestKitLight {
       } else {
         queue.takeFirst
       }
+    lastWasNoMsg = false
     message match {
       case null ⇒
         lastMessage = NullMessage
