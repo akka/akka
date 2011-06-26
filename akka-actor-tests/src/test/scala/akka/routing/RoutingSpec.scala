@@ -10,6 +10,7 @@ import akka.util.duration._
 import akka.actor.Actor
 import akka.actor.Actor._
 import akka.routing._
+import akka.event.EventHandler
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -104,10 +105,14 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       for (i ← 1 to 500) d ! i
 
-      latch.await(10 seconds)
+      try {
+        latch.await(10 seconds)
+      } finally {
+        EventHandler.info(this, "t1=" + t1Count + " t2=" + t2Count)
+      }
 
       // because t1 is much slower and thus has a bigger mailbox all the time
-      t1Count.get must be < (t2Count.get)
+      t1Count.get must be < t2Count.get
 
       for (a ← List(t1, t2, d)) a.stop()
     }
