@@ -9,7 +9,7 @@ import akka.cluster._
 import akka.actor._
 import akka.util.duration._
 
-object PingPong {
+object PingPongMultiJvmExample {
   val PING_ADDRESS = "ping"
   val PONG_ADDRESS = "pong"
 
@@ -224,4 +224,4 @@ class PongNode(number: Int) {
     node.stop
   }
 }
-*/
+*/ 

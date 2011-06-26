@@ -139,7 +139,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val log4j            = "log4j"                       % "log4j"                   % "1.2.15"          //ApacheV2
     lazy val zookeeper        = "org.apache.hadoop.zookeeper" % "zookeeper"               % ZOOKEEPER_VERSION //ApacheV2
     lazy val zookeeper_lock   = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock"  % ZOOKEEPER_VERSION //ApacheV2
-    lazy val zkClient         = "zkclient"                    % "zkclient"                % "0.2"             //ApacheV2
+    lazy val zkClient         = "zkclient"                    % "zkclient"                % "0.3"             //ApacheV2
 
     // Test
     lazy val multiverse_test  = "org.multiverse"              % "multiverse-alpha"        % MULTIVERSE_VERSION % "test" //ApacheV2

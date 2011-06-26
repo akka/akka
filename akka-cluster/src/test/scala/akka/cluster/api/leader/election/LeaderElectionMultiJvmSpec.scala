@@ -73,4 +73,4 @@ class LeaderElectionMultiJvmNode2 extends WordSpec with MustMatchers {
     }
   }
 }
-*/
+*/ 

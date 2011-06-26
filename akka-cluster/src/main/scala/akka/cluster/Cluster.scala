@@ -1354,7 +1354,7 @@ class DefaultClusterNode private[akka] (
   }
 
   // FIXME makes use of automaticMigrationFromFailedNodes method, why is it not used?
-  private[cluster] def automaticMigrationFromFailedNodes](currentSetOfClusterNodes: List[String]) {
+  private[cluster] def automaticMigrationFromFailedNodes(currentSetOfClusterNodes: List[String]) {
     connectToAllNewlyArrivedMembershipNodesInCluster()
     findFailedNodes(currentSetOfClusterNodes).foreach { failedNodeName ⇒
 
