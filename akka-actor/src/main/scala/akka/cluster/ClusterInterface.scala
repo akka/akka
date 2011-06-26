@@ -91,33 +91,22 @@ object ChangeListener {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class NodeAddress(
-  val clusterName: String,
-  val nodeName: String,
-  val hostname: String,
-  val port: Int) {
-  if ((hostname eq null) || hostname == "") throw new NullPointerException("Host name must not be null or empty string")
-  if ((nodeName eq null) || nodeName == "") throw new NullPointerException("Node name must not be null or empty string")
+class NodeAddress(val clusterName: String, val nodeName: String) {
   if ((clusterName eq null) || clusterName == "") throw new NullPointerException("Cluster name must not be null or empty string")
-  if (port < 1) throw new NullPointerException("Port can not be negative")
+  if ((nodeName eq null) || nodeName == "") throw new NullPointerException("Node name must not be null or empty string")
 
-  override def toString = "%s:%s:%s:%s".format(clusterName, nodeName, hostname, port)
+  override def toString = "%s:%s".format(clusterName, nodeName)
 
-  override def hashCode = 0 + clusterName.## + nodeName.## + hostname.## + port.##
+  override def hashCode = 0 + clusterName.## + nodeName.##
 
   override def equals(other: Any) = NodeAddress.unapply(this) == NodeAddress.unapply(other)
 }
 
 object NodeAddress {
-
-  def apply(
-    clusterName: String = Config.clusterName,
-    nodeName: String = Config.nodename,
-    hostname: String = Config.hostname,
-    port: Int = Config.remoteServerPort): NodeAddress = new NodeAddress(clusterName, nodeName, hostname, port)
+  def apply(clusterName: String = Config.clusterName, nodeName: String = Config.nodename): NodeAddress = new NodeAddress(clusterName, nodeName)
 
   def unapply(other: Any) = other match {
-    case address: NodeAddress ⇒ Some((address.clusterName, address.nodeName, address.hostname, address.port))
+    case address: NodeAddress ⇒ Some((address.clusterName, address.nodeName))
     case _                    ⇒ None
   }
 }
@@ -483,11 +472,12 @@ trait ClusterNode {
    */
   def removeConfigElement(key: String)
 
+  /**
+   * Returns a list with all config element keys.
+   */
   def getConfigElementKeys: Array[String]
 
   private[cluster] def initializeNode()
-
-  private[cluster] def addressForNode(node: String): Option[InetSocketAddress]
 
   private[cluster] def publish(change: ChangeNotification)
 
@@ -501,15 +491,13 @@ trait ClusterNode {
 
   private[cluster] def findNewlyDisconnectedAvailableNodes(nodes: List[String]): List[String]
 
-  private[cluster] def joinMembershipPath()
-
-  private[cluster] def joinActorsAtAddressPath()
+  private[cluster] def joinCluster()
 
   private[cluster] def joinLeaderElection: Boolean
 
   private[cluster] def failOverConnections(from: InetSocketAddress, to: InetSocketAddress)
 
-  private[cluster] def migrateFromFailedNodes[T <: Actor](currentSetOfClusterNodes: List[String])
+  private[cluster] def automaticMigrationFromFailedNodes()
 
   private[cluster] def membershipPathFor(node: String): String
 
@@ -534,5 +522,9 @@ trait ClusterNode {
   private[cluster] def actorRegistryNodePathFor(uuid: UUID): String
 
   private[cluster] def actorRegistryNodePathFor(uuid: UUID, address: InetSocketAddress): String
+
+  private[cluster] def remoteSocketAddressForNode(node: String): InetSocketAddress
+
+  private[cluster] def createActorsAtAddressPath()
 }
 

@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.cluster.registry.store
+package akka.cluster.registry
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
@@ -147,7 +147,7 @@ class RegistryStoreMultiJvmNode2 extends WordSpec with MustMatchers {
         val actorRef = actorOrOption.get
         actorRef.address must be("hello-world-3")
 
-        (actorRef ? "Count").as[Int].get must be >= (2) // be conservative - can by 5 but also 2 if slow system
+        (actorRef ? ("Count", 30000)).as[Int].get must be >= (2) // be conservative - can by 5 but also 2 if slow system
       }
 
       node.shutdown()

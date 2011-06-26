@@ -99,7 +99,6 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   object Dependencies {
 
-
      // Compile
     lazy val beanstalk        = "beanstalk"                   % "beanstalk_client"        % "1.4.5" //New BSD
     lazy val bookkeeper       = "org.apache.hadoop.zookeeper" % "bookkeeper"              % ZOOKEEPER_VERSION //ApacheV2
