@@ -948,12 +948,14 @@ class LocalActorRef private[akka] (
 
       if (Actor.debugLifecycle) EventHandler.debug(failedActor, "restarting")
 
+      val message = if (currentMessage ne null) Some(currentMessage.message) else None
+
       failedActor match {
         case p: Proxyable ⇒
-          failedActor.preRestart(reason)
+          failedActor.preRestart(reason, message)
           failedActor.postRestart(reason)
         case _ ⇒
-          failedActor.preRestart(reason)
+          failedActor.preRestart(reason, message)
           val freshActor = newActor
           setActorSelfFields(failedActor, null) // Only null out the references if we could instantiate the new actor
           actorInstance.set(freshActor) // Assign it here so if preStart fails, we can null out the sef-refs next call

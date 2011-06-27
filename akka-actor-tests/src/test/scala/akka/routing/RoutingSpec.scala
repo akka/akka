@@ -108,9 +108,8 @@ class RoutingSpec extends WordSpec with MustMatchers {
       try {
         latch.await(10 seconds)
       } catch {
-        case e =>
-          e.setCause(new AssertionFailure("t1=" + t1Count + " t2=" + t2Count))
-          throw e
+        case e: TestLatchTimeoutException ⇒
+          throw new TestLatchTimeoutException(e.getMessage + " t1=" + t1Count + " t2=" + t2Count)
       }
 
       // because t1 is much slower and thus has a bigger mailbox all the time

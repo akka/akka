@@ -99,11 +99,15 @@ The :class:`Actor` trait defines only one abstract method, the abovementioned
 :meth:`receive`. In addition, it offers two convenience methods
 :meth:`become`/:meth:`unbecome` for modifying the hotswap behavior stack as
 described in :ref:`Actor.HotSwap` and the :obj:`self` reference to this actor’s
-:class:`ActorRef` object. The remaining visible methods are user-overridable
-life-cycle hooks which are described in the following::
+:class:`ActorRef` object. If the current actor behavior does not match a
+received message, :meth:`unhandled` is called, which by default throws an
+:class:`UnhandledMessageException`.
+
+The remaining visible methods are user-overridable life-cycle hooks which are
+described in the following::
 
   def preStart() {}
-  def preRestart(cause: Throwable) {}
+  def preRestart(cause: Throwable, message: Option[Any]) {}
   def freshInstance(): Option[Actor] = None
   def postRestart(cause: Throwable) {}
   def postStop() {}
@@ -135,7 +139,10 @@ handling strategy, will be restarted in case an exception is thrown while
 processing a message. This restart involves four of the hooks mentioned above:
 
 1. The old actor is informed by calling :meth:`preRestart` with the exception
-   which caused the restart; this method is the best place for cleaning up,
+   which caused the restart and the message which triggered that exception; the
+   latter may be ``None`` if the restart was not caused by processing a
+   message, e.g. when a supervisor does not trap the exception and is restarted
+   in turn by its supervisor. This method is the best place for cleaning up,
    preparing hand-over to the fresh actor instance, etc.
 2. The old actor’s :meth:`freshInstance` factory method is invoked, which may
    optionally produce the new actor instance which will replace this actor. If
@@ -158,7 +165,7 @@ processing a message. This restart involves four of the hooks mentioned above:
 An actor restart replaces only the actual actor object; the contents of the
 mailbox and the hotswap stack are unaffected by the restart, so processing of
 messages will resume after the :meth:`postRestart` hook returns. Any message
-sent to an actor which is being restarted will be queued to its mailbox as
+sent to an actor while it is being restarted will be queued to its mailbox as
 usual.
  
 Stop Hook

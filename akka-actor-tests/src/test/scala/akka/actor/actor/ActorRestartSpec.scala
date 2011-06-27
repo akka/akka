@@ -36,7 +36,6 @@ object ActorRestartSpec {
       case "get"          ⇒ self reply xx
     }
     override def preStart { testActor ! (("preStart", gen)) }
-    override def postStop { testActor ! (("postStop", gen)) }
     override def preRestart(cause: Throwable) { testActor ! (("preRestart", gen)) }
     override def postRestart(cause: Throwable) { testActor ! (("postRestart", gen)) }
     override def freshInstance() = {
@@ -71,13 +70,21 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
   import ActorRestartSpec._
 
   override def beforeEach { generation = 0 }
+  override def afterEach { toStop foreach (_.stop()) }
+
+  private var toStop = List.empty[ActorRef]
+  private def newActor(f: ⇒ Actor): ActorRef = {
+    val ref = actorOf(f)
+    toStop ::= ref
+    ref.start()
+  }
 
   "An Actor restart" must {
 
     "invoke preRestart, preStart, postRestart" in {
-      val actor = actorOf(new Restarter(testActor)).start()
+      val actor = newActor(new Restarter(testActor))
       expectMsg(1 second, ("preStart", 1))
-      val supervisor = actorOf[Supervisor].start()
+      val supervisor = newActor(new Supervisor)
       supervisor link actor
       actor ! Kill
       within(1 second) {
@@ -89,9 +96,9 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
     }
 
     "support creation of nested actors in freshInstance()" in {
-      val actor = actorOf(new Restarter(testActor)).start()
+      val actor = newActor(new Restarter(testActor))
       expectMsg(1 second, ("preStart", 1))
-      val supervisor = actorOf[Supervisor].start()
+      val supervisor = newActor(new Supervisor)
       supervisor link actor
       actor ! Nested
       actor ! Kill
@@ -108,9 +115,9 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
     }
 
     "use freshInstance() if available" in {
-      val actor = actorOf(new Restarter(testActor)).start()
+      val actor = newActor(new Restarter(testActor))
       expectMsg(1 second, ("preStart", 1))
-      val supervisor = actorOf[Supervisor].start()
+      val supervisor = newActor(new Supervisor)
       supervisor link actor
       actor ! 42
       actor ! Handover
@@ -126,9 +133,9 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
     }
 
     "fall back to default factory if freshInstance() fails" in {
-      val actor = actorOf(new Restarter(testActor)).start()
+      val actor = newActor(new Restarter(testActor))
       expectMsg(1 second, ("preStart", 1))
-      val supervisor = actorOf[Supervisor].start()
+      val supervisor = newActor(new Supervisor)
       supervisor link actor
       actor ! 42
       actor ! Fail
@@ -141,6 +148,22 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
       }
       actor ! "get"
       expectMsg(1 second, 0)
+    }
+
+    "call preRestart(cause, currentMessage) if defined" in {
+      val actor = newActor(new Actor {
+        def receive = { case _ ⇒ }
+        override def preRestart(cause: Throwable, currentMessage: Option[Any]) {
+          testActor ! (("preRestart", currentMessage))
+        }
+      })
+      val supervisor = newActor(new Supervisor)
+      supervisor link actor
+      actor ! Kill
+      within(1 second) {
+        expectMsg(("preRestart", Some(Kill)))
+        expectNoMsg
+      }
     }
 
   }
