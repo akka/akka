@@ -102,6 +102,9 @@ class NodeAddress(val clusterName: String, val nodeName: String) {
   override def equals(other: Any) = NodeAddress.unapply(this) == NodeAddress.unapply(other)
 }
 
+/**
+ * NodeAddress companion object and factory.
+ */
 object NodeAddress {
   def apply(clusterName: String = Config.clusterName, nodeName: String = Config.nodename): NodeAddress = new NodeAddress(clusterName, nodeName)
 
@@ -119,22 +122,21 @@ object NodeAddress {
 trait ClusterNode {
   import ChangeListener._
 
-  def nodeAddress: NodeAddress
-  def zkServerAddresses: String
-
-  def remoteClientLifeCycleListener: ActorRef
-  def remoteDaemon: ActorRef
-  def remoteService: RemoteSupport
-  def remoteServerAddress: InetSocketAddress
-
   val isConnected = new Switch(false)
-  val electionNumber = new AtomicInteger(Int.MaxValue)
 
   private[cluster] val locallyCachedMembershipNodes = new ConcurrentSkipListSet[String]()
   private[cluster] val nodeNameToAddress: ConcurrentMap[String, InetSocketAddress] = new ConcurrentHashMap[String, InetSocketAddress]
   private[cluster] val locallyCheckedOutActors: ConcurrentMap[UUID, Array[Byte]] = new ConcurrentHashMap[UUID, Array[Byte]]
 
   def membershipNodes: Array[String]
+
+  def nodeAddress: NodeAddress
+
+  def zkServerAddresses: String
+
+  def remoteService: RemoteSupport
+
+  def remoteServerAddress: InetSocketAddress
 
   def isRunning: Boolean = isConnected.isOn
 
@@ -294,11 +296,6 @@ trait ClusterNode {
   def remove(actorRef: ActorRef)
 
   /**
-   * Removes actor with uuid from the cluster.
-   */
-  def remove(uuid: UUID)
-
-  /**
    * Removes actor with address from the cluster.
    */
   def remove(address: String): ClusterNode
@@ -351,11 +348,6 @@ trait ClusterNode {
   def release(actorAddress: String)
 
   /**
-   * Releases (checking in) all actors with a specific UUID on all nodes in the cluster where the actor is in 'use'.
-   */
-  def releaseActorOnAllNodes(uuid: UUID)
-
-  /**
    * Creates an ActorRef with a Router to a set of clustered actors.
    */
   def ref(actorAddress: String, router: RouterType): ActorRef
@@ -371,49 +363,14 @@ trait ClusterNode {
   def migrate(from: NodeAddress, to: NodeAddress, actorAddress: String)
 
   /**
-   * Returns the UUIDs of all actors checked out on this node.
-   */
-  def uuidsForActorsInUse: Array[UUID]
-
-  /**
    * Returns the addresses of all actors checked out on this node.
    */
   def addressesForActorsInUse: Array[String]
 
   /**
-   * Returns the UUIDs of all actors registered in this cluster.
-   */
-  def uuidsForClusteredActors: Array[UUID]
-
-  /**
    * Returns the addresses of all actors registered in this cluster.
    */
   def addressesForClusteredActors: Array[String]
-
-  /**
-   * Returns the actor id for the actor with a specific UUID.
-   */
-  def actorAddressForUuid(uuid: UUID): Option[String]
-
-  /**
-   * Returns the actor ids for all the actors with a specific UUID.
-   */
-  def actorAddressForUuids(uuids: Array[UUID]): Array[String]
-
-  /**
-   * Returns the actor UUIDs for actor ID.
-   */
-  def uuidsForActorAddress(actorAddress: String): Array[UUID]
-
-  /**
-   * Returns the node names of all actors in use with UUID.
-   */
-  def nodesForActorsInUseWithUuid(uuid: UUID): Array[String]
-
-  /**
-   * Returns the UUIDs of all actors in use registered on a specific node.
-   */
-  def uuidsForActorsInUseOnNode(nodeName: String): Array[UUID]
 
   /**
    * Returns the addresses of all actors in use registered on a specific node.
@@ -476,6 +433,56 @@ trait ClusterNode {
    * Returns a list with all config element keys.
    */
   def getConfigElementKeys: Array[String]
+
+  // =============== PRIVATE METHODS ===============
+
+  private[cluster] def remoteClientLifeCycleListener: ActorRef
+  private[cluster] def remoteDaemon: ActorRef
+
+  /**
+   * Removes actor with uuid from the cluster.
+   */
+  private[cluster] def remove(uuid: UUID)
+
+  /**
+   * Releases (checking in) all actors with a specific UUID on all nodes in the cluster where the actor is in 'use'.
+   */
+  private[cluster] def releaseActorOnAllNodes(uuid: UUID)
+
+  /**
+   * Returns the UUIDs of all actors checked out on this node.
+   */
+  private[cluster] def uuidsForActorsInUse: Array[UUID]
+
+  /**
+   * Returns the UUIDs of all actors registered in this cluster.
+   */
+  private[cluster] def uuidsForClusteredActors: Array[UUID]
+
+  /**
+   * Returns the actor id for the actor with a specific UUID.
+   */
+  private[cluster] def actorAddressForUuid(uuid: UUID): Option[String]
+
+  /**
+   * Returns the actor ids for all the actors with a specific UUID.
+   */
+  private[cluster] def actorAddressForUuids(uuids: Array[UUID]): Array[String]
+
+  /**
+   * Returns the actor UUIDs for actor ID.
+   */
+  private[cluster] def uuidsForActorAddress(actorAddress: String): Array[UUID]
+
+  /**
+   * Returns the node names of all actors in use with UUID.
+   */
+  private[cluster] def nodesForActorsInUseWithUuid(uuid: UUID): Array[String]
+
+  /**
+   * Returns the UUIDs of all actors in use registered on a specific node.
+   */
+  private[cluster] def uuidsForActorsInUseOnNode(nodeName: String): Array[UUID]
 
   private[cluster] def initializeNode()
 

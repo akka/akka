@@ -286,7 +286,7 @@ class DefaultClusterNode private[akka] (
 
   import Cluster._
 
-  lazy val remoteClientLifeCycleListener = localActorOf(new Actor {
+  private[cluster] lazy val remoteClientLifeCycleListener = localActorOf(new Actor {
     def receive = {
       case RemoteClientError(cause, client, address) ⇒ client.shutdownClientModule()
       case RemoteClientDisconnected(client, address) ⇒ client.shutdownClientModule()
@@ -294,9 +294,9 @@ class DefaultClusterNode private[akka] (
     }
   }, "akka.cluster.RemoteClientLifeCycleListener").start()
 
-  lazy val remoteDaemon = localActorOf(new RemoteClusterDaemon(this), RemoteClusterDaemon.ADDRESS).start()
+  private[cluster] lazy val remoteDaemon = localActorOf(new RemoteClusterDaemon(this), RemoteClusterDaemon.ADDRESS).start()
 
-  lazy val remoteDaemonSupervisor = Supervisor(
+  private[cluster] lazy val remoteDaemonSupervisor = Supervisor(
     SupervisorConfig(
       OneForOneStrategy(List(classOf[Exception]), Int.MaxValue, Int.MaxValue), // is infinite restart what we want?
       Supervise(
@@ -853,7 +853,7 @@ class DefaultClusterNode private[akka] (
   /**
    * Releases (checking in) all actors with a specific UUID on all nodes in the cluster where the actor is in 'use'.
    */
-  def releaseActorOnAllNodes(uuid: UUID) {
+  private[akka] def releaseActorOnAllNodes(uuid: UUID) {
     isConnected ifOn {
       EventHandler.debug(this,
         "Releasing (checking in) all actors with UUID [%s] on all nodes in cluster".format(uuid))
@@ -914,7 +914,7 @@ class DefaultClusterNode private[akka] (
   /**
    * Returns the UUIDs of all actors checked out on this node.
    */
-  def uuidsForActorsInUse: Array[UUID] = uuidsForActorsInUseOnNode(nodeAddress.nodeName)
+  private[akka] def uuidsForActorsInUse: Array[UUID] = uuidsForActorsInUseOnNode(nodeAddress.nodeName)
 
   /**
    * Returns the addresses of all actors checked out on this node.
@@ -924,7 +924,7 @@ class DefaultClusterNode private[akka] (
   /**
    * Returns the UUIDs of all actors registered in this cluster.
    */
-  def uuidsForClusteredActors: Array[UUID] = if (isConnected.isOn) {
+  private[akka] def uuidsForClusteredActors: Array[UUID] = if (isConnected.isOn) {
     zkClient.getChildren(ACTOR_REGISTRY_PATH).toList.map(new UUID(_)).toArray.asInstanceOf[Array[UUID]]
   } else Array.empty[UUID]
 
@@ -936,7 +936,7 @@ class DefaultClusterNode private[akka] (
   /**
    * Returns the actor id for the actor with a specific UUID.
    */
-  def actorAddressForUuid(uuid: UUID): Option[String] = if (isConnected.isOn) {
+  private[akka] def actorAddressForUuid(uuid: UUID): Option[String] = if (isConnected.isOn) {
     try {
       Some(zkClient.readData(actorRegistryActorAddressPathFor(uuid)).asInstanceOf[String])
     } catch {
@@ -947,13 +947,13 @@ class DefaultClusterNode private[akka] (
   /**
    * Returns the actor ids for all the actors with a specific UUID.
    */
-  def actorAddressForUuids(uuids: Array[UUID]): Array[String] =
+  private[akka] def actorAddressForUuids(uuids: Array[UUID]): Array[String] =
     uuids map (actorAddressForUuid(_)) filter (_.isDefined) map (_.get)
 
   /**
    * Returns the actor UUIDs for actor ID.
    */
-  def uuidsForActorAddress(actorAddress: String): Array[UUID] = if (isConnected.isOn) {
+  private[akka] def uuidsForActorAddress(actorAddress: String): Array[UUID] = if (isConnected.isOn) {
     try {
       zkClient.getChildren(actorAddressToUuidsPathFor(actorAddress)).toArray map {
         case c: CharSequence ⇒ new UUID(c)
@@ -966,7 +966,7 @@ class DefaultClusterNode private[akka] (
   /**
    * Returns the node names of all actors in use with UUID.
    */
-  def nodesForActorsInUseWithUuid(uuid: UUID): Array[String] = if (isConnected.isOn) {
+  private[akka] def nodesForActorsInUseWithUuid(uuid: UUID): Array[String] = if (isConnected.isOn) {
     try {
       zkClient.getChildren(actorLocationsPathFor(uuid)).toArray.asInstanceOf[Array[String]]
     } catch {
@@ -992,7 +992,7 @@ class DefaultClusterNode private[akka] (
   /**
    * Returns the UUIDs of all actors in use registered on a specific node.
    */
-  def uuidsForActorsInUseOnNode(nodeName: String): Array[UUID] = if (isConnected.isOn) {
+  private[akka] def uuidsForActorsInUseOnNode(nodeName: String): Array[UUID] = if (isConnected.isOn) {
     try {
       zkClient.getChildren(actorsAtNodePathFor(nodeName)).toArray map {
         case c: CharSequence ⇒ new UUID(c)
