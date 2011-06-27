@@ -16,7 +16,12 @@ Creating Typed Actors
 
 **IMPORTANT:** The Typed Actors class must have access modifier 'public' (which is default) and can't be an inner class (unless it is an inner class in an 'object').
 
-Akka turns POJOs with interface and implementation into asynchronous (Typed) Actors. Akka is using `AspectWerkz’s Proxy <http://blogs.codehaus.org/people/jboner/archives/000914_awproxy_proxy_on_steriods.html>`_ implementation, which is the `most performant <http://docs.codehaus.org/display/AW/AOP+Benchmark>`_ proxy implementation there exists.
+Akka turns POJOs with interface and implementation into asynchronous (Typed)
+Actors. Akka is using `AspectWerkz’s Proxy`_ implementation, which is the `most
+performant <http://docs.codehaus.org/display/AW/AOP+Benchmark>`_ proxy
+implementation there exists.
+
+.. _AspectWerkz’s Proxy: http://jonasboner.com/2004/12/08/awproxy-proxy-on-steroids.html
 
 In order to create a Typed Actor you have to subclass the TypedActor base class.
 
