@@ -237,10 +237,10 @@ object Cluster {
 
   def createQueue(rootPath: String, blocking: Boolean = true) = new ZooKeeperQueue(node.zkClient, rootPath, blocking)
 
-  def barrier(name: String, count: Int) =
+  def barrier(name: String, count: Int): ZooKeeperBarrier =
     ZooKeeperBarrier(node.zkClient, node.nodeAddress.clusterName, name, node.nodeAddress.nodeName, count)
 
-  def barrier(name: String, count: Int, timeout: Duration) =
+  def barrier(name: String, count: Int, timeout: Duration): ZooKeeperBarrier =
     ZooKeeperBarrier(node.zkClient, node.nodeAddress.clusterName, name, node.nodeAddress.nodeName, count, timeout)
 
   def uuidToString(uuid: UUID): String = uuid.toString
@@ -258,9 +258,9 @@ object Cluster {
     }
   }
 
-  def uuidProtocolToUuid(uuid: UuidProtocol) = new UUID(uuid.getHigh, uuid.getLow)
+  def uuidProtocolToUuid(uuid: UuidProtocol): UUID = new UUID(uuid.getHigh, uuid.getLow)
 
-  def uuidToUuidProtocol(uuid: UUID) =
+  def uuidToUuidProtocol(uuid: UUID): UuidProtocol =
     UuidProtocol.newBuilder
       .setHigh(uuid.getTime)
       .setLow(uuid.getClockSeqAndNode)
