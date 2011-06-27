@@ -504,7 +504,7 @@ trait ClusterNode {
 
   private[cluster] def failOverConnections(from: InetSocketAddress, to: InetSocketAddress)
 
-  private[cluster] def automaticMigrationFromFailedNodes(currentSetOfClusterNodes: List[String])
+  private[cluster] def migrateActorsOnFailedNodes(currentNodes: List[String])
 
   private[cluster] def membershipPathFor(node: String): String
 
@@ -530,7 +530,7 @@ trait ClusterNode {
 
   private[cluster] def actorRegistryNodePathFor(uuid: UUID, address: InetSocketAddress): String
 
-  private[cluster] def remoteSocketAddressForNode(node: String): InetSocketAddress
+  private[cluster] def remoteSocketAddressForNode(node: String): Option[InetSocketAddress]
 
   private[cluster] def createActorsAtAddressPath()
 }

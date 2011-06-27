@@ -20,7 +20,7 @@ import akka.serialization.Serialization
 import java.util.concurrent._
 
 object MigrationAutomaticMultiJvmSpec {
-  var NrOfNodes = 2
+  var NrOfNodes = 3
 
   class HelloWorld extends Actor with Serializable {
     def receive = {
@@ -36,6 +36,9 @@ class MigrationAutomaticMultiJvmNode1 extends WordSpec with MustMatchers {
   "A cluster" must {
 
     "be able to migrate an actor from one node to another" in {
+
+      barrier("start-node3", NrOfNodes) {
+      }
 
       barrier("start-node2", NrOfNodes) {
       }
@@ -57,9 +60,14 @@ class MigrationAutomaticMultiJvmNode1 extends WordSpec with MustMatchers {
 class MigrationAutomaticMultiJvmNode2 extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import MigrationAutomaticMultiJvmSpec._
 
+  var isFirstReplicaNode = false
+
   "A cluster" must {
 
     "be able to migrate an actor from one node to another" in {
+
+      barrier("start-node3", NrOfNodes) {
+      }
 
       barrier("start-node2", NrOfNodes) {
         node.start()
@@ -73,14 +81,51 @@ class MigrationAutomaticMultiJvmNode2 extends WordSpec with MustMatchers with Be
 
       Thread.sleep(2000) // wait for fail-over
 
-      node.isInUseOnNode("hello-world") must be(true)
-      val actorRef = Actor.registry.local.actorFor("hello-world").getOrElse(fail("Actor should have been in the local actor registry"))
-      actorRef.address must be("hello-world")
-      (actorRef ? "Hello").as[String].get must be("World from node [node2]")
+      barrier("check-fail-over", NrOfNodes - 1) {
+        // both remaining nodes should now have the replica
+        node.isInUseOnNode("hello-world") must be(true)
+        val actorRef = Actor.registry.local.actorFor("hello-world").getOrElse(fail("Actor should have been in the local actor registry"))
+        actorRef.address must be("hello-world")
+        (actorRef ? "Hello").as[String].get must be("World from node [node2]")
+      }
 
       node.shutdown()
     }
+  }
+}
 
+class MigrationAutomaticMultiJvmNode3 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+  import MigrationAutomaticMultiJvmSpec._
+
+  "A cluster" must {
+
+    "be able to migrate an actor from one node to another" in {
+
+      barrier("start-node3", NrOfNodes) {
+        node.start()
+      }
+
+      barrier("start-node2", NrOfNodes) {
+      }
+
+      barrier("start-node1", NrOfNodes) {
+      }
+
+      barrier("store-actor-in-node1", NrOfNodes) {
+      }
+
+      Thread.sleep(2000) // wait for fail-over
+
+      barrier("check-fail-over", NrOfNodes - 1) {
+        // both remaining nodes should now have the replica
+        node.isInUseOnNode("hello-world") must be(true)
+        val actorRef = Actor.registry.local.actorFor("hello-world").getOrElse(fail("Actor should have been in the local actor registry"))
+        actorRef.address must be("hello-world")
+        (actorRef ? "Hello").as[String].get must be("World from node [node3]")
+      }
+
+      node.shutdown()
+    }
   }
 
   override def beforeAll() = {
