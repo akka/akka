@@ -92,6 +92,83 @@ Here we create a light-weight actor-based thread, that can be used to spawn off 
     ... // do stuff
   }
 
+Actor Internal API
+------------------
+
+The :class:`Actor` trait defines only one abstract method, the abovementioned
+:meth:`receive`. In addition, it offers two convenience methods
+:meth:`become`/:meth:`unbecome` for modifying the hotswap behavior stack as
+described in :ref:`Actor.HotSwap` and the :obj:`self` reference to this actor’s
+:class:`ActorRef` object. The remaining visible methods are user-overridable
+life-cycle hooks which are described in the following::
+
+  def preStart() {}
+  def preRestart(cause: Throwable) {}
+  def freshInstance(): Option[Actor] = None
+  def postRestart(cause: Throwable) {}
+  def postStop() {}
+
+The implementations shown above are the defaults provided by the :class:`Actor`
+trait.
+
+Start Hook
+^^^^^^^^^^
+
+Right after starting the actor, its :meth:`preStart` method is invoked. This is
+guaranteed to happen before the first message from external sources is queued
+to the actor’s mailbox.
+
+::
+
+  override def preStart {
+    // e.g. send initial message to self
+    self ! GetMeStarted
+    // or do any other stuff, e.g. registering with other actors
+    someService ! Register(self)
+  }
+
+Restart Hooks
+^^^^^^^^^^^^^
+
+A supervised actor, i.e. one which is linked to another actor with a fault
+handling strategy, will be restarted in case an exception is thrown while
+processing a message. This restart involves four of the hooks mentioned above:
+
+1. The old actor is informed by calling :meth:`preRestart` with the exception
+   which caused the restart; this method is the best place for cleaning up,
+   preparing hand-over to the fresh actor instance, etc.
+2. The old actor’s :meth:`freshInstance` factory method is invoked, which may
+   optionally produce the new actor instance which will replace this actor. If
+   this method returns :obj:`None` or throws an exception, the initial factory
+   from the ``Actor.actorOf`` call is used to produce the fresh instance.
+3. The new actor’s :meth:`preStart` method is invoked, just as in the normal
+   start-up case.
+4. The new actor’s :meth:`postRestart` method is called with the exception
+   which caused the restart.
+
+.. warning::
+
+  The :meth:`freshInstance` hook may be used to propagate (part of) the failed
+  actor’s state to the fresh instance. This carries the risk of proliferating
+  the cause for the crash which triggered the restart. If you are tempted to
+  take this route, it is strongly advised to step back and consider other
+  possible approaches, e.g. distributing the state in question using other
+  means or spawning short-lived worker actors for carrying out “risky” tasks.
+
+An actor restart replaces only the actual actor object; the contents of the
+mailbox and the hotswap stack are unaffected by the restart, so processing of
+messages will resume after the :meth:`postRestart` hook returns. Any message
+sent to an actor which is being restarted will be queued to its mailbox as
+usual.
+ 
+Stop Hook
+^^^^^^^^^
+
+After stopping an actor, its :meth:`postStop` hook is called, which may be used
+e.g. for deregistering this actor from other services. This hook is guaranteed
+to run after message queuing has been disabled for this actor, i.e. sending
+messages would fail with an :class:`IllegalActorStateException`.
+
 Identifying Actors
 ------------------
 
@@ -252,43 +329,6 @@ This method should return a ``PartialFunction``, e.g. a ‘match/case’ clause 
     }
   }
 
-Actor internal API
-------------------
-
-The Actor trait contains almost no member fields or methods to invoke, you just use the Actor trait to implement the:
-
-#. ``receive`` message handler
-#. life-cycle callbacks:
-
-  #. preStart
-  #. postStop
-  #. preRestart
-  #. postRestart
-
-The ``Actor`` trait has one single member field:
-
-.. code-block:: scala
-
-  val self: ActorRef
-
-This ``self`` field holds a reference to its ``ActorRef`` and it is this reference you want to access the Actor's API. Here, for example, you find methods to reply to messages, send yourself messages, define timeouts, fault tolerance etc., start and stop etc.
-
-However, for convenience you can import these functions and fields like below, which will allow you do drop the ``self`` prefix:
-
-.. code-block:: scala
-
-  class MyActor extends Actor {
-    import self._
-    id = ...
-    dispatcher = ...
-    start
-    ...
-  }
-
-But in this documentation we will always prefix the calls with ``self`` for clarity.
-
-Let's start by looking how we can reply to messages in a convenient way using this ``ActorRef`` API.
-
 Reply to messages
 -----------------
 
@@ -440,6 +480,8 @@ PoisonPill
 You can also send an actor the ``akka.actor.PoisonPill`` message, which will stop the actor when the message is processed.
 
 If the sender is a ``Future`` (e.g. the message is sent with ``?``), the ``Future`` will be completed with an ``akka.actor.ActorKilledException("PoisonPill")``.
+
+.. _Actor.HotSwap:
 
 HotSwap
 -------

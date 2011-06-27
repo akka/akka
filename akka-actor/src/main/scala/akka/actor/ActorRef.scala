@@ -1043,7 +1043,20 @@ class LocalActorRef private[akka] (
     import Actor.{ actorRefInCreation ⇒ refStack }
     (try {
       refStack.set(refStack.get.push(this))
-      actorFactory()
+      if (_status == ActorRefInternals.BEING_RESTARTED) {
+        val a = actor
+        val fresh = try a.freshInstance catch {
+          case e ⇒
+            EventHandler.error(e, a, "freshInstance() failed, falling back to initial actor factory")
+            None
+        }
+        fresh match {
+          case Some(ref) ⇒ ref
+          case None      ⇒ actorFactory()
+        }
+      } else {
+        actorFactory()
+      }
     } catch {
       case e ⇒
         val stack = refStack.get
