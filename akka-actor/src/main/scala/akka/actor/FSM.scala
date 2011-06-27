@@ -11,6 +11,11 @@ import java.util.concurrent.ScheduledFuture
 
 object FSM {
 
+  object NullFunction extends PartialFunction[Any, Nothing] {
+    def isDefinedAt(o: Any) = false
+    def apply(o: Any) = sys.error("undefined")
+  }
+
   case class CurrentState[S](fsmRef: ActorRef, state: S)
   case class Transition[S](fsmRef: ActorRef, from: S, to: S)
   case class SubscribeTransitionCallBack(actorRef: ActorRef)
@@ -24,7 +29,7 @@ object FSM {
   case object StateTimeout
   case class TimeoutMarker(generation: Long)
 
-  case class Timer(name: String, msg: AnyRef, repeat: Boolean) {
+  case class Timer(name: String, msg: AnyRef, repeat: Boolean, generation: Int) {
     private var ref: Option[ScheduledFuture[AnyRef]] = _
 
     def schedule(actor: ActorRef, timeout: Duration) {
@@ -235,7 +240,7 @@ trait FSM[S, D] extends ListenerManagement {
     if (timers contains name) {
       timers(name).cancel
     }
-    val timer = Timer(name, msg, repeat)
+    val timer = Timer(name, msg, repeat, timerGen.next)
     timer.schedule(self, timeout)
     timers(name) = timer
     stay
@@ -345,6 +350,7 @@ trait FSM[S, D] extends ListenerManagement {
    * Timer handling
    */
   private val timers = mutable.Map[String, Timer]()
+  private val timerGen = Iterator from 0
 
   /*
    * State definitions
@@ -401,8 +407,8 @@ trait FSM[S, D] extends ListenerManagement {
       if (generation == gen) {
         processEvent(StateTimeout)
       }
-    case t@Timer(name, msg, repeat) ⇒
-      if (timerActive_?(name)) {
+    case t@Timer(name, msg, repeat, generation) ⇒
+      if ((timers contains name) && (timers(name).generation == generation)) {
         processEvent(msg)
         if (!repeat) {
           timers -= name

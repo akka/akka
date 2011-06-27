@@ -50,6 +50,17 @@ class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
       }
     }
 
+    "correctly cancel a named timer" in {
+      fsm ! TestCancelTimer
+      within(100 millis, 200 millis) {
+        fsm ! Tick
+        expectMsg(Tick)
+        expectMsg(Tock)
+      }
+      fsm ! Cancel
+      expectMsg(Transition(fsm, TestCancelTimer, Initial))
+    }
+
     "receive and cancel a repeated timer" in {
       fsm ! TestRepeatedTimer
       val seq = receiveWhile(600 millis) {
@@ -97,8 +108,10 @@ object FSMTimingSpec {
   case object TestSingleTimer extends State
   case object TestRepeatedTimer extends State
   case object TestUnhandled extends State
+  case object TestCancelTimer extends State
 
   case object Tick
+  case object Tock
   case object Cancel
   case object SetHandler
 
@@ -128,6 +141,21 @@ object FSMTimingSpec {
         tester ! Tick
         goto(Initial)
     }
+    when(TestCancelTimer) {
+      case Ev(Tick) ⇒
+        tester ! Tick
+        setTimer("hallo", Tock, 1 milli, false)
+        Thread.sleep(10);
+        cancelTimer("hallo")
+        setTimer("hallo", Tock, 100 millis, false)
+        stay
+      case Ev(Tock) ⇒
+        tester ! Tock
+        stay
+      case Ev(Cancel) ⇒
+        cancelTimer("hallo")
+        goto(Initial)
+    }
     when(TestRepeatedTimer) {
       case Event(Tick, remaining) ⇒
         tester ! Tick
@@ -147,6 +175,7 @@ object FSMTimingSpec {
         }
         stay
       case Ev(Cancel) ⇒
+        whenUnhandled(NullFunction)
         goto(Initial)
     }
   }
