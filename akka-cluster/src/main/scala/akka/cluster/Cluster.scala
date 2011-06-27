@@ -121,7 +121,6 @@ trait ClusterNodeMBean {
  */
 object Cluster {
   val EMPTY_STRING = "".intern
-  val UUID_PREFIX = "uuid:".intern
 
   // config options
   val name = Config.clusterName
