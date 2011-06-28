@@ -33,9 +33,9 @@ class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with
       val producer = actorOf(classOf[SampleUntypedReplyingProducer])
       producer.start
 
-      when("a test message is sent to the producer with !!")
+      when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val result = producer.sendRequestReply(message)
+      val result = producer.ask(message).get
 
       then("a normal response should have been returned by the producer")
       val expected = Message("received test", Map(Message.MessageExchangeId -> "123"))
@@ -47,9 +47,9 @@ class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with
       val producer = actorOf(classOf[SampleUntypedReplyingProducer])
       producer.start
 
-      when("a test message causing an exception is sent to the producer with !!")
+      when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val result = producer.sendRequestReply(message).asInstanceOf[Failure]
+      val result = producer.ask(message).as[Failure].get
 
       then("a failure response should have been returned by the producer")
       val expectedFailureText = result.cause.getMessage

@@ -170,10 +170,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
   "A supervised consumer" must {
     "be able to reply during receive" in {
       val consumer = Actor.actorOf(new SupervisedConsumer("reply-channel-test-1")).start
-      (consumer !! "succeed") match {
-        case Some(r) ⇒ r must equal("ok")
-        case None    ⇒ fail("reply expected")
-      }
+      (consumer ? "succeed").get must equal("ok")
     }
 
     "be able to reply on failure during preRestart" in {

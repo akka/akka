@@ -708,6 +708,8 @@ class LocalActorRef private[akka] (
             EventHandler.error(e, actor, messageHandle.message.toString)
             throw e
         }
+      } else {
+        // throwing away message if actor is shut down, no use throwing an exception in receiving actor's thread, isShutdown is enforced on caller side
       }
     } finally {
       guard.lock.unlock()
