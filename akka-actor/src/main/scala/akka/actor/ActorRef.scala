@@ -13,7 +13,6 @@ import akka.serialization.{ Format, Serializer }
 import ReflectiveAccess._
 import ClusterModule._
 import DeploymentConfig.{ ReplicationScheme, Replication, Transient, WriteThrough, WriteBehind }
-import akka.actor.Actor.Timeout
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
@@ -250,7 +249,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def ask(message: AnyRef, timeout: Long, sender: ActorRef): Future[AnyRef] =
-    ?(message, Actor.Timeout(timeout))(sender).asInstanceOf[Future[AnyRef]]
+    ?(message, Timeout(timeout))(sender).asInstanceOf[Future[AnyRef]]
 
   /**
    * Akka Java API. <p/>
@@ -1165,7 +1164,7 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
    * </pre>
    * <p/>
    */
-  def !(message: Any)(implicit channel: UntypedChannel = NullChannel): Unit = {
+  def !(message: Any)(implicit channel: UntypedChannel): Unit = {
     if (isRunning) postMessageToMailbox(message, channel)
     else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
@@ -1196,13 +1195,14 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
   /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
    */
-  def ?(message: Any, timeout: Timeout = Timeout.none)(implicit channel: UntypedChannel = NullChannel, implicitTimeout: Actor.Timeout = Timeout.default): Future[Any] = {
+  def ?(message: Any)(implicit channel: UntypedChannel, timeout: Timeout): Future[Any] = {
     if (isRunning) {
-      val realTimeout = if (timeout eq Timeout.none) implicitTimeout else timeout
-      postMessageToMailboxAndCreateFutureResultWithTimeout(message, realTimeout, channel)
+      postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
     } else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
+
+  def ?(message: Any, timeout: Timeout)(implicit channel: UntypedChannel): Future[Any] = ?(message)(channel, timeout)
 
   /**
    * Forwards the message and passes the original sender actor as the sender.

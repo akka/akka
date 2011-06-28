@@ -41,7 +41,7 @@ object TypedActor {
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
-        implicit val timeout = Actor.Timeout(actor.timeout)
+        implicit val timeout = Timeout(actor.timeout)
         MethodCall(method, args) match {
           case m if m.isOneWay ⇒
             actor ! m

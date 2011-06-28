@@ -55,7 +55,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         case Test3         ⇒ t2
       }.start()
 
-      implicit val timeout = Actor.Timeout((5 seconds).dilated)
+      implicit val timeout = Timeout((5 seconds).dilated)
       val result = for {
         a ← (d ? (Test1)).as[Int]
         b ← (d ? (Test2)).as[Int]

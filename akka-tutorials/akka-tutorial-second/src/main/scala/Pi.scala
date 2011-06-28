@@ -8,7 +8,7 @@ import akka.actor.Actor._
 import akka.routing.{Routing, CyclicIterator}
 import Routing._
 import akka.event.EventHandler
-import akka.actor.{Channel, Actor, PoisonPill}
+import akka.actor.{Channel, Actor, PoisonPill, Timeout}
 import akka.dispatch.Future
 
 import System.{currentTimeMillis => now}
@@ -104,7 +104,7 @@ object Pi extends App {
     val start = now
 
     //send calculate message
-    master.?(Calculate, Actor.Timeout(60000)).
+    master.?(Calculate, Timeout(60000)).
       await.resultOrException match {//wait for the result, with a 60 seconds timeout
         case Some(pi) =>
           EventHandler.info(this, "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))

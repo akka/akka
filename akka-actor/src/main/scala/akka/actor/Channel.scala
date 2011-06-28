@@ -127,6 +127,9 @@ object UntypedChannel {
       case Some(actor) ⇒ actor
       case None        ⇒ NullChannel
     }
+
+  implicit final val default: UntypedChannel = NullChannel
+
 }
 
 /**

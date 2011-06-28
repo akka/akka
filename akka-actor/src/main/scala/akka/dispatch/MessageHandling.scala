@@ -90,7 +90,7 @@ trait MessageDispatcher {
     dispatch(invocation)
   }
 
-  private[akka] final def dispatchFuture[T](block: () ⇒ T, timeout: Actor.Timeout): Future[T] = {
+  private[akka] final def dispatchFuture[T](block: () ⇒ T, timeout: Timeout): Future[T] = {
     futures.getAndIncrement()
     try {
       val future = new DefaultPromise[T](timeout)

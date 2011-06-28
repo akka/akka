@@ -6,8 +6,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef, Scheduler }
-import akka.actor.Actor.Timeout
+import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef, Scheduler, Timeout }
 import akka.util.{ Duration, BoxedType }
 import akka.japi.{ Procedure, Function ⇒ JFunc }
 
