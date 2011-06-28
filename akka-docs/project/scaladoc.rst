@@ -20,11 +20,11 @@ be found here:
 Release Versions
 ================
 
-1.1.3-SNAPSHOT
+1.1.4-SNAPSHOT
 ---
 
-- Akka 1.1.3-SNAPSHOT - http://akka.io/api/akka/1.1.3-SNAPSHOT/
-- Akka Modules 1.1.3-SNAPSHOT - http://akka.io/api/akka-modules/1.1.3-SNAPSHOT/
+- Akka 1.1.4-SNAPSHOT - http://akka.io/api/akka/1.1.4-SNAPSHOT/
+- Akka Modules 1.1.4-SNAPSHOT - http://akka.io/api/akka-modules/1.1.4-SNAPSHOT/
 
 1.0
 ---
