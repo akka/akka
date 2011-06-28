@@ -75,9 +75,9 @@ trait MultiJvmTests extends DefaultProject {
       val lastDot = fullName.lastIndexOf(".")
       val className = if (lastDot >= 0) fullName.substring(lastDot + 1) else fullName
       val i = className.indexOf(MultiJvmTestName)
-      if (i >= 0) className.substring(0, i) else className
+      if (i >= 0) fullName.substring(0, lastDot + i + 1) else fullName
     }
-    val testPairs = names map { name => (name, multiJvmTests.toList.filter(_.contains(name)).sort(_ < _)) }
+    val testPairs = names map { name => (name, multiJvmTests.toList.filter(_.startsWith(name)).sort(_ < _)) }
     Map(testPairs: _*)
   }
 
