@@ -35,20 +35,20 @@ class ConsumerPublishRequestorTest extends JUnitSuite {
 
   @Test
   def shouldReceiveOneConsumerRegisteredEvent = {
-    val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get
+    val latch = (publisher ? SetExpectedTestMessageCount(1)).as[CountDownLatch].get
     requestor ! ActorRegistered(consumer.address, consumer, None)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
-    assert((publisher !! GetRetainedMessage) ===
-      Some(ConsumerActorRegistered(consumer, consumer.actor.asInstanceOf[Consumer])))
+    assert((publisher ? GetRetainedMessage).get ===
+      ConsumerActorRegistered(consumer, consumer.actor.asInstanceOf[Consumer]))
   }
 
   @Test
   def shouldReceiveOneConsumerUnregisteredEvent = {
-    val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get
+    val latch = (publisher ? SetExpectedTestMessageCount(1)).as[CountDownLatch].get
     requestor ! ActorUnregistered(consumer.address, consumer, None)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
-    assert((publisher !! GetRetainedMessage) ===
-      Some(ConsumerActorUnregistered(consumer, consumer.actor.asInstanceOf[Consumer])))
+    assert((publisher ? GetRetainedMessage).get ===
+      ConsumerActorUnregistered(consumer, consumer.actor.asInstanceOf[Consumer]))
   }
 }
 

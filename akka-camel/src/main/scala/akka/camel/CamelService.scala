@@ -167,7 +167,7 @@ trait CamelService extends Bootable {
    * activations that occurred in the past are not considered.
    */
   private def expectEndpointActivationCount(count: Int): CountDownLatch =
-    (activationTracker !! SetExpectedActivationCount(count)).as[CountDownLatch].get
+    (activationTracker ? SetExpectedActivationCount(count)).as[CountDownLatch].get
 
   /**
    * Sets an expectation on the number of upcoming endpoint de-activations and returns
@@ -175,7 +175,7 @@ trait CamelService extends Bootable {
    * de-activations that occurred in the past are not considered.
    */
   private def expectEndpointDeactivationCount(count: Int): CountDownLatch =
-    (activationTracker !! SetExpectedDeactivationCount(count)).as[CountDownLatch].get
+    (activationTracker ? SetExpectedDeactivationCount(count)).as[CountDownLatch].get
 
   private[camel] def registerPublishRequestor: Unit =
     registry.addListener(publishRequestor)

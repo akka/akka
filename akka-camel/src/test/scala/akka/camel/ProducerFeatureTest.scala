@@ -34,13 +34,13 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val producer = actorOf(new TestProducer("direct:producer-test-2", true))
       producer.start
 
-      when("a test message is sent to the producer with !!")
+      when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val result = producer !! message
+      val result = (producer ? message).get
 
       then("a normal response should have been returned by the producer")
       val expected = Message("received TEST", Map(Message.MessageExchangeId -> "123"))
-      assert(result === Some(expected))
+      assert(result === expected)
     }
 
     scenario("produce message and receive failure response") {
@@ -48,9 +48,9 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val producer = actorOf(new TestProducer("direct:producer-test-2"))
       producer.start
 
-      when("a test message causing an exception is sent to the producer with !!")
+      when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val result = (producer !! message).as[Failure]
+      val result = (producer ? message).as[Failure]
 
       then("a failure response should have been returned by the producer")
       val expectedFailureText = result.get.cause.getMessage
@@ -93,13 +93,13 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val producer = actorOf(new TestProducer("direct:producer-test-3"))
       producer.start
 
-      when("a test message is sent to the producer with !!")
+      when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val result = producer !! message
+      val result = (producer ? message).get
 
       then("a normal response should have been returned by the producer")
       val expected = Message("received test", Map(Message.MessageExchangeId -> "123"))
-      assert(result === Some(expected))
+      assert(result === expected)
     }
 
     scenario("produce message and receive failure response") {
@@ -107,9 +107,9 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val producer = actorOf(new TestProducer("direct:producer-test-3"))
       producer.start
 
-      when("a test message causing an exception is sent to the producer with !!")
+      when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val result = (producer !! message).as[Failure]
+      val result = (producer ? message).as[Failure]
 
       then("a failure response should have been returned by the producer")
       val expectedFailureText = result.get.cause.getMessage
@@ -126,13 +126,13 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val target = actorOf[ReplyingForwardTarget].start
       val producer = actorOf(new TestForwarder("direct:producer-test-2", target)).start
 
-      when("a test message is sent to the producer with !!")
+      when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val result = producer !! message
+      val result = (producer ? message).get
 
       then("a normal response should have been returned by the forward target")
       val expected = Message("received test", Map(Message.MessageExchangeId -> "123", "test" -> "result"))
-      assert(result === Some(expected))
+      assert(result === expected)
     }
 
     scenario("produce message, forward failure response to a replying target actor and receive response") {
@@ -140,13 +140,13 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val target = actorOf[ReplyingForwardTarget].start
       val producer = actorOf(new TestForwarder("direct:producer-test-2", target)).start
 
-      when("a test message causing an exception is sent to the producer with !!")
+      when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val result = (producer !! message).as[Failure]
+      val result = (producer ? message).as[Failure].get
 
       then("a failure response should have been returned by the forward target")
-      val expectedFailureText = result.get.cause.getMessage
-      val expectedHeaders = result.get.headers
+      val expectedFailureText = result.cause.getMessage
+      val expectedHeaders = result.headers
       assert(expectedFailureText === "failure")
       assert(expectedHeaders === Map(Message.MessageExchangeId -> "123", "test" -> "failure"))
     }
@@ -186,13 +186,13 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val target = actorOf[ReplyingForwardTarget].start
       val producer = actorOf(new TestForwarder("direct:producer-test-3", target)).start
 
-      when("a test message is sent to the producer with !!")
+      when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val result = producer !! message
+      val result = (producer ? message).get
 
       then("a normal response should have been returned by the forward target")
       val expected = Message("received test", Map(Message.MessageExchangeId -> "123", "test" -> "result"))
-      assert(result === Some(expected))
+      assert(result === expected)
     }
 
     scenario("produce message, forward failure response to a replying target actor and receive response") {
@@ -200,9 +200,9 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val target = actorOf[ReplyingForwardTarget].start
       val producer = actorOf(new TestForwarder("direct:producer-test-3", target)).start
 
-      when("a test message causing an exception is sent to the producer with !!")
+      when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val result = (producer !! message).as[Failure]
+      val result = (producer ? message).as[Failure]
 
       then("a failure response should have been returned by the forward target")
       val expectedFailureText = result.get.cause.getMessage
