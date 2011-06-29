@@ -31,7 +31,9 @@ object Scheduler {
   private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
 
   /**
-   * Schedules to send the specified message to the receiver after initialDelay and then repeated after delay
+   * Schedules to send the specified message to the receiver after initialDelay and then repeated after delay.
+   * The returned java.util.concurrent.ScheduledFuture can be used to cancel the
+   * send of the message.
    */
   def schedule(receiver: ActorRef, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     try {
@@ -48,14 +50,18 @@ object Scheduler {
 
   /**
    * Schedules to run specified function to the receiver after initialDelay and then repeated after delay,
-   * avoid blocking operations since this is executed in the schedulers thread
+   * avoid blocking operations since this is executed in the schedulers thread.
+   * The returned java.util.concurrent.ScheduledFuture can be used to cancel the
+   * execution of the function.
    */
   def schedule(f: () ⇒ Unit, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] =
     schedule(new Runnable { def run = f() }, initialDelay, delay, timeUnit)
 
   /**
    * Schedules to run specified runnable to the receiver after initialDelay and then repeated after delay,
-   * avoid blocking operations since this is executed in the schedulers thread
+   * avoid blocking operations since this is executed in the schedulers thread.
+   * The returned java.util.concurrent.ScheduledFuture can be used to cancel the
+   * execution of the runnable.
    */
   def schedule(runnable: Runnable, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     try {
@@ -69,7 +75,9 @@ object Scheduler {
   }
 
   /**
-   * Schedules to send the specified message to the receiver after delay
+   * Schedules to send the specified message to the receiver after delay.
+   * The returned java.util.concurrent.ScheduledFuture can be used to cancel the
+   * send of the message.
    */
   def scheduleOnce(receiver: ActorRef, message: AnyRef, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     try {
@@ -86,14 +94,18 @@ object Scheduler {
 
   /**
    * Schedules a function to be run after delay,
-   * avoid blocking operations since the runnable is executed in the schedulers thread
+   * avoid blocking operations since the runnable is executed in the schedulers thread.
+   * The returned java.util.concurrent.ScheduledFuture can be used to cancel the
+   * execution of the function.
    */
   def scheduleOnce(f: () ⇒ Unit, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] =
     scheduleOnce(new Runnable { def run = f() }, delay, timeUnit)
 
   /**
    * Schedules a runnable to be run after delay,
-   * avoid blocking operations since the runnable is executed in the schedulers thread
+   * avoid blocking operations since the runnable is executed in the schedulers thread.
+   * The returned java.util.concurrent.ScheduledFuture can be used to cancel the
+   * execution of the runnable.
    */
   def scheduleOnce(runnable: Runnable, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     try {
