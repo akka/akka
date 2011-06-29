@@ -71,7 +71,6 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
   }
 
   private def parseTrapExits(element: Element): Array[Class[_ <: Throwable]] = {
-    import StringReflect._
     val trapExits = DomUtils.getChildElementsByTagName(element, TRAP_EXIT_TAG).toArray.toList.asInstanceOf[List[Element]]
     trapExits.map(DomUtils.getTextValue(_).toClass.asInstanceOf[Class[_ <: Throwable]]).toArray
   }
