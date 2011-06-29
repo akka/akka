@@ -27,13 +27,10 @@ class TestNode extends WordSpec with MustMatchers with BeforeAndAfterAll {
 
   override def beforeAll() {
     Cluster.startLocalCluster()
-    //    LocalBookKeeperEnsemble.start()
   }
 
   override def afterAll() {
     Cluster.shutdownLocalCluster()
-    //    TransactionLog.shutdown()
-    //    LocalBookKeeperEnsemble.shutdown()
   }
 }
 
@@ -70,10 +67,10 @@ class PeterExampleMultiJvmNode1 extends TestNode {
 class PeterExampleMultiJvmNode2 extends WordSpec with MustMatchers with BeforeAndAfterAll {
 
   import PeterExampleMultiJvmSpec._
+     /*
 
   "foo" must {
     "bla" in {
-      /*
       println("Waiting for Node 1 to start")
       Cluster.barrier("start-node1", NrOfNodes) {}
 
@@ -85,7 +82,7 @@ class PeterExampleMultiJvmNode2 extends WordSpec with MustMatchers with BeforeAn
       Cluster.barrier("get-ref-to-actor-on-node2", NrOfNodes) {}
 
       println("Shutting down JVM Node 2")
-      Cluster.node.shutdown()   /
+      Cluster.node.shutdown()
     }
-  }
+  }                           */
 }
