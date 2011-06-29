@@ -67,7 +67,7 @@ class PeterExampleMultiJvmNode1 extends TestNode {
 class PeterExampleMultiJvmNode2 extends WordSpec with MustMatchers with BeforeAndAfterAll {
 
   import PeterExampleMultiJvmSpec._
-     /*
+  /*
 
   "foo" must {
     "bla" in {
