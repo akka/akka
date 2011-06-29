@@ -16,6 +16,9 @@ import akka.actor._
 import akka.actor.Actor._
 import akka.config.Config
 
+/**
+ * todo: What is the main purpose of this test?
+ */
 object RoundRobin1ReplicaMultiJvmSpec {
   val NrOfNodes = 2
 
@@ -27,6 +30,9 @@ object RoundRobin1ReplicaMultiJvmSpec {
   }
 }
 
+/**
+ * This node makes use of the remote actor and
+ */
 class RoundRobin1ReplicaMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import RoundRobin1ReplicaMultiJvmSpec._
 
@@ -65,6 +71,9 @@ class RoundRobin1ReplicaMultiJvmNode1 extends WordSpec with MustMatchers with Be
   }
 }
 
+/**
+ * This node checks if the basic behavior of the actor is working correctly.
+ */
 class RoundRobin1ReplicaMultiJvmNode2 extends WordSpec with MustMatchers {
   import RoundRobin1ReplicaMultiJvmSpec._
 

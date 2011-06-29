@@ -16,6 +16,10 @@ import akka.actor._
 import akka.actor.Actor._
 import akka.config.Config
 
+/**
+ * When a MultiJvmNode is started, will it automatically be part of the cluster (so will it automatically be eligible
+ * for running actors, or will it be just a 'client' talking to the cluster.
+ */
 object RoundRobin2ReplicasMultiJvmSpec {
   val NrOfNodes = 3
 
@@ -28,6 +32,9 @@ object RoundRobin2ReplicasMultiJvmSpec {
   }
 }
 
+/**
+ * What is the purpose of this node? Is this just a node for the cluster to make use of?
+ */
 class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import RoundRobin2ReplicasMultiJvmSpec._
 
@@ -40,16 +47,21 @@ class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with B
       System.getProperty("akka.cluster.nodename", "") must be("node1")
       System.getProperty("akka.cluster.port", "") must be("9991")
 
+      //wait till node 1 has started.
       Cluster.barrier("start-node1", NrOfNodes) {
         Cluster.node.start()
       }
 
+      //wait till ndoe 2 has started.
       Cluster.barrier("start-node2", NrOfNodes) {}
 
+      //wait till node 3 has started.
       Cluster.barrier("start-node3", NrOfNodes) {}
 
+      //wait till an actor reference on node 2 has become available.
       Cluster.barrier("get-ref-to-actor-on-node2", NrOfNodes) {}
 
+      //wait till the node 2 has send a message to the replica's.
       Cluster.barrier("send-message-from-node2-to-replicas", NrOfNodes) {}
 
       Cluster.node.shutdown()
@@ -77,14 +89,18 @@ class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
       System.getProperty("akka.cluster.nodename", "") must be("node2")
       System.getProperty("akka.cluster.port", "") must be("9992")
 
+      //wait till node 1 has started.
       Cluster.barrier("start-node1", NrOfNodes) {}
 
+      //wait till node 2 has started.
       Cluster.barrier("start-node2", NrOfNodes) {
         Cluster.node.start()
       }
 
+      //wait till node 3 has started.
       Cluster.barrier("start-node3", NrOfNodes) {}
 
+      //check if the actorRef is the expected remoteActorRef.
       var hello: ActorRef = null
       Cluster.barrier("get-ref-to-actor-on-node2", NrOfNodes) {
         hello = Actor.actorOf[HelloWorld]("service-hello")
@@ -94,6 +110,7 @@ class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
       }
 
       Cluster.barrier("send-message-from-node2-to-replicas", NrOfNodes) {
+        //todo: is there a reason to check for null again since it already has been done in the previous block.
         hello must not equal (null)
 
         val replies = collection.mutable.Map.empty[String, Int]

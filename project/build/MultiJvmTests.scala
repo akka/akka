@@ -2,13 +2,13 @@ import sbt._
 import sbt.Process
 import java.io.File
 import java.lang.{ProcessBuilder => JProcessBuilder}
-import java.io.{BufferedReader, Closeable, InputStream, InputStreamReader, IOException, OutputStream}
-import java.io.{PipedInputStream, PipedOutputStream}
-import scala.concurrent.SyncVar
+import java.io.{BufferedReader, InputStream, InputStreamReader, OutputStream}
 
 trait MultiJvmTests extends DefaultProject {
   def multiJvmTestName = "MultiJvm"
+
   def multiJvmOptions: Seq[String] = Seq.empty
+
   def multiJvmExtraOptions(className: String): Seq[String] = Seq.empty
 
   val MultiJvmTestName = multiJvmTestName
@@ -29,13 +29,16 @@ trait MultiJvmTests extends DefaultProject {
   lazy val multiJvmTestAll = multiJvmTestAllAction
 
   def multiJvmTestAction = multiJvmMethod(getMultiJvmTests, testScalaOptions)
+
   def multiJvmRunAction = multiJvmMethod(getMultiJvmApps, runScalaOptions)
+
   def multiJvmTestAllAction = multiJvmTask(Nil, getMultiJvmTests, testScalaOptions)
 
   def multiJvmMethod(getMultiTestsMap: => Map[String, Seq[String]], scalaOptions: String => Seq[String]) = {
-    task { args =>
-      multiJvmTask(args.toList, getMultiTestsMap, scalaOptions)
-    } completeWith(getMultiTestsMap.keys.toList)
+    task {
+      args =>
+        multiJvmTask(args.toList, getMultiTestsMap, scalaOptions)
+    } completeWith (getMultiTestsMap.keys.toList)
   }
 
   def multiJvmTask(tests: List[String], getMultiTestsMap: => Map[String, Seq[String]], scalaOptions: String => Seq[String]) = {
@@ -58,17 +61,26 @@ trait MultiJvmTests extends DefaultProject {
     } dependsOn (testCompile)
   }
 
+  /**
+   * todo: Documentation
+   */
   def getMultiJvmTests(): Map[String, Seq[String]] = {
     val allTests = testCompileConditional.analysis.allTests.toList.map(_.className)
     filterMultiJvmTests(allTests)
   }
 
+  /**
+   * todo: Documentation
+   */
   def getMultiJvmApps(): Map[String, Seq[String]] = {
     val allApps = (mainCompileConditional.analysis.allApplications.toSeq ++
-                   testCompileConditional.analysis.allApplications.toSeq)
+      testCompileConditional.analysis.allApplications.toSeq)
     filterMultiJvmTests(allApps)
   }
 
+  /**
+   * todo: Documentation
+   */
   def filterMultiJvmTests(allTests: Seq[String]): Map[String, Seq[String]] = {
     val multiJvmTests = allTests filter (_.contains(MultiJvmTestName))
     val names = multiJvmTests map { fullName =>
@@ -81,16 +93,25 @@ trait MultiJvmTests extends DefaultProject {
     Map(testPairs: _*)
   }
 
+  /**
+   * todo: Documentation
+   */
   def testIdentifier(className: String) = {
     val i = className.indexOf(MultiJvmTestName)
     val l = MultiJvmTestName.length
     className.substring(i + l)
   }
 
+  /**
+   * todo: Documentation
+   */
   def testSimpleName(className: String) = {
     className.split("\\.").last
   }
 
+  /**
+   * todo: Documentation
+   */
   def testScalaOptions(testClass: String) = {
     val scalaTestJars = testClasspath.get.filter(_.name.contains("scalatest"))
     val cp = Path.makeString(scalaTestJars)
@@ -98,13 +119,23 @@ trait MultiJvmTests extends DefaultProject {
     Seq("-cp", cp, ScalaTestRunner, ScalaTestOptions, "-s", testClass, "-p", paths)
   }
 
+  /**
+   * todo: Documentation
+   */
   def runScalaOptions(appClass: String) = {
     val cp = Path.makeString(testClasspath.get)
     Seq("-cp", cp, appClass)
   }
 
-  def runMulti(testName: String, testClasses: Seq[String], scalaOptions: String => Seq[String]) = {
+  /**
+   * Runs all the test. This method blocks until all processes have completed.
+   *
+   * @return an option that return an error message if one of the tests failed, or a None in case of a success.
+   */
+  def runMulti(testName: String, testClasses: Seq[String], scalaOptions: String => Seq[String]): Option[String] = {
     log.control(ControlEvent.Start, "%s multi-jvm / %s %s" format (HeaderStart, testName, HeaderEnd))
+
+    //spawns all the processes.
     val processes = testClasses.toList.zipWithIndex map {
       case (testClass, index) => {
         val jvmName = "JVM-" + testIdentifier(testClass)
@@ -128,18 +159,28 @@ trait MultiJvmTests extends DefaultProject {
         (testClass, startJvm(jvmOptions, scalaOptions(testClass), jvmLogger, index == 0))
       }
     }
+
+    //places the exit code of the process belonging to a specific textClass in the exitCodes map.
     val exitCodes = processes map {
       case (testClass, process) => (testClass, process.exitValue)
     }
+
+    //Checks if there are any processes that failed with an error.
     val failures = exitCodes flatMap {
       case (testClass, exit) if exit > 0 => Some("%s failed with exit code %s" format (testClass, exit))
       case _ => None
     }
+
+    //log the failures (if there are any).
     failures foreach (log.error(_))
     log.control(ControlEvent.Finish, "%s multi-jvm / %s %s" format (HeaderStart, testName, HeaderEnd))
+
     if (!failures.isEmpty) Some("Some processes failed") else None
   }
 
+  /**
+   * Starts a JVM with the given options.
+   */
   def startJvm(jvmOptions: Seq[String], scalaOptions: Seq[String], logger: Logger, connectInput: Boolean) = {
     val si = buildScalaInstance
     val scalaJars = Seq(si.libraryJar, si.compilerJar)

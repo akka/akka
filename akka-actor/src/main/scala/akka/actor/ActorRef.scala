@@ -1196,9 +1196,12 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
    */
   def ?(message: Any, timeout: Actor.Timeout = Actor.noTimeoutGiven)(implicit channel: UntypedChannel = NullChannel, implicitTimeout: Actor.Timeout = Actor.defaultTimeout): Future[Any] = {
+    //todo: so it can happen that a message is posted after the actor has been shut down (the isRunning and postMessageToMailboxAndCreateFutureResultWithTimeout
+    //are not atomic.
     if (isRunning) {
       val realTimeout = if (timeout eq Actor.noTimeoutGiven) implicitTimeout else timeout
       postMessageToMailboxAndCreateFutureResultWithTimeout(message, realTimeout.duration.toMillis, channel)
+      //todo: there is no after check if the running state is still true.. so no 'repairing'
     } else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
@@ -1209,8 +1212,11 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
    * Works with '!' and '?'/'ask'.
    */
   def forward(message: Any)(implicit channel: ForwardableChannel) = {
+    //todo: so it can happen that a message is posted after the actor has been shut down (the isRunning and postMessageToMailbox
+    //are not atomic.
     if (isRunning) {
       postMessageToMailbox(message, channel.channel)
+      //todo: there is no after check if the running state is still true.. so no 'repairing'
     } else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
