@@ -19,6 +19,7 @@ import akka.serialization.Serialization
 
 import java.util.concurrent._
 
+/*
 object MigrationAutomaticMultiJvmSpec {
   var NrOfNodes = 3
 
@@ -136,3 +137,4 @@ class MigrationAutomaticMultiJvmNode3 extends WordSpec with MustMatchers with Be
     shutdownLocalCluster()
   }
 }
+*/
