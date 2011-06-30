@@ -53,8 +53,8 @@ object ClusterTestNode {
   val Timeout = 1.minute
 
   def ready(className: String) = {
-    readyFile(className).createNewFile()
     println("ClusterTest: READY")
+    readyFile(className).createNewFile()
   }
 
   def waitForReady(className: String) = {
@@ -66,8 +66,8 @@ object ClusterTestNode {
   }
 
   def exit(className: String) = {
-    exitFile(className).createNewFile()
     println("ClusterTest: EXIT")
+    exitFile(className).createNewFile()
   }
 
   def waitForExits(className: String, nodes: Int) = {
