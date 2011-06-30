@@ -14,16 +14,10 @@ object SampleMultiJvmSpec {
   val NrOfNodes = 2
 }
 
-class SampleMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class SampleMultiJvmNode1 extends MasterClusterTestNode {
   import SampleMultiJvmSpec._
 
-  override def beforeAll() = {
-    Cluster.startLocalCluster()
-  }
-
-  override def afterAll() = {
-    Cluster.shutdownLocalCluster()
-  }
+  val testNodes = NrOfNodes
 
   def resetCluster(): Unit = {
     import akka.cluster.zookeeper._
@@ -53,7 +47,7 @@ class SampleMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfter
   }
 }
 
-class SampleMultiJvmNode2 extends WordSpec with MustMatchers {
+class SampleMultiJvmNode2 extends ClusterTestNode {
   import SampleMultiJvmSpec._
 
   "A cluster" must {

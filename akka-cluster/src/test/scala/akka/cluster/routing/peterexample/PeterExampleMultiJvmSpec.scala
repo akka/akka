@@ -3,7 +3,7 @@ package akka.cluster.routing.peterexample
 import org.scalatest.matchers.MustMatchers
 import akka.config.Config
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
-import akka.cluster.Cluster
+import akka.cluster._
 import akka.actor.{ ActorRef, Actor }
 
 object PeterExampleMultiJvmSpec {
@@ -23,20 +23,11 @@ object PeterExampleMultiJvmSpec {
   }
 }
 
-class TestNode extends WordSpec with MustMatchers with BeforeAndAfterAll {
-
-  override def beforeAll() {
-    Cluster.startLocalCluster()
-  }
-
-  override def afterAll() {
-    Cluster.shutdownLocalCluster()
-  }
-}
-
-class PeterExampleMultiJvmNode1 extends TestNode {
+class PeterExampleMultiJvmNode1 extends MasterClusterTestNode {
 
   import PeterExampleMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "foo" must {
     "bla" in {
@@ -64,13 +55,14 @@ class PeterExampleMultiJvmNode1 extends TestNode {
   }
 }
 
-class PeterExampleMultiJvmNode2 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class PeterExampleMultiJvmNode2 extends ClusterTestNode {
 
   import PeterExampleMultiJvmSpec._
-     /*
 
   "foo" must {
     "bla" in {
+
+      /*
       println("Waiting for Node 1 to start")
       Cluster.barrier("start-node1", NrOfNodes) {}
 
@@ -82,7 +74,7 @@ class PeterExampleMultiJvmNode2 extends WordSpec with MustMatchers with BeforeAn
       Cluster.barrier("get-ref-to-actor-on-node2", NrOfNodes) {}
 
       println("Shutting down JVM Node 2")
-      Cluster.node.shutdown()
+      Cluster.node.shutdown()  */
     }
-  }                           */
+  }
 }

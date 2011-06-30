@@ -35,8 +35,10 @@ object RoundRobin2ReplicasMultiJvmSpec {
 /**
  * What is the purpose of this node? Is this just a node for the cluster to make use of?
  */
-class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class RoundRobin2ReplicasMultiJvmNode1 extends MasterClusterTestNode {
   import RoundRobin2ReplicasMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   private var bookKeeper: BookKeeper = _
   private var localBookKeeper: LocalBookKeeper = _
@@ -68,19 +70,17 @@ class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with B
     }
   }
 
-  override def beforeAll() = {
-    Cluster.startLocalCluster()
+  override def onReady() = {
     LocalBookKeeperEnsemble.start()
   }
 
-  override def afterAll() = {
-    Cluster.shutdownLocalCluster()
+  override def onShutdown() = {
     TransactionLog.shutdown()
     LocalBookKeeperEnsemble.shutdown()
   }
 }
 
-class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
+class RoundRobin2ReplicasMultiJvmNode2 extends ClusterTestNode {
   import RoundRobin2ReplicasMultiJvmSpec._
 
   "A cluster" must {
@@ -137,7 +137,7 @@ class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
   }
 }
 
-class RoundRobin2ReplicasMultiJvmNode3 extends WordSpec with MustMatchers {
+class RoundRobin2ReplicasMultiJvmNode3 extends ClusterTestNode {
   import RoundRobin2ReplicasMultiJvmSpec._
 
   "A cluster" must {

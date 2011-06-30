@@ -40,8 +40,10 @@ object RegistryStoreMultiJvmSpec {
   }
 }
 
-class RegistryStoreMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class RegistryStoreMultiJvmNode1 extends MasterClusterTestNode {
   import RegistryStoreMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "A cluster" must {
 
@@ -87,17 +89,9 @@ class RegistryStoreMultiJvmNode1 extends WordSpec with MustMatchers with BeforeA
       node.shutdown()
     }
   }
-
-  override def beforeAll() = {
-    startLocalCluster()
-  }
-
-  override def afterAll() = {
-    shutdownLocalCluster()
-  }
 }
 
-class RegistryStoreMultiJvmNode2 extends WordSpec with MustMatchers {
+class RegistryStoreMultiJvmNode2 extends ClusterTestNode {
   import RegistryStoreMultiJvmSpec._
 
   "A cluster" must {

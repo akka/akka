@@ -18,8 +18,10 @@ object NodeConnectedChangeListenerMultiJvmSpec {
   var NrOfNodes = 2
 }
 
-class NodeConnectedChangeListenerMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class NodeConnectedChangeListenerMultiJvmNode1 extends MasterClusterTestNode {
   import NodeConnectedChangeListenerMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "A NodeConnected change listener" must {
 
@@ -42,17 +44,9 @@ class NodeConnectedChangeListenerMultiJvmNode1 extends WordSpec with MustMatcher
       node.shutdown()
     }
   }
-
-  override def beforeAll() = {
-    startLocalCluster()
-  }
-
-  override def afterAll() = {
-    shutdownLocalCluster()
-  }
 }
 
-class NodeConnectedChangeListenerMultiJvmNode2 extends WordSpec with MustMatchers {
+class NodeConnectedChangeListenerMultiJvmNode2 extends ClusterTestNode {
   import NodeConnectedChangeListenerMultiJvmSpec._
 
   "A NodeConnected change listener" must {
