@@ -19,6 +19,7 @@ import akka.serialization.Serialization
 
 import java.util.concurrent._
 
+/*
 object MigrationAutomaticMultiJvmSpec {
   var NrOfNodes = 3
 
@@ -30,7 +31,7 @@ object MigrationAutomaticMultiJvmSpec {
   }
 }
 
-class MigrationAutomaticMultiJvmNode1 extends WordSpec with MustMatchers {
+class MigrationAutomaticMultiJvmNode1 extends ClusterTestNode {
   import MigrationAutomaticMultiJvmSpec._
 
   "A cluster" must {
@@ -57,7 +58,7 @@ class MigrationAutomaticMultiJvmNode1 extends WordSpec with MustMatchers {
   }
 }
 
-class MigrationAutomaticMultiJvmNode2 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class MigrationAutomaticMultiJvmNode2 extends ClusterTestNode {
   import MigrationAutomaticMultiJvmSpec._
 
   var isFirstReplicaNode = false
@@ -94,8 +95,10 @@ class MigrationAutomaticMultiJvmNode2 extends WordSpec with MustMatchers with Be
   }
 }
 
-class MigrationAutomaticMultiJvmNode3 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class MigrationAutomaticMultiJvmNode3 extends MasterClusterTestNode {
   import MigrationAutomaticMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "A cluster" must {
 
@@ -127,12 +130,5 @@ class MigrationAutomaticMultiJvmNode3 extends WordSpec with MustMatchers with Be
       node.shutdown()
     }
   }
-
-  override def beforeAll() = {
-    startLocalCluster()
-  }
-
-  override def afterAll() = {
-    shutdownLocalCluster()
-  }
 }
+*/

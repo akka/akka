@@ -33,8 +33,10 @@ object RoundRobin1ReplicaMultiJvmSpec {
 /**
  * This node makes use of the remote actor and
  */
-class RoundRobin1ReplicaMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class RoundRobin1ReplicaMultiJvmNode1 extends MasterClusterTestNode {
   import RoundRobin1ReplicaMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   private var bookKeeper: BookKeeper = _
   //  private var localBookKeeper: LocalBookKeeper = _
@@ -59,22 +61,20 @@ class RoundRobin1ReplicaMultiJvmNode1 extends WordSpec with MustMatchers with Be
     }
   }
 
-  override def beforeAll() = {
-    Cluster.startLocalCluster()
-    //    LocalBookKeeperEnsemble.start()
+  override def onReady() = {
+    LocalBookKeeperEnsemble.start()
   }
 
-  override def afterAll() = {
-    Cluster.shutdownLocalCluster()
-    //    TransactionLog.shutdown()
-    //    LocalBookKeeperEnsemble.shutdown()
+  override def onShutdown() = {
+    TransactionLog.shutdown()
+    LocalBookKeeperEnsemble.shutdown()
   }
 }
 
 /**
  * This node checks if the basic behavior of the actor is working correctly.
  */
-class RoundRobin1ReplicaMultiJvmNode2 extends WordSpec with MustMatchers {
+class RoundRobin1ReplicaMultiJvmNode2 extends ClusterTestNode {
   import RoundRobin1ReplicaMultiJvmSpec._
 
   "A cluster" must {

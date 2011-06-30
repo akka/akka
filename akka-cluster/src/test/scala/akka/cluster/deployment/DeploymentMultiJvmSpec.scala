@@ -17,8 +17,10 @@ object DeploymentMultiJvmSpec {
   var NrOfNodes = 2
 }
 
-class DeploymentMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class DeploymentMultiJvmNode1 extends MasterClusterTestNode {
   import DeploymentMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "A ClusterDeployer" must {
 
@@ -44,18 +46,9 @@ class DeploymentMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndA
       node.shutdown()
     }
   }
-
-  override def beforeAll() = {
-    startLocalCluster()
-  }
-
-  override def afterAll() = {
-    shutdownLocalCluster()
-    //    ClusterDeployer.shutdown()
-  }
 }
 
-class DeploymentMultiJvmNode2 extends WordSpec with MustMatchers {
+class DeploymentMultiJvmNode2 extends ClusterTestNode {
   import DeploymentMultiJvmSpec._
 
   "A cluster" must {
