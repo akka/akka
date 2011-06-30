@@ -65,6 +65,14 @@ class ZooKeeperBarrier(zkClient: ZkClient, name: String, node: String, count: In
     leave()
   }
 
+  /**
+   * An await does a enter/leave making this barrier a 'single' barrier instead of a double barrier.
+   */
+  def await() {
+    enter
+    leave()
+  }
+
   def enter = {
     zkClient.createEphemeral(entry)
     if (zkClient.countChildren(barrier) >= count)
