@@ -1,9 +1,8 @@
 package akka.cluster.routing.routing_identity_problem
 
 import akka.config.Config
-import akka.cluster.Cluster
 import akka.actor.{ ActorRef, Actor }
-import akka.cluster.routing.{ SlaveNode, MasterNode }
+import akka.cluster.{ ClusterTestNode, MasterClusterTestNode, Cluster }
 
 object RoutingIdentityProblemMultiJvmSpec {
 
@@ -23,9 +22,11 @@ object RoutingIdentityProblemMultiJvmSpec {
   }
 }
 
-class RoutingIdentityProblemMultiJvmNode1 extends MasterNode {
+class RoutingIdentityProblemMultiJvmNode1 extends MasterClusterTestNode {
 
   import RoutingIdentityProblemMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "foo" must {
     "bla" in {
@@ -44,7 +45,7 @@ class RoutingIdentityProblemMultiJvmNode1 extends MasterNode {
   }
 }
 
-class RoutingIdentityProblemMultiJvmNode2 extends SlaveNode {
+class RoutingIdentityProblemMultiJvmNode2 extends ClusterTestNode {
 
   import RoutingIdentityProblemMultiJvmSpec._
 
