@@ -5,7 +5,6 @@ import akka.cluster.zookeeper._
 
 import org.I0Itec.zkclient._
 
-/*
 class ZooKeeperBasedMailboxSpec extends DurableMailboxSpec("ZooKeeper", ZooKeeperDurableMailboxStorage) {
   val dataPath = "_akka_cluster/data"
   val logPath = "_akka_cluster/log"
@@ -30,4 +29,3 @@ class ZooKeeperBasedMailboxSpec extends DurableMailboxSpec("ZooKeeper", ZooKeepe
     super.afterAll
   }
 }
-*/
