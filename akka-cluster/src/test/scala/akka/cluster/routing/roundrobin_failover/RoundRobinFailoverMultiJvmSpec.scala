@@ -1,9 +1,8 @@
 package akka.cluster.routing.roundrobin_failover
 
 import akka.config.Config
-import akka.cluster.Cluster
+import akka.cluster._
 import akka.actor.{ ActorRef, Actor }
-import akka.cluster.routing.{ SlaveNode, MasterNode }
 
 object RoundRobinFailoverMultiJvmSpec {
 
@@ -27,9 +26,11 @@ object RoundRobinFailoverMultiJvmSpec {
   }
 }
 
-class RoundRobinFailoverMultiJvmNode1 extends MasterNode {
+class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
 
   import RoundRobinFailoverMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "foo" must {
     "bla" in {
@@ -55,7 +56,7 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterNode {
   }
 }
 
-class RoundRobinFailoverMultiJvmNode2 extends SlaveNode {
+class RoundRobinFailoverMultiJvmNode2 extends ClusterTestNode {
 
   import RoundRobinFailoverMultiJvmSpec._
 
