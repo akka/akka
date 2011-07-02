@@ -3,11 +3,11 @@ package akka.cluster.routing.use_homenode_as_replica
 import org.scalatest.matchers.MustMatchers
 import akka.config.Config
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
-import akka.cluster.Cluster
+import akka.cluster._
+import Cluster._
 import akka.actor.{ ActorRef, Actor }
 
 object UseHomeNodeAsReplicaMultiJvmSpec {
-
   val NrOfNodes = 2
 
   class HelloWorld extends Actor with Serializable {
@@ -19,61 +19,52 @@ object UseHomeNodeAsReplicaMultiJvmSpec {
   }
 }
 
-class TestNode extends WordSpec with MustMatchers with BeforeAndAfterAll {
-
-  override def beforeAll() {
-    Cluster.startLocalCluster()
-  }
-
-  override def afterAll() {
-    Cluster.shutdownLocalCluster()
-  }
-}
-
-class UseHomeNodeAsReplicaMultiJvmNode1 extends TestNode {
+class UseHomeNodeAsReplicaMultiJvmNode1 extends MasterClusterTestNode {
 
   import UseHomeNodeAsReplicaMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "foo" must {
     "bla" in {
       println("Node 1 has started")
 
-      Cluster.barrier("start-node1", NrOfNodes) {
-        Cluster.node.start()
+      barrier("start-node1", NrOfNodes) {
+        node.start()
       }
 
-      Cluster.barrier("start-node2", NrOfNodes) {}
+      barrier("start-node2", NrOfNodes) {}
 
       println("Getting reference to service-hello actor")
       var hello: ActorRef = null
-      Cluster.barrier("get-ref-to-actor-on-node2", NrOfNodes) {
+      barrier("get-ref-to-actor-on-node2", NrOfNodes) {
         hello = Actor.actorOf[HelloWorld]("service-hello")
       }
 
       println("Saying hello to actor")
       hello ! "say hello"
-      Cluster.node.shutdown()
+      node.shutdown()
     }
   }
 }
 
-class UseHomeNodeAsReplicaMultiJvmNode2 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class UseHomeNodeAsReplicaMultiJvmNode2 extends ClusterTestNode {
 
   import UseHomeNodeAsReplicaMultiJvmSpec._
   "foo" must {
     "bla" in {
       println("Waiting for Node 1 to start")
-      Cluster.barrier("start-node1", NrOfNodes) {}
+      barrier("start-node1", NrOfNodes) {}
 
       println("Waiting for himself to start???")
-      Cluster.barrier("start-node2", NrOfNodes) {
-        Cluster.node.start()
+      barrier("start-node2", NrOfNodes) {
+        node.start()
       }
 
-      Cluster.barrier("get-ref-to-actor-on-node2", NrOfNodes) {}
+      barrier("get-ref-to-actor-on-node2", NrOfNodes) {}
 
       println("Shutting down JVM Node 2")
-      Cluster.node.shutdown()
+      node.shutdown()
     }
   }
 }

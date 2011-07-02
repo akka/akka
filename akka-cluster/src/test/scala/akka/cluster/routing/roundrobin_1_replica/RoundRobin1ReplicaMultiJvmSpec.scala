@@ -27,8 +27,10 @@ object RoundRobin1ReplicaMultiJvmSpec {
   }
 }
 
-class RoundRobin1ReplicaMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class RoundRobin1ReplicaMultiJvmNode1 extends MasterClusterTestNode {
   import RoundRobin1ReplicaMultiJvmSpec._
+
+  val testNodes = 1
 
   "A cluster" must {
 
@@ -47,13 +49,5 @@ class RoundRobin1ReplicaMultiJvmNode1 extends WordSpec with MustMatchers with Be
 
       node.shutdown()
     }
-  }
-
-  override def beforeAll() {
-    startLocalCluster()
-  }
-
-  override def afterAll() {
-    shutdownLocalCluster()
   }
 }

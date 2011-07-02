@@ -1311,7 +1311,7 @@ class DefaultClusterNode private[akka] (
    */
   private[cluster] def connectToAllNewlyArrivedMembershipNodesInCluster(
     newlyConnectedMembershipNodes: Traversable[String],
-    newlyDisconnectedMembershipNodes: Traversable[String]): Map[String, InetSocketAddress] = synchronized { // to prevent race in startup (fetchMembershipNodes vs MembershipChildListener)
+    newlyDisconnectedMembershipNodes: Traversable[String]): Map[String, InetSocketAddress] = { // to prevent race in startup (fetchMembershipNodes vs MembershipChildListener)
 
     // cache the disconnected connections in a map, needed for fail-over of these connections later
     var disconnectedConnections = Map.empty[String, InetSocketAddress]
