@@ -18,8 +18,10 @@ object LeaderElectionMultiJvmSpec {
   var NrOfNodes = 2
 }
 /*
-class LeaderElectionMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class LeaderElectionMultiJvmNode1 extends MasterClusterTestNode {
   import LeaderElectionMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "A cluster" must {
 
@@ -39,17 +41,9 @@ class LeaderElectionMultiJvmNode1 extends WordSpec with MustMatchers with Before
       }
     }
   }
-
-  override def beforeAll() = {
-    startLocalCluster()
-  }
-
-  override def afterAll() = {
-    shutdownLocalCluster()
-  }
 }
 
-class LeaderElectionMultiJvmNode2 extends WordSpec with MustMatchers {
+class LeaderElectionMultiJvmNode2 extends ClusterTestNode {
   import LeaderElectionMultiJvmSpec._
 
   "A cluster" must {
@@ -73,4 +67,4 @@ class LeaderElectionMultiJvmNode2 extends WordSpec with MustMatchers {
     }
   }
 }
-*/ 
+*/

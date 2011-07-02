@@ -48,6 +48,8 @@ trait BootableActorLoaderService extends Bootable {
   abstract override def onLoad = {
     super.onLoad
 
+    applicationLoader foreach Thread.currentThread.setContextClassLoader
+
     for (loader ← applicationLoader; clazz ← BOOT_CLASSES) {
       loader.loadClass(clazz).newInstance
     }

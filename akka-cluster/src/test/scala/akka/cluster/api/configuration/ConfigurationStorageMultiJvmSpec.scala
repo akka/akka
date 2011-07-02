@@ -15,8 +15,10 @@ object ConfigurationStorageMultiJvmSpec {
   var NrOfNodes = 2
 }
 
-class ConfigurationStorageMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class ConfigurationStorageMultiJvmNode1 extends MasterClusterTestNode {
   import ConfigurationStorageMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "A cluster" must {
 
@@ -50,17 +52,9 @@ class ConfigurationStorageMultiJvmNode1 extends WordSpec with MustMatchers with 
       node.shutdown()
     }
   }
-
-  override def beforeAll() = {
-    startLocalCluster()
-  }
-
-  override def afterAll() = {
-    shutdownLocalCluster()
-  }
 }
 
-class ConfigurationStorageMultiJvmNode2 extends WordSpec with MustMatchers {
+class ConfigurationStorageMultiJvmNode2 extends ClusterTestNode {
   import ConfigurationStorageMultiJvmSpec._
 
   "A cluster" must {

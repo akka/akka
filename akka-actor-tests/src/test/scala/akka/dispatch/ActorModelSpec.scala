@@ -259,18 +259,16 @@ abstract class ActorModelSpec extends JUnitSuite {
     val counter = new CountDownLatch(200)
     a.start()
 
-    def start = spawn { for (i ← 1 to 20) { a ! WaitAck(1, counter) } }
-    for (i ← 1 to 10) { start }
+    for (i ← 1 to 10) { spawn { for (i ← 1 to 20) { a ! WaitAck(1, counter) } } }
     assertCountDown(counter, Testing.testTime(3000), "Should process 200 messages")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 200, msgsProcessed = 200)
 
     a.stop()
   }
 
-  def spawn(f: ⇒ Unit) = {
-    val thread = new Thread { override def run { f } }
+  def spawn(f: ⇒ Unit) {
+    val thread = new Thread { override def run { try { f } catch { case e ⇒ e.printStackTrace } } }
     thread.start()
-    thread
   }
 
   @Test
@@ -368,4 +366,9 @@ class DispatcherModelTest extends ActorModelSpec {
 class BalancingDispatcherModelTest extends ActorModelSpec {
   def newInterceptedDispatcher =
     new BalancingDispatcher("foo") with MessageDispatcherInterceptor
+}
+
+class FJDispatcherModelTest extends ActorModelSpec {
+  def newInterceptedDispatcher =
+    new FJDispatcher("foo") with MessageDispatcherInterceptor
 }

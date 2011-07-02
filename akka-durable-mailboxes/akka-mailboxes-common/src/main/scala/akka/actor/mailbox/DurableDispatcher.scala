@@ -30,10 +30,6 @@ sealed abstract class DurableMailboxStorage(mailboxFQN: String) {
   //TODO take into consideration a mailboxConfig parameter so one can have bounded mboxes and capacity etc
   def createFor(actor: ActorRef): AnyRef = {
     EventHandler.debug(this, "Creating durable mailbox [%s] for [%s]".format(mailboxClass.getName, actor))
-    val ctor = mailboxClass.getDeclaredConstructor(constructorSignature: _*)
-    ctor.setAccessible(true)
-    Some(ctor.newInstance(Array[AnyRef](actor): _*).asInstanceOf[AnyRef])
-
     ReflectiveAccess.createInstance[AnyRef](mailboxClass, constructorSignature, Array[AnyRef](actor)) match {
       case Right(instance) => instance
       case Left(exception) =>

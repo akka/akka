@@ -18,8 +18,10 @@ object NewLeaderChangeListenerMultiJvmSpec {
   var NrOfNodes = 2
 }
 
-class NewLeaderChangeListenerMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class NewLeaderChangeListenerMultiJvmNode1 extends MasterClusterTestNode {
   import NewLeaderChangeListenerMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "A NewLeader change listener" must {
 
@@ -43,17 +45,9 @@ class NewLeaderChangeListenerMultiJvmNode1 extends WordSpec with MustMatchers wi
       node.shutdown()
     }
   }
-
-  override def beforeAll() = {
-    startLocalCluster()
-  }
-
-  override def afterAll() = {
-    shutdownLocalCluster()
-  }
 }
 
-class NewLeaderChangeListenerMultiJvmNode2 extends WordSpec with MustMatchers {
+class NewLeaderChangeListenerMultiJvmNode2 extends ClusterTestNode {
   import NewLeaderChangeListenerMultiJvmSpec._
 
   "A NewLeader change listener" must {

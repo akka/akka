@@ -55,7 +55,6 @@ class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
    * Create configuration for TypedActor
    */
   private[akka] def createComponent(props: ActorProperties): SuperviseTypedActor = {
-    import StringReflect._
     val lifeCycle = if (!props.lifecycle.isEmpty && props.lifecycle.equalsIgnoreCase(VAL_LIFECYCYLE_TEMPORARY)) Temporary else Permanent
     val isRemote = (props.host ne null) && (!props.host.isEmpty)
     val withInterface = (props.interface ne null) && (!props.interface.isEmpty)
@@ -80,7 +79,6 @@ class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
    * Create configuration for UntypedActor
    */
   private[akka] def createSupervise(props: ActorProperties): Server = {
-    import StringReflect._
     val lifeCycle = if (!props.lifecycle.isEmpty && props.lifecycle.equalsIgnoreCase(VAL_LIFECYCYLE_TEMPORARY)) Temporary else Permanent
     val isRemote = (props.host ne null) && (!props.host.isEmpty)
     val actorRef = Actor.actorOf(props.target.toClass)

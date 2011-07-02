@@ -29,8 +29,10 @@ object MigrationExplicitMultiJvmSpec {
   }
 }
 
-class MigrationExplicitMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class MigrationExplicitMultiJvmNode1 extends MasterClusterTestNode {
   import MigrationExplicitMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "A cluster" must {
 
@@ -65,17 +67,9 @@ class MigrationExplicitMultiJvmNode1 extends WordSpec with MustMatchers with Bef
       node.shutdown()
     }
   }
-
-  override def beforeAll() = {
-    startLocalCluster()
-  }
-
-  override def afterAll() = {
-    shutdownLocalCluster()
-  }
 }
 
-class MigrationExplicitMultiJvmNode2 extends WordSpec with MustMatchers {
+class MigrationExplicitMultiJvmNode2 extends ClusterTestNode {
   import MigrationExplicitMultiJvmSpec._
 
   "A cluster" must {
