@@ -13,7 +13,7 @@ import ReflectiveAccess._
 import akka.remoteinterface.RemoteSupport
 import akka.japi.{ Creator, Procedure }
 import akka.AkkaException
-import akka.serialization.{ Format, Serializer }
+import akka.serialization.{ Format, Serializer, Serialization }
 import akka.cluster.ClusterNode
 import akka.event.EventHandler
 import scala.collection.immutable.Stack
@@ -464,12 +464,12 @@ object Actor extends ListenerManagement {
               "] since " + reason)
 
         val serializer: Serializer =
-          akka.serialization.Serialization.serializerFor(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
+          Serialization.serializerFor(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
 
         def storeActorAndGetClusterRef(replicationScheme: ReplicationScheme, serializer: Serializer): ActorRef = {
           // add actor to cluster registry (if not already added)
           if (!cluster.isClustered(address))
-            cluster.store(factory().start(), nrOfReplicas, replicationScheme, false, serializer)
+            cluster.store(address, factory, nrOfReplicas, replicationScheme, false, serializer)
 
           // remote node (not home node), check out as ClusterActorRef
           cluster.ref(address, DeploymentConfig.routerTypeFor(router))

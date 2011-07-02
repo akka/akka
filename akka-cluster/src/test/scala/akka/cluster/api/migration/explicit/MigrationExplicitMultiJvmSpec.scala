@@ -45,7 +45,7 @@ class MigrationExplicitMultiJvmNode1 extends WordSpec with MustMatchers with Bef
 
       barrier("store-1-in-node-1", NrOfNodes) {
         val serializer = Serialization.serializerFor(classOf[HelloWorld]).fold(x ⇒ fail("No serializer found"), s ⇒ s)
-        node.store(actorOf[HelloWorld]("hello-world"), serializer)
+        node.store("hello-world", classOf[HelloWorld], serializer)
       }
 
       barrier("use-1-in-node-2", NrOfNodes) {

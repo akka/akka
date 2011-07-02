@@ -95,17 +95,17 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
   /**
    *  Registers an actor in the Cluster ActorRegistry.
    */
-  private[akka] def registerInCluster[T <: Actor](
-    address: String, actorRef: ActorRef, replicas: Int, serializeMailbox: Boolean = false)(implicit format: Serializer) {
-    ClusterModule.node.store(actorRef, replicas, serializeMailbox, format)
-  }
+  // private[akka] def registerInCluster[T <: Actor](
+  //   address: String, actorRef: ActorRef, replicas: Int, serializeMailbox: Boolean = false)(implicit format: Serializer) {
+  //   // FIXME: implement ActorRegistry.registerInCluster(..)
+  // }
 
   /**
    *  Unregisters an actor in the Cluster ActorRegistry.
    */
-  private[akka] def unregisterInCluster(address: String) {
-    ClusterModule.node.remove(address)
-  }
+  // private[akka] def unregisterInCluster(address: String) {
+  //   ClusterModule.node.remove(address)
+  // }
 
   /**
    * Get the typed actor proxy for a given typed actor ref.

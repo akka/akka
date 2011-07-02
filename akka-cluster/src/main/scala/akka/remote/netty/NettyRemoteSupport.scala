@@ -209,7 +209,7 @@ abstract class RemoteClient private[akka] (
     senderFuture: Option[Promise[T]]): Option[Promise[T]] = {
 
     if (isRunning) {
-      EventHandler.debug(this, "Sending to connection [%s] message [%s]".format(remoteAddress, request))
+      EventHandler.debug(this, "Sending to connection [%s] message [\n%s]".format(remoteAddress, request))
 
       if (request.getOneWay) {
         try {
@@ -950,7 +950,7 @@ class RemoteServerHandler(
     val address = actorInfo.getAddress
 
     EventHandler.debug(this,
-      "Creating an remotely available actor for address [%s] on node [%s]"
+      "Looking up a remotely available actor for address [%s] on node [%s]"
         .format(address, Config.nodename))
 
     val actorRef = Actor.createActor(address, () ⇒ createSessionActor(actorInfo, channel))

@@ -56,7 +56,7 @@ class RegistryStoreMultiJvmNode1 extends WordSpec with MustMatchers with BeforeA
 
       barrier("store-1-in-node-1", NrOfNodes) {
         val serializer = Serialization.serializerFor(classOf[HelloWorld1]).fold(x ⇒ fail("No serializer found"), s ⇒ s)
-        node.store(actorOf[HelloWorld1]("hello-world-1"), serializer)
+        node.store("hello-world-1", classOf[HelloWorld1], serializer)
       }
 
       barrier("use-1-in-node-2", NrOfNodes) {
@@ -68,20 +68,6 @@ class RegistryStoreMultiJvmNode1 extends WordSpec with MustMatchers with BeforeA
       }
 
       barrier("use-2-in-node-2", NrOfNodes) {
-      }
-
-      barrier("store-3-in-node-1", NrOfNodes) {
-        val serializer = Serialization.serializerFor(classOf[HelloWorld2]).fold(x ⇒ fail("No serializer found"), s ⇒ s)
-        val actor = actorOf[HelloWorld2]("hello-world-3").start
-        actor ! "Hello"
-        actor ! "Hello"
-        actor ! "Hello"
-        actor ! "Hello"
-        actor ! "Hello"
-        node.store(actor, true, serializer)
-      }
-
-      barrier("use-3-in-node-2", NrOfNodes) {
       }
 
       node.shutdown()
@@ -135,19 +121,6 @@ class RegistryStoreMultiJvmNode2 extends WordSpec with MustMatchers {
         actorRef.address must be("hello-world-2")
 
         (actorRef ? "Hello").as[String].get must be("World from node [node2]")
-      }
-
-      barrier("store-3-in-node-1", NrOfNodes) {
-      }
-
-      barrier("use-3-in-node-2", NrOfNodes) {
-        val actorOrOption = node.use("hello-world-3")
-        if (actorOrOption.isEmpty) fail("Actor could not be retrieved")
-
-        val actorRef = actorOrOption.get
-        actorRef.address must be("hello-world-3")
-
-        (actorRef ? ("Count", 30000)).as[Int].get must be >= (2) // be conservative - can by 5 but also 2 if slow system
       }
 
       node.shutdown()

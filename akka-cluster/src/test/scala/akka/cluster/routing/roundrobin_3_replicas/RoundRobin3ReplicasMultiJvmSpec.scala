@@ -2,24 +2,24 @@
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package akka.cluster.routing.roundrobin_2_replicas
+package akka.cluster.routing.roundrobin_3_replicas
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 
 import akka.cluster._
-import Cluster._
 import akka.actor._
 import akka.actor.Actor._
 import akka.config.Config
+import Cluster._
 
 /**
  * When a MultiJvmNode is started, will it automatically be part of the cluster (so will it automatically be eligible
  * for running actors, or will it be just a 'client' talking to the cluster.
  */
-object RoundRobin2ReplicasMultiJvmSpec {
-  val NrOfNodes = 2
+object RoundRobin3ReplicasMultiJvmSpec {
+  val NrOfNodes = 3
 
   class HelloWorld extends Actor with Serializable {
     def receive = {
@@ -32,14 +32,12 @@ object RoundRobin2ReplicasMultiJvmSpec {
 /**
  * What is the purpose of this node? Is this just a node for the cluster to make use of?
  */
-class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
-  import RoundRobin2ReplicasMultiJvmSpec._
+class RoundRobin3ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+  import RoundRobin3ReplicasMultiJvmSpec._
 
   "A cluster" must {
 
     "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
-      System.getProperty("akka.cluster.nodename", "") must be("node1")
-      System.getProperty("akka.cluster.port", "") must be("9991")
 
       //wait till node 1 has started.
       barrier("start-node1", NrOfNodes) {
@@ -71,14 +69,13 @@ class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with B
   }
 }
 
-class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
-  import RoundRobin2ReplicasMultiJvmSpec._
+class RoundRobin3ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
+  import RoundRobin3ReplicasMultiJvmSpec._
+  import Cluster._
 
   "A cluster" must {
 
     "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
-      System.getProperty("akka.cluster.nodename", "") must be("node2")
-      System.getProperty("akka.cluster.port", "") must be("9992")
 
       //wait till node 1 has started.
       barrier("start-node1", NrOfNodes) {}
@@ -112,16 +109,45 @@ class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
 
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node2")))
+        count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node3")))
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node2")))
+        count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node3")))
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node2")))
+        count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node3")))
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node2")))
+        count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node3")))
 
         replies("World from node [node1]") must equal(4)
         replies("World from node [node2]") must equal(4)
+        replies("World from node [node3]") must equal(4)
       }
+
+      node.shutdown()
+    }
+  }
+}
+
+class RoundRobin3ReplicasMultiJvmNode3 extends WordSpec with MustMatchers {
+  import RoundRobin3ReplicasMultiJvmSpec._
+  import Cluster._
+
+  "A cluster" must {
+
+    "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
+      barrier("start-node1", NrOfNodes) {}
+
+      barrier("start-node2", NrOfNodes) {}
+
+      barrier("start-node3", NrOfNodes) {
+        node.start()
+      }
+
+      barrier("get-ref-to-actor-on-node2", NrOfNodes) {}
+
+      barrier("send-message-from-node2-to-replicas", NrOfNodes) {}
 
       node.shutdown()
     }

@@ -102,6 +102,7 @@ object ReflectiveAccess {
       def dequeue: MessageInvocation
     }
 
+    // FIXME: remove?
     type Serializer = {
       def toBinary(obj: AnyRef): Array[Byte]
       def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef

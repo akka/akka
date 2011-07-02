@@ -28,7 +28,6 @@ class ClusterActorRef private[akka] (
   val address: String,
   _timeout: Long)
   extends ActorRef with ScalaActorRef { this: Router.Router ⇒
-
   timeout = _timeout
 
   private[akka] val inetSocketAddressToActorRefMap = new AtomicReference[Map[InetSocketAddress, ActorRef]](
