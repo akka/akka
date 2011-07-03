@@ -36,7 +36,7 @@ object ActorRestartSpec {
       case "get"          ⇒ self reply xx
     }
     override def preStart { testActor ! (("preStart", gen)) }
-    override def preRestart(cause: Throwable) { testActor ! (("preRestart", gen)) }
+    override def preRestart(cause: Throwable, msg: Option[Any]) { testActor ! (("preRestart", msg, gen)) }
     override def postRestart(cause: Throwable) { testActor ! (("postRestart", gen)) }
     override def freshInstance() = {
       restart match {
@@ -94,7 +94,7 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
       supervisor link actor
       actor ! Kill
       within(1 second) {
-        expectMsg(("preRestart", 1))
+        expectMsg(("preRestart", Some(Kill), 1))
         expectMsg(("preStart", 2))
         expectMsg(("postRestart", 2))
         expectNoMsg
@@ -109,7 +109,7 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
       actor ! Nested
       actor ! Kill
       within(1 second) {
-        expectMsg(("preRestart", 1))
+        expectMsg(("preRestart", Some(Kill), 1))
         val (tActor, tRef) = expectMsgType[(Actor, TestActorRef[Actor])]
         tRef.underlyingActor must be(tActor)
         expectMsg((tActor, tRef))
@@ -129,7 +129,7 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
       actor ! Handover
       actor ! Kill
       within(1 second) {
-        expectMsg(("preRestart", 1))
+        expectMsg(("preRestart", Some(Kill), 1))
         expectMsg(("preStart", 2))
         expectMsg(("postRestart", 2))
         expectNoMsg
@@ -147,29 +147,13 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
       actor ! Fail
       actor ! Kill
       within(1 second) {
-        expectMsg(("preRestart", 1))
+        expectMsg(("preRestart", Some(Kill), 1))
         expectMsg(("preStart", 2))
         expectMsg(("postRestart", 2))
         expectNoMsg
       }
       actor ! "get"
       expectMsg(1 second, 0)
-    }
-
-    "call preRestart(cause, currentMessage) if defined" in {
-      val actor = newActor(new Actor {
-        def receive = { case _ ⇒ }
-        override def preRestart(cause: Throwable, currentMessage: Option[Any]) {
-          testActor ! (("preRestart", currentMessage))
-        }
-      })
-      val supervisor = newActor(new Supervisor)
-      supervisor link actor
-      actor ! Kill
-      within(1 second) {
-        expectMsg(("preRestart", Some(Kill)))
-        expectNoMsg
-      }
     }
 
   }

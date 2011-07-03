@@ -102,7 +102,7 @@ abstract class UntypedActor extends Actor {
    * <p/>
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean up of resources before Actor is terminated.
    */
-  override def preRestart(reason: Throwable) {}
+  override def preRestart(reason: Throwable, lastMessage: Option[Any]) {}
 
   /**
    * User overridable callback.

@@ -59,7 +59,7 @@ object Ticket669Spec {
       case msg ⇒ throw new Exception("test")
     }
 
-    override def preRestart(reason: scala.Throwable) {
+    override def preRestart(reason: scala.Throwable, msg: Option[Any]) {
       self.reply_?("failure1")
     }
 

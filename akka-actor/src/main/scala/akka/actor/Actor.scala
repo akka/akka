@@ -659,19 +659,9 @@ trait Actor {
    * User overridable callback.
    * <p/>
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean
-   * up of resources before Actor is terminated. Override either the variant
-   * with or without the currentMessage argument.
+   * up of resources before Actor is terminated.
    */
-  def preRestart(reason: Throwable) {}
-
-  /**
-   * User overridable callback.
-   * <p/>
-   * Is called on a crashed Actor right BEFORE it is restarted to allow clean
-   * up of resources before Actor is terminated. Override either the variant
-   * with or without the currentMessage argument.
-   */
-  def preRestart(reason: Throwable, message: Option[Any]) { preRestart(reason) }
+  def preRestart(reason: Throwable, message: Option[Any]) {}
 
   /**
    * User overridable callback.

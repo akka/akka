@@ -58,7 +58,7 @@ trait ProducerSupport { this: Actor ⇒
    * Default implementation of <code>Actor.preRestart</code> for freeing resources needed
    * to actually send messages to <code>endpointUri</code>.
    */
-  override def preRestart(reason: Throwable) {
+  override def preRestart(reason: Throwable, msg: Option[Any]) {
     try { preRestartProducer(reason) } finally { processor.stop }
   }
 
