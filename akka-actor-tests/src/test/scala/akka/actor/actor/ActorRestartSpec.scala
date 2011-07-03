@@ -70,12 +70,18 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
   import ActorRestartSpec._
 
   override def beforeEach { generation = 0 }
-  override def afterEach { toStop foreach (_.stop()) }
+  override def afterEach {
+    val it = toStop.iterator
+    while (it.hasNext) {
+      it.next.stop()
+      it.remove
+    }
+  }
 
-  private var toStop = List.empty[ActorRef]
+  private var toStop = new java.util.concurrent.ConcurrentSkipListSet[ActorRef]
   private def newActor(f: ⇒ Actor): ActorRef = {
     val ref = actorOf(f)
-    toStop ::= ref
+    toStop add ref
     ref.start()
   }
 
