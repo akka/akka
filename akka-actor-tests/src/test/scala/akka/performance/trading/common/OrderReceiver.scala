@@ -1,6 +1,8 @@
 package akka.performance.trading.common
 
-import akka.performance.trading.domain.Orderbook
+import akka.performance.trading.domain._
+import akka.actor._
+import akka.dispatch.MessageDispatcher
 
 trait OrderReceiver {
   type ME
@@ -21,4 +23,35 @@ trait OrderReceiver {
 
   def supportedOrderbooks(me: ME): List[Orderbook]
 
+}
+
+class AkkaOrderReceiver(val matchingEngines: List[ActorRef], disp: Option[MessageDispatcher])
+  extends Actor with OrderReceiver {
+  type ME = ActorRef
+
+  for (d ← disp) {
+    self.dispatcher = d
+  }
+
+  def receive = {
+    case order: Order ⇒ placeOrder(order)
+    case unknown      ⇒ println("Received unknown message: " + unknown)
+  }
+
+  override def supportedOrderbooks(me: ActorRef): List[Orderbook] = {
+    (me ? SupportedOrderbooksReq).get.asInstanceOf[List[Orderbook]]
+  }
+
+  def placeOrder(order: Order) = {
+    if (matchingEnginePartitionsIsStale) refreshMatchingEnginePartitions()
+    val matchingEngine = matchingEngineForOrderbook.get(order.orderbookSymbol)
+    matchingEngine match {
+      case Some(m) ⇒
+        // println("receiver " + order)
+        m.forward(order)
+      case None ⇒
+        println("Unknown orderbook: " + order.orderbookSymbol)
+        self.channel ! new Rsp(false)
+    }
+  }
 }

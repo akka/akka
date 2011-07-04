@@ -1,12 +1,11 @@
-package akka.performance.trading.akkabang
+package akka.performance.trading.oneway
 
 import akka.actor._
 import akka.dispatch.MessageDispatcher
-
-import akka.performance.trading.akka._
 import akka.performance.trading.domain._
+import akka.performance.trading.common.AkkaOrderReceiver
 
-class AkkaBangOrderReceiver(matchingEngines: List[ActorRef], disp: Option[MessageDispatcher])
+class OneWayOrderReceiver(matchingEngines: List[ActorRef], disp: Option[MessageDispatcher])
   extends AkkaOrderReceiver(matchingEngines, disp) {
 
   override def placeOrder(order: Order) = {

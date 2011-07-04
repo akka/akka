@@ -1,13 +1,12 @@
-package akka.performance.trading.akkabang
+package akka.performance.trading.oneway
 
 import akka.actor._
 import akka.dispatch.MessageDispatcher
-
-import akka.performance.trading.akka._
 import akka.performance.trading.domain.Order
 import akka.performance.trading.domain.Orderbook
+import akka.performance.trading.common.AkkaMatchingEngine
 
-class AkkaBangMatchingEngine(meId: String, orderbooks: List[Orderbook], disp: Option[MessageDispatcher])
+class OneWayMatchingEngine(meId: String, orderbooks: List[Orderbook], disp: Option[MessageDispatcher])
   extends AkkaMatchingEngine(meId, orderbooks, disp) {
 
   override def handleOrder(order: Order) {

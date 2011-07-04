@@ -1,4 +1,4 @@
-package akka.performance.trading.akka
+package akka.performance.trading.common
 
 import org.junit._
 import Assert._
@@ -12,8 +12,8 @@ import akka.actor.Actor.actorOf
 import akka.dispatch.Dispatchers
 import akka.actor.PoisonPill
 
-class AkkaPerformanceTest extends BenchmarkScenarios // with OtherPerformanceScenarios 
-{
+abstract class AkkaPerformanceTest extends BenchmarkScenarios {
+
   type TS = AkkaTradingSystem
 
   val clientDispatcher = Dispatchers.newDispatcher("client-dispatcher")
@@ -24,13 +24,10 @@ class AkkaPerformanceTest extends BenchmarkScenarios // with OtherPerformanceSce
 
   override def createTradingSystem: TS = new AkkaTradingSystem
 
-  override def placeOrder(orderReceiver: ActorRef, order: Order): Rsp = {
-    (orderReceiver ? order).get.asInstanceOf[Rsp]
-  }
-
-  // need this so that junit will detect this as a test case
-  @Test
-  def dummy {}
+  /**
+   * Implemented in subclass
+   */
+  def placeOrder(orderReceiver: ActorRef, order: Order): Rsp
 
   override def runScenario(scenario: String, orders: List[Order], repeat: Int, numberOfClients: Int, delayMs: Int) = {
     val totalNumberOfRequests = orders.size * repeat

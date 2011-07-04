@@ -14,6 +14,7 @@ abstract class Orderbook(val symbol: String) {
     }
   }
 
+  // this is by intention not tuned for performance to simulate some work
   def matchOrders() {
     if (!bidSide.isEmpty && !askSide.isEmpty) {
       val topOfBook = (bidSide.head, askSide.head)
@@ -56,4 +57,26 @@ object Orderbook {
     case false if useDummyOrderbook  ⇒ new DummyOrderbook(symbol) with SimpleTradeObserver
     case true if useDummyOrderbook   ⇒ new DummyOrderbook(symbol) with StandbyTradeObserver
   }
+}
+
+abstract class DummyOrderbook(symbol: String) extends Orderbook(symbol) {
+  var count = 0
+  var bid: Bid = _
+  var ask: Ask = _
+
+  override def addOrder(order: Order) {
+    count += 1
+    order match {
+      case b: Bid ⇒ bid = b
+      case a: Ask ⇒ ask = a
+    }
+  }
+
+  override def matchOrders() {
+    if (count % 2 == 0)
+      trade(bid, ask)
+  }
+
+  def trade(bid: Bid, ask: Ask)
+
 }
