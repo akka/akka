@@ -22,12 +22,12 @@ trait PerformanceTest extends JUnitSuite {
   def maxClients() = System.getProperty("maxClients", "40").toInt;
 
   def repeatFactor() = {
-    val defaultRepeatFactor = if (isBenchmark) "150" else "10"
+    val defaultRepeatFactor = if (isBenchmark) "150" else "2"
     System.getProperty("repeatFactor", defaultRepeatFactor).toInt
   }
 
   def warmupRepeatFactor() = {
-    val defaultRepeatFactor = if (isBenchmark) "200" else "10"
+    val defaultRepeatFactor = if (isBenchmark) "200" else "1"
     System.getProperty("warmupRepeatFactor", defaultRepeatFactor).toInt
   }
 
