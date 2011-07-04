@@ -156,6 +156,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val scalatest        = "org.scalatest"               %% "scalatest"              % SCALATEST_VERSION  % "test" //ApacheV2
     lazy val testLogback      = "ch.qos.logback"              % "logback-classic"         % LOGBACK_VERSION    % "test" // EPL 1.0 / LGPL 2.1
     lazy val camel_spring     = "org.apache.camel"            % "camel-spring"            % CAMEL_VERSION      % "test" //ApacheV2
+    lazy val commonsMath      = "org.apache.commons"          % "commons-math"            % "2.1"              % "test" //ApacheV2
 
   }
 
@@ -699,6 +700,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     val protobuf        = Dependencies.protobuf
     val jackson         = Dependencies.jackson
     val sjson           = Dependencies.sjson
+    val commonsMath     = Dependencies.commonsMath
+    val mockito         = Dependencies.mockito
     override def compileOptions = super.compileOptions ++ compileOptions("-P:continuations:enable")
   }
 
