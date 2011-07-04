@@ -19,10 +19,9 @@ trait TradingSystem {
 
   def useStandByEngines: Boolean = true
 
-  // pairs of primary-standby matching engines
-  lazy val matchingEngines: Map[ME, Option[ME]] = createMatchingEngines
+  lazy val matchingEngines: List[MatchingEngineInfo] = createMatchingEngines
 
-  def createMatchingEngines: Map[ME, Option[ME]]
+  def createMatchingEngines: List[MatchingEngineInfo]
 
   lazy val orderReceivers: List[OR] = createOrderReceivers
 
@@ -32,6 +31,7 @@ trait TradingSystem {
 
   def shutdown()
 
+  case class MatchingEngineInfo(primary: ME, standby: Option[ME], orderbooks: List[Orderbook])
 }
 
 class AkkaTradingSystem extends TradingSystem {
@@ -49,40 +49,49 @@ class AkkaTradingSystem extends TradingSystem {
 
   var matchingEngineForOrderbook: Map[String, ActorRef] = Map()
 
-  override def createMatchingEngines = {
-    var i = 0
-    val pairs =
-      for (orderbooks: List[Orderbook] ← orderbooksGroupedByMatchingEngine) yield {
-        i = i + 1
-        val me = createMatchingEngine("ME" + i, orderbooks)
-        val orderbooksCopy = orderbooks map (o ⇒ Orderbook(o.symbol, true))
-        val standbyOption =
-          if (useStandByEngines) {
-            val meStandby = createMatchingEngine("ME" + i + "s", orderbooksCopy)
-            Some(meStandby)
-          } else {
-            None
-          }
+  override def createMatchingEngines: List[MatchingEngineInfo] = {
+    for {
+      (orderbooks, i) ← orderbooksGroupedByMatchingEngine.zipWithIndex
+      n = i + 1
+    } yield {
+      val me = createMatchingEngine("ME" + n, orderbooks)
+      val orderbooksCopy = orderbooks map (o ⇒ Orderbook(o.symbol, true))
+      val standbyOption =
+        if (useStandByEngines) {
+          val meStandby = createMatchingEngine("ME" + n + "s", orderbooksCopy)
+          Some(meStandby)
+        } else {
+          None
+        }
 
-        (me, standbyOption)
-      }
-
-    Map() ++ pairs;
+      MatchingEngineInfo(me, standbyOption, orderbooks)
+    }
   }
 
   def createMatchingEngine(meId: String, orderbooks: List[Orderbook]) =
     actorOf(new AkkaMatchingEngine(meId, orderbooks, meDispatcher))
 
   override def createOrderReceivers: List[ActorRef] = {
-    val primaryMatchingEngines = matchingEngines.map(pair ⇒ pair._1).toList
-    (1 to 10).toList map (i ⇒ createOrderReceiver(primaryMatchingEngines))
+    (1 to 10).toList map (i ⇒ createOrderReceiver())
   }
 
-  def createOrderReceiver(matchingEngines: List[ActorRef]) =
-    actorOf(new AkkaOrderReceiver(matchingEngines, orDispatcher))
+  def matchingEngineRouting: Map[ActorRef, List[String]] = {
+    val rules =
+      for {
+        info ← matchingEngines
+        orderbookSymbols = info.orderbooks.map(_.symbol)
+      } yield {
+        (info.primary, orderbookSymbols)
+      }
+
+    Map() ++ rules
+  }
+
+  def createOrderReceiver() =
+    actorOf(new AkkaOrderReceiver(matchingEngineRouting, orDispatcher))
 
   override def start() {
-    for ((p, s) ← matchingEngines) {
+    for (MatchingEngineInfo(p, s, o) ← matchingEngines) {
       p.start()
       // standby is optional
       s.foreach(_.start())
@@ -93,7 +102,7 @@ class AkkaTradingSystem extends TradingSystem {
 
   override def shutdown() {
     orderReceivers.foreach(_ ! PoisonPill)
-    for ((p, s) ← matchingEngines) {
+    for (MatchingEngineInfo(p, s, o) ← matchingEngines) {
       p ! PoisonPill
       // standby is optional
       s.foreach(_ ! PoisonPill)

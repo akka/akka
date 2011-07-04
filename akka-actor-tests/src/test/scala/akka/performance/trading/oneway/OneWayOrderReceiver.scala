@@ -6,11 +6,10 @@ import akka.event.EventHandler
 import akka.performance.trading.domain._
 import akka.performance.trading.common.AkkaOrderReceiver
 
-class OneWayOrderReceiver(matchingEngines: List[ActorRef], disp: Option[MessageDispatcher])
-  extends AkkaOrderReceiver(matchingEngines, disp) {
+class OneWayOrderReceiver(matchingEngineRouting: Map[ActorRef, List[String]], disp: Option[MessageDispatcher])
+  extends AkkaOrderReceiver(matchingEngineRouting, disp) {
 
   override def placeOrder(order: Order) = {
-    if (matchingEnginePartitionsIsStale) refreshMatchingEnginePartitions()
     val matchingEngine = matchingEngineForOrderbook.get(order.orderbookSymbol)
     matchingEngine match {
       case Some(m) ⇒

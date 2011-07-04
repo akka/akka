@@ -28,8 +28,6 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook], disp
   def receive = {
     case standbyRef: ActorRef ⇒
       standby = Some(standbyRef)
-    case SupportedOrderbooksReq ⇒
-      self.channel ! orderbooks
     case order: Order ⇒
       handleOrder(order)
     case unknown ⇒

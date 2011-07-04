@@ -7,6 +7,7 @@ import org.junit.Test
 import akka.actor.Actor.actorOf
 import akka.actor.ActorRef
 import akka.performance.trading.common.AkkaPerformanceTest
+import akka.performance.trading.common.Rsp
 import akka.performance.trading.domain._
 
 class OneWayPerformanceTest extends AkkaPerformanceTest {

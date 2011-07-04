@@ -5,7 +5,7 @@ import org.junit.Test
 import akka.actor.ActorRef
 import akka.performance.trading.common.AkkaPerformanceTest
 import akka.performance.trading.domain.Order
-import akka.performance.trading.domain.Rsp
+import akka.performance.trading.common.Rsp
 
 class RspPerformanceTest extends AkkaPerformanceTest {
 

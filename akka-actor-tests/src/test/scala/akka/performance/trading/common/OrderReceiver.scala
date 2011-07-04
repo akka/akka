@@ -15,18 +15,18 @@ trait OrderReceiver {
     val m = Map() ++
       (for {
         me ← matchingEngines
-        o ← supportedOrderbooks(me)
-      } yield (o.symbol, me))
+        orderbookSymbol ← supportedOrderbooks(me)
+      } yield (orderbookSymbol, me))
 
     matchingEngineForOrderbook = m
     matchingEnginePartitionsIsStale = false
   }
 
-  def supportedOrderbooks(me: ME): List[Orderbook]
+  def supportedOrderbooks(me: ME): List[String]
 
 }
 
-class AkkaOrderReceiver(val matchingEngines: List[ActorRef], disp: Option[MessageDispatcher])
+class AkkaOrderReceiver(matchingEngineRouting: Map[ActorRef, List[String]], disp: Option[MessageDispatcher])
   extends Actor with OrderReceiver {
   type ME = ActorRef
 
@@ -34,17 +34,22 @@ class AkkaOrderReceiver(val matchingEngines: List[ActorRef], disp: Option[Messag
     self.dispatcher = d
   }
 
+  override val matchingEngines: List[ActorRef] = matchingEngineRouting.keys.toList
+
+  override def preStart() {
+    refreshMatchingEnginePartitions()
+  }
+
   def receive = {
     case order: Order ⇒ placeOrder(order)
     case unknown      ⇒ EventHandler.warning(this, "Received unknown message: " + unknown)
   }
 
-  override def supportedOrderbooks(me: ActorRef): List[Orderbook] = {
-    (me ? SupportedOrderbooksReq).get.asInstanceOf[List[Orderbook]]
+  override def supportedOrderbooks(me: ActorRef): List[String] = {
+    matchingEngineRouting(me)
   }
 
   def placeOrder(order: Order) = {
-    if (matchingEnginePartitionsIsStale) refreshMatchingEnginePartitions()
     val matchingEngine = matchingEngineForOrderbook.get(order.orderbookSymbol)
     matchingEngine match {
       case Some(m) ⇒
