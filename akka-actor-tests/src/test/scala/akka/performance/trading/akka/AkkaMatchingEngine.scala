@@ -37,7 +37,6 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook], disp
         val pendingStandbyReply: Option[Future[_]] =
           for (s ← standby) yield { s ? order }
 
-        txLog.storeTx(order)
         orderbook.addOrder(order)
         orderbook.matchOrders()
         // wait for standby reply
@@ -47,10 +46,6 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook], disp
         println("Orderbook not handled by this MatchingEngine: " + order.orderbookSymbol)
         self.channel ! new Rsp(false)
     }
-  }
-
-  override def postStop {
-    txLog.close()
   }
 
   def waitForStandby(pendingStandbyFuture: Future[_]) {

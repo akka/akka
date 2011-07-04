@@ -9,15 +9,4 @@ trait MatchingEngine {
   protected val orderbooksMap: Map[String, Orderbook] =
     Map() ++ (orderbooks map (o ⇒ (o.symbol, o)))
 
-  protected val txLog: TxLog =
-    if (useTxLogFile)
-      new TxLogFile(meId + ".txlog")
-    else
-      new TxLogDummy
-
-  def useTxLogFile() = {
-    val prop = System.getProperty("useTxLogFile")
-    // default false, if not defined
-    (prop == "true")
-  }
 }

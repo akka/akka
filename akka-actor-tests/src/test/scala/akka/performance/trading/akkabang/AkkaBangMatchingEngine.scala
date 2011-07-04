@@ -17,7 +17,6 @@ class AkkaBangMatchingEngine(meId: String, orderbooks: List[Orderbook], disp: Op
 
         standby.foreach(_ ! order)
 
-        txLog.storeTx(order)
         orderbook.addOrder(order)
         orderbook.matchOrders()
 
