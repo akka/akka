@@ -17,7 +17,6 @@ import akka.config.Config
 import akka.serialization.Serialization
 
 import java.util.concurrent._
-
 /*
 object MigrationExplicitMultiJvmSpec {
   var NrOfNodes = 2

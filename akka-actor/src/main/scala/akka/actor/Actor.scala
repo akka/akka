@@ -144,6 +144,7 @@ object Actor extends ListenerManagement {
     def this(timeout: Long) = this(Duration(timeout, TimeUnit.MILLISECONDS))
     def this(length: Long, unit: TimeUnit) = this(Duration(length, unit))
   }
+
   object Timeout {
     def apply(timeout: Long) = new Timeout(timeout)
     def apply(length: Long, unit: TimeUnit) = new Timeout(length, unit)
@@ -183,7 +184,7 @@ object Actor extends ListenerManagement {
   class LoggingReceive(source: AnyRef, r: Receive) extends Receive {
     def isDefinedAt(o: Any) = {
       val handled = r.isDefinedAt(o)
-      EventHandler.debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o)
+      EventHandler.debug(source, "Received " + (if (handled) "handled" else "unhandled") + " message " + o)
       handled
     }
     def apply(o: Any): Unit = r(o)
@@ -443,7 +444,7 @@ object Actor extends ListenerManagement {
       case Deploy(
         configAdress, router, serializerClassName,
         Clustered(
-          home,
+          preferredHomeNodes,
           replicas,
           replication)) ⇒
 
@@ -454,7 +455,7 @@ object Actor extends ListenerManagement {
         if (!Actor.remote.isRunning) throw new IllegalStateException(
           "Remote server is not running")
 
-        val isHomeNode = DeploymentConfig.isHomeNode(home)
+        val isHomeNode = preferredHomeNodes exists (home ⇒ DeploymentConfig.isHomeNode(home))
         val nrOfReplicas = DeploymentConfig.replicaValueFor(replicas)
 
         def serializerErrorDueTo(reason: String) =

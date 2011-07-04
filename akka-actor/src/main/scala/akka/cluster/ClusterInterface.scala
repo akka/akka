@@ -122,7 +122,7 @@ object NodeAddress {
 trait ClusterNode {
   import ChangeListener._
 
-  val isConnected = new Switch(false)
+  val isConnected = new AtomicBoolean(false)
 
   private[cluster] val locallyCachedMembershipNodes = new ConcurrentSkipListSet[String]()
 
@@ -136,7 +136,7 @@ trait ClusterNode {
 
   def remoteServerAddress: InetSocketAddress
 
-  def isRunning: Boolean = isConnected.isOn
+  def isRunning: Boolean = isConnected.get
 
   def start(): ClusterNode
 
@@ -323,6 +323,11 @@ trait ClusterNode {
    * for remote access through lookup by its UUID.
    */
   def use[T <: Actor](actorAddress: String, serializer: Serializer): Option[ActorRef]
+
+  /**
+   * Using (checking out) actor on a specific set of nodes.
+   */
+  def useActorOnNodes(nodes: Array[String], actorAddress: String)
 
   /**
    * Using (checking out) actor on all nodes in the cluster.
