@@ -11,6 +11,7 @@ import akka.actor.Actor
 import akka.actor.Actor.actorOf
 import akka.dispatch.Dispatchers
 import akka.actor.PoisonPill
+import akka.event.EventHandler
 
 abstract class AkkaPerformanceTest extends BenchmarkScenarios {
 
@@ -64,14 +65,13 @@ abstract class AkkaPerformanceTest extends BenchmarkScenarios {
       case "run" ⇒
         (1 to repeat).foreach(i ⇒
           {
-            // println("Client " + Thread.currentThread + " repeat: " + i)
             for (o ← orders) {
               val t0 = System.nanoTime
               val rsp = placeOrder(orderReceiver, o)
               val duration = System.nanoTime - t0
               stat.addValue(duration)
               if (!rsp.status) {
-                println("Invalid rsp")
+                EventHandler.error(this, "Invalid rsp")
               }
               delay(delayMs)
             }

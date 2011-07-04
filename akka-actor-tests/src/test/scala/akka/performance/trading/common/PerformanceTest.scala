@@ -3,10 +3,11 @@ package akka.performance.trading.common
 import java.util.Random
 import org.junit._
 import Assert._
+import org.scalatest.junit.JUnitSuite
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics
 import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistics
 import akka.performance.trading.domain._
-import org.scalatest.junit.JUnitSuite
+import akka.event.EventHandler
 
 trait PerformanceTest extends JUnitSuite {
 
@@ -107,12 +108,14 @@ trait PerformanceTest extends JUnitSuite {
     val headerLine2 = (spaces.take(name.length) :: "       " :: "   " :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(s)   " :: " " :: Nil)
       .mkString("\t")
     val line = List.fill(StatSingleton.results.head.replaceAll("\t", "      ").length)("-").mkString
-    println(line.replace('-', '='))
-    println(headerLine)
-    println(headerLine2)
-    println(line)
-    println(StatSingleton.results.reverse.mkString("\n"))
-    println(line)
+    val formattedStats = "\n" +
+      line.replace('-', '=') + "\n" +
+      headerLine + "\n" +
+      headerLine2 + "\n" +
+      line + "\n" +
+      StatSingleton.results.reverse.mkString("\n") + "\n" +
+      line + "\n"
+    EventHandler.info(this, formattedStats)
   }
 
   def delay(delayMs: Int) {

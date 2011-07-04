@@ -5,6 +5,7 @@ import akka.actor._
 import akka.dispatch.Future
 import akka.dispatch.FutureTimeoutException
 import akka.dispatch.MessageDispatcher
+import akka.event.EventHandler
 
 trait MatchingEngine {
   val meId: String
@@ -32,14 +33,12 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook], disp
     case order: Order ⇒
       handleOrder(order)
     case unknown ⇒
-      println("Received unknown message: " + unknown)
+      EventHandler.warning(this, "Received unknown message: " + unknown)
   }
 
   def handleOrder(order: Order) {
     orderbooksMap.get(order.orderbookSymbol) match {
       case Some(orderbook) ⇒
-        // println(meId + " " + order)
-
         val pendingStandbyReply: Option[Future[_]] =
           for (s ← standby) yield { s ? order }
 
@@ -49,7 +48,7 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook], disp
         pendingStandbyReply.foreach(waitForStandby(_))
         done(true)
       case None ⇒
-        println("Orderbook not handled by this MatchingEngine: " + order.orderbookSymbol)
+        EventHandler.warning(this, "Orderbook not handled by this MatchingEngine: " + order.orderbookSymbol)
         done(false)
     }
   }
@@ -62,7 +61,8 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook], disp
     try {
       pendingStandbyFuture.await
     } catch {
-      case e: FutureTimeoutException ⇒ println("### standby timeout: " + e)
+      case e: FutureTimeoutException ⇒
+        EventHandler.error(this, "Standby timeout: " + e)
     }
   }
 

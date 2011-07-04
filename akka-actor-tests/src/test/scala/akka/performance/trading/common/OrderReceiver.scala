@@ -3,6 +3,7 @@ package akka.performance.trading.common
 import akka.performance.trading.domain._
 import akka.actor._
 import akka.dispatch.MessageDispatcher
+import akka.event.EventHandler
 
 trait OrderReceiver {
   type ME
@@ -35,7 +36,7 @@ class AkkaOrderReceiver(val matchingEngines: List[ActorRef], disp: Option[Messag
 
   def receive = {
     case order: Order ⇒ placeOrder(order)
-    case unknown      ⇒ println("Received unknown message: " + unknown)
+    case unknown      ⇒ EventHandler.warning(this, "Received unknown message: " + unknown)
   }
 
   override def supportedOrderbooks(me: ActorRef): List[Orderbook] = {
@@ -47,10 +48,9 @@ class AkkaOrderReceiver(val matchingEngines: List[ActorRef], disp: Option[Messag
     val matchingEngine = matchingEngineForOrderbook.get(order.orderbookSymbol)
     matchingEngine match {
       case Some(m) ⇒
-        // println("receiver " + order)
         m.forward(order)
       case None ⇒
-        println("Unknown orderbook: " + order.orderbookSymbol)
+        EventHandler.warning(this, "Unknown orderbook: " + order.orderbookSymbol)
         self.channel ! new Rsp(false)
     }
   }
