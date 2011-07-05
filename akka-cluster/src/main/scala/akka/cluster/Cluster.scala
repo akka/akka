@@ -1273,10 +1273,10 @@ class DefaultClusterNode private[akka] (
 
   /**
    * Returns a random set with node names of size 'replicationFactor'.
-   * Default replicationFactor is 0, which returns the empty Vector.
+   * Default replicationFactor is 0, which returns the empty Set.
    */
-  private def nodesForReplicationFactor(replicationFactor: Int = 0, actorAddress: Option[String] = None): Vector[String] = {
-    var replicaNames = Vector.empty[String]
+  private def nodesForReplicationFactor(replicationFactor: Int = 0, actorAddress: Option[String] = None): Set[String] = {
+    var replicaNames = Set.empty[String]
     val nrOfClusterNodes = nodeConnections.size
 
     if (replicationFactor < 1) return replicaNames
@@ -1288,7 +1288,7 @@ class DefaultClusterNode private[akka] (
       if (actorAddress.isDefined) { // use 'preferred-nodes' in deployment config for the actor
         Deployer.deploymentFor(actorAddress.get) match {
           case Deploy(_, _, _, Clustered(nodes, _, _)) ⇒
-            nodes map (node ⇒ Deployer.nodeNameFor(node)) take replicationFactor
+            nodes map (node ⇒ DeploymentConfig.nodeNameFor(node)) take replicationFactor
           case _ ⇒
             throw new ClusterException("Actor [" + actorAddress.get + "] is not configured as clustered")
         }
@@ -1298,7 +1298,7 @@ class DefaultClusterNode private[akka] (
       nodeName ← preferredNodes
       key ← nodeConnections.keys
       if key == nodeName
-    } replicaNames = replicaNames :+ nodeName
+    } replicaNames = replicaNames + nodeName
 
     val nrOfCurrentReplicaNames = replicaNames.size
 
@@ -1308,7 +1308,7 @@ class DefaultClusterNode private[akka] (
       else {
         val random = new java.util.Random(System.currentTimeMillis)
         while (replicaNames.size < replicationFactor) {
-          replicaNames = replicaNames :+ membershipNodes(random.nextInt(nrOfClusterNodes))
+          replicaNames = replicaNames + membershipNodes(random.nextInt(nrOfClusterNodes))
         }
         replicaNames
       }
@@ -1321,9 +1321,9 @@ class DefaultClusterNode private[akka] (
 
   /**
    * Returns a random set with replica connections of size 'replicationFactor'.
-   * Default replicationFactor is 0, which returns the empty Vector.
+   * Default replicationFactor is 0, which returns the empty Set.
    */
-  private def nodeConnectionsForReplicationFactor(replicationFactor: Int = 0, actorAddress: Option[String] = None): Vector[ActorRef] = {
+  private def nodeConnectionsForReplicationFactor(replicationFactor: Int = 0, actorAddress: Option[String] = None): Set[ActorRef] = {
     for {
       node ← nodesForReplicationFactor(replicationFactor, actorAddress)
       connectionOption ← nodeConnections.get(node)

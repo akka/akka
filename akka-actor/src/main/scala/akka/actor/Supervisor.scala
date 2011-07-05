@@ -48,7 +48,7 @@ class SupervisorException private[akka] (message: String, cause: Throwable = nul
  *       ..
  *   ))
  * </pre>
-
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Supervisor {

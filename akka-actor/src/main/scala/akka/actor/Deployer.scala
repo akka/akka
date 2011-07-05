@@ -150,7 +150,7 @@ object DeploymentConfig {
     }
   }
 
-  def isHomeNode(home: Home): Boolean = nodeNameFor(home) == Config.nodeName
+  def isHomeNode(home: Home): Boolean = nodeNameFor(home) == Config.nodename
 
   def replicaValueFor(replicas: Replicas): Int = replicas match {
     case Replicate(replicas) ⇒ replicas

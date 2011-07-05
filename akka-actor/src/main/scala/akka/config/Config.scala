@@ -96,6 +96,8 @@ object Config {
 
   val TIME_UNIT = config.getString("akka.time-unit", "seconds")
 
+  val isClusterEnabled = config.getList("akka.enabled-modules").exists(_ == "cluster")
+
   lazy val nodename = System.getProperty("akka.cluster.nodename") match {
     case null | "" ⇒ new UUID().toString
     case value     ⇒ value
