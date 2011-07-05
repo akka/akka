@@ -505,8 +505,6 @@ trait ClusterNode {
 
   private[cluster] def remoteSocketAddressForNode(node: String): Option[InetSocketAddress]
 
-  private[cluster] def createActorsAtAddressPath()
-
   private[cluster] def membershipPathFor(node: String): String
   private[cluster] def configurationPathFor(key: String): String
 

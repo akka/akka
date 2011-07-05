@@ -184,7 +184,7 @@ object Actor extends ListenerManagement {
   class LoggingReceive(source: AnyRef, r: Receive) extends Receive {
     def isDefinedAt(o: Any) = {
       val handled = r.isDefinedAt(o)
-      EventHandler.debug(source, "Received " + (if (handled) "handled" else "unhandled") + " message " + o)
+      EventHandler.debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o)
       handled
     }
     def apply(o: Any): Unit = r(o)

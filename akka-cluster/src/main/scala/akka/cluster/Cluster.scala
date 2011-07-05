@@ -1261,12 +1261,10 @@ class DefaultClusterNode private[akka] (
         "\n\tserializer = [%s]")
         .format(nodeAddress.clusterName, nodeAddress.nodeName, port, zkServerAddresses, serializer))
     EventHandler.info(this, "Starting up remote server [%s]".format(remoteServerAddress.toString))
-    createRootClusterNode()
-    val isLeader = joinLeaderElection()
-    if (isLeader) createNodeStructureIfNeeded()
+    createZooKeeperPathStructureIfNeeded()
     registerListeners()
     joinCluster()
-    createActorsAtAddressPath()
+    joinLeaderElection()
     fetchMembershipNodes()
     EventHandler.info(this, "Cluster node [%s] started successfully".format(nodeAddress))
   }
@@ -1387,6 +1385,7 @@ class DefaultClusterNode private[akka] (
         EventHandler.error(error, this, error.toString)
         throw error
     }
+    ignore[ZkNodeExistsException](zkClient.createPersistent(nodeToUuidsPathFor(nodeAddress.nodeName)))
   }
 
   private[cluster] def joinLeaderElection(): Boolean = {
@@ -1404,10 +1403,6 @@ class DefaultClusterNode private[akka] (
     } catch {
       case e: ZkNoNodeException ⇒ None
     }
-  }
-
-  private[cluster] def createActorsAtAddressPath() {
-    ignore[ZkNodeExistsException](zkClient.createPersistent(nodeToUuidsPathFor(nodeAddress.nodeName)))
   }
 
   private[cluster] def failOverClusterActorRefConnections(from: InetSocketAddress, to: InetSocketAddress) {
@@ -1511,14 +1506,12 @@ class DefaultClusterNode private[akka] (
     }
   }
 
-  private def createRootClusterNode() {
+  private def createZooKeeperPathStructureIfNeeded() {
     ignore[ZkNodeExistsException] {
       zkClient.create(CLUSTER_PATH, null, CreateMode.PERSISTENT)
       EventHandler.info(this, "Created node [%s]".format(CLUSTER_PATH))
     }
-  }
 
-  private def createNodeStructureIfNeeded() {
     basePaths.foreach { path ⇒
       try {
         ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
