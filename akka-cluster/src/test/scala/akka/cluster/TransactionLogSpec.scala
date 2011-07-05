@@ -152,120 +152,151 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       val txlog = TransactionLog.newLogFor(uuid, true, null, JavaSerializer)
       val entry = "hello".getBytes("UTF-8")
       txlog.recordEntry(entry)
-      Thread.sleep(100)
+      Thread.sleep(200)
       txlog.close
     }
 
     "be able to record and delete entries - asynchronous" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null, JavaSerializer)
+      Thread.sleep(200)
       val entry = "hello".getBytes("UTF-8")
       txlog1.recordEntry(entry)
+      Thread.sleep(200)
       txlog1.recordEntry(entry)
+      Thread.sleep(200)
       txlog1.delete
-      Thread.sleep(100)
+      Thread.sleep(200)
       intercept[BKNoSuchLedgerExistsException](TransactionLog.logFor(uuid, true, null, JavaSerializer))
     }
     "be able to record entries and read entries with 'entriesInRange' - asynchronous" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null, JavaSerializer)
+      Thread.sleep(200)
       val entry = "hello".getBytes("UTF-8")
       txlog1.recordEntry(entry)
+      Thread.sleep(200)
       txlog1.recordEntry(entry)
-      Thread.sleep(100)
+      Thread.sleep(200)
       txlog1.close
 
       val txlog2 = TransactionLog.logFor(uuid, true, null, JavaSerializer)
+      Thread.sleep(200)
       val entries = txlog2.entriesInRange(0, 1).map(bytes ⇒ new String(bytes, "UTF-8"))
+      Thread.sleep(200)
       entries.size must equal(2)
       entries(0) must equal("hello")
       entries(1) must equal("hello")
-      Thread.sleep(100)
+      Thread.sleep(200)
       txlog2.close
     }
 
     "be able to record entries and read entries with 'entries' - asynchronous" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null, JavaSerializer)
+      Thread.sleep(200)
       val entry = "hello".getBytes("UTF-8")
       txlog1.recordEntry(entry)
+      Thread.sleep(200)
       txlog1.recordEntry(entry)
+      Thread.sleep(200)
       txlog1.recordEntry(entry)
+      Thread.sleep(200)
       txlog1.recordEntry(entry)
-      Thread.sleep(100)
+      Thread.sleep(200)
       txlog1.close
 
       val txlog2 = TransactionLog.logFor(uuid, true, null, JavaSerializer)
       val entries = txlog2.entries.map(bytes ⇒ new String(bytes, "UTF-8"))
+      Thread.sleep(200)
       entries.size must equal(4)
       entries(0) must equal("hello")
       entries(1) must equal("hello")
       entries(2) must equal("hello")
       entries(3) must equal("hello")
-      Thread.sleep(100)
+      Thread.sleep(200)
       txlog2.close
     }
 
     "be able to record a snapshot - asynchronous" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null, JavaSerializer)
+      Thread.sleep(200)
       val snapshot = "snapshot".getBytes("UTF-8")
       txlog1.recordSnapshot(snapshot)
-      Thread.sleep(100)
+      Thread.sleep(200)
       txlog1.close
     }
 
     "be able to record and read a snapshot and following entries - asynchronous" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null, JavaSerializer)
+      Thread.sleep(200)
       val snapshot = "snapshot".getBytes("UTF-8")
       txlog1.recordSnapshot(snapshot)
+      Thread.sleep(200)
 
       val entry = "hello".getBytes("UTF-8")
       txlog1.recordEntry(entry)
+      Thread.sleep(200)
       txlog1.recordEntry(entry)
+      Thread.sleep(200)
       txlog1.recordEntry(entry)
+      Thread.sleep(200)
       txlog1.recordEntry(entry)
-      Thread.sleep(100)
+      Thread.sleep(200)
       txlog1.close
 
       val txlog2 = TransactionLog.logFor(uuid, true, null, JavaSerializer)
+      Thread.sleep(200)
       val (snapshotAsBytes, entriesAsBytes) = txlog2.toByteArraysLatestSnapshot
+      Thread.sleep(200)
       new String(snapshotAsBytes, "UTF-8") must equal("snapshot")
 
       val entries = entriesAsBytes.map(bytes ⇒ new String(bytes, "UTF-8"))
+      Thread.sleep(200)
       entries.size must equal(4)
       entries(0) must equal("hello")
       entries(1) must equal("hello")
       entries(2) must equal("hello")
       entries(3) must equal("hello")
-      Thread.sleep(100)
+      Thread.sleep(200)
       txlog2.close
     }
 
     "be able to record entries then a snapshot then more entries - and then read from the snapshot and the following entries - asynchronous" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null, JavaSerializer)
+      Thread.sleep(200)
 
       val entry = "hello".getBytes("UTF-8")
       txlog1.recordEntry(entry)
+      Thread.sleep(200)
       txlog1.recordEntry(entry)
+      Thread.sleep(200)
       txlog1.recordEntry(entry)
+      Thread.sleep(200)
+
       val snapshot = "snapshot".getBytes("UTF-8")
       txlog1.recordSnapshot(snapshot)
+      Thread.sleep(200)
       txlog1.recordEntry(entry)
+      Thread.sleep(200)
       txlog1.recordEntry(entry)
-      Thread.sleep(100)
+      Thread.sleep(200)
       txlog1.close
 
       val txlog2 = TransactionLog.logFor(uuid, true, null, JavaSerializer)
+      Thread.sleep(200)
       val (snapshotAsBytes, entriesAsBytes) = txlog2.toByteArraysLatestSnapshot
+      Thread.sleep(200)
       new String(snapshotAsBytes, "UTF-8") must equal("snapshot")
       val entries = entriesAsBytes.map(bytes ⇒ new String(bytes, "UTF-8"))
+      Thread.sleep(200)
       entries.size must equal(2)
       entries(0) must equal("hello")
       entries(1) must equal("hello")
-      Thread.sleep(100)
+      Thread.sleep(200)
       txlog2.close
     }
   }
