@@ -452,9 +452,6 @@ class LocalActorRef private[akka] (
     case _                        ⇒ true
   }
 
-  // FIXME how to get the matching serializerClassName? Now default is used. Needed for transaction log snapshot
-  // private val serializer = Actor.serializerFor(address, Format.defaultSerializerName)
-
   def serializerErrorDueTo(reason: String) =
     throw new akka.config.ConfigurationException(
       "Could not create Serializer object [" + this.getClass.getName +
