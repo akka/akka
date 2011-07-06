@@ -404,8 +404,8 @@ object Actor extends ListenerManagement {
   private[akka] def createActor(address: String, actorFactory: () ⇒ ActorRef): ActorRef = {
     Address.validate(address)
     registry.actorFor(address) match { // check if the actor for the address is already in the registry
-      case Some(actorRef) ⇒ actorRef // it is -> return it
-      case None ⇒ // it is not -> create it
+      case Some(actorRef) ⇒ actorRef  // it is     -> return it
+      case None ⇒                     // it is not -> create it
         try {
           Deployer.deploymentFor(address) match {
             case Deploy(_, router, _, Local) ⇒ actorFactory() // create a local actor
