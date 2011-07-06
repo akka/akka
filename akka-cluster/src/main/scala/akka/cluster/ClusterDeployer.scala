@@ -52,7 +52,7 @@ object ClusterDeployer {
     Cluster.zooKeeperServers,
     Cluster.sessionTimeout,
     Cluster.connectionTimeout,
-    Cluster.defaultSerializer)
+    Cluster.defaultZooKeeperSerializer)
 
   private val deploymentInProgressLockListener = new LockListener {
     def lockAcquired() {

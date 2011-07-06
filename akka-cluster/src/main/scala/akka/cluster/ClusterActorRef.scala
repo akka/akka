@@ -21,6 +21,9 @@ import java.util.{ Map ⇒ JMap }
 import com.eaio.uuid.UUID
 
 /**
+ * ActorRef representing a one or many instances of a clustered, load-balanced and sometimes replicated actor
+ * where the instances can reside on other nodes in the cluster.
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ClusterActorRef private[akka] (
@@ -36,7 +39,6 @@ class ClusterActorRef private[akka] (
     })
 
   ClusterModule.ensureEnabled()
-  start()
 
   def connections: Map[InetSocketAddress, ActorRef] = inetSocketAddressToActorRefMap.get
 
@@ -91,33 +93,48 @@ class ClusterActorRef private[akka] (
   def dispatcher_=(md: MessageDispatcher) {
     unsupported
   }
+
   def dispatcher: MessageDispatcher = unsupported
+
   def link(actorRef: ActorRef) {
     unsupported
   }
+
   def unlink(actorRef: ActorRef) {
     unsupported
   }
+
   def startLink(actorRef: ActorRef): ActorRef = unsupported
+
   def supervisor: Option[ActorRef] = unsupported
+
   def linkedActors: JMap[Uuid, ActorRef] = unsupported
+
   protected[akka] def mailbox: AnyRef = unsupported
+
   protected[akka] def mailbox_=(value: AnyRef): AnyRef = unsupported
+
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable) {
     unsupported
   }
+
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
     unsupported
   }
+
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
     unsupported
   }
+
   protected[akka] def invoke(messageHandle: MessageInvocation) {
     unsupported
   }
+
   protected[akka] def supervisor_=(sup: Option[ActorRef]) {
     unsupported
   }
+
   protected[akka] def actorInstance: AtomicReference[Actor] = unsupported
+
   private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 }

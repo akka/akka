@@ -344,7 +344,7 @@ object TransactionLog {
       Cluster.zooKeeperServers,
       Cluster.sessionTimeout,
       Cluster.connectionTimeout,
-      Cluster.defaultSerializer)
+      Cluster.defaultZooKeeperSerializer)
 
     try {
       zk.create(transactionLogNode, null, CreateMode.PERSISTENT)

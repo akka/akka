@@ -30,12 +30,12 @@ object ReflectiveAccess {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object ClusterModule {
-    lazy val isEnabled = clusterInstance.isDefined
+    lazy val isEnabled = Config.isClusterEnabled && clusterInstance.isDefined
 
     def ensureEnabled() {
       if (!isEnabled) {
         val e = new ModuleNotAvailableException(
-          "Can't load the cluster module, make sure that akka-cluster.jar is on the classpath")
+          "Can't load the cluster module, make sure it is enabled in the config ('akka.enabled-modules = [\"cluster\"])' and that akka-cluster.jar is on the classpath")
         EventHandler.debug(this, e.toString)
         throw e
       }

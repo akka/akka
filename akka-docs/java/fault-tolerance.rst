@@ -117,7 +117,7 @@ The Actor’s supervision can be declaratively defined by creating a ‘Supervis
   import static akka.config.Supervision.*;
   import static akka.actor.Actors.*;
 
-  Supervisor supervisor = new Supervisor(
+  Supervisor supervisor = Supervisor.apply(
     new SupervisorConfig(
       new AllForOneStrategy(new Class[]{Exception.class}, 3, 5000),
       new Supervise[] {
@@ -141,13 +141,14 @@ MaximumNumberOfRestartsWithinTimeRangeReached message.
   import static akka.actor.Actors.*;
   import akka.event.JavaEventHandler;
 
-   Procedure2<ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached> handler = new Procedure2<ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached>() {
-            public void apply(ActorRef ref, MaximumNumberOfRestartsWithinTimeRangeReached max) {
-                JavaEventHandler.error(ref, max);
-            }
-        };
+   Procedure2<ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached> handler =
+     new Procedure2<ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached>() {
+       public void apply(ActorRef ref, MaximumNumberOfRestartsWithinTimeRangeReached max) {
+         JavaEventHandler.error(ref, max);
+       }
+     };
 
-  Supervisor supervisor = new Supervisor(
+  Supervisor supervisor = Supervisor.apply(
     new SupervisorConfig(
       new AllForOneStrategy(new Class[]{Exception.class}, 3, 5000),
       new Supervise[] {
@@ -165,7 +166,7 @@ You can link and unlink actors from a declaratively defined supervisor using the
 
 .. code-block:: java
 
-  Supervisor supervisor = new Supervisor(...);
+  Supervisor supervisor = Supervisor.apply(...);
   supervisor.link(..);
   supervisor.unlink(..);
 
@@ -209,7 +210,7 @@ Here is an example:
   import static akka.config.Supervision.*;
   import static akka.actor.Actors.*;
 
-  Supervisor supervisor = new Supervisor(
+  Supervisor supervisor = Supervisor.apply(
     new SupervisorConfig(
       new AllForOneStrategy(new Class[]{Exception.class}, 3, 5000),
       new Supervise[] {

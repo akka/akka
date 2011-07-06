@@ -31,7 +31,7 @@ object DeploymentConfig {
   case class Deploy(
     address: String,
     routing: Routing = Direct,
-    format: String = Serializer.defaultSerializerName, // Format.defaultSerializerName,
+    format: String = Serializer.defaultSerializerName,
     scope: Scope = Local)
 
   // --------------------------------
@@ -61,7 +61,7 @@ object DeploymentConfig {
   // --------------------------------
   sealed trait Scope
   case class Clustered(
-    home: Home = Host("localhost"),
+    preferredNodes: Iterable[Home] = Vector(Host("localhost")),
     replicas: Replicas = NoReplicas,
     replication: ReplicationScheme = Transient) extends Scope
 
@@ -139,11 +139,18 @@ object DeploymentConfig {
   // --- Helper methods for parsing
   // --------------------------------
 
-  def isHomeNode(home: Home): Boolean = home match {
-    case Host(hostname) ⇒ hostname == Config.hostname
-    case IP(address)    ⇒ address == "0.0.0.0" || address == "127.0.0.1" // FIXME look up IP address from the system
-    case Node(nodename) ⇒ nodename == Config.nodename
+  def nodeNameFor(home: Home): String = {
+    home match {
+      case Node(nodename)    ⇒ nodename
+      case Host("localhost") ⇒ Config.nodename
+      case IP("0.0.0.0")     ⇒ Config.nodename
+      case IP("127.0.0.1")   ⇒ Config.nodename
+      case Host(hostname)    ⇒ throw new UnsupportedOperationException("Specifying preferred node name by 'hostname' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
+      case IP(address)       ⇒ throw new UnsupportedOperationException("Specifying preferred node name by 'IP address' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
+    }
   }
+
+  def isHomeNode(home: Home): Boolean = nodeNameFor(home) == Config.nodename
 
   def replicaValueFor(replicas: Replicas): Int = replicas match {
     case Replicate(replicas) ⇒ replicas
@@ -166,7 +173,7 @@ object DeploymentConfig {
     case LeastRAM()      ⇒ RouterType.LeastRAM
     case LeastMessages   ⇒ RouterType.LeastMessages
     case LeastMessages() ⇒ RouterType.LeastMessages
-    case c: CustomRouter ⇒ throw new UnsupportedOperationException("routerTypeFor: " + c)
+    case c: CustomRouter ⇒ throw new UnsupportedOperationException("Unknown Router [" + c + "]")
   }
 
   def isReplicationAsync(strategy: ReplicationStrategy): Boolean = strategy match {
@@ -245,8 +252,10 @@ object Deployer {
 
   private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = {
     val deployment_? = instance.lookupDeploymentFor(address)
+
     if (deployment_?.isDefined && (deployment_?.get ne null)) deployment_?
     else {
+
       val newDeployment =
         try {
           lookupInConfig(address)
@@ -255,6 +264,7 @@ object Deployer {
             EventHandler.error(e, this, e.getMessage)
             throw e
         }
+
       newDeployment foreach { d ⇒
         if (d eq null) {
           val e = new IllegalStateException("Deployment for address [" + address + "] is null")
@@ -263,6 +273,7 @@ object Deployer {
         }
         deploy(d) // deploy and cache it
       }
+
       newDeployment
     }
   }
@@ -334,28 +345,30 @@ object Deployer {
           case Some(clusteredConfig) ⇒
 
             // --------------------------------
-            // akka.actor.deployment.<address>.clustered.home
+            // akka.actor.deployment.<address>.clustered.preferred-nodes
             // --------------------------------
 
-            val home = clusteredConfig.getString("home", "") match {
-              case "" ⇒ Host("localhost")
-              case home ⇒
+            val preferredNodes = clusteredConfig.getList("preferred-nodes") match {
+              case Nil ⇒ Vector(Host("localhost"))
+              case homes ⇒
                 def raiseHomeConfigError() = throw new ConfigurationException(
                   "Config option [" + addressPath +
-                    ".clustered.home] needs to be on format 'host:<hostname>', 'ip:<ip address>'' or 'node:<node name>', was [" +
-                    home + "]")
+                    ".clustered.preferred-nodes] needs to be a list with elements on format\n'host:<hostname>', 'ip:<ip address>' or 'node:<node name>', was [" +
+                    homes + "]")
 
-                if (!(home.startsWith("host:") || home.startsWith("node:") || home.startsWith("ip:"))) raiseHomeConfigError()
+                homes map { home ⇒
+                  if (!(home.startsWith("host:") || home.startsWith("node:") || home.startsWith("ip:"))) raiseHomeConfigError()
 
-                val tokenizer = new java.util.StringTokenizer(home, ":")
-                val protocol = tokenizer.nextElement
-                val address = tokenizer.nextElement.asInstanceOf[String]
+                  val tokenizer = new java.util.StringTokenizer(home, ":")
+                  val protocol = tokenizer.nextElement
+                  val address = tokenizer.nextElement.asInstanceOf[String]
 
-                protocol match {
-                  case "host" ⇒ Host(address)
-                  case "node" ⇒ Node(address)
-                  case "ip"   ⇒ IP(address)
-                  case _      ⇒ raiseHomeConfigError()
+                  protocol match {
+                    case "host" ⇒ Host(address)
+                    case "node" ⇒ Node(address)
+                    case "ip"   ⇒ IP(address)
+                    case _      ⇒ raiseHomeConfigError()
+                  }
                 }
             }
 
@@ -382,7 +395,7 @@ object Deployer {
             // --------------------------------
             clusteredConfig.getSection("replication") match {
               case None ⇒
-                Some(Deploy(address, router, format, Clustered(home, replicas, Transient)))
+                Some(Deploy(address, router, format, Clustered(preferredNodes, replicas, Transient)))
 
               case Some(replicationConfig) ⇒
                 val storage = replicationConfig.getString("storage", "transaction-log") match {
@@ -401,7 +414,7 @@ object Deployer {
                       ".clustered.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
                       unknown + "]")
                 }
-                Some(Deploy(address, router, format, Clustered(home, replicas, Replication(storage, strategy))))
+                Some(Deploy(address, router, format, Clustered(preferredNodes, replicas, Replication(storage, strategy))))
             }
         }
     }
