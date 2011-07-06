@@ -420,23 +420,28 @@ object Actor extends ListenerManagement {
   }
 
   private[akka] def newLocalActorRef(clazz: Class[_ <: Actor], address: String): ActorRef = {
-    new LocalActorRef(() ⇒ {
-      import ReflectiveAccess.{ createInstance, noParams, noArgs }
-      createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs) match {
-        case Right(actor) ⇒ actor
-        case Left(exception) ⇒
-          val cause = exception match {
-            case i: InvocationTargetException ⇒ i.getTargetException
-            case _                            ⇒ exception
-          }
+    registry.local.actorFor(address) match {
+      case Some(alreadyExistsForAddress) ⇒ // return already existing actor for this address
+        alreadyExistsForAddress
+      case None ⇒ // create (and store in registry) a new actor for this address
+        new LocalActorRef(() ⇒ {
+          import ReflectiveAccess.{ createInstance, noParams, noArgs }
+          createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs) match {
+            case Right(actor) ⇒ actor
+            case Left(exception) ⇒
+              val cause = exception match {
+                case i: InvocationTargetException ⇒ i.getTargetException
+                case _                            ⇒ exception
+              }
 
-          throw new ActorInitializationException(
-            "Could not instantiate Actor of " + clazz +
-              "\nMake sure Actor is NOT defined inside a class/trait," +
-              "\nif so put it outside the class/trait, f.e. in a companion object," +
-              "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
-      }
-    }, address, Transient)
+              throw new ActorInitializationException(
+                "Could not instantiate Actor of " + clazz +
+                  "\nMake sure Actor is NOT defined inside a class/trait," +
+                  "\nif so put it outside the class/trait, f.e. in a companion object," +
+                  "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
+          }
+        }, address, Transient)
+    }
   }
 
   private def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef = {
