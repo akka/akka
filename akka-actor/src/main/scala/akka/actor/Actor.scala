@@ -380,13 +380,15 @@ object Actor extends ListenerManagement {
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
    * the block has been executed.
    * <p/>
+   * Only to be used from Scala code.
+   * <p/>
    * NOTE: If used from within an Actor then has to be qualified with 'Actor.spawn' since
    * there is a method 'spawn[ActorType]' in the Actor trait already.
    * Example:
    * <pre>
    * import Actor.spawn
    *
-   * spawn  {
+   * spawn {
    *   ... // do stuff
    * }
    * </pre>
@@ -401,6 +403,10 @@ object Actor extends ListenerManagement {
     }).start() ! Spawn
   }
 
+  /**
+   * Creates an actor according to the deployment plan for the 'address'; local or clustered.
+   * If already created then it just returns it from the registry.
+   */
   private[akka] def createActor(address: String, actorFactory: () ⇒ ActorRef): ActorRef = {
     Address.validate(address)
     registry.actorFor(address) match { // check if the actor for the address is already in the registry
@@ -420,28 +426,23 @@ object Actor extends ListenerManagement {
   }
 
   private[akka] def newLocalActorRef(clazz: Class[_ <: Actor], address: String): ActorRef = {
-    registry.local.actorFor(address) match {
-      case Some(alreadyExistsForAddress) ⇒ // return already existing actor for this address
-        alreadyExistsForAddress
-      case None ⇒ // create (and store in registry) a new actor for this address
-        new LocalActorRef(() ⇒ {
-          import ReflectiveAccess.{ createInstance, noParams, noArgs }
-          createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs) match {
-            case Right(actor) ⇒ actor
-            case Left(exception) ⇒
-              val cause = exception match {
-                case i: InvocationTargetException ⇒ i.getTargetException
-                case _                            ⇒ exception
-              }
-
-              throw new ActorInitializationException(
-                "Could not instantiate Actor of " + clazz +
-                  "\nMake sure Actor is NOT defined inside a class/trait," +
-                  "\nif so put it outside the class/trait, f.e. in a companion object," +
-                  "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
+    new LocalActorRef(() ⇒ {
+      import ReflectiveAccess.{ createInstance, noParams, noArgs }
+      createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs) match {
+        case Right(actor) ⇒ actor
+        case Left(exception) ⇒
+          val cause = exception match {
+            case i: InvocationTargetException ⇒ i.getTargetException
+            case _                            ⇒ exception
           }
-        }, address, Transient)
-    }
+
+          throw new ActorInitializationException(
+            "Could not instantiate Actor of " + clazz +
+            "\nMake sure Actor is NOT defined inside a class/trait," +
+            "\nif so put it outside the class/trait, f.e. in a companion object," +
+            "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
+      }
+    }, address, Transient)
   }
 
   private def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef = {
