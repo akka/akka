@@ -58,10 +58,6 @@ class FJDispatcher(
   }
 }
 
-object FJDispatcher {
-  def isCurrentThreadFJThread = Thread.currentThread.isInstanceOf[ForkJoinWorkerThread]
-}
-
 case class ForkJoinPoolConfig(targetParallelism: Int = Runtime.getRuntime.availableProcessors()) extends ExecutorServiceFactoryProvider {
   final def createExecutorServiceFactory(name: String): ExecutorServiceFactory = new ExecutorServiceFactory {
     def createExecutorService: ExecutorService = {
@@ -72,7 +68,7 @@ case class ForkJoinPoolConfig(targetParallelism: Int = Runtime.getRuntime.availa
         override def execute(r: Runnable) {
           r match {
             case fjmbox: FJMailbox ⇒
-              fjmbox.fjTask.reinitialize()
+              //fjmbox.fjTask.reinitialize()
               Thread.currentThread match {
                 case fjwt: ForkJoinWorkerThread if fjwt.getPool eq this ⇒
                   fjmbox.fjTask.fork() //We should do fjwt.pushTask(fjmbox.fjTask) but it's package protected
