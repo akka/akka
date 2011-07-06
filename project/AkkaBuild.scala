@@ -1,5 +1,6 @@
 import sbt._
 import Keys._
+import MultiJvmPlugin.{ MultiJvm, extraOptions, multiJvmMarker }
 
 object AkkaBuild extends Build {
   val Organization = "se.scalablesolutions.akka"
@@ -57,11 +58,16 @@ object AkkaBuild extends Build {
     id = "akka-cluster",
     base = file("akka-cluster"),
     dependencies = Seq(stm, actorTests % "test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ MultiJvmPlugin.settings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
-      testOptions in Test += Tests.Filter(s => !s.contains("MultiJvm"))
+      sourceDirectory in MultiJvm <<= (sourceDirectory in Test).identity,
+      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      },
+      testOptions in Test <+= (multiJvmMarker in MultiJvm) map { m => Tests.Filter(s => !s.contains(m)) },
+      test in Test <<= test in Test dependsOn (test in MultiJvm)
     )
-  )
+  ) configs (MultiJvm)
 
   lazy val http = Project(
     id = "akka-http",
@@ -266,16 +272,22 @@ object Dependencies {
 
   val testkit = Seq(Test.scalatest)
 
-  val actorTests = Seq(Test.junit, Test.scalatest, Test.multiverse, protobuf, jacksonMapper, sjson)
+  val actorTests = Seq(
+    Test.junit, Test.scalatest, Test.multiverse, Test.commonsMath, Test.mockito,
+    protobuf, jacksonMapper, sjson
+  )
 
   val stm = Seq(multiverse, Test.junit, Test.scalatest)
 
-  val cluster = Seq(bookkeeper, commonsCodec, commonsIo, guice, h2Lzf, jacksonCore, jacksonMapper,
-                    log4j, netty, protobuf, sjson, zkClient, zookeeper, zookeeperLock,
-                    Test.junit, Test.scalatest)
+  val cluster = Seq(
+    bookkeeper, commonsCodec, commonsIo, guice, h2Lzf, jacksonCore, jacksonMapper, log4j, netty,
+    protobuf, sjson, zkClient, zookeeper, zookeeperLock, Test.junit, Test.scalatest
+  )
 
-  val http = Seq(jsr250, Provided.javaxServlet, Provided.jetty, Provided.jerseyServer, jsr311, commonsCodec,
-                 Test.junit, Test.scalatest, Test.mockito)
+  val http = Seq(
+    jsr250, Provided.javaxServlet, Provided.jetty, Provided.jerseyServer, jsr311, commonsCodec,
+    Test.junit, Test.scalatest, Test.mockito
+  )
 
   val slf4j = Seq(slf4jApi)
 
@@ -289,8 +301,10 @@ object Dependencies {
 
   val spring = Seq(springBeans, springContext, Test.camelSpring, Test.junit, Test.scalatest)
 
-  val kernel = Seq(jettyUtil, jettyXml, jettyServlet, jerseyCore, jerseyJson, jerseyScala,
-                   jacksonCore, staxApi, Provided.jerseyServer)
+  val kernel = Seq(
+    jettyUtil, jettyXml, jettyServlet, jerseyCore, jerseyJson, jerseyScala,
+    jacksonCore, staxApi, Provided.jerseyServer
+  )
 }
 
 object Dependency {
@@ -348,12 +362,6 @@ object Dependency {
   val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"              % V.Zookeeper  // ApacheV2
   val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2
 
-  // Runtime
-
-  object Runtime {
-    val logback = "ch.qos.logback" % "logback-classic" % V.Logback % "runtime" // MIT
-  }
-
   // Provided
 
   object Provided {
@@ -362,11 +370,18 @@ object Dependency {
     val jetty        = "org.eclipse.jetty" % "jetty-server"  % V.Jetty        % "provided" // Eclipse license
   }
 
+  // Runtime
+
+  object Runtime {
+    val logback = "ch.qos.logback" % "logback-classic" % V.Logback % "runtime" // MIT
+  }
+
   // Test
 
   object Test {
     val camelSpring = "org.apache.camel"    % "camel-spring"        % V.Camel      % "test" // ApacheV2
     val commonsColl = "commons-collections" % "commons-collections" % "3.2.1"      % "test" // ApacheV2
+    val commonsMath = "org.apache.commons"  % "commons-math"        % "2.1"        % "test" // ApacheV2
     val jetty       = "org.eclipse.jetty"   % "jetty-server"        % V.Jetty      % "test" // Eclipse license
     val jettyWebapp = "org.eclipse.jetty"   % "jetty-webapp"        % V.Jetty      % "test" // Eclipse license
     val junit       = "junit"               % "junit"               % "4.5"        % "test" // Common Public License 1.0
