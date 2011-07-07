@@ -10,7 +10,9 @@ object AkkaBuild extends Build {
   lazy val akka = Project(
     id = "akka",
     base = file("."),
-    settings = buildSettings,
+    settings = buildSettings ++ Unidoc.settings ++ Seq(
+      Unidoc.unidocExclude := Seq(samples.id, tutorials.id)
+    ),
     aggregate = Seq(actor, testkit, actorTests, stm, cluster, http, slf4j, mailboxes, camel, camelTyped, samples, tutorials)
   )
 
