@@ -33,11 +33,8 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterNode {
 
   "foo" must {
     "bla" in {
-      println("Started Zookeeper Node")
       Cluster.node.start()
-      println("Waiting to begin")
       Cluster.barrier("waiting-for-begin", NrOfNodes).await()
-      println("Begin!")
 
       println("Getting reference to service-hello actor")
       var hello: ActorRef = null
@@ -47,9 +44,7 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterNode {
 
       println("Successfully acquired reference")
 
-      println("Waiting to end")
       Cluster.barrier("waiting-to-end", NrOfNodes).await()
-      println("Shutting down ClusterNode")
       Cluster.node.shutdown()
     }
   }
@@ -67,7 +62,7 @@ class RoundRobinFailoverMultiJvmNode2 extends SlaveNode {
       Cluster.barrier("waiting-for-begin", NrOfNodes).await()
       println("Begin!")
 
-      Cluster.barrier("get-ref-to-actor-on-node2", NrOfNodes) {}
+      Cluster.barrier("get-ref-to-actor-on-node2", NrOfNodes).await()
 
       // ============= the real testing =================
       /*

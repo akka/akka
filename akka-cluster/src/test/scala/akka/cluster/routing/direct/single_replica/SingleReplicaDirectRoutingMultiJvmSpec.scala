@@ -1,11 +1,10 @@
-package akka.cluster.routing.routing_identity_problem
+package akka.cluster.routing.direct.single_replica
 
+import akka.actor.Actor
 import akka.config.Config
-import akka.actor.{ ActorRef, Actor }
 import akka.cluster.{ ClusterTestNode, MasterClusterTestNode, Cluster }
 
-object RoutingIdentityProblemMultiJvmSpec {
-
+object SingleReplicaDirectRoutingMultiJvmSpec {
   val NrOfNodes = 2
 
   class SomeActor extends Actor with Serializable {
@@ -20,42 +19,41 @@ object RoutingIdentityProblemMultiJvmSpec {
       }
     }
   }
+
 }
 
-class RoutingIdentityProblemMultiJvmNode1 extends MasterClusterTestNode {
+class SingleReplicaDirectRoutingMultiJvmNode1 extends MasterClusterTestNode {
 
-  import RoutingIdentityProblemMultiJvmSpec._
+  import SingleReplicaDirectRoutingMultiJvmSpec._
 
   val testNodes = NrOfNodes
+
+  "when node send message to existing node using direct routing it" must {
+    "communicate with that node" in {
+      Cluster.node.start()
+      Cluster.barrier("waiting-for-begin", NrOfNodes).await()
+
+      val actor = Actor.actorOf[SomeActor]("service-hello").start()
+      actor.isRunning must be(true)
+
+      Cluster.barrier("waiting-to-end", NrOfNodes).await()
+      Cluster.node.shutdown()
+    }
+  }
+}
+
+class SingleReplicaDirectRoutingMultiJvmNode2 extends ClusterTestNode {
+
+  import SingleReplicaDirectRoutingMultiJvmSpec._
 
   "___" must {
     "___" in {
       Cluster.node.start()
-
       Cluster.barrier("waiting-for-begin", NrOfNodes).await()
+
       Cluster.barrier("waiting-to-end", NrOfNodes).await()
       Cluster.node.shutdown()
     }
   }
 }
 
-class RoutingIdentityProblemMultiJvmNode2 extends ClusterTestNode {
-
-  import RoutingIdentityProblemMultiJvmSpec._
-
-  "deployment of round robin actor" must {
-    "obay homenode configuration" in {
-      Cluster.node.start()
-      Cluster.barrier("waiting-for-begin", NrOfNodes).await()
-
-      Cluster.barrier("get-ref-to-actor-on-node2", NrOfNodes) {}
-
-      val actor = Actor.actorOf[SomeActor]("service-hello")
-      val name: String = (actor ? "identify").get.asInstanceOf[String]
-      name must equal("node1")
-
-      Cluster.barrier("waiting-to-end", NrOfNodes).await()
-      Cluster.node.shutdown()
-    }
-  }
-}
