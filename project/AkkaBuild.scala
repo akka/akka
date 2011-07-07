@@ -248,7 +248,8 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Defaults.defaultSettings ++ Seq(
     organization := Organization,
     version      := Version,
-    scalaVersion := ScalaVersion
+    scalaVersion := ScalaVersion,
+    crossPaths := false
   )
 
   lazy val defaultSettings = buildSettings ++ Seq(
