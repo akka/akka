@@ -123,13 +123,13 @@ object ReflectiveAccess {
     }
 
     type TransactionLog = {
-      def recordEntry(messageHandle: MessageInvocation, actorRef: ActorRef)
+      def recordEntry(messageHandle: MessageInvocation, actorRef: LocalActorRef)
       def recordEntry(entry: Array[Byte])
       def recordSnapshot(snapshot: Array[Byte])
       def entries: Vector[Array[Byte]]
       def entriesFromLatestSnapshot: Tuple2[Array[Byte], Vector[Array[Byte]]]
       def entriesInRange(from: Long, to: Long): Vector[Array[Byte]]
-      def latestSnapshotAndSubsequentEntries: (Array[Byte], Vector[Array[Byte]])
+      def latestSnapshotAndSubsequentEntries: (Option[Array[Byte]], Vector[Array[Byte]])
       def latestEntryId: Long
       def latestSnapshotId: Long
       def delete()
