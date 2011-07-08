@@ -18,7 +18,6 @@ import DeploymentConfig.{ ReplicationScheme, ReplicationStrategy, Transient, Wri
 import akka.event.EventHandler
 import akka.dispatch.{ DefaultPromise, Promise, MessageInvocation }
 import akka.remote.MessageSerializer
-import akka.serialization.ActorSerialization._
 import akka.cluster.zookeeper._
 import akka.serialization.{ Serializer, Compression }
 import Compression.LZF
@@ -33,15 +32,11 @@ import java.util.concurrent.atomic.AtomicLong
 // FIXME delete tx log after migration of actor has been made and create a new one
 
 /**
- * TODO: Improved documentation,
- *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ReplicationException(message: String) extends AkkaException(message)
 
 /**
- * TODO: Improved documentation.
- *
  * TODO: Explain something about threadsafety.
  *
  * A TransactionLog makes chunks of data durable.
@@ -52,8 +47,7 @@ class TransactionLog private (
   ledger: LedgerHandle,
   val id: String,
   val isAsync: Boolean,
-  replicationScheme: ReplicationScheme,
-  format: Serializer) {
+  replicationScheme: ReplicationScheme) {
 
   import TransactionLog._
 
@@ -65,7 +59,7 @@ class TransactionLog private (
   private val isOpen = new Switch(true)
 
   /**
-   * TODO document method
+   * Record an Actor message invocation.
    */
   def recordEntry(messageHandle: MessageInvocation, actorRef: ActorRef) {
     if (nrOfEntries.incrementAndGet % snapshotFrequency == 0) {
@@ -79,7 +73,7 @@ class TransactionLog private (
   }
 
   /**
-   * TODO document method
+   * Record an entry.
    */
   def recordEntry(entry: Array[Byte]) {
     if (isOpen.isOn) {
@@ -96,8 +90,7 @@ class TransactionLog private (
                 entryId: Long,
                 ctx: AnyRef) {
                 handleReturnCode(returnCode)
-                EventHandler.debug(this,
-                  "Writing entry [%s] to log [%s]".format(entryId, logId))
+                EventHandler.debug(this, "Writing entry [%s] to log [%s]".format(entryId, logId))
               }
             },
             null)
@@ -113,7 +106,7 @@ class TransactionLog private (
   }
 
   /**
-   * TODO document method
+   * Record a snapshot.
    */
   def recordSnapshot(snapshot: Array[Byte]) {
     if (isOpen.isOn) {
@@ -145,14 +138,14 @@ class TransactionLog private (
   }
 
   /**
-   * TODO document method
+   * Get all the entries for this transaction log.
    */
   def entries: Vector[Array[Byte]] = entriesInRange(0, ledger.getLastAddConfirmed)
 
   /**
-   * TODO document method
+   * Get the latest snapshot and all subsequent entries from this snapshot.
    */
-  def toByteArraysLatestSnapshot: (Array[Byte], Vector[Array[Byte]]) = {
+  def latestSnapshotAndSubsequentEntries: (Array[Byte], Vector[Array[Byte]]) = {
     val snapshotId = latestSnapshotId
     EventHandler.debug(this,
       "Reading entries from snapshot id [%s] for log [%s]".format(snapshotId, logId))
@@ -160,7 +153,7 @@ class TransactionLog private (
   }
 
   /**
-   * TODO document method
+   * Get a range of entries from 'from' to 'to' for this transaction log.
    */
   def entriesInRange(from: Long, to: Long): Vector[Array[Byte]] = if (isOpen.isOn) {
     try {
@@ -197,12 +190,12 @@ class TransactionLog private (
   } else transactionClosedError
 
   /**
-   * TODO document method
+   * Get the last entry written to this transaction log.
    */
   def latestEntryId: Long = ledger.getLastAddConfirmed
 
   /**
-   * TODO document method
+   * Get the id for the last snapshot written to this transaction log.
    */
   def latestSnapshotId: Long = {
     try {
@@ -219,7 +212,7 @@ class TransactionLog private (
   }
 
   /**
-   * TODO document method
+   * Delete all entries for this transaction log.
    */
   def delete() {
     if (isOpen.isOn) {
@@ -244,7 +237,7 @@ class TransactionLog private (
   }
 
   /**
-   * TODO document method
+   * Close this transaction log.
    */
   def close() {
     if (isOpen.switchOff) {
@@ -371,9 +364,8 @@ object TransactionLog {
     ledger: LedgerHandle,
     id: String,
     isAsync: Boolean,
-    replicationScheme: ReplicationScheme,
-    format: Serializer) =
-    new TransactionLog(ledger, id, isAsync, replicationScheme, format)
+    replicationScheme: ReplicationScheme) =
+    new TransactionLog(ledger, id, isAsync, replicationScheme)
 
   /**
    * Shuts down the transaction log.
@@ -392,13 +384,12 @@ object TransactionLog {
   }
 
   /**
-   * TODO document method
+   * Creates a new transaction log for the 'id' specified.
    */
   def newLogFor(
     id: String,
     isAsync: Boolean,
-    replicationScheme: ReplicationScheme,
-    format: Serializer): TransactionLog = {
+    replicationScheme: ReplicationScheme): TransactionLog = {
 
     val txLogPath = transactionLogNode + "/" + id
 
@@ -443,17 +434,16 @@ object TransactionLog {
     }
 
     EventHandler.info(this, "Created new transaction log [%s] for UUID [%s]".format(logId, id))
-    TransactionLog(ledger, id, isAsync, replicationScheme, format)
+    TransactionLog(ledger, id, isAsync, replicationScheme)
   }
 
   /**
-   * TODO document method
+   * Fetches an existing transaction log for the 'id' specified.
    */
   def logFor(
     id: String,
     isAsync: Boolean,
-    replicationScheme: ReplicationScheme,
-    format: Serializer): TransactionLog = {
+    replicationScheme: ReplicationScheme): TransactionLog = {
 
     val txLogPath = transactionLogNode + "/" + id
 
@@ -493,7 +483,7 @@ object TransactionLog {
       case e ⇒ handleError(e)
     }
 
-    TransactionLog(ledger, id, isAsync, replicationScheme, format)
+    TransactionLog(ledger, id, isAsync, replicationScheme)
   }
 
   private[akka] def await[T](future: Promise[T]): T = {

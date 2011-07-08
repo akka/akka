@@ -18,8 +18,7 @@ import com.eaio.uuid.UUID
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestActorRef[T <: Actor](factory: () ⇒ T, address: String)
-  extends LocalActorRef(factory, address, DeploymentConfig.Transient) {
+class TestActorRef[T <: Actor](factory: () ⇒ T, address: String) extends LocalActorRef(factory, address) {
 
   dispatcher = CallingThreadDispatcher.global
   receiveTimeout = None

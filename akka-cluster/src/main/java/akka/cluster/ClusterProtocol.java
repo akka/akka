@@ -132,6 +132,11 @@ public final class ClusterProtocol {
     // optional bytes payload = 5;
     boolean hasPayload();
     com.google.protobuf.ByteString getPayload();
+    
+    // optional .UuidProtocol replicateActorFromUuid = 6;
+    boolean hasReplicateActorFromUuid();
+    akka.cluster.ClusterProtocol.UuidProtocol getReplicateActorFromUuid();
+    akka.cluster.ClusterProtocol.UuidProtocolOrBuilder getReplicateActorFromUuidOrBuilder();
   }
   public static final class RemoteDaemonMessageProtocol extends
       com.google.protobuf.GeneratedMessage
@@ -227,11 +232,25 @@ public final class ClusterProtocol {
       return payload_;
     }
     
+    // optional .UuidProtocol replicateActorFromUuid = 6;
+    public static final int REPLICATEACTORFROMUUID_FIELD_NUMBER = 6;
+    private akka.cluster.ClusterProtocol.UuidProtocol replicateActorFromUuid_;
+    public boolean hasReplicateActorFromUuid() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    public akka.cluster.ClusterProtocol.UuidProtocol getReplicateActorFromUuid() {
+      return replicateActorFromUuid_;
+    }
+    public akka.cluster.ClusterProtocol.UuidProtocolOrBuilder getReplicateActorFromUuidOrBuilder() {
+      return replicateActorFromUuid_;
+    }
+    
     private void initFields() {
       messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.START;
       actorUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
       actorAddress_ = "";
       payload_ = com.google.protobuf.ByteString.EMPTY;
+      replicateActorFromUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -244,6 +263,12 @@ public final class ClusterProtocol {
       }
       if (hasActorUuid()) {
         if (!getActorUuid().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      if (hasReplicateActorFromUuid()) {
+        if (!getReplicateActorFromUuid().isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
         }
@@ -266,6 +291,9 @@ public final class ClusterProtocol {
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeBytes(5, payload_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeMessage(6, replicateActorFromUuid_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -291,6 +319,10 @@ public final class ClusterProtocol {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(5, payload_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(6, replicateActorFromUuid_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -402,13 +434,14 @@ public final class ClusterProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getActorUuidFieldBuilder();
+          getReplicateActorFromUuidFieldBuilder();
         }
       }
       private static Builder create() {
@@ -429,6 +462,12 @@ public final class ClusterProtocol {
         bitField0_ = (bitField0_ & ~0x00000004);
         payload_ = com.google.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
+        if (replicateActorFromUuidBuilder_ == null) {
+          replicateActorFromUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
+        } else {
+          replicateActorFromUuidBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
       
@@ -487,6 +526,14 @@ public final class ClusterProtocol {
           to_bitField0_ |= 0x00000008;
         }
         result.payload_ = payload_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        if (replicateActorFromUuidBuilder_ == null) {
+          result.replicateActorFromUuid_ = replicateActorFromUuid_;
+        } else {
+          result.replicateActorFromUuid_ = replicateActorFromUuidBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -515,6 +562,9 @@ public final class ClusterProtocol {
         if (other.hasPayload()) {
           setPayload(other.getPayload());
         }
+        if (other.hasReplicateActorFromUuid()) {
+          mergeReplicateActorFromUuid(other.getReplicateActorFromUuid());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -526,6 +576,12 @@ public final class ClusterProtocol {
         }
         if (hasActorUuid()) {
           if (!getActorUuid().isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (hasReplicateActorFromUuid()) {
+          if (!getReplicateActorFromUuid().isInitialized()) {
             
             return false;
           }
@@ -584,6 +640,15 @@ public final class ClusterProtocol {
             case 42: {
               bitField0_ |= 0x00000008;
               payload_ = input.readBytes();
+              break;
+            }
+            case 50: {
+              akka.cluster.ClusterProtocol.UuidProtocol.Builder subBuilder = akka.cluster.ClusterProtocol.UuidProtocol.newBuilder();
+              if (hasReplicateActorFromUuid()) {
+                subBuilder.mergeFrom(getReplicateActorFromUuid());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setReplicateActorFromUuid(subBuilder.buildPartial());
               break;
             }
           }
@@ -764,6 +829,96 @@ public final class ClusterProtocol {
         payload_ = getDefaultInstance().getPayload();
         onChanged();
         return this;
+      }
+      
+      // optional .UuidProtocol replicateActorFromUuid = 6;
+      private akka.cluster.ClusterProtocol.UuidProtocol replicateActorFromUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.cluster.ClusterProtocol.UuidProtocol, akka.cluster.ClusterProtocol.UuidProtocol.Builder, akka.cluster.ClusterProtocol.UuidProtocolOrBuilder> replicateActorFromUuidBuilder_;
+      public boolean hasReplicateActorFromUuid() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      public akka.cluster.ClusterProtocol.UuidProtocol getReplicateActorFromUuid() {
+        if (replicateActorFromUuidBuilder_ == null) {
+          return replicateActorFromUuid_;
+        } else {
+          return replicateActorFromUuidBuilder_.getMessage();
+        }
+      }
+      public Builder setReplicateActorFromUuid(akka.cluster.ClusterProtocol.UuidProtocol value) {
+        if (replicateActorFromUuidBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          replicateActorFromUuid_ = value;
+          onChanged();
+        } else {
+          replicateActorFromUuidBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000010;
+        return this;
+      }
+      public Builder setReplicateActorFromUuid(
+          akka.cluster.ClusterProtocol.UuidProtocol.Builder builderForValue) {
+        if (replicateActorFromUuidBuilder_ == null) {
+          replicateActorFromUuid_ = builderForValue.build();
+          onChanged();
+        } else {
+          replicateActorFromUuidBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000010;
+        return this;
+      }
+      public Builder mergeReplicateActorFromUuid(akka.cluster.ClusterProtocol.UuidProtocol value) {
+        if (replicateActorFromUuidBuilder_ == null) {
+          if (((bitField0_ & 0x00000010) == 0x00000010) &&
+              replicateActorFromUuid_ != akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance()) {
+            replicateActorFromUuid_ =
+              akka.cluster.ClusterProtocol.UuidProtocol.newBuilder(replicateActorFromUuid_).mergeFrom(value).buildPartial();
+          } else {
+            replicateActorFromUuid_ = value;
+          }
+          onChanged();
+        } else {
+          replicateActorFromUuidBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000010;
+        return this;
+      }
+      public Builder clearReplicateActorFromUuid() {
+        if (replicateActorFromUuidBuilder_ == null) {
+          replicateActorFromUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
+          onChanged();
+        } else {
+          replicateActorFromUuidBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000010);
+        return this;
+      }
+      public akka.cluster.ClusterProtocol.UuidProtocol.Builder getReplicateActorFromUuidBuilder() {
+        bitField0_ |= 0x00000010;
+        onChanged();
+        return getReplicateActorFromUuidFieldBuilder().getBuilder();
+      }
+      public akka.cluster.ClusterProtocol.UuidProtocolOrBuilder getReplicateActorFromUuidOrBuilder() {
+        if (replicateActorFromUuidBuilder_ != null) {
+          return replicateActorFromUuidBuilder_.getMessageOrBuilder();
+        } else {
+          return replicateActorFromUuid_;
+        }
+      }
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.cluster.ClusterProtocol.UuidProtocol, akka.cluster.ClusterProtocol.UuidProtocol.Builder, akka.cluster.ClusterProtocol.UuidProtocolOrBuilder> 
+          getReplicateActorFromUuidFieldBuilder() {
+        if (replicateActorFromUuidBuilder_ == null) {
+          replicateActorFromUuidBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              akka.cluster.ClusterProtocol.UuidProtocol, akka.cluster.ClusterProtocol.UuidProtocol.Builder, akka.cluster.ClusterProtocol.UuidProtocolOrBuilder>(
+                  replicateActorFromUuid_,
+                  getParentForChildren(),
+                  isClean());
+          replicateActorFromUuid_ = null;
+        }
+        return replicateActorFromUuidBuilder_;
       }
       
       // @@protoc_insertion_point(builder_scope:RemoteDaemonMessageProtocol)
@@ -1092,7 +1247,7 @@ public final class ClusterProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1694,7 +1849,7 @@ public final class ClusterProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1912,23 +2067,24 @@ public final class ClusterProtocol {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\025ClusterProtocol.proto\"\225\001\n\033RemoteDaemon" +
+      "\n\025ClusterProtocol.proto\"\304\001\n\033RemoteDaemon" +
       "MessageProtocol\022-\n\013messageType\030\001 \002(\0162\030.R" +
       "emoteDaemonMessageType\022 \n\tactorUuid\030\002 \001(" +
       "\0132\r.UuidProtocol\022\024\n\014actorAddress\030\003 \001(\t\022\017" +
-      "\n\007payload\030\005 \001(\014\"\212\001\n\035DurableMailboxMessag" +
-      "eProtocol\022\031\n\021ownerActorAddress\030\001 \002(\t\022\032\n\022" +
-      "senderActorAddress\030\002 \001(\t\022!\n\nfutureUuid\030\003" +
-      " \001(\0132\r.UuidProtocol\022\017\n\007message\030\004 \002(\014\")\n\014" +
-      "UuidProtocol\022\014\n\004high\030\001 \002(\004\022\013\n\003low\030\002 \002(\004*" +
-      "\232\002\n\027RemoteDaemonMessageType\022\t\n\005START\020\001\022\010",
-      "\n\004STOP\020\002\022\007\n\003USE\020\003\022\013\n\007RELEASE\020\004\022\022\n\016MAKE_A" +
-      "VAILABLE\020\005\022\024\n\020MAKE_UNAVAILABLE\020\006\022\016\n\nDISC" +
-      "ONNECT\020\007\022\r\n\tRECONNECT\020\010\022\n\n\006RESIGN\020\t\022\031\n\025F" +
-      "AIL_OVER_CONNECTIONS\020\n\022\026\n\022FUNCTION_FUN0_" +
-      "UNIT\020\013\022\025\n\021FUNCTION_FUN0_ANY\020\014\022\032\n\026FUNCTIO" +
-      "N_FUN1_ARG_UNIT\020\r\022\031\n\025FUNCTION_FUN1_ARG_A" +
-      "NY\020\016B\020\n\014akka.clusterH\001"
+      "\n\007payload\030\005 \001(\014\022-\n\026replicateActorFromUui" +
+      "d\030\006 \001(\0132\r.UuidProtocol\"\212\001\n\035DurableMailbo" +
+      "xMessageProtocol\022\031\n\021ownerActorAddress\030\001 " +
+      "\002(\t\022\032\n\022senderActorAddress\030\002 \001(\t\022!\n\nfutur" +
+      "eUuid\030\003 \001(\0132\r.UuidProtocol\022\017\n\007message\030\004 " +
+      "\002(\014\")\n\014UuidProtocol\022\014\n\004high\030\001 \002(\004\022\013\n\003low",
+      "\030\002 \002(\004*\232\002\n\027RemoteDaemonMessageType\022\t\n\005ST" +
+      "ART\020\001\022\010\n\004STOP\020\002\022\007\n\003USE\020\003\022\013\n\007RELEASE\020\004\022\022\n" +
+      "\016MAKE_AVAILABLE\020\005\022\024\n\020MAKE_UNAVAILABLE\020\006\022" +
+      "\016\n\nDISCONNECT\020\007\022\r\n\tRECONNECT\020\010\022\n\n\006RESIGN" +
+      "\020\t\022\031\n\025FAIL_OVER_CONNECTIONS\020\n\022\026\n\022FUNCTIO" +
+      "N_FUN0_UNIT\020\013\022\025\n\021FUNCTION_FUN0_ANY\020\014\022\032\n\026" +
+      "FUNCTION_FUN1_ARG_UNIT\020\r\022\031\n\025FUNCTION_FUN" +
+      "1_ARG_ANY\020\016B\020\n\014akka.clusterH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -1940,7 +2096,7 @@ public final class ClusterProtocol {
           internal_static_RemoteDaemonMessageProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_RemoteDaemonMessageProtocol_descriptor,
-              new java.lang.String[] { "MessageType", "ActorUuid", "ActorAddress", "Payload", },
+              new java.lang.String[] { "MessageType", "ActorUuid", "ActorAddress", "Payload", "ReplicateActorFromUuid", },
               akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol.class,
               akka.cluster.ClusterProtocol.RemoteDaemonMessageProtocol.Builder.class);
           internal_static_DurableMailboxMessageProtocol_descriptor =

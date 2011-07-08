@@ -147,28 +147,27 @@ object ActorSerialization {
       if (protocol.hasSupervisor) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
       else None
 
-    import ReplicationStorageType._
-    import ReplicationStrategyType._
-
-    val replicationScheme =
-      if (protocol.hasReplicationStorage) {
-        protocol.getReplicationStorage match {
-          case TRANSIENT ⇒ Transient
-          case store ⇒
-            val storage = store match {
-              case TRANSACTION_LOG ⇒ TransactionLog
-              case DATA_GRID       ⇒ DataGrid
-            }
-            val strategy = if (protocol.hasReplicationStrategy) {
-              protocol.getReplicationStrategy match {
-                case WRITE_THROUGH ⇒ WriteThrough
-                case WRITE_BEHIND  ⇒ WriteBehind
-              }
-            } else throw new IllegalActorStateException(
-              "Expected replication strategy for replication storage [" + storage + "]")
-            Replication(storage, strategy)
-        }
-      } else Transient
+    // import ReplicationStorageType._
+    // import ReplicationStrategyType._
+    // val replicationScheme =
+    //   if (protocol.hasReplicationStorage) {
+    //     protocol.getReplicationStorage match {
+    //       case TRANSIENT ⇒ Transient
+    //       case store ⇒
+    //         val storage = store match {
+    //           case TRANSACTION_LOG ⇒ TransactionLog
+    //           case DATA_GRID       ⇒ DataGrid
+    //         }
+    //         val strategy = if (protocol.hasReplicationStrategy) {
+    //           protocol.getReplicationStrategy match {
+    //             case WRITE_THROUGH ⇒ WriteThrough
+    //             case WRITE_BEHIND  ⇒ WriteBehind
+    //           }
+    //         } else throw new IllegalActorStateException(
+    //           "Expected replication strategy for replication storage [" + storage + "]")
+    //         Replication(storage, strategy)
+    //     }
+    //   } else Transient
 
     val hotswap =
       try {
@@ -205,8 +204,7 @@ object ActorSerialization {
       lifeCycle,
       supervisor,
       hotswap,
-      factory,
-      replicationScheme)
+      factory)
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
     messages.foreach(message ⇒ ar ! MessageSerializer.deserialize(message.getMessage, Some(classLoader)))

@@ -112,14 +112,12 @@ object ReflectiveAccess {
       def newLogFor(
         id: String,
         isAsync: Boolean,
-        replicationScheme: ReplicationScheme,
-        format: Serializer): TransactionLog
+        replicationScheme: ReplicationScheme): TransactionLog
 
       def logFor(
         id: String,
         isAsync: Boolean,
-        replicationScheme: ReplicationScheme,
-        format: Serializer): TransactionLog
+        replicationScheme: ReplicationScheme): TransactionLog
 
       def shutdown()
     }
@@ -131,6 +129,7 @@ object ReflectiveAccess {
       def entries: Vector[Array[Byte]]
       def entriesFromLatestSnapshot: Tuple2[Array[Byte], Vector[Array[Byte]]]
       def entriesInRange(from: Long, to: Long): Vector[Array[Byte]]
+      def latestSnapshotAndSubsequentEntries: (Array[Byte], Vector[Array[Byte]])
       def latestEntryId: Long
       def latestSnapshotId: Long
       def delete()
