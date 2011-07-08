@@ -3,14 +3,16 @@ import Keys._
 import MultiJvmPlugin.{ MultiJvm, extraOptions, multiJvmMarker }
 
 object AkkaBuild extends Build {
-  val Organization = "se.scalablesolutions.akka"
-  val Version      = "2.0-SNAPSHOT"
-  val ScalaVersion = "2.9.0-1"
+  lazy val buildSettings = Seq(
+    organization := "se.scalablesolutions.akka",
+    version      := "2.0-SNAPSHOT",
+    scalaVersion := "2.9.0-1"
+  )
 
   lazy val akka = Project(
     id = "akka",
     base = file("."),
-    settings = buildSettings ++ Unidoc.settings ++ rstdocSettings ++ Seq(
+    settings = parentSettings ++ Unidoc.settings ++ rstdocSettings ++ Seq(
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       rstdocDirectory <<= baseDirectory / "akka-docs"
     ),
@@ -22,7 +24,7 @@ object AkkaBuild extends Build {
     base = file("akka-actor"),
     settings = defaultSettings ++ Seq(
       autoCompilerPlugins := true,
-      addCompilerPlugin("org.scala-lang.plugins" % "continuations" % ScalaVersion),
+      libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
       scalacOptions += "-P:continuations:enable"
     )
   )
@@ -42,7 +44,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(testkit),
     settings = defaultSettings ++ Seq(
       autoCompilerPlugins := true,
-      addCompilerPlugin("org.scala-lang.plugins" % "continuations" % ScalaVersion),
+      libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
       scalacOptions += "-P:continuations:enable",
       libraryDependencies ++= Dependencies.actorTests
     )
@@ -93,7 +95,7 @@ object AkkaBuild extends Build {
   lazy val mailboxes = Project(
     id = "akka-durable-mailboxes",
     base = file("akka-durable-mailboxes"),
-    settings = buildSettings,
+    settings = parentSettings,
     aggregate = Seq(mailboxesCommon, beanstalkMailbox, fileMailbox, redisMailbox, zookeeperMailbox)
   )
 
@@ -184,7 +186,7 @@ object AkkaBuild extends Build {
   lazy val samples = Project(
     id = "akka-samples",
     base = file("akka-samples"),
-    settings = buildSettings,
+    settings = parentSettings,
     aggregate = Seq(fsmSample)
   )
 
@@ -226,7 +228,7 @@ object AkkaBuild extends Build {
   lazy val tutorials = Project(
     id = "akka-tutorials",
     base = file("akka-tutorials"),
-    settings = buildSettings,
+    settings = parentSettings,
     aggregate = Seq(firstTutorial, secondTutorial)
   )
 
@@ -246,14 +248,15 @@ object AkkaBuild extends Build {
 
   // Settings
 
-  lazy val buildSettings = Defaults.defaultSettings ++ Seq(
-    organization := Organization,
-    version      := Version,
-    scalaVersion := ScalaVersion,
-    crossPaths := false
+  override lazy val settings = super.settings ++ buildSettings ++ Publish.versionSettings
+
+  lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
+
+  lazy val parentSettings = baseSettings ++ Seq(
+    publishArtifact in Compile := false
   )
 
-  lazy val defaultSettings = buildSettings ++ Seq(
+  lazy val defaultSettings = baseSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
 
     // compile options
