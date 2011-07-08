@@ -102,7 +102,7 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
    * as a signal to BSONDocument, etc implementations to verify an id is there 
    * and generate one if needed.
    */
-  def checkID(msg: MongoDurableMessage) = {} // OID already generated in wrapper message
+  def checkID(msg: MongoDurableMessage) = msg // OID already generated in wrapper message
   
   def _id(msg: MongoDurableMessage): Option[AnyRef] = Some(msg._id)
 }

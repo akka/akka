@@ -44,13 +44,13 @@ class MongoBasedNaiveMailbox(val owner: ActorRef) extends DurableExecutableMailb
     /* TODO - Test if a BSON serializer is registered for the message and only if not, use toByteString? */
     val durableMessage = MongoDurableMessage(ownerAddress, msg.receiver, msg.message, msg.channel)
     // todo - do we need to filter the actor name at all for safe collection naming?
-    val result = new DefaultPromise[Boolean](3000) // give the write 3 seconds to succeed ... should we wait infinitely (does akka allow it?)
+    val result = new DefaultPromise[Boolean](10000) // give the write 10 seconds to succeed ... should we wait infinitely (does akka allow it?)
     db.insert(collName)(durableMessage, false)(RequestFutures.write { wr: Either[Throwable, (Option[AnyRef], WriteResult)] => wr match { 
       case Right((oid, wr)) => result.completeWithResult(true)
       case Left(t) => result.completeWithException(t)
     }})
 
-    result.get
+    result.as[Boolean].orNull
   }
 
   def dequeue: MessageInvocation = withErrorHandling {
@@ -61,7 +61,7 @@ class MongoBasedNaiveMailbox(val owner: ActorRef) extends DurableExecutableMailb
      * TODO - Should we have a specific query in place? Which way do we sort? 
      * TODO - Error handling version!
      */
-    val msgInvocation = new DefaultPromise[MessageInvocation](3000)
+    val msgInvocation = new DefaultPromise[MessageInvocation](10000)
     db.findAndRemove(collName)(Document.empty) { msg: MongoDurableMessage => 
       EventHandler.debug(this, 
         "\nDEQUEUING message in mongo-based mailbox [%s]".format(msg))
@@ -69,13 +69,13 @@ class MongoBasedNaiveMailbox(val owner: ActorRef) extends DurableExecutableMailb
       EventHandler.debug(this, 
         "\nDEQUEUING messageInvocation in mongo-based mailbox [%s]".format(msgInvocation))
     }
-    msgInvocation.get 
+    msgInvocation.as[MessageInvocation].orNull
   } 
 
   def size: Int = {
-    val count = new DefaultPromise[Int](3000)
+    val count = new DefaultPromise[Int](10000)
     db.count(collName)()(count.completeWithResult)
-    count.get
+    count.as[Int].getOrElse(-1)
   }
 
 
