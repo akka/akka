@@ -10,8 +10,9 @@ object AkkaBuild extends Build {
   lazy val akka = Project(
     id = "akka",
     base = file("."),
-    settings = buildSettings ++ Unidoc.settings ++ Seq(
-      Unidoc.unidocExclude := Seq(samples.id, tutorials.id)
+    settings = buildSettings ++ Unidoc.settings ++ rstdocSettings ++ Seq(
+      Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
+      rstdocDirectory <<= baseDirectory / "akka-docs"
     ),
     aggregate = Seq(actor, testkit, actorTests, stm, cluster, http, slf4j, mailboxes, camel, camelTyped, samples, tutorials)
   )
@@ -266,6 +267,23 @@ object AkkaBuild extends Build {
     // disable parallel tests
     parallelExecution in Test := false
   )
+
+  // reStructuredText docs
+
+  val rstdocDirectory = SettingKey[File]("rstdoc-directory")
+  val rstdoc = TaskKey[File]("rstdoc", "Build the reStructuredText documentation.")
+
+  lazy val rstdocSettings = Seq(rstdoc <<= rstdocTask)
+
+  def rstdocTask = (rstdocDirectory, streams) map {
+    (dir, s) => {
+      s.log.info("Building reStructuredText documentation...")
+      val exitCode = Process(List("make", "clean", "html", "pdf"), dir) ! s.log
+      if (exitCode != 0) error("Failed to build docs.")
+      s.log.info("Done building docs.")
+      dir
+    }
+  }
 }
 
 // Dependencies
