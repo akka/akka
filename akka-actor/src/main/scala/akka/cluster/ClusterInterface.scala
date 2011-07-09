@@ -316,28 +316,28 @@ trait ClusterNode {
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
    * for remote access through lookup by its UUID.
    */
-  def use[T <: Actor](actorAddress: String): Option[ActorRef]
+  def use[T <: Actor](actorAddress: String): Option[LocalActorRef]
 
   /**
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
    * for remote access through lookup by its UUID.
    */
-  def use[T <: Actor](actorAddress: String, serializer: Serializer): Option[ActorRef]
+  def use[T <: Actor](actorAddress: String, serializer: Serializer): Option[LocalActorRef]
 
   /**
    * Using (checking out) actor on a specific set of nodes.
    */
-  def useActorOnNodes(nodes: Array[String], actorAddress: String)
+  def useActorOnNodes(nodes: Array[String], actorAddress: String, replicateFromUuid: Option[UUID])
 
   /**
    * Using (checking out) actor on all nodes in the cluster.
    */
-  def useActorOnAllNodes(actorAddress: String)
+  def useActorOnAllNodes(actorAddress: String, replicateFromUuid: Option[UUID])
 
   /**
    * Using (checking out) actor on a specific node.
    */
-  def useActorOnNode(node: String, actorAddress: String)
+  def useActorOnNode(node: String, actorAddress: String, replicateFromUuid: Option[UUID])
 
   /**
    * Checks in an actor after done using it on this node.
@@ -353,16 +353,6 @@ trait ClusterNode {
    * Creates an ActorRef with a Router to a set of clustered actors.
    */
   def ref(actorAddress: String, router: RouterType): ActorRef
-
-  /**
-   * Migrate the actor from 'this' node to node 'to'.
-   */
-  def migrate(to: NodeAddress, actorAddress: String)
-
-  /**
-   * Migrate the actor from node 'from' to node 'to'.
-   */
-  def migrate(from: NodeAddress, to: NodeAddress, actorAddress: String)
 
   /**
    * Returns the addresses of all actors checked out on this node.

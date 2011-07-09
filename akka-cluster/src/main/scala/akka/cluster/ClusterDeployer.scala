@@ -167,7 +167,7 @@ object ClusterDeployer {
     ensureRunning {
       LocalDeployer.deploy(deployment)
       deployment match {
-        case Deploy(_, _, _, Local) ⇒ {} // local deployment, do nothing here
+        case Deploy(_, _, Local) ⇒ {} // local deployment, do nothing here
         case _ ⇒ // cluster deployment
           val path = deploymentAddressPath.format(deployment.address)
           try {

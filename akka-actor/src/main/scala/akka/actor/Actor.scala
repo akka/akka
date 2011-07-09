@@ -326,7 +326,7 @@ object Actor extends ListenerManagement {
    * </pre>
    */
   def actorOf[T <: Actor](creator: ⇒ T, address: String): ActorRef = {
-    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator, address, Transient))
+    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator, address))
   }
 
   /**
@@ -349,7 +349,7 @@ object Actor extends ListenerManagement {
    * JAVA API
    */
   def actorOf[T <: Actor](creator: Creator[T], address: String): ActorRef = {
-    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator.create, address, Transient))
+    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator.create, address))
   }
 
   def localActorOf[T <: Actor: Manifest]: ActorRef = {
@@ -369,11 +369,11 @@ object Actor extends ListenerManagement {
   }
 
   def localActorOf[T <: Actor](factory: ⇒ T): ActorRef = {
-    new LocalActorRef(() ⇒ factory, new UUID().toString, Transient)
+    new LocalActorRef(() ⇒ factory, new UUID().toString)
   }
 
   def localActorOf[T <: Actor](factory: ⇒ T, address: String): ActorRef = {
-    new LocalActorRef(() ⇒ factory, address, Transient)
+    new LocalActorRef(() ⇒ factory, address)
   }
 
   /**
@@ -410,12 +410,12 @@ object Actor extends ListenerManagement {
   private[akka] def createActor(address: String, actorFactory: () ⇒ ActorRef): ActorRef = {
     Address.validate(address)
     registry.actorFor(address) match { // check if the actor for the address is already in the registry
-      case Some(actorRef) ⇒ actorRef  // it is     -> return it
-      case None ⇒                     // it is not -> create it
+      case Some(actorRef) ⇒ actorRef // it is     -> return it
+      case None ⇒ // it is not -> create it
         try {
           Deployer.deploymentFor(address) match {
-            case Deploy(_, router, _, Local) ⇒ actorFactory() // create a local actor
-            case deploy                      ⇒ newClusterActorRef(actorFactory, address, deploy)
+            case Deploy(_, router, Local) ⇒ actorFactory() // create a local actor
+            case deploy                   ⇒ newClusterActorRef(actorFactory, address, deploy)
           }
         } catch {
           case e: DeploymentException ⇒
@@ -438,17 +438,17 @@ object Actor extends ListenerManagement {
 
           throw new ActorInitializationException(
             "Could not instantiate Actor of " + clazz +
-            "\nMake sure Actor is NOT defined inside a class/trait," +
-            "\nif so put it outside the class/trait, f.e. in a companion object," +
-            "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
+              "\nMake sure Actor is NOT defined inside a class/trait," +
+              "\nif so put it outside the class/trait, f.e. in a companion object," +
+              "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
       }
-    }, address, Transient)
+    }, address)
   }
 
   private def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef = {
     deploy match {
       case Deploy(
-        configAdress, router, serializerClassName,
+        configAdress, router,
         Clustered(
           preferredHomeNodes,
           replicas,
@@ -461,14 +461,11 @@ object Actor extends ListenerManagement {
         if (!Actor.remote.isRunning) throw new IllegalStateException(
           "Remote server is not running")
 
-        val isHomeNode = preferredHomeNodes exists (home ⇒ DeploymentConfig.isHomeNode(home))
+        val isHomeNode = DeploymentConfig.isHomeNode(preferredHomeNodes)
         val nrOfReplicas = DeploymentConfig.replicaValueFor(replicas)
 
-        def serializerErrorDueTo(reason: String) =
-          throw new akka.config.ConfigurationException(
-            "Could not create Serializer object [" + serializerClassName +
-              "] for serialization of actor [" + address +
-              "] since " + reason)
+        def serializerErrorDueTo(reason: String) = throw new akka.config.ConfigurationException(
+          "Could not create Serializer for actor [" + address + "] due to: " + reason)
 
         val serializer: Serializer =
           Serialization.serializerFor(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
@@ -487,13 +484,16 @@ object Actor extends ListenerManagement {
             storeActorAndGetClusterRef(Transient, serializer)
 
           case replication: Replication ⇒
+            if (DeploymentConfig.routerTypeFor(router) != akka.routing.RouterType.Direct) throw new ConfigurationException(
+              "Can't replicate an actor [" + address + "] configured with another router than \"direct\" - found [" + router + "]")
+
             if (isHomeNode) { // stateful actor's home node
               cluster
                 .use(address, serializer)
                 .getOrElse(throw new ConfigurationException(
                   "Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
+
             } else {
-              // FIXME later manage different 'storage' (data grid) as well
               storeActorAndGetClusterRef(replication, serializer)
             }
         }
