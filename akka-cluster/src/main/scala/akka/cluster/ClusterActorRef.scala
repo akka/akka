@@ -84,11 +84,18 @@ class ClusterActorRef private[akka] (
       if (_status == ActorRefInternals.RUNNING) {
         _status = ActorRefInternals.SHUTDOWN
         postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
+
+        // FIXME here we need to fire off Actor.cluster.remove(address) (which needs to be properly implemented first, see ticket)
+
+        inetSocketAddressToActorRefMap.get.values foreach (_.stop()) // shut down all remote connections
       }
     }
   }
 
+  // ========================================================================
   // ==== NOT SUPPORTED ====
+  // ========================================================================
+
   // FIXME move these methods and the same ones in RemoteActorRef to a base class - now duplicated
   def dispatcher_=(md: MessageDispatcher) {
     unsupported
@@ -136,5 +143,5 @@ class ClusterActorRef private[akka] (
 
   protected[akka] def actorInstance: AtomicReference[Actor] = unsupported
 
-  private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
+  private def unsupported = throw new UnsupportedOperationException("Not supported for ClusterActorRef")
 }

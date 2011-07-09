@@ -29,9 +29,10 @@ In order to create tickets you need to do the following:
 
 `Register here <https://www.assembla.com/user/signup>`_ then log in
 
+Then you also need to become a "Watcher" of the Akka space.
+
 For Akka tickets:
 `Link to create new ticket <https://www.assembla.com/spaces/akka/tickets/new>`__
-
 
 For Akka Modules tickets:
 `Link to create new ticket <https://www.assembla.com/spaces/akka-modules/tickets/new>`__
@@ -49,8 +50,8 @@ Please submit a failing test on the following format:
   import org.scalatest.matchers.MustMatchers
 
   class Ticket001Spec extends WordSpec with MustMatchers {
-  
-    "An XXX" should {
+
+    "An XXX" must {
       "do YYY" in {
         1 must be (1)
       }

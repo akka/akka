@@ -9,10 +9,10 @@ import akka.dispatch._
 import akka.config._
 import akka.config.Supervision._
 import akka.util._
-import akka.serialization.{ Format, Serializer }
+import akka.serialization.{ Format, Serializer, Serialization }
 import ReflectiveAccess._
 import ClusterModule._
-import DeploymentConfig.{ ReplicationScheme, Replication, Transient, WriteThrough, WriteBehind }
+import DeploymentConfig.{ TransactionLog ⇒ TransactionLogConfig, _ }
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
@@ -416,10 +416,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class LocalActorRef private[akka] (
-  private[this] val actorFactory: () ⇒ Actor,
-  val address: String,
-  replicationScheme: ReplicationScheme)
+class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor, val address: String)
   extends ActorRef with ScalaActorRef {
 
   protected[akka] val guard = new ReentrantGuard
@@ -447,52 +444,38 @@ class LocalActorRef private[akka] (
 
   protected[akka] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
 
-  private val isReplicated: Boolean = replicationScheme match {
-    case _: Transient | Transient ⇒ false
-    case _                        ⇒ true
-  }
-
-  // FIXME how to get the matching serializerClassName? Now default is used. Needed for transaction log snapshot
-  // private val serializer = Actor.serializerFor(address, Format.defaultSerializerName)
-
   def serializerErrorDueTo(reason: String) =
     throw new akka.config.ConfigurationException(
       "Could not create Serializer object [" + this.getClass.getName +
         "]")
 
   private val serializer: Serializer =
-    akka.serialization.Serialization.serializerFor(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
+    Serialization.serializerFor(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
+
+  private lazy val replicationScheme: ReplicationScheme =
+    DeploymentConfig.replicationSchemeFor(Deployer.deploymentFor(address)).getOrElse(Transient)
+
+  private lazy val isReplicated: Boolean = DeploymentConfig.isReplicated(replicationScheme)
+
+  private lazy val isWriteBehindReplication: Boolean = DeploymentConfig.isWriteBehindReplication(replicationScheme)
 
   private lazy val replicationStorage: Either[TransactionLog, AnyRef] = {
-    replicationScheme match {
-      case _: Transient | Transient ⇒
-        throw new IllegalStateException("Can not replicate 'transient' actor [" + toString + "]")
+    if (DeploymentConfig.isReplicatedWithTransactionLog(replicationScheme)) {
+      EventHandler.debug(this,
+        "Creating a transaction log for Actor [%s] with replication strategy [%s]"
+          .format(address, replicationScheme))
 
-      case Replication(storage, strategy) ⇒
-        val isWriteBehind = strategy match {
-          case _: WriteBehind | WriteBehind   ⇒ true
-          case _: WriteThrough | WriteThrough ⇒ false
-        }
+      Left(transactionLog.newLogFor(_uuid.toString, isWriteBehindReplication, replicationScheme))
 
-        storage match {
-          case _: DeploymentConfig.TransactionLog | DeploymentConfig.TransactionLog ⇒
-            EventHandler.debug(this,
-              "Creating a transaction log for Actor [%s] with replication strategy [%s]"
-                .format(address, replicationScheme))
-            // Left(transactionLog.newLogFor(_uuid.toString, isWriteBehind, replicationScheme, serializer))
-            // to fix null
-            Left(transactionLog.newLogFor(_uuid.toString, isWriteBehind, replicationScheme, null))
+    } else if (DeploymentConfig.isReplicatedWithDataGrid(replicationScheme)) {
+      throw new ConfigurationException("Replication storage type \"data-grid\" is not yet supported")
 
-          case _: DeploymentConfig.DataGrid | DeploymentConfig.DataGrid ⇒
-            throw new ConfigurationException("Replication storage type \"data-grid\" is not yet supported")
-
-          case unknown ⇒
-            throw new ConfigurationException("Unknown replication storage type [" + unknown + "]")
-        }
+    } else {
+      throw new ConfigurationException("Unknown replication storage type [" + replicationScheme + "]")
     }
   }
 
-  //If it was started inside "newActor", initialize it
+  // If it was started inside "newActor", initialize it
   if (isRunning) initializeActorInstance
 
   // used only for deserialization
@@ -504,10 +487,9 @@ class LocalActorRef private[akka] (
     __lifeCycle: LifeCycle,
     __supervisor: Option[ActorRef],
     __hotswap: Stack[PartialFunction[Any, Unit]],
-    __factory: () ⇒ Actor,
-    __replicationStrategy: ReplicationScheme) = {
+    __factory: () ⇒ Actor) = {
 
-    this(__factory, __address, __replicationStrategy)
+    this(__factory, __address)
 
     _uuid = __uuid
     timeout = __timeout

@@ -35,9 +35,6 @@ class DeploymentMultiJvmNode1 extends MasterClusterTestNode {
 
       barrier("perform-deployment-on-node-1", NrOfNodes) {
         Deployer.start()
-        //        val deployments = Deployer.deploymentsInConfig
-        //        deployments must not equal (Nil)
-        //        ClusterDeployer.init(deployments)
       }
 
       barrier("lookup-deployment-node-2", NrOfNodes) {
