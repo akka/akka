@@ -7,6 +7,8 @@ package akka.routing
 import akka.actor.ActorRef
 import scala.collection.JavaConversions._
 import scala.collection.immutable.Seq
+import java.util.concurrent.atomic.AtomicReference
+import annotation.tailrec
 
 /**
  * An Iterator that is either always empty or yields an infinite number of Ts.
@@ -21,18 +23,27 @@ trait InfiniteIterator[T] extends Iterator[T] {
 case class CyclicIterator[T](val items: Seq[T]) extends InfiniteIterator[T] {
   def this(items: java.util.List[T]) = this(items.toList)
 
-  @volatile
-  private[this] var current: Seq[T] = items
+  private[this] val current: AtomicReference[Seq[T]] = new AtomicReference(items)
 
   def hasNext = items != Nil
 
-  def next = {
-    val nc = if (current == Nil) items else current
-    current = nc.tail
-    nc.head
+  def next: T = {
+    @tailrec
+    def findNext: T = {
+      val currentItems = current.get
+      val newItems = currentItems match {
+        case Nil ⇒ items
+        case xs  ⇒ xs
+      }
+
+      if (current.compareAndSet(currentItems, newItems.tail)) newItems.head
+      else findNext
+    }
+
+    findNext
   }
 
-  override def exists(f: T ⇒ Boolean): Boolean = items.exists(f)
+  override def exists(f: T ⇒ Boolean): Boolean = items exists f
 }
 
 /**
