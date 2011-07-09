@@ -130,7 +130,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val jsr250           = "javax.annotation"            % "jsr250-api"              % "1.0" % "compile" //CDDL v1
     lazy val jsr311           = "javax.ws.rs"                 % "jsr311-api"              % "1.1" % "compile" //CDDL v1
-    lazy val mongo            = "com.mongodb.async"           % "mongo-driver_2.9.0-1"    % "0.2.5"            //ApacheV2
+    lazy val mongo            = "com.mongodb.async"           % "mongo-driver_2.9.0-1"    % "0.2.6"            //ApacheV2
     lazy val multiverse       = "org.multiverse"              % "multiverse-alpha"        % MULTIVERSE_VERSION % "compile" //ApacheV2
     lazy val netty            = "org.jboss.netty"             % "netty"                   % "3.2.4.Final" % "compile" //ApacheV2
     lazy val osgi_core        = "org.osgi"                    % "org.osgi.core"           % "4.2.0" //ApacheV2
