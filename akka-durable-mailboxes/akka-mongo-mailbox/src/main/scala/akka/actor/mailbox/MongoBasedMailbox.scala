@@ -62,13 +62,19 @@ class MongoBasedNaiveMailbox(val owner: ActorRef) extends DurableExecutableMailb
      * TODO - Error handling version!
      */
     val msgInvocation = new DefaultPromise[MessageInvocation](10000)
-    db.findAndRemove(collName)(Document.empty) { msg: MongoDurableMessage => 
-      EventHandler.debug(this, 
-        "\nDEQUEUING message in mongo-based mailbox [%s]".format(msg))
-      msgInvocation.completeWithResult(msg.messageInvocation())
-      EventHandler.debug(this, 
-        "\nDEQUEUING messageInvocation in mongo-based mailbox [%s]".format(msgInvocation))
-    }
+    db.findAndRemove(collName)(Document.empty) { doc: Option[MongoDurableMessage] => doc match {
+      case Some(msg) => {
+        EventHandler.debug(this, 
+          "\nDEQUEUING message in mongo-based mailbox [%s]".format(msg))
+        msgInvocation.completeWithResult(msg.messageInvocation())
+        EventHandler.debug(this, 
+          "\nDEQUEUING messageInvocation in mongo-based mailbox [%s]".format(msgInvocation))
+      }
+      case None => 
+        EventHandler.info(this,
+          "\nNo matching document found. Not an error, just an empty queue.")
+      
+    }}
     msgInvocation.as[MessageInvocation].orNull
   } 
 
