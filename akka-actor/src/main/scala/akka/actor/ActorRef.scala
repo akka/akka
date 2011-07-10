@@ -988,7 +988,8 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   def start(): this.type = synchronized[this.type] {
-    _status = ActorRefInternals.RUNNING
+    if (_status == ActorRefInternals.UNSTARTED)
+      _status = ActorRefInternals.RUNNING
     this
   }
 
