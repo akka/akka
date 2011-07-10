@@ -1,5 +1,7 @@
 package akka.performance.trading.common
 
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Random
 
 import scala.collection.immutable.TreeMap
@@ -11,8 +13,6 @@ import org.junit.Before
 import org.scalatest.junit.JUnitSuite
 
 import akka.event.EventHandler
-import akka.performance.trading.chart.GoogleChartBuilder
-import akka.performance.trading.chart.Stats
 import akka.performance.trading.domain.Ask
 import akka.performance.trading.domain.Bid
 import akka.performance.trading.domain.Order
@@ -51,6 +51,10 @@ trait PerformanceTest extends JUnitSuite {
 
   var stat: DescriptiveStatistics = _
 
+  val resultRepository = BenchResultRepository()
+
+  val legendTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
+
   type TS <: TradingSystem
 
   var tradingSystem: TS = _
@@ -75,7 +79,7 @@ trait PerformanceTest extends JUnitSuite {
   @After
   def tearDown() {
     tradingSystem.shutdown()
-
+    stat = null
   }
 
   def warmUp() {
@@ -92,9 +96,15 @@ trait PerformanceTest extends JUnitSuite {
     isWarm = true
   }
 
+  /**
+   * To compare two tests with each other you can override this method, in
+   * the test. For example Some("OneWayPerformanceTest")
+   */
+  def compareResultWith: Option[String] = None
+
   def logMeasurement(scenario: String, numberOfClients: Int, durationNs: Long) {
 
-    val name = getClass.getSimpleName + "." + scenario
+    val name = getClass.getSimpleName
     val durationS = durationNs.toDouble / 1000000000.0
 
     val percentiles = TreeMap[Int, Long](
@@ -107,6 +117,7 @@ trait PerformanceTest extends JUnitSuite {
     val stats = Stats(
       name,
       load = numberOfClients,
+      timestamp = TestStart.startTime,
       durationNanos = durationNs,
       n = stat.getN,
       min = (stat.getMin / 1000).toLong,
@@ -115,22 +126,36 @@ trait PerformanceTest extends JUnitSuite {
       tps = (stat.getN.toDouble / durationS),
       percentiles)
 
-    ResultHolder.stats = stats :: ResultHolder.stats
+    resultRepository.add(stats)
 
-    EventHandler.info(this, formatResultsTable(ResultHolder.stats))
+    EventHandler.info(this, formatResultsTable(resultRepository.get(name)))
 
-    val chartTitle = name + " Latency Percentiles (microseconds)"
-    val chartUrl = GoogleChartBuilder.percentilChartUrl(ResultHolder.stats, chartTitle)
+    val chartTitle = name + " Percentiles (microseconds)"
+    val chartUrl = GoogleChartBuilder.percentilChartUrl(resultRepository.get(name), chartTitle, _.load + " clients")
     EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
 
-    if (numberOfClients >= maxClients) {
-      ResultHolder.stats = Nil
+    for {
+      compareName ← compareResultWith
+      compareStats ← resultRepository.get(compareName, numberOfClients)
+    } {
+      val chartTitle = name + " vs. " + compareName + ", " + numberOfClients + " clients" + ", Percentiles (microseconds)"
+      val chartUrl = GoogleChartBuilder.percentilChartUrl(Seq(compareStats, stats), chartTitle, _.name)
+      EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
     }
+
+    val withHistorical = resultRepository.getWithHistorical(name, numberOfClients)
+    if (withHistorical.size > 1) {
+      val chartTitle = name + " vs. historical, " + numberOfClients + " clients" + ", Percentiles (microseconds)"
+      val chartUrl = GoogleChartBuilder.percentilChartUrl(withHistorical, chartTitle,
+        stats ⇒ legendTimeFormat.format(new Date(stats.timestamp)))
+      EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
+    }
+
   }
 
-  def formatResultsTable(statsList: List[Stats]): String = {
+  def formatResultsTable(statsSeq: Seq[Stats]): String = {
 
-    val name = statsList.head.name
+    val name = statsSeq.head.name
 
     val spaces = "                                                                                     "
     val headerScenarioCol = ("Scenario" + spaces).take(name.length)
@@ -139,13 +164,13 @@ trait PerformanceTest extends JUnitSuite {
       .mkString("\t")
     val headerLine2 = (spaces.take(name.length) :: "       " :: "   " :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(s)   " :: " " :: Nil)
       .mkString("\t")
-    val line = List.fill(formatStats(statsList.head).replaceAll("\t", "      ").length)("-").mkString
+    val line = List.fill(formatStats(statsSeq.head).replaceAll("\t", "      ").length)("-").mkString
     val formattedStats = "\n" +
       line.replace('-', '=') + "\n" +
       headerLine + "\n" +
       headerLine2 + "\n" +
       line + "\n" +
-      statsList.reverse.map(formatStats(_)).mkString("\n") + "\n" +
+      statsSeq.map(formatStats(_)).mkString("\n") + "\n" +
       line + "\n"
 
     formattedStats
@@ -193,7 +218,7 @@ trait PerformanceTest extends JUnitSuite {
 
 }
 
-object ResultHolder {
-  var stats: List[Stats] = Nil
+object TestStart {
+  val startTime = System.currentTimeMillis
 }
 

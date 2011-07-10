@@ -1,4 +1,5 @@
-package akka.performance.trading.chart
+package akka.performance.trading.common
+
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
 
@@ -15,11 +16,10 @@ object GoogleChartBuilder {
   /**
    * Builds a bar chart for all percentiles in the statistics.
    */
-  def percentilChartUrl(inStatistics: List[Stats], title: String): String = {
-    if (inStatistics.isEmpty) return ""
+  def percentilChartUrl(statistics: Seq[Stats], title: String, legend: Stats ⇒ String): String = {
+    if (statistics.isEmpty) return ""
 
-    val current = inStatistics.head
-    val statistics = inStatistics.reverse
+    val current = statistics.last
 
     val sb = new StringBuilder()
     sb.append(BaseUrl)
@@ -50,7 +50,7 @@ object GoogleChartBuilder {
     sb.append("chxtc=2,-1000")
     sb.append("&")
     // legend
-    appendLegend(statistics, sb)
+    appendLegend(statistics, sb, legend)
     sb.append("&")
     // bar spacing
     sb.append("chbh=a,4,20")
@@ -79,18 +79,12 @@ object GoogleChartBuilder {
 
   private def percentileLabels(percentiles: TreeMap[Int, Long], sb: StringBuilder) {
     sb.append("chxl=1:|")
-    val s = percentiles.keys.mkString("%|")
+    val s = percentiles.keys.toList.map(_ + "%").mkString("|")
     sb.append(s)
   }
 
-  private def appendLegend(statistics: List[Stats], sb: StringBuilder) {
-    val allSameLoad = statistics.map(_.load).toSet.size == 1
-    val allSameName = statistics.map(_.name).toSet.size == 1
-    val legends = statistics.map { stats ⇒
-      if (allSameLoad) stats.name
-      else if (allSameName) stats.load + " clients"
-      else stats.name + ", " + stats.load + " clients"
-    }
+  private def appendLegend(statistics: Seq[Stats], sb: StringBuilder, legend: Stats ⇒ String) {
+    val legends = statistics.map(legend(_))
     sb.append("chdl=")
     val s = legends.map(urlEncode(_)).mkString("|")
     sb.append(s)
@@ -103,7 +97,7 @@ object GoogleChartBuilder {
     sb.append(s)
   }
 
-  private def dataSeries(allPercentiles: List[TreeMap[Int, Long]], sb: StringBuilder) {
+  private def dataSeries(allPercentiles: Seq[TreeMap[Int, Long]], sb: StringBuilder) {
     val series =
       for {
         percentiles ← allPercentiles

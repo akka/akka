@@ -1,9 +1,11 @@
-package akka.performance.trading.chart
+package akka.performance.trading.common
+
 import scala.collection.immutable.TreeMap
 
 case class Stats(
   name: String,
   load: Int,
+  timestamp: Long = System.currentTimeMillis,
   durationNanos: Long,
   n: Long,
   min: Long,
