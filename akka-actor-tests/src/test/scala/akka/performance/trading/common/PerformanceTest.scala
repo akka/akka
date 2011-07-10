@@ -1,13 +1,22 @@
 package akka.performance.trading.common
 
 import java.util.Random
-import org.junit._
-import Assert._
-import org.scalatest.junit.JUnitSuite
+
+import scala.collection.immutable.TreeMap
+
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics
 import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistics
-import akka.performance.trading.domain._
+import org.junit.After
+import org.junit.Before
+import org.scalatest.junit.JUnitSuite
+
 import akka.event.EventHandler
+import akka.performance.trading.chart.GoogleChartBuilder
+import akka.performance.trading.chart.Stats
+import akka.performance.trading.domain.Ask
+import akka.performance.trading.domain.Bid
+import akka.performance.trading.domain.Order
+import akka.performance.trading.domain.TotalTradeCounter
 
 trait PerformanceTest extends JUnitSuite {
 
@@ -66,6 +75,7 @@ trait PerformanceTest extends JUnitSuite {
   @After
   def tearDown() {
     tradingSystem.shutdown()
+
   }
 
   def warmUp() {
@@ -83,22 +93,44 @@ trait PerformanceTest extends JUnitSuite {
   }
 
   def logMeasurement(scenario: String, numberOfClients: Int, durationNs: Long) {
-    val durationUs = durationNs / 1000
-    val durationMs = durationNs / 1000000
-    val durationS = durationNs.toDouble / 1000000000.0
-    val duration = durationS.formatted("%.0f")
-    val n = stat.getN
-    val mean = (stat.getMean / 1000).formatted("%.0f")
-    val tps = (stat.getN.toDouble / durationS).formatted("%.0f")
-    val p5 = (stat.getPercentile(5.0) / 1000).formatted("%.0f")
-    val p25 = (stat.getPercentile(25.0) / 1000).formatted("%.0f")
-    val p50 = (stat.getPercentile(50.0) / 1000).formatted("%.0f")
-    val p75 = (stat.getPercentile(75.0) / 1000).formatted("%.0f")
-    val p95 = (stat.getPercentile(95.0) / 1000).formatted("%.0f")
-    val name = getClass.getSimpleName + "." + scenario
 
-    val summaryLine = name :: numberOfClients.toString :: tps :: mean :: p5 :: p25 :: p50 :: p75 :: p95 :: duration :: n :: Nil
-    StatSingleton.results = summaryLine.mkString("\t") :: StatSingleton.results
+    val name = getClass.getSimpleName + "." + scenario
+    val durationS = durationNs.toDouble / 1000000000.0
+
+    val percentiles = TreeMap[Int, Long](
+      5 -> (stat.getPercentile(5.0) / 1000).toLong,
+      25 -> (stat.getPercentile(25.0) / 1000).toLong,
+      50 -> (stat.getPercentile(50.0) / 1000).toLong,
+      75 -> (stat.getPercentile(75.0) / 1000).toLong,
+      95 -> (stat.getPercentile(95.0) / 1000).toLong)
+
+    val stats = Stats(
+      name,
+      load = numberOfClients,
+      durationNanos = durationNs,
+      n = stat.getN,
+      min = (stat.getMin / 1000).toLong,
+      max = (stat.getMax / 1000).toLong,
+      mean = (stat.getMean / 1000).toLong,
+      tps = (stat.getN.toDouble / durationS),
+      percentiles)
+
+    ResultHolder.stats = stats :: ResultHolder.stats
+
+    EventHandler.info(this, formatResultsTable(ResultHolder.stats))
+
+    val chartTitle = name + " Latency Percentiles (microseconds)"
+    val chartUrl = GoogleChartBuilder.percentilChartUrl(ResultHolder.stats, chartTitle)
+    EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
+
+    if (numberOfClients >= maxClients) {
+      ResultHolder.stats = Nil
+    }
+  }
+
+  def formatResultsTable(statsList: List[Stats]): String = {
+
+    val name = statsList.head.name
 
     val spaces = "                                                                                     "
     val headerScenarioCol = ("Scenario" + spaces).take(name.length)
@@ -107,15 +139,42 @@ trait PerformanceTest extends JUnitSuite {
       .mkString("\t")
     val headerLine2 = (spaces.take(name.length) :: "       " :: "   " :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(s)   " :: " " :: Nil)
       .mkString("\t")
-    val line = List.fill(StatSingleton.results.head.replaceAll("\t", "      ").length)("-").mkString
+    val line = List.fill(formatStats(statsList.head).replaceAll("\t", "      ").length)("-").mkString
     val formattedStats = "\n" +
       line.replace('-', '=') + "\n" +
       headerLine + "\n" +
       headerLine2 + "\n" +
       line + "\n" +
-      StatSingleton.results.reverse.mkString("\n") + "\n" +
+      statsList.reverse.map(formatStats(_)).mkString("\n") + "\n" +
       line + "\n"
-    EventHandler.info(this, formattedStats)
+
+    formattedStats
+
+  }
+
+  def formatStats(stats: Stats): String = {
+    val durationS = stats.durationNanos.toDouble / 1000000000.0
+    val duration = durationS.formatted("%.0f")
+
+    val tpsStr = stats.tps.formatted("%.0f")
+    val meanStr = stats.mean.formatted("%.0f")
+
+    val summaryLine =
+      stats.name ::
+        stats.load.toString ::
+        tpsStr ::
+        meanStr ::
+        stats.percentiles(5).toString ::
+        stats.percentiles(25).toString ::
+        stats.percentiles(50).toString ::
+        stats.percentiles(75).toString ::
+        stats.percentiles(95).toString ::
+        duration ::
+        stats.n.toString ::
+        Nil
+
+    summaryLine.mkString("\t")
+
   }
 
   def delay(delayMs: Int) {
@@ -134,6 +193,7 @@ trait PerformanceTest extends JUnitSuite {
 
 }
 
-object StatSingleton {
-  var results: List[String] = Nil
+object ResultHolder {
+  var stats: List[Stats] = Nil
 }
+
