@@ -27,26 +27,26 @@ trait PerformanceTest extends JUnitSuite {
 
   def isBenchmark() = System.getProperty("benchmark") == "true"
 
-  def minClients() = System.getProperty("minClients", "1").toInt;
+  def minClients() = System.getProperty("benchmark.minClients", "1").toInt;
 
-  def maxClients() = System.getProperty("maxClients", "40").toInt;
+  def maxClients() = System.getProperty("benchmark.maxClients", "40").toInt;
 
   def repeatFactor() = {
     val defaultRepeatFactor = if (isBenchmark) "150" else "2"
-    System.getProperty("repeatFactor", defaultRepeatFactor).toInt
+    System.getProperty("benchmark.repeatFactor", defaultRepeatFactor).toInt
   }
 
   def warmupRepeatFactor() = {
     val defaultRepeatFactor = if (isBenchmark) "200" else "1"
-    System.getProperty("warmupRepeatFactor", defaultRepeatFactor).toInt
+    System.getProperty("benchmark.warmupRepeatFactor", defaultRepeatFactor).toInt
   }
 
   def randomSeed() = {
-    System.getProperty("randomSeed", "0").toInt
+    System.getProperty("benchmark.randomSeed", "0").toInt
   }
 
   def timeDilation() = {
-    System.getProperty("timeDilation", "1").toLong
+    System.getProperty("benchmark.timeDilation", "1").toLong
   }
 
   var stat: DescriptiveStatistics = _

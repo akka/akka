@@ -49,7 +49,7 @@ abstract class Orderbook(val symbol: String) {
 
 object Orderbook {
 
-  val useDummyOrderbook = System.getProperty("useDummyOrderbook", "false").toBoolean
+  val useDummyOrderbook = System.getProperty("benchmark.useDummyOrderbook", "false").toBoolean
 
   def apply(symbol: String, standby: Boolean): Orderbook = standby match {
     case false if !useDummyOrderbook ⇒ new Orderbook(symbol) with SimpleTradeObserver
