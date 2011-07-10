@@ -1,6 +1,6 @@
 import sbt._
 import Keys._
-import MultiJvmPlugin.{ MultiJvm, extraOptions, multiJvmMarker }
+import MultiJvmPlugin.{ MultiJvm, extraOptions }
 
 object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
@@ -65,12 +65,12 @@ object AkkaBuild extends Build {
     dependencies = Seq(stm, actorTests % "test->test"),
     settings = defaultSettings ++ MultiJvmPlugin.settings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
-      sourceDirectory in MultiJvm <<= (sourceDirectory in Test).identity,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
-      testOptions in Test <+= (multiJvmMarker in MultiJvm) map { m => Tests.Filter(s => !s.contains(m)) },
-      test in Test <<= test in Test dependsOn (test in MultiJvm)
+      // TODO: use dependsOn once updated to sbt 0.10.1 -- currently doesn't fail on error
+      // test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+      test in Test <<= (test in MultiJvm, (test in Test).task) flatMap { (mj, t) => t }
     )
   ) configs (MultiJvm)
 
