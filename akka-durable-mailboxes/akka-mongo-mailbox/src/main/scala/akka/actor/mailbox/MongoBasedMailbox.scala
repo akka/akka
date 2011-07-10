@@ -70,10 +70,12 @@ class MongoBasedNaiveMailbox(val owner: ActorRef) extends DurableExecutableMailb
         EventHandler.debug(this, 
           "\nDEQUEUING messageInvocation in mongo-based mailbox [%s]".format(msgInvocation))
       }
-      case None => 
+      case None => {
         EventHandler.info(this,
           "\nNo matching document found. Not an error, just an empty queue.")
-      
+        msgInvocation.completeWithResult(null)
+      }
+      ()
     }}
     msgInvocation.as[MessageInvocation].orNull
   } 
