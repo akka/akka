@@ -728,8 +728,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
       val windowStart = restartTimeWindowStartNanos
       val now = System.nanoTime
       //We are within the time window if it isn't the first restart, or if the window hasn't closed
-      val insideWindow = if (windowStart == 0) false
-      else (now - windowStart) <= TimeUnit.MILLISECONDS.toNanos(withinTimeRange.get)
+      val insideWindow = if (windowStart == 0) true else (now - windowStart) <= TimeUnit.MILLISECONDS.toNanos(withinTimeRange.get)
 
       if (windowStart == 0 || !insideWindow) //(Re-)set the start of the window
         restartTimeWindowStartNanos = now
