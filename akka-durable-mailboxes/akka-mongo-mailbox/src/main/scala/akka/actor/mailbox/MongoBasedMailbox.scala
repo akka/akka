@@ -35,7 +35,7 @@ class MongoBasedNaiveMailbox(val owner: ActorRef) extends DurableExecutableMailb
 
   val mongoConfig = config.getList("akka.mailbox.actor.mailbox.mongodb")// need an explicit definition in akka-conf
 
-  @volatile private var db = connect() //review Is the Redis connection thread safe?
+  @volatile private var db = connect() 
   private val collName = "akka_mailbox.%s".format(name)
 
   def enqueue(msg: MessageInvocation) = {
@@ -93,21 +93,6 @@ class MongoBasedNaiveMailbox(val owner: ActorRef) extends DurableExecutableMailb
     EventHandler.debug(this,
       "\nCONNECTING mongodb { config: [%s] } ".format(mongoConfig))
     MongoConnection("localhost", 27017)("akka")
-    /*nodes match {
-      case Seq() =>
-        // no cluster defined
-        new RedisClient(
-          config.getString("akka.actor.mailbox.redis.hostname", "127.0.0.1"),
-          config.getInt("akka.actor.mailbox.redis.port", 6379))
-
-      case s =>
-        // with cluster
-        import com.redis.cluster._
-        EventHandler.info(this, "Running on Redis cluster")
-        new RedisCluster(nodes: _*) {
-          val keyTag = Some(NoOpKeyTag)
-        }
-    }*/
   }
 
   private def withErrorHandling[T](body: => T): T = {
