@@ -115,6 +115,13 @@ described in the following::
 The implementations shown above are the defaults provided by the :class:`Actor`
 trait.
 
+.. note::
+
+  There is still the single-argument method :meth:`preRestart(cause:
+  Throwable)`, which in fact is called by the default implementation of the
+  two-argument variant. This method will be removed in version 2.0; you should
+  add the second (dummy) argument to your actors before upgrading.
+
 Start Hook
 ^^^^^^^^^^
 
