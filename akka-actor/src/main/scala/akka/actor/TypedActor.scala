@@ -54,7 +54,6 @@ object TypedActor {
     case some ⇒ some
   }
 
-<<<<<<< HEAD
   @deprecated("This should be replaced with the same immutable configuration that will be used for ActorRef.actorOf", "!!!")
   object Configuration { //TODO: Replace this with the new ActorConfiguration when it exists
     val defaultTimeout = Duration(Actor.TIMEOUT, "millis")
@@ -241,7 +240,7 @@ object TypedActor {
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
-        implicit val timeout = Actor.Timeout(actor.timeout)
+        implicit val timeout = Timeout(actor.timeout)
         MethodCall(method, args) match {
           case m if m.isOneWay ⇒
             actor ! m

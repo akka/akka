@@ -298,7 +298,7 @@ object Dependencies {
 
   val actorTests = Seq(
     Test.junit, Test.scalatest, Test.multiverse, Test.commonsMath, Test.mockito,
-    protobuf, jacksonMapper, sjson
+    Test.scalacheck, protobuf, jacksonMapper, sjson
   )
 
   val stm = Seq(multiverse, Test.junit, Test.scalatest)
@@ -346,7 +346,7 @@ object Dependency {
     val Multiverse   = "0.6.2"
     val Netty        = "3.2.4.Final"
     val Protobuf     = "2.4.1"
-    val Scalatest    = "1.4.1"
+    val Scalatest    = "1.6.1"
     val Slf4j        = "1.6.0"
     val Spring       = "3.0.5.RELEASE"
     val Zookeeper    = "3.4.0"
@@ -413,6 +413,7 @@ object Dependency {
     val mockito     = "org.mockito"         % "mockito-all"         % "1.8.1"      % "test" // MIT
     val multiverse  = "org.multiverse"      % "multiverse-alpha"    % V.Multiverse % "test" // ApacheV2
     val scalatest   = "org.scalatest"       % "scalatest_2.9.0"     % V.Scalatest  % "test" // ApacheV2
+    val scalacheck  = "org.scala-tools.testing" % "scalacheck_2.9.0" % "1.9"       % "test" // New BSD
     val sjsonTest   = "net.debasishg"       %% "sjson"              % "0.11"       % "test" // ApacheV2
   }
 }
