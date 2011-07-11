@@ -709,7 +709,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
         dead.restart(reason, maxRetries, within)
 
       case _ ⇒
-        if (_supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
+        if (_supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason))
         else dead.stop()
     }
   }
@@ -857,7 +857,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
 
     channel.sendException(reason)
 
-    if (supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
+    if (supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason))
     else {
       lifeCycle match {
         case Temporary ⇒ shutDownTemporaryActor(this)

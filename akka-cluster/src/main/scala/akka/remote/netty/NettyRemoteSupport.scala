@@ -20,7 +20,7 @@ import akka.actor.{
   RemoteActorSystemMessage,
   uuidFrom,
   Uuid,
-  Exit,
+  Death,
   LifeCycleMessage
 }
 import akka.actor.Actor._
