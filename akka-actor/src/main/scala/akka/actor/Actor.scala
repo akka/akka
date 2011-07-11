@@ -467,7 +467,11 @@ trait Actor {
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean
    * up of resources before Actor is terminated. Override either the variant
    * with or without the currentMessage argument.
+   * <p/>
+   * This method is deprecated: use the variant which receives the current
+   * message instead. This method will be removed in version 2.0.
    */
+  @deprecated("use two-argument version, this one will be removed in 2.0", "1.2")
   def preRestart(reason: Throwable) {}
 
   /**
