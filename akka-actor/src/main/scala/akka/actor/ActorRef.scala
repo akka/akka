@@ -906,7 +906,7 @@ class LocalActorRef private[akka] (
         dead.restart(reason, maxRetries, within)
 
       case _ ⇒
-        if (_supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
+        if (_supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason))
         else dead.stop()
     }
   }
@@ -1073,7 +1073,7 @@ class LocalActorRef private[akka] (
 
     channel.sendException(reason)
 
-    if (supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
+    if (supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason))
     else {
       lifeCycle match {
         case Temporary ⇒ shutDownTemporaryActor(this)

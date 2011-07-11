@@ -49,7 +49,7 @@ class SupervisorHierarchySpec extends JUnitSuite {
     manager.startLink(workerTwo)
     manager.startLink(workerThree)
 
-    workerOne ! Exit(workerOne, new FireWorkerException("Fire the worker!"))
+    workerOne ! Death(workerOne, new FireWorkerException("Fire the worker!"))
 
     // manager + all workers should be restarted by only killing a worker
     // manager doesn't trap exits, so boss will restart manager
@@ -70,8 +70,8 @@ class SupervisorHierarchySpec extends JUnitSuite {
     }).start()
     boss.startLink(crasher)
 
-    crasher ! Exit(crasher, new FireWorkerException("Fire the worker!"))
-    crasher ! Exit(crasher, new FireWorkerException("Fire the worker!"))
+    crasher ! Death(crasher, new FireWorkerException("Fire the worker!"))
+    crasher ! Death(crasher, new FireWorkerException("Fire the worker!"))
 
     assert(countDown.await(2, TimeUnit.SECONDS))
   }

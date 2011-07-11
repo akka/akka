@@ -23,12 +23,13 @@ import akka.actor.{
   RemoteActorSystemMessage,
   uuidFrom,
   Uuid,
-  Exit,
+  Death,
   LifeCycleMessage,
   ActorType ⇒ AkkaActorType
 }
 import akka.actor.Actor._
-import akka.config.Config._
+import akka.config.Config
+import Config._
 import akka.util._
 import akka.event.EventHandler
 
@@ -510,7 +511,7 @@ class ActiveRemoteClientHandler(
               val supervisedActor = supervisors.get(supervisorUuid)
               if (!supervisedActor.supervisor.isDefined) throw new IllegalActorStateException(
                 "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
-              else supervisedActor.supervisor.get ! Exit(supervisedActor, exception)
+              else supervisedActor.supervisor.get ! Death(supervisedActor, exception)
             }
 
             future.completeWithException(exception)
