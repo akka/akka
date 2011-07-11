@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import akka.experimental
 import akka.dispatch._
 import akka.config.Config._
 import akka.util.Helpers.{ narrow, narrowSilently }
@@ -493,6 +494,7 @@ trait Actor {
    * <b>Warning:</b> <i>Propagating state from a crashed actor carries the risk
    * of proliferating the cause of the error. Consider let-it-crash first.</i>
    */
+  @experimental("1.2")
   def freshInstance(): Option[Actor] = None
 
   /**
