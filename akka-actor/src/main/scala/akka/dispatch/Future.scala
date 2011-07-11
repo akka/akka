@@ -15,12 +15,13 @@ import scala.util.continuations._
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.{ ConcurrentLinkedQueue, TimeUnit, Callable }
 import java.util.concurrent.TimeUnit.{ NANOSECONDS ⇒ NANOS, MILLISECONDS ⇒ MILLIS }
-import java.util.concurrent.atomic.{ AtomicBoolean }
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
 
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
+import akka.util.{ Switch, Duration, BoxedType }
+import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 
 class FutureTimeoutException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
@@ -97,27 +98,35 @@ object Futures {
     } else {
       val result = new DefaultPromise[R](timeout)
       val results = new ConcurrentLinkedQueue[T]()
+      val done = new Switch(false)
       val allDone = futures.size
 
-      val aggregate: Future[T] ⇒ Unit = f ⇒ if (!result.isCompleted) { //TODO: This is an optimization, is it premature?
+      val aggregate: Future[T] ⇒ Unit = f ⇒ if (done.isOff && !result.isCompleted) { //TODO: This is an optimization, is it premature?
         f.value.get match {
           case r: Right[Throwable, T] ⇒
-            results add r.b
-            if (results.size == allDone) { //Only one thread can get here
-              try {
-                result completeWithResult scala.collection.JavaConversions.collectionAsScalaIterable(results).foldLeft(zero)(foldFun)
-              } catch {
-                case e: Exception ⇒
-                  EventHandler.error(e, this, e.getMessage)
-                  result completeWithException e
-              }
-              finally {
-                results.clear
+            val added = results add r.b
+            if (added && results.size == allDone) { //Only one thread can get here
+              if (done.switchOn) {
+                try {
+                  val i = results.iterator
+                  var currentValue = zero
+                  while (i.hasNext) { currentValue = foldFun(currentValue, i.next) }
+                  result completeWithResult currentValue
+                } catch {
+                  case e: Exception ⇒
+                    EventHandler.error(e, this, e.getMessage)
+                    result completeWithException e
+                }
+                finally {
+                  results.clear
+                }
               }
             }
           case l: Left[Throwable, T] ⇒
-            result completeWithException l.a
-            results.clear
+            if (done.switchOn) {
+              result completeWithException l.a
+              results.clear
+            }
         }
       }
 
@@ -289,12 +298,7 @@ object Future {
    */
   def flow[A](body: ⇒ A @cps[Future[Any]])(implicit timeout: Timeout): Future[A] = {
     val future = Promise[A](timeout)
-    (reset(future.asInstanceOf[Promise[Any]].completeWithResult(body)): Future[Any]) onComplete {
-      _.exception match {
-        case Some(e) ⇒ future completeWithException e
-        case None    ⇒
-      }
-    }
+    (reset(future.asInstanceOf[Promise[Any]].completeWithResult(body)): Future[Any]) onException { case e => future completeWithException e }
     future
   }
 }

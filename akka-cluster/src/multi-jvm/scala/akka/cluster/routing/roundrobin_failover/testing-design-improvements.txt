@@ -1,0 +1,54 @@
+- It would be nice if the .conf files somehow could be integrated in the scala file
+
+object SomeNode extends ClusterNodeWithConf{
+    def config() = "
+        akka.event-handler-level = "DEBUG"
+        akka.actor.deployment.service-hello.router = "round-robin"
+        akka.actor.deployment.service-hello.clustered.preferred-nodes = ["node:node1"]
+        akka.actor.deployment.service-hello.clustered.replicas = 1"
+    }
+}
+
+- It would be nice if the .opts file somehow could be integrated in the scala file.
+
+object SomeNode extends ClusterNodeWithOpts{
+    def opts() = -Dakka.cluster.nodename=node1 -Dakka.cluster.port=9991
+}
+
+- It should be transparent which node starts/stops the cluster. Perhaps some kind of 'before the world starts' and
+'after the world ended' logic could be added. The consequence is that there are mixed responsibilities in a node.
+
+- A node has the mixed responsibity of being part of the grid and doing checks. It would be nice if one could create
+cluster nodes very easily (just spawn a jvm and everything will be copied on them) and if one could create 'client nodes'
+that communicate with the grid and do their validations.
+
+- Each node has been expressed in code, so it is very hard to either use a large number of nodes (lots of code) of to change
+the number of nodes without changes all the code. It would be nice if one could say: I want 100 jvm instances with this
+specification.
+
+- There is a lot of waiting for each other, but it would be nice if each node could say this:
+        waitForGo.
+
+so you get something like:
+
+object God{
+    def beforeBegin(){
+       ZooKeeper.start()
+    }
+
+    def afterEnd{
+        ZooKeeper.stop()
+    }
+}
+
+class SomeNode extends ClusterTestNode{
+    "foo" must {
+        "bla" in {
+            waitForGo()
+
+            ..now do testing logic.
+        }
+    }
+}
+
+

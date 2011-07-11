@@ -41,9 +41,9 @@ object ClusterDeployer {
 
   val deploymentCoordinationPath = clusterPath + "/deployment-coordination"
   val deploymentInProgressLockPath = deploymentCoordinationPath + "/in-progress"
-  val isDeploymentCompletedInClusterLockPath = deploymentCoordinationPath + "/completed" // should not be part of baseNodes
+  val isDeploymentCompletedInClusterLockPath = deploymentCoordinationPath + "/completed" // should not be part of basePaths
 
-  val baseNodes = List(clusterPath, deploymentPath, deploymentCoordinationPath, deploymentInProgressLockPath)
+  val basePaths = List(clusterPath, deploymentPath, deploymentCoordinationPath, deploymentInProgressLockPath)
 
   private val isConnected = new Switch(false)
   private val deploymentCompleted = new CountDownLatch(1)
@@ -52,7 +52,7 @@ object ClusterDeployer {
     Cluster.zooKeeperServers,
     Cluster.sessionTimeout,
     Cluster.connectionTimeout,
-    Cluster.defaultSerializer)
+    Cluster.defaultZooKeeperSerializer)
 
   private val deploymentInProgressLockListener = new LockListener {
     def lockAcquired() {
@@ -123,7 +123,7 @@ object ClusterDeployer {
     val deployments = addresses map { address ⇒
       zkClient.readData(deploymentAddressPath.format(address)).asInstanceOf[Deploy]
     }
-    EventHandler.info(this, "Fetched clustered deployments [\n\t%s\n]" format deployments.mkString("\n\t"))
+    EventHandler.info(this, "Fetched deployment plan from cluster [\n\t%s\n]" format deployments.mkString("\n\t"))
     deployments
   }
 
@@ -131,10 +131,10 @@ object ClusterDeployer {
     isConnected switchOn {
       EventHandler.info(this, "Initializing cluster deployer")
 
-      baseNodes foreach { path ⇒
+      basePaths foreach { path ⇒
         try {
           ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
-          EventHandler.debug(this, "Created node [%s]".format(path))
+          EventHandler.debug(this, "Created ZooKeeper path for deployment [%s]".format(path))
         } catch {
           case e ⇒
             val error = new DeploymentException(e.toString)
@@ -148,7 +148,7 @@ object ClusterDeployer {
       if (!isDeploymentCompletedInCluster) {
         if (deploymentInProgressLock.lock()) {
           // try to be the one doing the clustered deployment
-          EventHandler.info(this, "Deploying to cluster [\n" + allDeployments.mkString("\n\t") + "\n]")
+          EventHandler.info(this, "Pushing deployment plan cluster [\n\t" + allDeployments.mkString("\n\t") + "\n]")
           allDeployments foreach (deploy(_)) // deploy
           markDeploymentCompletedInCluster()
           deploymentInProgressLock.unlock() // signal deployment complete
@@ -167,7 +167,7 @@ object ClusterDeployer {
     ensureRunning {
       LocalDeployer.deploy(deployment)
       deployment match {
-        case Deploy(_, _, _, Local) ⇒ {} // local deployment, do nothing here
+        case Deploy(_, _, Local) ⇒ {} // local deployment, do nothing here
         case _ ⇒ // cluster deployment
           val path = deploymentAddressPath.format(deployment.address)
           try {

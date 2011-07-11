@@ -36,7 +36,6 @@ class AkkaBeansException(message: String, cause: Throwable) extends BeansExcepti
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with ApplicationContextAware {
-  import StringReflect._
   import AkkaSpringConfigurationTags._
   @BeanProperty
   var id: String = ""
@@ -242,7 +241,6 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with ApplicationConte
  * @author michaelkober
  */
 class ActorForFactoryBean extends AbstractFactoryBean[AnyRef] with ApplicationContextAware {
-  import StringReflect._
   import AkkaSpringConfigurationTags._
 
   @BeanProperty

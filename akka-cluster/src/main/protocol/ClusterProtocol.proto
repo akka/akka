@@ -19,6 +19,7 @@ message RemoteDaemonMessageProtocol {
   optional UuidProtocol actorUuid = 2;
   optional string actorAddress = 3;
   optional bytes payload = 5;
+  optional UuidProtocol replicateActorFromUuid = 6;
 }
 
 /**

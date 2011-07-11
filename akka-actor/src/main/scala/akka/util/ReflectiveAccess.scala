@@ -30,12 +30,12 @@ object ReflectiveAccess {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object ClusterModule {
-    lazy val isEnabled = clusterInstance.isDefined
+    lazy val isEnabled = Config.isClusterEnabled && clusterInstance.isDefined
 
     def ensureEnabled() {
       if (!isEnabled) {
         val e = new ModuleNotAvailableException(
-          "Can't load the cluster module, make sure that akka-cluster.jar is on the classpath")
+          "Can't load the cluster module, make sure it is enabled in the config ('akka.enabled-modules = [\"cluster\"])' and that akka-cluster.jar is on the classpath")
         EventHandler.debug(this, e.toString)
         throw e
       }
@@ -102,6 +102,7 @@ object ReflectiveAccess {
       def dequeue: MessageInvocation
     }
 
+    // FIXME: remove?
     type Serializer = {
       def toBinary(obj: AnyRef): Array[Byte]
       def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
@@ -111,25 +112,24 @@ object ReflectiveAccess {
       def newLogFor(
         id: String,
         isAsync: Boolean,
-        replicationScheme: ReplicationScheme,
-        format: Serializer): TransactionLog
+        replicationScheme: ReplicationScheme): TransactionLog
 
       def logFor(
         id: String,
         isAsync: Boolean,
-        replicationScheme: ReplicationScheme,
-        format: Serializer): TransactionLog
+        replicationScheme: ReplicationScheme): TransactionLog
 
       def shutdown()
     }
 
     type TransactionLog = {
-      def recordEntry(messageHandle: MessageInvocation, actorRef: ActorRef)
+      def recordEntry(messageHandle: MessageInvocation, actorRef: LocalActorRef)
       def recordEntry(entry: Array[Byte])
       def recordSnapshot(snapshot: Array[Byte])
       def entries: Vector[Array[Byte]]
       def entriesFromLatestSnapshot: Tuple2[Array[Byte], Vector[Array[Byte]]]
       def entriesInRange(from: Long, to: Long): Vector[Array[Byte]]
+      def latestSnapshotAndSubsequentEntries: (Option[Array[Byte]], Vector[Array[Byte]])
       def latestEntryId: Long
       def latestSnapshotId: Long
       def delete()

@@ -90,7 +90,7 @@ object Router {
       if (connections.isEmpty) {
         EventHandler.warning(this, "Router has no replica connections")
         None
-      } else Some(connections.valuesIterator.drop(random.nextInt(connections.size)).next)
+      } else Some(connections.valuesIterator.drop(random.nextInt(connections.size)).next())
   }
 
   /**

@@ -309,6 +309,22 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         Futures.fold(0, timeout)(futures)(_ + _).await.exception.get.getMessage must be("shouldFoldResultsWithException: expected")
       }
 
+/*  @Test
+  def shouldFoldMutableZeroes {
+    import scala.collection.mutable.ArrayBuffer
+    def test(testNumber: Int) {
+      val fs = (0 to 1000) map (i ⇒ Future(i, 10000))
+      val result = Futures.fold(ArrayBuffer.empty[AnyRef], 10000)(fs) {
+        case (l, i) if i % 2 == 0 ⇒ l += i.asInstanceOf[AnyRef]
+        case (l, _)               ⇒ l
+      }.get.asInstanceOf[ArrayBuffer[Int]].sum
+
+      assert(result === 250500)
+    }
+
+    (1 to 100) foreach test //Make sure it tries to provoke the problem
+  }*/
+
       "return zero value if folding empty list" in {
         Futures.fold(0)(List[Future[Int]]())(_ + _).get must be(0)
       }

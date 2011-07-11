@@ -67,7 +67,7 @@ class Dispatcher(
   val throughput: Int = Dispatchers.THROUGHPUT,
   val throughputDeadlineTime: Int = Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS,
   val mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
-  val config: ThreadPoolConfig = ThreadPoolConfig())
+  executorServiceFactoryProvider: ExecutorServiceFactoryProvider = ThreadPoolConfig())
   extends MessageDispatcher {
 
   def this(_name: String, throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
@@ -79,16 +79,16 @@ class Dispatcher(
   def this(_name: String, throughput: Int) =
     this(_name, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 
-  def this(_name: String, _config: ThreadPoolConfig) =
-    this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE, _config)
+  def this(_name: String, _executorServiceFactoryProvider: ExecutorServiceFactoryProvider) =
+    this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE, _executorServiceFactoryProvider)
 
   def this(_name: String) =
     this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 
   val name = "akka:event-driven:dispatcher:" + _name
 
-  private[akka] val threadFactory = new MonitorableThreadFactory(name)
-  private[akka] val executorService = new AtomicReference[ExecutorService](config.createLazyExecutorService(threadFactory))
+  private[akka] val executorServiceFactory = executorServiceFactoryProvider.createExecutorServiceFactory(name)
+  private[akka] val executorService = new AtomicReference[ExecutorService](new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))
 
   private[akka] def dispatch(invocation: MessageInvocation) = {
     val mbox = getMailbox(invocation.receiver)
@@ -134,7 +134,7 @@ class Dispatcher(
   private[akka] def start {}
 
   private[akka] def shutdown {
-    val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
+    val old = executorService.getAndSet(new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))
     if (old ne null) {
       old.shutdownNow()
     }
@@ -159,6 +159,8 @@ class Dispatcher(
 
   private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
     registerForExecution(mbox)
+
+  private[akka] def doneProcessingMailbox(mbox: MessageQueue with ExecutableMailbox): Unit = ()
 
   protected override def cleanUpMailboxFor(actorRef: ActorRef) {
     val m = getMailbox(actorRef)
@@ -201,8 +203,11 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue ⇒
     finally {
       dispatcherLock.unlock()
     }
+
     if (!self.isEmpty)
       dispatcher.reRegisterForExecution(this)
+
+    dispatcher.doneProcessingMailbox(this)
   }
 
   /**
@@ -271,7 +276,7 @@ class PriorityDispatcher(
   throughput: Int = Dispatchers.THROUGHPUT,
   throughputDeadlineTime: Int = Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS,
   mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
-  config: ThreadPoolConfig = ThreadPoolConfig()) extends Dispatcher(name, throughput, throughputDeadlineTime, mailboxType, config) with PriorityMailbox {
+  executorServiceFactoryProvider: ExecutorServiceFactoryProvider = ThreadPoolConfig()) extends Dispatcher(name, throughput, throughputDeadlineTime, mailboxType, executorServiceFactoryProvider) with PriorityMailbox {
 
   def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
     this(name, comparator, throughput, throughputDeadlineTime, mailboxType, ThreadPoolConfig()) // Needed for Java API usage
@@ -282,8 +287,8 @@ class PriorityDispatcher(
   def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int) =
     this(name, comparator, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 
-  def this(name: String, comparator: java.util.Comparator[MessageInvocation], config: ThreadPoolConfig) =
-    this(name, comparator, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE, config)
+  def this(name: String, comparator: java.util.Comparator[MessageInvocation], executorServiceFactoryProvider: ExecutorServiceFactoryProvider) =
+    this(name, comparator, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE, executorServiceFactoryProvider)
 
   def this(name: String, comparator: java.util.Comparator[MessageInvocation]) =
     this(name, comparator, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage

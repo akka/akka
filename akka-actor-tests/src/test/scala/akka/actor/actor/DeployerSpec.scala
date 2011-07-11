@@ -18,9 +18,8 @@ class DeployerSpec extends WordSpec with MustMatchers {
         Deploy(
           "service-ping",
           LeastCPU,
-          "akka.serialization.Format$Default$",
           Clustered(
-            Node("node1"),
+            Vector(Node("node1")),
             Replicate(3),
             Replication(
               TransactionLog,

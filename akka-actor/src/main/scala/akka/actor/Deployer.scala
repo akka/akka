@@ -17,165 +17,6 @@ import akka.serialization._
 import akka.AkkaException
 
 /**
- * Module holding the programmatic deployment configuration classes.
- * Defines the deployment specification.
- * Most values have defaults and can be left out.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object DeploymentConfig {
-
-  // --------------------------------
-  // --- Deploy
-  // --------------------------------
-  case class Deploy(
-    address: String,
-    routing: Routing = Direct,
-    format: String = Serializer.defaultSerializerName, // Format.defaultSerializerName,
-    scope: Scope = Local)
-
-  // --------------------------------
-  // --- Routing
-  // --------------------------------
-  sealed trait Routing
-  case class CustomRouter(router: AnyRef) extends Routing
-
-  // For Java API
-  case class Direct() extends Routing
-  case class RoundRobin() extends Routing
-  case class Random() extends Routing
-  case class LeastCPU() extends Routing
-  case class LeastRAM() extends Routing
-  case class LeastMessages() extends Routing
-
-  // For Scala API
-  case object Direct extends Routing
-  case object RoundRobin extends Routing
-  case object Random extends Routing
-  case object LeastCPU extends Routing
-  case object LeastRAM extends Routing
-  case object LeastMessages extends Routing
-
-  // --------------------------------
-  // --- Scope
-  // --------------------------------
-  sealed trait Scope
-  case class Clustered(
-    home: Home = Host("localhost"),
-    replicas: Replicas = NoReplicas,
-    replication: ReplicationScheme = Transient) extends Scope
-
-  // For Java API
-  case class Local() extends Scope
-
-  // For Scala API
-  case object Local extends Scope
-
-  // --------------------------------
-  // --- Home
-  // --------------------------------
-  sealed trait Home
-  case class Host(hostName: String) extends Home
-  case class Node(nodeName: String) extends Home
-  case class IP(ipAddress: String) extends Home
-
-  // --------------------------------
-  // --- Replicas
-  // --------------------------------
-  sealed trait Replicas
-  case class Replicate(factor: Int) extends Replicas {
-    if (factor < 1) throw new IllegalArgumentException("Replicas factor can not be negative or zero")
-  }
-
-  // For Java API
-  case class AutoReplicate() extends Replicas
-  case class NoReplicas() extends Replicas
-
-  // For Scala API
-  case object AutoReplicate extends Replicas
-  case object NoReplicas extends Replicas
-
-  // --------------------------------
-  // --- Replication
-  // --------------------------------
-  sealed trait ReplicationScheme
-
-  // For Java API
-  case class Transient() extends ReplicationScheme
-
-  // For Scala API
-  case object Transient extends ReplicationScheme
-  case class Replication(
-    storage: ReplicationStorage,
-    strategy: ReplicationStrategy) extends ReplicationScheme
-
-  // --------------------------------
-  // --- ReplicationStorage
-  // --------------------------------
-  sealed trait ReplicationStorage
-
-  // For Java API
-  case class TransactionLog() extends ReplicationStorage
-  case class DataGrid() extends ReplicationStorage
-
-  // For Scala API
-  case object TransactionLog extends ReplicationStorage
-  case object DataGrid extends ReplicationStorage
-
-  // --------------------------------
-  // --- ReplicationStrategy
-  // --------------------------------
-  sealed trait ReplicationStrategy
-
-  // For Java API
-  case class WriteBehind() extends ReplicationStrategy
-  case class WriteThrough() extends ReplicationStrategy
-
-  // For Scala API
-  case object WriteBehind extends ReplicationStrategy
-  case object WriteThrough extends ReplicationStrategy
-
-  // --------------------------------
-  // --- Helper methods for parsing
-  // --------------------------------
-
-  def isHomeNode(home: Home): Boolean = home match {
-    case Host(hostname) ⇒ hostname == Config.hostname
-    case IP(address)    ⇒ address == "0.0.0.0" || address == "127.0.0.1" // FIXME look up IP address from the system
-    case Node(nodename) ⇒ nodename == Config.nodename
-  }
-
-  def replicaValueFor(replicas: Replicas): Int = replicas match {
-    case Replicate(replicas) ⇒ replicas
-    case AutoReplicate       ⇒ -1
-    case AutoReplicate()     ⇒ -1
-    case NoReplicas          ⇒ 0
-    case NoReplicas()        ⇒ 0
-  }
-
-  def routerTypeFor(routing: Routing): RouterType = routing match {
-    case Direct          ⇒ RouterType.Direct
-    case Direct()        ⇒ RouterType.Direct
-    case RoundRobin      ⇒ RouterType.RoundRobin
-    case RoundRobin()    ⇒ RouterType.RoundRobin
-    case Random          ⇒ RouterType.Random
-    case Random()        ⇒ RouterType.Random
-    case LeastCPU        ⇒ RouterType.LeastCPU
-    case LeastCPU()      ⇒ RouterType.LeastCPU
-    case LeastRAM        ⇒ RouterType.LeastRAM
-    case LeastRAM()      ⇒ RouterType.LeastRAM
-    case LeastMessages   ⇒ RouterType.LeastMessages
-    case LeastMessages() ⇒ RouterType.LeastMessages
-    case c: CustomRouter ⇒ throw new UnsupportedOperationException("routerTypeFor: " + c)
-  }
-
-  def isReplicationAsync(strategy: ReplicationStrategy): Boolean = strategy match {
-    case _: WriteBehind | WriteBehind   ⇒ true
-    case _: WriteThrough | WriteThrough ⇒ false
-  }
-}
-
-/**
  * Deployer maps actor deployments to actor addresses.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -223,8 +64,8 @@ object Deployer {
   }
 
   def isLocal(deployment: Deploy): Boolean = deployment match {
-    case Deploy(_, _, _, Local) ⇒ true
-    case _                      ⇒ false
+    case Deploy(_, _, Local) ⇒ true
+    case _                   ⇒ false
   }
 
   def isClustered(deployment: Deploy): Boolean = isLocal(deployment)
@@ -245,8 +86,10 @@ object Deployer {
 
   private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = {
     val deployment_? = instance.lookupDeploymentFor(address)
+
     if (deployment_?.isDefined && (deployment_?.get ne null)) deployment_?
     else {
+
       val newDeployment =
         try {
           lookupInConfig(address)
@@ -255,6 +98,7 @@ object Deployer {
             EventHandler.error(e, this, e.getMessage)
             throw e
         }
+
       newDeployment foreach { d ⇒
         if (d eq null) {
           val e = new IllegalStateException("Deployment for address [" + address + "] is null")
@@ -263,6 +107,7 @@ object Deployer {
         }
         deploy(d) // deploy and cache it
       }
+
       newDeployment
     }
   }
@@ -295,7 +140,7 @@ object Deployer {
     // --------------------------------
     val addressPath = "akka.actor.deployment." + address
     Config.config.getSection(addressPath) match {
-      case None ⇒ Some(Deploy(address, Direct, Serializer.defaultSerializerName, Local))
+      case None ⇒ Some(Deploy(address, Direct, Local))
       case Some(addressConfig) ⇒
 
         // --------------------------------
@@ -320,61 +165,63 @@ object Deployer {
         }
 
         // --------------------------------
-        // akka.actor.deployment.<address>.format
-        // --------------------------------
-        val format = addressConfig.getString("format", Serializer.defaultSerializerName)
-
-        // --------------------------------
         // akka.actor.deployment.<address>.clustered
         // --------------------------------
         addressConfig.getSection("clustered") match {
           case None ⇒
-            Some(Deploy(address, router, Serializer.defaultSerializerName, Local)) // deploy locally
+            Some(Deploy(address, router, Local)) // deploy locally
 
           case Some(clusteredConfig) ⇒
 
             // --------------------------------
-            // akka.actor.deployment.<address>.clustered.home
+            // akka.actor.deployment.<address>.clustered.preferred-nodes
             // --------------------------------
 
-            val home = clusteredConfig.getString("home", "") match {
-              case "" ⇒ Host("localhost")
-              case home ⇒
+            val preferredNodes = clusteredConfig.getList("preferred-nodes") match {
+              case Nil ⇒ Nil
+              case homes ⇒
                 def raiseHomeConfigError() = throw new ConfigurationException(
                   "Config option [" + addressPath +
-                    ".clustered.home] needs to be on format 'host:<hostname>', 'ip:<ip address>'' or 'node:<node name>', was [" +
-                    home + "]")
+                    ".clustered.preferred-nodes] needs to be a list with elements on format\n'host:<hostname>', 'ip:<ip address>' or 'node:<node name>', was [" +
+                    homes + "]")
 
-                if (!(home.startsWith("host:") || home.startsWith("node:") || home.startsWith("ip:"))) raiseHomeConfigError()
+                homes map { home ⇒
+                  if (!(home.startsWith("host:") || home.startsWith("node:") || home.startsWith("ip:"))) raiseHomeConfigError()
 
-                val tokenizer = new java.util.StringTokenizer(home, ":")
-                val protocol = tokenizer.nextElement
-                val address = tokenizer.nextElement.asInstanceOf[String]
+                  val tokenizer = new java.util.StringTokenizer(home, ":")
+                  val protocol = tokenizer.nextElement
+                  val address = tokenizer.nextElement.asInstanceOf[String]
 
-                protocol match {
-                  case "host" ⇒ Host(address)
-                  case "node" ⇒ Node(address)
-                  case "ip"   ⇒ IP(address)
-                  case _      ⇒ raiseHomeConfigError()
+                  protocol match {
+                    case "host" ⇒ Host(address)
+                    case "node" ⇒ Node(address)
+                    case "ip"   ⇒ IP(address)
+                    case _      ⇒ raiseHomeConfigError()
+                  }
                 }
             }
 
             // --------------------------------
             // akka.actor.deployment.<address>.clustered.replicas
             // --------------------------------
-            val replicas = clusteredConfig.getAny("replicas", "0") match {
-              case "auto" ⇒ AutoReplicate
-              case "0"    ⇒ NoReplicas
-              case nrOfReplicas: String ⇒
-                try {
-                  Replicate(nrOfReplicas.toInt)
-                } catch {
-                  case e: NumberFormatException ⇒
-                    throw new ConfigurationException(
-                      "Config option [" + addressPath +
-                        ".clustered.replicas] needs to be either [\"auto\"] or [0-N] - was [" +
-                        nrOfReplicas + "]")
+            val replicas = {
+              if (router == Direct) Replicate(1)
+              else {
+                clusteredConfig.getAny("replicas", "0") match {
+                  case "auto" ⇒ AutoReplicate
+                  case "0"    ⇒ NoReplicas
+                  case nrOfReplicas: String ⇒
+                    try {
+                      Replicate(nrOfReplicas.toInt)
+                    } catch {
+                      case e: NumberFormatException ⇒
+                        throw new ConfigurationException(
+                          "Config option [" + addressPath +
+                            ".clustered.replicas] needs to be either [\"auto\"] or [0-N] - was [" +
+                            nrOfReplicas + "]")
+                    }
                 }
+              }
             }
 
             // --------------------------------
@@ -382,7 +229,7 @@ object Deployer {
             // --------------------------------
             clusteredConfig.getSection("replication") match {
               case None ⇒
-                Some(Deploy(address, router, format, Clustered(home, replicas, Transient)))
+                Some(Deploy(address, router, Clustered(preferredNodes, replicas, Transient)))
 
               case Some(replicationConfig) ⇒
                 val storage = replicationConfig.getString("storage", "transaction-log") match {
@@ -401,7 +248,7 @@ object Deployer {
                       ".clustered.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
                       unknown + "]")
                 }
-                Some(Deploy(address, router, format, Clustered(home, replicas, Replication(storage, strategy))))
+                Some(Deploy(address, router, Clustered(preferredNodes, replicas, Replication(storage, strategy))))
             }
         }
     }

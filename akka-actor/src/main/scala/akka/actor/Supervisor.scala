@@ -41,6 +41,14 @@ class SupervisorException private[akka] (message: String, cause: Throwable = nul
  * supervisor.unlink(child)
  * </pre>
  *
+ * If you are using it from Java you have to use <code>Supervisor.apply(..)</code> like in:
+ * <pre>
+ *   Supervisor supervisor = Supervisor.apply(
+ *     SupervisorConfig(
+ *       ..
+ *   ))
+ * </pre>
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Supervisor {
