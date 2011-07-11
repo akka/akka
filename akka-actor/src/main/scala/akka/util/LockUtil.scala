@@ -22,15 +22,6 @@ final class ReentrantGuard {
       lock.unlock
     }
   }
-
-  final def tryWithGuard[T](body: ⇒ T): T = {
-    while (!lock.tryLock) { Thread.sleep(10) } // wait on the monitor to be unlocked
-    try {
-      body
-    } finally {
-      lock.unlock
-    }
-  }
 }
 
 /**

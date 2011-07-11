@@ -368,7 +368,4 @@ class BalancingDispatcherModelTest extends ActorModelSpec {
     new BalancingDispatcher("foo") with MessageDispatcherInterceptor
 }
 
-class FJDispatcherModelTest extends ActorModelSpec {
-  def newInterceptedDispatcher =
-    new FJDispatcher("foo") with MessageDispatcherInterceptor
-}
+

@@ -28,6 +28,8 @@ class OneWayPerformanceTest extends AkkaPerformanceTest {
   @Test
   def dummy {}
 
+  override def compareResultWith = Some("RspPerformanceTest")
+
   def createLatchOrder(order: Order) = order match {
     case bid: Bid ⇒ new Bid(order.orderbookSymbol, order.price, order.volume) with LatchMessage { val count = 2 }
     case ask: Ask ⇒ new Ask(order.orderbookSymbol, order.price, order.volume) with LatchMessage { val count = 2 }

@@ -20,6 +20,8 @@ import java.net.InetSocketAddress
 
 import com.google.protobuf.ByteString
 
+import com.eaio.uuid.UUID
+
 /**
  * Module for local actor serialization.
  */
@@ -27,10 +29,13 @@ object ActorSerialization {
   implicit val defaultSerializer = akka.serialization.JavaSerializer // Format.Default
 
   def fromBinary[T <: Actor](bytes: Array[Byte], homeAddress: InetSocketAddress): ActorRef =
-    fromBinaryToLocalActorRef(bytes, Some(homeAddress))
+    fromBinaryToLocalActorRef(bytes, None, Some(homeAddress))
+
+  def fromBinary[T <: Actor](bytes: Array[Byte], uuid: UUID): ActorRef =
+    fromBinaryToLocalActorRef(bytes, Some(uuid), None)
 
   def fromBinary[T <: Actor](bytes: Array[Byte]): ActorRef =
-    fromBinaryToLocalActorRef(bytes, None)
+    fromBinaryToLocalActorRef(bytes, None, None)
 
   def toBinary[T <: Actor](
     a: ActorRef,
@@ -126,13 +131,16 @@ object ActorSerialization {
 
   private def fromBinaryToLocalActorRef[T <: Actor](
     bytes: Array[Byte],
+    uuid: Option[UUID],
     homeAddress: Option[InetSocketAddress]): ActorRef = {
     val builder = SerializedActorRefProtocol.newBuilder.mergeFrom(bytes)
-    fromProtobufToLocalActorRef(builder.build, None)
+    fromProtobufToLocalActorRef(builder.build, uuid, None)
   }
 
   private[akka] def fromProtobufToLocalActorRef[T <: Actor](
-    protocol: SerializedActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
+    protocol: SerializedActorRefProtocol,
+    overriddenUuid: Option[UUID],
+    loader: Option[ClassLoader]): ActorRef = {
 
     val lifeCycle =
       if (protocol.hasLifeCycle) {
@@ -147,28 +155,27 @@ object ActorSerialization {
       if (protocol.hasSupervisor) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
       else None
 
-    import ReplicationStorageType._
-    import ReplicationStrategyType._
-
-    val replicationScheme =
-      if (protocol.hasReplicationStorage) {
-        protocol.getReplicationStorage match {
-          case TRANSIENT ⇒ Transient
-          case store ⇒
-            val storage = store match {
-              case TRANSACTION_LOG ⇒ TransactionLog
-              case DATA_GRID       ⇒ DataGrid
-            }
-            val strategy = if (protocol.hasReplicationStrategy) {
-              protocol.getReplicationStrategy match {
-                case WRITE_THROUGH ⇒ WriteThrough
-                case WRITE_BEHIND  ⇒ WriteBehind
-              }
-            } else throw new IllegalActorStateException(
-              "Expected replication strategy for replication storage [" + storage + "]")
-            Replication(storage, strategy)
-        }
-      } else Transient
+    // import ReplicationStorageType._
+    // import ReplicationStrategyType._
+    // val replicationScheme =
+    //   if (protocol.hasReplicationStorage) {
+    //     protocol.getReplicationStorage match {
+    //       case TRANSIENT ⇒ Transient
+    //       case store ⇒
+    //         val storage = store match {
+    //           case TRANSACTION_LOG ⇒ TransactionLog
+    //           case DATA_GRID       ⇒ DataGrid
+    //         }
+    //         val strategy = if (protocol.hasReplicationStrategy) {
+    //           protocol.getReplicationStrategy match {
+    //             case WRITE_THROUGH ⇒ WriteThrough
+    //             case WRITE_BEHIND  ⇒ WriteBehind
+    //           }
+    //         } else throw new IllegalActorStateException(
+    //           "Expected replication strategy for replication storage [" + storage + "]")
+    //         Replication(storage, strategy)
+    //     }
+    //   } else Transient
 
     val hotswap =
       try {
@@ -197,16 +204,20 @@ object ActorSerialization {
       }
     }
 
+    val actorUuid = overriddenUuid match {
+      case Some(uuid) ⇒ uuid
+      case None       ⇒ uuidFrom(protocol.getUuid.getHigh, protocol.getUuid.getLow)
+    }
+
     val ar = new LocalActorRef(
-      uuidFrom(protocol.getUuid.getHigh, protocol.getUuid.getLow),
+      actorUuid,
       protocol.getAddress,
       if (protocol.hasTimeout) protocol.getTimeout else Actor.TIMEOUT,
       if (protocol.hasReceiveTimeout) Some(protocol.getReceiveTimeout) else None,
       lifeCycle,
       supervisor,
       hotswap,
-      factory,
-      replicationScheme)
+      factory)
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
     messages.foreach(message ⇒ ar ! MessageSerializer.deserialize(message.getMessage, Some(classLoader)))

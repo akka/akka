@@ -119,7 +119,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       for (i ← 1 to 500) d ! i
 
       try {
-        latch.await(10 seconds)
+        latch.await(20 seconds)
       } finally {
         // because t1 is much slower and thus has a bigger mailbox all the time
         t1Count.get must be < (t2Count.get)

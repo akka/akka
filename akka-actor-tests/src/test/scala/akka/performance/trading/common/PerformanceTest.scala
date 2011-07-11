@@ -1,13 +1,22 @@
 package akka.performance.trading.common
 
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Random
-import org.junit._
-import Assert._
-import org.scalatest.junit.JUnitSuite
+
+import scala.collection.immutable.TreeMap
+
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics
 import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistics
-import akka.performance.trading.domain._
+import org.junit.After
+import org.junit.Before
+import org.scalatest.junit.JUnitSuite
+
 import akka.event.EventHandler
+import akka.performance.trading.domain.Ask
+import akka.performance.trading.domain.Bid
+import akka.performance.trading.domain.Order
+import akka.performance.trading.domain.TotalTradeCounter
 
 trait PerformanceTest extends JUnitSuite {
 
@@ -18,29 +27,33 @@ trait PerformanceTest extends JUnitSuite {
 
   def isBenchmark() = System.getProperty("benchmark") == "true"
 
-  def minClients() = System.getProperty("minClients", "1").toInt;
+  def minClients() = System.getProperty("benchmark.minClients", "1").toInt;
 
-  def maxClients() = System.getProperty("maxClients", "40").toInt;
+  def maxClients() = System.getProperty("benchmark.maxClients", "40").toInt;
 
   def repeatFactor() = {
     val defaultRepeatFactor = if (isBenchmark) "150" else "2"
-    System.getProperty("repeatFactor", defaultRepeatFactor).toInt
+    System.getProperty("benchmark.repeatFactor", defaultRepeatFactor).toInt
   }
 
   def warmupRepeatFactor() = {
     val defaultRepeatFactor = if (isBenchmark) "200" else "1"
-    System.getProperty("warmupRepeatFactor", defaultRepeatFactor).toInt
+    System.getProperty("benchmark.warmupRepeatFactor", defaultRepeatFactor).toInt
   }
 
   def randomSeed() = {
-    System.getProperty("randomSeed", "0").toInt
+    System.getProperty("benchmark.randomSeed", "0").toInt
   }
 
   def timeDilation() = {
-    System.getProperty("timeDilation", "1").toLong
+    System.getProperty("benchmark.timeDilation", "1").toLong
   }
 
   var stat: DescriptiveStatistics = _
+
+  val resultRepository = BenchResultRepository()
+
+  val legendTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
 
   type TS <: TradingSystem
 
@@ -66,6 +79,7 @@ trait PerformanceTest extends JUnitSuite {
   @After
   def tearDown() {
     tradingSystem.shutdown()
+    stat = null
   }
 
   def warmUp() {
@@ -82,23 +96,66 @@ trait PerformanceTest extends JUnitSuite {
     isWarm = true
   }
 
-  def logMeasurement(scenario: String, numberOfClients: Int, durationNs: Long) {
-    val durationUs = durationNs / 1000
-    val durationMs = durationNs / 1000000
-    val durationS = durationNs.toDouble / 1000000000.0
-    val duration = durationS.formatted("%.0f")
-    val n = stat.getN
-    val mean = (stat.getMean / 1000).formatted("%.0f")
-    val tps = (stat.getN.toDouble / durationS).formatted("%.0f")
-    val p5 = (stat.getPercentile(5.0) / 1000).formatted("%.0f")
-    val p25 = (stat.getPercentile(25.0) / 1000).formatted("%.0f")
-    val p50 = (stat.getPercentile(50.0) / 1000).formatted("%.0f")
-    val p75 = (stat.getPercentile(75.0) / 1000).formatted("%.0f")
-    val p95 = (stat.getPercentile(95.0) / 1000).formatted("%.0f")
-    val name = getClass.getSimpleName + "." + scenario
+  /**
+   * To compare two tests with each other you can override this method, in
+   * the test. For example Some("OneWayPerformanceTest")
+   */
+  def compareResultWith: Option[String] = None
 
-    val summaryLine = name :: numberOfClients.toString :: tps :: mean :: p5 :: p25 :: p50 :: p75 :: p95 :: duration :: n :: Nil
-    StatSingleton.results = summaryLine.mkString("\t") :: StatSingleton.results
+  def logMeasurement(scenario: String, numberOfClients: Int, durationNs: Long) {
+
+    val name = getClass.getSimpleName
+    val durationS = durationNs.toDouble / 1000000000.0
+
+    val percentiles = TreeMap[Int, Long](
+      5 -> (stat.getPercentile(5.0) / 1000).toLong,
+      25 -> (stat.getPercentile(25.0) / 1000).toLong,
+      50 -> (stat.getPercentile(50.0) / 1000).toLong,
+      75 -> (stat.getPercentile(75.0) / 1000).toLong,
+      95 -> (stat.getPercentile(95.0) / 1000).toLong)
+
+    val stats = Stats(
+      name,
+      load = numberOfClients,
+      timestamp = TestStart.startTime,
+      durationNanos = durationNs,
+      n = stat.getN,
+      min = (stat.getMin / 1000).toLong,
+      max = (stat.getMax / 1000).toLong,
+      mean = (stat.getMean / 1000).toLong,
+      tps = (stat.getN.toDouble / durationS),
+      percentiles)
+
+    resultRepository.add(stats)
+
+    EventHandler.info(this, formatResultsTable(resultRepository.get(name)))
+
+    val chartTitle = name + " Percentiles (microseconds)"
+    val chartUrl = GoogleChartBuilder.percentilChartUrl(resultRepository.get(name), chartTitle, _.load + " clients")
+    EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
+
+    for {
+      compareName ← compareResultWith
+      compareStats ← resultRepository.get(compareName, numberOfClients)
+    } {
+      val chartTitle = name + " vs. " + compareName + ", " + numberOfClients + " clients" + ", Percentiles (microseconds)"
+      val chartUrl = GoogleChartBuilder.percentilChartUrl(Seq(compareStats, stats), chartTitle, _.name)
+      EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
+    }
+
+    val withHistorical = resultRepository.getWithHistorical(name, numberOfClients)
+    if (withHistorical.size > 1) {
+      val chartTitle = name + " vs. historical, " + numberOfClients + " clients" + ", Percentiles (microseconds)"
+      val chartUrl = GoogleChartBuilder.percentilChartUrl(withHistorical, chartTitle,
+        stats ⇒ legendTimeFormat.format(new Date(stats.timestamp)))
+      EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
+    }
+
+  }
+
+  def formatResultsTable(statsSeq: Seq[Stats]): String = {
+
+    val name = statsSeq.head.name
 
     val spaces = "                                                                                     "
     val headerScenarioCol = ("Scenario" + spaces).take(name.length)
@@ -107,15 +164,42 @@ trait PerformanceTest extends JUnitSuite {
       .mkString("\t")
     val headerLine2 = (spaces.take(name.length) :: "       " :: "   " :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(s)   " :: " " :: Nil)
       .mkString("\t")
-    val line = List.fill(StatSingleton.results.head.replaceAll("\t", "      ").length)("-").mkString
+    val line = List.fill(formatStats(statsSeq.head).replaceAll("\t", "      ").length)("-").mkString
     val formattedStats = "\n" +
       line.replace('-', '=') + "\n" +
       headerLine + "\n" +
       headerLine2 + "\n" +
       line + "\n" +
-      StatSingleton.results.reverse.mkString("\n") + "\n" +
+      statsSeq.map(formatStats(_)).mkString("\n") + "\n" +
       line + "\n"
-    EventHandler.info(this, formattedStats)
+
+    formattedStats
+
+  }
+
+  def formatStats(stats: Stats): String = {
+    val durationS = stats.durationNanos.toDouble / 1000000000.0
+    val duration = durationS.formatted("%.0f")
+
+    val tpsStr = stats.tps.formatted("%.0f")
+    val meanStr = stats.mean.formatted("%.0f")
+
+    val summaryLine =
+      stats.name ::
+        stats.load.toString ::
+        tpsStr ::
+        meanStr ::
+        stats.percentiles(5).toString ::
+        stats.percentiles(25).toString ::
+        stats.percentiles(50).toString ::
+        stats.percentiles(75).toString ::
+        stats.percentiles(95).toString ::
+        duration ::
+        stats.n.toString ::
+        Nil
+
+    summaryLine.mkString("\t")
+
   }
 
   def delay(delayMs: Int) {
@@ -134,6 +218,7 @@ trait PerformanceTest extends JUnitSuite {
 
 }
 
-object StatSingleton {
-  var results: List[String] = Nil
+object TestStart {
+  val startTime = System.currentTimeMillis
 }
+
