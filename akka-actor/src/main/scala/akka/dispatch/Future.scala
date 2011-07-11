@@ -267,12 +267,7 @@ object Future {
    */
   def flow[A](body: ⇒ A @cps[Future[Any]], timeout: Long = Actor.TIMEOUT): Future[A] = {
     val future = Promise[A](timeout)
-    (reset(future.asInstanceOf[Promise[Any]].completeWithResult(body)): Future[Any]) onComplete {
-      _.exception match {
-        case Some(e) ⇒ future completeWithException e
-        case None    ⇒
-      }
-    }
+    (reset(future.asInstanceOf[Promise[Any]].completeWithResult(body)): Future[Any]) onException { case e => future completeWithException e }
     future
   }
 }
