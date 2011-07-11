@@ -16,5 +16,8 @@ class RspPerformanceTest extends AkkaPerformanceTest {
   // need this so that junit will detect this as a test case
   @Test
   def dummy {}
+
+  override def compareResultWith = Some("OneWayPerformanceTest")
+
 }
 

@@ -709,7 +709,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
         dead.restart(reason, maxRetries, within)
 
       case _ ⇒
-        if (_supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
+        if (_supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason))
         else dead.stop()
     }
   }
@@ -728,8 +728,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
       val windowStart = restartTimeWindowStartNanos
       val now = System.nanoTime
       //We are within the time window if it isn't the first restart, or if the window hasn't closed
-      val insideWindow = if (windowStart == 0) false
-      else (now - windowStart) <= TimeUnit.MILLISECONDS.toNanos(withinTimeRange.get)
+      val insideWindow = if (windowStart == 0) true else (now - windowStart) <= TimeUnit.MILLISECONDS.toNanos(withinTimeRange.get)
 
       if (windowStart == 0 || !insideWindow) //(Re-)set the start of the window
         restartTimeWindowStartNanos = now
@@ -858,7 +857,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
 
     channel.sendException(reason)
 
-    if (supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
+    if (supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason))
     else {
       lifeCycle match {
         case Temporary ⇒ shutDownTemporaryActor(this)
@@ -989,7 +988,8 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   def start(): this.type = synchronized[this.type] {
-    _status = ActorRefInternals.RUNNING
+    if (_status == ActorRefInternals.UNSTARTED)
+      _status = ActorRefInternals.RUNNING
     this
   }
 

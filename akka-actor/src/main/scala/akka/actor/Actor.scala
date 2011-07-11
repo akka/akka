@@ -58,7 +58,7 @@ case object RevertHotSwap extends AutoReceivedMessage with LifeCycleMessage
 
 case class Restart(reason: Throwable) extends AutoReceivedMessage with LifeCycleMessage
 
-case class Exit(dead: ActorRef, killer: Throwable) extends AutoReceivedMessage with LifeCycleMessage
+case class Death(dead: ActorRef, killer: Throwable) extends AutoReceivedMessage with LifeCycleMessage
 
 case class Link(child: ActorRef) extends AutoReceivedMessage with LifeCycleMessage
 
@@ -727,7 +727,7 @@ trait Actor {
     msg match {
       case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
       case RevertHotSwap             ⇒ unbecome()
-      case Exit(dead, reason)        ⇒ self.handleTrapExit(dead, reason)
+      case Death(dead, reason)       ⇒ self.handleTrapExit(dead, reason)
       case Link(child)               ⇒ self.link(child)
       case Unlink(child)             ⇒ self.unlink(child)
       case UnlinkAndStop(child)      ⇒ self.unlink(child); child.stop()

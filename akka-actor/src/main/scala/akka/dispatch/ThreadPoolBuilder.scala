@@ -151,10 +151,14 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class MonitorableThreadFactory(val name: String) extends ThreadFactory {
+class MonitorableThreadFactory(val name: String, val daemonic: Boolean = false) extends ThreadFactory {
   protected val counter = new AtomicLong
 
-  def newThread(runnable: Runnable) = new MonitorableThread(runnable, name)
+  def newThread(runnable: Runnable) = {
+    val t = new MonitorableThread(runnable, name)
+    t.setDaemon(daemonic)
+    t
+  }
 }
 
 /**

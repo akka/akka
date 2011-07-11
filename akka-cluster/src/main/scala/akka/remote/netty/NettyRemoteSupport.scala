@@ -12,7 +12,6 @@ import akka.serialization.RemoteActorSerialization._
 import akka.remoteinterface._
 import akka.actor.{
   PoisonPill,
-  Index,
   LocalActorRef,
   Actor,
   RemoteActorRef,
@@ -21,7 +20,7 @@ import akka.actor.{
   RemoteActorSystemMessage,
   uuidFrom,
   Uuid,
-  Exit,
+  Death,
   LifeCycleMessage
 }
 import akka.actor.Actor._
