@@ -3,6 +3,8 @@ import Keys._
 import MultiJvmPlugin.{ MultiJvm, extraOptions }
 
 object AkkaBuild extends Build {
+  System.setProperty("akka.mode", "test") // Is there better place for this?
+
   lazy val buildSettings = Seq(
     organization := "se.scalablesolutions.akka",
     version      := "2.0-SNAPSHOT",
@@ -53,7 +55,7 @@ object AkkaBuild extends Build {
   lazy val stm = Project(
     id = "akka-stm",
     base = file("akka-stm"),
-    dependencies = Seq(actor),
+    dependencies = Seq(actor, testkit % "test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.stm
     )
@@ -62,7 +64,7 @@ object AkkaBuild extends Build {
   lazy val cluster = Project(
     id = "akka-cluster",
     base = file("akka-cluster"),
-    dependencies = Seq(stm, actorTests % "test->test"),
+    dependencies = Seq(stm, actorTests % "test->test", testkit % "test"),
     settings = defaultSettings ++ MultiJvmPlugin.settings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -77,7 +79,7 @@ object AkkaBuild extends Build {
   lazy val http = Project(
     id = "akka-http",
     base = file("akka-http"),
-    dependencies = Seq(actor),
+    dependencies = Seq(actor, testkit % "test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.http
     )
@@ -86,7 +88,7 @@ object AkkaBuild extends Build {
   lazy val slf4j = Project(
     id = "akka-slf4j",
     base = file("akka-slf4j"),
-    dependencies = Seq(actor),
+    dependencies = Seq(actor, testkit % "test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.slf4j
     )
@@ -124,7 +126,7 @@ object AkkaBuild extends Build {
   lazy val fileMailbox = Project(
     id = "akka-file-mailbox",
     base = file("akka-durable-mailboxes/akka-file-mailbox"),
-    dependencies = Seq(mailboxesCommon % "compile;test->test"),
+    dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
     settings = defaultSettings
   )
 
@@ -144,14 +146,14 @@ object AkkaBuild extends Build {
   lazy val zookeeperMailbox = Project(
     id = "akka-zookeeper-mailbox",
     base = file("akka-durable-mailboxes/akka-zookeeper-mailbox"),
-    dependencies = Seq(mailboxesCommon % "compile;test->test"),
+    dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
     settings = defaultSettings
   )
 
   lazy val camel = Project(
     id = "akka-camel",
     base = file("akka-camel"),
-    dependencies = Seq(actor, slf4j),
+    dependencies = Seq(actor, slf4j, testkit % "test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.camel
     )
@@ -161,7 +163,7 @@ object AkkaBuild extends Build {
   lazy val camelTyped = Project(
     id = "akka-camel-typed",
     base = file("akka-camel-typed"),
-    dependencies = Seq(camel % "compile;test->test"),
+    dependencies = Seq(camel % "compile;test->test", testkit % "test"),
     settings = defaultSettings
   )
 
