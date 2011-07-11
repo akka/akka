@@ -29,12 +29,13 @@ object ReplicationTransactionLogWriteBehindNoSnapshotMultiJvmSpec {
   }
 }
 
+/*
 class ReplicationTransactionLogWriteBehindNoSnapshotMultiJvmNode1 extends ClusterTestNode {
   import ReplicationTransactionLogWriteBehindNoSnapshotMultiJvmSpec._
 
   "A cluster" must {
 
-    "be able to replicate an actor with a transaction log and replay transaction log after actor migration" in {
+    "be able to replicate an actor with a transaction log and replay transaction log after actor migration" ignore {
 
       barrier("start-node1", NrOfNodes) {
         node.start()
@@ -115,4 +116,4 @@ class ReplicationTransactionLogWriteBehindNoSnapshotMultiJvmNode2 extends Master
     TransactionLog.shutdown()
     LocalBookKeeperEnsemble.shutdown()
   }
-}
+}*/

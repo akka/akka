@@ -37,7 +37,7 @@ class RoundRobin3ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with B
 
   "A cluster" must {
 
-    "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
+    "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" ignore {
 
       //wait till node 1 has started.
       barrier("start-node1", NrOfNodes) {
@@ -75,7 +75,7 @@ class RoundRobin3ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
 
   "A cluster" must {
 
-    "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
+    "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" ignore {
 
       //wait till node 1 has started.
       barrier("start-node1", NrOfNodes) {}
@@ -136,7 +136,7 @@ class RoundRobin3ReplicasMultiJvmNode3 extends WordSpec with MustMatchers {
 
   "A cluster" must {
 
-    "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
+    "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" ignore {
       barrier("start-node1", NrOfNodes) {}
 
       barrier("start-node2", NrOfNodes) {}

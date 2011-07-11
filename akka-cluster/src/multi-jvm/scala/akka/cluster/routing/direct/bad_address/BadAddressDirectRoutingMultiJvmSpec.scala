@@ -6,7 +6,7 @@ import akka.config.Config
 
 object BadAddressDirectRoutingMultiJvmSpec {
 
-  val NrOfNodes = 2
+  val NrOfNodes = 1
 
   class SomeActor extends Actor with Serializable {
     println("---------------------------------------------------------------------------")
@@ -23,6 +23,7 @@ object BadAddressDirectRoutingMultiJvmSpec {
 
 }
 
+/*
 class BadAddressDirectRoutingMultiJvmNode1 extends MasterClusterTestNode {
 
   import BadAddressDirectRoutingMultiJvmSpec._
@@ -38,5 +39,5 @@ class BadAddressDirectRoutingMultiJvmNode1 extends MasterClusterTestNode {
       Cluster.node.shutdown()
     }
   }
-}
+}*/
 
