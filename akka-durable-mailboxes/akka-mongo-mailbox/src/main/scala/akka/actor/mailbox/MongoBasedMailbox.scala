@@ -1,7 +1,7 @@
 /**
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
-/*package akka.actor.mailbox
+package akka.actor.mailbox
 
 import akka.actor.ActorRef
 import akka.config.Config.config
@@ -132,4 +132,4 @@ class MongoBasedNaiveMailbox(val owner: ActorRef) extends DurableExecutableMailb
       }
     }
   }
-} */
+}

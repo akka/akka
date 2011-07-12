@@ -1,4 +1,4 @@
-/*package akka.actor.mailbox
+package akka.actor.mailbox
 
 import java.util.concurrent.TimeUnit
 
@@ -22,7 +22,7 @@ class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb", MongoNaiveDura
 
   Logger.getRootLogger.setLevel(Level.DEBUG)
 }
-            */
+
 /*object DurableMongoMailboxSpecActorFactory {
 
   class MongoMailboxTestActor extends Actor {

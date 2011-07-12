@@ -1,7 +1,7 @@
 /**
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
-/*package akka.actor.mailbox
+package akka.actor.mailbox
 
 import akka.actor.{Actor, ActorRef, NullChannel}
 import akka.config.Config.config
@@ -105,6 +105,6 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
   def checkID(msg: MongoDurableMessage) = msg // OID already generated in wrapper message
   
   def _id(msg: MongoDurableMessage): Option[AnyRef] = Some(msg._id)
-}*/
+}
 
 // vim: set ts=2 sw=2 sts=2 et:
