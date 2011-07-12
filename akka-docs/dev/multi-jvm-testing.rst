@@ -1,31 +1,94 @@
-Multi-JVM Testing
-=================
 
-Included in the example is an sbt trait for multi-JVM testing which will fork
-JVMs for multi-node testing. There is support for running applications (objects
-with main methods) and running ScalaTest tests.
+.. _multi-jvm-testing:
 
-Using the multi-JVM testing is straight-forward. First, mix the ``MultiJvmTests``
-trait into your sbt project::
+###################
+ Multi-JVM Testing
+###################
 
-    class SomeProject(info: ProjectInfo) extends DefaultProject(info) with MultiJvmTests
+Support for running applications (objects with main methods) and
+ScalaTest tests in multiple JVMs.
+
+.. contents:: :local:
+
+
+Setup
+=====
+
+The multi-JVM testing is an sbt plugin that you can find here:
+
+http://github.com/typesafehub/sbt-multi-jvm
+
+You can add it as a plugin by adding the following to your plugins/build.sbt::
+
+   resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/"
+
+   libraryDependencies += "com.typesafe" %% "sbt-multi-jvm" % "0.1"
+
+You can then add multi-JVM testing to a project by including the ``MultiJvm``
+settings and config. For example, here is how the akka-cluster project adds
+multi-JVM testing::
+
+   import MultiJvmPlugin.{ MultiJvm, extraOptions }
+
+   lazy val cluster = Project(
+     id = "akka-cluster",
+     base = file("akka-cluster"),
+     settings = defaultSettings ++ MultiJvmPlugin.settings ++ Seq(
+       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+       },
+       test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+     )
+   ) configs (MultiJvm)
 
 You can specify JVM options for the forked JVMs::
 
-    class SomeProject(info: ProjectInfo) extends DefaultProject(info) with MultiJvmTests {
-      override def multiJvmOptions = Seq("-Xmx256M")
-    }
+    jvmOptions in MultiJvm := Seq("-Xmx256M")
 
-There are two sbt commands: ``multi-jvm-run`` for running applications and
-``multi-jvm-test`` for running ScalaTest tests.
 
-The ``MultiJvmTests`` trait resides in the ``project/build`` directory.
+Running tests
+=============
+
+The multi-jvm tasks are similar to the normal tasks: ``test``, ``test-only``,
+and ``run``, but are under the ``multi-jvm`` configuration.
+
+So in Akka, to run all the multi-JVM tests in the akka-cluster project use (at
+the sbt prompt):
+
+.. code-block:: none
+
+   akka-cluster/multi-jvm:test
+
+Or one can change to the ``akka-cluster`` project first, and then run the
+tests:
+
+.. code-block:: none
+
+   project akka-cluster
+   multi-jvm:test
+
+To run individual tests use ``test-only``:
+
+.. code-block:: none
+
+   multi-jvm:test-only akka.cluster.deployment.Deployment
+
+More than one test name can be listed to run multiple specific
+tests. Tab-completion in sbt makes it easy to complete the test names.
+
+It's also possible to specify JVM options with ``test-only`` by including those
+options after the test names and ``--``. For example:
+
+.. code-block:: none
+
+    multi-jvm:test-only akka.cluster.deployment.Deployment -- -Dsome.option=something
+
 
 Creating application tests
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+==========================
 
-The tests are discovered through a naming convention. A test is named with the
-following pattern:
+The tests are discovered, and combined, through a naming convention. A test is
+named with the following pattern:
 
 .. code-block:: none
 
@@ -36,10 +99,10 @@ it groups together tests/applications under a single ``TestName`` that will run
 together. The part after, the ``NodeName``, is a distinguishing name for each
 forked JVM.
 
-So to create a 3-node test called ``Test``, you can create three applications
+So to create a 3-node test called ``Sample``, you can create three applications
 like the following::
 
-    package example
+    package sample
 
     object SampleMultiJvmNode1 {
       def main(args: Array[String]) {
@@ -59,40 +122,35 @@ like the following::
       }
     }
 
-When you call ``multi-jvm-run Test`` at the sbt prompt, three JVMs will be
+When you call ``multi-jvm:run sample.Sample`` at the sbt prompt, three JVMs will be
 spawned, one for each node. It will look like this:
 
 .. code-block:: none
 
-    > multi-jvm-run Test
+    > multi-jvm:run sample.Sample
     ...
-    [info] == multi-jvm-run ==
-    [info] == multi-jvm / Test ==
-    [info] Starting JVM-Node1 for example.SampleMultiJvmNode1
-    [info] Starting JVM-Node2 for example.SampleMultiJvmNode2
-    [info] Starting JVM-Node3 for example.SampleMultiJvmNode3
+    [info] Starting JVM-Node1 for sample.SampleMultiJvmNode1
+    [info] Starting JVM-Node2 for sample.SampleMultiJvmNode2
+    [info] Starting JVM-Node3 for sample.SampleMultiJvmNode3
     [JVM-Node1] Hello from node 1
     [JVM-Node2] Hello from node 2
     [JVM-Node3] Hello from node 3
-    [info] == multi-jvm / Test ==
-    [info] == multi-jvm-run ==
-    [success] Successful.
+    [success] Total time: ...
 
 
 Naming
-~~~~~~
+======
 
 You can change what the ``MultiJvm`` identifier is. For example, to change it to
-``ClusterTest`` override the ``multiJvmTestName`` method::
+``ClusterTest`` use the ``multiJvmMarker`` setting::
 
-    class SomeProject(info: ProjectInfo) extends DefaultProject(info) with MultiJvmTests {
-      override def multiJvmTestName = "ClusterSpec"
-    }
+   multiJvmMarker in MultiJvm := "ClusterTest"
 
 Your tests should now be named ``{TestName}ClusterTest{NodeName}``.
 
+
 Configuration of the JVM instances
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+==================================
 
 Setting JVM options
 -------------------
@@ -117,6 +175,7 @@ and add the options to them.
 
     -Dakka.cluster.nodename=node3 -Dakka.cluster.port=9993
 
+
 Overriding akka.conf options
 ----------------------------
 
@@ -139,15 +198,16 @@ For example, to override the configuration option ``akka.cluster.name`` let's cr
 
     akka.cluster.name = "test-cluster"
 
+
 ScalaTest
-~~~~~~~~~
+=========
 
 There is also support for creating ScalaTest tests rather than applications. To
 do this use the same naming convention as above, but create ScalaTest suites
 rather than objects with main methods. You need to have ScalaTest on the
 classpath. Here is a similar example to the one above but using ScalaTest::
 
-    package example
+    package sample
 
     import org.scalatest.WordSpec
     import org.scalatest.matchers.MustMatchers
@@ -170,11 +230,12 @@ classpath. Here is a similar example to the one above but using ScalaTest::
       }
     }
 
-To run these tests you would call ``multi-jvm-test Spec`` at the sbt prompt.
+To run just these tests you would call ``multi-jvm:test-only sample.Spec`` at
+the sbt prompt.
 
 
-Zookeeper Barrier
-~~~~~~~~~~~~~~~~~
+ZookeeperBarrier
+================
 
 When running multi-JVM tests it's common to need to coordinate timing across
 nodes. To do this there is a ZooKeeper-based double-barrier (there is both an
@@ -189,6 +250,8 @@ timeout is 60 seconds.
 
 Here is an example of coordinating the starting of two nodes and then running
 something in coordination::
+
+    package sample
 
     import org.scalatest.WordSpec
     import org.scalatest.matchers.MustMatchers
@@ -254,10 +317,8 @@ An example output from this would be:
 
 .. code-block:: none
 
-    > multi-jvm-run Test
+    > multi-jvm:test-only sample.Sample
     ...
-    [info] == multi-jvm-run ==
-    [info] == multi-jvm / Test ==
     [info] Starting JVM-Node1 for example.SampleMultiJvmNode1
     [info] Starting JVM-Node2 for example.SampleMultiJvmNode2
     [JVM-Node1] Loading config [akka.conf] from the application classpath.
@@ -265,23 +326,25 @@ An example output from this would be:
     ...
     [JVM-Node2] Hello from node 2
     [JVM-Node1] Hello from node 1
-    [info] == multi-jvm / Test ==
-    [info] == multi-jvm-run ==
-    [success] Successful.
+    [success]
+
 
 NetworkFailureTest
-^^^^^^^^^^^^^^^^^^
+==================
 
-You can use the 'NetworkFailureTest' trait to test network failure. See the 'RemoteErrorHandlingNetworkTest' test. Your tests needs to end with 'NetworkTest'. They are disabled by default. To run them you need to enable a flag.
+You can use the ``NetworkFailureTest`` trait to test network failure. See the
+``RemoteErrorHandlingNetworkTest`` test. Your tests needs to end with
+``NetworkTest``. They are disabled by default. To run them you need to enable a
+flag.
 
-Example:
+Example::
 
-::
+   project akka-remote
+   set akka.test.network true
+   test-only akka.actor.remote.RemoteErrorHandlingNetworkTest
 
-  project akka-remote
-  set akka.test.network true
-  test-only akka.actor.remote.RemoteErrorHandlingNetworkTest
+It uses ``ipfw`` for network management. Mac OSX comes with it installed but if
+you are on another platform you might need to install it yourself. Here is a
+port:
 
-It uses 'ipfw' for network management. Mac OSX comes with it installed but if you are on another platform you might need to install it yourself. Here is a port:
-
-`<http://info.iet.unipi.it/~luigi/dummynet>`_
+http://info.iet.unipi.it/~luigi/dummynet
