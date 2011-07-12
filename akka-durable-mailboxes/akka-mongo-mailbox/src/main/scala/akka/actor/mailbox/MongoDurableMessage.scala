@@ -1,7 +1,7 @@
 /**
  *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package akka.actor.mailbox
+/*package akka.actor.mailbox
 
 import akka.actor.{ActorRef, UntypedChannel, NullChannel}
 import akka.config.Config.config
@@ -39,6 +39,6 @@ case class MongoDurableMessage(val ownerAddress: String,
                                val _id: ObjectId = new ObjectId) {
 
   def messageInvocation() = MessageInvocation(this.receiver, this.message, this.channel)
-}
+}*/
 
 // vim: set ts=2 sw=2 sts=2 et:
