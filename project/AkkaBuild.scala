@@ -96,7 +96,7 @@ object AkkaBuild extends Build {
     id = "akka-durable-mailboxes",
     base = file("akka-durable-mailboxes"),
     settings = parentSettings,
-    aggregate = Seq(mailboxesCommon, beanstalkMailbox, fileMailbox, redisMailbox, zookeeperMailbox)
+    aggregate = Seq(mailboxesCommon, beanstalkMailbox, fileMailbox, redisMailbox, zookeeperMailbox, mongoMailbox)
   )
 
   lazy val mailboxesCommon = Project(
@@ -146,6 +146,19 @@ object AkkaBuild extends Build {
     base = file("akka-durable-mailboxes/akka-zookeeper-mailbox"),
     dependencies = Seq(mailboxesCommon % "compile;test->test"),
     settings = defaultSettings
+  )
+
+  val testMongoMailbox = SettingKey[Boolean]("test-mongo-mailbox")
+
+  lazy val mongoMailbox = Project(
+    id = "akka-mongo-mailbox",
+    base = file("akka-durable-mailboxes/akka-mongo-mailbox"),
+    dependencies = Seq(mailboxesCommon % "compile;test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.mongoMailbox,
+      testMongoMailbox := false,
+      testOptions in Test <+= testMongoMailbox map { test => Tests.Filter(s => test) }
+    )
   )
 
   lazy val camel = Project(
@@ -258,6 +271,7 @@ object AkkaBuild extends Build {
 
   lazy val defaultSettings = baseSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
+    resolvers += "Twitter Public Repo" at "http://maven.twttr.com", // This will be going away with com.mongodb.async's next release
 
     // compile options
     scalacOptions ++= Seq("-encoding", "UTF-8", "-optimise", "-deprecation", "-unchecked"),
@@ -321,6 +335,8 @@ object Dependencies {
 
   val redisMailbox = Seq(redis)
 
+  val mongoMailbox = Seq(mongoAsync, twttrUtilCore)
+
   val camel = Seq(camelCore, Test.junit, Test.scalatest, Test.logback)
 
   val spring = Seq(springBeans, springContext, Test.camelSpring, Test.junit, Test.scalatest)
@@ -372,6 +388,7 @@ object Dependency {
   val jsr250        = "javax.annotation"            % "jsr250-api"             % "1.0"        // CDDL v1
   val jsr311        = "javax.ws.rs"                 % "jsr311-api"             % "1.1"        // CDDL v1
   val log4j         = "log4j"                       % "log4j"                  % "1.2.15"     // ApacheV2
+  val mongoAsync    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"   % "0.2.7"      //ApacheV2
   val multiverse    = "org.multiverse"              % "multiverse-alpha"       % V.Multiverse // ApacheV2
   val netty         = "org.jboss.netty"             % "netty"                  % V.Netty      // ApacheV2
   val osgi          = "org.osgi"                    % "org.osgi.core"          % "4.2.0"      // ApacheV2
@@ -382,6 +399,7 @@ object Dependency {
   val springBeans   = "org.springframework"         % "spring-beans"           % V.Spring     // ApacheV2
   val springContext = "org.springframework"         % "spring-context"         % V.Spring     // ApacheV2
   val staxApi       = "javax.xml.stream"            % "stax-api"               % "1.0-2"      // ApacheV2
+  val twttrUtilCore = "com.twitter"                 % "util-core"              % "1.8.1"      // ApacheV2  
   val zkClient      = "zkclient"                    % "zkclient"               % "0.3"        // ApacheV2
   val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"              % V.Zookeeper  // ApacheV2
   val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2
