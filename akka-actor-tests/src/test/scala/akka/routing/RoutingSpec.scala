@@ -114,9 +114,9 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       }).start()
 
-      val d = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
+      val d = loadBalancerActor(new SmallestMailboxFirstIterator(t2 :: t1 :: Nil)) //Will pick the last with the smallest mailbox, so make sure t1 is last
 
-      for (i ← 1 to 500) d ! i
+      for (i ← 1 to 500 ) d ! i
 
       try {
         latch.await(20 seconds)

@@ -18,7 +18,6 @@ package akka.actor
 import akka.event.EventHandler
 import akka.AkkaException
 import java.util.concurrent.atomic.AtomicLong
-import java.lang.ref.WeakReference
 import java.util.concurrent._
 import java.lang.RuntimeException
 
@@ -27,20 +26,19 @@ object Scheduler {
 
   case class SchedulerException(msg: String, e: Throwable) extends AkkaException(msg, e)
 
-  @volatile
-  private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
+  private[akka] val service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
 
   private def createSendRunnable(receiver: ActorRef, message: Any, throwWhenReceiverExpired: Boolean): Runnable = {
     receiver match {
-      case local: LocalActorRef =>
-        val ref = new WeakReference[ActorRef](local)
+      case local: LocalActorRef ⇒
+        val uuid = local.uuid
         new Runnable {
-          def run = ref.get match {
-            case null => if(throwWhenReceiverExpired) throw new RuntimeException("Receiver not found: GC:ed")
-            case actor => actor ! message
+          def run = Actor.registry.local.actorFor(uuid) match {
+            case None        ⇒ if (throwWhenReceiverExpired) throw new RuntimeException("Receiver not found, unregistered")
+            case Some(actor) ⇒ actor ! message
           }
         }
-      case other => new Runnable { def run = other ! message }
+      case other ⇒ new Runnable { def run = other ! message }
     }
   }
 
@@ -128,18 +126,7 @@ object Scheduler {
     }
   }
 
-  def shutdown() {
-    synchronized {
-      service.shutdown()
-    }
-  }
-
-  def restart() {
-    synchronized {
-      shutdown()
-      service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
-    }
-  }
+  private[akka] def shutdown() { service.shutdown() }
 }
 
 private object SchedulerThreadFactory extends ThreadFactory {
