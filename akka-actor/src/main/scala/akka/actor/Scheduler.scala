@@ -18,7 +18,6 @@ package akka.actor
 import akka.event.EventHandler
 import akka.AkkaException
 import java.util.concurrent.atomic.AtomicLong
-import java.lang.ref.WeakReference
 import java.util.concurrent._
 import java.lang.RuntimeException
 
@@ -32,15 +31,15 @@ object Scheduler {
 
   private def createSendRunnable(receiver: ActorRef, message: Any, throwWhenReceiverExpired: Boolean): Runnable = {
     receiver match {
-      case local: LocalActorRef =>
-        val ref = new WeakReference[ActorRef](local)
+      case local: LocalActorRef ⇒
+        val uuid = local.uuid
         new Runnable {
-          def run = ref.get match {
-            case null => if(throwWhenReceiverExpired) throw new RuntimeException("Receiver not found: GC:ed")
-            case actor => actor ! message
+          def run = Actor.registry.local.actorFor(uuid) match {
+            case None        ⇒ if (throwWhenReceiverExpired) throw new RuntimeException("Receiver not found, unregistered")
+            case Some(actor) ⇒ actor ! message
           }
         }
-      case other => new Runnable { def run = other ! message }
+      case other ⇒ new Runnable { def run = other ! message }
     }
   }
 
