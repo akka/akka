@@ -26,8 +26,7 @@ object Scheduler {
 
   case class SchedulerException(msg: String, e: Throwable) extends AkkaException(msg, e)
 
-  @volatile
-  private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
+  private[akka] val service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
 
   private def createSendRunnable(receiver: ActorRef, message: Any, throwWhenReceiverExpired: Boolean): Runnable = {
     receiver match {
@@ -127,18 +126,7 @@ object Scheduler {
     }
   }
 
-  def shutdown() {
-    synchronized {
-      service.shutdown()
-    }
-  }
-
-  def restart() {
-    synchronized {
-      shutdown()
-      service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
-    }
-  }
+  private[akka] def shutdown() { service.shutdown() }
 }
 
 private object SchedulerThreadFactory extends ThreadFactory {
