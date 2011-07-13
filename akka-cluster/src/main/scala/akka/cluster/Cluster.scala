@@ -86,7 +86,7 @@ trait ClusterNodeMBean {
 
   def getNodeAddres():NodeAddress
 
-  def getLeader: String
+  def getLeaderLockName: String
 
   def isLeader: Boolean
 
@@ -118,7 +118,7 @@ trait ClusterNodeMBean {
 
   def getActorAddresstoNodesPathFor(actorAddress:String):String
 
-  def getActorAddressToNodesPathFor(actorAddress:String, nodeName:String):String
+  def getActorAddressToNodesPathForWithNodeName(actorAddress:String, nodeName:String):String
 
   def getNodeToUuidsPathFor(node:String):String
 
@@ -136,7 +136,7 @@ trait ClusterNodeMBean {
 
   def getActorAddressToUuidsPathFor(actorAddress: String):String
 
-  def getActorAddressToUuidsPathFor(actorAddress: String, uuid: UUID):String
+  def getActorAddressToUuidsPathForWithNodeName(actorAddress: String, uuid: UUID):String
 }
 
 /**
@@ -1594,7 +1594,7 @@ class DefaultClusterNode private[akka] (
 
       override def getMemberNodes = self.locallyCachedMembershipNodes.iterator.map(_.toString).toArray
 
-      override def getLeader = self.leader.toString
+      override def getLeaderLockName = self.leader.toString
 
       override def isLeader = self.isLeader
 
@@ -1626,7 +1626,7 @@ class DefaultClusterNode private[akka] (
 
       override def getActorAddresstoNodesPathFor(actorAddress:String) = self.actorAddressToNodesPathFor(actorAddress)
 
-      override def getActorAddressToNodesPathFor(actorAddress:String, nodeName:String) = self.actorAddressToNodesPathFor(actorAddress, nodeName)
+      override def getActorAddressToNodesPathForWithNodeName(actorAddress:String, nodeName:String) = self.actorAddressToNodesPathFor(actorAddress, nodeName)
 
       override def getNodeToUuidsPathFor(node:String) = self.nodeToUuidsPathFor(node)
 
@@ -1644,7 +1644,7 @@ class DefaultClusterNode private[akka] (
 
       override def getActorAddressToUuidsPathFor(actorAddress: String) = self.actorAddressToUuidsPathFor(actorAddress)
 
-      override def getActorAddressToUuidsPathFor(actorAddress: String, uuid: UUID) = self.actorAddressToUuidsPathFor(actorAddress, uuid)
+      override def getActorAddressToUuidsPathForWithNodeName(actorAddress: String, uuid: UUID) = self.actorAddressToUuidsPathFor(actorAddress, uuid)
     }
 
     JMX.register(clusterJmxObjectName, clusterMBean)
