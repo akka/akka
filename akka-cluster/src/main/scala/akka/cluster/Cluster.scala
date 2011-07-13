@@ -13,12 +13,11 @@ import org.I0Itec.zkclient.serialize._
 import org.I0Itec.zkclient.exception._
 
 import java.util.{ List ⇒ JList }
-import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference, AtomicInteger }
-import java.util.concurrent.{ ConcurrentSkipListSet, CopyOnWriteArrayList, Callable, ConcurrentHashMap }
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
+import java.util.concurrent.{ CopyOnWriteArrayList, Callable, ConcurrentHashMap }
 import java.net.InetSocketAddress
 import javax.management.StandardMBean
 
-import scala.collection.immutable.{ HashMap, HashSet }
 import scala.collection.mutable.ConcurrentMap
 import scala.collection.JavaConversions._
 
@@ -48,8 +47,6 @@ import ChangeListener._
 import ClusterProtocol._
 import RemoteDaemonMessageType._
 
-import akka.AkkaException
-
 import com.eaio.uuid.UUID
 
 import com.google.protobuf.ByteString
@@ -59,11 +56,10 @@ import com.google.protobuf.ByteString
 /**
  * JMX MBean for the cluster service.
  *
- * FIXME revisit the methods in this MBean interface, they are not up to date with new cluster API
- *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait ClusterNodeMBean {
+
   def start()
 
   def stop()
@@ -88,7 +84,11 @@ trait ClusterNodeMBean {
 
   def getMemberNodes: Array[String]
 
+  def getNodeAddres():NodeAddress
+
   def getLeader: String
+
+  def isLeader: Boolean
 
   def getUuidsForClusteredActors: Array[String]
 
@@ -111,6 +111,32 @@ trait ClusterNodeMBean {
   def removeConfigElement(key: String)
 
   def getConfigElementKeys: Array[String]
+
+  def getMemberShipPathFor(node:String):String
+
+  def getConfigurationPathFor(key:String):String
+
+  def getActorAddresstoNodesPathFor(actorAddress:String):String
+
+  def getActorAddressToNodesPathFor(actorAddress:String, nodeName:String):String
+
+  def getNodeToUuidsPathFor(node:String):String
+
+  def getNodeToUuidsPathFor(node:String, uuid:UUID):String
+
+  def getActorAddressRegistryPathFor(actorAddress:String):String
+
+  def getActorAddressRegistrySerializerPathFor(actorAddress:String):String
+
+  def getActorAddressRegistryUuidPathFor(actorAddress:String):String
+
+  def getActorUuidRegistryNodePathFor(uuid: UUID):String
+
+  def getActorUuidRegistryRemoteAddressPathFor(uuid: UUID):String
+
+  def getActorAddressToUuidsPathFor(actorAddress: String):String
+
+  def getActorAddressToUuidsPathFor(actorAddress: String, uuid: UUID):String
 }
 
 /**
@@ -1542,19 +1568,19 @@ class DefaultClusterNode private[akka] (
   private def createMBean = {
     val clusterMBean = new StandardMBean(classOf[ClusterNodeMBean]) with ClusterNodeMBean {
 
-      import Cluster._
+      override def start() = self.start()
 
-      override def start(): Unit = self.start()
-
-      override def stop(): Unit = self.shutdown()
+      override def stop() = self.shutdown()
 
       override def disconnect() = self.disconnect()
 
-      override def reconnect(): Unit = self.reconnect()
+      override def reconnect() = self.reconnect()
 
-      override def resign(): Unit = self.resign()
+      override def resign() = self.resign()
 
       override def isConnected = self.isConnected.get
+
+      override def getNodeAddres = self.nodeAddress
 
       override def getRemoteServerHostname = self.hostname
 
@@ -1569,6 +1595,8 @@ class DefaultClusterNode private[akka] (
       override def getMemberNodes = self.locallyCachedMembershipNodes.iterator.map(_.toString).toArray
 
       override def getLeader = self.leader.toString
+
+      override def isLeader = self.isLeader
 
       override def getUuidsForActorsInUse = self.uuidsForActorsInUse.map(_.toString).toArray
 
@@ -1591,6 +1619,32 @@ class DefaultClusterNode private[akka] (
       override def removeConfigElement(key: String): Unit = self.removeConfigElement(key)
 
       override def getConfigElementKeys = self.getConfigElementKeys.toArray
+
+      override def getMemberShipPathFor(node:String) = self.membershipPathFor(node)
+
+      override def getConfigurationPathFor(key:String) = self.configurationPathFor(key)
+
+      override def getActorAddresstoNodesPathFor(actorAddress:String) = self.actorAddressToNodesPathFor(actorAddress)
+
+      override def getActorAddressToNodesPathFor(actorAddress:String, nodeName:String) = self.actorAddressToNodesPathFor(actorAddress, nodeName)
+
+      override def getNodeToUuidsPathFor(node:String) = self.nodeToUuidsPathFor(node)
+
+      override def getNodeToUuidsPathFor(node:String, uuid:UUID) = self.nodeToUuidsPathFor(node, uuid)
+
+      override def getActorAddressRegistryPathFor(actorAddress:String) = self.actorAddressRegistryPathFor(actorAddress)
+
+      override def getActorAddressRegistrySerializerPathFor(actorAddress:String) = self.actorAddressRegistrySerializerPathFor(actorAddress)
+
+      override def getActorAddressRegistryUuidPathFor(actorAddress:String) = self.actorAddressRegistryUuidPathFor(actorAddress)
+
+      override def getActorUuidRegistryNodePathFor(uuid: UUID) = self.actorUuidRegistryNodePathFor(uuid)
+
+      override def getActorUuidRegistryRemoteAddressPathFor(uuid: UUID)= self.actorUuidRegistryNodePathFor(uuid)
+
+      override def getActorAddressToUuidsPathFor(actorAddress: String) = self.actorAddressToUuidsPathFor(actorAddress)
+
+      override def getActorAddressToUuidsPathFor(actorAddress: String, uuid: UUID) = self.actorAddressToUuidsPathFor(actorAddress, uuid)
     }
 
     JMX.register(clusterJmxObjectName, clusterMBean)
