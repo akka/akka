@@ -205,7 +205,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
   }
 
   def kill(pingPongActor: ActorRef) = {
-    intercept[RuntimeException] { pingPongActor !! (Die, TimeoutMillis) }
+    intercept[RuntimeException] { (pingPongActor ? (Die, TimeoutMillis)).as[Any] }
     messageLogPoll must be === ExceptionMessage
   }
 
