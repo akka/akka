@@ -28,7 +28,7 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
       val bytes = toBinary(actor1)
       val actor2 = fromBinary(bytes)
       actor2.start()
-      (actor2 ? "hello") should equal("world 3")
+      (actor2 ? "hello").get should equal("world 3")
 
       actor2.receiveTimeout should equal(Some(1000))
       actor1.stop()
