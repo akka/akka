@@ -96,7 +96,8 @@ class FileBenchResultRepository extends BenchResultRepository {
       out.writeObject(stats)
     } catch {
       case e: Exception ⇒
-        EventHandler.error(this, "Failed to save [%s] to [%s]".format(stats, f.getAbsolutePath))
+        EventHandler.error(this, "Failed to save [%s] to [%s], due to [%s]".
+          format(stats, f.getAbsolutePath, e.getMessage))
     }
     finally {
       if (out ne null) try { out.close() } catch { case ignore: Exception ⇒ }
@@ -112,8 +113,9 @@ class FileBenchResultRepository extends BenchResultRepository {
           val stats = in.readObject.asInstanceOf[Stats]
           Some(stats)
         } catch {
-          case e: Exception ⇒
-            EventHandler.error(this, "Failed to load from [%s]".format(f.getAbsolutePath))
+          case e: Throwable ⇒
+            EventHandler.error(this, "Failed to load from [%s], due to [%s]".
+              format(f.getAbsolutePath, e.getMessage))
             None
         }
         finally {

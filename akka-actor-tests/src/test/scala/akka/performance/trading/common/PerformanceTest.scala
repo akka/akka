@@ -130,27 +130,44 @@ trait PerformanceTest extends JUnitSuite {
 
     EventHandler.info(this, formatResultsTable(resultRepository.get(name)))
 
-    val chartTitle = name + " Percentiles (microseconds)"
-    val chartUrl = GoogleChartBuilder.percentilChartUrl(resultRepository.get(name), chartTitle, _.load + " clients")
-    EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
+    percentilesChart(stats)
+    latencyAndThroughputChart(stats)
+    comparePercentilesChart(stats)
+    compareWithHistoricalPercentiliesChart(stats)
 
+  }
+
+  def percentilesChart(stats: Stats) {
+    val chartTitle = stats.name + " Percentiles (microseconds)"
+    val chartUrl = GoogleChartBuilder.percentilChartUrl(resultRepository.get(stats.name), chartTitle, _.load + " clients")
+    EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
+  }
+
+  def comparePercentilesChart(stats: Stats) {
     for {
       compareName ← compareResultWith
-      compareStats ← resultRepository.get(compareName, numberOfClients)
+      compareStats ← resultRepository.get(compareName, stats.load)
     } {
-      val chartTitle = name + " vs. " + compareName + ", " + numberOfClients + " clients" + ", Percentiles (microseconds)"
+      val chartTitle = stats.name + " vs. " + compareName + ", " + stats.load + " clients" + ", Percentiles (microseconds)"
       val chartUrl = GoogleChartBuilder.percentilChartUrl(Seq(compareStats, stats), chartTitle, _.name)
       EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
     }
+  }
 
-    val withHistorical = resultRepository.getWithHistorical(name, numberOfClients)
+  def compareWithHistoricalPercentiliesChart(stats: Stats) {
+    val withHistorical = resultRepository.getWithHistorical(stats.name, stats.load)
     if (withHistorical.size > 1) {
-      val chartTitle = name + " vs. historical, " + numberOfClients + " clients" + ", Percentiles (microseconds)"
+      val chartTitle = stats.name + " vs. historical, " + stats.load + " clients" + ", Percentiles (microseconds)"
       val chartUrl = GoogleChartBuilder.percentilChartUrl(withHistorical, chartTitle,
         stats ⇒ legendTimeFormat.format(new Date(stats.timestamp)))
       EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
     }
+  }
 
+  def latencyAndThroughputChart(stats: Stats) {
+    val chartTitle = stats.name + " Latency (microseconds) and Throughput (TPS)"
+    val chartUrl = GoogleChartBuilder.latencyAndThroughputChartUrl(resultRepository.get(stats.name), chartTitle)
+    EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
   }
 
   def formatResultsTable(statsSeq: Seq[Stats]): String = {
