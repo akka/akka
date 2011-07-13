@@ -2,8 +2,9 @@ package akka.performance.trading.common
 
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
-
 import scala.collection.immutable.TreeMap
+import java.util.Locale
+import java.util.Formatter
 
 /**
  * Generates URLs to Google Chart API http://code.google.com/apis/chart/
@@ -21,7 +22,7 @@ object GoogleChartBuilder {
 
     val current = statistics.last
 
-    val sb = new StringBuilder()
+    val sb = new StringBuilder
     sb.append(BaseUrl)
     // bar chart
     sb.append("cht=bvg")
@@ -74,7 +75,7 @@ object GoogleChartBuilder {
     // grid lines
     appendGridSpacing(maxValue, sb)
 
-    return sb.toString()
+    return sb.toString
   }
 
   private def percentileLabels(percentiles: TreeMap[Int, Long], sb: StringBuilder) {
@@ -117,6 +118,106 @@ object GoogleChartBuilder {
     } catch {
       case e: UnsupportedEncodingException ⇒ str
     }
+  }
+
+  def latencyAndThroughputChartUrl(statistics: Seq[Stats], title: String): String = {
+    if (statistics.isEmpty) return ""
+
+    val sb = new StringBuilder
+    sb.append(BaseUrl)
+    // line chart
+    sb.append("cht=lxy")
+    sb.append("&")
+    // size
+    sb.append("chs=").append(ChartWidth).append("x").append(ChartHeight)
+    sb.append("&")
+    // title
+    sb.append("chtt=").append(urlEncode(title))
+    sb.append("&")
+    // axis locations
+    sb.append("chxt=x,y,r,x,y,r")
+    sb.append("&")
+    // labels
+    sb.append("chxl=3:|clients|4:|Latency+(us)|5:|Throughput+(tps)")
+    sb.append("&")
+    // label color and font
+    sb.append("chxs=0,676767,11.5,0,lt,676767|1,676767,11.5,0,lt,676767|2,676767,11.5,0,lt,676767")
+    sb.append("&")
+    sb.append("chco=")
+    val seriesColors = List("25B33B", "3072F3", "FF0000", "FF9900")
+    sb.append(seriesColors.mkString(","))
+    sb.append("&")
+    // legend
+    sb.append("chdl=5th Percentile|Median|95th Percentile|Throughput")
+    sb.append("&")
+
+    sb.append("chdlp=b")
+    sb.append("&")
+
+    sb.append("chls=1|1|1")
+    sb.append("&")
+
+    sb.append("chls=1|1|1")
+    sb.append("&")
+
+    sb.append("chma=5,5,5,25")
+    sb.append("&")
+
+    // data points
+    sb.append("chm=")
+    val chmStr = seriesColors.zipWithIndex.map(each ⇒ "o," + each._1 + "," + each._2 + ",-1,7").mkString("|")
+    sb.append(chmStr)
+    sb.append("&")
+
+    // data series
+    val loadStr = statistics.map(_.load).mkString(",")
+    sb.append("chd=t:")
+    val maxP = 95
+    val percentiles = List(5, 50, maxP)
+    val maxValue = statistics.map(_.percentiles(maxP)).max
+    val percentileSeries: List[String] =
+      for (p ← percentiles) yield {
+        loadStr + "|" + statistics.map(_.percentiles(p)).mkString(",")
+      }
+    sb.append(percentileSeries.mkString("|"))
+
+    sb.append("|")
+    val maxTps: Double = statistics.map(_.tps).max
+    sb.append(loadStr).append("|")
+    val tpsSeries = statistics.map(s ⇒ formatDouble(s.tps)).mkString(",")
+    sb.append(tpsSeries)
+
+    val minLoad = statistics.head.load
+    val maxLoad = statistics.last.load
+
+    // y range
+    sb.append("&")
+    sb.append("chxr=0,").append(minLoad).append(",").append(maxLoad).append("|1,0,").append(maxValue).append("|2,0,")
+      .append(formatDouble(maxTps))
+    sb.append("&")
+
+    sb.append("chds=")
+    for (p ← percentiles) {
+      sb.append(minLoad).append(",").append(maxLoad)
+      sb.append(",0,").append(maxValue)
+      sb.append(",")
+    }
+    sb.append(minLoad).append(",").append(maxLoad)
+    sb.append(",0,").append(formatDouble(maxTps))
+    sb.append("&")
+
+    // label positions
+    sb.append("chxp=3,").append("50").append("|4,").append("100").append("|5,").append("100")
+    sb.append("&")
+
+    // grid lines
+    appendGridSpacing(maxValue, sb)
+
+    return sb.toString
+  }
+
+  def formatDouble(value: Double): String = {
+    new java.math.BigDecimal(value).setScale(2, java.math.RoundingMode.HALF_EVEN).toString
   }
 
 }
