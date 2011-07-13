@@ -14,6 +14,7 @@ import Actor._
 import SerializeSpec._
 
 case class MyMessage(id: Long, name: String, status: Boolean)
+
 @RunWith(classOf[JUnitRunner])
 class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll {
 

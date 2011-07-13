@@ -171,8 +171,6 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
   }
 
  private def sendSync(exchange: Exchange) = {
-    import akka.camel.Consumer._
-
     val actor = target(exchange)
     val result: Any = try { (actor ? requestFor(exchange)).as[Any] } catch { case e ⇒ Some(Failure(e)) }
 
