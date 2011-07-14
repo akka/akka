@@ -1153,28 +1153,6 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
   }
 
   /**
-   * Sends a message asynchronously and waits on a future for a reply message.
-   * <p/>
-   * It waits on the reply either until it receives it (in the form of <code>Some(replyMessage)</code>)
-   * or until the timeout expires (which will return None). E.g. send-and-receive-eventually semantics.
-   * <p/>
-   * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use '!' together with the 'sender' member field to
-   * implement request/response message exchanges.
-   * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>self.reply(..)</code>
-   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
-   */
-  @deprecated("use `(actor ? msg).as[T]` instead", "1.2")
-  def !!(message: Any, timeout: Long = this.timeout)(implicit channel: UntypedChannel = NullChannel): Option[Any] = {
-    if (isRunning) {
-      val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
-
-      try { future.await.resultOrException } catch { case e: FutureTimeoutException ⇒ None }
-    } else throw new ActorInitializationException(
-      "Actor has not been started, you need to invoke 'actor.start()' before using it")
-  }
-
-  /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
    */
   def ?(message: Any, timeout: Actor.Timeout = Actor.noTimeoutGiven)(implicit channel: UntypedChannel = NullChannel, implicitTimeout: Actor.Timeout = Actor.defaultTimeout): Future[Any] = {
