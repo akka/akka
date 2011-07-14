@@ -32,7 +32,7 @@ object RoundRobin2ReplicasMultiJvmSpec {
 /**
  * What is the purpose of this node? Is this just a node for the cluster to make use of?
  */
-/*
+
 class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import RoundRobin2ReplicasMultiJvmSpec._
 
@@ -70,9 +70,9 @@ class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with B
   override def afterAll() {
     shutdownLocalCluster()
   }
-}*/
+}
 
-/*
+
 class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
   import RoundRobin2ReplicasMultiJvmSpec._
 
@@ -129,4 +129,3 @@ class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
     }
   }
 }
-*/

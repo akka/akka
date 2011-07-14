@@ -22,7 +22,6 @@ object MultiReplicaDirectRoutingMultiJvmSpec {
 
 }
 
-/*
 class MultiReplicaDirectRoutingMultiJvmNode2 extends ClusterTestNode {
 
   import MultiReplicaDirectRoutingMultiJvmSpec._
@@ -64,5 +63,4 @@ class MultiReplicaDirectRoutingMultiJvmNode1 extends MasterClusterTestNode {
     }
   }
 }
-*/
 
