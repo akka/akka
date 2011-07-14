@@ -17,7 +17,7 @@ import org.multiverse.api.exceptions.ControlFlowError
 /**
  * Akka-specific exception for coordinated transactions.
  */
-class CoordinatedTransactionException(message: String) extends AkkaException(message)
+class CoordinatedTransactionException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * Coordinated transactions across actors.
@@ -153,10 +153,19 @@ class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
         }
 
         val timeout = factory.config.timeout
-        if (!barrier.tryJoinCommit(mtx, timeout.length, timeout.unit)) {
+        val success = try {
+          barrier.tryJoinCommit(mtx, timeout.length, timeout.unit)
+        } catch {
+          case e: IllegalStateException => {
+            val config: TransactionConfiguration = mtx.getConfiguration
+            throw new CoordinatedTransactionException("Coordinated transaction [" + config.getFamilyName + "] aborted", e)
+          }
+        }
+
+        if (!success) {
           val config: TransactionConfiguration = mtx.getConfiguration
           throw new ActorTimeoutException(
-            "Failed to complete transaction [" + config.getFamilyName + "] " +
+            "Failed to complete coordinated transaction [" + config.getFamilyName + "] " +
               "with a maxium timeout of [" + config.getTimeoutNs + "] ns")
         }
         result
