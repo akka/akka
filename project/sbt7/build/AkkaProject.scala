@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
 import com.weiglewilczek.bnd4sbt.BNDPlugin
@@ -225,8 +225,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     <inceptionYear>2009</inceptionYear>
     <url>http://akka.io</url>
     <organization>
-      <name>Scalable Solutions AB</name>
-      <url>http://scalablesolutions.se</url>
+      <name>Typesafe Inc.</name>
+      <url>http://www.typesafe.com</url>
     </organization>
     <licenses>
       <license>

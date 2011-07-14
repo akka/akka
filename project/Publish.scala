@@ -20,8 +20,8 @@ object Publish {
     <inceptionYear>2009</inceptionYear>
     <url>http://akka.io</url>
     <organization>
-      <name>Scalable Solutions AB</name>
-      <url>http://scalablesolutions.se</url>
+      <name>Typesafe Inc.</name>
+      <url>http://www.typesafe.com</url>
     </organization>
     <licenses>
       <license>
