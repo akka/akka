@@ -4,12 +4,18 @@
 
 package akka.transactor
 
+import akka.AkkaException
 import akka.config.Config
 import akka.stm.{ Atomic, DefaultTransactionConfig, TransactionFactory }
 
 import org.multiverse.api.{ Transaction ⇒ MultiverseTransaction }
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 import org.multiverse.templates.TransactionalCallable
+
+/**
+ * Akka-specific exception for coordinated transactions.
+ */
+class CoordinatedTransactionException(message: String) extends AkkaException(message)
 
 /**
  * Coordinated transactions across actors.
@@ -129,9 +135,16 @@ class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
   def atomic[T](factory: TransactionFactory)(body: ⇒ T): T = {
     factory.boilerplate.execute(new TransactionalCallable[T]() {
       def call(mtx: MultiverseTransaction): T = {
-        val result = body
+        val result = try { body } catch { case e: Exception ⇒ barrier.abort(); throw e }
         val timeout = factory.config.timeout
-        barrier.tryJoinCommit(mtx, timeout.length, timeout.unit)
+        try {
+          barrier.tryJoinCommit(mtx, timeout.length, timeout.unit)
+        } catch {
+          case e: org.multiverse.api.exceptions.DeadTransactionException ⇒
+            throw new CoordinatedTransactionException("Coordinated transaction aborted")
+          case e: java.lang.IllegalStateException ⇒
+            throw new CoordinatedTransactionException("Coordinated transaction aborted")
+        }
         result
       }
     })
