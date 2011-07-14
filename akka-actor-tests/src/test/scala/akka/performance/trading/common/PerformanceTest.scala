@@ -52,8 +52,7 @@ trait PerformanceTest extends JUnitSuite {
   var stat: DescriptiveStatistics = _
 
   val resultRepository = BenchResultRepository()
-
-  val legendTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
+  lazy val report = new Report(resultRepository, compareResultWith)
 
   type TS <: TradingSystem
 
@@ -128,95 +127,7 @@ trait PerformanceTest extends JUnitSuite {
 
     resultRepository.add(stats)
 
-    EventHandler.info(this, formatResultsTable(resultRepository.get(name)))
-
-    percentilesChart(stats)
-    latencyAndThroughputChart(stats)
-    comparePercentilesChart(stats)
-    compareWithHistoricalPercentiliesChart(stats)
-
-  }
-
-  def percentilesChart(stats: Stats) {
-    val chartTitle = stats.name + " Percentiles (microseconds)"
-    val chartUrl = GoogleChartBuilder.percentilChartUrl(resultRepository.get(stats.name), chartTitle, _.load + " clients")
-    EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
-  }
-
-  def comparePercentilesChart(stats: Stats) {
-    for {
-      compareName ← compareResultWith
-      compareStats ← resultRepository.get(compareName, stats.load)
-    } {
-      val chartTitle = stats.name + " vs. " + compareName + ", " + stats.load + " clients" + ", Percentiles (microseconds)"
-      val chartUrl = GoogleChartBuilder.percentilChartUrl(Seq(compareStats, stats), chartTitle, _.name)
-      EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
-    }
-  }
-
-  def compareWithHistoricalPercentiliesChart(stats: Stats) {
-    val withHistorical = resultRepository.getWithHistorical(stats.name, stats.load)
-    if (withHistorical.size > 1) {
-      val chartTitle = stats.name + " vs. historical, " + stats.load + " clients" + ", Percentiles (microseconds)"
-      val chartUrl = GoogleChartBuilder.percentilChartUrl(withHistorical, chartTitle,
-        stats ⇒ legendTimeFormat.format(new Date(stats.timestamp)))
-      EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
-    }
-  }
-
-  def latencyAndThroughputChart(stats: Stats) {
-    val chartTitle = stats.name + " Latency (microseconds) and Throughput (TPS)"
-    val chartUrl = GoogleChartBuilder.latencyAndThroughputChartUrl(resultRepository.get(stats.name), chartTitle)
-    EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
-  }
-
-  def formatResultsTable(statsSeq: Seq[Stats]): String = {
-
-    val name = statsSeq.head.name
-
-    val spaces = "                                                                                     "
-    val headerScenarioCol = ("Scenario" + spaces).take(name.length)
-
-    val headerLine = (headerScenarioCol :: "clients" :: "TPS" :: "mean" :: "5%  " :: "25% " :: "50% " :: "75% " :: "95% " :: "Durat." :: "N" :: Nil)
-      .mkString("\t")
-    val headerLine2 = (spaces.take(name.length) :: "       " :: "   " :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(us)" :: "(s)   " :: " " :: Nil)
-      .mkString("\t")
-    val line = List.fill(formatStats(statsSeq.head).replaceAll("\t", "      ").length)("-").mkString
-    val formattedStats = "\n" +
-      line.replace('-', '=') + "\n" +
-      headerLine + "\n" +
-      headerLine2 + "\n" +
-      line + "\n" +
-      statsSeq.map(formatStats(_)).mkString("\n") + "\n" +
-      line + "\n"
-
-    formattedStats
-
-  }
-
-  def formatStats(stats: Stats): String = {
-    val durationS = stats.durationNanos.toDouble / 1000000000.0
-    val duration = durationS.formatted("%.0f")
-
-    val tpsStr = stats.tps.formatted("%.0f")
-    val meanStr = stats.mean.formatted("%.0f")
-
-    val summaryLine =
-      stats.name ::
-        stats.load.toString ::
-        tpsStr ::
-        meanStr ::
-        stats.percentiles(5).toString ::
-        stats.percentiles(25).toString ::
-        stats.percentiles(50).toString ::
-        stats.percentiles(75).toString ::
-        stats.percentiles(95).toString ::
-        duration ::
-        stats.n.toString ::
-        Nil
-
-    summaryLine.mkString("\t")
-
+    report.html(resultRepository.get(name))
   }
 
   def delay(delayMs: Int) {
