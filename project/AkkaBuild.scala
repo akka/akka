@@ -269,6 +269,13 @@ object AkkaBuild extends Build {
     publishArtifact in Compile := false
   )
 
+  val testExcludes = SettingKey[Seq[String]]("test-excludes")
+
+  def akkaTestExcludes: Seq[String] = {
+    val exclude = System.getProperty("akka.test.exclude", "")
+    if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
+  }
+
   lazy val defaultSettings = baseSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
     resolvers += "Twitter Public Repo" at "http://maven.twttr.com", // This will be going away with com.mongodb.async's next release
@@ -282,7 +289,11 @@ object AkkaBuild extends Build {
     unmanagedClasspath in Test    <+= (baseDirectory in LocalProject("akka")) map { base => Attributed.blank(base / "config") },
 
     // disable parallel tests
-    parallelExecution in Test := false
+    parallelExecution in Test := false,
+
+    // for excluding tests in jenkins builds (-Dakka.test.exclude=TimingSpec)
+    testExcludes := akkaTestExcludes,
+    testOptions in Test <++= testExcludes map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) }
   )
 
   // reStructuredText docs
