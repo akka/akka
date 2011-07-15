@@ -29,7 +29,7 @@ The durable mailboxes currently supported are:
   - ``RedisDurableMailboxStorage`` -- backed by Redis
   - ``ZooKeeperDurableMailboxStorage`` -- backed by ZooKeeper
   - ``BeanstalkDurableMailboxStorage`` -- backed by Beanstalkd
-
+  - ``MongoNaiveDurableMailboxStorage`` -- backed by MongoDB
 We'll walk through each one of these in detail in the sections below.
 
 Soon Akka will also have:
@@ -226,3 +226,57 @@ server. This is done in the ``akka.actor.mailbox.beanstalk`` section in the
         }
       }
     }
+
+MongoDB-based Durable Mailboxes
+===============================
+
+This mailbox is backed by `MongoDB <http://mongodb.org>`_.
+MongoDB is a fast, lightweight and scalable document-oriented database.  It contains a number of 
+features cohesive to a fast, reliable & durable queueing mechanism which the Akka Mailbox takes advantage of.
+
+
+Akka's implementations of MongoDB mailboxes are built on top of the purely asynchronous MongoDB driver (often known as `Hammersmith <http://github.com/bwmcadams/hammersmith>`_ and ``com.mongodb.async``) and as such are purely callback based with a Netty network layer.  This makes them extremely fast & lightweight versus building on other MongoDB implementations such as `mongo-java-driver <http://github.com/mongodb/mongo-java-driver>`_ and `Casbah <http://github.com/mongodb/casbah`_.
+
+You will need to configure the URI for the MongoDB server, using the URI Format specified in the `MongoDB Documentation <http://www.mongodb.org/display/DOCS/Connections>`_. This is done in
+the ``akka.actor.mailbox.mongodb`` section in the ``akka.conf`` configuration
+file.
+
+.. code-block:: none
+
+      mongodb {
+        # Any specified collection name will be used as a prefix for collections that use durable mongo mailboxes
+        uri = "mongodb://localhost/akka.mailbox"   # Follow Mongo URI Spec - http://www.mongodb.org/display/DOCS/Connections
+        # Configurable timeouts for certain ops
+        timeout {
+            read = 3000 # number of milliseconds to wait for a read to succeed before timing out the future
+            write = 3000 # number of milliseconds to wait for a write to succeed before timing out the future
+        }
+      }
+
+You must specify a hostname (and optionally port) and at *least* a Database name.  If you specify a collection name, it will be used as a 'prefix' for the collections Akka creates to store mailbox messages.  Otherwise, collections will be prefixed with ``mailbox.``
+
+It is also possible to configure the timeout threshholds for Read and Write operations in the ``timeout`` block.
+Currently Akka offers only one "type" of MongoDB based Mailbox but there are plans to support at least 
+one other kind which uses a different queueing strategy.  
+
+
+'Naive' MongoDB-based Durable Mailbox
+-------------------------------------
+The currently supported mailbox is considered "Naive" as it removes messages (using the ``findAndRemove``
+command) from the MongoDB datastore as soon as the actor consumes them.  This could cause message loss 
+if an actor crashes before completely processing a message.  It is not a problem per sé, but behavior 
+users should be aware of.
+
+Here is an example of how you can configure your dispatcher to use this mailbox::
+
+    val dispatcher = DurableDispatcher(
+      "my:service",
+      MongoNaiveDurableMailboxStorage)
+
+or for a thread-based durable dispatcher::
+
+    self.dispatcher = DurablePinnedDispatcher(
+      self,
+      MongoNaiveDurableMailboxStorage)
+
+

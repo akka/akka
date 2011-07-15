@@ -40,9 +40,13 @@ object CoordinatedIncrement {
   }
 
   class Failer extends Actor {
+    val txFactory = TransactionFactory(timeout = 3 seconds)
+
     def receive = {
-      case Coordinated(Increment(friends)) ⇒ {
-        throw new RuntimeException("Expected failure")
+      case coordinated@Coordinated(Increment(friends)) ⇒ {
+        coordinated.atomic(txFactory) {
+          throw new RuntimeException("Expected failure")
+        }
       }
     }
   }

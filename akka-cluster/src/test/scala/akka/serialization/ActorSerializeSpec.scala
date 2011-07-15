@@ -14,6 +14,7 @@ import Actor._
 import SerializeSpec._
 
 case class MyMessage(id: Long, name: String, status: Boolean)
+
 @RunWith(classOf[JUnitRunner])
 class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll {
 
@@ -21,13 +22,13 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
     it("should be able to serialize and de-serialize a stateful actor with a given serializer") {
 
       val actor1 = localActorOf[MyJavaSerializableActor].start()
-      (actor1 !! "hello").getOrElse("_") should equal("world 1")
-      (actor1 !! "hello").getOrElse("_") should equal("world 2")
+      (actor1 ? "hello").get should equal("world 1")
+      (actor1 ? "hello").get should equal("world 2")
 
       val bytes = toBinary(actor1)
       val actor2 = fromBinary(bytes)
       actor2.start()
-      (actor2 !! "hello").getOrElse("_") should equal("world 3")
+      (actor2 ? "hello").get should equal("world 3")
 
       actor2.receiveTimeout should equal(Some(1000))
       actor1.stop()
@@ -51,12 +52,12 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
       val actor2 = fromBinary(toBinary(actor1))
       Thread.sleep(1000)
       actor2.getDispatcher.mailboxSize(actor1) should be > (0)
-      (actor2 !! "hello-reply").getOrElse("_") should equal("world")
+      (actor2 ? "hello-reply").get should equal("world")
 
       val actor3 = fromBinary(toBinary(actor1, false))
       Thread.sleep(1000)
       actor3.getDispatcher.mailboxSize(actor1) should equal(0)
-      (actor3 !! "hello-reply").getOrElse("_") should equal("world")
+      (actor3 ? "hello-reply").get should equal("world")
     }
 
     it("should be able to serialize and deserialize a PersonActorWithMessagesInMailbox") {
@@ -77,12 +78,12 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
       val actor2 = fromBinary(toBinary(actor1))
       Thread.sleep(1000)
       actor2.getDispatcher.mailboxSize(actor1) should be > (0)
-      (actor2 !! "hello-reply").getOrElse("_") should equal("hello")
+      (actor2 ? "hello-reply").get should equal("hello")
 
       val actor3 = fromBinary(toBinary(actor1, false))
       Thread.sleep(1000)
       actor3.getDispatcher.mailboxSize(actor1) should equal(0)
-      (actor3 !! "hello-reply").getOrElse("_") should equal("hello")
+      (actor3 ? "hello-reply").get should equal("hello")
     }
   }
 
@@ -123,12 +124,12 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
       val actor2 = fromBinary(toBinary(actor1))
       Thread.sleep(1000)
       actor2.getDispatcher.mailboxSize(actor1) should be > (0)
-      (actor2 !! "hello-reply").getOrElse("_") should equal("world")
+      (actor2 ? "hello-reply").get should equal("world")
 
       val actor3 = fromBinary(toBinary(actor1, false))
       Thread.sleep(1000)
       actor3.getDispatcher.mailboxSize(actor1) should equal(0)
-      (actor3 !! "hello-reply").getOrElse("_") should equal("world")
+      (actor3 ? "hello-reply").get should equal("world")
     }
   }
 }
