@@ -6,7 +6,7 @@ package akka
 
 import akka.actor.newUuid
 import java.net.{ InetAddress, UnknownHostException }
-
+ 
 /**
  * Akka base Exception. Each Exception gets:
  * <ul>

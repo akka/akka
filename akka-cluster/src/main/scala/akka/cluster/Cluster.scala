@@ -477,33 +477,33 @@ class DefaultClusterNode private[akka](
 
 
   def shutdown() {
+    def shutdownNode() {
+      ignore[ZkNoNodeException](zkClient.deleteRecursive(membershipNodePath))
+
+      locallyCachedMembershipNodes.clear()
+
+      nodeConnections.toList.foreach({
+        case (_, (address, _)) ⇒
+          Actor.remote.shutdownClientConnection(address) // shut down client connections
+      })
+
+      remoteService.shutdown() // shutdown server
+
+      remoteClientLifeCycleListener.stop()
+      remoteDaemon.stop()
+
+      // for monitoring remote listener
+      registry.local.actors.filter(remoteService.hasListener).foreach(_.stop())
+
+      nodeConnections.clear()
+
+      disconnect()
+      EventHandler.info(this, "Cluster node shut down [%s]".format(nodeAddress))
+    }
+
     isConnected.switchOff {
       shutdownNode()
     }
-  }
-
-  private def shutdownNode() {
-    ignore[ZkNoNodeException](zkClient.deleteRecursive(membershipNodePath))
-
-    locallyCachedMembershipNodes.clear()
-
-    nodeConnections.toList.foreach({
-      case (_, (address, _)) ⇒
-        Actor.remote.shutdownClientConnection(address) // shut down client connections
-    })
-
-    remoteService.shutdown() // shutdown server
-
-    remoteClientLifeCycleListener.stop()
-    remoteDaemon.stop()
-
-    // for monitoring remote listener
-    registry.local.actors.filter(remoteService.hasListener).foreach(_.stop())
-
-    nodeConnections.clear()
-
-    disconnect()
-    EventHandler.info(this, "Cluster node shut down [%s]".format(nodeAddress))
   }
 
   def disconnect(): ClusterNode = {
