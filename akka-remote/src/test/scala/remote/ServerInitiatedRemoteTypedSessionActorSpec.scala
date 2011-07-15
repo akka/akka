@@ -32,7 +32,7 @@ class ServerInitiatedRemoteTypedSessionActorSpec extends AkkaRemoteTest {
       session1.getUser() must equal("session[1]")
 
       remote.shutdownClientModule()
-
+      Thread.sleep(1000)
       val session2 = remote.typedActorFor(classOf[RemoteTypedSessionActor], "typed-session-actor-service", 5000L, host, port)
 
       session2.getUser() must equal("anonymous")
