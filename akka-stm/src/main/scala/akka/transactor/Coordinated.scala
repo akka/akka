@@ -8,14 +8,16 @@ import akka.AkkaException
 import akka.config.Config
 import akka.stm.{ Atomic, DefaultTransactionConfig, TransactionFactory }
 
-import org.multiverse.api.{ Transaction ⇒ MultiverseTransaction }
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 import org.multiverse.templates.TransactionalCallable
+import akka.actor.ActorTimeoutException
+import org.multiverse.api.{ TransactionConfiguration, Transaction ⇒ MultiverseTransaction }
+import org.multiverse.api.exceptions.ControlFlowError
 
 /**
  * Akka-specific exception for coordinated transactions.
  */
-class CoordinatedTransactionException(message: String) extends AkkaException(message)
+class CoordinatedTransactionException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * Coordinated transactions across actors.
@@ -135,15 +137,31 @@ class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
   def atomic[T](factory: TransactionFactory)(body: ⇒ T): T = {
     factory.boilerplate.execute(new TransactionalCallable[T]() {
       def call(mtx: MultiverseTransaction): T = {
-        val result = try { body } catch { case e: Exception ⇒ barrier.abort(); throw e }
+        val result = try {
+          body
+        } catch {
+          case e: ControlFlowError ⇒ throw e
+          case e: Exception ⇒ {
+            barrier.abort()
+            throw e
+          }
+        }
+
         val timeout = factory.config.timeout
-        try {
+        val success = try {
           barrier.tryJoinCommit(mtx, timeout.length, timeout.unit)
         } catch {
-          case e: org.multiverse.api.exceptions.DeadTransactionException ⇒
-            throw new CoordinatedTransactionException("Coordinated transaction aborted")
-          case e: java.lang.IllegalStateException ⇒
-            throw new CoordinatedTransactionException("Coordinated transaction aborted")
+          case e: IllegalStateException ⇒ {
+            val config: TransactionConfiguration = mtx.getConfiguration
+            throw new CoordinatedTransactionException("Coordinated transaction [" + config.getFamilyName + "] aborted", e)
+          }
+        }
+
+        if (!success) {
+          val config: TransactionConfiguration = mtx.getConfiguration
+          throw new ActorTimeoutException(
+            "Failed to complete coordinated transaction [" + config.getFamilyName + "] " +
+              "with a maxium timeout of [" + config.getTimeoutNs + "] ns")
         }
         result
       }
