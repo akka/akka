@@ -160,8 +160,6 @@ class Dispatcher(
   private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
     registerForExecution(mbox)
 
-  private[akka] def doneProcessingMailbox(mbox: MessageQueue with ExecutableMailbox): Unit = ()
-
   protected override def cleanUpMailboxFor(actorRef: ActorRef) {
     val m = getMailbox(actorRef)
     if (!m.isEmpty) {
@@ -195,19 +193,10 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue ⇒
   def dispatcher: Dispatcher
 
   final def run = {
-    try {
-      processMailbox()
-    } catch {
-      case ie: InterruptedException ⇒
-    }
-    finally {
-      dispatcherLock.unlock()
-    }
+    try { processMailbox()} finally {dispatcherLock.unlock()}
 
     if (!self.isEmpty)
       dispatcher.reRegisterForExecution(this)
-
-    dispatcher.doneProcessingMailbox(this)
   }
 
   /**
