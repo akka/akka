@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -160,8 +160,6 @@ class Dispatcher(
   private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
     registerForExecution(mbox)
 
-  private[akka] def doneProcessingMailbox(mbox: MessageQueue with ExecutableMailbox): Unit = ()
-
   protected override def cleanUpMailboxFor(actorRef: ActorRef) {
     val m = getMailbox(actorRef)
     if (!m.isEmpty) {
@@ -195,19 +193,13 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue ⇒
   def dispatcher: Dispatcher
 
   final def run = {
-    try {
-      processMailbox()
-    } catch {
-      case ie: InterruptedException ⇒
-    }
-    finally {
+    try { processMailbox() } catch {
+      case ie: InterruptedException => Thread.currentThread().interrupt() //Restore interrupt
+    } finally {
       dispatcherLock.unlock()
+      if (!self.isEmpty)
+        dispatcher.reRegisterForExecution(this)
     }
-
-    if (!self.isEmpty)
-      dispatcher.reRegisterForExecution(this)
-
-    dispatcher.doneProcessingMailbox(this)
   }
 
   /**

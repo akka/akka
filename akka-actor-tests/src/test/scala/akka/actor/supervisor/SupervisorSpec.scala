@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -8,7 +8,6 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterEach
 
-import akka.testkit._
 import akka.testkit.Testing.sleepFor
 import akka.util.duration._
 import akka.config.Supervision._
@@ -205,7 +204,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
   }
 
   def kill(pingPongActor: ActorRef) = {
-    intercept[RuntimeException] { pingPongActor !! (Die, TimeoutMillis) }
+    intercept[RuntimeException] { (pingPongActor ? (Die, TimeoutMillis)).as[Any] }
     messageLogPoll must be === ExceptionMessage
   }
 

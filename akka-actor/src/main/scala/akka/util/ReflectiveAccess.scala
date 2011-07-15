@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.util
@@ -23,6 +23,8 @@ import java.net.InetSocketAddress
 object ReflectiveAccess {
 
   val loader = getClass.getClassLoader
+  val emptyParams: Array[Class[_]] = Array()
+  val emptyArguments: Array[AnyRef] = Array()
 
   /**
    * Reflective access to the Cluster module.

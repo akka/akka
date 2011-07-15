@@ -1,7 +1,7 @@
 package akka.actor
 
 /**
- * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
 import akka.japi.{ Creator, Option ⇒ JOption }
@@ -10,6 +10,8 @@ import akka.dispatch.{ MessageDispatcher, Dispatchers, Future, FutureTimeoutExce
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
+import akka.serialization.Serialization
+import com.sun.xml.internal.ws.developer.MemberSubmissionAddressing.Validation
 
 //TODO Document this class, not only in Scaladoc, but also in a dedicated typed-actor.rst, for both java and scala
 /**
@@ -87,16 +89,35 @@ object TypedActor {
       }
     } catch { case i: InvocationTargetException ⇒ throw i.getTargetException }
 
-    private def writeReplace(): AnyRef = new SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, parameters)
+    private def writeReplace(): AnyRef = {
+      val serializedParameters: Array[(Array[Byte],String)] = parameters match {
+        case null => null
+        case a if a.length == 0 => Array[(Array[Byte],String)]()
+        case a => a.map( {
+          case null => null
+          case value => Serialization.serializerFor(value.getClass).fold(throw _, s => (s.toBinary(value), s.getClass.getName))
+        })
+      }
+      new SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, serializedParameters)
+    }
   }
 
   /**
    * Represents the serialized form of a MethodCall, uses readResolve and writeReplace to marshall the call
    */
-  case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], parameterValues: Array[AnyRef]) {
+  case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializedParameters: Array[(Array[Byte],String)]) {
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
-    private def readResolve(): AnyRef = MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes: _*), parameterValues)
+    private def readResolve(): AnyRef = {
+      MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
+        case null => null
+        case a if a.length == 0 => Array[AnyRef]()
+        case a => a.map( {
+          case null => null
+          case (bytes, serializerFQN) => Serialization.serializerOf(serializerFQN).fold(throw _, _.fromBinary(bytes))
+        })
+      })
+    }
   }
 
   /**

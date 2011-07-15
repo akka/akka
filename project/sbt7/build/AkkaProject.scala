@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
 import com.weiglewilczek.bnd4sbt.BNDPlugin
@@ -41,6 +41,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val DatabinderRepo         = MavenRepository("Databinder Repo", "http://databinder.net/repo")
     lazy val ScalaToolsSnapshotRepo = MavenRepository("Scala-Tools Snapshot Repo", "http://scala-tools.org/repo-snapshots")
     lazy val SunJDMKRepo            = MavenRepository("WP5 Repository", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
+    lazy val TwitterRepo            = MavenRepository("Twitter Public Repo", "http://maven.twttr.com")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -64,6 +65,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val processingModuleConfig  = ModuleConfiguration("org.processing", DatabinderRepo)
   lazy val sjsonModuleConfig       = ModuleConfiguration("net.debasishg", ScalaToolsRelRepo)
   lazy val redisModuleConfig       = ModuleConfiguration("net.debasishg", ScalaToolsRelRepo)
+  lazy val mongoModuleConfig       = ModuleConfiguration("com.mongodb.async", ScalaToolsRelRepo)
+  lazy val twitterUtilModuleConfig = ModuleConfiguration("com.twitter", TwitterRepo)
   lazy val beanstalkModuleConfig   = ModuleConfiguration("beanstalk", AkkaRepo)
   lazy val lzfModuleConfig         = ModuleConfiguration("voldemort.store.compress", "h2-lzf", AkkaRepo)
   lazy val vscaladocModuleConfig   = ModuleConfiguration("org.scala-tools", "vscaladoc", "1.1-md-3", AkkaRepo)
@@ -127,6 +130,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val jsr250           = "javax.annotation"            % "jsr250-api"              % "1.0" % "compile" //CDDL v1
     lazy val jsr311           = "javax.ws.rs"                 % "jsr311-api"              % "1.1" % "compile" //CDDL v1
+    lazy val mongo            = "com.mongodb.async"           % "mongo-driver_2.9.0-1"    % "0.2.6"            //ApacheV2
     lazy val multiverse       = "org.multiverse"              % "multiverse-alpha"        % MULTIVERSE_VERSION % "compile" //ApacheV2
     lazy val netty            = "org.jboss.netty"             % "netty"                   % "3.2.4.Final" % "compile" //ApacheV2
     lazy val osgi_core        = "org.osgi"                    % "org.osgi.core"           % "4.2.0" //ApacheV2
@@ -140,6 +144,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val spring_jms       = "org.springframework"         % "spring-jms"              % SPRING_VERSION % "compile" //ApacheV2
     lazy val stax_api         = "javax.xml.stream"            % "stax-api"                % "1.0-2"        % "compile" //ApacheV2
+    lazy val twitter_util_core= "com.twitter"                 % "util-core"               % "1.8.1" // ApacheV2      
     lazy val logback          = "ch.qos.logback"              % "logback-classic"         % "0.9.28"       % "runtime" //MIT
     lazy val log4j            = "log4j"                       % "log4j"                   % "1.2.15"          //ApacheV2
     lazy val zookeeper        = "org.apache.hadoop.zookeeper" % "zookeeper"               % ZOOKEEPER_VERSION //ApacheV2
@@ -220,8 +225,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     <inceptionYear>2009</inceptionYear>
     <url>http://akka.io</url>
     <organization>
-      <name>Scalable Solutions AB</name>
-      <url>http://scalablesolutions.se</url>
+      <name>Typesafe Inc.</name>
+      <url>http://www.typesafe.com</url>
     </organization>
     <licenses>
       <license>
@@ -394,6 +399,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
       project("akka-mailboxes-common",  "akka-mailboxes-common",  new AkkaMailboxesCommonProject(_),  akka_cluster)
     lazy val akka_redis_mailbox =
       project("akka-redis-mailbox",     "akka-redis-mailbox",     new AkkaRedisMailboxProject(_),     akka_mailboxes_common)
+    lazy val akka_mongo_mailbox =
+      project("akka-mongo-mailbox",     "akka-mongo-mailbox",     new AkkaMongoMailboxProject(_),     akka_mailboxes_common)
     lazy val akka_file_mailbox =
       project("akka-file-mailbox",      "akka-file-mailbox",      new AkkaFileMailboxProject(_),      akka_mailboxes_common)
     lazy val akka_beanstalk_mailbox =
@@ -414,6 +421,16 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     override def testOptions =
       super.testOptions ++ (if (!redisTestsEnabled.value) Seq(testFilter("Redis")) else Seq.empty)
+  }
+
+  class AkkaMongoMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    val mongo = Dependencies.mongo
+    val twitter = Dependencies.twitter_util_core
+
+    lazy val mongoTestsEnabled = systemOptional[Boolean]("mailbox.test.mongo", true)
+
+    override def testOptions =
+      super.testOptions ++ (if (!mongoTestsEnabled.value) Seq(testFilter("Mongo")) else Seq.empty)
   }
 
   class AkkaFileMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info)

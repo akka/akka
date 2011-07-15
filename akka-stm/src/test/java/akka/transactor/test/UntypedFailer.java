@@ -1,9 +1,9 @@
 package akka.transactor.test;
 
-import akka.actor.UntypedActor;
+import akka.transactor.UntypedTransactor;
 
-public class UntypedFailer extends UntypedActor {
-    public void onReceive(Object incoming) throws Exception {
+public class UntypedFailer extends UntypedTransactor {
+    public void atomically(Object message) throws Exception {
         throw new RuntimeException("Expected failure");
     }
 }

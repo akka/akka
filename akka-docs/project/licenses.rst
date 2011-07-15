@@ -12,7 +12,7 @@ Akka License
 
   This software is licensed under the Apache 2 license, quoted below.
 
-  Copyright 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+  Copyright 2009-2011 Typesafe Inc. <http://www.typesafe.com>
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy of
@@ -35,11 +35,11 @@ All committers have signed this CLA
 
             Based on: http://www.apache.org/licenses/icla.txt
 
-                         Scalable Solutions AB
+                         Typesafe Inc.
       Individual Contributor License Agreement ("Agreement") V2.0
                http://www.scalablesolutions.se/licenses/
 
-  Thank you for your interest in Akka, a Scalable Solutions AB (the
+  Thank you for your interest in Akka, a Typesafe Inc. (the
   "Company") Open Source project. In order to clarify the intellectual
   property license granted with Contributions from any person or entity,
   the Company must have a Contributor License Agreement ("CLA") on file

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster.routing.roundrobin_2_replicas
@@ -13,6 +13,9 @@ import Cluster._
 import akka.actor._
 import akka.actor.Actor._
 import akka.config.Config
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.ConcurrentHashMap
+import akka.util.Duration
 
 /**
  * When a MultiJvmNode is started, will it automatically be part of the cluster (so will it automatically be eligible
@@ -32,7 +35,7 @@ object RoundRobin2ReplicasMultiJvmSpec {
 /**
  * What is the purpose of this node? Is this just a node for the cluster to make use of?
  */
-/*
+
 class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import RoundRobin2ReplicasMultiJvmSpec._
 
@@ -70,9 +73,9 @@ class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with B
   override def afterAll() {
     shutdownLocalCluster()
   }
-}*/
+}
 
-/*
+
 class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
   import RoundRobin2ReplicasMultiJvmSpec._
 
@@ -106,12 +109,14 @@ class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
         //todo: is there a reason to check for null again since it already has been done in the previous block.
         hello must not equal (null)
 
-        val replies = collection.mutable.Map.empty[String, Int]
+        val replies = new ConcurrentHashMap[String,AtomicInteger]()
         def count(reply: String) = {
-          if (replies.get(reply).isEmpty) replies.put(reply, 1)
-          else replies.put(reply, replies(reply) + 1)
+          val counter = new AtomicInteger(0)
+          Option(replies.putIfAbsent(reply, counter)).getOrElse(counter).incrementAndGet()
         }
 
+        implicit val timeout = Timeout(Duration(20, "seconds"))
+
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node2")))
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
@@ -121,12 +126,11 @@ class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node1")))
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from node2")))
 
-        replies("World from node [node1]") must equal(4)
-        replies("World from node [node2]") must equal(4)
+        replies.get("World from node [node1]").get must equal(4)
+        replies.get("World from node [node2]").get must equal(4)
       }
 
       node.shutdown()
     }
   }
 }
-*/

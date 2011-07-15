@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
 import akka.actor.dispatch.ActorModelSpec
 import java.util.concurrent.CountDownLatch
+import org.junit.{After, Test}
 
 class CallingThreadDispatcherModelSpec extends ActorModelSpec {
   import ActorModelSpec._
@@ -40,6 +41,13 @@ class CallingThreadDispatcherModelSpec extends ActorModelSpec {
 
   override def dispatcherShouldCompleteAllUncompletedSenderFuturesOnDeregister {
     //Can't handle this...
+  }
+
+
+  @After
+  def after {
+    //remove the interrupted status since we are messing with interrupted exceptions.
+    Thread.interrupted()
   }
 
 }

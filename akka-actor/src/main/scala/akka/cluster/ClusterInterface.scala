@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2010 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -122,8 +122,6 @@ object NodeAddress {
 trait ClusterNode {
   import ChangeListener._
 
-  val isConnected = new AtomicBoolean(false)
-
   private[cluster] val locallyCachedMembershipNodes = new ConcurrentSkipListSet[String]()
 
   def membershipNodes: Array[String]
@@ -136,7 +134,7 @@ trait ClusterNode {
 
   def remoteServerAddress: InetSocketAddress
 
-  def isRunning: Boolean = isConnected.get
+  def isRunning: Boolean
 
   def start(): ClusterNode
 

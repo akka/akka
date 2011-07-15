@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -127,6 +127,10 @@ trait MessageDispatcher {
       }
     }
 
+  /**
+   * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
+   * and only call it under the dispatcher-guard, see "attach" for the only invocation
+   */
   private[akka] def register(actorRef: ActorRef) {
     if (actorRef.mailbox eq null)
       actorRef.mailbox = createMailbox(actorRef)
@@ -139,6 +143,10 @@ trait MessageDispatcher {
     }
   }
 
+  /**
+   * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
+   * and only call it under the dispatcher-guard, see "detach" for the only invocation
+   */
   private[akka] def unregister(actorRef: ActorRef) = {
     if (uuids remove actorRef.uuid) {
       cleanUpMailboxFor(actorRef)

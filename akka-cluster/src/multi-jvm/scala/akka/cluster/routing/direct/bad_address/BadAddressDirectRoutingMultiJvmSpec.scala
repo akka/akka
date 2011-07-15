@@ -23,7 +23,7 @@ object BadAddressDirectRoutingMultiJvmSpec {
 
 }
 
-/*
+
 class BadAddressDirectRoutingMultiJvmNode1 extends MasterClusterTestNode {
 
   import BadAddressDirectRoutingMultiJvmSpec._
@@ -39,5 +39,5 @@ class BadAddressDirectRoutingMultiJvmNode1 extends MasterClusterTestNode {
       Cluster.node.shutdown()
     }
   }
-}*/
+}
 

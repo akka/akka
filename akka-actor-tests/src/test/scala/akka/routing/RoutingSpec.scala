@@ -95,37 +95,45 @@ class RoutingSpec extends WordSpec with MustMatchers {
     "dispatch to smallest mailbox" in {
       val t1Count = new AtomicInteger(0)
       val t2Count = new AtomicInteger(0)
-      val latch = TestLatch(500)
+      val latch1 = TestLatch(2501)
+      val latch2 = TestLatch(2499)
 
       val t1 = actorOf(new Actor {
         def receive = {
           case x ⇒
-            sleepFor(50 millis) // slow actor
             t1Count.incrementAndGet
-            latch.countDown()
+            latch1.countDown()
         }
       }).start()
+
+      t1.dispatcher.suspend(t1)
+
+      for (i <- 1 to 2501) t1 ! i
 
       val t2 = actorOf(new Actor {
         def receive = {
           case x ⇒
             t2Count.incrementAndGet
-            latch.countDown()
+            latch2.countDown()
         }
       }).start()
 
-      val d = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
+      val d = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil)) //Will pick the last with the smallest mailbox, so make sure t1 is last
 
-      for (i ← 1 to 500) d ! i
+      for (i ← 1 to 2499 ) d ! i
+
+      latch2.await(20 seconds)
+
+      t1.dispatcher.resume(t1)
 
       try {
-        latch.await(20 seconds)
+        latch1.await(20 seconds)
       } finally {
         // because t1 is much slower and thus has a bigger mailbox all the time
-        t1Count.get must be < (t2Count.get)
+        t1Count.get must be === 2501
+        t2Count.get must be === 2499
+        for (a ← List(t1, t2, d)) a.stop()
       }
-
-      for (a ← List(t1, t2, d)) a.stop()
     }
 
     "listen" in {
