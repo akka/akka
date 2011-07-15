@@ -5,6 +5,7 @@ package akka.testkit
 
 import akka.actor.dispatch.ActorModelSpec
 import java.util.concurrent.CountDownLatch
+import org.junit.{After, Test}
 
 class CallingThreadDispatcherModelSpec extends ActorModelSpec {
   import ActorModelSpec._
@@ -40,6 +41,13 @@ class CallingThreadDispatcherModelSpec extends ActorModelSpec {
 
   override def dispatcherShouldCompleteAllUncompletedSenderFuturesOnDeregister {
     //Can't handle this...
+  }
+
+
+  @After
+  def after {
+    //remove the interrupted status since we are messing with interrupted exceptions.
+    Thread.interrupted()
   }
 
 }

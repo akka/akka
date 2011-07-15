@@ -23,6 +23,8 @@ import java.net.InetSocketAddress
 object ReflectiveAccess {
 
   val loader = getClass.getClassLoader
+  val emptyParams: Array[Class[_]] = Array()
+  val emptyArguments: Array[AnyRef] = Array()
 
   /**
    * Reflective access to the Cluster module.

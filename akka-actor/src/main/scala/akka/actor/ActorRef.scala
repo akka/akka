@@ -9,15 +9,15 @@ import akka.dispatch._
 import akka.config._
 import akka.config.Supervision._
 import akka.util._
-import akka.serialization.{ Format, Serializer, Serialization }
+import akka.serialization.{Serializer, Serialization}
 import ReflectiveAccess._
 import ClusterModule._
-import DeploymentConfig.{ TransactionLog ⇒ TransactionLogConfig, _ }
+import DeploymentConfig.{TransactionLog ⇒ TransactionLogConfig, _}
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.{ ScheduledFuture, ConcurrentHashMap, TimeUnit }
-import java.util.{ Map ⇒ JMap }
+import java.util.concurrent.{ScheduledFuture, ConcurrentHashMap, TimeUnit}
+import java.util.{Map ⇒ JMap}
 
 import scala.reflect.BeanProperty
 import scala.collection.immutable.Stack
@@ -30,10 +30,15 @@ private[akka] object ActorRefInternals {
    * LifeCycles for ActorRefs.
    */
   private[akka] sealed trait StatusType
+
   object UNSTARTED extends StatusType
+
   object RUNNING extends StatusType
+
   object BEING_RESTARTED extends StatusType
+
   object SHUTDOWN extends StatusType
+
 }
 
 /**
@@ -68,7 +73,8 @@ private[akka] object ActorRefInternals {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Comparable[ActorRef] with Serializable { scalaRef: ScalaActorRef ⇒
+trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Comparable[ActorRef] with Serializable {
+  scalaRef: ScalaActorRef ⇒
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile
   protected[akka] var _uuid = newUuid
@@ -105,6 +111,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
   def setReceiveTimeout(timeout: Long) {
     this.receiveTimeout = Some(timeout)
   }
+
   def getReceiveTimeout: Option[Long] = receiveTimeout
 
   /**
@@ -121,6 +128,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * </pre>
    */
   def setFaultHandler(handler: FaultHandlingStrategy)
+
   def getFaultHandler: FaultHandlingStrategy
 
   /**
@@ -139,6 +147,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * </pre>
    */
   def setLifeCycle(lifeCycle: LifeCycle)
+
   def getLifeCycle: LifeCycle
 
   /**
@@ -153,7 +162,10 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * The default is also that all actors that are created and spawned from within this actor
    * is sharing the same dispatcher as its creator.
    */
-  def setDispatcher(dispatcher: MessageDispatcher) { this.dispatcher = dispatcher }
+  def setDispatcher(dispatcher: MessageDispatcher) {
+    this.dispatcher = dispatcher
+  }
+
   def getDispatcher: MessageDispatcher = dispatcher
 
   /**
@@ -177,6 +189,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * Returns the uuid for the actor.
    */
   def getUuid = _uuid
+
   def uuid = _uuid
 
   /**
@@ -366,9 +379,13 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    */
 
   def sendException(ex: Throwable) {}
+
   def isUsableOnlyOnce = false
+
   def isUsable = true
+
   def isReplyable = true
+
   def canSendException = false
 
   /**
@@ -393,6 +410,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
   protected[akka] def supervisor_=(sup: Option[ActorRef])
 
   protected[akka] def mailbox: AnyRef
+
   protected[akka] def mailbox_=(value: AnyRef): AnyRef
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable)
@@ -416,7 +434,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor, val address: String)
+class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, val address: String)
   extends ActorRef with ScalaActorRef {
 
   protected[akka] val guard = new ReentrantGuard
@@ -442,7 +460,9 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
   @volatile
   private[akka] var _dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
 
-  protected[akka] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
+  protected[akka] val actorInstance = guard.withGuard {
+    new AtomicReference[Actor](newActor)
+  }
 
   def serializerErrorDueTo(reason: String) =
     throw new akka.config.ConfigurationException(
@@ -480,16 +500,16 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
 
   // used only for deserialization
   private[akka] def this(
-    __uuid: Uuid,
-    __address: String,
-    __timeout: Long,
-    __receiveTimeout: Option[Long],
-    __lifeCycle: LifeCycle,
-    __supervisor: Option[ActorRef],
-    __hotswap: Stack[PartialFunction[Any, Unit]],
-    __factory: () ⇒ Actor) = {
+                          __uuid: Uuid,
+                          __address: String,
+                          __timeout: Long,
+                          __receiveTimeout: Option[Long],
+                          __lifeCycle: LifeCycle,
+                          __supervisor: Option[ActorRef],
+                          __hotswap: Stack[PartialFunction[Any, Unit]],
+                          __factory: () ⇒ Actor) = {
 
-    this(__factory, __address)
+    this (__factory, __address)
 
     _uuid = __uuid
     timeout = __timeout
@@ -627,7 +647,9 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
    */
   def mailbox: AnyRef = _mailbox
 
-  protected[akka] def mailbox_=(value: AnyRef): AnyRef = { _mailbox = value; value }
+  protected[akka] def mailbox_=(value: AnyRef): AnyRef = {
+    _mailbox = value; value
+  }
 
   /**
    * Returns the supervisor, if there is one.
@@ -677,7 +699,8 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
             currentMessage = null // reset current message after successful invocation
           } catch {
             case e: InterruptedException ⇒
-              currentMessage = null // received message while actor is shutting down, ignore
+              handleExceptionInDispatch(e, messageHandle.message)
+              throw e
             case e ⇒
               handleExceptionInDispatch(e, messageHandle.message)
           }
@@ -716,13 +739,16 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
 
   private def requestRestartPermission(maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Boolean = {
 
-    val denied = if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty) { //Immortal
+    val denied = if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty) {
+      //Immortal
       false
-    } else if (withinTimeRange.isEmpty) { // restrict number of restarts
+    } else if (withinTimeRange.isEmpty) {
+      // restrict number of restarts
       val retries = maxNrOfRetriesCount + 1
       maxNrOfRetriesCount = retries //Increment number of retries
       retries > maxNrOfRetries.get
-    } else { // cannot restart more than N within M timerange
+    } else {
+      // cannot restart more than N within M timerange
       val retries = maxNrOfRetriesCount + 1
 
       val windowStart = restartTimeWindowStartNanos
@@ -816,7 +842,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
       actorRef.lifeCycle match {
         // either permanent or none where default is permanent
         case Temporary ⇒ shutDownTemporaryActor(actorRef)
-        case _         ⇒ actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
+        case _ ⇒ actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
       }
     }
   }
@@ -826,7 +852,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
   // ========= PRIVATE FUNCTIONS =========
 
   private[this] def newActor: Actor = {
-    import Actor.{ actorRefInCreation ⇒ refStack }
+    import Actor.{actorRefInCreation ⇒ refStack}
     val stackBefore = refStack.get
     refStack.set(stackBefore.push(this))
     try {
@@ -837,7 +863,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
         refStack.set(if (stackAfter.head eq null) stackAfter.pop.pop else stackAfter.pop) //pop null marker plus self
     }
   } match {
-    case null  ⇒ throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
+    case null ⇒ throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
     case valid ⇒ valid
   }
 
@@ -861,26 +887,28 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     else {
       lifeCycle match {
         case Temporary ⇒ shutDownTemporaryActor(this)
-        case _         ⇒ dispatcher.resume(this) //Resume processing for this actor
+        case _ ⇒ dispatcher.resume(this) //Resume processing for this actor
       }
     }
   }
 
   private def notifySupervisorWithMessage(notification: LifeCycleMessage) {
     // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
-    _supervisor.foreach { sup ⇒
-      if (sup.isShutdown) { // if supervisor is shut down, game over for all linked actors
-        //Scoped stop all linked actors, to avoid leaking the 'i' val
-        {
-          val i = _linkedActors.values.iterator
-          while (i.hasNext) {
-            i.next.stop()
-            i.remove
+    _supervisor.foreach {
+      sup ⇒
+        if (sup.isShutdown) {
+          // if supervisor is shut down, game over for all linked actors
+          //Scoped stop all linked actors, to avoid leaking the 'i' val
+          {
+            val i = _linkedActors.values.iterator
+            while (i.hasNext) {
+              i.next.stop()
+              i.remove
+            }
           }
-        }
-        //Stop the actor itself
-        stop
-      } else sup ! notification // else notify supervisor
+          //Stop the actor itself
+          stop
+        } else sup ! notification // else notify supervisor
     }
   }
 
@@ -921,7 +949,8 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
 
   protected[akka] def checkReceiveTimeout() {
     cancelReceiveTimeout()
-    if (receiveTimeout.isDefined && dispatcher.mailboxIsEmpty(this)) { //Only reschedule if desired and there are currently no more messages to be processed
+    if (receiveTimeout.isDefined && dispatcher.mailboxIsEmpty(this)) {
+      //Only reschedule if desired and there are currently no more messages to be processed
       _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, receiveTimeout.get, TimeUnit.MILLISECONDS))
     }
   }
@@ -949,11 +978,11 @@ object RemoteActorSystemMessage {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[akka] case class RemoteActorRef private[akka] (
-  val remoteAddress: InetSocketAddress,
-  val address: String,
-  _timeout: Long,
-  loader: Option[ClassLoader])
+private[akka] case class RemoteActorRef private[akka](
+                                                       val remoteAddress: InetSocketAddress,
+                                                       val address: String,
+                                                       _timeout: Long,
+                                                       loader: Option[ClassLoader])
   extends ActorRef with ScalaActorRef {
 
   ClusterModule.ensureEnabled()
@@ -965,7 +994,7 @@ private[akka] case class RemoteActorRef private[akka] (
   def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
     val chSender = channel match {
       case ref: ActorRef ⇒ Some(ref)
-      case _             ⇒ None
+      case _ ⇒ None
     }
     Actor.remote.send[Any](message, chSender, None, remoteAddress, timeout, true, this, loader)
   }
@@ -1011,34 +1040,49 @@ private[akka] case class RemoteActorRef private[akka] (
   def dispatcher_=(md: MessageDispatcher) {
     unsupported
   }
+
   def dispatcher: MessageDispatcher = unsupported
+
   def link(actorRef: ActorRef) {
     unsupported
   }
+
   def unlink(actorRef: ActorRef) {
     unsupported
   }
+
   def startLink(actorRef: ActorRef): ActorRef = unsupported
+
   def supervisor: Option[ActorRef] = unsupported
+
   def linkedActors: JMap[Uuid, ActorRef] = unsupported
+
   protected[akka] def mailbox: AnyRef = unsupported
+
   protected[akka] def mailbox_=(value: AnyRef): AnyRef = unsupported
+
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable) {
     unsupported
   }
+
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
     unsupported
   }
+
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
     unsupported
   }
+
   protected[akka] def invoke(messageHandle: MessageInvocation) {
     unsupported
   }
+
   protected[akka] def supervisor_=(sup: Option[ActorRef]) {
     unsupported
   }
+
   protected[akka] def actorInstance: AtomicReference[Actor] = unsupported
+
   private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 }
 
@@ -1070,7 +1114,8 @@ trait ActorRefShared {
  * There are implicit conversions in ../actor/Implicits.scala
  * from ActorRef -> ScalaActorRef and back
  */
-trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorRef ⇒
+trait ScalaActorRef extends ActorRefShared with ForwardableChannel {
+  ref: ActorRef ⇒
 
   /**
    * Address for actor, must be a unique one.
@@ -1114,7 +1159,7 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
     if (msg eq null) None
     else msg.channel match {
       case ref: ActorRef ⇒ Some(ref)
-      case _             ⇒ None
+      case _ ⇒ None
     }
   }
 
@@ -1128,7 +1173,7 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
     if (msg eq null) None
     else msg.channel match {
       case f: ActorPromise ⇒ Some(f)
-      case _               ⇒ None
+      case _ ⇒ None
     }
   }
 

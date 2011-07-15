@@ -122,8 +122,6 @@ object NodeAddress {
 trait ClusterNode {
   import ChangeListener._
 
-  val isConnected = new AtomicBoolean(false)
-
   private[cluster] val locallyCachedMembershipNodes = new ConcurrentSkipListSet[String]()
 
   def membershipNodes: Array[String]
@@ -136,7 +134,7 @@ trait ClusterNode {
 
   def remoteServerAddress: InetSocketAddress
 
-  def isRunning: Boolean = isConnected.get
+  def isRunning: Boolean
 
   def start(): ClusterNode
 

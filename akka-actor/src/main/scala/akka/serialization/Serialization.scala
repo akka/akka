@@ -9,6 +9,7 @@ import akka.config.Config
 import akka.config.Config._
 import akka.actor.{ ActorRef, Actor }
 import akka.AkkaException
+import akka.util.ReflectiveAccess
 
 
 case class NoSerializerFoundException(m: String) extends AkkaException(m)
@@ -18,12 +19,12 @@ case class NoSerializerFoundException(m: String) extends AkkaException(m)
  * locating a Serializer for a particular class as defined in the mapping in the 'akka.conf' file.
  */
 object Serialization {
-
+  //TODO document me
   def serialize(o: AnyRef): Either[Exception, Array[Byte]] = serializerFor(o.getClass) match {
     case Left(ex)          ⇒ Left(ex)
     case Right(serializer) ⇒ Right(serializer.toBinary(o))
   }
-
+  //TODO document me
   def deserialize(
     bytes: Array[Byte],
     clazz: Class[_],
@@ -32,14 +33,21 @@ object Serialization {
       case Left(e)         ⇒ Left(e)
       case Right(serializer) ⇒ Right(serializer.fromBinary(bytes, Some(clazz), classLoader))
     }
-
-  def serializerFor(clazz: Class[_]): Either[Exception, Serializer] =
+  //TODO document me
+  //TODO memoize the lookups
+  def serializerFor(clazz: Class[_]): Either[Exception, Serializer] = //TODO fall back on BestMatchClass THEN default
     getClassFor(serializerMap.get(clazz.getName).getOrElse(serializers("default"))) match {
       case Right(serializer) ⇒ Right(serializer.newInstance.asInstanceOf[Serializer])
       case Left(e) => Left(e)
     }
 
-  private def getSerializerInstanceForBestMatchClass(cl: Class[_]): Either[Exception, Serializer] = {
+  /**
+   * Tries to load the specified Serializer by the FQN
+   */
+  def serializerOf(serializerFQN: String): Either[Exception, Serializer] =
+    createInstance(serializerFQN, ReflectiveAccess.emptyParams, ReflectiveAccess.emptyArguments)
+
+  private def serializerForBestMatchClass(cl: Class[_]): Either[Exception, Serializer] = {
     if (bindings.isEmpty)
       Left(NoSerializerFoundException("No mapping serializer found for " + cl))
     else {
@@ -50,11 +58,7 @@ object Serialization {
           case _            ⇒ false
         }
       } map {
-        case (_, ser) ⇒
-          getClassFor(ser) match {
-            case Right(s) ⇒ Right(s.newInstance.asInstanceOf[Serializer])
-            case _        ⇒ Left(new Exception("Error instantiating " + ser))
-          }
+        case (_, ser) ⇒ serializerOf(ser)
       } getOrElse Left(NoSerializerFoundException("No mapping serializer found for " + cl))
     }
   }

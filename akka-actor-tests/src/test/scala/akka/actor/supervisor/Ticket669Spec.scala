@@ -14,6 +14,8 @@ import org.scalatest.matchers.MustMatchers
 class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import Ticket669Spec._
 
+  override def beforeAll = Thread.interrupted()  //remove interrupted status.
+
   override def afterAll = {
     Actor.registry.local.shutdownAll
     akka.event.EventHandler.start
@@ -21,6 +23,7 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
 
   "A supervised actor with lifecycle PERMANENT" should {
     "be able to reply on failure during preRestart" in {
+
       val latch = new CountDownLatch(1)
       val sender = Actor.actorOf(new Sender(latch)).start()
 
