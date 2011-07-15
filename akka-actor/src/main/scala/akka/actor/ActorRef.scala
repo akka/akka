@@ -888,13 +888,8 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
     if (supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason))
     else {
       lifeCycle match {
-<<<<<<< HEAD
         case Temporary ⇒ shutDownTemporaryActor(this, reason)
         case _         ⇒ dispatcher.resume(this) //Resume processing for this actor
-=======
-        case Temporary ⇒ shutDownTemporaryActor(this)
-        case _ ⇒ dispatcher.resume(this) //Resume processing for this actor
->>>>>>> 2cf64bccae0afcfa2ed9062e1590cd9e4f187aeb
       }
     }
   }
