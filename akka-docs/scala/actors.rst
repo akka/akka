@@ -582,9 +582,11 @@ the same mailbox will be there. So all messages on that mailbox, will be there a
 
 What happens to the actor
 ^^^^^^^^^^^^^^^^^^^^^^^^^
-If an exception is thrownn and the actor is not supervised, the actor object itself is discarded and a new instance is
+If an exception is thrown and the actor is supervised, the actor object itself is discarded and a new instance is
 created. This new instance will now be used in the actor references to this actor (so this is done invisible
 to the developer).
+If the actor is _not_ supervised, but its lifeCycle is set to Permanent (default), it will just keep on processing messages as if nothing had happened.
+If the actor is _not_ supervised, but its lifeCycle is set to Temporary, it will be stopped immediately.
 
 
 Extending Actors using PartialFunction chaining
