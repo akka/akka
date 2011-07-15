@@ -86,6 +86,7 @@ class FileBenchResultRepository extends BenchResultRepository {
   }
 
   private def save(stats: Stats) {
+    new File(dir).mkdirs
     if (!dirExists) return
     val timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date(stats.timestamp))
     val name = stats.name + "--" + timestamp + "--" + stats.load + ".ser"
@@ -98,8 +99,7 @@ class FileBenchResultRepository extends BenchResultRepository {
       case e: Exception ⇒
         EventHandler.error(this, "Failed to save [%s] to [%s], due to [%s]".
           format(stats, f.getAbsolutePath, e.getMessage))
-    }
-    finally {
+    } finally {
       if (out ne null) try { out.close() } catch { case ignore: Exception ⇒ }
     }
   }
@@ -117,8 +117,7 @@ class FileBenchResultRepository extends BenchResultRepository {
             EventHandler.error(this, "Failed to load from [%s], due to [%s]".
               format(f.getAbsolutePath, e.getMessage))
             None
-        }
-        finally {
+        } finally {
           if (in ne null) try { in.close() } catch { case ignore: Exception ⇒ }
         }
       }
