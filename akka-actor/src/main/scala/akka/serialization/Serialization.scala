@@ -9,6 +9,7 @@ import akka.config.Config
 import akka.config.Config._
 import akka.actor.{ ActorRef, Actor }
 import akka.AkkaException
+import akka.util.ReflectiveAccess
 
 
 case class NoSerializerFoundException(m: String) extends AkkaException(m)
@@ -40,6 +41,12 @@ object Serialization {
       case Left(e) => Left(e)
     }
 
+  /**
+   * Tries to load the specified Serializer by the FQN
+   */
+  def serializerOf(serializerFQN: String): Either[Exception, Serializer] =
+    createInstance(serializerFQN, ReflectiveAccess.emptyParams, ReflectiveAccess.emptyArguments)
+
   private def serializerForBestMatchClass(cl: Class[_]): Either[Exception, Serializer] = {
     if (bindings.isEmpty)
       Left(NoSerializerFoundException("No mapping serializer found for " + cl))
@@ -51,11 +58,7 @@ object Serialization {
           case _            ⇒ false
         }
       } map {
-        case (_, ser) ⇒
-          getClassFor(ser) match {
-            case Right(s) ⇒ Right(s.newInstance.asInstanceOf[Serializer])
-            case _        ⇒ Left(new Exception("Error instantiating " + ser))
-          }
+        case (_, ser) ⇒ serializerOf(ser)
       } getOrElse Left(NoSerializerFoundException("No mapping serializer found for " + cl))
     }
   }
