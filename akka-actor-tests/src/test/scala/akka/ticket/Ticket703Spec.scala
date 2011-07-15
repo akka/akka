@@ -11,7 +11,7 @@ class Ticket703Spec extends WordSpec with MustMatchers {
   "A ? call to an actor pool" should {
     "reuse the proper timeout" in {
       val actorPool = actorOf(
-        new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
+        new Actor with DefaultActorPool with DefaultActorPoolSupervisionConfig with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
           def lowerBound = 2
           def upperBound = 20
           def rampupRate = 0.1

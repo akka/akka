@@ -4,8 +4,9 @@
 
 package akka.routing
 
-import akka.actor.{ Actor, ActorRef, PoisonPill }
+import akka.actor.{ Actor, ActorRef, PoisonPill, Death, MaximumNumberOfRestartsWithinTimeRangeReached }
 import akka.dispatch.{ Promise }
+import akka.config.Supervision._
 
 /**
  * Actor pooling
@@ -35,44 +36,102 @@ object ActorPool {
  * Defines the nature of an actor pool.
  */
 trait ActorPool {
-  def instance(): ActorRef //Question, Instance of what?
-  def capacity(delegates: Seq[ActorRef]): Int //Question, What is the semantics of this return value?
-  def select(delegates: Seq[ActorRef]): Tuple2[Iterator[ActorRef], Int] //Question, Why does select return this instead of an ordered Set?
+  /**
+   * Adds a new actor to the pool. The DefaultActorPool implementation will start and link (supervise) this actor.
+   * This method is invoked whenever the pool determines it must boost capacity. 
+   * @return A new actor for the pool
+   */
+  def instance(): ActorRef
+  /**
+   * Returns the overall desired change in pool capacity. This method is used by non-static pools as the means
+   * for the capacity strategy to influence the pool.
+   * @param _delegates The current sequence of pooled actors
+   * @return the number of delegates by which the pool should be adjusted (positive, negative or zero)
+   */
+  def capacity(delegates: Seq[ActorRef]): Int 
+  /**
+   * Provides the results of the selector, one or more actors, to which an incoming message is forwarded.
+   * This method returns an iterator since a selector might return more than one actor to handle the message.
+   * You might want to do this to perform redundant processing of particularly error-prone messages.
+   * @param _delegates The current sequence of pooled actors
+   * @return a list of actors to which the message will be delivered
+   */
+  def select(delegates: Seq[ActorRef]): Seq[ActorRef]
 }
 
 /**
- * A default implementation of a pool, on each message to route,
- *      - checks the current capacity and adjusts accordingly if needed
- *      - routes the incoming message to a selection set of delegate actors
+ * Defines the configuration options for how the pool supervises the actors.
  */
-trait DefaultActorPool extends ActorPool { this: Actor ⇒
+trait ActorPoolSupervisionConfig {
+  /**
+   * Defines the default fault handling strategy to be employed by the pool.
+   */
+  def poolFaultHandler: FaultHandlingStrategy
+}
+
+/**
+ * Provides a default implementation of the supervision configuration by
+ * defining a One-for-One fault handling strategy, trapping exceptions, 
+ * limited to 5 retries within 1 second.
+ *
+ * This is just a basic strategy and implementors are encouraged to define
+ * something more appropriate for their needs.
+ */
+trait DefaultActorPoolSupervisionConfig extends ActorPoolSupervisionConfig {
+  def poolFaultHandler = OneForOneStrategy(List(classOf[Exception]), 5, 1000)
+}
+
+/**
+ * A default implementation of a pool that:
+ *  First, invokes the pool's capacitor that tells it, based on the current delegate count
+ *  and it's own heuristic by how many delegates the pool should be resized.  Resizing can
+ *  can be incremental, decremental or flat.  If there is a change to capacity, new delegates
+ *  are added or existing ones are removed. Removed actors are sent the PoisonPill message.
+ *  New actors are automatically started and linked.  The pool supervises the actors and will
+ *  use the fault handling strategy specified by the mixed-in ActorPoolSupervisionConfig.
+ *  Pooled actors may be any lifecycle. If you're testing pool sizes during runtime, take a 
+ *  look at the unit tests... Any delegate with a <b>Permanent</b> lifecycle will be
+ *  restarted and the pool size will be level with what it was prior to the fault.  In just
+ *  about every other case, e.g. the delegates are <b>Temporary</b> or the delegate cannot be
+ *  restarted within the time interval specified in the fault handling strategy, the pool will
+ *  be temporarily shy by that actor (it will have been removed by not back-filled).  The
+ *  back-fill if any is required, will occur on the next message [as usual].
+ *
+ *  Second, invokes the pool's selector that returns a list of delegates that are to receive
+ *  the incoming message.  Selectors may return more than one actor.  If <i>partialFill</i>
+ *  is true then it might also the case that fewer than number of desired actors will be 
+ *  returned.
+ *  
+ *  Lastly, routes by forwarding, the incoming message to each delegate in the selected set.
+ */
+trait DefaultActorPool extends ActorPool { this: Actor with ActorPoolSupervisionConfig ⇒
   import ActorPool._
-  import akka.actor.MaximumNumberOfRestartsWithinTimeRangeReached
 
-  protected var _delegates = Vector[ActorRef]()
-  private var _lastCapacityChange = 0
-  private var _lastSelectorCount = 0
+  protected[akka] var _delegates = Vector[ActorRef]()
 
-  override def postStop() = _delegates foreach { delegate ⇒
-    try {
-      delegate ! PoisonPill
-    } catch { case e: Exception ⇒ } //Ignore any exceptions here
+  override def preStart() {
+    self.faultHandler = poolFaultHandler
+  }
+  override def postStop() {
+    _delegates foreach { delegate ⇒
+      try {
+        delegate ! PoisonPill
+      } catch { case e: Exception ⇒ } //Ignore any exceptions here
+    }
   }
 
   protected def _route(): Receive = {
     // for testing...
     case Stat ⇒
       self reply_? Stats(_delegates length)
-    case max: MaximumNumberOfRestartsWithinTimeRangeReached ⇒
-      _delegates = _delegates filterNot { _.uuid == max.victim.uuid }
+    case MaximumNumberOfRestartsWithinTimeRangeReached(victim, _, _, _) ⇒
+      _delegates = _delegates filterNot { _.uuid == victim.uuid }
+    case Death(victim, _) => 
+      _delegates = _delegates filterNot { _.uuid == victim.uuid }
     case msg ⇒
       resizeIfAppropriate()
 
-      select(_delegates) match {
-        case (selectedDelegates, count) ⇒
-          _lastSelectorCount = count
-          selectedDelegates foreach { _ forward msg } //Should we really send the same message to several actors?
-      }
+    select(_delegates) foreach { _ forward msg } 
   }
 
   private def resizeIfAppropriate() {
@@ -95,14 +154,15 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
       case _ ⇒ _delegates //No change
     }
 
-    _lastCapacityChange = requestedCapacity
     _delegates = newDelegates
   }
 }
 
 /**
  * Selectors
- *      These traits define how, when a message needs to be routed, delegate(s) are chosen from the pool
+ * 
+ * These traits define how, when a message needs to be routed, delegate(s) are chosen from the pool.
+ * Note that it's acceptable to return more than one actor to handle a given message.
  */
 
 /**
@@ -112,7 +172,7 @@ trait SmallestMailboxSelector {
   def selectionCount: Int
   def partialFill: Boolean
 
-  def select(delegates: Seq[ActorRef]): Tuple2[Iterator[ActorRef], Int] = {
+  def select(delegates: Seq[ActorRef]): Seq[ActorRef] = {
     var set: Seq[ActorRef] = Nil
     var take = if (partialFill) math.min(selectionCount, delegates.length) else selectionCount
 
@@ -121,7 +181,7 @@ trait SmallestMailboxSelector {
       take -= set.size
     }
 
-    (set.iterator, set.size)
+    set
   }
 }
 
@@ -134,7 +194,7 @@ trait RoundRobinSelector {
   def selectionCount: Int
   def partialFill: Boolean
 
-  def select(delegates: Seq[ActorRef]): Tuple2[Iterator[ActorRef], Int] = {
+  def select(delegates: Seq[ActorRef]): Seq[ActorRef] = {
     val length = delegates.length
     val take = if (partialFill) math.min(selectionCount, length)
     else selectionCount
@@ -145,13 +205,16 @@ trait RoundRobinSelector {
         delegates(_last)
       }
 
-    (set.iterator, set.size)
+    set
   }
 }
 
 /**
  * Capacitors
- *      These traits define how to alter the size of the pool
+ * 
+ * These traits define how to alter the size of the pool according to some desired behavior.
+ * Capacitors are required (minimally) by the pool to establish bounds on the number of delegates
+ * that may exist in the pool.
  */
 
 /**
@@ -163,7 +226,13 @@ trait FixedSizeCapacitor {
 }
 
 /**
- * Constrains the pool capacity to a bounded range
+ * Constrains the pool capacity to a bounded range.
+ * This capacitor employs 'pressure capacitors' (sorry for the unforunate confusing naming)
+ * to feed a 'pressure' delta into the capacity function.  This measure is
+ * basically the difference between the current pressure level and a pre-established threshhold.
+ * When using this capacitor you must provide a method called 'pressure' or mix-in
+ * one of the PressureCapacitor traits below.
+ *
  */
 trait BoundedCapacitor {
   def lowerBound: Int
@@ -200,17 +269,39 @@ trait ActiveFuturesPressureCapacitor {
 }
 
 /**
+ * 
  */
 trait CapacityStrategy {
   import ActorPool._
 
+  /**
+   * This method returns a 'pressure level' that will be fed into the capacitor and
+   * evaluated against the established threshhold.  For instance, in general, if
+   * the current pressure level exceeds the capacity of the pool, new delegates will
+   * be added.
+   */
   def pressure(delegates: Seq[ActorRef]): Int
+  /**
+   * This method can be used to smooth the response of the capacitor by considering
+   * the current pressure and current capacity.  
+   */
   def filter(pressure: Int, capacity: Int): Int
 
   protected def _eval(delegates: Seq[ActorRef]): Int = filter(pressure(delegates), delegates.size)
 }
 
+/**
+ * Use this trait to setup a pool that uses a fixed delegate count.
+ */
 trait FixedCapacityStrategy extends FixedSizeCapacitor
+
+/**
+ * Use this trait to setup a pool that may have a variable number of
+ * delegates but always within an established upper and lower limit.
+ *
+ * If mix this into your pool implementation, you must also provide a 
+ * PressureCapacitor and a Filter.
+ */
 trait BoundedCapacityStrategy extends CapacityStrategy with BoundedCapacitor
 
 /**

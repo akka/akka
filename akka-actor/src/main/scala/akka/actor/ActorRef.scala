@@ -772,7 +772,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
 
           lifeCycle match {
             case Temporary ⇒
-              shutDownTemporaryActor(this)
+              shutDownTemporaryActor(this, reason)
               true
 
             case _ ⇒ // either permanent or none where default is permanent
@@ -815,7 +815,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
       val actorRef = i.next
       actorRef.lifeCycle match {
         // either permanent or none where default is permanent
-        case Temporary ⇒ shutDownTemporaryActor(actorRef)
+        case Temporary ⇒ shutDownTemporaryActor(actorRef, reason)
         case _         ⇒ actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
       }
     }
@@ -841,9 +841,11 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     case valid ⇒ valid
   }
 
-  private def shutDownTemporaryActor(temporaryActor: ActorRef) {
+  private def shutDownTemporaryActor(temporaryActor: ActorRef, reason: Throwable) {
     temporaryActor.stop()
     _linkedActors.remove(temporaryActor.uuid) // remove the temporary actor
+    // when this comes down through the handleTrapExit path, we get here when the temp actor is restarted
+    notifySupervisorWithMessage(MaximumNumberOfRestartsWithinTimeRangeReached(temporaryActor, Some(0), None, reason))
     // if last temporary actor is gone, then unlink me from supervisor
     if (_linkedActors.isEmpty) notifySupervisorWithMessage(UnlinkAndStop(this))
     true
@@ -860,7 +862,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     if (supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason))
     else {
       lifeCycle match {
-        case Temporary ⇒ shutDownTemporaryActor(this)
+        case Temporary ⇒ shutDownTemporaryActor(this, reason)
         case _         ⇒ dispatcher.resume(this) //Resume processing for this actor
       }
     }
