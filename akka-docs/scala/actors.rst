@@ -561,14 +561,30 @@ The actor has a well-defined non-circular life-cycle.
       => STARTED (when 'start' is invoked) - can receive messages
           => SHUT DOWN (when 'exit' or 'stop' is invoked) - can't do anything
 
-What happens with a message when exception is thrown while processing
----------------------------------------------------------------------
+Actors and exceptions
+---------------------
+It can happen that while a message is being processed by an actor, that some kind of exception is thrown, e.g. a
+database exception.
+
+What happens to the Message
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If an exception is thrown while a message is being processed (so taken of his mailbox and handed over the the receive),
 then this message will be lost. It is important to understand that it is not put back on the mailbox. So if you want to
 retry processing of a message, you need to deal with it yourself by catching the exception and retry your flow. Make
 sure that you put a bound on the number of retries since you don't want a system to livelock (so consuming a lot of
 cpu cycles without making progress).
+
+What happens to the mailbox
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If an exception is thrown while a message is being processed, nothing happens to the mailbox. If the actor is restarted,
+the same mailbox will be there. So all messages on that mailbox, will be there as well.
+
+What happens to the actor
+^^^^^^^^^^^^^^^^^^^^^^^^^
+If an exception is thrownn and the actor is not supervised, the actor object itself is discarded and a new instance is
+created. This new instance will now be used in the actor references to this actor.
+
 
 Extending Actors using PartialFunction chaining
 -----------------------------------------------
