@@ -22,9 +22,16 @@ Using an ``Actor``\'s ``?`` method to send a message will return a Future. To wa
 .. code-block:: scala
 
   val future = actor ? msg
-  val result: Any = future.get()
+  val result = future.get()
 
-This will cause the current thread to block and wait for the ``Actor`` to 'complete' the ``Future`` with it's reply. Due to the dynamic nature of Akka's ``Actor``\s this result will be untyped and will default to ``Nothing``. The safest way to deal with this is to cast the result to an ``Any`` as is shown in the above example. You can also use the expected result type instead of ``Any``, but if an unexpected type were to be returned you will get a ``ClassCastException``. For more elegant ways to deal with this and to use the result without blocking, refer to `Functional Futures`_.
+This will cause the current thread to block and wait for the ``Actor`` to 'complete' the ``Future`` with it's reply. Blocking is discouraged though as it can cause performance problem. Alternatives to blocking are discussed futher within this documentation. Also note that the ``Future`` returned by an ``Actor`` is a ``Future[Any]`` since an ``Actor`` is dynamic. To safely try to cast a ``Future`` to an expected type the ``mapTo`` method may be used:
+
+.. code-block:: scala
+
+  val future = actor ? msg
+  val result = future.mapTo[String].get()
+
+The ``mapTo`` method will return a new ``Future`` that contains the result if the cast was successful, or a ``ClassCastException`` if not. Handling ``Exception``\s will be disccused further within this documentation.
 
 Use Directly
 ------------
@@ -109,7 +116,7 @@ Normally this works quite well as it means there is very little overhead to runn
     "Hello" + "World"
   }
 
-  val f2 = f1 flatMap {x =>
+  val f2 = f1 flatMap { x =>
     Future(x.length)
   }
 
@@ -144,12 +151,12 @@ The example for comprehension above is an example of composing ``Future``\s. A c
   val f1 = actor1 ? msg1
   val f2 = actor2 ? msg2
 
-  val a: Int = f1.get()
-  val b: Int = f2.get()
+  val a = f1.mapTo[Int].get()
+  val b = f2.mapTo[Int].get()
 
   val f3 = actor3 ? (a + b)
 
-  val result: String = f3.get()
+  val result = f3.mapTo[String].get()
 
 Here we wait for the results from the first 2 ``Actor``\s before sending that result to the third ``Actor``. We called ``get`` 3 times, which caused our little program to block 3 times before getting our final result. Now compare that to this example:
 
@@ -159,9 +166,9 @@ Here we wait for the results from the first 2 ``Actor``\s before sending that re
   val f2 = actor2 ? msg2
 
   val f3 = for {
-    a: Int    <- f1
-    b: Int    <- f2
-    c: String <- actor3 ? (a + b)
+    a <- f1.mapTo[Int]
+    b <- f2.mapTo[Int]
+    c <- (actor3 ? (a + b)).mapTo[String]
   } yield c
 
   val result = f3.get()
@@ -172,8 +179,8 @@ This is fine when dealing with a known amount of Actors, but can grow unwieldy i
 
 .. code-block:: scala
 
-  // oddActor returns odd numbers sequentially from 1
-  val listOfFutures: List[Future[Int]] = List.fill(100)(oddActor ? GetNext)
+  // oddActor returns odd numbers sequentially from 1 as a List[Future[Int]]
+  val listOfFutures = List.fill(100)((oddActor ? GetNext).mapTo[Int])
 
   // now we have a Future[List[Int]]
   val futureList = Future.sequence(listOfFutures)
@@ -197,8 +204,7 @@ This is the same result as this example:
 
 But it may be faster to use ``traverse`` as it doesn't have to create an intermediate ``List[Future[Int]]``.
 
-
-Then there's a method that's called ``fold`` that takes a start-value, a sequence of ``Future``:s and a function from the type of the start-value and the type of the futures and returns something with the same type as the start-value, and then applies the function to all elements in the sequence of futures, non-blockingly, the execution will run on the Thread of the last completing Future in the sequence.
+Then there's a method that's called ``fold`` that takes a start-value, a sequence of ``Future``\s and a function from the type of the start-value and the type of the futures and returns something with the same type as the start-value, and then applies the function to all elements in the sequence of futures, non-blockingly, the execution will run on the Thread of the last completing Future in the sequence.
 
 .. code-block:: scala
 
@@ -247,3 +253,26 @@ It is also possible to handle an ``Exception`` by returning a different result. 
   }
 
 In this example, if an ``ArithmeticException`` was thrown while the ``Actor`` processed the message, our ``Future`` would have a result of 0. The ``recover`` method works very similarly to the standard try/catch blocks, so multiple ``Exception``\s can be handled in this manner, and if an ``Exception`` is not handled this way it will be behave as if we hadn't used the ``recover`` method.
+
+Timeouts
+--------
+
+Waiting forever for a ``Future`` to be completed can be dangerous. It could cause your program to block indefinitly or produce a memory leak. ``Future`` has support for a timeout already builtin with a default of 5 seconds (taken from 'akka.conf'). A timeout is an instance of ``akka.actor.Timeout`` which contains an ``akka.util.Duration``. A ``Duration`` can be finite, which needs a length and unit type, or infinite. An infinite timeout can be dangerous since it will never actually expire.
+
+A different timeout can be supplied either explicitly or implicitly when a ``Future`` is created. An implicit timeout has the benefit of being usable by a for-comprehension as well as being picked up by any methods looking for an implicit timeout, while an explicit timeout can be used in a more controlled manner.
+
+Explicit timeout example:
+
+Implicit timeout example:
+
+If the timeout is reached the ``Future`` becomes unusable, even if an attempt is made to complete it. It is possible to have a ``Future`` handle a timeout, if needed, with the ``onTimeout`` and ``orElse`` methods:
+
+.. code-block:: scala
+
+  val future1 = actor ? msg onTimeout { _ =>
+    println("Timed out!")
+  }
+
+  val future2 = actor ? msg orElse "Timed out!"
+
+Using ``onTimeout`` will cause the supplied block to be executed if the ``Future`` expires, while ``orElse`` will complete the ``Future`` with the supplied value if the ``Future`` expires.
