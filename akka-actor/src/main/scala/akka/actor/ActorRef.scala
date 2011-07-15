@@ -700,7 +700,7 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
           } catch {
             case e: InterruptedException ⇒
               handleExceptionInDispatch(e, messageHandle.message)
-              Thread.currentThread().interrupt() //Restore interrupt
+              throw e
             case e ⇒
               handleExceptionInDispatch(e, messageHandle.message)
           }

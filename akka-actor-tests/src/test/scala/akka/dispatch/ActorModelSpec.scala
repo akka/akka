@@ -217,12 +217,6 @@ abstract class ActorModelSpec extends JUnitSuite {
 
   protected def newInterceptedDispatcher: MessageDispatcherInterceptor
 
-  @After
-  def after {
-    //remove the interrupted status since we are messing with interrupted exceptions.
-    Thread.interrupted()
-  }
-
   @Test
   def dispatcherShouldDynamicallyHandleItsOwnLifeCycle {
     implicit val dispatcher = newInterceptedDispatcher
