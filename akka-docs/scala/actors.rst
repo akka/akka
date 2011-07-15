@@ -583,7 +583,8 @@ the same mailbox will be there. So all messages on that mailbox, will be there a
 What happens to the actor
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 If an exception is thrownn and the actor is not supervised, the actor object itself is discarded and a new instance is
-created. This new instance will now be used in the actor references to this actor.
+created. This new instance will now be used in the actor references to this actor (so this is done invisible
+to the developer).
 
 
 Extending Actors using PartialFunction chaining
