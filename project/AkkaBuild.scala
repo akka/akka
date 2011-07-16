@@ -457,7 +457,7 @@ object Dependency {
     val camelJetty = "org.apache.camel"    % "camel-jetty"     % V.CamelPatch % "runtime" // ApacheV2
     val camelJms   = "org.apache.camel"    % "camel-jms"       % V.Camel      % "runtime" // ApacheV2
     val logback    = "ch.qos.logback"      % "logback-classic" % V.Logback    % "runtime" // MIT
-    val springJms  = "org.springframework" % "spring-jms"      % V.Spring     % "compile" // ApacheV2
+    val springJms  = "org.springframework" % "spring-jms"      % V.Spring     % "runtime" // ApacheV2
   }
 
   // Test
