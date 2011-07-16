@@ -224,25 +224,12 @@ object AkkaBuild extends Build {
     settings = defaultSettings
   )
 
-  lazy val camelSampleXML =
-    <dependencies>
-      <dependency org="org.apache.camel" name="camel-jms" rev={Dependency.V.Camel}>
-        <exclude module="camel-core"/>
-      </dependency>
-      <dependency org="org.apache.camel" name="camel-spring" rev={Dependency.V.Camel}>
-        <exclude module="camel-core"/>
-      </dependency>
-      <!--<dependency org="org.apache.camel" name="camel-jetty" rev={Dependency.V.CamelPatch}>
-        <exclude module="camel-core"/>
-      </dependency>-->
-    </dependencies>
-
   lazy val camelSample = Project(
     id = "akka-sample-camel",
     base = file("akka-samples/akka-sample-camel"),
     dependencies = Seq(actor, camelTyped),
     settings = defaultSettings ++ Seq(
-      ivyXML := camelSampleXML,
+      ivyXML := Dependencies.sampleCamelXML,
       libraryDependencies ++= Dependencies.sampleCamel
     )
   )
@@ -382,6 +369,20 @@ object Dependencies {
 
   val sampleCamel = Seq(camelCore, commonsCodec, Runtime.activemq, Runtime.springJms,
     Test.junit, Test.scalatest, Test.logback)
+
+  val sampleCamelXML =
+    <dependencies>
+      <dependency org="org.apache.camel" name="camel-jms" rev={V.Camel}>
+        <exclude module="camel-core"/>
+      </dependency>
+      <dependency org="org.apache.camel" name="camel-spring" rev={V.Camel}>
+        <exclude module="camel-core"/>
+      </dependency>
+      <!-- TODO: resolve Jetty version conflict -->
+      <!--<dependency org="org.apache.camel" name="camel-jetty" rev={Dependency.V.CamelPatch}>
+        <exclude module="camel-core"/>
+      </dependency>-->
+    </dependencies>
 }
 
 object Dependency {
