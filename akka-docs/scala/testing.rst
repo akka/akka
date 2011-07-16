@@ -375,6 +375,19 @@ with message flows:
     This feature is useful e.g. when testing a logging system, where you want
     to ignore regular messages and are only interested in your specific ones.
 
+Expecting Exceptions
+--------------------
+
+One case which is not handled by the :obj:`testActor` is if an exception is
+thrown while processing the message sent to the actor under test. This can be
+tested by using a :class:`Future` based invocation::
+
+  // assuming ScalaTest ShouldMatchers
+
+  evaluating {
+    (someActor ? badOperation).await.get
+  } should produce [UnhandledMessageException]
+
 .. _TestKit.within:
 
 Timing Assertions
@@ -468,7 +481,7 @@ using a small example::
     var dest1 : ActorRef = _
     var dest2 : ActorRef = _
     def receive = {
-      case (d1, d2) =>
+      case (d1: ActorRef, d2: ActorRef) =>
         dest1 = d1
         dest2 = d2
       case x =>
