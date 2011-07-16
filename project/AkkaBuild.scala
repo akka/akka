@@ -200,7 +200,7 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(fsmSample)
+    aggregate = Seq(fsmSample, camelSample)
   )
 
   // lazy val antsSample = Project(
@@ -222,6 +222,29 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-fsm"),
     dependencies = Seq(actor),
     settings = defaultSettings
+  )
+
+  lazy val camelSampleXML =
+    <dependencies>
+      <dependency org="org.apache.camel" name="camel-jms" rev={Dependency.V.Camel}>
+        <exclude module="camel-core"/>
+      </dependency>
+      <dependency org="org.apache.camel" name="camel-spring" rev={Dependency.V.Camel}>
+        <exclude module="camel-core"/>
+      </dependency>
+      <dependency org="org.apache.camel" name="camel-jetty" rev={Dependency.V.CamelPatch}>
+        <exclude module="camel-core"/>
+      </dependency>
+    </dependencies>
+
+  lazy val camelSample = Project(
+    id = "akka-sample-camel",
+    base = file("akka-samples/akka-sample-camel"),
+    dependencies = Seq(actor, camelTyped),
+    settings = defaultSettings ++ Seq(
+      ivyXML := camelSampleXML,
+      libraryDependencies ++= Dependencies.sampleCamel
+    )
   )
 
   // lazy val helloSample = Project(
@@ -356,6 +379,9 @@ object Dependencies {
     jettyUtil, jettyXml, jettyServlet, jerseyCore, jerseyJson, jerseyScala,
     jacksonCore, staxApi, Provided.jerseyServer
   )
+
+  val sampleCamel = Seq(camelCore, commonsCodec, Runtime.activemq, Runtime.springJms,
+    Test.junit, Test.scalatest, Test.logback)
 }
 
 object Dependency {
@@ -426,7 +452,11 @@ object Dependency {
   // Runtime
 
   object Runtime {
-    val logback = "ch.qos.logback" % "logback-classic" % V.Logback % "runtime" // MIT
+    val activemq   = "org.apache.activemq" % "activemq-core"   % "5.4.2"      % "runtime" // ApacheV2
+    val camelJetty = "org.apache.camel"    % "camel-jetty"     % V.CamelPatch % "runtime" // ApacheV2
+    val camelJms   = "org.apache.camel"    % "camel-jms"       % V.Camel      % "runtime" // ApacheV2
+    val logback    = "ch.qos.logback"      % "logback-classic" % V.Logback    % "runtime" // MIT
+    val springJms  = "org.springframework" % "spring-jms"      % V.Spring     % "compile" // ApacheV2
   }
 
   // Test
