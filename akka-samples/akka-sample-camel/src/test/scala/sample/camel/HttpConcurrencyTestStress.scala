@@ -52,9 +52,9 @@ object HttpConcurrencyTestStress {
     val workers = for (i <- 1 to 8) yield actorOf[HttpServerWorker].start
     val balancer = loadBalancerActor(new CyclicIterator(workers.toList))
 
-    service.get.awaitEndpointActivation(1) {
-      actorOf(new HttpServerActor(balancer)).start
-    }
+    //service.get.awaitEndpointActivation(1) {
+    //  actorOf(new HttpServerActor(balancer)).start
+    //}
   }
 
   @AfterClass

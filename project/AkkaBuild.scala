@@ -232,9 +232,9 @@ object AkkaBuild extends Build {
       <dependency org="org.apache.camel" name="camel-spring" rev={Dependency.V.Camel}>
         <exclude module="camel-core"/>
       </dependency>
-      <dependency org="org.apache.camel" name="camel-jetty" rev={Dependency.V.CamelPatch}>
+      <!--<dependency org="org.apache.camel" name="camel-jetty" rev={Dependency.V.CamelPatch}>
         <exclude module="camel-core"/>
-      </dependency>
+      </dependency>-->
     </dependencies>
 
   lazy val camelSample = Project(
