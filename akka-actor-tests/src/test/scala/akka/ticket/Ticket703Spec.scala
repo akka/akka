@@ -24,7 +24,7 @@ class Ticket703Spec extends WordSpec with MustMatchers {
             def receive = {
               case req: String ⇒
                 Thread.sleep(6000L)
-                self.reply_?("Response")
+                self.tryReply("Response")
             }
           })
         }).start()

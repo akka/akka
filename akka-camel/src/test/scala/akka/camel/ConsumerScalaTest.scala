@@ -252,11 +252,11 @@ object ConsumerScalaTest {
     }
 
     override def preRestart(reason: scala.Throwable) {
-      self.reply_?("pr")
+      self.tryReply("pr")
     }
 
     override def postStop {
-      self.reply_?("ps")
+      self.tryReply("ps")
     }
   }
 

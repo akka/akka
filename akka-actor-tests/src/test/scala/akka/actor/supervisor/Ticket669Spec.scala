@@ -63,11 +63,11 @@ object Ticket669Spec {
     }
 
     override def preRestart(reason: scala.Throwable) {
-      self.reply_?("failure1")
+      self.tryReply("failure1")
     }
 
     override def postStop() {
-      self.reply_?("failure2")
+      self.tryReply("failure2")
     }
   }
 }

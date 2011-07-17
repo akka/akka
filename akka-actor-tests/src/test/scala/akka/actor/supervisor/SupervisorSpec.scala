@@ -41,7 +41,7 @@ object SupervisorSpec {
     def receive = {
       case Ping ⇒
         messageLog.put(PingMessage)
-        self.reply_?(PongMessage)
+        self.tryReply(PongMessage)
       case Die ⇒
         throw new RuntimeException(ExceptionMessage)
     }
@@ -361,7 +361,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
         if (inits.get % 2 == 0) throw new IllegalStateException("Don't wanna!")
 
         def receive = {
-          case Ping ⇒ self.reply_?(PongMessage)
+          case Ping ⇒ self.tryReply(PongMessage)
           case Die  ⇒ throw new Exception("expected")
         }
       })

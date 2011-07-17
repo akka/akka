@@ -305,8 +305,8 @@ class ActorRefSpec extends WordSpec with MustMatchers {
       val ref = Actor.actorOf(
         new Actor {
           def receive = {
-            case 5    ⇒ self reply_? "five"
-            case null ⇒ self reply_? "null"
+            case 5    ⇒ self tryReply "five"
+            case null ⇒ self tryReply "null"
           }
         }).start()
 

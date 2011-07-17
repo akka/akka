@@ -176,7 +176,7 @@ class FutureSpec extends JUnitSuite {
   def shouldFoldResults {
     val actors = (1 to 10).toList map { _ ⇒
       actorOf(new Actor {
-        def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); self reply_? add }
+        def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); self tryReply add }
       }).start()
     }
     val timeout = 10000
@@ -204,7 +204,7 @@ class FutureSpec extends JUnitSuite {
   def shouldFoldResultsByComposing {
     val actors = (1 to 10).toList map { _ ⇒
       actorOf(new Actor {
-        def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); self reply_? add }
+        def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); self tryReply add }
       }).start()
     }
     def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), 10000).mapTo[Int] }
@@ -219,7 +219,7 @@ class FutureSpec extends JUnitSuite {
           case (add: Int, wait: Int) ⇒
             Thread.sleep(wait)
             if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
-            self reply_? add
+            self tryReply add
         }
       }).start()
     }
@@ -237,7 +237,7 @@ class FutureSpec extends JUnitSuite {
   def shouldReduceResults {
     val actors = (1 to 10).toList map { _ ⇒
       actorOf(new Actor {
-        def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); self reply_? add }
+        def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); self tryReply add }
       }).start()
     }
     val timeout = 10000
@@ -253,7 +253,7 @@ class FutureSpec extends JUnitSuite {
           case (add: Int, wait: Int) ⇒
             Thread.sleep(wait)
             if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
-            self reply_? add
+            self tryReply add
         }
       }).start()
     }

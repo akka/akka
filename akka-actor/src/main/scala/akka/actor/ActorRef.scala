@@ -12,8 +12,6 @@ import akka.util._
 import akka.serialization.{Serializer, Serialization}
 import ReflectiveAccess._
 import ClusterModule._
-import DeploymentConfig.{TransactionLog ⇒ TransactionLogConfig, _}
-
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ScheduledFuture, ConcurrentHashMap, TimeUnit}
@@ -23,6 +21,7 @@ import scala.reflect.BeanProperty
 import scala.collection.immutable.Stack
 import scala.annotation.tailrec
 import java.lang.IllegalStateException
+import akka.actor.DeploymentConfig.ReplicationScheme
 
 private[akka] object ActorRefInternals {
 
@@ -280,6 +279,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * <p/>
    * Throws an IllegalStateException if unable to determine what to reply to.
    */
+  @deprecated("will be removed in 2.0, use reply instead", "1.2")
   def replyUnsafe(message: AnyRef) {
     reply(message)
   }
@@ -291,7 +291,8 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * <p/>
    * Returns true if reply was sent, and false if unable to determine what to reply to.
    */
-  def replySafe(message: AnyRef): Boolean = reply_?(message)
+  @deprecated("will be removed in 2.0, use tryReply instead", "1.2")
+  def replySafe(message: AnyRef): Boolean = tryReply(message)
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
@@ -473,7 +474,7 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
     Serialization.serializerFor(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
 
   private lazy val replicationScheme: ReplicationScheme =
-    DeploymentConfig.replicationSchemeFor(Deployer.deploymentFor(address)).getOrElse(Transient)
+    DeploymentConfig.replicationSchemeFor(Deployer.deploymentFor(address)).getOrElse(DeploymentConfig.Transient)
 
   private lazy val isReplicated: Boolean = DeploymentConfig.isReplicated(replicationScheme)
 
@@ -1230,19 +1231,26 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel {
 
   /**
    * Use <code>self.reply(..)</code> to reply with a message to the original sender of the message currently
-   * being processed.
+   * being processed. This method  fails if the original sender of the message could not be determined with an
+   * IllegalStateException.
+   *
+   * If you don't want deal with this IllegalStateException, but just a boolean, just use the <code>tryReply(...)</code>
+   * version.
+   *
    * <p/>
    * Throws an IllegalStateException if unable to determine what to reply to.
    */
   def reply(message: Any) = channel.!(message)(this)
 
   /**
-   * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
-   * being processed.
+   * Use <code>tryReply(..)</code> to try reply with a message to the original sender of the message currently
+   * being processed. This method
    * <p/>
    * Returns true if reply was sent, and false if unable to determine what to reply to.
+   *
+   * If you would rather have an exception, check the <code>reply(..)</code> version.
    */
-  def reply_?(message: Any): Boolean = channel.safe_!(message)(this)
+  def tryReply(message: Any): Boolean =  channel.safe_!(message)(this)
 }
 
 case class SerializedActorRef(uuid: Uuid,

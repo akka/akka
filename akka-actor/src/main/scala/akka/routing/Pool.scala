@@ -123,7 +123,7 @@ trait DefaultActorPool extends ActorPool { this: Actor with ActorPoolSupervision
   protected def _route(): Receive = {
     // for testing...
     case Stat ⇒
-      self reply_? Stats(_delegates length)
+      self tryReply Stats(_delegates length)
     case MaximumNumberOfRestartsWithinTimeRangeReached(victim, _, _, _) ⇒
       _delegates = _delegates filterNot { _.uuid == victim.uuid }
     case Death(victim, _) => 
