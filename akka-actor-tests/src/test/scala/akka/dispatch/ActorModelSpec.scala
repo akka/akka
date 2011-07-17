@@ -19,7 +19,7 @@ import org.multiverse.api.latches.StandardLatch
 object ActorModelSpec {
 
   sealed trait ActorModelMessage
-  case class Reply_?(expect: Any) extends ActorModelMessage
+  case class TryReply(expect: Any) extends ActorModelMessage
   case class Reply(expect: Any) extends ActorModelMessage
   case class Forward(to: ActorRef, msg: Any) extends ActorModelMessage
   case class CountDown(latch: CountDownLatch) extends ActorModelMessage
@@ -57,7 +57,7 @@ object ActorModelSpec {
       case Wait(time)        ⇒ ack; Thread.sleep(time); busy.switchOff()
       case WaitAck(time, l)  ⇒ ack; Thread.sleep(time); l.countDown(); busy.switchOff()
       case Reply(msg)        ⇒ ack; self.reply(msg); busy.switchOff()
-      case Reply_?(msg)      ⇒ ack; self.reply_?(msg); busy.switchOff()
+      case TryReply(msg)     ⇒ ack; self.tryReply(msg); busy.switchOff()
       case Forward(to, msg)  ⇒ ack; to.forward(msg); busy.switchOff()
       case CountDown(latch)  ⇒ ack; latch.countDown(); busy.switchOff()
       case Increment(count)  ⇒ ack; count.incrementAndGet(); busy.switchOff()

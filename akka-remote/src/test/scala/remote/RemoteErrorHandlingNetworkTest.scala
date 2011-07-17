@@ -13,19 +13,19 @@ object RemoteErrorHandlingNetworkTest {
   class RemoteActorSpecActorUnidirectional extends Actor {
     self.id = "network-drop:unidirectional"
     def receive = {
-      case "Ping" ⇒ self.reply_?("Pong")
+      case "Ping" ⇒ self.tryReply("Pong")
     }
   }
 
   class Decrementer extends Actor {
     def receive = {
-      case "done" ⇒ self.reply_?(false)
+      case "done" ⇒ self.tryReply(false)
       case i: Int if i > 0 ⇒
-        self.reply_?(i - 1)
+        self.tryReply(i - 1)
       case i: Int ⇒
-        self.reply_?(0)
+        self.tryReply(0)
         this become {
-          case "done" ⇒ self.reply_?(true)
+          case "done" ⇒ self.tryReply(true)
           case _      ⇒ //Do Nothing
         }
     }

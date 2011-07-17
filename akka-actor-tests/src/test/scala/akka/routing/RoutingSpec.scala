@@ -206,7 +206,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
               case _ ⇒
                 count.incrementAndGet
                 latch.countDown()
-                self reply_? "success"
+                self tryReply "success"
             }
           }).start()
 
@@ -255,7 +255,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
             def receive = {
               case req: String ⇒ {
                 sleepFor(10 millis)
-                self.reply_?("Response")
+                self.tryReply("Response")
               }
             }
           })

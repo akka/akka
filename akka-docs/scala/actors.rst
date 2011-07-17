@@ -389,13 +389,13 @@ If you want to send a message back to the original sender of the message you jus
 
 In this case the ``result`` will be send back to the Actor that sent the ``request``.
 
-The ``reply`` method throws an ``IllegalStateException`` if unable to determine what to reply to, e.g. the sender is not an actor. You can also use the more forgiving ``reply_?`` method which returns ``true`` if reply was sent, and ``false`` if unable to determine what to reply to.
+The ``reply`` method throws an ``IllegalStateException`` if unable to determine what to reply to, e.g. the sender is not an actor. You can also use the more forgiving ``tryReply`` method which returns ``true`` if reply was sent, and ``false`` if unable to determine what to reply to.
 
 .. code-block:: scala
 
   case request =>
     val result = process(request)
-    if (self.reply_?(result)) ...// success
+    if (self.tryReply(result)) ...// success
     else ... // handle failure
 
 Summary of reply semantics and options
