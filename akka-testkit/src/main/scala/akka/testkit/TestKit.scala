@@ -378,11 +378,9 @@ trait TestKitLight {
    * given duration, with an AssertionFailure being thrown in case of timeout.
    *
    * <pre>
-   * within(1 second) {
    *   dispatcher ! SomeWork1()
    *   dispatcher ! SomeWork2()
-   *   expectMsgAllOf(Result1(), Result2())
-   * }
+   *   expectMsgAllOf(1 second, Result1(), Result2())
    * </pre>
    */
   def expectMsgAllOf[T](max: Duration, obj: T*): Seq[T] = expectMsgAllOf_internal(max.dilated, obj: _*)

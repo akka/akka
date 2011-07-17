@@ -7,7 +7,8 @@ import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
 import akka.actor.Actor._
-import akka.actor.{TypedActor, Supervisor}
+import akka.actor.TypedActor
+import akka.actor.TypedActor.Configuration._
 import akka.camel.CamelContextManager
 import akka.config.Supervision._
 
@@ -89,7 +90,8 @@ class Boot {
   // Active object example
   // -----------------------------------------------------------------------
 
-  //TypedActor.newInstance(classOf[TypedConsumer1], classOf[TypedConsumer1Impl])
+  // TODO: investigate why this consumer is not published
+  TypedActor.typedActorOf(classOf[TypedConsumer1], classOf[TypedConsumer1Impl], defaultConfiguration)
 }
 
 /**
