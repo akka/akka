@@ -207,7 +207,7 @@ object Deployer {
             val replicas = {
               if (router == Direct) Replicate(1)
               else {
-                clusteredConfig.getAny("replicas", "0") match {
+                clusteredConfig.getAny("replication-factor", "0") match {
                   case "auto" ⇒ AutoReplicate
                   case "0"    ⇒ NoReplicas
                   case nrOfReplicas: String ⇒
