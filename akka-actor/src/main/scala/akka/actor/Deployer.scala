@@ -204,15 +204,15 @@ object Deployer {
             // --------------------------------
             // akka.actor.deployment.<address>.clustered.replicas
             // --------------------------------
-            val replicas = {
-              if (router == Direct) Replicate(1)
+            val replicationFactor = {
+              if (router == Direct) ReplicationFactor(1)
               else {
                 clusteredConfig.getAny("replication-factor", "0") match {
-                  case "auto" ⇒ AutoReplicate
-                  case "0"    ⇒ NoReplicas
+                  case "auto" ⇒ AutoReplicationFactor
+                  case "0"    ⇒ ZeroReplicationFactor
                   case nrOfReplicas: String ⇒
                     try {
-                      Replicate(nrOfReplicas.toInt)
+                      ReplicationFactor(nrOfReplicas.toInt)
                     } catch {
                       case e: NumberFormatException ⇒
                         throw new ConfigurationException(
@@ -229,7 +229,7 @@ object Deployer {
             // --------------------------------
             clusteredConfig.getSection("replication") match {
               case None ⇒
-                Some(Deploy(address, router, Clustered(preferredNodes, replicas, Transient)))
+                Some(Deploy(address, router, Clustered(preferredNodes, replicationFactor, Transient)))
 
               case Some(replicationConfig) ⇒
                 val storage = replicationConfig.getString("storage", "transaction-log") match {
@@ -248,7 +248,7 @@ object Deployer {
                       ".clustered.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
                       unknown + "]")
                 }
-                Some(Deploy(address, router, Clustered(preferredNodes, replicas, Replication(storage, strategy))))
+                Some(Deploy(address, router, Clustered(preferredNodes, replicationFactor, Replication(storage, strategy))))
             }
         }
     }

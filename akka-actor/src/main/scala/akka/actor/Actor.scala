@@ -462,7 +462,7 @@ object Actor extends ListenerManagement {
           "Remote server is not running")
 
         val isHomeNode = DeploymentConfig.isHomeNode(preferredHomeNodes)
-        val nrOfReplicas = DeploymentConfig.replicaValueFor(replicas)
+        val nrOfReplicas = replicas.factor
 
         def serializerErrorDueTo(reason: String) = throw new akka.config.ConfigurationException(
           "Could not create Serializer for actor [" + address + "] due to: " + reason)
