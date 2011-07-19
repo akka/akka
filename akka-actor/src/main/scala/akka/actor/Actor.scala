@@ -5,6 +5,7 @@
 package akka.actor
 
 import DeploymentConfig._
+import akka.experimental
 import akka.dispatch._
 import akka.config._
 import Config._
@@ -677,6 +678,7 @@ trait Actor {
    * <b>Warning:</b> <i>Propagating state from a crashed actor carries the risk
    * of proliferating the cause of the error. Consider let-it-crash first.</i>
    */
+  @experimental("1.2")
   def freshInstance(): Option[Actor] = None
 
   /**
