@@ -4,10 +4,12 @@
 
 import sbt._
 import sbt.Keys._
-import sbt.Keys._
+import sbt.Load.BuildStructure
 import sbt.classpath.ClasspathUtilities
 import sbt.Project.Initialize
+import sbt.CommandSupport._
 import java.io.File
+import scala.collection.mutable.{ Set => MutableSet }
 
 object AkkaMicrokernelPlugin extends Plugin {
 
@@ -21,7 +23,6 @@ object AkkaMicrokernelPlugin extends Plugin {
 
   val Dist = config("dist") extend (Runtime)
   val dist = TaskKey[File]("dist", "Builds an Akka microkernel directory")
-  // TODO how to reuse keyword "clean" here instead (dist:clean)
   val distClean = TaskKey[Unit]("clean", "Removes Akka microkernel directory")
 
   val outputDirectory = SettingKey[File]("output-directory")
@@ -53,22 +54,29 @@ object AkkaMicrokernelPlugin extends Plugin {
         dist <<= (dist in Dist).identity)
 
   private def distTask: Initialize[Task[File]] =
-    (distConfig, sourceDirectory, crossTarget, dependencyClasspath, allDependencies, streams) map { (conf, src, tgt, cp, deps, s) ⇒
+    (distConfig, sourceDirectory, crossTarget, dependencyClasspath, projectDependencies, allDependencies, buildStructure, state, streams) map { 
+    (conf, src, tgt, cp, projDeps, allDeps, buildStruct, st, s) ⇒
       
-      if (isKernelProject(deps)) {
+      if (isKernelProject(allDeps)) {
         val log = s.log
         val distBinPath = conf.outputDirectory / "bin"
         val distConfigPath = conf.outputDirectory / "config"
         val distDeployPath = conf.outputDirectory / "deploy"
         val distLibPath = conf.outputDirectory / "lib"
-  
+        
+        val subProjectDependencies: Set[SubProjectInfo] = allSubProjectDependencies(projDeps, buildStruct, st) 
+      
         log.info("Creating distribution %s ..." format conf.outputDirectory)
         IO.createDirectory(conf.outputDirectory)
         Scripts(conf.distJvmOptions, conf.distMainClass).writeScripts(distBinPath)
         copyDirectories(conf.configSourceDirs, distConfigPath)
         copyJars(tgt, distDeployPath)
+        
         copyFiles(libFiles(cp, conf.libFilter), distLibPath)
         copyFiles(conf.additionalLibs, distLibPath)
+        for (subTarget <- subProjectDependencies.map(_.target)) {
+          copyJars(subTarget, distLibPath)
+        }
         log.info("Distribution created.")
       }
       conf.outputDirectory
@@ -89,7 +97,7 @@ object AkkaMicrokernelPlugin extends Plugin {
   }
   
   private def defaultConfigSourceDirs = (sourceDirectory, unmanagedResourceDirectories) map { (src, resources) ⇒
-    Seq(src / "main" / "config") ++ resources
+    Seq(src / "config", src / "main" / "config") ++ resources
   }
 
   private def defaultAdditionalLibs = (libraryDependencies) map { (libs) ⇒
@@ -162,6 +170,67 @@ object AkkaMicrokernelPlugin extends Plugin {
   private def libFiles(classpath: Classpath, libFilter: File ⇒ Boolean): Seq[File] = {
     val (libs, directories) = classpath.map(_.data).partition(ClasspathUtilities.isArchive)
     libs.map(_.asFile).filter(libFilter)
+  }
+  
+  private def allSubProjectDependencies(projDeps: Seq[ModuleID], buildStruct: BuildStructure, state: State): Set[SubProjectInfo] = {
+    val buildUnit = buildStruct.units(buildStruct.root)
+    val uri = buildStruct.root
+    val allProjects = buildUnit.defined.map {
+      case (id, proj) => (ProjectRef(uri, id) -> proj)
+    }
+    
+    val projDepsNames = projDeps.map(_.name)
+    def include(project: ResolvedProject): Boolean = projDepsNames.exists(_ == project.id)
+    val subProjects: Seq[SubProjectInfo] = allProjects.collect {
+      case (projRef, project) if include(project) => projectInfo(projRef, project, buildStruct, state, allProjects)
+    }.toList
+    
+    val allSubProjects = subProjects.map(_.recursiveSubProjects).flatten.toSet
+    allSubProjects
+}
+  
+  private def projectInfo(projectRef: ProjectRef, project: ResolvedProject, buildStruct: BuildStructure, state: State, 
+      allProjects: Map[ProjectRef, ResolvedProject]): SubProjectInfo = {
+
+    def optionalSetting[A](key: ScopedSetting[A]) = key in projectRef get buildStruct.data
+
+    def setting[A](key: ScopedSetting[A], errorMessage: => String) = {
+      optionalSetting(key) getOrElse {
+        logger(state).error(errorMessage);
+        throw new IllegalArgumentException()
+      }
+    }
+    
+    def evaluateTask[T](taskKey: sbt.Project.ScopedKey[sbt.Task[T]]) = {
+      EvaluateTask.evaluateTask(buildStruct, taskKey, state, projectRef, false, EvaluateTask.SystemProcessors)
+    }
+    
+    val projDeps: Seq[ModuleID] = evaluateTask(Keys.projectDependencies) match {
+      case Some(Value(moduleIds)) => moduleIds
+      case _ => Seq.empty
+    }
+    
+    val projDepsNames = projDeps.map(_.name)
+    def include(project: ResolvedProject): Boolean = projDepsNames.exists(_ == project.id)
+    val subProjects = allProjects.collect {
+      case (projRef, proj) if include(proj) => projectInfo(projRef, proj, buildStruct, state, allProjects)
+    }.toList
+    
+    val target = setting(Keys.crossTarget, "Missing crossTarget directory")
+    SubProjectInfo(project.id, target, subProjects)
+  }
+  
+  private case class SubProjectInfo(id: String, target: File, subProjects: Seq[SubProjectInfo]) {
+
+    def recursiveSubProjects: Set[SubProjectInfo] = {
+      val flatSubProjects = for {
+        x <- subProjects
+        y <- x.recursiveSubProjects
+      } yield y
+      
+      flatSubProjects.toSet + this
+    }
+    
   }
 
 }
