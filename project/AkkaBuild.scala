@@ -303,6 +303,9 @@ object AkkaBuild extends Build {
     // disable parallel tests
     parallelExecution in Test := false,
 
+    //Explicitly set sourceFileEncoding to "UTF-8" for scalariform
+    sourceFileEncoding := "UTF-8",
+
     // for excluding tests in jenkins builds (-Dakka.test.exclude=TimingSpec)
     testExcludes := akkaTestExcludes,
     testOptions in Test <++= testExcludes map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) }
