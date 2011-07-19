@@ -39,6 +39,8 @@ object TypedActorSpec {
 
     def incr()
     def read(): Int
+
+    def testMethodCallSerialization(foo: Foo, s: String, i: Int): Unit = throw new IllegalStateException("expected")
   }
 
   class Bar extends Foo with Serializable {
@@ -307,7 +309,7 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
     "be able to serialize and deserialize invocations' parameters" in {
       import java.io._
       val someFoo: Foo = new Bar
-      val m = MethodCall(classOf[Foo].getDeclaredMethod("futureComposePigdogFrom", Array[Class[_]](classOf[Foo]): _*), Array[AnyRef](someFoo))
+      val m = MethodCall(classOf[Foo].getDeclaredMethod("testMethodCallSerialization", Array[Class[_]](classOf[Foo], classOf[String], classOf[Int]): _*), Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef]))
       val baos = new ByteArrayOutputStream(8192 * 4)
       val out = new ObjectOutputStream(baos)
 
@@ -319,9 +321,12 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       val mNew = in.readObject().asInstanceOf[MethodCall]
 
       mNew.method must be(m.method)
-      mNew.parameters must have size 1
+      mNew.parameters must have size 3
       mNew.parameters(0) must not be null
       mNew.parameters(0).getClass must be === classOf[Bar]
+      mNew.parameters(1) must be(null)
+      mNew.parameters(2) must not be null
+      mNew.parameters(2).asInstanceOf[Int] must be === 1
     }
   }
 }

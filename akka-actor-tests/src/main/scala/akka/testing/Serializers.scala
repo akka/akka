@@ -14,6 +14,8 @@ import sjson.json._
 class ProtobufSerializer extends Serializer {
   val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
 
+  def identifier = 2:Byte
+
   def toBinary(obj: AnyRef): Array[Byte] = {
     if (!obj.isInstanceOf[Message]) throw new IllegalArgumentException(
       "Can't serialize a non-protobuf message using protobuf [" + obj + "]")
@@ -30,6 +32,8 @@ object ProtobufSerializer extends ProtobufSerializer
 
 class JavaJSONSerializer extends Serializer {
   private val mapper = new ObjectMapper
+
+  def identifier = 3:Byte
 
   def toBinary(obj: AnyRef): Array[Byte] = {
     val bos = new ByteArrayOutputStream
@@ -53,6 +57,8 @@ class JavaJSONSerializer extends Serializer {
 object JavaJSONSerializer extends JavaJSONSerializer
 
 class SJSONSerializer extends Serializer {
+
+  def identifier = 4:Byte
 
   def toBinary(obj: AnyRef): Array[Byte] =
     sjson.json.Serializer.SJSON.out(obj)

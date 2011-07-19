@@ -471,7 +471,7 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
         "]")
 
   private val serializer: Serializer =
-    Serialization.serializerFor(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
+    try { Serialization.serializerFor(this.getClass) } catch { case e: Exception => serializerErrorDueTo(e.toString)}
 
   private lazy val replicationScheme: ReplicationScheme =
     DeploymentConfig.replicationSchemeFor(Deployer.deploymentFor(address)).getOrElse(DeploymentConfig.Transient)

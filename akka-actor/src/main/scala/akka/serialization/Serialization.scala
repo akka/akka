@@ -19,27 +19,26 @@ case class NoSerializerFoundException(m: String) extends AkkaException(m)
  * locating a Serializer for a particular class as defined in the mapping in the 'akka.conf' file.
  */
 object Serialization {
+
   //TODO document me
-  def serialize(o: AnyRef): Either[Exception, Array[Byte]] = serializerFor(o.getClass) match {
-    case Left(ex)          ⇒ Left(ex)
-    case Right(serializer) ⇒ Right(serializer.toBinary(o))
-  }
+  def serialize(o: AnyRef): Either[Exception, Array[Byte]] =
+    try { Right(findSerializerFor(o).toBinary(o)) } catch { case e: Exception => Left(e) }
+
   //TODO document me
   def deserialize(
     bytes: Array[Byte],
     clazz: Class[_],
     classLoader: Option[ClassLoader]): Either[Exception, AnyRef] =
-    serializerFor(clazz) match {
-      case Left(e)         ⇒ Left(e)
-      case Right(serializer) ⇒ Right(serializer.fromBinary(bytes, Some(clazz), classLoader))
-    }
+     try { Right(serializerFor(clazz).fromBinary(bytes, Some(clazz), classLoader)) } catch { case e: Exception => Left(e) }
+
+  def findSerializerFor(o: AnyRef): Serializer = o match {
+    case null => NullSerializer
+    case other => serializerFor(other.getClass)
+  }
+
   //TODO document me
-  //TODO memoize the lookups
-  def serializerFor(clazz: Class[_]): Either[Exception, Serializer] = //TODO fall back on BestMatchClass THEN default
-    getClassFor(serializerMap.get(clazz.getName).getOrElse(serializers("default"))) match {
-      case Right(serializer) ⇒ Right(serializer.newInstance.asInstanceOf[Serializer])
-      case Left(e) => Left(e)
-    }
+  def serializerFor(clazz: Class[_]): Serializer = //TODO fall back on BestMatchClass THEN default AND memoize the lookups
+    serializerMap.get(clazz.getName).getOrElse(serializers("default"))
 
   /**
    * Tries to load the specified Serializer by the FQN
@@ -64,16 +63,18 @@ object Serialization {
   }
 
   /**
-   * A Map of serializer from alias to implementation (FQN of a class implementing akka.serialization.Serializer)
-   * By default always contains the following mapping: "default" -> "akka.serialization.JavaSerializer"
+   * A Map of serializer from alias to implementation (class implementing akka.serialization.Serializer)
+   * By default always contains the following mapping: "default" -> akka.serialization.JavaSerializer
    * But "default" can be overridden in config
    */
-  val serializers: Map[String, String] = config.getSection("akka.actor.serializers") map {
-    _.map.foldLeft(Map("default" -> "akka.serialization.JavaSerializer")) {
-      case (result, (k: String, v: String)) => result + (k -> v)
-      case (result, _) => result
-    }
-  } getOrElse Map("default" -> "akka.serialization.JavaSerializer")
+  val serializers: Map[String, Serializer] =
+    config.getSection("akka.actor.serializers")
+          .map(_.map)
+          .getOrElse(Map())
+          .foldLeft(Map[String, Serializer]("default" -> akka.serialization.JavaSerializer)) {
+            case (result, (k: String, v: String)) => result + (k -> serializerOf(v).fold(throw _, identity))
+            case (result, _) => result
+          }
 
   /**
    *  bindings is a Map whose keys = FQN of class that is serializable and values = the alias of the serializer to be used
@@ -88,5 +89,11 @@ object Serialization {
   /**
    * serializerMap is a Map whose keys = FQN of class that is serializable and values = the FQN of the serializer to be used for that class
    */
-  val serializerMap: Map[String, String] = bindings mapValues serializers
+  val serializerMap: Map[String, Serializer] = bindings mapValues serializers
+
+  /**
+   * Maps from a Serializer.Identifier (Byte) to a Serializer instance (optimization)
+   */
+  val serializerByIdentity: Map[Serializer.Identifier, Serializer] =
+    Map(NullSerializer.identifier -> NullSerializer) ++ serializers map { case (_, v) => (v.identifier,v) }
 }

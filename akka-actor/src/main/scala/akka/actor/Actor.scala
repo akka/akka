@@ -464,11 +464,8 @@ object Actor extends ListenerManagement {
         val isHomeNode = DeploymentConfig.isHomeNode(preferredHomeNodes)
         val nrOfReplicas = replicas.factor
 
-        def serializerErrorDueTo(reason: String) = throw new akka.config.ConfigurationException(
-          "Could not create Serializer for actor [" + address + "] due to: " + reason)
-
         val serializer: Serializer =
-          Serialization.serializerFor(this.getClass).fold(x ⇒ serializerErrorDueTo(x.toString), s ⇒ s)
+          Serialization.serializerFor(this.getClass)
 
         def storeActorAndGetClusterRef(replicationScheme: ReplicationScheme, serializer: Serializer): ActorRef = {
           // add actor to cluster registry (if not already added)
