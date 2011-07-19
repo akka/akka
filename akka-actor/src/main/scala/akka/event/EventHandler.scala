@@ -112,8 +112,8 @@ object EventHandler extends ListenerManagement {
       defaultListeners foreach { listenerName ⇒
         try {
           ReflectiveAccess.getClassFor[Actor](listenerName) match {
-            case r: Right[_, Class[Actor]] ⇒ addListener(Actor.localActorOf(r.b).start())
-            case l: Left[Exception, _]     ⇒ throw l.a
+            case Right(actorClass) ⇒ addListener(Actor.localActorOf(actorClass).start())
+            case Left(exception)   ⇒ throw exception
           }
         } catch {
           case e: Exception ⇒

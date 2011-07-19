@@ -90,8 +90,8 @@ object Futures {
 
       val aggregate: Future[T] ⇒ Unit = f ⇒ if (done.isOff && !result.isCompleted) { //TODO: This is an optimization, is it premature?
         f.value.get match {
-          case r: Right[Throwable, T] ⇒
-            val added = results add r.b
+          case Right(value) ⇒
+            val added = results add value
             if (added && results.size == allDone) { //Only one thread can get here
               if (done.switchOn) {
                 try {
@@ -109,9 +109,9 @@ object Futures {
                 }
               }
             }
-          case l: Left[Throwable, T] ⇒
+          case Left(exception) ⇒
             if (done.switchOn) {
-              result completeWithException l.a
+              result completeWithException exception
               results.clear
             }
         }
@@ -148,10 +148,8 @@ object Futures {
       val seedFold: Future[T] ⇒ Unit = f ⇒ {
         if (seedFound.compareAndSet(false, true)) { //Only the first completed should trigger the fold
           f.value.get match {
-            case r: Right[Throwable, T] ⇒
-              result.completeWith(fold(r.b, timeout)(futures.filterNot(_ eq f))(op))
-            case l: Left[Throwable, T] ⇒
-              result.completeWithException(l.a)
+            case Right(value)    ⇒ result.completeWith(fold(value, timeout)(futures.filterNot(_ eq f))(op))
+            case Left(exception) ⇒ result.completeWithException(exception)
           }
         }
       }

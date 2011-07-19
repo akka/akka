@@ -70,12 +70,12 @@ object TestActorRef {
 
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
     createInstance[T](manifest[T].erasure, noParams, noArgs) match {
-      case r: Right[_, T] ⇒ r.b
-      case l: Left[Exception, _] ⇒ throw new ActorInitializationException(
+      case Right(value) ⇒ value
+      case Left(exception) ⇒ throw new ActorInitializationException(
         "Could not instantiate Actor" +
           "\nMake sure Actor is NOT defined inside a class/trait," +
           "\nif so put it outside the class/trait, f.e. in a companion object," +
-          "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", l.a)
+          "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", exception)
     }
   }, address)
 }

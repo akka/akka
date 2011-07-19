@@ -1917,7 +1917,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
             self.dispatcher = computeGridDispatcher
 
             def receive = {
-              case f: Function0[Unit] ⇒ try {
+              case f: Function0[_] ⇒ try {
                 f()
               } finally {
                 self.stop()
@@ -1930,7 +1930,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
             self.dispatcher = computeGridDispatcher
 
             def receive = {
-              case f: Function0[Any] ⇒ try {
+              case f: Function0[_] ⇒ try {
                 self.reply(f())
               } finally {
                 self.stop()
@@ -1943,8 +1943,8 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
             self.dispatcher = computeGridDispatcher
 
             def receive = {
-              case (fun: Function[Any, Unit], param: Any) ⇒ try {
-                fun(param)
+              case (fun: Function[_, _], param: Any) ⇒ try {
+                fun.asInstanceOf[Any => Unit].apply(param)
               } finally {
                 self.stop()
               }
@@ -1956,8 +1956,8 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
             self.dispatcher = computeGridDispatcher
 
             def receive = {
-              case (fun: Function[Any, Unit], param: Any) ⇒ try {
-                self.reply(fun(param))
+              case (fun: Function[_, _], param: Any) ⇒ try {
+                self.reply(fun.asInstanceOf[Any => Any](param))
               } finally {
                 self.stop()
               }

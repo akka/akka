@@ -1011,7 +1011,7 @@ private[akka] case class RemoteActorRef private[akka](
       case _ ⇒ None
     }
     val chFuture = channel match {
-      case f: Promise[Any] ⇒ Some(f)
+      case f: Promise[_] ⇒ Some(f.asInstanceOf[Promise[Any]])
       case _ ⇒ None
     }
     val future = Actor.remote.send[Any](message, chSender, chFuture, remoteAddress, timeout, false, this, loader)

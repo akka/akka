@@ -95,10 +95,10 @@ object ActorSerialization {
       if (actorRef.mailbox eq null) throw new IllegalActorStateException("Can't serialize an actor that has not been started.")
       val messages =
         actorRef.mailbox match {
-          case q: java.util.Queue[MessageInvocation] ⇒
+          case q: java.util.Queue[_] ⇒
             val l = new scala.collection.mutable.ListBuffer[MessageInvocation]
             val it = q.iterator
-            while (it.hasNext == true) l += it.next
+            while (it.hasNext) l += it.next.asInstanceOf[MessageInvocation]
             l
         }
 
