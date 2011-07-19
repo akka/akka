@@ -10,19 +10,29 @@ import java.io.File
 
 object AkkaMicrokernelPlugin extends Plugin {
 
+  case class DistConfig(
+    outputDirectory: File,
+    configSourceDirs: Seq[File],
+    distJvmOptions: String,
+    distMainClass: String,
+    libFilter: File ⇒ Boolean,
+    additionalLibs: Seq[File])
+
   val Dist = config("dist") extend (Runtime)
   val dist = TaskKey[File]("dist", "Builds an Akka microkernel directory")
   // TODO how to reuse keyword "clean" here instead (dist:clean)
   val distClean = TaskKey[File]("clean-dist", "Removes Akka microkernel directory")
+
   val outputDirectory = SettingKey[File]("output-directory")
   val configSourceDirs = TaskKey[Seq[File]]("config-source-directories",
     "Configuration files are copied from these directories")
 
-  val distJvmOptions = SettingKey[String]("jvm-options", "JVM parameters to use in start script")
+  val distJvmOptions = SettingKey[String]("kernel-jvm-options", "JVM parameters to use in start script")
   val distMainClass = SettingKey[String]("kernel-main-class", "Kernel main class to use in start script")
 
   val libFilter = SettingKey[File ⇒ Boolean]("lib-filter", "Filter of dependency jar files")
   val additionalLibs = TaskKey[Seq[File]]("additional-libs", "Additional dependency jar files")
+  val distConfig = TaskKey[DistConfig]("dist-config")
 
   override lazy val settings =
     inConfig(Dist)(Seq(
@@ -36,32 +46,29 @@ object AkkaMicrokernelPlugin extends Plugin {
       distJvmOptions := "-Xms1024M -Xmx1024M -Xss1M -XX:MaxPermSize=256M -XX:+UseParallelGC",
       distMainClass := "akka.kernel.Main",
       libFilter := { f ⇒ true },
-      additionalLibs <<= defaultAdditionalLibs)) ++
+      additionalLibs <<= defaultAdditionalLibs,
+      distConfig <<= (outputDirectory, configSourceDirs, distJvmOptions, distMainClass, libFilter, additionalLibs) map DistConfig)) ++
       Seq(
         dist <<= (dist in Dist).identity)
 
   private def distTask: Initialize[Task[File]] =
-    (outputDirectory, sourceDirectory, crossTarget, dependencyClasspath,
-      configSourceDirs, distJvmOptions, distMainClass, libFilter, streams) map { 
-          (outDir, src, tgt, cp, configSrc, jvmOptions, mainClass, libFilt, s) ⇒
-        val log = s.log
-        val distBinPath = outDir / "bin"
-        val distConfigPath = outDir / "config"
-        val distDeployPath = outDir / "deploy"
-        val distLibPath = outDir / "lib"
-        // TODO how do I grab the additionalLibs setting? Can't add it in input tuple, limitation of number of elements in map of tuple.
-        val addLibs = Seq.empty[File]
+    (distConfig, sourceDirectory, crossTarget, dependencyClasspath, streams) map { (conf, src, tgt, cp, s) ⇒
+      val log = s.log
+      val distBinPath = conf.outputDirectory / "bin"
+      val distConfigPath = conf.outputDirectory / "config"
+      val distDeployPath = conf.outputDirectory / "deploy"
+      val distLibPath = conf.outputDirectory / "lib"
 
-        log.info("Creating distribution %s ..." format outDir)
-        IO.createDirectory(outDir)
-        Scripts(jvmOptions, mainClass).writeScripts(distBinPath)
-        copyDirectories(configSrc, distConfigPath)
-        copyJars(tgt, distDeployPath)
-        copyFiles(libFiles(cp, libFilt), distLibPath)
-        copyFiles(addLibs, distLibPath)
-        log.info("Distribution created.")
-        outDir
-      }
+      log.info("Creating distribution %s ..." format conf.outputDirectory)
+      IO.createDirectory(conf.outputDirectory)
+      Scripts(conf.distJvmOptions, conf.distMainClass).writeScripts(distBinPath)
+      copyDirectories(conf.configSourceDirs, distConfigPath)
+      copyJars(tgt, distDeployPath)
+      copyFiles(libFiles(cp, conf.libFilter), distLibPath)
+      copyFiles(conf.additionalLibs, distLibPath)
+      log.info("Distribution created.")
+      conf.outputDirectory
+    }
 
   private def distCleanTask: Initialize[Task[File]] =
     (outputDirectory, streams) map { (outDir, s) ⇒
