@@ -8,7 +8,7 @@ import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, B
 import akka.util.ClassLoaderObjectInputStream
 
 object Serializer {
-  val defaultSerializerName = JavaSerializer.getClass.getName
+  val defaultSerializerName = classOf[JavaSerializer].getName
   type Identifier = Byte
 }
 

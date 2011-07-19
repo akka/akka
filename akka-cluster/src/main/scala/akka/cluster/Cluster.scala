@@ -703,8 +703,6 @@ class DefaultClusterNode private[akka](
              serializeMailbox: Boolean,
              serializer: Serializer): ClusterNode = if (isConnected.isOn) {
 
-    val serializerClassName = serializer.getClass.getName
-
     EventHandler.debug(this,
       "Storing actor with address [%s] in cluster".format(actorAddress))
 
@@ -739,9 +737,9 @@ class DefaultClusterNode private[akka](
 
     // create ADDRESS -> SERIALIZER CLASS NAME mapping
     try {
-      zkClient.createPersistent(actorAddressRegistrySerializerPathFor(actorAddress), serializerClassName)
+      zkClient.createPersistent(actorAddressRegistrySerializerPathFor(actorAddress), serializer.identifier.toString)
     } catch {
-      case e: ZkNodeExistsException ⇒ zkClient.writeData(actorAddressRegistrySerializerPathFor(actorAddress), serializerClassName)
+      case e: ZkNodeExistsException ⇒ zkClient.writeData(actorAddressRegistrySerializerPathFor(actorAddress), serializer.identifier.toString)
     }
 
     // create ADDRESS -> NODE mapping
@@ -1084,21 +1082,10 @@ class DefaultClusterNode private[akka](
   /**
    * Returns Serializer for actor with specific address.
    */
-  def serializerForActor(actorAddress: String): Serializer = {
-    val serializerClassName =
-      try {
-        zkClient.readData(actorAddressRegistrySerializerPathFor(actorAddress), new Stat).asInstanceOf[String]
-      } catch {
-        case e: ZkNoNodeException ⇒ throw new IllegalStateException("No serializer found for actor with address [%s]".format(actorAddress))
-      }
-
-    ReflectiveAccess.getClassFor(serializerClassName) match {
-      // FIXME need to pass in a user provide class loader? Now using default in ReflectiveAccess.
-      case Right(clazz) ⇒ clazz.newInstance.asInstanceOf[Serializer]
-      case Left(error) ⇒
-        EventHandler.error(error, this, "Could not load serializer class [%s] due to: %s".format(serializerClassName, error.toString))
-        throw error
-    }
+  def serializerForActor(actorAddress: String): Serializer = try {
+    Serialization.serializerByIdentity(zkClient.readData(actorAddressRegistrySerializerPathFor(actorAddress), new Stat).asInstanceOf[String].toByte)
+  } catch {
+    case e: ZkNoNodeException ⇒ throw new IllegalStateException("No serializer found for actor with address [%s]".format(actorAddress))
   }
 
   /**
