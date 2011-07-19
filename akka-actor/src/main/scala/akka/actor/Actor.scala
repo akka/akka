@@ -662,9 +662,22 @@ trait Actor {
   /**
    * User overridable callback.
    * <p/>
-   * Is called on a crashed Actor right BEFORE it is restarted to allow clean up of resources before Actor is terminated.
+   * Is called on a crashed Actor right BEFORE it is restarted to allow clean
+   * up of resources before Actor is terminated.
    */
-  def preRestart(reason: Throwable) {}
+  def preRestart(reason: Throwable, message: Option[Any]) {}
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called on the crashed Actor to give it the option of producing the
+   * Actor's reincarnation. If it returns None, which is the default, the
+   * initially provided actor factory is used.
+   * <p/>
+   * <b>Warning:</b> <i>Propagating state from a crashed actor carries the risk
+   * of proliferating the cause of the error. Consider let-it-crash first.</i>
+   */
+  def freshInstance(): Option[Actor] = None
 
   /**
    * User overridable callback.

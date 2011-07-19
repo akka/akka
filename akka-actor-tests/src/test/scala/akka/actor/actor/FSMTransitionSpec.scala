@@ -32,7 +32,7 @@ object FSMTransitionSpec {
       case Ev("reply") ⇒ stay replying "reply"
     }
     initialize
-    override def preRestart(reason: Throwable) { target ! "restarted" }
+    override def preRestart(reason: Throwable, msg: Option[Any]) { target ! "restarted" }
   }
 
   class Forwarder(target: ActorRef) extends Actor {
