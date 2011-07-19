@@ -12,13 +12,24 @@ object Serializer {
   type Identifier = Byte
 }
 
+/**
+ * A Serializer represents a bimap between an object and an array of bytes representing that object
+ */
 trait Serializer extends scala.Serializable {
   /**
    * Completely unique Byte value to identify this implementation of Serializer, used to optimize network traffic
    * Values from 0 to 16 is reserved for Akka internal usage
    */
   def identifier: Serializer.Identifier
+
+  /**
+   * Serializes the given object into an Array of Byte
+   */
   def toBinary(o: AnyRef): Array[Byte]
+
+  /**
+   *  Produces an object from an array of bytes, with an optional type-hint and a classloader to load the class into
+   */
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]] = None, classLoader: Option[ClassLoader] = None): AnyRef
 }
 
