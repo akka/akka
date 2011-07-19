@@ -53,36 +53,46 @@ object AkkaMicrokernelPlugin extends Plugin {
         dist <<= (dist in Dist).identity)
 
   private def distTask: Initialize[Task[File]] =
-    (distConfig, sourceDirectory, crossTarget, dependencyClasspath, streams) map { (conf, src, tgt, cp, s) ⇒
-      val log = s.log
-      val distBinPath = conf.outputDirectory / "bin"
-      val distConfigPath = conf.outputDirectory / "config"
-      val distDeployPath = conf.outputDirectory / "deploy"
-      val distLibPath = conf.outputDirectory / "lib"
-
-      log.info("Creating distribution %s ..." format conf.outputDirectory)
-      IO.createDirectory(conf.outputDirectory)
-      Scripts(conf.distJvmOptions, conf.distMainClass).writeScripts(distBinPath)
-      copyDirectories(conf.configSourceDirs, distConfigPath)
-      copyJars(tgt, distDeployPath)
-      copyFiles(libFiles(cp, conf.libFilter), distLibPath)
-      copyFiles(conf.additionalLibs, distLibPath)
-      log.info("Distribution created.")
+    (distConfig, sourceDirectory, crossTarget, dependencyClasspath, allDependencies, streams) map { (conf, src, tgt, cp, deps, s) ⇒
+      
+      if (isKernelProject(deps)) {
+        val log = s.log
+        val distBinPath = conf.outputDirectory / "bin"
+        val distConfigPath = conf.outputDirectory / "config"
+        val distDeployPath = conf.outputDirectory / "deploy"
+        val distLibPath = conf.outputDirectory / "lib"
+  
+        log.info("Creating distribution %s ..." format conf.outputDirectory)
+        IO.createDirectory(conf.outputDirectory)
+        Scripts(conf.distJvmOptions, conf.distMainClass).writeScripts(distBinPath)
+        copyDirectories(conf.configSourceDirs, distConfigPath)
+        copyJars(tgt, distDeployPath)
+        copyFiles(libFiles(cp, conf.libFilter), distLibPath)
+        copyFiles(conf.additionalLibs, distLibPath)
+        log.info("Distribution created.")
+      }
       conf.outputDirectory
     }
 
   private def distCleanTask: Initialize[Task[Unit]] =
-    (outputDirectory, streams) map { (outDir, s) ⇒
-      val log = s.log
-      log.info("Cleaning " + outDir)
-      IO.delete(outDir)
+    (outputDirectory, allDependencies, streams) map { (outDir, deps, s) ⇒
+    
+      if (isKernelProject(deps)) {
+        val log = s.log
+        log.info("Cleaning " + outDir)
+        IO.delete(outDir)
+      }
     }
 
-  def defaultConfigSourceDirs = (sourceDirectory, unmanagedResourceDirectories) map { (src, resources) ⇒
+  def isKernelProject(dependencies: Seq[ModuleID]): Boolean = {
+    dependencies.exists(moduleId => moduleId.organization == "se.scalablesolutions.akka" && moduleId.name == "akka-kernel")
+  }
+  
+  private def defaultConfigSourceDirs = (sourceDirectory, unmanagedResourceDirectories) map { (src, resources) ⇒
     Seq(src / "main" / "config") ++ resources
   }
 
-  def defaultAdditionalLibs = (libraryDependencies) map { (libs) ⇒
+  private def defaultAdditionalLibs = (libraryDependencies) map { (libs) ⇒
     Seq.empty[File]
   }
 
