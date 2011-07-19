@@ -179,8 +179,9 @@ class Configuration(val map: Map[String, Any]) {
 
   def getSection(name: String): Option[Configuration] = {
     val l = name.length + 1
+    val pattern = name+"."
     val m = map.collect {
-      case (k, v) if k.startsWith(name) && !k.equals("replication-factor") ⇒ (k.substring(l), v)
+      case (k, v) if k.startsWith(pattern) ⇒ (k.substring(l), v)
     }
     if (m.isEmpty) None
     else Some(new Configuration(m))
