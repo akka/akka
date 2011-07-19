@@ -4,6 +4,7 @@
 
 import sbt._
 import sbt.Keys._
+import sbt.Keys._
 import sbt.classpath.ClasspathUtilities
 import sbt.Project.Initialize
 import java.io.File
@@ -21,7 +22,7 @@ object AkkaMicrokernelPlugin extends Plugin {
   val Dist = config("dist") extend (Runtime)
   val dist = TaskKey[File]("dist", "Builds an Akka microkernel directory")
   // TODO how to reuse keyword "clean" here instead (dist:clean)
-  val distClean = TaskKey[File]("clean-dist", "Removes Akka microkernel directory")
+  val distClean = TaskKey[Unit]("clean", "Removes Akka microkernel directory")
 
   val outputDirectory = SettingKey[File]("output-directory")
   val configSourceDirs = TaskKey[Seq[File]]("config-source-directories",
@@ -70,12 +71,11 @@ object AkkaMicrokernelPlugin extends Plugin {
       conf.outputDirectory
     }
 
-  private def distCleanTask: Initialize[Task[File]] =
+  private def distCleanTask: Initialize[Task[Unit]] =
     (outputDirectory, streams) map { (outDir, s) ⇒
       val log = s.log
       log.info("Cleaning " + outDir)
       IO.delete(outDir)
-      outDir
     }
 
   def defaultConfigSourceDirs = (sourceDirectory, unmanagedResourceDirectories) map { (src, resources) ⇒
