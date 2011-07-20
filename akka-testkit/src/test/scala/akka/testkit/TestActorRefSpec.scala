@@ -174,7 +174,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
         self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), Some(1000))
         val ref = TestActorRef(new TActor {
           def receiveT = { case _ ⇒ }
-          override def preRestart(reason: Throwable) { counter -= 1 }
+          override def preRestart(reason: Throwable, msg: Option[Any]) { counter -= 1 }
           override def postRestart(reason: Throwable) { counter -= 1 }
         }).start()
         self.dispatcher = CallingThreadDispatcher.global

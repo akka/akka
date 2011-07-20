@@ -93,7 +93,7 @@ You can also set the rejection policy that should be used, e.g. what should be d
 * java.util.concurrent.ThreadPoolExecutor.DiscardPolicy - discards the message (throws it away)
 * java.util.concurrent.ThreadPoolExecutor.DiscardOldestPolicy - discards the oldest message in the mailbox (throws it away)
 
-You cane read more about these policies `here <http://java.sun.com/javase/6/docs/api/index.html?java/util/concurrent/RejectedExecutionHandler.html>`_.
+You can read more about these policies `here <http://java.sun.com/javase/6/docs/api/index.html?java/util/concurrent/RejectedExecutionHandler.html>`_.
 
 Here is an example:
 
@@ -104,7 +104,7 @@ Here is an example:
   import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 
   class MyActor extends Actor {
-    self.dispatcher = Dispatchers.newDispatcher(name)
+    self.dispatcher = Dispatchers.newDispatcher(name, throughput = 15)
       .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
       .setCorePoolSize(16)
       .setMaxPoolSize(128)
@@ -114,8 +114,14 @@ Here is an example:
      ...
   }
 
-This 'Dispatcher' allows you to define the 'throughput' it should have. This defines the number of messages for a specific Actor the dispatcher should process in one single sweep.
-Setting this to a higher number will increase throughput but lower fairness, and vice versa. If you don't specify it explicitly then it uses the default value defined in the 'akka.conf' configuration file:
+The standard :class:`Dispatcher` allows you to define the ``throughput`` it
+should have, as shown above. This defines the number of messages for a specific
+Actor the dispatcher should process in one single sweep; in other words, the
+dispatcher will bunch up to ``throughput`` message invocations together when
+having elected an actor to run.  Setting this to a higher number will increase
+throughput but lower fairness, and vice versa. If you don't specify it
+explicitly then it uses the default value defined in the 'akka.conf'
+configuration file:
 
 .. code-block:: ruby
 

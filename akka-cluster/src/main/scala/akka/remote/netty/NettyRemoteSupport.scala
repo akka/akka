@@ -88,14 +88,14 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
     lock.readLock.lock
     try {
       val c = remoteClients.get(key) match {
-        case s: Some[RemoteClient] ⇒ s.get
+        case Some(client) ⇒ client
         case None ⇒
           lock.readLock.unlock
           lock.writeLock.lock //Lock upgrade, not supported natively
           try {
             try {
               remoteClients.get(key) match { //Recheck for addition, race between upgrades
-                case s: Some[RemoteClient] ⇒ s.get //If already populated by other writer
+                case Some(client) ⇒ client //If already populated by other writer
                 case None ⇒ //Populate map
                   val client = new ActiveRemoteClient(this, address, loader, self.notifyListeners _)
                   client.connect()
@@ -111,15 +111,15 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
 
   def shutdownClientConnection(address: InetSocketAddress): Boolean = lock withWriteGuard {
     remoteClients.remove(Address(address)) match {
-      case s: Some[RemoteClient] ⇒ s.get.shutdown()
-      case None                  ⇒ false
+      case Some(client) ⇒ client.shutdown()
+      case None         ⇒ false
     }
   }
 
   def restartClientConnection(address: InetSocketAddress): Boolean = lock withReadGuard {
     remoteClients.get(Address(address)) match {
-      case s: Some[RemoteClient] ⇒ s.get.connect(reconnectIfAlreadyConnected = true)
-      case None                  ⇒ false
+      case Some(client) ⇒ client.connect(reconnectIfAlreadyConnected = true)
+      case None         ⇒ false
     }
   }
 
@@ -632,12 +632,12 @@ trait NettyRemoteServerModule extends RemoteServerModule { self: RemoteModule �
   private[akka] val currentServer = new AtomicReference[Option[NettyRemoteServer]](None)
 
   def address = currentServer.get match {
-    case s: Some[NettyRemoteServer] ⇒ s.get.address
-    case None                       ⇒ ReflectiveAccess.RemoteModule.configDefaultAddress
+    case Some(server) ⇒ server.address
+    case None         ⇒ ReflectiveAccess.RemoteModule.configDefaultAddress
   }
 
   def name = currentServer.get match {
-    case s: Some[NettyRemoteServer] ⇒ s.get.name
+    case Some(server) ⇒ server.name
     case None ⇒
       val a = ReflectiveAccess.RemoteModule.configDefaultAddress
       "NettyRemoteServer@" + a.getAddress.getHostAddress + ":" + a.getPort
@@ -920,15 +920,15 @@ class RemoteServerHandler(
           request.getActorInfo.getTimeout,
           new ActorPromise(request.getActorInfo.getTimeout).
             onComplete(_.value.get match {
-              case l: Left[Throwable, Any] ⇒ write(channel, createErrorReplyMessage(l.a, request))
-              case r: Right[Throwable, Any] ⇒
+              case Left(exception) ⇒ write(channel, createErrorReplyMessage(exception, request))
+              case r: Right[_,_] ⇒
                 val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
                   Some(actorRef),
                   Right(request.getUuid),
                   actorInfo.getAddress,
                   actorInfo.getTimeout,
-                  r,
-                  true,
+                  r.asInstanceOf[Either[Throwable,Any]],
+                  isOneWay = true,
                   Some(actorRef))
 
                 // FIXME lift in the supervisor uuid management into toh createRemoteMessageProtocolBuilder method

@@ -25,7 +25,7 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
       case Die ⇒ throw new Exception(self.address + " is dying...")
     }
 
-    override def preRestart(reason: Throwable) {
+    override def preRestart(reason: Throwable, msg: Option[Any]) {
       log += self.address
     }
   }
