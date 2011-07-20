@@ -6,7 +6,6 @@ package akka.actor
 
 import akka.config.Config
 import akka.routing.RouterType
-import akka.serialization.Serializer
 
 /**
  * Module holding the programmatic deployment configuration classes.
