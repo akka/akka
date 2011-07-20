@@ -275,24 +275,7 @@ object AkkaBuild extends Build {
 
   override lazy val settings = super.settings ++ buildSettings ++ Publish.versionSettings
 
-  lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings ++ Seq(
-    sourceFileEncoding := "UTF-8",
-    alignSingleLineCaseStatementsMaxArrowIndent := 2000,
-    alignParameters := true,
-    alignSingleLineCaseStatements := true,
-    compactStringConcatenation := false,
-    indentPackageBlocks := true,
-    formatXml := true,
-    preserveSpaceBeforeArguments := true,
-    doubleIndentClassDeclaration := false,
-    rewriteArrowSymbols := true,
-    spaceInsideBrackets := false,
-    spaceInsideParentheses := false,
-    spaceBeforeColon:= false,
-    preserveDanglingCloseParenthesis := false,
-    indentSpaces := 2,
-    indentLocalDefs := false
-  ) ++ formatterTasks
+  lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings ++ formatterPreferences ++ formatterTasks
 
   lazy val parentSettings = baseSettings ++ Seq(
     publishArtifact in Compile := false

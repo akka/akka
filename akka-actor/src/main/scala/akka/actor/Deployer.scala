@@ -11,9 +11,7 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.event.EventHandler
 import akka.actor.DeploymentConfig._
 import akka.config.{ ConfigurationException, Config }
-import akka.routing.RouterType
 import akka.util.ReflectiveAccess._
-import akka.serialization._
 import akka.AkkaException
 
 /**
