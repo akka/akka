@@ -1,6 +1,8 @@
 import sbt._
 import Keys._
 import MultiJvmPlugin.{ MultiJvm, extraOptions }
+import com.github.oforero.sbtformatter.SbtFormatter._
+import com.github.oforero.sbtformatter.SbtFormatterSettings._
 
 object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
@@ -273,7 +275,7 @@ object AkkaBuild extends Build {
 
   override lazy val settings = super.settings ++ buildSettings ++ Publish.versionSettings
 
-  lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
+  lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings ++ formatterPreferences ++ formatterTasks
 
   lazy val parentSettings = baseSettings ++ Seq(
     publishArtifact in Compile := false
@@ -300,6 +302,9 @@ object AkkaBuild extends Build {
 
     // disable parallel tests
     parallelExecution in Test := false,
+
+    //Explicitly set sourceFileEncoding to "UTF-8" for scalariform
+    sourceFileEncoding := "UTF-8",
 
     // for excluding tests in jenkins builds (-Dakka.test.exclude=TimingSpec)
     testExcludes := akkaTestExcludes,
