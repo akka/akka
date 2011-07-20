@@ -30,15 +30,15 @@ class Report(
     sb.append(resultTable)
     sb.append("\n</pre>\n")
 
-    sb.append(img(percentilesChart(current)))
+    sb.append(img(percentilesAndMeanChart(current)))
     sb.append(img(latencyAndThroughputChart(current)))
 
     for (stats ← statistics) {
-      compareWithHistoricalPercentiliesChart(stats).foreach(url ⇒ sb.append(img(url)))
+      compareWithHistoricalPercentiliesAndMeanChart(stats).foreach(url ⇒ sb.append(img(url)))
     }
 
     for (stats ← statistics) {
-      comparePercentilesChart(stats).foreach(url ⇒ sb.append(img(url)))
+      comparePercentilesAndMeanChart(stats).foreach(url ⇒ sb.append(img(url)))
     }
 
     val timestamp = fileTimestampFormat.format(new Date(current.timestamp))
@@ -56,28 +56,28 @@ class Report(
       url, GoogleChartBuilder.ChartWidth, GoogleChartBuilder.ChartHeight) + "\n"
   }
 
-  def percentilesChart(stats: Stats): String = {
-    val chartTitle = stats.name + " Percentiles (microseconds)"
-    val chartUrl = GoogleChartBuilder.percentilChartUrl(resultRepository.get(stats.name), chartTitle, _.load + " clients")
+  def percentilesAndMeanChart(stats: Stats): String = {
+    val chartTitle = stats.name + " Percentiles and Mean (microseconds)"
+    val chartUrl = GoogleChartBuilder.percentilesAndMeanChartUrl(resultRepository.get(stats.name), chartTitle, _.load + " clients")
     chartUrl
   }
 
-  def comparePercentilesChart(stats: Stats): Seq[String] = {
+  def comparePercentilesAndMeanChart(stats: Stats): Seq[String] = {
     for {
       compareName ← compareResultWith.toSeq
       compareStats ← resultRepository.get(compareName, stats.load)
     } yield {
-      val chartTitle = stats.name + " vs. " + compareName + ", " + stats.load + " clients" + ", Percentiles (microseconds)"
-      val chartUrl = GoogleChartBuilder.percentilChartUrl(Seq(compareStats, stats), chartTitle, _.name)
+      val chartTitle = stats.name + " vs. " + compareName + ", " + stats.load + " clients" + ", Percentiles and Mean (microseconds)"
+      val chartUrl = GoogleChartBuilder.percentilesAndMeanChartUrl(Seq(compareStats, stats), chartTitle, _.name)
       chartUrl
     }
   }
 
-  def compareWithHistoricalPercentiliesChart(stats: Stats): Option[String] = {
+  def compareWithHistoricalPercentiliesAndMeanChart(stats: Stats): Option[String] = {
     val withHistorical = resultRepository.getWithHistorical(stats.name, stats.load)
     if (withHistorical.size > 1) {
-      val chartTitle = stats.name + " vs. historical, " + stats.load + " clients" + ", Percentiles (microseconds)"
-      val chartUrl = GoogleChartBuilder.percentilChartUrl(withHistorical, chartTitle,
+      val chartTitle = stats.name + " vs. historical, " + stats.load + " clients" + ", Percentiles and Mean (microseconds)"
+      val chartUrl = GoogleChartBuilder.percentilesAndMeanChartUrl(withHistorical, chartTitle,
         stats ⇒ legendTimeFormat.format(new Date(stats.timestamp)))
       Some(chartUrl)
     } else {

@@ -15,9 +15,9 @@ object GoogleChartBuilder {
   val ChartHeight = 400
 
   /**
-   * Builds a bar chart for all percentiles in the statistics.
+   * Builds a bar chart for all percentiles and the mean in the statistics.
    */
-  def percentilChartUrl(statistics: Seq[Stats], title: String, legend: Stats ⇒ String): String = {
+  def percentilesAndMeanChartUrl(statistics: Seq[Stats], title: String, legend: akka.performance.trading.common.Stats ⇒ String): String = {
     if (statistics.isEmpty) return ""
 
     val current = statistics.last
@@ -38,6 +38,7 @@ object GoogleChartBuilder {
     sb.append("&")
     // labels
     percentileLabels(current.percentiles, sb)
+    sb.append("|mean")
     sb.append("|2:|min|mean|median")
     sb.append("&")
     // label positions
@@ -63,7 +64,7 @@ object GoogleChartBuilder {
     // data series
     val maxValue = statistics.map(_.percentiles.last._2).max
     sb.append("chd=t:")
-    dataSeries(statistics.map(_.percentiles), sb)
+    dataSeries(statistics.map(_.percentiles), statistics.map(_.mean), sb)
 
     // y range
     sb.append("&")
@@ -98,13 +99,18 @@ object GoogleChartBuilder {
     sb.append(s)
   }
 
-  private def dataSeries(allPercentiles: Seq[TreeMap[Int, Long]], sb: StringBuilder) {
-    val series =
+  private def dataSeries(allPercentiles: Seq[TreeMap[Int, Long]], meanValues: Seq[Double], sb: StringBuilder) {
+    val percentileSeries =
       for {
         percentiles ← allPercentiles
       } yield {
         percentiles.values.mkString(",")
       }
+
+    val series =
+      for ((s, m) ← percentileSeries.zip(meanValues))
+        yield s + "," + formatDouble(m)
+
     sb.append(series.mkString("|"))
   }
 
