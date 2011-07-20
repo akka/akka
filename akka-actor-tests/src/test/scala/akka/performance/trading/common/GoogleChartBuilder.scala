@@ -144,11 +144,11 @@ object GoogleChartBuilder {
     sb.append("chxs=0,676767,11.5,0,lt,676767|1,676767,11.5,0,lt,676767|2,676767,11.5,0,lt,676767")
     sb.append("&")
     sb.append("chco=")
-    val seriesColors = List("25B33B", "3072F3", "FF0000", "FF9900")
+    val seriesColors = List("25B33B", "3072F3", "FF0000", "37F0ED", "FF9900")
     sb.append(seriesColors.mkString(","))
     sb.append("&")
     // legend
-    sb.append("chdl=5th Percentile|Median|95th Percentile|Throughput")
+    sb.append("chdl=5th%20Percentile|Median|95th%20Percentile|Mean|Throughput")
     sb.append("&")
 
     sb.append("chdlp=b")
@@ -160,6 +160,7 @@ object GoogleChartBuilder {
     sb.append("chls=1|1|1")
     sb.append("&")
 
+    // margins
     sb.append("chma=5,5,5,25")
     sb.append("&")
 
@@ -182,6 +183,11 @@ object GoogleChartBuilder {
     sb.append(percentileSeries.mkString("|"))
 
     sb.append("|")
+    sb.append(loadStr).append("|")
+    val meanSeries = statistics.map(s ⇒ formatDouble(s.mean)).mkString(",")
+    sb.append(meanSeries)
+
+    sb.append("|")
     val maxTps: Double = statistics.map(_.tps).max
     sb.append(loadStr).append("|")
     val tpsSeries = statistics.map(s ⇒ formatDouble(s.tps)).mkString(",")
@@ -192,7 +198,7 @@ object GoogleChartBuilder {
 
     // y range
     sb.append("&")
-    sb.append("chxr=0,").append(minLoad).append(",").append(maxLoad).append("|1,0,").append(maxValue).append("|2,0,")
+    sb.append("chxr=0,").append(minLoad).append(",").append(maxLoad).append(",4").append("|1,0,").append(maxValue).append("|2,0,")
       .append(formatDouble(maxTps))
     sb.append("&")
 
@@ -202,6 +208,9 @@ object GoogleChartBuilder {
       sb.append(",0,").append(maxValue)
       sb.append(",")
     }
+    sb.append(minLoad).append(",").append(maxLoad)
+    sb.append(",0,").append(formatDouble(maxValue))
+    sb.append(",")
     sb.append(minLoad).append(",").append(maxLoad)
     sb.append(",0,").append(formatDouble(maxTps))
     sb.append("&")
