@@ -10,16 +10,13 @@ class Report(
   resultRepository: BenchResultRepository,
   compareResultWith: Option[String] = None) {
 
-  private val dir = System.getProperty("benchmark.resultDir", "target/benchmark")
-
-  private def dirExists: Boolean = new File(dir).exists
-  private def log = System.getProperty("benchmark.logResult", "false").toBoolean
+  private def log = System.getProperty("benchmark.logResult", "true").toBoolean
 
   val dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
   val legendTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
   val fileTimestampFormat = new SimpleDateFormat("yyyyMMddHHmmss")
 
-  def html(statistics: Seq[Stats]): Unit = if (dirExists) {
+  def html(statistics: Seq[Stats]): Unit = {
 
     val current = statistics.last
     val sb = new StringBuilder
@@ -29,7 +26,8 @@ class Report(
     sb.append("<h1>%s</h1>\n".format(title))
 
     sb.append("<pre>\n")
-    sb.append(formatResultsTable(statistics))
+    val resultTable = formatResultsTable(statistics)
+    sb.append(resultTable)
     sb.append("\n</pre>\n")
 
     sb.append(img(percentilesChart(current)))
@@ -43,15 +41,17 @@ class Report(
       comparePercentilesChart(stats).foreach(url ⇒ sb.append(img(url)))
     }
 
-    if (dirExists) {
-      val timestamp = fileTimestampFormat.format(new Date(current.timestamp))
-      val name = current.name + "--" + timestamp + ".html"
-      write(sb.toString, name)
+    val timestamp = fileTimestampFormat.format(new Date(current.timestamp))
+    val reportName = current.name + "--" + timestamp + ".html"
+    resultRepository.saveHtmlReport(sb.toString, reportName)
+
+    if (log) {
+      EventHandler.info(this, resultTable + "Charts in html report: " + resultRepository.htmlReportUrl(reportName))
     }
 
   }
 
-  private def img(url: String): String = {
+  def img(url: String): String = {
     """<img src="%s" border="0" width="%s" height="%s" />""".format(
       url, GoogleChartBuilder.ChartWidth, GoogleChartBuilder.ChartHeight) + "\n"
   }
@@ -59,7 +59,6 @@ class Report(
   def percentilesChart(stats: Stats): String = {
     val chartTitle = stats.name + " Percentiles (microseconds)"
     val chartUrl = GoogleChartBuilder.percentilChartUrl(resultRepository.get(stats.name), chartTitle, _.load + " clients")
-    if (log) EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
     chartUrl
   }
 
@@ -70,7 +69,6 @@ class Report(
     } yield {
       val chartTitle = stats.name + " vs. " + compareName + ", " + stats.load + " clients" + ", Percentiles (microseconds)"
       val chartUrl = GoogleChartBuilder.percentilChartUrl(Seq(compareStats, stats), chartTitle, _.name)
-      if (log) EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
       chartUrl
     }
   }
@@ -81,7 +79,6 @@ class Report(
       val chartTitle = stats.name + " vs. historical, " + stats.load + " clients" + ", Percentiles (microseconds)"
       val chartUrl = GoogleChartBuilder.percentilChartUrl(withHistorical, chartTitle,
         stats ⇒ legendTimeFormat.format(new Date(stats.timestamp)))
-      if (log) EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
       Some(chartUrl)
     } else {
       None
@@ -91,7 +88,6 @@ class Report(
   def latencyAndThroughputChart(stats: Stats): String = {
     val chartTitle = stats.name + " Latency (microseconds) and Throughput (TPS)"
     val chartUrl = GoogleChartBuilder.latencyAndThroughputChartUrl(resultRepository.get(stats.name), chartTitle)
-    if (log) EventHandler.info(this, chartTitle + " Chart:\n" + chartUrl)
     chartUrl
   }
 
@@ -114,8 +110,6 @@ class Report(
       line + "\n" +
       statsSeq.map(formatStats(_)).mkString("\n") + "\n" +
       line + "\n"
-
-    if (log) EventHandler.info(this, formattedStats)
 
     formattedStats
 
@@ -144,22 +138,6 @@ class Report(
 
     summaryLine.mkString("\t")
 
-  }
-
-  def write(content: String, fileName: String) {
-    val f = new File(dir, fileName)
-    var writer: PrintWriter = null
-    try {
-      writer = new PrintWriter(new FileWriter(f))
-      writer.print(content)
-      writer.flush()
-    } catch {
-      case e: Exception ⇒
-        EventHandler.error(this, "Failed to save report to [%s], due to [%s]".
-          format(f.getAbsolutePath, e.getMessage))
-    } finally {
-      if (writer ne null) try { writer.close() } catch { case ignore: Exception ⇒ }
-    }
   }
 
   def header(title: String) =
