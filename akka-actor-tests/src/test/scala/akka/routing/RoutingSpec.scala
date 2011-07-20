@@ -10,6 +10,7 @@ import akka.util.duration._
 import akka.actor._
 import akka.actor.Actor._
 import akka.routing._
+import akka.event.EventHandler
 
 import java.util.concurrent.atomic.AtomicInteger
 import akka.dispatch.{ KeptPromise, Future }

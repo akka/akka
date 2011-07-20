@@ -2,6 +2,8 @@ package akka.spring;
 
 import akka.actor.*;
 
+import scala.Option;
+
 import java.util.concurrent.CountDownLatch;
 
 public class RemoteTypedActorOneImpl extends TypedActor implements RemoteTypedActorOne {
@@ -22,7 +24,7 @@ public class RemoteTypedActorOneImpl extends TypedActor implements RemoteTypedAc
     }
 
     @Override
-    public void preRestart(Throwable e) {
+    public void preRestart(Throwable e, Option<Object> msg) {
       try { RemoteTypedActorLog.messageLog().put(e.getMessage()); } catch(Exception ex) {}
       latch.countDown();
     }

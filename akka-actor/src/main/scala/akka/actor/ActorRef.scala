@@ -776,7 +776,8 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
     def performRestart() {
       val failedActor = actorInstance.get
       if (Actor.debugLifecycle) EventHandler.debug(failedActor, "restarting")
-      failedActor.preRestart(reason)
+      val message = if (currentMessage ne null) Some(currentMessage.message) else None
+      failedActor.preRestart(reason, message)
       val freshActor = newActor
       setActorSelfFields(failedActor, null) // Only null out the references if we could instantiate the new actor
       actorInstance.set(freshActor) // Assign it here so if preStart fails, we can null out the sef-refs next call
@@ -857,7 +858,20 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
     val stackBefore = refStack.get
     refStack.set(stackBefore.push(this))
     try {
-      actorFactory()
+      if (_status == ActorRefInternals.BEING_RESTARTED) {
+        val a = actor
+        val fresh = try a.freshInstance catch {
+          case e ⇒
+            EventHandler.error(e, a, "freshInstance() failed, falling back to initial actor factory")
+            None
+        }
+        fresh match {
+          case Some(ref) ⇒ ref
+          case None      ⇒ actorFactory()
+        }
+      } else {
+        actorFactory()
+      }
     } finally {
       val stackAfter = refStack.get
       if (stackAfter.nonEmpty)

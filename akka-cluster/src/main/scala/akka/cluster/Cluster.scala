@@ -1777,7 +1777,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
   self.dispatcher = Dispatchers.newPinnedDispatcher(self)
 
-  override def preRestart(reason: Throwable) {
+  override def preRestart(reason: Throwable, msg: Option[Any]) {
     EventHandler.debug(this, "RemoteClusterDaemon failed due to [%s] restarting...".format(reason))
   }
 
