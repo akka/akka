@@ -291,13 +291,13 @@ Now we can create the worker actor.  This is done by extending in the ``UntypedA
           double result = calculatePiFor(work.getStart(), work.getNrOfElements());
 
           // reply with the result
-          getContext().replyUnsafe(new Result(result));
+          getContext().reply(new Result(result));
 
         } else throw new IllegalArgumentException("Unknown message [" + message + "]");
       }
     }
 
-As you can see we have now created an ``UntypedActor`` with a ``onReceive`` method as a handler for the ``Work`` message. In this handler we invoke the ``calculatePiFor(..)`` method, wrap the result in a ``Result`` message and send it back to the original sender using ``getContext().replyUnsafe(..)``. In Akka the sender reference is implicitly passed along with the message so that the receiver can always reply or store away the sender reference for future use.
+As you can see we have now created an ``UntypedActor`` with a ``onReceive`` method as a handler for the ``Work`` message. In this handler we invoke the ``calculatePiFor(..)`` method, wrap the result in a ``Result`` message and send it back to the original sender using ``getContext().reply(..)``. In Akka the sender reference is implicitly passed along with the message so that the receiver can always reply or store away the sender reference for future use.
 
 The only thing missing in our ``Worker`` actor is the implementation on the ``calculatePiFor(..)`` method::
 
@@ -587,7 +587,7 @@ Before we package it up and run it, let's take a look at the full code now, with
             double result = calculatePiFor(work.getStart(), work.getNrOfElements())
 
             // reply with the result
-            getContext().replyUnsafe(new Result(result));
+            getContext().reply(new Result(result));
 
           } else throw new IllegalArgumentException("Unknown message [" + message + "]");
         }
