@@ -21,7 +21,6 @@ import scala.reflect.BeanProperty
 import scala.collection.immutable.Stack
 import scala.annotation.tailrec
 import java.lang.IllegalStateException
-import akka.actor.DeploymentConfig.ReplicationScheme
 
 private[akka] object ActorRefInternals {
 
@@ -483,27 +482,20 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
   private val serializer: Serializer =
     try { Serialization.serializerFor(this.getClass) } catch { case e: Exception => serializerErrorDueTo(e.toString)}
 
-  private lazy val replicationScheme: ReplicationScheme =
-    DeploymentConfig.replicationSchemeFor(Deployer.deploymentFor(address)).getOrElse(DeploymentConfig.Transient)
+  private lazy val replicationStorage: Option[TransactionLog] = {
+    import DeploymentConfig._
+    val replicationScheme = replicationSchemeFor(Deployer.deploymentFor(address)).getOrElse(Transient)
+    if(isReplicated(replicationScheme)) {
+      if (isReplicatedWithTransactionLog(replicationScheme)) {
+        EventHandler.debug(this, "Creating a transaction log for Actor [%s] with replication strategy [%s]".format(address, replicationScheme))
 
-  private lazy val isReplicated: Boolean = DeploymentConfig.isReplicated(replicationScheme)
-
-  private lazy val isWriteBehindReplication: Boolean = DeploymentConfig.isWriteBehindReplication(replicationScheme)
-
-  private lazy val replicationStorage: Either[TransactionLog, AnyRef] = {
-    if (DeploymentConfig.isReplicatedWithTransactionLog(replicationScheme)) {
-      EventHandler.debug(this,
-        "Creating a transaction log for Actor [%s] with replication strategy [%s]"
-          .format(address, replicationScheme))
-
-      Left(transactionLog.newLogFor(_uuid.toString, isWriteBehindReplication, replicationScheme))
-
-    } else if (DeploymentConfig.isReplicatedWithDataGrid(replicationScheme)) {
-      throw new ConfigurationException("Replication storage type \"data-grid\" is not yet supported")
-
-    } else {
-      throw new ConfigurationException("Unknown replication storage type [" + replicationScheme + "]")
-    }
+        Some(transactionLog.newLogFor(_uuid.toString, isWriteBehindReplication(replicationScheme), replicationScheme)) //TODO FIXME @jboner shouldn't this be address?
+      } else if (isReplicatedWithDataGrid(replicationScheme)) {
+        throw new ConfigurationException("Replication storage type \"data-grid\" is not yet supported")
+      } else {
+        throw new ConfigurationException("Unknown replication storage type [" + replicationScheme + "]")
+      }
+    } else None
   }
 
   // If it was started inside "newActor", initialize it
@@ -597,9 +589,7 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
         }
       } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
 
-      if (isReplicated) {
-        if (replicationStorage.isLeft) replicationStorage.left.get.delete()
-      }
+      if (replicationStorage.isDefined) replicationStorage.get.delete()
     }
   }
 
@@ -728,9 +718,7 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
       }
     } finally {
       guard.lock.unlock()
-      if (isReplicated) {
-        if (replicationStorage.isLeft) replicationStorage.left.get.recordEntry(messageHandle, this)
-      }
+      if (replicationStorage.isDefined) replicationStorage.get.recordEntry(messageHandle, this)
     }
   }
 
