@@ -462,14 +462,17 @@ class ActiveRemoteClientHandler(
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
           val reply = arp.getMessage
           val replyUuid = uuidFrom(reply.getActorInfo.getUuid.getHigh, reply.getActorInfo.getUuid.getLow)
-          val future = futures.remove(replyUuid).asInstanceOf[Promise[Any]]
+          futures.remove(replyUuid).asInstanceOf[Promise[Any]] match {
+            case null =>
+              client.notifyListeners(RemoteClientError(new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist"), client.module, client.remoteAddress))
 
-          if (reply.hasMessage) {
-            if (future eq null) throw new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist")
-            val message = MessageSerializer.deserialize(reply.getMessage)
-            future.completeWithResult(message)
-          } else {
-            future.completeWithException(parseException(reply, client.loader))
+            case future =>
+            if (reply.hasMessage) {
+              val message = MessageSerializer.deserialize(reply.getMessage)
+              future.completeWithResult(message)
+            } else {
+              future.completeWithException(parseException(reply, client.loader))
+            }
           }
         case other ⇒
           throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.module, client.remoteAddress)

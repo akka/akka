@@ -245,6 +245,13 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
   /**
    * Akka Java API. <p/>
    * @see ask(message: AnyRef, sender: ActorRef): Future[_]
+   * Uses the specified timeout (milliseconds)
+   */
+  def ask(message: AnyRef, timeout: Long): Future[Any] = ask(message, timeout, null)
+
+  /**
+   * Akka Java API. <p/>
+   * @see ask(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the Actors default timeout (setTimeout())
    */
   def ask(message: AnyRef, sender: ActorRef): Future[AnyRef] = ask(message, timeout, sender)
