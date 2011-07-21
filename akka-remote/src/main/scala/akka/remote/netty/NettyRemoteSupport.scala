@@ -495,26 +495,30 @@ class ActiveRemoteClientHandler(
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
           val reply = arp.getMessage
           val replyUuid = uuidFrom(reply.getActorInfo.getUuid.getHigh, reply.getActorInfo.getUuid.getLow)
-          val future = futures.remove(replyUuid).asInstanceOf[CompletableFuture[Any]]
+          futures.remove(replyUuid).asInstanceOf[CompletableFuture[Any]] match {
+            case null ⇒
+              println("foo")
+              client.notifyListeners(RemoteClientError(new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist"), client.module, client.remoteAddress))
 
-          if (reply.hasMessage) {
-            if (future eq null) throw new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist")
-            val message = MessageSerializer.deserialize(reply.getMessage)
-            future.completeWithResult(message)
-          } else {
-            val exception = parseException(reply, client.loader)
+            case future ⇒
+              if (reply.hasMessage) {
+                val message = MessageSerializer.deserialize(reply.getMessage)
+                future.completeWithResult(message)
+              } else {
+                val exception = parseException(reply, client.loader)
 
-            if (reply.hasSupervisorUuid()) {
-              val supervisorUuid = uuidFrom(reply.getSupervisorUuid.getHigh, reply.getSupervisorUuid.getLow)
-              if (!supervisors.containsKey(supervisorUuid)) throw new IllegalActorStateException(
-                "Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
-              val supervisedActor = supervisors.get(supervisorUuid)
-              if (!supervisedActor.supervisor.isDefined) throw new IllegalActorStateException(
-                "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
-              else supervisedActor.supervisor.get ! Death(supervisedActor, exception)
-            }
+                if (reply.hasSupervisorUuid()) {
+                  val supervisorUuid = uuidFrom(reply.getSupervisorUuid.getHigh, reply.getSupervisorUuid.getLow)
+                  if (!supervisors.containsKey(supervisorUuid)) throw new IllegalActorStateException(
+                    "Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
+                  val supervisedActor = supervisors.get(supervisorUuid)
+                  if (!supervisedActor.supervisor.isDefined) throw new IllegalActorStateException(
+                    "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
+                  else supervisedActor.supervisor.get ! Death(supervisedActor, exception)
+                }
 
-            future.completeWithException(exception)
+                future.completeWithException(exception)
+              }
           }
         case other ⇒
           throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.module, client.remoteAddress)
