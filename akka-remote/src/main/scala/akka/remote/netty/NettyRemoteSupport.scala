@@ -497,7 +497,6 @@ class ActiveRemoteClientHandler(
           val replyUuid = uuidFrom(reply.getActorInfo.getUuid.getHigh, reply.getActorInfo.getUuid.getLow)
           futures.remove(replyUuid).asInstanceOf[CompletableFuture[Any]] match {
             case null ⇒
-              println("foo")
               client.notifyListeners(RemoteClientError(new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist"), client.module, client.remoteAddress))
 
             case future ⇒
