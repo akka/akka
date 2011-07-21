@@ -36,6 +36,8 @@ object AkkaMicrokernelPlugin extends Plugin {
   val additionalLibs = TaskKey[Seq[File]]("additional-libs", "Additional dependency jar files")
   val distConfig = TaskKey[DistConfig]("dist-config")
 
+  val distNeedsPackageBin = dist <<= dist.dependsOn(packageBin in Compile) 
+  
   override lazy val settings =
     inConfig(Dist)(Seq(
       dist <<= packageBin.identity,
@@ -51,14 +53,14 @@ object AkkaMicrokernelPlugin extends Plugin {
       additionalLibs <<= defaultAdditionalLibs,
       distConfig <<= (outputDirectory, configSourceDirs, distJvmOptions, distMainClass, libFilter, additionalLibs) map DistConfig)) ++
       Seq(
-        dist <<= (dist in Dist).identity)
+        dist <<= (dist in Dist).identity, distNeedsPackageBin) 
 
   private def distTask: Initialize[Task[File]] =
-    (distConfig, sourceDirectory, crossTarget, dependencyClasspath, projectDependencies, allDependencies, buildStructure, state, streams) map { 
-    (conf, src, tgt, cp, projDeps, allDeps, buildStruct, st, s) ⇒
+    (distConfig, sourceDirectory, crossTarget, dependencyClasspath, projectDependencies, allDependencies, buildStructure, state) map { 
+    (conf, src, tgt, cp, projDeps, allDeps, buildStruct, st) ⇒
       
       if (isKernelProject(allDeps)) {
-        val log = s.log
+        val log = logger(st)
         val distBinPath = conf.outputDirectory / "bin"
         val distConfigPath = conf.outputDirectory / "config"
         val distDeployPath = conf.outputDirectory / "deploy"
