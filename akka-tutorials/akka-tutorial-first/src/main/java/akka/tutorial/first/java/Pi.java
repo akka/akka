@@ -76,7 +76,7 @@ public class Pi {
         double result = calculatePiFor(work.getStart(), work.getNrOfElements());
 
         // reply with the result
-        getContext().replyUnsafe(new Result(result));
+        getContext().reply(new Result(result));
 
       } else throw new IllegalArgumentException("Unknown message [" + message + "]");
     }

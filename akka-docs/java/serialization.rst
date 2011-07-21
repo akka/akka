@@ -20,7 +20,7 @@ Step 1: Define the Actor
 
   public class SerializationTestActor extends UntypedActor {
       public void onReceive(Object msg) {
-          getContext().replySafe("got it!");
+          getContext().tryReply("got it!");
       }
   }
 
@@ -101,10 +101,10 @@ Step 1: Define the Actor
     public void onReceive(Object msg) {
       if (msg.equals("hello")) {
         count = count + 1;
-        getContext().replyUnsafe("world " + count);
+        getContext().reply("world " + count);
       } else if (msg instanceof String) {
         count = count + 1;
-        getContext().replyUnsafe("hello " + msg + " " + count);
+        getContext().reply("hello " + msg + " " + count);
       } else {
         throw new IllegalArgumentException("invalid message type");
       }

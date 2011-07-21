@@ -247,10 +247,10 @@ which you do by Channel.sendOneWay(msg)
 
 We recommend that you as first choice use the channel abstraction instead of the other ways described in the following sections.
 
-Reply using the 'replySafe' and 'replyUnsafe' methods
+Reply using the 'tryReply' and 'reply' methods
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want to send a message back to the original sender of the message you just received then you can use the 'getContext().replyUnsafe(..)' method.
+If you want to send a message back to the original sender of the message you just received then you can use the 'getContext().reply(..)' method.
 
 .. code-block:: java
 
@@ -258,15 +258,15 @@ If you want to send a message back to the original sender of the message you jus
     if (message instanceof String) {
       String msg = (String)message;
       if (msg.equals("Hello")) {
-        // Reply to original sender of message using the 'replyUnsafe' method
-        getContext().replyUnsafe(msg + " from " + getContext().getUuid());
+        // Reply to original sender of message using the 'reply' method
+        getContext().reply(msg + " from " + getContext().getUuid());
       }
     }
   }
 
 In this case we will a reply back to the Actor that sent the message.
 
-The 'replyUnsafe' method throws an 'IllegalStateException' if unable to determine what to reply to, e.g. the sender has not been passed along with the message when invoking one of 'send*' methods. You can also use the more forgiving 'replySafe' method which returns 'true' if reply was sent, and 'false' if unable to determine what to reply to.
+The 'reply' method throws an 'IllegalStateException' if unable to determine what to reply to, e.g. the sender has not been passed along with the message when invoking one of 'send*' methods. You can also use the more forgiving 'tryReply' method which returns 'true' if reply was sent, and 'false' if unable to determine what to reply to.
 
 .. code-block:: java
 
@@ -274,8 +274,8 @@ The 'replyUnsafe' method throws an 'IllegalStateException' if unable to determin
     if (message instanceof String) {
       String msg = (String)message;
       if (msg.equals("Hello")) {
-        // Reply to original sender of message using the 'replyUnsafe' method
-        if (getContext().replySafe(msg + " from " + getContext().getUuid())) ... // success
+        // Reply to original sender of message using the 'reply' method
+        if (getContext().tryReply(msg + " from " + getContext().getUuid())) ... // success
         else ... // handle failure
       }
     }

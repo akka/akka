@@ -245,6 +245,13 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
   /**
    * Akka Java API. <p/>
    * @see ask(message: AnyRef, sender: ActorRef): Future[_]
+   * Uses the specified timeout (milliseconds)
+   */
+  def ask(message: AnyRef, timeout: Long): Future[Any] = ask(message, timeout, null)
+
+  /**
+   * Akka Java API. <p/>
+   * @see ask(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the Actors default timeout (setTimeout())
    */
   def ask(message: AnyRef, sender: ActorRef): Future[AnyRef] = ask(message, timeout, sender)
@@ -273,26 +280,29 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
   }
 
   /**
-   * Akka Java API. <p/>
-   * Use <code>getContext().replyUnsafe(..)</code> to reply with a message to the original sender of the message currently
-   * being processed.
+   * Akka Scala & Java API
+   * Use <code>self.reply(..)</code> to reply with a message to the original sender of the message currently
+   * being processed. This method  fails if the original sender of the message could not be determined with an
+   * IllegalStateException.
+   *
+   * If you don't want deal with this IllegalStateException, but just a boolean, just use the <code>tryReply(...)</code>
+   * version.
+   *
    * <p/>
    * Throws an IllegalStateException if unable to determine what to reply to.
    */
-  @deprecated("will be removed in 2.0, use reply instead", "1.2")
-  def replyUnsafe(message: AnyRef) {
-    reply(message)
-  }
+  def reply(message: Any) = channel.!(message)(this)
 
   /**
-   * Akka Java API. <p/>
-   * Use <code>getContext().replySafe(..)</code> to reply with a message to the original sender of the message currently
-   * being processed.
+   * Akka Scala & Java API
+   * Use <code>tryReply(..)</code> to try reply with a message to the original sender of the message currently
+   * being processed. This method
    * <p/>
    * Returns true if reply was sent, and false if unable to determine what to reply to.
+   *
+   * If you would rather have an exception, check the <code>reply(..)</code> version.
    */
-  @deprecated("will be removed in 2.0, use tryReply instead", "1.2")
-  def replySafe(message: AnyRef): Boolean = tryReply(message)
+  def tryReply(message: Any): Boolean =  channel.safe_!(message)(this)
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
@@ -1242,29 +1252,6 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel {
     } else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
-
-  /**
-   * Use <code>self.reply(..)</code> to reply with a message to the original sender of the message currently
-   * being processed. This method  fails if the original sender of the message could not be determined with an
-   * IllegalStateException.
-   *
-   * If you don't want deal with this IllegalStateException, but just a boolean, just use the <code>tryReply(...)</code>
-   * version.
-   *
-   * <p/>
-   * Throws an IllegalStateException if unable to determine what to reply to.
-   */
-  def reply(message: Any) = channel.!(message)(this)
-
-  /**
-   * Use <code>tryReply(..)</code> to try reply with a message to the original sender of the message currently
-   * being processed. This method
-   * <p/>
-   * Returns true if reply was sent, and false if unable to determine what to reply to.
-   *
-   * If you would rather have an exception, check the <code>reply(..)</code> version.
-   */
-  def tryReply(message: Any): Boolean =  channel.safe_!(message)(this)
 }
 
 case class SerializedActorRef(uuid: Uuid,
