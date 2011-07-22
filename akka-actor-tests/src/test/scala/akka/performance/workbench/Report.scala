@@ -8,6 +8,8 @@ import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConversions.enumerationAsScalaIterator
 
 import akka.event.EventHandler
+import akka.config.Config
+import akka.config.Config.config
 
 class Report(
   resultRepository: BenchResultRepository,
@@ -157,11 +159,11 @@ class Report(
 
     val sb = new StringBuilder
 
-    sb.append("Benchmark properties: ")
+    sb.append("Benchmark properties:")
     import scala.collection.JavaConversions._
     val propNames: Seq[String] = System.getProperties.propertyNames.toSeq.map(_.toString)
-    for (name ← propNames if name.startsWith("benchmark.")) {
-      sb.append(name).append("=").append(System.getProperty(name)).append(" ")
+    for (name ← propNames if name.startsWith("benchmark")) {
+      sb.append("\n  ").append(name).append("=").append(System.getProperty(name))
     }
     sb.append("\n")
 
@@ -169,9 +171,6 @@ class Report(
     sb.append("\n")
     sb.append("JVM: ").append(runtime.getVmName).append(" ").append(runtime.getVmVendor).
       append(" ").append(runtime.getVmVersion)
-    sb.append("\n")
-    val args = runtime.getInputArguments.filterNot(_.contains("classpath")).mkString(" ")
-    sb.append("Args: ").append(args)
     sb.append("\n")
     sb.append("Processors: ").append(os.getAvailableProcessors)
     sb.append("\n")
@@ -185,6 +184,17 @@ class Report(
       append(formatDouble(heap.getMax.toDouble / 1024 / 1024)).
       append(")").append(" MB")
     sb.append("\n")
+
+    val args = runtime.getInputArguments.filterNot(_.contains("classpath")).mkString("\n  ")
+    sb.append("Args:\n  ").append(args)
+    sb.append("\n")
+
+    sb.append("Akka version: ").append(Config.CONFIG_VERSION)
+    sb.append("\n")
+    sb.append("Akka config:")
+    for (key ← config.keys) {
+      sb.append("\n  ").append(key).append("=").append(config(key))
+    }
 
     sb.toString
   }
