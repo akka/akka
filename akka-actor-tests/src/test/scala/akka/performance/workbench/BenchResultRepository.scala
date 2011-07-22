@@ -1,18 +1,20 @@
-package akka.performance.trading.common
+package akka.performance.workbench
 
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.FileWriter
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
+import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.Date
-import scala.collection.mutable.{ Map ⇒ MutableMap }
+
+import scala.collection.mutable.{Map => MutableMap}
+
 import akka.event.EventHandler
-import java.io.PrintWriter
-import java.io.FileWriter
 
 trait BenchResultRepository {
   def add(stats: Stats)

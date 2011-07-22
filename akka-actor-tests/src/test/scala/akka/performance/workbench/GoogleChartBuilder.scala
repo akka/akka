@@ -1,10 +1,9 @@
-package akka.performance.trading.common
+package akka.performance.workbench
 
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
+
 import scala.collection.immutable.TreeMap
-import java.util.Locale
-import java.util.Formatter
 
 /**
  * Generates URLs to Google Chart API http://code.google.com/apis/chart/
@@ -17,7 +16,7 @@ object GoogleChartBuilder {
   /**
    * Builds a bar chart for all percentiles and the mean in the statistics.
    */
-  def percentilesAndMeanChartUrl(statistics: Seq[Stats], title: String, legend: akka.performance.trading.common.Stats ⇒ String): String = {
+  def percentilesAndMeanChartUrl(statistics: Seq[Stats], title: String, legend: Stats ⇒ String): String = {
     if (statistics.isEmpty) return ""
 
     val current = statistics.last

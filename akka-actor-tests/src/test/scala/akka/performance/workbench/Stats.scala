@@ -1,4 +1,4 @@
-package akka.performance.trading.common
+package akka.performance.workbench
 
 import scala.collection.immutable.TreeMap
 

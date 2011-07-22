@@ -1,11 +1,13 @@
-package akka.performance.trading.common
-import java.io.File
-import java.text.SimpleDateFormat
-import java.io.PrintWriter
-import java.io.FileWriter
-import akka.event.EventHandler
-import java.util.Date
+package akka.performance.workbench
+
 import java.lang.management.ManagementFactory
+import java.text.SimpleDateFormat
+import java.util.Date
+
+import scala.collection.JavaConversions.asScalaBuffer
+import scala.collection.JavaConversions.enumerationAsScalaIterator
+
+import akka.event.EventHandler
 
 class Report(
   resultRepository: BenchResultRepository,
