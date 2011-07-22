@@ -7,7 +7,6 @@ package akka.dispatch
 import akka.AkkaException
 import akka.event.EventHandler
 import akka.actor.{ Actor, Channel }
-import akka.util.Duration
 import akka.japi.{ Procedure, Function ⇒ JFunc }
 
 import scala.util.continuations._
@@ -20,6 +19,7 @@ import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
 import scala.collection.mutable.Stack
 import annotation.tailrec
+import akka.util.{ Switch, Duration }
 
 class FutureTimeoutException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
@@ -84,27 +84,35 @@ object Futures {
     } else {
       val result = new DefaultCompletableFuture[R](timeout)
       val results = new ConcurrentLinkedQueue[T]()
+      val done = new Switch(false)
       val allDone = futures.size
 
-      val aggregate: Future[T] ⇒ Unit = f ⇒ if (!result.isCompleted) { //TODO: This is an optimization, is it premature?
+      val aggregate: Future[T] ⇒ Unit = f ⇒ if (done.isOff && !result.isCompleted) { //TODO: This is an optimization, is it premature?
         f.value.get match {
           case r: Right[Throwable, T] ⇒
-            results add r.b
-            if (results.size == allDone) { //Only one thread can get here
-              try {
-                result completeWithResult scala.collection.JavaConversions.collectionAsScalaIterable(results).foldLeft(zero)(foldFun)
-              } catch {
-                case e: Exception ⇒
-                  EventHandler.error(e, this, e.getMessage)
-                  result completeWithException e
-              }
-              finally {
-                results.clear
+            val added = results add r.b
+            if (added && results.size == allDone) { //Only one thread can get here
+              if (done.switchOn) {
+                try {
+                  val i = results.iterator
+                  var currentValue = zero
+                  while (i.hasNext) { currentValue = foldFun(currentValue, i.next) }
+                  result completeWithResult currentValue
+                } catch {
+                  case e: Exception ⇒
+                    EventHandler.error(e, this, e.getMessage)
+                    result completeWithException e
+                }
+                finally {
+                  results.clear
+                }
               }
             }
           case l: Left[Throwable, T] ⇒
-            result completeWithException l.a
-            results.clear
+            if (done.switchOn) {
+              result completeWithException l.a
+              results.clear
+            }
         }
       }
 
@@ -150,7 +158,6 @@ object Futures {
       result
     }
   }
-
   /**
    * Java API.
    * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
