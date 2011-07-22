@@ -18,6 +18,7 @@ package akka.actor
 import scala.collection.JavaConversions
 
 import java.util.concurrent._
+import java.util.concurrent.atomic.AtomicLong
 
 import akka.event.EventHandler
 import akka.AkkaException
