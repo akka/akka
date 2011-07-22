@@ -129,6 +129,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     // Test
 
     lazy val commons_coll   = "commons-collections"    % "commons-collections" % "3.2.1"           % "test" //ApacheV2
+    lazy val commons_math   = "org.apache.commons"     % "commons-math"        % "2.1"             % "test" //ApacheV2
 
     lazy val testJetty      = "org.eclipse.jetty"      % "jetty-server"        % JETTY_VERSION     % "test" //Eclipse license
     lazy val testJettyWebApp= "org.eclipse.jetty"      % "jetty-webapp"        % JETTY_VERSION     % "test" //Eclipse license
@@ -445,6 +446,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     val junit           = Dependencies.junit
     val scalatest       = Dependencies.scalatest
     val multiverse_test = Dependencies.multiverse_test // StandardLatch
+    val commons_math    = Dependencies.commons_math
+    val mockito         = Dependencies.mockito
     override def compileOptions = super.compileOptions ++ compileOptions("-P:continuations:enable")
   }
 
