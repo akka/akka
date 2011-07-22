@@ -741,6 +741,18 @@ object TypedActor {
   def stop(proxy: AnyRef): Unit = AspectInitRegistry.unregister(proxy)
 
   /**
+   * Sends a PoisonPill to the TypedActor
+   */
+  def poisonPill(proxy: AnyRef) {
+    AspectInitRegistry.initFor(proxy) match {
+      case null ⇒
+      case a: AspectInit ⇒ a.actorRef !!! (PoisonPill, Long.MaxValue) failure {
+        case ake: ActorKilledException ⇒ stop(proxy)
+      }
+    }
+  }
+
+  /**
    * Get the underlying typed actor for the given Typed Actor.
    */
   def actorFor(proxy: AnyRef): Option[ActorRef] =
@@ -1057,7 +1069,8 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
     val init = if (proxy ne null) initializations.remove(proxy) else null
     if (init ne null) {
       notifyListeners(AspectInitUnregistered(proxy, init))
-      try { init.actorRef ! PoisonPill } catch { case e: Exception ⇒ }
+      if (!init.actorRef.isShutdown)
+        init.actorRef.stop()
     }
     init
   }
