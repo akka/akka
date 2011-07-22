@@ -8,7 +8,7 @@ import akka.actor._
 import akka.dispatch.Dispatchers
 import akka.config.Config._
 import akka.config.ConfigurationException
-import akka.util.{ ListenerManagement, ReflectiveAccess }
+import akka.util.{ListenerManagement, ReflectiveAccess}
 import akka.serialization._
 import akka.AkkaException
 
@@ -26,7 +26,7 @@ import akka.AkkaException
  *     case EventHandler.Info(instance, message)         ⇒ ...
  *     case EventHandler.Debug(instance, message)        ⇒ ...
  *     case genericEvent                                 ⇒ ...
- *   }
+ * }
  * })
  *
  * EventHandler.addListener(eventHandlerListener)
@@ -95,10 +95,10 @@ object EventHandler extends ListenerManagement {
 
   @volatile
   var level: Int = config.getString("akka.event-handler-level", "INFO") match {
-    case "ERROR"   ⇒ ErrorLevel
+    case "ERROR" ⇒ ErrorLevel
     case "WARNING" ⇒ WarningLevel
-    case "INFO"    ⇒ InfoLevel
-    case "DEBUG"   ⇒ DebugLevel
+    case "INFO" ⇒ InfoLevel
+    case "DEBUG" ⇒ DebugLevel
     case unknown ⇒ throw new ConfigurationException(
       "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
   }
@@ -106,21 +106,22 @@ object EventHandler extends ListenerManagement {
   def start() {
     try {
       val defaultListeners = config.getList("akka.event-handlers") match {
-        case Nil       ⇒ "akka.event.EventHandler$DefaultListener" :: Nil
+        case Nil ⇒ "akka.event.EventHandler$DefaultListener" :: Nil
         case listeners ⇒ listeners
       }
-      defaultListeners foreach { listenerName ⇒
-        try {
-          ReflectiveAccess.getClassFor[Actor](listenerName) match {
-            case Right(actorClass) ⇒ addListener(Actor.localActorOf(actorClass).start())
-            case Left(exception)   ⇒ throw exception
+      defaultListeners foreach {
+        listenerName ⇒
+          try {
+            ReflectiveAccess.getClassFor[Actor](listenerName) match {
+              case Right(actorClass) ⇒ addListener(Actor.localActorOf(actorClass).start())
+              case Left(exception) ⇒ throw exception
+            }
+          } catch {
+            case e: Exception ⇒
+              throw new ConfigurationException(
+                "Event Handler specified in config can't be loaded [" + listenerName +
+                  "] due to [" + e.toString + "]", e)
           }
-        } catch {
-          case e: Exception ⇒
-            throw new ConfigurationException(
-              "Event Handler specified in config can't be loaded [" + listenerName +
-                "] due to [" + e.toString + "]", e)
-        }
       }
       info(this, "Starting up EventHandler")
     } catch {
@@ -145,7 +146,7 @@ object EventHandler extends ListenerManagement {
       notifyListeners(event)
   }
 
-  def notify[T <: Event: ClassManifest](event: ⇒ T) {
+  def notify[T <: Event : ClassManifest](event: ⇒ T) {
     if (level >= levelFor(classManifest[T].erasure.asInstanceOf[Class[_ <: Event]])) notifyListeners(event)
   }
 
@@ -181,6 +182,7 @@ object EventHandler extends ListenerManagement {
     if (level >= InfoLevel) notifyListeners(Info(instance, message))
   }
 
+
   def debug(instance: AnyRef, message: ⇒ String) {
     if (level >= DebugLevel) notifyListeners(Debug(instance, message))
   }
@@ -194,7 +196,7 @@ object EventHandler extends ListenerManagement {
   def isDebugEnabled = level >= DebugLevel
 
   def stackTraceFor(e: Throwable) = {
-    import java.io.{ StringWriter, PrintWriter }
+    import java.io.{StringWriter, PrintWriter}
     val sw = new StringWriter
     val pw = new PrintWriter(sw)
     e.printStackTrace(pw)
@@ -210,6 +212,7 @@ object EventHandler extends ListenerManagement {
   }
 
   class DefaultListener extends Actor {
+
     import java.text.SimpleDateFormat
     import java.util.Date
 

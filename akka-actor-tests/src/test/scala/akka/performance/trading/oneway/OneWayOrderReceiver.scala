@@ -6,8 +6,8 @@ import akka.event.EventHandler
 import akka.performance.trading.domain._
 import akka.performance.trading.common.AkkaOrderReceiver
 
-class OneWayOrderReceiver(matchingEngineRouting: Map[ActorRef, List[String]], disp: Option[MessageDispatcher])
-  extends AkkaOrderReceiver(matchingEngineRouting, disp) {
+class OneWayOrderReceiver(disp: Option[MessageDispatcher])
+  extends AkkaOrderReceiver(disp) {
 
   override def placeOrder(order: Order) = {
     val matchingEngine = matchingEngineForOrderbook.get(order.orderbookSymbol)

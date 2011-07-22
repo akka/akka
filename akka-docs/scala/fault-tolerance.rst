@@ -228,11 +228,11 @@ A child actor can tell the supervising actor to unlink him by sending him the 'U
 
 .. code-block:: scala
 
-  if (supervisor.isDefined) supervisor.get ! Unlink(this)
+  if (supervisor.isDefined) supervisor.get ! Unlink(self)
 
   // Or shorter using 'foreach':
 
-  supervisor.foreach(_ ! Unlink(this))
+  supervisor.foreach(_ ! Unlink(self))
 
 The supervising actor's side of things
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

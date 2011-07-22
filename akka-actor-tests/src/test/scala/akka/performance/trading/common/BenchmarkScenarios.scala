@@ -29,12 +29,14 @@ trait BenchmarkScenarios extends PerformanceTest {
   def complexScenario80 = complexScenario(80)
   @Test
   def complexScenario100 = complexScenario(100)
+  /*
   @Test
   def complexScenario200 = complexScenario(200)
   @Test
   def complexScenario300 = complexScenario(300)
   @Test
   def complexScenario400 = complexScenario(400)
+  */
 
   def complexScenario(numberOfClients: Int) {
     Assume.assumeTrue(numberOfClients >= minClients)
