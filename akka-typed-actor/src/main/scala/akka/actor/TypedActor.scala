@@ -1057,7 +1057,7 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
     val init = if (proxy ne null) initializations.remove(proxy) else null
     if (init ne null) {
       notifyListeners(AspectInitUnregistered(proxy, init))
-      init.actorRef.stop()
+      try { init.actorRef ! PoisonPill } catch { case e: Exception ⇒ }
     }
     init
   }

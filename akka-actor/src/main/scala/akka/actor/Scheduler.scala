@@ -121,12 +121,12 @@ object Scheduler {
 }
 
 private object SchedulerThreadFactory extends ThreadFactory {
-  private var count = 0
+  private val count = new AtomicLong(0)
   val threadFactory = Executors.defaultThreadFactory()
 
   def newThread(r: Runnable): Thread = {
     val thread = threadFactory.newThread(r)
-    thread.setName("akka:scheduler-" + count)
+    thread.setName("akka:scheduler-" + count.incrementAndGet())
     thread.setDaemon(true)
     thread
   }
