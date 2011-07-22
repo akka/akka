@@ -934,7 +934,7 @@ class RemoteServerHandler(
       map ← Option(typedSessionActors.remove(event.getChannel));
       actor ← collectionAsScalaIterable(map.values)
     ) {
-      try { TypedActor.stop(actor) } catch { case e: Exception ⇒ }
+      try { TypedActor.poisonPill(actor) } catch { case e: Exception ⇒ }
     }
 
     server.notifyListeners(RemoteServerClientDisconnected(server, clientAddress))
