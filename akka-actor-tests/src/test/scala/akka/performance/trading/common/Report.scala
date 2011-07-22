@@ -5,6 +5,7 @@ import java.io.PrintWriter
 import java.io.FileWriter
 import akka.event.EventHandler
 import java.util.Date
+import java.lang.management.ManagementFactory
 
 class Report(
   resultRepository: BenchResultRepository,
@@ -40,6 +41,11 @@ class Report(
     for (stats ← statistics) {
       comparePercentilesAndMeanChart(stats).foreach(url ⇒ sb.append(img(url)))
     }
+
+    sb.append("<hr/>\n")
+    sb.append("<pre>\n")
+    sb.append(systemInformation)
+    sb.append("\n</pre>\n")
 
     val timestamp = fileTimestampFormat.format(new Date(current.timestamp))
     val reportName = current.name + "--" + timestamp + ".html"
@@ -138,6 +144,51 @@ class Report(
 
     summaryLine.mkString("\t")
 
+  }
+
+  def systemInformation: String = {
+    val runtime = ManagementFactory.getRuntimeMXBean
+    val os = ManagementFactory.getOperatingSystemMXBean
+    val threads = ManagementFactory.getThreadMXBean
+    val mem = ManagementFactory.getMemoryMXBean
+    val heap = mem.getHeapMemoryUsage
+
+    val sb = new StringBuilder
+
+    sb.append("Benchmark properties: ")
+    import scala.collection.JavaConversions._
+    val propNames: Seq[String] = System.getProperties.propertyNames.toSeq.map(_.toString)
+    for (name ← propNames if name.startsWith("benchmark.")) {
+      sb.append(name).append("=").append(System.getProperty(name)).append(" ")
+    }
+    sb.append("\n")
+
+    sb.append("Operating system: ").append(os.getName).append(", ").append(os.getArch).append(", ").append(os.getVersion)
+    sb.append("\n")
+    sb.append("JVM: ").append(runtime.getVmName).append(" ").append(runtime.getVmVendor).
+      append(" ").append(runtime.getVmVersion)
+    sb.append("\n")
+    val args = runtime.getInputArguments.filterNot(_.contains("classpath")).mkString(" ")
+    sb.append("Args: ").append(args)
+    sb.append("\n")
+    sb.append("Processors: ").append(os.getAvailableProcessors)
+    sb.append("\n")
+    sb.append("Load average: ").append(os.getSystemLoadAverage)
+    sb.append("\n")
+    sb.append("Thread count: ").append(threads.getThreadCount).append(" (").append(threads.getPeakThreadCount).append(")")
+    sb.append("\n")
+    sb.append("Heap: ").append(formatDouble(heap.getUsed.toDouble / 1024 / 1024)).
+      append(" (").append(formatDouble(heap.getInit.toDouble / 1024 / 1024)).
+      append(" - ").
+      append(formatDouble(heap.getMax.toDouble / 1024 / 1024)).
+      append(")").append(" MB")
+    sb.append("\n")
+
+    sb.toString
+  }
+
+  def formatDouble(value: Double): String = {
+    new java.math.BigDecimal(value).setScale(2, java.math.RoundingMode.HALF_EVEN).toString
   }
 
   def header(title: String) =
