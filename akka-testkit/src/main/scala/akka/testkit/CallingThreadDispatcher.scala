@@ -33,7 +33,7 @@ import scala.annotation.tailrec
 
 object CallingThreadDispatcher {
 
-  lazy val global = new CallingThreadDispatcher
+  lazy val global = new CallingThreadDispatcher("global-calling-thread")
 
   // PRIVATE DATA
 
@@ -105,7 +105,7 @@ object CallingThreadDispatcher {
  * @author Roland Kuhn
  * @since 1.1
  */
-class CallingThreadDispatcher(val warnings: Boolean = true) extends MessageDispatcher {
+class CallingThreadDispatcher(val name: String = "calling-thread", val warnings: Boolean = true) extends MessageDispatcher {
   import CallingThreadDispatcher._
 
   private[akka] override def createMailbox(actor: ActorRef) = new CallingThreadMailbox
