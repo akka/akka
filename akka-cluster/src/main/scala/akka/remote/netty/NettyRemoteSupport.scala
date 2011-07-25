@@ -47,7 +47,9 @@ import java.util.concurrent.atomic.{AtomicReference, AtomicBoolean}
 import java.util.concurrent._
 import akka.AkkaException
 
-class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause){
+  def this(msg:String) = this(msg, null);
+}
 
 object RemoteEncoder {
   def encode(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {

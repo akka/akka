@@ -14,17 +14,16 @@ import akka.config._
 import Config._
 import akka.util._
 import akka.actor._
-import DeploymentConfig.{ ReplicationScheme, ReplicationStrategy, Transient, WriteThrough, WriteBehind }
+import DeploymentConfig.{ ReplicationScheme}
 import akka.event.EventHandler
 import akka.dispatch.{ DefaultPromise, Promise, MessageInvocation }
 import akka.remote.MessageSerializer
 import akka.cluster.zookeeper._
-import akka.serialization.{ Serializer, Serialization, Compression }
+import akka.serialization.Compression
 import Compression.LZF
 import akka.serialization.ActorSerialization._
 
 import java.util.Enumeration
-import java.util.concurrent.atomic.AtomicLong
 
 // FIXME allow user to choose dynamically between 'async' and 'sync' tx logging (asyncAddEntry(byte[] data, AddCallback cb, Object ctx))
 // FIXME clean up old entries in log after doing a snapshot

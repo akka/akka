@@ -80,12 +80,29 @@ case class MaximumNumberOfRestartsWithinTimeRangeReached(
   @BeanProperty lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
 
 // Exceptions for Actors
-class ActorStartException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
-class IllegalActorStateException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
-class ActorKilledException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
-class ActorInitializationException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
-class ActorTimeoutException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
-class InvalidMessageException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class ActorStartException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause){
+  def this(msg:String) = this(msg, null);
+}
+
+class IllegalActorStateException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
+  def this(msg:String) = this(msg, null);
+}
+
+class ActorKilledException private[akka] (message: String, cause: Throwable) extends AkkaException(message, cause){
+  def this(msg: String) = this(msg, null);
+}
+
+class ActorInitializationException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
+  def this(msg:String) = this(msg, null);
+}
+
+class ActorTimeoutException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)   {
+  def this(msg:String) = this(msg, null);
+}
+
+class InvalidMessageException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)  {
+  def this(msg:String) = this(msg, null);
+}
 
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message

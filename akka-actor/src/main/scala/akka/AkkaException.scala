@@ -26,6 +26,8 @@ class AkkaException(message: String = "", cause: Throwable = null) extends Runti
   lazy val toLongString =
     "%s: %s\n[%s]\n%s".format(getClass.getName, message, uuid, stackTraceToString)
 
+  def this(msg:String) = this(msg, null);
+
   def stackTraceToString = {
     val trace = getStackTrace
     val sb = new StringBuffer
