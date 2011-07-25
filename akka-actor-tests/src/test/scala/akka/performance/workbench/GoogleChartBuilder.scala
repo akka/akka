@@ -1,10 +1,9 @@
-package akka.performance.trading.common
+package akka.performance.workbench
 
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
+
 import scala.collection.immutable.TreeMap
-import java.util.Locale
-import java.util.Formatter
 
 /**
  * Generates URLs to Google Chart API http://code.google.com/apis/chart/
@@ -15,9 +14,9 @@ object GoogleChartBuilder {
   val ChartHeight = 400
 
   /**
-   * Builds a bar chart for all percentiles in the statistics.
+   * Builds a bar chart for all percentiles and the mean in the statistics.
    */
-  def percentilChartUrl(statistics: Seq[Stats], title: String, legend: Stats ⇒ String): String = {
+  def percentilesAndMeanChartUrl(statistics: Seq[Stats], title: String, legend: Stats ⇒ String): String = {
     if (statistics.isEmpty) return ""
 
     val current = statistics.last
@@ -38,6 +37,7 @@ object GoogleChartBuilder {
     sb.append("&")
     // labels
     percentileLabels(current.percentiles, sb)
+    sb.append("|mean")
     sb.append("|2:|min|mean|median")
     sb.append("&")
     // label positions
@@ -63,7 +63,7 @@ object GoogleChartBuilder {
     // data series
     val maxValue = statistics.map(_.percentiles.last._2).max
     sb.append("chd=t:")
-    dataSeries(statistics.map(_.percentiles), sb)
+    dataSeries(statistics.map(_.percentiles), statistics.map(_.mean), sb)
 
     // y range
     sb.append("&")
@@ -98,13 +98,18 @@ object GoogleChartBuilder {
     sb.append(s)
   }
 
-  private def dataSeries(allPercentiles: Seq[TreeMap[Int, Long]], sb: StringBuilder) {
-    val series =
+  private def dataSeries(allPercentiles: Seq[TreeMap[Int, Long]], meanValues: Seq[Double], sb: StringBuilder) {
+    val percentileSeries =
       for {
         percentiles ← allPercentiles
       } yield {
         percentiles.values.mkString(",")
       }
+
+    val series =
+      for ((s, m) ← percentileSeries.zip(meanValues))
+        yield s + "," + formatDouble(m)
+
     sb.append(series.mkString("|"))
   }
 
@@ -144,11 +149,11 @@ object GoogleChartBuilder {
     sb.append("chxs=0,676767,11.5,0,lt,676767|1,676767,11.5,0,lt,676767|2,676767,11.5,0,lt,676767")
     sb.append("&")
     sb.append("chco=")
-    val seriesColors = List("25B33B", "3072F3", "FF0000", "FF9900")
+    val seriesColors = List("25B33B", "3072F3", "FF0000", "37F0ED", "FF9900")
     sb.append(seriesColors.mkString(","))
     sb.append("&")
     // legend
-    sb.append("chdl=5th Percentile|Median|95th Percentile|Throughput")
+    sb.append("chdl=5th%20Percentile|Median|95th%20Percentile|Mean|Throughput")
     sb.append("&")
 
     sb.append("chdlp=b")
@@ -160,6 +165,7 @@ object GoogleChartBuilder {
     sb.append("chls=1|1|1")
     sb.append("&")
 
+    // margins
     sb.append("chma=5,5,5,25")
     sb.append("&")
 
@@ -182,6 +188,11 @@ object GoogleChartBuilder {
     sb.append(percentileSeries.mkString("|"))
 
     sb.append("|")
+    sb.append(loadStr).append("|")
+    val meanSeries = statistics.map(s ⇒ formatDouble(s.mean)).mkString(",")
+    sb.append(meanSeries)
+
+    sb.append("|")
     val maxTps: Double = statistics.map(_.tps).max
     sb.append(loadStr).append("|")
     val tpsSeries = statistics.map(s ⇒ formatDouble(s.tps)).mkString(",")
@@ -192,7 +203,7 @@ object GoogleChartBuilder {
 
     // y range
     sb.append("&")
-    sb.append("chxr=0,").append(minLoad).append(",").append(maxLoad).append("|1,0,").append(maxValue).append("|2,0,")
+    sb.append("chxr=0,").append(minLoad).append(",").append(maxLoad).append(",4").append("|1,0,").append(maxValue).append("|2,0,")
       .append(formatDouble(maxTps))
     sb.append("&")
 
@@ -202,6 +213,9 @@ object GoogleChartBuilder {
       sb.append(",0,").append(maxValue)
       sb.append(",")
     }
+    sb.append(minLoad).append(",").append(maxLoad)
+    sb.append(",0,").append(formatDouble(maxValue))
+    sb.append(",")
     sb.append(minLoad).append(",").append(maxLoad)
     sb.append(",0,").append(formatDouble(maxTps))
     sb.append("&")

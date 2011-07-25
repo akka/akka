@@ -1,7 +1,8 @@
-package akka.performance.trading.common
+package akka.performance.workbench
 
 import scala.collection.immutable.TreeMap
 
+@SerialVersionUID(1L)
 case class Stats(
   name: String,
   load: Int,

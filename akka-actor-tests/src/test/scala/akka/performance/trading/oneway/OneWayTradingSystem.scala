@@ -11,6 +11,6 @@ class OneWayTradingSystem extends AkkaTradingSystem {
     actorOf(new OneWayMatchingEngine(meId, orderbooks, meDispatcher))
 
   override def createOrderReceiver() =
-    actorOf(new OneWayOrderReceiver(matchingEngineRouting, orDispatcher))
+    actorOf(new OneWayOrderReceiver(orDispatcher))
 
 }

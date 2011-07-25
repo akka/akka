@@ -1,7 +1,5 @@
 package akka.performance.trading.common
 
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Random
 
 import scala.collection.immutable.TreeMap
@@ -12,11 +10,13 @@ import org.junit.After
 import org.junit.Before
 import org.scalatest.junit.JUnitSuite
 
-import akka.event.EventHandler
 import akka.performance.trading.domain.Ask
 import akka.performance.trading.domain.Bid
 import akka.performance.trading.domain.Order
 import akka.performance.trading.domain.TotalTradeCounter
+import akka.performance.workbench.BenchResultRepository
+import akka.performance.workbench.Report
+import akka.performance.workbench.Stats
 
 trait PerformanceTest extends JUnitSuite {
 

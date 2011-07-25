@@ -75,7 +75,7 @@ class AkkaTradingSystem extends TradingSystem {
     (1 to 10).toList map (i ⇒ createOrderReceiver())
   }
 
-  def matchingEngineRouting: Map[ActorRef, List[String]] = {
+  def matchingEngineRouting: MatchingEngineRouting[ActorRef] = {
     val rules =
       for {
         info ← matchingEngines
@@ -84,11 +84,11 @@ class AkkaTradingSystem extends TradingSystem {
         (info.primary, orderbookSymbols)
       }
 
-    Map() ++ rules
+    MatchingEngineRouting(Map() ++ rules)
   }
 
   def createOrderReceiver() =
-    actorOf(new AkkaOrderReceiver(matchingEngineRouting, orDispatcher))
+    actorOf(new AkkaOrderReceiver(orDispatcher))
 
   override def start() {
     for (MatchingEngineInfo(p, s, o) ← matchingEngines) {
@@ -97,7 +97,11 @@ class AkkaTradingSystem extends TradingSystem {
       s.foreach(_.start())
       s.foreach(p ! _)
     }
-    orderReceivers.foreach(_.start())
+    val routing = matchingEngineRouting
+    for (or ← orderReceivers) {
+      or.start()
+      or ! routing
+    }
   }
 
   override def shutdown() {
