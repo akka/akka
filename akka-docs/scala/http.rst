@@ -1,4 +1,3 @@
-
 .. _http-module:
 
 HTTP
@@ -462,4 +461,7 @@ Using the Akka Mist module with the Facebook Graph API and WebGL
 Example project using Akka Mist with the Facebook Graph API and WebGL
 `<https://github.com/buka/fbgl1>`_
 
+Using Akka Mist on Amazon ElasticBeanstalk
+******************************************
 
+`<https://groups.google.com/group/akka-user/browse_thread/thread/ab7b5432f2fc4153>`_
