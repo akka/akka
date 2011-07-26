@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Router {
+
   def newRouter(
                  routerType: RouterType,
                  inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
@@ -36,16 +37,35 @@ object Router {
   }
 
   /**
+   * The Router is responsible for sending a message to one (or more) of its connections.
+   *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   trait Router {
 
+    /**
+     * Returns a Map containing all ActorRefs this Router uses send messages to.
+     */
     def connections: Map[InetSocketAddress, ActorRef]
 
+    /**
+     * A callback this Router uses to indicate that some actorRef was not usable.
+     *
+     * Implementations should make sure that this method can be called without the actorRef being part of the
+     * current set of connections. The most logical way to deal with this situation, is just to ignore it.
+     *
+     * @param ref the dead
+     */
     def signalDeadActor(ref: ActorRef): Unit
 
+    /**
+     *
+     */
     def route(message: Any)(implicit sender: Option[ActorRef]): Unit
 
+    /**
+     *
+     */
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T]
   }
 
@@ -94,6 +114,11 @@ object Router {
   }
 
   /**
+   * A Router that is used when a durable actor is used. All requests are send to the node containing the actor.
+   * As soon as that instance fails, a different instance is created and since the mailbox is durable, the internal
+   * state can be restored using event sourcing, and once this instance is up and running, all request will be send
+   * to this instance.
+   *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   trait Direct extends BasicRouter {
@@ -106,9 +131,12 @@ object Router {
   }
 
   /**
+   * A Router that randomly selects one of the target connections to send a message to.
+   *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   trait Random extends BasicRouter {
+
     private val random = new java.util.Random(System.currentTimeMillis)
 
     def next: Option[ActorRef] =
@@ -121,6 +149,8 @@ object Router {
   }
 
   /**
+   * A Router that uses round-robin to select a connection.
+   *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   trait RoundRobin extends BasicRouter {

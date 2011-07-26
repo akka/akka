@@ -4,7 +4,9 @@
 
 package akka.routing
 
-import akka.actor.{ UntypedActor, Actor, ActorRef }
+//TODO: This will package is going to be removed.
+
+import akka.actor.{ UntypedActor, Actor}
 import akka.actor.Actor._
 
 import akka.actor.ActorRef
@@ -203,7 +205,9 @@ case class CyclicIterator[T](val items: Seq[T]) extends InfiniteIterator[T] {
  * useful for work-stealing.
  */
 case class SmallestMailboxFirstIterator(val items: Seq[ActorRef]) extends InfiniteIterator[ActorRef] {
+
   def this(items: java.util.List[ActorRef]) = this(items.toList)
+
   def hasNext = items != Nil
 
   def next = items.reduceLeft((a1, a2) ⇒ if (a1.dispatcher.mailboxSize(a1) < a2.dispatcher.mailboxSize(a2)) a1 else a2)
