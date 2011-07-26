@@ -1,8 +1,7 @@
 import sbt._
 import Keys._
 import MultiJvmPlugin.{ MultiJvm, extraOptions }
-import com.github.oforero.sbtformatter.SbtFormatter._
-import com.github.oforero.sbtformatter.SbtFormatterSettings._
+import ScalariformPlugin.{ format, formatPreferences }
 
 object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
@@ -65,7 +64,7 @@ object AkkaBuild extends Build {
     id = "akka-cluster",
     base = file("akka-cluster"),
     dependencies = Seq(stm, actorTests % "test->test"),
-    settings = defaultSettings ++ MultiJvmPlugin.settings ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
@@ -273,7 +272,7 @@ object AkkaBuild extends Build {
 
   override lazy val settings = super.settings ++ buildSettings ++ Publish.versionSettings
 
-  lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings ++ formatterPreferences ++ formatterTasks
+  lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 
   lazy val parentSettings = baseSettings ++ Seq(
     publishArtifact in Compile := false
@@ -286,7 +285,7 @@ object AkkaBuild extends Build {
     if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
   }
 
-  lazy val defaultSettings = baseSettings ++ Seq(
+  lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
     resolvers += "Twitter Public Repo" at "http://maven.twttr.com", // This will be going away with com.mongodb.async's next release
 
@@ -304,6 +303,24 @@ object AkkaBuild extends Build {
     // for excluding tests in jenkins builds (-Dakka.test.exclude=TimingSpec)
     testExcludes := akkaTestExcludes,
     testOptions in Test <++= testExcludes map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) }
+  )
+
+  lazy val formatSettings = ScalariformPlugin.settings ++ Seq(
+    formatPreferences in Compile := formattingPreferences,
+    formatPreferences in Test    := formattingPreferences
+  )
+
+  def formattingPreferences = {
+    import scalariform.formatter.preferences._
+    FormattingPreferences()
+    .setPreference(RewriteArrowSymbols, true)
+    .setPreference(AlignParameters, true)
+    .setPreference(AlignSingleLineCaseStatements, true)
+  }
+
+  lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.formatSettings) ++ Seq(
+    compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (format in MultiJvm),
+    formatPreferences in MultiJvm := formattingPreferences
   )
 
   // reStructuredText docs
