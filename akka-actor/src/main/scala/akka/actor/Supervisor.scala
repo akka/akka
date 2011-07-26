@@ -13,7 +13,7 @@ import java.util.concurrent.{ CopyOnWriteArrayList, ConcurrentHashMap }
 import akka.config.Supervision._
 
 class SupervisorException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
-  def this(msg:String) = this(msg, null);
+  def this(msg: String) = this(msg, null);
 }
 
 /**
@@ -153,7 +153,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (Act
             supervisor.link(actorRef)
             if (ClusterModule.isEnabled && registerAsRemoteService)
               Actor.remote.register(actorRef)
-          case supervisorConfig@SupervisorConfig(_, _, _) ⇒ // recursive supervisor configuration
+          case supervisorConfig @ SupervisorConfig(_, _, _) ⇒ // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)
             supervisor.link(childSupervisor.supervisor)
             _childSupervisors.add(childSupervisor)
@@ -179,7 +179,7 @@ final class SupervisorActor private[akka] (handler: FaultHandlingStrategy, maxRe
   }
 
   def receive = {
-    case max@MaximumNumberOfRestartsWithinTimeRangeReached(_, _, _, _) ⇒ maxRestartsHandler(self, max)
+    case max @ MaximumNumberOfRestartsWithinTimeRangeReached(_, _, _, _) ⇒ maxRestartsHandler(self, max)
     case unknown ⇒ throw new SupervisorException(
       "SupervisorActor can not respond to messages.\n\tUnknown message [" + unknown + "]")
   }

@@ -1,11 +1,11 @@
 package sample.camel
 
-import org.apache.camel.impl.{DefaultCamelContext, SimpleRegistry}
+import org.apache.camel.impl.{ DefaultCamelContext, SimpleRegistry }
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
-import akka.actor.{Actor, TypedActor}
+import akka.actor.{ Actor, TypedActor }
 import akka.actor.TypedActor.Configuration._
 import akka.camel._
 
@@ -92,7 +92,7 @@ object StandaloneJmsApplication extends App {
   startCamelService
 
   val jmsUri = "jms:topic:test"
-  val jmsPublisher =   Actor.actorOf(new Publisher(jmsUri), "jms-publisher").start
+  val jmsPublisher = Actor.actorOf(new Publisher(jmsUri), "jms-publisher").start
 
   mandatoryService.awaitEndpointActivation(2) {
     Actor.actorOf(new Subscriber("jms-subscriber-1", jmsUri)).start
@@ -100,12 +100,12 @@ object StandaloneJmsApplication extends App {
   }
 
   // Send 10 messages to via publisher actor
-  for(i <- 1 to 10) {
+  for (i ← 1 to 10) {
     jmsPublisher ! ("Akka rocks (%d)" format i)
   }
 
   // Send 10 messages to JMS topic directly
-  for(i <- 1 to 10) {
+  for (i ← 1 to 10) {
     CamelContextManager.mandatoryTemplate.sendBody(jmsUri, "Camel rocks (%d)" format i)
   }
 

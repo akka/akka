@@ -72,7 +72,7 @@ object FickleFriends {
     }
 
     def receive = {
-      case coordinated@Coordinated(Increment(friends)) ⇒ {
+      case coordinated @ Coordinated(Increment(friends)) ⇒ {
         val failAt = random(8)
         failIf(failAt, 0)
         if (friends.nonEmpty) {

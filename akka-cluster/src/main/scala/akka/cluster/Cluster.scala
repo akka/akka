@@ -6,14 +6,14 @@ package akka.cluster
 import org.apache.zookeeper._
 import org.apache.zookeeper.Watcher.Event._
 import org.apache.zookeeper.data.Stat
-import org.apache.zookeeper.recipes.lock.{WriteLock, LockListener}
+import org.apache.zookeeper.recipes.lock.{ WriteLock, LockListener }
 
 import org.I0Itec.zkclient._
 import org.I0Itec.zkclient.serialize._
 import org.I0Itec.zkclient.exception._
 
-import java.util.{List ⇒ JList}
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
+import java.util.{ List ⇒ JList }
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 import java.net.InetSocketAddress
 import javax.management.StandardMBean
 
@@ -29,15 +29,15 @@ import Status._
 import DeploymentConfig._
 
 import akka.event.EventHandler
-import akka.dispatch.{Dispatchers, Future}
+import akka.dispatch.{ Dispatchers, Future }
 import akka.remoteinterface._
 import akka.routing.RouterType
 
-import akka.config.{Config, Supervision}
+import akka.config.{ Config, Supervision }
 import Supervision._
 import Config._
 
-import akka.serialization.{Serialization, Serializer, ActorSerialization}
+import akka.serialization.{ Serialization, Serializer, ActorSerialization }
 import ActorSerialization._
 import akka.serialization.Compression.LZF
 
@@ -49,7 +49,7 @@ import RemoteDaemonMessageType._
 import com.eaio.uuid.UUID
 
 import com.google.protobuf.ByteString
-import java.util.concurrent.{CopyOnWriteArrayList, Callable, ConcurrentHashMap}
+import java.util.concurrent.{ CopyOnWriteArrayList, Callable, ConcurrentHashMap }
 
 // FIXME add watch for each node that when the entry for the node is removed then the node shuts itself down
 
@@ -181,17 +181,17 @@ object Cluster {
 
   private def nodename: String = properties.get("akka.cluster.nodename") match {
     case Some(uberride) ⇒ uberride
-    case None ⇒ Config.nodename
+    case None           ⇒ Config.nodename
   }
 
   private def hostname: String = properties.get("akka.cluster.hostname") match {
     case Some(uberride) ⇒ uberride
-    case None ⇒ Config.hostname
+    case None           ⇒ Config.hostname
   }
 
   private def port: Int = properties.get("akka.cluster.port") match {
     case Some(uberride) ⇒ uberride.toInt
-    case None ⇒ Config.remoteServerPort
+    case None           ⇒ Config.remoteServerPort
   }
 
   val defaultZooKeeperSerializer = new SerializableSerializer
@@ -329,12 +329,12 @@ object Cluster {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class DefaultClusterNode private[akka](
-                                        val nodeAddress: NodeAddress,
-                                        val hostname: String = Config.hostname,
-                                        val port: Int = Config.remoteServerPort,
-                                        val zkServerAddresses: String,
-                                        val serializer: ZkSerializer) extends ErrorHandler with ClusterNode {
+class DefaultClusterNode private[akka] (
+  val nodeAddress: NodeAddress,
+  val hostname: String = Config.hostname,
+  val port: Int = Config.remoteServerPort,
+  val zkServerAddresses: String,
+  val serializer: ZkSerializer) extends ErrorHandler with ClusterNode {
   self ⇒
 
   if ((hostname eq null) || hostname == "") throw new NullPointerException("Host name must not be null or empty string")
@@ -349,7 +349,7 @@ class DefaultClusterNode private[akka](
     def receive = {
       case RemoteClientError(cause, client, address) ⇒ client.shutdownClientModule()
       case RemoteClientDisconnected(client, address) ⇒ client.shutdownClientModule()
-      case _ ⇒ //ignore other
+      case _                                         ⇒ //ignore other
     }
   }, "akka.cluster.RemoteClientLifeCycleListener").start()
 
@@ -474,7 +474,6 @@ class DefaultClusterNode private[akka](
     fetchMembershipNodes()
     EventHandler.info(this, "Cluster node [%s] started successfully".format(nodeAddress))
   }
-
 
   def shutdown() {
     def shutdownNode() {
@@ -696,12 +695,12 @@ class DefaultClusterNode private[akka](
    * available durable store.
    */
   def store(
-             actorAddress: String,
-             actorFactory: () ⇒ ActorRef,
-             replicationFactor: Int,
-             replicationScheme: ReplicationScheme,
-             serializeMailbox: Boolean,
-             serializer: Serializer): ClusterNode = if (isConnected.isOn) {
+    actorAddress: String,
+    actorFactory: () ⇒ ActorRef,
+    replicationFactor: Int,
+    replicationScheme: ReplicationScheme,
+    serializeMailbox: Boolean,
+    serializer: Serializer): ClusterNode = if (isConnected.isOn) {
 
     EventHandler.debug(this,
       "Storing actor with address [%s] in cluster".format(actorAddress))
@@ -730,7 +729,7 @@ class DefaultClusterNode private[akka](
             }
           }
         }) match {
-          case Left(path) ⇒ path
+          case Left(path)       ⇒ path
           case Right(exception) ⇒ actorAddressRegistryPath
         }
     }
@@ -817,7 +816,7 @@ class DefaultClusterNode private[akka](
 
           val actorFactory =
             Serialization.deserialize(actorFactoryBytes, classOf[() ⇒ LocalActorRef], None) match {
-              case Left(error) ⇒ throw error
+              case Left(error)     ⇒ throw error
               case Right(instance) ⇒ instance.asInstanceOf[() ⇒ LocalActorRef]
             }
 
@@ -897,12 +896,11 @@ class DefaultClusterNode private[akka](
 
       val command = builder.build
 
-      nodes foreach {
-        node ⇒
-          nodeConnections.get(node) foreach {
-            case (_, connection) ⇒
-              sendCommandToNode(connection, command, async = false)
-          }
+      nodes foreach { node ⇒
+        nodeConnections.get(node) foreach {
+          case (_, connection) ⇒
+            sendCommandToNode(connection, command, async = false)
+        }
       }
     }
   }
@@ -939,13 +937,12 @@ class DefaultClusterNode private[akka](
     if (isConnected.isOn) {
       ignore[ZkNoNodeException](zkClient.delete(actorAddressToNodesPathFor(actorAddress, nodeAddress.nodeName)))
 
-      uuidsForActorAddress(actorAddress) foreach {
-        uuid ⇒
-          EventHandler.debug(this,
-            "Releasing actor [%s] with UUID [%s] after usage".format(actorAddress, uuid))
+      uuidsForActorAddress(actorAddress) foreach { uuid ⇒
+        EventHandler.debug(this,
+          "Releasing actor [%s] with UUID [%s] after usage".format(actorAddress, uuid))
 
-          ignore[ZkNoNodeException](zkClient.deleteRecursive(nodeToUuidsPathFor(nodeAddress.nodeName, uuid)))
-          ignore[ZkNoNodeException](zkClient.delete(actorUuidRegistryRemoteAddressPathFor(uuid)))
+        ignore[ZkNoNodeException](zkClient.deleteRecursive(nodeToUuidsPathFor(nodeAddress.nodeName, uuid)))
+        ignore[ZkNoNodeException](zkClient.delete(actorUuidRegistryRemoteAddressPathFor(uuid)))
       }
     }
   }
@@ -963,11 +960,10 @@ class DefaultClusterNode private[akka](
         .setActorAddress(actorAddress)
         .build
 
-      nodesForActorsInUseWithAddress(actorAddress) foreach {
-        node ⇒
-          nodeConnections.get(node) foreach {
-            case (_, connection) ⇒ sendCommandToNode(connection, command, async = true)
-          }
+      nodesForActorsInUseWithAddress(actorAddress) foreach { node ⇒
+        nodeConnections.get(node) foreach {
+          case (_, connection) ⇒ sendCommandToNode(connection, command, async = true)
+        }
       }
     }
   }
@@ -1205,7 +1201,7 @@ class DefaultClusterNode private[akka](
         }
       }
     }) match {
-      case Left(_) ⇒ /* do nothing */
+      case Left(_)          ⇒ /* do nothing */
       case Right(exception) ⇒ throw exception
     }
   }
@@ -1293,7 +1289,6 @@ class DefaultClusterNode private[akka](
 
   private[cluster] def actorAddressToUuidsPathFor(actorAddress: String, uuid: UUID): String = "%s/%s".format(actorAddressToUuidsPathFor(actorAddress), uuid)
 
-
   /**
    * Returns a random set with node names of size 'replicationFactor'.
    * Default replicationFactor is 0, which returns the empty Set.
@@ -1364,16 +1359,15 @@ class DefaultClusterNode private[akka](
    * @returns a Map with the remote socket addresses to of disconnected node connections
    */
   private[cluster] def connectToAllNewlyArrivedMembershipNodesInCluster(
-                                                                         newlyConnectedMembershipNodes: Traversable[String],
-                                                                         newlyDisconnectedMembershipNodes: Traversable[String]): Map[String, InetSocketAddress] = {
+    newlyConnectedMembershipNodes: Traversable[String],
+    newlyDisconnectedMembershipNodes: Traversable[String]): Map[String, InetSocketAddress] = {
 
     // cache the disconnected connections in a map, needed for fail-over of these connections later
     var disconnectedConnections = Map.empty[String, InetSocketAddress]
-    newlyDisconnectedMembershipNodes foreach {
-      node ⇒
-        disconnectedConnections += (node -> (nodeConnections(node) match {
-          case (address, _) ⇒ address
-        }))
+    newlyDisconnectedMembershipNodes foreach { node ⇒
+      disconnectedConnections += (node -> (nodeConnections(node) match {
+        case (address, _) ⇒ address
+      }))
     }
 
     if (connectToAllNewlyArrivedMembershipNodesInClusterLock.compareAndSet(false, true)) {
@@ -1382,20 +1376,18 @@ class DefaultClusterNode private[akka](
         newlyDisconnectedMembershipNodes foreach (nodeConnections.remove(_))
 
         // add connections newly arrived nodes
-        newlyConnectedMembershipNodes foreach {
-          node ⇒
-            if (!nodeConnections.contains(node)) {
-              // only connect to each replica once
+        newlyConnectedMembershipNodes foreach { node ⇒
+          if (!nodeConnections.contains(node)) {
+            // only connect to each replica once
 
-              remoteSocketAddressForNode(node) foreach {
-                address ⇒
-                  EventHandler.debug(this,
-                    "Setting up connection to node with nodename [%s] and address [%s]".format(node, address))
+            remoteSocketAddressForNode(node) foreach { address ⇒
+              EventHandler.debug(this,
+                "Setting up connection to node with nodename [%s] and address [%s]".format(node, address))
 
-                  val clusterDaemon = Actor.remote.actorFor(RemoteClusterDaemon.Address, address.getHostName, address.getPort).start()
-                  nodeConnections.put(node, (address, clusterDaemon))
-              }
+              val clusterDaemon = Actor.remote.actorFor(RemoteClusterDaemon.Address, address.getHostName, address.getPort).start()
+              nodeConnections.put(node, (address, clusterDaemon))
             }
+          }
         }
       } finally {
         connectToAllNewlyArrivedMembershipNodesInClusterLock.set(false)
@@ -1442,87 +1434,85 @@ class DefaultClusterNode private[akka](
   }
 
   private[cluster] def migrateActorsOnFailedNodes(
-                                                   failedNodes: List[String],
-                                                   currentClusterNodes: List[String],
-                                                   oldClusterNodes: List[String],
-                                                   disconnectedConnections: Map[String, InetSocketAddress]) {
+    failedNodes: List[String],
+    currentClusterNodes: List[String],
+    oldClusterNodes: List[String],
+    disconnectedConnections: Map[String, InetSocketAddress]) {
 
-    failedNodes.foreach {
-      failedNodeName ⇒
+    failedNodes.foreach { failedNodeName ⇒
 
-        val failedNodeAddress = NodeAddress(nodeAddress.clusterName, failedNodeName)
+      val failedNodeAddress = NodeAddress(nodeAddress.clusterName, failedNodeName)
 
-        val myIndex = oldClusterNodes.indexWhere(_.endsWith(nodeAddress.nodeName))
-        val failedNodeIndex = oldClusterNodes.indexWhere(_ == failedNodeName)
+      val myIndex = oldClusterNodes.indexWhere(_.endsWith(nodeAddress.nodeName))
+      val failedNodeIndex = oldClusterNodes.indexWhere(_ == failedNodeName)
 
-        // Migrate to the successor of the failed node (using a sorted circular list of the node names)
-        if ((failedNodeIndex == 0 && myIndex == oldClusterNodes.size - 1) || // No leftmost successor exists, check the tail
-          (failedNodeIndex == myIndex + 1)) {
-          // Am I the leftmost successor?
+      // Migrate to the successor of the failed node (using a sorted circular list of the node names)
+      if ((failedNodeIndex == 0 && myIndex == oldClusterNodes.size - 1) || // No leftmost successor exists, check the tail
+        (failedNodeIndex == myIndex + 1)) {
+        // Am I the leftmost successor?
 
-          // Takes the lead of migrating the actors. Not all to this node.
-          // All to this node except if the actor already resides here, then pick another node it is not already on.
+        // Takes the lead of migrating the actors. Not all to this node.
+        // All to this node except if the actor already resides here, then pick another node it is not already on.
 
-          // Yes I am the node to migrate the actor to (can only be one in the cluster)
-          val actorUuidsForFailedNode = zkClient.getChildren(nodeToUuidsPathFor(failedNodeName)).toList
+        // Yes I am the node to migrate the actor to (can only be one in the cluster)
+        val actorUuidsForFailedNode = zkClient.getChildren(nodeToUuidsPathFor(failedNodeName)).toList
 
-          actorUuidsForFailedNode.foreach {
-            uuidAsString ⇒
-              EventHandler.debug(this,
-                "Cluster node [%s] has failed, migrating actor with UUID [%s] to [%s]"
-                  .format(failedNodeName, uuidAsString, nodeAddress.nodeName))
+        actorUuidsForFailedNode.foreach { uuidAsString ⇒
+          EventHandler.debug(this,
+            "Cluster node [%s] has failed, migrating actor with UUID [%s] to [%s]"
+              .format(failedNodeName, uuidAsString, nodeAddress.nodeName))
 
-              val uuid = uuidFrom(uuidAsString)
-              val actorAddress = actorAddressForUuid(uuid).getOrElse(
-                throw new IllegalStateException("No actor address found for UUID [" + uuidAsString + "]"))
+          val uuid = uuidFrom(uuidAsString)
+          val actorAddress = actorAddressForUuid(uuid).getOrElse(
+            throw new IllegalStateException("No actor address found for UUID [" + uuidAsString + "]"))
 
-              val migrateToNodeAddress =
-                if (isInUseOnNode(actorAddress)) {
-                  // already in use on this node, pick another node to instantiate the actor on
-                  val replicaNodesForActor = nodesForActorsInUseWithAddress(actorAddress)
-                  val nodesAvailableForMigration = (currentClusterNodes.toSet diff failedNodes.toSet) diff replicaNodesForActor.toSet
+          val migrateToNodeAddress =
+            if (isInUseOnNode(actorAddress)) {
+              // already in use on this node, pick another node to instantiate the actor on
+              val replicaNodesForActor = nodesForActorsInUseWithAddress(actorAddress)
+              val nodesAvailableForMigration = (currentClusterNodes.toSet diff failedNodes.toSet) diff replicaNodesForActor.toSet
 
-                  if (nodesAvailableForMigration.isEmpty) throw new ClusterException(
-                    "Can not migrate actor to new node since there are not any available nodes left. " +
-                      "(However, the actor already has >1 replica in cluster, so we are ok)")
+              if (nodesAvailableForMigration.isEmpty) throw new ClusterException(
+                "Can not migrate actor to new node since there are not any available nodes left. " +
+                  "(However, the actor already has >1 replica in cluster, so we are ok)")
 
-                  NodeAddress(nodeAddress.clusterName, nodesAvailableForMigration.head)
-                } else {
-                  // actor is not in use on this node, migrate it here
-                  nodeAddress
-                }
+              NodeAddress(nodeAddress.clusterName, nodesAvailableForMigration.head)
+            } else {
+              // actor is not in use on this node, migrate it here
+              nodeAddress
+            }
 
-              // if actor is replicated => pass along the UUID for the actor to replicate from (replay transaction log etc.)
-              val replicateFromUuid =
-                if (isReplicated(actorAddress)) Some(uuid)
-                else None
+          // if actor is replicated => pass along the UUID for the actor to replicate from (replay transaction log etc.)
+          val replicateFromUuid =
+            if (isReplicated(actorAddress)) Some(uuid)
+            else None
 
-              migrateWithoutCheckingThatActorResidesOnItsHomeNode(
-                failedNodeAddress,
-                migrateToNodeAddress,
-                actorAddress,
-                replicateFromUuid)
-          }
-
-          // notify all available nodes that they should fail-over all connections from 'from' to 'to'
-          val from = disconnectedConnections(failedNodeName)
-          val to = remoteServerAddress
-
-          Serialization.serialize((from, to)) match {
-            case Left(error) ⇒ throw error
-            case Right(bytes) ⇒
-
-              val command = RemoteDaemonMessageProtocol.newBuilder
-                .setMessageType(FAIL_OVER_CONNECTIONS)
-                .setPayload(ByteString.copyFrom(bytes))
-                .build
-
-              // FIXME now we are broadcasting to ALL nodes in the cluster even though a fraction might have a reference to the actors - should that be fixed?
-              nodeConnections.values foreach {
-                case (_, connection) ⇒ sendCommandToNode(connection, command, async = true)
-              }
-          }
+          migrateWithoutCheckingThatActorResidesOnItsHomeNode(
+            failedNodeAddress,
+            migrateToNodeAddress,
+            actorAddress,
+            replicateFromUuid)
         }
+
+        // notify all available nodes that they should fail-over all connections from 'from' to 'to'
+        val from = disconnectedConnections(failedNodeName)
+        val to = remoteServerAddress
+
+        Serialization.serialize((from, to)) match {
+          case Left(error) ⇒ throw error
+          case Right(bytes) ⇒
+
+            val command = RemoteDaemonMessageProtocol.newBuilder
+              .setMessageType(FAIL_OVER_CONNECTIONS)
+              .setPayload(ByteString.copyFrom(bytes))
+              .build
+
+            // FIXME now we are broadcasting to ALL nodes in the cluster even though a fraction might have a reference to the actors - should that be fixed?
+            nodeConnections.values foreach {
+              case (_, connection) ⇒ sendCommandToNode(connection, command, async = true)
+            }
+        }
+      }
     }
   }
 
@@ -1530,7 +1520,7 @@ class DefaultClusterNode private[akka](
    * Used when the ephemeral "home" node is already gone, so we can't check if it is available.
    */
   private def migrateWithoutCheckingThatActorResidesOnItsHomeNode(
-                                                                   from: NodeAddress, to: NodeAddress, actorAddress: String, replicateFromUuid: Option[UUID]) {
+    from: NodeAddress, to: NodeAddress, actorAddress: String, replicateFromUuid: Option[UUID]) {
 
     EventHandler.debug(this, "Migrating actor [%s] from node [%s] to node [%s]".format(actorAddress, from, to))
     if (!isInUseOnNode(actorAddress, to)) {
@@ -1556,17 +1546,16 @@ class DefaultClusterNode private[akka](
       EventHandler.info(this, "Created node [%s]".format(CLUSTER_PATH))
     }
 
-    basePaths.foreach {
-      path ⇒
-        try {
-          ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
-          EventHandler.debug(this, "Created node [%s]".format(path))
-        } catch {
-          case e ⇒
-            val error = new ClusterException(e.toString)
-            EventHandler.error(error, this)
-            throw error
-        }
+    basePaths.foreach { path ⇒
+      try {
+        ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
+        EventHandler.debug(this, "Created node [%s]".format(path))
+      } catch {
+        case e ⇒
+          val error = new ClusterException(e.toString)
+          EventHandler.error(error, this)
+          throw error
+      }
     }
   }
 
@@ -1794,85 +1783,81 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
           try {
             if (message.hasActorAddress) {
               val actorAddress = message.getActorAddress
-              cluster.serializerForActor(actorAddress) foreach {
-                serializer ⇒
-                  cluster.use(actorAddress, serializer) foreach {
-                    newActorRef ⇒
-                      cluster.remoteService.register(actorAddress, newActorRef)
+              cluster.serializerForActor(actorAddress) foreach { serializer ⇒
+                cluster.use(actorAddress, serializer) foreach { newActorRef ⇒
+                  cluster.remoteService.register(actorAddress, newActorRef)
 
-                      if (message.hasReplicateActorFromUuid) {
-                        // replication is used - fetch the messages and replay them
-                        import akka.remote.protocol.RemoteProtocol._
-                        import akka.remote.MessageSerializer
+                  if (message.hasReplicateActorFromUuid) {
+                    // replication is used - fetch the messages and replay them
+                    import akka.remote.protocol.RemoteProtocol._
+                    import akka.remote.MessageSerializer
 
-                        val replicateFromUuid = uuidProtocolToUuid(message.getReplicateActorFromUuid)
-                        val deployment = Deployer.deploymentFor(actorAddress)
-                        val replicationScheme = DeploymentConfig.replicationSchemeFor(deployment).getOrElse(
-                          throw new IllegalStateException(
-                            "Actor [" + actorAddress + "] should have been configured as a replicated actor but could not find its ReplicationScheme"))
-                        val isWriteBehind = DeploymentConfig.isWriteBehindReplication(replicationScheme)
+                    val replicateFromUuid = uuidProtocolToUuid(message.getReplicateActorFromUuid)
+                    val deployment = Deployer.deploymentFor(actorAddress)
+                    val replicationScheme = DeploymentConfig.replicationSchemeFor(deployment).getOrElse(
+                      throw new IllegalStateException(
+                        "Actor [" + actorAddress + "] should have been configured as a replicated actor but could not find its ReplicationScheme"))
+                    val isWriteBehind = DeploymentConfig.isWriteBehindReplication(replicationScheme)
 
-                        try {
-                          // get the transaction log for the actor UUID
-                          val txLog = TransactionLog.logFor(replicateFromUuid.toString, isWriteBehind, replicationScheme)
+                    try {
+                      // get the transaction log for the actor UUID
+                      val txLog = TransactionLog.logFor(replicateFromUuid.toString, isWriteBehind, replicationScheme)
 
-                          // get the latest snapshot (Option[Array[Byte]]) and all the subsequent messages (Array[Byte])
-                          val (snapshotAsBytes, entriesAsBytes) = txLog.latestSnapshotAndSubsequentEntries
+                      // get the latest snapshot (Option[Array[Byte]]) and all the subsequent messages (Array[Byte])
+                      val (snapshotAsBytes, entriesAsBytes) = txLog.latestSnapshotAndSubsequentEntries
 
-                          // deserialize and restore actor snapshot
-                          val actorRefToUseForReplay =
-                            snapshotAsBytes match {
+                      // deserialize and restore actor snapshot
+                      val actorRefToUseForReplay =
+                        snapshotAsBytes match {
 
-                              // we have a new actor ref - the snapshot
-                              case Some(bytes) ⇒
-                                // stop the new actor ref and use the snapshot instead
-                                cluster.remoteService.unregister(actorAddress)
+                          // we have a new actor ref - the snapshot
+                          case Some(bytes) ⇒
+                            // stop the new actor ref and use the snapshot instead
+                            cluster.remoteService.unregister(actorAddress)
 
-                                // deserialize the snapshot actor ref and register it as remote actor
-                                val uncompressedBytes =
-                                  if (Cluster.shouldCompressData) LZF.uncompress(bytes)
-                                  else bytes
+                            // deserialize the snapshot actor ref and register it as remote actor
+                            val uncompressedBytes =
+                              if (Cluster.shouldCompressData) LZF.uncompress(bytes)
+                              else bytes
 
-                                val snapshotActorRef = fromBinary(uncompressedBytes, newActorRef.uuid).start()
-                                cluster.remoteService.register(actorAddress, snapshotActorRef)
+                            val snapshotActorRef = fromBinary(uncompressedBytes, newActorRef.uuid).start()
+                            cluster.remoteService.register(actorAddress, snapshotActorRef)
 
-                                // FIXME we should call 'stop()' here (to GC the actor), but can't since that will currently shut down the TransactionLog for this UUID - since both this actor and the new snapshotActorRef have the same UUID (which they should)
-                                //newActorRef.stop()
+                            // FIXME we should call 'stop()' here (to GC the actor), but can't since that will currently shut down the TransactionLog for this UUID - since both this actor and the new snapshotActorRef have the same UUID (which they should)
+                            //newActorRef.stop()
 
-                                snapshotActorRef
+                            snapshotActorRef
 
-                              // we have no snapshot - use the new actor ref
-                              case None ⇒
-                                newActorRef
-                            }
-
-                          // deserialize the messages
-                          val messages: Vector[AnyRef] = entriesAsBytes map {
-                            bytes ⇒
-                              val messageBytes =
-                                if (Cluster.shouldCompressData) LZF.uncompress(bytes)
-                                else bytes
-                              MessageSerializer.deserialize(MessageProtocol.parseFrom(messageBytes), None)
-                          }
-
-                          EventHandler.info(this, "Replaying [%s] messages to actor [%s]".format(messages.size, actorAddress))
-
-                          // replay all messages
-                          messages foreach {
-                            message ⇒
-                              EventHandler.debug(this, "Replaying message [%s] to actor [%s]".format(message, actorAddress))
-
-                              // FIXME how to handle '?' messages? We can *not* replay them with the correct semantics. Should we: 1. Ignore/drop them and log warning? 2. Throw exception when about to log them? 3. Other?
-                              actorRefToUseForReplay ! message
-                          }
-
-                        } catch {
-                          case e: Throwable ⇒
-                            EventHandler.error(e, this, e.toString)
-                            throw e
+                          // we have no snapshot - use the new actor ref
+                          case None ⇒
+                            newActorRef
                         }
+
+                      // deserialize the messages
+                      val messages: Vector[AnyRef] = entriesAsBytes map { bytes ⇒
+                        val messageBytes =
+                          if (Cluster.shouldCompressData) LZF.uncompress(bytes)
+                          else bytes
+                        MessageSerializer.deserialize(MessageProtocol.parseFrom(messageBytes), None)
                       }
+
+                      EventHandler.info(this, "Replaying [%s] messages to actor [%s]".format(messages.size, actorAddress))
+
+                      // replay all messages
+                      messages foreach { message ⇒
+                        EventHandler.debug(this, "Replaying message [%s] to actor [%s]".format(message, actorAddress))
+
+                        // FIXME how to handle '?' messages? We can *not* replay them with the correct semantics. Should we: 1. Ignore/drop them and log warning? 2. Throw exception when about to log them? 3. Other?
+                        actorRefToUseForReplay ! message
+                      }
+
+                    } catch {
+                      case e: Throwable ⇒
+                        EventHandler.error(e, this, e.toString)
+                        throw e
+                    }
                   }
+                }
               }
             } else {
               EventHandler.error(this, "Actor 'address' is not defined, ignoring remote cluster daemon command [%s]".format(message))
@@ -1887,9 +1872,8 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
         case RELEASE ⇒
           if (message.hasActorUuid) {
-            cluster.actorAddressForUuid(uuidProtocolToUuid(message.getActorUuid)) foreach {
-              address ⇒
-                cluster.release(address)
+            cluster.actorAddressForUuid(uuidProtocolToUuid(message.getActorUuid)) foreach { address ⇒
+              cluster.release(address)
             }
           } else if (message.hasActorAddress) {
             cluster release message.getActorAddress
@@ -1899,15 +1883,15 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
                 .format(message))
           }
 
-        case START ⇒ cluster.start()
+        case START      ⇒ cluster.start()
 
-        case STOP ⇒ cluster.shutdown()
+        case STOP       ⇒ cluster.shutdown()
 
         case DISCONNECT ⇒ cluster.disconnect()
 
-        case RECONNECT ⇒ cluster.reconnect()
+        case RECONNECT  ⇒ cluster.reconnect()
 
-        case RESIGN ⇒ cluster.resign()
+        case RESIGN     ⇒ cluster.resign()
 
         case FAIL_OVER_CONNECTIONS ⇒
           val (from, to) = payloadFor(message, classOf[(InetSocketAddress, InetSocketAddress)])
@@ -1945,7 +1929,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
             def receive = {
               case (fun: Function[_, _], param: Any) ⇒ try {
-                fun.asInstanceOf[Any => Unit].apply(param)
+                fun.asInstanceOf[Any ⇒ Unit].apply(param)
               } finally {
                 self.stop()
               }
@@ -1958,7 +1942,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
             def receive = {
               case (fun: Function[_, _], param: Any) ⇒ try {
-                self.reply(fun.asInstanceOf[Any => Any](param))
+                self.reply(fun.asInstanceOf[Any ⇒ Any](param))
               } finally {
                 self.stop()
               }
@@ -1971,7 +1955,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
   private def payloadFor[T](message: RemoteDaemonMessageProtocol, clazz: Class[T]): T = {
     Serialization.deserialize(message.getPayload.toByteArray, clazz, None) match {
-      case Left(error) ⇒ throw error
+      case Left(error)     ⇒ throw error
       case Right(instance) ⇒ instance.asInstanceOf[T]
     }
   }

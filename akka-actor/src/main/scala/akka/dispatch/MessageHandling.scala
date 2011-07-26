@@ -34,8 +34,7 @@ final case class FutureInvocation[T](future: Promise[T], function: () ⇒ T, cle
       case e ⇒
         EventHandler.error(e, this, e.getMessage)
         Left(e)
-    }
-    finally {
+    } finally {
       cleanup()
     })
   }

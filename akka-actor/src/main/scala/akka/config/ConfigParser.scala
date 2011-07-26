@@ -66,9 +66,9 @@ class ConfigParser(var prefix: String = "", map: mutable.Map[String, Any] = muta
 
   def parse(in: String): Map[String, Any] = {
     parseAll(root, in) match {
-      case Success(result, _) ⇒ map.toMap
-      case x@Failure(msg, _)  ⇒ throw new ConfigurationException(x.toString)
-      case x@Error(msg, _)    ⇒ throw new ConfigurationException(x.toString)
+      case Success(result, _)  ⇒ map.toMap
+      case x @ Failure(msg, _) ⇒ throw new ConfigurationException(x.toString)
+      case x @ Error(msg, _)   ⇒ throw new ConfigurationException(x.toString)
     }
   }
 }

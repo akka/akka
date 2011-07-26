@@ -6,7 +6,7 @@ package akka.cluster
 import akka.actor._
 import akka.dispatch.Future
 import akka.event.EventHandler
-import akka.routing.{RouterType, RoutingException}
+import akka.routing.{ RouterType, RoutingException }
 import RouterType._
 
 import com.eaio.uuid.UUID
@@ -21,16 +21,16 @@ import java.util.concurrent.atomic.AtomicReference
  */
 object Router {
   def newRouter(
-                 routerType: RouterType,
-                 inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
-                 actorAddress: String,
-                 timeout: Long): ClusterActorRef = {
+    routerType: RouterType,
+    inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
+    actorAddress: String,
+    timeout: Long): ClusterActorRef = {
     routerType match {
-      case Direct ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with Direct
-      case Random ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with Random
-      case RoundRobin ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with RoundRobin
-      case LeastCPU ⇒ sys.error("Router LeastCPU not supported yet")
-      case LeastRAM ⇒ sys.error("Router LeastRAM not supported yet")
+      case Direct        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with Direct
+      case Random        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with Random
+      case RoundRobin    ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with RoundRobin
+      case LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
+      case LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
       case LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
     }
   }
@@ -63,7 +63,7 @@ object Router {
         try {
           actor.!(message)(sender)
         } catch {
-          case e: Exception =>
+          case e: Exception ⇒
             signalDeadActor(actor)
             throw e
         }
@@ -76,7 +76,7 @@ object Router {
         try {
           actor.?(message, timeout)(sender).asInstanceOf[Future[T]]
         } catch {
-          case e: Throwable =>
+          case e: Throwable ⇒
             signalDeadActor(actor)
             throw e
         }
@@ -136,7 +136,7 @@ object Router {
         val currentItems = current.get
         val newItems = currentItems match {
           case Nil ⇒ items
-          case xs ⇒ xs
+          case xs  ⇒ xs
         }
 
         if (newItems.isEmpty) {

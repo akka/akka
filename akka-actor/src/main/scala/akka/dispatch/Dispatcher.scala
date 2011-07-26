@@ -194,7 +194,7 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue ⇒
 
   final def run = {
     try { processMailbox() } catch {
-      case ie: InterruptedException => Thread.currentThread().interrupt() //Restore interrupt
+      case ie: InterruptedException ⇒ Thread.currentThread().interrupt() //Restore interrupt
     } finally {
       dispatcherLock.unlock()
       if (!self.isEmpty)

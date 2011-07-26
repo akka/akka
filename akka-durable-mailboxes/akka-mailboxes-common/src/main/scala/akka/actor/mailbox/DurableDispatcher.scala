@@ -3,7 +3,7 @@
  */
 package akka.actor.mailbox
 
-import akka.actor.{newUuid, ActorRef}
+import akka.actor.{ newUuid, ActorRef }
 import akka.util.ReflectiveAccess
 import akka.dispatch._
 import akka.config._
@@ -18,11 +18,11 @@ sealed abstract class DurableMailboxStorage(mailboxFQN: String) {
   val constructorSignature = Array[Class[_]](classOf[ActorRef])
 
   val mailboxClass: Class[_] = ReflectiveAccess.getClassFor(mailboxFQN, classOf[ActorRef].getClassLoader) match {
-    case Right(clazz)    => clazz
-    case Left(exception) =>
+    case Right(clazz) ⇒ clazz
+    case Left(exception) ⇒
       val cause = exception match {
-        case i: InvocationTargetException => i.getTargetException
-        case _                            => exception
+        case i: InvocationTargetException ⇒ i.getTargetException
+        case _                            ⇒ exception
       }
       throw new DurableMailboxException("Cannot find class [%s] due to: %s".format(mailboxFQN, cause.toString))
   }
@@ -31,22 +31,22 @@ sealed abstract class DurableMailboxStorage(mailboxFQN: String) {
   def createFor(actor: ActorRef): AnyRef = {
     EventHandler.debug(this, "Creating durable mailbox [%s] for [%s]".format(mailboxClass.getName, actor))
     ReflectiveAccess.createInstance[AnyRef](mailboxClass, constructorSignature, Array[AnyRef](actor)) match {
-      case Right(instance) => instance
-      case Left(exception) =>
+      case Right(instance) ⇒ instance
+      case Left(exception) ⇒
         val cause = exception match {
-          case i: InvocationTargetException => i.getTargetException
-          case _                            => exception
+          case i: InvocationTargetException ⇒ i.getTargetException
+          case _                            ⇒ exception
         }
         throw new DurableMailboxException("Cannot instantiate [%s] due to: %s".format(mailboxClass.getName, cause.toString))
     }
   }
 }
 
-case object RedisDurableMailboxStorage      extends DurableMailboxStorage("akka.actor.mailbox.RedisBasedMailbox")
+case object RedisDurableMailboxStorage extends DurableMailboxStorage("akka.actor.mailbox.RedisBasedMailbox")
 case object MongoNaiveDurableMailboxStorage extends DurableMailboxStorage("akka.actor.mailbox.MongoBasedNaiveMailbox")
-case object BeanstalkDurableMailboxStorage  extends DurableMailboxStorage("akka.actor.mailbox.BeanstalkBasedMailbox")
-case object FileDurableMailboxStorage       extends DurableMailboxStorage("akka.actor.mailbox.FileBasedMailbox")
-case object ZooKeeperDurableMailboxStorage  extends DurableMailboxStorage("akka.actor.mailbox.ZooKeeperBasedMailbox")
+case object BeanstalkDurableMailboxStorage extends DurableMailboxStorage("akka.actor.mailbox.BeanstalkBasedMailbox")
+case object FileDurableMailboxStorage extends DurableMailboxStorage("akka.actor.mailbox.FileBasedMailbox")
+case object ZooKeeperDurableMailboxStorage extends DurableMailboxStorage("akka.actor.mailbox.ZooKeeperBasedMailbox")
 
 /**
  * The durable equivalent of Dispatcher
@@ -67,7 +67,7 @@ case class DurableDispatcher(
   _config) {
 
   def this(_name: String, _storage: DurableMailboxStorage, throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
-    this(_name, _storage, throughput, throughputDeadlineTime, mailboxType,ThreadPoolConfig())  // Needed for Java API usage
+    this(_name, _storage, throughput, throughputDeadlineTime, mailboxType, ThreadPoolConfig()) // Needed for Java API usage
 
   def this(_name: String, _storage: DurableMailboxStorage, throughput: Int, mailboxType: MailboxType) =
     this(_name, _storage, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
@@ -105,9 +105,9 @@ case class DurableDispatcher(
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 case class DurablePinnedDispatcher(
-      _actor: ActorRef,
-      _storage: DurableMailboxStorage,
-      _mailboxType: MailboxType) extends PinnedDispatcher(_actor,_mailboxType) {
+  _actor: ActorRef,
+  _storage: DurableMailboxStorage,
+  _mailboxType: MailboxType) extends PinnedDispatcher(_actor, _mailboxType) {
 
   def this(actor: ActorRef, _storage: DurableMailboxStorage) =
     this(actor, _storage, UnboundedMailbox()) // For Java API
@@ -142,7 +142,7 @@ case class DurablePinnedDispatcher(
  */
 class DurableDispatcherConfigurator extends MessageDispatcherConfigurator {
   def configure(config: Configuration): MessageDispatcher = {
-    configureThreadPool(config, threadPoolConfig => new DurableDispatcher(
+    configureThreadPool(config, threadPoolConfig ⇒ new DurableDispatcher(
       config.getString("name", newUuid.toString),
       getStorage(config),
       config.getInt("throughput", Dispatchers.THROUGHPUT),
@@ -153,12 +153,12 @@ class DurableDispatcherConfigurator extends MessageDispatcherConfigurator {
 
   def getStorage(config: Configuration): DurableMailboxStorage = {
     val storage = config.getString("storage") map {
-      case "redis"     => RedisDurableMailboxStorage
-      case "mongodb"   => MongoNaiveDurableMailboxStorage
-      case "beanstalk" => BeanstalkDurableMailboxStorage
-      case "zookeeper" => ZooKeeperDurableMailboxStorage
-      case "file"      => FileDurableMailboxStorage
-      case unknown     => throw new IllegalArgumentException("[%s] is not a valid storage, valid options are [redis, beanstalk, zookeeper, file]" format unknown)
+      case "redis"     ⇒ RedisDurableMailboxStorage
+      case "mongodb"   ⇒ MongoNaiveDurableMailboxStorage
+      case "beanstalk" ⇒ BeanstalkDurableMailboxStorage
+      case "zookeeper" ⇒ ZooKeeperDurableMailboxStorage
+      case "file"      ⇒ FileDurableMailboxStorage
+      case unknown     ⇒ throw new IllegalArgumentException("[%s] is not a valid storage, valid options are [redis, beanstalk, zookeeper, file]" format unknown)
     }
 
     storage.getOrElse(throw new DurableMailboxException("No 'storage' defined for DurableDispatcherConfigurator"))

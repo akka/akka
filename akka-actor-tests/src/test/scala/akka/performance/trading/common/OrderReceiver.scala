@@ -34,7 +34,7 @@ class AkkaOrderReceiver(disp: Option[MessageDispatcher])
   }
 
   def receive = {
-    case routing@MatchingEngineRouting(mapping) ⇒
+    case routing @ MatchingEngineRouting(mapping) ⇒
       refreshMatchingEnginePartitions(routing.asInstanceOf[MatchingEngineRouting[ActorRef]])
     case order: Order ⇒ placeOrder(order)
     case unknown      ⇒ EventHandler.warning(this, "Received unknown message: " + unknown)

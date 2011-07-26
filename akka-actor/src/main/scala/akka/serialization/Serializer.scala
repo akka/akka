@@ -38,7 +38,7 @@ object NullSerializer extends NullSerializer
 
 class JavaSerializer extends Serializer {
 
-  def identifier = 1:Byte
+  def identifier = 1: Byte
 
   def toBinary(o: AnyRef): Array[Byte] = {
     val bos = new ByteArrayOutputStream
@@ -63,7 +63,7 @@ class NullSerializer extends Serializer {
 
   val nullAsBytes = Array[Byte]()
 
-  def identifier = 0:Byte
+  def identifier = 0: Byte
   def toBinary(o: AnyRef) = nullAsBytes
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]] = None, classLoader: Option[ClassLoader] = None): AnyRef = null
 }

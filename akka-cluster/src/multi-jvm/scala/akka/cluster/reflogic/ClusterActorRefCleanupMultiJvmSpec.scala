@@ -8,7 +8,7 @@ import akka.cluster._
 import akka.cluster.Cluster._
 import akka.actor.Actor
 import akka.routing.RoutingException
-import java.nio.channels.{ClosedChannelException, NotYetConnectedException}
+import java.nio.channels.{ ClosedChannelException, NotYetConnectedException }
 
 object ClusterActorRefCleanupMultiJvmSpec {
 
@@ -20,10 +20,10 @@ object ClusterActorRefCleanupMultiJvmSpec {
     println("--------------------------------------")
 
     def receive = {
-      case "Die" =>
+      case "Die" ⇒
         println("Killing JVM: " + Cluster.node.nodeAddress)
         System.exit(0)
-      case _ =>
+      case _ ⇒
         println("Hello")
     }
   }
@@ -61,7 +61,7 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
         clusteredRef ! "hello"
         clusteredRef ! "hello"
       } catch {
-        case e: NotYetConnectedException =>
+        case e: NotYetConnectedException ⇒
       }
 
       //since the call to the node failed, the node must have been removed from the list.
@@ -80,9 +80,9 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
       try {
         clusteredRef ! "hello"
       } catch {
-        case e: ClosedChannelException =>
-        case e: NotYetConnectedException =>
-        case e: RoutingException =>
+        case e: ClosedChannelException   ⇒
+        case e: NotYetConnectedException ⇒
+        case e: RoutingException         ⇒
       }
 
       //now there must not be any remaining connections after the dead of the last actor.
@@ -93,7 +93,7 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
         clusteredRef ! "Hello"
         assert(false)
       } catch {
-        case e: RoutingException =>
+        case e: RoutingException ⇒
       }
 
       node.shutdown()

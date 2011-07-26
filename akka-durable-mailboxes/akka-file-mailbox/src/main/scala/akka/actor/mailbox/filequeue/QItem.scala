@@ -17,7 +17,7 @@
 
 package akka.actor.mailbox.filequeue
 
-import java.nio.{ByteBuffer, ByteOrder}
+import java.nio.{ ByteBuffer, ByteOrder }
 
 case class QItem(addTime: Long, expiry: Long, data: Array[Byte], var xid: Int) {
   def pack(): Array[Byte] = {

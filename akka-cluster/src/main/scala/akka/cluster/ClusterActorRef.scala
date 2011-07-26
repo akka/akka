@@ -11,7 +11,7 @@ import akka.dispatch.Future
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
-import java.util.{Map ⇒ JMap}
+import java.util.{ Map ⇒ JMap }
 
 import com.eaio.uuid.UUID
 import collection.immutable.Map
@@ -23,9 +23,9 @@ import annotation.tailrec
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ClusterActorRef private[akka](inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
-                                    val address: String,
-                                    _timeout: Long)
+class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
+                                     val address: String,
+                                     _timeout: Long)
   extends ActorRef with ScalaActorRef {
   this: Router.Router ⇒
   timeout = _timeout
@@ -42,7 +42,7 @@ class ClusterActorRef private[akka](inetSocketAddresses: Array[Tuple2[UUID, Inet
   override def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
     val sender = channel match {
       case ref: ActorRef ⇒ Some(ref)
-      case _ ⇒ None
+      case _             ⇒ None
     }
     route(message)(sender)
   }
@@ -52,7 +52,7 @@ class ClusterActorRef private[akka](inetSocketAddresses: Array[Tuple2[UUID, Inet
                                                                     channel: UntypedChannel): Future[Any] = {
     val sender = channel match {
       case ref: ActorRef ⇒ Some(ref)
-      case _ ⇒ None
+      case _             ⇒ None
     }
     route[Any](message, timeout)(sender)
   }

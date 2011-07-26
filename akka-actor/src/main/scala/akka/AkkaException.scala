@@ -6,7 +6,7 @@ package akka
 
 import akka.actor.newUuid
 import java.net.{ InetAddress, UnknownHostException }
- 
+
 /**
  * Akka base Exception. Each Exception gets:
  * <ul>
@@ -26,7 +26,7 @@ class AkkaException(message: String = "", cause: Throwable = null) extends Runti
   lazy val toLongString =
     "%s: %s\n[%s]\n%s".format(getClass.getName, message, uuid, stackTraceToString)
 
-  def this(msg:String) = this(msg, null);
+  def this(msg: String) = this(msg, null);
 
   def stackTraceToString = {
     val trace = getStackTrace

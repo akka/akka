@@ -3,7 +3,7 @@
  */
 package akka.actor.mailbox
 
-import akka.actor.{ActorRef, UntypedChannel, NullChannel}
+import akka.actor.{ ActorRef, UntypedChannel, NullChannel }
 import akka.config.Config.config
 import akka.dispatch._
 import akka.event.EventHandler
@@ -21,9 +21,9 @@ import java.io.InputStream
 import org.bson.collection._
 
 /**
- * A container message for durable mailbox messages, which can be easily stuffed into 
+ * A container message for durable mailbox messages, which can be easily stuffed into
  * and out of MongoDB.
- * 
+ *
  * Does not use the Protobuf protocol, instead using a pure Mongo based serialization for sanity
  * (and mongo-iness).
  *
@@ -35,7 +35,7 @@ import org.bson.collection._
 case class MongoDurableMessage(val ownerAddress: String,
                                val receiver: ActorRef,
                                val message: Any,
-                               val channel: UntypedChannel, 
+                               val channel: UntypedChannel,
                                val _id: ObjectId = new ObjectId) {
 
   def messageInvocation() = MessageInvocation(this.receiver, this.message, this.channel)

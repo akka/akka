@@ -148,11 +148,10 @@ class Configuration(val map: Map[String, Any]) {
     getDouble(key).getOrElse(outputIfDesiredAndReturnInput(key, defaultValue))
 
   def getBoolean(key: String): Option[Boolean] = {
-    getString(key) flatMap {
-      s ⇒
-        val isTrue = trueValues.contains(s)
-        if (!isTrue && !falseValues.contains(s)) None
-        else Some(isTrue)
+    getString(key) flatMap { s ⇒
+      val isTrue = trueValues.contains(s)
+      if (!isTrue && !falseValues.contains(s)) None
+      else Some(isTrue)
     }
   }
 
@@ -165,7 +164,7 @@ class Configuration(val map: Map[String, Any]) {
     getBoolean(key, defaultValue)
 
   def apply(key: String): String = getString(key) match {
-    case None ⇒ throw new ConfigurationException("undefined config: " + key)
+    case None    ⇒ throw new ConfigurationException("undefined config: " + key)
     case Some(v) ⇒ v
   }
 
@@ -179,7 +178,7 @@ class Configuration(val map: Map[String, Any]) {
 
   def getSection(name: String): Option[Configuration] = {
     val l = name.length + 1
-    val pattern = name+"."
+    val pattern = name + "."
     val m = map.collect {
       case (k, v) if k.startsWith(pattern) ⇒ (k.substring(l), v)
     }

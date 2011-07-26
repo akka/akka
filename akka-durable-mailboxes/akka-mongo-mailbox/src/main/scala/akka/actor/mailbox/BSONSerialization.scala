@@ -3,7 +3,7 @@
  */
 package akka.actor.mailbox
 
-import akka.actor.{Actor, ActorRef, NullChannel}
+import akka.actor.{ Actor, ActorRef, NullChannel }
 import akka.config.Config.config
 import akka.dispatch._
 import akka.event.EventHandler
@@ -16,15 +16,15 @@ import MailboxProtocol._
 import com.mongodb.async._
 
 import org.bson.util._
-import org.bson.io.{BasicOutputBuffer, OutputBuffer}
+import org.bson.io.{ BasicOutputBuffer, OutputBuffer }
 import org.bson.types.ObjectId
-import java.io.{ByteArrayInputStream, InputStream}
+import java.io.{ ByteArrayInputStream, InputStream }
 
 import org.bson._
 import org.bson.collection._
 
 object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessage] with Logging {
-  
+
   protected[akka] def serializeDurableMsg(msg: MongoDurableMessage)(implicit serializer: BSONSerializer) = {
     EventHandler.debug(this, "Serializing a durable message to MongoDB: %s".format(msg))
     val msgData = MessageSerializer.serialize(msg.message.asInstanceOf[AnyRef])
@@ -36,12 +36,12 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
     b += "ownerAddress" -> msg.ownerAddress
 
     msg.channel match {
-      case a : ActorRef => { b += "senderAddress" -> a.address }
-      case _ =>
+      case a: ActorRef ⇒ { b += "senderAddress" -> a.address }
+      case _           ⇒
     }
-    /** 
+    /**
      * TODO - Figure out a way for custom serialization of the message instance
-     * TODO - Test if a serializer is registered for the message and if not, use toByteString 
+     * TODO - Test if a serializer is registered for the message and if not, use toByteString
      */
     b += "message" -> new org.bson.types.Binary(0, msgData.toByteArray)
     val doc = b.result
@@ -51,7 +51,7 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
 
   /* 
    * TODO - Implement some object pooling for the Encoders/decoders
-   */ 
+   */
   def encode(msg: MongoDurableMessage, out: OutputBuffer) = {
     implicit val serializer = new DefaultBSONSerializer
     serializer.set(out)
@@ -74,10 +74,10 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
     // TODO - Skip the whole doc step for performance, fun, and profit! (Needs Salat / custom Deser)
     val doc = deserializer.decodeAndFetch(in).asInstanceOf[BSONDocument]
     EventHandler.debug(this, "Deserializing a durable message from MongoDB: %s".format(doc))
-    val msgData      = MessageProtocol.parseFrom(doc.as[org.bson.types.Binary]("message").getData)
-    val msg          = MessageSerializer.deserialize(msgData)
+    val msgData = MessageProtocol.parseFrom(doc.as[org.bson.types.Binary]("message").getData)
+    val msg = MessageSerializer.deserialize(msgData)
     val ownerAddress = doc.as[String]("ownerAddress")
-    val owner        = Actor.registry.actorFor(ownerAddress).getOrElse(
+    val owner = Actor.registry.actorFor(ownerAddress).getOrElse(
       throw new DurableMailboxException("No actor could be found for address [" + ownerAddress + "], could not deserialize message."))
 
     val senderOption = if (doc.contains("senderAddress")) {
@@ -85,8 +85,8 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
     } else None
 
     val sender = senderOption match {
-      case Some(ref) => ref
-      case None => NullChannel
+      case Some(ref) ⇒ ref
+      case None      ⇒ NullChannel
     }
 
     MongoDurableMessage(ownerAddress, owner, msg, sender)
@@ -99,11 +99,11 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
   /**
    * Checks for an ID and generates one.
    * Not all implementers will need this, but it gets invoked nonetheless
-   * as a signal to BSONDocument, etc implementations to verify an id is there 
+   * as a signal to BSONDocument, etc implementations to verify an id is there
    * and generate one if needed.
    */
   def checkID(msg: MongoDurableMessage) = msg // OID already generated in wrapper message
-  
+
   def _id(msg: MongoDurableMessage): Option[AnyRef] = Some(msg._id)
 }
 

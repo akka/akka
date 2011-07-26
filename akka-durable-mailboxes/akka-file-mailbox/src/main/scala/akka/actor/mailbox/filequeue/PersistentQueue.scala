@@ -26,14 +26,14 @@ import akka.event.EventHandler
 import akka.config.Configuration
 
 // a config value that's backed by a global setting but may be locally overridden
-class OverlaySetting[T](base: => T) {
-  @volatile private var local: Option[T] = None
+class OverlaySetting[T](base: ⇒ T) {
+  @volatile
+  private var local: Option[T] = None
 
   def set(value: Option[T]) = local = value
 
   def apply() = local.getOrElse(base)
 }
-
 
 class PersistentQueue(persistencePath: String, val name: String, val config: Configuration) {
 
@@ -66,7 +66,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
   private var closed = false
   private var paused = false
 
-  def overlay[T](base: => T) = new OverlaySetting(base)
+  def overlay[T](base: ⇒ T) = new OverlaySetting(base)
 
   // attempting to add an item after the queue reaches this size (in items) will fail.
   val maxItems = overlay(PersistentQueue.maxItems)
@@ -145,8 +145,8 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
     EventHandler.info(this,
       "Configuring queue %s: journal=%s, max-items=%s, max-size=%s, max-age=%s, max-journal-size=%s, max-memory-size=%s, max-journal-overflow=%s, max-journal-size-absolute=%s, discard-old-when-full=%s, sync-journal=%s"
         .format(
-           name, keepJournal(), maxItems(), maxSize(), maxAge(), maxJournalSize(), maxMemorySize(),
-           maxJournalOverflow(), maxJournalSizeAbsolute(), discardOldWhenFull(), syncJournal()))
+          name, keepJournal(), maxItems(), maxSize(), maxAge(), maxJournalSize(), maxMemorySize(),
+          maxJournalOverflow(), maxJournalSizeAbsolute(), discardOldWhenFull(), syncJournal()))
     if (!keepJournal()) journal.erase()
   }
 
@@ -162,8 +162,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
       "discard-old-when-full=" + discardOldWhenFull(),
       "journal=" + keepJournal(),
       "sync-journal=" + syncJournal(),
-      "move-expired-to" + expiredQueue().map { _.name }.getOrElse("(none)")
-    )
+      "move-expired-to" + expiredQueue().map { _.name }.getOrElse("(none)"))
   }
 
   def dumpStats(): Array[(String, String)] = synchronized {
@@ -177,8 +176,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
       ("mem-bytes", memoryBytes.toString),
       ("age", currentAge.toString),
       ("discarded", totalDiscarded.toString),
-      ("open-transactions", openTransactionCount.toString)
-    )
+      ("open-transactions", openTransactionCount.toString))
   }
 
   private final def adjustExpiry(startingTime: Long, expiry: Long): Long = {
@@ -291,7 +289,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
   }
 
   def flush(): Unit = {
-    while (remove(false).isDefined) { }
+    while (remove(false).isDefined) {}
   }
 
   /**
@@ -330,7 +328,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
     // if we're in read-behind mode, scan forward in the journal to keep memory as full as
     // possible. this amortizes the disk overhead across all reads.
     while (keepJournal() && journal.inReadBehind && _memoryBytes < maxMemorySize()) {
-      journal.fillReadBehind { item =>
+      journal.fillReadBehind { item ⇒
         queue += item
         _memoryBytes += item.data.length
       }
@@ -347,7 +345,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
     xidCounter = 0
 
     journal.replay(name) {
-      case JournalItem.Add(item) =>
+      case JournalItem.Add(item) ⇒
         _add(item)
         // when processing the journal, this has to happen after:
         if (!journal.inReadBehind && queueSize >= maxMemorySize()) {
@@ -355,27 +353,27 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
             "Dropping to read-behind for queue '%s' (%s bytes)".format(name, queueSize))
           journal.startReadBehind
         }
-      case JournalItem.Remove => _remove(false)
-      case JournalItem.RemoveTentative => _remove(true)
-      case JournalItem.SavedXid(xid) => xidCounter = xid
-      case JournalItem.Unremove(xid) => _unremove(xid)
-      case JournalItem.ConfirmRemove(xid) => openTransactions.remove(xid)
-      case x => EventHandler.warning(this, "Unexpected item in journal: %s".format(x))
+      case JournalItem.Remove             ⇒ _remove(false)
+      case JournalItem.RemoveTentative    ⇒ _remove(true)
+      case JournalItem.SavedXid(xid)      ⇒ xidCounter = xid
+      case JournalItem.Unremove(xid)      ⇒ _unremove(xid)
+      case JournalItem.ConfirmRemove(xid) ⇒ openTransactions.remove(xid)
+      case x                              ⇒ EventHandler.warning(this, "Unexpected item in journal: %s".format(x))
     }
 
     EventHandler.debug(this,
       "Finished transaction journal for '%s' (%s items, %s bytes)"
-      .format(name, queueLength, journal.size))
+        .format(name, queueLength, journal.size))
     journal.open
 
     // now, any unfinished transactions must be backed out.
-    for (xid <- openTransactionIds) {
+    for (xid ← openTransactionIds) {
       journal.unremove(xid)
       _unremove(xid)
     }
   }
 
- def toList(): List[QItem] = {
+  def toList(): List[QItem] = {
     discardExpired
     queue.toList
   }
@@ -398,7 +396,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
     if (queue.isEmpty) None else Some(queue.front)
   }
 
-   private def _remove(transaction: Boolean): Option[QItem] = {
+  private def _remove(transaction: Boolean): Option[QItem] = {
     discardExpired()
     if (queue.isEmpty) return None
 
@@ -442,7 +440,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
   }
 
   private def _unremove(xid: Int) = {
-    openTransactions.remove(xid) map { item =>
+    openTransactions.remove(xid) map { item ⇒
       queueLength += 1
       queueSize += item.data.length
       queue unget item
@@ -451,18 +449,29 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
   }
 }
 
-
 object PersistentQueue {
-  @volatile var maxItems: Int = Int.MaxValue
-  @volatile var maxSize: Long = Long.MaxValue
-  @volatile var maxItemSize: Long = Long.MaxValue
-  @volatile var maxAge: Int = 0
-  @volatile var maxJournalSize: Long = 16 * 1024 * 1024
-  @volatile var maxMemorySize: Long = 128 * 1024 * 1024
-  @volatile var maxJournalOverflow: Int = 10
-  @volatile var maxJournalSizeAbsolute: Long = Long.MaxValue
-  @volatile var discardOldWhenFull: Boolean = false
-  @volatile var keepJournal: Boolean = true
-  @volatile var syncJournal: Boolean = false
-  @volatile var expiredQueue: Option[PersistentQueue] = None
+  @volatile
+  var maxItems: Int = Int.MaxValue
+  @volatile
+  var maxSize: Long = Long.MaxValue
+  @volatile
+  var maxItemSize: Long = Long.MaxValue
+  @volatile
+  var maxAge: Int = 0
+  @volatile
+  var maxJournalSize: Long = 16 * 1024 * 1024
+  @volatile
+  var maxMemorySize: Long = 128 * 1024 * 1024
+  @volatile
+  var maxJournalOverflow: Int = 10
+  @volatile
+  var maxJournalSizeAbsolute: Long = Long.MaxValue
+  @volatile
+  var discardOldWhenFull: Boolean = false
+  @volatile
+  var keepJournal: Boolean = true
+  @volatile
+  var syncJournal: Boolean = false
+  @volatile
+  var expiredQueue: Option[PersistentQueue] = None
 }

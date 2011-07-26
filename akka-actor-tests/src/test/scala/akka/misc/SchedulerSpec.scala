@@ -5,12 +5,12 @@ import Actor._
 import akka.config.Supervision._
 import org.multiverse.api.latches.StandardLatch
 import org.junit.Test
-import java.util.concurrent.{ScheduledFuture, ConcurrentLinkedQueue, CountDownLatch, TimeUnit}
+import java.util.concurrent.{ ScheduledFuture, ConcurrentLinkedQueue, CountDownLatch, TimeUnit }
 
 class SchedulerSpec extends JUnitSuite {
   private val futures = new ConcurrentLinkedQueue[ScheduledFuture[AnyRef]]()
 
-  def collectFuture(f: => ScheduledFuture[AnyRef]): ScheduledFuture[AnyRef] = {
+  def collectFuture(f: ⇒ ScheduledFuture[AnyRef]): ScheduledFuture[AnyRef] = {
     val future = f
     futures.add(future)
     future
@@ -18,7 +18,7 @@ class SchedulerSpec extends JUnitSuite {
 
   def withCleanEndState(action: ⇒ Unit) {
     action
-    while(futures.peek() ne null) { Option(futures.poll()).foreach(_.cancel(true)) }
+    while (futures.peek() ne null) { Option(futures.poll()).foreach(_.cancel(true)) }
     Actor.registry.local.shutdownAll
   }
 

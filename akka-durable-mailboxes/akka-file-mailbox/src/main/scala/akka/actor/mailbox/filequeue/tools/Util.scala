@@ -43,10 +43,10 @@ object Util {
       }
 
       base.toString + (if (base < 100) ("." + dot) else "") + (divisor match {
-        case KILOBYTE => "K"
-        case MEGABYTE => "M"
-        case GIGABYTE => "G"
-        case _ => ""
+        case KILOBYTE ⇒ "K"
+        case MEGABYTE ⇒ "M"
+        case GIGABYTE ⇒ "G"
+        case _        ⇒ ""
       })
     }
   }

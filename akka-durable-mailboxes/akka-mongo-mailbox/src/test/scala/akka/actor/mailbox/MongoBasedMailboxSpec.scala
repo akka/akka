@@ -12,13 +12,13 @@ import java.util.concurrent.CountDownLatch
 import akka.config.Supervision.Temporary
 import akka.dispatch.MessageDispatcher
 
-class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb", MongoNaiveDurableMailboxStorage)  {
-  import org.apache.log4j.{Logger, Level}
+class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb", MongoNaiveDurableMailboxStorage) {
+  import org.apache.log4j.{ Logger, Level }
   import com.mongodb.async._
 
   val mongo = MongoConnection("localhost", 27017)("akka")
 
-  mongo.dropDatabase(){ success => }
+  mongo.dropDatabase() { success ⇒ }
 
   Logger.getRootLogger.setLevel(Level.DEBUG)
 }

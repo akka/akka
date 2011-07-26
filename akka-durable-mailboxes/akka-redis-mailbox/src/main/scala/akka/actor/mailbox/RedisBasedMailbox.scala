@@ -41,9 +41,10 @@ import CommonsCodec.Base64StringEncoder._
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RedisBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbox(owner) {
-  val nodes = config.getList("akka.persistence.redis.cluster")// need an explicit definition in akka-conf
+  val nodes = config.getList("akka.persistence.redis.cluster") // need an explicit definition in akka-conf
 
-  @volatile private var db = connect() //review Is the Redis connection thread safe?
+  @volatile
+  private var db = connect() //review Is the Redis connection thread safe?
 
   def enqueue(message: MessageInvocation) = {
     EventHandler.debug(this,
@@ -61,8 +62,8 @@ class RedisBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbox(ow
         "\nDEQUEUING message in redis-based mailbox [%s]".format(messageInvocation))
       messageInvocation
     } catch {
-      case e: java.util.NoSuchElementException => null
-      case e =>
+      case e: java.util.NoSuchElementException ⇒ null
+      case e ⇒
         EventHandler.error(e, this, "Couldn't dequeue from Redis-based mailbox")
         throw e
     }
@@ -76,13 +77,13 @@ class RedisBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbox(ow
 
   private[akka] def connect() =
     nodes match {
-      case Seq() =>
+      case Seq() ⇒
         // no cluster defined
         new RedisClient(
           config.getString("akka.actor.mailbox.redis.hostname", "127.0.0.1"),
           config.getInt("akka.actor.mailbox.redis.port", 6379))
 
-      case s =>
+      case s ⇒
         // with cluster
         import com.redis.cluster._
         EventHandler.info(this, "Running on Redis cluster")
@@ -91,15 +92,15 @@ class RedisBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbox(ow
         }
     }
 
-  private def withErrorHandling[T](body: => T): T = {
+  private def withErrorHandling[T](body: ⇒ T): T = {
     try {
       body
     } catch {
-      case e: RedisConnectionException => {
+      case e: RedisConnectionException ⇒ {
         db = connect()
         body
       }
-      case e =>
+      case e ⇒
         val error = new RedisBasedMailboxException("Could not connect to Redis server")
         EventHandler.error(error, this, "Could not connect to Redis server")
         throw error

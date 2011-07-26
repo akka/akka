@@ -200,7 +200,7 @@ object Dispatchers {
           case Right(clazz) ⇒
             ReflectiveAccess.createInstance[MessageDispatcherConfigurator](clazz, Array[Class[_]](), Array[AnyRef]()) match {
               case Right(configurator) ⇒ configurator
-              case Left(exception)⇒
+              case Left(exception) ⇒
                 throw new IllegalArgumentException(
                   "Cannot instantiate MessageDispatcherConfigurator type [%s], make sure it has a default no-args constructor" format fqn, exception)
             }

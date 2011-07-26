@@ -12,7 +12,7 @@ import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.mutable.{ Map ⇒ MutableMap }
 
 import akka.event.EventHandler
 

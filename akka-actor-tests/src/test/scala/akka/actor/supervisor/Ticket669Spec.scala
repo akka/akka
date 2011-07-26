@@ -14,7 +14,7 @@ import org.scalatest.matchers.MustMatchers
 class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import Ticket669Spec._
 
-  override def beforeAll = Thread.interrupted()  //remove interrupted status.
+  override def beforeAll = Thread.interrupted() //remove interrupted status.
 
   override def afterAll = Actor.registry.local.shutdownAll
 
