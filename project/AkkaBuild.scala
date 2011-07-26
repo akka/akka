@@ -70,9 +70,7 @@ object AkkaBuild extends Build {
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
-      // TODO: use dependsOn once updated to sbt 0.10.1 -- currently doesn't fail on error
-      // test in Test <<= (test in Test) dependsOn (test in MultiJvm)
-      test in Test <<= (test in MultiJvm, (test in Test).task) flatMap { (mj, t) => t }
+      test in Test <<= (test in Test) dependsOn (test in MultiJvm)
     )
   ) configs (MultiJvm)
 
