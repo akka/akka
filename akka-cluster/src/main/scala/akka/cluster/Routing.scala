@@ -3,13 +3,10 @@
  */
 package akka.cluster
 
-import Cluster._
-
 import akka.actor._
-import Actor._
 import akka.dispatch.Future
 import akka.event.EventHandler
-import akka.routing.{ RouterType, RoutingException }
+import akka.routing.{RouterType, RoutingException}
 import RouterType._
 
 import com.eaio.uuid.UUID
@@ -24,16 +21,16 @@ import java.util.concurrent.atomic.AtomicReference
  */
 object Router {
   def newRouter(
-    routerType: RouterType,
-    inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
-    actorAddress: String,
-    timeout: Long): ClusterActorRef = {
+                 routerType: RouterType,
+                 inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
+                 actorAddress: String,
+                 timeout: Long): ClusterActorRef = {
     routerType match {
-      case Direct        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with Direct
-      case Random        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with Random
-      case RoundRobin    ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with RoundRobin
-      case LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
-      case LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
+      case Direct ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with Direct
+      case Random ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with Random
+      case RoundRobin ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with RoundRobin
+      case LeastCPU ⇒ sys.error("Router LeastCPU not supported yet")
+      case LeastRAM ⇒ sys.error("Router LeastRAM not supported yet")
       case LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
     }
   }
@@ -42,22 +39,49 @@ object Router {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   trait Router {
+
     def connections: Map[InetSocketAddress, ActorRef]
+
+    def signalDeadActor(ref: ActorRef): Unit
 
     def route(message: Any)(implicit sender: Option[ActorRef]): Unit
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T]
   }
 
+  /**
+   * An Abstract Router implementation that already provides the basic infrastructure so that a concrete
+   * Router only needs to implement the next method.
+   *
+   * This also is the location where a failover  is done in the future if an ActorRef fails and a different
+   * one needs to be selected.
+   */
   trait BasicRouter extends Router {
+
     def route(message: Any)(implicit sender: Option[ActorRef]): Unit = next match {
-      case Some(actor) ⇒ actor.!(message)(sender)
-      case _           ⇒ throwNoConnectionsError()
+      case Some(actor) ⇒ {
+        try {
+          actor.!(message)(sender)
+        } catch {
+          case e: Exception =>
+            signalDeadActor(actor)
+            throw e
+        }
+      }
+      case _ ⇒ throwNoConnectionsError()
     }
 
     def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] = next match {
-      case Some(actor) ⇒ actor.?(message, timeout)(sender).asInstanceOf[Future[T]]
-      case _           ⇒ throwNoConnectionsError()
+      case Some(actor) ⇒ {
+        try {
+          actor.?(message, timeout)(sender).asInstanceOf[Future[T]]
+        } catch {
+          case e: Throwable =>
+            signalDeadActor(actor)
+            throw e
+        }
+      }
+      case _ ⇒ throwNoConnectionsError()
     }
 
     protected def next: Option[ActorRef]
@@ -73,6 +97,7 @@ object Router {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   trait Direct extends BasicRouter {
+
     lazy val next: Option[ActorRef] = {
       val connection = connections.values.headOption
       if (connection.isEmpty) EventHandler.warning(this, "Router has no replica connection")
@@ -90,7 +115,9 @@ object Router {
       if (connections.isEmpty) {
         EventHandler.warning(this, "Router has no replica connections")
         None
-      } else Some(connections.valuesIterator.drop(random.nextInt(connections.size)).next())
+      } else {
+        Some(connections.valuesIterator.drop(random.nextInt(connections.size)).next())
+      }
   }
 
   /**
@@ -109,7 +136,7 @@ object Router {
         val currentItems = current.get
         val newItems = currentItems match {
           case Nil ⇒ items
-          case xs  ⇒ xs
+          case xs ⇒ xs
         }
 
         if (newItems.isEmpty) {
@@ -124,4 +151,5 @@ object Router {
       findNext
     }
   }
+
 }

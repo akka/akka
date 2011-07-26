@@ -82,7 +82,11 @@ case class MaximumNumberOfRestartsWithinTimeRangeReached(
 // Exceptions for Actors
 class ActorStartException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
 class IllegalActorStateException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
-class ActorKilledException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
+
+class ActorKilledException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause){
+  def this(msg: String) = this(msg, null);
+}
+
 class ActorInitializationException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
 class ActorTimeoutException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
 class InvalidMessageException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
