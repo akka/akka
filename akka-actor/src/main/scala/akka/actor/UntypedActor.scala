@@ -19,8 +19,8 @@ import akka.japi.{ Creator, Procedure }
  *        String msg = (String)message;
  *
  *        if (msg.equals("UseReply")) {
- *          // Reply to original sender of message using the 'replyUnsafe' method
- *          getContext().replyUnsafe(msg + ":" + getContext().getUuid());
+ *          // Reply to original sender of message using the 'reply' method
+ *          getContext().reply(msg + ":" + getContext().getUuid());
  *
  *        } else if (msg.equals("UseSender") && getContext().getSender().isDefined()) {
  *          // Reply to original sender of message using the sender reference
@@ -102,7 +102,7 @@ abstract class UntypedActor extends Actor {
    * <p/>
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean up of resources before Actor is terminated.
    */
-  override def preRestart(reason: Throwable) {}
+  override def preRestart(reason: Throwable, lastMessage: Option[Any]) {}
 
   /**
    * User overridable callback.

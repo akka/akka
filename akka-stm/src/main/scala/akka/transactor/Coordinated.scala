@@ -17,7 +17,9 @@ import org.multiverse.api.exceptions.ControlFlowError
 /**
  * Akka-specific exception for coordinated transactions.
  */
-class CoordinatedTransactionException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class CoordinatedTransactionException(message: String, cause: Throwable = null) extends AkkaException(message, cause){
+  def this(msg:String) = this(msg, null);
+}
 
 /**
  * Coordinated transactions across actors.

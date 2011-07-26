@@ -64,7 +64,6 @@ class Configuration(val map: Map[String, Any]) {
   private def outputIfDesiredAndReturnInput[T](key: String, t: T): T = {
     if (Configuration.outputConfigSources)
       println("Akka config is using default value for: " + key)
-
     t
   }
 
@@ -149,10 +148,11 @@ class Configuration(val map: Map[String, Any]) {
     getDouble(key).getOrElse(outputIfDesiredAndReturnInput(key, defaultValue))
 
   def getBoolean(key: String): Option[Boolean] = {
-    getString(key) flatMap { s ⇒
-      val isTrue = trueValues.contains(s)
-      if (!isTrue && !falseValues.contains(s)) None
-      else Some(isTrue)
+    getString(key) flatMap {
+      s ⇒
+        val isTrue = trueValues.contains(s)
+        if (!isTrue && !falseValues.contains(s)) None
+        else Some(isTrue)
     }
   }
 
@@ -165,18 +165,24 @@ class Configuration(val map: Map[String, Any]) {
     getBoolean(key, defaultValue)
 
   def apply(key: String): String = getString(key) match {
-    case None    ⇒ throw new ConfigurationException("undefined config: " + key)
+    case None ⇒ throw new ConfigurationException("undefined config: " + key)
     case Some(v) ⇒ v
   }
 
   def apply(key: String, defaultValue: String) = getString(key, defaultValue)
+
   def apply(key: String, defaultValue: Int) = getInt(key, defaultValue)
+
   def apply(key: String, defaultValue: Long) = getLong(key, defaultValue)
+
   def apply(key: String, defaultValue: Boolean) = getBool(key, defaultValue)
 
   def getSection(name: String): Option[Configuration] = {
     val l = name.length + 1
-    val m = map.collect { case (k, v) if k.startsWith(name) ⇒ (k.substring(l), v) }
+    val pattern = name+"."
+    val m = map.collect {
+      case (k, v) if k.startsWith(pattern) ⇒ (k.substring(l), v)
+    }
     if (m.isEmpty) None
     else Some(new Configuration(m))
   }

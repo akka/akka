@@ -21,6 +21,7 @@ import java.net.InetSocketAddress
 import com.google.protobuf.ByteString
 
 import com.eaio.uuid.UUID
+import akka.event.EventHandler
 
 /**
  * Module for local actor serialization.
@@ -95,10 +96,10 @@ object ActorSerialization {
       if (actorRef.mailbox eq null) throw new IllegalActorStateException("Can't serialize an actor that has not been started.")
       val messages =
         actorRef.mailbox match {
-          case q: java.util.Queue[MessageInvocation] ⇒
+          case q: java.util.Queue[_] ⇒
             val l = new scala.collection.mutable.ListBuffer[MessageInvocation]
             val it = q.iterator
-            while (it.hasNext == true) l += it.next
+            while (it.hasNext) l += it.next.asInstanceOf[MessageInvocation]
             l
         }
 
@@ -141,6 +142,8 @@ object ActorSerialization {
     protocol: SerializedActorRefProtocol,
     overriddenUuid: Option[UUID],
     loader: Option[ClassLoader]): ActorRef = {
+
+    EventHandler.debug(this, "Deserializing SerializedActorRefProtocol to LocalActorRef:\n%s".format(protocol))
 
     val lifeCycle =
       if (protocol.hasLifeCycle) {
@@ -243,11 +246,17 @@ object RemoteActorSerialization {
    * Deserializes a RemoteActorRefProtocol Protocol Buffers (protobuf) Message into an RemoteActorRef instance.
    */
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
-    RemoteActorRef(
+    EventHandler.debug(this, "Deserializing RemoteActorRefProtocol to RemoteActorRef:\n %s".format(protocol))
+
+    val ref = RemoteActorRef(
       JavaSerializer.fromBinary(protocol.getInetSocketAddress.toByteArray, Some(classOf[InetSocketAddress]), loader).asInstanceOf[InetSocketAddress],
       protocol.getAddress,
       protocol.getTimeout,
       loader)
+
+    EventHandler.debug(this, "Newly deserialized RemoteActorRef has uuid: %s".format(ref.uuid))
+
+    ref
   }
 
   /**
@@ -263,6 +272,9 @@ object RemoteActorSerialization {
       case _ ⇒
         ReflectiveAccess.RemoteModule.configDefaultAddress
     }
+
+    EventHandler.debug(this, "Register serialized Actor [%s] as remote @ [%s]".format(actor.uuid, remoteAddress))
+
     RemoteActorRefProtocol.newBuilder
       .setInetSocketAddress(ByteString.copyFrom(JavaSerializer.toBinary(remoteAddress)))
       .setAddress(actor.address)

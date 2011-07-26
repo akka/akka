@@ -22,7 +22,6 @@ import java.util.concurrent._
 import java.lang.RuntimeException
 
 object Scheduler {
-  import Actor._
 
   case class SchedulerException(msg: String, e: Throwable) extends AkkaException(msg, e)
 

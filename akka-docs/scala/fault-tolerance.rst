@@ -228,11 +228,11 @@ A child actor can tell the supervising actor to unlink him by sending him the 'U
 
 .. code-block:: scala
 
-  if (supervisor.isDefined) supervisor.get ! Unlink(this)
+  if (supervisor.isDefined) supervisor.get ! Unlink(self)
 
   // Or shorter using 'foreach':
 
-  supervisor.foreach(_ ! Unlink(this))
+  supervisor.foreach(_ ! Unlink(self))
 
 The supervising actor's side of things
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -322,16 +322,16 @@ Supervised actors have the option to reply to the initial sender within preResta
     }
 
     override def preRestart(reason: scala.Throwable) {
-      self.reply_?(reason.getMessage)
+      self.tryReply(reason.getMessage)
     }
 
     override def postStop() {
-      self.reply_?("stopped by supervisor")
+      self.tryReply("stopped by supervisor")
     }
   }
 
-- A reply within preRestart or postRestart must be a safe reply via `self.reply_?` because an unsafe self.reply will throw an exception when the actor is restarted without having failed. This can be the case in context of AllForOne restart strategies.
-- A reply within postStop must be a safe reply via `self.reply_?` because an unsafe self.reply will throw an exception when the actor has been stopped by the application (and not by a supervisor) after successful execution of receive (or no execution at all).
+- A reply within preRestart or postRestart must be a safe reply via `self.tryReply` because an unsafe self.reply will throw an exception when the actor is restarted without having failed. This can be the case in context of AllForOne restart strategies.
+- A reply within postStop must be a safe reply via `self.tryReply` because an unsafe self.reply will throw an exception when the actor has been stopped by the application (and not by a supervisor) after successful execution of receive (or no execution at all).
 
 Handling too many actor restarts within a specific time limit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

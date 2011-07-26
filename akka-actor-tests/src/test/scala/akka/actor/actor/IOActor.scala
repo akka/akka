@@ -106,9 +106,9 @@ object IOActorSpec {
       case msg: NewClient ⇒ self startLink createWorker forward msg
       case ('set, key: String, value: ByteString) ⇒
         kvs += (key -> value)
-        self reply_? (())
-      case ('get, key: String) ⇒ self reply_? kvs.get(key)
-      case 'getall             ⇒ self reply_? kvs
+        self tryReply (())
+      case ('get, key: String) ⇒ self tryReply kvs.get(key)
+      case 'getall             ⇒ self tryReply kvs
     }
 
   }
@@ -124,15 +124,15 @@ object IOActorSpec {
     def receiveIO = {
       case ('set, key: String, value: ByteString) ⇒
         socket write (ByteString("SET " + key + " " + value.length + "\r\n") ++ value)
-        self reply_? readResult
+        self tryReply readResult
 
       case ('get, key: String) ⇒
         socket write ByteString("GET " + key + "\r\n")
-        self reply_? readResult
+        self tryReply readResult
 
       case 'getall ⇒
         socket write ByteString("GETALL\r\n")
-        self reply_? readResult
+        self tryReply readResult
     }
 
     def readResult = {

@@ -251,12 +251,12 @@ object ConsumerScalaTest {
       case "succeed" ⇒ self.reply("ok")
     }
 
-    override def preRestart(reason: scala.Throwable) {
-      self.reply_?("pr")
+    override def preRestart(reason: scala.Throwable, msg: Option[Any]) {
+      self.tryReply("pr")
     }
 
     override def postStop {
-      self.reply_?("ps")
+      self.tryReply("ps")
     }
   }
 

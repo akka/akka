@@ -1,16 +1,18 @@
-package akka.performance.trading.common
+package akka.performance.workbench
 
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.FileWriter
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
+import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import scala.collection.mutable.{ Map ⇒ MutableMap }
+import scala.collection.mutable.{Map => MutableMap}
 
 import akka.event.EventHandler
 
@@ -23,6 +25,10 @@ trait BenchResultRepository {
 
   def getWithHistorical(name: String, load: Int): Seq[Stats]
 
+  def saveHtmlReport(content: String, name: String): Unit
+
+  def htmlReportUrl(name: String): String
+
 }
 
 object BenchResultRepository {
@@ -34,8 +40,10 @@ class FileBenchResultRepository extends BenchResultRepository {
   private val statsByName = MutableMap[String, Seq[Stats]]()
   private val baselineStats = MutableMap[Key, Stats]()
   private val historicalStats = MutableMap[Key, Seq[Stats]]()
-  private val dir = System.getProperty("benchmark.resultDir", "target/benchmark")
-  private def dirExists: Boolean = new File(dir).exists
+  private val serDir = System.getProperty("benchmark.resultDir", "target/benchmark") + "/ser"
+  private def serDirExists: Boolean = new File(serDir).exists
+  private val htmlDir = System.getProperty("benchmark.resultDir", "target/benchmark") + "/html"
+  private def htmlDirExists: Boolean = new File(htmlDir).exists
   protected val maxHistorical = 7
 
   case class Key(name: String, load: Int)
@@ -64,10 +72,10 @@ class FileBenchResultRepository extends BenchResultRepository {
   }
 
   private def loadFiles() {
-    if (dirExists) {
+    if (serDirExists) {
       val files =
         for {
-          f ← new File(dir).listFiles
+          f ← new File(serDir).listFiles
           if f.isFile
           if f.getName.endsWith(".ser")
         } yield f
@@ -86,11 +94,11 @@ class FileBenchResultRepository extends BenchResultRepository {
   }
 
   private def save(stats: Stats) {
-    new File(dir).mkdirs
-    if (!dirExists) return
+    new File(serDir).mkdirs
+    if (!serDirExists) return
     val timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date(stats.timestamp))
     val name = stats.name + "--" + timestamp + "--" + stats.load + ".ser"
-    val f = new File(dir, name)
+    val f = new File(serDir, name)
     var out: ObjectOutputStream = null
     try {
       out = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(f)))
@@ -127,5 +135,24 @@ class FileBenchResultRepository extends BenchResultRepository {
 
   loadFiles()
 
+  def saveHtmlReport(content: String, fileName: String) {
+    new File(htmlDir).mkdirs
+    if (!htmlDirExists) return
+    val f = new File(htmlDir, fileName)
+    var writer: PrintWriter = null
+    try {
+      writer = new PrintWriter(new FileWriter(f))
+      writer.print(content)
+      writer.flush()
+    } catch {
+      case e: Exception ⇒
+        EventHandler.error(this, "Failed to save report to [%s], due to [%s]".
+          format(f.getAbsolutePath, e.getMessage))
+    } finally {
+      if (writer ne null) try { writer.close() } catch { case ignore: Exception ⇒ }
+    }
+  }
+
+  def htmlReportUrl(fileName: String): String = new File(htmlDir, fileName).getAbsolutePath
 }
 

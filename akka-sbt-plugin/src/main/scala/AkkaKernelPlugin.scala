@@ -4,26 +4,40 @@
 
 import sbt._
 import sbt.Keys._
+import sbt.Load.BuildStructure
 import sbt.classpath.ClasspathUtilities
 import sbt.Project.Initialize
+import sbt.CommandSupport._
 import java.io.File
+import scala.collection.mutable.{ Set => MutableSet }
 
 object AkkaMicrokernelPlugin extends Plugin {
 
+  case class DistConfig(
+    outputDirectory: File,
+    configSourceDirs: Seq[File],
+    distJvmOptions: String,
+    distMainClass: String,
+    libFilter: File ⇒ Boolean,
+    additionalLibs: Seq[File])
+
   val Dist = config("dist") extend (Runtime)
   val dist = TaskKey[File]("dist", "Builds an Akka microkernel directory")
-  // TODO how to reuse keyword "clean" here instead (dist:clean)
-  val distClean = TaskKey[File]("clean-dist", "Removes Akka microkernel directory")
+  val distClean = TaskKey[Unit]("clean", "Removes Akka microkernel directory")
+
   val outputDirectory = SettingKey[File]("output-directory")
   val configSourceDirs = TaskKey[Seq[File]]("config-source-directories",
     "Configuration files are copied from these directories")
 
-  val distJvmOptions = SettingKey[String]("jvm-options", "JVM parameters to use in start script")
+  val distJvmOptions = SettingKey[String]("kernel-jvm-options", "JVM parameters to use in start script")
   val distMainClass = SettingKey[String]("kernel-main-class", "Kernel main class to use in start script")
 
   val libFilter = SettingKey[File ⇒ Boolean]("lib-filter", "Filter of dependency jar files")
   val additionalLibs = TaskKey[Seq[File]]("additional-libs", "Additional dependency jar files")
+  val distConfig = TaskKey[DistConfig]("dist-config")
 
+  val distNeedsPackageBin = dist <<= dist.dependsOn(packageBin in Compile) 
+  
   override lazy val settings =
     inConfig(Dist)(Seq(
       dist <<= packageBin.identity,
@@ -36,46 +50,59 @@ object AkkaMicrokernelPlugin extends Plugin {
       distJvmOptions := "-Xms1024M -Xmx1024M -Xss1M -XX:MaxPermSize=256M -XX:+UseParallelGC",
       distMainClass := "akka.kernel.Main",
       libFilter := { f ⇒ true },
-      additionalLibs <<= defaultAdditionalLibs)) ++
+      additionalLibs <<= defaultAdditionalLibs,
+      distConfig <<= (outputDirectory, configSourceDirs, distJvmOptions, distMainClass, libFilter, additionalLibs) map DistConfig)) ++
       Seq(
-        dist <<= (dist in Dist).identity)
+        dist <<= (dist in Dist).identity, distNeedsPackageBin) 
 
   private def distTask: Initialize[Task[File]] =
-    (outputDirectory, sourceDirectory, crossTarget, dependencyClasspath,
-      configSourceDirs, distJvmOptions, distMainClass, libFilter, streams) map { 
-          (outDir, src, tgt, cp, configSrc, jvmOptions, mainClass, libFilt, s) ⇒
-        val log = s.log
-        val distBinPath = outDir / "bin"
-        val distConfigPath = outDir / "config"
-        val distDeployPath = outDir / "deploy"
-        val distLibPath = outDir / "lib"
-        // TODO how do I grab the additionalLibs setting? Can't add it in input tuple, limitation of number of elements in map of tuple.
-        val addLibs = Seq.empty[File]
-
-        log.info("Creating distribution %s ..." format outDir)
-        IO.createDirectory(outDir)
-        Scripts(jvmOptions, mainClass).writeScripts(distBinPath)
-        copyDirectories(configSrc, distConfigPath)
+    (distConfig, sourceDirectory, crossTarget, dependencyClasspath, projectDependencies, allDependencies, buildStructure, state) map { 
+    (conf, src, tgt, cp, projDeps, allDeps, buildStruct, st) ⇒
+      
+      if (isKernelProject(allDeps)) {
+        val log = logger(st)
+        val distBinPath = conf.outputDirectory / "bin"
+        val distConfigPath = conf.outputDirectory / "config"
+        val distDeployPath = conf.outputDirectory / "deploy"
+        val distLibPath = conf.outputDirectory / "lib"
+        
+        val subProjectDependencies: Set[SubProjectInfo] = allSubProjectDependencies(projDeps, buildStruct, st) 
+      
+        log.info("Creating distribution %s ..." format conf.outputDirectory)
+        IO.createDirectory(conf.outputDirectory)
+        Scripts(conf.distJvmOptions, conf.distMainClass).writeScripts(distBinPath)
+        copyDirectories(conf.configSourceDirs, distConfigPath)
         copyJars(tgt, distDeployPath)
-        copyFiles(libFiles(cp, libFilt), distLibPath)
-        copyFiles(addLibs, distLibPath)
+        
+        copyFiles(libFiles(cp, conf.libFilter), distLibPath)
+        copyFiles(conf.additionalLibs, distLibPath)
+        for (subTarget <- subProjectDependencies.map(_.target)) {
+          copyJars(subTarget, distLibPath)
+        }
         log.info("Distribution created.")
-        outDir
       }
-
-  private def distCleanTask: Initialize[Task[File]] =
-    (outputDirectory, streams) map { (outDir, s) ⇒
-      val log = s.log
-      log.info("Cleaning " + outDir)
-      IO.delete(outDir)
-      outDir
+      conf.outputDirectory
     }
 
-  def defaultConfigSourceDirs = (sourceDirectory, unmanagedResourceDirectories) map { (src, resources) ⇒
-    Seq(src / "main" / "config") ++ resources
+  private def distCleanTask: Initialize[Task[Unit]] =
+    (outputDirectory, allDependencies, streams) map { (outDir, deps, s) ⇒
+    
+      if (isKernelProject(deps)) {
+        val log = s.log
+        log.info("Cleaning " + outDir)
+        IO.delete(outDir)
+      }
+    }
+
+  def isKernelProject(dependencies: Seq[ModuleID]): Boolean = {
+    dependencies.exists(moduleId => moduleId.organization == "se.scalablesolutions.akka" && moduleId.name == "akka-kernel")
+  }
+  
+  private def defaultConfigSourceDirs = (sourceDirectory, unmanagedResourceDirectories) map { (src, resources) ⇒
+    Seq(src / "config", src / "main" / "config") ++ resources
   }
 
-  def defaultAdditionalLibs = (libraryDependencies) map { (libs) ⇒
+  private def defaultAdditionalLibs = (libraryDependencies) map { (libs) ⇒
     Seq.empty[File]
   }
 
@@ -145,6 +172,67 @@ object AkkaMicrokernelPlugin extends Plugin {
   private def libFiles(classpath: Classpath, libFilter: File ⇒ Boolean): Seq[File] = {
     val (libs, directories) = classpath.map(_.data).partition(ClasspathUtilities.isArchive)
     libs.map(_.asFile).filter(libFilter)
+  }
+  
+  private def allSubProjectDependencies(projDeps: Seq[ModuleID], buildStruct: BuildStructure, state: State): Set[SubProjectInfo] = {
+    val buildUnit = buildStruct.units(buildStruct.root)
+    val uri = buildStruct.root
+    val allProjects = buildUnit.defined.map {
+      case (id, proj) => (ProjectRef(uri, id) -> proj)
+    }
+    
+    val projDepsNames = projDeps.map(_.name)
+    def include(project: ResolvedProject): Boolean = projDepsNames.exists(_ == project.id)
+    val subProjects: Seq[SubProjectInfo] = allProjects.collect {
+      case (projRef, project) if include(project) => projectInfo(projRef, project, buildStruct, state, allProjects)
+    }.toList
+    
+    val allSubProjects = subProjects.map(_.recursiveSubProjects).flatten.toSet
+    allSubProjects
+}
+  
+  private def projectInfo(projectRef: ProjectRef, project: ResolvedProject, buildStruct: BuildStructure, state: State, 
+      allProjects: Map[ProjectRef, ResolvedProject]): SubProjectInfo = {
+
+    def optionalSetting[A](key: ScopedSetting[A]) = key in projectRef get buildStruct.data
+
+    def setting[A](key: ScopedSetting[A], errorMessage: => String) = {
+      optionalSetting(key) getOrElse {
+        logger(state).error(errorMessage);
+        throw new IllegalArgumentException()
+      }
+    }
+    
+    def evaluateTask[T](taskKey: sbt.Project.ScopedKey[sbt.Task[T]]) = {
+      EvaluateTask.evaluateTask(buildStruct, taskKey, state, projectRef, false, EvaluateTask.SystemProcessors)
+    }
+    
+    val projDeps: Seq[ModuleID] = evaluateTask(Keys.projectDependencies) match {
+      case Some(Value(moduleIds)) => moduleIds
+      case _ => Seq.empty
+    }
+    
+    val projDepsNames = projDeps.map(_.name)
+    def include(project: ResolvedProject): Boolean = projDepsNames.exists(_ == project.id)
+    val subProjects = allProjects.collect {
+      case (projRef, proj) if include(proj) => projectInfo(projRef, proj, buildStruct, state, allProjects)
+    }.toList
+    
+    val target = setting(Keys.crossTarget, "Missing crossTarget directory")
+    SubProjectInfo(project.id, target, subProjects)
+  }
+  
+  private case class SubProjectInfo(id: String, target: File, subProjects: Seq[SubProjectInfo]) {
+
+    def recursiveSubProjects: Set[SubProjectInfo] = {
+      val flatSubProjects = for {
+        x <- subProjects
+        y <- x.recursiveSubProjects
+      } yield y
+      
+      flatSubProjects.toSet + this
+    }
+    
   }
 
 }

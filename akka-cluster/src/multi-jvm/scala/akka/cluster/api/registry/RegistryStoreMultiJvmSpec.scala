@@ -57,16 +57,14 @@ class RegistryStoreMultiJvmNode1 extends MasterClusterTestNode {
       }
 
       barrier("store-1-in-node-1", NrOfNodes) {
-        val serializer = Serialization.serializerFor(classOf[HelloWorld1]).fold(x ⇒ fail("No serializer found"), s ⇒ s)
-        node.store("hello-world-1", classOf[HelloWorld1], serializer)
+        node.store("hello-world-1", classOf[HelloWorld1], Serialization.serializerFor(classOf[HelloWorld1]))
       }
 
       barrier("use-1-in-node-2", NrOfNodes) {
       }
 
       barrier("store-2-in-node-1", NrOfNodes) {
-        val serializer = Serialization.serializerFor(classOf[HelloWorld1]).fold(x ⇒ fail("No serializer found"), s ⇒ s)
-        node.store("hello-world-2", classOf[HelloWorld1], false, serializer)
+        node.store("hello-world-2", classOf[HelloWorld1], false, Serialization.serializerFor(classOf[HelloWorld1]))
       }
 
       barrier("use-2-in-node-2", NrOfNodes) {

@@ -10,18 +10,14 @@ import akka.actor._
 import DeploymentConfig._
 import akka.dispatch.Future
 import akka.config.Config
-import akka.util._
 import akka.routing.RouterType
 import akka.AkkaException
 
 import com.eaio.uuid.UUID
 
 import java.net.InetSocketAddress
-import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
-import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
+import java.util.concurrent.{ ConcurrentSkipListSet}
 
-import scala.collection.mutable.ConcurrentMap
-import scala.collection.JavaConversions._
 
 class ClusterException(message: String) extends AkkaException(message)
 

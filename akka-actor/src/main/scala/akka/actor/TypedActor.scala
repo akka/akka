@@ -10,8 +10,8 @@ import akka.dispatch.{ MessageDispatcher, Dispatchers, Future, FutureTimeoutExce
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
-import akka.serialization.Serialization
 import com.sun.xml.internal.ws.developer.MemberSubmissionAddressing.Validation
+import akka.serialization.{Serializer, Serialization}
 
 //TODO Document this class, not only in Scaladoc, but also in a dedicated typed-actor.rst, for both java and scala
 /**
@@ -89,33 +89,35 @@ object TypedActor {
       }
     } catch { case i: InvocationTargetException ⇒ throw i.getTargetException }
 
-    private def writeReplace(): AnyRef = {
-      val serializedParameters: Array[(Array[Byte],String)] = parameters match {
-        case null => null
-        case a if a.length == 0 => Array[(Array[Byte],String)]()
-        case a => a.map( {
-          case null => null
-          case value => Serialization.serializerFor(value.getClass).fold(throw _, s => (s.toBinary(value), s.getClass.getName))
-        })
-      }
-      new SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, serializedParameters)
+    private def writeReplace(): AnyRef = parameters match {
+      case null               => SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null, null)
+      case ps if ps.length == 0 => SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array[Serializer.Identifier](), Array[Array[Byte]]())
+      case ps =>
+        val serializers: Array[Serializer] = ps map Serialization.findSerializerFor
+        val serializedParameters: Array[Array[Byte]] = Array.ofDim[Array[Byte]](serializers.length)
+        for(i <- 0 until serializers.length)
+          serializedParameters(i) = serializers(i) toBinary parameters(i) //Mutable for the sake of sanity
+
+        SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, serializers.map(_.identifier), serializedParameters)
     }
   }
 
   /**
    * Represents the serialized form of a MethodCall, uses readResolve and writeReplace to marshall the call
    */
-  case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializedParameters: Array[(Array[Byte],String)]) {
+  case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializerIdentifiers: Array[Serializer.Identifier], serializedParameters: Array[Array[Byte]]) {
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
     private def readResolve(): AnyRef = {
       MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
         case null => null
         case a if a.length == 0 => Array[AnyRef]()
-        case a => a.map( {
-          case null => null
-          case (bytes, serializerFQN) => Serialization.serializerOf(serializerFQN).fold(throw _, _.fromBinary(bytes))
-        })
+        case a =>
+          val deserializedParameters: Array[AnyRef] = Array.ofDim[AnyRef](a.length) //Mutable for the sake of sanity
+          for(i <- 0 until a.length)
+            deserializedParameters(i) = Serialization.serializerByIdentity(serializerIdentifiers(i)).fromBinary(serializedParameters(i))
+
+          deserializedParameters
       })
     }
   }

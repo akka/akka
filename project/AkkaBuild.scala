@@ -1,6 +1,8 @@
 import sbt._
 import Keys._
 import MultiJvmPlugin.{ MultiJvm, extraOptions }
+import com.github.oforero.sbtformatter.SbtFormatter._
+import com.github.oforero.sbtformatter.SbtFormatterSettings._
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -202,7 +204,7 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(fsmSample)
+    aggregate = Seq(fsmSample, camelSample)
   )
 
   // lazy val antsSample = Project(
@@ -224,6 +226,16 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-fsm"),
     dependencies = Seq(actor),
     settings = defaultSettings
+  )
+
+  lazy val camelSample = Project(
+    id = "akka-sample-camel",
+    base = file("akka-samples/akka-sample-camel"),
+    dependencies = Seq(actor, camelTyped),
+    settings = defaultSettings ++ Seq(
+      ivyXML := Dependencies.sampleCamelXML,
+      libraryDependencies ++= Dependencies.sampleCamel
+    )
   )
 
   // lazy val helloSample = Project(
@@ -265,7 +277,7 @@ object AkkaBuild extends Build {
 
   override lazy val settings = super.settings ++ buildSettings ++ Publish.versionSettings
 
-  lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
+  lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings ++ formatterPreferences ++ formatterTasks
 
   lazy val parentSettings = baseSettings ++ Seq(
     publishArtifact in Compile := false
@@ -358,6 +370,23 @@ object Dependencies {
     jettyUtil, jettyXml, jettyServlet, jerseyCore, jerseyJson, jerseyScala,
     jacksonCore, staxApi, Provided.jerseyServer
   )
+
+  val sampleCamel = Seq(camelCore, commonsCodec, Runtime.activemq, Runtime.springJms,
+    Test.junit, Test.scalatest, Test.logback)
+
+  val sampleCamelXML =
+    <dependencies>
+      <dependency org="org.apache.camel" name="camel-jms" rev={V.Camel}>
+        <exclude module="camel-core"/>
+      </dependency>
+      <dependency org="org.apache.camel" name="camel-spring" rev={V.Camel}>
+        <exclude module="camel-core"/>
+      </dependency>
+      <!-- TODO: resolve Jetty version conflict -->
+      <!--<dependency org="org.apache.camel" name="camel-jetty" rev={Dependency.V.CamelPatch}>
+        <exclude module="camel-core"/>
+      </dependency>-->
+    </dependencies>
 }
 
 object Dependency {
@@ -428,7 +457,11 @@ object Dependency {
   // Runtime
 
   object Runtime {
-    val logback = "ch.qos.logback" % "logback-classic" % V.Logback % "runtime" // MIT
+    val activemq   = "org.apache.activemq" % "activemq-core"   % "5.4.2"      % "runtime" // ApacheV2
+    val camelJetty = "org.apache.camel"    % "camel-jetty"     % V.CamelPatch % "runtime" // ApacheV2
+    val camelJms   = "org.apache.camel"    % "camel-jms"       % V.Camel      % "runtime" // ApacheV2
+    val logback    = "ch.qos.logback"      % "logback-classic" % V.Logback    % "runtime" // MIT
+    val springJms  = "org.springframework" % "spring-jms"      % V.Spring     % "runtime" // ApacheV2
   }
 
   // Test

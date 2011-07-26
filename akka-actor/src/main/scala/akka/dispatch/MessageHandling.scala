@@ -69,6 +69,11 @@ trait MessageDispatcher {
   private[akka] def createMailbox(actorRef: ActorRef): AnyRef
 
   /**
+   * Name of this dispatcher.
+   */
+  def name: String
+
+  /**
    * Attaches the specified actorRef to this dispatcher
    */
   final def attach(actorRef: ActorRef) {

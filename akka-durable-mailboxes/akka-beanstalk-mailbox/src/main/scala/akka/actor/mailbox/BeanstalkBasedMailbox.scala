@@ -15,7 +15,7 @@ import akka.event.EventHandler
 import com.surftools.BeanstalkClient._
 import com.surftools.BeanstalkClientImpl._
 
-class BeanstalkBasedMailboxException(message: String) extends AkkaException(message)
+class BeanstalkBasedMailboxException(message: String) extends AkkaException(message) {}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

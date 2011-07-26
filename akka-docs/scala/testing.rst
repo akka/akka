@@ -288,6 +288,13 @@ assertions concerning received messages. Here is the full list:
     does a conformance check; if you need the class to be equal, have a look at
     :meth:`expectMsgAllClassOf` with a single given class argument.
 
+  * :meth:`expectMsgType[T: Manifest](d: Duration)`
+
+    An object which is an instance of the given type (after erasure) must be
+    received within the allotted time frame; the object will be returned. This
+    method is approximately equivalent to
+    ``expectMsgClass(manifest[T].erasure)``.
+
   * :meth:`expectMsgAnyOf[T](d: Duration, obj: T*): T`
 
     An object must be received within the given time, and it must be equal (
@@ -375,6 +382,19 @@ with message flows:
     This feature is useful e.g. when testing a logging system, where you want
     to ignore regular messages and are only interested in your specific ones.
 
+Expecting Exceptions
+--------------------
+
+One case which is not handled by the :obj:`testActor` is if an exception is
+thrown while processing the message sent to the actor under test. This can be
+tested by using a :class:`Future` based invocation::
+
+  // assuming ScalaTest ShouldMatchers
+
+  evaluating {
+    (someActor ? badOperation).await.get
+  } should produce [UnhandledMessageException]
+
 .. _TestKit.within:
 
 Timing Assertions
@@ -398,10 +418,13 @@ is between :obj:`min` and :obj:`max`, where the former defaults to zero. The
 deadline calculated by adding the :obj:`max` parameter to the block's start
 time is implicitly available within the block to all examination methods, if
 you do not specify it, is is inherited from the innermost enclosing
-:meth:`within` block. It should be noted that using :meth:`expectNoMsg` will
-terminate upon reception of a message or at the deadline, whichever occurs
-first; it follows that this examination usually is the last statement in a
 :meth:`within` block.
+
+It should be noted that if the last message-receiving assertion of the block is
+:meth:`expectNoMsg` or :meth:`receiveWhile`, the final check of the
+:meth:`within` is skipped in order to avoid false positives due to wake-up
+latencies. This means that while individual contained assertions still use the
+maximum time bound, the overall block may take arbitrarily longer in this case.
 
 .. code-block:: scala
 
@@ -409,10 +432,11 @@ first; it follows that this examination usually is the last statement in a
     "A Worker" must {
       "send timely replies" in {
         val worker = actorOf(...)
-        within (50 millis) {
+        within (500 millis) {
           worker ! "some work"
           expectMsg("some result")
-          expectNoMsg
+          expectNoMsg        // will block for the rest of the 500ms
+          Thread.sleep(1000) // will NOT make this block fail
         }
       }
     }
@@ -468,7 +492,7 @@ using a small example::
     var dest1 : ActorRef = _
     var dest2 : ActorRef = _
     def receive = {
-      case (d1, d2) =>
+      case (d1: ActorRef, d2: ActorRef) =>
         dest1 = d1
         dest2 = d2
       case x =>

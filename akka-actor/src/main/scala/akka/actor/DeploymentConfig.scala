@@ -6,7 +6,6 @@ package akka.actor
 
 import akka.config.Config
 import akka.routing.RouterType
-import akka.serialization.Serializer
 
 /**
  * Module holding the programmatic deployment configuration classes.
@@ -53,7 +52,7 @@ object DeploymentConfig {
   sealed trait Scope
   case class Clustered(
     preferredNodes: Iterable[Home] = Vector(Host("localhost")),
-    replicas: Replicas = NoReplicas,
+    replicas: ReplicationFactor = ZeroReplicationFactor,
     replication: ReplicationScheme = Transient) extends Scope
 
   // For Java API
@@ -73,18 +72,17 @@ object DeploymentConfig {
   // --------------------------------
   // --- Replicas
   // --------------------------------
-  sealed trait Replicas
-  case class Replicate(factor: Int) extends Replicas {
-    if (factor < 1) throw new IllegalArgumentException("Replicas factor can not be negative or zero")
+  sealed case class ReplicationFactor(val factor: Int) {
+    if (factor < 0) throw new IllegalArgumentException("replication-factor can not be negative")
   }
 
   // For Java API
-  case class AutoReplicate() extends Replicas
-  case class NoReplicas() extends Replicas
+  case class AutoReplicationFactor() extends ReplicationFactor(-1)
+  case class ZeroReplicationFactor() extends ReplicationFactor(0)
 
   // For Scala API
-  case object AutoReplicate extends Replicas
-  case object NoReplicas extends Replicas
+  case object AutoReplicationFactor extends ReplicationFactor(-1)
+  case object ZeroReplicationFactor extends ReplicationFactor(0)
 
   // --------------------------------
   // --- Replication
@@ -140,14 +138,6 @@ object DeploymentConfig {
   }
 
   def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == Config.nodename)
-
-  def replicaValueFor(replicas: Replicas): Int = replicas match {
-    case Replicate(replicas) ⇒ replicas
-    case AutoReplicate       ⇒ -1
-    case AutoReplicate()     ⇒ -1
-    case NoReplicas          ⇒ 0
-    case NoReplicas()        ⇒ 0
-  }
 
   def routerTypeFor(routing: Routing): RouterType = routing match {
     case Direct          ⇒ RouterType.Direct

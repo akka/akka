@@ -246,7 +246,7 @@ from localhost on port 8877.
      public void onReceive(Object message) {
        Message msg = (Message)message;
        String body = msg.getBodyAs(String.class);
-       getContext().replySafe(String.format("Hello %s", body));
+       getContext().tryReply(String.format("Hello %s", body));
      }
    }
 
@@ -659,10 +659,10 @@ acknowledgement).
 
      public void onReceive(Object message) {
        // ...
-       getContext().replyUnsafe(ack()) // on success
+       getContext().reply(ack()) // on success
        // ...
        val e: Exception = ...
-       getContext().replyUnsafe(new Failure(e)) // on failure
+       getContext().reply(new Failure(e)) // on failure
      }
    }
 
@@ -855,7 +855,7 @@ following consumer actor class.
      }
 
      public void onReceive(Object message) {
-       getContext().replySafe("response from remote actor 1");
+       getContext().tryReply("response from remote actor 1");
      }
    }
 
@@ -1423,7 +1423,7 @@ For initiating a a two-way message exchange, one of the
 
    public class SampleUntypedActor extends UntypedActor {
        public void onReceive(Object msg) {
-           getContext().replySafe(CamelContextManager.getMandatoryTemplate().requestBody("direct:news", msg));
+           getContext().tryReply(CamelContextManager.getMandatoryTemplate().requestBody("direct:news", msg));
        }
    }
 
@@ -1995,7 +1995,7 @@ ends at the target actor.
        public void onReceive(Object message) {
            Message msg = (Message) message;
            String body = msg.getBodyAs(String.class);
-           getContext().replySafe(String.format("Hello %s", body));
+           getContext().tryReply(String.format("Hello %s", body));
        }
    }
 

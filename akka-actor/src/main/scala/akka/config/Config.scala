@@ -10,8 +10,13 @@ import java.net.InetAddress
 
 import com.eaio.uuid.UUID
 
-class ConfigurationException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
-class ModuleNotAvailableException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class ConfigurationException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
+  def this(msg:String) = this(msg, null);
+}
+
+class ModuleNotAvailableException(message: String, cause: Throwable = null) extends AkkaException(message, cause)  {
+  def this(msg:String) = this(msg, null);
+}
 
 /**
  * Loads up the configuration (from the akka.conf file).
