@@ -9,13 +9,13 @@ import akka.dispatch._
 import akka.config._
 import akka.config.Supervision._
 import akka.util._
-import akka.serialization.{Serializer, Serialization}
+import akka.serialization.{ Serializer, Serialization }
 import ReflectiveAccess._
 import ClusterModule._
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.{ScheduledFuture, ConcurrentHashMap, TimeUnit}
-import java.util.{Map ⇒ JMap}
+import java.util.concurrent.{ ScheduledFuture, ConcurrentHashMap, TimeUnit }
+import java.util.{ Map ⇒ JMap }
 
 import scala.reflect.BeanProperty
 import scala.collection.immutable.Stack
@@ -301,7 +301,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    *
    * If you would rather have an exception, check the <code>reply(..)</code> version.
    */
-  def tryReply(message: Any): Boolean =  channel.safe_!(message)(this)
+  def tryReply(message: Any): Boolean = channel.safe_!(message)(this)
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
@@ -444,7 +444,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, val address: String)
+class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor, val address: String)
   extends ActorRef with ScalaActorRef {
 
   protected[akka] val guard = new ReentrantGuard
@@ -480,12 +480,12 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
         "]")
 
   private val serializer: Serializer =
-    try { Serialization.serializerFor(this.getClass) } catch { case e: Exception => serializerErrorDueTo(e.toString)}
+    try { Serialization.serializerFor(this.getClass) } catch { case e: Exception ⇒ serializerErrorDueTo(e.toString) }
 
   private lazy val replicationStorage: Option[TransactionLog] = {
     import DeploymentConfig._
     val replicationScheme = replicationSchemeFor(Deployer.deploymentFor(address)).getOrElse(Transient)
-    if(isReplicated(replicationScheme)) {
+    if (isReplicated(replicationScheme)) {
       if (isReplicatedWithTransactionLog(replicationScheme)) {
         EventHandler.debug(this, "Creating a transaction log for Actor [%s] with replication strategy [%s]".format(address, replicationScheme))
 
@@ -503,16 +503,16 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
 
   // used only for deserialization
   private[akka] def this(
-                          __uuid: Uuid,
-                          __address: String,
-                          __timeout: Long,
-                          __receiveTimeout: Option[Long],
-                          __lifeCycle: LifeCycle,
-                          __supervisor: Option[ActorRef],
-                          __hotswap: Stack[PartialFunction[Any, Unit]],
-                          __factory: () ⇒ Actor) = {
+    __uuid: Uuid,
+    __address: String,
+    __timeout: Long,
+    __receiveTimeout: Option[Long],
+    __lifeCycle: LifeCycle,
+    __supervisor: Option[ActorRef],
+    __hotswap: Stack[PartialFunction[Any, Unit]],
+    __factory: () ⇒ Actor) = {
 
-    this (__factory, __address)
+    this(__factory, __address)
 
     _uuid = __uuid
     timeout = __timeout
@@ -704,8 +704,7 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
               throw e
             case e ⇒
               handleExceptionInDispatch(e, messageHandle.message)
-          }
-          finally {
+          } finally {
             checkReceiveTimeout // Reschedule receive timeout
           }
         } catch {
@@ -810,8 +809,7 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
                   case e ⇒
                     EventHandler.error(e, this, "Exception in restart of Actor [%s]".format(toString))
                     false // an error or exception here should trigger a retry
-                }
-                finally {
+                } finally {
                   currentMessage = null
                 }
 
@@ -852,7 +850,7 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
   // ========= PRIVATE FUNCTIONS =========
 
   private[this] def newActor: Actor = {
-    import Actor.{actorRefInCreation ⇒ refStack}
+    import Actor.{ actorRefInCreation ⇒ refStack }
     val stackBefore = refStack.get
     refStack.set(stackBefore.push(this))
     try {
@@ -876,7 +874,7 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
         refStack.set(if (stackAfter.head eq null) stackAfter.pop.pop else stackAfter.pop) //pop null marker plus self
     }
   } match {
-    case null ⇒ throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
+    case null  ⇒ throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
     case valid ⇒ valid
   }
 
@@ -909,21 +907,20 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
 
   private def notifySupervisorWithMessage(notification: LifeCycleMessage) {
     // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
-    _supervisor.foreach {
-      sup ⇒
-        if (sup.isShutdown) {
-          // if supervisor is shut down, game over for all linked actors
-          //Scoped stop all linked actors, to avoid leaking the 'i' val
-          {
-            val i = _linkedActors.values.iterator
-            while (i.hasNext) {
-              i.next.stop()
-              i.remove
-            }
+    _supervisor.foreach { sup ⇒
+      if (sup.isShutdown) {
+        // if supervisor is shut down, game over for all linked actors
+        //Scoped stop all linked actors, to avoid leaking the 'i' val
+        {
+          val i = _linkedActors.values.iterator
+          while (i.hasNext) {
+            i.next.stop()
+            i.remove
           }
-          //Stop the actor itself
-          stop
-        } else sup ! notification // else notify supervisor
+        }
+        //Stop the actor itself
+        stop
+      } else sup ! notification // else notify supervisor
     }
   }
 
@@ -993,11 +990,11 @@ object RemoteActorSystemMessage {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[akka] case class RemoteActorRef private[akka](
-                                                       val remoteAddress: InetSocketAddress,
-                                                       val address: String,
-                                                       _timeout: Long,
-                                                       loader: Option[ClassLoader])
+private[akka] case class RemoteActorRef private[akka] (
+  val remoteAddress: InetSocketAddress,
+  val address: String,
+  _timeout: Long,
+  loader: Option[ClassLoader])
   extends ActorRef with ScalaActorRef {
 
   ClusterModule.ensureEnabled()
@@ -1009,7 +1006,7 @@ private[akka] case class RemoteActorRef private[akka](
   def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
     val chSender = channel match {
       case ref: ActorRef ⇒ Some(ref)
-      case _ ⇒ None
+      case _             ⇒ None
     }
     Actor.remote.send[Any](message, chSender, None, remoteAddress, timeout, true, this, loader)
   }
@@ -1024,7 +1021,7 @@ private[akka] case class RemoteActorRef private[akka](
     }
     val chFuture = channel match {
       case f: Promise[_] ⇒ Some(f.asInstanceOf[Promise[Any]])
-      case _ ⇒ None
+      case _             ⇒ None
     }
     val future = Actor.remote.send[Any](message, chSender, chFuture, remoteAddress, timeout.duration.toMillis, false, this, loader)
     if (future.isDefined) ActorPromise(future.get)
@@ -1174,7 +1171,7 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel {
     if (msg eq null) None
     else msg.channel match {
       case ref: ActorRef ⇒ Some(ref)
-      case _ ⇒ None
+      case _             ⇒ None
     }
   }
 
@@ -1188,7 +1185,7 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel {
     if (msg eq null) None
     else msg.channel match {
       case f: ActorPromise ⇒ Some(f)
-      case _ ⇒ None
+      case _               ⇒ None
     }
   }
 

@@ -16,8 +16,7 @@ import akka.AkkaException
 import com.eaio.uuid.UUID
 
 import java.net.InetSocketAddress
-import java.util.concurrent.{ ConcurrentSkipListSet}
-
+import java.util.concurrent.{ ConcurrentSkipListSet }
 
 class ClusterException(message: String) extends AkkaException(message)
 

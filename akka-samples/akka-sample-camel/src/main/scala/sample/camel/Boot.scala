@@ -1,6 +1,6 @@
 package sample.camel
 
-import org.apache.camel.{Exchange, Processor}
+import org.apache.camel.{ Exchange, Processor }
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.spring.spi.ApplicationContextRegistry
@@ -74,7 +74,7 @@ class Boot {
   val jmsUri = "jms:topic:test"
   val jmsSubscriber1 = actorOf(new Subscriber("jms-subscriber-1", jmsUri)).start
   val jmsSubscriber2 = actorOf(new Subscriber("jms-subscriber-2", jmsUri)).start
-  val jmsPublisher =   actorOf(new Publisher(jmsUri), "jms-publisher").start
+  val jmsPublisher = actorOf(new Publisher(jmsUri), "jms-publisher").start
 
   //val cometdPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher)).start
   val jmsPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher)).start

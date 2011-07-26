@@ -6,19 +6,19 @@ package akka.transactor
 
 import akka.AkkaException
 import akka.config.Config
-import akka.stm.{Atomic, DefaultTransactionConfig, TransactionFactory}
+import akka.stm.{ Atomic, DefaultTransactionConfig, TransactionFactory }
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 import org.multiverse.templates.TransactionalCallable
 import akka.actor.ActorTimeoutException
-import org.multiverse.api.{TransactionConfiguration, Transaction ⇒ MultiverseTransaction}
+import org.multiverse.api.{ TransactionConfiguration, Transaction ⇒ MultiverseTransaction }
 import org.multiverse.api.exceptions.ControlFlowError
 
 /**
  * Akka-specific exception for coordinated transactions.
  */
-class CoordinatedTransactionException(message: String, cause: Throwable = null) extends AkkaException(message, cause){
-  def this(msg:String) = this(msg, null);
+class CoordinatedTransactionException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
+  def this(msg: String) = this(msg, null);
 }
 
 /**
@@ -96,9 +96,9 @@ object Coordinated {
 class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
 
   // Java API constructors
-  def this(message: Any) = this (message, Coordinated.createBarrier)
+  def this(message: Any) = this(message, Coordinated.createBarrier)
 
-  def this() = this (null, Coordinated.createBarrier)
+  def this() = this(null, Coordinated.createBarrier)
 
   /**
    * Create a new Coordinated object and increment the number of parties by one.
@@ -147,8 +147,8 @@ class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
         val result = try {
           body
         } catch {
-          case e: ControlFlowError => throw e
-          case e: Exception => {
+          case e: ControlFlowError ⇒ throw e
+          case e: Exception ⇒ {
             barrier.abort()
             throw e
           }
@@ -158,7 +158,7 @@ class Coordinated(val message: Any, barrier: CountDownCommitBarrier) {
         val success = try {
           barrier.tryJoinCommit(mtx, timeout.length, timeout.unit)
         } catch {
-          case e: IllegalStateException => {
+          case e: IllegalStateException ⇒ {
             val config: TransactionConfiguration = mtx.getConfiguration
             throw new CoordinatedTransactionException("Coordinated transaction [" + config.getFamilyName + "] aborted", e)
           }

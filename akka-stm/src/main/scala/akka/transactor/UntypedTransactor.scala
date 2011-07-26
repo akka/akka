@@ -28,7 +28,7 @@ abstract class UntypedTransactor extends UntypedActor {
   @throws(classOf[Exception])
   final def onReceive(message: Any): Unit = {
     message match {
-      case coordinated@Coordinated(message) ⇒ {
+      case coordinated @ Coordinated(message) ⇒ {
         val others = coordinate(message)
         for (sendTo ← others) {
           sendTo.actor.sendOneWay(coordinated(sendTo.message.getOrElse(message)))

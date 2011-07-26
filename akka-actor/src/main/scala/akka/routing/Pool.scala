@@ -38,7 +38,7 @@ object ActorPool {
 trait ActorPool {
   /**
    * Adds a new actor to the pool. The DefaultActorPool implementation will start and link (supervise) this actor.
-   * This method is invoked whenever the pool determines it must boost capacity. 
+   * This method is invoked whenever the pool determines it must boost capacity.
    * @return A new actor for the pool
    */
   def instance(): ActorRef
@@ -48,7 +48,7 @@ trait ActorPool {
    * @param _delegates The current sequence of pooled actors
    * @return the number of delegates by which the pool should be adjusted (positive, negative or zero)
    */
-  def capacity(delegates: Seq[ActorRef]): Int 
+  def capacity(delegates: Seq[ActorRef]): Int
   /**
    * Provides the results of the selector, one or more actors, to which an incoming message is forwarded.
    * This method returns an iterator since a selector might return more than one actor to handle the message.
@@ -71,7 +71,7 @@ trait ActorPoolSupervisionConfig {
 
 /**
  * Provides a default implementation of the supervision configuration by
- * defining a One-for-One fault handling strategy, trapping exceptions, 
+ * defining a One-for-One fault handling strategy, trapping exceptions,
  * limited to 5 retries within 1 second.
  *
  * This is just a basic strategy and implementors are encouraged to define
@@ -89,7 +89,7 @@ trait DefaultActorPoolSupervisionConfig extends ActorPoolSupervisionConfig {
  *  are added or existing ones are removed. Removed actors are sent the PoisonPill message.
  *  New actors are automatically started and linked.  The pool supervises the actors and will
  *  use the fault handling strategy specified by the mixed-in ActorPoolSupervisionConfig.
- *  Pooled actors may be any lifecycle. If you're testing pool sizes during runtime, take a 
+ *  Pooled actors may be any lifecycle. If you're testing pool sizes during runtime, take a
  *  look at the unit tests... Any delegate with a <b>Permanent</b> lifecycle will be
  *  restarted and the pool size will be level with what it was prior to the fault.  In just
  *  about every other case, e.g. the delegates are <b>Temporary</b> or the delegate cannot be
@@ -99,9 +99,9 @@ trait DefaultActorPoolSupervisionConfig extends ActorPoolSupervisionConfig {
  *
  *  Second, invokes the pool's selector that returns a list of delegates that are to receive
  *  the incoming message.  Selectors may return more than one actor.  If <i>partialFill</i>
- *  is true then it might also the case that fewer than number of desired actors will be 
+ *  is true then it might also the case that fewer than number of desired actors will be
  *  returned.
- *  
+ *
  *  Lastly, routes by forwarding, the incoming message to each delegate in the selected set.
  */
 trait DefaultActorPool extends ActorPool { this: Actor with ActorPoolSupervisionConfig ⇒
@@ -126,12 +126,12 @@ trait DefaultActorPool extends ActorPool { this: Actor with ActorPoolSupervision
       self tryReply Stats(_delegates length)
     case MaximumNumberOfRestartsWithinTimeRangeReached(victim, _, _, _) ⇒
       _delegates = _delegates filterNot { _.uuid == victim.uuid }
-    case Death(victim, _) => 
+    case Death(victim, _) ⇒
       _delegates = _delegates filterNot { _.uuid == victim.uuid }
     case msg ⇒
       resizeIfAppropriate()
 
-    select(_delegates) foreach { _ forward msg } 
+      select(_delegates) foreach { _ forward msg }
   }
 
   private def resizeIfAppropriate() {
@@ -160,7 +160,7 @@ trait DefaultActorPool extends ActorPool { this: Actor with ActorPoolSupervision
 
 /**
  * Selectors
- * 
+ *
  * These traits define how, when a message needs to be routed, delegate(s) are chosen from the pool.
  * Note that it's acceptable to return more than one actor to handle a given message.
  */
@@ -211,7 +211,7 @@ trait RoundRobinSelector {
 
 /**
  * Capacitors
- * 
+ *
  * These traits define how to alter the size of the pool according to some desired behavior.
  * Capacitors are required (minimally) by the pool to establish bounds on the number of delegates
  * that may exist in the pool.
@@ -269,7 +269,7 @@ trait ActiveFuturesPressureCapacitor {
 }
 
 /**
- * 
+ *
  */
 trait CapacityStrategy {
   import ActorPool._
@@ -283,7 +283,7 @@ trait CapacityStrategy {
   def pressure(delegates: Seq[ActorRef]): Int
   /**
    * This method can be used to smooth the response of the capacitor by considering
-   * the current pressure and current capacity.  
+   * the current pressure and current capacity.
    */
   def filter(pressure: Int, capacity: Int): Int
 
@@ -299,7 +299,7 @@ trait FixedCapacityStrategy extends FixedSizeCapacitor
  * Use this trait to setup a pool that may have a variable number of
  * delegates but always within an established upper and lower limit.
  *
- * If mix this into your pool implementation, you must also provide a 
+ * If mix this into your pool implementation, you must also provide a
  * PressureCapacitor and a Filter.
  */
 trait BoundedCapacityStrategy extends CapacityStrategy with BoundedCapacitor

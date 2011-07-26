@@ -18,7 +18,7 @@
 package akka.actor.mailbox.filequeue
 
 import java.io._
-import java.nio.{ByteBuffer, ByteOrder}
+import java.nio.{ ByteBuffer, ByteOrder }
 import java.nio.channels.FileChannel
 
 import akka.event.EventHandler
@@ -35,11 +35,10 @@ object JournalItem {
   case object EndOfFile extends JournalItem
 }
 
-
 /**
  * Codes for working with the journal file for a PersistentQueue.
  */
-class Journal(queuePath: String, syncJournal: => Boolean) {
+class Journal(queuePath: String, syncJournal: ⇒ Boolean) {
 
   private val queueFile = new File(queuePath)
 
@@ -63,7 +62,6 @@ class Journal(queuePath: String, syncJournal: => Boolean) {
   private val CMD_CONFIRM_REMOVE = 6
   private val CMD_ADD_XID = 7
 
-
   private def open(file: File): Unit = {
     writer = new FileOutputStream(file, true).getChannel
   }
@@ -77,12 +75,12 @@ class Journal(queuePath: String, syncJournal: => Boolean) {
     val tmpFile = new File(queuePath + "~~" + System.currentTimeMillis)
     open(tmpFile)
     size = 0
-    for (item <- openItems) {
+    for (item ← openItems) {
       addWithXid(item)
       removeTentative(false)
     }
     saveXid(xid)
-    for (item <- queue) {
+    for (item ← queue) {
       add(false, item)
     }
     if (syncJournal) writer.force(false)
@@ -93,7 +91,7 @@ class Journal(queuePath: String, syncJournal: => Boolean) {
 
   def close(): Unit = {
     writer.close
-    for (r <- reader) r.close
+    for (r ← reader) r.close
     reader = None
   }
 
@@ -102,7 +100,7 @@ class Journal(queuePath: String, syncJournal: => Boolean) {
       close()
       queueFile.delete
     } catch {
-      case _ =>
+      case _ ⇒
     }
   }
 
@@ -164,23 +162,23 @@ class Journal(queuePath: String, syncJournal: => Boolean) {
     reader = Some(rj)
   }
 
-  def fillReadBehind(f: QItem => Unit): Unit = {
+  def fillReadBehind(f: QItem ⇒ Unit): Unit = {
     val pos = if (replayer.isDefined) replayer.get.position else writer.position
-    for (rj <- reader) {
+    for (rj ← reader) {
       if (rj.position == pos) {
         // we've caught up.
         rj.close
         reader = None
       } else {
         readJournalEntry(rj) match {
-          case (JournalItem.Add(item), _) => f(item)
-          case (_, _) =>
+          case (JournalItem.Add(item), _) ⇒ f(item)
+          case (_, _)                     ⇒
         }
       }
     }
   }
 
-  def replay(name: String)(f: JournalItem => Unit): Unit = {
+  def replay(name: String)(f: JournalItem ⇒ Unit): Unit = {
     size = 0
     var lastUpdate = 0L
     val TEN_MB = 10L * 1024 * 1024
@@ -191,8 +189,8 @@ class Journal(queuePath: String, syncJournal: => Boolean) {
         var done = false
         do {
           readJournalEntry(in) match {
-            case (JournalItem.EndOfFile, _) => done = true
-            case (x, itemsize) =>
+            case (JournalItem.EndOfFile, _) ⇒ done = true
+            case (x, itemsize) ⇒
               size += itemsize
               f(x)
               if (size / TEN_MB > lastUpdate) {
@@ -203,17 +201,17 @@ class Journal(queuePath: String, syncJournal: => Boolean) {
           }
         } while (!done)
       } catch {
-        case e: BrokenItemException =>
+        case e: BrokenItemException ⇒
           EventHandler.error(e, this, "Exception replaying journal for '%s'".format(name))
           truncateJournal(e.lastValidPosition)
       }
     } catch {
-      case e: FileNotFoundException =>
+      case e: FileNotFoundException ⇒
         EventHandler.info(this, "No transaction journal for '%s'; starting with empty queue.".format(name))
-      case e: IOException =>
+      case e: IOException ⇒
         EventHandler.error(e, this, "Exception replaying journal for '%s'".format(name))
-        // this can happen if the server hardware died abruptly in the middle
-        // of writing a journal. not awesome but we should recover.
+      // this can happen if the server hardware died abruptly in the middle
+      // of writing a journal. not awesome but we should recover.
     }
     replayer = None
   }
@@ -241,36 +239,36 @@ class Journal(queuePath: String, syncJournal: => Boolean) {
     } else {
       try {
         buffer(0) match {
-          case CMD_ADD =>
+          case CMD_ADD ⇒
             val data = readBlock(in)
             (JournalItem.Add(QItem.unpackOldAdd(data)), 5 + data.length)
-          case CMD_REMOVE =>
+          case CMD_REMOVE ⇒
             (JournalItem.Remove, 1)
-          case CMD_ADDX =>
+          case CMD_ADDX ⇒
             val data = readBlock(in)
             (JournalItem.Add(QItem.unpack(data)), 5 + data.length)
-          case CMD_REMOVE_TENTATIVE =>
+          case CMD_REMOVE_TENTATIVE ⇒
             (JournalItem.RemoveTentative, 1)
-          case CMD_SAVE_XID =>
+          case CMD_SAVE_XID ⇒
             val xid = readInt(in)
             (JournalItem.SavedXid(xid), 5)
-          case CMD_UNREMOVE =>
+          case CMD_UNREMOVE ⇒
             val xid = readInt(in)
             (JournalItem.Unremove(xid), 5)
-          case CMD_CONFIRM_REMOVE =>
+          case CMD_CONFIRM_REMOVE ⇒
             val xid = readInt(in)
             (JournalItem.ConfirmRemove(xid), 5)
-          case CMD_ADD_XID =>
+          case CMD_ADD_XID ⇒
             val xid = readInt(in)
             val data = readBlock(in)
             val item = QItem.unpack(data)
             item.xid = xid
             (JournalItem.Add(item), 9 + data.length)
-          case n =>
+          case n ⇒
             throw new BrokenItemException(lastPosition, new IOException("invalid opcode in journal: " + n.toInt + " at position " + in.position))
         }
       } catch {
-        case ex: IOException =>
+        case ex: IOException ⇒
           throw new BrokenItemException(lastPosition, ex)
       }
     }
@@ -286,11 +284,11 @@ class Journal(queuePath: String, syncJournal: => Boolean) {
         false
       } else {
         nextItem = readJournalEntry(in) match {
-          case (JournalItem.EndOfFile, _) =>
+          case (JournalItem.EndOfFile, _) ⇒
             done = true
             in.close()
             None
-          case x =>
+          case x ⇒
             Some(x)
         }
         nextItem.isDefined
@@ -332,9 +330,9 @@ class Journal(queuePath: String, syncJournal: => Boolean) {
 
   private def write(allowSync: Boolean, items: Any*): Int = {
     byteBuffer.clear
-    for (item <- items) item match {
-      case b: Byte => byteBuffer.put(b)
-      case i: Int => byteBuffer.putInt(i)
+    for (item ← items) item match {
+      case b: Byte ⇒ byteBuffer.put(b)
+      case i: Int  ⇒ byteBuffer.putInt(i)
     }
     byteBuffer.flip
     while (byteBuffer.position < byteBuffer.limit) {

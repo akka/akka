@@ -118,8 +118,8 @@ class VersionedData(val data: Array[Byte], val version: Long) {}
 /**
  * An AkkaException thrown by the Storage module.
  */
-class StorageException(msg: String = null, cause: java.lang.Throwable = null) extends AkkaException(msg, cause){
-  def this(msg:String) = this(msg, null);
+class StorageException(msg: String = null, cause: java.lang.Throwable = null) extends AkkaException(msg, cause) {
+  def this(msg: String) = this(msg, null);
 }
 
 /**
@@ -127,21 +127,21 @@ class StorageException(msg: String = null, cause: java.lang.Throwable = null) ex
  * A StorageException thrown when an operation is done on a non existing node.
  */
 class MissingDataException(msg: String = null, cause: java.lang.Throwable = null) extends StorageException(msg, cause) {
-  def this(msg:String) = this(msg, null);
+  def this(msg: String) = this(msg, null);
 }
 
 /**
  * A StorageException thrown when an operation is done on an existing node, but no node was expected.
  */
-class DataExistsException(msg: String = null, cause: java.lang.Throwable = null) extends StorageException(msg, cause){
-  def this(msg:String) = this(msg, null);
+class DataExistsException(msg: String = null, cause: java.lang.Throwable = null) extends StorageException(msg, cause) {
+  def this(msg: String) = this(msg, null);
 }
 
 /**
  * A StorageException thrown when an operation causes an optimistic locking failure.
  */
 class BadVersionException(msg: String = null, cause: java.lang.Throwable = null) extends StorageException(msg, cause) {
-  def this(msg:String) = this(msg, null);
+  def this(msg: String) = this(msg, null);
 }
 
 /**

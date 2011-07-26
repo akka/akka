@@ -91,7 +91,7 @@ object Chameneos {
           self.stop()
         }
 
-      case msg@Meet(a, c) ⇒
+      case msg @ Meet(a, c) ⇒
         if (n > 0) {
           waitingChameneo match {
             case Some(chameneo) ⇒

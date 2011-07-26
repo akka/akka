@@ -21,8 +21,16 @@ object DeploymentConfig {
   // --------------------------------
   case class Deploy(
     address: String,
+    recipe: Option[ActorRecipe],
     routing: Routing = Direct,
-    scope: Scope = Local)
+    scope: Scope = Local) {
+    Address.validate(address)
+  }
+
+  // --------------------------------
+  // --- Actor Recipe
+  // --------------------------------
+  case class ActorRecipe(implementationClass: Class[_ <: Actor]) //TODO Add ActorConfiguration here
 
   // --------------------------------
   // --- Routing
@@ -133,8 +141,10 @@ object DeploymentConfig {
     case Host("localhost") ⇒ Config.nodename
     case IP("0.0.0.0")     ⇒ Config.nodename
     case IP("127.0.0.1")   ⇒ Config.nodename
-    case Host(hostname)    ⇒ throw new UnsupportedOperationException("Specifying preferred node name by 'hostname' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
-    case IP(address)       ⇒ throw new UnsupportedOperationException("Specifying preferred node name by 'IP address' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
+    case Host(hostname) ⇒ throw new UnsupportedOperationException(
+      "Specifying preferred node name by 'hostname' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
+    case IP(address) ⇒ throw new UnsupportedOperationException(
+      "Specifying preferred node name by 'IP address' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
   }
 
   def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == Config.nodename)
@@ -156,7 +166,7 @@ object DeploymentConfig {
   }
 
   def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {
-    case Deploy(_, _, Clustered(_, _, replicationScheme)) ⇒ Some(replicationScheme)
+    case Deploy(_, _, _, Clustered(_, _, replicationScheme)) ⇒ Some(replicationScheme)
     case _ ⇒ None
   }
 

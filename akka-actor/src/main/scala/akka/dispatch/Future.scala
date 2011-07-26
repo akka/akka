@@ -116,8 +116,7 @@ object Futures {
                   case e: Exception ⇒
                     EventHandler.error(e, this, e.getMessage)
                     result completeWithException e
-                }
-                finally {
+                } finally {
                   results.clear
                 }
               }
@@ -296,7 +295,7 @@ object Future {
    */
   def flow[A](body: ⇒ A @cps[Future[Any]])(implicit timeout: Timeout): Future[A] = {
     val future = Promise[A](timeout)
-    (reset(future.asInstanceOf[Promise[Any]].completeWithResult(body)): Future[Any]) onException { case e => future completeWithException e }
+    (reset(future.asInstanceOf[Promise[Any]].completeWithResult(body)): Future[Any]) onException { case e ⇒ future completeWithException e }
     future
   }
 }

@@ -22,19 +22,19 @@ class FileBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbox(own
   import FileBasedMailboxUtil._
 
   private val queue = try {
-    try { FileUtils.forceMkdir(new java.io.File(queuePath)) } catch { case e => {} }
+    try { FileUtils.forceMkdir(new java.io.File(queuePath)) } catch { case e ⇒ {} }
     val queue = new filequeue.PersistentQueue(queuePath, name, config)
     queue.setup // replays journal
     queue.discardExpired
     queue
   } catch {
-    case e: Exception =>
+    case e: Exception ⇒
       EventHandler.error(e, this, "Could not create a file-based mailbox")
       throw e
   }
 
   def enqueue(message: MessageInvocation) = {
-    EventHandler.debug(this, "\nENQUEUING message in file-based mailbox [%s]".format( message))
+    EventHandler.debug(this, "\nENQUEUING message in file-based mailbox [%s]".format(message))
     queue.add(serialize(message))
   }
 
@@ -47,8 +47,8 @@ class FileBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbox(own
       messageInvocation
     } else null
   } catch {
-    case e: java.util.NoSuchElementException => null
-    case e: Exception =>
+    case e: java.util.NoSuchElementException ⇒ null
+    case e: Exception ⇒
       EventHandler.error(e, this, "Couldn't dequeue from file-based mailbox")
       throw e
   }
@@ -60,7 +60,7 @@ class FileBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbox(own
     queue.remove
     true
   } catch {
-    case e => false //review why catch Throwable? And swallow potential Errors?
+    case e ⇒ false //review why catch Throwable? And swallow potential Errors?
   }
 
   def size: Int = queue.length.toInt

@@ -75,7 +75,6 @@ class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with B
   }
 }
 
-
 class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
   import RoundRobin2ReplicasMultiJvmSpec._
 
@@ -109,7 +108,7 @@ class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
         //todo: is there a reason to check for null again since it already has been done in the previous block.
         hello must not equal (null)
 
-        val replies = new ConcurrentHashMap[String,AtomicInteger]()
+        val replies = new ConcurrentHashMap[String, AtomicInteger]()
         def count(reply: String) = {
           val counter = new AtomicInteger(0)
           Option(replies.putIfAbsent(reply, counter)).getOrElse(counter).incrementAndGet()

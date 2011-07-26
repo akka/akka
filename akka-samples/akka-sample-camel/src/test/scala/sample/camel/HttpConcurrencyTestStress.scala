@@ -8,7 +8,7 @@ import org.junit._
 import org.scalatest.junit.JUnitSuite
 
 import akka.actor.Actor._
-import akka.actor.{ActorRegistry, ActorRef, Actor}
+import akka.actor.{ ActorRegistry, ActorRef, Actor }
 import akka.camel._
 import akka.camel.CamelServiceManager._
 import akka.routing.CyclicIterator
@@ -20,7 +20,8 @@ import akka.routing.Routing._
 class HttpConcurrencyTestStress extends JUnitSuite {
   import HttpConcurrencyTestStress._
 
-  @Test def shouldProcessMessagesConcurrently = {
+  @Test
+  def shouldProcessMessagesConcurrently = {
     /* TODO: fix stress test
 
     val num = 50
@@ -49,7 +50,7 @@ object HttpConcurrencyTestStress {
   def beforeClass: Unit = {
     startCamelService
 
-    val workers = for (i <- 1 to 8) yield actorOf[HttpServerWorker].start
+    val workers = for (i ← 1 to 8) yield actorOf[HttpServerWorker].start
     val balancer = loadBalancerActor(new CyclicIterator(workers.toList))
 
     //service.get.awaitEndpointActivation(1) {
@@ -68,12 +69,12 @@ object HttpConcurrencyTestStress {
     var correlationIds = Set[Any]()
 
     override protected def receive = {
-      case "getCorrelationIdCount" => self.reply(correlationIds.size)
-      case msg => super.receive(msg)
+      case "getCorrelationIdCount" ⇒ self.reply(correlationIds.size)
+      case msg                     ⇒ super.receive(msg)
     }
 
     override protected def receiveAfterProduce = {
-      case msg: Message => {
+      case msg: Message ⇒ {
         val corr = msg.headers(Message.MessageExchangeId)
         val body = msg.bodyAs[String]
         correlationIds += corr
@@ -89,13 +90,13 @@ object HttpConcurrencyTestStress {
     var counter = 0
 
     def receive = {
-      case msg => balancer forward msg
+      case msg ⇒ balancer forward msg
     }
   }
 
   class HttpServerWorker extends Actor {
     protected def receive = {
-      case msg => self.reply(msg)
+      case msg ⇒ self.reply(msg)
     }
   }
 }

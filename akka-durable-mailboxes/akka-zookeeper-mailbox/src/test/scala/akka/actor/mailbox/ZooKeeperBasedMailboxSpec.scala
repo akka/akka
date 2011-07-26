@@ -18,8 +18,8 @@ class ZooKeeperBasedMailboxSpec extends DurableMailboxSpec("ZooKeeper", ZooKeepe
 
   override def afterEach() {
     Actor.registry.local.actors.foreach(_.mailbox match {
-      case zkm: ZooKeeperBasedMailbox => zkm.close
-      case _ => ()
+      case zkm: ZooKeeperBasedMailbox ⇒ zkm.close
+      case _                          ⇒ ()
     })
     super.afterEach
   }

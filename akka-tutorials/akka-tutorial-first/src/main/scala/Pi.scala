@@ -4,12 +4,12 @@
 
 package akka.tutorial.first.scala
 
-import akka.actor.{Actor, PoisonPill}
+import akka.actor.{ Actor, PoisonPill }
 import Actor._
-import akka.routing.{Routing, CyclicIterator}
+import akka.routing.{ Routing, CyclicIterator }
 import Routing._
 
-import System.{currentTimeMillis => now}
+import System.{ currentTimeMillis ⇒ now }
 import java.util.concurrent.CountDownLatch
 
 object Pi extends App {
@@ -32,13 +32,13 @@ object Pi extends App {
     // define the work
     def calculatePiFor(start: Int, nrOfElements: Int): Double = {
       var acc = 0.0
-      for (i <- start until (start + nrOfElements))
+      for (i ← start until (start + nrOfElements))
         acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1)
       acc
     }
 
     def receive = {
-      case Work(start, nrOfElements) =>
+      case Work(start, nrOfElements) ⇒
         self reply Result(calculatePiFor(start, nrOfElements)) // perform the work
     }
   }
@@ -61,9 +61,9 @@ object Pi extends App {
 
     // message handler
     def receive = {
-      case Calculate =>
+      case Calculate ⇒
         // schedule work
-        for (i <- 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
+        for (i ← 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
 
         // send a PoisonPill to all workers telling them to shut down themselves
         router ! Broadcast(PoisonPill)
@@ -71,7 +71,7 @@ object Pi extends App {
         // send a PoisonPill to the router, telling him to shut himself down
         router ! PoisonPill
 
-      case Result(value) =>
+      case Result(value) ⇒
         // handle result from the worker
         pi += value
         nrOfResults += 1
@@ -86,7 +86,7 @@ object Pi extends App {
       // tell the world that the calculation is complete
       println(
         "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
-        .format(pi, (System.currentTimeMillis - start)))
+          .format(pi, (System.currentTimeMillis - start)))
       latch.countDown()
     }
   }

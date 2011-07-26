@@ -50,14 +50,7 @@ object ReflectiveAccess {
         None
     }
 
-    lazy val clusterDeployerInstance: Option[ClusterDeployer] = getObjectFor("akka.cluster.ClusterDeployer$") match {
-      case Right(value) ⇒ Some(value)
-      case Left(exception) ⇒
-        EventHandler.debug(this, exception.toString)
-        None
-    }
-
-    lazy val serializerClass: Option[Class[_]] = getClassFor("akka.serialization.Serializer") match {
+    lazy val clusterDeployerInstance: Option[ActorDeployer] = getObjectFor("akka.cluster.ClusterDeployer$") match {
       case Right(value) ⇒ Some(value)
       case Left(exception) ⇒
         EventHandler.debug(this, exception.toString)
@@ -76,7 +69,7 @@ object ReflectiveAccess {
       clusterInstance.get.node
     }
 
-    lazy val clusterDeployer: ClusterDeployer = {
+    lazy val clusterDeployer: ActorDeployer = {
       ensureEnabled()
       clusterDeployerInstance.get
     }
@@ -86,15 +79,6 @@ object ReflectiveAccess {
       transactionLogInstance.get
     }
 
-    type ClusterDeployer = {
-      def init(deployments: List[Deploy])
-      def shutdown()
-      def deploy(deployment: Deploy)
-      def undeploy(deployment: Deploy)
-      def undeployAll()
-      def lookupDeploymentFor(address: String): Option[Deploy]
-    }
-
     type Cluster = {
       def node: ClusterNode
     }
@@ -102,12 +86,6 @@ object ReflectiveAccess {
     type Mailbox = {
       def enqueue(message: MessageInvocation)
       def dequeue: MessageInvocation
-    }
-
-    // FIXME: remove?
-    type Serializer = {
-      def toBinary(obj: AnyRef): Array[Byte]
-      def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
     }
 
     type TransactionLogObject = {

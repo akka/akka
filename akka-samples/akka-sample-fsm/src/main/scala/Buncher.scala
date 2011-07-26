@@ -2,7 +2,7 @@ package sample.fsm.buncher
 
 import scala.reflect.ClassManifest
 import akka.util.Duration
-import akka.actor.{FSM, Actor, ActorRef}
+import akka.actor.{ FSM, Actor, ActorRef }
 
 /*
  * generic typed object buncher.
@@ -22,8 +22,8 @@ object GenericBuncher {
   case object Flush // send out current queue immediately
   case object Stop // poison pill
 
-  class MsgExtractor[A : Manifest] {
-    def unapply(m : AnyRef) : Option[A] = {
+  class MsgExtractor[A: Manifest] {
+    def unapply(m: AnyRef): Option[A] = {
       if (ClassManifest.fromClass(m.getClass) <:< manifest[A]) {
         Some(m.asInstanceOf[A])
       } else {
@@ -32,75 +32,75 @@ object GenericBuncher {
     }
   }
 }
-  
-abstract class GenericBuncher[A : Manifest, B] (val singleTimeout : Duration, val multiTimeout : Duration)
-    extends Actor with FSM[GenericBuncher.State, B] {
+
+abstract class GenericBuncher[A: Manifest, B](val singleTimeout: Duration, val multiTimeout: Duration)
+  extends Actor with FSM[GenericBuncher.State, B] {
   import GenericBuncher._
   import FSM._
-    
-  protected def empty : B
-  protected def merge(acc : B, elem : A) : B
-  protected def send(acc : B) : Unit
-  
-  protected def flush(acc : B) = {
+
+  protected def empty: B
+  protected def merge(acc: B, elem: A): B
+  protected def send(acc: B): Unit
+
+  protected def flush(acc: B) = {
     send(acc)
     cancelTimer("multi")
     goto(Idle) using empty
   }
-  
+
   val Msg = new MsgExtractor[A]
-  
+
   startWith(Idle, empty)
-    
+
   when(Idle) {
-    case Event(Msg(m), acc) =>
+    case Event(Msg(m), acc) ⇒
       setTimer("multi", StateTimeout, multiTimeout, false)
       goto(Active) using merge(acc, m)
-    case Event(Flush, _) => stay
-    case Event(Stop, _) => stop
+    case Event(Flush, _) ⇒ stay
+    case Event(Stop, _)  ⇒ stop
   }
-    
+
   when(Active, stateTimeout = Some(singleTimeout)) {
-    case Event(Msg(m), acc) =>
+    case Event(Msg(m), acc) ⇒
       stay using merge(acc, m)
-    case Event(StateTimeout, acc) =>
+    case Event(StateTimeout, acc) ⇒
       flush(acc)
-    case Event(Flush, acc) =>
+    case Event(Flush, acc) ⇒
       flush(acc)
-    case Event(Stop, acc) =>
+    case Event(Stop, acc) ⇒
       send(acc)
       cancelTimer("multi")
       stop
   }
-    
+
   initialize
 }
 
 object Buncher {
-  case class Target(target : ActorRef) // for setting the target for default send action
-  
+  case class Target(target: ActorRef) // for setting the target for default send action
+
   val Stop = GenericBuncher.Stop // make special message objects visible for Buncher clients
   val Flush = GenericBuncher.Flush
-  
-  def apply[A : Manifest](singleTimeout : Duration,
-        multiTimeout : Duration) =
+
+  def apply[A: Manifest](singleTimeout: Duration,
+                         multiTimeout: Duration) =
     Actor.actorOf(new Buncher[A](singleTimeout, multiTimeout))
 }
 
-class Buncher[A : Manifest](singleTimeout : Duration, multiTimeout : Duration)
+class Buncher[A: Manifest](singleTimeout: Duration, multiTimeout: Duration)
   extends GenericBuncher[A, List[A]](singleTimeout, multiTimeout) {
-  
+
   import Buncher._
 
-  private var target : Option[ActorRef] = None
-  protected def send(acc : List[A]) : Unit = if (target.isDefined) target.get ! acc.reverse
-  
-  protected def empty : List[A] = Nil
-  
-  protected def merge(l : List[A], elem : A) = elem :: l
+  private var target: Option[ActorRef] = None
+  protected def send(acc: List[A]): Unit = if (target.isDefined) target.get ! acc.reverse
+
+  protected def empty: List[A] = Nil
+
+  protected def merge(l: List[A], elem: A) = elem :: l
 
   whenUnhandled {
-    case Event(Target(t), _) =>
+    case Event(Target(t), _) ⇒
       target = Some(t)
       stay
   }

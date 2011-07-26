@@ -22,7 +22,6 @@ object SingleReplicaDirectRoutingMultiJvmSpec {
 
 }
 
-
 class SingleReplicaDirectRoutingMultiJvmNode1 extends MasterClusterTestNode {
 
   import SingleReplicaDirectRoutingMultiJvmSpec._

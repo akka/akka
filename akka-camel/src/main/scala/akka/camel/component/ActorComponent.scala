@@ -16,7 +16,7 @@ import akka.actor._
 import akka.camel.{ Ack, Failure, Message }
 import akka.camel.CamelMessageConversion.toExchangeAdapter
 import scala.reflect.BeanProperty
-import akka.dispatch.{FutureTimeoutException, Promise, MessageInvocation, MessageDispatcher}
+import akka.dispatch.{ FutureTimeoutException, Promise, MessageInvocation, MessageDispatcher }
 
 /**
  * @author Martin Krasser
@@ -170,7 +170,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
     }
   }
 
- private def sendSync(exchange: Exchange) = {
+  private def sendSync(exchange: Exchange) = {
     val actor = target(exchange)
     val result: Any = try { (actor ? requestFor(exchange)).as[Any] } catch { case e ⇒ Some(Failure(e)) }
 
@@ -181,7 +181,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
       case None ⇒ throw new TimeoutException("timeout (%d ms) while waiting response from %s"
         format (actor.timeout, ep.getEndpointUri))
     }
- }
+  }
 
   private def sendAsync(exchange: Exchange, sender: Option[ActorRef] = None) =
     target(exchange).!(requestFor(exchange))(sender)

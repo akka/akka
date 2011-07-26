@@ -2,8 +2,8 @@ package sample.camel
 
 import org.apache.camel.Exchange
 
-import akka.actor.{Actor, ActorRef, ActorRegistry}
-import akka.camel.{Ack, Failure, Producer, Message, Consumer}
+import akka.actor.{ Actor, ActorRef, ActorRegistry }
+import akka.camel.{ Ack, Failure, Producer, Message, Consumer }
 
 /**
  * Client-initiated remote actor.
@@ -12,7 +12,7 @@ class RemoteActor1 extends Actor with Consumer {
   def endpointUri = "jetty:http://localhost:6644/camel/remote-actor-1"
 
   protected def receive = {
-    case msg: Message => self.reply(Message("hello %s" format msg.bodyAs[String], Map("sender" -> "remote1")))
+    case msg: Message ⇒ self.reply(Message("hello %s" format msg.bodyAs[String], Map("sender" -> "remote1")))
   }
 }
 
@@ -23,7 +23,7 @@ class RemoteActor2 extends Actor with Consumer {
   def endpointUri = "jetty:http://localhost:6644/camel/remote-actor-2"
 
   protected def receive = {
-    case msg: Message => self.reply(Message("hello %s" format msg.bodyAs[String], Map("sender" -> "remote2")))
+    case msg: Message ⇒ self.reply(Message("hello %s" format msg.bodyAs[String], Map("sender" -> "remote2")))
   }
 }
 
@@ -36,7 +36,7 @@ class Consumer1 extends Actor with Consumer {
   def endpointUri = "file:data/input/actor"
 
   def receive = {
-    case msg: Message => println("received %s" format msg.bodyAs[String])
+    case msg: Message ⇒ println("received %s" format msg.bodyAs[String])
   }
 }
 
@@ -44,7 +44,7 @@ class Consumer2 extends Actor with Consumer {
   def endpointUri = "jetty:http://0.0.0.0:8877/camel/default"
 
   def receive = {
-    case msg: Message => self.reply("Hello %s" format msg.bodyAs[String])
+    case msg: Message ⇒ self.reply("Hello %s" format msg.bodyAs[String])
   }
 }
 
@@ -52,7 +52,7 @@ class Consumer3(transformer: ActorRef) extends Actor with Consumer {
   def endpointUri = "jetty:http://0.0.0.0:8877/camel/welcome"
 
   def receive = {
-    case msg: Message => transformer.forward(msg.setBodyAs[String])
+    case msg: Message ⇒ transformer.forward(msg.setBodyAs[String])
   }
 }
 
@@ -60,12 +60,12 @@ class Consumer4 extends Actor with Consumer {
   def endpointUri = "jetty:http://0.0.0.0:8877/camel/stop"
 
   def receive = {
-    case msg: Message => msg.bodyAs[String] match {
-      case "stop" => {
+    case msg: Message ⇒ msg.bodyAs[String] match {
+      case "stop" ⇒ {
         self.reply("Consumer4 stopped")
         self.stop
       }
-      case body => self.reply(body)
+      case body ⇒ self.reply(body)
     }
   }
 }
@@ -74,7 +74,7 @@ class Consumer5 extends Actor with Consumer {
   def endpointUri = "jetty:http://0.0.0.0:8877/camel/start"
 
   def receive = {
-    case _ => {
+    case _ ⇒ {
       Actor.actorOf[Consumer4].start
       self.reply("Consumer4 started")
     }
@@ -83,15 +83,15 @@ class Consumer5 extends Actor with Consumer {
 
 class Transformer(producer: ActorRef) extends Actor {
   protected def receive = {
-    case msg: Message => producer.forward(msg.transformBody( (body: String) => "- %s -" format body))
+    case msg: Message ⇒ producer.forward(msg.transformBody((body: String) ⇒ "- %s -" format body))
   }
 }
 
-class Subscriber(name:String, uri: String) extends Actor with Consumer {
+class Subscriber(name: String, uri: String) extends Actor with Consumer {
   def endpointUri = uri
 
   protected def receive = {
-    case msg: Message => println("%s received: %s" format (name, msg.body))
+    case msg: Message ⇒ println("%s received: %s" format (name, msg.body))
   }
 }
 
@@ -104,7 +104,7 @@ class PublisherBridge(uri: String, publisher: ActorRef) extends Actor with Consu
   def endpointUri = uri
 
   protected def receive = {
-    case msg: Message => {
+    case msg: Message ⇒ {
       publisher ! msg.bodyAs[String]
       self.reply("message published")
     }
@@ -115,7 +115,7 @@ class HttpConsumer(producer: ActorRef) extends Actor with Consumer {
   def endpointUri = "jetty:http://0.0.0.0:8875/"
 
   protected def receive = {
-    case msg => producer forward msg
+    case msg ⇒ producer forward msg
   }
 }
 
@@ -124,19 +124,19 @@ class HttpProducer(transformer: ActorRef) extends Actor with Producer {
 
   override protected def receiveBeforeProduce = {
     // only keep Exchange.HTTP_PATH message header (which needed by bridge endpoint)
-    case msg: Message => msg.setHeaders(msg.headers(Set(Exchange.HTTP_PATH)))
+    case msg: Message ⇒ msg.setHeaders(msg.headers(Set(Exchange.HTTP_PATH)))
   }
 
   override protected def receiveAfterProduce = {
     // do not reply but forward result to transformer
-    case msg => transformer forward msg
+    case msg ⇒ transformer forward msg
   }
 }
 
 class HttpTransformer extends Actor {
   protected def receive = {
-    case msg: Message => self.reply(msg.transformBody {body: String => body replaceAll ("Akka ", "AKKA ")})
-    case msg: Failure => self.reply(msg)
+    case msg: Message ⇒ self.reply(msg.transformBody { body: String ⇒ body replaceAll ("Akka ", "AKKA ") })
+    case msg: Failure ⇒ self.reply(msg)
   }
 }
 
@@ -147,7 +147,7 @@ class FileConsumer extends Actor with Consumer {
   var counter = 0
 
   def receive = {
-    case msg: Message => {
+    case msg: Message ⇒ {
       if (counter == 2) {
         println("received %s" format msg.bodyAs[String])
         self.reply(Ack)

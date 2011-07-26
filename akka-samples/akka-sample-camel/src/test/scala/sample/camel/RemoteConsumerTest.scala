@@ -1,6 +1,6 @@
 package sample.camel
 
-import org.scalatest.{GivenWhenThen, BeforeAndAfterAll, FeatureSpec}
+import org.scalatest.{ GivenWhenThen, BeforeAndAfterAll, FeatureSpec }
 
 import akka.actor.Actor._
 import akka.actor._
@@ -94,8 +94,8 @@ object RemoteConsumerTest {
     def endpointUri = "direct:remote-consumer"
 
     protected def receive = {
-      case "init"     => self.reply("done")
-      case m: Message => self.reply("remote actor: %s" format m.body)
+      case "init"     ⇒ self.reply("done")
+      case m: Message ⇒ self.reply("remote actor: %s" format m.body)
     }
   }
 }

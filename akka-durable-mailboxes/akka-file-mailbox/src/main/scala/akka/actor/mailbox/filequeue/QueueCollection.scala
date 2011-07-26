@@ -22,19 +22,18 @@ import java.util.concurrent.CountDownLatch
 
 import scala.collection.mutable
 
-import akka.config.{Config, Configuration}
+import akka.config.{ Config, Configuration }
 import akka.event.EventHandler
 
 class InaccessibleQueuePath extends Exception("Inaccessible queue path: Must be a directory and writable")
 
-
 class QueueCollection(queueFolder: String, private var queueConfigs: Configuration) {
   private val path = new File(queueFolder)
 
-  if (! path.isDirectory) {
+  if (!path.isDirectory) {
     path.mkdirs()
   }
-  if (! path.isDirectory || ! path.canWrite) {
+  if (!path.isDirectory || !path.canWrite) {
     throw new InaccessibleQueuePath
   }
 
@@ -58,7 +57,7 @@ class QueueCollection(queueFolder: String, private var queueConfigs: Configurati
 
   // preload any queues
   def loadQueues() {
-    path.list() filter { name => !(name contains "~~") } map { queue(_) }
+    path.list() filter { name ⇒ !(name contains "~~") } map { queue(_) }
   }
 
   def queueNames: List[String] = synchronized {
@@ -101,13 +100,13 @@ class QueueCollection(queueFolder: String, private var queueConfigs: Configurati
    *     down
    */
   def add(key: String, item: Array[Byte], expiry: Int): Boolean = {
-    for (fanouts <- fanout_queues.get(key); name <- fanouts) {
+    for (fanouts ← fanout_queues.get(key); name ← fanouts) {
       add(name, item, expiry)
     }
 
     queue(key) match {
-      case None => false
-      case Some(q) =>
+      case None ⇒ false
+      case Some(q) ⇒
         val now = System.currentTimeMillis
         val normalizedExpiry: Long = if (expiry == 0) {
           0
@@ -128,17 +127,17 @@ class QueueCollection(queueFolder: String, private var queueConfigs: Configurati
    * Retrieve an item from a queue and pass it to a continuation. If no item is available within
    * the requested time, or the server is shutting down, None is passed.
    */
-  def remove(key: String, timeout: Int, transaction: Boolean, peek: Boolean)(f: Option[QItem] => Unit): Unit = {
+  def remove(key: String, timeout: Int, transaction: Boolean, peek: Boolean)(f: Option[QItem] ⇒ Unit): Unit = {
     queue(key) match {
-      case None =>
+      case None ⇒
         queueMisses.incr
         f(None)
-      case Some(q) =>
+      case Some(q) ⇒
         if (peek) {
           f(q.peek())
         } else {
           q.remove
-/*          q.removeReact(if (timeout == 0) timeout else System.currentTimeMillis + timeout, transaction) {
+          /*          q.removeReact(if (timeout == 0) timeout else System.currentTimeMillis + timeout, transaction) {
             case None =>
               queueMisses.incr
               f(None)
@@ -146,7 +145,7 @@ class QueueCollection(queueFolder: String, private var queueConfigs: Configurati
               queueHits.incr
               f(Some(item))
           }
-*/        }
+*/ }
     }
   }
 
@@ -155,10 +154,10 @@ class QueueCollection(queueFolder: String, private var queueConfigs: Configurati
     var rv: Option[Array[Byte]] = None
     val latch = new CountDownLatch(1)
     remove(key, 0, false, false) {
-      case None =>
+      case None ⇒
         rv = None
         latch.countDown
-      case Some(v) =>
+      case Some(v) ⇒
         rv = Some(v.data)
         latch.countDown
     }
@@ -167,20 +166,20 @@ class QueueCollection(queueFolder: String, private var queueConfigs: Configurati
   }
 
   def unremove(key: String, xid: Int) {
-    queue(key) map { q => q.unremove(xid) }
+    queue(key) map { q ⇒ q.unremove(xid) }
   }
 
   def confirmRemove(key: String, xid: Int) {
-    queue(key) map { q => q.confirmRemove(xid) }
+    queue(key) map { q ⇒ q.confirmRemove(xid) }
   }
 
   def flush(key: String) {
-    queue(key) map { q => q.flush() }
+    queue(key) map { q ⇒ q.flush() }
   }
 
   def delete(name: String): Unit = synchronized {
     if (!shuttingDown) {
-      queues.get(name) map { q =>
+      queues.get(name) map { q ⇒
         q.close()
         q.destroyJournal()
         queues.remove(name)
@@ -197,25 +196,25 @@ class QueueCollection(queueFolder: String, private var queueConfigs: Configurati
     if (shuttingDown) {
       0
     } else {
-      queue(name) map { q => q.discardExpired() } getOrElse(0)
+      queue(name) map { q ⇒ q.discardExpired() } getOrElse (0)
     }
   }
 
   def flushAllExpired(): Int = synchronized {
-    queueNames.foldLeft(0) { (sum, qName) => sum + flushExpired(qName) }
+    queueNames.foldLeft(0) { (sum, qName) ⇒ sum + flushExpired(qName) }
   }
 
   def stats(key: String): Array[(String, String)] = queue(key) match {
-    case None => Array[(String, String)]()
-    case Some(q) =>
+    case None ⇒ Array[(String, String)]()
+    case Some(q) ⇒
       q.dumpStats() ++
-        fanout_queues.get(key).map { qset => ("children", qset.mkString(",")) }.toList
+        fanout_queues.get(key).map { qset ⇒ ("children", qset.mkString(",")) }.toList
   }
 
   def dumpConfig(key: String): Array[String] = {
     queue(key) match {
-      case None => Array()
-      case Some(q) => q.dumpConfig()
+      case None    ⇒ Array()
+      case Some(q) ⇒ q.dumpConfig()
     }
   }
 
@@ -228,7 +227,7 @@ class QueueCollection(queueFolder: String, private var queueConfigs: Configurati
       return
     }
     shuttingDown = true
-    for ((name, q) <- queues) {
+    for ((name, q) ← queues) {
       // synchronous, so the journals are all officially closed before we return.
       q.close
     }

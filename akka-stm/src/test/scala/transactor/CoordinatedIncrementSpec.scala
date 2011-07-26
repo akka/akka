@@ -26,7 +26,7 @@ object CoordinatedIncrement {
     }
 
     def receive = {
-      case coordinated@Coordinated(Increment(friends)) ⇒ {
+      case coordinated @ Coordinated(Increment(friends)) ⇒ {
         if (friends.nonEmpty) {
           friends.head ! coordinated(Increment(friends.tail))
         }
@@ -43,7 +43,7 @@ object CoordinatedIncrement {
     val txFactory = TransactionFactory(timeout = 3 seconds)
 
     def receive = {
-      case coordinated@Coordinated(Increment(friends)) ⇒ {
+      case coordinated @ Coordinated(Increment(friends)) ⇒ {
         coordinated.atomic(txFactory) {
           throw new RuntimeException("Expected failure")
         }

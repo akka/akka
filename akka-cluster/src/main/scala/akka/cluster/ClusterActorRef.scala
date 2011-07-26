@@ -3,15 +3,10 @@
  */
 package akka.cluster
 
-import Cluster._
-
 import akka.actor._
-import Actor._
 import akka.dispatch._
 import akka.util._
 import ReflectiveAccess._
-import ClusterModule._
-import akka.event.EventHandler
 import akka.dispatch.Future
 
 import java.net.InetSocketAddress
@@ -19,6 +14,8 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.{ Map ⇒ JMap }
 
 import com.eaio.uuid.UUID
+import collection.immutable.Map
+import annotation.tailrec
 
 /**
  * ActorRef representing a one or many instances of a clustered, load-balanced and sometimes replicated actor
@@ -26,11 +23,11 @@ import com.eaio.uuid.UUID
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ClusterActorRef private[akka] (
-  inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
-  val address: String,
-  _timeout: Long)
-  extends ActorRef with ScalaActorRef { this: Router.Router ⇒
+class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
+                                     val address: String,
+                                     _timeout: Long)
+  extends ActorRef with ScalaActorRef {
+  this: Router.Router ⇒
   timeout = _timeout
 
   private[akka] val inetSocketAddressToActorRefMap = new AtomicReference[Map[InetSocketAddress, ActorRef]](
@@ -50,10 +47,9 @@ class ClusterActorRef private[akka] (
     route(message)(sender)
   }
 
-  override def postMessageToMailboxAndCreateFutureResultWithTimeout(
-    message: Any,
-    timeout: Timeout,
-    channel: UntypedChannel): Future[Any] = {
+  override def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any,
+                                                                    timeout: Timeout,
+                                                                    channel: UntypedChannel): Future[Any] = {
     val sender = channel match {
       case ref: ActorRef ⇒ Some(ref)
       case _             ⇒ None
@@ -61,13 +57,56 @@ class ClusterActorRef private[akka] (
     route[Any](message, timeout.duration.toMillis)(sender)
   }
 
-  private[akka] def failOver(fromInetSocketAddress: InetSocketAddress, toInetSocketAddress: InetSocketAddress) {
-    inetSocketAddressToActorRefMap set (inetSocketAddressToActorRefMap.get map {
-      case (`fromInetSocketAddress`, actorRef) ⇒
-        actorRef.stop()
-        (toInetSocketAddress, createRemoteActorRef(actorRef.address, toInetSocketAddress))
-      case other ⇒ other
-    })
+  private[akka] def failOver(from: InetSocketAddress, to: InetSocketAddress): Unit = {
+    @tailrec
+    def doFailover(from: InetSocketAddress, to: InetSocketAddress): Unit = {
+      val oldValue = inetSocketAddressToActorRefMap.get
+
+      val newValue = oldValue map {
+        case (`from`, actorRef) ⇒
+          actorRef.stop()
+          (to, createRemoteActorRef(actorRef.address, to))
+        case other ⇒ other
+      }
+
+      if (!inetSocketAddressToActorRefMap.compareAndSet(oldValue, newValue))
+        doFailover(from, to)
+    }
+
+    doFailover(from, to)
+  }
+
+  /**
+   * Removes the given address (and the corresponding actorref) from this ClusteredActorRef.
+   *
+   * Call can safely be made when the address is missing.
+   *
+   * Call is threadsafe.
+   */
+  @tailrec
+  private def remove(address: InetSocketAddress): Unit = {
+    val oldValue = inetSocketAddressToActorRefMap.get()
+
+    var newValue = oldValue - address
+
+    if (!inetSocketAddressToActorRefMap.compareAndSet(oldValue, newValue))
+      remove(address)
+  }
+
+  def signalDeadActor(ref: ActorRef): Unit = {
+    //since the number remote actor refs for a clustered actor ref is quite low, we can deal with the O(N) complexity
+    //of the following removal.
+    val it = connections.keySet.iterator
+
+    while (it.hasNext) {
+      val address = it.next()
+      val foundRef: ActorRef = connections.get(address).get
+
+      if (foundRef == ref) {
+        remove(address)
+        return
+      }
+    }
   }
 
   private def createRemoteActorRef(actorAddress: String, inetSocketAddress: InetSocketAddress) = {
@@ -75,18 +114,21 @@ class ClusterActorRef private[akka] (
   }
 
   def start(): this.type = synchronized[this.type] {
-    _status = ActorRefInternals.RUNNING
+    if (_status == ActorRefInternals.UNSTARTED) {
+      _status = ActorRefInternals.RUNNING
+      //TODO add this? Actor.registry.register(this)
+    }
     this
   }
 
   def stop() {
     synchronized {
       if (_status == ActorRefInternals.RUNNING) {
+        //TODO add this? Actor.registry.unregister(this)
         _status = ActorRefInternals.SHUTDOWN
         postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
 
         // FIXME here we need to fire off Actor.cluster.remove(address) (which needs to be properly implemented first, see ticket)
-
         inetSocketAddressToActorRefMap.get.values foreach (_.stop()) // shut down all remote connections
       }
     }

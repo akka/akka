@@ -283,7 +283,7 @@ class AgentUpdater[T](agent: Agent[T]) extends Actor {
 
   def receive = {
     case update: Update[_] ⇒
-      self.tryReply(atomic(txFactory) { agent.ref alter update.function.asInstanceOf[T => T] })
+      self.tryReply(atomic(txFactory) { agent.ref alter update.function.asInstanceOf[T ⇒ T] })
     case Get ⇒ self reply agent.get
     case _   ⇒ ()
   }
@@ -299,7 +299,7 @@ class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
 
   def receive = {
     case update: Update[_] ⇒ try {
-      self.tryReply(atomic(txFactory) { agent.ref alter update.function.asInstanceOf[T => T] })
+      self.tryReply(atomic(txFactory) { agent.ref alter update.function.asInstanceOf[T ⇒ T] })
     } finally {
       agent.resume
       self.stop()

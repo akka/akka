@@ -22,18 +22,18 @@ class ZooKeeperBasedMailboxException(message: String) extends AkkaException(mess
  */
 private[akka] object ZooKeeperMailboxConfig {
   val zkServerAddresses = config.getString("akka.actor.mailbox.zookeeper.server-addresses", "localhost:2181")
-  val sessionTimeout    = Duration(config.getInt("akka.actor.mailbox.zookeeper.session-timeout", 60), TIME_UNIT).toMillis.toInt
+  val sessionTimeout = Duration(config.getInt("akka.actor.mailbox.zookeeper.session-timeout", 60), TIME_UNIT).toMillis.toInt
   val connectionTimeout = Duration(config.getInt("akka.actor.mailbox.zookeeper.connection-timeout", 60), TIME_UNIT).toMillis.toInt
-  val blockingQueue     = config.getBool("akka.actor.mailbox.zookeeper.blocking-queue", true)
+  val blockingQueue = config.getBool("akka.actor.mailbox.zookeeper.blocking-queue", true)
 
-  val queueNode         = "/queues"
+  val queueNode = "/queues"
   val queuePathTemplate = queueNode + "/%s"
 
   object serializer extends ZkSerializer {
     def serialize(data: AnyRef): Array[Byte] = data match {
-      case d: DurableMailboxMessageProtocol => d.toByteArray
-      case null => throw new ZooKeeperBasedMailboxException("Expected a DurableMailboxMessageProtocol message, was null")
-      case _    => throw new ZooKeeperBasedMailboxException("Expected a DurableMailboxMessageProtocol message, was [" + data.getClass + "]")
+      case d: DurableMailboxMessageProtocol ⇒ d.toByteArray
+      case null                             ⇒ throw new ZooKeeperBasedMailboxException("Expected a DurableMailboxMessageProtocol message, was null")
+      case _                                ⇒ throw new ZooKeeperBasedMailboxException("Expected a DurableMailboxMessageProtocol message, was [" + data.getClass + "]")
     }
 
     def deserialize(bytes: Array[Byte]): AnyRef = DurableMailboxMessageProtocol.parseFrom(bytes)
@@ -61,9 +61,9 @@ class ZooKeeperBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbo
       "\nDEQUEUING message in zookeeper-based mailbox [%s]".format(messageInvocation))
     messageInvocation
   } catch {
-    case e: java.util.NoSuchElementException => null
-    case e: InterruptedException             => null
-    case e =>
+    case e: java.util.NoSuchElementException ⇒ null
+    case e: InterruptedException             ⇒ null
+    case e ⇒
       EventHandler.error(e, this, "Couldn't dequeue from ZooKeeper-based mailbox")
       throw e
   }
@@ -76,7 +76,7 @@ class ZooKeeperBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbo
     queue.clear
     true
   } catch {
-    case e => false
+    case e ⇒ false
   }
 
   def close = zkClient.close

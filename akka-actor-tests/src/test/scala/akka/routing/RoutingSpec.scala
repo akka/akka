@@ -109,7 +109,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       t1.dispatcher.suspend(t1)
 
-      for (i <- 1 to 2501) t1 ! i
+      for (i ← 1 to 2501) t1 ! i
 
       val t2 = actorOf(new Actor {
         def receive = {
@@ -121,7 +121,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       val d = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil)) //Will pick the last with the smallest mailbox, so make sure t1 is last
 
-      for (i ← 1 to 2499 ) d ! i
+      for (i ← 1 to 2499) d ! i
 
       latch2.await(20 seconds)
 
@@ -529,12 +529,12 @@ class RoutingSpec extends WordSpec with MustMatchers {
           def pressureThreshold = 1
           def factory = actorOf(new Actor {
             if (deathCount.get > 5) deathCount.set(0)
-            if (deathCount.get > 0) {deathCount.incrementAndGet;throw new IllegalStateException("keep dying")}
+            if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
             def receive = {
-              case akka.Die ⇒ 
+              case akka.Die ⇒
                 if (keepDying) deathCount.incrementAndGet
                 throw new RuntimeException
-              case _ => pingCount.incrementAndGet
+              case _ ⇒ pingCount.incrementAndGet
             }
           }).start()
         }).start()
@@ -554,12 +554,12 @@ class RoutingSpec extends WordSpec with MustMatchers {
           def factory = actorOf(new Actor {
             self.lifeCycle = Permanent
             if (deathCount.get > 5) deathCount.set(0)
-            if (deathCount.get > 0) {deathCount.incrementAndGet;throw new IllegalStateException("keep dying")}
+            if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
             def receive = {
-              case akka.Die ⇒ 
+              case akka.Die ⇒
                 if (keepDying) deathCount.incrementAndGet
                 throw new RuntimeException
-              case _ => pingCount.incrementAndGet
+              case _ ⇒ pingCount.incrementAndGet
             }
           }).start()
         }).start()
@@ -579,12 +579,12 @@ class RoutingSpec extends WordSpec with MustMatchers {
           def factory = actorOf(new Actor {
             self.lifeCycle = Temporary
             if (deathCount.get > 5) deathCount.set(0)
-            if (deathCount.get > 0) {deathCount.incrementAndGet;throw new IllegalStateException("keep dying")}
+            if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
             def receive = {
-              case akka.Die ⇒ 
+              case akka.Die ⇒
                 if (keepDying) deathCount.incrementAndGet
                 throw new RuntimeException
-              case _ => pingCount.incrementAndGet
+              case _ ⇒ pingCount.incrementAndGet
             }
           }).start()
         }).start()
@@ -598,12 +598,12 @@ class RoutingSpec extends WordSpec with MustMatchers {
       pool1 ! akka.Die
       sleepFor(2 seconds)
       (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pingCount.get must be (1)
+      pingCount.get must be(1)
 
       // default lifecycle
       // actor dies completely
       pingCount.set(0)
-      keepDying = true 
+      keepDying = true
       pool1 ! "ping"
       (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
       pool1 ! akka.Die
@@ -611,35 +611,35 @@ class RoutingSpec extends WordSpec with MustMatchers {
       (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
       pool1 ! "ping"
       (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pingCount.get must be (2)
+      pingCount.get must be(2)
 
       // permanent lifecycle  
       // actor comes back right away
       pingCount.set(0)
-      keepDying = false 
+      keepDying = false
       pool2 ! "ping"
       (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
       pool2 ! akka.Die
       sleepFor(2 seconds)
       (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pingCount.get must be (1)
+      pingCount.get must be(1)
 
       // permanent lifecycle
       // actor dies completely
       pingCount.set(0)
-      keepDying = true 
+      keepDying = true
       pool2 ! "ping"
       (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
       pool2 ! akka.Die
       sleepFor(2 seconds)
       (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
       pool2 ! "ping"
-      (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)      
-      pingCount.get must be (2)
+      (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+      pingCount.get must be(2)
 
       // temporary lifecycle  
       pingCount.set(0)
-      keepDying = false 
+      keepDying = false
       pool3 ! "ping"
       (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
       pool3 ! akka.Die
@@ -649,7 +649,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       pool3 ! "ping"
       pool3 ! "ping"
       (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pingCount.get must be (4)
+      pingCount.get must be(4)
     }
 
     "support customizable supervision config of pooled actors" in {
@@ -678,18 +678,17 @@ class RoutingSpec extends WordSpec with MustMatchers {
           def pressureThreshold = 1
           def factory = actorOf(new Actor {
             if (deathCount.get > 5) deathCount.set(0)
-            if (deathCount.get > 0) {deathCount.incrementAndGet;throw new IllegalStateException("keep dying")}
+            if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
             def receive = {
-              case BadState ⇒ 
+              case BadState ⇒
                 if (keepDying) deathCount.incrementAndGet
                 throw new IllegalStateException
-              case akka.Die =>
+              case akka.Die ⇒
                 throw new RuntimeException
-              case _ => pingCount.incrementAndGet
+              case _ ⇒ pingCount.incrementAndGet
             }
           }).start()
         }).start()
-
 
       // actor comes back right away
       pingCount.set(0)
@@ -699,11 +698,11 @@ class RoutingSpec extends WordSpec with MustMatchers {
       pool1 ! BadState
       sleepFor(2 seconds)
       (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pingCount.get must be (1)
+      pingCount.get must be(1)
 
       // actor dies completely
       pingCount.set(0)
-      keepDying = true 
+      keepDying = true
       pool1 ! "ping"
       (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
       pool1 ! BadState
@@ -711,7 +710,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
       pool1 ! "ping"
       (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pingCount.get must be (2)
+      pingCount.get must be(2)
 
       // kill it
       intercept[RuntimeException](pool1.?(akka.Die).get)

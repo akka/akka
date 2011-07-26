@@ -13,6 +13,7 @@ import akka.util.Duration
 import System.{ currentTimeMillis ⇒ now }
 
 import java.io.File
+import akka.actor.Deployer
 
 trait MasterClusterTestNode extends WordSpec with MustMatchers with BeforeAndAfterAll {
   def testNodes: Int
@@ -36,6 +37,7 @@ trait MasterClusterTestNode extends WordSpec with MustMatchers with BeforeAndAft
 }
 
 trait ClusterTestNode extends WordSpec with MustMatchers with BeforeAndAfterAll {
+
   override def beforeAll() = {
     ClusterTestNode.waitForReady(getClass.getName)
   }

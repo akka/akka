@@ -105,7 +105,7 @@ trait Transactor extends Actor {
    * Implement a general pattern for using coordinated transactions.
    */
   final def receive = {
-    case coordinated@Coordinated(message) ⇒ {
+    case coordinated @ Coordinated(message) ⇒ {
       val others = (coordinate orElse alone)(message)
       for (sendTo ← others) {
         sendTo.actor ! coordinated(sendTo.message.getOrElse(message))

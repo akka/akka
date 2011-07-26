@@ -9,12 +9,12 @@ import akka.testkit.Testing
 import akka.dispatch._
 import akka.actor.Actor._
 import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.{ConcurrentHashMap, CountDownLatch, TimeUnit}
+import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch, TimeUnit }
 import akka.actor.dispatch.ActorModelSpec.MessageDispatcherInterceptor
 import akka.util.Switch
-import akka.actor.{ActorKilledException, PoisonPill, ActorRef, Actor}
+import akka.actor.{ ActorKilledException, PoisonPill, ActorRef, Actor }
 import java.rmi.RemoteException
-import org.junit.{After, Test}
+import org.junit.{ After, Test }
 
 object ActorModelSpec {
 
@@ -46,7 +46,6 @@ object ActorModelSpec {
 
   case class ThrowException(e: Throwable) extends ActorModelMessage
 
-
   val Ping = "Ping"
   val Pong = "Pong"
 
@@ -68,19 +67,19 @@ object ActorModelSpec {
     }
 
     def receive = {
-      case Await(latch) ⇒ ack; latch.await(); busy.switchOff()
-      case Meet(sign, wait) ⇒ ack; sign.countDown(); wait.await(); busy.switchOff()
-      case Wait(time) ⇒ ack; Thread.sleep(time); busy.switchOff()
-      case WaitAck(time, l) ⇒ ack; Thread.sleep(time); l.countDown(); busy.switchOff()
-      case Reply(msg) ⇒ ack; self.reply(msg); busy.switchOff()
-      case TryReply(msg) ⇒ ack; self.tryReply(msg); busy.switchOff()
-      case Forward(to, msg) ⇒ ack; to.forward(msg); busy.switchOff()
-      case CountDown(latch) ⇒ ack; latch.countDown(); busy.switchOff()
-      case Increment(count) ⇒ ack; count.incrementAndGet(); busy.switchOff()
-      case CountDownNStop(l) ⇒ ack; l.countDown(); self.stop(); busy.switchOff()
-      case Restart ⇒ ack; busy.switchOff(); throw new Exception("Restart requested")
-      case Interrupt => ack; busy.switchOff(); throw new InterruptedException("Ping!")
-      case ThrowException(e: Throwable) => ack; busy.switchOff(); throw e
+      case Await(latch)                 ⇒ ack; latch.await(); busy.switchOff()
+      case Meet(sign, wait)             ⇒ ack; sign.countDown(); wait.await(); busy.switchOff()
+      case Wait(time)                   ⇒ ack; Thread.sleep(time); busy.switchOff()
+      case WaitAck(time, l)             ⇒ ack; Thread.sleep(time); l.countDown(); busy.switchOff()
+      case Reply(msg)                   ⇒ ack; self.reply(msg); busy.switchOff()
+      case TryReply(msg)                ⇒ ack; self.tryReply(msg); busy.switchOff()
+      case Forward(to, msg)             ⇒ ack; to.forward(msg); busy.switchOff()
+      case CountDown(latch)             ⇒ ack; latch.countDown(); busy.switchOff()
+      case Increment(count)             ⇒ ack; count.incrementAndGet(); busy.switchOff()
+      case CountDownNStop(l)            ⇒ ack; l.countDown(); self.stop(); busy.switchOff()
+      case Restart                      ⇒ ack; busy.switchOff(); throw new Exception("Restart requested")
+      case Interrupt                    ⇒ ack; busy.switchOff(); throw new InterruptedException("Ping!")
+      case ThrowException(e: Throwable) ⇒ ack; busy.switchOff(); throw e
     }
   }
 
@@ -368,9 +367,8 @@ abstract class ActorModelSpec extends JUnitSuite {
 
     def flood(num: Int) {
       val cachedMessage = CountDownNStop(new CountDownLatch(num))
-      (1 to num) foreach {
-        _ ⇒
-          newTestActor.start() ! cachedMessage
+      (1 to num) foreach { _ ⇒
+        newTestActor.start() ! cachedMessage
       }
       assertCountDown(cachedMessage.latch, Testing.testTime(10000), "Should process " + num + " countdowns")
     }
@@ -453,5 +451,4 @@ class BalancingDispatcherModelTest extends ActorModelSpec {
   def newInterceptedDispatcher =
     new BalancingDispatcher("foo") with MessageDispatcherInterceptor
 }
-
 

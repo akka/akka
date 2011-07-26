@@ -17,7 +17,7 @@
 
 package akka.actor.mailbox.filequeue.tools
 
-import java.io.{FileNotFoundException, IOException}
+import java.io.{ FileNotFoundException, IOException }
 import scala.collection.mutable
 import akka.actor.mailbox.filequeue._
 
@@ -36,7 +36,7 @@ class QueueDumper(filename: String) {
     var lastDisplay = 0L
 
     try {
-      for ((item, itemsize) <- journal.walk()) {
+      for ((item, itemsize) ← journal.walk()) {
         operations += 1
         dumpItem(item)
         offset += itemsize
@@ -54,9 +54,9 @@ class QueueDumper(filename: String) {
       println("Journal size: %d bytes, with %d operations.".format(offset, operations))
       println("%d items totalling %d bytes.".format(totalItems, totalBytes))
     } catch {
-      case e: FileNotFoundException =>
+      case e: FileNotFoundException ⇒
         println("Can't open journal file: " + filename)
-      case e: IOException =>
+      case e: IOException ⇒
         println("Exception reading journal file: " + filename)
         e.printStackTrace()
     }
@@ -66,7 +66,7 @@ class QueueDumper(filename: String) {
     val now = System.currentTimeMillis
     if (!QDumper.quiet) print("%08x  ".format(offset & 0xffffffffL))
     item match {
-      case JournalItem.Add(qitem) =>
+      case JournalItem.Add(qitem) ⇒
         if (!QDumper.quiet) {
           print("ADD %-6d".format(qitem.data.size))
           if (qitem.xid > 0) {
@@ -82,30 +82,29 @@ class QueueDumper(filename: String) {
           println()
         }
         queue += qitem.data.size
-      case JournalItem.Remove =>
+      case JournalItem.Remove ⇒
         if (!QDumper.quiet) println("REM")
         queue.dequeue
-      case JournalItem.RemoveTentative =>
+      case JournalItem.RemoveTentative ⇒
         do {
           currentXid += 1
         } while (openTransactions contains currentXid)
         openTransactions(currentXid) = queue.dequeue
         if (!QDumper.quiet) println("RSV %d".format(currentXid))
-      case JournalItem.SavedXid(xid) =>
+      case JournalItem.SavedXid(xid) ⇒
         if (!QDumper.quiet) println("XID %d".format(xid))
         currentXid = xid
-      case JournalItem.Unremove(xid) =>
+      case JournalItem.Unremove(xid) ⇒
         queue.unget(openTransactions.remove(xid).get)
         if (!QDumper.quiet) println("CAN %d".format(xid))
-      case JournalItem.ConfirmRemove(xid) =>
+      case JournalItem.ConfirmRemove(xid) ⇒
         if (!QDumper.quiet) println("ACK %d".format(xid))
         openTransactions.remove(xid)
-      case x =>
+      case x ⇒
         if (!QDumper.quiet) println(x)
     }
   }
 }
-
 
 object QDumper {
   val filenames = new mutable.ListBuffer[String]
@@ -122,14 +121,14 @@ object QDumper {
   }
 
   def parseArgs(args: List[String]): Unit = args match {
-    case Nil =>
-    case "--help" :: xs =>
+    case Nil ⇒
+    case "--help" :: xs ⇒
       usage()
       System.exit(0)
-    case "-q" :: xs =>
+    case "-q" :: xs ⇒
       quiet = true
       parseArgs(xs)
-    case x :: xs =>
+    case x :: xs ⇒
       filenames += x
       parseArgs(xs)
   }
@@ -141,7 +140,7 @@ object QDumper {
       System.exit(0)
     }
 
-    for (filename <- filenames) {
+    for (filename ← filenames) {
       println("Queue: " + filename)
       new QueueDumper(filename)()
     }

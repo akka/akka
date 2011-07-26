@@ -9,12 +9,12 @@ import Actor._
 import akka.config.Supervision._
 import org.multiverse.api.latches.StandardLatch
 import org.junit.{ Test, Before, After }
-import java.util.concurrent.{ScheduledFuture, ConcurrentLinkedQueue, CountDownLatch, TimeUnit}
+import java.util.concurrent.{ ScheduledFuture, ConcurrentLinkedQueue, CountDownLatch, TimeUnit }
 
 class SchedulerSpec extends JUnitSuite {
   private val futures = new ConcurrentLinkedQueue[ScheduledFuture[AnyRef]]()
 
-  def collectFuture(f: => ScheduledFuture[AnyRef]): ScheduledFuture[AnyRef] = {
+  def collectFuture(f: ⇒ ScheduledFuture[AnyRef]): ScheduledFuture[AnyRef] = {
     val future = f
     futures.add(future)
     future
