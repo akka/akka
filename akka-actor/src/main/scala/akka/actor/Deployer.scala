@@ -307,15 +307,12 @@ object LocalDeployer {
 object Address {
   private val validAddressPattern = java.util.regex.Pattern.compile("[0-9a-zA-Z\\-\\_\\$\\.]+")
 
-  def validate(address: String) {
-    if (validAddressPattern.matcher(address).matches) true
-    else {
-      val e = new IllegalArgumentException(
-        "Address [" + address + "] is not valid, need to follow pattern [0-9a-zA-Z\\-\\_\\$]+")
+  def validate(address: String): Unit =
+    if (!validAddressPattern.matcher(address).matches) {
+      val e = new IllegalArgumentException("Address [" + address + "] is not valid, need to follow pattern: " + validAddressPattern.pattern)
       EventHandler.error(e, this, e.getMessage)
       throw e
     }
-  }
 }
 
 class DeploymentException private[akka] (message: String) extends AkkaException(message)
