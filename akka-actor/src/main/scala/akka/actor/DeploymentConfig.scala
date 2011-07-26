@@ -133,8 +133,10 @@ object DeploymentConfig {
     case Host("localhost") ⇒ Config.nodename
     case IP("0.0.0.0")     ⇒ Config.nodename
     case IP("127.0.0.1")   ⇒ Config.nodename
-    case Host(hostname)    ⇒ throw new UnsupportedOperationException("Specifying preferred node name by 'hostname' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
-    case IP(address)       ⇒ throw new UnsupportedOperationException("Specifying preferred node name by 'IP address' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
+    case Host(hostname)    ⇒ throw new UnsupportedOperationException(
+      "Specifying preferred node name by 'hostname' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
+    case IP(address)       ⇒ throw new UnsupportedOperationException(
+      "Specifying preferred node name by 'IP address' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
   }
 
   def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == Config.nodename)

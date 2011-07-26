@@ -933,7 +933,8 @@ class DefaultClusterNode private[akka](
    */
   def release(actorAddress: String) {
 
-    // FIXME 'Cluster.release' needs to notify all existing ClusterActorRef's that are using the instance that it is no longer available. Then what to do? Should we even remove this method?
+    // FIXME 'Cluster.release' needs to notify all existing ClusterActorRef's that are using the instance that it is no
+    // longer available. Then what to do? Should we even remove this method?
 
     if (isConnected.isOn) {
       ignore[ZkNoNodeException](zkClient.delete(actorAddressToNodesPathFor(actorAddress, nodeAddress.nodeName)))

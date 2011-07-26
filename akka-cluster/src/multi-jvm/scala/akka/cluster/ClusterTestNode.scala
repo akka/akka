@@ -36,6 +36,7 @@ trait MasterClusterTestNode extends WordSpec with MustMatchers with BeforeAndAft
 }
 
 trait ClusterTestNode extends WordSpec with MustMatchers with BeforeAndAfterAll {
+
   override def beforeAll() = {
     ClusterTestNode.waitForReady(getClass.getName)
   }
