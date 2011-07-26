@@ -3,7 +3,6 @@
  */
 
 package akka.cluster.replication.transactionlog.writethrough.nosnapshot
-
 import akka.actor._
 import akka.cluster._
 import Cluster._
@@ -44,26 +43,8 @@ class ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmNode1 extends Clust
         val actorRef = Actor.actorOf[HelloWorld]("hello-world").start()
         node.isInUseOnNode("hello-world") must be(true)
         actorRef.address must be("hello-world")
-        var counter = 0
-        (actorRef ? Count(counter)).as[String].get must be("World from node [node1]")
-        counter += 1
-        (actorRef ? Count(counter)).as[String].get must be("World from node [node1]")
-        counter += 1
-        (actorRef ? Count(counter)).as[String].get must be("World from node [node1]")
-        counter += 1
-        (actorRef ? Count(counter)).as[String].get must be("World from node [node1]")
-        counter += 1
-        (actorRef ? Count(counter)).as[String].get must be("World from node [node1]")
-        counter += 1
-        (actorRef ? Count(counter)).as[String].get must be("World from node [node1]")
-        counter += 1
-        (actorRef ? Count(counter)).as[String].get must be("World from node [node1]")
-        counter += 1
-        (actorRef ? Count(counter)).as[String].get must be("World from node [node1]")
-        counter += 1
-        (actorRef ? Count(counter)).as[String].get must be("World from node [node1]")
-        counter += 1
-        (actorRef ? Count(counter)).as[String].get must be("World from node [node1]")
+        for (i ← 0 until 10)
+          (actorRef ? Count(i)).as[String] must be(Some("World from node [node1]"))
       }
 
       barrier("start-node2", NrOfNodes) {

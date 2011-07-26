@@ -114,18 +114,21 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
   }
 
   def start(): this.type = synchronized[this.type] {
-    _status = ActorRefInternals.RUNNING
+    if (_status == ActorRefInternals.UNSTARTED) {
+      _status = ActorRefInternals.RUNNING
+      //TODO add this? Actor.registry.register(this)
+    }
     this
   }
 
   def stop() {
     synchronized {
       if (_status == ActorRefInternals.RUNNING) {
+        //TODO add this? Actor.registry.unregister(this)
         _status = ActorRefInternals.SHUTDOWN
         postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
 
         // FIXME here we need to fire off Actor.cluster.remove(address) (which needs to be properly implemented first, see ticket)
-
         inetSocketAddressToActorRefMap.get.values foreach (_.stop()) // shut down all remote connections
       }
     }

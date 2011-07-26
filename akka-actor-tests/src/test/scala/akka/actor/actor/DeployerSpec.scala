@@ -18,6 +18,7 @@ class DeployerSpec extends WordSpec with MustMatchers {
       deployment must equal(Some(
         Deploy(
           "service-ping",
+          None,
           LeastCPU,
           Clustered(
             Vector(Node("node1")),

@@ -21,8 +21,16 @@ object DeploymentConfig {
   // --------------------------------
   case class Deploy(
     address: String,
+    recipe: Option[ActorRecipe],
     routing: Routing = Direct,
-    scope: Scope = Local)
+    scope: Scope = Local) {
+    Address.validate(address)
+  }
+
+  // --------------------------------
+  // --- Actor Recipe
+  // --------------------------------
+  case class ActorRecipe(implementationClass: Class[_ <: Actor]) //TODO Add ActorConfiguration here
 
   // --------------------------------
   // --- Routing
@@ -158,7 +166,7 @@ object DeploymentConfig {
   }
 
   def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {
-    case Deploy(_, _, Clustered(_, _, replicationScheme)) ⇒ Some(replicationScheme)
+    case Deploy(_, _, _, Clustered(_, _, replicationScheme)) ⇒ Some(replicationScheme)
     case _ ⇒ None
   }
 

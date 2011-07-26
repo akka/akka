@@ -356,7 +356,7 @@ object Actor extends ListenerManagement {
    * JAVA API
    */
   def actorOf[T <: Actor](creator: Creator[T]): ActorRef =
-    actorOf(creator, new UUID().toString)
+    actorOf(creator, newUuid().toString)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
@@ -379,7 +379,7 @@ object Actor extends ListenerManagement {
   }
 
   def localActorOf[T <: Actor](clazz: Class[T]): ActorRef = {
-    newLocalActorRef(clazz, new UUID().toString)
+    newLocalActorRef(clazz, newUuid().toString)
   }
 
   def localActorOf[T <: Actor](clazz: Class[T], address: String): ActorRef = {
@@ -387,7 +387,7 @@ object Actor extends ListenerManagement {
   }
 
   def localActorOf[T <: Actor](factory: ⇒ T): ActorRef = {
-    new LocalActorRef(() ⇒ factory, new UUID().toString)
+    new LocalActorRef(() ⇒ factory, newUuid().toString)
   }
 
   def localActorOf[T <: Actor](factory: ⇒ T, address: String): ActorRef = {
@@ -432,8 +432,8 @@ object Actor extends ListenerManagement {
       case None ⇒ // it is not -> create it
         try {
           Deployer.deploymentFor(address) match {
-            case Deploy(_, router, Local) ⇒ actorFactory() // create a local actor
-            case deploy                   ⇒ newClusterActorRef(actorFactory, address, deploy)
+            case Deploy(_, _, router, Local) ⇒ actorFactory() // create a local actor
+            case deploy                      ⇒ newClusterActorRef(actorFactory, address, deploy)
           }
         } catch {
           case e: DeploymentException ⇒
@@ -463,32 +463,26 @@ object Actor extends ListenerManagement {
     }, address)
   }
 
-  private def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef = {
+  private[akka] def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef =
     deploy match {
-      case Deploy(
-        configAdress, router,
-        Clustered(
-          preferredHomeNodes,
-          replicas,
-          replication)) ⇒
+      case Deploy(configAddress, recipe, router, Clustered(preferredHomeNodes, replicas, replication)) ⇒
 
         ClusterModule.ensureEnabled()
 
-        if (configAdress != address) throw new IllegalStateException(
-          "Deployment config for [" + address + "] is wrong [" + deploy + "]")
-        if (!Actor.remote.isRunning) throw new IllegalStateException(
-          "Remote server is not running")
+        if (configAddress != address) throw new IllegalStateException("Deployment config for [" + address + "] is wrong [" + deploy + "]")
+        if (!remote.isRunning) throw new IllegalStateException("Remote server is not running")
 
         val isHomeNode = DeploymentConfig.isHomeNode(preferredHomeNodes)
-        val nrOfReplicas = replicas.factor
 
-        val serializer: Serializer =
-          Serialization.serializerFor(this.getClass)
+        val serializer = recipe match {
+          case Some(r) ⇒ Serialization.serializerFor(r.implementationClass)
+          case None    ⇒ Serialization.serializerFor(classOf[Actor]) //TODO revisit this decision of default
+        }
 
         def storeActorAndGetClusterRef(replicationScheme: ReplicationScheme, serializer: Serializer): ActorRef = {
           // add actor to cluster registry (if not already added)
-          if (!cluster.isClustered(address))
-            cluster.store(address, factory, nrOfReplicas, replicationScheme, false, serializer)
+          if (!cluster.isClustered(address)) //WARNING!!!! Racy
+            cluster.store(address, factory, replicas.factor, replicationScheme, false, serializer)
 
           // remote node (not home node), check out as ClusterActorRef
           cluster.ref(address, DeploymentConfig.routerTypeFor(router))
@@ -503,21 +497,17 @@ object Actor extends ListenerManagement {
               "Can't replicate an actor [" + address + "] configured with another router than \"direct\" - found [" + router + "]")
 
             if (isHomeNode) { // stateful actor's home node
-              cluster
-                .use(address, serializer)
+              cluster.use(address, serializer)
                 .getOrElse(throw new ConfigurationException(
                   "Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
-
             } else {
               storeActorAndGetClusterRef(replication, serializer)
             }
         }
 
       case invalid ⇒ throw new IllegalActorStateException(
-        "Could not create actor with address [" + address +
-          "], not bound to a valid deployment scheme [" + invalid + "]")
+        "Could not create actor with address [" + address + "], not bound to a valid deployment scheme [" + invalid + "]")
     }
-  }
 }
 
 /**

@@ -4,8 +4,8 @@
 
 package akka.cluster
 
-import akka.actor.{ DeploymentConfig, Deployer, LocalDeployer, DeploymentException }
-import DeploymentConfig._
+import akka.actor.DeploymentConfig._
+import akka.actor._
 import akka.event.EventHandler
 import akka.config.Config
 import akka.util.Switch
@@ -17,12 +17,10 @@ import org.apache.zookeeper.recipes.lock.{ WriteLock, LockListener }
 
 import org.I0Itec.zkclient.exception.{ ZkNoNodeException, ZkNodeExistsException }
 
+import scala.collection.immutable.Seq
 import scala.collection.JavaConversions.collectionAsScalaIterable
 
-import com.eaio.uuid.UUID
-
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * A ClusterDeployer is responsible for deploying a Deploy.
@@ -31,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object ClusterDeployer {
+object ClusterDeployer extends ActorDeployer {
   val clusterName = Cluster.name
   val nodeName = Config.nodename
   val clusterPath = "/%s" format clusterName
@@ -127,7 +125,7 @@ object ClusterDeployer {
     deployments
   }
 
-  private[akka] def init(deployments: List[Deploy]) {
+  private[akka] def init(deployments: Seq[Deploy]) {
     isConnected switchOn {
       EventHandler.info(this, "Initializing cluster deployer")
 
@@ -143,7 +141,7 @@ object ClusterDeployer {
         }
       }
 
-      val allDeployments = deployments ::: systemDeployments
+      val allDeployments = deployments ++ systemDeployments
 
       if (!isDeploymentCompletedInCluster) {
         if (deploymentInProgressLock.lock()) {
@@ -167,21 +165,20 @@ object ClusterDeployer {
     ensureRunning {
       LocalDeployer.deploy(deployment)
       deployment match {
-        case Deploy(_, _, Local) ⇒ {} // local deployment, do nothing here
-        case _ ⇒ // cluster deployment
-          val path = deploymentAddressPath.format(deployment.address)
+        case Deploy(_, _, _, Local) | Deploy(_, _, _, _: Local) ⇒ //TODO LocalDeployer.deploy(deployment)??
+        case Deploy(address, recipe, routing, _) ⇒ // cluster deployment
+          /*TODO recipe foreach { r ⇒
+            Deployer.newClusterActorRef(() ⇒ Actor.actorOf(r.implementationClass), address, deployment).start()
+          }*/
+          val path = deploymentAddressPath.format(address)
           try {
             ignore[ZkNodeExistsException](zkClient.create(path, null, CreateMode.PERSISTENT))
             zkClient.writeData(path, deployment)
           } catch {
             case e: NullPointerException ⇒
-              handleError(new DeploymentException(
-                "Could not store deployment data [" + deployment +
-                  "] in ZooKeeper since client session is closed"))
+              handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper since client session is closed"))
             case e: Exception ⇒
-              handleError(new DeploymentException(
-                "Could not store deployment data [" +
-                  deployment + "] in ZooKeeper due to: " + e))
+              handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper due to: " + e))
           }
       }
     }
