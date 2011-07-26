@@ -27,7 +27,7 @@ class SchedulerSpec extends JUnitSuite {
 
   @After
   def afterEach {
-    while(futures.peek() ne null) { Option(futures.poll()).foreach(_.cancel(true)) }
+    while (futures.peek() ne null) { Option(futures.poll()).foreach(_.cancel(true)) }
     Actor.registry.local.shutdownAll
     EventHandler.start()
   }

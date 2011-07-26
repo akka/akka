@@ -309,7 +309,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         Futures.fold(0, timeout)(futures)(_ + _).await.exception.get.getMessage must be("shouldFoldResultsWithException: expected")
       }
 
-/*  @Test
+      /*  @Test
   def shouldFoldMutableZeroes {
     import scala.collection.mutable.ArrayBuffer
     def test(testNumber: Int) {

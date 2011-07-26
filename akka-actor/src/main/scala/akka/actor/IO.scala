@@ -206,7 +206,7 @@ trait IO {
           _next = continuation(bytes)
           run()
         }
-      case bsd@ByteStringDelimited(continuation, handle, message, delimiter, inclusive, scanned) ⇒
+      case bsd @ ByteStringDelimited(continuation, handle, message, delimiter, inclusive, scanned) ⇒
         self.currentMessage = message
         val st = state(handle)
         val idx = st.readBytes.indexOfSlice(delimiter, scanned)
