@@ -725,7 +725,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       }
 
       "ticket812FutureDispatchCleanup" in {
-        val dispatcher = implicitly[MessageDispatcher]
+        implicit val dispatcher = new Dispatcher("ticket812FutureDispatchCleanup")
         assert(dispatcher.pendingFutures === 0)
         val future = Future({ Thread.sleep(100); "Done" }, 10)
         intercept[FutureTimeoutException] { future.await }
