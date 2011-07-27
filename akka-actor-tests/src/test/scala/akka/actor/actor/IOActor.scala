@@ -189,9 +189,9 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
       val ioManager = Actor.actorOf(new IOManager()).start
       val server = Actor.actorOf(new SimpleEchoServer("localhost", 8064, ioManager)).start
       val client = Actor.actorOf(new SimpleEchoClient("localhost", 8064, ioManager)).start
-      val list = List.range(0, 100000)
+      val list = List.range(0, 10000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
-      assert(f.get.size === 100000)
+      assert(f.get.size === 10000)
       client.stop
       server.stop
       ioManager.stop
@@ -201,9 +201,9 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
       val ioManager = Actor.actorOf(new IOManager(2)).start
       val server = Actor.actorOf(new SimpleEchoServer("localhost", 8064, ioManager)).start
       val client = Actor.actorOf(new SimpleEchoClient("localhost", 8064, ioManager)).start
-      val list = List.range(0, 100000)
+      val list = List.range(0, 10000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
-      assert(f.get.size === 100000)
+      assert(f.get.size === 10000)
       client.stop
       server.stop
       ioManager.stop
