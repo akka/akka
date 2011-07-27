@@ -92,7 +92,6 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
 
   private[akka] def withClientFor[T](
     address: InetSocketAddress, loader: Option[ClassLoader])(fun: RemoteClient ⇒ T): T = {
-    loader.foreach(MessageSerializer.setClassLoader(_))
     val key = Address(address)
     lock.readLock.lock
     try {
@@ -201,6 +200,8 @@ abstract class RemoteClient private[akka] (
 
   def shutdown(): Boolean
 
+  def loader: Option[ClassLoader]
+
   /**
    * Returns an array with the current pending messages not yet delivered.
    */
@@ -209,7 +210,7 @@ abstract class RemoteClient private[akka] (
     val iter = pendingRequests.iterator
     while (iter.hasNext) {
       val (_, _, message) = iter.next
-      messages = messages :+ MessageSerializer.deserialize(message.getMessage)
+      messages = messages :+ MessageSerializer.deserialize(message.getMessage, loader)
     }
     messages.toArray
   }
@@ -501,7 +502,7 @@ class ActiveRemoteClientHandler(
 
             case future ⇒
               if (reply.hasMessage) {
-                val message = MessageSerializer.deserialize(reply.getMessage)
+                val message = MessageSerializer.deserialize(reply.getMessage, client.loader)
                 future.completeWithResult(message)
               } else {
                 val exception = parseException(reply, client.loader)
@@ -879,8 +880,6 @@ class RemoteServerHandler(
   import RemoteServerSettings._
   val CHANNEL_INIT = "channel-init".intern
 
-  applicationLoader.foreach(MessageSerializer.setClassLoader(_)) //TODO: REVISIT: THIS FEELS A BIT DODGY
-
   val sessionActors = new ChannelLocal[ConcurrentHashMap[String, ActorRef]]()
   val typedSessionActors = new ChannelLocal[ConcurrentHashMap[String, AnyRef]]()
 
@@ -991,7 +990,7 @@ class RemoteServerHandler(
           return
       }
 
-    val message = MessageSerializer.deserialize(request.getMessage)
+    val message = MessageSerializer.deserialize(request.getMessage, applicationLoader)
     val sender =
       if (request.hasSender) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(request.getSender, applicationLoader))
       else None
@@ -1041,7 +1040,7 @@ class RemoteServerHandler(
     //FIXME: Add ownerTypeHint and parameter types to the TypedActorInfo?
     val (ownerTypeHint, argClasses, args) =
       MessageSerializer
-        .deserialize(request.getMessage)
+        .deserialize(request.getMessage, applicationLoader)
         .asInstanceOf[Tuple3[String, Array[Class[_]], Array[AnyRef]]]
 
     def resolveMethod(bottomType: Class[_],

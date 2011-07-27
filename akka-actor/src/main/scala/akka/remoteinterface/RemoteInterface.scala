@@ -63,6 +63,7 @@ trait RemoteModule {
  * Life-cycle events for RemoteClient.
  */
 sealed trait RemoteClientLifeCycleEvent
+
 case class RemoteClientError(
   @BeanProperty cause: Throwable,
   @BeanProperty client: RemoteClientModule,

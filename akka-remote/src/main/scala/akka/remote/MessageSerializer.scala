@@ -16,30 +16,23 @@ object MessageSerializer {
   private def SERIALIZER_SCALA_JSON: Serializer.ScalaJSON = Serializer.ScalaJSON
   private def SERIALIZER_PROTOBUF: Serializer.Protobuf = Serializer.Protobuf
 
-  def setClassLoader(cl: ClassLoader) = {
-    val someCl = Some(cl)
-    SERIALIZER_JAVA.classLoader = someCl
-    SERIALIZER_JAVA_JSON.classLoader = someCl
-    SERIALIZER_SCALA_JSON.classLoader = someCl
-  }
-
-  def deserialize(messageProtocol: MessageProtocol): Any = {
+  def deserialize(messageProtocol: MessageProtocol, classLoader: Option[ClassLoader]): Any = {
     messageProtocol.getSerializationScheme match {
       case SerializationSchemeType.JAVA ⇒
-        unbox(SERIALIZER_JAVA.fromBinary(messageProtocol.getMessage.toByteArray, None))
+        unbox(SERIALIZER_JAVA.fromBinary(messageProtocol.getMessage.toByteArray, None, classLoader))
 
       case SerializationSchemeType.PROTOBUF ⇒
-        val clazz = loadManifest(SERIALIZER_PROTOBUF.classLoader, messageProtocol)
-        SERIALIZER_PROTOBUF.fromBinary(messageProtocol.getMessage.toByteArray, Some(clazz))
+        val clazz = loadManifest(classLoader, messageProtocol)
+        SERIALIZER_PROTOBUF.fromBinary(messageProtocol.getMessage.toByteArray, Some(clazz), classLoader)
 
       case SerializationSchemeType.SCALA_JSON ⇒
-        val clazz = loadManifest(SERIALIZER_SCALA_JSON.classLoader, messageProtocol)
+        val clazz = loadManifest(classLoader, messageProtocol)
         val renderer = clazz.newInstance.asInstanceOf[Serializable.ScalaJSON[_]]
         renderer.fromBytes(messageProtocol.getMessage.toByteArray)
 
       case SerializationSchemeType.JAVA_JSON ⇒
-        val clazz = loadManifest(SERIALIZER_JAVA_JSON.classLoader, messageProtocol)
-        SERIALIZER_JAVA_JSON.fromBinary(messageProtocol.getMessage.toByteArray, Some(clazz))
+        val clazz = loadManifest(classLoader, messageProtocol)
+        SERIALIZER_JAVA_JSON.fromBinary(messageProtocol.getMessage.toByteArray, Some(clazz), classLoader)
     }
   }
 
@@ -66,8 +59,10 @@ object MessageSerializer {
 
   private def loadManifest(classLoader: Option[ClassLoader], messageProtocol: MessageProtocol): Class[_] = {
     val manifest = messageProtocol.getMessageManifest.toStringUtf8
-    if (classLoader.isDefined) classLoader.get.loadClass(manifest)
-    else Class.forName(manifest)
+    classLoader match {
+      case Some(loader) ⇒ loader.loadClass(manifest)
+      case None         ⇒ Class.forName(manifest)
+    }
   }
 
   private def setMessageAndManifest(builder: MessageProtocol.Builder, serializable: Serializable) = {

@@ -220,7 +220,7 @@ object ActorSerialization {
       homeAddress)
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
-    messages.foreach(message ⇒ ar ! MessageSerializer.deserialize(message.getMessage))
+    messages.foreach(message ⇒ ar ! MessageSerializer.deserialize(message.getMessage, loader))
 
     if (format.isInstanceOf[SerializerBasedActorFormat[_]] == false)
       format.fromBinary(protocol.getActorInstance.toByteArray, ar.actor.asInstanceOf[T])

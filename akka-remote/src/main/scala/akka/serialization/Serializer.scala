@@ -18,12 +18,14 @@ import sjson.json.{ Serializer ⇒ SJSONSerializer }
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Serializer extends scala.Serializable {
-  @volatile
-  var classLoader: Option[ClassLoader] = None
-  def deepClone(obj: AnyRef): AnyRef = fromBinary(toBinary(obj), Some(obj.getClass))
+
+  def deepClone(obj: AnyRef): AnyRef = obj match {
+    case null ⇒ null
+    case _    ⇒ fromBinary(toBinary(obj), Some(obj.getClass), Some(obj.getClass.getClassLoader))
+  }
 
   def toBinary(obj: AnyRef): Array[Byte]
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]], classLoader: Option[ClassLoader] = None): AnyRef
 }
 
 // For Java API
@@ -44,7 +46,7 @@ object Serializer {
   object NOOP extends NOOP
   class NOOP extends Serializer {
     def toBinary(obj: AnyRef): Array[Byte] = Array[Byte]()
-    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = null.asInstanceOf[AnyRef]
+    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]], classLoader: Option[ClassLoader]): AnyRef = null: AnyRef
   }
 
   /**
@@ -60,13 +62,16 @@ object Serializer {
       bos.toByteArray
     }
 
-    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
+    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]], classLoader: Option[ClassLoader]): AnyRef = {
       val in =
         if (classLoader.isDefined) new ClassLoaderObjectInputStream(classLoader.get, new ByteArrayInputStream(bytes))
+        else if (clazz.isDefined) new ClassLoaderObjectInputStream(clazz.get.getClassLoader, new ByteArrayInputStream(bytes))
         else new ObjectInputStream(new ByteArrayInputStream(bytes))
-      val obj = in.readObject
-      in.close
-      obj
+      try {
+        in.readObject
+      } finally {
+        in.close
+      }
     }
   }
 
@@ -81,10 +86,9 @@ object Serializer {
       obj.asInstanceOf[Message].toByteArray
     }
 
-    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
-      if (!clazz.isDefined) throw new IllegalArgumentException(
-        "Need a protobuf message class to be able to serialize bytes using protobuf")
-      clazz.get.getDeclaredMethod("parseFrom", ARRAY_OF_BYTE_ARRAY: _*).invoke(null, bytes).asInstanceOf[Message]
+    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]], classLoader: Option[ClassLoader]): AnyRef = clazz match {
+      case None    ⇒ throw new IllegalArgumentException("Need a protobuf message class to be able to serialize bytes using protobuf")
+      case Some(c) ⇒ c.getDeclaredMethod("parseFrom", ARRAY_OF_BYTE_ARRAY: _*).invoke(null, bytes).asInstanceOf[Message]
     }
 
     def fromBinary(bytes: Array[Byte], clazz: Class[_]): AnyRef = {
@@ -108,20 +112,22 @@ object Serializer {
       bos.toByteArray
     }
 
-    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
-      if (!clazz.isDefined) throw new IllegalArgumentException(
-        "Can't deserialize JSON to instance if no class is provided")
-      val in =
-        if (classLoader.isDefined) new ClassLoaderObjectInputStream(classLoader.get, new ByteArrayInputStream(bytes))
-        else new ObjectInputStream(new ByteArrayInputStream(bytes))
-      val obj = mapper.readValue(in, clazz.get).asInstanceOf[AnyRef]
-      in.close
-      obj
+    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]], classLoader: Option[ClassLoader]): AnyRef = clazz match {
+      case None ⇒ throw new IllegalArgumentException("Can't deserialize JSON to instance if no class is provided")
+      case Some(c) ⇒
+        val in =
+          if (classLoader.isDefined) new ClassLoaderObjectInputStream(classLoader.get, new ByteArrayInputStream(bytes))
+          else new ClassLoaderObjectInputStream(c.getClassLoader, new ByteArrayInputStream(bytes))
+        try {
+          mapper.readValue(in, clazz.get).asInstanceOf[AnyRef]
+        } finally {
+          in.close
+        }
     }
 
-    def fromJSON(json: String, clazz: Class[_]): AnyRef = {
-      if (clazz eq null) throw new IllegalArgumentException("Can't deserialize JSON to instance if no class is provided")
-      mapper.readValue(json, clazz).asInstanceOf[AnyRef]
+    def fromJSON(json: String, clazz: Class[_]): AnyRef = clazz match {
+      case null ⇒ throw new IllegalArgumentException("Can't deserialize JSON to instance if no class is provided")
+      case _    ⇒ mapper.readValue(json, clazz).asInstanceOf[AnyRef]
     }
   }
 
@@ -142,7 +148,7 @@ object Serializer {
     def frombinary[T](bytes: Array[Byte])(implicit fjs: Reads[T]): T = JsonSerialization.frombinary(bytes)(fjs)
 
     // backward compatibility
-    // implemented using refelction based json serialization
+    // implemented using reflection based json serialization
     def toBinary(obj: AnyRef): Array[Byte] = SJSONSerializer.SJSON.out(obj)
 
     def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = SJSONSerializer.SJSON.in(bytes)
