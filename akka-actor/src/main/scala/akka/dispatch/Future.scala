@@ -238,8 +238,19 @@ object Future {
    * This method constructs and returns a Future that will eventually hold the result of the execution of the supplied body
    * The execution is performed by the specified Dispatcher.
    */
-  def apply[T](body: ⇒ T)(implicit dispatcher: MessageDispatcher, timeout: Timeout = implicitly): Future[T] =
-    dispatcher.dispatchFuture(() ⇒ body, timeout)
+  def apply[T](body: ⇒ T)(implicit dispatcher: MessageDispatcher, timeout: Timeout = implicitly): Future[T] = {
+    val promise = new DefaultPromise[T](timeout)
+    dispatcher dispatchTask { () ⇒
+      promise complete {
+        try {
+          Right(body)
+        } catch {
+          case e ⇒ Left(e)
+        }
+      }
+    }
+    promise
+  }
 
   def apply[T](body: ⇒ T, timeout: Timeout)(implicit dispatcher: MessageDispatcher): Future[T] =
     apply(body)(dispatcher, timeout)
@@ -293,9 +304,13 @@ object Future {
    *
    * The Delimited Continuations compiler plugin must be enabled in order to use this method.
    */
-  def flow[A](body: ⇒ A @cps[Future[Any]])(implicit timeout: Timeout): Future[A] = {
+  def flow[A](body: ⇒ A @cps[Future[Any]])(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = {
     val future = Promise[A](timeout)
-    (reset(future.asInstanceOf[Promise[Any]].completeWithResult(body)): Future[Any]) onException { case e ⇒ future completeWithException e }
+    //dispatcher dispatchTask { () ⇒
+    reify(body) foreachFull (future completeWithResult, future completeWithException) onException {
+      case e: Exception ⇒ future completeWithException e
+    }
+    //}
     future
   }
 }
@@ -312,7 +327,7 @@ sealed trait Future[+T] {
    * execution will fail. The normal result of getting a Future from an ActorRef using ? will return
    * an untyped Future.
    */
-  def apply[A >: T](): A @cps[Future[Any]] = shift(this flatMap (_: A ⇒ Future[Any]))
+  def apply[A >: T]()(implicit dispatcher: MessageDispatcher, timeout: Timeout): A @cps[Future[Any]] = shift(this flatMap (_: A ⇒ Future[Any]))
 
   /**
    * Blocks awaiting completion of this Future, then returns the resulting value,
@@ -407,7 +422,7 @@ sealed trait Future[+T] {
    * Future. If the Future has already been completed, this will apply
    * immediately.
    */
-  def onComplete(func: Future[T] ⇒ Unit): this.type
+  def onComplete(func: Future[T] ⇒ Unit)(implicit dispatcher: MessageDispatcher): this.type
 
   /**
    * When the future is completed with a valid result, apply the provided
@@ -419,7 +434,7 @@ sealed trait Future[+T] {
    *   }
    * </pre>
    */
-  final def onResult(pf: PartialFunction[Any, Unit]): this.type = onComplete { f ⇒
+  final def onResult(pf: PartialFunction[Any, Unit])(implicit dispatcher: MessageDispatcher): this.type = onComplete { f ⇒
     val optr = f.result
     if (optr.isDefined) {
       val r = optr.get
@@ -437,7 +452,7 @@ sealed trait Future[+T] {
    *   }
    * </pre>
    */
-  final def onException(pf: PartialFunction[Throwable, Unit]): Future[T] = onComplete { f ⇒
+  final def onException(pf: PartialFunction[Throwable, Unit])(implicit dispatcher: MessageDispatcher): Future[T] = onComplete { f ⇒
     val opte = f.exception
     if (opte.isDefined) {
       val e = opte.get
@@ -445,9 +460,9 @@ sealed trait Future[+T] {
     }
   }
 
-  def onTimeout(func: Future[T] ⇒ Unit): this.type
+  def onTimeout(func: Future[T] ⇒ Unit)(implicit dispatcher: MessageDispatcher): this.type
 
-  def orElse[A >: T](fallback: ⇒ A): Future[A]
+  def orElse[A >: T](fallback: ⇒ A)(implicit dispatcher: MessageDispatcher): Future[A]
 
   /**
    * Creates a new Future by applying a PartialFunction to the successful
@@ -463,7 +478,7 @@ sealed trait Future[+T] {
    * } yield b + "-" + c
    * </pre>
    */
-  final def collect[A](pf: PartialFunction[Any, A])(implicit timeout: Timeout): Future[A] = value match {
+  final def collect[A](pf: PartialFunction[Any, A])(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = value match {
     case Some(Right(r)) ⇒
       new KeptPromise[A](try {
         if (pf isDefinedAt r)
@@ -509,7 +524,7 @@ sealed trait Future[+T] {
    * Future(6 / 2) recover { case e: ArithmeticException => 0 } // result: 3
    * </pre>
    */
-  final def recover[A >: T](pf: PartialFunction[Throwable, A])(implicit timeout: Timeout): Future[A] = value match {
+  final def recover[A >: T](pf: PartialFunction[Throwable, A])(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = value match {
     case Some(Left(e)) ⇒
       try {
         if (pf isDefinedAt e)
@@ -556,7 +571,7 @@ sealed trait Future[+T] {
    * } yield b + "-" + c
    * </pre>
    */
-  final def map[A](f: T ⇒ A)(implicit timeout: Timeout): Future[A] = value match {
+  final def map[A](f: T ⇒ A)(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = value match {
     case Some(Right(r)) ⇒
       new KeptPromise[A](try {
         Right(f(r))
@@ -591,7 +606,7 @@ sealed trait Future[+T] {
    * Creates a new Future[A] which is completed with this Future's result if
    * that conforms to A's erased type or a ClassCastException otherwise.
    */
-  final def mapTo[A](implicit m: Manifest[A], timeout: Timeout = this.timeout): Future[A] = value match {
+  final def mapTo[A](implicit m: Manifest[A], dispatcher: MessageDispatcher = implicitly, timeout: Timeout = this.timeout): Future[A] = value match {
     case Some(Right(t)) ⇒
       new KeptPromise(try {
         Right(BoxedType(m.erasure).cast(t).asInstanceOf[A])
@@ -630,7 +645,7 @@ sealed trait Future[+T] {
    * } yield b + "-" + c
    * </pre>
    */
-  final def flatMap[A](f: T ⇒ Future[A])(implicit timeout: Timeout): Future[A] = value match {
+  final def flatMap[A](f: T ⇒ Future[A])(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = value match {
     case Some(Right(r)) ⇒
       try {
         f(r)
@@ -659,23 +674,23 @@ sealed trait Future[+T] {
       future
   }
 
-  final def foreach(f: T ⇒ Unit): Unit = onComplete {
+  final def foreach(f: T ⇒ Unit)(implicit dispatcher: MessageDispatcher): Unit = onComplete {
     _.result match {
       case Some(v) ⇒ f(v)
       case None    ⇒
     }
   }
 
-  final def withFilter(p: T ⇒ Boolean) = new FutureWithFilter[T](this, p)
+  final def withFilter(p: T ⇒ Boolean)(implicit dispatcher: MessageDispatcher, timeout: Timeout) = new FutureWithFilter[T](this, p)
 
-  final class FutureWithFilter[+A](self: Future[A], p: A ⇒ Boolean)(implicit timeout: Timeout) {
+  final class FutureWithFilter[+A](self: Future[A], p: A ⇒ Boolean)(implicit dispatcher: MessageDispatcher, timeout: Timeout) {
     def foreach(f: A ⇒ Unit): Unit = self filter p foreach f
     def map[B](f: A ⇒ B): Future[B] = self filter p map f
     def flatMap[B](f: A ⇒ Future[B]): Future[B] = self filter p flatMap f
     def withFilter(q: A ⇒ Boolean): FutureWithFilter[A] = new FutureWithFilter[A](self, x ⇒ p(x) && q(x))
   }
 
-  final def filter(p: T ⇒ Boolean)(implicit timeout: Timeout): Future[T] = value match {
+  final def filter(p: T ⇒ Boolean)(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[T] = value match {
     case Some(Right(r)) ⇒
       try {
         if (p(r))
@@ -767,26 +782,26 @@ trait Promise[T] extends Future[T] {
    * Completes this Future with the specified result, if not already completed.
    * @return this
    */
-  def complete(value: Either[Throwable, T]): this.type
+  def complete(value: Either[Throwable, T])(implicit dispatcher: MessageDispatcher): this.type
 
   /**
    * Completes this Future with the specified result, if not already completed.
    * @return this
    */
-  final def completeWithResult(result: T): this.type = complete(Right(result))
+  final def completeWithResult(result: T)(implicit dispatcher: MessageDispatcher): this.type = complete(Right(result))
 
   /**
    * Completes this Future with the specified exception, if not already completed.
    * @return this
    */
-  final def completeWithException(exception: Throwable): this.type = complete(Left(exception))
+  final def completeWithException(exception: Throwable)(implicit dispatcher: MessageDispatcher): this.type = complete(Left(exception))
 
   /**
    * Completes this Future with the specified other Future, when that Future is completed,
    * unless this Future has already been completed.
    * @return this.
    */
-  final def completeWith(other: Future[T]): this.type = {
+  final def completeWith(other: Future[T])(implicit dispatcher: MessageDispatcher): this.type = {
     other onComplete { f ⇒ complete(f.value.get) }
     this
   }
@@ -794,7 +809,7 @@ trait Promise[T] extends Future[T] {
   final def <<(value: T): Future[T] @cps[Future[Any]] = shift { cont: (Future[T] ⇒ Future[Any]) ⇒ cont(complete(Right(value))) }
 
   final def <<(other: Future[T]): Future[T] @cps[Future[Any]] = shift { cont: (Future[T] ⇒ Future[Any]) ⇒
-    val fr = new DefaultPromise[Any]()
+    val fr = new DefaultPromise[Any](this.timeout)
     this completeWith other onComplete { f ⇒
       try {
         fr completeWith cont(f)
@@ -808,7 +823,7 @@ trait Promise[T] extends Future[T] {
   }
 
   final def <<(stream: PromiseStreamOut[T]): Future[T] @cps[Future[Any]] = shift { cont: (Future[T] ⇒ Future[Any]) ⇒
-    val fr = Promise[Any]()
+    val fr = new DefaultPromise[Any](this.timeout)
     stream.dequeue(this).onComplete { f ⇒
       try {
         fr completeWith cont(f)
@@ -892,7 +907,7 @@ class DefaultPromise[T](val timeout: Timeout) extends Promise[T] {
     }
   }
 
-  def complete(value: Either[Throwable, T]): this.type = {
+  def complete(value: Either[Throwable, T])(implicit dispatcher: MessageDispatcher): this.type = {
     _lock.lock
     val notifyTheseListeners = try {
       if (_value.isEmpty) { //Only complete if we aren't expired
@@ -928,18 +943,20 @@ class DefaultPromise[T](val timeout: Timeout) extends Promise[T] {
           notifyTheseListeners foreach doNotify
         })
       } else {
-        try {
-          val callbacks = Stack[() ⇒ Unit]() // Allocate new aggregator for pending callbacks
-          Promise.callbacksPendingExecution.set(Some(callbacks)) // Specify the callback aggregator
-          runCallbacks(notifyTheseListeners, callbacks) // Execute callbacks, if they trigger new callbacks, they are aggregated
-        } finally { Promise.callbacksPendingExecution.set(None) } // Ensure cleanup
+        dispatcher dispatchTask { () ⇒
+          try {
+            val callbacks = Stack[() ⇒ Unit]() // Allocate new aggregator for pending callbacks
+            Promise.callbacksPendingExecution.set(Some(callbacks)) // Specify the callback aggregator
+            runCallbacks(notifyTheseListeners, callbacks) // Execute callbacks, if they trigger new callbacks, they are aggregated
+          } finally { Promise.callbacksPendingExecution.set(None) } // Ensure cleanup
+        }
       }
     }
 
     this
   }
 
-  def onComplete(func: Future[T] ⇒ Unit): this.type = {
+  def onComplete(func: Future[T] ⇒ Unit)(implicit dispatcher: MessageDispatcher): this.type = {
     _lock.lock
     val notifyNow = try {
       if (_value.isEmpty) {
@@ -952,12 +969,12 @@ class DefaultPromise[T](val timeout: Timeout) extends Promise[T] {
       _lock.unlock
     }
 
-    if (notifyNow) notifyCompleted(func)
+    if (notifyNow) dispatcher dispatchTask (() ⇒ notifyCompleted(func))
 
     this
   }
 
-  def onTimeout(func: Future[T] ⇒ Unit): this.type = {
+  def onTimeout(func: Future[T] ⇒ Unit)(implicit dispatcher: MessageDispatcher): this.type = {
     if (timeout.duration.isFinite) {
       _lock.lock
       val runNow = try {
@@ -982,7 +999,7 @@ class DefaultPromise[T](val timeout: Timeout) extends Promise[T] {
     this
   }
 
-  final def orElse[A >: T](fallback: ⇒ A): Future[A] =
+  final def orElse[A >: T](fallback: ⇒ A)(implicit dispatcher: MessageDispatcher): Future[A] =
     if (timeout.duration.isFinite) {
       value match {
         case Some(_)        ⇒ this
@@ -1047,14 +1064,14 @@ object ActorPromise {
 sealed class KeptPromise[T](suppliedValue: Either[Throwable, T]) extends Promise[T] {
   val value = Some(suppliedValue)
 
-  def complete(value: Either[Throwable, T]): this.type = this
-  def onComplete(func: Future[T] ⇒ Unit): this.type = { func(this); this }
+  def complete(value: Either[Throwable, T])(implicit dispatcher: MessageDispatcher): this.type = this
+  def onComplete(func: Future[T] ⇒ Unit)(implicit dispatcher: MessageDispatcher): this.type = { func(this); this }
   def await(atMost: Duration): this.type = this
   def await: this.type = this
   def isExpired: Boolean = true
   def timeout: Timeout = Timeout.zero
 
-  final def onTimeout(func: Future[T] ⇒ Unit): this.type = this
-  final def orElse[A >: T](fallback: ⇒ A): Future[A] = this
+  final def onTimeout(func: Future[T] ⇒ Unit)(implicit dispatcher: MessageDispatcher): this.type = this
+  final def orElse[A >: T](fallback: ⇒ A)(implicit dispatcher: MessageDispatcher): Future[A] = this
 
 }

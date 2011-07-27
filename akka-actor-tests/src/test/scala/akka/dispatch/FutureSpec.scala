@@ -391,7 +391,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
 
         val f1 = Future { throw new ThrowableTest("test") }
         f1.await
-        intercept[ThrowableTest] { f1.resultOrException }
+        intercept[ThrowableTest] { f1.get }
 
         val latch = new StandardLatch
         val f2 = Future { latch.tryAwait(5, TimeUnit.SECONDS); "success" }
@@ -400,14 +400,17 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         val f3 = f2 map (s ⇒ s.toUpperCase)
         latch.open
         f2.await
-        assert(f2.resultOrException === Some("success"))
+        assert(f2.get === "success")
         f2 foreach (_ ⇒ throw new ThrowableTest("current thread foreach"))
         f2 onResult { case _ ⇒ throw new ThrowableTest("current thread receive") }
         f3.await
-        assert(f3.resultOrException === Some("SUCCESS"))
+        assert(f3.get === "SUCCESS")
+
+        // give time for all callbacks to execute
+        Thread sleep 100
 
         // make sure all futures are completed in dispatcher
-        assert(Dispatchers.defaultGlobalDispatcher.pendingFutures === 0)
+        assert(Dispatchers.defaultGlobalDispatcher.pendingTasks === 0)
       }
 
       "shouldBlockUntilResult" in {
@@ -519,7 +522,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         Thread.sleep(100)
 
         // make sure all futures are completed in dispatcher
-        assert(Dispatchers.defaultGlobalDispatcher.pendingFutures === 0)
+        assert(Dispatchers.defaultGlobalDispatcher.pendingTasks === 0)
       }
 
       "shouldNotAddOrRunCallbacksAfterFailureToBeCompletedBeforeExpiry" in {
@@ -726,12 +729,12 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
 
       "ticket812FutureDispatchCleanup" in {
         implicit val dispatcher = new Dispatcher("ticket812FutureDispatchCleanup")
-        assert(dispatcher.pendingFutures === 0)
+        assert(dispatcher.pendingTasks === 0)
         val future = Future({ Thread.sleep(100); "Done" }, 10)
         intercept[FutureTimeoutException] { future.await }
-        assert(dispatcher.pendingFutures === 1)
-        Thread.sleep(100)
-        assert(dispatcher.pendingFutures === 0)
+        assert(dispatcher.pendingTasks === 1)
+        Thread.sleep(200)
+        assert(dispatcher.pendingTasks === 0)
       }
     }
   }
