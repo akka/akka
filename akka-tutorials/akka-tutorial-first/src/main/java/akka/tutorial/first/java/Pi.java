@@ -11,11 +11,12 @@ import static java.util.Arrays.asList;
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
-import akka.routing.CyclicIterator;
-import akka.routing.InfiniteIterator;
+import akka.routing.RouterType;
+import akka.routing.Routing;
 import akka.routing.Routing.Broadcast;
-import akka.routing.UntypedLoadBalancer;
+import scala.collection.JavaConversions;
 
+import java.util.LinkedList;
 import java.util.concurrent.CountDownLatch;
 
 public class Pi {
@@ -96,35 +97,18 @@ public class Pi {
 
     private ActorRef router;
 
-    static class PiRouter extends UntypedLoadBalancer {
-      private final InfiniteIterator<ActorRef> workers;
-
-      public PiRouter(ActorRef[] workers) {
-        this.workers = new CyclicIterator<ActorRef>(asList(workers));
-      }
-
-      public InfiniteIterator<ActorRef> seq() {
-        return workers;
-      }
-    }
-
-    public Master(int nrOfWorkers, int nrOfMessages, int nrOfElements, CountDownLatch latch) {
+      public Master(int nrOfWorkers, int nrOfMessages, int nrOfElements, CountDownLatch latch) {
       this.nrOfMessages = nrOfMessages;
       this.nrOfElements = nrOfElements;
       this.latch = latch;
 
-      // create the workers
-      final ActorRef[] workers = new ActorRef[nrOfWorkers];
+      LinkedList<ActorRef> workers = new LinkedList<ActorRef>();
       for (int i = 0; i < nrOfWorkers; i++) {
-        workers[i] = actorOf(Worker.class, "worker").start();
+          ActorRef worker = actorOf(Worker.class, "worker").start();
+          workers.add(worker);
       }
 
-      // wrap them with a load-balancing router
-      router = actorOf(new UntypedActorFactory() {
-        public UntypedActor create() {
-          return new PiRouter(workers);
-        }
-      }, "router").start();
+      router = Routing.newRoundRobinActorRef("pi", JavaConversions.asIterable(workers));
     }
 
     // message handler

@@ -6,11 +6,9 @@ package akka.tutorial.first.scala
 
 import akka.actor.{ Actor, PoisonPill }
 import Actor._
-import akka.routing.{ Routing, CyclicIterator }
-import Routing._
-
-import System.{ currentTimeMillis ⇒ now }
 import java.util.concurrent.CountDownLatch
+import akka.routing.Routing.Broadcast
+import akka.routing.Routing
 
 object Pi extends App {
 
@@ -57,7 +55,7 @@ object Pi extends App {
     val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
 
     // wrap them with a load-balancing router
-    val router = Routing.loadBalancerActor(CyclicIterator(workers)).start()
+    val router = Routing.newRoundRobinActorRef("pi", workers)
 
     // message handler
     def receive = {

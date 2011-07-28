@@ -977,7 +977,7 @@ class DefaultClusterNode private[akka] (
       "Checking out cluster actor ref with address [%s] and router [%s] on [%s] connected to [\n\t%s]"
         .format(actorAddress, router, remoteServerAddress, addresses.map(_._2).mkString("\n\t")))
 
-    val actorRef = Router newRouter (router, addresses, actorAddress, Actor.TIMEOUT)
+    val actorRef = Routing newRouter (router, addresses, actorAddress, Actor.TIMEOUT)
     addresses foreach {
       case (_, address) ⇒ clusterActorRefs.put(address, actorRef)
     }
