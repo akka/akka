@@ -12,9 +12,7 @@ import org.scalacheck.Gen._
 
 import akka.actor.{ Actor, ActorRef }
 import Actor._
-import akka.event.EventHandler
-import akka.testkit.TestEvent._
-import akka.testkit.EventFilter
+import akka.testkit.{ EventFilter, filterEvents }
 import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 
@@ -46,14 +44,6 @@ class JavaFutureSpec extends JavaFutureTests with JUnitSuite
 
 class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAndAfterAll {
   import FutureSpec._
-
-  override def beforeAll() {
-    EventHandler.notify(Mute(EventFilter[RuntimeException]))
-  }
-
-  override def afterAll() {
-    EventHandler.notify(UnMuteAll)
-  }
 
   "A Promise" when {
     "never completed" must {
@@ -108,17 +98,19 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       }
       "has actions applied" must {
         "pass checks" in {
-          check({ (future: Future[Int], actions: List[FutureAction]) ⇒
-            val result = (future /: actions)(_ /: _)
-            val expected = (future.await.value.get /: actions)(_ /: _)
-            ((result.await.value.get, expected) match {
-              case (Right(a), Right(b))                           ⇒ a == b
-              case (Left(a), Left(b)) if a.toString == b.toString ⇒ true
-              case (Left(a), Left(b)) if a.getStackTrace.isEmpty || b.getStackTrace.isEmpty ⇒
-                a.getClass.toString == b.getClass.toString
-              case _ ⇒ false
-            }) :| result.value.get.toString + " is expected to be " + expected.toString
-          }, minSuccessful(10000), workers(4))
+          filterEvents(EventFilter[ArithmeticException]) {
+            check({ (future: Future[Int], actions: List[FutureAction]) ⇒
+              val result = (future /: actions)(_ /: _)
+              val expected = (future.await.value.get /: actions)(_ /: _)
+              ((result.await.value.get, expected) match {
+                case (Right(a), Right(b))                           ⇒ a == b
+                case (Left(a), Left(b)) if a.toString == b.toString ⇒ true
+                case (Left(a), Left(b)) if a.getStackTrace.isEmpty || b.getStackTrace.isEmpty ⇒
+                  a.getClass.toString == b.getClass.toString
+                case _ ⇒ false
+              }) :| result.value.get.toString + " is expected to be " + expected.toString
+            }, minSuccessful(10000), workers(4))
+          }
         }
       }
     }
@@ -136,12 +128,14 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       }
       "throws an exception" must {
         behave like futureWithException[RuntimeException] { test ⇒
-          val actor = actorOf[TestActor]
-          actor.start()
-          val future = actor ? "Failure"
-          future.await
-          test(future, "Expected exception; to test fault-tolerance")
-          actor.stop()
+          filterEvents(EventFilter[RuntimeException]) {
+            val actor = actorOf[TestActor]
+            actor.start()
+            val future = actor ? "Failure"
+            future.await
+            test(future, "Expected exception; to test fault-tolerance")
+            actor.stop()
+          }
         }
       }
     }
@@ -160,13 +154,15 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       }
       "will throw an exception" must {
         behave like futureWithException[ArithmeticException] { test ⇒
-          val actor1 = actorOf[TestActor].start()
-          val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply (s.length / 0) } }).start()
-          val future = actor1 ? "Hello" flatMap { _ match { case s: String ⇒ actor2 ? s } }
-          future.await
-          test(future, "/ by zero")
-          actor1.stop()
-          actor2.stop()
+          filterEvents(EventFilter[ArithmeticException]) {
+            val actor1 = actorOf[TestActor].start()
+            val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply (s.length / 0) } }).start()
+            val future = actor1 ? "Hello" flatMap { _ match { case s: String ⇒ actor2 ? s } }
+            future.await
+            test(future, "/ by zero")
+            actor1.stop()
+            actor2.stop()
+          }
         }
       }
     }
@@ -174,102 +170,108 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
     "being tested" must {
 
       "compose with for-comprehensions" in {
-        val actor = actorOf(new Actor {
-          def receive = {
-            case s: String ⇒ self reply s.length
-            case i: Int    ⇒ self reply (i * 2).toString
-          }
-        }).start()
+        filterEvents(EventFilter[ClassCastException]) {
+          val actor = actorOf(new Actor {
+            def receive = {
+              case s: String ⇒ self reply s.length
+              case i: Int    ⇒ self reply (i * 2).toString
+            }
+          }).start()
 
-        val future0 = actor ? "Hello"
+          val future0 = actor ? "Hello"
 
-        val future1 = for {
-          a: Int ← future0.mapTo[Int] // returns 5
-          b: String ← (actor ? a).mapTo[String] // returns "10"
-          c: String ← (actor ? 7).mapTo[String] // returns "14"
-        } yield b + "-" + c
+          val future1 = for {
+            a: Int ← future0.mapTo[Int] // returns 5
+            b: String ← (actor ? a).mapTo[String] // returns "10"
+            c: String ← (actor ? 7).mapTo[String] // returns "14"
+          } yield b + "-" + c
 
-        val future2 = for {
-          a: Int ← future0.mapTo[Int]
-          b: Int ← (actor ? a).mapTo[Int]
-          c: String ← (actor ? 7).mapTo[String]
-        } yield b + "-" + c
+          val future2 = for {
+            a: Int ← future0.mapTo[Int]
+            b: Int ← (actor ? a).mapTo[Int]
+            c: String ← (actor ? 7).mapTo[String]
+          } yield b + "-" + c
 
-        future1.get must be("10-14")
-        intercept[ClassCastException] { future2.get }
-        actor.stop()
+          future1.get must be("10-14")
+          intercept[ClassCastException] { future2.get }
+          actor.stop()
+        }
       }
 
       "support pattern matching within a for-comprehension" in {
-        case class Req[T](req: T)
-        case class Res[T](res: T)
-        val actor = actorOf(new Actor {
-          def receive = {
-            case Req(s: String) ⇒ self reply Res(s.length)
-            case Req(i: Int)    ⇒ self reply Res((i * 2).toString)
-          }
-        }).start()
+        filterEvents(EventFilter[MatchError]) {
+          case class Req[T](req: T)
+          case class Res[T](res: T)
+          val actor = actorOf(new Actor {
+            def receive = {
+              case Req(s: String) ⇒ self reply Res(s.length)
+              case Req(i: Int)    ⇒ self reply Res((i * 2).toString)
+            }
+          }).start()
 
-        val future1 = for {
-          Res(a: Int) ← actor ? Req("Hello")
-          Res(b: String) ← actor ? Req(a)
-          Res(c: String) ← actor ? Req(7)
-        } yield b + "-" + c
+          val future1 = for {
+            Res(a: Int) ← actor ? Req("Hello")
+            Res(b: String) ← actor ? Req(a)
+            Res(c: String) ← actor ? Req(7)
+          } yield b + "-" + c
 
-        val future2 = for {
-          Res(a: Int) ← actor ? Req("Hello")
-          Res(b: Int) ← actor ? Req(a)
-          Res(c: Int) ← actor ? Req(7)
-        } yield b + "-" + c
+          val future2 = for {
+            Res(a: Int) ← actor ? Req("Hello")
+            Res(b: Int) ← actor ? Req(a)
+            Res(c: Int) ← actor ? Req(7)
+          } yield b + "-" + c
 
-        future1.get must be("10-14")
-        intercept[MatchError] { future2.get }
-        actor.stop()
+          future1.get must be("10-14")
+          intercept[MatchError] { future2.get }
+          actor.stop()
+        }
       }
 
       "recover from exceptions" in {
-        val future1 = Future(5)
-        val future2 = future1 map (_ / 0)
-        val future3 = future2 map (_.toString)
+        filterEvents(EventFilter[RuntimeException]) {
+          val future1 = Future(5)
+          val future2 = future1 map (_ / 0)
+          val future3 = future2 map (_.toString)
 
-        val future4 = future1 recover {
-          case e: ArithmeticException ⇒ 0
-        } map (_.toString)
+          val future4 = future1 recover {
+            case e: ArithmeticException ⇒ 0
+          } map (_.toString)
 
-        val future5 = future2 recover {
-          case e: ArithmeticException ⇒ 0
-        } map (_.toString)
+          val future5 = future2 recover {
+            case e: ArithmeticException ⇒ 0
+          } map (_.toString)
 
-        val future6 = future2 recover {
-          case e: MatchError ⇒ 0
-        } map (_.toString)
+          val future6 = future2 recover {
+            case e: MatchError ⇒ 0
+          } map (_.toString)
 
-        val future7 = future3 recover { case e: ArithmeticException ⇒ "You got ERROR" }
+          val future7 = future3 recover { case e: ArithmeticException ⇒ "You got ERROR" }
 
-        val actor = actorOf[TestActor].start()
+          val actor = actorOf[TestActor].start()
 
-        val future8 = actor ? "Failure"
-        val future9 = actor ? "Failure" recover {
-          case e: RuntimeException ⇒ "FAIL!"
+          val future8 = actor ? "Failure"
+          val future9 = actor ? "Failure" recover {
+            case e: RuntimeException ⇒ "FAIL!"
+          }
+          val future10 = actor ? "Hello" recover {
+            case e: RuntimeException ⇒ "FAIL!"
+          }
+          val future11 = actor ? "Failure" recover { case _ ⇒ "Oops!" }
+
+          future1.get must be(5)
+          intercept[ArithmeticException] { future2.get }
+          intercept[ArithmeticException] { future3.get }
+          future4.get must be("5")
+          future5.get must be("0")
+          intercept[ArithmeticException] { future6.get }
+          future7.get must be("You got ERROR")
+          intercept[RuntimeException] { future8.get }
+          future9.get must be("FAIL!")
+          future10.get must be("World")
+          future11.get must be("Oops!")
+
+          actor.stop()
         }
-        val future10 = actor ? "Hello" recover {
-          case e: RuntimeException ⇒ "FAIL!"
-        }
-        val future11 = actor ? "Failure" recover { case _ ⇒ "Oops!" }
-
-        future1.get must be(5)
-        intercept[ArithmeticException] { future2.get }
-        intercept[ArithmeticException] { future3.get }
-        future4.get must be("5")
-        future5.get must be("0")
-        intercept[ArithmeticException] { future6.get }
-        future7.get must be("You got ERROR")
-        intercept[RuntimeException] { future8.get }
-        future9.get must be("FAIL!")
-        future10.get must be("World")
-        future11.get must be("Oops!")
-
-        actor.stop()
       }
 
       "fold" in {
@@ -294,19 +296,21 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       }
 
       "fold with an exception" in {
-        val actors = (1 to 10).toList map { _ ⇒
-          actorOf(new Actor {
-            def receive = {
-              case (add: Int, wait: Int) ⇒
-                Thread.sleep(wait)
-                if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
-                self tryReply add
-            }
-          }).start()
+        filterEvents(EventFilter[IllegalArgumentException]) {
+          val actors = (1 to 10).toList map { _ ⇒
+            actorOf(new Actor {
+              def receive = {
+                case (add: Int, wait: Int) ⇒
+                  Thread.sleep(wait)
+                  if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
+                  self tryReply add
+              }
+            }).start()
+          }
+          val timeout = 10000
+          def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100), timeout).mapTo[Int] }
+          Futures.fold(0, timeout)(futures)(_ + _).await.exception.get.getMessage must be("shouldFoldResultsWithException: expected")
         }
-        val timeout = 10000
-        def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100), timeout).mapTo[Int] }
-        Futures.fold(0, timeout)(futures)(_ + _).await.exception.get.getMessage must be("shouldFoldResultsWithException: expected")
       }
 
       /*  @Test
@@ -341,23 +345,27 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       }
 
       "shouldReduceResultsWithException" in {
-        val actors = (1 to 10).toList map { _ ⇒
-          actorOf(new Actor {
-            def receive = {
-              case (add: Int, wait: Int) ⇒
-                Thread.sleep(wait)
-                if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
-                self tryReply add
-            }
-          }).start()
+        filterEvents(EventFilter[IllegalArgumentException]) {
+          val actors = (1 to 10).toList map { _ ⇒
+            actorOf(new Actor {
+              def receive = {
+                case (add: Int, wait: Int) ⇒
+                  Thread.sleep(wait)
+                  if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
+                  self tryReply add
+              }
+            }).start()
+          }
+          val timeout = 10000
+          def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100), timeout).mapTo[Int] }
+          assert(Futures.reduce(futures, timeout)(_ + _).await.exception.get.getMessage === "shouldFoldResultsWithException: expected")
         }
-        val timeout = 10000
-        def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100), timeout).mapTo[Int] }
-        assert(Futures.reduce(futures, timeout)(_ + _).await.exception.get.getMessage === "shouldFoldResultsWithException: expected")
       }
 
       "shouldReduceThrowIAEOnEmptyInput" in {
-        intercept[UnsupportedOperationException] { Futures.reduce(List[Future[Int]]())(_ + _).get }
+        filterEvents(EventFilter[IllegalArgumentException]) {
+          intercept[UnsupportedOperationException] { Futures.reduce(List[Future[Int]]())(_ + _).get }
+        }
       }
 
       "receiveShouldExecuteOnComplete" in {
@@ -389,25 +397,27 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       "shouldHandleThrowables" in {
         class ThrowableTest(m: String) extends Throwable(m)
 
-        val f1 = Future { throw new ThrowableTest("test") }
-        f1.await
-        intercept[ThrowableTest] { f1.resultOrException }
+        filterEvents(EventFilter[ThrowableTest]) {
+          val f1 = Future { throw new ThrowableTest("test") }
+          f1.await
+          intercept[ThrowableTest] { f1.resultOrException }
 
-        val latch = new StandardLatch
-        val f2 = Future { latch.tryAwait(5, TimeUnit.SECONDS); "success" }
-        f2 foreach (_ ⇒ throw new ThrowableTest("dispatcher foreach"))
-        f2 onResult { case _ ⇒ throw new ThrowableTest("dispatcher receive") }
-        val f3 = f2 map (s ⇒ s.toUpperCase)
-        latch.open
-        f2.await
-        assert(f2.resultOrException === Some("success"))
-        f2 foreach (_ ⇒ throw new ThrowableTest("current thread foreach"))
-        f2 onResult { case _ ⇒ throw new ThrowableTest("current thread receive") }
-        f3.await
-        assert(f3.resultOrException === Some("SUCCESS"))
+          val latch = new StandardLatch
+          val f2 = Future { latch.tryAwait(5, TimeUnit.SECONDS); "success" }
+          f2 foreach (_ ⇒ throw new ThrowableTest("dispatcher foreach"))
+          f2 onResult { case _ ⇒ throw new ThrowableTest("dispatcher receive") }
+          val f3 = f2 map (s ⇒ s.toUpperCase)
+          latch.open
+          f2.await
+          assert(f2.resultOrException === Some("success"))
+          f2 foreach (_ ⇒ throw new ThrowableTest("current thread foreach"))
+          f2 onResult { case _ ⇒ throw new ThrowableTest("current thread receive") }
+          f3.await
+          assert(f3.resultOrException === Some("SUCCESS"))
 
-        // make sure all futures are completed in dispatcher
-        assert(Dispatchers.defaultGlobalDispatcher.pendingFutures === 0)
+          // make sure all futures are completed in dispatcher
+          assert(Dispatchers.defaultGlobalDispatcher.pendingFutures === 0)
+        }
       }
 
       "shouldBlockUntilResult" in {
@@ -421,8 +431,10 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         assert(f2.get === 10)
 
         val f3 = Future({ Thread.sleep(10); 5 }, 10)
-        intercept[FutureTimeoutException] {
-          f3.get
+        filterEvents(EventFilter[FutureTimeoutException]) {
+          intercept[FutureTimeoutException] {
+            f3.get
+          }
         }
       }
 
@@ -442,40 +454,46 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       }
 
       "futureComposingWithContinuationsFailureDivideZero" in {
-        import Future.flow
+        filterEvents(EventFilter[ArithmeticException]) {
+          import Future.flow
 
-        val x = Future("Hello")
-        val y = x map (_.length)
+          val x = Future("Hello")
+          val y = x map (_.length)
 
-        val r = flow(x() + " " + y.map(_ / 0).map(_.toString).apply, 100)
+          val r = flow(x() + " " + y.map(_ / 0).map(_.toString).apply, 100)
 
-        intercept[java.lang.ArithmeticException](r.get)
+          intercept[java.lang.ArithmeticException](r.get)
+        }
       }
 
       "futureComposingWithContinuationsFailureCastInt" in {
-        import Future.flow
+        filterEvents(EventFilter[ClassCastException]) {
+          import Future.flow
 
-        val actor = actorOf[TestActor].start
+          val actor = actorOf[TestActor].start
 
-        val x = Future(3)
-        val y = (actor ? "Hello").mapTo[Int]
+          val x = Future(3)
+          val y = (actor ? "Hello").mapTo[Int]
 
-        val r = flow(x() + y(), 100)
+          val r = flow(x() + y(), 100)
 
-        intercept[ClassCastException](r.get)
+          intercept[ClassCastException](r.get)
+        }
       }
 
       "futureComposingWithContinuationsFailureCastNothing" in {
-        import Future.flow
+        filterEvents(EventFilter[ClassCastException]) {
+          import Future.flow
 
-        val actor = actorOf[TestActor].start
+          val actor = actorOf[TestActor].start
 
-        val x = Future("Hello")
-        val y = actor ? "Hello" mapTo manifest[Nothing]
+          val x = Future("Hello")
+          val y = actor ? "Hello" mapTo manifest[Nothing]
 
-        val r = flow(x() + y())
+          val r = flow(x() + y())
 
-        intercept[ClassCastException](r.get)
+          intercept[ClassCastException](r.get)
+        }
       }
 
       "futureCompletingWithContinuations" in {
@@ -612,29 +630,31 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       }
 
       "futureCompletingWithContinuationsFailure" in {
-        import Future.flow
+        filterEvents(EventFilter[ArithmeticException]) {
+          import Future.flow
 
-        val x, y, z = Promise[Int]()
-        val ly, lz = new StandardLatch
+          val x, y, z = Promise[Int]()
+          val ly, lz = new StandardLatch
 
-        val result = flow {
-          y << x
-          ly.open
-          val oops = 1 / 0
-          z << x
-          lz.open
-          z() + y() + oops
+          val result = flow {
+            y << x
+            ly.open
+            val oops = 1 / 0
+            z << x
+            lz.open
+            z() + y() + oops
+          }
+
+          assert(!ly.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
+          assert(!lz.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
+
+          flow { x << 5 }
+
+          assert(y.get === 5)
+          intercept[java.lang.ArithmeticException](result.get)
+          assert(z.value === None)
+          assert(!lz.isOpen)
         }
-
-        assert(!ly.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
-        assert(!lz.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
-
-        flow { x << 5 }
-
-        assert(y.get === 5)
-        intercept[java.lang.ArithmeticException](result.get)
-        assert(z.value === None)
-        assert(!lz.isOpen)
       }
 
       "futureContinuationsShouldNotBlock" in {
@@ -725,13 +745,15 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       }
 
       "ticket812FutureDispatchCleanup" in {
-        implicit val dispatcher = new Dispatcher("ticket812FutureDispatchCleanup")
-        assert(dispatcher.pendingFutures === 0)
-        val future = Future({ Thread.sleep(100); "Done" }, 10)
-        intercept[FutureTimeoutException] { future.await }
-        assert(dispatcher.pendingFutures === 1)
-        Thread.sleep(100)
-        assert(dispatcher.pendingFutures === 0)
+        filterEvents(EventFilter[FutureTimeoutException]) {
+          implicit val dispatcher = new Dispatcher("ticket812FutureDispatchCleanup")
+          assert(dispatcher.pendingFutures === 0)
+          val future = Future({ Thread.sleep(100); "Done" }, 10)
+          intercept[FutureTimeoutException] { future.await }
+          assert(dispatcher.pendingFutures === 1)
+          Thread.sleep(200)
+          assert(dispatcher.pendingFutures === 0)
+        }
       }
     }
   }
