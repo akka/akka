@@ -478,39 +478,25 @@ sealed trait Future[+T] {
    * } yield b + "-" + c
    * </pre>
    */
-  final def collect[A](pf: PartialFunction[Any, A])(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = value match {
-    case Some(Right(r)) ⇒
-      new KeptPromise[A](try {
-        if (pf isDefinedAt r)
-          Right(pf(r))
-        else
-          Left(new MatchError(r))
-      } catch {
-        case e: Exception ⇒
-          EventHandler.error(e, this, e.getMessage)
-          Left(e)
-      })
-    case Some(_) ⇒
-      this.asInstanceOf[Future[A]]
-    case None ⇒
-      val future = new DefaultPromise[A](timeout)
-      onComplete { self ⇒
-        future complete {
-          self.value.get match {
-            case Right(r) ⇒
-              try {
-                if (pf isDefinedAt r) Right(pf(r))
-                else Left(new MatchError(r))
-              } catch {
-                case e: Exception ⇒
-                  EventHandler.error(e, this, e.getMessage)
-                  Left(e)
-              }
-            case v ⇒ v.asInstanceOf[Either[Throwable, A]]
-          }
+  final def collect[A](pf: PartialFunction[Any, A])(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = {
+    val future = new DefaultPromise[A](timeout)
+    onComplete { self ⇒
+      future complete {
+        self.value.get match {
+          case Right(r) ⇒
+            try {
+              if (pf isDefinedAt r) Right(pf(r))
+              else Left(new MatchError(r))
+            } catch {
+              case e: Exception ⇒
+                EventHandler.error(e, this, e.getMessage)
+                Left(e)
+            }
+          case v ⇒ v.asInstanceOf[Either[Throwable, A]]
         }
       }
-      future
+    }
+    future
   }
 
   /**
@@ -524,38 +510,24 @@ sealed trait Future[+T] {
    * Future(6 / 2) recover { case e: ArithmeticException => 0 } // result: 3
    * </pre>
    */
-  final def recover[A >: T](pf: PartialFunction[Throwable, A])(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = value match {
-    case Some(Left(e)) ⇒
-      try {
-        if (pf isDefinedAt e)
-          new KeptPromise(Right(pf(e)))
-        else
-          this.asInstanceOf[Future[A]]
-      } catch {
-        case e: Exception ⇒
-          EventHandler.error(e, this, e.getMessage)
-          new KeptPromise(Left(e))
-      }
-    case Some(_) ⇒
-      this.asInstanceOf[Future[A]]
-    case None ⇒
-      val future = new DefaultPromise[A](timeout)
-      onComplete { self ⇒
-        future complete {
-          self.value.get match {
-            case Left(e) ⇒
-              try {
-                if (pf isDefinedAt e) Right(pf(e))
-                else Left(e)
-              } catch {
-                case x: Exception ⇒
-                  Left(x)
-              }
-            case v ⇒ v
-          }
+  final def recover[A >: T](pf: PartialFunction[Throwable, A])(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = {
+    val future = new DefaultPromise[A](timeout)
+    onComplete { self ⇒
+      future complete {
+        self.value.get match {
+          case Left(e) ⇒
+            try {
+              if (pf isDefinedAt e) Right(pf(e))
+              else Left(e)
+            } catch {
+              case x: Exception ⇒
+                Left(x)
+            }
+          case v ⇒ v
         }
       }
-      future
+    }
+    future
   }
 
   /**
@@ -571,64 +543,44 @@ sealed trait Future[+T] {
    * } yield b + "-" + c
    * </pre>
    */
-  final def map[A](f: T ⇒ A)(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = value match {
-    case Some(Right(r)) ⇒
-      new KeptPromise[A](try {
-        Right(f(r))
-      } catch {
-        case e: Exception ⇒
-          EventHandler.error(e, this, e.getMessage)
-          Left(e)
-      })
-    case Some(_) ⇒
-      this.asInstanceOf[Future[A]]
-    case None ⇒
-      val future = new DefaultPromise[A](timeout)
-      onComplete { self ⇒
-        future complete {
-          self.value.get match {
-            case Right(r) ⇒
-              try {
-                Right(f(r))
-              } catch {
-                case e: Exception ⇒
-                  EventHandler.error(e, this, e.getMessage)
-                  Left(e)
-              }
-            case v ⇒ v.asInstanceOf[Either[Throwable, A]]
-          }
+  final def map[A](f: T ⇒ A)(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = {
+    val future = new DefaultPromise[A](timeout)
+    onComplete { self ⇒
+      future complete {
+        self.value.get match {
+          case Right(r) ⇒
+            try {
+              Right(f(r))
+            } catch {
+              case e: Exception ⇒
+                EventHandler.error(e, this, e.getMessage)
+                Left(e)
+            }
+          case v ⇒ v.asInstanceOf[Either[Throwable, A]]
         }
       }
-      future
+    }
+    future
   }
 
   /**
    * Creates a new Future[A] which is completed with this Future's result if
    * that conforms to A's erased type or a ClassCastException otherwise.
    */
-  final def mapTo[A](implicit m: Manifest[A], dispatcher: MessageDispatcher = implicitly, timeout: Timeout = this.timeout): Future[A] = value match {
-    case Some(Right(t)) ⇒
-      new KeptPromise(try {
-        Right(BoxedType(m.erasure).cast(t).asInstanceOf[A])
-      } catch {
-        case e: ClassCastException ⇒ Left(e)
+  final def mapTo[A](implicit m: Manifest[A], dispatcher: MessageDispatcher = implicitly, timeout: Timeout = this.timeout): Future[A] = {
+    val fa = new DefaultPromise[A](timeout)
+    onComplete { ft ⇒
+      fa complete (ft.value.get match {
+        case l: Left[_, _] ⇒ l.asInstanceOf[Either[Throwable, A]]
+        case Right(t) ⇒
+          try {
+            Right(BoxedType(m.erasure).cast(t).asInstanceOf[A])
+          } catch {
+            case e: ClassCastException ⇒ Left(e)
+          }
       })
-    case Some(_) ⇒
-      this.asInstanceOf[Future[A]]
-    case None ⇒
-      val fa = new DefaultPromise[A](timeout)
-      onComplete { ft ⇒
-        fa complete (ft.value.get match {
-          case l: Left[_, _] ⇒ l.asInstanceOf[Either[Throwable, A]]
-          case Right(t) ⇒
-            try {
-              Right(BoxedType(m.erasure).cast(t).asInstanceOf[A])
-            } catch {
-              case e: ClassCastException ⇒ Left(e)
-            }
-        })
-      }
-      fa
+    }
+    fa
   }
 
   /**
@@ -645,33 +597,22 @@ sealed trait Future[+T] {
    * } yield b + "-" + c
    * </pre>
    */
-  final def flatMap[A](f: T ⇒ Future[A])(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = value match {
-    case Some(Right(r)) ⇒
-      try {
-        f(r)
-      } catch {
-        case e: Exception ⇒
-          EventHandler.error(e, this, e.getMessage)
-          new KeptPromise(Left(e))
+  final def flatMap[A](f: T ⇒ Future[A])(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = {
+    val future = new DefaultPromise[A](timeout)
+    onComplete {
+      _.value.get match {
+        case Right(r) ⇒
+          try {
+            future completeWith f(r)
+          } catch {
+            case e: Exception ⇒
+              EventHandler.error(e, this, e.getMessage)
+              future complete Left(e)
+          }
+        case v ⇒ future complete v.asInstanceOf[Either[Throwable, A]]
       }
-    case Some(_) ⇒
-      this.asInstanceOf[Future[A]]
-    case None ⇒
-      val future = new DefaultPromise[A](timeout)
-      onComplete {
-        _.value.get match {
-          case Right(r) ⇒
-            try {
-              future completeWith f(r)
-            } catch {
-              case e: Exception ⇒
-                EventHandler.error(e, this, e.getMessage)
-                future complete Left(e)
-            }
-          case v ⇒ future complete v.asInstanceOf[Either[Throwable, A]]
-        }
-      }
-      future
+    }
+    future
   }
 
   final def foreach(f: T ⇒ Unit)(implicit dispatcher: MessageDispatcher): Unit = onComplete {
@@ -690,41 +631,27 @@ sealed trait Future[+T] {
     def withFilter(q: A ⇒ Boolean): FutureWithFilter[A] = new FutureWithFilter[A](self, x ⇒ p(x) && q(x))
   }
 
-  final def filter(p: T ⇒ Boolean)(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[T] = value match {
-    case Some(Right(r)) ⇒
-      try {
-        if (p(r))
-          this
-        else
-          new KeptPromise(Left(new MatchError(r)))
-      } catch {
-        case e: Exception ⇒
-          EventHandler.error(e, this, e.getMessage)
-          new KeptPromise(Left(e))
-      }
-    case Some(_) ⇒
-      this
-    case None ⇒
-      val future = new DefaultPromise[T](timeout)
-      onComplete { self ⇒
-        future complete {
-          self.value.get match {
-            case Right(r) ⇒
-              try {
-                if (p(r))
-                  Right(r)
-                else
-                  Left(new MatchError(r))
-              } catch {
-                case e: Exception ⇒
-                  EventHandler.error(e, this, e.getMessage)
-                  Left(e)
-              }
-            case v ⇒ v
-          }
+  final def filter(p: T ⇒ Boolean)(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[T] = {
+    val future = new DefaultPromise[T](timeout)
+    onComplete { self ⇒
+      future complete {
+        self.value.get match {
+          case Right(r) ⇒
+            try {
+              if (p(r))
+                Right(r)
+              else
+                Left(new MatchError(r))
+            } catch {
+              case e: Exception ⇒
+                EventHandler.error(e, this, e.getMessage)
+                Left(e)
+            }
+          case v ⇒ v
         }
       }
-      future
+    }
+    future
   }
 
   /**
