@@ -463,10 +463,10 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // Default project
   // -------------------------------------------------------------------------------------------------------------------
 
-  import com.github.olim7t.sbtscalariform._
-  class AkkaDefaultProject(info: ProjectInfo) extends DefaultProject(info) with McPom with ScalariformPlugin {
+  //import com.github.olim7t.sbtscalariform._
+  class AkkaDefaultProject(info: ProjectInfo) extends DefaultProject(info) with McPom /*with ScalariformPlugin*/ {
 
-    override def scalariformOptions = Seq(
+    /*override def scalariformOptions = Seq(
       //VerboseScalariform,
       AlignParameters(true),
       CompactStringConcatenation(false),
@@ -484,7 +484,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 //      SpaceInsideBrackets(false),
 //      SpaceInsideParentheses(false),
       //SpacesWithinPatternBinders(true)
-    )
+    )*/
 
     override def disableCrossPaths = true
 
