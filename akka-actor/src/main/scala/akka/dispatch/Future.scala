@@ -996,7 +996,10 @@ sealed class KeptPromise[T](suppliedValue: Either[Throwable, T]) extends Promise
   val value = Some(suppliedValue)
 
   def complete(value: Either[Throwable, T])(implicit dispatcher: MessageDispatcher): this.type = this
-  def onComplete(func: Future[T] ⇒ Unit)(implicit dispatcher: MessageDispatcher): this.type = { func(this); this }
+  def onComplete(func: Future[T] ⇒ Unit)(implicit dispatcher: MessageDispatcher): this.type = {
+    dispatcher dispatchTask (() => func(this)) //TODO: Use pending callback stack
+    this
+  }
   def await(atMost: Duration): this.type = this
   def await: this.type = this
   def isExpired: Boolean = true
