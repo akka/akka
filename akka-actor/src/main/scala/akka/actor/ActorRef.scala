@@ -301,7 +301,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    *
    * If you would rather have an exception, check the <code>reply(..)</code> version.
    */
-  def tryReply(message: Any): Boolean =  channel.safe_!(message)(this)
+  def tryReply(message: Any): Boolean = channel.safe_!(message)(this)
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
@@ -480,12 +480,16 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
         "]")
 
   private val serializer: Serializer =
-    try { Serialization.serializerFor(this.getClass) } catch { case e: Exception => serializerErrorDueTo(e.toString)}
+    try {
+      Serialization.serializerFor(this.getClass)
+    } catch {
+      case e: Exception => serializerErrorDueTo(e.toString)
+    }
 
   private lazy val replicationStorage: Option[TransactionLog] = {
     import DeploymentConfig._
     val replicationScheme = replicationSchemeFor(Deployer.deploymentFor(address)).getOrElse(Transient)
-    if(isReplicated(replicationScheme)) {
+    if (isReplicated(replicationScheme)) {
       if (isReplicatedWithTransactionLog(replicationScheme)) {
         EventHandler.debug(this, "Creating a transaction log for Actor [%s] with replication strategy [%s]".format(address, replicationScheme))
 
@@ -649,7 +653,8 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
   def mailbox: AnyRef = _mailbox
 
   protected[akka] def mailbox_=(value: AnyRef): AnyRef = {
-    _mailbox = value; value
+    _mailbox = value;
+    value
   }
 
   /**
@@ -842,7 +847,7 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
       actorRef.lifeCycle match {
         // either permanent or none where default is permanent
         case Temporary ⇒ shutDownTemporaryActor(actorRef, reason)
-        case _         ⇒ actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
+        case _ ⇒ actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
       }
     }
   }
@@ -865,7 +870,7 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
         }
         fresh match {
           case Some(ref) ⇒ ref
-          case None      ⇒ actorFactory()
+          case None ⇒ actorFactory()
         }
       } else {
         actorFactory()
@@ -902,7 +907,7 @@ class LocalActorRef private[akka](private[this] val actorFactory: () ⇒ Actor, 
     else {
       lifeCycle match {
         case Temporary ⇒ shutDownTemporaryActor(this, reason)
-        case _         ⇒ dispatcher.resume(this) //Resume processing for this actor
+        case _ ⇒ dispatcher.resume(this) //Resume processing for this actor
       }
     }
   }
@@ -1258,4 +1263,59 @@ case class SerializedActorRef(uuid: Uuid,
           "Trying to deserialize ActorRef [" + this +
             "] but it's not found in the local registry and remoting is not enabled.")
   }
+}
+
+
+/**
+ * Trait for ActorRef implementations where most of the methods are not supported.
+ */
+trait UnsupportedActorRef extends ActorRef with ScalaActorRef{
+
+  def dispatcher_=(md: MessageDispatcher) {
+    unsupported
+  }
+
+  def dispatcher: MessageDispatcher = unsupported
+
+  def link(actorRef: ActorRef) {
+    unsupported
+  }
+
+  def unlink(actorRef: ActorRef) {
+    unsupported
+  }
+
+  def startLink(actorRef: ActorRef): ActorRef = unsupported
+
+  def supervisor: Option[ActorRef] = unsupported
+
+  def linkedActors: JMap[Uuid, ActorRef] = unsupported
+
+  protected[akka] def mailbox: AnyRef = unsupported
+
+  protected[akka] def mailbox_=(value: AnyRef): AnyRef = unsupported
+
+  protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable) {
+    unsupported
+  }
+
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
+    unsupported
+  }
+
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
+    unsupported
+  }
+
+  protected[akka] def invoke(messageHandle: MessageInvocation) {
+    unsupported
+  }
+
+  protected[akka] def supervisor_=(sup: Option[ActorRef]) {
+    unsupported
+  }
+
+  protected[akka] def actorInstance: AtomicReference[Actor] = unsupported
+
+  private def unsupported = throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 }

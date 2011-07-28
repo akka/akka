@@ -16,6 +16,7 @@ import java.util.{Map ⇒ JMap}
 import com.eaio.uuid.UUID
 import collection.immutable.Map
 import annotation.tailrec
+import akka.routing.Router
 
 /**
  * ActorRef representing a one or many instances of a clustered, load-balanced and sometimes replicated actor
@@ -26,8 +27,8 @@ import annotation.tailrec
 class ClusterActorRef private[akka](inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
                                     val address: String,
                                     _timeout: Long)
-  extends ActorRef with ScalaActorRef {
-  this: Router.Router ⇒
+  extends UnsupportedActorRef with ScalaActorRef {
+  this: Router ⇒
   timeout = _timeout
 
   private[akka] val inetSocketAddressToActorRefMap = new AtomicReference[Map[InetSocketAddress, ActorRef]](
@@ -37,7 +38,7 @@ class ClusterActorRef private[akka](inetSocketAddresses: Array[Tuple2[UUID, Inet
 
   ClusterModule.ensureEnabled()
 
-  def connections: Map[InetSocketAddress, ActorRef] = inetSocketAddressToActorRefMap.get
+  def connections: Iterable[ActorRef] = inetSocketAddressToActorRefMap.get.values
 
   override def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
     val sender = channel match {
@@ -96,11 +97,12 @@ class ClusterActorRef private[akka](inetSocketAddresses: Array[Tuple2[UUID, Inet
   def signalDeadActor(ref: ActorRef): Unit = {
     //since the number remote actor refs for a clustered actor ref is quite low, we can deal with the O(N) complexity
     //of the following removal.
-    val it = connections.keySet.iterator
+    val map = inetSocketAddressToActorRefMap.get
+    val it = map.keySet.iterator
 
     while (it.hasNext) {
       val address = it.next()
-      val foundRef: ActorRef = connections.get(address).get
+      val foundRef: ActorRef = map.get(address).get
 
       if (foundRef == ref) {
         remove(address)
@@ -130,57 +132,4 @@ class ClusterActorRef private[akka](inetSocketAddresses: Array[Tuple2[UUID, Inet
       }
     }
   }
-
-  // ========================================================================
-  // ==== NOT SUPPORTED ====
-  // ========================================================================
-
-  // FIXME move these methods and the same ones in RemoteActorRef to a base class - now duplicated
-  def dispatcher_=(md: MessageDispatcher) {
-    unsupported
-  }
-
-  def dispatcher: MessageDispatcher = unsupported
-
-  def link(actorRef: ActorRef) {
-    unsupported
-  }
-
-  def unlink(actorRef: ActorRef) {
-    unsupported
-  }
-
-  def startLink(actorRef: ActorRef): ActorRef = unsupported
-
-  def supervisor: Option[ActorRef] = unsupported
-
-  def linkedActors: JMap[Uuid, ActorRef] = unsupported
-
-  protected[akka] def mailbox: AnyRef = unsupported
-
-  protected[akka] def mailbox_=(value: AnyRef): AnyRef = unsupported
-
-  protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable) {
-    unsupported
-  }
-
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
-    unsupported
-  }
-
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
-    unsupported
-  }
-
-  protected[akka] def invoke(messageHandle: MessageInvocation) {
-    unsupported
-  }
-
-  protected[akka] def supervisor_=(sup: Option[ActorRef]) {
-    unsupported
-  }
-
-  protected[akka] def actorInstance: AtomicReference[Actor] = unsupported
-
-  private def unsupported = throw new UnsupportedOperationException("Not supported for ClusterActorRef")
 }

@@ -7,37 +7,71 @@ package akka.actor
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
-import org.scalatest.{ BeforeAndAfterAll, WordSpec, BeforeAndAfterEach }
+import org.scalatest.{BeforeAndAfterAll, WordSpec, BeforeAndAfterEach}
 import akka.actor.TypedActor._
-import akka.japi.{ Option ⇒ JOption }
+import akka.japi.{Option ⇒ JOption}
 import akka.util.Duration
-import akka.dispatch.{ Dispatchers, Future, KeptPromise }
-import akka.routing.CyclicIterator
-import java.io.{ ObjectInputStream, ObjectOutputStream, ByteArrayOutputStream }
-import akka.actor.TypedActorSpec.Foo
+import akka.dispatch.{Dispatchers, Future, KeptPromise}
+import java.util.concurrent.atomic.AtomicReference
+import annotation.tailrec
 
 object TypedActorSpec {
+
+  class CyclicIterator[T](val items: Seq[T]) extends Iterator[T] {
+
+    private[this] val current: AtomicReference[Seq[T]] = new AtomicReference(items)
+
+    def hasNext = items != Nil
+
+    def next: T = {
+      @tailrec
+      def findNext: T = {
+        val currentItems = current.get
+        val newItems = currentItems match {
+          case Nil ⇒ items
+          case xs ⇒ xs
+        }
+
+        if (current.compareAndSet(currentItems, newItems.tail)) newItems.head
+        else findNext
+      }
+
+      findNext
+    }
+
+    override def exists(f: T ⇒ Boolean): Boolean = items exists f
+  }
+
+
   trait Foo {
     def pigdog(): String
 
     def self = TypedActor.self[Foo]
 
     def futurePigdog(): Future[String]
+
     def futurePigdog(delay: Long): Future[String]
+
     def futurePigdog(delay: Long, numbered: Int): Future[String]
+
     def futureComposePigdogFrom(foo: Foo): Future[String]
 
     def failingFuturePigdog(): Future[String] = throw new IllegalStateException("expected")
+
     def failingOptionPigdog(): Option[String] = throw new IllegalStateException("expected")
+
     def failingJOptionPigdog(): JOption[String] = throw new IllegalStateException("expected")
 
     def failingPigdog(): Unit = throw new IllegalStateException("expected")
 
     def optionPigdog(): Option[String]
+
     def optionPigdog(delay: Long): Option[String]
+
     def joptionPigdog(delay: Long): JOption[String]
 
     def incr()
+
     def read(): Int
 
     def testMethodCallSerialization(foo: Foo, s: String, i: Int): Unit = throw new IllegalStateException("expected")
@@ -48,6 +82,7 @@ object TypedActorSpec {
     def pigdog = "Pigdog"
 
     def futurePigdog(): Future[String] = new KeptPromise(Right(pigdog))
+
     def futurePigdog(delay: Long): Future[String] = {
       Thread.sleep(delay)
       futurePigdog
@@ -92,6 +127,7 @@ object TypedActorSpec {
 
   trait Stacked extends Stackable1 with Stackable2 {
     def stacked: String = stackable1 + stackable2
+
     def notOverriddenStacked: String = stackable1 + stackable2
   }
 

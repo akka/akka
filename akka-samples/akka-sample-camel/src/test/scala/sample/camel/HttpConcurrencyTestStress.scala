@@ -11,7 +11,6 @@ import akka.actor.Actor._
 import akka.actor.{ActorRegistry, ActorRef, Actor}
 import akka.camel._
 import akka.camel.CamelServiceManager._
-import akka.routing.CyclicIterator
 import akka.routing.Routing._
 
 /**
@@ -50,7 +49,7 @@ object HttpConcurrencyTestStress {
     startCamelService
 
     val workers = for (i <- 1 to 8) yield actorOf[HttpServerWorker].start
-    val balancer = loadBalancerActor(new CyclicIterator(workers.toList))
+    val balancer = newRoundRobinActorRef("loadbalancer",workers)
 
     //service.get.awaitEndpointActivation(1) {
     //  actorOf(new HttpServerActor(balancer)).start

@@ -5,13 +5,12 @@
 package akka.tutorial.second
 
 import akka.actor.Actor._
-import akka.routing.{Routing, CyclicIterator}
-import Routing._
+import akka.routing.Routing
 import akka.event.EventHandler
 import akka.actor.{Channel, Actor, PoisonPill}
-import akka.dispatch.Future
 
 import System.{currentTimeMillis => now}
+import akka.routing.Routing.Broadcast
 
 object Pi extends App {
 
@@ -55,7 +54,7 @@ object Pi extends App {
     val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
 
     // wrap them with a load-balancing router
-    val router = Routing.loadBalancerActor(CyclicIterator(workers)).start()
+    val router = Routing.newRoundRobinActorRef("pi",workers)
 
     // phase 1, can accept a Calculate message
     def scatter: Receive = {

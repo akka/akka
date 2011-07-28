@@ -4,18 +4,19 @@
 
 package akka.routing
 
-//TODO: This will package is going to be removed.
-
-import akka.actor.{ UntypedActor, Actor}
 import akka.actor.Actor._
-
-import akka.actor.ActorRef
 import scala.collection.JavaConversions._
 import scala.collection.immutable.Seq
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 
 import akka.AkkaException
+import akka.dispatch.Future
+import java.net.InetSocketAddress
+import akka.actor._
+import akka.event.EventHandler
+import akka.actor.UntypedChannel._
+import akka.routing.RouterType.RoundRobin
 
 class RoutingException(message: String) extends AkkaException(message)
 
@@ -25,193 +26,307 @@ sealed trait RouterType
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RouterType {
+
   object Direct extends RouterType
+
+  /**
+   * A RouterType that randomly selects a connection to send a message to.
+   */
   object Random extends RouterType
+
+  /**
+   * A RouterType that selects the connection by using round robin.
+   */
   object RoundRobin extends RouterType
+
+  /**
+   * A RouterType that selects the connection based on the least amount of cpu usage
+   */
   object LeastCPU extends RouterType
+
+  /**
+   * A RouterType that select the connection based on the least amount of ram used.
+   *
+   * todo: this is extremely vague currently since there are so many ways to define least amount of ram.
+   */
   object LeastRAM extends RouterType
+
+  /**
+   * A RouterType that select the connection where the actor has the least amount of messages in its mailbox.
+   */
   object LeastMessages extends RouterType
-}
 
-/**
- * A Router is a trait whose purpose is to route incoming messages to actors.
- */
-trait Router { this: Actor ⇒
-
-  protected def transform(msg: Any): Any = msg
-
-  protected def routes: PartialFunction[Any, ActorRef]
-
-  protected def broadcast(message: Any) {}
-
-  protected def dispatch: Receive = {
-    case Routing.Broadcast(message) ⇒
-      broadcast(message)
-    case a if routes.isDefinedAt(a) ⇒
-      if (isSenderDefined) routes(a).forward(transform(a))(someSelf)
-      else routes(a).!(transform(a))(None)
-  }
-
-  def receive = dispatch
-
-  private def isSenderDefined = self.senderFuture.isDefined || self.sender.isDefined
-}
-
-/**
- * An UntypedRouter is an abstract class whose purpose is to route incoming messages to actors.
- */
-abstract class UntypedRouter extends UntypedActor {
-  protected def transform(msg: Any): Any = msg
-
-  protected def route(msg: Any): ActorRef
-
-  protected def broadcast(message: Any) {}
-
-  private def isSenderDefined = self.senderFuture.isDefined || self.sender.isDefined
-
-  @throws(classOf[Exception])
-  def onReceive(msg: Any): Unit = msg match {
-    case m: Routing.Broadcast ⇒ broadcast(m.message)
-    case _ ⇒
-      val r = route(msg)
-      if (r eq null) throw new IllegalStateException("No route for " + msg + " defined!")
-      if (isSenderDefined) r.forward(transform(msg))(someSelf)
-      else r.!(transform(msg))(None)
-  }
-}
-
-/**
- * A LoadBalancer is a specialized kind of Router, that is supplied an InfiniteIterator of targets
- * to dispatch incoming messages to.
- */
-trait LoadBalancer extends Router { self: Actor ⇒
-  protected def seq: InfiniteIterator[ActorRef]
-
-  protected def routes = {
-    case x if seq.hasNext ⇒ seq.next
-  }
-
-  override def broadcast(message: Any) = seq.items.foreach(_ ! message)
-}
-
-/**
- * A UntypedLoadBalancer is a specialized kind of UntypedRouter, that is supplied an InfiniteIterator of targets
- * to dispatch incoming messages to.
- */
-abstract class UntypedLoadBalancer extends UntypedRouter {
-  protected def seq: InfiniteIterator[ActorRef]
-
-  protected def route(msg: Any) =
-    if (seq.hasNext) seq.next
-    else null
-
-  override def broadcast(message: Any) = seq.items.foreach(_ ! message)
 }
 
 object Routing {
 
   sealed trait RoutingMessage
+
   case class Broadcast(message: Any) extends RoutingMessage
 
-  type PF[A, B] = PartialFunction[A, B]
-
-  /**
-   * Creates a new PartialFunction whose isDefinedAt is a combination
-   * of the two parameters, and whose apply is first to call filter.apply
-   * and then filtered.apply.
+   /**
+   * Creates a new started RoutedActorRef that uses routing to deliver a message to one of its connected actors.
+   *
+   * @param actorAddress the address of the ActorRef.
+   * @param connections an Iterable pointing to all connected actor references.
+   * @param routerType the type of routing that should be used.
+   * @throws IllegalArgumentException if the number of connections is zero, or if it depends on the actual router implementation
+   *                                  how many connections it can handle.
    */
-  def filter[A, B](filter: PF[A, Unit], filtered: PF[A, B]): PF[A, B] = {
-    case a: A if filtered.isDefinedAt(a) && filter.isDefinedAt(a) ⇒
-      filter(a)
-      filtered(a)
+  def newRoutedActorRef(actorAddress: String, connections: Iterable[ActorRef], routerType: RouterType): RoutedActorRef = {
+    if (connections.size == 0)
+      throw new IllegalArgumentException("To create a routed actor ref, at least one connection is required")
+
+    val ref = routerType match {
+      case RouterType.Direct =>
+        if (connections.size > 1) throw new IllegalArgumentException("A direct router can't have more than 1 connection")
+        new RoutedActorRef(actorAddress, connections) with Direct
+      case RouterType.Random =>
+        new RoutedActorRef(actorAddress, connections) with Random
+      case RouterType.RoundRobin =>
+        new RoutedActorRef(actorAddress, connections) with RoundRobin
+      case _ => throw new IllegalArgumentException("Unsupported routerType "+routerType)
+    }
+
+    ref.start()
   }
 
-  /**
-   * Interceptor is a filter(x,y) where x.isDefinedAt is considered to be always true.
-   */
-  def intercept[A: Manifest, B](interceptor: (A) ⇒ Unit, interceptee: PF[A, B]): PF[A, B] =
-    filter({ case a ⇒ interceptor(a) }, interceptee)
+  def newRoundRobinActorRef(actorAddress:String, connections: Iterable[ActorRef]):RoutedActorRef = {
+      newRoutedActorRef(actorAddress,connections, RoundRobin)
+  }
+}
 
-  /**
-   * Creates a LoadBalancer from the thunk-supplied InfiniteIterator.
-   */
-  def loadBalancerActor(actors: ⇒ InfiniteIterator[ActorRef]): ActorRef =
-    localActorOf(new Actor with LoadBalancer {
-      val seq = actors
-    }).start()
 
-  /**
-   * Creates a Router given a routing and a message-transforming function.
-   */
-  def routerActor(routing: PF[Any, ActorRef], msgTransformer: (Any) ⇒ Any): ActorRef =
-    localActorOf(new Actor with Router {
-      override def transform(msg: Any) = msgTransformer(msg)
-      def routes = routing
-    }).start()
+/**
+ * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to send a message to
+ * on (or more) of these actors.
+ */
+class RoutedActorRef(val address: String, val cons: Iterable[ActorRef]) extends UnsupportedActorRef with ScalaActorRef {
+  this: Router ⇒
 
-  /**
-   * Creates a Router given a routing.
-   */
-  def routerActor(routing: PF[Any, ActorRef]): ActorRef = localActorOf(new Actor with Router {
-    def routes = routing
-  }).start()
+  def connections: Iterable[ActorRef] = cons
 
-  /**
-   * Creates an actor that pipes all incoming messages to
-   * both another actor and through the supplied function
-   */
-  def loggerActor(actorToLog: ActorRef, logger: (Any) ⇒ Unit): ActorRef =
-    routerActor({ case _ ⇒ actorToLog }, logger)
+  override def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
+    val sender = channel match {
+      case ref: ActorRef ⇒ Some(ref)
+      case _ ⇒ None
+    }
+    route(message)(sender)
+  }
+
+  override def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any,
+                                                                    timeout: Long,
+                                                                    channel: UntypedChannel): Future[Any] = {
+    val sender = channel match {
+      case ref: ActorRef ⇒ Some(ref)
+      case _ ⇒ None
+    }
+    route[Any](message, timeout)(sender)
+  }
+
+  private[akka] def failOver(from: InetSocketAddress, to: InetSocketAddress): Unit = {
+    throw new UnsupportedOperationException
+  }
+
+  def signalDeadActor(ref: ActorRef): Unit = {
+    throw new UnsupportedOperationException
+  }
+
+  def start(): this.type = synchronized[this.type] {
+    _status = ActorRefInternals.RUNNING
+    this
+  }
+
+  def stop() {
+    synchronized {
+      if (_status == ActorRefInternals.RUNNING) {
+        _status = ActorRefInternals.SHUTDOWN
+        postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
+
+        // FIXME here we need to fire off Actor.cluster.remove(address) (which needs to be properly implemented first, see ticket)
+
+        //inetSocketAddressToActorRefMap.get.values foreach (_.stop()) // shut down all remote connections
+      }
+    }
+  }
 }
 
 /**
- * An Iterator that is either always empty or yields an infinite number of Ts.
+ * The Router is responsible for sending a message to one (or more) of its connections.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait InfiniteIterator[T] extends Iterator[T] {
-  val items: Seq[T]
+trait Router {
+
+  /**
+   * Returns an Iterable containing all connected ActorRefs this Router uses to send messages to.
+   */
+  def connections: Iterable[ActorRef]
+
+  /**
+   * A callback this Router uses to indicate that some actorRef was not usable.
+   *
+   * Implementations should make sure that this method can be called without the actorRef being part of the
+   * current set of connections. The most logical way to deal with this situation, is just to ignore it.
+   *
+   * @param ref the dead
+   */
+  def signalDeadActor(ref: ActorRef): Unit
+
+  /**
+   * Routes the message to one of the connections.
+   */
+  def route(message: Any)(implicit sender: Option[ActorRef]): Unit
+
+
+  /**
+   * Routes the message using a timeout to one of the connections and returns a Future to synchronize on the
+   * completion of the processing of the message.
+   */
+  def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T]
 }
 
 /**
- * CyclicIterator is a round-robin style InfiniteIterator that cycles the supplied List.
+ * An Abstract Router implementation that already provides the basic infrastructure so that a concrete
+ * Router only needs to implement the next method.
+ *
+ * todo:
+ * This also is the location where a failover  is done in the future if an ActorRef fails and a different
+ * one needs to be selected.
+ * todo:
+ * this is also the location where message buffering should be done in case of failure.
  */
-case class CyclicIterator[T](val items: Seq[T]) extends InfiniteIterator[T] {
-  def this(items: java.util.List[T]) = this(items.toList)
+trait BasicRouter extends Router {
 
-  private[this] val current: AtomicReference[Seq[T]] = new AtomicReference(items)
+  def route(message: Any)(implicit sender: Option[ActorRef]): Unit = message match {
+    case Routing.Broadcast(message) ⇒
+      //it is a broadcast message, we are going to send to message to all connections.
+      connections.foreach(actor =>
+        try {
+          actor.!(message)(sender)
+        } catch {
+          case e: Exception =>
+            signalDeadActor(actor)
+            throw e
+        }
+      )
+    case _ ⇒
+      //it no broadcast message, we are going to select an actor from the connections and send the message to him.
+      next match {
+        case Some(actor) =>
+          try {
+            actor.!(message)(sender)
+          } catch {
+            case e: Exception =>
+              signalDeadActor(actor)
+              throw e
 
-  def hasNext = items != Nil
+          }
+        case None =>
+          throwNoConnectionsError()
+      }
+  }
 
-  def next: T = {
+  def route[T](message: Any, timeout: Long)(implicit sender: Option[ActorRef]): Future[T] = message match {
+    case Routing.Broadcast(message) ⇒
+      throw new RoutingException("Broadcasting using a future for the time being is not supported")
+    case _ ⇒
+      //it no broadcast message, we are going to select an actor from the connections and send the message to him.
+      next match {
+        case Some(actor) =>
+          try {
+            actor.?(message, timeout)(sender).asInstanceOf[Future[T]]
+          } catch {
+            case e: Exception =>
+              signalDeadActor(actor)
+              throw e
+
+          }
+        case None =>
+          throwNoConnectionsError()
+      }
+  }
+
+  protected def next: Option[ActorRef]
+
+  private def throwNoConnectionsError() = {
+    val error = new RoutingException("No replica connections for router")
+    EventHandler.error(error, this, error.toString)
+    throw error
+  }
+}
+
+/**
+ * A Router that is used when a durable actor is used. All requests are send to the node containing the actor.
+ * As soon as that instance fails, a different instance is created and since the mailbox is durable, the internal
+ * state can be restored using event sourcing, and once this instance is up and running, all request will be send
+ * to this instance.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait Direct extends BasicRouter {
+
+  lazy val next: Option[ActorRef] = {
+    val connection = connections.headOption
+    if (connection.isEmpty) EventHandler.warning(this, "Router has no replica connection")
+    connection
+  }
+}
+
+/**
+ * A Router that randomly selects one of the target connections to send a message to.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait Random extends BasicRouter {
+
+  //todo: threadlocal random?
+  private val random = new java.util.Random(System.currentTimeMillis)
+
+  def next: Option[ActorRef] =
+    if (connections.isEmpty) {
+      EventHandler.warning(this, "Router has no replica connections")
+      None
+    } else {
+      val randomIndex = random.nextInt(connections.size)
+
+      //todo: possible index ouf of bounds problems since the number of connection could already have been changed.
+      Some(connections.iterator.drop(randomIndex).next())
+    }
+}
+
+/**
+ * A Router that uses round-robin to select a connection.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait RoundRobin extends BasicRouter {
+
+  private def items: List[ActorRef] = connections.toList
+
+  //todo: this is broken since the list is not updated.
+  private val current = new AtomicReference[List[ActorRef]](items)
+
+  private def hasNext = connections.nonEmpty
+
+  def next: Option[ActorRef] = {
     @tailrec
-    def findNext: T = {
+    def findNext: Option[ActorRef] = {
       val currentItems = current.get
       val newItems = currentItems match {
         case Nil ⇒ items
-        case xs  ⇒ xs
+        case xs ⇒ xs
       }
 
-      if (current.compareAndSet(currentItems, newItems.tail)) newItems.head
-      else findNext
+      if (newItems.isEmpty) {
+        EventHandler.warning(this, "Router has no replica connections")
+        None
+      } else {
+        if (current.compareAndSet(currentItems, newItems.tail)) newItems.headOption
+        else findNext
+      }
     }
 
     findNext
   }
-
-  override def exists(f: T ⇒ Boolean): Boolean = items exists f
 }
-
-/**
- * This InfiniteIterator always returns the Actor that has the currently smallest mailbox
- * useful for work-stealing.
- */
-case class SmallestMailboxFirstIterator(val items: Seq[ActorRef]) extends InfiniteIterator[ActorRef] {
-
-  def this(items: java.util.List[ActorRef]) = this(items.toList)
-
-  def hasNext = items != Nil
-
-  def next = items.reduceLeft((a1, a2) ⇒ if (a1.dispatcher.mailboxSize(a1) < a2.dispatcher.mailboxSize(a2)) a1 else a2)
-
-  override def exists(f: ActorRef ⇒ Boolean): Boolean = items.exists(f)
-}
-
