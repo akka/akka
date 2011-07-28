@@ -835,31 +835,37 @@ class DefaultPromise[T](val timeout: Timeout) extends Promise[T] {
   }
 
   def complete(value: Either[Throwable, T])(implicit dispatcher: MessageDispatcher): this.type = {
-    _lock.lock
-    val notifyTheseListeners = try {
-      if (_value.isEmpty) { //Only complete if we aren't expired
-        if (!isExpired) {
-          _value = Some(value)
-          val existingListeners = _listeners
-          _listeners = Nil
-          existingListeners
-        } else {
-          _listeners = Nil
-          Nil
-        }
-      } else Nil
-    } finally {
-      _signal.signalAll
-      _lock.unlock
+    processCallbacks {
+      _lock.lock
+      try {
+        if (_value.isEmpty) { //Only complete if we aren't expired
+          if (!isExpired) {
+            _value = Some(value)
+            val existingListeners = _listeners
+            _listeners = Nil
+            existingListeners
+          } else {
+            _listeners = Nil
+            Nil
+          }
+        } else Nil
+      } finally {
+        _signal.signalAll
+        _lock.unlock
+      }
     }
 
-    if (notifyTheseListeners.nonEmpty) { // Steps to ensure we don't run into a stack-overflow situation
+    this
+  }
+
+  private def processCallbacks(callbacks: List[Future[T] ⇒ Unit])(implicit dispatcher: MessageDispatcher): Unit = {
+    if (callbacks.nonEmpty) { // Steps to ensure we don't run into a stack-overflow situation
       @tailrec
-      def runCallbacks(rest: List[Future[T] ⇒ Unit], callbacks: Stack[() ⇒ Unit]) {
+      def runCallbacks(rest: List[Future[T] ⇒ Unit], callbackStack: Stack[() ⇒ Unit]) {
         if (rest.nonEmpty) {
           notifyCompleted(rest.head)
-          while (callbacks.nonEmpty) { callbacks.pop().apply() }
-          runCallbacks(rest.tail, callbacks)
+          while (callbackStack.nonEmpty) { callbackStack.pop().apply() }
+          runCallbacks(rest.tail, callbackStack)
         }
       }
 
@@ -867,20 +873,18 @@ class DefaultPromise[T](val timeout: Timeout) extends Promise[T] {
       if (pending.isDefined) { //Instead of nesting the calls to the callbacks (leading to stack overflow)
         pending.get.push(() ⇒ { // Linearize/aggregate callbacks at top level and then execute
           val doNotify = notifyCompleted _ //Hoist closure to avoid garbage
-          notifyTheseListeners foreach doNotify
+          callbacks foreach doNotify
         })
       } else {
         dispatcher dispatchTask { () ⇒
           try {
-            val callbacks = Stack[() ⇒ Unit]() // Allocate new aggregator for pending callbacks
-            Promise.callbacksPendingExecution.set(Some(callbacks)) // Specify the callback aggregator
-            runCallbacks(notifyTheseListeners, callbacks) // Execute callbacks, if they trigger new callbacks, they are aggregated
+            val callbackStack = Stack[() ⇒ Unit]() // Allocate new aggregator for pending callbacks
+            Promise.callbacksPendingExecution.set(Some(callbackStack)) // Specify the callback aggregator
+            runCallbacks(callbacks, callbackStack) // Execute callbacks, if they trigger new callbacks, they are aggregated
           } finally { Promise.callbacksPendingExecution.set(None) } // Ensure cleanup
         }
       }
     }
-
-    this
   }
 
   def onComplete(func: Future[T] ⇒ Unit)(implicit dispatcher: MessageDispatcher): this.type = {
@@ -896,7 +900,7 @@ class DefaultPromise[T](val timeout: Timeout) extends Promise[T] {
       _lock.unlock
     }
 
-    if (notifyNow) dispatcher dispatchTask (() ⇒ notifyCompleted(func))
+    if (notifyNow) processCallbacks(List(func))
 
     this
   }
