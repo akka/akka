@@ -1090,11 +1090,6 @@ class RemoteServerHandler(
     val typedActorInfo = actorInfo.getTypedActorInfo
 
     val typedActor = createTypedActor(actorInfo, channel)
-    //FIXME: Add ownerTypeHint and parameter types to the TypedActorInfo?
-    val (ownerTypeHint, argClasses, args) =
-      MessageSerializer
-        .deserialize(request.getMessage, applicationLoader)
-        .asInstanceOf[Tuple3[String, Array[Class[_]], Array[AnyRef]]]
 
     def resolveMethod(bottomType: Class[_],
                       typeHint: String,
@@ -1126,49 +1121,56 @@ class RemoteServerHandler(
       targetMethod
     }
 
-    try {
-      val messageReceiver = resolveMethod(typedActor.getClass, ownerTypeHint, typedActorInfo.getMethod, argClasses)
+    MessageSerializer.deserialize(request.getMessage, applicationLoader) match {
+      case RemoteActorSystemMessage.Stop ⇒
+        if (UNTRUSTED_MODE) throw new SecurityException("Remote server is operating is untrusted mode, can not stop the actor")
+        else TypedActor.poisonPill(typedActor) //TODO stop may block, but it might be better to do spawn { typedActor.stop() }
+      case (ownerTypeHint: String, argClasses: Array[Class[_]], args: Array[AnyRef]) =>
+        try {
 
-      if (request.getOneWay) messageReceiver.invoke(typedActor, args: _*) //FIXME execute in non-IO thread
-      else {
-        //Sends the response
-        def sendResponse(result: Either[Throwable, Any]): Unit = try {
-          val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
-            None,
-            Right(request.getUuid),
-            actorInfo.getId,
-            actorInfo.getTarget,
-            actorInfo.getTimeout,
-            result,
-            true,
-            None,
-            None,
-            AkkaActorType.TypedActor,
-            None)
-          if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
+          val messageReceiver = resolveMethod(typedActor.getClass, ownerTypeHint, typedActorInfo.getMethod, argClasses.asInstanceOf[Array[Class[_]]])
 
-          write(channel, RemoteEncoder.encode(messageBuilder.build))
-        } catch {
-          case e: Exception ⇒
-            EventHandler.error(e, this, e.getMessage)
-            server.notifyListeners(RemoteServerError(e, server))
+          if (request.getOneWay) messageReceiver.invoke(typedActor, args: _*) //FIXME execute in non-IO thread
+          else {
+            //Sends the response
+            def sendResponse(result: Either[Throwable, Any]): Unit = try {
+              val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+                None,
+                Right(request.getUuid),
+                actorInfo.getId,
+                actorInfo.getTarget,
+                actorInfo.getTimeout,
+                result,
+                true,
+                None,
+                None,
+                AkkaActorType.TypedActor,
+                None)
+              if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
+
+              write(channel, RemoteEncoder.encode(messageBuilder.build))
+            } catch {
+              case e: Exception ⇒
+                EventHandler.error(e, this, e.getMessage)
+                server.notifyListeners(RemoteServerError(e, server))
+            }
+
+            messageReceiver.invoke(typedActor, args: _*) match { //FIXME execute in non-IO thread
+              //If it's a future, we can lift on that to defer the send to when the future is completed
+              case f: Future[_] ⇒ f.onComplete(future ⇒ sendResponse(future.value.get))
+              case other        ⇒ sendResponse(Right(other))
+            }
         }
-
-        messageReceiver.invoke(typedActor, args: _*) match { //FIXME execute in non-IO thread
-          //If it's a future, we can lift on that to defer the send to when the future is completed
-          case f: Future[_] ⇒ f.onComplete(future ⇒ sendResponse(future.value.get))
-          case other        ⇒ sendResponse(Right(other))
-        }
+      } catch {
+        case e: InvocationTargetException ⇒
+          EventHandler.error(e, this, e.getMessage)
+          write(channel, createErrorReplyMessage(e.getCause, request, AkkaActorType.TypedActor))
+          server.notifyListeners(RemoteServerError(e, server))
+        case e: Exception ⇒
+          EventHandler.error(e, this, e.getMessage)
+          write(channel, createErrorReplyMessage(e, request, AkkaActorType.TypedActor))
+          server.notifyListeners(RemoteServerError(e, server))
       }
-    } catch {
-      case e: InvocationTargetException ⇒
-        EventHandler.error(e, this, e.getMessage)
-        write(channel, createErrorReplyMessage(e.getCause, request, AkkaActorType.TypedActor))
-        server.notifyListeners(RemoteServerError(e, server))
-      case e: Exception ⇒
-        EventHandler.error(e, this, e.getMessage)
-        write(channel, createErrorReplyMessage(e, request, AkkaActorType.TypedActor))
-        server.notifyListeners(RemoteServerError(e, server))
     }
   }
 
