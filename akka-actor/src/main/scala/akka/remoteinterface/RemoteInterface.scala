@@ -16,6 +16,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.io.{ PrintWriter, PrintStream }
 import java.lang.reflect.InvocationTargetException
+import akka.event.EventHandler
 
 trait RemoteModule {
   val UUID_PREFIX = "uuid:".intern
@@ -136,18 +137,9 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
   override def printStackTrace(printWriter: PrintWriter) = cause.printStackTrace(printWriter)
 }
 
-abstract class RemoteSupport extends ListenerManagement with RemoteServerModule with RemoteClientModule {
-
-  lazy val eventHandler: ActorRef = {
-    val handler = Actor.actorOf[RemoteEventHandler].start()
-    // add the remote client and server listener that pipes the events to the event handler system
-    addListener(handler)
-    handler
-  }
+abstract class RemoteSupport extends RemoteServerModule with RemoteClientModule {
 
   def shutdown() {
-    eventHandler.stop()
-    removeListener(eventHandler)
     this.shutdownClientModule()
     this.shutdownServerModule()
     clear
@@ -228,7 +220,6 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
     }
   }
 
-  protected override def manageLifeCycleOfListeners = false
   protected[akka] override def notifyListeners(message: ⇒ Any): Unit = super.notifyListeners(message)
 
   private[akka] val actors = new ConcurrentHashMap[String, ActorRef]
@@ -491,4 +482,22 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule ⇒
 
   @deprecated("Will be removed after 1.1", "1.1")
   private[akka] def unregisterClientManagedActor(hostname: String, port: Int, uuid: Uuid): Unit
+
+  @deprecated("This method now delegates to EventHandler.addListener, this method will be removed in the future", "1.2")
+  def addListener(listener: ActorRef) = EventHandler.addListener(listener)
+
+  @deprecated("This method now delegates to EventHandler.removeListener, this method will be removed in the future", "1.2")
+  def removeListener(listener: ActorRef) = EventHandler.removeListener(listener)
+
+  @deprecated("This method now delegates to EventHandler.hasListeners, this method will be removed in the future", "1.2")
+  def hasListeners: Boolean = EventHandler.hasListeners
+
+  @deprecated("This method now delegates to EventHandler.hasListener, this method will be removed in the future", "1.2")
+  def hasListener(listener: ActorRef): Boolean = EventHandler.hasListener(listener)
+
+  @deprecated("This method now delegates to EventHandler.notify, this method will be removed in the future", "1.2")
+  protected[akka] def notifyListeners(message: ⇒ Any) = EventHandler.notify(message)
+
+  @deprecated("This method now delegates to EventHandler.foreachListener, this method will be removed in the future", "1.2")
+  protected[akka] def foreachListener(f: (ActorRef) ⇒ Unit) = EventHandler.foreachListener(f)
 }

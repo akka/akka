@@ -71,7 +71,7 @@ object RemoteEncoder {
   }
 }
 
-trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagement ⇒
+trait NettyRemoteClientModule extends RemoteClientModule {
   private val remoteClients = new HashMap[Address, RemoteClient]
   private val remoteActors = new Index[Address, Uuid]
   private val lock = new ReadWriteGuard
@@ -106,7 +106,7 @@ trait NettyRemoteClientModule extends RemoteClientModule { self: ListenerManagem
               remoteClients.get(key) match { //Recheck for addition, race between upgrades
                 case s: Some[RemoteClient] ⇒ s.get //If already populated by other writer
                 case None ⇒ //Populate map
-                  val client = new ActiveRemoteClient(this, address, loader, self.notifyListeners _)
+                  val client = new ActiveRemoteClient(this, address, loader, notifyListeners)
                   client.connect()
                   remoteClients += key -> client
                   client
