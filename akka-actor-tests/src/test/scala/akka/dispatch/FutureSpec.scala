@@ -760,6 +760,22 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
 
         f2.await must be('completed)
         f3.await must be('completed)
+
+        val p1 = Promise[String]()
+        val f4 = p1 map { s ⇒ l3.await; s.length }
+
+        p1 must not be ('completed)
+        f4 must not be ('completed)
+
+        p1 complete Right("Hello")
+
+        p1 must be('completed)
+        f4 must not be ('completed)
+
+        l3.open
+
+        f4.await must be('completed)
+
       }
     }
   }
