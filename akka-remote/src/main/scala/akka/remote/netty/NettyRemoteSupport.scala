@@ -53,6 +53,7 @@ import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 import java.util.concurrent._
 import akka.AkkaException
+import java.util.Queue
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
@@ -174,19 +175,20 @@ abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) {
 
-  val useTransactionLog = config.getBool("akka.remote.client.buffering.retry-message-send-on-failure", true)
-  val transactionLogCapacity = config.getInt("akka.remote.client.buffering.capacity", -1)
-
   val name = this.getClass.getSimpleName + "@" +
     remoteAddress.getAddress.getHostAddress + "::" +
     remoteAddress.getPort
 
+  val resendMessagesOnFailure = config.getBool("akka.remote.client.buffering.retry-message-send-on-failure", false)
+  val resendMessagesOnFailureCapacity = config.getInt("akka.remote.client.buffering.capacity", -1)
+  protected val resendMessageQueueLock = new SimpleLock()
+  protected val resendMessageQueue: Queue[RemoteMessageProtocol] = resendMessagesOnFailureCapacity match {
+    case i if i < 0 => new ConcurrentLinkedQueue[RemoteMessageProtocol]
+    case i          => new LinkedBlockingQueue[RemoteMessageProtocol](i)
+  }
+
   protected val futures = new ConcurrentHashMap[Uuid, CompletableFuture[_]]
   protected val supervisors = new ConcurrentHashMap[Uuid, ActorRef]
-  protected val pendingRequests = {
-    if (transactionLogCapacity < 0) new ConcurrentLinkedQueue[(Boolean, Uuid, RemoteMessageProtocol)]
-    else new LinkedBlockingQueue[(Boolean, Uuid, RemoteMessageProtocol)](transactionLogCapacity)
-  }
 
   private[remote] val runSwitch = new Switch()
 
@@ -207,10 +209,9 @@ abstract class RemoteClient private[akka] (
    */
   def pendingMessages: Array[Any] = {
     var messages = Vector[Any]()
-    val iter = pendingRequests.iterator
+    val iter = resendMessageQueue.iterator
     while (iter.hasNext) {
-      val (_, _, message) = iter.next
-      messages = messages :+ MessageSerializer.deserialize(message.getMessage, loader)
+      messages = messages :+ MessageSerializer.deserialize(iter.next.getMessage, loader)
     }
     messages.toArray
   }
@@ -250,52 +251,82 @@ abstract class RemoteClient private[akka] (
     request: RemoteMessageProtocol,
     senderFuture: Option[CompletableFuture[T]]): Option[CompletableFuture[T]] = {
     if (isRunning) {
-      if (request.getOneWay) {
-        try {
-          val future = currentChannel.write(RemoteEncoder.encode(request))
-          future.awaitUninterruptibly()
-          if (!future.isCancelled && !future.isSuccess) {
-            notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
-            throw future.getCause
+      val itIsOkToTryToWriteMessage = if (resendMessagesOnFailure) { //Flush pending messages prior to send
+        sendresendMessageQueue() match {
+          case Some(future) ⇒ //We got a future back, this will be completed when the flush is done
+            future.awaitUninterruptibly() //Wait for the flush to be done
+            if (!future.isCancelled && !future.isSuccess) {
+              notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
+
+              if (!resendMessageQueue.offer(request))
+                throw new RemoteClientMessageBufferException("Buffer limit [" + resendMessagesOnFailureCapacity + "] reached", future.getCause)
+
+              false
+            } else true
+          case None ⇒ true //All gud
+        }
+      } else true
+
+      val resultFuture = if (request.getOneWay) {
+        if (itIsOkToTryToWriteMessage) { //Only attempt write if message wasn't appended to pending
+          try {
+            val future = currentChannel.write(RemoteEncoder.encode(request))
+            future.awaitUninterruptibly()
+            if (!future.isCancelled && !future.isSuccess) {
+              notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
+              throw future.getCause
+            }
+          } catch {
+            case e: Throwable ⇒
+              // add the request to the tx log after a failing send
+              notifyListeners(RemoteClientError(e, module, remoteAddress))
+              if (resendMessagesOnFailure) {
+                if (!resendMessageQueue.offer(request))
+                  throw new RemoteClientMessageBufferException("Buffer limit [" + resendMessagesOnFailureCapacity + "] reached", e)
+              } else throw e
           }
-        } catch {
-          case e: Throwable ⇒
-            // add the request to the tx log after a failing send
-            notifyListeners(RemoteClientError(e, module, remoteAddress))
-            if (useTransactionLog) {
-              if (!pendingRequests.offer((true, null, request)))
-                throw new RemoteClientMessageBufferException("Buffer limit [" + transactionLogCapacity + "] reached")
-            } else throw e
         }
         None
       } else {
-        val futureResult = if (senderFuture.isDefined) senderFuture.get
-        else new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
+        val futureResult = senderFuture match {
+          case Some(future) ⇒ future
+          case None         ⇒ new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
+        }
         val futureUuid = uuidFrom(request.getUuid.getHigh, request.getUuid.getLow)
         futures.put(futureUuid, futureResult) // Add future prematurely, remove it if write fails
 
-        def handleRequestReplyError(future: ChannelFuture) = {
-          notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
-          if (useTransactionLog) {
-            if (!pendingRequests.offer((false, futureUuid, request))) // Add the request to the tx log after a failing send
-              throw new RemoteClientMessageBufferException("Buffer limit [" + transactionLogCapacity + "] reached")
-          } else {
-            val f = futures.remove(futureUuid) // Clean up future
-            if (f ne null) f.completeWithException(future.getCause)
+        if (itIsOkToTryToWriteMessage) { //Only attempt write if message wasn't appended to pending
+          def handleRequestReplyError(future: ChannelFuture) = {
+            notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
+            if (resendMessagesOnFailure) {
+              if (!resendMessageQueue.offer(request)) // Add the request to the tx log after a failing send
+                throw new RemoteClientMessageBufferException("Buffer limit [" + resendMessagesOnFailureCapacity + "] reached", future.getCause)
+            } else {
+              val f = futures.remove(futureUuid) // Clean up future
+              if (f ne null) f.completeWithException(future.getCause)
+            }
+          }
+
+          var future: ChannelFuture = null
+          try {
+            // try to send the original one
+            future = currentChannel.write(RemoteEncoder.encode(request))
+            future.awaitUninterruptibly()
+            if (future.isCancelled) futures.remove(futureUuid) // Clean up future
+            else if (!future.isSuccess) handleRequestReplyError(future)
+          } catch {
+            case e: Exception ⇒ handleRequestReplyError(future)
           }
         }
-
-        var future: ChannelFuture = null
-        try {
-          // try to send the original one
-          future = currentChannel.write(RemoteEncoder.encode(request))
-          future.awaitUninterruptibly()
-          if (future.isCancelled) futures.remove(futureUuid) // Clean up future
-          else if (!future.isSuccess) handleRequestReplyError(future)
-        } catch {
-          case e: Exception ⇒ handleRequestReplyError(future)
-        }
         Some(futureResult)
+      }
+
+      //Flush any failed sends by other threads while a flush was in progress
+      sendresendMessageQueue() match {
+        case Some(future) ⇒
+          future.awaitUninterruptibly()
+          resultFuture
+        case None ⇒ resultFuture
       }
     } else {
       val exception = new RemoteClientException("Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.", module, remoteAddress)
@@ -304,32 +335,54 @@ abstract class RemoteClient private[akka] (
     }
   }
 
-  private[remote] def sendPendingRequests() = pendingRequests synchronized { // ensure only one thread at a time can flush the log
-    val nrOfMessages = pendingRequests.size
-    if (nrOfMessages > 0) EventHandler.info(this, "Resending [%s] previously failed messages after remote client reconnect" format nrOfMessages)
-    var pendingRequest = pendingRequests.peek
-    while (pendingRequest ne null) {
-      val (isOneWay, futureUuid, message) = pendingRequest
-      if (isOneWay) { // sendOneWay
-        val future = currentChannel.write(RemoteEncoder.encode(message))
-        future.awaitUninterruptibly()
-        if (!future.isCancelled && !future.isSuccess) {
-          notifyListeners(RemoteClientWriteFailed(message, future.getCause, module, remoteAddress))
-          throw future.getCause
+  private[remote] def sendresendMessageQueue(): Option[ChannelFuture] = { // ensure only one thread at a time can flush the log
+    def next(signal: Option[DefaultChannelFuture]): Option[ChannelFuture] = resendMessageQueue.peek match {
+      case null ⇒
+        signal match { //If we have a future here, we've been flushing messages, and now we're done. We could use "map", but we want to avoid allocation in fast path
+          case s@Some(future) ⇒ future.setSuccess(); s
+          case None           ⇒ None
         }
-      } else { // sendRequestReply
-        val future = currentChannel.write(RemoteEncoder.encode(message))
-        future.awaitUninterruptibly()
-        if (future.isCancelled) futures.remove(futureUuid) // Clean up future
-        else if (!future.isSuccess) {
-          val f = futures.remove(futureUuid) // Clean up future
-          if (f ne null) f.completeWithException(future.getCause)
-          notifyListeners(RemoteClientWriteFailed(message, future.getCause, module, remoteAddress))
+      case pending ⇒
+        if (resendMessageQueueLock.tryLock()) { //Only one may initiate
+          val newSignal = signal match {
+            case s@Some(_) ⇒ s
+            case None      ⇒ Some(new DefaultChannelFuture(currentChannel, true))
+          }
+          try {
+            currentChannel.write(RemoteEncoder.encode(pending)).addListener(new SendPendingMessageListener(pending, newSignal))
+          } catch {
+            case e ⇒
+              resendMessageQueueLock.tryUnlock() //Clean up
+              newSignal.get.setFailure(e) //Signal the error
+          }
+          newSignal
+        } else None
+    }
+
+    class SendPendingMessageListener(message: RemoteMessageProtocol, signal: Some[DefaultChannelFuture]) extends ChannelFutureListener {
+      def operationComplete(future: ChannelFuture): Unit = {
+        if (!future.isCancelled && !future.isSuccess) {
+          try {
+            notifyListeners(RemoteClientWriteFailed(message, future.getCause, module, remoteAddress))
+          } finally {
+            resendMessageQueueLock.tryUnlock()
+            signal.get.setFailure(future.getCause) //Signal the problem
+          }
+          future.getChannel.close //FIXME Is this the correct behavior?
+        } else { //Success
+          resendMessageQueue.poll() match { //Remove head from queue, should be the message we just sent
+            case `message` ⇒
+              resendMessageQueueLock.tryUnlock()
+              next(signal) //Continue
+            case other ⇒
+              resendMessageQueueLock.tryUnlock()
+              signal.get.setFailure(new IllegalStateException("Bug in sendPendingMessages, report this to the akka-user mailinglist! Other is: [" + other + "]")) //Signal the error
+          }
         }
       }
-      pendingRequests.remove(pendingRequest)
-      pendingRequest = pendingRequests.peek // try to grab next message
     }
+
+    next(None) //Avoid allocations unless we should flush
   }
 
   private[akka] def registerSupervisorForActor(actorRef: ActorRef): ActorRef =
@@ -427,7 +480,7 @@ class ActiveRemoteClient private[akka] (
     bootstrap.releaseExternalResources()
     bootstrap = null
     connection = null
-    pendingRequests.clear()
+    resendMessageQueue.clear()
   }
 
   private[akka] def isWithinReconnectionTimeWindow: Boolean = {
@@ -546,7 +599,7 @@ class ActiveRemoteClientHandler(
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     try {
-      if (client.useTransactionLog) client.sendPendingRequests() // try to send pending requests (still there after client/server crash ard reconnect
+      if (client.resendMessagesOnFailure) client.sendresendMessageQueue() // try to send pending requests (still there after client/server crash ard reconnect
       client.notifyListeners(RemoteClientConnected(client.module, client.remoteAddress))
       client.resetReconnectionTimeWindow
     } catch {
