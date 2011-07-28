@@ -736,6 +736,31 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         Thread.sleep(200)
         assert(dispatcher.pendingTasks === 0)
       }
+
+      "run callbacks async" in {
+        val l1, l2, l3, l4, l5, l6 = new StandardLatch
+
+        val f1 = Future { l1.await; "Hello" }
+        val f2 = f1 map { s ⇒ l2.await; s.length }
+
+        f1 must not be ('completed)
+        f2 must not be ('completed)
+
+        l1.open
+
+        f1.await must be('completed)
+        f2 must not be ('completed)
+
+        val f3 = f1 map { s ⇒ l2.await; s.length * 2 }
+
+        f2 must not be ('completed)
+        f3 must not be ('completed)
+
+        l2.open
+
+        f2.await must be('completed)
+        f3.await must be('completed)
+      }
     }
   }
 
