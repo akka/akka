@@ -649,7 +649,8 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
   def mailbox: AnyRef = _mailbox
 
   protected[akka] def mailbox_=(value: AnyRef): AnyRef = {
-    _mailbox = value; value
+    _mailbox = value;
+    value
   }
 
   /**
@@ -1256,4 +1257,58 @@ case class SerializedActorRef(uuid: Uuid,
           "Trying to deserialize ActorRef [" + this +
             "] but it's not found in the local registry and remoting is not enabled.")
   }
+}
+
+/**
+ * Trait for ActorRef implementations where most of the methods are not supported.
+ */
+trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
+
+  def dispatcher_=(md: MessageDispatcher) {
+    unsupported
+  }
+
+  def dispatcher: MessageDispatcher = unsupported
+
+  def link(actorRef: ActorRef) {
+    unsupported
+  }
+
+  def unlink(actorRef: ActorRef) {
+    unsupported
+  }
+
+  def startLink(actorRef: ActorRef): ActorRef = unsupported
+
+  def supervisor: Option[ActorRef] = unsupported
+
+  def linkedActors: JMap[Uuid, ActorRef] = unsupported
+
+  protected[akka] def mailbox: AnyRef = unsupported
+
+  protected[akka] def mailbox_=(value: AnyRef): AnyRef = unsupported
+
+  protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable) {
+    unsupported
+  }
+
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
+    unsupported
+  }
+
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
+    unsupported
+  }
+
+  protected[akka] def invoke(messageHandle: MessageInvocation) {
+    unsupported
+  }
+
+  protected[akka] def supervisor_=(sup: Option[ActorRef]) {
+    unsupported
+  }
+
+  protected[akka] def actorInstance: AtomicReference[Actor] = unsupported
+
+  private def unsupported = throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 }
