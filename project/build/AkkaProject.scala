@@ -66,6 +66,12 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val aspectWerkzModuleConfig = ModuleConfiguration("org.codehaus.aspectwerkz", "aspectwerkz", "2.2.3", AkkaRepo)
   lazy val objenesisModuleConfig   = ModuleConfiguration("org.objenesis", sbt.DefaultMavenRepository)
   lazy val jsr311ModuleConfig      = ModuleConfiguration("javax.ws.rs", "jsr311-api", sbt.DefaultMavenRepository)
+
+  lazy val redisModuleConfig       = ModuleConfiguration("net.debasishg", ScalaToolsRelRepo)
+  lazy val beanstalkModuleConfig   = ModuleConfiguration("beanstalk", AkkaRepo)
+  lazy val zkclientModuleConfig    = ModuleConfiguration("zkclient", AkkaRepo)
+  lazy val zookeeperModuleConfig   = ModuleConfiguration("org.apache.hadoop.zookeeper", AkkaRepo)
+
   lazy val localMavenRepo          = LocalMavenRepo // Second exception, also fast! ;-)
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -118,13 +124,17 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val osgi_core = "org.osgi" % "org.osgi.core" % "4.2.0" //ApacheV2
 
-    lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile" //New BSD
+    lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.4.1" % "compile" //New BSD
 
     lazy val sjson      = "net.debasishg" %% "sjson" % "0.11" % "compile" //ApacheV2
     lazy val sjson_test = "net.debasishg" %% "sjson" % "0.11" % "test" //ApacheV2
 
     lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % SLF4J_VERSION
     lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.28" % "runtime"
+
+    lazy val beanstalk        = "beanstalk"                   % "beanstalk_client"        % "1.4.5" //New BSD
+    lazy val redis            = "net.debasishg"               % "redisclient_2.9.0"       % "2.3.1"            //ApacheV2
+    lazy val mongoAsync       = "com.mongodb.async"           % "mongo-driver_2.9.0-1"    % "0.2.7"      //ApacheV2
 
     // Test
 
@@ -144,14 +154,15 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val akka_actor       = project("akka-actor",       "akka-actor",       new AkkaActorProject(_))
-  lazy val akka_testkit     = project("akka-testkit",     "akka-testkit",     new AkkaTestkitProject(_),    akka_actor)
-  lazy val akka_actor_tests = project("akka-actor-tests", "akka-actor-tests", new AkkaActorTestsProject(_), akka_testkit)
-  lazy val akka_stm         = project("akka-stm",         "akka-stm",         new AkkaStmProject(_),        akka_actor)
-  lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_stm, akka_actor_tests)
-  lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),     akka_typed_actor)
-  lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),       akka_actor)
+  lazy val akka_testkit     = project("akka-testkit",     "akka-testkit",     new AkkaTestkitProject(_),              akka_actor)
+  lazy val akka_actor_tests = project("akka-actor-tests", "akka-actor-tests", new AkkaActorTestsProject(_),           akka_testkit)
+  lazy val akka_stm         = project("akka-stm",         "akka-stm",         new AkkaStmProject(_),                  akka_actor)
+  lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_),           akka_stm, akka_actor_tests)
+  lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),               akka_typed_actor)
+  lazy val akka_durable_mailboxes = project("akka-durable-mailboxes", "akka-durable-mailboxes", new AkkaDurableMailboxesParentProject(_), akka_remote)
+  lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),                 akka_actor)
   lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
-  lazy val akka_slf4j       = project("akka-slf4j",       "akka-slf4j",       new AkkaSlf4jProject(_),      akka_actor)
+  lazy val akka_slf4j       = project("akka-slf4j",       "akka-slf4j",       new AkkaSlf4jProject(_),                akka_actor)
   lazy val akka_tutorials   = project("akka-tutorials",   "akka-tutorials",   new AkkaTutorialsParentProject(_),      akka_actor)
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -341,6 +352,46 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     val junit     = Dependencies.junit
     val mockito   = Dependencies.mockito
     val scalatest = Dependencies.scalatest
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // The akka-durable-mailboxes sub-project
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaDurableMailboxesParentProject(info: ProjectInfo) extends ParentProject(info) {
+    lazy val akka_mailboxes_common =
+      project("akka-mailboxes-common", "akka-mailboxes-common", new AkkaMailboxesCommonProject(_), akka_remote)
+    lazy val akka_redis_mailbox =
+      project("akka-redis-mailbox", "akka-redis-mailbox", new AkkaRedisMailboxProject(_), akka_mailboxes_common)
+    lazy val akka_file_mailbox =
+      project("akka-file-mailbox", "akka-file-mailbox", new AkkaFileMailboxProject(_), akka_mailboxes_common)
+    lazy val akka_beanstalk_mailbox =
+      project("akka-beanstalk-mailbox", "akka-beanstalk-mailbox", new AkkaBeanstalkMailboxProject(_), akka_mailboxes_common)
+  }
+
+  class AkkaMailboxesCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    // test dependencies
+    val scalatest = Dependencies.scalatest
+  }
+
+  class AkkaRedisMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    val redis = Dependencies.redis
+
+    lazy val redisTestsEnabled = systemOptional[Boolean]("mailbox.test.redis", false)
+
+    override def testOptions =
+      super.testOptions ++ (if (!redisTestsEnabled.value) Seq(TestFilter(test => !test.name.contains("Redis"))) else Seq.empty)
+  }
+
+  class AkkaFileMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info)
+
+  class AkkaBeanstalkMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    val beanstalk = Dependencies.beanstalk
+
+    lazy val beanstalkTestsEnabled = systemOptional[Boolean]("mailbox.test.beanstalk", false)
+
+    override def testOptions =
+      super.testOptions ++ (if (!beanstalkTestsEnabled.value) Seq(TestFilter(test => !test.name.contains("Beanstalk"))) else Seq.empty)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
