@@ -85,12 +85,14 @@ class ActorFireForgetRequestReplySpec extends WordSpec with MustMatchers with Be
     }
 
     "should shutdown crashed temporary actor" in {
-      val actor = actorOf[CrashingTemporaryActor].start()
-      actor.isRunning must be(true)
-      actor ! "Die"
-      state.finished.await
-      sleepFor(1 second)
-      actor.isShutdown must be(true)
+      filterEvents(EventFilter[Exception]("Expected")) {
+        val actor = actorOf[CrashingTemporaryActor].start()
+        actor.isRunning must be(true)
+        actor ! "Die"
+        state.finished.await
+        sleepFor(1 second)
+        actor.isShutdown must be(true)
+      }
     }
   }
 }

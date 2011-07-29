@@ -158,34 +158,38 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
     }
 
     "stop when sent a poison pill" in {
-      val a = TestActorRef[WorkerActor].start()
-      intercept[ActorKilledException] {
-        (a ? PoisonPill).get
+      filterEvents(EventFilter[ActorKilledException]) {
+        val a = TestActorRef[WorkerActor].start()
+        intercept[ActorKilledException] {
+          (a ? PoisonPill).get
+        }
+        a must not be ('running)
+        a must be('shutdown)
+        assertThread
       }
-      a must not be ('running)
-      a must be('shutdown)
-      assertThread
     }
 
     "restart when Kill:ed" in {
-      counter = 2
+      filterEvents(EventFilter[ActorKilledException]) {
+        counter = 2
 
-      val boss = TestActorRef(new TActor {
-        self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), Some(1000))
-        val ref = TestActorRef(new TActor {
-          def receiveT = { case _ ⇒ }
-          override def preRestart(reason: Throwable, msg: Option[Any]) { counter -= 1 }
-          override def postRestart(reason: Throwable) { counter -= 1 }
+        val boss = TestActorRef(new TActor {
+          self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), Some(1000))
+          val ref = TestActorRef(new TActor {
+            def receiveT = { case _ ⇒ }
+            override def preRestart(reason: Throwable, msg: Option[Any]) { counter -= 1 }
+            override def postRestart(reason: Throwable) { counter -= 1 }
+          }).start()
+          self.dispatcher = CallingThreadDispatcher.global
+          self link ref
+          def receiveT = { case "sendKill" ⇒ ref ! Kill }
         }).start()
-        self.dispatcher = CallingThreadDispatcher.global
-        self link ref
-        def receiveT = { case "sendKill" ⇒ ref ! Kill }
-      }).start()
 
-      boss ! "sendKill"
+        boss ! "sendKill"
 
-      counter must be(0)
-      assertThread
+        counter must be(0)
+        assertThread
+      }
     }
 
     "support futures" in {
