@@ -12,7 +12,7 @@ import org.scalacheck.Gen._
 
 import akka.actor.{ Actor, ActorRef }
 import Actor._
-import akka.testkit.{ EventFilter, filterEvents }
+import akka.testkit.{ EventFilter, filterEvents, filterException }
 import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 

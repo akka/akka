@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.Actor._
 import akka.testkit.Testing._
 import akka.actor.{ TypedActor, Actor }
-import akka.testkit.{ TestLatch, filterEvents, EventFilter }
+import akka.testkit.{ TestLatch, filterEvents, EventFilter, filterException }
 import akka.util.duration._
 
 object ActorPoolSpec {

@@ -8,7 +8,7 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.util.duration._
 import akka.testkit.Testing.sleepFor
-import akka.testkit.{ EventFilter, filterEvents }
+import akka.testkit.{ EventFilter, filterEvents, filterException }
 import akka.dispatch.Dispatchers
 import akka.config.Supervision.{ SupervisorConfig, OneForOneStrategy, Supervise, Permanent }
 import Actor._
