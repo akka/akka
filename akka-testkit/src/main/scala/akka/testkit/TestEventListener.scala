@@ -36,7 +36,7 @@ object EventFilter {
   def apply[A <: Throwable: Manifest](source: AnyRef, message: String): EventFilter =
     ErrorSourceMessageFilter(manifest[A].erasure, source, message)
 
-  def apply(test: (Event) ⇒ Boolean): EventFilter =
+  def custom(test: (Event) ⇒ Boolean): EventFilter =
     CustomEventFilter(test)
 }
 
@@ -92,7 +92,7 @@ class TestEventListener extends EventHandler.DefaultListener {
     case event: Event if filter(event) ⇒
   }: Receive) orElse super.receive
 
-  def filter(event: Event): Boolean = try { filters exists (_(event)) } catch { case e: Exception ⇒ false }
+  def filter(event: Event): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })
 
   def addFilter(filter: EventFilter): Unit = filters ::= filter
 

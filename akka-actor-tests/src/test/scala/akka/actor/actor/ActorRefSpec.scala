@@ -326,7 +326,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
     }
 
     "restart when Kill:ed" in {
-      filterEvents(EventFilter[ActorKilledException]) {
+      filterException[ActorKilledException] {
         val latch = new CountDownLatch(2)
 
         val boss = Actor.actorOf(new Actor {
