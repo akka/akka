@@ -34,7 +34,7 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
   "In a 3 levels deep supervisor tree (linked in the constructor) we" must {
 
     "be able to kill the middle actor and see itself and its child restarted" in {
-      filterEvents(EventFilter[Exception]) {
+      filterException[Exception] {
         log = "INIT"
 
         val lastActor = actorOf(new Chainer, "lastActor").start

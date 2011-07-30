@@ -59,8 +59,8 @@ object FSMActorSpec {
 
     whenUnhandled {
       case Ev(msg) ⇒ {
-        unhandledLatch.open
         EventHandler.info(this, "unhandled event " + msg + " in state " + stateName + " with data " + stateData)
+        unhandledLatch.open
         stay
       }
     }
@@ -112,7 +112,11 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
   }
 
   override def beforeAll {
-    EventHandler notify Mute(EventFilter[EventHandler.EventHandlerException]("Next state 2 does not exist"))
+    EventHandler notify Mute(EventFilter[EventHandler.EventHandlerException]("Next state 2 does not exist"),
+      EventFilter.custom {
+        case _: EventHandler.Debug ⇒ true
+        case _                     ⇒ false
+      })
     val f = FSM.getClass.getDeclaredField("debugEvent")
     f.setAccessible(true)
     f.setBoolean(FSM, true)
@@ -153,8 +157,13 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
       transitionCallBackLatch.await
       lockedLatch.await
 
-      lock ! "not_handled"
-      unhandledLatch.await
+      filterEvents(EventFilter.custom {
+        case EventHandler.Info(_: Lock, _) ⇒ true
+        case _                             ⇒ false
+      }) {
+        lock ! "not_handled"
+        unhandledLatch.await
+      }
 
       val answerLatch = TestLatch()
       object Hello

@@ -13,4 +13,6 @@ package object testkit {
   }
 
   def filterEvents[T](eventFilters: EventFilter*)(block: ⇒ T): T = filterEvents(eventFilters.toSeq)(block)
+
+  def filterException[T <: Throwable: Manifest](block: ⇒ Unit): Unit = filterEvents(Seq(EventFilter[T]))(block)
 }

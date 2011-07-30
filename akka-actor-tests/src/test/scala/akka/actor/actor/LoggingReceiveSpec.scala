@@ -23,7 +23,10 @@ class LoggingReceiveSpec
 
   override def beforeAll {
     EventHandler.notify(TestEvent.Mute(EventFilter[UnhandledMessageException],
-      EventFilter[ActorKilledException]))
+      EventFilter[ActorKilledException], EventFilter.custom {
+        case d: EventHandler.Debug ⇒ true
+        case _                     ⇒ false
+      }))
     EventHandler.addListener(testActor)
     EventHandler.level = EventHandler.DebugLevel
   }
