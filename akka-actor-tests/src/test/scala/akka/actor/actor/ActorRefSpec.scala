@@ -326,25 +326,27 @@ class ActorRefSpec extends WordSpec with MustMatchers {
     }
 
     "restart when Kill:ed" in {
-      val latch = new CountDownLatch(2)
+      filterEvents(EventFilter[ActorKilledException]) {
+        val latch = new CountDownLatch(2)
 
-      val boss = Actor.actorOf(new Actor {
-        self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), scala.Some(2), scala.Some(1000))
+        val boss = Actor.actorOf(new Actor {
+          self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), scala.Some(2), scala.Some(1000))
 
-        val ref = Actor.actorOf(
-          new Actor {
-            def receive = { case _ ⇒ }
-            override def preRestart(reason: Throwable, msg: Option[Any]) = latch.countDown()
-            override def postRestart(reason: Throwable) = latch.countDown()
-          }).start()
+          val ref = Actor.actorOf(
+            new Actor {
+              def receive = { case _ ⇒ }
+              override def preRestart(reason: Throwable, msg: Option[Any]) = latch.countDown()
+              override def postRestart(reason: Throwable) = latch.countDown()
+            }).start()
 
-        self link ref
+          self link ref
 
-        protected def receive = { case "sendKill" ⇒ ref ! Kill }
-      }).start()
+          protected def receive = { case "sendKill" ⇒ ref ! Kill }
+        }).start()
 
-      boss ! "sendKill"
-      latch.await(5, TimeUnit.SECONDS) must be === true
+        boss ! "sendKill"
+        latch.await(5, TimeUnit.SECONDS) must be === true
+      }
     }
   }
 }

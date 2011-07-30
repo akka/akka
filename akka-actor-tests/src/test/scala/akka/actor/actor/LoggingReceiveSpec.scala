@@ -5,7 +5,7 @@ package akka.actor
 
 import org.scalatest.{ WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
 import org.scalatest.matchers.MustMatchers
-import akka.testkit.{ TestKit, TestActorRef }
+import akka.testkit.{ TestKit, TestActorRef, EventFilter, TestEvent }
 import akka.event.EventHandler
 import Actor._
 import akka.util.duration._
@@ -22,6 +22,8 @@ class LoggingReceiveSpec
   val level = EventHandler.level
 
   override def beforeAll {
+    EventHandler.notify(TestEvent.Mute(EventFilter[UnhandledMessageException],
+      EventFilter[ActorKilledException]))
     EventHandler.addListener(testActor)
     EventHandler.level = EventHandler.DebugLevel
   }
@@ -29,6 +31,7 @@ class LoggingReceiveSpec
   override def afterAll {
     EventHandler.removeListener(testActor)
     EventHandler.level = level
+    EventHandler.notify(TestEvent.UnMuteAll)
   }
 
   override def afterEach {

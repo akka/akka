@@ -8,7 +8,7 @@ import org.scalatest.{ WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
 import org.scalatest.matchers.MustMatchers
 
 import akka.testkit._
-
+import TestEvent.{ Mute, UnMuteAll }
 import FSM._
 import akka.util.Duration
 import akka.util.duration._
@@ -112,12 +112,14 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
   }
 
   override def beforeAll {
+    EventHandler notify Mute(EventFilter[EventHandler.EventHandlerException]("Next state 2 does not exist"))
     val f = FSM.getClass.getDeclaredField("debugEvent")
     f.setAccessible(true)
     f.setBoolean(FSM, true)
   }
 
   override def afterAll {
+    EventHandler notify UnMuteAll
     val f = FSM.getClass.getDeclaredField("debugEvent")
     f.setAccessible(true)
     f.setBoolean(FSM, false)
