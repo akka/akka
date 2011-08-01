@@ -240,7 +240,7 @@ which you do by Channel.tell(msg)
       String msg = (String)message;
       if (msg.equals("Hello")) {
         // Reply to original sender of message using the channel
-        getContext().channel().tellSafe(msg + " from " + getContext().getUuid());
+        getContext().channel().tryTell(msg + " from " + getContext().getUuid());
       }
     }
   }

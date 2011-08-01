@@ -71,7 +71,7 @@ private[akka] object ActorRefInternals {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Comparable[ActorRef] with Serializable {
+abstract class ActorRef extends ActorRefShared with ForwardableChannel with ReplyChannel[Any] with java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: ScalaActorRef ⇒
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile
@@ -303,7 +303,7 @@ abstract class ActorRef extends ActorRefShared with ForwardableChannel with java
    *
    * If you would rather have an exception, check the <code>reply(..)</code> version.
    */
-  def tryReply(message: Any): Boolean = channel.safe_!(message)(this)
+  def tryReply(message: Any): Boolean = channel.tryTell(message, this)
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
@@ -385,20 +385,6 @@ abstract class ActorRef extends ActorRefShared with ForwardableChannel with java
     if (msg ne null) msg.channel
     else NullChannel
   }
-
-  /*
-   * Implementation of ForwardableChannel
-   */
-
-  def sendException(ex: Throwable) {}
-
-  def isUsableOnlyOnce = false
-
-  def isUsable = true
-
-  def isReplyable = true
-
-  def canSendException = false
 
   /**
    * Java API. <p/>
@@ -1129,7 +1115,7 @@ trait ActorRefShared {
  * There are implicit conversions in ../actor/Implicits.scala
  * from ActorRef -> ScalaActorRef and back
  */
-trait ScalaActorRef extends ActorRefShared with ForwardableChannel {
+trait ScalaActorRef extends ActorRefShared with ForwardableChannel with ReplyChannel[Any] {
   ref: ActorRef ⇒
 
   /**
