@@ -25,7 +25,7 @@ import akka.routing.Router
 class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
                                      val address: String,
                                      _timeout: Long)
-  extends UnsupportedActorRef with ScalaActorRef {
+  extends UnsupportedActorRef {
   this: Router ⇒
   timeout = _timeout
 

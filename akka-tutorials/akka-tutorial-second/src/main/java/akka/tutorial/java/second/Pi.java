@@ -102,7 +102,7 @@ public class Pi {
          workers.add(worker);
       }
 
-      router = Routing.newRoundRobinActorRef("pi", JavaConversions.asIterable(workers));
+      router = Routing.actorOfWithRoundRobin("pi", JavaConversions.asIterable(workers));
     }
 
     @Override
