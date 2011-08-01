@@ -217,11 +217,15 @@ abstract class TypedActor extends Actor with Proxyable {
           if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
           if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
           else if (TypedActor.returnsFuture_?(joinPoint)) {
+            val senderFuture = self.senderFuture
             joinPoint.proceed match {
-              case f: Future[Any] ⇒ self.senderFuture.get.completeWith(f)
-              case null           ⇒ self.reply(null)
+              case f: Future[Any] ⇒ senderFuture.get.completeWith(f)
+              case null           ⇒ senderFuture.get.completeWithResult(null)
             }
-          } else self.reply(joinPoint.proceed)
+          } else {
+            val channel = self.channel
+            channel.sendOneWay(joinPoint.proceed)
+          }
         }
       }
 

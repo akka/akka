@@ -10,10 +10,11 @@ import org.scalatest.matchers.{ ShouldMatchers, MustMatchers }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
-import akka.japi.Option;
+import akka.japi.Option
 
-import akka.dispatch.DefaultCompletableFuture
 import TypedActorSpec._
+import akka.dispatch.Promise._
+import akka.dispatch.{Promise, Future, DefaultCompletableFuture}
 
 object TypedActorSpec {
   trait MyTypedActor {
@@ -99,6 +100,20 @@ class TypedActorSpec extends Spec with ShouldMatchers with BeforeAndAfterEach {
 
       val pojo3 = TypedActor.newInstance(classOf[MyTypedActor], new MyTypedActorWithConstructorArgsImpl("test3", 3L), 5000L)
       assert(pojo3.sendRequestReply("hello") === "hello test3 3")
+    }
+
+    it("should handle onComplete-callbacks for Future-returning methods") {
+      val gotStopped = Promise[Boolean](10000)
+      val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
+      val ref = TypedActor.actorFor(pojo).get
+      val result: Future[java.lang.Integer] = pojo.square(10)
+      result.onComplete(_ => {
+        TypedActor.stop(pojo)
+        gotStopped completeWithResult ref.isShutdown
+      })
+      result.get should equal(100)
+      ref.isShutdown should equal(true)
+      gotStopped.get should equal(true)
     }
   }
 
