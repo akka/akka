@@ -6,7 +6,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef, Scheduler }
+import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef, Scheduler, ExceptionChannel }
 import akka.japi.{ Procedure, Function ⇒ JFunc }
 
 import scala.util.continuations._
@@ -949,20 +949,18 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit va
 
 class ActorCompletableFuture(timeout: Long, timeunit: TimeUnit)(implicit dispatcher: MessageDispatcher)
   extends DefaultCompletableFuture[Any](timeout, timeunit)(dispatcher)
-  with ForwardableChannel {
+  with ForwardableChannel with ExceptionChannel[Any] {
   def this()(implicit dispatcher: MessageDispatcher) = this(0, MILLIS)
   def this(timeout: Long)(implicit dispatcher: MessageDispatcher) = this(timeout, MILLIS)
 
-  def !(message: Any)(implicit channel: UntypedChannel = NullChannel) = completeWithResult(message)
+  def !(message: Any)(implicit channel: UntypedChannel) = completeWithResult(message)
 
-  def sendException(ex: Throwable) = completeWithException(ex)
+  override def sendException(ex: Throwable) = {
+    completeWithException(ex)
+    value == Some(Left(ex))
+  }
 
   def channel: UntypedChannel = this
-
-  def isUsableOnlyOnce = true
-  def isUsable = !isCompleted
-  def isReplyable = false
-  def canSendException = true
 
   @deprecated("ActorCompletableFuture merged with Channel[Any], just use 'this'", "1.2")
   def future = this
@@ -973,7 +971,10 @@ object ActorCompletableFuture {
     new ActorCompletableFuture(f.timeoutInNanos, NANOS)(f.dispatcher) {
       completeWith(f)
       override def !(message: Any)(implicit channel: UntypedChannel) = f completeWithResult message
-      override def sendException(ex: Throwable) = f completeWithException ex
+      override def sendException(ex: Throwable) = {
+        f completeWithException ex
+        f.value == Some(Left(ex))
+      }
     }
 }
 

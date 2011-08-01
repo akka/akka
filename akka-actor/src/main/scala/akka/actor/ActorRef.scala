@@ -63,9 +63,7 @@ private[akka] object ActorRefInternals {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ActorRef extends ActorRefShared
-  with ForwardableChannel
-  with java.lang.Comparable[ActorRef] {
+trait ActorRef extends ActorRefShared with ForwardableChannel with ReplyChannel[Any] with java.lang.Comparable[ActorRef] {
   scalaRef: ScalaActorRef ⇒
 
   // Only mutable for RemoteServer in order to maintain identity across nodes
@@ -374,6 +372,7 @@ trait ActorRef extends ActorRefShared
    * <p/>
    * Throws an IllegalStateException if unable to determine what to reply to.
    */
+  @deprecated("replaced by reply", "1.2")
   def replyUnsafe(message: AnyRef) = reply(message)
 
   /**
@@ -383,7 +382,16 @@ trait ActorRef extends ActorRefShared
    * <p/>
    * Returns true if reply was sent, and false if unable to determine what to reply to.
    */
+  @deprecated("replaced by tryReply", "1.2")
   def replySafe(message: AnyRef): Boolean = tryReply(message)
+
+  /**
+   * Use <code>getContext().tryReply(..)</code> to reply with a message to the original sender of the message currently
+   * being processed.
+   * <p/>
+   * Returns true if reply was sent, and false if unable to determine what to reply to.
+   */
+  def tryReply(message: Any): Boolean = channel.tryTell(message, this)
 
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.
@@ -534,16 +542,6 @@ trait ActorRef extends ActorRefShared
     if (msg ne null) msg.channel
     else NullChannel
   }
-
-  /*
-   * Implementation of ForwardableChannel
-   */
-
-  def sendException(ex: Throwable) {}
-  def isUsableOnlyOnce = false
-  def isUsable = true
-  def isReplyable = true
-  def canSendException = false
 
   /**
    * Java API. <p/>
@@ -1300,7 +1298,8 @@ trait ActorRefShared {
  * There are implicit conversions in ../actor/Implicits.scala
  * from ActorRef -> ScalaActorRef and back
  */
-trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorRef ⇒
+trait ScalaActorRef extends ActorRefShared with ForwardableChannel with ReplyChannel[Any] {
+  ref: ActorRef ⇒
 
   /**
    * Identifier for actor, does not have to be a unique one. Default is the 'uuid'.
@@ -1475,16 +1474,6 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
    */
   @deprecated("Use tryReply(..)", "1.2")
   def reply_?(message: Any): Boolean = tryReply(message)
-
-  /**
-   * Use <code>tryReply(..)</code> to try reply with a message to the original sender of the message currently
-   * being processed. This method
-   * <p/>
-   * Returns true if reply was sent, and false if unable to determine what to reply to.
-   *
-   * If you would rather have an exception, check the <code>reply(..)</code> version.
-   */
-  def tryReply(message: Any): Boolean = channel.safe_!(message)(this)
 
   /**
    * Atomically create (from actor class) and start an actor.
