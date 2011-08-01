@@ -43,7 +43,7 @@ public class UntypedTransactorTest {
     @Test public void incrementAllCountersWithSuccessfulTransaction() {
         CountDownLatch incrementLatch = new CountDownLatch(numCounters);
         Increment message = new Increment(counters.subList(1, counters.size()), incrementLatch);
-        counters.get(0).sendOneWay(message);
+        counters.get(0).tell(message);
         try {
             incrementLatch.await(timeout, TimeUnit.SECONDS);
         } catch (InterruptedException exception) {}
@@ -66,7 +66,7 @@ public class UntypedTransactorTest {
         List<ActorRef> actors = new ArrayList<ActorRef>(counters);
         actors.add(failer);
         Increment message = new Increment(actors.subList(1, actors.size()), incrementLatch);
-        actors.get(0).sendOneWay(message);
+        actors.get(0).tell(message);
         try {
             incrementLatch.await(timeout, TimeUnit.SECONDS);
         } catch (InterruptedException exception) {}

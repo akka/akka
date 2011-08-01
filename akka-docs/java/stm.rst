@@ -305,7 +305,7 @@ Here is an example of using ``retry`` to block until an account has enough money
 
       ActorRef transferer = Actors.actorOf(Transferer.class).start();
 
-      transferer.sendOneWay(new Transfer(account1, account2, 500.0));
+      transferer.tell(new Transfer(account1, account2, 500.0));
       // Transferer: not enough money - retrying
 
       new Atomic() {
@@ -428,7 +428,7 @@ You can also have two alternative blocking transactions, one of which can succee
 
       ActorRef brancher = Actors.actorOf(Brancher.class).start();
 
-      brancher.sendOneWay(new Branch(left, right, 500));
+      brancher.tell(new Branch(left, right, 500));
       // not enough on left - retrying
       // not enough on right - retrying
 

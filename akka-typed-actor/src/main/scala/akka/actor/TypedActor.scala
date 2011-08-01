@@ -224,7 +224,7 @@ abstract class TypedActor extends Actor with Proxyable {
             }
           } else {
             val channel = self.channel
-            channel.sendOneWay(joinPoint.proceed)
+            channel.tell(joinPoint.proceed)
           }
         }
       }

@@ -33,7 +33,7 @@ class RemoteActorSpecActorBidirectional extends Actor {
   }
 }
 
-class SendOneWayAndReplyReceiverActor extends Actor {
+class TellAndReplyReceiverActor extends Actor {
   def receive = {
     case "Hello" ⇒
       self.reply("World")
@@ -46,10 +46,10 @@ class CountDownActor(latch: CountDownLatch) extends Actor {
   }
 }
 /*
-object SendOneWayAndReplySenderActor {
+object TellAndReplySenderActor {
   val latch = new CountDownLatch(1)
 }
-class SendOneWayAndReplySenderActor extends Actor {
+class TellAndReplySenderActor extends Actor {
   var state: Option[AnyRef] = None
   var sendTo: ActorRef = _
   var latch: CountDownLatch = _
@@ -59,7 +59,7 @@ class SendOneWayAndReplySenderActor extends Actor {
   def receive = {
     case msg: AnyRef =>
       state = Some(msg)
-      SendOneWayAndReplySenderActor.latch.countDown()
+      TellAndReplySenderActor.latch.countDown()
   }
 }*/
 
@@ -74,7 +74,7 @@ class MyActorCustomConstructor extends Actor {
 
 class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
   "ClientInitiatedRemoteActor" should {
-    "shouldSendOneWay" in {
+    "shouldTell" in {
       val clientManaged = remote.actorOf[RemoteActorSpecActorUnidirectional](host, port).start()
       clientManaged must not be null
       clientManaged.getClass must be(classOf[LocalActorRef])
@@ -83,9 +83,9 @@ class ClientInitiatedRemoteActorSpec extends AkkaRemoteTest {
       clientManaged.stop()
     }
 
-    "shouldSendOneWayAndReceiveReply" in {
+    "shouldTellAndReceiveReply" in {
       val latch = new CountDownLatch(1)
-      val actor = remote.actorOf[SendOneWayAndReplyReceiverActor](host, port).start()
+      val actor = remote.actorOf[TellAndReplyReceiverActor](host, port).start()
       implicit val sender = actorOf(new CountDownActor(latch)).start()
 
       actor ! "Hello"

@@ -62,6 +62,7 @@ trait Channel[-T] {
    * actor.sendOneWay(message);
    * </pre>
    */
+  @deprecated("Use 'tell' instead", "1.2")
   def sendOneWay(msg: T): Unit = this.!(msg)
 
   /**
@@ -73,6 +74,7 @@ trait Channel[-T] {
    * actor.sendOneWay(message, context);
    * </pre>
    */
+  @deprecated("Use 'tell' instead", "1.2")
   def sendOneWay(msg: T, sender: UntypedChannel): Unit = this.!(msg)(sender)
 
   /**
@@ -82,6 +84,7 @@ trait Channel[-T] {
    * actor.sendOneWay(message);
    * </pre>
    */
+  @deprecated("Use 'tellSafe' instead", "1.2")
   def sendOneWaySafe(msg: T): Boolean = this.safe_!(msg)
 
   /**
@@ -93,7 +96,48 @@ trait Channel[-T] {
    * actor.sendOneWay(message, context);
    * </pre>
    */
+  @deprecated("Use 'tellSafe' instead", "1.2")
   def sendOneWaySafe(msg: T, sender: UntypedChannel): Boolean = this.safe_!(msg)(sender)
+  
+   /**
+   * Java API.<p/>
+   * Sends the specified message to the channel, i.e. fire-and-forget semantics.<p/>
+   * <pre>
+   * actor.tell(message);
+   * </pre>
+   */
+  def tell(msg: T): Unit = this.!(msg)
+
+  /**
+   * Java API. <p/>
+   * Sends the specified message to the channel, i.e. fire-and-forget
+   * semantics, including the sender reference if possible (not supported on
+   * all channels).<p/>
+   * <pre>
+   * actor.tell(message, context);
+   * </pre>
+   */
+  def tell(msg: T, sender: UntypedChannel): Unit = this.!(msg)(sender)
+
+  /**
+   * Java API.<p/>
+   * Try to send the specified message to the channel, i.e. fire-and-forget semantics.<p/>
+   * <pre>
+   * actor.tell(message);
+   * </pre>
+   */
+  def tellSafe(msg: T): Boolean = this.safe_!(msg)
+
+  /**
+   * Java API. <p/>
+   * Try to send the specified message to the channel, i.e. fire-and-forget
+   * semantics, including the sender reference if possible (not supported on
+   * all channels).<p/>
+   * <pre>
+   * actor.tell(message, context);
+   * </pre>
+   */
+  def tellSafe(msg: T, sender: UntypedChannel): Boolean = this.safe_!(msg)(sender)
 
 }
 

@@ -35,7 +35,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
   private val unit = TimeUnit.MILLISECONDS
 
   @Test
-  def shouldSendOneWay = {
+  def shouldTell = {
     val actor = actorOf[OneWayTestActor].start()
     val result = actor ! "OneWay"
     assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))

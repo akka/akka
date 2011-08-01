@@ -15,7 +15,7 @@ public class UntypedCoordinatedExample {
         ActorRef counter1 = Actors.actorOf(UntypedCoordinatedCounter.class).start();
         ActorRef counter2 = Actors.actorOf(UntypedCoordinatedCounter.class).start();
 
-        counter1.sendOneWay(new Coordinated(new Increment(counter2)));
+        counter1.tell(new Coordinated(new Increment(counter2)));
 
         Thread.sleep(3000);
 

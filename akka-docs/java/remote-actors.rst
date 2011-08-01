@@ -625,7 +625,7 @@ Using the generated message builder to send the message to a remote actor:
 
 .. code-block:: java
 
-  actor.sendOneWay(ProtobufPOJO.newBuilder()
+  actor.tell(ProtobufPOJO.newBuilder()
       .setId(11)
       .setStatus(true)
       .setName("Coltrane")

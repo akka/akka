@@ -86,7 +86,7 @@ Here is an example of coordinating two simple counter UntypedActors so that they
               if (message instanceof Increment) {
                   Increment increment = (Increment) message;
                   if (increment.hasFriend()) {
-                      increment.getFriend().sendOneWay(coordinated.coordinate(new Increment()));
+                      increment.getFriend().tell(coordinated.coordinate(new Increment()));
                   }
                   coordinated.atomic(new Atomically() {
                       public void atomically() {
@@ -105,7 +105,7 @@ Here is an example of coordinating two simple counter UntypedActors so that they
   ActorRef counter1 = actorOf(Counter.class).start();
   ActorRef counter2 = actorOf(Counter.class).start();
 
-  counter1.sendOneWay(new Coordinated(new Increment(counter2)));
+  counter1.tell(new Coordinated(new Increment(counter2)));
 
 To start a new coordinated transaction that you will also participate in, just create a ``Coordinated`` object:
 
@@ -117,13 +117,13 @@ To start a coordinated transaction that you won't participate in yourself you ca
 
 .. code-block:: java
 
-  actor.sendOneWay(new Coordinated(new Message()));
+  actor.tell(new Coordinated(new Message()));
 
 To include another actor in the same coordinated transaction that you've created or received, use the ``coordinate`` method on that object. This will increment the number of parties involved by one and create a new ``Coordinated`` object to be sent.
 
 .. code-block:: java
 
-  actor.sendOneWay(coordinated.coordinate(new Message()));
+  actor.tell(coordinated.coordinate(new Message()));
 
 To enter the coordinated transaction use the atomic method of the coordinated object. This accepts either an ``akka.transactor.Atomically`` object, or an ``Atomic`` object the same as used normally in the STM (just don't execute it - the coordination will do that).
 

@@ -18,13 +18,13 @@ import akka.dispatch.{Promise, Future, DefaultCompletableFuture}
 
 object TypedActorSpec {
   trait MyTypedActor {
-    def sendOneWay(msg: String): Unit
+    def tell(msg: String): Unit
     def sendRequestReply(msg: String): String
   }
 
   class MyTypedActorImpl extends TypedActor with MyTypedActor {
     self.id = "my-custom-id"
-    def sendOneWay(msg: String) {
+    def tell(msg: String) {
       println("got " + msg)
     }
     def sendRequestReply(msg: String): String = {
@@ -34,7 +34,7 @@ object TypedActorSpec {
 
   class MyTypedActorWithConstructorArgsImpl(aString: String, aLong: Long) extends TypedActor with MyTypedActor {
     self.id = "my-custom-id"
-    def sendOneWay(msg: String) {
+    def tell(msg: String) {
       println("got " + msg + " " + aString + " " + aLong)
     }
 

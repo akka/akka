@@ -134,7 +134,7 @@ public class Pi {
       public void apply(Object msg) {
         // schedule work
         for (int arg = 0; arg < nrOfMessages; arg++) {
-          router.sendOneWay(new Work(arg, nrOfElements), getContext());
+          router.tell(new Work(arg, nrOfElements), getContext());
         }
         // Assume the gathering behavior
         become(gather(getContext().getChannel()));
@@ -150,7 +150,7 @@ public class Pi {
           nrOfResults += 1;
           if (nrOfResults == nrOfMessages) {
             // send the pi result back to the guy who started the calculation
-            recipient.sendOneWay(pi);
+            recipient.tell(pi);
             // shut ourselves down, we're done
             getContext().stop();
           }
@@ -161,9 +161,9 @@ public class Pi {
     @Override
     public void postStop() {
       // send a PoisonPill to all workers telling them to shut down themselves
-      router.sendOneWay(new Broadcast(poisonPill()));
+      router.tell(new Broadcast(poisonPill()));
       // send a PoisonPill to the router, telling him to shut himself down
-      router.sendOneWay(poisonPill());
+      router.tell(poisonPill());
     }
   }
 
