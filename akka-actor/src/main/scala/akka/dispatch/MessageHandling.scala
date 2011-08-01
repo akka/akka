@@ -51,7 +51,7 @@ object MessageDispatcher {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait MessageDispatcher {
+abstract class MessageDispatcher {
 
   import MessageDispatcher._
 

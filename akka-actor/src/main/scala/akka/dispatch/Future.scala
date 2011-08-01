@@ -869,8 +869,8 @@ class DefaultPromise[T](val timeout: Timeout) extends Promise[T] {
         this
       } else { //Limited wait
         val time = if (!atMost.isFinite) timeLeft() //If atMost is infinity, use preset timeout
-                   else if (!timeout.duration.isFinite) atMost.toNanos //If preset timeout is infinite, use atMost
-                   else atMost.toNanos min timeLeft() //Otherwise use the smallest of them
+        else if (!timeout.duration.isFinite) atMost.toNanos //If preset timeout is infinite, use atMost
+        else atMost.toNanos min timeLeft() //Otherwise use the smallest of them
         if (awaitUnsafe(time)) this
         else throw new FutureTimeoutException("Future timed out after [" + NANOS.toMillis(time) + "] ms")
       }
