@@ -262,7 +262,7 @@ abstract class ActorRef extends ActorRefShared with ForwardableChannel with java
    * Sends a message asynchronously returns a future holding the eventual reply message.
    * <p/>
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'getContext().getSender()' to
+   * Use this method with care. In most cases it is better to use 'tell' together with the 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
    * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().reply(..)</code>

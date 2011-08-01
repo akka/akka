@@ -111,7 +111,7 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       val actorRef = context.getBean("untyped-actor-with-thread-based-dispatcher").asInstanceOf[ActorRef]
       assert(actorRef.getActorClassName() === "akka.spring.foo.PingActor")
       actorRef.start()
-      actorRef.sendOneWay("Hello")
+      actorRef.tell("Hello")
       assert(actorRef.getDispatcher.isInstanceOf[ThreadBasedDispatcher])
     }
   }

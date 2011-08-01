@@ -117,14 +117,14 @@ public class Pi {
       if (message instanceof Calculate) {
         // schedule work
         for (int start = 0; start < nrOfMessages; start++) {
-          router.sendOneWay(new Work(start, nrOfElements), getContext());
+          router.tell(new Work(start, nrOfElements), getContext());
         }
 
         // send a PoisonPill to all workers telling them to shut down themselves
-        router.sendOneWay(new Broadcast(poisonPill()));
+        router.tell(new Broadcast(poisonPill()));
 
         // send a PoisonPill to the router, telling him to shut himself down
-        router.sendOneWay(poisonPill());
+        router.tell(poisonPill());
 
       } else if (message instanceof Result) {
 
@@ -169,7 +169,7 @@ public class Pi {
     }, "master").start();
 
     // start the calculation
-    master.sendOneWay(new Calculate());
+    master.tell(new Calculate());
 
     // wait for master to shut down
     latch.await();

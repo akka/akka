@@ -41,7 +41,7 @@ class PinnedActorSpec extends JUnitSuite {
   }
 
   @Test
-  def shouldSendOneWay {
+  def shouldTell {
     var oneWay = new CountDownLatch(1)
     val actor = actorOf(new Actor {
       self.dispatcher = Dispatchers.newPinnedDispatcher(self)

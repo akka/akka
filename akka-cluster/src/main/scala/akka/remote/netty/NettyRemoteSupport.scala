@@ -283,7 +283,7 @@ abstract class RemoteClient private[akka] (
     while (pendingRequest ne null) {
       val (isOneWay, futureUuid, message) = pendingRequest
       if (isOneWay) {
-        // sendOneWay
+        // tell
         val future = currentChannel.write(RemoteEncoder.encode(message))
         future.awaitUninterruptibly()
         if (!future.isCancelled && !future.isSuccess) {
