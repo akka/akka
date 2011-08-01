@@ -843,6 +843,7 @@ class DefaultPromise[T](val timeout: Timeout) extends Promise[T] {
 
   /**
    * Must be called inside _lock.lock<->_lock.unlock
+   * Returns true if completed within the timeout
    */
   @tailrec
   private def awaitUnsafe(waitTimeNanos: Long): Boolean = {
@@ -862,24 +863,21 @@ class DefaultPromise[T](val timeout: Timeout) extends Promise[T] {
 
   def await(atMost: Duration) = {
     _lock.lock()
-    if (try { awaitUnsafe(atMost.toNanos min timeLeft()) } finally { _lock.unlock }) this
-    else throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(timeoutInNanos) + "] milliseconds")
-  }
-
-  def await = {
-    _lock.lock()
     try {
-      if (timeout.duration.isFinite) {
-        if (awaitUnsafe(timeLeft())) this
-        else throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(timeoutInNanos) + "] milliseconds")
-      } else {
+      if (!atMost.isFinite && !timeout.duration.isFinite) { //If wait until infinity
         while (_value.isEmpty) { _signal.await }
         this
+      } else { //Limited wait
+        val time = if (!atMost.isFinite) timeLeft() //If atMost is infinity, use preset timeout
+        else if (!timeout.duration.isFinite) atMost.toNanos //If preset timeout is infinite, use atMost
+        else atMost.toNanos min timeLeft() //Otherwise use the smallest of them
+        if (awaitUnsafe(time)) this
+        else throw new FutureTimeoutException("Future timed out after [" + NANOS.toMillis(time) + "] ms")
       }
-    } finally {
-      _lock.unlock
-    }
+    } finally { _lock.unlock }
   }
+
+  def await = await(timeout.duration)
 
   def isExpired: Boolean = if (timeout.duration.isFinite) timeLeft() <= 0 else false
 
