@@ -217,7 +217,16 @@ abstract class TypedActor extends Actor with Proxyable {
         SenderContextInfo.senderProxy.withValue(proxy) {
           if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
           if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
-          else self.reply(joinPoint.proceed)
+          else if (TypedActor.returnsFuture_?(joinPoint)) {
+            val senderFuture = self.senderFuture
+            joinPoint.proceed match {
+              case f: Future[Any] ⇒ senderFuture.get.completeWith(f)
+              case null           ⇒ senderFuture.get.completeWithResult(null)
+            }
+          } else {
+            val channel = self.channel
+            channel.sendOneWay(joinPoint.proceed)
+          }
         }
       }
 
@@ -854,6 +863,9 @@ object TypedActor {
 
   private[akka] def isCoordinated(methodRtti: MethodRtti): Boolean =
     methodRtti.getMethod.isAnnotationPresent(classOf[CoordinatedAnnotation])
+
+  private[akka] def returnsFuture_?(joinPoint: JoinPoint): Boolean =
+    returnsFuture_?(joinPoint.getRtti.asInstanceOf[MethodRtti])
 
   private[akka] def returnsFuture_?(methodRtti: MethodRtti): Boolean =
     classOf[Future[_]].isAssignableFrom(methodRtti.getMethod.getReturnType)
