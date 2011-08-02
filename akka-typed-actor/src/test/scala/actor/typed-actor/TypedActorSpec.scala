@@ -14,7 +14,7 @@ import akka.japi.Option
 
 import TypedActorSpec._
 import akka.dispatch.Promise._
-import akka.dispatch.{Promise, Future, DefaultCompletableFuture}
+import akka.dispatch.{ Promise, Future, DefaultCompletableFuture }
 
 object TypedActorSpec {
   trait MyTypedActor {
@@ -107,7 +107,7 @@ class TypedActorSpec extends Spec with ShouldMatchers with BeforeAndAfterEach {
       val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
       val ref = TypedActor.actorFor(pojo).get
       val result: Future[java.lang.Integer] = pojo.square(10)
-      result.onComplete(_ => {
+      result.onComplete(_ ⇒ {
         TypedActor.stop(pojo)
         gotStopped completeWithResult ref.isShutdown
       })
