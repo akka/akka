@@ -310,7 +310,7 @@ object Future {
   def flow[A](body: ⇒ A @cps[Future[Any]])(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = {
     val future = Promise[A](timeout)
     //dispatcher dispatchTask { () ⇒
-    reify(body) foreachFull (future completeWithResult, future completeWithException) onException {
+    (reify(body) foreachFull (future completeWithResult, future completeWithException): Future[Any]) onException {
       case e: Exception ⇒ future completeWithException e
     }
     //}
