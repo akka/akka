@@ -81,7 +81,7 @@ You can also set the thread to a reference to be able to control its life-cycle:
 
   ... // time passes
 
-  t.sendOneWay(new Exit()); // shut down the thread
+  t.tell(new Exit()); // shut down the thread
 
 Examples
 --------
@@ -190,6 +190,6 @@ Example in Akka:
   });
 
   // shut down the threads
-  main.sendOneWay(new Exit());
-  setY.sendOneWay(new Exit());
-  setV.sendOneWay(new Exit());
+  main.tell(new Exit());
+  setY.tell(new Exit());
+  setV.tell(new Exit());

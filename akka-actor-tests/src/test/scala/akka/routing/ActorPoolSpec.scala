@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.Actor._
 import akka.testkit.Testing._
 import akka.actor.{ TypedActor, Actor }
-import akka.testkit.TestLatch
+import akka.testkit.{ TestLatch, filterEvents, EventFilter, filterException }
 import akka.util.duration._
 
 object ActorPoolSpec {
@@ -357,210 +357,214 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
     }
 
     "provide default supervision of pooled actors" in {
-      import akka.config.Supervision._
-      val pingCount = new AtomicInteger(0)
-      val deathCount = new AtomicInteger(0)
-      var keepDying = false
+      filterException[RuntimeException] {
+        import akka.config.Supervision._
+        val pingCount = new AtomicInteger(0)
+        val deathCount = new AtomicInteger(0)
+        var keepDying = false
 
-      val pool1 = actorOf(
-        new Actor with DefaultActorPool with DefaultActorPoolSupervisionConfig with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
-          def lowerBound = 2
-          def upperBound = 5
-          def rampupRate = 0.1
-          def backoffRate = 0.1
-          def backoffThreshold = 0.5
-          def partialFill = true
-          def selectionCount = 1
-          def instance = factory
-          def receive = _route
-          def pressureThreshold = 1
-          def factory = actorOf(new Actor {
-            if (deathCount.get > 5) deathCount.set(0)
-            if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
-            def receive = {
-              case akka.Die ⇒
-                if (keepDying) deathCount.incrementAndGet
-                throw new RuntimeException
-              case _ ⇒ pingCount.incrementAndGet
-            }
+        val pool1 = actorOf(
+          new Actor with DefaultActorPool with DefaultActorPoolSupervisionConfig with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
+            def lowerBound = 2
+            def upperBound = 5
+            def rampupRate = 0.1
+            def backoffRate = 0.1
+            def backoffThreshold = 0.5
+            def partialFill = true
+            def selectionCount = 1
+            def instance = factory
+            def receive = _route
+            def pressureThreshold = 1
+            def factory = actorOf(new Actor {
+              if (deathCount.get > 5) deathCount.set(0)
+              if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
+              def receive = {
+                case akka.Die ⇒
+                  if (keepDying) deathCount.incrementAndGet
+                  throw new RuntimeException
+                case _ ⇒ pingCount.incrementAndGet
+              }
+            }).start()
           }).start()
-        }).start()
 
-      val pool2 = actorOf(
-        new Actor with DefaultActorPool with DefaultActorPoolSupervisionConfig with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
-          def lowerBound = 2
-          def upperBound = 5
-          def rampupRate = 0.1
-          def backoffRate = 0.1
-          def backoffThreshold = 0.5
-          def partialFill = true
-          def selectionCount = 1
-          def instance = factory
-          def receive = _route
-          def pressureThreshold = 1
-          def factory = actorOf(new Actor {
-            self.lifeCycle = Permanent
-            if (deathCount.get > 5) deathCount.set(0)
-            if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
-            def receive = {
-              case akka.Die ⇒
-                if (keepDying) deathCount.incrementAndGet
-                throw new RuntimeException
-              case _ ⇒ pingCount.incrementAndGet
-            }
+        val pool2 = actorOf(
+          new Actor with DefaultActorPool with DefaultActorPoolSupervisionConfig with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
+            def lowerBound = 2
+            def upperBound = 5
+            def rampupRate = 0.1
+            def backoffRate = 0.1
+            def backoffThreshold = 0.5
+            def partialFill = true
+            def selectionCount = 1
+            def instance = factory
+            def receive = _route
+            def pressureThreshold = 1
+            def factory = actorOf(new Actor {
+              self.lifeCycle = Permanent
+              if (deathCount.get > 5) deathCount.set(0)
+              if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
+              def receive = {
+                case akka.Die ⇒
+                  if (keepDying) deathCount.incrementAndGet
+                  throw new RuntimeException
+                case _ ⇒ pingCount.incrementAndGet
+              }
+            }).start()
           }).start()
-        }).start()
 
-      val pool3 = actorOf(
-        new Actor with DefaultActorPool with DefaultActorPoolSupervisionConfig with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with RoundRobinSelector with BasicFilter {
-          def lowerBound = 2
-          def upperBound = 5
-          def rampupRate = 0.1
-          def backoffRate = 0.1
-          def backoffThreshold = 0.5
-          def partialFill = true
-          def selectionCount = 1
-          def instance = factory
-          def receive = _route
-          def pressureThreshold = 1
-          def factory = actorOf(new Actor {
-            self.lifeCycle = Temporary
-            if (deathCount.get > 5) deathCount.set(0)
-            if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
-            def receive = {
-              case akka.Die ⇒
-                if (keepDying) deathCount.incrementAndGet
-                throw new RuntimeException
-              case _ ⇒ pingCount.incrementAndGet
-            }
+        val pool3 = actorOf(
+          new Actor with DefaultActorPool with DefaultActorPoolSupervisionConfig with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with RoundRobinSelector with BasicFilter {
+            def lowerBound = 2
+            def upperBound = 5
+            def rampupRate = 0.1
+            def backoffRate = 0.1
+            def backoffThreshold = 0.5
+            def partialFill = true
+            def selectionCount = 1
+            def instance = factory
+            def receive = _route
+            def pressureThreshold = 1
+            def factory = actorOf(new Actor {
+              self.lifeCycle = Temporary
+              if (deathCount.get > 5) deathCount.set(0)
+              if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
+              def receive = {
+                case akka.Die ⇒
+                  if (keepDying) deathCount.incrementAndGet
+                  throw new RuntimeException
+                case _ ⇒ pingCount.incrementAndGet
+              }
+            }).start()
           }).start()
-        }).start()
 
-      // default lifecycle
-      // actor comes back right away
-      pingCount.set(0)
-      keepDying = false
-      pool1 ! "ping"
-      (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pool1 ! akka.Die
-      sleepFor(2 seconds)
-      (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pingCount.get must be(1)
+        // default lifecycle
+        // actor comes back right away
+        pingCount.set(0)
+        keepDying = false
+        pool1 ! "ping"
+        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pool1 ! akka.Die
+        sleepFor(2 seconds)
+        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pingCount.get must be(1)
 
-      // default lifecycle
-      // actor dies completely
-      pingCount.set(0)
-      keepDying = true
-      pool1 ! "ping"
-      (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pool1 ! akka.Die
-      sleepFor(2 seconds)
-      (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
-      pool1 ! "ping"
-      (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pingCount.get must be(2)
+        // default lifecycle
+        // actor dies completely
+        pingCount.set(0)
+        keepDying = true
+        pool1 ! "ping"
+        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pool1 ! akka.Die
+        sleepFor(2 seconds)
+        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
+        pool1 ! "ping"
+        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pingCount.get must be(2)
 
-      // permanent lifecycle
-      // actor comes back right away
-      pingCount.set(0)
-      keepDying = false
-      pool2 ! "ping"
-      (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pool2 ! akka.Die
-      sleepFor(2 seconds)
-      (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pingCount.get must be(1)
+        // permanent lifecycle
+        // actor comes back right away
+        pingCount.set(0)
+        keepDying = false
+        pool2 ! "ping"
+        (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pool2 ! akka.Die
+        sleepFor(2 seconds)
+        (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pingCount.get must be(1)
 
-      // permanent lifecycle
-      // actor dies completely
-      pingCount.set(0)
-      keepDying = true
-      pool2 ! "ping"
-      (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pool2 ! akka.Die
-      sleepFor(2 seconds)
-      (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
-      pool2 ! "ping"
-      (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pingCount.get must be(2)
+        // permanent lifecycle
+        // actor dies completely
+        pingCount.set(0)
+        keepDying = true
+        pool2 ! "ping"
+        (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pool2 ! akka.Die
+        sleepFor(2 seconds)
+        (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
+        pool2 ! "ping"
+        (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pingCount.get must be(2)
 
-      // temporary lifecycle
-      pingCount.set(0)
-      keepDying = false
-      pool3 ! "ping"
-      (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pool3 ! akka.Die
-      sleepFor(2 seconds)
-      (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
-      pool3 ! "ping"
-      pool3 ! "ping"
-      pool3 ! "ping"
-      (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pingCount.get must be(4)
+        // temporary lifecycle
+        pingCount.set(0)
+        keepDying = false
+        pool3 ! "ping"
+        (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pool3 ! akka.Die
+        sleepFor(2 seconds)
+        (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
+        pool3 ! "ping"
+        pool3 ! "ping"
+        pool3 ! "ping"
+        (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pingCount.get must be(4)
+      }
     }
 
     "support customizable supervision config of pooled actors" in {
-      import akka.config.Supervision._
-      val pingCount = new AtomicInteger(0)
-      val deathCount = new AtomicInteger(0)
-      var keepDying = false
+      filterEvents(EventFilter[IllegalStateException], EventFilter[RuntimeException]) {
+        import akka.config.Supervision._
+        val pingCount = new AtomicInteger(0)
+        val deathCount = new AtomicInteger(0)
+        var keepDying = false
 
-      trait LimitedTrapSupervisionConfig extends ActorPoolSupervisionConfig {
-        def poolFaultHandler = OneForOneStrategy(List(classOf[IllegalStateException]), 5, 1000)
-      }
+        trait LimitedTrapSupervisionConfig extends ActorPoolSupervisionConfig {
+          def poolFaultHandler = OneForOneStrategy(List(classOf[IllegalStateException]), 5, 1000)
+        }
 
-      object BadState
+        object BadState
 
-      val pool1 = actorOf(
-        new Actor with DefaultActorPool with LimitedTrapSupervisionConfig with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
-          def lowerBound = 2
-          def upperBound = 5
-          def rampupRate = 0.1
-          def backoffRate = 0.1
-          def backoffThreshold = 0.5
-          def partialFill = true
-          def selectionCount = 1
-          def instance = factory
-          def receive = _route
-          def pressureThreshold = 1
-          def factory = actorOf(new Actor {
-            if (deathCount.get > 5) deathCount.set(0)
-            if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
-            def receive = {
-              case BadState ⇒
-                if (keepDying) deathCount.incrementAndGet
-                throw new IllegalStateException
-              case akka.Die ⇒
-                throw new RuntimeException
-              case _ ⇒ pingCount.incrementAndGet
-            }
+        val pool1 = actorOf(
+          new Actor with DefaultActorPool with LimitedTrapSupervisionConfig with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
+            def lowerBound = 2
+            def upperBound = 5
+            def rampupRate = 0.1
+            def backoffRate = 0.1
+            def backoffThreshold = 0.5
+            def partialFill = true
+            def selectionCount = 1
+            def instance = factory
+            def receive = _route
+            def pressureThreshold = 1
+            def factory = actorOf(new Actor {
+              if (deathCount.get > 5) deathCount.set(0)
+              if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
+              def receive = {
+                case BadState ⇒
+                  if (keepDying) deathCount.incrementAndGet
+                  throw new IllegalStateException
+                case akka.Die ⇒
+                  throw new RuntimeException
+                case _ ⇒ pingCount.incrementAndGet
+              }
+            }).start()
           }).start()
-        }).start()
 
-      // actor comes back right away
-      pingCount.set(0)
-      keepDying = false
-      pool1 ! "ping"
-      (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pool1 ! BadState
-      sleepFor(2 seconds)
-      (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pingCount.get must be(1)
+        // actor comes back right away
+        pingCount.set(0)
+        keepDying = false
+        pool1 ! "ping"
+        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pool1 ! BadState
+        sleepFor(2 seconds)
+        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pingCount.get must be(1)
 
-      // actor dies completely
-      pingCount.set(0)
-      keepDying = true
-      pool1 ! "ping"
-      (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pool1 ! BadState
-      sleepFor(2 seconds)
-      (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
-      pool1 ! "ping"
-      (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-      pingCount.get must be(2)
+        // actor dies completely
+        pingCount.set(0)
+        keepDying = true
+        pool1 ! "ping"
+        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pool1 ! BadState
+        sleepFor(2 seconds)
+        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
+        pool1 ! "ping"
+        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+        pingCount.get must be(2)
 
-      // kill it
-      intercept[RuntimeException](pool1.?(akka.Die).get)
+        // kill it
+        intercept[RuntimeException](pool1.?(akka.Die).get)
+      }
     }
   }
 }

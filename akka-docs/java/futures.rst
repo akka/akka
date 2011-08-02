@@ -15,7 +15,7 @@ In Akka, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a da
 Use with Actors
 ---------------
 
-There are generally two ways of getting a reply from an ``UntypedActor``: the first is by a sent message (``actorRef.sendOneWay(msg);``), which only works if the original sender was an ``UntypedActor``) and the second is through a ``Future``.
+There are generally two ways of getting a reply from an ``UntypedActor``: the first is by a sent message (``actorRef.tell(msg);``), which only works if the original sender was an ``UntypedActor``) and the second is through a ``Future``.
 
 Using the ``ActorRef``\'s ``ask`` method to send a message will return a Future. To wait for and retrieve the actual result the simplest method is:
 

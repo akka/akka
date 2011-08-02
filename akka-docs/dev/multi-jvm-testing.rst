@@ -22,7 +22,7 @@ You can add it as a plugin by adding the following to your plugins/build.sbt::
 
    resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/"
 
-   libraryDependencies += "com.typesafe" %% "sbt-multi-jvm" % "0.1"
+   libraryDependencies += "com.typesafe.sbt-multi-jvm" %% "sbt-multi-jvm" % "0.1.3"
 
 You can then add multi-JVM testing to a project by including the ``MultiJvm``
 settings and config. For example, here is how the akka-cluster project adds

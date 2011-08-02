@@ -14,6 +14,7 @@ import akka.util.Duration
 import akka.dispatch.{ Dispatchers, Future, KeptPromise }
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
+import akka.testkit.{ EventFilter, filterEvents }
 
 object TypedActorSpec {
 
@@ -172,9 +173,11 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
     }
 
     "throw an IllegalStateExcpetion when TypedActor.self is called in the wrong scope" in {
-      (intercept[IllegalStateException] {
-        TypedActor.self[Foo]
-      }).getMessage must equal("Calling TypedActor.self outside of a TypedActor implementation method!")
+      filterEvents(EventFilter[IllegalStateException]("Calling")) {
+        (intercept[IllegalStateException] {
+          TypedActor.self[Foo]
+        }).getMessage must equal("Calling TypedActor.self outside of a TypedActor implementation method!")
+      }
     }
 
     "have access to itself when executing a method call" in {
@@ -259,27 +262,29 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
     }
 
     "be able to handle exceptions when calling methods" in {
-      val t = newFooBar
+      filterEvents(EventFilter[IllegalStateException]("expected")) {
+        val t = newFooBar
 
-      t.incr()
-      t.failingPigdog()
-      t.read() must be(1) //Make sure state is not reset after failure
+        t.incr()
+        t.failingPigdog()
+        t.read() must be(1) //Make sure state is not reset after failure
 
-      t.failingFuturePigdog.await.exception.get.getMessage must be("expected")
-      t.read() must be(1) //Make sure state is not reset after failure
+        t.failingFuturePigdog.await.exception.get.getMessage must be("expected")
+        t.read() must be(1) //Make sure state is not reset after failure
 
-      (intercept[IllegalStateException] {
-        t.failingJOptionPigdog
-      }).getMessage must be("expected")
-      t.read() must be(1) //Make sure state is not reset after failure
+        (intercept[IllegalStateException] {
+          t.failingJOptionPigdog
+        }).getMessage must be("expected")
+        t.read() must be(1) //Make sure state is not reset after failure
 
-      (intercept[IllegalStateException] {
-        t.failingOptionPigdog
-      }).getMessage must be("expected")
+        (intercept[IllegalStateException] {
+          t.failingOptionPigdog
+        }).getMessage must be("expected")
 
-      t.read() must be(1) //Make sure state is not reset after failure
+        t.read() must be(1) //Make sure state is not reset after failure
 
-      mustStop(t)
+        mustStop(t)
+      }
     }
 
     "be able to support stacked traits for the interface part" in {

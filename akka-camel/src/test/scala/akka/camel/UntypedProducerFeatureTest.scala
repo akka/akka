@@ -69,7 +69,7 @@ class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("received test")
-      val result = producer.sendOneWay(Message("test"), producer)
+      val result = producer.tell(Message("test"), producer)
 
       then("a normal response should have been sent")
       mockEndpoint.assertIsSatisfied

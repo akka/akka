@@ -85,75 +85,85 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
     ref.start()
   }
 
+  val expectedEvents = Seq(EventFilter[ActorKilledException], EventFilter[IllegalActorStateException]("expected"))
+
   "An Actor restart" must {
 
     "invoke preRestart, preStart, postRestart" in {
-      val actor = newActor(new Restarter(testActor))
-      expectMsg(1 second, ("preStart", 1))
-      val supervisor = newActor(new Supervisor)
-      supervisor link actor
-      actor ! Kill
-      within(1 second) {
-        expectMsg(("preRestart", Some(Kill), 1))
-        expectMsg(("preStart", 2))
-        expectMsg(("postRestart", 2))
-        expectNoMsg
+      filterEvents(expectedEvents) {
+        val actor = newActor(new Restarter(testActor))
+        expectMsg(1 second, ("preStart", 1))
+        val supervisor = newActor(new Supervisor)
+        supervisor link actor
+        actor ! Kill
+        within(1 second) {
+          expectMsg(("preRestart", Some(Kill), 1))
+          expectMsg(("preStart", 2))
+          expectMsg(("postRestart", 2))
+          expectNoMsg
+        }
       }
     }
 
     "support creation of nested actors in freshInstance()" in {
-      val actor = newActor(new Restarter(testActor))
-      expectMsg(1 second, ("preStart", 1))
-      val supervisor = newActor(new Supervisor)
-      supervisor link actor
-      actor ! Nested
-      actor ! Kill
-      within(1 second) {
-        expectMsg(("preRestart", Some(Kill), 1))
-        val (tActor, tRef) = expectMsgType[(Actor, TestActorRef[Actor])]
-        tRef.underlyingActor must be(tActor)
-        expectMsg((tActor, tRef))
-        tRef.stop()
-        expectMsg(("preStart", 2))
-        expectMsg(("postRestart", 2))
-        expectNoMsg
+      filterEvents(expectedEvents) {
+        val actor = newActor(new Restarter(testActor))
+        expectMsg(1 second, ("preStart", 1))
+        val supervisor = newActor(new Supervisor)
+        supervisor link actor
+        actor ! Nested
+        actor ! Kill
+        within(1 second) {
+          expectMsg(("preRestart", Some(Kill), 1))
+          val (tActor, tRef) = expectMsgType[(Actor, TestActorRef[Actor])]
+          tRef.underlyingActor must be(tActor)
+          expectMsg((tActor, tRef))
+          tRef.stop()
+          expectMsg(("preStart", 2))
+          expectMsg(("postRestart", 2))
+          expectNoMsg
+        }
       }
     }
 
     "use freshInstance() if available" in {
-      val actor = newActor(new Restarter(testActor))
-      expectMsg(1 second, ("preStart", 1))
-      val supervisor = newActor(new Supervisor)
-      supervisor link actor
-      actor ! 42
-      actor ! Handover
-      actor ! Kill
-      within(1 second) {
-        expectMsg(("preRestart", Some(Kill), 1))
-        expectMsg(("preStart", 2))
-        expectMsg(("postRestart", 2))
-        expectNoMsg
+      filterEvents(expectedEvents) {
+        val actor = newActor(new Restarter(testActor))
+        expectMsg(1 second, ("preStart", 1))
+        val supervisor = newActor(new Supervisor)
+        supervisor link actor
+        actor ! 42
+        actor ! Handover
+        actor ! Kill
+        within(1 second) {
+          expectMsg(("preRestart", Some(Kill), 1))
+          expectMsg(("preStart", 2))
+          expectMsg(("postRestart", 2))
+          expectNoMsg
+        }
+        actor ! "get"
+        expectMsg(1 second, 42)
       }
-      actor ! "get"
-      expectMsg(1 second, 42)
     }
 
     "fall back to default factory if freshInstance() fails" in {
-      val actor = newActor(new Restarter(testActor))
-      expectMsg(1 second, ("preStart", 1))
-      val supervisor = newActor(new Supervisor)
-      supervisor link actor
-      actor ! 42
-      actor ! Fail
-      actor ! Kill
-      within(1 second) {
-        expectMsg(("preRestart", Some(Kill), 1))
-        expectMsg(("preStart", 2))
-        expectMsg(("postRestart", 2))
-        expectNoMsg
+      filterEvents(expectedEvents) {
+        val actor = newActor(new Restarter(testActor))
+        expectMsg(1 second, ("preStart", 1))
+        val supervisor = newActor(new Supervisor)
+        supervisor link actor
+        actor ! 42
+        actor ! Fail
+        actor ! Kill
+        within(1 second) {
+          expectMsg(("preRestart", Some(Kill), 1))
+          expectMsg(("preStart", 2))
+          expectMsg(("postRestart", 2))
+          expectNoMsg
+        }
+        actor ! "get"
+        expectMsg(1 second, 0)
       }
-      actor ! "get"
-      expectMsg(1 second, 0)
     }
 
   }

@@ -10,6 +10,7 @@ import akka.testkit._
 import akka.testkit._
 import akka.util.duration._
 import akka.config.Supervision._
+import akka.event.EventHandler
 
 import FSM._
 
@@ -79,9 +80,14 @@ class FSMTransitionSpec extends WordSpec with MustMatchers with TestKit {
       val sup = Actor.actorOf[Supervisor].start()
       sup link fsm
       within(300 millis) {
-        fsm ! SubscribeTransitionCallBack(forward)
-        fsm ! "reply"
-        expectMsg("reply")
+        filterEvents(EventFilter.custom {
+          case EventHandler.Warning(_: MyFSM, _) ⇒ true
+          case _                                 ⇒ false
+        }) {
+          fsm ! SubscribeTransitionCallBack(forward)
+          fsm ! "reply"
+          expectMsg("reply")
+        }
         forward.start()
         fsm ! SubscribeTransitionCallBack(forward)
         expectMsg(CurrentState(fsm, 0))

@@ -14,7 +14,7 @@ public class RetryExample {
 
         ActorRef transferer = Actors.actorOf(Transferer.class).start();
 
-        transferer.sendOneWay(new Transfer(account1, account2, 500.0));
+        transferer.tell(new Transfer(account1, account2, 500.0));
         // Transferer: not enough money - retrying
 
         new Atomic() {

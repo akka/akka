@@ -5,7 +5,7 @@ package akka.actor.dispatch
 
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.Assertions._
-import akka.testkit.Testing
+import akka.testkit.{ Testing, filterEvents, EventFilter }
 import akka.dispatch._
 import akka.actor.Actor._
 import java.util.concurrent.atomic.AtomicLong
@@ -330,15 +330,17 @@ abstract class ActorModelSpec extends JUnitSuite {
 
   @Test
   def dispatcherShouldSuspendAndResumeAFailingNonSupervisedPermanentActor {
-    implicit val dispatcher = newInterceptedDispatcher
-    val a = newTestActor.start()
-    val done = new CountDownLatch(1)
-    a ! Restart
-    a ! CountDown(done)
-    assertCountDown(done, Testing.testTime(3000), "Should be suspended+resumed and done with next message within 3 seconds")
-    a.stop()
-    assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 2,
-      msgsProcessed = 2, suspensions = 1, resumes = 1)
+    filterEvents(EventFilter[Exception]("Restart")) {
+      implicit val dispatcher = newInterceptedDispatcher
+      val a = newTestActor.start()
+      val done = new CountDownLatch(1)
+      a ! Restart
+      a ! CountDown(done)
+      assertCountDown(done, Testing.testTime(3000), "Should be suspended+resumed and done with next message within 3 seconds")
+      a.stop()
+      assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 2,
+        msgsProcessed = 2, suspensions = 1, resumes = 1)
+    }
   }
 
   @Test
@@ -397,48 +399,52 @@ abstract class ActorModelSpec extends JUnitSuite {
 
   @Test
   def dispatcherShouldContinueToProcessMessagesWhenAThreadGetsInterrupted {
-    implicit val dispatcher = newInterceptedDispatcher
-    val a = newTestActor.start()
-    val f1 = a ? Reply("foo")
-    val f2 = a ? Reply("bar")
-    val f3 = a ? Interrupt
-    val f4 = a ? Reply("foo2")
-    val f5 = a ? Interrupt
-    val f6 = a ? Reply("bar2")
+    filterEvents(EventFilter[InterruptedException]("Ping!"), EventFilter[akka.event.EventHandler.EventHandlerException]) {
+      implicit val dispatcher = newInterceptedDispatcher
+      val a = newTestActor.start()
+      val f1 = a ? Reply("foo")
+      val f2 = a ? Reply("bar")
+      val f3 = a ? Interrupt
+      val f4 = a ? Reply("foo2")
+      val f5 = a ? Interrupt
+      val f6 = a ? Reply("bar2")
 
-    assert(f1.get === "foo")
-    assert(f2.get === "bar")
-    assert((intercept[InterruptedException] {
-      f3.get
-    }).getMessage === "Ping!")
-    assert(f4.get === "foo2")
-    assert((intercept[InterruptedException] {
-      f5.get
-    }).getMessage === "Ping!")
-    assert(f6.get === "bar2")
+      assert(f1.get === "foo")
+      assert(f2.get === "bar")
+      assert((intercept[InterruptedException] {
+        f3.get
+      }).getMessage === "Ping!")
+      assert(f4.get === "foo2")
+      assert((intercept[InterruptedException] {
+        f5.get
+      }).getMessage === "Ping!")
+      assert(f6.get === "bar2")
+    }
   }
 
   @Test
   def dispatcherShouldContinueToProcessMessagesWhenExceptionIsThrown {
-    implicit val dispatcher = newInterceptedDispatcher
-    val a = newTestActor.start()
-    val f1 = a ? Reply("foo")
-    val f2 = a ? Reply("bar")
-    val f3 = a ? new ThrowException(new IndexOutOfBoundsException("IndexOutOfBoundsException"))
-    val f4 = a ? Reply("foo2")
-    val f5 = a ? new ThrowException(new RemoteException("RemoteException"))
-    val f6 = a ? Reply("bar2")
+    filterEvents(EventFilter[IndexOutOfBoundsException], EventFilter[RemoteException]) {
+      implicit val dispatcher = newInterceptedDispatcher
+      val a = newTestActor.start()
+      val f1 = a ? Reply("foo")
+      val f2 = a ? Reply("bar")
+      val f3 = a ? new ThrowException(new IndexOutOfBoundsException("IndexOutOfBoundsException"))
+      val f4 = a ? Reply("foo2")
+      val f5 = a ? new ThrowException(new RemoteException("RemoteException"))
+      val f6 = a ? Reply("bar2")
 
-    assert(f1.get === "foo")
-    assert(f2.get === "bar")
-    assert((intercept[IndexOutOfBoundsException] {
-      f3.get
-    }).getMessage === "IndexOutOfBoundsException")
-    assert(f4.get === "foo2")
-    assert((intercept[RemoteException] {
-      f5.get
-    }).getMessage === "RemoteException")
-    assert(f6.get === "bar2")
+      assert(f1.get === "foo")
+      assert(f2.get === "bar")
+      assert((intercept[IndexOutOfBoundsException] {
+        f3.get
+      }).getMessage === "IndexOutOfBoundsException")
+      assert(f4.get === "foo2")
+      assert((intercept[RemoteException] {
+        f5.get
+      }).getMessage === "RemoteException")
+      assert(f6.get === "bar2")
+    }
   }
 }
 

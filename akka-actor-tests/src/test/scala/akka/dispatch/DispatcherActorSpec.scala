@@ -7,6 +7,7 @@ import akka.dispatch.{ Dispatchers, Dispatcher }
 import akka.actor.Actor
 import Actor._
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
+import akka.testkit.{ filterEvents, EventFilter }
 
 object DispatcherActorSpec {
   class TestActor extends Actor {
@@ -35,7 +36,7 @@ class DispatcherActorSpec extends JUnitSuite {
   private val unit = TimeUnit.MILLISECONDS
 
   @Test
-  def shouldSendOneWay = {
+  def shouldTell = {
     val actor = actorOf[OneWayTestActor].start()
     val result = actor ! "OneWay"
     assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
@@ -60,15 +61,17 @@ class DispatcherActorSpec extends JUnitSuite {
 
   @Test
   def shouldSendReceiveException = {
-    val actor = actorOf[TestActor].start()
-    try {
-      (actor ? "Failure").get
-      fail("Should have thrown an exception")
-    } catch {
-      case e ⇒
-        assert("Expected exception; to test fault-tolerance" === e.getMessage())
+    filterEvents(EventFilter[RuntimeException]("Expected")) {
+      val actor = actorOf[TestActor].start()
+      try {
+        (actor ? "Failure").get
+        fail("Should have thrown an exception")
+      } catch {
+        case e ⇒
+          assert("Expected exception; to test fault-tolerance" === e.getMessage())
+      }
+      actor.stop()
     }
-    actor.stop()
   }
 
   @Test

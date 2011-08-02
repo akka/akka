@@ -29,13 +29,13 @@ class RoutingSpec extends WordSpec with MustMatchers {
     "be started when constructed" in {
       val actor1 = Actor.actorOf[TestActor].start
 
-      val actor = Routing.newRoutedActorRef("foo", List(actor1), RouterType.Direct)
+      val actor = Routing.actorOf("foo", List(actor1), RouterType.Direct)
       actor.isRunning must be(true)
     }
 
     "throw IllegalArgumentException at construction when no connections" in {
       try {
-        Routing.newRoutedActorRef("foo", List(), RouterType.Direct)
+        Routing.actorOf("foo", List(), RouterType.Direct)
         fail()
       } catch {
         case e: IllegalArgumentException ⇒
@@ -53,7 +53,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       }).start()
 
-      val routedActor = Routing.newRoutedActorRef("foo", List(connection1), RouterType.Direct)
+      val routedActor = Routing.actorOf("foo", List(connection1), RouterType.Direct)
       routedActor ! "hello"
       routedActor ! "end"
 
@@ -73,7 +73,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       }).start()
 
-      val actor = Routing.newRoutedActorRef("foo", List(connection1), RouterType.Direct)
+      val actor = Routing.actorOf("foo", List(connection1), RouterType.Direct)
 
       actor ! Broadcast(1)
       actor ! "end"
@@ -89,13 +89,13 @@ class RoutingSpec extends WordSpec with MustMatchers {
     "be started when constructed" in {
       val actor1 = Actor.actorOf[TestActor].start
 
-      val actor = Routing.newRoutedActorRef("foo", List(actor1), RouterType.RoundRobin)
+      val actor = Routing.actorOf("foo", List(actor1), RouterType.RoundRobin)
       actor.isRunning must be(true)
     }
 
     "throw IllegalArgumentException at construction when no connections" in {
       try {
-        Routing.newRoutedActorRef("foo", List(), RouterType.RoundRobin)
+        Routing.actorOf("foo", List(), RouterType.RoundRobin)
         fail()
       } catch {
         case e: IllegalArgumentException ⇒
@@ -127,7 +127,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       }
 
       //create the routed actor.
-      val actor = Routing.newRoutedActorRef("foo", connections, RouterType.RoundRobin)
+      val actor = Routing.actorOf("foo", connections, RouterType.RoundRobin)
 
       //send messages to the actor.
       for (i ← 0 until iterationCount) {
@@ -165,7 +165,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       }).start()
 
-      val actor = Routing.newRoutedActorRef("foo", List(connection1, connection2), RouterType.RoundRobin)
+      val actor = Routing.actorOf("foo", List(connection1, connection2), RouterType.RoundRobin)
 
       actor ! Broadcast(1)
       actor ! Broadcast("end")
@@ -187,7 +187,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       }).start()
 
-      val actor = Routing.newRoutedActorRef("foo", List(connection1), RouterType.RoundRobin)
+      val actor = Routing.actorOf("foo", List(connection1), RouterType.RoundRobin)
 
       try {
         actor ? Broadcast(1)
@@ -208,13 +208,13 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       val actor1 = Actor.actorOf[TestActor].start
 
-      val actor = Routing.newRoutedActorRef("foo", List(actor1), RouterType.Random)
+      val actor = Routing.actorOf("foo", List(actor1), RouterType.Random)
       actor.isRunning must be(true)
     }
 
     "throw IllegalArgumentException at construction when no connections" in {
       try {
-        Routing.newRoutedActorRef("foo", List(), RouterType.Random)
+        Routing.actorOf("foo", List(), RouterType.Random)
         fail()
       } catch {
         case e: IllegalArgumentException ⇒
@@ -244,7 +244,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       }).start()
 
-      val actor = Routing.newRoutedActorRef("foo", List(connection1, connection2), RouterType.Random)
+      val actor = Routing.actorOf("foo", List(connection1, connection2), RouterType.Random)
 
       actor ! Broadcast(1)
       actor ! Broadcast("end")
@@ -266,7 +266,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       }).start()
 
-      val actor = Routing.newRoutedActorRef("foo", List(connection1), RouterType.Random)
+      val actor = Routing.actorOf("foo", List(connection1), RouterType.Random)
 
       try {
         actor ? Broadcast(1)
@@ -286,7 +286,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val actor1 = Actor.actorOf[TestActor].start
 
       try {
-        Routing.newRoutedActorRef("foo", List(actor1), RouterType.LeastCPU)
+        Routing.actorOf("foo", List(actor1), RouterType.LeastCPU)
       } catch {
         case e: IllegalArgumentException ⇒
       }
@@ -298,7 +298,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val actor1 = Actor.actorOf[TestActor].start
 
       try {
-        Routing.newRoutedActorRef("foo", List(actor1), RouterType.LeastRAM)
+        Routing.actorOf("foo", List(actor1), RouterType.LeastRAM)
       } catch {
         case e: IllegalArgumentException ⇒
       }
@@ -310,7 +310,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val actor1 = Actor.actorOf[TestActor].start
 
       try {
-        Routing.newRoutedActorRef("foo", List(actor1), RouterType.LeastMessages)
+        Routing.actorOf("foo", List(actor1), RouterType.LeastMessages)
       } catch {
         case e: IllegalArgumentException ⇒
       }

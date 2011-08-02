@@ -49,12 +49,12 @@ object MessageDispatcher {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait MessageDispatcher {
+abstract class MessageDispatcher {
 
   import MessageDispatcher._
 
   protected val uuids = new ConcurrentSkipListSet[Uuid]
-  protected val tasks = new AtomicLong(0L)
+  protected val _tasks = new AtomicLong(0L)
   protected val guard = new ReentrantGuard
   protected val active = new Switch(false)
 
@@ -93,7 +93,7 @@ trait MessageDispatcher {
   }
 
   private[akka] final def dispatchTask(block: () ⇒ Unit): Unit = {
-    tasks.getAndIncrement()
+    _tasks.getAndIncrement()
     try {
       if (active.isOff)
         guard withGuard {
@@ -104,15 +104,15 @@ trait MessageDispatcher {
       executeTask(TaskInvocation(block, taskCleanup))
     } catch {
       case e ⇒
-        tasks.decrementAndGet
+        _tasks.decrementAndGet
         throw e
     }
   }
 
   private val taskCleanup: () ⇒ Unit =
-    () ⇒ if (tasks.decrementAndGet() == 0) {
+    () ⇒ if (_tasks.decrementAndGet() == 0) {
       guard withGuard {
-        if (tasks.get == 0 && uuids.isEmpty) {
+        if (_tasks.get == 0 && uuids.isEmpty) {
           shutdownSchedule match {
             case UNSCHEDULED ⇒
               shutdownSchedule = SCHEDULED
@@ -149,7 +149,7 @@ trait MessageDispatcher {
     if (uuids remove actorRef.uuid) {
       cleanUpMailboxFor(actorRef)
       actorRef.mailbox = null
-      if (uuids.isEmpty && tasks.get == 0) {
+      if (uuids.isEmpty && _tasks.get == 0) {
         shutdownSchedule match {
           case UNSCHEDULED ⇒
             shutdownSchedule = SCHEDULED
@@ -190,7 +190,7 @@ trait MessageDispatcher {
             shutdownSchedule = SCHEDULED
             Scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
           case SCHEDULED ⇒
-            if (uuids.isEmpty && tasks.get == 0) {
+            if (uuids.isEmpty && _tasks.get == 0) {
               active switchOff {
                 shutdown() // shut down in the dispatcher's references is zero
               }
@@ -248,7 +248,7 @@ trait MessageDispatcher {
   /**
    * Returns the amount of tasks queued for execution
    */
-  def pendingTasks: Long = tasks.get
+  def tasks: Long = _tasks.get
 }
 
 /**
