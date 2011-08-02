@@ -698,9 +698,9 @@ class LocalActorRef private[akka] (
 
         checkReceiveTimeout //Schedule the initial Receive timeout
       } catch {
-        case e =>
+        case e ⇒
           _status = ActorRefInternals.UNSTARTED
-        throw e
+          throw e
       }
     }
     this
@@ -871,7 +871,7 @@ class LocalActorRef private[akka] (
     } else {
       val future = channel match {
         case f: ActorCompletableFuture ⇒ f
-        case _                         ⇒ new ActorCompletableFuture(timeout)
+        case _                         ⇒ new ActorCompletableFuture(timeout)(dispatcher)
       }
       dispatcher dispatchMessage new MessageInvocation(this, message, future)
       future
