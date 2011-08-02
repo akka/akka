@@ -292,7 +292,7 @@ object AkkaBuild extends Build {
     resolvers += "Twitter Public Repo" at "http://maven.twttr.com", // This will be going away with com.mongodb.async's next release
 
     // compile options
-    scalacOptions ++= Seq("-encoding", "UTF-8", "-optimise", "-deprecation", "-unchecked"),
+    scalacOptions ++= Seq("-encoding", "UTF-8", /* "-optimise", */ "-deprecation", "-unchecked"),
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 
     // add config dir to classpaths
