@@ -10,9 +10,10 @@ import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import org.scalacheck.Gen._
 
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, Timeout }
 import Actor._
 import akka.testkit.{ EventFilter, filterEvents, filterException }
+import akka.util.duration._
 import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 
@@ -434,7 +435,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         latch.open
         assert(f2.get === 10)
 
-        val f3 = Future({ Thread.sleep(10); 5 }, 10)
+        val f3 = Future({ Thread.sleep(10); 5 }, 10 millis)
         filterException[FutureTimeoutException] {
           intercept[FutureTimeoutException] {
             f3.get

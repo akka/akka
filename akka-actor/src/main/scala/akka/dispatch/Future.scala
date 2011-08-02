@@ -255,6 +255,9 @@ object Future {
   def apply[T](body: ⇒ T, timeout: Timeout)(implicit dispatcher: MessageDispatcher): Future[T] =
     apply(body)(dispatcher, timeout)
 
+  def apply[T](body: ⇒ T, timeout: Duration)(implicit dispatcher: MessageDispatcher): Future[T] =
+    apply(body)(dispatcher, timeout)
+
   def apply[T](body: ⇒ T, timeout: Long)(implicit dispatcher: MessageDispatcher): Future[T] =
     apply(body)(dispatcher, timeout)
 
