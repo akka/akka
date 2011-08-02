@@ -108,6 +108,9 @@ class InvalidMessageException private[akka] (message: String, cause: Throwable =
  * This message is thrown by default when an Actors behavior doesn't match a message
  */
 case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Exception {
+
+  def this(msg: String) = this(msg, null)
+
   // constructor with 'null' ActorRef needed to work with client instantiation of remote exception
   override def getMessage =
     if (ref ne null) "Actor %s does not handle [%s]".format(ref, msg)

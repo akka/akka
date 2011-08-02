@@ -1430,6 +1430,7 @@ class DefaultClusterNode private[akka] (
   }
 
   private[cluster] def failOverClusterActorRefConnections(from: InetSocketAddress, to: InetSocketAddress) {
+    EventHandler.info(this, "failOverClusterActorRef from %s to %s".format(from, to))
     clusterActorRefs.values(from) foreach (_.failOver(from, to))
   }
 
