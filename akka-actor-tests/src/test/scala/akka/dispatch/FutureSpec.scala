@@ -412,6 +412,9 @@ class FutureSpec extends JUnitSuite {
     f3.await
     assert(f3.resultOrException === Some("SUCCESS"))
 
+    // give some time to allow all tasks to complete
+    Thread.sleep(100)
+
     // make sure all futures are completed in dispatcher
     assert(Dispatchers.defaultGlobalDispatcher.pendingFutures === 0)
   }
