@@ -71,7 +71,7 @@ private[akka] object ActorRefInternals {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Comparable[ActorRef] with Serializable {
+abstract class ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: ScalaActorRef ⇒
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile
@@ -195,6 +195,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
+  @deprecated("will be removed in 2.0, use channel instead", "1.2")
   def getSender: Option[ActorRef] = sender
 
   /**
@@ -202,6 +203,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * The reference sender future of the last received message.
    * Is defined if the message was sent with sent with '?'/'ask', else None.
    */
+  @deprecated("will be removed in 2.0, use channel instead", "1.2")
   def getSenderFuture: Option[Promise[Any]] = senderFuture
 
   /**
@@ -260,7 +262,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with java.lang.Com
    * Sends a message asynchronously returns a future holding the eventual reply message.
    * <p/>
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'getContext().getSender()' to
+   * Use this method with care. In most cases it is better to use 'tell' together with the 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
    * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().reply(..)</code>

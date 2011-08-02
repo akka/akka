@@ -21,7 +21,7 @@ public class UntypedCoordinatedCounter extends UntypedActor {
             if (message instanceof Increment) {
                 Increment increment = (Increment) message;
                 if (increment.hasFriend()) {
-                    increment.getFriend().sendOneWay(coordinated.coordinate(new Increment()));
+                    increment.getFriend().tell(coordinated.coordinate(new Increment()));
                 }
                 coordinated.atomic(new Atomically() {
                     public void atomically() {

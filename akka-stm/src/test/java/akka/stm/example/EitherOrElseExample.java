@@ -14,7 +14,7 @@ public class EitherOrElseExample {
 
         ActorRef brancher = Actors.actorOf(Brancher.class).start();
 
-        brancher.sendOneWay(new Branch(left, right, 500));
+        brancher.tell(new Branch(left, right, 500));
 
         new Atomic() {
             public Object atomically() {

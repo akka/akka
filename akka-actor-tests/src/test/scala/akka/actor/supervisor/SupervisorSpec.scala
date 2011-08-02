@@ -70,6 +70,7 @@ object SupervisorSpec {
 
     override def receive = {
       case Die ⇒ (temp.?(Die, TimeoutMillis)).get
+      case _: MaximumNumberOfRestartsWithinTimeRangeReached ⇒
     }
   }
 
@@ -200,7 +201,8 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
   override def beforeAll() = {
     EventHandler notify Mute(EventFilter[Exception]("Die"),
-      EventFilter[IllegalStateException]("Don't wanna!"))
+      EventFilter[IllegalStateException]("Don't wanna!"),
+      EventFilter[RuntimeException]("Expected"))
   }
 
   override def afterAll() = {

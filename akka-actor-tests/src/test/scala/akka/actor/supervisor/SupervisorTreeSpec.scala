@@ -8,6 +8,7 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.util.duration._
 import akka.testkit.Testing.sleepFor
+import akka.testkit.{ EventFilter, filterEvents, filterException }
 import akka.dispatch.Dispatchers
 import akka.config.Supervision.{ SupervisorConfig, OneForOneStrategy, Supervise, Permanent }
 import Actor._
@@ -33,15 +34,17 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
   "In a 3 levels deep supervisor tree (linked in the constructor) we" must {
 
     "be able to kill the middle actor and see itself and its child restarted" in {
-      log = "INIT"
+      filterException[Exception] {
+        log = "INIT"
 
-      val lastActor = actorOf(new Chainer, "lastActor").start
-      val middleActor = actorOf(new Chainer(Some(lastActor)), "middleActor").start
-      val headActor = actorOf(new Chainer(Some(middleActor)), "headActor").start
+        val lastActor = actorOf(new Chainer, "lastActor").start
+        val middleActor = actorOf(new Chainer(Some(lastActor)), "middleActor").start
+        val headActor = actorOf(new Chainer(Some(middleActor)), "headActor").start
 
-      middleActor ! Die
-      sleepFor(500 millis)
-      log must equal("INITmiddleActorlastActor")
+        middleActor ! Die
+        sleepFor(500 millis)
+        log must equal("INITmiddleActorlastActor")
+      }
     }
   }
 }

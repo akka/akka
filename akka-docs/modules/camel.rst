@@ -1047,7 +1047,7 @@ used.
    Message response = (Message)producer.sendRequestReply("akka rocks");
    String body = response.getBodyAs(String.class)
 
-If the message is sent using the ! operator (or the sendOneWay method in Java)
+If the message is sent using the ! operator (or the tell method in Java)
 then the response message is sent back asynchronously to the original sender. In
 the following example, a Sender actor sends a message (a String) to a producer
 actor using the ! operator and asynchronously receives a response (of type

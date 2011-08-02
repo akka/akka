@@ -228,7 +228,7 @@ object AkkaBuild extends Build {
   lazy val camelSample = Project(
     id = "akka-sample-camel",
     base = file("akka-samples/akka-sample-camel"),
-    dependencies = Seq(actor, camelTyped),
+    dependencies = Seq(actor, camelTyped, testkit % "test"),
     settings = defaultSettings ++ Seq(
       ivyXML := Dependencies.sampleCamelXML,
       libraryDependencies ++= Dependencies.sampleCamel

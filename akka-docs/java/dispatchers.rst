@@ -176,13 +176,13 @@ Creating a PriorityDispatcher using PriorityGenerator:
 
           ref.start(); // Start the actor
       ref.getDispatcher().suspend(ref); // Suspending the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
-          ref.sendOneWay("lowpriority");
-          ref.sendOneWay("lowpriority");
-          ref.sendOneWay("highpriority");
-          ref.sendOneWay("pigdog");
-          ref.sendOneWay("pigdog2");
-          ref.sendOneWay("pigdog3");
-          ref.sendOneWay("highpriority");
+          ref.tell("lowpriority");
+          ref.tell("lowpriority");
+          ref.tell("highpriority");
+          ref.tell("pigdog");
+          ref.tell("pigdog2");
+          ref.tell("pigdog3");
+          ref.tell("highpriority");
       ref.getDispatcher().resume(ref); // Resuming the actor so it will start treating its messages
     }
   }

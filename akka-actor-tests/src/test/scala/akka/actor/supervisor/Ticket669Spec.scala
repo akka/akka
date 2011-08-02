@@ -7,7 +7,7 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.actor._
 import akka.config.Supervision._
-
+import akka.testkit.{ filterEvents, EventFilter }
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 
@@ -23,30 +23,33 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
 
   "A supervised actor with lifecycle PERMANENT" should {
     "be able to reply on failure during preRestart" in {
+      filterEvents(EventFilter[Exception]("test")) {
+        val latch = new CountDownLatch(1)
+        val sender = Actor.actorOf(new Sender(latch)).start()
 
-      val latch = new CountDownLatch(1)
-      val sender = Actor.actorOf(new Sender(latch)).start()
+        val supervised = Actor.actorOf[Supervised]
+        val supervisor = Supervisor(SupervisorConfig(
+          AllForOneStrategy(List(classOf[Exception]), 5, 10000),
+          Supervise(supervised, Permanent) :: Nil))
 
-      val supervised = Actor.actorOf[Supervised]
-      val supervisor = Supervisor(SupervisorConfig(
-        AllForOneStrategy(List(classOf[Exception]), 5, 10000),
-        Supervise(supervised, Permanent) :: Nil))
-
-      supervised.!("test")(Some(sender))
-      latch.await(5, TimeUnit.SECONDS) must be(true)
+        supervised.!("test")(Some(sender))
+        latch.await(5, TimeUnit.SECONDS) must be(true)
+      }
     }
 
     "be able to reply on failure during postStop" in {
-      val latch = new CountDownLatch(1)
-      val sender = Actor.actorOf(new Sender(latch)).start()
+      filterEvents(EventFilter[Exception]("test")) {
+        val latch = new CountDownLatch(1)
+        val sender = Actor.actorOf(new Sender(latch)).start()
 
-      val supervised = Actor.actorOf[Supervised]
-      val supervisor = Supervisor(SupervisorConfig(
-        AllForOneStrategy(List(classOf[Exception]), 5, 10000),
-        Supervise(supervised, Temporary) :: Nil))
+        val supervised = Actor.actorOf[Supervised]
+        val supervisor = Supervisor(SupervisorConfig(
+          AllForOneStrategy(List(classOf[Exception]), 5, 10000),
+          Supervise(supervised, Temporary) :: Nil))
 
-      supervised.!("test")(Some(sender))
-      latch.await(5, TimeUnit.SECONDS) must be(true)
+        supervised.!("test")(Some(sender))
+        latch.await(5, TimeUnit.SECONDS) must be(true)
+      }
     }
   }
 }

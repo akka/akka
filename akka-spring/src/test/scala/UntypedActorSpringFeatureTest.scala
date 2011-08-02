@@ -49,7 +49,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
 
     scenario("get a untyped actor") {
       val myactor = getPingActorFromContext("/untyped-actor-config.xml", "simple-untyped-actor")
-      myactor.sendOneWay("Hello")
+      myactor.tell("Hello")
       PingActor.latch.await
       assert(PingActor.lastMessage === "Hello")
       assert(myactor.isDefinedAt("some string message"))
@@ -57,7 +57,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
 
     scenario("untyped-actor of provided bean") {
       val myactor = getPingActorFromContext("/untyped-actor-config.xml", "simple-untyped-actor-of-bean")
-      myactor.sendOneWay("Hello")
+      myactor.tell("Hello")
       PingActor.latch.await
       assert(PingActor.lastMessage === "Hello")
       assert(myactor.isDefinedAt("some string message"))
@@ -66,14 +66,14 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
     scenario("untyped-actor with timeout") {
       val myactor = getPingActorFromContext("/untyped-actor-config.xml", "simple-untyped-actor-long-timeout")
       assert(myactor.getTimeout() === 10000)
-      myactor.sendOneWay("Hello 2")
+      myactor.tell("Hello 2")
       PingActor.latch.await
       assert(PingActor.lastMessage === "Hello 2")
     }
 
     scenario("get a remote typed-actor") {
       val myactor = getPingActorFromContext("/untyped-actor-config.xml", "remote-untyped-actor")
-      myactor.sendOneWay("Hello 4")
+      myactor.tell("Hello 4")
       assert(myactor.homeAddress.isDefined)
       assert(myactor.homeAddress.get.getHostName() === "localhost")
       assert(myactor.homeAddress.get.getPort() === 9990)
@@ -86,14 +86,14 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
       assert(myactor.id === "untyped-actor-with-dispatcher")
       assert(myactor.getTimeout() === 1000)
       assert(myactor.getDispatcher.isInstanceOf[ExecutorBasedEventDrivenWorkStealingDispatcher])
-      myactor.sendOneWay("Hello 5")
+      myactor.tell("Hello 5")
       PingActor.latch.await
       assert(PingActor.lastMessage === "Hello 5")
     }
 
     scenario("create client managed remote untyped-actor") {
       val myactor = getPingActorFromContext("/server-managed-config.xml", "client-managed-remote-untyped-actor")
-      myactor.sendOneWay("Hello client managed remote untyped-actor")
+      myactor.tell("Hello client managed remote untyped-actor")
       PingActor.latch.await
       assert(PingActor.lastMessage === "Hello client managed remote untyped-actor")
       assert(myactor.homeAddress.isDefined)
@@ -112,7 +112,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
       val myactor = getPingActorFromContext("/server-managed-config.xml", "server-managed-remote-untyped-actor")
       val nrOfActors = Actor.registry.actors.length
       val actorRef = remote.actorFor("server-managed-remote-untyped-actor", "localhost", 9990)
-      actorRef.sendOneWay("Hello server managed remote untyped-actor")
+      actorRef.tell("Hello server managed remote untyped-actor")
       PingActor.latch.await
       assert(PingActor.lastMessage === "Hello server managed remote untyped-actor")
       assert(Actor.registry.actors.length === nrOfActors)
@@ -122,7 +122,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
       val myactor = getPingActorFromContext("/server-managed-config.xml", "server-managed-remote-untyped-actor-custom-id")
       val nrOfActors = Actor.registry.actors.length
       val actorRef = remote.actorFor("ping-service", "localhost", 9990)
-      actorRef.sendOneWay("Hello server managed remote untyped-actor")
+      actorRef.tell("Hello server managed remote untyped-actor")
       PingActor.latch.await
       assert(PingActor.lastMessage === "Hello server managed remote untyped-actor")
       assert(Actor.registry.actors.length === nrOfActors)
@@ -138,7 +138,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
       // get client actor ref from spring context
       val actorRef = context.getBean("client-1").asInstanceOf[ActorRef]
       assert(actorRef.isInstanceOf[RemoteActorRef])
-      actorRef.sendOneWay("Hello")
+      actorRef.tell("Hello")
       PingActor.latch.await
       assert(Actor.registry.actors.length === nrOfActors)
     }

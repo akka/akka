@@ -25,7 +25,7 @@ import akka.japi.{ Creator, Procedure }
  *        } else if (msg.equals("UseSender") && getContext().getSender().isDefined()) {
  *          // Reply to original sender of message using the sender reference
  *          // also passing along my own reference (the context)
- *          getContext().getSender().get().sendOneWay(msg, context);
+ *          getContext().getSender().get().tell(msg, context);
  *
  *        } else if (msg.equals("UseSenderFuture") && getContext().getSenderFuture().isDefined()) {
  *          // Reply to original sender of message using the sender future reference
@@ -33,7 +33,7 @@ import akka.japi.{ Creator, Procedure }
  *
  *        } else if (msg.equals("SendToSelf")) {
  *          // Send message to the actor itself recursively
- *          getContext().sendOneWay(msg)
+ *          getContext().tell(msg)
  *
  *        } else if (msg.equals("ForwardMessage")) {
  *          // Retreive an actor from the ActorRegistry by ID and get an ActorRef back
@@ -46,7 +46,7 @@ import akka.japi.{ Creator, Procedure }
  *    public static void main(String[] args) {
  *      ActorRef actor = Actors.actorOf(SampleUntypedActor.class);
  *      actor.start();
- *      actor.sendOneWay("SendToSelf");
+ *      actor.tell("SendToSelf");
  *      actor.stop();
  *    }
  *  }

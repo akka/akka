@@ -73,7 +73,7 @@ object Routing {
    * @throws IllegalArgumentException if the number of connections is zero, or if it depends on the actual router implementation
    *                                  how many connections it can handle.
    */
-  def newRoutedActorRef(actorAddress: String, connections: Iterable[ActorRef], routerType: RouterType): RoutedActorRef = {
+  def actorOf(actorAddress: String, connections: Iterable[ActorRef], routerType: RouterType): ActorRef = {
     if (connections.size == 0)
       throw new IllegalArgumentException("To create a routed actor ref, at least one connection is required")
 
@@ -91,8 +91,8 @@ object Routing {
     ref.start()
   }
 
-  def newRoundRobinActorRef(actorAddress: String, connections: Iterable[ActorRef]): RoutedActorRef = {
-    newRoutedActorRef(actorAddress, connections, RoundRobin)
+  def actorOfWithRoundRobin(actorAddress: String, connections: Iterable[ActorRef]): ActorRef = {
+    actorOf(actorAddress, connections, RoundRobin)
   }
 }
 
@@ -100,7 +100,7 @@ object Routing {
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to send a message to
  * on (or more) of these actors.
  */
-class RoutedActorRef(val address: String, val cons: Iterable[ActorRef]) extends UnsupportedActorRef with ScalaActorRef {
+class RoutedActorRef(val address: String, val cons: Iterable[ActorRef]) extends UnsupportedActorRef {
   this: Router ⇒
 
   def connections: Iterable[ActorRef] = cons
