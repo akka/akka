@@ -114,7 +114,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val multiverse      = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" //ApacheV2
     lazy val multiverse_test = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "test" //ApacheV2
 
-    lazy val netty = "org.jboss.netty" % "netty" % "3.2.4.Final" % "compile" //ApacheV2
+    lazy val netty = "org.jboss.netty" % "netty" % "3.2.5.Final" % "compile" //ApacheV2
 
     lazy val osgi_core = "org.osgi" % "org.osgi.core" % "4.2.0" //ApacheV2
 
