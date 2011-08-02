@@ -417,7 +417,7 @@ object Dependency {
     val Jetty        = "7.4.0.v20110414"
     val Logback      = "0.9.28"
     val Multiverse   = "0.6.2"
-    val Netty        = "3.2.4.Final"
+    val Netty        = "3.2.5.Final"
     val Protobuf     = "2.4.1"
     val Scalatest    = "1.6.1"
     val Slf4j        = "1.6.0"
