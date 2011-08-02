@@ -66,24 +66,7 @@ The first method for working with ``Future`` functionally is ``map``. This metho
 
 In this example we are joining two strings together within a Future. Instead of waiting for this to complete, we apply our function that calculates the length of the string using the ``map`` method. Now we have a second Future that will eventually contain an ``Int``. When our original ``Future`` completes, it will also apply our function and complete the second Future with it's result. When we finally ``get`` the result, it will contain the number 10. Our original Future still contains the string "HelloWorld" and is unaffected by the ``map``.
 
-Something to note when using these methods: if the ``Future`` is still being processed when one of these methods are called, it will be the completing thread that actually does the work. If the ``Future`` is already complete though, it will be run in our current thread. For example:
-
-.. code-block:: scala
-
-  val f1 = Future {
-    Thread.sleep(1000)
-    "Hello" + "World"
-  }
-
-  val f2 = f1 map { x =>
-    x.length
-  }
-
-  val result = f2.get()
-
-The original ``Future`` will take at least 1 second to execute now, which means it is still being processed at the time we call ``map``. The function we provide gets stored within the ``Future`` and later executed automatically by the dispatcher when the result is ready.
-
-If we do the opposite:
+The ``map`` method is fine if we are modifying a single ``Future``, but if 2 or more ``Future``\s are involved ``map`` will not allow you to combine them together:
 
 .. code-block:: scala
 
@@ -91,17 +74,19 @@ If we do the opposite:
     "Hello" + "World"
   }
 
-  Thread.sleep(1000)
-
-  val f2 = f1 map { x =>
-     x.length
+  val f2 = Future {
+    3
   }
 
-  val result = f2.get()
+  val f3 = f1 map { x =>
+    f2 map { y =>
+      x.length * y
+    }
+  }
 
-Our little string has been processed long before our 1 second sleep has finished. Because of this, the dispatcher has moved onto other messages that need processing and can no longer calculate the length of the string for us, instead it gets calculated in the current thread just as if we weren't using a ``Future``.
+  val result = f2.get().get()
 
-Normally this works quite well as it means there is very little overhead to running a quick function. If there is a possibility of the function taking a non-trivial amount of time to process it might be better to have this done concurrently, and for that we use ``flatMap``:
+The ``get`` method had to be used twice because ``f3`` is a ``Future[Future[Int]]`` instead of the desired ``Future[Int]``. Instead, the ``flatMap`` method should be used:
 
 .. code-block:: scala
 
@@ -109,13 +94,17 @@ Normally this works quite well as it means there is very little overhead to runn
     "Hello" + "World"
   }
 
-  val f2 = f1 flatMap {x =>
-    Future(x.length)
+  val f2 = Future {
+    3
+  }
+
+  val f3 = f1 flatMap { x =>
+    f2 map { y =>
+      x.length * y
+    }
   }
 
   val result = f2.get()
-
-Now our second Future is executed concurrently as well. This technique can also be used to combine the results of several Futures into a single calculation, which will be better explained in the following sections.
 
 For Comprehensions
 ^^^^^^^^^^^^^^^^^^
@@ -242,3 +231,22 @@ It is also possible to handle an ``Exception`` by returning a different result. 
   }
 
 In this example, if an ``ArithmeticException`` was thrown while the ``Actor`` processed the message, our ``Future`` would have a result of 0. The ``failure`` method works very similarly to the standard try/catch blocks, so multiple ``Exception``\s can be handled in this manner, and if an ``Exception`` is not handled this way it will be behave as if we hadn't used the ``failure`` method.
+
+Timeouts
+--------
+
+Waiting forever for a ``Future`` to be completed can be dangerous. It could cause your program to block indefinitly or produce a memory leak. ``Future`` has support for a timeout already builtin with a default of 5000 milliseconds (taken from 'akka.conf'). A timeout can also be specified when creating a ``Future``:
+
+.. code-block:: scala
+
+  val future = Future( { doSomething }, 10000 )
+
+This example creates a ``Future`` with a 10 second timeout.
+
+If the timeout is reached the ``Future`` becomes unusable, even if an attempt is made to complete it. It is possible to have a ``Future`` perform an action on timeout if needed with the ``onTimeout`` method:
+
+.. code-block:: scala
+
+  val future1 = actor ? msg onTimeout { _ =>
+    println("Timed out!")
+  }
