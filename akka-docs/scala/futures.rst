@@ -71,26 +71,9 @@ The first method for working with ``Future`` functionally is ``map``. This metho
 
   val result = f2.get()
 
-In this example we are joining two strings together within a Future. Instead of waiting for this to complete, we apply our function that calculates the length of the string using the ``map`` method. Now we have a second Future that will eventually contain an ``Int``. When our original ``Future`` completes, it will also apply our function and complete the second Future with it's result. When we finally ``get`` the result, it will contain the number 10. Our original Future still contains the string "HelloWorld" and is unaffected by the ``map``.
+In this example we are joining two strings together within a Future. Instead of waiting for this to complete, we apply our function that calculates the length of the string using the ``map`` method. Now we have a second ``Future`` that will eventually contain an ``Int``. When our original ``Future`` completes, it will also apply our function and complete the second ``Future`` with it's result. When we finally ``get`` the result, it will contain the number 10. Our original ``Future`` still contains the string "HelloWorld" and is unaffected by the ``map``.
 
-Something to note when using these methods: if the ``Future`` is still being processed when one of these methods are called, it will be the completing thread that actually does the work. If the ``Future`` is already complete though, it will be run in our current thread. For example:
-
-.. code-block:: scala
-
-  val f1 = Future {
-    Thread.sleep(1000)
-    "Hello" + "World"
-  }
-
-  val f2 = f1 map { x =>
-    x.length
-  }
-
-  val result = f2.get()
-
-The original ``Future`` will take at least 1 second to execute now, which means it is still being processed at the time we call ``map``. The function we provide gets stored within the ``Future`` and later executed automatically by the dispatcher when the result is ready.
-
-If we do the opposite:
+The ``map`` method is fine if we are modifying a single ``Future``, but if 2 or more ``Future``\s are involved ``map`` will not allow you to combine them together:
 
 .. code-block:: scala
 
@@ -98,17 +81,19 @@ If we do the opposite:
     "Hello" + "World"
   }
 
-  Thread.sleep(1000)
-
-  val f2 = f1 map { x =>
-     x.length
+  val f2 = Future {
+    3
   }
 
-  val result = f2.get()
+  val f3 = f1 map { x =>
+    f2 map { y =>
+      x.length * y
+    }
+  }
 
-Our little string has been processed long before our 1 second sleep has finished. Because of this, the dispatcher has moved onto other messages that need processing and can no longer calculate the length of the string for us, instead it gets calculated in the current thread just as if we weren't using a ``Future``.
+  val result = f2.get().get()
 
-Normally this works quite well as it means there is very little overhead to running a quick function. If there is a possibility of the function taking a non-trivial amount of time to process it might be better to have this done concurrently, and for that we use ``flatMap``:
+The ``get`` method had to be used twice because ``f3`` is a ``Future[Future[Int]]`` instead of the desired ``Future[Int]``. Instead, the ``flatMap`` method should be used:
 
 .. code-block:: scala
 
@@ -116,13 +101,17 @@ Normally this works quite well as it means there is very little overhead to runn
     "Hello" + "World"
   }
 
-  val f2 = f1 flatMap { x =>
-    Future(x.length)
+  val f2 = Future {
+    3
+  }
+
+  val f3 = f1 flatMap { x =>
+    f2 map { y =>
+      x.length * y
+    }
   }
 
   val result = f2.get()
-
-Now our second Future is executed concurrently as well. This technique can also be used to combine the results of several Futures into a single calculation, which will be better explained in the following sections.
 
 For Comprehensions
 ^^^^^^^^^^^^^^^^^^
@@ -139,7 +128,7 @@ Since ``Future`` has a ``map`` and ``flatMap`` method it can be easily used in a
 
   val result = f.get()
 
-Something to keep in mind when doing this is even though it looks like parts of the above example can run in parallel, each step of the for comprehension is run sequentially. This will happen on separate threads for each step but there isn't much benefit over running the calculations all within a single Future. The real benefit comes when the ``Future``\s are created first, and then combining them together.
+Something to keep in mind when doing this is even though it looks like parts of the above example can run in parallel, each step of the for comprehension is run sequentially. This will happen on separate threads for each step but there isn't much benefit over running the calculations all within a single ``Future``. The real benefit comes when the ``Future``\s are created first, and then combining them together.
 
 Composing Futures
 ^^^^^^^^^^^^^^^^^
@@ -225,8 +214,6 @@ If the sequence passed to ``fold`` is empty, it will return the start-value, in 
 
 Same as with ``fold``, the execution will be done by the Thread that completes the last of the Futures, you can also parallize it by chunking your futures into sub-sequences and reduce them, and then reduce the reduced results again.
 
-
-
 This is just a sample of what can be done, but to use more advanced techniques it is easier to take advantage of Scalaz, which Akka has support for in its akka-scalaz module.
 
 
@@ -257,13 +244,34 @@ In this example, if an ``ArithmeticException`` was thrown while the ``Actor`` pr
 Timeouts
 --------
 
-Waiting forever for a ``Future`` to be completed can be dangerous. It could cause your program to block indefinitly or produce a memory leak. ``Future`` has support for a timeout already builtin with a default of 5 seconds (taken from 'akka.conf'). A timeout is an instance of ``akka.actor.Timeout`` which contains an ``akka.util.Duration``. A ``Duration`` can be finite, which needs a length and unit type, or infinite. An infinite timeout can be dangerous since it will never actually expire.
+Waiting forever for a ``Future`` to be completed can be dangerous. It could cause your program to block indefinitly or produce a memory leak. ``Future`` has support for a timeout already builtin with a default of 5 seconds (taken from 'akka.conf'). A timeout is an instance of ``akka.actor.Timeout`` which contains an ``akka.util.Duration``. A ``Duration`` can be finite, which needs a length and unit type, or infinite. An infinite ``Timeout`` can be dangerous since it will never actually expire.
 
-A different timeout can be supplied either explicitly or implicitly when a ``Future`` is created. An implicit timeout has the benefit of being usable by a for-comprehension as well as being picked up by any methods looking for an implicit timeout, while an explicit timeout can be used in a more controlled manner.
+A different ``Timeout`` can be supplied either explicitly or implicitly when a ``Future`` is created. An implicit ``Timeout`` has the benefit of being usable by a for-comprehension as well as being picked up by any methods looking for an implicit ``Timeout``, while an explicit ``Timeout`` can be used in a more controlled manner.
 
-Explicit timeout example:
+Explicit ``Timeout`` example:
 
-Implicit timeout example:
+.. code-block:: scala
+
+  import akka.util.duration._
+
+  val future1 = Future( { runSomething }, 1 second)
+
+  val future2 = future1.map(doSomethingElse)(1500 millis)
+
+Implicit ``Timeout`` example:
+
+.. code-block:: scala
+
+  import akka.actor.Timeout
+  import akka.util.duration._
+
+  implicit val longTimeout = Timeout(1 minute)
+
+  val future1 = Future { runSomething }
+
+  val future2 = future1 map doSomethingElse
+
+An important note: when explicitly providing a ``Timeout`` it is fine to just use a ``Duration`` (like in the above explicit ``Timeout`` example). An implicit ``Duration`` will be ignored if an implicit ``Timeout`` is required. Due to this, in the above implicit example the ``Duration`` is wrapped within a ``Timeout``.
 
 If the timeout is reached the ``Future`` becomes unusable, even if an attempt is made to complete it. It is possible to have a ``Future`` handle a timeout, if needed, with the ``onTimeout`` and ``orElse`` methods:
 
