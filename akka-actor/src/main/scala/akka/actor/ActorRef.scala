@@ -685,18 +685,23 @@ class LocalActorRef private[akka] (
     if (isShutdown) throw new ActorStartException(
       "Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
-      dispatcher.attach(this)
-
       _status = ActorRefInternals.RUNNING
+      try {
+        dispatcher.attach(this)
 
-      // If we are not currently creating this ActorRef instance
-      if ((actorInstance ne null) && (actorInstance.get ne null))
-        initializeActorInstance
+        // If we are not currently creating this ActorRef instance
+        if ((actorInstance ne null) && (actorInstance.get ne null))
+          initializeActorInstance
 
-      if (isClientManaged_?)
-        Actor.remote.registerClientManagedActor(homeAddress.get.getAddress.getHostAddress, homeAddress.get.getPort, uuid)
+        if (isClientManaged_?)
+          Actor.remote.registerClientManagedActor(homeAddress.get.getAddress.getHostAddress, homeAddress.get.getPort, uuid)
 
-      checkReceiveTimeout //Schedule the initial Receive timeout
+        checkReceiveTimeout //Schedule the initial Receive timeout
+      } catch {
+        case e =>
+          _status = ActorRefInternals.UNSTARTED
+        throw e
+      }
     }
     this
   }
@@ -709,6 +714,12 @@ class LocalActorRef private[akka] (
       receiveTimeout = None
       cancelReceiveTimeout
       dispatcher.detach(this)
+      Actor.registry.unregister(this)
+      if (isRemotingEnabled) {
+        if (isClientManaged_?)
+          Actor.remote.unregisterClientManagedActor(homeAddress.get.getAddress.getHostAddress, homeAddress.get.getPort, uuid)
+        Actor.remote.unregister(this)
+      }
       _status = ActorRefInternals.SHUTDOWN
       try {
         val a = actor
@@ -716,12 +727,6 @@ class LocalActorRef private[akka] (
         a.postStop
       } finally {
         currentMessage = null
-        Actor.registry.unregister(this)
-        if (isRemotingEnabled) {
-          if (isClientManaged_?)
-            Actor.remote.unregisterClientManagedActor(homeAddress.get.getAddress.getHostAddress, homeAddress.get.getPort, uuid)
-          Actor.remote.unregister(this)
-        }
         setActorSelfFields(actorInstance.get, null)
       }
     } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
