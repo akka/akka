@@ -391,7 +391,7 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with ReplyChannel[
    * <p/>
    * Returns true if reply was sent, and false if unable to determine what to reply to.
    */
-  def tryReply(message: Any): Boolean = channel.tryTell(message, this)
+  def tryReply(message: Any): Boolean = channel.tryTell(message)(this)
 
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.

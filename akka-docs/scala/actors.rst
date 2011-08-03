@@ -356,7 +356,8 @@ Simply call ``self.channel`` and then you can forward that to others, store it a
 
   case request =>
       val result = process(request)
-      self.channel ! result
+      self.channel ! result       // will throw an exception if there is no sender information
+      self.channel tryTell result // will return Boolean whether reply succeeded
 
 The :class:`Channel` trait is contravariant in the expected message type. Since
 ``self.channel`` is subtype of ``Channel[Any]``, you may specialise your return
