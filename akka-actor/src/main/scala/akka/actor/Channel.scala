@@ -4,6 +4,23 @@
 
 package akka.actor
 
+/*
+ * This package is just used to hide the tryTell method from the Scala parts:
+ * it will be public to javac's eyes by virtue of §5.2 of the SLS.
+ */
+package japi {
+  trait Channel[-T] { self: akka.actor.Channel[T] ⇒
+    private[japi] def tryTell(msg: T): Boolean = {
+      try {
+        self.!(msg)(NullChannel)
+        true
+      } catch {
+        case _: Exception ⇒ false
+      }
+    }
+  }
+}
+
 /**
  * Abstraction for unification of sender and senderFuture for later reply.
  * Can be stored away and used at a later point in time.
@@ -12,13 +29,39 @@ package akka.actor
  * untyped, as there is no way to utilize its real static type without
  * requiring runtime-costly manifests.
  */
-trait Channel[-T] {
+trait Channel[-T] extends japi.Channel[T] {
 
   /**
    * Scala API. <p/>
    * Sends the specified message to the channel.
    */
-  def !(msg: T)(implicit channel: UntypedChannel): Unit
+  def !(msg: T)(implicit sender: UntypedChannel): Unit
+
+  /**
+   * Scala and Java API. <p/>
+   * Try to send the specified message to the channel, i.e. fire-and-forget
+   * semantics, including the sender reference if possible (not supported on
+   * all channels).<p/>
+   * From Java:
+   * <pre>
+   * actor.tryTell(message);
+   * actor.tryTell(message, context);
+   * </pre>
+   * <p/>
+   * From Scala:
+   * <pre>
+   * actor tryTell message
+   * actor.tryTell(message)(sender)
+   * </pre>
+   */
+  def tryTell(msg: T)(implicit sender: UntypedChannel): Boolean = {
+    try {
+      this.!(msg)(sender)
+      true
+    } catch {
+      case _: Exception ⇒ false
+    }
+  }
 
   /**
    * Try to send an exception. Not all channel types support this, one notable
@@ -46,32 +89,6 @@ trait Channel[-T] {
    * </pre>
    */
   def tell(msg: T, sender: UntypedChannel): Unit = this.!(msg)(sender)
-
-  /**
-   * Try to send the specified message to the channel, i.e. fire-and-forget semantics.<p/>
-   * <pre>
-   * channel.tell(message);
-   * </pre>
-   */
-  def tryTell(msg: T): Boolean = this.tryTell(msg, NullChannel)
-
-  /**
-   * Java API. <p/>
-   * Try to send the specified message to the channel, i.e. fire-and-forget
-   * semantics, including the sender reference if possible (not supported on
-   * all channels).<p/>
-   * <pre>
-   * actor.tell(message, context);
-   * </pre>
-   */
-  def tryTell(msg: T, sender: UntypedChannel): Boolean = {
-    try {
-      this.!(msg)(sender)
-      true
-    } catch {
-      case _: Exception ⇒ false
-    }
-  }
 
 }
 

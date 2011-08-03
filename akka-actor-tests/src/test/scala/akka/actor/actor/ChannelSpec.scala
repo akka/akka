@@ -32,6 +32,16 @@ class ChannelSpec extends WordSpec with MustMatchers {
       }).start()
       a ! "hallo"
       s must be(("hallo", a))
+
+      {
+        implicit val actor = a
+        ch tryTell "buh"
+      }
+      s must be(("buh", a))
+      ch.!("world")(a)
+      s must be(("world", a))
+      ch.tryTell("bippy")(a)
+      s must be(("bippy", a))
     }
 
   }

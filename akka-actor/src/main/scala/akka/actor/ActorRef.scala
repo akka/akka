@@ -303,7 +303,7 @@ abstract class ActorRef extends ActorRefShared with ForwardableChannel with Repl
    *
    * If you would rather have an exception, check the <code>reply(..)</code> version.
    */
-  def tryReply(message: Any): Boolean = channel.tryTell(message, this)
+  def tryReply(message: Any): Boolean = channel.tryTell(message)(this)
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.

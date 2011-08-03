@@ -31,4 +31,10 @@ public class JavaAPI {
       });
       assertNotNull(ref);
   }
+
+  @Test void mustAcceptSingleArgTryTell() {
+    ActorRef ref = Actors.actorOf(JavaAPITestActor.class);
+    ref.tryTell("hallo");
+    ref.tryTell("hallo", ref);
+  }
 }
