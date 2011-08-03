@@ -5,7 +5,7 @@ package akka.testkit
 
 import akka.event.EventHandler
 import akka.actor.ActorRef
-import akka.dispatch.{ MessageDispatcher, MessageInvocation, FutureInvocation, Promise, ActorPromise }
+import akka.dispatch.{ MessageDispatcher, MessageInvocation, TaskInvocation, Promise, ActorPromise }
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
 import java.util.concurrent.RejectedExecutionException
@@ -161,7 +161,7 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
     if (execute) runQueue(mbox, queue)
   }
 
-  private[akka] override def executeFuture(invocation: FutureInvocation[_]) { invocation.run }
+  private[akka] override def executeTask(invocation: TaskInvocation) { invocation.run }
 
   /*
    * This method must be called with this thread's queue, which must already

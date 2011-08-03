@@ -96,7 +96,7 @@ class Dispatcher(
     registerForExecution(mbox)
   }
 
-  private[akka] def executeFuture(invocation: FutureInvocation[_]): Unit = if (active.isOn) {
+  private[akka] def executeTask(invocation: TaskInvocation): Unit = if (active.isOn) {
     try executorService.get() execute invocation
     catch {
       case e: RejectedExecutionException ⇒

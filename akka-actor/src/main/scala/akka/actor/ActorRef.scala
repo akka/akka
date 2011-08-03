@@ -686,7 +686,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     channel: UntypedChannel): Future[Any] = {
     val future = channel match {
       case f: ActorPromise ⇒ f
-      case _               ⇒ new ActorPromise(timeout)
+      case _               ⇒ new ActorPromise(timeout)(dispatcher)
     }
     dispatcher dispatchMessage new MessageInvocation(this, message, future)
     future
@@ -1031,7 +1031,7 @@ private[akka] case class RemoteActorRef private[akka] (
       case _             ⇒ None
     }
     val future = Actor.remote.send[Any](message, chSender, chFuture, remoteAddress, timeout.duration.toMillis, false, this, loader)
-    if (future.isDefined) ActorPromise(future.get)
+    if (future.isDefined) ActorPromise(future.get)(dispatcher)
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
 
