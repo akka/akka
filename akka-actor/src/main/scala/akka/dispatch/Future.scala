@@ -419,7 +419,7 @@ sealed trait Future[+T] {
    *   }
    * </pre>
    */
-  final def onResult(pf: PartialFunction[Any, Unit]): this.type = onComplete { f ⇒
+  final def onResult(pf: PartialFunction[T, Unit]): this.type = onComplete { f ⇒
     val optr = f.result
     if (optr.isDefined) {
       val r = optr.get
