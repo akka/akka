@@ -6,7 +6,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef }
+import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef, Scheduler }
 import akka.japi.{ Procedure, Function ⇒ JFunc }
 
 import scala.util.continuations._
@@ -243,18 +243,29 @@ object Future {
    * This method constructs and returns a Future that will eventually hold the result of the execution of the supplied body
    * The execution is performed by the specified Dispatcher.
    */
-  def apply[T](body: ⇒ T, timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher): Future[T] =
-    dispatcher.dispatchFuture(() ⇒ body, timeout)
+  def apply[T](body: ⇒ T, timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher): Future[T] = {
+    val promise = new DefaultCompletableFuture[T](timeout)
+    dispatcher dispatchTask { () ⇒
+      promise complete {
+        try {
+          Right(body)
+        } catch {
+          case e ⇒ Left(e)
+        }
+      }
+    }
+    promise
+  }
 
   /**
    * Construct a completable channel
    */
-  def channel(timeout: Long = Actor.TIMEOUT) = new ActorCompletableFuture(timeout)
+  def channel(timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher) = new ActorCompletableFuture(timeout)
 
   /**
    * Create an empty Future with default timeout
    */
-  def empty[T](timeout: Long = Actor.TIMEOUT) = new DefaultCompletableFuture[T](timeout)
+  def empty[T](timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher) = new DefaultCompletableFuture[T](timeout)
 
   import scala.collection.mutable.Builder
   import scala.collection.generic.CanBuildFrom
@@ -311,6 +322,8 @@ object Future {
 }
 
 sealed trait Future[+T] {
+
+  implicit def dispatcher: MessageDispatcher
 
   /**
    * For use only within a Future.flow block or another compatible Delimited Continuations reset block.
@@ -471,6 +484,8 @@ sealed trait Future[+T] {
       if (pf.isDefinedAt(ex)) pf(ex)
     }
   }
+
+  def onTimeout(func: Future[T] ⇒ Unit): this.type
 
   /**
    * Creates a new Future by applying a PartialFunction to the successful
@@ -700,9 +715,9 @@ sealed trait Future[+T] {
 
 object Promise {
 
-  def apply[A](timeout: Long): CompletableFuture[A] = new DefaultCompletableFuture[A](timeout)
+  def apply[A](timeout: Long)(implicit dispatcher: MessageDispatcher): CompletableFuture[A] = new DefaultCompletableFuture[A](timeout)
 
-  def apply[A](): CompletableFuture[A] = apply(Actor.TIMEOUT)
+  def apply[A]()(implicit dispatcher: MessageDispatcher): CompletableFuture[A] = apply(Actor.TIMEOUT)
 
 }
 
@@ -759,11 +774,11 @@ trait CompletableFuture[T] extends Future[T] {
 /**
  * The default concrete Future implementation.
  */
-class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends CompletableFuture[T] {
+class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit val dispatcher: MessageDispatcher) extends CompletableFuture[T] {
 
-  def this() = this(0, MILLIS)
+  def this()(implicit dispatcher: MessageDispatcher) = this(Actor.TIMEOUT, MILLIS)
 
-  def this(timeout: Long) = this(timeout, MILLIS)
+  def this(timeout: Long)(implicit dispatcher: MessageDispatcher) = this(timeout, MILLIS)
 
   val timeoutInNanos = timeunit.toNanos(timeout)
   private val _startTimeInNanos = currentTimeInNanos
@@ -827,26 +842,35 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   def complete(value: Either[Throwable, T]): this.type = {
-    _lock.lock
-    val notifyTheseListeners = try {
-      if (_value.isEmpty && !isExpired) { //Only complete if we aren't expired
-        _value = Some(value)
-        val existingListeners = _listeners
-        _listeners = Nil
-        existingListeners
-      } else Nil
-    } finally {
-      _signal.signalAll
-      _lock.unlock
+    processCallbacks {
+      _lock.lock
+      try {
+        if (_value.isEmpty && !isExpired) { //Only complete if we aren't expired
+          _value = Some(value)
+          val existingListeners = _listeners
+          _listeners = Nil
+          existingListeners
+        } else {
+          _listeners = Nil
+          Nil
+        }
+      } finally {
+        _signal.signalAll
+        _lock.unlock
+      }
     }
 
-    if (notifyTheseListeners.nonEmpty) { // Steps to ensure we don't run into a stack-overflow situation
+    this
+  }
+
+  private def processCallbacks(callbacks: List[Future[T] ⇒ Unit]): Unit = {
+    if (callbacks.nonEmpty) { // Steps to ensure we don't run into a stack-overflow situation
       @tailrec
-      def runCallbacks(rest: List[Future[T] ⇒ Unit], callbacks: Stack[() ⇒ Unit]) {
+      def runCallbacks(rest: List[Future[T] ⇒ Unit], callbackStack: Stack[() ⇒ Unit]) {
         if (rest.nonEmpty) {
           notifyCompleted(rest.head)
-          while (callbacks.nonEmpty) { callbacks.pop().apply() }
-          runCallbacks(rest.tail, callbacks)
+          while (callbackStack.nonEmpty) { callbackStack.pop().apply() }
+          runCallbacks(rest.tail, callbackStack)
         }
       }
 
@@ -854,18 +878,18 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
       if (pending.isDefined) { //Instead of nesting the calls to the callbacks (leading to stack overflow)
         pending.get.push(() ⇒ { // Linearize/aggregate callbacks at top level and then execute
           val doNotify = notifyCompleted _ //Hoist closure to avoid garbage
-          notifyTheseListeners foreach doNotify
+          callbacks foreach doNotify
         })
       } else {
-        try {
-          val callbacks = Stack[() ⇒ Unit]() // Allocate new aggregator for pending callbacks
-          Future.callbacksPendingExecution.set(Some(callbacks)) // Specify the callback aggregator
-          runCallbacks(notifyTheseListeners, callbacks) // Execute callbacks, if they trigger new callbacks, they are aggregated
-        } finally { Future.callbacksPendingExecution.set(None) } // Ensure cleanup
+        dispatcher dispatchTask { () ⇒
+          try {
+            val callbackStack = Stack[() ⇒ Unit]() // Allocate new aggregator for pending callbacks
+            Future.callbacksPendingExecution.set(Some(callbackStack)) // Specify the callback aggregator
+            runCallbacks(callbacks, callbackStack) // Execute callbacks, if they trigger new callbacks, they are aggregated
+          } finally { Future.callbacksPendingExecution.set(None) } // Ensure cleanup
+        }
       }
     }
-
-    this
   }
 
   def onComplete(func: Future[T] ⇒ Unit): this.type = {
@@ -881,7 +905,30 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
       _lock.unlock
     }
 
-    if (notifyNow) notifyCompleted(func)
+    if (notifyNow) processCallbacks(List(func))
+
+    this
+  }
+
+  def onTimeout(func: Future[T] ⇒ Unit): this.type = {
+    _lock.lock
+    val runNow = try {
+      if (_value.isEmpty) {
+        if (!isExpired) {
+          val runnable = new Runnable {
+            def run() {
+              if (!isCompleted) func(DefaultCompletableFuture.this)
+            }
+          }
+          Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
+          false
+        } else true
+      } else false
+    } finally {
+      _lock.unlock
+    }
+
+    if (runNow) dispatcher dispatchTask (() ⇒ func(this))
 
     this
   }
@@ -900,11 +947,11 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
 }
 
-class ActorCompletableFuture(timeout: Long, timeunit: TimeUnit)
-  extends DefaultCompletableFuture[Any](timeout, timeunit)
+class ActorCompletableFuture(timeout: Long, timeunit: TimeUnit)(implicit dispatcher: MessageDispatcher)
+  extends DefaultCompletableFuture[Any](timeout, timeunit)(dispatcher)
   with ForwardableChannel {
-  def this() = this(0, MILLIS)
-  def this(timeout: Long) = this(timeout, MILLIS)
+  def this()(implicit dispatcher: MessageDispatcher) = this(0, MILLIS)
+  def this(timeout: Long)(implicit dispatcher: MessageDispatcher) = this(timeout, MILLIS)
 
   def !(message: Any)(implicit channel: UntypedChannel = NullChannel) = completeWithResult(message)
 
@@ -923,7 +970,7 @@ class ActorCompletableFuture(timeout: Long, timeunit: TimeUnit)
 
 object ActorCompletableFuture {
   def apply(f: CompletableFuture[Any]): ActorCompletableFuture =
-    new ActorCompletableFuture(f.timeoutInNanos, NANOS) {
+    new ActorCompletableFuture(f.timeoutInNanos, NANOS)(f.dispatcher) {
       completeWith(f)
       override def !(message: Any)(implicit channel: UntypedChannel) = f completeWithResult message
       override def sendException(ex: Throwable) = f completeWithException ex
@@ -934,14 +981,18 @@ object ActorCompletableFuture {
  * An already completed Future is seeded with it's result at creation, is useful for when you are participating in
  * a Future-composition but you already have a value to contribute.
  */
-sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T]) extends CompletableFuture[T] {
+sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T])(implicit val dispatcher: MessageDispatcher) extends CompletableFuture[T] {
   val value = Some(suppliedValue)
 
   def complete(value: Either[Throwable, T]): this.type = this
-  def onComplete(func: Future[T] ⇒ Unit): this.type = { func(this); this }
+  def onComplete(func: Future[T] ⇒ Unit): this.type = {
+    dispatcher dispatchTask (() ⇒ func(this))
+    this
+  }
   def await(atMost: Duration): this.type = this
   def await: this.type = this
   def awaitBlocking: this.type = this
   def isExpired: Boolean = true
   def timeoutInNanos: Long = 0
+  def onTimeout(func: Future[T] ⇒ Unit): this.type = this
 }

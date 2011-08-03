@@ -98,8 +98,8 @@ trait Channel[-T] {
    */
   @deprecated("Use 'tellSafe' instead", "1.2")
   def sendOneWaySafe(msg: T, sender: UntypedChannel): Boolean = this.safe_!(msg)(sender)
-  
-   /**
+
+  /**
    * Java API.<p/>
    * Sends the specified message to the channel, i.e. fire-and-forget semantics.<p/>
    * <pre>
