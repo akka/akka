@@ -983,8 +983,8 @@ class ActorPromise(timeout: Timeout)(implicit dispatcher: MessageDispatcher) ext
 }
 
 object ActorPromise {
-  def apply(f: Promise[Any])(implicit dispatcher: MessageDispatcher): ActorPromise =
-    new ActorPromise(f.timeout) {
+  def apply(f: Promise[Any]): ActorPromise =
+    new ActorPromise(f.timeout)(f.dispatcher) {
       completeWith(f)
       override def !(message: Any)(implicit channel: UntypedChannel) = f completeWithResult message
       override def sendException(ex: Throwable) = f completeWithException ex

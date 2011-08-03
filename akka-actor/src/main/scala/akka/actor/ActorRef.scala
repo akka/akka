@@ -1136,7 +1136,7 @@ private[akka] case class RemoteActorRef private[akka] (
       case _             ⇒ None
     }
     val future = Actor.remote.send[Any](message, chSender, chFuture, remoteAddress, timeout.duration.toMillis, false, this, loader)
-    if (future.isDefined) ActorPromise(future.get)(dispatcher)
+    if (future.isDefined) ActorPromise(future.get)
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
 
