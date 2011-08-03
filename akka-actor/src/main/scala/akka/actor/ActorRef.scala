@@ -554,14 +554,18 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
       "Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
       dispatcher.attach(this)
-
       _status = ActorRefInternals.RUNNING
+      try {
+        // If we are not currently creating this ActorRef instance
+        if ((actorInstance ne null) && (actorInstance.get ne null))
+          initializeActorInstance
 
-      // If we are not currently creating this ActorRef instance
-      if ((actorInstance ne null) && (actorInstance.get ne null))
-        initializeActorInstance
-
-      checkReceiveTimeout //Schedule the initial Receive timeout
+        checkReceiveTimeout //Schedule the initial Receive timeout
+      } catch {
+        case e ⇒
+          _status = ActorRefInternals.UNSTARTED
+          throw e
+      }
     }
     this
   }
@@ -574,24 +578,24 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
       if (isRunning) {
         receiveTimeout = None
         cancelReceiveTimeout
-        dispatcher.detach(this)
+        Actor.registry.unregister(this)
+
+        // This lines can trigger cluster start which makes cluster ZK client hang trying to reconnect indefinitely
+        //if (ClusterModule.isEnabled) Actor.remote.unregister(this)
         _status = ActorRefInternals.SHUTDOWN
+        dispatcher.detach(this)
         try {
           val a = actor
           if (Actor.debugLifecycle) EventHandler.debug(a, "stopping")
           a.postStop()
         } finally {
           currentMessage = null
-          Actor.registry.unregister(this)
-
-          // This lines can trigger cluster start which makes cluster ZK client hang trying to reconnect indefinitely
-          //if (ClusterModule.isEnabled) Actor.remote.unregister(this)
 
           setActorSelfFields(actorInstance.get, null)
         }
       } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
 
-      if (replicationStorage.isDefined) replicationStorage.get.delete()
+      if (replicationStorage.isDefined) replicationStorage.get.delete() //TODO shouldn't this be inside the if (isRunning?)
     }
   }
 
