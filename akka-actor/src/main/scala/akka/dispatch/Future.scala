@@ -434,7 +434,7 @@ sealed trait Future[+T] {
    *   }
    * </pre>
    */
-  @deprecated("will be replaced by `onResult`", "1.2")
+  @deprecated("Use `onResult` instead, will be removed in the future", "1.2")
   final def receive(pf: PartialFunction[Any, Unit]): this.type = onResult(pf)
 
   /**
@@ -447,7 +447,7 @@ sealed trait Future[+T] {
    *   }
    * </pre>
    */
-  final def onResult(pf: PartialFunction[Any, Unit]): this.type = onComplete { f ⇒
+  final def onResult(pf: PartialFunction[T, Unit]): this.type = onComplete { f ⇒
     val optr = f.result
     if (optr.isDefined) {
       val r = optr.get
