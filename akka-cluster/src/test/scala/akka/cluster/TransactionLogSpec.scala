@@ -28,16 +28,15 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
   private var bookKeeper: BookKeeper = _
   private var localBookKeeper: LocalBookKeeper = _
 
-  // synchronous API
-  "A Transaction Log" should {
-    "be able to record entries - synchronous" in {
+  "A synchronous used Transaction Log" should {
+    "be able to record entries" in {
       val uuid = (new UUID).toString
       val txlog = TransactionLog.newLogFor(uuid, false, null)
       val entry = "hello".getBytes("UTF-8")
       txlog.recordEntry(entry)
     }
 
-    "be able to record and delete entries - synchronous" in {
+    "be able to record and delete entries" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, false, null)
       val entry = "hello".getBytes("UTF-8")
@@ -48,7 +47,7 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       intercept[BKNoSuchLedgerExistsException](TransactionLog.logFor(uuid, false, null))
     }
 
-    "be able to record entries and read entries with 'entriesInRange' - synchronous" in {
+    "be able to record entries and read entries with 'entriesInRange'" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, false, null)
       val entry = "hello".getBytes("UTF-8")
@@ -64,7 +63,7 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       txlog2.close
     }
 
-    "be able to record entries and read entries with 'entries' - synchronous" in {
+    "be able to record entries and read entries with 'entries'" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, false, null)
       val entry = "hello".getBytes("UTF-8")
@@ -84,7 +83,7 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       txlog2.close
     }
 
-    "be able to record a snapshot - synchronous" in {
+    "be able to record a snapshot" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, false, null)
       val snapshot = "snapshot".getBytes("UTF-8")
@@ -92,7 +91,7 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       txlog1.close
     }
 
-    "be able to record and read a snapshot and following entries - synchronous" in {
+    "be able to record and read a snapshot and following entries" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, false, null)
       val snapshot = "snapshot".getBytes("UTF-8")
@@ -118,7 +117,7 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       txlog2.close
     }
 
-    "be able to record entries then a snapshot then more entries - and then read from the snapshot and the following entries - synchronous" in {
+    "be able to record entries then a snapshot then more entries - and then read from the snapshot and the following entries" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, false, null)
 
@@ -146,8 +145,8 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
     }
   }
 
-  "A Transaction Log" should {
-    "be able to record entries - asynchronous" in {
+  "An asynchronous used Transaction Log" should {
+    "be able to record entries" in {
       val uuid = (new UUID).toString
       val txlog = TransactionLog.newLogFor(uuid, true, null)
       val entry = "hello".getBytes("UTF-8")
@@ -156,7 +155,7 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       txlog.close
     }
 
-    "be able to record and delete entries - asynchronous" in {
+    "be able to record and delete entries" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null)
       Thread.sleep(200)
@@ -169,7 +168,7 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       Thread.sleep(200)
       intercept[BKNoSuchLedgerExistsException](TransactionLog.logFor(uuid, true, null))
     }
-    "be able to record entries and read entries with 'entriesInRange' - asynchronous" in {
+    "be able to record entries and read entries with 'entriesInRange'" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null)
       Thread.sleep(200)
@@ -191,7 +190,7 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       txlog2.close
     }
 
-    "be able to record entries and read entries with 'entries' - asynchronous" in {
+    "be able to record entries and read entries with 'entries'" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null)
       Thread.sleep(200)
@@ -218,7 +217,7 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       txlog2.close
     }
 
-    "be able to record a snapshot - asynchronous" in {
+    "be able to record a snapshot" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null)
       Thread.sleep(200)
@@ -228,7 +227,7 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       txlog1.close
     }
 
-    "be able to record and read a snapshot and following entries - asynchronous" in {
+    "be able to record and read a snapshot and following entries" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null)
       Thread.sleep(200)
@@ -264,7 +263,7 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       txlog2.close
     }
 
-    "be able to record entries then a snapshot then more entries - and then read from the snapshot and the following entries - asynchronous" in {
+    "be able to record entries then a snapshot then more entries - and then read from the snapshot and the following entries" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null)
       Thread.sleep(200)
