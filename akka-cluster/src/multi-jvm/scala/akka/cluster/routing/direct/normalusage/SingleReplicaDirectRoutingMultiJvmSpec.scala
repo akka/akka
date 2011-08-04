@@ -8,13 +8,13 @@ object SingleReplicaDirectRoutingMultiJvmSpec {
   val NrOfNodes = 2
 
   class SomeActor extends Actor with Serializable {
-    println("---------------------------------------------------------------------------")
-    println("SomeActor has been created on node [" + Config.nodename + "]")
-    println("---------------------------------------------------------------------------")
+    //println("---------------------------------------------------------------------------")
+    //println("SomeActor has been created on node [" + Config.nodename + "]")
+    //println("---------------------------------------------------------------------------")
 
     def receive = {
       case "identify" ⇒ {
-        println("The node received the 'identify' command: " + Config.nodename)
+        //println("The node received the 'identify' command: " + Config.nodename)
         self.reply(Config.nodename)
       }
     }

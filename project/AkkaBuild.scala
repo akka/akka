@@ -1,7 +1,8 @@
 import sbt._
 import Keys._
-import MultiJvmPlugin.{ MultiJvm, extraOptions }
+import MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
 import ScalariformPlugin.{ format, formatPreferences }
+import java.lang.Boolean.getBoolean
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -70,6 +71,10 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.cluster,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      },
+      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+      jvmOptions in MultiJvm := Seq("-Xmx256") ++ {
+        if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
       },
       test in Test <<= (test in Test) dependsOn (test in MultiJvm)
     )
@@ -456,7 +461,7 @@ object Dependency {
   val springBeans   = "org.springframework"         % "spring-beans"           % V.Spring     // ApacheV2
   val springContext = "org.springframework"         % "spring-context"         % V.Spring     // ApacheV2
   val staxApi       = "javax.xml.stream"            % "stax-api"               % "1.0-2"      // ApacheV2
-  val twttrUtilCore = "com.twitter"                 % "util-core"              % "1.8.1"      // ApacheV2  
+  val twttrUtilCore = "com.twitter"                 % "util-core"              % "1.8.1"      // ApacheV2
   val zkClient      = "zkclient"                    % "zkclient"               % "0.3"        // ApacheV2
   val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"              % V.Zookeeper  // ApacheV2
   val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2

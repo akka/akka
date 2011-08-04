@@ -19,11 +19,11 @@ object ReplicationTransactionLogWriteThroughSnapshotMultiJvmSpec {
 
   class HelloWorld extends Actor with Serializable {
     var log = ""
-    println("Creating HelloWorld log =======> " + log)
+    //println("Creating HelloWorld log =======> " + log)
     def receive = {
       case Count(nr) ⇒
         log += nr.toString
-        println("Message to HelloWorld log =======> " + log)
+        //println("Message to HelloWorld log =======> " + log)
         self.reply("World from node [" + Config.nodename + "]")
       case GetLog ⇒
         self.reply(Log(log))
