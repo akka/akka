@@ -73,7 +73,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
-      jvmOptions in MultiJvm := Seq("-Xmx256") ++ {
+      jvmOptions in MultiJvm := {
         if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
       },
       test in Test <<= (test in Test) dependsOn (test in MultiJvm)
