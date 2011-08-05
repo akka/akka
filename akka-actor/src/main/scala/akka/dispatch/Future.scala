@@ -309,16 +309,40 @@ object Future {
    */
   def flow[A](body: ⇒ A @cps[Future[Any]])(implicit dispatcher: MessageDispatcher, timeout: Timeout): Future[A] = {
     val future = Promise[A](timeout)
-    //dispatcher dispatchTask { () ⇒
-    (reify(body) foreachFull (future completeWithResult, future completeWithException): Future[Any]) onException {
-      case e: Exception ⇒ future completeWithException e
-    }
-    //}
+    dispatchTask({ () ⇒
+      (reify(body) foreachFull (future completeWithResult, future completeWithException): Future[Any]) onException {
+        case e: Exception ⇒ future completeWithException e
+      }
+    }, true)
     future
   }
+
+  private val _taskStack = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
+    override def initialValue = None
+  }
+
+  private[akka] def dispatchTask(task: () ⇒ Unit, force: Boolean = false)(implicit dispatcher: MessageDispatcher): Unit =
+    _taskStack.get match {
+      case Some(taskStack) if !force ⇒ taskStack push task
+      case _ ⇒
+        dispatcher dispatchTask { () ⇒
+          try {
+            val taskStack = Stack[() ⇒ Unit](task)
+            _taskStack set Some(taskStack)
+            while (taskStack.nonEmpty) {
+              val next = taskStack.pop()
+              try {
+                next.apply()
+              } catch {
+                case e ⇒ // FIXME
+              }
+            }
+          } finally { _taskStack set None }
+        }
+    }
 }
 
-sealed trait Future[+T] {
+sealed trait Future[+T] extends japi.Future[T] {
 
   implicit def dispatcher: MessageDispatcher
 
@@ -327,12 +351,8 @@ sealed trait Future[+T] {
    *
    * Returns the result of this Future without blocking, by suspending execution and storing it as a
    * continuation until the result is available.
-   *
-   * If this Future is untyped (a Future[Nothing]), a type parameter must be explicitly provided or
-   * execution will fail. The normal result of getting a Future from an ActorRef using ? will return
-   * an untyped Future.
    */
-  def apply[A >: T]()(implicit timeout: Timeout): A @cps[Future[Any]] = shift(this flatMap (_: A ⇒ Future[Any]))
+  def apply()(implicit timeout: Timeout): T @cps[Future[Any]] = shift(this flatMap (_: T ⇒ Future[Any]))
 
   /**
    * Blocks awaiting completion of this Future, then returns the resulting value,
@@ -483,26 +503,8 @@ sealed trait Future[+T] {
    * } yield b + "-" + c
    * </pre>
    */
-  final def collect[A](pf: PartialFunction[Any, A])(implicit timeout: Timeout): Future[A] = {
-    val future = new DefaultPromise[A](timeout)
-    onComplete { self ⇒
-      future complete {
-        self.value.get match {
-          case Right(r) ⇒
-            try {
-              if (pf isDefinedAt r) Right(pf(r))
-              else Left(new MatchError(r))
-            } catch {
-              case e: Exception ⇒
-                EventHandler.error(e, this, e.getMessage)
-                Left(e)
-            }
-          case v ⇒ v.asInstanceOf[Either[Throwable, A]]
-        }
-      }
-    }
-    future
-  }
+  @deprecated("No longer needed, use 'map' instead. Removed in 2.0", "2.0")
+  final def collect[A](pf: PartialFunction[T, A])(implicit timeout: Timeout): Future[A] = this map pf
 
   /**
    * Creates a new Future that will handle any matching Throwable that this
@@ -670,18 +672,21 @@ sealed trait Future[+T] {
       else r.right.toOption
     } else None
   }
+}
 
-  /* Java API */
-  final def onComplete[A >: T](proc: Procedure[Future[A]]): this.type = onComplete(proc(_))
+package japi {
+  /* Future Java API */
+  trait Future[+T] { self: akka.dispatch.Future[T] ⇒
+    private[japi] final def onComplete[A >: T](proc: Procedure[Future[A]]): this.type = self.onComplete(proc(_))
 
-  final def map[A >: T, B](f: JFunc[A, B]): Future[B] = map(f(_))
+    private[japi] final def map[A >: T, B](f: JFunc[A, B]): akka.dispatch.Future[B] = self.map(f(_))
 
-  final def flatMap[A >: T, B](f: JFunc[A, Future[B]]): Future[B] = flatMap(f(_))
+    private[japi] final def flatMap[A >: T, B](f: JFunc[A, akka.dispatch.Future[B]]): akka.dispatch.Future[B] = self.flatMap(f(_))
 
-  final def foreach[A >: T](proc: Procedure[A]): Unit = foreach(proc(_))
+    private[japi] final def foreach[A >: T](proc: Procedure[A]): Unit = self.foreach(proc(_))
 
-  final def filter(p: JFunc[Any, Boolean]): Future[Any] = filter(p(_))
-
+    private[japi] final def filter(p: JFunc[Any, Boolean]): akka.dispatch.Future[Any] = self.filter(p(_))
+  }
 }
 
 object Promise {
@@ -700,10 +705,6 @@ object Promise {
    * Construct a completable channel
    */
   def channel(timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher): ActorPromise = new ActorPromise(timeout)
-
-  private[akka] val callbacksPendingExecution = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
-    override def initialValue = None
-  }
 }
 
 /**
@@ -838,7 +839,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
   }
 
   def complete(value: Either[Throwable, T]): this.type = {
-    processCallbacks {
+    val callbacks = {
       _lock.lock
       try {
         if (_value.isEmpty) { //Only complete if we aren't expired
@@ -858,36 +859,9 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
       }
     }
 
+    if (callbacks.nonEmpty) Future.dispatchTask(() ⇒ callbacks foreach notifyCompleted)
+
     this
-  }
-
-  private def processCallbacks(callbacks: List[Future[T] ⇒ Unit]): Unit = {
-    if (callbacks.nonEmpty) { // Steps to ensure we don't run into a stack-overflow situation
-      @tailrec
-      def runCallbacks(rest: List[Future[T] ⇒ Unit], callbackStack: Stack[() ⇒ Unit]) {
-        if (rest.nonEmpty) {
-          notifyCompleted(rest.head)
-          while (callbackStack.nonEmpty) { callbackStack.pop().apply() }
-          runCallbacks(rest.tail, callbackStack)
-        }
-      }
-
-      val pending = Promise.callbacksPendingExecution.get
-      if (pending.isDefined) { //Instead of nesting the calls to the callbacks (leading to stack overflow)
-        pending.get.push(() ⇒ { // Linearize/aggregate callbacks at top level and then execute
-          val doNotify = notifyCompleted _ //Hoist closure to avoid garbage
-          callbacks foreach doNotify
-        })
-      } else {
-        dispatcher dispatchTask { () ⇒
-          try {
-            val callbackStack = Stack[() ⇒ Unit]() // Allocate new aggregator for pending callbacks
-            Promise.callbacksPendingExecution.set(Some(callbackStack)) // Specify the callback aggregator
-            runCallbacks(callbacks, callbackStack) // Execute callbacks, if they trigger new callbacks, they are aggregated
-          } finally { Promise.callbacksPendingExecution.set(None) } // Ensure cleanup
-        }
-      }
-    }
   }
 
   def onComplete(func: Future[T] ⇒ Unit): this.type = {
@@ -903,7 +877,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
       _lock.unlock
     }
 
-    if (notifyNow) processCallbacks(List(func))
+    if (notifyNow) Future.dispatchTask(() ⇒ notifyCompleted(func))
 
     this
   }
@@ -927,7 +901,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
         _lock.unlock
       }
 
-      if (runNow) func(this)
+      if (runNow) Future.dispatchTask(() ⇒ notifyCompleted(func))
     }
 
     this
@@ -937,7 +911,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
     if (timeout.duration.isFinite) {
       value match {
         case Some(_)        ⇒ this
-        case _ if isExpired ⇒ new KeptPromise[A](try { Right(fallback) } catch { case e: Exception ⇒ Left(e) })
+        case _ if isExpired ⇒ Future[A](fallback)
         case _ ⇒
           val promise = new DefaultPromise[A](Timeout.never)
           promise completeWith this
@@ -1000,7 +974,7 @@ sealed class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val di
 
   def complete(value: Either[Throwable, T]): this.type = this
   def onComplete(func: Future[T] ⇒ Unit): this.type = {
-    dispatcher dispatchTask (() ⇒ func(this)) //TODO: Use pending callback stack
+    Future dispatchTask (() ⇒ func(this))
     this
   }
   def await(atMost: Duration): this.type = this

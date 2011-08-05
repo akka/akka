@@ -146,7 +146,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         behave like futureWithResult { test ⇒
           val actor1 = actorOf[TestActor].start()
           val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply s.toUpperCase } }).start()
-          val future = actor1 ? "Hello" flatMap { _ match { case s: String ⇒ actor2 ? s } }
+          val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
           future.await
           test(future, "WORLD")
           actor1.stop()
@@ -158,9 +158,22 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           filterException[ArithmeticException] {
             val actor1 = actorOf[TestActor].start()
             val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply (s.length / 0) } }).start()
-            val future = actor1 ? "Hello" flatMap { _ match { case s: String ⇒ actor2 ? s } }
+            val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
             future.await
             test(future, "/ by zero")
+            actor1.stop()
+            actor2.stop()
+          }
+        }
+      }
+      "will throw a MatchError when matching wrong type" must {
+        behave like futureWithException[MatchError] { test ⇒
+          filterException[MatchError] {
+            val actor1 = actorOf[TestActor].start()
+            val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply s.toUpperCase } }).start()
+            val future = actor1 ? "Hello" flatMap { case i: Int ⇒ actor2 ? i }
+            future.await
+            test(future, "World (of class java.lang.String)")
             actor1.stop()
             actor2.stop()
           }
@@ -570,10 +583,14 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
 
         flow { one << 1 }
 
+        one.await
+
         assert(one.isCompleted)
         assert(List(two, simpleResult).forall(_.isCompleted == false))
 
         flow { two << 9 }
+
+        two.await
 
         assert(List(one, two).forall(_.isCompleted == true))
         assert(simpleResult.get === 10)
@@ -592,7 +609,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           lz.open()
           x1() + x2()
         }
-        assert(lx.isOpen)
+        assert(lx.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
         assert(!ly.isOpen)
         assert(!lz.isOpen)
         assert(List(x1, x2, y1, y2).forall(_.isCompleted == false))
@@ -723,7 +740,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         import Future.flow
         import akka.util.cps._
 
-        val count = 10000
+        val count = 1000
 
         val promises = List.fill(count)(Promise[Int]())
 
