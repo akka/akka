@@ -528,7 +528,7 @@ trait FSM[S, D] extends ListenerManagement {
     }
   }
 
-  override def postStop { terminate(stay withStopReason Shutdown) }
+  override def postStop() { terminate(stay withStopReason Shutdown) }
 
   private def terminate(nextState: State): Unit = {
     if (!currentState.stopReason.isDefined) {
