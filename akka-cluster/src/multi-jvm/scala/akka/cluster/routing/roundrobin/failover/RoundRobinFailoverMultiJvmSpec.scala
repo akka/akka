@@ -3,24 +3,28 @@ package akka.cluster.routing.roundrobin.failover
 import akka.config.Config
 import akka.cluster._
 import akka.actor.{ ActorRef, Actor }
+import akka.event.EventHandler
+import akka.testkit.{ EventFilter, TestEvent }
 import java.util.{ Collections, Set ⇒ JSet }
+import java.net.ConnectException
+import java.nio.channels.NotYetConnectedException
 
 object RoundRobinFailoverMultiJvmSpec {
 
   val NrOfNodes = 3
 
   class SomeActor extends Actor with Serializable {
-    println("---------------------------------------------------------------------------")
-    println("SomeActor has been created on node [" + Config.nodename + "]")
-    println("---------------------------------------------------------------------------")
+    //println("---------------------------------------------------------------------------")
+    //println("SomeActor has been created on node [" + Config.nodename + "]")
+    //println("---------------------------------------------------------------------------")
 
     def receive = {
       case "identify" ⇒ {
-        println("The node received the 'identify' command")
+        //println("The node received the 'identify' command")
         self.reply(Config.nodename)
       }
       case "shutdown" ⇒ {
-        println("The node received the 'shutdown' command")
+        //println("The node received the 'shutdown' command")
         Cluster.node.shutdown()
       }
     }
@@ -35,13 +39,20 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
   def testNodes = NrOfNodes
 
   def sleepSome() {
-    println("Starting sleep")
+    //println("Starting sleep")
     Thread.sleep(1000) //nasty.. but ok for now.
-    println("Finished doing sleep")
+    //println("Finished doing sleep")
   }
 
   "Round Robin: when round robin fails" must {
     "jump to another replica" in {
+      val ignoreExceptions = Seq(
+        EventFilter[NotYetConnectedException],
+        EventFilter[ConnectException],
+        EventFilter[ClusterException])
+
+      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
+
       Cluster.node.start()
       Cluster.barrier("waiting-for-begin", NrOfNodes).await()
 
@@ -49,8 +60,8 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
       val actor = Actor.actorOf[SomeActor]("service-hello").asInstanceOf[ClusterActorRef]
 
       val oldFoundConnections = identifyConnections(actor)
-      println("---------------------------- oldFoundConnections ------------------------")
-      println(oldFoundConnections)
+      //println("---------------------------- oldFoundConnections ------------------------")
+      //println(oldFoundConnections)
 
       //since we have replication factor 2
       oldFoundConnections.size() must be(2)
@@ -66,8 +77,8 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
 
       /*
       val newFoundConnections = identifyConnections(actor)
-           println("---------------------------- newFoundConnections ------------------------")
-           println(newFoundConnections)
+           //println("---------------------------- newFoundConnections ------------------------")
+           //println(newFoundConnections)
 
       //it still must be 2 since a different node should have been used to failover to
       newFoundConnections.size() must be(2)

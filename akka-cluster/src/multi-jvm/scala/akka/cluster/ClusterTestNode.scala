@@ -55,7 +55,6 @@ object ClusterTestNode {
   val Timeout = 1.minute
 
   def ready(className: String) = {
-    println("ClusterTest: READY")
     readyFile(className).createNewFile()
   }
 
@@ -64,11 +63,9 @@ object ClusterTestNode {
       cleanUp(className)
       sys.error("Timeout waiting for cluster ready")
     }
-    println("ClusterTest: GO")
   }
 
   def exit(className: String) = {
-    println("ClusterTest: EXIT")
     exitFile(className).createNewFile()
   }
 
@@ -77,7 +74,6 @@ object ClusterTestNode {
       cleanUp(className)
       sys.error("Timeout waiting for node exits")
     }
-    println("ClusterTest: SHUTDOWN")
   }
 
   def cleanUp(className: String) = {
