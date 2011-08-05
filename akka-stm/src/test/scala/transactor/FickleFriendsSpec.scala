@@ -5,9 +5,10 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 
 import akka.transactor.Coordinated
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, ActorTimeoutException }
 import akka.stm._
 import akka.util.duration._
+import akka.event.EventHandler
 import akka.transactor.CoordinatedTransactionException
 import akka.testkit._
 
@@ -110,20 +111,22 @@ class FickleFriendsSpec extends WordSpec with MustMatchers with BeforeAndAfterAl
 
   "Coordinated fickle friends" should {
     "eventually succeed to increment all counters by one" in {
-      filterException[ExpectedFailureException] {
-        filterException[CoordinatedTransactionException] {
-          val (counters, coordinator) = createActors
-          val latch = new CountDownLatch(1)
-          coordinator ! FriendlyIncrement(counters, latch)
-          latch.await // this could take a while
-          (coordinator ? GetCount).as[Int].get must be === 1
-          for (counter ← counters) {
-            (counter ? GetCount).as[Int].get must be === 1
-          }
-          counters foreach (_.stop())
-          coordinator.stop()
-        }
+      val ignoreExceptions = Seq(
+        EventFilter[ExpectedFailureException],
+        EventFilter[CoordinatedTransactionException],
+        EventFilter[ActorTimeoutException])
+      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
+      val (counters, coordinator) = createActors
+      val latch = new CountDownLatch(1)
+      coordinator ! FriendlyIncrement(counters, latch)
+      latch.await // this could take a while
+      (coordinator ? GetCount).as[Int].get must be === 1
+      for (counter ← counters) {
+        (counter ? GetCount).as[Int].get must be === 1
       }
+      counters foreach (_.stop())
+      coordinator.stop()
+      EventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 }

@@ -5,9 +5,10 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 
 import akka.transactor.Coordinated
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, ActorTimeoutException }
 import akka.stm.{ Ref, TransactionFactory }
 import akka.util.duration._
+import akka.event.EventHandler
 import akka.transactor.CoordinatedTransactionException
 import akka.testkit._
 
@@ -80,19 +81,21 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers with BeforeAnd
     }
 
     "increment no counters with a failing transaction" in {
-      filterException[ExpectedFailureException] {
-        filterException[CoordinatedTransactionException] {
-          val (counters, failer) = createActors
-          val coordinated = Coordinated()
-          counters(0) ! Coordinated(Increment(counters.tail :+ failer))
-          coordinated.await
-          for (counter ← counters) {
-            (counter ? GetCount).as[Int].get must be === 0
-          }
-          counters foreach (_.stop())
-          failer.stop()
-        }
+      val ignoreExceptions = Seq(
+        EventFilter[ExpectedFailureException],
+        EventFilter[CoordinatedTransactionException],
+        EventFilter[ActorTimeoutException])
+      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
+      val (counters, failer) = createActors
+      val coordinated = Coordinated()
+      counters(0) ! Coordinated(Increment(counters.tail :+ failer))
+      coordinated.await
+      for (counter ← counters) {
+        (counter ? GetCount).as[Int].get must be === 0
       }
+      counters foreach (_.stop())
+      failer.stop()
+      EventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 }

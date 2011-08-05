@@ -4,9 +4,10 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
 import akka.transactor.Transactor
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, ActorTimeoutException }
 import akka.stm._
 import akka.util.duration._
+import akka.event.EventHandler
 import akka.transactor.CoordinatedTransactionException
 import akka.testkit._
 
@@ -103,19 +104,21 @@ class TransactorSpec extends WordSpec with MustMatchers {
     }
 
     "increment no counters with a failing transaction" in {
-      filterException[ExpectedFailureException] {
-        filterException[CoordinatedTransactionException] {
-          val (counters, failer) = createTransactors
-          val failLatch = new CountDownLatch(numCounters + 1)
-          counters(0) ! Increment(counters.tail :+ failer, failLatch)
-          failLatch.await(timeout.length, timeout.unit)
-          for (counter ← counters) {
-            (counter ? GetCount).as[Int].get must be === 0
-          }
-          counters foreach (_.stop())
-          failer.stop()
-        }
+      val ignoreExceptions = Seq(
+        EventFilter[ExpectedFailureException],
+        EventFilter[CoordinatedTransactionException],
+        EventFilter[ActorTimeoutException])
+      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
+      val (counters, failer) = createTransactors
+      val failLatch = new CountDownLatch(numCounters + 1)
+      counters(0) ! Increment(counters.tail :+ failer, failLatch)
+      failLatch.await(timeout.length, timeout.unit)
+      for (counter ← counters) {
+        (counter ? GetCount).as[Int].get must be === 0
       }
+      counters foreach (_.stop())
+      failer.stop()
+      EventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 
