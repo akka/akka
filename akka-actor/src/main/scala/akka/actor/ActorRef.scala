@@ -63,9 +63,7 @@ private[akka] object ActorRefInternals {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ActorRef extends ActorRefShared
-  with ForwardableChannel
-  with java.lang.Comparable[ActorRef] {
+trait ActorRef extends ActorRefShared with ForwardableChannel with ReplyChannel[Any] with java.lang.Comparable[ActorRef] {
   scalaRef: ScalaActorRef ⇒
 
   // Only mutable for RemoteServer in order to maintain identity across nodes
@@ -279,7 +277,7 @@ trait ActorRef extends ActorRefShared
    * (which will throw an ActorTimeoutException). E.g. send-and-receive-eventually semantics.
    * <p/>
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with 'getContext().getSender()' to
+   * Use this method with care. In most cases it is better to use 'tell' together with 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
    * If you are sending messages using <code>sendRequestReply</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
@@ -316,7 +314,7 @@ trait ActorRef extends ActorRefShared
    * Sends a message asynchronously returns a future holding the eventual reply message.
    * <p/>
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'getContext().getSender()' to
+   * Use this method with care. In most cases it is better to use 'tell' together with the 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
    * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
@@ -351,7 +349,7 @@ trait ActorRef extends ActorRefShared
    * Sends a message asynchronously returns a future holding the eventual reply message.
    * <p/>
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'getContext().getSender()' to
+   * Use this method with care. In most cases it is better to use 'tell' together with the 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
    * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
@@ -374,6 +372,7 @@ trait ActorRef extends ActorRefShared
    * <p/>
    * Throws an IllegalStateException if unable to determine what to reply to.
    */
+  @deprecated("replaced by reply", "1.2")
   def replyUnsafe(message: AnyRef) = reply(message)
 
   /**
@@ -383,7 +382,16 @@ trait ActorRef extends ActorRefShared
    * <p/>
    * Returns true if reply was sent, and false if unable to determine what to reply to.
    */
+  @deprecated("replaced by tryReply", "1.2")
   def replySafe(message: AnyRef): Boolean = tryReply(message)
+
+  /**
+   * Use <code>getContext().tryReply(..)</code> to reply with a message to the original sender of the message currently
+   * being processed.
+   * <p/>
+   * Returns true if reply was sent, and false if unable to determine what to reply to.
+   */
+  def tryReply(message: Any): Boolean = channel.tryTell(message)(this)
 
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.
@@ -535,16 +543,6 @@ trait ActorRef extends ActorRefShared
     else NullChannel
   }
 
-  /*
-   * Implementation of ForwardableChannel
-   */
-
-  def sendException(ex: Throwable) {}
-  def isUsableOnlyOnce = false
-  def isUsable = true
-  def isReplyable = true
-  def canSendException = false
-
   /**
    * Java API. <p/>
    * Abstraction for unification of sender and senderFuture for later reply
@@ -685,18 +683,23 @@ class LocalActorRef private[akka] (
     if (isShutdown) throw new ActorStartException(
       "Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
-      dispatcher.attach(this)
-
       _status = ActorRefInternals.RUNNING
+      try {
+        dispatcher.attach(this)
 
-      // If we are not currently creating this ActorRef instance
-      if ((actorInstance ne null) && (actorInstance.get ne null))
-        initializeActorInstance
+        // If we are not currently creating this ActorRef instance
+        if ((actorInstance ne null) && (actorInstance.get ne null))
+          initializeActorInstance
 
-      if (isClientManaged_?)
-        Actor.remote.registerClientManagedActor(homeAddress.get.getAddress.getHostAddress, homeAddress.get.getPort, uuid)
+        if (isClientManaged_?)
+          Actor.remote.registerClientManagedActor(homeAddress.get.getAddress.getHostAddress, homeAddress.get.getPort, uuid)
 
-      checkReceiveTimeout //Schedule the initial Receive timeout
+        checkReceiveTimeout //Schedule the initial Receive timeout
+      } catch {
+        case e ⇒
+          _status = ActorRefInternals.UNSTARTED
+          throw e
+      }
     }
     this
   }
@@ -709,6 +712,12 @@ class LocalActorRef private[akka] (
       receiveTimeout = None
       cancelReceiveTimeout
       dispatcher.detach(this)
+      Actor.registry.unregister(this)
+      if (isRemotingEnabled) {
+        if (isClientManaged_?)
+          Actor.remote.unregisterClientManagedActor(homeAddress.get.getAddress.getHostAddress, homeAddress.get.getPort, uuid)
+        Actor.remote.unregister(this)
+      }
       _status = ActorRefInternals.SHUTDOWN
       try {
         val a = actor
@@ -716,12 +725,6 @@ class LocalActorRef private[akka] (
         a.postStop
       } finally {
         currentMessage = null
-        Actor.registry.unregister(this)
-        if (isRemotingEnabled) {
-          if (isClientManaged_?)
-            Actor.remote.unregisterClientManagedActor(homeAddress.get.getAddress.getHostAddress, homeAddress.get.getPort, uuid)
-          Actor.remote.unregister(this)
-        }
         setActorSelfFields(actorInstance.get, null)
       }
     } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
@@ -866,7 +869,7 @@ class LocalActorRef private[akka] (
     } else {
       val future = channel match {
         case f: ActorCompletableFuture ⇒ f
-        case _                         ⇒ new ActorCompletableFuture(timeout)
+        case _                         ⇒ new ActorCompletableFuture(timeout)(dispatcher)
       }
       dispatcher dispatchMessage new MessageInvocation(this, message, future)
       future
@@ -1295,7 +1298,8 @@ trait ActorRefShared {
  * There are implicit conversions in ../actor/Implicits.scala
  * from ActorRef -> ScalaActorRef and back
  */
-trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorRef ⇒
+trait ScalaActorRef extends ActorRefShared with ForwardableChannel with ReplyChannel[Any] {
+  ref: ActorRef ⇒
 
   /**
    * Identifier for actor, does not have to be a unique one. Default is the 'uuid'.
@@ -1470,16 +1474,6 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel { ref: ActorR
    */
   @deprecated("Use tryReply(..)", "1.2")
   def reply_?(message: Any): Boolean = tryReply(message)
-
-  /**
-   * Use <code>tryReply(..)</code> to try reply with a message to the original sender of the message currently
-   * being processed. This method
-   * <p/>
-   * Returns true if reply was sent, and false if unable to determine what to reply to.
-   *
-   * If you would rather have an exception, check the <code>reply(..)</code> version.
-   */
-  def tryReply(message: Any): Boolean = channel.safe_!(message)(this)
 
   /**
    * Atomically create (from actor class) and start an actor.

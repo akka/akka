@@ -29,18 +29,16 @@ final case class MessageInvocation(val receiver: ActorRef,
   }
 }
 
-final case class FutureInvocation[T](future: CompletableFuture[T], function: () ⇒ T, cleanup: () ⇒ Unit) extends Runnable {
-  def run = {
-    future complete (try {
-      Right(function())
+final case class TaskInvocation(function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
+  def run() {
+    try {
+      function()
     } catch {
-      case e ⇒
-        EventHandler.error(e, this, e.getMessage)
-        Left(e)
+      case e ⇒ EventHandler.error(e, this, e.getMessage)
     }
     finally {
       cleanup()
-    })
+    }
   }
 }
 
@@ -59,7 +57,7 @@ trait MessageDispatcher {
   import MessageDispatcher._
 
   protected val uuids = new ConcurrentSkipListSet[Uuid]
-  protected val futures = new AtomicLong(0L)
+  protected val _tasks = new AtomicLong(0L)
   protected val guard = new ReentrantGuard
   protected val active = new Switch(false)
 
@@ -91,27 +89,27 @@ trait MessageDispatcher {
 
   private[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = dispatch(invocation)
 
-  private[akka] final def dispatchFuture[T](block: () ⇒ T, timeout: Long): Future[T] = {
-    futures.getAndIncrement()
+  private[akka] final def dispatchTask(block: () ⇒ Unit): Unit = {
+    _tasks.getAndIncrement()
     try {
-      val future = new DefaultCompletableFuture[T](timeout)
-
       if (active.isOff)
-        guard withGuard { active.switchOn { start } }
-
-      executeFuture(FutureInvocation[T](future, block, futureCleanup))
-      future
+        guard withGuard {
+          active.switchOn {
+            start()
+          }
+        }
+      executeTask(TaskInvocation(block, taskCleanup))
     } catch {
       case e ⇒
-        futures.decrementAndGet
+        _tasks.decrementAndGet
         throw e
     }
   }
 
-  private val futureCleanup: () ⇒ Unit =
-    () ⇒ if (futures.decrementAndGet() == 0) {
+  private val taskCleanup: () ⇒ Unit =
+    () ⇒ if (_tasks.decrementAndGet() == 0) {
       guard withGuard {
-        if (futures.get == 0 && uuids.isEmpty) {
+        if (_tasks.get == 0 && uuids.isEmpty) {
           shutdownSchedule match {
             case UNSCHEDULED ⇒
               shutdownSchedule = SCHEDULED
@@ -139,7 +137,7 @@ trait MessageDispatcher {
   private[akka] def unregister(actorRef: ActorRef) = {
     if (uuids remove actorRef.uuid) {
       actorRef.mailbox = null
-      if (uuids.isEmpty && futures.get == 0) {
+      if (uuids.isEmpty && _tasks.get == 0) {
         shutdownSchedule match {
           case UNSCHEDULED ⇒
             shutdownSchedule = SCHEDULED
@@ -173,7 +171,7 @@ trait MessageDispatcher {
           shutdownSchedule = SCHEDULED
           Scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
         case SCHEDULED ⇒
-          if (uuids.isEmpty && futures.get == 0) {
+          if (uuids.isEmpty && _tasks.get == 0) {
             active switchOff {
               shutdown // shut down in the dispatcher's references is zero
             }
@@ -205,7 +203,7 @@ trait MessageDispatcher {
    */
   private[akka] def dispatch(invocation: MessageInvocation): Unit
 
-  private[akka] def executeFuture(invocation: FutureInvocation[_]): Unit
+  private[akka] def executeTask(invocation: TaskInvocation): Unit
 
   /**
    * Called one time every time an actor is attached to this dispatcher and this dispatcher was previously shutdown
@@ -230,7 +228,13 @@ trait MessageDispatcher {
   /**
    * Returns the amount of futures queued for execution
    */
-  def pendingFutures: Long = futures.get
+  @deprecated("Will be removed for Akka 2.0, use 'tasks' instead", "2.0")
+  def pendingFutures: Long = tasks
+
+  /**
+   * Returns the amount of tasks queued for execution
+   */
+  def tasks: Long = _tasks.get
 }
 
 /**

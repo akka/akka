@@ -44,7 +44,7 @@ public class Actors {
    *     }
    *   });
    *   actor.start();
-   *   actor.sendOneWay(message, context);
+   *   actor.tell(message, context);
    *   actor.stop();
    * </pre>
    */
@@ -58,7 +58,7 @@ public class Actors {
    * <pre>
    *   ActorRef actor = Actors.actorOf(MyUntypedActor.class);
    *   actor.start();
-   *   actor.sendOneWay(message, context);
+   *   actor.tell(message, context);
    *   actor.stop();
    * </pre>
    * You can create and start the actor in one statement like this:
@@ -86,7 +86,7 @@ public class Actors {
     /**
      * The message that when sent to an Actor kills it by throwing an exception.
      * <pre>
-     *  actor.sendOneWay(kill());
+     *  actor.tell(kill());
      * </pre>
      * @return the single instance of Kill
      */
@@ -98,7 +98,7 @@ public class Actors {
     /**
      * The message that when sent to an Actor shuts it down by calling 'stop'.
      * <pre>
-     *  actor.sendOneWay(poisonPill());
+     *  actor.tell(poisonPill());
      * </pre>
      * @return the single instance of PoisonPill
      */

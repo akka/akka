@@ -183,8 +183,8 @@ abstract class RemoteClient private[akka] (
   val resendMessagesOnFailureCapacity = config.getInt("akka.remote.client.buffering.capacity", -1)
   protected val resendMessageQueueLock = new SimpleLock()
   protected val resendMessageQueue: Queue[RemoteMessageProtocol] = resendMessagesOnFailureCapacity match {
-    case i if i < 0 => new ConcurrentLinkedQueue[RemoteMessageProtocol]
-    case i          => new LinkedBlockingQueue[RemoteMessageProtocol](i)
+    case i if i < 0 ⇒ new ConcurrentLinkedQueue[RemoteMessageProtocol]
+    case i          ⇒ new LinkedBlockingQueue[RemoteMessageProtocol](i)
   }
 
   protected val futures = new ConcurrentHashMap[Uuid, CompletableFuture[_]]
@@ -1125,7 +1125,7 @@ class RemoteServerHandler(
       case RemoteActorSystemMessage.Stop ⇒
         if (UNTRUSTED_MODE) throw new SecurityException("Remote server is operating is untrusted mode, can not stop the actor")
         else TypedActor.poisonPill(typedActor) //TODO stop may block, but it might be better to do spawn { typedActor.stop() }
-      case (ownerTypeHint: String, argClasses: Array[Class[_]], args: Array[AnyRef]) =>
+      case (ownerTypeHint: String, argClasses: Array[Class[_]], args: Array[AnyRef]) ⇒
         try {
 
           val messageReceiver = resolveMethod(typedActor.getClass, ownerTypeHint, typedActorInfo.getMethod, argClasses.asInstanceOf[Array[Class[_]]])
@@ -1160,17 +1160,17 @@ class RemoteServerHandler(
               case f: Future[_] ⇒ f.onComplete(future ⇒ sendResponse(future.value.get))
               case other        ⇒ sendResponse(Right(other))
             }
+          }
+        } catch {
+          case e: InvocationTargetException ⇒
+            EventHandler.error(e, this, e.getMessage)
+            write(channel, createErrorReplyMessage(e.getCause, request, AkkaActorType.TypedActor))
+            server.notifyListeners(RemoteServerError(e, server))
+          case e: Exception ⇒
+            EventHandler.error(e, this, e.getMessage)
+            write(channel, createErrorReplyMessage(e, request, AkkaActorType.TypedActor))
+            server.notifyListeners(RemoteServerError(e, server))
         }
-      } catch {
-        case e: InvocationTargetException ⇒
-          EventHandler.error(e, this, e.getMessage)
-          write(channel, createErrorReplyMessage(e.getCause, request, AkkaActorType.TypedActor))
-          server.notifyListeners(RemoteServerError(e, server))
-        case e: Exception ⇒
-          EventHandler.error(e, this, e.getMessage)
-          write(channel, createErrorReplyMessage(e, request, AkkaActorType.TypedActor))
-          server.notifyListeners(RemoteServerError(e, server))
-      }
     }
   }
 

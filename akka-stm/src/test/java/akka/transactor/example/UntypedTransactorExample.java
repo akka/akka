@@ -14,7 +14,7 @@ public class UntypedTransactorExample {
         ActorRef counter1 = Actors.actorOf(UntypedCounter.class).start();
         ActorRef counter2 = Actors.actorOf(UntypedCounter.class).start();
 
-        counter1.sendOneWay(new Increment(counter2));
+        counter1.tell(new Increment(counter2));
 
         Thread.sleep(3000);
 

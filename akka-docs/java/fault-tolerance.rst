@@ -249,7 +249,7 @@ A child actor can tell the supervising actor to unlink him by sending him the 'U
 .. code-block:: java
 
   ActorRef supervisor = getContext().getSupervisor();
-  if (supervisor != null) supervisor.sendOneWay(new Unlink(getContext()))
+  if (supervisor != null) supervisor.tell(new Unlink(getContext()))
 
 The supervising actor's side of things
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

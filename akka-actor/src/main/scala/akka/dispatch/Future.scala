@@ -6,7 +6,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef }
+import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef, Scheduler, ExceptionChannel }
 import akka.japi.{ Procedure, Function ⇒ JFunc }
 
 import scala.util.continuations._
@@ -243,18 +243,29 @@ object Future {
    * This method constructs and returns a Future that will eventually hold the result of the execution of the supplied body
    * The execution is performed by the specified Dispatcher.
    */
-  def apply[T](body: ⇒ T, timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher): Future[T] =
-    dispatcher.dispatchFuture(() ⇒ body, timeout)
+  def apply[T](body: ⇒ T, timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher): Future[T] = {
+    val promise = new DefaultCompletableFuture[T](timeout)
+    dispatcher dispatchTask { () ⇒
+      promise complete {
+        try {
+          Right(body)
+        } catch {
+          case e ⇒ Left(e)
+        }
+      }
+    }
+    promise
+  }
 
   /**
    * Construct a completable channel
    */
-  def channel(timeout: Long = Actor.TIMEOUT) = new ActorCompletableFuture(timeout)
+  def channel(timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher) = new ActorCompletableFuture(timeout)
 
   /**
    * Create an empty Future with default timeout
    */
-  def empty[T](timeout: Long = Actor.TIMEOUT) = new DefaultCompletableFuture[T](timeout)
+  def empty[T](timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher) = new DefaultCompletableFuture[T](timeout)
 
   import scala.collection.mutable.Builder
   import scala.collection.generic.CanBuildFrom
@@ -296,21 +307,45 @@ object Future {
    *
    * The Delimited Continuations compiler plugin must be enabled in order to use this method.
    */
-  def flow[A](body: ⇒ A @cps[Future[Any]], timeout: Long = Actor.TIMEOUT): Future[A] = {
+  def flow[A](body: ⇒ A @cps[Future[Any]], timeout: Long = Actor.TIMEOUT)(implicit dispatcher: MessageDispatcher): Future[A] = {
     val future = Promise[A](timeout)
-    (reset(future.asInstanceOf[CompletableFuture[Any]].completeWithResult(body)): Future[Any]) onComplete { f ⇒
-      val opte = f.exception
-      if (opte.isDefined) future completeWithException (opte.get)
-    }
+    dispatchTask({ () ⇒
+      (reify(body) foreachFull (future completeWithResult, future completeWithException): Future[Any]) onException {
+        case e: Exception ⇒ future completeWithException e
+      }
+    }, true)
     future
   }
 
-  private[akka] val callbacksPendingExecution = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
+
+  private val _taskStack = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
     override def initialValue = None
   }
+
+  private[akka] def dispatchTask(task: () ⇒ Unit, force: Boolean = false)(implicit dispatcher: MessageDispatcher): Unit =
+    _taskStack.get match {
+      case Some(taskStack) if !force ⇒ taskStack push task
+      case _ ⇒
+        dispatcher dispatchTask { () ⇒
+          try {
+            val taskStack = Stack[() ⇒ Unit](task)
+            _taskStack set Some(taskStack)
+            while (taskStack.nonEmpty) {
+              val next = taskStack.pop()
+              try {
+                next.apply()
+              } catch {
+                case e ⇒ EventHandler notify EventHandler.Error(e, this)
+              }
+            }
+          } finally { _taskStack set None }
+        }
+    }
 }
 
-sealed trait Future[+T] {
+sealed trait Future[+T] extends japi.Future[T] {
+
+  implicit def dispatcher: MessageDispatcher
 
   /**
    * For use only within a Future.flow block or another compatible Delimited Continuations reset block.
@@ -434,7 +469,7 @@ sealed trait Future[+T] {
    *   }
    * </pre>
    */
-  @deprecated("will be replaced by `onResult`", "1.2")
+  @deprecated("Use `onResult` instead, will be removed in the future", "1.2")
   final def receive(pf: PartialFunction[Any, Unit]): this.type = onResult(pf)
 
   /**
@@ -447,7 +482,7 @@ sealed trait Future[+T] {
    *   }
    * </pre>
    */
-  final def onResult(pf: PartialFunction[Any, Unit]): this.type = onComplete { f ⇒
+  final def onResult(pf: PartialFunction[T, Unit]): this.type = onComplete { f ⇒
     val optr = f.result
     if (optr.isDefined) {
       val r = optr.get
@@ -472,6 +507,8 @@ sealed trait Future[+T] {
     }
   }
 
+  def onTimeout(func: Future[T] ⇒ Unit): this.type
+
   /**
    * Creates a new Future by applying a PartialFunction to the successful
    * result of this Future if a match is found, or else return a MatchError.
@@ -486,27 +523,8 @@ sealed trait Future[+T] {
    * } yield b + "-" + c
    * </pre>
    */
-  final def collect[A](pf: PartialFunction[Any, A]): Future[A] = {
-    val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
-    onComplete { ft ⇒
-      val v = ft.value.get
-      fa complete {
-        if (v.isLeft) v.asInstanceOf[Either[Throwable, A]]
-        else {
-          try {
-            val r = v.right.get
-            if (pf isDefinedAt r) Right(pf(r))
-            else Left(new MatchError(r))
-          } catch {
-            case e: Exception ⇒
-              EventHandler.error(e, this, e.getMessage)
-              Left(e)
-          }
-        }
-      }
-    }
-    fa
-  }
+  @deprecated("No longer needed, use 'map' instead. Removed in 2.0", "2.0")
+  final def collect[A](pf: PartialFunction[T, A]): Future[A] = this map pf
 
   /**
    * Creates a new Future that will handle any matching Throwable that this
@@ -684,25 +702,24 @@ sealed trait Future[+T] {
       else r.right.toOption
     } else None
   }
+}
 
+package japi {
   /* Java API */
-  final def onComplete[A >: T](proc: Procedure[Future[A]]): this.type = onComplete(proc(_))
-
-  final def map[A >: T, B](f: JFunc[A, B]): Future[B] = map(f(_))
-
-  final def flatMap[A >: T, B](f: JFunc[A, Future[B]]): Future[B] = flatMap(f(_))
-
-  final def foreach[A >: T](proc: Procedure[A]): Unit = foreach(proc(_))
-
-  final def filter(p: JFunc[Any, Boolean]): Future[Any] = filter(p(_))
-
+  trait Future[+T] { self: akka.dispatch.Future[T] ⇒
+    private[japi] final def onComplete[A >: T](proc: Procedure[akka.dispatch.Future[A]]): this.type = self.onComplete(proc(_))
+    private[japi] final def map[A >: T, B](f: JFunc[A, B]): akka.dispatch.Future[B] = self.map(f(_))
+    private[japi] final def flatMap[A >: T, B](f: JFunc[A, akka.dispatch.Future[B]]): akka.dispatch.Future[B] = self.flatMap(f(_))
+    private[japi] final def foreach[A >: T](proc: Procedure[A]): Unit = self.foreach(proc(_))
+    private[japi] final def filter(p: JFunc[Any, Boolean]): akka.dispatch.Future[Any] = self.filter(p(_))
+  }
 }
 
 object Promise {
 
-  def apply[A](timeout: Long): CompletableFuture[A] = new DefaultCompletableFuture[A](timeout)
+  def apply[A](timeout: Long)(implicit dispatcher: MessageDispatcher): CompletableFuture[A] = new DefaultCompletableFuture[A](timeout)
 
-  def apply[A](): CompletableFuture[A] = apply(Actor.TIMEOUT)
+  def apply[A]()(implicit dispatcher: MessageDispatcher): CompletableFuture[A] = apply(Actor.TIMEOUT)
 
 }
 
@@ -759,11 +776,11 @@ trait CompletableFuture[T] extends Future[T] {
 /**
  * The default concrete Future implementation.
  */
-class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends CompletableFuture[T] {
+class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit val dispatcher: MessageDispatcher) extends CompletableFuture[T] {
 
-  def this() = this(0, MILLIS)
+  def this()(implicit dispatcher: MessageDispatcher) = this(Actor.TIMEOUT, MILLIS)
 
-  def this(timeout: Long) = this(timeout, MILLIS)
+  def this(timeout: Long)(implicit dispatcher: MessageDispatcher) = this(timeout, MILLIS)
 
   val timeoutInNanos = timeunit.toNanos(timeout)
   private val _startTimeInNanos = currentTimeInNanos
@@ -827,43 +844,25 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   }
 
   def complete(value: Either[Throwable, T]): this.type = {
-    _lock.lock
-    val notifyTheseListeners = try {
-      if (_value.isEmpty && !isExpired) { //Only complete if we aren't expired
-        _value = Some(value)
-        val existingListeners = _listeners
-        _listeners = Nil
-        existingListeners
-      } else Nil
-    } finally {
-      _signal.signalAll
-      _lock.unlock
-    }
-
-    if (notifyTheseListeners.nonEmpty) { // Steps to ensure we don't run into a stack-overflow situation
-      @tailrec
-      def runCallbacks(rest: List[Future[T] ⇒ Unit], callbacks: Stack[() ⇒ Unit]) {
-        if (rest.nonEmpty) {
-          notifyCompleted(rest.head)
-          while (callbacks.nonEmpty) { callbacks.pop().apply() }
-          runCallbacks(rest.tail, callbacks)
+    val callbacks = {
+      _lock.lock
+      try {
+        if (_value.isEmpty && !isExpired) { //Only complete if we aren't expired
+          _value = Some(value)
+          val existingListeners = _listeners
+          _listeners = Nil
+          existingListeners
+        } else {
+          _listeners = Nil
+          Nil
         }
-      }
-
-      val pending = Future.callbacksPendingExecution.get
-      if (pending.isDefined) { //Instead of nesting the calls to the callbacks (leading to stack overflow)
-        pending.get.push(() ⇒ { // Linearize/aggregate callbacks at top level and then execute
-          val doNotify = notifyCompleted _ //Hoist closure to avoid garbage
-          notifyTheseListeners foreach doNotify
-        })
-      } else {
-        try {
-          val callbacks = Stack[() ⇒ Unit]() // Allocate new aggregator for pending callbacks
-          Future.callbacksPendingExecution.set(Some(callbacks)) // Specify the callback aggregator
-          runCallbacks(notifyTheseListeners, callbacks) // Execute callbacks, if they trigger new callbacks, they are aggregated
-        } finally { Future.callbacksPendingExecution.set(None) } // Ensure cleanup
+      } finally {
+        _signal.signalAll
+        _lock.unlock
       }
     }
+
+    if (callbacks.nonEmpty) Future.dispatchTask(() ⇒ callbacks foreach notifyCompleted)
 
     this
   }
@@ -881,7 +880,30 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
       _lock.unlock
     }
 
-    if (notifyNow) notifyCompleted(func)
+    if (notifyNow) Future.dispatchTask(() ⇒ notifyCompleted(func))
+
+    this
+  }
+
+  def onTimeout(func: Future[T] ⇒ Unit): this.type = {
+    _lock.lock
+    val runNow = try {
+      if (_value.isEmpty) {
+        if (!isExpired) {
+          val runnable = new Runnable {
+            def run() {
+              if (!isCompleted) func(DefaultCompletableFuture.this)
+            }
+          }
+          Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
+          false
+        } else true
+      } else false
+    } finally {
+      _lock.unlock
+    }
+
+    if (runNow) Future.dispatchTask(() ⇒ notifyCompleted(func))
 
     this
   }
@@ -900,22 +922,20 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit) extends Com
   private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
 }
 
-class ActorCompletableFuture(timeout: Long, timeunit: TimeUnit)
-  extends DefaultCompletableFuture[Any](timeout, timeunit)
-  with ForwardableChannel {
-  def this() = this(0, MILLIS)
-  def this(timeout: Long) = this(timeout, MILLIS)
+class ActorCompletableFuture(timeout: Long, timeunit: TimeUnit)(implicit dispatcher: MessageDispatcher)
+  extends DefaultCompletableFuture[Any](timeout, timeunit)(dispatcher)
+  with ForwardableChannel with ExceptionChannel[Any] {
+  def this()(implicit dispatcher: MessageDispatcher) = this(0, MILLIS)
+  def this(timeout: Long)(implicit dispatcher: MessageDispatcher) = this(timeout, MILLIS)
 
-  def !(message: Any)(implicit channel: UntypedChannel = NullChannel) = completeWithResult(message)
+  def !(message: Any)(implicit channel: UntypedChannel) = completeWithResult(message)
 
-  def sendException(ex: Throwable) = completeWithException(ex)
+  override def sendException(ex: Throwable) = {
+    completeWithException(ex)
+    value == Some(Left(ex))
+  }
 
   def channel: UntypedChannel = this
-
-  def isUsableOnlyOnce = true
-  def isUsable = !isCompleted
-  def isReplyable = false
-  def canSendException = true
 
   @deprecated("ActorCompletableFuture merged with Channel[Any], just use 'this'", "1.2")
   def future = this
@@ -923,10 +943,13 @@ class ActorCompletableFuture(timeout: Long, timeunit: TimeUnit)
 
 object ActorCompletableFuture {
   def apply(f: CompletableFuture[Any]): ActorCompletableFuture =
-    new ActorCompletableFuture(f.timeoutInNanos, NANOS) {
+    new ActorCompletableFuture(f.timeoutInNanos, NANOS)(f.dispatcher) {
       completeWith(f)
       override def !(message: Any)(implicit channel: UntypedChannel) = f completeWithResult message
-      override def sendException(ex: Throwable) = f completeWithException ex
+      override def sendException(ex: Throwable) = {
+        f completeWithException ex
+        f.value == Some(Left(ex))
+      }
     }
 }
 
@@ -934,14 +957,18 @@ object ActorCompletableFuture {
  * An already completed Future is seeded with it's result at creation, is useful for when you are participating in
  * a Future-composition but you already have a value to contribute.
  */
-sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T]) extends CompletableFuture[T] {
+sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T])(implicit val dispatcher: MessageDispatcher) extends CompletableFuture[T] {
   val value = Some(suppliedValue)
 
   def complete(value: Either[Throwable, T]): this.type = this
-  def onComplete(func: Future[T] ⇒ Unit): this.type = { func(this); this }
+  def onComplete(func: Future[T] ⇒ Unit): this.type = {
+    Future dispatchTask (() ⇒ func(this))
+    this
+  }
   def await(atMost: Duration): this.type = this
   def await: this.type = this
   def awaitBlocking: this.type = this
   def isExpired: Boolean = true
   def timeoutInNanos: Long = 0
+  def onTimeout(func: Future[T] ⇒ Unit): this.type = this
 }
