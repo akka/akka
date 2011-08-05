@@ -76,9 +76,9 @@ class FutureSpec extends JUnitSuite {
   def shouldFutureComposePatternMatch {
     val actor1 = actorOf[TestActor].start()
     val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply s.toUpperCase } }).start()
-    val future1 = actor1 !!! "Hello" collect { case (s: String) ⇒ s } flatMap (actor2 !!! _)
-    val future2 = actor1 !!! "Hello" collect { case (n: Int) ⇒ n } flatMap (actor2 !!! _)
-    assert((future1.get: Any) === "WORLD")
+    val future1 = actor1 ? "Hello" flatMap { case (s: String) ⇒ actor2 ? s }
+    val future2 = actor1 ? "Hello" flatMap { case (n: Int) ⇒ actor2 ? n }
+    assert(future1.get === "WORLD")
     intercept[MatchError] { future2.get }
     actor1.stop()
     actor2.stop()
@@ -565,10 +565,14 @@ class FutureSpec extends JUnitSuite {
 
     flow { one << 1 }
 
+    one.await
+
     assert(one.isCompleted)
     assert(List(two, simpleResult).forall(_.isCompleted == false))
 
     flow { two << 9 }
+
+    two.await
 
     assert(List(one, two).forall(_.isCompleted == true))
     assert(simpleResult.get === 10)
@@ -588,7 +592,7 @@ class FutureSpec extends JUnitSuite {
       lz.open()
       x1() + x2()
     }
-    assert(lx.isOpen)
+    assert(lx.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
     assert(!ly.isOpen)
     assert(!lz.isOpen)
     assert(List(x1, x2, y1, y2).forall(_.isCompleted == false))
