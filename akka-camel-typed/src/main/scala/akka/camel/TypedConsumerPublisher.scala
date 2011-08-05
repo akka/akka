@@ -57,7 +57,7 @@ private[camel] object TypedConsumerPublisher {
    */
   def handleConsumerMethodRegistered(event: ConsumerMethodRegistered) {
     CamelContextManager.mandatoryContext.addRoutes(new ConsumerMethodRouteBuilder(event))
-    EventHandler notifyListeners EventHandler.Info(this, "published method %s of %s at endpoint %s" format (event.methodName, event.typedActor, event.endpointUri))
+    EventHandler.info(this, "published method %s of %s at endpoint %s" format (event.methodName, event.typedActor, event.endpointUri))
   }
 
   /**
@@ -65,7 +65,7 @@ private[camel] object TypedConsumerPublisher {
    */
   def handleConsumerMethodUnregistered(event: ConsumerMethodUnregistered) {
     CamelContextManager.mandatoryContext.stopRoute(event.methodUuid)
-    EventHandler notifyListeners EventHandler.Info(this, "unpublished method %s of %s from endpoint %s" format (event.methodName, event.typedActor, event.endpointUri))
+    EventHandler.info(this, "unpublished method %s of %s from endpoint %s" format (event.methodName, event.typedActor, event.endpointUri))
   }
 }
 

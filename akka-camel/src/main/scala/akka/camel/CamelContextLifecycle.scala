@@ -102,7 +102,7 @@ trait CamelContextLifecycle {
       c.start
       t.start
       _started = true
-      EventHandler notifyListeners EventHandler.Info(this, "Camel context started")
+      EventHandler.info(this, "Camel context started")
     }
   }
 
@@ -118,7 +118,7 @@ trait CamelContextLifecycle {
       c.stop
       _started = false
       _initialized = false
-      EventHandler notifyListeners EventHandler.Info(this, "Camel context stopped")
+      EventHandler.info(this, "Camel context stopped")
     }
   }
 
@@ -141,7 +141,7 @@ trait CamelContextLifecycle {
     this._template = Some(context.createProducerTemplate)
 
     _initialized = true
-    EventHandler notifyListeners EventHandler.Info(this, "Camel context initialized")
+    EventHandler.info(this, "Camel context initialized")
   }
 }
 

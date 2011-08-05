@@ -28,7 +28,7 @@ public class UntypedCounter extends UntypedTransactor {
     }
 
     private void increment() {
-        System.out.println(name + ": incrementing");
+        //System.out.println(name + ": incrementing");
         count.set(count.get() + 1);
     }
 
@@ -48,7 +48,7 @@ public class UntypedCounter extends UntypedTransactor {
     }
 
     @Override public void before(Object message) {
-        System.out.println(name + ": before transaction");
+        //System.out.println(name + ": before transaction");
     }
 
     public void atomically(Object message) {
@@ -65,7 +65,7 @@ public class UntypedCounter extends UntypedTransactor {
     }
 
     @Override public void after(Object message) {
-        System.out.println(name + ": after transaction");
+        //System.out.println(name + ": after transaction");
     }
 
     @Override public boolean normally(Object message) {

@@ -17,6 +17,7 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Unidoc.settings ++ rstdocSettings ++ Seq(
+      parallelExecution in GlobalScope := false,
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       rstdocDirectory <<= baseDirectory / "akka-docs"
     ),
