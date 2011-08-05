@@ -26,7 +26,7 @@ public class UntypedCoordinatedCounter extends UntypedActor {
     }
 
     private void increment() {
-        System.out.println(name + ": incrementing");
+        //System.out.println(name + ": incrementing");
         count.set(count.get() + 1);
     }
 

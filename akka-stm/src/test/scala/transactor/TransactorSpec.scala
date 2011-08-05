@@ -4,9 +4,12 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
 import akka.transactor.Transactor
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, ActorTimeoutException }
 import akka.stm._
 import akka.util.duration._
+import akka.event.EventHandler
+import akka.transactor.CoordinatedTransactionException
+import akka.testkit._
 
 import java.util.concurrent.CountDownLatch
 
@@ -51,9 +54,11 @@ object TransactorIncrement {
     }
   }
 
+  class ExpectedFailureException extends RuntimeException("Expected failure")
+
   class Failer extends Transactor {
     def atomically = {
-      case _ ⇒ throw new RuntimeException("Expected failure")
+      case _ ⇒ throw new ExpectedFailureException
     }
   }
 }
@@ -99,6 +104,11 @@ class TransactorSpec extends WordSpec with MustMatchers {
     }
 
     "increment no counters with a failing transaction" in {
+      val ignoreExceptions = Seq(
+        EventFilter[ExpectedFailureException],
+        EventFilter[CoordinatedTransactionException],
+        EventFilter[ActorTimeoutException])
+      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
       val (counters, failer) = createTransactors
       val failLatch = new CountDownLatch(numCounters + 1)
       counters(0) ! Increment(counters.tail :+ failer, failLatch)
@@ -108,6 +118,7 @@ class TransactorSpec extends WordSpec with MustMatchers {
       }
       counters foreach (_.stop())
       failer.stop()
+      EventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 

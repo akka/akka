@@ -229,6 +229,8 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       val boss = Actor.actorOf(new Actor { def receive = { case _ ⇒ } }).start()
       val ref = TestActorRef[WorkerActor].start()
 
+      val filter = EventFilter.custom(_ ⇒ true)
+      EventHandler.notify(TestEvent.Mute(filter))
       val log = TestActorRef[Logger]
       EventHandler.addListener(log)
       boss link ref
@@ -236,6 +238,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       la.count must be(1)
       la.msg must (include("supervisor") and include("CallingThreadDispatcher"))
       EventHandler.removeListener(log)
+      EventHandler.notify(TestEvent.UnMute(filter))
     }
 
     "proxy apply for the underlying actor" in {
