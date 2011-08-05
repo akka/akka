@@ -10,13 +10,21 @@ import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.dispatch.Future;
+import akka.event.EventHandler;
+import akka.testkit.EventFilter;
+import akka.testkit.ErrorFilter;
+import akka.testkit.TestEvent;
+import akka.transactor.CoordinatedTransactionException;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import scala.Option;
+import scala.collection.JavaConverters;
+import scala.collection.Seq;
 
 public class UntypedCoordinatedIncrementTest {
     List<ActorRef> counters;
@@ -63,6 +71,10 @@ public class UntypedCoordinatedIncrementTest {
     }
 
     @Test public void incrementNoCountersWithFailingTransaction() {
+        EventFilter expectedFailureFilter = (EventFilter) new ErrorFilter(ExpectedFailureException.class);
+        EventFilter coordinatedFilter = (EventFilter) new ErrorFilter(CoordinatedTransactionException.class);
+        Seq<EventFilter> ignoreExceptions = seq(expectedFailureFilter, coordinatedFilter);
+        EventHandler.notify(new TestEvent.Mute(ignoreExceptions));
         CountDownLatch incrementLatch = new CountDownLatch(numCounters);
         List<ActorRef> actors = new ArrayList<ActorRef>(counters);
         actors.add(failer);
@@ -83,6 +95,11 @@ public class UntypedCoordinatedIncrementTest {
                 }
             }
         }
+        EventHandler.notify(new TestEvent.UnMute(ignoreExceptions));
+    }
+
+    public <A> Seq<A> seq(A... args) {
+      return JavaConverters.collectionAsScalaIterableConverter(Arrays.asList(args)).asScala().toSeq();
     }
 }
 

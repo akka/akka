@@ -8,9 +8,8 @@ import akka.transactor.Coordinated
 import akka.actor.{ Actor, ActorRef }
 import akka.stm.{ Ref, TransactionFactory }
 import akka.util.duration._
-import akka.event.EventHandler
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent._
+import akka.transactor.CoordinatedTransactionException
+import akka.testkit._
 
 object CoordinatedIncrement {
   case class Increment(friends: Seq[ActorRef])
@@ -39,13 +38,15 @@ object CoordinatedIncrement {
     }
   }
 
+  class ExpectedFailureException extends RuntimeException("Expected failure")
+
   class Failer extends Actor {
     val txFactory = TransactionFactory(timeout = 3 seconds)
 
     def receive = {
       case coordinated @ Coordinated(Increment(friends)) ⇒ {
         coordinated.atomic(txFactory) {
-          throw new RuntimeException("Expected failure")
+          throw new ExpectedFailureException
         }
       }
     }
@@ -54,15 +55,6 @@ object CoordinatedIncrement {
 
 class CoordinatedIncrementSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import CoordinatedIncrement._
-
-  override def beforeAll() {
-    EventHandler notify Mute(EventFilter[RuntimeException]("Expected failure"))
-    EventHandler notify Mute(EventFilter[org.multiverse.api.exceptions.DeadTransactionException]())
-  }
-
-  override def afterAll() {
-    EventHandler notify UnMuteAll
-  }
 
   val numCounters = 5
   val timeout = 5 seconds
@@ -88,15 +80,19 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers with BeforeAnd
     }
 
     "increment no counters with a failing transaction" in {
-      val (counters, failer) = createActors
-      val coordinated = Coordinated()
-      counters(0) ! Coordinated(Increment(counters.tail :+ failer))
-      coordinated.await
-      for (counter ← counters) {
-        (counter ? GetCount).as[Int].get must be === 0
+      filterException[ExpectedFailureException] {
+        filterException[CoordinatedTransactionException] {
+          val (counters, failer) = createActors
+          val coordinated = Coordinated()
+          counters(0) ! Coordinated(Increment(counters.tail :+ failer))
+          coordinated.await
+          for (counter ← counters) {
+            (counter ? GetCount).as[Int].get must be === 0
+          }
+          counters foreach (_.stop())
+          failer.stop()
+        }
       }
-      counters foreach (_.stop())
-      failer.stop()
     }
   }
 }

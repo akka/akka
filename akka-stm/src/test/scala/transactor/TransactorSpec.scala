@@ -7,6 +7,8 @@ import akka.transactor.Transactor
 import akka.actor.{ Actor, ActorRef }
 import akka.stm._
 import akka.util.duration._
+import akka.transactor.CoordinatedTransactionException
+import akka.testkit._
 
 import java.util.concurrent.CountDownLatch
 
@@ -51,9 +53,11 @@ object TransactorIncrement {
     }
   }
 
+  class ExpectedFailureException extends RuntimeException("Expected failure")
+
   class Failer extends Transactor {
     def atomically = {
-      case _ ⇒ throw new RuntimeException("Expected failure")
+      case _ ⇒ throw new ExpectedFailureException
     }
   }
 }
@@ -99,15 +103,19 @@ class TransactorSpec extends WordSpec with MustMatchers {
     }
 
     "increment no counters with a failing transaction" in {
-      val (counters, failer) = createTransactors
-      val failLatch = new CountDownLatch(numCounters + 1)
-      counters(0) ! Increment(counters.tail :+ failer, failLatch)
-      failLatch.await(timeout.length, timeout.unit)
-      for (counter ← counters) {
-        (counter ? GetCount).as[Int].get must be === 0
+      filterException[ExpectedFailureException] {
+        filterException[CoordinatedTransactionException] {
+          val (counters, failer) = createTransactors
+          val failLatch = new CountDownLatch(numCounters + 1)
+          counters(0) ! Increment(counters.tail :+ failer, failLatch)
+          failLatch.await(timeout.length, timeout.unit)
+          for (counter ← counters) {
+            (counter ? GetCount).as[Int].get must be === 0
+          }
+          counters foreach (_.stop())
+          failer.stop()
+        }
       }
-      counters foreach (_.stop())
-      failer.stop()
     }
   }
 
