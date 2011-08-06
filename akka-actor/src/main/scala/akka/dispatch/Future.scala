@@ -766,7 +766,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit va
       val ms = NANOS.toMillis(waitTimeNanos)
       val ns = (waitTimeNanos % 1000000l).toInt //As per object.wait spec
       val start = System.nanoTime()
-      try { ref.synchronized { ref.wait(ms,ns) } } catch { case e: InterruptedException ⇒ }
+      try { ref.synchronized { if (value.isEmpty) ref.wait(ms,ns) } } catch { case e: InterruptedException ⇒ }
 
       awaitUnsafe(waitTimeNanos - Math.abs(System.nanoTime() - start))
     } else {
