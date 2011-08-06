@@ -816,7 +816,14 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
       if (!timeout.duration.isFinite) false //Not possible
       else if (value.isEmpty) {
         if (!isExpired) {
-          val runnable = new Runnable { def run() { if (!isCompleted) func(DefaultPromise.this) } } //TODO Reschedule is run prematurely
+          val runnable = new Runnable {
+            def run() {
+              if (!isCompleted) {
+                if (!isExpired) Scheduler.scheduleOnce(this, timeLeft, NANOS)
+                else func(DefaultPromise.this)
+              }
+            }
+          }
           Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
           false
         } else true
@@ -837,7 +844,10 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
           promise completeWith this
           val runnable = new Runnable {
             def run() {
-              if (!isCompleted) promise complete (try { Right(fallback) } catch { case e: Exception ⇒ Left(e) })
+              if (!isCompleted) {
+                if (!isExpired) Scheduler.scheduleOnce(this, timeLeft, NANOS)
+                else promise complete (try { Right(fallback) } catch { case e: Exception ⇒ Left(e) })
+              }
             }
           }
           Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
