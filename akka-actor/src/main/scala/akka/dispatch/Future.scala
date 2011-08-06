@@ -809,13 +809,21 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
     }
   }
 
-  protected def awaitThenThrow(waitNanos: Long): this.type =
+  def await(atMost: Duration): this.type = {
+    val waitNanos =
+      if (timeout.duration.isFinite && atMost.isFinite)
+        atMost.toNanos min timeLeft()
+      else if (atMost.isFinite)
+        atMost.toNanos
+      else if (timeout.duration.isFinite)
+        timeLeft()
+      else Long.MaxValue //If both are infinite, use Long.MaxValue
+
     if (awaitUnsafe(waitNanos)) this
     else throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(waitNanos) + "] milliseconds")
+  }
 
-  def await(atMost: Duration) = awaitThenThrow(atMost.toNanos min timeLeft())
-
-  def await = awaitThenThrow(timeLeft())
+  def await = await(timeout.duration)
 
   def isExpired: Boolean = if (timeout.duration.isFinite) timeLeft() <= 0 else false
 
