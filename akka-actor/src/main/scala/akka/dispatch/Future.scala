@@ -188,7 +188,7 @@ object Futures {
 
   /**
    * Java API.
-   * Transforms a java.lang.Iterable[A] into a Future[java.lang.Iterable[B]] using the provided Function A => Future[B].
+   * Transforms a java.lang.Iterable[A] into a Future[java.lang.Iterable[B]] using the provided Function A ⇒ Future[B].
    * This is useful for performing a parallel map. For example, to apply a function to all items of a list
    * in parallel.
    */
@@ -203,7 +203,7 @@ object Futures {
 
   /**
    * Java API.
-   * Transforms a java.lang.Iterable[A] into a Future[java.lang.Iterable[B]] using the provided Function A => Future[B].
+   * Transforms a java.lang.Iterable[A] into a Future[java.lang.Iterable[B]] using the provided Function A ⇒ Future[B].
    * This is useful for performing a parallel map. For example, to apply a function to all items of a list
    * in parallel.
    */
@@ -228,7 +228,7 @@ object Futures {
   /**
    * Applies the supplied function to the specified collection of Futures after awaiting each future to be completed
    */
-  @deprecated("Will be removed after 1.1, if you must block, use: futures map { f => fun(f.await) }", "1.1")
+  @deprecated("Will be removed after 1.1, if you must block, use: futures map { f ⇒ fun(f.await) }", "1.1")
   def awaitMap[A, B](in: Traversable[Future[A]])(fun: (Future[A]) ⇒ B): Traversable[B] =
     in map { f ⇒ fun(f.await) }
 
@@ -279,11 +279,11 @@ object Future {
     in.foldLeft(new DefaultCompletableFuture[Builder[A, M[A]]](timeout).completeWithResult(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) ⇒ for (r ← fr; a ← fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
 
   /**
-   * Transforms a Traversable[A] into a Future[Traversable[B]] using the provided Function A => Future[B].
+   * Transforms a Traversable[A] into a Future[Traversable[B]] using the provided Function A ⇒ Future[B].
    * This is useful for performing a parallel map. For example, to apply a function to all items of a list
    * in parallel:
    * <pre>
-   * val myFutureList = Futures.traverse(myList)(x => Future(myFunc(x)))
+   * val myFutureList = Futures.traverse(myList)(x ⇒ Future(myFunc(x)))
    * </pre>
    */
   def traverse[A, B, M[_] <: Traversable[_]](in: M[A], timeout: Long = Actor.TIMEOUT)(fn: A ⇒ Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]]): Future[M[B]] =
@@ -402,14 +402,6 @@ sealed trait Future[+T] extends japi.Future[T] {
     }
 
   /**
-   * Blocks the current thread until the Future has been completed. Use
-   * caution with this method as it ignores the timeout and will block
-   * indefinitely if the Future is never completed.
-   */
-  @deprecated("Will be removed after 1.1, it's dangerous and can cause deadlocks, agony and insanity.", "1.1")
-  def awaitBlocking: Future[T]
-
-  /**
    * Tests whether this Future has been completed.
    */
   final def isCompleted: Boolean = value.isDefined
@@ -438,19 +430,17 @@ sealed trait Future[+T] extends japi.Future[T] {
   /**
    * Returns the successful result of this Future if it exists.
    */
-  final def result: Option[T] = {
-    val v = value
-    if (v.isDefined) v.get.right.toOption
-    else None
+  final def result: Option[T] = value match {
+    case Some(r) ⇒ r.right.toOption
+    case _ ⇒ None
   }
 
   /**
    * Returns the contained exception of this Future if it exists.
    */
-  final def exception: Option[Throwable] = {
-    val v = value
-    if (v.isDefined) v.get.left.toOption
-    else None
+  final def exception: Option[Throwable] = value match {
+    case Some(r) ⇒ r.left.toOption
+    case _ ⇒ None
   }
 
   /**
@@ -465,8 +455,8 @@ sealed trait Future[+T] extends japi.Future[T] {
    * PartialFunction to the result.
    * <pre>
    *   future receive {
-   *     case Foo => target ! "foo"
-   *     case Bar => target ! "bar"
+   *     case Foo ⇒ target ! "foo"
+   *     case Bar ⇒ target ! "bar"
    *   }
    * </pre>
    */
@@ -478,16 +468,15 @@ sealed trait Future[+T] extends japi.Future[T] {
    * PartialFunction to the result.
    * <pre>
    *   future onResult {
-   *     case Foo => target ! "foo"
-   *     case Bar => target ! "bar"
+   *     case Foo ⇒ target ! "foo"
+   *     case Bar ⇒ target ! "bar"
    *   }
    * </pre>
    */
-  final def onResult(pf: PartialFunction[T, Unit]): this.type = onComplete { f ⇒
-    val optr = f.result
-    if (optr.isDefined) {
-      val r = optr.get
-      if (pf.isDefinedAt(r)) pf(r)
+  final def onResult(pf: PartialFunction[T, Unit]): this.type = onComplete {
+    _.value match {
+      case Some(Right(r)) if pf isDefinedAt r ⇒ pf(r)
+      case _ ⇒
     }
   }
 
@@ -496,15 +485,14 @@ sealed trait Future[+T] extends japi.Future[T] {
    * PartialFunction to that.
    * <pre>
    *   future onException {
-   *     case NumberFormatException => target ! "wrong format"
+   *     case NumberFormatException ⇒ target ! "wrong format"
    *   }
    * </pre>
    */
-  final def onException(pf: PartialFunction[Throwable, Unit]): this.type = onComplete { f ⇒
-    val optex = f.exception
-    if (optex.isDefined) {
-      val ex = optex.get
-      if (pf.isDefinedAt(ex)) pf(ex)
+  final def onException(pf: PartialFunction[Throwable, Unit]): this.type = onComplete {
+    _.value match {
+      case Some(Left(ex)) if pf isDefinedAt ex ⇒ pf(ex)
+      case _ ⇒
     }
   }
 
@@ -518,9 +506,9 @@ sealed trait Future[+T] extends japi.Future[T] {
    * Example:
    * <pre>
    * val future1 = for {
-   *   a <- actor !!! Req("Hello") collect { case Res(x: Int)    => x }
-   *   b <- actor !!! Req(a)       collect { case Res(x: String) => x }
-   *   c <- actor !!! Req(7)       collect { case Res(x: String) => x }
+   *   a <- actor !!! Req("Hello") collect { case Res(x: Int)    ⇒ x }
+   *   b <- actor !!! Req(a)       collect { case Res(x: String) ⇒ x }
+   *   c <- actor !!! Req(7)       collect { case Res(x: String) ⇒ x }
    * } yield b + "-" + c
    * </pre>
    */
@@ -533,9 +521,9 @@ sealed trait Future[+T] extends japi.Future[T] {
    * a valid result then the new Future will contain the same.
    * Example:
    * <pre>
-   * Future(6 / 0) failure { case e: ArithmeticException => 0 } // result: 0
-   * Future(6 / 0) failure { case e: NotFoundException   => 0 } // result: exception
-   * Future(6 / 2) failure { case e: ArithmeticException => 0 } // result: 3
+   * Future(6 / 0) failure { case e: ArithmeticException ⇒ 0 } // result: 0
+   * Future(6 / 0) failure { case e: NotFoundException   ⇒ 0 } // result: exception
+   * Future(6 / 2) failure { case e: ArithmeticException ⇒ 0 } // result: 3
    * </pre>
    */
   @deprecated("will be replaced by `recover`", "1.2")
@@ -547,25 +535,17 @@ sealed trait Future[+T] extends japi.Future[T] {
    * a valid result then the new Future will contain the same.
    * Example:
    * <pre>
-   * Future(6 / 0) failure { case e: ArithmeticException => 0 } // result: 0
-   * Future(6 / 0) failure { case e: NotFoundException   => 0 } // result: exception
-   * Future(6 / 2) failure { case e: ArithmeticException => 0 } // result: 3
+   * Future(6 / 0) failure { case e: ArithmeticException ⇒ 0 } // result: 0
+   * Future(6 / 0) failure { case e: NotFoundException   ⇒ 0 } // result: exception
+   * Future(6 / 2) failure { case e: ArithmeticException ⇒ 0 } // result: 3
    * </pre>
    */
   final def recover[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
     val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
-    onComplete { ft ⇒
-      val opte = ft.exception
-      fa complete {
-        if (opte.isDefined) {
-          val e = opte.get
-          try {
-            if (pf isDefinedAt e) Right(pf(e))
-            else Left(e)
-          } catch {
-            case x: Exception ⇒ Left(x)
-          }
-        } else ft.value.get
+    onComplete {
+      _.value.get match {
+        case Left(e) if pf isDefinedAt e => fa.complete(try { Right(pf(e)) } catch { case x: Exception ⇒ Left(x) })
+        case otherwise => fa complete otherwise
       }
     }
     fa
@@ -586,21 +566,17 @@ sealed trait Future[+T] extends japi.Future[T] {
    */
   final def map[A](f: T ⇒ A): Future[A] = {
     val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
-    onComplete { ft ⇒
-      val optv = ft.value
-      if (optv.isDefined) {
-        val v = optv.get
-        if (v.isLeft)
-          fa complete v.asInstanceOf[Either[Throwable, A]]
-        else {
+    onComplete {
+      _.value.get match {
+        case l: Left[_, _] ⇒ fa complete l.asInstanceOf[Either[Throwable, A]]
+        case Right(res) ⇒
           fa complete (try {
-            Right(f(v.right.get))
+            Right(f(res))
           } catch {
             case e: Exception ⇒
               EventHandler.error(e, this, e.getMessage)
               Left(e)
           })
-        }
       }
     }
     fa
@@ -642,51 +618,40 @@ sealed trait Future[+T] extends japi.Future[T] {
    */
   final def flatMap[A](f: T ⇒ Future[A]): Future[A] = {
     val fa = new DefaultCompletableFuture[A](timeoutInNanos, NANOS)
-    onComplete { ft ⇒
-      val optv = ft.value
-      if (optv.isDefined) {
-        val v = optv.get
-        if (v.isLeft)
-          fa complete v.asInstanceOf[Either[Throwable, A]]
-        else {
-          try {
-            fa.completeWith(f(v.right.get))
+    onComplete {
+      _.value.get match {
+        case l: Left[_, _] ⇒ fa complete l.asInstanceOf[Either[Throwable, A]]
+        case Right(r) ⇒ try {
+            fa.completeWith(f(r))
           } catch {
             case e: Exception ⇒
               EventHandler.error(e, this, e.getMessage)
               fa completeWithException e
           }
-        }
       }
     }
     fa
   }
 
-  final def foreach(f: T ⇒ Unit): Unit = onComplete { ft ⇒
-    val optr = ft.result
-    if (optr.isDefined)
-      f(optr.get)
+  final def foreach(f: T ⇒ Unit): Unit = onComplete {
+    _.value.get match {
+      case Right(r) ⇒ f(r)
+      case _ ⇒
+    }
   }
 
   final def filter(p: Any ⇒ Boolean): Future[Any] = {
     val f = new DefaultCompletableFuture[T](timeoutInNanos, NANOS)
-    onComplete { ft ⇒
-      val optv = ft.value
-      if (optv.isDefined) {
-        val v = optv.get
-        if (v.isLeft)
-          f complete v
-        else {
-          val r = v.right.get
-          f complete (try {
-            if (p(r)) Right(r)
-            else Left(new MatchError(r))
+    onComplete {
+      _.value.get match {
+        case l: Left[_, _]  ⇒ f complete l.asInstanceOf[Either[Throwable, T]]
+        case r @ Right(res) ⇒ f complete (try {
+            if (p(res)) r else Left(new MatchError(res))
           } catch {
             case e: Exception ⇒
               EventHandler.error(e, this, e.getMessage)
               Left(e)
           })
-        }
       }
     }
     f
@@ -695,13 +660,10 @@ sealed trait Future[+T] extends japi.Future[T] {
   /**
    * Returns the current result, throws the exception is one has been raised, else returns None
    */
-  final def resultOrException: Option[T] = {
-    val v = value
-    if (v.isDefined) {
-      val r = v.get
-      if (r.isLeft) throw r.left.get
-      else r.right.toOption
-    } else None
+  final def resultOrException: Option[T] = value match {
+    case Some(Left(e))  ⇒ throw e
+    case Some(Right(r)) ⇒ Some(r)
+    case _ ⇒ None
   }
 }
 
@@ -783,7 +745,7 @@ private[akka] object FState {
 /**
  * Represents the internal state of the DefaultCompletableFuture
  */
-private[akka] case class FState[T](value: Option[Either[Throwable, T]] = None, listeners: List[Future[T] => Unit] = Nil)
+private[akka] case class FState[T](value: Option[Either[Throwable, T]] = None, listeners: List[Future[T] ⇒ Unit] = Nil)
 
 /**
  * The default concrete Future implementation.
@@ -820,11 +782,6 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit va
 
   def await = awaitThenThrow(timeLeft())
 
-  def awaitBlocking = {
-    awaitUnsafe(Long.MaxValue)
-    this
-  }
-
   def isExpired: Boolean = timeLeft() <= 0
 
   def value: Option[Either[Throwable, T]] = ref.get.value
@@ -833,11 +790,12 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit va
     val callbacks = {
       try {
         @tailrec
-        def tryComplete: List[Future[T] => Unit] = {
+        def tryComplete: List[Future[T] ⇒ Unit] = {
           val cur = ref.get
           if (cur.value.isDefined) Nil
           else if (/*cur.value.isEmpty && */isExpired) {
             //Empty and expired, so remove listeners
+            //TODO Perhaps cancel existing onTimeout listeners in the future here?
             ref.compareAndSet(cur, FState()) //Try to reset the state to the default, doesn't matter if it fails
             Nil
           } else {
@@ -866,9 +824,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit va
       else tryAddCallback()
     }
 
-    val notifyNow = tryAddCallback()
-
-    if (notifyNow) Future.dispatchTask(() ⇒ notifyCompleted(func))
+    if (tryAddCallback()) Future.dispatchTask(() ⇒ notifyCompleted(func))
 
     this
   }
@@ -877,7 +833,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit va
     val runNow =
       if (value.isEmpty) {
         if (!isExpired) {
-          val runnable = new Runnable { def run() { if (!isCompleted) func(DefaultCompletableFuture.this) } }
+          val runnable = new Runnable { def run() { if (!isCompleted) func(DefaultCompletableFuture.this) } } //TODO Reschedule is run prematurely
           Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
           false
         } else true
@@ -943,7 +899,6 @@ sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T])(impl
   }
   def await(atMost: Duration): this.type = this
   def await: this.type = this
-  def awaitBlocking: this.type = this
   def isExpired: Boolean = true
   def timeoutInNanos: Long = 0
   def onTimeout(func: Future[T] ⇒ Unit): this.type = this
