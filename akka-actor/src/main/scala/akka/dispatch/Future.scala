@@ -376,23 +376,6 @@ sealed trait Future[+T] extends japi.Future[T] {
   def await(atMost: Duration): Future[T]
 
   /**
-   * Await completion of this Future (as `await`) and return its value if it
-   * conforms to A's erased type.
-   */
-
-  def as[A](implicit m: Manifest[A]): Option[A] =
-    try {
-      await
-      value match {
-        case None                ⇒ None
-        case Some(_: Left[_, _]) ⇒ None
-        case Some(Right(v))      ⇒ Some(BoxedType(m.erasure).cast(v).asInstanceOf[A])
-      }
-    } catch {
-      case _: Exception ⇒ None
-    }
-
-  /**
    * Tests whether this Future has been completed.
    */
   final def isCompleted: Boolean = value.isDefined
@@ -447,19 +430,6 @@ sealed trait Future[+T] extends japi.Future[T] {
    * When the future is completed with a valid result, apply the provided
    * PartialFunction to the result.
    * <pre>
-   *   future receive {
-   *     case Foo ⇒ target ! "foo"
-   *     case Bar ⇒ target ! "bar"
-   *   }
-   * </pre>
-   */
-  @deprecated("Use `onResult` instead, will be removed in the future", "1.2")
-  final def receive(pf: PartialFunction[Any, Unit]): this.type = onResult(pf)
-
-  /**
-   * When the future is completed with a valid result, apply the provided
-   * PartialFunction to the result.
-   * <pre>
    *   future onResult {
    *     case Foo ⇒ target ! "foo"
    *     case Bar ⇒ target ! "bar"
@@ -492,37 +462,6 @@ sealed trait Future[+T] extends japi.Future[T] {
   def onTimeout(func: Future[T] ⇒ Unit): this.type
 
   def orElse[A >: T](fallback: ⇒ A): Future[A]
-
-  /**
-   * Creates a new Future by applying a PartialFunction to the successful
-   * result of this Future if a match is found, or else return a MatchError.
-   * If this Future is completed with an exception then the new Future will
-   * also contain this exception.
-   * Example:
-   * <pre>
-   * val future1 = for {
-   *   a <- actor ? Req("Hello") collect { case Res(x: Int)    => x }
-   *   b <- actor ? Req(a)       collect { case Res(x: String) => x }
-   *   c <- actor ? Req(7)       collect { case Res(x: String) => x }
-   * } yield b + "-" + c
-   * </pre>
-   */
-  @deprecated("No longer needed, use 'map' instead. Removed in 2.0", "2.0")
-  final def collect[A](pf: PartialFunction[T, A])(implicit timeout: Timeout): Future[A] = this map pf
-
-  /**
-   * Creates a new Future that will handle any matching Throwable that this
-   * Future might contain. If there is no match, or if this Future contains
-   * a valid result then the new Future will contain the same.
-   * Example:
-   * <pre>
-   * Future(6 / 0) failure { case e: ArithmeticException ⇒ 0 } // result: 0
-   * Future(6 / 0) failure { case e: NotFoundException   ⇒ 0 } // result: exception
-   * Future(6 / 2) failure { case e: ArithmeticException ⇒ 0 } // result: 3
-   * </pre>
-   */
-  @deprecated("will be replaced by `recover`", "1.2")
-  final def failure[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = recover(pf)
 
   /**
    * Creates a new Future that will handle any matching Throwable that this
@@ -800,10 +739,10 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
     if (value.isEmpty && waitTimeNanos > 0) {
       val ms = NANOS.toMillis(waitTimeNanos)
       val ns = (waitTimeNanos % 1000000l).toInt //As per object.wait spec
-      val start = System.nanoTime()
+      val start = currentTimeInNanos
       try { ref.synchronized { ref.wait(ms, ns) } } catch { case e: InterruptedException ⇒ }
 
-      awaitUnsafe(waitTimeNanos - Math.abs(System.nanoTime() - start))
+      awaitUnsafe(waitTimeNanos - (currentTimeInNanos - start))
     } else {
       value.isDefined
     }
@@ -894,7 +833,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
         case Some(_)        ⇒ this
         case _ if isExpired ⇒ Future[A](fallback)
         case _ ⇒
-          val promise = new DefaultPromise[A](Timeout.never)
+          val promise = new DefaultPromise[A](Timeout.never) //TODO FIXME We can't have infinite timeout here, doesn't make sense.
           promise completeWith this
           val runnable = new Runnable {
             def run() {
@@ -911,7 +850,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
   }
 
   @inline
-  private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis)
+  private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis) //TODO Switch to math.abs(System.nanoTime)?
   @inline
   private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
 }
