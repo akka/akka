@@ -407,16 +407,16 @@ sealed trait Future[+T] extends japi.Future[T] {
    * Returns the successful result of this Future if it exists.
    */
   final def result: Option[T] = value match {
-    case Some(r) ⇒ r.right.toOption
-    case _       ⇒ None
+    case Some(Right(r)) ⇒ Some(r)
+    case _              ⇒ None
   }
 
   /**
    * Returns the contained exception of this Future if it exists.
    */
   final def exception: Option[Throwable] = value match {
-    case Some(r) ⇒ r.left.toOption
-    case _       ⇒ None
+    case Some(Left(e)) ⇒ Some(e)
+    case _             ⇒ None
   }
 
   /**
@@ -740,7 +740,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
       val ms = NANOS.toMillis(waitTimeNanos)
       val ns = (waitTimeNanos % 1000000l).toInt //As per object.wait spec
       val start = currentTimeInNanos
-      try { ref.synchronized { ref.wait(ms, ns) } } catch { case e: InterruptedException ⇒ }
+      try { ref.synchronized { if (value.isEmpty) ref.wait(ms, ns) } } catch { case e: InterruptedException ⇒ }
 
       awaitUnsafe(waitTimeNanos - (currentTimeInNanos - start))
     } else {
