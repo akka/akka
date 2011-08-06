@@ -20,9 +20,11 @@ object ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmSpec {
     var log = ""
     def receive = {
       case Count(nr) ⇒
+        println("Received number: " + nr)
         log += nr.toString
         self.reply("World from node [" + Config.nodename + "]")
       case GetLog ⇒
+        println("Received getLog")
         self.reply(Log(log))
     }
   }
@@ -47,8 +49,7 @@ class ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmNode1 extends Clust
           (actorRef ? Count(i)).as[String] must be(Some("World from node [node1]"))
       }
 
-      barrier("start-node2", NrOfNodes) {
-      }
+      barrier("start-node2", NrOfNodes).await()
 
       node.shutdown()
     }
@@ -64,11 +65,9 @@ class ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmNode2 extends Maste
 
     "be able to replicate an actor with a transaction log and replay transaction log after actor migration" in {
 
-      barrier("start-node1", NrOfNodes) {
-      }
+      barrier("start-node1", NrOfNodes).await()
 
-      barrier("create-actor-on-node1", NrOfNodes) {
-      }
+      barrier("create-actor-on-node1", NrOfNodes).await()
 
       barrier("start-node2", NrOfNodes) {
         node.start()

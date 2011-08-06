@@ -47,8 +47,7 @@ class ReplicationTransactionLogWriteBehindNoSnapshotMultiJvmNode1 extends Cluste
         for (i ← 0 until 10) (actorRef ? Count(i)).as[String] must be(Some("World from node [node1]"))
       }
 
-      barrier("start-node2", NrOfNodes) {
-      }
+      barrier("start-node2", NrOfNodes).await()
 
       node.shutdown()
     }
@@ -64,11 +63,9 @@ class ReplicationTransactionLogWriteBehindNoSnapshotMultiJvmNode2 extends Master
 
     "be able to replicate an actor with a transaction log and replay transaction log after actor migration" in {
 
-      barrier("start-node1", NrOfNodes) {
-      }
+      barrier("start-node1", NrOfNodes).await()
 
-      barrier("create-actor-on-node1", NrOfNodes) {
-      }
+      barrier("create-actor-on-node1", NrOfNodes).await()
 
       barrier("start-node2", NrOfNodes) {
         node.start()

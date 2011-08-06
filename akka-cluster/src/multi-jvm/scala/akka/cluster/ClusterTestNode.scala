@@ -13,28 +13,6 @@ import akka.util.Duration
 import System.{ currentTimeMillis ⇒ now }
 
 import java.io.File
-import akka.actor.Deployer
-
-trait MasterClusterTestNode extends WordSpec with MustMatchers with BeforeAndAfterAll {
-  def testNodes: Int
-
-  override def beforeAll() = {
-    Cluster.startLocalCluster()
-    onReady()
-    ClusterTestNode.ready(getClass.getName)
-  }
-
-  def onReady() = {}
-
-  override def afterAll() = {
-    ClusterTestNode.waitForExits(getClass.getName, testNodes - 1)
-    ClusterTestNode.cleanUp(getClass.getName)
-    onShutdown()
-    Cluster.shutdownLocalCluster()
-  }
-
-  def onShutdown() = {}
-}
 
 trait ClusterTestNode extends WordSpec with MustMatchers with BeforeAndAfterAll {
 
