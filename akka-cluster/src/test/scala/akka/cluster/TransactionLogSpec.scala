@@ -3,26 +3,12 @@
  */
 package akka.cluster
 
-import org.apache.bookkeeper.client.{ BookKeeper, BKException }
-import BKException._
-import org.apache.zookeeper.server.ZooKeeperServer
-
+import org.apache.bookkeeper.client.BookKeeper
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach, Spec }
-
-import akka.serialization._
-import akka.actor._
-import ActorSerialization._
-import Actor._
-
-import java.util.concurrent.{ CyclicBarrier, TimeUnit }
-import java.io.File
-import java.nio.ByteBuffer
+import org.scalatest.BeforeAndAfterAll
 
 import com.eaio.uuid.UUID
-
-import scala.collection.JavaConversions._
 
 class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   private var bookKeeper: BookKeeper = _
@@ -30,11 +16,51 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
 
   "A synchronous used Transaction Log" should {
 
+    "be able to be deleted - synchronous" in {
+      val uuid = (new UUID).toString
+      val txlog = TransactionLog.newLogFor(uuid, false, null)
+      val entry = "hello".getBytes("UTF-8")
+      txlog.recordEntry(entry)
+
+      txlog.delete()
+      txlog.close()
+
+      val zkClient = TransactionLog.zkClient
+      assert(zkClient.readData(txlog.snapshotPath, true) == null)
+      assert(zkClient.readData(txlog.txLogPath, true) == null)
+    }
+
+    "fail to be opened if non existing - synchronous" in {
+      val uuid = (new UUID).toString
+      intercept[ReplicationException](TransactionLog.logFor(uuid, false, null))
+    }
+
+    "be able to be checked for existence - synchronous" in {
+      val uuid = (new UUID).toString
+      TransactionLog.exists(uuid) must be(false)
+
+      TransactionLog.newLogFor(uuid, false, null)
+      TransactionLog.exists(uuid) must be(true)
+    }
+
     "be able to record entries - synchronous" in {
       val uuid = (new UUID).toString
       val txlog = TransactionLog.newLogFor(uuid, false, null)
       val entry = "hello".getBytes("UTF-8")
       txlog.recordEntry(entry)
+    }
+
+    "be able to overweite an existing txlog if one already exists - synchronous" in {
+      val uuid = (new UUID).toString
+      val txlog1 = TransactionLog.newLogFor(uuid, false, null)
+      val entry = "hello".getBytes("UTF-8")
+      txlog1.recordEntry(entry)
+      txlog1.recordEntry(entry)
+      txlog1.close
+
+      val txLog2 = TransactionLog.newLogFor(uuid, false, null)
+      txLog2.latestSnapshotId.isDefined must be(false)
+      txLog2.latestEntryId must be(-1)
     }
 
     "be able to record and delete entries - synchronous" in {
@@ -45,7 +71,7 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       txlog1.recordEntry(entry)
       txlog1.delete
       txlog1.close
-      intercept[BKNoSuchLedgerExistsException](TransactionLog.logFor(uuid, false, null))
+      intercept[ReplicationException](TransactionLog.logFor(uuid, false, null))
     }
 
     "be able to record entries and read entries with 'entriesInRange' - synchronous" in {
@@ -146,14 +172,54 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
     }
   }
 
-  "An asynchronous used Transaction Log" should {
-    "be able to record entries" in {
+  "An asynchronous Transaction Log" should {
+    "be able to record entries - asynchronous" in {
       val uuid = (new UUID).toString
       val txlog = TransactionLog.newLogFor(uuid, true, null)
       val entry = "hello".getBytes("UTF-8")
       txlog.recordEntry(entry)
       Thread.sleep(200)
       txlog.close
+    }
+
+    "be able to be deleted - asynchronous" in {
+      val uuid = (new UUID).toString
+      val txlog = TransactionLog.newLogFor(uuid, true, null)
+      val entry = "hello".getBytes("UTF-8")
+      txlog.recordEntry(entry)
+
+      txlog.delete()
+      txlog.close()
+
+      val zkClient = TransactionLog.zkClient
+      assert(zkClient.readData(txlog.snapshotPath, true) == null)
+      assert(zkClient.readData(txlog.txLogPath, true) == null)
+    }
+
+    "be able to be checked for existence - asynchronous" in {
+      val uuid = (new UUID).toString
+      TransactionLog.exists(uuid) must be(false)
+
+      TransactionLog.newLogFor(uuid, true, null)
+      TransactionLog.exists(uuid) must be(true)
+    }
+
+    "fail to be opened if non existing - asynchronous" in {
+      val uuid = (new UUID).toString
+      intercept[ReplicationException](TransactionLog.logFor(uuid, true, null))
+    }
+
+    "be able to overweite an existing txlog if one already exists - asynchronous" in {
+      val uuid = (new UUID).toString
+      val txlog1 = TransactionLog.newLogFor(uuid, true, null)
+      val entry = "hello".getBytes("UTF-8")
+      txlog1.recordEntry(entry)
+      txlog1.recordEntry(entry)
+      txlog1.close
+
+      val txLog2 = TransactionLog.newLogFor(uuid, true, null)
+      txLog2.latestSnapshotId.isDefined must be(false)
+      txLog2.latestEntryId must be(-1)
     }
 
     "be able to record and delete entries - asynchronous" in {
@@ -167,8 +233,9 @@ class TransactionLogSpec extends WordSpec with MustMatchers with BeforeAndAfterA
       Thread.sleep(200)
       txlog1.delete
       Thread.sleep(200)
-      intercept[BKNoSuchLedgerExistsException](TransactionLog.logFor(uuid, true, null))
+      intercept[ReplicationException](TransactionLog.logFor(uuid, true, null))
     }
+
     "be able to record entries and read entries with 'entriesInRange' - asynchronous" in {
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null)
