@@ -515,6 +515,7 @@ class FutureSpec extends JUnitSuite {
 
     assert(y.get === 5)
     assert(z.get === 5)
+    assert(lz.tryAwaitUninterruptible(10000, TimeUnit.MILLISECONDS))
     assert(lz.isOpen)
     assert(result.get === 10)
 
