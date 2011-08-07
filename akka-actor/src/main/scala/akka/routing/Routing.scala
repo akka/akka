@@ -4,9 +4,6 @@
 
 package akka.routing
 
-import akka.actor.Actor._
-import scala.collection.JavaConversions._
-import scala.collection.immutable.Seq
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 
