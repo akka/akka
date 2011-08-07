@@ -58,7 +58,7 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
   }
 
   private[akka] def failOver(from: InetSocketAddress, to: InetSocketAddress): Unit = {
-    EventHandler.info(this, "ClusterActorRef. %s failover from %s to %s".format(address, from, to))
+    EventHandler.debug(this, "ClusterActorRef. %s failover from %s to %s".format(address, from, to))
 
     @tailrec
     def doFailover(from: InetSocketAddress, to: InetSocketAddress): Unit = {
@@ -96,7 +96,7 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
   }
 
   def signalDeadActor(ref: ActorRef): Unit = {
-    EventHandler.info(this, "ClusterActorRef %s signalDeadActor %s".format(address, ref.address))
+    EventHandler.debug(this, "ClusterActorRef %s signalDeadActor %s".format(address, ref.address))
 
     //since the number remote actor refs for a clustered actor ref is quite low, we can deal with the O(N) complexity
     //of the following removal.

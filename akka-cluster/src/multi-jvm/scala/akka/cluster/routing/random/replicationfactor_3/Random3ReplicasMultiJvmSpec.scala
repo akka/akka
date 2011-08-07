@@ -80,9 +80,14 @@ class Random3ReplicasMultiJvmNode2 extends ClusterTestNode {
         count((hello ? "Hello").as[String].getOrElse(fail("Should have recieved reply from a node")))
       }
 
-      assert(replies("World from node [node1]") > 100)
-      assert(replies("World from node [node2]") > 100)
-      assert(replies("World from node [node3]") > 100)
+      val repliesNode1 = replies("World from node [node1]")
+      val repliesNode2 = replies("World from node [node2]")
+      val repliesNode3 = replies("World from node [node3]")
+
+      assert(repliesNode1 > 100)
+      assert(repliesNode2 > 100)
+      assert(repliesNode3 > 100)
+      assert(repliesNode1 + repliesNode2 + repliesNode3 === 1000)
 
       barrier("end", NrOfNodes).await()
 

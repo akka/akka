@@ -4,14 +4,9 @@
 
 package akka.cluster.routing.roundrobin.replicationfactor_1
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.BeforeAndAfterAll
-
 import akka.cluster._
 import Cluster._
 import akka.actor._
-import akka.actor.Actor._
 import akka.config.Config
 
 /**
@@ -25,9 +20,11 @@ object RoundRobin1ReplicaMultiJvmSpec {
         self.reply("World from node [" + Config.nodename + "]")
     }
   }
+
 }
 
 class RoundRobin1ReplicaMultiJvmNode1 extends MasterClusterTestNode {
+
   import RoundRobin1ReplicaMultiJvmSpec._
 
   val testNodes = 1
