@@ -22,7 +22,7 @@ class ConfigSpec extends WordSpec with MustMatchers {
       getInt("akka.remote.client.reconnect-delay") must equal(Some(5))
       getInt("akka.remote.client.reconnection-time-window") must equal(Some(600))
 
-      getString("akka.remote.compression-scheme") must equal(Some("zlib"))
+      getString("akka.remote.compression-scheme") must equal(Some(""))
       getString("akka.remote.secure-cookie") must equal(Some(""))
 
       getInt("akka.remote.server.backlog") must equal(Some(4096))
