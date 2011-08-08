@@ -162,30 +162,13 @@ object Timeout {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Actor extends ListenerManagement {
+object Actor {
 
   /**
    * A Receive is a convenience type that defines actor message behavior currently modeled as
    * a PartialFunction[Any, Unit].
    */
   type Receive = PartialFunction[Any, Unit]
-
-  /**
-   * Add shutdown cleanups
-   */
-  private[akka] lazy val shutdownHook = {
-    val hook = new Runnable {
-      override def run() {
-        // Clear Thread.subclassAudits
-        val tf = classOf[java.lang.Thread].getDeclaredField("subclassAudits")
-        tf.setAccessible(true)
-        val subclassAudits = tf.get(null).asInstanceOf[java.util.Map[_, _]]
-        subclassAudits synchronized { subclassAudits.clear() }
-      }
-    }
-    Runtime.getRuntime.addShutdownHook(new Thread(hook, "akka-shutdown-hook"))
-    hook
-  }
 
   private[actor] val actorRefInCreation = new ThreadLocal[Stack[ActorRef]] {
     override def initialValue = Stack[ActorRef]()
