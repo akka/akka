@@ -25,7 +25,9 @@ import akka.util.{ Switch, Duration, BoxedType }
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 import scala.Math
 
-class FutureTimeoutException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class FutureTimeoutException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
+  def this(message: String) = this(message, null)
+}
 
 object Futures {
 
