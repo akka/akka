@@ -92,7 +92,7 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception 
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Actor extends ListenerManagement {
+object Actor {
 
   /**
    * Add shutdown cleanups
