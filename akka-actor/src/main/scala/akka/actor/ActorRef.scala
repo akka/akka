@@ -711,14 +711,17 @@ class LocalActorRef private[akka] (
     if (isRunning) {
       receiveTimeout = None
       cancelReceiveTimeout
-      dispatcher.detach(this)
+
       Actor.registry.unregister(this)
+
       if (isRemotingEnabled) {
         if (isClientManaged_?)
           Actor.remote.unregisterClientManagedActor(homeAddress.get.getAddress.getHostAddress, homeAddress.get.getPort, uuid)
         Actor.remote.unregister(this)
       }
       _status = ActorRefInternals.SHUTDOWN
+      dispatcher.detach(this)
+
       try {
         val a = actor
         if (Actor.debugLifecycle) EventHandler.debug(a, "stopping")
