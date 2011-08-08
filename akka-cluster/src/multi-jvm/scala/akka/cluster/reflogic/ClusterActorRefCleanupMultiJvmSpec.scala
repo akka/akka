@@ -41,8 +41,6 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
 
   "ClusterActorRef" must {
     "cleanup itself" in {
-      try {
-
         node.start
         barrier("awaitStarted", NrOfNodes).await()
 
@@ -110,11 +108,6 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
         }
 
         node.shutdown()
-      } catch {
-        case e: Throwable ⇒
-          e.printStackTrace();
-          throw e
-      }
     }
   }
 }
