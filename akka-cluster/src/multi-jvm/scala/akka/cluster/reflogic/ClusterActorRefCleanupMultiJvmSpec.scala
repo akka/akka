@@ -41,73 +41,73 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
 
   "ClusterActorRef" must {
     "cleanup itself" in {
-        node.start
-        barrier("awaitStarted", NrOfNodes).await()
+      node.start
+      barrier("awaitStarted", NrOfNodes).await()
 
-        val ref = Actor.actorOf[ClusterActorRefCleanupMultiJvmSpec.TestActor]("service-test")
+      val ref = Actor.actorOf[ClusterActorRefCleanupMultiJvmSpec.TestActor]("service-test")
 
-        ref.isInstanceOf[ClusterActorRef] must be(true)
+      ref.isInstanceOf[ClusterActorRef] must be(true)
 
-        val clusteredRef = ref.asInstanceOf[ClusterActorRef]
+      val clusteredRef = ref.asInstanceOf[ClusterActorRef]
 
-        //verify that all remote actors are there.
-        clusteredRef.connections.size must be(2)
+      //verify that all remote actors are there.
+      clusteredRef.connections.size must be(2)
 
-        // ignore exceptions from killing nodes
-        val ignoreExceptions = Seq(
-          EventFilter[ClosedChannelException],
-          EventFilter[NotYetConnectedException],
-          EventFilter[RoutingException],
-          EventFilter[ConnectException])
+      // ignore exceptions from killing nodes
+      val ignoreExceptions = Seq(
+        EventFilter[ClosedChannelException],
+        EventFilter[NotYetConnectedException],
+        EventFilter[RoutingException],
+        EventFilter[ConnectException])
 
-        EventHandler.notify(TestEvent.Mute(ignoreExceptions))
+      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
 
-        //let one of the actors die.
-        clusteredRef ! "Die"
+      //let one of the actors die.
+      clusteredRef ! "Die"
 
-        //just some waiting to make sure that the node has died.
-        Thread.sleep(5000)
+      //just some waiting to make sure that the node has died.
+      Thread.sleep(5000)
 
-        //send some request, this should trigger the cleanup
-        try {
-          clusteredRef ! "hello"
-          clusteredRef ! "hello"
-        } catch {
-          case e: ClosedChannelException   ⇒
-          case e: NotYetConnectedException ⇒
-          case e: RoutingException         ⇒
-        }
-
-        //since the call to the node failed, the node must have been removed from the list.
-        clusteredRef.connections.size must be(1)
-
-        //send a message to this node,
+      //send some request, this should trigger the cleanup
+      try {
         clusteredRef ! "hello"
+        clusteredRef ! "hello"
+      } catch {
+        case e: ClosedChannelException   ⇒
+        case e: NotYetConnectedException ⇒
+        case e: RoutingException         ⇒
+      }
 
-        //now kill another node
-        clusteredRef ! "Die"
+      //since the call to the node failed, the node must have been removed from the list.
+      clusteredRef.connections.size must be(1)
 
-        //just some waiting to make sure that the node has died.
-        Thread.sleep(5000)
+      //send a message to this node,
+      clusteredRef ! "hello"
 
-        //trigger the cleanup.
-        try {
-          clusteredRef ! "hello"
-        } catch {
-          case e: ClosedChannelException   ⇒
-          case e: NotYetConnectedException ⇒
-          case e: RoutingException         ⇒
-        }
+      //now kill another node
+      clusteredRef ! "Die"
 
-        //now there must not be any remaining connections after the dead of the last actor.
-        clusteredRef.connections.size must be(0)
+      //just some waiting to make sure that the node has died.
+      Thread.sleep(5000)
 
-        //and lets make sure we now get the correct exception if we try to use the ref.
-        intercept[RoutingException] {
-          clusteredRef ! "Hello"
-        }
+      //trigger the cleanup.
+      try {
+        clusteredRef ! "hello"
+      } catch {
+        case e: ClosedChannelException   ⇒
+        case e: NotYetConnectedException ⇒
+        case e: RoutingException         ⇒
+      }
 
-        node.shutdown()
+      //now there must not be any remaining connections after the dead of the last actor.
+      clusteredRef.connections.size must be(0)
+
+      //and lets make sure we now get the correct exception if we try to use the ref.
+      intercept[RoutingException] {
+        clusteredRef ! "Hello"
+      }
+
+      node.shutdown()
     }
   }
 }

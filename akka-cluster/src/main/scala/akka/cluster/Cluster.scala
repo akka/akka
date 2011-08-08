@@ -1800,7 +1800,9 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
   def handleRelease(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
     if (message.hasActorUuid) {
-      cluster.actorAddressForUuid(uuidProtocolToUuid(message.getActorUuid)) foreach cluster.release(_)
+      cluster.actorAddressForUuid(uuidProtocolToUuid(message.getActorUuid)) foreach { address ⇒
+        cluster.release(address)
+      }
     } else if (message.hasActorAddress) {
       cluster release message.getActorAddress
     } else {
@@ -1909,7 +1911,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
       }
       self.reply(Success)
     } catch {
-      case error:Throwable ⇒
+      case error: Throwable ⇒
         self.reply(Failure(error))
         throw error
     }
