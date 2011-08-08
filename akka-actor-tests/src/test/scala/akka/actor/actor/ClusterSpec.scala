@@ -6,7 +6,7 @@ import akka.config.Config
 
 class ClusterSpec extends WordSpec with MustMatchers {
 
-  "A Deployer" must {
+  "ClusterSpec: A Deployer" must {
     "be able to parse 'akka.actor.cluster._' config elements" in {
       import Config.config._
 
