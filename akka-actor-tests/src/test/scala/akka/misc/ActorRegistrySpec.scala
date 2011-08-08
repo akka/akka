@@ -261,4 +261,20 @@ class ActorRegistrySpec extends JUnitSuite {
       assert(actors.size === 9000)
     }
   }
+
+  @Test def shutdownAllShouldntCrashListeners {
+    def newListener = actorOf( new Actor {
+      def receive = {
+        case x =>
+      }
+    }).start()
+    actorOf(new Actor{ def receive = { case _ => } }).start()
+    actorOf(new Actor{ def receive = { case _ => } }).start()
+    actorOf(new Actor{ def receive = { case _ => } }).start()
+    actorOf(new Actor{ def receive = { case _ => } }).start()
+    actorOf(new Actor{ def receive = { case _ => } }).start()
+    Actor.registry.addListener(newListener)
+
+    Actor.registry.shutdownAll
+  }
 }

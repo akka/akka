@@ -4,9 +4,8 @@
 
 package akka.dispatch
 
-import akka.actor.{ ActorRef, Actor, IllegalActorStateException }
-
 import util.DynamicVariable
+import akka.actor.{ActorInitializationException, ActorRef, Actor, IllegalActorStateException}
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -77,12 +76,15 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   }
 
   override private[akka] def dispatch(invocation: MessageInvocation) = {
-    val mbox = getMailbox(invocation.receiver)
-    if (donationInProgress.value == false && (!mbox.isEmpty || mbox.dispatcherLock.locked) && attemptDonationOf(invocation, mbox)) {
-      //We were busy and we got to donate the message to some other lucky guy, we're done here
-    } else {
-      mbox enqueue invocation
-      registerForExecution(mbox)
+    getMailbox(invocation.receiver) match {
+      case null => throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start()' before using it")
+      case mbox =>
+       if (donationInProgress.value == false && (!mbox.isEmpty || mbox.dispatcherLock.locked) && attemptDonationOf(invocation, mbox)) {
+          //We were busy and we got to donate the message to some other lucky guy, we're done here
+       } else {
+         mbox enqueue invocation
+         registerForExecution(mbox)
+       }
     }
   }
 

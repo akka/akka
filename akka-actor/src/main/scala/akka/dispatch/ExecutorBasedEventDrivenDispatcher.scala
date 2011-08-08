@@ -5,10 +5,9 @@
 package akka.dispatch
 
 import akka.event.EventHandler
-import akka.actor.{ ActorRef }
-
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue }
+import akka.actor.{ActorInitializationException, ActorRef}
 
 /**
  * Default settings are:
@@ -92,9 +91,12 @@ class ExecutorBasedEventDrivenDispatcher(
   private[akka] val executorService = new AtomicReference[ExecutorService](config.createLazyExecutorService(threadFactory))
 
   private[akka] def dispatch(invocation: MessageInvocation) = {
-    val mbox = getMailbox(invocation.receiver)
-    mbox enqueue invocation
-    registerForExecution(mbox)
+    getMailbox(invocation.receiver) match {
+      case null => throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start()' before using it")
+      case mbox =>
+        mbox enqueue invocation
+        registerForExecution(mbox)
+    }
   }
 
   private[akka] def executeTask(invocation: TaskInvocation): Unit = if (active.isOn) {

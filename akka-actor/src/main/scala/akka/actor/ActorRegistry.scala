@@ -40,7 +40,6 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
 
   private val actorsByUUID = new ConcurrentHashMap[Uuid, ActorRef]
   private val actorsById = new Index[String, ActorRef]
-  private val guard = new ReadWriteGuard
 
   /**
    * Returns all actors in the system.
