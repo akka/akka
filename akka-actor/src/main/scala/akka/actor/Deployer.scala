@@ -21,7 +21,7 @@ import akka.AkkaException
  */
 object Deployer {
 
-  val defaultAddress = Host(Config.hostname)
+//  val defaultAddress = Node(Config.nodename)
 
   lazy val instance: ClusterModule.ClusterDeployer = {
     val deployer =
@@ -191,9 +191,9 @@ object Deployer {
                   val address = tokenizer.nextElement.asInstanceOf[String]
 
                   protocol match {
-                    case "host" ⇒ Host(address)
+                    //case "host" ⇒ Host(address)
                     case "node" ⇒ Node(address)
-                    case "ip"   ⇒ IP(address)
+                    //case "ip"   ⇒ IP(address)
                     case _      ⇒ raiseHomeConfigError()
                   }
                 }
