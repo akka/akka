@@ -31,7 +31,7 @@ trait ActorDeployer {
  */
 object Deployer extends ActorDeployer {
 
-//  val defaultAddress = Node(Config.nodename)
+  //  val defaultAddress = Node(Config.nodename)
 
   lazy val instance: ActorDeployer = {
     val deployer = if (ClusterModule.isEnabled) ClusterModule.clusterDeployer else LocalDeployer
