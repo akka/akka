@@ -93,7 +93,11 @@ Trivia
 
 This release contains changes to 213 files, with 16053 insertions and 3624
 deletions. The authorship of the corresponding commits is distributed as shown
-below.
+below; the listing should not be taken too seriously, though, it has just been
+done using ``git log --shortstat`` and summing up the numbers, so it certainly
+misses details like who originally authored changes which were then back-ported
+from the master branch (do not fear, you will be correctly attributed when the
+stats for 2.0 are made).
 
 =======  ==========  =========  =========
 Commits  Insertions  Deletions  Author
