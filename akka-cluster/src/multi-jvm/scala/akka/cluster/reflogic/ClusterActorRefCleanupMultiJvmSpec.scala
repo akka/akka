@@ -7,7 +7,10 @@ package akka.cluster.reflogic
 import akka.cluster._
 import akka.cluster.Cluster._
 import akka.actor.Actor
+import akka.event.EventHandler
+import akka.testkit.{ EventFilter, TestEvent }
 import akka.routing.RoutingException
+import java.net.ConnectException
 import java.nio.channels.{ ClosedChannelException, NotYetConnectedException }
 
 object ClusterActorRefCleanupMultiJvmSpec {
@@ -15,16 +18,16 @@ object ClusterActorRefCleanupMultiJvmSpec {
   val NrOfNodes = 3
 
   class TestActor extends Actor with Serializable {
-    println("--------------------------------------")
-    println("TestActor created")
-    println("--------------------------------------")
+    //println("--------------------------------------")
+    //println("TestActor created")
+    //println("--------------------------------------")
 
     def receive = {
       case "Die" ⇒
-        println("Killing JVM: " + Cluster.node.nodeAddress)
+        //println("Killing JVM: " + Cluster.node.nodeAddress)
         System.exit(0)
       case _ ⇒
-        println("Hello")
+      //println("Hello")
     }
   }
 
@@ -50,6 +53,15 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
       //verify that all remote actors are there.
       clusteredRef.connections.size must be(2)
 
+      // ignore exceptions from killing nodes
+      val ignoreExceptions = Seq(
+        EventFilter[ClosedChannelException],
+        EventFilter[NotYetConnectedException],
+        EventFilter[RoutingException],
+        EventFilter[ConnectException])
+
+      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
+
       //let one of the actors die.
       clusteredRef ! "Die"
 
@@ -61,7 +73,9 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
         clusteredRef ! "hello"
         clusteredRef ! "hello"
       } catch {
+        case e: ClosedChannelException   ⇒
         case e: NotYetConnectedException ⇒
+        case e: RoutingException         ⇒
       }
 
       //since the call to the node failed, the node must have been removed from the list.
@@ -89,11 +103,8 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
       clusteredRef.connections.size must be(0)
 
       //and lets make sure we now get the correct exception if we try to use the ref.
-      try {
+      intercept[RoutingException] {
         clusteredRef ! "Hello"
-        assert(false)
-      } catch {
-        case e: RoutingException ⇒
       }
 
       node.shutdown()

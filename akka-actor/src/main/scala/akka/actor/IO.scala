@@ -130,9 +130,11 @@ object IO {
   }
 
   sealed trait IOSuspendable[+A]
-  private case class ByteStringLength(continuation: (ByteString) ⇒ IOSuspendable[Any], handle: Handle, message: MessageInvocation, length: Int) extends IOSuspendable[ByteString]
-  private case class ByteStringDelimited(continuation: (ByteString) ⇒ IOSuspendable[Any], handle: Handle, message: MessageInvocation, delimter: ByteString, inclusive: Boolean, scanned: Int) extends IOSuspendable[ByteString]
-  private case class ByteStringAny(continuation: (ByteString) ⇒ IOSuspendable[Any], handle: Handle, message: MessageInvocation) extends IOSuspendable[ByteString]
+  sealed trait CurrentMessage { def message: MessageInvocation }
+  private case class ByteStringLength(continuation: (ByteString) ⇒ IOSuspendable[Any], handle: Handle, message: MessageInvocation, length: Int) extends IOSuspendable[ByteString] with CurrentMessage
+  private case class ByteStringDelimited(continuation: (ByteString) ⇒ IOSuspendable[Any], handle: Handle, message: MessageInvocation, delimter: ByteString, inclusive: Boolean, scanned: Int) extends IOSuspendable[ByteString] with CurrentMessage
+  private case class ByteStringAny(continuation: (ByteString) ⇒ IOSuspendable[Any], handle: Handle, message: MessageInvocation) extends IOSuspendable[ByteString] with CurrentMessage
+  private case class Retry(message: MessageInvocation) extends IOSuspendable[Nothing]
   private case object Idle extends IOSuspendable[Nothing]
 
 }
@@ -167,8 +169,11 @@ trait IO {
     case Connected(socket) ⇒
       state(socket).connected = true
       run()
-    case Closed(handle) ⇒
+    case msg @ Closed(handle) ⇒
       _state -= handle // TODO: clean up better
+      if (_receiveIO.isDefinedAt(msg)) {
+        _next = reset { _receiveIO(msg); Idle }
+      }
       run()
     case msg if _next ne Idle ⇒
       _messages enqueue self.currentMessage
@@ -178,6 +183,14 @@ trait IO {
   }
 
   def receiveIO: ReceiveIO
+
+  def retry(): Any @cps[IOSuspendable[Any]] =
+    shift { _: (Any ⇒ IOSuspendable[Any]) ⇒
+      _next match {
+        case n: CurrentMessage ⇒ Retry(n.message)
+        case _                 ⇒ Idle
+      }
+    }
 
   private lazy val _receiveIO = receiveIO
 
@@ -228,6 +241,10 @@ trait IO {
           _next = continuation(bytes)
           run()
         }
+      case Retry(message) ⇒
+        message +=: _messages
+        _next = Idle
+        run()
       case Idle ⇒ reinvoke()
     }
   }
@@ -355,10 +372,17 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
         case channel: ReadChannel ⇒ read(handle.asReadable, channel)
       }
       if (key.isWritable) key.channel match {
-        case channel: WriteChannel ⇒ write(handle.asWritable, channel)
+        case channel: WriteChannel ⇒
+          try {
+            write(handle.asWritable, channel)
+          } catch {
+            case e: IOException ⇒ // ignore, let it fail on read to ensure
+            // nothing left in read buffer.
+          }
       }
     } catch {
       case e: CancelledKeyException ⇒ cleanup(handle)
+      case e: IOException           ⇒ cleanup(handle)
     }
   }
 

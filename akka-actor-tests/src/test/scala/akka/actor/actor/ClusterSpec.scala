@@ -6,7 +6,7 @@ import akka.config.Config
 
 class ClusterSpec extends WordSpec with MustMatchers {
 
-  "A Deployer" must {
+  "ClusterSpec: A Deployer" must {
     "be able to parse 'akka.actor.cluster._' config elements" in {
       import Config.config._
 
@@ -21,7 +21,7 @@ class ClusterSpec extends WordSpec with MustMatchers {
       getInt("akka.cluster.connection-timeout") must equal(Some(60))
       getInt("akka.cluster.remote-daemon-ack-timeout") must equal(Some(30))
       getBool("akka.cluster.include-ref-node-in-replica-set") must equal(Some(true))
-      getString("akka.cluster.compression-scheme") must equal(Some("zlib"))
+      getString("akka.cluster.compression-scheme") must equal(Some(""))
       getInt("akka.cluster.zlib-compression-level") must equal(Some(6))
       getString("akka.cluster.layer") must equal(Some("akka.remote.netty.NettyRemoteSupport"))
       getString("akka.cluster.secure-cookie") must equal(Some(""))

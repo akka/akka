@@ -59,7 +59,7 @@ object DeploymentConfig {
   // --------------------------------
   sealed trait Scope
   case class Clustered(
-    preferredNodes: Iterable[Home] = Vector(Host("localhost")),
+    preferredNodes: Iterable[Home] = Vector(Node(Config.nodename)),
     replicas: ReplicationFactor = ZeroReplicationFactor,
     replication: ReplicationScheme = Transient) extends Scope
 
@@ -73,9 +73,9 @@ object DeploymentConfig {
   // --- Home
   // --------------------------------
   sealed trait Home
-  case class Host(hostName: String) extends Home
+  //  case class Host(hostName: String) extends Home
   case class Node(nodeName: String) extends Home
-  case class IP(ipAddress: String) extends Home
+  //  case class IP(ipAddress: String) extends Home
 
   // --------------------------------
   // --- Replicas
@@ -137,14 +137,12 @@ object DeploymentConfig {
   // --------------------------------
 
   def nodeNameFor(home: Home): String = home match {
-    case Node(nodename)    ⇒ nodename
-    case Host("localhost") ⇒ Config.nodename
-    case IP("0.0.0.0")     ⇒ Config.nodename
-    case IP("127.0.0.1")   ⇒ Config.nodename
-    case Host(hostname) ⇒ throw new UnsupportedOperationException(
-      "Specifying preferred node name by 'hostname' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
-    case IP(address) ⇒ throw new UnsupportedOperationException(
-      "Specifying preferred node name by 'IP address' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
+    case Node(nodename) ⇒ nodename
+    //    case Host("localhost") ⇒ Config.nodename
+    //    case IP("0.0.0.0")     ⇒ Config.nodename
+    //    case IP("127.0.0.1")   ⇒ Config.nodename
+    //    case Host(hostname)    ⇒ throw new UnsupportedOperationException("Specifying preferred node name by 'hostname' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
+    //    case IP(address)       ⇒ throw new UnsupportedOperationException("Specifying preferred node name by 'IP address' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
   }
 
   def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == Config.nodename)

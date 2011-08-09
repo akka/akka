@@ -1,6 +1,0 @@
-What does clustered home mean?
-
-akka.actor.deployment.service-hello.clustered.home = "node:node1"
-
-If a node fails, it should transparently be redeployed on a different node. So actors imho are homeless.. they run
-wherever the grid deploys them.

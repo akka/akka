@@ -19,11 +19,11 @@ object ReplicationTransactionLogWriteThroughSnapshotMultiJvmSpec {
 
   class HelloWorld extends Actor with Serializable {
     var log = ""
-    println("Creating HelloWorld log =======> " + log)
+    //println("Creating HelloWorld log =======> " + log)
     def receive = {
       case Count(nr) ⇒
         log += nr.toString
-        println("Message to HelloWorld log =======> " + log)
+        //println("Message to HelloWorld log =======> " + log)
         self.reply("World from node [" + Config.nodename + "]")
       case GetLog ⇒
         self.reply(Log(log))
@@ -68,8 +68,7 @@ class ReplicationTransactionLogWriteThroughSnapshotMultiJvmNode1 extends Cluster
         (actorRef ? Count(counter)).as[String].get must be("World from node [node1]")
       }
 
-      barrier("start-node2", NrOfNodes) {
-      }
+      barrier("start-node2", NrOfNodes).await()
 
       node.shutdown()
     }
@@ -85,11 +84,9 @@ class ReplicationTransactionLogWriteThroughSnapshotMultiJvmNode2 extends MasterC
 
     "be able to replicate an actor with a transaction log and replay transaction log after actor migration" in {
 
-      barrier("start-node1", NrOfNodes) {
-      }
+      barrier("start-node1", NrOfNodes).await()
 
-      barrier("create-actor-on-node1", NrOfNodes) {
-      }
+      barrier("create-actor-on-node1", NrOfNodes).await()
 
       barrier("start-node2", NrOfNodes) {
         node.start()

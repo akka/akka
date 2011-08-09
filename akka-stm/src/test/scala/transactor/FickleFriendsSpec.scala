@@ -5,12 +5,12 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 
 import akka.transactor.Coordinated
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, ActorTimeoutException }
 import akka.stm._
 import akka.util.duration._
 import akka.event.EventHandler
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent._
+import akka.transactor.CoordinatedTransactionException
+import akka.testkit._
 
 import scala.util.Random.{ nextInt ⇒ random }
 
@@ -59,6 +59,8 @@ object FickleFriends {
     }
   }
 
+  class ExpectedFailureException(message: String) extends RuntimeException(message)
+
   /**
    * FickleCounter randomly fails at different points with 50% chance of failing overall.
    */
@@ -72,7 +74,7 @@ object FickleFriends {
     }
 
     def failIf(x: Int, y: Int) = {
-      if (x == y) throw new RuntimeException("Random fail at position " + x)
+      if (x == y) throw new ExpectedFailureException("Random fail at position " + x)
     }
 
     def receive = {
@@ -98,16 +100,6 @@ object FickleFriends {
 class FickleFriendsSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import FickleFriends._
 
-  val ignoreEvents = List(EventFilter(classOf[RuntimeException], message = "Random fail"))
-
-  override def beforeAll() {
-    ignoreEvents foreach (f ⇒ EventHandler.notify(Mute(f)))
-  }
-
-  override def afterAll() {
-    ignoreEvents foreach (f ⇒ EventHandler.notify(UnMute(f)))
-  }
-
   val numCounters = 2
 
   def createActors = {
@@ -119,6 +111,11 @@ class FickleFriendsSpec extends WordSpec with MustMatchers with BeforeAndAfterAl
 
   "Coordinated fickle friends" should {
     "eventually succeed to increment all counters by one" in {
+      val ignoreExceptions = Seq(
+        EventFilter[ExpectedFailureException],
+        EventFilter[CoordinatedTransactionException],
+        EventFilter[ActorTimeoutException])
+      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
       val (counters, coordinator) = createActors
       val latch = new CountDownLatch(1)
       coordinator ! FriendlyIncrement(counters, latch)
@@ -129,6 +126,7 @@ class FickleFriendsSpec extends WordSpec with MustMatchers with BeforeAndAfterAl
       }
       counters foreach (_.stop())
       coordinator.stop()
+      EventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 }

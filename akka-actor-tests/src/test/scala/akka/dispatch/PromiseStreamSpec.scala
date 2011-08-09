@@ -3,6 +3,7 @@ package akka.dispatch
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import Future.flow
+import akka.util.cps._
 
 class PromiseStreamSpec extends JUnitSuite {
   @Test
@@ -74,30 +75,36 @@ class PromiseStreamSpec extends JUnitSuite {
   @Test
   def pendingTest2 {
     val a, b, c, d = Promise[Int]()
-    val q = PromiseStream[Int]()
+    val q1, q2 = PromiseStream[Int]()
     val oneTwo = Future(List(1, 2))
-    flow { a << q }
     flow {
-      b << q
-      q << 3 << 4
+      a << q2
+      b << q2
+      q1 << 3 << 4
     }
-    flow { c << q }
     flow {
-      q <<< oneTwo
-      d << q
+      q2 <<< oneTwo
+      c << q1
+      d << q1
     }
-    assert((a.get, b.get, c.get, d.get) === (1, 2, 3, 4))
+    assert(a.get === 1)
+    assert(b.get === 2)
+    assert(c.get === 3)
+    assert(d.get === 4)
   }
 
   @Test
   def pendingEnqueueTest {
-    val a, b = Promise[Int]()
     val q = PromiseStream[Int]()
-    flow { a << q }
-    flow { b << q }
-    val c = q.dequeue()
+    val a = q.dequeue()
+    val b = q.dequeue()
+    val c, d = Promise[Int]()
+    flow {
+      c << q
+      d << q
+    }
     q ++= List(1, 2, 3, 4)
-    val d = q.dequeue()
+
     assert(a.get === 1)
     assert(b.get === 2)
     assert(c.get === 3)
@@ -113,9 +120,11 @@ class PromiseStreamSpec extends JUnitSuite {
     flow {
       a << qi
       b << qs
+      c << qi
     }
-    flow { qs << ("Hello", "World!", "Test") }
-    flow { c << qi }
+    flow {
+      qs << ("Hello", "World!", "Test")
+    }
     assert(a.get === 5)
     assert(b.get === "World!")
     assert(c.get === 4)
@@ -123,11 +132,38 @@ class PromiseStreamSpec extends JUnitSuite {
 
   @Test
   def concurrentStressTest {
-    val q = PromiseStream[Int]()
-    Future((0 until 50000) foreach (v ⇒ Future(q enqueue v)))
-    val future = Future.sequence(List.fill(10)(Future(Future.sequence(List.fill(10000)(q.dequeue()))).flatMap(x ⇒ x))) map (_.flatten.sorted)
-    Future((50000 until 100000) foreach (v ⇒ Future(q enqueue v)))
+    val q = PromiseStream[Long]()
+
+    flow {
+      var n = 0L
+      repeatC(50000) {
+        n += 1
+        q << n
+      }
+    }
+
+    val future = Future sequence {
+      List.fill(10) {
+        flow {
+          var total = 0L
+          repeatC(10000) {
+            val n = q()
+            total += n
+          }
+          total
+        }
+      }
+    } map (_.sum)
+
+    flow {
+      var n = 50000L
+      repeatC(50000) {
+        n += 1
+        q << n
+      }
+    }
+
     val result = future.get
-    assert(result === List.range(0, 100000), "Result did not match 'List.range(0, 100000)'")
+    assert(result === (1L to 100000L).sum)
   }
 }

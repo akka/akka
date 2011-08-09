@@ -10,7 +10,7 @@ public class UntypedCoordinatedCounter extends UntypedActor {
     private Ref<Integer> count = new Ref<Integer>(0);
 
     private void increment() {
-        System.out.println("incrementing");
+        //System.out.println("incrementing");
         count.set(count.get() + 1);
     }
 

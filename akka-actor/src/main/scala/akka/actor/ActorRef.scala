@@ -20,7 +20,8 @@ import java.util.{ Map ⇒ JMap }
 import scala.reflect.BeanProperty
 import scala.collection.immutable.Stack
 import scala.annotation.tailrec
-import java.lang.IllegalStateException
+import java.lang.{ UnsupportedOperationException, IllegalStateException }
+import akka.japi.Creator
 
 private[akka] object ActorRefInternals {
 
@@ -37,6 +38,124 @@ private[akka] object ActorRefInternals {
 
   object SHUTDOWN extends StatusType
 
+}
+
+/**
+ * ActorRef configuration object, this is threadsafe and fully sharable
+ *
+ * Props() returns default configuration
+ * TODO document me
+ */
+object Props {
+  val defaultTimeout: Timeout = Timeout(Duration(Actor.TIMEOUT, "millis"))
+  def defaultDispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
+  val noCreatorSpecified: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actorFactoryProvided!")
+
+  val default = new Props(creator = noCreatorSpecified)
+  def apply(): Props = default
+
+  def apply[T <: Actor: Manifest]: Props =
+    default.withCreator(() ⇒ implicitly[Manifest[T]].erasure.asInstanceOf[Class[_ <: Actor]].newInstance)
+
+  def apply(actorClass: Class[_ <: Actor]): Props =
+    default.withCreator(() ⇒ actorClass.newInstance)
+}
+
+/**
+ * ActorRef configuration object, this is thread safe and fully sharable
+ */
+case class Props(creator: () ⇒ Actor,
+                 deployId: String = "",
+                 dispatcher: MessageDispatcher = Props.defaultDispatcher,
+                 timeout: Timeout = Props.defaultTimeout,
+                 receiveTimeout: Option[Duration] = None,
+                 lifeCycle: LifeCycle = Permanent,
+                 faultHandler: FaultHandlingStrategy = NoFaultHandlingStrategy,
+                 supervisor: Option[ActorRef] = None,
+                 localOnly: Boolean = false) {
+  /**
+   * Returns a new Props with the specified creator set
+   *  Scala API
+   */
+  def withCreator(c: () ⇒ Actor) = copy(creator = c)
+
+  /**
+   * Returns a new Props with the specified creator set
+   *  Java API
+   */
+  def withCreator(c: Creator[Actor]) = copy(creator = () ⇒ c.create)
+
+  /**
+   * Returns a new Props with the specified deployId set
+   *  Java and Scala API
+   */
+  def withDeployId(id: String) = copy(deployId = if (id eq null) "" else id)
+
+  /**
+   * Returns a new Props with the specified dispatcher set
+   *  Java API
+   */
+  def withDispatcher(d: MessageDispatcher) = copy(dispatcher = d)
+
+  /**
+   * Returns a new Props with the specified timeout set
+   * Java API
+   */
+  def withTimeout(t: Timeout) = copy(timeout = t)
+
+  /**
+   * Returns a new Props with the specified lifecycle set
+   * Java API
+   */
+  def withLifeCycle(l: LifeCycle) = copy(lifeCycle = l)
+
+  /**
+   * Returns a new Props with the specified faulthandler set
+   * Java API
+   */
+  def withFaultHandler(f: FaultHandlingStrategy) = copy(faultHandler = f)
+
+  /**
+   * Returns a new Props with the specified supervisor set, if null, it's equivalent to withSupervisor(Option.none())
+   * Java API
+   */
+  def withSupervisor(s: ActorRef) = copy(supervisor = Option(s))
+
+  /**
+   * Returns a new Props with the specified supervisor set
+   * Java API
+   */
+  def withSupervisor(s: akka.japi.Option[ActorRef]) = copy(supervisor = s.asScala)
+
+  /**
+   * Returns a new Props with the specified supervisor set
+   * Scala API
+   */
+  def withSupervisor(s: scala.Option[ActorRef]) = copy(supervisor = s)
+
+  /**
+   * Returns a new Props with the specified receive timeout set, if null, it's equivalent to withReceiveTimeout(Option.none())
+   * Java API
+   */
+  def withReceiveTimeout(r: Duration) = copy(receiveTimeout = Option(r))
+
+  /**
+   * Returns a new Props with the specified receive timeout set
+   * Java API
+   */
+  def withReceiveTimeout(r: akka.japi.Option[Duration]) = copy(receiveTimeout = r.asScala)
+
+  /**
+   * Returns a new Props with the specified receive timeout set
+   * Scala API
+   */
+  def withReceiveTimeout(r: scala.Option[Duration]) = copy(receiveTimeout = r)
+
+  /**
+   * Returns a new Props with the specified localOnly set
+   * Java and Scala API
+   */
+  def withLocalOnly(l: Boolean) = copy(localOnly = l)
 }
 
 /**
@@ -540,14 +659,18 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
       "Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
       dispatcher.attach(this)
-
       _status = ActorRefInternals.RUNNING
+      try {
+        // If we are not currently creating this ActorRef instance
+        if ((actorInstance ne null) && (actorInstance.get ne null))
+          initializeActorInstance
 
-      // If we are not currently creating this ActorRef instance
-      if ((actorInstance ne null) && (actorInstance.get ne null))
-        initializeActorInstance
-
-      checkReceiveTimeout //Schedule the initial Receive timeout
+        checkReceiveTimeout //Schedule the initial Receive timeout
+      } catch {
+        case e ⇒
+          _status = ActorRefInternals.UNSTARTED
+          throw e
+      }
     }
     this
   }
@@ -560,24 +683,24 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
       if (isRunning) {
         receiveTimeout = None
         cancelReceiveTimeout
-        dispatcher.detach(this)
+        Actor.registry.unregister(this)
+
+        // This lines can trigger cluster start which makes cluster ZK client hang trying to reconnect indefinitely
+        //if (ClusterModule.isEnabled) Actor.remote.unregister(this)
         _status = ActorRefInternals.SHUTDOWN
+        dispatcher.detach(this)
         try {
           val a = actor
           if (Actor.debugLifecycle) EventHandler.debug(a, "stopping")
           a.postStop()
         } finally {
           currentMessage = null
-          Actor.registry.unregister(this)
-
-          // This lines can trigger cluster start which makes cluster ZK client hang trying to reconnect indefinitely
-          //if (ClusterModule.isEnabled) Actor.remote.unregister(this)
 
           setActorSelfFields(actorInstance.get, null)
         }
       } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
 
-      if (replicationStorage.isDefined) replicationStorage.get.delete()
+      if (replicationStorage.isDefined) replicationStorage.get.delete() //TODO shouldn't this be inside the if (isRunning?)
     }
   }
 
@@ -668,7 +791,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     channel: UntypedChannel): Future[Any] = {
     val future = channel match {
       case f: ActorPromise ⇒ f
-      case _               ⇒ new ActorPromise(timeout)
+      case _               ⇒ new ActorPromise(timeout)(dispatcher)
     }
     dispatcher dispatchMessage new MessageInvocation(this, message, future)
     future

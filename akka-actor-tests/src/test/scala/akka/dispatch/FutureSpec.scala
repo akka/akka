@@ -10,9 +10,10 @@ import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import org.scalacheck.Gen._
 
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, Timeout }
 import Actor._
 import akka.testkit.{ EventFilter, filterEvents, filterException }
+import akka.util.duration._
 import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 
@@ -145,7 +146,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         behave like futureWithResult { test ⇒
           val actor1 = actorOf[TestActor].start()
           val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply s.toUpperCase } }).start()
-          val future = actor1 ? "Hello" flatMap { _ match { case s: String ⇒ actor2 ? s } }
+          val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
           future.await
           test(future, "WORLD")
           actor1.stop()
@@ -157,9 +158,22 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           filterException[ArithmeticException] {
             val actor1 = actorOf[TestActor].start()
             val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply (s.length / 0) } }).start()
-            val future = actor1 ? "Hello" flatMap { _ match { case s: String ⇒ actor2 ? s } }
+            val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
             future.await
             test(future, "/ by zero")
+            actor1.stop()
+            actor2.stop()
+          }
+        }
+      }
+      "will throw a MatchError when matching wrong type" must {
+        behave like futureWithException[MatchError] { test ⇒
+          filterException[MatchError] {
+            val actor1 = actorOf[TestActor].start()
+            val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply s.toUpperCase } }).start()
+            val future = actor1 ? "Hello" flatMap { case i: Int ⇒ actor2 ? i }
+            future.await
+            test(future, "World (of class java.lang.String)")
             actor1.stop()
             actor2.stop()
           }
@@ -181,18 +195,19 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           val future0 = actor ? "Hello"
 
           val future1 = for {
-            a: Int ← future0.mapTo[Int] // returns 5
-            b: String ← (actor ? a).mapTo[String] // returns "10"
-            c: String ← (actor ? 7).mapTo[String] // returns "14"
+            a ← future0.mapTo[Int] // returns 5
+            b ← (actor ? a).mapTo[String] // returns "10"
+            c ← (actor ? 7).mapTo[String] // returns "14"
           } yield b + "-" + c
 
           val future2 = for {
-            a: Int ← future0.mapTo[Int]
-            b: Int ← (actor ? a).mapTo[Int]
-            c: String ← (actor ? 7).mapTo[String]
+            a ← future0.mapTo[Int]
+            b ← (actor ? a).mapTo[Int]
+            c ← (actor ? 7).mapTo[String]
           } yield b + "-" + c
 
           future1.get must be("10-14")
+          assert(checkType(future1, manifest[String]))
           intercept[ClassCastException] { future2.get }
           actor.stop()
         }
@@ -313,21 +328,20 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         }
       }
 
-      /*  @Test
-  def shouldFoldMutableZeroes {
-    import scala.collection.mutable.ArrayBuffer
-    def test(testNumber: Int) {
-      val fs = (0 to 1000) map (i ⇒ Future(i, 10000))
-      val result = Futures.fold(ArrayBuffer.empty[AnyRef], 10000)(fs) {
-        case (l, i) if i % 2 == 0 ⇒ l += i.asInstanceOf[AnyRef]
-        case (l, _)               ⇒ l
-      }.get.asInstanceOf[ArrayBuffer[Int]].sum
+      "fold mutable zeroes safely" in {
+        import scala.collection.mutable.ArrayBuffer
+        def test(testNumber: Int) {
+          val fs = (0 to 1000) map (i ⇒ Future(i, 10000))
+          val result = Futures.fold(ArrayBuffer.empty[AnyRef], 10000)(fs) {
+            case (l, i) if i % 2 == 0 ⇒ l += i.asInstanceOf[AnyRef]
+            case (l, _)               ⇒ l
+          }.get.asInstanceOf[ArrayBuffer[Int]].sum
 
-      assert(result === 250500)
-    }
+          assert(result === 250500)
+        }
 
-    (1 to 100) foreach test //Make sure it tries to provoke the problem
-  }*/
+        (1 to 100) foreach test //Make sure it tries to provoke the problem
+      }
 
       "return zero value if folding empty list" in {
         Futures.fold(0)(List[Future[Int]]())(_ + _).get must be(0)
@@ -400,7 +414,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         filterException[ThrowableTest] {
           val f1 = Future { throw new ThrowableTest("test") }
           f1.await
-          intercept[ThrowableTest] { f1.resultOrException }
+          intercept[ThrowableTest] { f1.get }
 
           val latch = new StandardLatch
           val f2 = Future { latch.tryAwait(5, TimeUnit.SECONDS); "success" }
@@ -409,14 +423,17 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           val f3 = f2 map (s ⇒ s.toUpperCase)
           latch.open
           f2.await
-          assert(f2.resultOrException === Some("success"))
+          assert(f2.get === "success")
           f2 foreach (_ ⇒ throw new ThrowableTest("current thread foreach"))
           f2 onResult { case _ ⇒ throw new ThrowableTest("current thread receive") }
           f3.await
-          assert(f3.resultOrException === Some("SUCCESS"))
+          assert(f3.get === "SUCCESS")
+
+          // give time for all callbacks to execute
+          Thread sleep 100
 
           // make sure all futures are completed in dispatcher
-          assert(Dispatchers.defaultGlobalDispatcher.pendingFutures === 0)
+          assert(Dispatchers.defaultGlobalDispatcher.tasks === 0)
         }
       }
 
@@ -430,7 +447,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         latch.open
         assert(f2.get === 10)
 
-        val f3 = Future({ Thread.sleep(10); 5 }, 10)
+        val f3 = Future({ Thread.sleep(10); 5 }, 10 millis)
         filterException[FutureTimeoutException] {
           intercept[FutureTimeoutException] {
             f3.get
@@ -537,7 +554,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         Thread.sleep(100)
 
         // make sure all futures are completed in dispatcher
-        assert(Dispatchers.defaultGlobalDispatcher.pendingFutures === 0)
+        assert(Dispatchers.defaultGlobalDispatcher.tasks === 0)
       }
 
       "shouldNotAddOrRunCallbacksAfterFailureToBeCompletedBeforeExpiry" in {
@@ -566,10 +583,14 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
 
         flow { one << 1 }
 
+        one.await
+
         assert(one.isCompleted)
         assert(List(two, simpleResult).forall(_.isCompleted == false))
 
         flow { two << 9 }
+
+        two.await
 
         assert(List(one, two).forall(_.isCompleted == true))
         assert(simpleResult.get === 10)
@@ -588,7 +609,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           lz.open()
           x1() + x2()
         }
-        assert(lx.isOpen)
+        assert(lx.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
         assert(!ly.isOpen)
         assert(!lz.isOpen)
         assert(List(x1, x2, y1, y2).forall(_.isCompleted == false))
@@ -680,8 +701,6 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       "futureFlowShouldBeTypeSafe" in {
         import Future.flow
 
-        def checkType[A: Manifest, B](in: Future[A], refmanifest: Manifest[B]): Boolean = manifest[A] == refmanifest
-
         val rString = flow {
           val x = Future(5)
           x().toString
@@ -721,7 +740,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         import Future.flow
         import akka.util.cps._
 
-        val count = 10000
+        val count = 1000
 
         val promises = List.fill(count)(Promise[Int]())
 
@@ -747,13 +766,64 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       "ticket812FutureDispatchCleanup" in {
         filterException[FutureTimeoutException] {
           implicit val dispatcher = new Dispatcher("ticket812FutureDispatchCleanup")
-          assert(dispatcher.pendingFutures === 0)
+          assert(dispatcher.tasks === 0)
           val future = Future({ Thread.sleep(100); "Done" }, 10)
           intercept[FutureTimeoutException] { future.await }
-          assert(dispatcher.pendingFutures === 1)
+          assert(dispatcher.tasks === 1)
           Thread.sleep(200)
-          assert(dispatcher.pendingFutures === 0)
+          assert(dispatcher.tasks === 0)
         }
+      }
+
+      "run callbacks async" in {
+        val latch = Vector.fill(10)(new StandardLatch)
+
+        val f1 = Future { latch(0).open; latch(1).await; "Hello" }
+        val f2 = f1 map { s ⇒ latch(2).open; latch(3).await; s.length }
+        f2 foreach (_ ⇒ latch(4).open)
+
+        latch(0).await
+
+        f1 must not be ('completed)
+        f2 must not be ('completed)
+
+        latch(1).open
+        latch(2).await
+
+        f1 must be('completed)
+        f2 must not be ('completed)
+
+        val f3 = f1 map { s ⇒ latch(5).open; latch(6).await; s.length * 2 }
+        f3 foreach (_ ⇒ latch(3).open)
+
+        latch(5).await
+
+        f3 must not be ('completed)
+
+        latch(6).open
+        latch(4).await
+
+        f2 must be('completed)
+        f3 must be('completed)
+
+        val p1 = Promise[String]()
+        val f4 = p1 map { s ⇒ latch(7).open; latch(8).await; s.length }
+        f4 foreach (_ ⇒ latch(9).open)
+
+        p1 must not be ('completed)
+        f4 must not be ('completed)
+
+        p1 complete Right("Hello")
+
+        latch(7).await
+
+        p1 must be('completed)
+        f4 must not be ('completed)
+
+        latch(8).open
+        latch(9).await
+
+        f4.await must be('completed)
       }
     }
   }
@@ -865,4 +935,5 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
 
   }
 
+  def checkType[A: Manifest, B](in: Future[A], refmanifest: Manifest[B]): Boolean = manifest[A] == refmanifest
 }

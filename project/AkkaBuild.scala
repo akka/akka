@@ -1,7 +1,8 @@
 import sbt._
 import Keys._
-import MultiJvmPlugin.{ MultiJvm, extraOptions }
+import MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
 import ScalariformPlugin.{ format, formatPreferences }
+import java.lang.Boolean.getBoolean
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -16,6 +17,7 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Unidoc.settings ++ rstdocSettings ++ Seq(
+      parallelExecution in GlobalScope := false,
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       rstdocDirectory <<= baseDirectory / "akka-docs"
     ),
@@ -70,6 +72,10 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.cluster,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      },
+      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+      jvmOptions in MultiJvm := {
+        if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
       },
       test in Test <<= (test in Test) dependsOn (test in MultiJvm)
     )
@@ -292,7 +298,8 @@ object AkkaBuild extends Build {
     resolvers += "Twitter Public Repo" at "http://maven.twttr.com", // This will be going away with com.mongodb.async's next release
 
     // compile options
-    scalacOptions ++= Seq("-encoding", "UTF-8", "-optimise", "-deprecation", "-unchecked"),
+    scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked") ++ (
+      if (System getProperty "java.runtime.version" startsWith "1.7") Seq() else Seq("-optimize")), // -optimize fails with jdk7
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 
     // add config dir to classpaths
@@ -417,7 +424,7 @@ object Dependency {
     val Jetty        = "7.4.0.v20110414"
     val Logback      = "0.9.28"
     val Multiverse   = "0.6.2"
-    val Netty        = "3.2.4.Final"
+    val Netty        = "3.2.5.Final"
     val Protobuf     = "2.4.1"
     val Scalatest    = "1.6.1"
     val Slf4j        = "1.6.0"
@@ -456,7 +463,7 @@ object Dependency {
   val springBeans   = "org.springframework"         % "spring-beans"           % V.Spring     // ApacheV2
   val springContext = "org.springframework"         % "spring-context"         % V.Spring     // ApacheV2
   val staxApi       = "javax.xml.stream"            % "stax-api"               % "1.0-2"      // ApacheV2
-  val twttrUtilCore = "com.twitter"                 % "util-core"              % "1.8.1"      // ApacheV2  
+  val twttrUtilCore = "com.twitter"                 % "util-core"              % "1.8.1"      // ApacheV2
   val zkClient      = "zkclient"                    % "zkclient"               % "0.3"        // ApacheV2
   val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"              % V.Zookeeper  // ApacheV2
   val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2

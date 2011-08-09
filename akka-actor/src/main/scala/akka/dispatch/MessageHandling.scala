@@ -26,17 +26,15 @@ final case class MessageInvocation(val receiver: ActorRef,
   }
 }
 
-final case class FutureInvocation[T](future: Promise[T], function: () ⇒ T, cleanup: () ⇒ Unit) extends Runnable {
+final case class TaskInvocation(function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
   def run() {
-    future complete (try {
-      Right(function())
+    try {
+      function()
     } catch {
-      case e ⇒
-        EventHandler.error(e, this, e.getMessage)
-        Left(e)
+      case e ⇒ EventHandler.error(e, this, e.getMessage)
     } finally {
       cleanup()
-    })
+    }
   }
 }
 
@@ -56,7 +54,7 @@ abstract class MessageDispatcher {
   import MessageDispatcher._
 
   protected val uuids = new ConcurrentSkipListSet[Uuid]
-  protected val futures = new AtomicLong(0L)
+  protected val _tasks = new AtomicLong(0L)
   protected val guard = new ReentrantGuard
   protected val active = new Switch(false)
 
@@ -94,31 +92,27 @@ abstract class MessageDispatcher {
     dispatch(invocation)
   }
 
-  private[akka] final def dispatchFuture[T](block: () ⇒ T, timeout: Timeout): Future[T] = {
-    futures.getAndIncrement()
+  private[akka] final def dispatchTask(block: () ⇒ Unit): Unit = {
+    _tasks.getAndIncrement()
     try {
-      val future = new DefaultPromise[T](timeout)
-
       if (active.isOff)
         guard withGuard {
           active.switchOn {
             start()
           }
         }
-
-      executeFuture(FutureInvocation[T](future, block, futureCleanup))
-      future
+      executeTask(TaskInvocation(block, taskCleanup))
     } catch {
       case e ⇒
-        futures.decrementAndGet
+        _tasks.decrementAndGet
         throw e
     }
   }
 
-  private val futureCleanup: () ⇒ Unit =
-    () ⇒ if (futures.decrementAndGet() == 0) {
+  private val taskCleanup: () ⇒ Unit =
+    () ⇒ if (_tasks.decrementAndGet() == 0) {
       guard withGuard {
-        if (futures.get == 0 && uuids.isEmpty) {
+        if (_tasks.get == 0 && uuids.isEmpty) {
           shutdownSchedule match {
             case UNSCHEDULED ⇒
               shutdownSchedule = SCHEDULED
@@ -155,7 +149,7 @@ abstract class MessageDispatcher {
     if (uuids remove actorRef.uuid) {
       cleanUpMailboxFor(actorRef)
       actorRef.mailbox = null
-      if (uuids.isEmpty && futures.get == 0) {
+      if (uuids.isEmpty && _tasks.get == 0) {
         shutdownSchedule match {
           case UNSCHEDULED ⇒
             shutdownSchedule = SCHEDULED
@@ -196,7 +190,7 @@ abstract class MessageDispatcher {
             shutdownSchedule = SCHEDULED
             Scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
           case SCHEDULED ⇒
-            if (uuids.isEmpty && futures.get == 0) {
+            if (uuids.isEmpty && _tasks.get == 0) {
               active switchOff {
                 shutdown() // shut down in the dispatcher's references is zero
               }
@@ -229,7 +223,7 @@ abstract class MessageDispatcher {
    */
   private[akka] def dispatch(invocation: MessageInvocation)
 
-  private[akka] def executeFuture(invocation: FutureInvocation[_])
+  private[akka] def executeTask(invocation: TaskInvocation)
 
   /**
    * Called one time every time an actor is attached to this dispatcher and this dispatcher was previously shutdown
@@ -252,9 +246,9 @@ abstract class MessageDispatcher {
   def mailboxIsEmpty(actorRef: ActorRef): Boolean
 
   /**
-   * Returns the amount of futures queued for execution
+   * Returns the amount of tasks queued for execution
    */
-  def pendingFutures: Long = futures.get
+  def tasks: Long = _tasks.get
 }
 
 /**

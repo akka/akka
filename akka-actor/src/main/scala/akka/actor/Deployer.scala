@@ -31,7 +31,7 @@ trait ActorDeployer {
  */
 object Deployer extends ActorDeployer {
 
-  val defaultAddress = Host(Config.hostname)
+  //  val defaultAddress = Node(Config.nodename)
 
   lazy val instance: ActorDeployer = {
     val deployer = if (ClusterModule.isEnabled) ClusterModule.clusterDeployer else LocalDeployer
@@ -183,9 +183,9 @@ object Deployer extends ActorDeployer {
                   val address = tokenizer.nextElement.asInstanceOf[String]
 
                   protocol match {
-                    case "host" ⇒ Host(address)
+                    //case "host" ⇒ Host(address)
                     case "node" ⇒ Node(address)
-                    case "ip"   ⇒ IP(address)
+                    //case "ip"   ⇒ IP(address)
                     case _      ⇒ raiseHomeConfigError()
                   }
                 }

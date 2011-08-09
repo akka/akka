@@ -5,12 +5,12 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 
 import akka.transactor.Coordinated
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, ActorTimeoutException }
 import akka.stm.{ Ref, TransactionFactory }
 import akka.util.duration._
 import akka.event.EventHandler
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent._
+import akka.transactor.CoordinatedTransactionException
+import akka.testkit._
 
 object CoordinatedIncrement {
   case class Increment(friends: Seq[ActorRef])
@@ -39,13 +39,15 @@ object CoordinatedIncrement {
     }
   }
 
+  class ExpectedFailureException extends RuntimeException("Expected failure")
+
   class Failer extends Actor {
     val txFactory = TransactionFactory(timeout = 3 seconds)
 
     def receive = {
       case coordinated @ Coordinated(Increment(friends)) ⇒ {
         coordinated.atomic(txFactory) {
-          throw new RuntimeException("Expected failure")
+          throw new ExpectedFailureException
         }
       }
     }
@@ -54,15 +56,6 @@ object CoordinatedIncrement {
 
 class CoordinatedIncrementSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import CoordinatedIncrement._
-
-  override def beforeAll() {
-    EventHandler notify Mute(EventFilter[RuntimeException]("Expected failure"))
-    EventHandler notify Mute(EventFilter[org.multiverse.api.exceptions.DeadTransactionException]())
-  }
-
-  override def afterAll() {
-    EventHandler notify UnMuteAll
-  }
 
   val numCounters = 5
   val timeout = 5 seconds
@@ -88,6 +81,11 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers with BeforeAnd
     }
 
     "increment no counters with a failing transaction" in {
+      val ignoreExceptions = Seq(
+        EventFilter[ExpectedFailureException],
+        EventFilter[CoordinatedTransactionException],
+        EventFilter[ActorTimeoutException])
+      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
       val (counters, failer) = createActors
       val coordinated = Coordinated()
       counters(0) ! Coordinated(Increment(counters.tail :+ failer))
@@ -97,6 +95,7 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers with BeforeAnd
       }
       counters foreach (_.stop())
       failer.stop()
+      EventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 }

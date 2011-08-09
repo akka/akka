@@ -13,28 +13,6 @@ import akka.util.Duration
 import System.{ currentTimeMillis ⇒ now }
 
 import java.io.File
-import akka.actor.Deployer
-
-trait MasterClusterTestNode extends WordSpec with MustMatchers with BeforeAndAfterAll {
-  def testNodes: Int
-
-  override def beforeAll() = {
-    Cluster.startLocalCluster()
-    onReady()
-    ClusterTestNode.ready(getClass.getName)
-  }
-
-  def onReady() = {}
-
-  override def afterAll() = {
-    ClusterTestNode.waitForExits(getClass.getName, testNodes - 1)
-    ClusterTestNode.cleanUp(getClass.getName)
-    onShutdown()
-    Cluster.shutdownLocalCluster()
-  }
-
-  def onShutdown() = {}
-}
 
 trait ClusterTestNode extends WordSpec with MustMatchers with BeforeAndAfterAll {
 
@@ -55,7 +33,6 @@ object ClusterTestNode {
   val Timeout = 1.minute
 
   def ready(className: String) = {
-    println("ClusterTest: READY")
     readyFile(className).createNewFile()
   }
 
@@ -64,11 +41,9 @@ object ClusterTestNode {
       cleanUp(className)
       sys.error("Timeout waiting for cluster ready")
     }
-    println("ClusterTest: GO")
   }
 
   def exit(className: String) = {
-    println("ClusterTest: EXIT")
     exitFile(className).createNewFile()
   }
 
@@ -77,7 +52,6 @@ object ClusterTestNode {
       cleanUp(className)
       sys.error("Timeout waiting for node exits")
     }
-    println("ClusterTest: SHUTDOWN")
   }
 
   def cleanUp(className: String) = {

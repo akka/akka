@@ -79,12 +79,12 @@ object IOActorSpec {
                 val value = socket read length.toInt
                 server.owner ? (('set, key, value)) map ((x: Any) ⇒ ByteString("+OK\r\n"))
               case Array("GET", key) ⇒
-                server.owner ? (('get, key)) collect {
+                server.owner ? (('get, key)) map {
                   case Some(b: ByteString) ⇒ ByteString("$" + b.length + "\r\n") ++ b
                   case None                ⇒ ByteString("$-1\r\n")
                 }
               case Array("GETALL") ⇒
-                server.owner ? 'getall collect {
+                server.owner ? 'getall map {
                   case m: Map[_, _] ⇒
                     (ByteString("*" + (m.size * 2) + "\r\n") /: m) {
                       case (result, (k: String, v: ByteString)) ⇒
