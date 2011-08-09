@@ -12,17 +12,6 @@ package object akka {
    */
   implicit def toAnyOptionAsTypedOption(anyOption: Option[Any]) = new AnyOptionAsTypedOption(anyOption)
 
-  /**
-   * Implicitly converts the given Future[_] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
-   * to convert an Option[Any] to an Option[T].
-   * This means that the following code is equivalent:
-   *   (actor ? "foo").as[Int] (Recommended)
-   */
-  implicit def futureToAnyOptionAsTypedOption(anyFuture: Future[_]) = new AnyOptionAsTypedOption({
-    try { anyFuture.await } catch { case t: FutureTimeoutException ⇒ }
-    anyFuture.resultOrException
-  })
-
   private[akka] class AnyOptionAsTypedOption(anyOption: Option[Any]) {
     /**
      * Convenience helper to cast the given Option of Any to an Option of the given type. Will throw a ClassCastException
