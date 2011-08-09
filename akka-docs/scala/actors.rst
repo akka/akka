@@ -294,8 +294,11 @@ processing another message on this actor).
 For this purpose, there is the method :meth:`Future.as[T]` which waits until
 either the future is completed or its timeout expires, whichever comes first.
 The result is then inspected and returned as :class:`Some[T]` if it was
-normally completed and the answer’s runtime type matches the desired type; in
-all other cases :class:`None` is returned.
+normally completed and the answer’s runtime type matches the desired type; if
+the future contains an exception or the value cannot be cast to the desired
+type, it will throw the exception or a :class:`ClassCastException` (if you want
+to get :obj:`None` in the latter case, use :meth:`Future.asSilently[T]`). In
+case of a timeout, :obj:`None` is returned.
 
 .. code-block:: scala
 

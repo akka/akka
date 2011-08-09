@@ -388,20 +388,35 @@ sealed trait Future[+T] extends japi.Future[T] {
   def await(atMost: Duration): Future[T]
 
   /**
-   * Await completion of this Future (as `await`) and return its value if it
-   * conforms to A's erased type.
+   * Await completion of this Future and return its value if it conforms to A's
+   * erased type. Will throw a ClassCastException if the value does not
+   * conform, or any exception the Future was completed with. Will return None
+   * in case of a timeout.
    */
-  def as[A](implicit m: Manifest[A]): Option[A] =
-    try {
-      await
-      value match {
-        case None                ⇒ None
-        case Some(_: Left[_, _]) ⇒ None
-        case Some(Right(v))      ⇒ Some(BoxedType(m.erasure).cast(v).asInstanceOf[A])
-      }
-    } catch {
-      case _: Exception ⇒ None
+  def as[A](implicit m: Manifest[A]): Option[A] = {
+    try await catch { case _: FutureTimeoutException ⇒ }
+    value match {
+      case None           ⇒ None
+      case Some(Left(ex)) ⇒ throw ex
+      case Some(Right(v)) ⇒ Some(BoxedType(m.erasure).cast(v).asInstanceOf[A])
     }
+  }
+
+  /**
+   * Await completion of this Future and return its value if it conforms to A's
+   * erased type, None otherwise. Will throw any exception the Future was
+   * completed with. Will return None in case of a timeout.
+   */
+  def asSilently[A](implicit m: Manifest[A]): Option[A] = {
+    try await catch { case _: FutureTimeoutException ⇒ }
+    value match {
+      case None           ⇒ None
+      case Some(Left(ex)) ⇒ throw ex
+      case Some(Right(v)) ⇒
+        try Some(BoxedType(m.erasure).cast(v).asInstanceOf[A])
+        catch { case _: ClassCastException => None }
+    }
+  }
 
   /**
    * Tests whether this Future has been completed.

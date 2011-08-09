@@ -294,18 +294,6 @@ object Actor {
    */
   implicit def toAnyOptionAsTypedOption(anyOption: Option[Any]) = new AnyOptionAsTypedOption(anyOption)
 
-  /**
-   * Implicitly converts the given Future[_] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
-   * to convert an Option[Any] to an Option[T].
-   * This means that the following code is equivalent:
-   *   (actor !! "foo").as[Int] (Deprecated)
-   *   and
-   *   (actor !!! "foo").as[Int] (Recommended)
-   */
-  implicit def futureToAnyOptionAsTypedOption(anyFuture: Future[_]) = new AnyOptionAsTypedOption({
-    try { anyFuture.await } catch { case t: FutureTimeoutException ⇒ }
-    anyFuture.resultOrException
-  })
 }
 
 /**
