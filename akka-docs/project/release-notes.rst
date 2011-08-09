@@ -12,8 +12,6 @@ development cycle please refer to
 
 - **Actor:** 
 
-  - pluggable serializers for remote actors (Java, Protobuf, ScalaJSON, JavaJSON)
-
   - unified :class:`Channel` abstraction for :class:`Promise` & :class:`Actor`
 
   - reintegrate invocation tracing (to be enabled per class and globally)
