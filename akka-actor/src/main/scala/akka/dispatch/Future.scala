@@ -6,7 +6,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef, Scheduler, Timeout }
+import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef, Scheduler, Timeout, ExceptionChannel }
 import akka.util.{ Duration, BoxedType }
 import akka.japi.{ Procedure, Function ⇒ JFunc }
 
@@ -867,21 +867,17 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
   private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
 }
 
-class ActorPromise(timeout: Timeout)(implicit dispatcher: MessageDispatcher) extends DefaultPromise[Any](timeout)(dispatcher) with ForwardableChannel {
+class ActorPromise(timeout: Timeout)(implicit dispatcher: MessageDispatcher) extends DefaultPromise[Any](timeout)(dispatcher) with ForwardableChannel with ExceptionChannel[Any] {
 
-  def !(message: Any)(implicit channel: UntypedChannel = NullChannel) = completeWithResult(message)
+  def !(message: Any)(implicit channel: UntypedChannel) = completeWithResult(message)
 
-  def sendException(ex: Throwable) = completeWithException(ex)
+  override def sendException(ex: Throwable) = {
+    completeWithException(ex)
+    value == Some(Left(ex))
+  }
 
   def channel: UntypedChannel = this
 
-  def isUsableOnlyOnce = true
-  def isUsable = !isCompleted
-  def isReplyable = false
-  def canSendException = true
-
-  @deprecated("ActorPromise merged with Channel[Any], just use 'this'", "1.2")
-  def future = this
 }
 
 object ActorPromise {
@@ -889,7 +885,10 @@ object ActorPromise {
     new ActorPromise(f.timeout)(f.dispatcher) {
       completeWith(f)
       override def !(message: Any)(implicit channel: UntypedChannel) = f completeWithResult message
-      override def sendException(ex: Throwable) = f completeWithException ex
+      override def sendException(ex: Throwable) = {
+        f completeWithException ex
+        f.value == Some(Left(ex))
+      }
     }
 }
 
