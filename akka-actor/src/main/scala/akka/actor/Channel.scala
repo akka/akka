@@ -99,7 +99,7 @@ trait Channel[-T] extends japi.Channel[T] {
    * actor.sendOneWay(message);
    * </pre>
    */
-  @deprecated("Use 'tellSafe' instead", "1.2")
+  @deprecated("Use 'tryTell' instead", "1.2")
   def sendOneWaySafe(msg: T): Boolean = this.tryTell(msg)
 
   /**
@@ -111,7 +111,7 @@ trait Channel[-T] extends japi.Channel[T] {
    * actor.sendOneWay(message, context);
    * </pre>
    */
-  @deprecated("Use 'tellSafe' instead", "1.2")
+  @deprecated("Use 'tryTell' instead", "1.2")
   def sendOneWaySafe(msg: T, sender: UntypedChannel): Boolean = this.tryTell(msg)(sender)
 
   /**
