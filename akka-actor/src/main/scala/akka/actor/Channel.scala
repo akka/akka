@@ -25,7 +25,7 @@ package japi {
  * Abstraction for unification of sender and senderFuture for later reply.
  * Can be stored away and used at a later point in time.
  *
- * The possible reply channel which can be passed into ! and safe_! is always
+ * The possible reply channel which can be passed into ! and tryTell is always
  * untyped, as there is no way to utilize its real static type without
  * requiring runtime-costly manifests.
  */
@@ -135,9 +135,9 @@ case object NullChannel extends UntypedChannel {
    You have probably:
       1. Sent a message to an Actor from an instance that is NOT an Actor.
       2. Invoked a method on an TypedActor from an instance NOT an TypedActor.
-   You may want to have a look at safe_! for a variant returning a Boolean""")
+   You may want to have a look at tryTell for a variant returning a Boolean""")
   }
-  def tryTell(msg: Any)(implicit channel: UntypedChannel, dummy: Int = 0): Boolean = false
+  override def tryTell(msg: Any)(implicit channel: UntypedChannel): Boolean = false
 }
 
 /**
