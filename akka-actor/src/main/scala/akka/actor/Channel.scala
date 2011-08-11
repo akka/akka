@@ -181,7 +181,7 @@ case object NullChannel extends UntypedChannel {
       2. Invoked a method on an TypedActor from an instance NOT an TypedActor.
    You may want to have a look at safe_! for a variant returning a Boolean""")
   }
-  def tryTell(msg: Any)(implicit channel: UntypedChannel, dummy: Int = 0): Boolean = false
+  override def tryTell(msg: Any)(implicit channel: UntypedChannel): Boolean = false
 }
 
 /**
