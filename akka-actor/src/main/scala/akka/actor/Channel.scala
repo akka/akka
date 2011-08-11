@@ -25,7 +25,7 @@ package japi {
  * Abstraction for unification of sender and senderFuture for later reply.
  * Can be stored away and used at a later point in time.
  *
- * The possible reply channel which can be passed into ! and safe_! is always
+ * The possible reply channel which can be passed into ! and tryTell is always
  * untyped, as there is no way to utilize its real static type without
  * requiring runtime-costly manifests.
  */
