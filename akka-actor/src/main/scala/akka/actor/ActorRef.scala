@@ -386,6 +386,18 @@ trait ActorRef extends ActorRefShared with ForwardableChannel with ReplyChannel[
   def replySafe(message: AnyRef): Boolean = tryReply(message)
 
   /**
+   * Use <code>self.reply(..)</code> to reply with a message to the original sender of the message currently
+   * being processed. This method  fails if the original sender of the message could not be determined with an
+   * IllegalStateException.
+   * <p/>
+   * If you don't want deal with this IllegalStateException, but just a boolean, just use the <code>tryReply(...)</code>
+   * version.
+   *
+   * Throws an IllegalStateException if unable to determine what to reply to.
+   */
+  def reply(message: Any) = channel.!(message)(this)
+
+  /**
    * Use <code>getContext().tryReply(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
    * <p/>
@@ -1456,18 +1468,6 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel with ReplyCha
       postMessageToMailbox(message, channel.channel)
     } else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
-
-  /**
-   * Use <code>self.reply(..)</code> to reply with a message to the original sender of the message currently
-   * being processed. This method  fails if the original sender of the message could not be determined with an
-   * IllegalStateException.
-   * <p/>
-   * If you don't want deal with this IllegalStateException, but just a boolean, just use the <code>tryReply(...)</code>
-   * version.
-   *
-   * Throws an IllegalStateException if unable to determine what to reply to.
-   */
-  def reply(message: Any) = channel.!(message)(this)
 
   /**
    * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
