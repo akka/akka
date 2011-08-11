@@ -357,7 +357,7 @@ sealed trait Future[+T] extends japi.Future[T] {
    * continuation until the result is available.
    *
    * If this Future is untyped (a Future[Nothing]), a type parameter must be explicitly provided or
-   * execution will fail. The normal result of getting a Future from an ActorRef using !!! will return
+   * execution will fail. The normal result of getting a Future from an ActorRef using ? will return
    * an untyped Future.
    */
   def apply[A >: T](): A @cps[Future[Any]] = shift(this flatMap (_: A ⇒ Future[Any]))
@@ -523,9 +523,9 @@ sealed trait Future[+T] extends japi.Future[T] {
    * Example:
    * <pre>
    * val future1 = for {
-   *   a <- actor !!! Req("Hello") collect { case Res(x: Int)    ⇒ x }
-   *   b <- actor !!! Req(a)       collect { case Res(x: String) ⇒ x }
-   *   c <- actor !!! Req(7)       collect { case Res(x: String) ⇒ x }
+   *   a <- actor ? Req("Hello") collect { case Res(x: Int)    ⇒ x }
+   *   b <- actor ? Req(a)       collect { case Res(x: String) ⇒ x }
+   *   c <- actor ? Req(7)       collect { case Res(x: String) ⇒ x }
    * } yield b + "-" + c
    * </pre>
    */
@@ -575,9 +575,9 @@ sealed trait Future[+T] extends japi.Future[T] {
    * Example:
    * <pre>
    * val future1 = for {
-   *   a: Int    <- actor !!! "Hello" // returns 5
-   *   b: String <- actor !!! a       // returns "10"
-   *   c: String <- actor !!! 7       // returns "14"
+   *   a: Int    <- actor ? "Hello" // returns 5
+   *   b: String <- actor ? a       // returns "10"
+   *   c: String <- actor ? 7       // returns "14"
    * } yield b + "-" + c
    * </pre>
    */
@@ -627,9 +627,9 @@ sealed trait Future[+T] extends japi.Future[T] {
    * Example:
    * <pre>
    * val future1 = for {
-   *   a: Int    <- actor !!! "Hello" // returns 5
-   *   b: String <- actor !!! a       // returns "10"
-   *   c: String <- actor !!! 7       // returns "14"
+   *   a: Int    <- actor ? "Hello" // returns 5
+   *   b: String <- actor ? a       // returns "10"
+   *   c: String <- actor ? 7       // returns "14"
    * } yield b + "-" + c
    * </pre>
    */
