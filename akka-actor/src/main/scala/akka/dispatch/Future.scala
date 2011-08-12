@@ -513,6 +513,14 @@ sealed trait Future[+T] extends japi.Future[T] {
     }
   }
 
+  /**
+   * Registers a function that will be executed when this Future times out.
+   * <pre>
+   *    future onTimeout {
+   *      f => doSomethingOnTimeout(f)
+   *    }
+   * </pre>
+   */
   def onTimeout(func: Future[T] ⇒ Unit): this.type
 
   /**
@@ -687,6 +695,9 @@ sealed trait Future[+T] extends japi.Future[T] {
 package japi {
   /* Java API */
   trait Future[+T] { self: akka.dispatch.Future[T] ⇒
+    private[japi] final def onTimeout[A >: T](proc: Procedure[akka.dispatch.Future[A]]): this.type = self.onTimeout(proc(_))
+    private[japi] final def onResult[A >: T](proc: Procedure[A]): this.type = self.onResult({ case r: A => proc(r) }: PartialFunction[T, Unit])
+    private[japi] final def onException(proc: Procedure[Throwable]): this.type = self.onException({ case t: Throwable => proc(t) }: PartialFunction[Throwable,Unit])
     private[japi] final def onComplete[A >: T](proc: Procedure[akka.dispatch.Future[A]]): this.type = self.onComplete(proc(_))
     private[japi] final def map[A >: T, B](f: JFunc[A, B]): akka.dispatch.Future[B] = self.map(f(_))
     private[japi] final def flatMap[A >: T, B](f: JFunc[A, akka.dispatch.Future[B]]): akka.dispatch.Future[B] = self.flatMap(f(_))
@@ -785,7 +796,7 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit va
       val start = System.nanoTime()
       try { ref.synchronized { if (value.isEmpty) ref.wait(ms,ns) } } catch { case e: InterruptedException ⇒ }
 
-      awaitUnsafe(waitTimeNanos - Math.abs(System.nanoTime() - start))
+      awaitUnsafe(waitTimeNanos - math.abs(System.nanoTime() - start))
     } else {
       value.isDefined
     }

@@ -5,7 +5,7 @@ import org.junit.Test
 import akka.actor.{ Actor, ActorRef }
 import Actor._
 import org.multiverse.api.latches.StandardLatch
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 object FutureSpec {
   class TestActor extends Actor {
@@ -38,8 +38,7 @@ class FutureSpec extends JUnitSuite {
 
   @Test
   def shouldActorReplyResultThroughExplicitFuture {
-    val actor = actorOf[TestActor]
-    actor.start()
+    val actor = actorOf[TestActor].start()
     val future = actor !!! "Hello"
     future.await
     assert(future.result.isDefined)
@@ -49,13 +48,38 @@ class FutureSpec extends JUnitSuite {
 
   @Test
   def shouldActorReplyExceptionThroughExplicitFuture {
-    val actor = actorOf[TestActor]
-    actor.start()
+    val actor = actorOf[TestActor].start()
     val future = actor !!! "Failure"
     future.await
     assert(future.exception.isDefined)
     assert("Expected exception; to test fault-tolerance" === future.exception.get.getMessage)
     actor.stop()
+  }
+
+  @Test
+  def onResultShouldBeExecuted {
+    val latch = new CountDownLatch(1)
+    val p = new DefaultCompletableFuture[String](1000, TimeUnit.MILLISECONDS)
+    p onResult { case "foo" => latch.countDown }
+    p.completeWithResult("foo")
+    assert(latch.await(5000, TimeUnit.MILLISECONDS))
+  }
+
+  @Test
+  def onTimeoutShouldBeExecuted {
+    val latch = new CountDownLatch(1)
+    val p = new DefaultCompletableFuture[String](100, TimeUnit.MILLISECONDS)
+    p onTimeout { _ => latch.countDown }
+    assert(latch.await(5000, TimeUnit.MILLISECONDS))
+  }
+
+  @Test
+  def onExceptionShouldBeExecuted {
+    val latch = new CountDownLatch(1)
+    val p = new DefaultCompletableFuture[String](1000, TimeUnit.MILLISECONDS)
+    p onException { case _:NullPointerException => latch.countDown }
+    p.completeWithException(new NullPointerException)
+    assert(latch.await(5000, TimeUnit.MILLISECONDS))
   }
 
   @Test
