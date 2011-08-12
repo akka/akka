@@ -26,7 +26,7 @@ class ConfigSpec extends WordSpec with MustMatchers {
       getString("akka.remote.secure-cookie") must equal(Some(""))
 
       getInt("akka.remote.server.backlog") must equal(Some(4096))
-      getInt("akka.remote.server.connection-timeout") must equal(Some(1))
+      getInt("akka.remote.server.connection-timeout") must equal(Some(100))
       getString("akka.remote.server.hostname") must equal(Some("localhost"))
       getInt("akka.remote.server.message-frame-size") must equal(Some(1048576))
       getInt("akka.remote.server.port") must equal(Some(2552))
