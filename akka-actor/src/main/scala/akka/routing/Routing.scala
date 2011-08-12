@@ -22,7 +22,7 @@ class RoutingException(message: String) extends AkkaException(message)
 sealed trait RouterType
 
 /**
- * Used for declariative configuration of Routing.
+ * Used for declarative configuration of Routing.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -48,7 +48,7 @@ object RouterType {
   /**
    * A RouterType that select the connection based on the least amount of ram used.
    *
-   * todo: this is extremely vague currently since there are so many ways to define least amount of ram.
+   * FIXME: this is extremely vague currently since there are so many ways to define least amount of ram.
    */
   object LeastRAM extends RouterType
 
@@ -243,7 +243,7 @@ class RoutedActorRef(val address: String, val router: Router, val connectionIter
       var newList = oldState.connectionIterable.filter(currentActorRef ⇒ currentActorRef ne ref)
 
       if (newList.size != oldState.connectionIterable.size) {
-        //one or more occurrances of the actorRef were removed, so we need to update the state.
+        //one or more occurrences of the actorRef were removed, so we need to update the state.
 
         val newState = new State(oldState.version + 1, newList)
         //if we are not able to update the state, we just try again.
@@ -260,11 +260,8 @@ class RoutedActorRef(val address: String, val router: Router, val connectionIter
  * An Abstract Router implementation that already provides the basic infrastructure so that a concrete
  * Router only needs to implement the next method.
  *
- * todo:
- * This also is the location where a failover  is done in the future if an ActorRef fails and a different
- * one needs to be selected.
- * todo:
- * this is also the location where message buffering should be done in case of failure.
+ * FIXME: This also is the location where a failover  is done in the future if an ActorRef fails and a different one needs to be selected.
+ * FIXME: this is also the location where message buffering should be done in case of failure.
  */
 trait BasicRouter extends Router {
 
@@ -359,7 +356,7 @@ class DirectRouter extends BasicRouter {
       val (version, connectionIterable) = connections.versionedIterator
 
       if (connectionIterable.size > 1)
-        throw new RoutingException("A DirectRouter can't have more than 1 connected actorref, but found [%s]".format(connectionIterable.size))
+        throw new RoutingException("A DirectRouter can't have more than 1 connected Actor, but found [%s]".format(connectionIterable.size))
 
       val newState = new DirectRouterState(connectionIterable.head, version)
       if (state.compareAndSet(currentState, newState)) {
@@ -385,7 +382,7 @@ class RandomRouter extends BasicRouter {
 
   private val state = new AtomicReference[RandomRouterState]()
 
-  //todo: threadlocal random?
+  //FIXME: threadlocal random?
   private val random = new java.util.Random(System.currentTimeMillis)
 
   def next: Option[ActorRef] = {

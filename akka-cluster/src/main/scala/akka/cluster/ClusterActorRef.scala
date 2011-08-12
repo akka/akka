@@ -147,7 +147,7 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
           if (actorRef ne deadRef) newConnections = newConnections + ((address, actorRef))
         })
 
-       if (newConnections.size != oldState.connections.size) {
+      if (newConnections.size != oldState.connections.size) {
         //one or more occurrances of the actorRef were removed, so we need to update the state.
         val newState = new State(oldState.version + 1, newConnections)
 
