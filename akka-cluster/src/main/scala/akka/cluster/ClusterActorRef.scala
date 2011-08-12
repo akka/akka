@@ -126,8 +126,10 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
       }
 
       if (change) {
-
+        //there was a state change, so we are now going to update the state.
         val newState = new State(oldState.version + 1, newMap)
+
+        //if we are not able to update, the state, we are going to try again.
         if (!state.compareAndSet(oldState, newState)) failOver(from, to)
       }
     }
@@ -146,9 +148,7 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
           if (actorRef ne deadRef) newConnections = newConnections + ((address, actorRef))
         })
 
-      //  (address, actorRef) ⇒ if (actorRef ne deadRef) newConnections = newConnections + (address, actorRef))
-
-      if (newConnections.size != oldState.connections.size) {
+       if (newConnections.size != oldState.connections.size) {
         //one or more occurrances of the actorRef were removed, so we need to update the state.
 
         val newState = new State(oldState.version + 1, newConnections)
