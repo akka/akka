@@ -11,8 +11,6 @@ import java.util.concurrent.TimeUnit;
 import akka.japi.Function;
 import akka.japi.Function2;
 import akka.japi.Procedure;
-import scala.Some;
-import scala.Right;
 import static akka.dispatch.Futures.*;
 
 public class JavaFutureTests {
@@ -32,17 +30,6 @@ public class JavaFutureTests {
 
         assertEquals("Hello World", f2.get());
     }
-
-    /**
-     * private[japi] final def onTimeout[A >: T](proc: Procedure[japi.Future[A]]): this.type = self onTimeout proc
-    private[japi] final def onResult[A >: T](proc: Procedure[A]): this.type = self.onResult({ case r: A => proc(r) }: PartialFunction[T, Unit])
-    private[japi] final def onException(proc: Procedure[Throwable]): this.type = self.onException({ case t: Throwable => proc(t) }:PartialFunction[Throwable,Unit])
-    private[japi] final def onComplete[A >: T](proc: Procedure[japi.Future[A]]): this.type = self.onComplete(proc(_))
-    private[japi] final def map[A >: T, B](f: JFunc[A, B]): akka.dispatch.Future[B] = self.map(f(_))
-    private[japi] final def flatMap[A >: T, B](f: JFunc[A, akka.dispatch.Future[B]]): akka.dispatch.Future[B] = self.flatMap(f(_))
-    private[japi] final def foreach[A >: T](proc: Procedure[A]): Unit = self.foreach(proc(_))
-    private[japi] final def filter(p: JFunc[Any, Boolean]): akka.dispatch.Future[Any] = self.filter(p(_))
-     */
 
     @Test public void mustBeAbleToExecuteAnOnResultCallback() throws Throwable {
       final CountDownLatch latch = new CountDownLatch(1);
@@ -97,7 +84,6 @@ public class JavaFutureTests {
       Future<String> f = cf;
       f.onComplete(new Procedure<Future<String>>() {
           public void apply(akka.dispatch.Future<String> future) {
-             if(future.result().isDefined() && future.result().get().equals("foo"))
              latch.countDown();
           }
       });
@@ -107,16 +93,55 @@ public class JavaFutureTests {
       assertEquals(f.get(), "foo");
     }
 
-    @Test public void mustBeAbleToForeachAFuture() {
+    @Test public void mustBeAbleToForeachAFuture() throws Throwable {
+      final CountDownLatch latch = new CountDownLatch(1);
+      CompletableFuture<String> cf = new akka.dispatch.DefaultCompletableFuture<String>(1000, TimeUnit.MILLISECONDS, Dispatchers.defaultGlobalDispatcher());
+      Future<String> f = cf;
+      f.foreach(new Procedure<String>() {
+          public void apply(String future) {
+             latch.countDown();
+          }
+      });
 
+      cf.completeWithResult("foo");
+      assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+      assertEquals(f.get(), "foo");
     }
 
-    @Test public void mustBeAbleToFlatMapAFuture() {
+    @Test public void mustBeAbleToFlatMapAFuture() throws Throwable {
+      final CountDownLatch latch = new CountDownLatch(1);
+      CompletableFuture<String> cf = new akka.dispatch.DefaultCompletableFuture<String>(1000, TimeUnit.MILLISECONDS, Dispatchers.defaultGlobalDispatcher());
+      cf.completeWithResult("1000");
+      Future<String> f = cf;
+      Future<Integer> r = f.flatMap(new Function<String, Future<Integer>>() {
+            public Future<Integer> apply(String r) {
+                latch.countDown();
+                CompletableFuture<Integer> cf = new akka.dispatch.DefaultCompletableFuture<Integer>(1000, TimeUnit.MILLISECONDS, Dispatchers.defaultGlobalDispatcher());
+                cf.completeWithResult(Integer.parseInt(r));
+                return cf;
+            }
+        });
 
+      assertEquals(f.get(), "1000");
+      assertEquals(r.get().intValue(), 1000);
+      assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
     }
 
-    @Test public void mustBeAbleToFilterAFuture() {
+    @Test public void mustBeAbleToFilterAFuture() throws Throwable {
+      final CountDownLatch latch = new CountDownLatch(1);
+      CompletableFuture<String> cf = new akka.dispatch.DefaultCompletableFuture<String>(1000, TimeUnit.MILLISECONDS, Dispatchers.defaultGlobalDispatcher());
+      Future<String> f = cf;
+      Future<String> r = f.filter(new Function<String, Boolean>() {
+          public Boolean apply(String r) {
+              latch.countDown();
+              return r.equals("foo");
+          }
+      });
 
+      cf.completeWithResult("foo");
+      assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+      assertEquals(f.get(), "foo");
+      assertEquals(r.get(), "foo");
     }
 
     // TODO: Improve this test, perhaps with an Actor

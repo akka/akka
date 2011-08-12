@@ -702,7 +702,8 @@ package japi {
     private[japi] final def map[A >: T, B](f: JFunc[A, B]): akka.dispatch.Future[B] = self.map(f(_))
     private[japi] final def flatMap[A >: T, B](f: JFunc[A, akka.dispatch.Future[B]]): akka.dispatch.Future[B] = self.flatMap(f(_))
     private[japi] final def foreach[A >: T](proc: Procedure[A]): Unit = self.foreach(proc(_))
-    private[japi] final def filter(p: JFunc[Any, Boolean]): akka.dispatch.Future[Any] = self.filter(p(_))
+    private[japi] final def filter[A >: T](p: JFunc[A, java.lang.Boolean]): akka.dispatch.Future[A] =
+      self.filter((a: Any) => p(a.asInstanceOf[A])).asInstanceOf[akka.dispatch.Future[A]]
   }
 }
 
