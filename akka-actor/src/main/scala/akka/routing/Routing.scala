@@ -75,7 +75,7 @@ trait Router {
    * This method is not threadsafe, and should only be called once
    *
    * JMM Guarantees:
-   * This method guarantees that all changes made in this method, are visible when one of the routing methods is called.
+   * This method guarantees that all changes made in this method, are visible before one of the routing methods is called.
    */
   def init(connections: RouterConnections): Unit
 
