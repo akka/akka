@@ -64,7 +64,6 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
   }
 
   private[akka] def failOver(from: InetSocketAddress, to: InetSocketAddress): Unit = {
-    println("Doing failover")
     connections.failOver(from, to)
   }
 
@@ -150,8 +149,8 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
 
        if (newConnections.size != oldState.connections.size) {
         //one or more occurrances of the actorRef were removed, so we need to update the state.
-
         val newState = new State(oldState.version + 1, newConnections)
+
         //if we are not able to update the state, we just try again.
         if (!state.compareAndSet(oldState, newState)) signalDeadActor(deadRef)
       }
