@@ -14,8 +14,8 @@ import java.util.concurrent.atomic.AtomicReference
 import com.eaio.uuid.UUID
 import collection.immutable.Map
 import annotation.tailrec
-import akka.routing.Router
 import akka.event.EventHandler
+import akka.routing.{ RouterConnections, Router }
 
 /**
  * ActorRef representing a one or many instances of a clustered, load-balanced and sometimes replicated actor
@@ -25,26 +25,28 @@ import akka.event.EventHandler
  */
 class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
                                      val address: String,
-                                     _timeout: Long)
+                                     _timeout: Long,
+                                     val router: Router)
   extends UnsupportedActorRef {
-  this: Router ⇒
-  timeout = _timeout
-
-  private[akka] val inetSocketAddressToActorRefMap = new AtomicReference[Map[InetSocketAddress, ActorRef]](
-    (Map[InetSocketAddress, ActorRef]() /: inetSocketAddresses) {
-      case (map, (uuid, inetSocketAddress)) ⇒ map + (inetSocketAddress -> createRemoteActorRef(address, inetSocketAddress))
-    })
 
   ClusterModule.ensureEnabled()
 
-  def connections: Iterable[ActorRef] = inetSocketAddressToActorRefMap.get.values
+  timeout = _timeout
+
+  val connections = new ClusterActorRefConnections((Map[InetSocketAddress, ActorRef]() /: inetSocketAddresses) {
+    case (map, (uuid, inetSocketAddress)) ⇒ map + (inetSocketAddress -> createRemoteActorRef(address, inetSocketAddress))
+  })
+
+  router.init(connections)
+
+  def connectionsSize(): Int = connections.size
 
   override def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
     val sender = channel match {
       case ref: ActorRef ⇒ Some(ref)
       case _             ⇒ None
     }
-    route(message)(sender)
+    router.route(message)(sender)
   }
 
   override def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any,
@@ -54,68 +56,16 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
       case ref: ActorRef ⇒ Some(ref)
       case _             ⇒ None
     }
-    route[Any](message, timeout.duration.toMillis)(sender)
-  }
-
-  private[akka] def failOver(from: InetSocketAddress, to: InetSocketAddress): Unit = {
-    EventHandler.debug(this, "ClusterActorRef. %s failover from %s to %s".format(address, from, to))
-
-    @tailrec
-    def doFailover(from: InetSocketAddress, to: InetSocketAddress): Unit = {
-      val oldValue = inetSocketAddressToActorRefMap.get
-
-      val newValue = oldValue map {
-        case (`from`, actorRef) ⇒
-          actorRef.stop()
-          (to, createRemoteActorRef(actorRef.address, to))
-        case other ⇒ other
-      }
-
-      if (!inetSocketAddressToActorRefMap.compareAndSet(oldValue, newValue))
-        doFailover(from, to)
-    }
-
-    doFailover(from, to)
-  }
-
-  /**
-   * Removes the given address (and the corresponding actorref) from this ClusteredActorRef.
-   *
-   * Call can safely be made when the address is missing.
-   *
-   * Call is threadsafe.
-   */
-  @tailrec
-  private def remove(address: InetSocketAddress): Unit = {
-    val oldValue = inetSocketAddressToActorRefMap.get()
-
-    var newValue = oldValue - address
-
-    if (!inetSocketAddressToActorRefMap.compareAndSet(oldValue, newValue))
-      remove(address)
-  }
-
-  def signalDeadActor(ref: ActorRef): Unit = {
-    EventHandler.debug(this, "ClusterActorRef %s signalDeadActor %s".format(address, ref.address))
-
-    //since the number remote actor refs for a clustered actor ref is quite low, we can deal with the O(N) complexity
-    //of the following removal.
-    val map = inetSocketAddressToActorRefMap.get
-    val it = map.keySet.iterator
-
-    while (it.hasNext) {
-      val address = it.next()
-      val foundRef: ActorRef = map.get(address).get
-
-      if (foundRef == ref) {
-        remove(address)
-        return
-      }
-    }
+    router.route[Any](message, timeout.duration.toMillis)(sender)
   }
 
   private def createRemoteActorRef(actorAddress: String, inetSocketAddress: InetSocketAddress) = {
     RemoteActorRef(inetSocketAddress, actorAddress, Actor.TIMEOUT, None)
+  }
+
+  private[akka] def failOver(from: InetSocketAddress, to: InetSocketAddress): Unit = {
+    println("Doing failover")
+    connections.failOver(from, to)
   }
 
   def start(): this.type = synchronized[this.type] {
@@ -134,8 +84,81 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
         postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
 
         // FIXME here we need to fire off Actor.cluster.remove(address) (which needs to be properly implemented first, see ticket)
-        inetSocketAddressToActorRefMap.get.values foreach (_.stop()) // shut down all remote connections
+        connections.stopAll()
       }
     }
   }
+
+  class ClusterActorRefConnections() extends RouterConnections {
+
+    private val state = new AtomicReference[State]()
+
+    def this(connectionMap: Map[InetSocketAddress, ActorRef]) = {
+      this()
+      state.set(new State(Long.MinValue, connectionMap))
+    }
+
+    def version: Long = state.get().version
+
+    def versionedIterator = {
+      val s = state.get
+      (s.version, s.connections.values)
+    }
+
+    def size(): Int = state.get().connections.size
+
+    def stopAll() {
+      state.get().connections.values foreach (_.stop()) // shut down all remote connections
+    }
+
+    @tailrec
+    final def failOver(from: InetSocketAddress, to: InetSocketAddress): Unit = {
+      EventHandler.debug(this, "ClusterActorRef. %s failover from %s to %s".format(address, from, to))
+
+      val oldState = state.get
+      var change = false
+      val newMap = oldState.connections map {
+        case (`from`, actorRef) ⇒
+          change = true
+          actorRef.stop()
+          (to, createRemoteActorRef(actorRef.address, to))
+        case other ⇒ other
+      }
+
+      if (change) {
+
+        val newState = new State(oldState.version + 1, newMap)
+        if (!state.compareAndSet(oldState, newState)) failOver(from, to)
+      }
+    }
+
+    @tailrec
+    final def signalDeadActor(deadRef: ActorRef) = {
+      EventHandler.debug(this, "ClusterActorRef. %s signalDeadActor %s".format(uuid, deadRef.uuid))
+
+      val oldState = state.get()
+
+      //remote the ref from the connections.
+      var newConnections = Map[InetSocketAddress, ActorRef]()
+      oldState.connections.keys.foreach(
+        address ⇒ {
+          val actorRef: ActorRef = oldState.connections.get(address).get
+          if (actorRef ne deadRef) newConnections = newConnections + ((address, actorRef))
+        })
+
+      //  (address, actorRef) ⇒ if (actorRef ne deadRef) newConnections = newConnections + (address, actorRef))
+
+      if (newConnections.size != oldState.connections.size) {
+        //one or more occurrances of the actorRef were removed, so we need to update the state.
+
+        val newState = new State(oldState.version + 1, newConnections)
+        //if we are not able to update the state, we just try again.
+        if (!state.compareAndSet(oldState, newState)) signalDeadActor(deadRef)
+      }
+    }
+
+    class State(val version: Long, val connections: Map[InetSocketAddress, ActorRef])
+
+  }
+
 }
