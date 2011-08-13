@@ -4,10 +4,8 @@
 
 package akka.dispatch
 
-import akka.util.Duration
-
 import java.util.concurrent.atomic.AtomicReference
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.ActorRef
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.

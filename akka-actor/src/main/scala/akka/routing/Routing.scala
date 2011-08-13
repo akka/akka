@@ -14,8 +14,7 @@ import akka.actor.UntypedChannel._
 import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 
 /**
- * An {@link AkkaException} thrown when something goes wrong while routing a message to a specific
- * connected ActorRef.
+ * An {@link AkkaException} thrown when something goes wrong while routing a message
  */
 class RoutingException(message: String) extends AkkaException(message)
 

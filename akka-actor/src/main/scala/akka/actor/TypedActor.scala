@@ -10,7 +10,6 @@ import akka.dispatch.{ MessageDispatcher, Dispatchers, Future, FutureTimeoutExce
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
-import com.sun.xml.internal.ws.developer.MemberSubmissionAddressing.Validation
 import akka.serialization.{ Serializer, Serialization }
 
 //TODO Document this class, not only in Scaladoc, but also in a dedicated typed-actor.rst, for both java and scala

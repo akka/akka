@@ -4,7 +4,7 @@
 
 package akka.dispatch
 
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.ActorRef
 import akka.actor.newUuid
 import akka.config.Config._
 import akka.util.{ Duration, ReflectiveAccess }

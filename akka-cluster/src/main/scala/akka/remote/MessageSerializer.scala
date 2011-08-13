@@ -5,10 +5,9 @@
 package akka.remote
 
 import akka.remote.protocol.RemoteProtocol._
-import akka.util._
 import akka.serialization.Serialization
 
-import com.google.protobuf.{ Message, ByteString }
+import com.google.protobuf.ByteString
 
 object MessageSerializer {
 

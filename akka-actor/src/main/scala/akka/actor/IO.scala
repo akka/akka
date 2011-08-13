@@ -3,7 +3,6 @@
  */
 package akka.actor
 
-import akka.config.Supervision.Permanent
 import akka.util.ByteString
 import akka.dispatch.MessageInvocation
 

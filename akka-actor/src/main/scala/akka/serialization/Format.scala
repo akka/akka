@@ -6,8 +6,6 @@ package akka.serialization
 
 import akka.actor.Actor
 
-import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
-
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  * trait Serializer extends scala.Serializable {

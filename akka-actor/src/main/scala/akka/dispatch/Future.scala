@@ -6,13 +6,11 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef, Scheduler, Timeout, ExceptionChannel }
-import akka.util.{ Duration, BoxedType }
+import akka.actor.{ Actor, ForwardableChannel, UntypedChannel, Scheduler, Timeout, ExceptionChannel }
 import akka.japi.{ Procedure, Function ⇒ JFunc }
 
 import scala.util.continuations._
 
-import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.{ ConcurrentLinkedQueue, TimeUnit, Callable }
 import java.util.concurrent.TimeUnit.{ NANOSECONDS ⇒ NANOS, MILLISECONDS ⇒ MILLIS }
 import java.lang.{ Iterable ⇒ JIterable }
@@ -23,7 +21,6 @@ import scala.collection.mutable.Stack
 import akka.util.{ Switch, Duration, BoxedType }
 
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
-import scala.Math
 
 class FutureTimeoutException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(message: String) = this(message, null)
@@ -863,6 +860,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
 
   @inline
   private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis) //TODO Switch to math.abs(System.nanoTime)?
+  //TODO: the danger of Math.abs is that it could break the ordering of time. So I would not recommend an abs.
   @inline
   private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
 }

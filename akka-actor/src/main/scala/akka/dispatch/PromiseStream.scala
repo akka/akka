@@ -5,10 +5,9 @@
 package akka.dispatch
 
 import akka.actor.Actor.TIMEOUT
-import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
+import java.util.concurrent.atomic.AtomicReference
 import scala.util.continuations._
 import scala.annotation.{ tailrec }
-import scala.collection.immutable.Queue
 
 object PromiseStream {
   def apply[A](timeout: Long = TIMEOUT): PromiseStream[A] = new PromiseStream[A](timeout)
