@@ -47,11 +47,11 @@ class HomeNodeMultiJvmNode2 extends ClusterTestNode {
       node.start()
       barrier("waiting-for-begin", NrOfNodes).await()
 
-      val actorNode1 = Actor.actorOf[SomeActor]("service-node1")
+      val actorNode1 = Actor.actorOf[SomeActor]("service-node1").start()
       val name1 = (actorNode1 ? "identify").get.asInstanceOf[String]
       name1 must equal("node1")
 
-      val actorNode2 = Actor.actorOf[SomeActor]("service-node2")
+      val actorNode2 = Actor.actorOf[SomeActor]("service-node2").start()
       val name2 = (actorNode2 ? "identify").get.asInstanceOf[String]
       name2 must equal("node2")
 
