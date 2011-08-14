@@ -5,6 +5,7 @@ package akka.actor
 
 import akka.util.ByteString
 import akka.dispatch.MessageInvocation
+import akka.event.EventHandler
 
 import java.net.InetSocketAddress
 import java.io.IOException
@@ -90,7 +91,7 @@ object IO {
   case class Connect(socket: SocketHandle, address: InetSocketAddress) extends IOMessage
   case class Connected(socket: SocketHandle) extends IOMessage
   case class Close(handle: Handle) extends IOMessage
-  case class Closed(handle: Handle) extends IOMessage
+  case class Closed(handle: Handle, cause: Option[Exception]) extends IOMessage
   case class Read(handle: ReadHandle, bytes: ByteString) extends IOMessage
   case class Write(handle: WriteHandle, bytes: ByteString) extends IOMessage
 
@@ -168,7 +169,7 @@ trait IO {
     case Connected(socket) ⇒
       state(socket).connected = true
       run()
-    case msg @ Closed(handle) ⇒
+    case msg @ Closed(handle, _) ⇒
       _state -= handle // TODO: clean up better
       if (_receiveIO.isDefinedAt(msg)) {
         _next = reset { _receiveIO(msg); Idle }
@@ -322,7 +323,7 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
 
   private val buffer = ByteBuffer.allocate(bufferSize)
 
-  private val thread = new Thread() {
+  private val thread = new Thread("io-worker") {
     override def run(): Unit = {
       while (selector.isOpen) {
         selector select ()
@@ -349,7 +350,7 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
               writes += (handle -> queue.enqueue(data))
             }
           case Close(handle) ⇒
-            cleanup(handle)
+            cleanup(handle, None)
           case Shutdown ⇒
             channels.values foreach (_.close)
             selector.close
@@ -375,17 +376,18 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
           try {
             write(handle.asWritable, channel)
           } catch {
-            case e: IOException ⇒ // ignore, let it fail on read to ensure
-            // nothing left in read buffer.
+            case e: IOException ⇒
+            // ignore, let it fail on read to ensure nothing left in read buffer.
           }
       }
     } catch {
-      case e: CancelledKeyException ⇒ cleanup(handle)
-      case e: IOException           ⇒ cleanup(handle)
+      case e: CancelledKeyException        ⇒ cleanup(handle, Some(e))
+      case e: IOException                  ⇒ cleanup(handle, Some(e))
+      case e: ActorInitializationException ⇒ cleanup(handle, Some(e))
     }
   }
 
-  private def cleanup(handle: IO.Handle): Unit = {
+  private def cleanup(handle: IO.Handle, cause: Option[Exception]): Unit = {
     handle match {
       case server: IO.ServerHandle  ⇒ accepted -= server
       case writable: IO.WriteHandle ⇒ writes -= writable
@@ -394,7 +396,12 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
       case Some(channel) ⇒
         channel.close
         channels -= handle
-        handle.owner ! IO.Closed(handle)
+        try {
+          handle.owner ! IO.Closed(handle, cause)
+        } catch {
+          case e: ActorInitializationException ⇒
+            EventHandler debug (this, "IO.Handle's owner not running")
+        }
       case None ⇒
     }
   }
@@ -415,9 +422,12 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
   }
 
   private def connect(socket: IO.SocketHandle, channel: SocketChannel): Unit = {
-    channel.finishConnect
-    removeOps(socket, OP_CONNECT)
-    socket.owner ! IO.Connected(socket)
+    if (channel.finishConnect) {
+      removeOps(socket, OP_CONNECT)
+      socket.owner ! IO.Connected(socket)
+    } else {
+      cleanup(socket, None) // TODO: Add a cause
+    }
   }
 
   @tailrec
@@ -436,7 +446,7 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
     buffer.clear
     val readLen = channel read buffer
     if (readLen == -1) {
-      cleanup(handle)
+      cleanup(handle, None) // TODO: Add a cause
     } else if (readLen > 0) {
       buffer.flip
       handle.owner ! IO.Read(handle, ByteString(buffer))
