@@ -454,8 +454,13 @@ trait FSM[S, D] extends ListenerManagement {
       if (generation == gen) {
         processMsg(StateTimeout, "state timeout")
       }
-    case t@Timer(name, msg, repeat, generation) ⇒
-      if ((timers contains name) && (timers(name).generation == generation)) {
+    case t @ Timer(name, msg, repeat, gen) ⇒
+      if ((timers contains name) && (timers(name).generation == gen)) {
+        if (timeoutFuture.isDefined) {
+          timeoutFuture.get.cancel(true)
+          timeoutFuture = None
+        }
+        generation += 1
         processMsg(msg, t)
         if (!repeat) {
           timers -= name
