@@ -4,13 +4,12 @@
 
 package akka.util
 
-import akka.dispatch.{ Future, Promise, MessageInvocation }
+import akka.dispatch.MessageInvocation
 import akka.config.{ Config, ModuleNotAvailableException }
 import akka.remoteinterface.RemoteSupport
 import akka.actor._
-import DeploymentConfig.{ Deploy, ReplicationScheme, ReplicationStrategy }
+import DeploymentConfig.ReplicationScheme
 import akka.event.EventHandler
-import akka.serialization.Format
 import akka.cluster.ClusterNode
 
 import java.net.InetSocketAddress

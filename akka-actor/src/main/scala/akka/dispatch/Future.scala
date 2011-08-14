@@ -6,13 +6,11 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChannel, ActorRef, Scheduler, Timeout, ExceptionChannel }
-import akka.util.{ Duration, BoxedType }
+import akka.actor.{ Actor, ForwardableChannel, UntypedChannel, Scheduler, Timeout, ExceptionChannel }
 import akka.japi.{ Procedure, Function ⇒ JFunc }
 
 import scala.util.continuations._
 
-import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.{ ConcurrentLinkedQueue, TimeUnit, Callable }
 import java.util.concurrent.TimeUnit.{ NANOSECONDS ⇒ NANOS, MILLISECONDS ⇒ MILLIS }
 import java.lang.{ Iterable ⇒ JIterable }
@@ -23,7 +21,6 @@ import scala.collection.mutable.Stack
 import akka.util.{ Switch, Duration, BoxedType }
 
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
-import scala.Math
 
 class FutureTimeoutException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(message: String) = this(message, null)
@@ -614,17 +611,17 @@ sealed trait Future[+T] extends japi.Future[T] {
 }
 
 package japi {
-  /* Future Java API */
+  /* Java API */
   trait Future[+T] { self: akka.dispatch.Future[T] ⇒
-    private[japi] final def onComplete[A >: T](proc: Procedure[Future[A]]): this.type = self.onComplete(proc(_))
-
+    private[japi] final def onTimeout[A >: T](proc: Procedure[akka.dispatch.Future[A]]): this.type = self.onTimeout(proc(_))
+    private[japi] final def onResult[A >: T](proc: Procedure[A]): this.type = self.onResult({ case r: A ⇒ proc(r) }: PartialFunction[T, Unit])
+    private[japi] final def onException(proc: Procedure[Throwable]): this.type = self.onException({ case t: Throwable ⇒ proc(t) }: PartialFunction[Throwable, Unit])
+    private[japi] final def onComplete[A >: T](proc: Procedure[akka.dispatch.Future[A]]): this.type = self.onComplete(proc(_))
     private[japi] final def map[A >: T, B](f: JFunc[A, B]): akka.dispatch.Future[B] = self.map(f(_))
-
     private[japi] final def flatMap[A >: T, B](f: JFunc[A, akka.dispatch.Future[B]]): akka.dispatch.Future[B] = self.flatMap(f(_))
-
     private[japi] final def foreach[A >: T](proc: Procedure[A]): Unit = self.foreach(proc(_))
-
-    private[japi] final def filter(p: JFunc[Any, Boolean]): akka.dispatch.Future[Any] = self.filter(p(_))
+    private[japi] final def filter[A >: T](p: JFunc[A, java.lang.Boolean]): akka.dispatch.Future[A] =
+      self.filter((a: Any) ⇒ p(a.asInstanceOf[A])).asInstanceOf[akka.dispatch.Future[A]]
   }
 }
 
@@ -863,6 +860,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
 
   @inline
   private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis) //TODO Switch to math.abs(System.nanoTime)?
+  //TODO: the danger of Math.abs is that it could break the ordering of time. So I would not recommend an abs.
   @inline
   private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
 }

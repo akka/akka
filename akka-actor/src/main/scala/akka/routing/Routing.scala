@@ -4,22 +4,25 @@
 
 package akka.routing
 
-import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 
 import akka.AkkaException
 import akka.dispatch.Future
-import java.net.InetSocketAddress
 import akka.actor._
 import akka.event.EventHandler
 import akka.actor.UntypedChannel._
-import akka.routing.RouterType.RoundRobin
+import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 
+/**
+ * An {@link AkkaException} thrown when something goes wrong while routing a message
+ */
 class RoutingException(message: String) extends AkkaException(message)
 
 sealed trait RouterType
 
 /**
+ * Used for declarative configuration of Routing.
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RouterType {
@@ -44,7 +47,7 @@ object RouterType {
   /**
    * A RouterType that select the connection based on the least amount of ram used.
    *
-   * todo: this is extremely vague currently since there are so many ways to define least amount of ram.
+   * FIXME: this is extremely vague currently since there are so many ways to define least amount of ram.
    */
   object LeastRAM extends RouterType
 
@@ -53,6 +56,78 @@ object RouterType {
    */
   object LeastMessages extends RouterType
 
+}
+
+/**
+ * The Router is responsible for sending a message to one (or more) of its connections. Connections are stored in the
+ * {@link RouterConnections} and each Router should be linked to only one {@link RouterConnections}.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait Router {
+
+  /**
+   * Initializes this Router with a given set of Connections. The Router can use this datastructure to ask for
+   * the current connections, signal that there were problems with one of the connections and see if there have
+   * been changes in the connections.
+   *
+   * This method is not threadsafe, and should only be called once
+   *
+   * JMM Guarantees:
+   * This method guarantees that all changes made in this method, are visible before one of the routing methods is called.
+   */
+  def init(connections: RouterConnections): Unit
+
+  /**
+   * Routes the message to one of the connections.
+   *
+   * @throws RoutingException if something goes wrong while routing the message
+   */
+  def route(message: Any)(implicit sender: Option[ActorRef]): Unit
+
+  /**
+   * Routes the message using a timeout to one of the connections and returns a Future to synchronize on the
+   * completion of the processing of the message.
+   *
+   * @throws RoutingExceptionif something goes wrong while routing the message.
+   */
+  def route[T](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[T]
+}
+
+/**
+ *
+ */
+trait RouterConnections {
+
+  /**
+   * A version that is useful to see if there is any change in the connections. If there is a change, a router is
+   * able to update its internal datastructures.
+   */
+  def version: Long
+
+  /**
+   * Returns a tuple containing the version and Iterable of all connected ActorRefs this Router uses to send messages to.
+   *
+   * This iterator should be 'persistent'. So it can be handed out to other threads so that they are working on
+   * a stable (immutable) view of some set of connections.
+   */
+  def versionedIterator: (Long, Iterable[ActorRef])
+
+  /**
+   * A callback that can be used to indicate that a connected actorRef was dead.
+   * <p/>
+   * Implementations should make sure that this method can be called without the actorRef being part of the
+   * current set of connections. The most logical way to deal with this situation, is just to ignore it. One of the
+   * reasons this can happen is that multiple thread could at the 'same' moment discover for the same ActorRef that
+   * not working.
+   *
+   * It could be that even after a signalDeadActor has been called for a specific ActorRef, that the ActorRef
+   * is still being used. A good behaving Router will eventually discard this reference, but no guarantees are
+   * made how long this takes place.
+   *
+   * @param ref the dead
+   */
+  def signalDeadActor(deadRef: ActorRef): Unit
 }
 
 object Routing {
@@ -76,20 +151,26 @@ object Routing {
 
     val ref = routerType match {
       case RouterType.Direct ⇒
-        if (connections.size > 1) throw new IllegalArgumentException("A direct router can't have more than 1 connection")
-        new RoutedActorRef(actorAddress, connections) with Direct
+        if (connections.size > 1)
+          throw new IllegalArgumentException("A direct router can't have more than 1 connection")
+
+        actorOf(actorAddress, connections, new DirectRouter())
       case RouterType.Random ⇒
-        new RoutedActorRef(actorAddress, connections) with Random
+        actorOf(actorAddress, connections, new RandomRouter())
       case RouterType.RoundRobin ⇒
-        new RoutedActorRef(actorAddress, connections) with RoundRobin
+        actorOf(actorAddress, connections, new RoundRobinRouter())
       case _ ⇒ throw new IllegalArgumentException("Unsupported routerType " + routerType)
     }
 
     ref.start()
   }
 
+  def actorOf(actorAddress: String, connections: Iterable[ActorRef], router: Router): ActorRef = {
+    new RoutedActorRef(actorAddress, router, connections)
+  }
+
   def actorOfWithRoundRobin(actorAddress: String, connections: Iterable[ActorRef]): ActorRef = {
-    actorOf(actorAddress, connections, RoundRobin)
+    actorOf(actorAddress, connections, akka.routing.RouterType.RoundRobin)
   }
 }
 
@@ -97,17 +178,16 @@ object Routing {
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to send a message to
  * on (or more) of these actors.
  */
-class RoutedActorRef(val address: String, val cons: Iterable[ActorRef]) extends UnsupportedActorRef {
-  this: Router ⇒
+class RoutedActorRef(val address: String, val router: Router, val connectionIterator: Iterable[ActorRef]) extends UnsupportedActorRef {
 
-  def connections: Iterable[ActorRef] = cons
+  router.init(new RoutedActorRefConnections(connectionIterator))
 
   override def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
     val sender = channel match {
       case ref: ActorRef ⇒ Some(ref)
       case _             ⇒ None
     }
-    route(message)(sender)
+    router.route(message)(sender)
   }
 
   override def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any,
@@ -117,15 +197,7 @@ class RoutedActorRef(val address: String, val cons: Iterable[ActorRef]) extends 
       case ref: ActorRef ⇒ Some(ref)
       case _             ⇒ None
     }
-    route[Any](message, timeout)(sender)
-  }
-
-  private[akka] def failOver(from: InetSocketAddress, to: InetSocketAddress): Unit = {
-    throw new UnsupportedOperationException
-  }
-
-  def signalDeadActor(ref: ActorRef): Unit = {
-    throw new UnsupportedOperationException
+    router.route[Any](message, timeout)(sender)
   }
 
   def start(): this.type = synchronized[this.type] {
@@ -145,63 +217,69 @@ class RoutedActorRef(val address: String, val cons: Iterable[ActorRef]) extends 
       }
     }
   }
-}
 
-/**
- * The Router is responsible for sending a message to one (or more) of its connections.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait Router {
+  private class RoutedActorRefConnections() extends RouterConnections {
 
-  /**
-   * Returns an Iterable containing all connected ActorRefs this Router uses to send messages to.
-   */
-  def connections: Iterable[ActorRef]
+    private val state = new AtomicReference[State]()
 
-  /**
-   * A callback this Router uses to indicate that some actorRef was not usable.
-   *
-   * Implementations should make sure that this method can be called without the actorRef being part of the
-   * current set of connections. The most logical way to deal with this situation, is just to ignore it.
-   *
-   * @param ref the dead
-   */
-  def signalDeadActor(ref: ActorRef): Unit
+    def this(connectionIterable: Iterable[ActorRef]) = {
+      this()
+      state.set(new State(Long.MinValue, connectionIterable))
+    }
 
-  /**
-   * Routes the message to one of the connections.
-   */
-  def route(message: Any)(implicit sender: Option[ActorRef]): Unit
+    def version: Long = state.get().version
 
-  /**
-   * Routes the message using a timeout to one of the connections and returns a Future to synchronize on the
-   * completion of the processing of the message.
-   */
-  def route[T](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[T]
+    def versionedIterator = {
+      val s = state.get
+      (s.version, s.connectionIterable)
+    }
+
+    @tailrec
+    final def signalDeadActor(ref: ActorRef) = {
+      val oldState = state.get()
+
+      //remote the ref from the connections.
+      var newList = oldState.connectionIterable.filter(currentActorRef ⇒ currentActorRef ne ref)
+
+      if (newList.size != oldState.connectionIterable.size) {
+        //one or more occurrences of the actorRef were removed, so we need to update the state.
+
+        val newState = new State(oldState.version + 1, newList)
+        //if we are not able to update the state, we just try again.
+        if (!state.compareAndSet(oldState, newState)) signalDeadActor(ref)
+      }
+    }
+
+    class State(val version: Long, val connectionIterable: Iterable[ActorRef])
+  }
+
 }
 
 /**
  * An Abstract Router implementation that already provides the basic infrastructure so that a concrete
  * Router only needs to implement the next method.
  *
- * todo:
- * This also is the location where a failover  is done in the future if an ActorRef fails and a different
- * one needs to be selected.
- * todo:
- * this is also the location where message buffering should be done in case of failure.
+ * FIXME: This also is the location where a failover  is done in the future if an ActorRef fails and a different one needs to be selected.
+ * FIXME: this is also the location where message buffering should be done in case of failure.
  */
 trait BasicRouter extends Router {
+
+  @volatile
+  protected var connections: RouterConnections = _
+
+  def init(connections: RouterConnections) = {
+    this.connections = connections
+  }
 
   def route(message: Any)(implicit sender: Option[ActorRef]): Unit = message match {
     case Routing.Broadcast(message) ⇒
       //it is a broadcast message, we are going to send to message to all connections.
-      connections.foreach(actor ⇒
+      connections.versionedIterator._2.foreach(actor ⇒
         try {
           actor.!(message)(sender)
         } catch {
           case e: Exception ⇒
-            signalDeadActor(actor)
+            connections.signalDeadActor(actor)
             throw e
         })
     case _ ⇒
@@ -212,7 +290,7 @@ trait BasicRouter extends Router {
             actor.!(message)(sender)
           } catch {
             case e: Exception ⇒
-              signalDeadActor(actor)
+              connections.signalDeadActor(actor)
               throw e
 
           }
@@ -232,7 +310,7 @@ trait BasicRouter extends Router {
             actor.?(message, timeout)(sender).asInstanceOf[Future[T]]
           } catch {
             case e: Exception ⇒
-              signalDeadActor(actor)
+              connections.signalDeadActor(actor)
               throw e
 
           }
@@ -251,20 +329,47 @@ trait BasicRouter extends Router {
 }
 
 /**
- * A Router that is used when a durable actor is used. All requests are send to the node containing the actor.
- * As soon as that instance fails, a different instance is created and since the mailbox is durable, the internal
- * state can be restored using event sourcing, and once this instance is up and running, all request will be send
- * to this instance.
+ * A DirectRouter is
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait Direct extends BasicRouter {
+class DirectRouter extends BasicRouter {
+
+  private val state = new AtomicReference[DirectRouterState]()
 
   lazy val next: Option[ActorRef] = {
-    val connection = connections.headOption
-    if (connection.isEmpty) EventHandler.warning(this, "Router has no replica connection")
-    connection
+    val currentState = getState()
+    if (currentState.ref == null) None else Some(currentState.ref)
   }
+
+  @tailrec
+  private def getState(): DirectRouterState = {
+    val currentState = state.get()
+
+    if (currentState != null && connections.version == currentState.version) {
+      //we are lucky since nothing has changed in the connections.
+      currentState
+    } else {
+      //there has been a change in the connections, or this is the first time this method is called. So we are going to do some updating.
+
+      val (version, connectionIterable) = connections.versionedIterator
+
+      if (connectionIterable.size > 1)
+        throw new RoutingException("A DirectRouter can't have more than 1 connected Actor, but found [%s]".format(connectionIterable.size))
+
+      val newState = new DirectRouterState(connectionIterable.head, version)
+      if (state.compareAndSet(currentState, newState)) {
+        //we are lucky since we just updated the state, so we can send it back as the state to use
+        newState
+      } else {
+        //we failed to update the state, lets try again... better luck next time.
+        getState()
+      }
+    }
+  }
+
+  private class DirectRouterState(val ref: ActorRef, val version: Long)
+
 }
 
 /**
@@ -272,55 +377,96 @@ trait Direct extends BasicRouter {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait Random extends BasicRouter {
+class RandomRouter extends BasicRouter {
 
-  //todo: threadlocal random?
+  private val state = new AtomicReference[RandomRouterState]()
+
+  //FIXME: threadlocal random?
   private val random = new java.util.Random(System.currentTimeMillis)
 
-  def next: Option[ActorRef] =
-    if (connections.isEmpty) {
-      EventHandler.warning(this, "Router has no replica connections")
+  def next: Option[ActorRef] = {
+    val state = getState()
+    if (state.array.isEmpty) {
       None
     } else {
-      val randomIndex = random.nextInt(connections.size)
-
-      //todo: possible index ouf of bounds problems since the number of connection could already have been changed.
-      Some(connections.iterator.drop(randomIndex).next())
+      val index = random.nextInt(state.array.length)
+      Some(state.array(index))
     }
+  }
+
+  @tailrec
+  private def getState(): RandomRouterState = {
+    val currentState = state.get()
+
+    if (currentState != null && currentState.version == connections.version) {
+      //we are lucky, since there has not been any change in the connections. So therefor we can use the existing state.
+      currentState
+    } else {
+      //there has been a change in connections, or it was the first try, so we need to update the internal state
+
+      val (version, connectionIterable) = connections.versionedIterator
+      val newState = new RandomRouterState(connectionIterable.toArray[ActorRef], version)
+      if (state.compareAndSet(currentState, newState)) {
+        //we are lucky since we just updated the state, so we can send it back as the state to use
+        newState
+      } else {
+        //we failed to update the state, lets try again... better luck next time.
+        getState()
+      }
+    }
+  }
+
+  private class RandomRouterState(val array: Array[ActorRef], val version: Long)
+
 }
 
 /**
- * A Router that uses round-robin to select a connection.
+ * A Router that uses round-robin to select a connection. For concurrent calls, round robin is just a best effort.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait RoundRobin extends BasicRouter {
+class RoundRobinRouter extends BasicRouter {
 
-  private def items: List[ActorRef] = connections.toList
+  private val state = new AtomicReference[RoundRobinState]()
 
-  //todo: this is broken since the list is not updated.
-  private val current = new AtomicReference[List[ActorRef]](items)
+  def next: Option[ActorRef] = getState().next()
 
-  private def hasNext = connections.nonEmpty
+  @tailrec
+  private def getState(): RoundRobinState = {
+    val currentState = state.get()
 
-  def next: Option[ActorRef] = {
-    @tailrec
-    def findNext: Option[ActorRef] = {
-      val currentItems = current.get
-      val newItems = currentItems match {
-        case Nil ⇒ items
-        case xs  ⇒ xs
-      }
+    if (currentState != null && currentState.version == connections.version) {
+      //we are lucky, since there has not been any change in the connections. So therefor we can use the existing state.
+      currentState
+    } else {
+      //there has been a change in connections, or it was the first try, so we need to update the internal state
 
-      if (newItems.isEmpty) {
-        EventHandler.warning(this, "Router has no replica connections")
-        None
+      val (version, connectionIterable) = connections.versionedIterator
+      val newState = new RoundRobinState(connectionIterable.toArray[ActorRef], version)
+      if (state.compareAndSet(currentState, newState)) {
+        //we are lucky since we just updated the state, so we can send it back as the state to use
+        newState
       } else {
-        if (current.compareAndSet(currentItems, newItems.tail)) newItems.headOption
-        else findNext
+        //we failed to update the state, lets try again... better luck next time.
+        getState()
       }
     }
-
-    findNext
   }
+
+  private class RoundRobinState(val array: Array[ActorRef], val version: Long) {
+
+    private val index = new AtomicInteger(0)
+
+    def next(): Option[ActorRef] = if (array.isEmpty) None else Some(array(nextIndex()))
+
+    @tailrec
+    private def nextIndex(): Int = {
+      val oldIndex = index.get()
+      var newIndex = if (oldIndex == array.length - 1) 0 else oldIndex + 1
+
+      if (!index.compareAndSet(oldIndex, newIndex)) nextIndex()
+      else oldIndex
+    }
+  }
+
 }

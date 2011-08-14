@@ -8,6 +8,7 @@ import akka.testkit.{ EventFilter, TestEvent }
 import java.util.{ Collections, Set ⇒ JSet }
 import java.net.ConnectException
 import java.nio.channels.NotYetConnectedException
+import java.lang.Thread
 
 object RoundRobinFailoverMultiJvmSpec {
 
@@ -25,7 +26,13 @@ object RoundRobinFailoverMultiJvmSpec {
       }
       case "shutdown" ⇒ {
         //println("The node received the 'shutdown' command")
-        Cluster.node.shutdown()
+
+        new Thread() {
+          override def run() {
+            Thread.sleep(2000)
+            Cluster.node.shutdown()
+          }
+        }.start()
       }
     }
   }
@@ -40,7 +47,7 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
 
   def sleepSome() {
     //println("Starting sleep")
-    Thread.sleep(1000) //nasty.. but ok for now.
+    Thread.sleep(10000) //nasty.. but ok for now.
     //println("Finished doing sleep")
   }
 
@@ -75,18 +82,17 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
       //all kinds of connection timeouts. So this test shows that there are problems. For the time being
       //the test code has been deactivated to prevent causing problems.
 
-      /*
-      val newFoundConnections = identifyConnections(actor)
-           //println("---------------------------- newFoundConnections ------------------------")
-           //println(newFoundConnections)
+      //val newFoundConnections = identifyConnections(actor)
+      //println("---------------------------- newFoundConnections ------------------------")
+      //println(newFoundConnections)
 
       //it still must be 2 since a different node should have been used to failover to
-      newFoundConnections.size() must be(2)
+      //newFoundConnections.size() must be(2)
       //they are not disjoint since, there must be a single element that is in both
-      Collections.disjoint(newFoundConnections, oldFoundConnections) must be(false)
+      //Collections.disjoint(newFoundConnections, oldFoundConnections) must be(false)
       //but they should not be equal since the shutdown-node has been replaced by another one.
-      newFoundConnections.equals(oldFoundConnections) must be(false)
-      */
+      //newFoundConnections.equals(oldFoundConnections) must be(false)
+
       Cluster.node.shutdown()
     }
   }

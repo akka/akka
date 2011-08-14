@@ -51,7 +51,7 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
       val clusteredRef = ref.asInstanceOf[ClusterActorRef]
 
       //verify that all remote actors are there.
-      clusteredRef.connections.size must be(2)
+      clusteredRef.connectionsSize must be(2)
 
       // ignore exceptions from killing nodes
       val ignoreExceptions = Seq(
@@ -79,7 +79,7 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
       }
 
       //since the call to the node failed, the node must have been removed from the list.
-      clusteredRef.connections.size must be(1)
+      clusteredRef.connectionsSize must be(1)
 
       //send a message to this node,
       clusteredRef ! "hello"
@@ -100,7 +100,7 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
       }
 
       //now there must not be any remaining connections after the dead of the last actor.
-      clusteredRef.connections.size must be(0)
+      clusteredRef.connectionsSize must be(0)
 
       //and lets make sure we now get the correct exception if we try to use the ref.
       intercept[RoutingException] {

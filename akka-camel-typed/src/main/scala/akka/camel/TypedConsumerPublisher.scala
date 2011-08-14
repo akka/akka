@@ -21,6 +21,7 @@ private[camel] class TypedConsumerPublishRequestor extends PublishRequestor {
   def receiveActorRegistryEvent = {
     case ActorRegistered(_, actor, typedActor)   ⇒ for (event ← ConsumerMethodRegistered.eventsFor(actor, typedActor)) deliverCurrentEvent(event)
     case ActorUnregistered(_, actor, typedActor) ⇒ for (event ← ConsumerMethodUnregistered.eventsFor(actor, typedActor)) deliverCurrentEvent(event)
+    case _                                       ⇒ ()
   }
 }
 

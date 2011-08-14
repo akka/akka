@@ -5,16 +5,10 @@
 package akka.actor
 
 import scala.collection.mutable.ListBuffer
-import scala.reflect.Manifest
-import annotation.tailrec
 
-import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
-import java.util.{ Set ⇒ JSet }
+import java.util.concurrent.ConcurrentHashMap
 
-import akka.util.Index
-import akka.util.ReflectiveAccess._
 import akka.util.ListenerManagement
-import akka.serialization._
 
 /**
  * Base trait for ActorRegistry events, allows listen to when an actor is added and removed from the ActorRegistry.

@@ -5,9 +5,7 @@
 package akka.serialization
 
 import akka.util.ReflectiveAccess._
-import akka.config.Config
 import akka.config.Config._
-import akka.actor.{ ActorRef, Actor }
 import akka.AkkaException
 import akka.util.ReflectiveAccess
 

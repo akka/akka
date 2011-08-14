@@ -38,7 +38,7 @@ class ClusterSpec extends WordSpec with MustMatchers {
       //akka.cluster.server
       getInt("akka.cluster.server.port") must equal(Some(2552))
       getInt("akka.cluster.server.message-frame-size") must equal(Some(1048576))
-      getInt("akka.cluster.server.connection-timeout") must equal(Some(1))
+      getInt("akka.cluster.server.connection-timeout") must equal(Some(100))
       getBool("akka.cluster.server.require-cookie") must equal(Some(false))
       getBool("akka.cluster.server.untrusted-mode") must equal(Some(false))
       getInt("akka.cluster.server.backlog") must equal(Some(4096))

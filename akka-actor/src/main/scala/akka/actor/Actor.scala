@@ -9,12 +9,12 @@ import akka.experimental
 import akka.dispatch._
 import akka.config._
 import Config._
-import akka.util.{ ListenerManagement, ReflectiveAccess, Duration, Helpers }
+import akka.util.{ ReflectiveAccess, Duration }
 import ReflectiveAccess._
 import akka.remoteinterface.RemoteSupport
 import akka.japi.{ Creator, Procedure }
 import akka.AkkaException
-import akka.serialization.{ Format, Serializer, Serialization }
+import akka.serialization.{ Serializer, Serialization }
 import akka.cluster.ClusterNode
 import akka.event.EventHandler
 import scala.collection.immutable.Stack

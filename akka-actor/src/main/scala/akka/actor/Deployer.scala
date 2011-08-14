@@ -12,8 +12,6 @@ import akka.event.EventHandler
 import akka.actor.DeploymentConfig._
 import akka.util.ReflectiveAccess._
 import akka.AkkaException
-import akka.serialization.{ Serializer, Serialization }
-import akka.util.ReflectiveAccess
 import akka.config.{ Configuration, ConfigurationException, Config }
 
 trait ActorDeployer {

@@ -10,7 +10,7 @@ import RouterType._
 import com.eaio.uuid.UUID
 
 import java.net.InetSocketAddress
-import akka.routing.{ Random, Direct, RoundRobin }
+import akka.routing.{ RandomRouter, DirectRouter, RoundRobinRouter }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -23,9 +23,9 @@ object Routing {
     actorAddress: String,
     timeout: Long): ClusterActorRef = {
     routerType match {
-      case Direct        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with Direct
-      case Random        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with Random
-      case RoundRobin    ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout) with RoundRobin
+      case Direct        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, new DirectRouter())
+      case Random        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, new RandomRouter())
+      case RoundRobin    ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, new RoundRobinRouter())
       case LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
       case LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
       case LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
