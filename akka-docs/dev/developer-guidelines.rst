@@ -24,15 +24,14 @@ Please follow these guidelines when creating public commits and writing commit m
 
 1. If your work spans multiple local commits (for example; if you do safe point commits while working in a topic branch or work in a branch for long time doing merges/rebases etc.) then please do **not** commit it all but rewrite the history by squashing the commits into a single big commit which you write a good commit message for (like discussed below). Here is a great article for how to do that: `http://sandofsky.com/blog/git-workflow.html <http://sandofsky.com/blog/git-workflow.html>`_. Every commit should be able to be used in isolation, cherry picked etc.
 
-2. First line should be a descriptive sentence what the commit is doing. It should be possible to fully understand what the commit does by just reading this single line. It is **not** ok to only list the ticket number, type "minor fix" or similar. If the commit is a **small** fix, then you are done. If not, go to 3.
+2. First line should be a descriptive sentence what the commit is doing. It should be possible to fully understand what the commit does by just reading this single line. It is **not** ok to only list the ticket number, type "minor fix" or similar. Include reference to ticket number, prefixed with #, at the end of the first line. If the commit is a **small** fix, then you are done. If not, go to 3.
 
 3. Following the single line description should be a blank line followed by an enumerated list with the details of the commit.
 
 Example::
 
-    Completed replication over BookKeeper based transaction log with configurable actor snapshotting every X message.
+    Completed replication over BookKeeper based transaction log with configurable actor snapshotting every X message. Fixes #XXX
 
-      * Fixes ticket #XXX
       * Details 1
       * Details 2
       * Details 3
