@@ -56,11 +56,8 @@ object Dispatchers {
   val THROUGHPUT_DEADLINE_TIME_MILLIS = THROUGHPUT_DEADLINE_TIME.toMillis.toInt
   val MAILBOX_TYPE: MailboxType = if (MAILBOX_CAPACITY < 1) UnboundedMailbox() else BoundedMailbox()
 
-  lazy val defaultGlobalDispatcher = {
-    config.getSection("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalDispatcher)
-  }
-
-  object globalDispatcher extends Dispatcher("global", THROUGHPUT, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE)
+  lazy val defaultGlobalDispatcher =
+    config.getSection("akka.actor.default-dispatcher").flatMap(from) getOrElse newDispatcher("AkkaDefaultGlobalDispatcher", 1, MAILBOX_TYPE).build
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
@@ -171,11 +168,11 @@ object Dispatchers {
    * Creates of obtains a dispatcher from a ConfigMap according to the format below
    *
    * default-dispatcher {
-   *   type = "GlobalExecutorBasedEventDriven" # Must be one of the following, all "Global*" are non-configurable
-   *                               # (ExecutorBasedEventDrivenWorkStealing), ExecutorBasedEventDriven,
-   *                               # GlobalExecutorBasedEventDriven
+   *   type = "Dispatcher"         # Must be one of the following
+   *                               # Dispatcher, (BalancingDispatcher, only valid when all actors using it are of the same type),
    *                               # A FQCN to a class inheriting MessageDispatcherConfigurator with a no-arg visible constructor
-   *   keep-alive-time = 60        # Keep alive time for threads
+   *   name = "MyDispatcher"       # Optional, will be a generated UUID if omitted
+   *   keep-alive-time = 60        # Keep alive time for threads in akka.time-unit
    *   core-pool-size-factor = 1.0 # No of core threads ... ceil(available processors * factor)
    *   max-pool-size-factor  = 4.0 # Max no of threads ... ceil(available processors * factor)
    *   executor-bounds = -1        # Makes the Executor bounded, -1 is unbounded
@@ -188,18 +185,18 @@ object Dispatchers {
    * Gotcha: Only configures the dispatcher if possible
    * Returns: None if "type" isn't specified in the config
    * Throws: IllegalArgumentException if the value of "type" is not valid
-   *         IllegalArgumentException if it cannot
+   *         IllegalArgumentException if it cannot create the MessageDispatcherConfigurator
    */
   def from(cfg: Configuration): Option[MessageDispatcher] = {
-    cfg.getString("type") map {
-      case "Dispatcher"          ⇒ new DispatcherConfigurator()
-      case "BalancingDispatcher" ⇒ new BalancingDispatcherConfigurator()
-      case "GlobalDispatcher"    ⇒ GlobalDispatcherConfigurator
+    cfg.getString("type") flatMap {
+      case "Dispatcher"          ⇒ Some(new DispatcherConfigurator())
+      case "BalancingDispatcher" ⇒ Some(new BalancingDispatcherConfigurator())
+      case "GlobalDispatcher"    ⇒ None //TODO FIXME remove this
       case fqn ⇒
         ReflectiveAccess.getClassFor[MessageDispatcherConfigurator](fqn) match {
           case Right(clazz) ⇒
             ReflectiveAccess.createInstance[MessageDispatcherConfigurator](clazz, Array[Class[_]](), Array[AnyRef]()) match {
-              case Right(configurator) ⇒ configurator
+              case Right(configurator) ⇒ Some(configurator)
               case Left(exception) ⇒
                 throw new IllegalArgumentException(
                   "Cannot instantiate MessageDispatcherConfigurator type [%s], make sure it has a default no-args constructor" format fqn, exception)
@@ -211,10 +208,6 @@ object Dispatchers {
       _ configure cfg
     }
   }
-}
-
-object GlobalDispatcherConfigurator extends MessageDispatcherConfigurator {
-  def configure(config: Configuration): MessageDispatcher = Dispatchers.globalDispatcher
 }
 
 class DispatcherConfigurator extends MessageDispatcherConfigurator {

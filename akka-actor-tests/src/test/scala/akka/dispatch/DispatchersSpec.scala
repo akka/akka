@@ -28,8 +28,7 @@ object DispatchersSpec {
 
   def typesAndValidators: Map[String, (MessageDispatcher) ⇒ Boolean] = Map(
     "BalancingDispatcher" -> ofType[BalancingDispatcher],
-    "Dispatcher" -> ofType[Dispatcher],
-    "GlobalDispatcher" -> instance(globalDispatcher))
+    "Dispatcher" -> ofType[Dispatcher])
 
   def validTypes = typesAndValidators.keys.toList
 
