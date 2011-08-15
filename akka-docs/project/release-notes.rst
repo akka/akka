@@ -1,15 +1,124 @@
 Release Notes
 ==============
 
-Changes listed in no particular order.
+Release 1.2
+-----------
 
-1.1
-----------------------------------------
+This release, while containing several substantial improvements, focuses on
+paving the way for the upcoming 2.0 release. A selection of changes is
+presented in the following, for the full list of tickets closed during the
+development cycle please refer to
+`the issue tracker <https://www.assembla.com/spaces/akka/milestones/356697-1-2>`_.
 
-- **UPD** - improve FSM DSL: make onTransition syntax nicer (Roland Kuhn)
+- **Actor:** 
 
-Release 1.1-M1
---------------------
+  - unified :class:`Channel` abstraction for :class:`Promise` & :class:`Actor`
+
+  - reintegrate invocation tracing (to be enabled per class and globally)
+
+  - make last message available during :meth:`preRestart()`
+
+  - experimental :meth:`freshInstance()` life-cycle hook for priming the new instance during restart
+
+  - new textual primitives :meth:`tell` (``!``) and :meth:`ask` (``?``, formerly ``!!!``)
+
+  - timeout for :meth:`ask` Futures taken from implicit argument (currently with fallback to deprecated ``ActorRef.timeout``
+
+- **durable mailboxes:**
+
+  - beanstalk, file, mongo, redis
+
+- **Future:**
+
+  - :meth:`onTimeout` callback
+
+  - select dispatcher for execution by implicit argument
+
+  - add safer cast methods :meth:`as[T]: T` and :meth:`mapTo[T]: Future[T]`
+
+- **TestKit:**
+
+  - add :class:`TestProbe` (can receive, reply and forward messages, supports all :class:`TestKit` assertions)
+
+  - add :meth:`TestKit.awaitCond`
+
+  - support global time-factor for all timing assertions (for running on busy CI servers)
+
+- **FSM:**
+
+  - add :class:`TestFSMRef`
+
+  - add :class:`LoggingFSM` (transition tracing, rolling event log)
+
+- updated dependencies:
+
+  - Jackson 1.8.0
+
+  - Netty 3.2.5
+
+  - Protobuf 2.4.1
+
+  - ScalaTest 1.6.1
+
+- various fixes, small improvements and documentation updates
+
+- several **deprecations** in preparation for 2.0
+
+  ================================  =====================
+  Method                            Replacement
+  ================================  =====================
+  Actor.preRestart(cause)           Actor.preRestart(cause, lastMsg)
+  ActorRef.sendOneWay               ActorRef.tell
+  ActorRef.sendOneWaySafe           ActorRef.tryTell
+  ActorRef.sendRequestReply         ActorRef.ask(...).get()
+  ActorRef.sendRequestReplyFuture   ActorRef.ask(...).get()
+  ActorRef.replyUnsafe              ActorRef.reply
+  ActorRef.replySafe                ActorRef.tryReply
+  ActorRef.mailboxSize              ActorRef.dispatcher.mailboxSize(actorRef)
+  ActorRef.sender/senderFuture      ActorRef.channel
+  ActorRef.!!                       ActorRef.?(...).as[T]
+  ActorRef.!!!                      ActorRef.?
+  ActorRef.reply\_?                 ActorRef.tryReply
+  Future.receive                    Future.onResult
+  Future.collect                    Future.map
+  Future.failure                    Future.recover
+  MessageDispatcher.pendingFutures  MessageDispatcher.tasks
+  RemoteClientModule.*Listener(s)   EventHandler.<X>
+  TestKit.expectMsg(pf)             TestKit.expectMsgPF
+  TestKit.receiveWhile(pf)          TestKit.receiveWhile()(pf)
+  ================================  =====================
+
+Trivia
+^^^^^^
+
+This release contains changes to 213 files, with 16053 insertions and 3624
+deletions. The authorship of the corresponding commits is distributed as shown
+below; the listing should not be taken too seriously, though, it has just been
+done using ``git log --shortstat`` and summing up the numbers, so it certainly
+misses details like who originally authored changes which were then back-ported
+from the master branch (do not fear, you will be correctly attributed when the
+stats for 2.0 are made).
+
+=======  ==========  =========  =========
+Commits  Insertions  Deletions  Author
+=======  ==========  =========  =========
+     69       11805        170  Viktor Klang
+     34        9694         97  Patrik Nordwall
+     72        3563        179  Roland Kuhn
+     27        1749        115  Peter Vlugter
+      7         238         22  Derek Williams
+      4          86         25  Peter Veentjer
+      1          17          5  Debasish Ghosh
+      2          15          5  Jonas Bonér
+=======  ==========  =========  =========
+  
+.. note::
+
+  Release notes of previous releases consisted of ticket or change listings in
+  no particular order
+
+Release 1.1
+-----------
 
 - **ADD** - #647 Extract an akka-camel-typed module out of akka-camel for optional typed actor support (Martin Krasser)
 - **ADD** - #654 Allow consumer actors to acknowledge in-only message exchanges (Martin Krasser)

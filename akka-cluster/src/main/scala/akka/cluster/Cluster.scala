@@ -403,13 +403,6 @@ class DefaultClusterNode private[akka] (
 
   def membershipNodes: Array[String] = locallyCachedMembershipNodes.toList.toArray.asInstanceOf[Array[String]]
 
-  private[akka] val nodeConnections: ConcurrentMap[String, Tuple2[InetSocketAddress, ActorRef]] = {
-    val conns = new ConcurrentHashMap[String, Tuple2[InetSocketAddress, ActorRef]]
-    if (includeRefNodeInReplicaSet)
-      conns.put(nodeAddress.nodeName, (remoteServerAddress, remoteDaemon)) // add the remote connection to 'this' node as well, but as a 'local' actor
-    conns
-  }
-
   // zookeeper listeners
   private val stateListener = new StateListener(this)
   private val membershipListener = new MembershipChildListener(this)
@@ -419,6 +412,17 @@ class DefaultClusterNode private[akka] (
 
   // Address -> ClusterActorRef
   private val clusterActorRefs = new Index[InetSocketAddress, ClusterActorRef]
+
+  // ============================================================================================================
+  // ========== WARNING: THESE FIELDS AND EVERYTHING USING THEM IN THE CONSTRUCTOR NEEDS TO BE LAZY =============
+  // ============================================================================================================
+
+  lazy private[akka] val nodeConnections: ConcurrentMap[String, Tuple2[InetSocketAddress, ActorRef]] = {
+    val conns = new ConcurrentHashMap[String, Tuple2[InetSocketAddress, ActorRef]]
+    if (includeRefNodeInReplicaSet)
+      conns.put(nodeAddress.nodeName, (remoteServerAddress, remoteDaemon)) // add the remote connection to 'this' node as well, but as a 'local' actor
+    conns
+  }
 
   // ZooKeeper client
   lazy private[cluster] val zkClient = new AkkaZkClient(zkServerAddresses, sessionTimeout, connectionTimeout, serializer)
@@ -440,6 +444,8 @@ class DefaultClusterNode private[akka] (
     zkClient.connection.getZookeeper,
     LEADER_ELECTION_PATH, null,
     leaderElectionCallback)
+
+  // ============================================================================================================
 
   if (enableJMX) createMBean
 
@@ -476,6 +482,7 @@ class DefaultClusterNode private[akka] (
   }
 
   def shutdown() {
+
     def shutdownNode() {
       ignore[ZkNoNodeException](zkClient.deleteRecursive(membershipNodePath))
 

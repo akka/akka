@@ -65,6 +65,20 @@ class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
       expectMsg(Transition(fsm, TestCancelTimer, Initial))
     }
 
+    "not get confused between named and state timers" in {
+      fsm ! TestCancelStateTimerInNamedTimerMessage
+      fsm ! Tick
+      expectMsg(100 millis, Tick)
+      Thread.sleep(200)
+      fsm.dispatcher resume fsm
+      expectMsg(100 millis, Transition(fsm, TestCancelStateTimerInNamedTimerMessage, TestCancelStateTimerInNamedTimerMessage2))
+      fsm ! Cancel
+      within(100 millis) {
+        expectMsg(Cancel)
+        expectMsg(Transition(fsm, TestCancelStateTimerInNamedTimerMessage2, Initial))
+      }
+    }
+
     "receive and cancel a repeated timer" in {
       fsm ! TestRepeatedTimer
       val seq = receiveWhile(600 millis) {
@@ -113,6 +127,8 @@ object FSMTimingSpec {
   case object TestRepeatedTimer extends State
   case object TestUnhandled extends State
   case object TestCancelTimer extends State
+  case object TestCancelStateTimerInNamedTimerMessage extends State
+  case object TestCancelStateTimerInNamedTimerMessage2 extends State
 
   case object Tick
   case object Tock
@@ -169,6 +185,21 @@ object FSMTimingSpec {
         } else {
           stay using (remaining - 1)
         }
+    }
+    when(TestCancelStateTimerInNamedTimerMessage) {
+      // FSM is suspended after processing this message and resumed 200ms later
+      case Ev(Tick) ⇒
+        self.dispatcher suspend self
+        setTimer("named", Tock, 10 millis, false)
+        stay forMax (100 millis) replying Tick
+      case Ev(Tock) ⇒
+        goto(TestCancelStateTimerInNamedTimerMessage2)
+    }
+    when(TestCancelStateTimerInNamedTimerMessage2) {
+      case Ev(StateTimeout) ⇒
+        goto(Initial)
+      case Ev(Cancel) ⇒
+        goto(Initial) replying Cancel
     }
     when(TestUnhandled) {
       case Ev(SetHandler) ⇒

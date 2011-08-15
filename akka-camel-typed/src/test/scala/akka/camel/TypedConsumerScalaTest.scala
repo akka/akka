@@ -7,7 +7,6 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Actor._
 import akka.actor._
-import akka.actor.TypedActor.Configuration._
 
 /**
  * @author Martin Krasser
@@ -33,7 +32,7 @@ class TypedConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMa
     "started" must {
       "support in-out message exchanges via its endpoints" in {
         service.awaitEndpointActivation(3) {
-          actor = TypedActor.typedActorOf(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl], defaultConfiguration)
+          actor = TypedActor.typedActorOf(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl], Props())
         } must be(true)
         mandatoryTemplate.requestBodyAndHeader("direct:m2", "x", "test", "y") must equal("m2: x y")
         mandatoryTemplate.requestBodyAndHeader("direct:m3", "x", "test", "y") must equal("m3: x y")
@@ -63,7 +62,7 @@ class TypedConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMa
     "started" must {
       "support in-out message exchanges via its endpoints" in {
         service.awaitEndpointActivation(2) {
-          actor = TypedActor.typedActorOf(classOf[TestTypedConsumer], classOf[TestTypedConsumerImpl], defaultConfiguration)
+          actor = TypedActor.typedActorOf(classOf[TestTypedConsumer], classOf[TestTypedConsumerImpl], Props())
         } must be(true)
         mandatoryTemplate.requestBody("direct:publish-test-3", "x") must equal("foo: x")
         mandatoryTemplate.requestBody("direct:publish-test-4", "x") must equal("bar: x")

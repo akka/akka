@@ -144,14 +144,14 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
   def newFooBar: Foo = newFooBar(Duration(2, "s"))
 
-  def newFooBar(timeout: Duration): Foo =
-    newFooBar(Configuration(timeout))
+  def newFooBar(d: Duration): Foo =
+    newFooBar(Props().withTimeout(Timeout(d)))
 
-  def newFooBar(config: Configuration): Foo =
-    typedActorOf(classOf[Foo], classOf[Bar], config)
+  def newFooBar(props: Props): Foo =
+    typedActorOf(classOf[Foo], classOf[Bar], props)
 
-  def newStacked(config: Configuration = Configuration(Duration(2, "s"))): Stacked =
-    typedActorOf(classOf[Stacked], classOf[StackedImpl], config)
+  def newStacked(props: Props = Props().withTimeout(Timeout(2000))): Stacked =
+    typedActorOf(classOf[Stacked], classOf[StackedImpl], props)
 
   def mustStop(typedActor: AnyRef) = stop(typedActor) must be(true)
 
@@ -295,7 +295,7 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
     }
 
     "be able to support implementation only typed actors" in {
-      val t = typedActorOf[Foo, Bar](Configuration())
+      val t = typedActorOf[Foo, Bar](Props())
       val f = t.futurePigdog(200)
       val f2 = t.futurePigdog(0)
       f2.isCompleted must be(false)
@@ -312,15 +312,15 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
     }
 
     "be able to use work-stealing dispatcher" in {
-      val config = Configuration(
-        Duration(6600, "ms"),
-        Dispatchers.newBalancingDispatcher("pooled-dispatcher")
+      val props = Props(
+        timeout = Timeout(6600),
+        dispatcher = Dispatchers.newBalancingDispatcher("pooled-dispatcher")
           .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
           .setCorePoolSize(60)
           .setMaxPoolSize(60)
           .build)
 
-      val thais = for (i ← 1 to 60) yield newFooBar(config)
+      val thais = for (i ← 1 to 60) yield newFooBar(props)
       val iterator = new CyclicIterator(thais)
 
       val results = for (i ← 1 to 120) yield (i, iterator.next.futurePigdog(200L, i))

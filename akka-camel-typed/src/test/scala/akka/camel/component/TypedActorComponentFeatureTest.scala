@@ -5,8 +5,7 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.{ DefaultCamelContext, SimpleRegistry }
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec }
 
-import akka.actor.{ Actor, TypedActor }
-import akka.actor.TypedActor.Configuration._
+import akka.actor.{ Actor, TypedActor, Props }
 import akka.camel._
 
 /**
@@ -21,10 +20,10 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
   override protected def beforeAll = {
     val typedActor = TypedActor.typedActorOf(
       classOf[SampleTypedActor],
-      classOf[SampleTypedActorImpl], defaultConfiguration) // not a consumer
+      classOf[SampleTypedActorImpl], Props()) // not a consumer
     val typedConsumer = TypedActor.typedActorOf(
       classOf[SampleTypedConsumer],
-      classOf[SampleTypedConsumerImpl], defaultConfiguration)
+      classOf[SampleTypedConsumerImpl], Props())
 
     typedConsumerUuid = TypedActor.getActorRefFor(typedConsumer).uuid.toString
 

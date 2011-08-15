@@ -2,8 +2,7 @@ package sample.camel
 
 import akka.actor.Actor._
 import akka.camel.CamelServiceManager
-import akka.actor.TypedActor
-import akka.actor.TypedActor.Configuration._
+import akka.actor.{ TypedActor, Props }
 
 /**
  * @author Martin Krasser
@@ -18,7 +17,7 @@ object ServerApplication extends App {
   val ua = actorOf[RemoteActor2].start
   val ta = TypedActor.typedActorOf(
     classOf[RemoteTypedConsumer2],
-    classOf[RemoteTypedConsumer2Impl], defaultConfiguration)
+    classOf[RemoteTypedConsumer2Impl], Props())
 
   remote.start("localhost", 7777)
   remote.register("remote2", ua)

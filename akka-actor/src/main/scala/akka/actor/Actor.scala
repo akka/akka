@@ -371,6 +371,27 @@ object Actor {
     createActor(address, () ⇒ new LocalActorRef(() ⇒ creator.create, address))
   }
 
+  //TODO FIXME
+  def actorOf(props: Props): ActorRef = {
+    //TODO Implement support for configuring by deployment ID etc
+    //TODO If localOnly = true, never use the config file deployment and always create a new actor
+    //TODO If deployId matches an already created actor (Ahead-of-time deployed) return that actor
+    //TODO If deployId exists in config, it will override the specified Props (should we attempt to merge?)
+
+    val address = props.deployId match { //TODO handle deployId separately from address?
+      case "" | null ⇒ newUuid().toString
+      case other     ⇒ other
+    }
+    val newActor = new LocalActorRef(props.creator, address)
+    newActor.dispatcher = props.dispatcher
+    newActor.faultHandler = props.faultHandler
+    newActor.lifeCycle = props.lifeCycle
+    newActor.timeout = props.timeout.duration.toMillis
+    newActor.receiveTimeout = props.receiveTimeout.map(_.toMillis)
+    props.supervisor.foreach(newActor.link(_))
+    newActor.start
+  }
+
   def localActorOf[T <: Actor: Manifest]: ActorRef = {
     newLocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], new UUID().toString)
   }
