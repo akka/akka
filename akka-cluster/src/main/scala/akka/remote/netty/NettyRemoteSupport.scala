@@ -407,7 +407,7 @@ class ActiveRemoteClient private[akka] (
 
   //Please note that this method does _not_ remove the ARC from the NettyRemoteClientModule's map of clients
   def shutdown() = runSwitch switchOff {
-    EventHandler.info(this, "Shutting down [%s]".format(name))
+    EventHandler.info(this, "Shutting down remote client [%s]".format(name))
 
     notifyListeners(RemoteClientShutdown(module, remoteAddress))
     timer.stop()
@@ -655,6 +655,7 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
   serverModule.notifyListeners(RemoteServerStarted(serverModule))
 
   def shutdown() {
+    EventHandler.info(this, "Shutting down remote server [%s]".format(name))
     try {
       val shutdownSignal = {
         val b = RemoteControlProtocol.newBuilder.setCommandType(CommandType.SHUTDOWN)
