@@ -78,7 +78,7 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
         case e: RoutingException         ⇒
       }
 
-       //since the call to the node failed, the node must have been removed from the list.
+      //since the call to the node failed, the node must have been removed from the list.
       clusteredRef.connectionsSize must be(1)
 
       //send a message to this node,
