@@ -61,10 +61,11 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
     notifyListeners(ActorRegistered(address, actor, Option(typedActorsByUuid get actor.uuid)))
   }
 
-  private[akka] def registerTypedActor(actorRef: ActorRef, interface: AnyRef) {
+  private[akka] def registerTypedActor(actorRef: ActorRef, interface: AnyRef): Unit =
     typedActorsByUuid.put(actorRef.uuid, interface)
-    actorRef.start // register actorRef
-  }
+
+  private[akka] def unregisterTypedActor(actorRef: ActorRef, interface: AnyRef): Unit =
+    typedActorsByUuid.remove(actorRef.uuid, interface)
 
   /**
    * Unregisters an actor in the ActorRegistry.

@@ -47,12 +47,19 @@ private[akka] object ActorRefInternals {
  * TODO document me
  */
 object Props {
-  val defaultTimeout: Timeout = Timeout(Duration(Actor.TIMEOUT, "millis"))
-  def defaultDispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
-  val noCreatorSpecified: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actorFactoryProvided!")
+  object Default {
+    val creator: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actor creator specified!")
+    val deployId: String = ""
+    val dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
+    val timeout: Timeout = Timeout(Duration(Actor.TIMEOUT, "millis"))
+    val receiveTimeout: Option[Duration] = None
+    val lifeCycle: LifeCycle = Permanent
+    val faultHandler: FaultHandlingStrategy = NoFaultHandlingStrategy
+    val supervisor: Option[ActorRef] = None
+    val localOnly: Boolean = false
+  }
 
-  val default = new Props(creator = noCreatorSpecified)
-  def apply(): Props = default
+  val default = new Props()
 
   def apply[T <: Actor: Manifest]: Props =
     default.withCreator(() ⇒ implicitly[Manifest[T]].erasure.asInstanceOf[Class[_ <: Actor]].newInstance)
@@ -64,15 +71,26 @@ object Props {
 /**
  * ActorRef configuration object, this is thread safe and fully sharable
  */
-case class Props(creator: () ⇒ Actor,
-                 deployId: String = "",
-                 dispatcher: MessageDispatcher = Props.defaultDispatcher,
-                 timeout: Timeout = Props.defaultTimeout,
-                 receiveTimeout: Option[Duration] = None,
-                 lifeCycle: LifeCycle = Permanent,
-                 faultHandler: FaultHandlingStrategy = NoFaultHandlingStrategy,
-                 supervisor: Option[ActorRef] = None,
-                 localOnly: Boolean = false) {
+case class Props(creator: () ⇒ Actor = Props.Default.creator,
+                 deployId: String = Props.Default.deployId,
+                 dispatcher: MessageDispatcher = Props.Default.dispatcher,
+                 timeout: Timeout = Props.Default.timeout,
+                 receiveTimeout: Option[Duration] = Props.Default.receiveTimeout,
+                 lifeCycle: LifeCycle = Props.Default.lifeCycle,
+                 faultHandler: FaultHandlingStrategy = Props.Default.faultHandler,
+                 supervisor: Option[ActorRef] = Props.Default.supervisor,
+                 localOnly: Boolean = Props.Default.localOnly) {
+
+  def this() = this(
+    creator = Props.Default.creator,
+    deployId = Props.Default.deployId,
+    dispatcher = Props.Default.dispatcher,
+    timeout = Props.Default.timeout,
+    receiveTimeout = Props.Default.receiveTimeout,
+    lifeCycle = Props.Default.lifeCycle,
+    faultHandler = Props.Default.faultHandler,
+    supervisor = Props.Default.supervisor,
+    localOnly = Props.Default.localOnly)
   /**
    * Returns a new Props with the specified creator set
    *  Scala API
@@ -581,13 +599,11 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
     new AtomicReference[Actor](newActor)
   }
 
-  def serializerErrorDueTo(reason: String) =
-    throw new akka.config.ConfigurationException(
-      "Could not create Serializer object [" + this.getClass.getName +
-        "]")
-
-  private val serializer: Serializer =
-    try { Serialization.serializerFor(this.getClass) } catch { case e: Exception ⇒ serializerErrorDueTo(e.toString) }
+  private def serializer: Serializer = //TODO Is this used or needed?
+    try { Serialization.serializerFor(this.getClass) } catch {
+      case e: Exception ⇒ throw new akka.config.ConfigurationException(
+        "Could not create Serializer object for [" + this.getClass.getName + "]")
+    }
 
   private lazy val replicationStorage: Option[TransactionLog] = {
     import DeploymentConfig._

@@ -7,8 +7,8 @@ import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
 import akka.actor.Actor._
+import akka.actor.Props
 import akka.actor.TypedActor
-import akka.actor.TypedActor.Configuration._
 import akka.camel.CamelContextManager
 import akka.config.Supervision._
 
@@ -91,7 +91,7 @@ class Boot {
   // -----------------------------------------------------------------------
 
   // TODO: investigate why this consumer is not published
-  TypedActor.typedActorOf(classOf[TypedConsumer1], classOf[TypedConsumer1Impl], defaultConfiguration)
+  TypedActor.typedActorOf(classOf[TypedConsumer1], classOf[TypedConsumer1Impl], Props())
 }
 
 /**

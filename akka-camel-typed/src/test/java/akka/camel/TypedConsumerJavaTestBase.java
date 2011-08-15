@@ -2,7 +2,8 @@ package akka.camel;
 
 import akka.actor.Actor;
 import akka.actor.TypedActor;
-import akka.actor.TypedActor.Configuration;
+import akka.actor.Props;
+import akka.actor.Timeout;
 import akka.dispatch.Dispatchers;
 import akka.japi.SideEffect;
 import akka.util.FiniteDuration;
@@ -42,8 +43,7 @@ public class TypedConsumerJavaTestBase {
                 consumer = TypedActor.typedActorOf(
                         SampleErrorHandlingTypedConsumer.class,
                         SampleErrorHandlingTypedConsumerImpl.class,
-                        new Configuration(new FiniteDuration(5000, "millis"), Dispatchers.defaultGlobalDispatcher()
-                        ));
+                        (new Props()).withTimeout(new Timeout(new FiniteDuration(5000, "millis"))));
             }
         });
         String result = getMandatoryTemplate().requestBody("direct:error-handler-test-java-typed", "hello", String.class);

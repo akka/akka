@@ -5,8 +5,7 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
-import akka.actor.{ Actor, TypedActor }
-import akka.actor.TypedActor.Configuration._
+import akka.actor.{ Actor, TypedActor, Props }
 import akka.camel._
 
 /**
@@ -18,7 +17,7 @@ object StandaloneApplication extends App {
 
   // 'externally' register typed actors
   val registry = new SimpleRegistry
-  registry.put("sample", TypedActor.typedActorOf(classOf[BeanIntf], classOf[BeanImpl], defaultConfiguration))
+  registry.put("sample", TypedActor.typedActorOf(classOf[BeanIntf], classOf[BeanImpl], Props()))
 
   // customize CamelContext
   CamelContextManager.init(new DefaultCamelContext(registry))
@@ -31,7 +30,7 @@ object StandaloneApplication extends App {
 
   mandatoryService.awaitEndpointActivation(1) {
     // 'internally' register typed actor (requires CamelService)
-    TypedActor.typedActorOf(classOf[TypedConsumer2], classOf[TypedConsumer2Impl], defaultConfiguration)
+    TypedActor.typedActorOf(classOf[TypedConsumer2], classOf[TypedConsumer2Impl], Props())
   }
 
   // access 'internally' (automatically) registered typed-actors
