@@ -11,7 +11,6 @@ import ThreadPoolExecutor.CallerRunsPolicy
 
 import akka.util.Duration
 import akka.event.EventHandler
-import concurrent.forkjoin.{ ForkJoinWorkerThread, ForkJoinTask, ForkJoinPool }
 
 object ThreadPoolConfig {
   type Bounds = Int

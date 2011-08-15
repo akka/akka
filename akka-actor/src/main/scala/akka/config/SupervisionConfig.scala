@@ -6,7 +6,7 @@ package akka.config
 
 import akka.dispatch.MessageDispatcher
 import akka.actor.{ MaximumNumberOfRestartsWithinTimeRangeReached, ActorRef }
-import akka.japi.{ Procedure2, Procedure }
+import akka.japi.{ Procedure2 }
 
 case class RemoteAddress(val hostname: String, val port: Int)
 

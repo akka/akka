@@ -649,7 +649,7 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
   bootstrap.setOption("child.tcpNoDelay", true)
   bootstrap.setOption("child.keepAlive", true)
   bootstrap.setOption("child.reuseAddress", true)
-  bootstrap.setOption("child.connectTimeoutMillis", RemoteServerSettings.CONNECTION_TIMEOUT_MILLIS.toMillis)
+  bootstrap.setOption("child.connectTimeoutMillis", RemoteServerSettings.CONNECTION_TIMEOUT.toMillis)
 
   openChannels.add(bootstrap.bind(address))
   serverModule.notifyListeners(RemoteServerStarted(serverModule))

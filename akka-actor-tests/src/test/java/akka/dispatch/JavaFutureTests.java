@@ -5,6 +5,9 @@ import static org.junit.Assert.*;
 import java.util.concurrent.Callable;
 import java.util.LinkedList;
 import java.lang.Iterable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import akka.japi.Function;
 import akka.japi.Function2;
 import akka.japi.Procedure;
@@ -28,6 +31,119 @@ public class JavaFutureTests {
             });
 
         assertEquals("Hello World", f2.get());
+    }
+
+    @Test public void mustBeAbleToExecuteAnOnResultCallback() throws Throwable {
+      final CountDownLatch latch = new CountDownLatch(1);
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, Dispatchers.defaultGlobalDispatcher());
+      Future<String> f = cf;
+      f.onResult(new Procedure<String>() {
+          public void apply(String result) {
+             if(result.equals("foo"))
+               latch.countDown();
+          }
+      });
+
+      cf.completeWithResult("foo");
+      assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+      assertEquals(f.get(), "foo");
+    }
+
+    @Test public void mustBeAbleToExecuteAnOnExceptionCallback() throws Throwable {
+      final CountDownLatch latch = new CountDownLatch(1);
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, Dispatchers.defaultGlobalDispatcher());
+      Future<String> f = cf;
+      f.onException(new Procedure<Throwable>() {
+          public void apply(Throwable t) {
+             if(t instanceof NullPointerException)
+               latch.countDown();
+          }
+      });
+
+      Throwable exception = new NullPointerException();
+      cf.completeWithException(exception);
+      assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+      assertEquals(f.exception().get(), exception);
+    }
+
+    @Test public void mustBeAbleToExecuteAnOnTimeoutCallback() throws Throwable {
+      final CountDownLatch latch = new CountDownLatch(1);
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, Dispatchers.defaultGlobalDispatcher());
+      Future<String> f = cf;
+      f.onTimeout(new Procedure<Future<String>>() {
+          public void apply(Future<String> future) {
+             latch.countDown();
+          }
+      });
+
+      assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+      assertTrue(f.value().isEmpty());
+    }
+
+    @Test public void mustBeAbleToExecuteAnOnCompleteCallback() throws Throwable {
+      final CountDownLatch latch = new CountDownLatch(1);
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, Dispatchers.defaultGlobalDispatcher());
+      Future<String> f = cf;
+      f.onComplete(new Procedure<Future<String>>() {
+          public void apply(akka.dispatch.Future<String> future) {
+             latch.countDown();
+          }
+      });
+
+      cf.completeWithResult("foo");
+      assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+      assertEquals(f.get(), "foo");
+    }
+
+    @Test public void mustBeAbleToForeachAFuture() throws Throwable {
+      final CountDownLatch latch = new CountDownLatch(1);
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, Dispatchers.defaultGlobalDispatcher());
+      Future<String> f = cf;
+      f.foreach(new Procedure<String>() {
+          public void apply(String future) {
+             latch.countDown();
+          }
+      });
+
+      cf.completeWithResult("foo");
+      assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+      assertEquals(f.get(), "foo");
+    }
+
+    @Test public void mustBeAbleToFlatMapAFuture() throws Throwable {
+      final CountDownLatch latch = new CountDownLatch(1);
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, Dispatchers.defaultGlobalDispatcher());
+      cf.completeWithResult("1000");
+      Future<String> f = cf;
+      Future<Integer> r = f.flatMap(new Function<String, Future<Integer>>() {
+            public Future<Integer> apply(String r) {
+                latch.countDown();
+                Promise<Integer> cf = new akka.dispatch.DefaultPromise<Integer>(1000, TimeUnit.MILLISECONDS, Dispatchers.defaultGlobalDispatcher());
+                cf.completeWithResult(Integer.parseInt(r));
+                return cf;
+            }
+        });
+
+      assertEquals(f.get(), "1000");
+      assertEquals(r.get().intValue(), 1000);
+      assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+    }
+
+    @Test public void mustBeAbleToFilterAFuture() throws Throwable {
+      final CountDownLatch latch = new CountDownLatch(1);
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, Dispatchers.defaultGlobalDispatcher());
+      Future<String> f = cf;
+      Future<String> r = f.filter(new Function<String, Boolean>() {
+          public Boolean apply(String r) {
+              latch.countDown();
+              return r.equals("foo");
+          }
+      });
+
+      cf.completeWithResult("foo");
+      assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+      assertEquals(f.get(), "foo");
+      assertEquals(r.get(), "foo");
     }
 
     // TODO: Improve this test, perhaps with an Actor

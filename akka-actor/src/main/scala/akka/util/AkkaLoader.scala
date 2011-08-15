@@ -5,7 +5,6 @@
 package akka.util
 
 import akka.config.Config
-import akka.actor.Actor
 
 /*
  * This class is responsible for booting up a stack of bundles and then shutting them down
