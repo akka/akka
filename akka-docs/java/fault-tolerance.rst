@@ -117,17 +117,17 @@ The Actor’s supervision can be declaratively defined by creating a ‘Supervis
   import static akka.config.Supervision.*;
   import static akka.actor.Actors.*;
 
-  Supervisor supervisor = new Supervisor(
-    new SupervisorConfig(
-      new AllForOneStrategy(new Class[]{Exception.class}, 3, 5000),
-      new Supervise[] {
-        new Supervise(
-          actorOf(MyActor1.class),
-          permanent()),
-        Supervise(
-          actorOf(MyActor2.class),
-          permanent())
-       }));
+  Supervisor supervisor = Supervisor.apply(
+      new SupervisorConfig(
+        new AllForOneStrategy(new Class[]{Exception.class}, 3, 5000),
+        new Supervise[] {
+          new Supervise(
+            actorOf(MyActor1.class),
+            permanent()),
+          new Supervise(
+            actorOf(MyActor2.class),
+            permanent())
+         }));
 
 Supervisors created like this are implicitly instantiated and started.
 
@@ -139,25 +139,26 @@ MaximumNumberOfRestartsWithinTimeRangeReached message.
 
   import static akka.config.Supervision.*;
   import static akka.actor.Actors.*;
-  import akka.event.JavaEventHandler;
+  import akka.event.EventHandler;
+  import akka.japi.Procedure2;
 
-   Procedure2<ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached> handler = new Procedure2<ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached>() {
-            public void apply(ActorRef ref, MaximumNumberOfRestartsWithinTimeRangeReached max) {
-                JavaEventHandler.error(ref, max);
-            }
-        };
+  Procedure2<ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached> handler = new Procedure2<ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached>() {
+    public void apply(ActorRef ref, MaximumNumberOfRestartsWithinTimeRangeReached max) {
+      EventHandler.error(ref, max);
+    }
+  };
 
-  Supervisor supervisor = new Supervisor(
-    new SupervisorConfig(
-      new AllForOneStrategy(new Class[]{Exception.class}, 3, 5000),
-      new Supervise[] {
-        new Supervise(
-          actorOf(MyActor1.class),
-          permanent()),
-        Supervise(
-          actorOf(MyActor2.class),
-          permanent())
-       },handler));
+  Supervisor supervisor = Supervisor.apply(
+      new SupervisorConfig(
+        new AllForOneStrategy(new Class[]{Exception.class}, 3, 5000),
+        new Supervise[] {
+          new Supervise(
+            actorOf(MyActor1.class),
+            permanent()),
+          new Supervise(
+            actorOf(MyActor2.class),
+            permanent())
+         }, handler));
 
 
 
@@ -165,7 +166,7 @@ You can link and unlink actors from a declaratively defined supervisor using the
 
 .. code-block:: java
 
-  Supervisor supervisor = new Supervisor(...);
+  Supervisor supervisor = Supervisor.apply(...);
   supervisor.link(..);
   supervisor.unlink(..);
 
@@ -185,7 +186,7 @@ Example usage:
         new Supervise(
           actorOf(MyActor1.class),
           permanent()),
-        Supervise(
+        new Supervise(
           actorOf(MyActor2.class),
           temporary())
      }));
@@ -209,7 +210,7 @@ Here is an example:
   import static akka.config.Supervision.*;
   import static akka.actor.Actors.*;
 
-  Supervisor supervisor = new Supervisor(
+  Supervisor supervisor = Supervisor.apply(
     new SupervisorConfig(
       new AllForOneStrategy(new Class[]{Exception.class}, 3, 5000),
       new Supervise[] {
