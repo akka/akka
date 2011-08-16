@@ -9,9 +9,9 @@ import akka.util._
 import ReflectiveAccess._
 import Actor._
 
-import java.util.concurrent.{ CopyOnWriteArrayList, ConcurrentHashMap }
-import java.net.InetSocketAddress
+import java.util.concurrent.{ CopyOnWriteArrayList }
 import akka.config.Supervision._
+import collection.mutable.ListBuffer
 
 class SupervisorException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
@@ -102,7 +102,7 @@ case class SupervisorFactory(val config: SupervisorConfig) {
 sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached) ⇒ Unit) {
   import Supervisor._
 
-  private val _childActors = new ConcurrentHashMap[String, List[ActorRef]]
+  private val _childActors = new Index[String, ActorRef]
   private val _childSupervisors = new CopyOnWriteArrayList[Supervisor]
 
   private[akka] val supervisor = actorOf(new SupervisorActor(handler, maxRestartsHandler)).start()
@@ -119,35 +119,35 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (Act
 
   def unlink(child: ActorRef) = supervisor.unlink(child)
 
-  def children: List[ActorRef] =
-    _childActors.values.toArray.toList.asInstanceOf[List[List[ActorRef]]].flatten
+  def children: List[ActorRef] = {
+    val buf = new ListBuffer[ActorRef]
+    _childActors foreach { case (k, v) => buf += v }
+    buf.toList
+  }
 
-  def childSupervisors: List[Supervisor] =
-    _childActors.values.toArray.toList.asInstanceOf[List[Supervisor]]
+  def childSupervisors: List[Supervisor] = {
+    val buf = new ListBuffer[Supervisor]
+    val i = _childSupervisors.iterator()
+    while(i.hasNext) buf += i.next()
+    buf.toList
+  }
 
   def configure(config: SupervisorConfig): Unit = config match {
     case SupervisorConfig(_, servers, _) ⇒
+      servers foreach {
+        case Supervise(actorRef, lifeCycle, registerAsRemoteService) ⇒
+          actorRef.lifeCycle = lifeCycle
+          supervisor.startLink(actorRef)
 
-      servers.map(server ⇒
-        server match {
-          case Supervise(actorRef, lifeCycle, registerAsRemoteService) ⇒
-            actorRef.start()
-            val className = actorRef.actor.getClass.getName
-            val currentActors = {
-              val list = _childActors.get(className)
-              if (list eq null) List[ActorRef]()
-              else list
-            }
-            _childActors.put(className, actorRef :: currentActors)
-            actorRef.lifeCycle = lifeCycle
-            supervisor.link(actorRef)
-            if (registerAsRemoteService)
-              Actor.remote.register(actorRef)
-          case supervisorConfig@SupervisorConfig(_, _, _) ⇒ // recursive supervisor configuration
-            val childSupervisor = Supervisor(supervisorConfig)
-            supervisor.link(childSupervisor.supervisor)
-            _childSupervisors.add(childSupervisor)
-        })
+          _childActors.put(actorRef.actor.getClass.getName, actorRef) //TODO Why do we keep this here, mem leak?
+
+          if (registerAsRemoteService)
+            Actor.remote.register(actorRef)
+        case supervisorConfig@SupervisorConfig(_, _, _) ⇒ // recursive supervisor configuration
+          val childSupervisor = Supervisor(supervisorConfig)
+          supervisor.link(childSupervisor.supervisor)
+          _childSupervisors.add(childSupervisor)
+      }
   }
 }
 
