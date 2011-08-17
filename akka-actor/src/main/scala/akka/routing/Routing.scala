@@ -9,6 +9,7 @@ import annotation.tailrec
 import akka.AkkaException
 import akka.dispatch.Future
 import akka.actor._
+import akka.dispatch.Futures
 import akka.event.EventHandler
 import akka.actor.UntypedChannel._
 import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
@@ -146,9 +147,6 @@ object Routing {
    *                                  how many connections it can handle.
    */
   def actorOf(actorAddress: String, connections: Iterable[ActorRef], routerType: RouterType): ActorRef = {
-    if (connections.size == 0)
-      throw new IllegalArgumentException("To create a routed actor ref, at least one connection is required")
-
     val ref = routerType match {
       case RouterType.Direct ⇒
         if (connections.size > 1)
@@ -166,6 +164,9 @@ object Routing {
   }
 
   def actorOf(actorAddress: String, connections: Iterable[ActorRef], router: Router): ActorRef = {
+    if (connections.size == 0)
+      throw new IllegalArgumentException("To create a routed actor ref, at least one connection is required")
+
     new RoutedActorRef(actorAddress, router, connections)
   }
 
@@ -468,5 +469,59 @@ class RoundRobinRouter extends BasicRouter {
       else oldIndex
     }
   }
+
+}
+
+/*
+ * ScatterGatherRouter broadcasts the message to all connections and gathers results according to the
+ * specified strategy (specific router needs to implement `gather` method).
+ * Scatter-gather pattern will be applied only to the messages broadcasted using Future 
+ * (wrapped into {@link Routing.Broadcast} and sent with "?" method). For the messages, sent in a fire-forget
+ * mode, the router would behave as {@link BasicRouter}, unless it's mixed in with other router type 
+ * 
+ *  FIXME: This also is the location where a failover  is done in the future if an ActorRef fails and a different one needs to be selected.
+ * FIXME: this is also the location where message buffering should be done in case of failure.
+ */
+trait ScatterGatherRouter extends BasicRouter with Serializable {
+
+  /*
+     * Aggregates the responses into a single Future
+     * @param results Futures of the responses from connections
+     */
+  protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G]
+
+  private def scatterGather[S, G >: S](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[G] = {
+    val responses = connections.versionedIterator._2.flatMap { actor ⇒
+      try {
+        Some(actor.?(message, timeout)(sender).asInstanceOf[Future[S]])
+      } catch {
+        case e: Exception ⇒
+          connections.signalDeadActor(actor)
+          None
+      }
+    }
+
+    if (responses.size == 0)
+      throw new RoutingException("No connections can process the message [%s] sent to scatter-gather router" format (message))
+
+    gather(responses)
+  }
+
+  override def route[T](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[T] = message match {
+    case Routing.Broadcast(message) ⇒ scatterGather(message, timeout)
+    case message                    ⇒ super.route(message, timeout)(sender)
+  }
+
+}
+
+/*
+ * Simple router that broadcasts the message to all connections, and replies with the first response
+ * Scatter-gather pattern will be applied only to the messages broadcasted using Future 
+ * (wrapped into {@link Routing.Broadcast} and sent with "?" method). For the messages sent in a fire-forget
+ * mode, the router would behave as {@link RoundRobinRouter} 
+ */
+class ScatterGatherFirstCompletedRouter extends RoundRobinRouter with ScatterGatherRouter {
+
+  protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G] = Futures.firstCompletedOf(results)
 
 }

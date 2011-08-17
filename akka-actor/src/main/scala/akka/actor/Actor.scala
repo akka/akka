@@ -450,12 +450,12 @@ object Actor {
   private[akka] def createActor(address: String, actorFactory: () ⇒ ActorRef): ActorRef = {
     Address.validate(address)
     registry.actorFor(address) match { // check if the actor for the address is already in the registry
-      case Some(actorRef) ⇒ println(address + ": FOund in registry!!"); actorRef // it is     -> return it
+      case Some(actorRef) ⇒ actorRef // it is     -> return it
       case None ⇒ // it is not -> create it
         try {
           Deployer.deploymentFor(address) match {
-            case Deploy(_, _, router, Local) ⇒ println(address + ": CREATE LOCALLY!!"); actorFactory() // create a local actor
-            case deploy                      ⇒ println(address + ": CREATE CLUSTER!!"); newClusterActorRef(actorFactory, address, deploy)
+            case Deploy(_, _, router, Local) ⇒ actorFactory() // create a local actor
+            case deploy                      ⇒ newClusterActorRef(actorFactory, address, deploy)
           }
         } catch {
           case e: DeploymentException ⇒
@@ -615,11 +615,11 @@ trait Actor {
   }
 
   /*
-     * Option[ActorRef] representation of the 'self' ActorRef reference.
-     * <p/>
-     * Mainly for internal use, functions as the implicit sender references when invoking
-     * one of the message send functions ('!' and '?').
-     */
+   * Option[ActorRef] representation of the 'self' ActorRef reference.
+   * <p/>
+   * Mainly for internal use, functions as the implicit sender references when invoking
+   * one of the message send functions ('!' and '?').
+   */
   def optionSelf: Option[ActorRef] = someSelf
 
   /**
