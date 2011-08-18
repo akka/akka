@@ -26,21 +26,12 @@ class NewLeaderChangeListenerMultiJvmNode1 extends MasterClusterTestNode {
   "A NewLeader change listener" must {
 
     "be invoked after leader election is completed" in {
-      val latch = new CountDownLatch(1)
-      node.register(new ChangeListener {
-        override def newLeader(node: String, client: ClusterNode) {
-          latch.countDown
-        }
-      })
-
       barrier("start-node1", NrOfNodes) {
         Cluster.node
       }
 
       barrier("start-node2", NrOfNodes) {
       }
-
-      latch.await(10, TimeUnit.SECONDS) must be === true
 
       node.shutdown()
     }
@@ -52,13 +43,21 @@ class NewLeaderChangeListenerMultiJvmNode2 extends ClusterTestNode {
 
   "A NewLeader change listener" must {
 
-    "be invoked when a new node leaves the cluster" in {
+    "be invoked after leader election is completed" in {
+      val latch = new CountDownLatch(1)
+
       barrier("start-node1", NrOfNodes) {
       }
 
       barrier("start-node2", NrOfNodes) {
-        Cluster.node
+        node.register(new ChangeListener {
+          override def newLeader(node: String, client: ClusterNode) {
+            latch.countDown
+          }
+        })
       }
+
+      latch.await(10, TimeUnit.SECONDS) must be === true
 
       node.shutdown()
     }

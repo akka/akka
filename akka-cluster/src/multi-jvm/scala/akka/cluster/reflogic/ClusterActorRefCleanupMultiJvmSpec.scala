@@ -24,10 +24,9 @@ object ClusterActorRefCleanupMultiJvmSpec {
 
     def receive = {
       case "Die" ⇒
-        //println("Killing JVM: " + Cluster.node.nodeAddress)
+        println("Killing JVM: " + Cluster.node.nodeAddress)
         System.exit(0)
-      case _ ⇒
-      //println("Hello")
+      case _ ⇒ {}
     }
   }
 

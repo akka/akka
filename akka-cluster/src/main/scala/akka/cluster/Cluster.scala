@@ -531,6 +531,8 @@ class DefaultClusterNode private[akka] (
   }
 
   private[cluster] def publish(change: ChangeNotification) {
+    println("=============================================================== PUBLISH")
+    println("=======>>> change: " + change)
     changeListeners.iterator.foreach(_.notify(change, this))
   }
 
