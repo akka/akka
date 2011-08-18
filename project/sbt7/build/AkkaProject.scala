@@ -146,7 +146,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val spring_jms       = "org.springframework"         % "spring-jms"              % SPRING_VERSION % "compile" //ApacheV2
     lazy val stax_api         = "javax.xml.stream"            % "stax-api"                % "1.0-2"        % "compile" //ApacheV2
-    lazy val twitter_util_core= "com.twitter"                 % "util-core"               % "1.8.1" // ApacheV2      
+    lazy val twitter_util_core= "com.twitter"                 % "util-core"               % "1.8.1" // ApacheV2
     lazy val logback          = "ch.qos.logback"              % "logback-classic"         % "0.9.28"       % "runtime" //MIT
     lazy val log4j            = "log4j"                       % "log4j"                   % "1.2.15"          //ApacheV2
     lazy val zookeeper        = "org.apache.hadoop.zookeeper" % "zookeeper"               % ZOOKEEPER_VERSION //ApacheV2

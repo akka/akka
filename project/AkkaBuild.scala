@@ -103,7 +103,8 @@ object AkkaBuild extends Build {
     id = "akka-durable-mailboxes",
     base = file("akka-durable-mailboxes"),
     settings = parentSettings,
-    aggregate = Seq(mailboxesCommon, beanstalkMailbox, fileMailbox, redisMailbox, zookeeperMailbox, mongoMailbox)
+    aggregate = Seq(mailboxesCommon, beanstalkMailbox, fileMailbox, redisMailbox, zookeeperMailbox)
+    // aggregate = Seq(mailboxesCommon, beanstalkMailbox, fileMailbox, redisMailbox, zookeeperMailbox, mongoMailbox)
   )
 
   lazy val mailboxesCommon = Project(
@@ -155,18 +156,18 @@ object AkkaBuild extends Build {
     settings = defaultSettings
   )
 
-  val testMongoMailbox = SettingKey[Boolean]("test-mongo-mailbox")
+  // val testMongoMailbox = SettingKey[Boolean]("test-mongo-mailbox")
 
-  lazy val mongoMailbox = Project(
-    id = "akka-mongo-mailbox",
-    base = file("akka-durable-mailboxes/akka-mongo-mailbox"),
-    dependencies = Seq(mailboxesCommon % "compile;test->test"),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.mongoMailbox,
-      testMongoMailbox := false,
-      testOptions in Test <+= testMongoMailbox map { test => Tests.Filter(s => test) }
-    )
-  )
+  // lazy val mongoMailbox = Project(
+  //   id = "akka-mongo-mailbox",
+  //   base = file("akka-durable-mailboxes/akka-mongo-mailbox"),
+  //   dependencies = Seq(mailboxesCommon % "compile;test->test"),
+  //   settings = defaultSettings ++ Seq(
+  //     libraryDependencies ++= Dependencies.mongoMailbox,
+  //     testMongoMailbox := false,
+  //     testOptions in Test <+= testMongoMailbox map { test => Tests.Filter(s => test) }
+  //   )
+  // )
 
   lazy val camel = Project(
     id = "akka-camel",
