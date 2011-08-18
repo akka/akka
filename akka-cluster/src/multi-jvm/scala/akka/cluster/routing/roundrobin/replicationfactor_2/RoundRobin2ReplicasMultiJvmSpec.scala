@@ -37,8 +37,10 @@ object RoundRobin2ReplicasMultiJvmSpec {
  * What is the purpose of this node? Is this just a node for the cluster to make use of?
  */
 
-class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class RoundRobin2ReplicasMultiJvmNode1 extends MasterClusterTestNode {
   import RoundRobin2ReplicasMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "Round Robin: A cluster" must {
 
@@ -52,31 +54,27 @@ class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with B
       }
 
       //wait till ndoe 2 has started.
-      barrier("start-node2", NrOfNodes).await()
+      barrier("start-node2", NrOfNodes) {
+      }
 
       //wait till node 3 has started.
-      barrier("start-node3", NrOfNodes).await()
+      barrier("start-node3", NrOfNodes) {
+      }
 
       //wait till an actor reference on node 2 has become available.
-      barrier("get-ref-to-actor-on-node2", NrOfNodes).await()
+      barrier("get-ref-to-actor-on-node2", NrOfNodes) {
+      }
 
       //wait till the node 2 has send a message to the replica's.
-      barrier("send-message-from-node2-to-replicas", NrOfNodes).await()
+      barrier("send-message-from-node2-to-replicas", NrOfNodes) {
+      }
 
       node.shutdown()
     }
   }
-
-  override def beforeAll() {
-    startLocalCluster()
-  }
-
-  override def afterAll() {
-    shutdownLocalCluster()
-  }
 }
 
-class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
+class RoundRobin2ReplicasMultiJvmNode2 extends ClusterTestNode {
   import RoundRobin2ReplicasMultiJvmSpec._
 
   "Round Robin: A cluster" must {
@@ -86,7 +84,8 @@ class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
       System.getProperty("akka.cluster.port", "") must be("9992")
 
       //wait till node 1 has started.
-      barrier("start-node1", NrOfNodes).await()
+      barrier("start-node1", NrOfNodes) {
+      }
 
       //wait till node 2 has started.
       barrier("start-node2", NrOfNodes) {
@@ -94,7 +93,8 @@ class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
       }
 
       //wait till node 3 has started.
-      barrier("start-node3", NrOfNodes).await()
+      barrier("start-node3", NrOfNodes) {
+      }
 
       //check if the actorRef is the expected remoteActorRef.
       var hello: ActorRef = null

@@ -33,12 +33,14 @@ object RoundRobin3ReplicasMultiJvmSpec {
 /**
  * What is the purpose of this node? Is this just a node for the cluster to make use of?
  */
-class RoundRobin3ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class RoundRobin3ReplicasMultiJvmNode1 extends MasterClusterTestNode {
   import RoundRobin3ReplicasMultiJvmSpec._
+
+  val testNodes = NrOfNodes
 
   "Round Robin: A cluster" must {
 
-    "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" ignore {
+    "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
 
       //wait till node 1 has started.
       barrier("start-node1", NrOfNodes) {
@@ -46,40 +48,37 @@ class RoundRobin3ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with B
       }
 
       //wait till ndoe 2 has started.
-      barrier("start-node2", NrOfNodes).await()
+      barrier("start-node2", NrOfNodes) {
+      }
 
       //wait till node 3 has started.
-      barrier("start-node3", NrOfNodes).await()
+      barrier("start-node3", NrOfNodes) {
+      }
 
       //wait till an actor reference on node 2 has become available.
-      barrier("get-ref-to-actor-on-node2", NrOfNodes).await()
+      barrier("get-ref-to-actor-on-node2", NrOfNodes) {
+      }
 
       //wait till the node 2 has send a message to the replica's.
-      barrier("send-message-from-node2-to-replicas", NrOfNodes).await()
+      barrier("send-message-from-node2-to-replicas", NrOfNodes) {
+      }
 
       node.shutdown()
     }
   }
-
-  override def beforeAll() {
-    startLocalCluster()
-  }
-
-  override def afterAll() {
-    shutdownLocalCluster()
-  }
 }
 
-class RoundRobin3ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
+class RoundRobin3ReplicasMultiJvmNode2 extends ClusterTestNode {
   import RoundRobin3ReplicasMultiJvmSpec._
   import Cluster._
 
   "Round Robin: A cluster" must {
 
-    "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" ignore {
+    "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
 
       //wait till node 1 has started.
-      barrier("start-node1", NrOfNodes).await()
+      barrier("start-node1", NrOfNodes) {
+      }
 
       //wait till node 2 has started.
       barrier("start-node2", NrOfNodes) {
@@ -87,7 +86,8 @@ class RoundRobin3ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
       }
 
       //wait till node 3 has started.
-      barrier("start-node3", NrOfNodes).await()
+      barrier("start-node3", NrOfNodes) {
+      }
 
       //check if the actorRef is the expected remoteActorRef.
       var hello: ActorRef = null
@@ -131,24 +131,28 @@ class RoundRobin3ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
   }
 }
 
-class RoundRobin3ReplicasMultiJvmNode3 extends WordSpec with MustMatchers {
+class RoundRobin3ReplicasMultiJvmNode3 extends ClusterTestNode {
   import RoundRobin3ReplicasMultiJvmSpec._
   import Cluster._
 
   "Round Robin: A cluster" must {
 
-    "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" ignore {
-      barrier("start-node1", NrOfNodes).await()
+    "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
+      barrier("start-node1", NrOfNodes) {
+      }
 
-      barrier("start-node2", NrOfNodes).await()
+      barrier("start-node2", NrOfNodes) {
+      }
 
       barrier("start-node3", NrOfNodes) {
         Cluster.node
       }
 
-      barrier("get-ref-to-actor-on-node2", NrOfNodes).await()
+      barrier("get-ref-to-actor-on-node2", NrOfNodes) {
+      }
 
-      barrier("send-message-from-node2-to-replicas", NrOfNodes).await()
+      barrier("send-message-from-node2-to-replicas", NrOfNodes) {
+      }
 
       node.shutdown()
     }
