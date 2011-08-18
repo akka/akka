@@ -12,7 +12,7 @@ trait MasterClusterTestNode extends WordSpec with MustMatchers with BeforeAndAft
   def testNodes: Int
 
   override def beforeAll() = {
-    Cluster.startLocalCluster()
+    LocalCluster.startLocalCluster()
     onReady()
     ClusterTestNode.ready(getClass.getName)
   }
@@ -23,7 +23,7 @@ trait MasterClusterTestNode extends WordSpec with MustMatchers with BeforeAndAft
     ClusterTestNode.waitForExits(getClass.getName, testNodes - 1)
     ClusterTestNode.cleanUp(getClass.getName)
     onShutdown()
-    Cluster.shutdownLocalCluster()
+    LocalCluster.shutdownLocalCluster()
   }
 
   def onShutdown() = {}

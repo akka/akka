@@ -29,7 +29,7 @@ class SingleReplicaDirectRoutingMultiJvmNode1 extends MasterClusterTestNode {
 
   "___" must {
     "___" in {
-      Cluster.node.start()
+      Cluster.node
       Cluster.barrier("waiting-for-begin", NrOfNodes).await()
 
       Cluster.barrier("waiting-to-end", NrOfNodes).await()
@@ -44,7 +44,7 @@ class SingleReplicaDirectRoutingMultiJvmNode2 extends ClusterTestNode {
 
   "Direct Router: when node send message to existing node it" must {
     "communicate with that node" in {
-      Cluster.node.start()
+      Cluster.node
       Cluster.barrier("waiting-for-begin", NrOfNodes).await()
 
       val actor = Actor.actorOf[SomeActor]("service-hello").start().asInstanceOf[ClusterActorRef]

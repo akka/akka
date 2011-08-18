@@ -239,8 +239,10 @@ abstract class RemoteClient private[akka] (
         None
 
       } else {
-        val futureResult = if (senderFuture.isDefined) senderFuture.get
-        else new DefaultPromise[T](request.getActorInfo.getTimeout)
+        val futureResult =
+          if (senderFuture.isDefined) senderFuture.get
+          else new DefaultPromise[T](request.getActorInfo.getTimeout)
+
         val futureUuid = uuidFrom(request.getUuid.getHigh, request.getUuid.getLow)
         futures.put(futureUuid, futureResult) // Add future prematurely, remove it if write fails
 
@@ -347,12 +349,20 @@ class ActiveRemoteClient private[akka] (
       EventHandler.debug(this, "Starting remote client connection to [%s]".format(remoteAddress))
 
       // Wait until the connection attempt succeeds or fails.
-      connection = bootstrap.connect(remoteAddress)
+
+      try {
+        connection = bootstrap.connect(remoteAddress)
+      } catch {
+        case e: Exception ⇒
+          EventHandler.error(e, this, "Remote client failed to connect to [%s]".format(remoteAddress))
+          throw e
+      }
+
       openChannels.add(connection.awaitUninterruptibly.getChannel)
 
       if (!connection.isSuccess) {
         notifyListeners(RemoteClientError(connection.getCause, module, remoteAddress))
-        EventHandler.error(connection.getCause, "Remote client connection to [%s] has failed".format(remoteAddress), this)
+        EventHandler.error(connection.getCause, this, "Remote client connection to [%s] has failed".format(remoteAddress))
         false
       } else {
         //Send cookie
@@ -389,7 +399,7 @@ class ActiveRemoteClient private[akka] (
         openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
         if (!connection.isSuccess) {
           notifyListeners(RemoteClientError(connection.getCause, module, remoteAddress))
-          EventHandler.error(connection.getCause, "Reconnection to [%s] has failed".format(remoteAddress), this)
+          EventHandler.error(connection.getCause, this, "Reconnection to [%s] has failed".format(remoteAddress))
 
           false
         } else {
@@ -489,6 +499,7 @@ class ActiveRemoteClientHandler(
               client.module.shutdownClientConnection(remoteAddress)
             }
           }
+
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
           val reply = arp.getMessage
           val replyUuid = uuidFrom(reply.getActorInfo.getUuid.getHigh, reply.getActorInfo.getUuid.getLow)
@@ -507,6 +518,7 @@ class ActiveRemoteClientHandler(
                 future.completeWithException(parseException(reply, client.loader))
               }
           }
+
         case other ⇒
           throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.module, client.remoteAddress)
       }
@@ -554,7 +566,7 @@ class ActiveRemoteClientHandler(
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
     if (event.getCause ne null)
-      EventHandler.error(event.getCause, "Unexpected exception from downstream in remote client", this)
+      EventHandler.error(event.getCause, this, "Unexpected exception from downstream in remote client")
     else
       EventHandler.error(this, "Unexpected exception from downstream in remote client: %s".format(event))
 
@@ -563,7 +575,7 @@ class ActiveRemoteClientHandler(
         spawn {
           client.module.shutdownClientConnection(remoteAddress)
         }
-      case e ⇒
+      case e: Exception ⇒
         client.notifyListeners(RemoteClientError(e, client.module, client.remoteAddress))
         event.getChannel.close //FIXME Is this the correct behavior?
     }
@@ -573,13 +585,14 @@ class ActiveRemoteClientHandler(
     val exception = reply.getException
     val classname = exception.getClassname
     try {
-      val exceptionClass = if (loader.isDefined) loader.get.loadClass(classname)
-      else Class.forName(classname)
+      val exceptionClass =
+        if (loader.isDefined) loader.get.loadClass(classname)
+        else Class.forName(classname)
       exceptionClass
         .getConstructor(Array[Class[_]](classOf[String]): _*)
         .newInstance(exception.getMessage).asInstanceOf[Throwable]
     } catch {
-      case problem: Throwable ⇒
+      case problem: Exception ⇒
         EventHandler.error(problem, this, problem.getMessage)
         CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorException(problem, classname, exception.getMessage)
     }
@@ -661,7 +674,6 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
         val b = RemoteControlProtocol.newBuilder.setCommandType(CommandType.SHUTDOWN)
         if (RemoteClientSettings.SECURE_COOKIE.nonEmpty)
           b.setCookie(RemoteClientSettings.SECURE_COOKIE.get)
-
         b.build
       }
       openChannels.write(RemoteEncoder.encode(shutdownSignal)).awaitUninterruptibly
@@ -717,7 +729,6 @@ trait NettyRemoteServerModule extends RemoteServerModule {
     _isRunning switchOff {
       currentServer.getAndSet(None) foreach { instance ⇒
         EventHandler.debug(this, "Shutting down remote server on %s:%s".format(instance.host, instance.port))
-
         instance.shutdown()
       }
     }
@@ -920,7 +931,7 @@ class RemoteServerHandler(
       try {
         actor ! PoisonPill
       } catch {
-        case e: Exception ⇒ EventHandler.error(e, "Couldn't stop %s".format(actor), this)
+        case e: Exception ⇒ EventHandler.error(e, this, "Couldn't stop %s".format(actor))
       }
     }
 
@@ -946,7 +957,7 @@ class RemoteServerHandler(
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    EventHandler.error(event.getCause, "Unexpected exception from remote downstream", this)
+    EventHandler.error(event.getCause, this, "Unexpected exception from remote downstream")
 
     event.getChannel.close
     server.notifyListeners(RemoteServerError(event.getCause, server))

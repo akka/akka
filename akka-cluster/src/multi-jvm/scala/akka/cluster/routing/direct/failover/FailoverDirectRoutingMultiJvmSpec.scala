@@ -46,7 +46,7 @@ class FailoverDirectRoutingMultiJvmNode1 extends MasterClusterTestNode {
       val ignoreExceptions = Seq(EventFilter[NotYetConnectedException], EventFilter[ConnectException])
       EventHandler.notify(TestEvent.Mute(ignoreExceptions))
 
-      Cluster.node.start()
+      Cluster.node
 
       Cluster.barrier("waiting-for-begin", NrOfNodes).await()
       val actor = Actor.actorOf[SomeActor]("service-hello").start().asInstanceOf[ClusterActorRef]
@@ -71,7 +71,7 @@ class FailoverDirectRoutingMultiJvmNode2 extends ClusterTestNode {
 
   "___" must {
     "___" in {
-      Cluster.node.start()
+      Cluster.node
       Cluster.barrier("waiting-for-begin", NrOfNodes).await()
 
       Thread.sleep(30 * 1000)

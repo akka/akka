@@ -218,7 +218,7 @@ class AsynchronousTransactionLogSpec extends WordSpec with MustMatchers with Bef
 
   override def afterAll() = {
     Cluster.node.shutdown()
-    Cluster.shutdownLocalCluster()
+    LocalCluster.shutdownLocalCluster()
     TransactionLog.shutdown()
     LocalBookKeeperEnsemble.shutdown()
     Actor.registry.local.shutdownAll()

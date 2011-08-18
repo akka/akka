@@ -129,10 +129,6 @@ trait ClusterNode {
 
   def remoteServerAddress: InetSocketAddress
 
-  def isRunning: Boolean
-
-  def start(): ClusterNode
-
   def shutdown()
 
   def disconnect(): ClusterNode
@@ -424,6 +420,7 @@ trait ClusterNode {
   // FIXME considering moving all these private[cluster] methods to a separate trait to get them out of the user's view
 
   private[cluster] def remoteClientLifeCycleListener: ActorRef
+
   private[cluster] def remoteDaemon: ActorRef
 
   /**

@@ -25,7 +25,7 @@ class ConfigurationStorageMultiJvmNode1 extends MasterClusterTestNode {
     "be able to store, read and remove custom configuration data" in {
 
       barrier("start-node-1", NrOfNodes) {
-        node.start()
+        Cluster.node
       }
 
       barrier("start-node-2", NrOfNodes) {
@@ -65,7 +65,7 @@ class ConfigurationStorageMultiJvmNode2 extends ClusterTestNode {
       }
 
       barrier("start-node-2", NrOfNodes) {
-        node.start()
+        Cluster.node
       }
 
       barrier("store-config-data-node-1", NrOfNodes) {

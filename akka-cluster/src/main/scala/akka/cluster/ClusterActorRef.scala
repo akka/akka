@@ -70,7 +70,7 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
   def start(): this.type = synchronized[this.type] {
     if (_status == ActorRefInternals.UNSTARTED) {
       _status = ActorRefInternals.RUNNING
-      //TODO add this? Actor.registry.register(this)
+      //Actor.registry.register(this)
     }
     this
   }
@@ -78,7 +78,7 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
   def stop() {
     synchronized {
       if (_status == ActorRefInternals.RUNNING) {
-        //TODO add this? Actor.registry.unregister(this)
+        //Actor.registry.unregister(this)
         _status = ActorRefInternals.SHUTDOWN
         postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
 
@@ -104,7 +104,7 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
       (s.version, s.connections.values)
     }
 
-    def size(): Int = state.get().connections.size
+    def size: Int = state.get().connections.size
 
     def stopAll() {
       state.get().connections.values foreach (_.stop()) // shut down all remote connections
@@ -119,7 +119,7 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
       val newMap = oldState.connections map {
         case (`from`, actorRef) ⇒
           change = true
-          actorRef.stop()
+          //          actorRef.stop()
           (to, createRemoteActorRef(actorRef.address, to))
         case other ⇒ other
       }
@@ -156,8 +156,6 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
       }
     }
 
-    class State(val version: Long, val connections: Map[InetSocketAddress, ActorRef])
-
+    case class State(val version: Long, val connections: Map[InetSocketAddress, ActorRef])
   }
-
 }

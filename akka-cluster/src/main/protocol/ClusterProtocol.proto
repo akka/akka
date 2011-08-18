@@ -26,20 +26,19 @@ message RemoteDaemonMessageProtocol {
  * Defines the remote daemon message type.
  */
 enum RemoteDaemonMessageType {
-  START = 1;
-  STOP = 2;
-  USE = 3;
-  RELEASE = 4;
-  MAKE_AVAILABLE = 5;
-  MAKE_UNAVAILABLE = 6;
-  DISCONNECT = 7;
-  RECONNECT = 8;
-  RESIGN = 9;
-  FAIL_OVER_CONNECTIONS = 10;
-  FUNCTION_FUN0_UNIT = 11;
-  FUNCTION_FUN0_ANY = 12;
-  FUNCTION_FUN1_ARG_UNIT = 13;
-  FUNCTION_FUN1_ARG_ANY = 14;
+  STOP = 1;
+  USE = 2;
+  RELEASE = 3;
+  MAKE_AVAILABLE = 4;
+  MAKE_UNAVAILABLE = 5;
+  DISCONNECT = 6;
+  RECONNECT = 7;
+  RESIGN = 8;
+  FAIL_OVER_CONNECTIONS = 9;
+  FUNCTION_FUN0_UNIT = 10;
+  FUNCTION_FUN0_ANY = 11;
+  FUNCTION_FUN1_ARG_UNIT = 12;
+  FUNCTION_FUN1_ARG_ANY = 13;
 }
 
 /**

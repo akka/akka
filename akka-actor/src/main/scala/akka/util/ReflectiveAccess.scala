@@ -31,7 +31,7 @@ object ReflectiveAccess {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object ClusterModule {
-    lazy val isEnabled = Config.isClusterEnabled && clusterInstance.isDefined
+    lazy val isEnabled = Config.isClusterEnabled //&& clusterInstance.isDefined
 
     def ensureEnabled() {
       if (!isEnabled) {

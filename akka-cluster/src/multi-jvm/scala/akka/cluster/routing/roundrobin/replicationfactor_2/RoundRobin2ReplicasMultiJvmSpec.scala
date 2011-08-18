@@ -10,6 +10,7 @@ import org.scalatest.BeforeAndAfterAll
 
 import akka.cluster._
 import Cluster._
+import LocalCluster._
 import akka.actor._
 import akka.actor.Actor._
 import akka.config.Config
@@ -47,7 +48,7 @@ class RoundRobin2ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with B
 
       //wait till node 1 has started.
       barrier("start-node1", NrOfNodes) {
-        node.start()
+        Cluster.node
       }
 
       //wait till ndoe 2 has started.
@@ -89,7 +90,7 @@ class RoundRobin2ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
 
       //wait till node 2 has started.
       barrier("start-node2", NrOfNodes) {
-        node.start()
+        Cluster.node
       }
 
       //wait till node 3 has started.

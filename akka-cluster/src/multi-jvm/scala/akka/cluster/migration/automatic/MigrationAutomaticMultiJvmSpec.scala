@@ -33,7 +33,7 @@ class MigrationAutomaticMultiJvmNode1 extends ClusterTestNode {
     "be able to migrate an actor from one node to another" in {
 
       barrier("start-node1", NrOfNodes) {
-        node.start()
+        Cluster.node
       }
 
       barrier("create-actor-on-node1", NrOfNodes) {
@@ -67,7 +67,7 @@ class MigrationAutomaticMultiJvmNode2 extends ClusterTestNode {
       }
 
       barrier("start-node2", NrOfNodes) {
-        node.start()
+        Cluster.node
       }
 
       Thread.sleep(2000) // wait for fail-over from node1 to node2
@@ -75,7 +75,8 @@ class MigrationAutomaticMultiJvmNode2 extends ClusterTestNode {
       barrier("check-fail-over-to-node2", NrOfNodes - 1) {
         // both remaining nodes should now have the replica
         node.isInUseOnNode("hello-world") must be(true)
-        val actorRef = Actor.registry.local.actorFor("hello-world").getOrElse(fail("Actor should have been in the local actor registry"))
+        val actorRef = Actor.registry.local.actorFor("hello-world")
+          .getOrElse(fail("Actor should have been in the local actor registry"))
         actorRef.address must be("hello-world")
         (actorRef ? "Hello").as[String].get must be("World from node [node2]")
       }
@@ -110,7 +111,7 @@ class MigrationAutomaticMultiJvmNode3 extends MasterClusterTestNode {
       }
 
       barrier("start-node3", NrOfNodes - 1) {
-        node.start()
+        Cluster.node
       }
 
       Thread.sleep(2000) // wait for fail-over from node2 to node3
@@ -118,7 +119,8 @@ class MigrationAutomaticMultiJvmNode3 extends MasterClusterTestNode {
       barrier("check-fail-over-to-node3", NrOfNodes - 2) {
         // both remaining nodes should now have the replica
         node.isInUseOnNode("hello-world") must be(true)
-        val actorRef = Actor.registry.local.actorFor("hello-world").getOrElse(fail("Actor should have been in the local actor registry"))
+        val actorRef = Actor.registry.local.actorFor("hello-world")
+          .getOrElse(fail("Actor should have been in the local actor registry"))
         actorRef.address must be("hello-world")
         (actorRef ? "Hello").as[String].get must be("World from node [node3]")
       }

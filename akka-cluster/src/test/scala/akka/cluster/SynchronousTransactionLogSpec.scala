@@ -175,13 +175,13 @@ class SynchronousTransactionLogSpec extends WordSpec with MustMatchers with Befo
   }
 
   override def beforeAll() = {
-    Cluster.startLocalCluster()
+    LocalCluster.startLocalCluster()
     LocalBookKeeperEnsemble.start()
   }
 
   override def afterAll() = {
     Cluster.node.shutdown()
-    Cluster.shutdownLocalCluster()
+    LocalCluster.shutdownLocalCluster()
     TransactionLog.shutdown()
     LocalBookKeeperEnsemble.shutdown()
     Actor.registry.local.shutdownAll()

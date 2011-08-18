@@ -35,7 +35,7 @@ class Random3ReplicasMultiJvmNode1 extends MasterClusterTestNode {
 
   "___" must {
     "___" in {
-      node.start()
+      Cluster.node
 
       //wait till node 1 has started.
       barrier("begin", NrOfNodes).await()
@@ -55,7 +55,7 @@ class Random3ReplicasMultiJvmNode2 extends ClusterTestNode {
   "Random: A cluster" must {
 
     "distribute requests randomly" in {
-      node.start()
+      Cluster.node
 
       //wait till node 1 has started.
       barrier("begin", NrOfNodes).await()
@@ -103,7 +103,7 @@ class Random3ReplicasMultiJvmNode3 extends ClusterTestNode {
 
   "___" must {
     "___" in {
-      node.start()
+      Cluster.node
 
       //wait till node 1 has started.
       barrier("begin", NrOfNodes).await()

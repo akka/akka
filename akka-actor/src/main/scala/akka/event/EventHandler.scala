@@ -89,7 +89,7 @@ object EventHandler extends ListenerManagement {
 
   class EventHandlerException extends AkkaException
 
-  lazy val EventHandlerDispatcher = Dispatchers.newDispatcher("event:handler").build
+  lazy val EventHandlerDispatcher = Dispatchers.newDispatcher("akka:event:handler").build
 
   implicit object defaultListenerFormat extends StatelessActorFormat[DefaultListener]
 

@@ -115,6 +115,7 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Exc
   override def getMessage =
     if (ref ne null) "Actor %s does not handle [%s]".format(ref, msg)
     else "Actor does not handle [%s]".format(msg)
+
   override def fillInStackTrace() = this //Don't waste cycles generating stack trace
 }
 
@@ -123,7 +124,7 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Exc
  */
 object Status {
   sealed trait Status extends Serializable
-  case object Success extends Status
+  case class Success(status: AnyRef) extends Status
   case class Failure(cause: Throwable) extends Status
 }
 
@@ -131,6 +132,7 @@ case class Timeout(duration: Duration) {
   def this(timeout: Long) = this(Duration(timeout, TimeUnit.MILLISECONDS))
   def this(length: Long, unit: TimeUnit) = this(Duration(length, unit))
 }
+
 object Timeout {
   /**
    * The default timeout, based on the config setting 'akka.actor.timeout'
@@ -185,11 +187,7 @@ object Actor {
   /**
    * Handle to the ClusterNode. API for the cluster client.
    */
-  lazy val cluster: ClusterNode = {
-    val node = ClusterModule.node
-    node.start()
-    node
-  }
+  lazy val cluster: ClusterNode = ClusterModule.node
 
   /**
    * Handle to the RemoteSupport. API for the remote client/server.

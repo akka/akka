@@ -10,56 +10,53 @@ public final class ClusterProtocol {
   }
   public enum RemoteDaemonMessageType
       implements com.google.protobuf.ProtocolMessageEnum {
-    START(0, 1),
-    STOP(1, 2),
-    USE(2, 3),
-    RELEASE(3, 4),
-    MAKE_AVAILABLE(4, 5),
-    MAKE_UNAVAILABLE(5, 6),
-    DISCONNECT(6, 7),
-    RECONNECT(7, 8),
-    RESIGN(8, 9),
-    FAIL_OVER_CONNECTIONS(9, 10),
-    FUNCTION_FUN0_UNIT(10, 11),
-    FUNCTION_FUN0_ANY(11, 12),
-    FUNCTION_FUN1_ARG_UNIT(12, 13),
-    FUNCTION_FUN1_ARG_ANY(13, 14),
+    STOP(0, 1),
+    USE(1, 2),
+    RELEASE(2, 3),
+    MAKE_AVAILABLE(3, 4),
+    MAKE_UNAVAILABLE(4, 5),
+    DISCONNECT(5, 6),
+    RECONNECT(6, 7),
+    RESIGN(7, 8),
+    FAIL_OVER_CONNECTIONS(8, 9),
+    FUNCTION_FUN0_UNIT(9, 10),
+    FUNCTION_FUN0_ANY(10, 11),
+    FUNCTION_FUN1_ARG_UNIT(11, 12),
+    FUNCTION_FUN1_ARG_ANY(12, 13),
     ;
     
-    public static final int START_VALUE = 1;
-    public static final int STOP_VALUE = 2;
-    public static final int USE_VALUE = 3;
-    public static final int RELEASE_VALUE = 4;
-    public static final int MAKE_AVAILABLE_VALUE = 5;
-    public static final int MAKE_UNAVAILABLE_VALUE = 6;
-    public static final int DISCONNECT_VALUE = 7;
-    public static final int RECONNECT_VALUE = 8;
-    public static final int RESIGN_VALUE = 9;
-    public static final int FAIL_OVER_CONNECTIONS_VALUE = 10;
-    public static final int FUNCTION_FUN0_UNIT_VALUE = 11;
-    public static final int FUNCTION_FUN0_ANY_VALUE = 12;
-    public static final int FUNCTION_FUN1_ARG_UNIT_VALUE = 13;
-    public static final int FUNCTION_FUN1_ARG_ANY_VALUE = 14;
+    public static final int STOP_VALUE = 1;
+    public static final int USE_VALUE = 2;
+    public static final int RELEASE_VALUE = 3;
+    public static final int MAKE_AVAILABLE_VALUE = 4;
+    public static final int MAKE_UNAVAILABLE_VALUE = 5;
+    public static final int DISCONNECT_VALUE = 6;
+    public static final int RECONNECT_VALUE = 7;
+    public static final int RESIGN_VALUE = 8;
+    public static final int FAIL_OVER_CONNECTIONS_VALUE = 9;
+    public static final int FUNCTION_FUN0_UNIT_VALUE = 10;
+    public static final int FUNCTION_FUN0_ANY_VALUE = 11;
+    public static final int FUNCTION_FUN1_ARG_UNIT_VALUE = 12;
+    public static final int FUNCTION_FUN1_ARG_ANY_VALUE = 13;
     
     
     public final int getNumber() { return value; }
     
     public static RemoteDaemonMessageType valueOf(int value) {
       switch (value) {
-        case 1: return START;
-        case 2: return STOP;
-        case 3: return USE;
-        case 4: return RELEASE;
-        case 5: return MAKE_AVAILABLE;
-        case 6: return MAKE_UNAVAILABLE;
-        case 7: return DISCONNECT;
-        case 8: return RECONNECT;
-        case 9: return RESIGN;
-        case 10: return FAIL_OVER_CONNECTIONS;
-        case 11: return FUNCTION_FUN0_UNIT;
-        case 12: return FUNCTION_FUN0_ANY;
-        case 13: return FUNCTION_FUN1_ARG_UNIT;
-        case 14: return FUNCTION_FUN1_ARG_ANY;
+        case 1: return STOP;
+        case 2: return USE;
+        case 3: return RELEASE;
+        case 4: return MAKE_AVAILABLE;
+        case 5: return MAKE_UNAVAILABLE;
+        case 6: return DISCONNECT;
+        case 7: return RECONNECT;
+        case 8: return RESIGN;
+        case 9: return FAIL_OVER_CONNECTIONS;
+        case 10: return FUNCTION_FUN0_UNIT;
+        case 11: return FUNCTION_FUN0_ANY;
+        case 12: return FUNCTION_FUN1_ARG_UNIT;
+        case 13: return FUNCTION_FUN1_ARG_ANY;
         default: return null;
       }
     }
@@ -90,7 +87,7 @@ public final class ClusterProtocol {
     }
     
     private static final RemoteDaemonMessageType[] VALUES = {
-      START, STOP, USE, RELEASE, MAKE_AVAILABLE, MAKE_UNAVAILABLE, DISCONNECT, RECONNECT, RESIGN, FAIL_OVER_CONNECTIONS, FUNCTION_FUN0_UNIT, FUNCTION_FUN0_ANY, FUNCTION_FUN1_ARG_UNIT, FUNCTION_FUN1_ARG_ANY, 
+      STOP, USE, RELEASE, MAKE_AVAILABLE, MAKE_UNAVAILABLE, DISCONNECT, RECONNECT, RESIGN, FAIL_OVER_CONNECTIONS, FUNCTION_FUN0_UNIT, FUNCTION_FUN0_ANY, FUNCTION_FUN1_ARG_UNIT, FUNCTION_FUN1_ARG_ANY, 
     };
     
     public static RemoteDaemonMessageType valueOf(
@@ -246,7 +243,7 @@ public final class ClusterProtocol {
     }
     
     private void initFields() {
-      messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.START;
+      messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.STOP;
       actorUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
       actorAddress_ = "";
       payload_ = com.google.protobuf.ByteString.EMPTY;
@@ -434,7 +431,7 @@ public final class ClusterProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -450,7 +447,7 @@ public final class ClusterProtocol {
       
       public Builder clear() {
         super.clear();
-        messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.START;
+        messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.STOP;
         bitField0_ = (bitField0_ & ~0x00000001);
         if (actorUuidBuilder_ == null) {
           actorUuid_ = akka.cluster.ClusterProtocol.UuidProtocol.getDefaultInstance();
@@ -658,7 +655,7 @@ public final class ClusterProtocol {
       private int bitField0_;
       
       // required .RemoteDaemonMessageType messageType = 1;
-      private akka.cluster.ClusterProtocol.RemoteDaemonMessageType messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.START;
+      private akka.cluster.ClusterProtocol.RemoteDaemonMessageType messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.STOP;
       public boolean hasMessageType() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
@@ -676,7 +673,7 @@ public final class ClusterProtocol {
       }
       public Builder clearMessageType() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.START;
+        messageType_ = akka.cluster.ClusterProtocol.RemoteDaemonMessageType.STOP;
         onChanged();
         return this;
       }
@@ -1247,7 +1244,7 @@ public final class ClusterProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1849,7 +1846,7 @@ public final class ClusterProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2077,14 +2074,14 @@ public final class ClusterProtocol {
       "\002(\t\022\032\n\022senderActorAddress\030\002 \001(\t\022!\n\nfutur" +
       "eUuid\030\003 \001(\0132\r.UuidProtocol\022\017\n\007message\030\004 " +
       "\002(\014\")\n\014UuidProtocol\022\014\n\004high\030\001 \002(\004\022\013\n\003low",
-      "\030\002 \002(\004*\232\002\n\027RemoteDaemonMessageType\022\t\n\005ST" +
-      "ART\020\001\022\010\n\004STOP\020\002\022\007\n\003USE\020\003\022\013\n\007RELEASE\020\004\022\022\n" +
-      "\016MAKE_AVAILABLE\020\005\022\024\n\020MAKE_UNAVAILABLE\020\006\022" +
-      "\016\n\nDISCONNECT\020\007\022\r\n\tRECONNECT\020\010\022\n\n\006RESIGN" +
-      "\020\t\022\031\n\025FAIL_OVER_CONNECTIONS\020\n\022\026\n\022FUNCTIO" +
-      "N_FUN0_UNIT\020\013\022\025\n\021FUNCTION_FUN0_ANY\020\014\022\032\n\026" +
-      "FUNCTION_FUN1_ARG_UNIT\020\r\022\031\n\025FUNCTION_FUN" +
-      "1_ARG_ANY\020\016B\020\n\014akka.clusterH\001"
+      "\030\002 \002(\004*\217\002\n\027RemoteDaemonMessageType\022\010\n\004ST" +
+      "OP\020\001\022\007\n\003USE\020\002\022\013\n\007RELEASE\020\003\022\022\n\016MAKE_AVAIL" +
+      "ABLE\020\004\022\024\n\020MAKE_UNAVAILABLE\020\005\022\016\n\nDISCONNE" +
+      "CT\020\006\022\r\n\tRECONNECT\020\007\022\n\n\006RESIGN\020\010\022\031\n\025FAIL_" +
+      "OVER_CONNECTIONS\020\t\022\026\n\022FUNCTION_FUN0_UNIT" +
+      "\020\n\022\025\n\021FUNCTION_FUN0_ANY\020\013\022\032\n\026FUNCTION_FU" +
+      "N1_ARG_UNIT\020\014\022\031\n\025FUNCTION_FUN1_ARG_ANY\020\r" +
+      "B\020\n\014akka.clusterH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

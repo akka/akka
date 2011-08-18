@@ -28,7 +28,7 @@ class LeaderElectionMultiJvmNode1 extends MasterClusterTestNode {
     "be able to elect a single leader in the cluster and perform re-election if leader resigns" in {
 
       barrier("start-node1", NrOfNodes) {
-        node.start()
+        Cluster.node
       }
       node.isLeader must be === true
 
@@ -55,7 +55,7 @@ class LeaderElectionMultiJvmNode2 extends ClusterTestNode {
       node.isLeader must be === false
 
       barrier("start-node2", NrOfNodes) {
-        node.start()
+        Cluster.node
       }
       node.isLeader must be === false
 

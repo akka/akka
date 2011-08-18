@@ -50,7 +50,7 @@ class RegistryStoreMultiJvmNode1 extends MasterClusterTestNode {
     "be able to store an ActorRef in the cluster without a replication strategy and retrieve it with 'use'" in {
 
       barrier("start-node-1", NrOfNodes) {
-        node.start()
+        Cluster.node
       }
 
       barrier("start-node-2", NrOfNodes) {
@@ -86,7 +86,7 @@ class RegistryStoreMultiJvmNode2 extends ClusterTestNode {
       }
 
       barrier("start-node-2", NrOfNodes) {
-        node.start()
+        Cluster.node
       }
 
       barrier("store-1-in-node-1", NrOfNodes) {

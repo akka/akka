@@ -49,7 +49,7 @@ class RandomFailoverMultiJvmNode1 extends MasterClusterTestNode {
       val ignoreExceptions = Seq(EventFilter[NotYetConnectedException], EventFilter[ConnectException])
       EventHandler.notify(TestEvent.Mute(ignoreExceptions))
 
-      Cluster.node.start()
+      Cluster.node
       Cluster.barrier("waiting-for-begin", NrOfNodes).await()
 
       // ============= the real testing =================
@@ -102,7 +102,7 @@ class RandomFailoverMultiJvmNode2 extends ClusterTestNode {
 
   "___" must {
     "___" in {
-      Cluster.node.start()
+      Cluster.node
       Cluster.barrier("waiting-for-begin", NrOfNodes).await()
 
       Thread.sleep(30 * 1000)
@@ -116,7 +116,7 @@ class RandomFailoverMultiJvmNode3 extends ClusterTestNode {
 
   "___" must {
     "___" in {
-      Cluster.node.start()
+      Cluster.node
       Cluster.barrier("waiting-for-begin", NrOfNodes).await()
 
       Thread.sleep(30 * 1000)

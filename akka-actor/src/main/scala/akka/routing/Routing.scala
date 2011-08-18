@@ -12,6 +12,7 @@ import akka.actor._
 import akka.dispatch.Futures
 import akka.event.EventHandler
 import akka.actor.UntypedChannel._
+
 import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 
 /**
@@ -56,6 +57,11 @@ object RouterType {
    * A RouterType that select the connection where the actor has the least amount of messages in its mailbox.
    */
   object LeastMessages extends RouterType
+
+  /**
+   * A user-defined custom RouterType.
+   */
+  object Custom extends RouterType
 
 }
 
@@ -107,6 +113,11 @@ trait RouterConnections {
   def version: Long
 
   /**
+   * Returns the number of connections.
+   */
+  def size: Int
+
+  /**
    * Returns a tuple containing the version and Iterable of all connected ActorRefs this Router uses to send messages to.
    *
    * This iterator should be 'persistent'. So it can be handed out to other threads so that they are working on
@@ -151,12 +162,14 @@ object Routing {
       case RouterType.Direct ⇒
         if (connections.size > 1)
           throw new IllegalArgumentException("A direct router can't have more than 1 connection")
-
         actorOf(actorAddress, connections, new DirectRouter())
+
       case RouterType.Random ⇒
         actorOf(actorAddress, connections, new RandomRouter())
+
       case RouterType.RoundRobin ⇒
         actorOf(actorAddress, connections, new RoundRobinRouter())
+
       case _ ⇒ throw new IllegalArgumentException("Unsupported routerType " + routerType)
     }
 
@@ -191,9 +204,8 @@ class RoutedActorRef(val address: String, val router: Router, val connectionIter
     router.route(message)(sender)
   }
 
-  override def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any,
-                                                                    timeout: Timeout,
-                                                                    channel: UntypedChannel): Future[Any] = {
+  override def postMessageToMailboxAndCreateFutureResultWithTimeout(
+    message: Any, timeout: Timeout, channel: UntypedChannel): Future[Any] = {
     val sender = channel match {
       case ref: ActorRef ⇒ Some(ref)
       case _             ⇒ None
@@ -230,9 +242,11 @@ class RoutedActorRef(val address: String, val router: Router, val connectionIter
 
     def version: Long = state.get().version
 
+    def size: Int = state.get().connections.size
+
     def versionedIterator = {
       val s = state.get
-      (s.version, s.connectionIterable)
+      (s.version, s.connections)
     }
 
     @tailrec
@@ -240,9 +254,9 @@ class RoutedActorRef(val address: String, val router: Router, val connectionIter
       val oldState = state.get()
 
       //remote the ref from the connections.
-      var newList = oldState.connectionIterable.filter(currentActorRef ⇒ currentActorRef ne ref)
+      var newList = oldState.connections.filter(currentActorRef ⇒ currentActorRef ne ref)
 
-      if (newList.size != oldState.connectionIterable.size) {
+      if (newList.size != oldState.connections.size) {
         //one or more occurrences of the actorRef were removed, so we need to update the state.
 
         val newState = new State(oldState.version + 1, newList)
@@ -251,9 +265,8 @@ class RoutedActorRef(val address: String, val router: Router, val connectionIter
       }
     }
 
-    class State(val version: Long, val connectionIterable: Iterable[ActorRef])
+    case class State(val version: Long, val connections: Iterable[ActorRef])
   }
-
 }
 
 /**
@@ -293,7 +306,6 @@ trait BasicRouter extends Router {
             case e: Exception ⇒
               connections.signalDeadActor(actor)
               throw e
-
           }
         case None ⇒
           throwNoConnectionsError()
@@ -302,7 +314,7 @@ trait BasicRouter extends Router {
 
   def route[T](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[T] = message match {
     case Routing.Broadcast(message) ⇒
-      throw new RoutingException("Broadcasting using a future for the time being is not supported")
+      throw new RoutingException("Broadcasting using '?' is for the time being is not supported. Use ScatterGatherRouter.")
     case _ ⇒
       //it no broadcast message, we are going to select an actor from the connections and send the message to him.
       next match {
@@ -313,7 +325,6 @@ trait BasicRouter extends Router {
             case e: Exception ⇒
               connections.signalDeadActor(actor)
               throw e
-
           }
         case None ⇒
           throwNoConnectionsError()
@@ -330,7 +341,7 @@ trait BasicRouter extends Router {
 }
 
 /**
- * A DirectRouter is
+ * A DirectRouter is FIXME
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -369,7 +380,7 @@ class DirectRouter extends BasicRouter {
     }
   }
 
-  private class DirectRouterState(val ref: ActorRef, val version: Long)
+  private case class DirectRouterState(val ref: ActorRef, val version: Long)
 
 }
 
@@ -404,9 +415,9 @@ class RandomRouter extends BasicRouter {
       currentState
     } else {
       //there has been a change in connections, or it was the first try, so we need to update the internal state
-
       val (version, connectionIterable) = connections.versionedIterator
       val newState = new RandomRouterState(connectionIterable.toArray[ActorRef], version)
+
       if (state.compareAndSet(currentState, newState)) {
         //we are lucky since we just updated the state, so we can send it back as the state to use
         newState
@@ -417,8 +428,7 @@ class RandomRouter extends BasicRouter {
     }
   }
 
-  private class RandomRouterState(val array: Array[ActorRef], val version: Long)
-
+  private case class RandomRouterState(val array: Array[ActorRef], val version: Long)
 }
 
 /**
@@ -441,9 +451,9 @@ class RoundRobinRouter extends BasicRouter {
       currentState
     } else {
       //there has been a change in connections, or it was the first try, so we need to update the internal state
-
       val (version, connectionIterable) = connections.versionedIterator
       val newState = new RoundRobinState(connectionIterable.toArray[ActorRef], version)
+
       if (state.compareAndSet(currentState, newState)) {
         //we are lucky since we just updated the state, so we can send it back as the state to use
         newState
@@ -454,7 +464,7 @@ class RoundRobinRouter extends BasicRouter {
     }
   }
 
-  private class RoundRobinState(val array: Array[ActorRef], val version: Long) {
+  private case class RoundRobinState(val array: Array[ActorRef], val version: Long) {
 
     private val index = new AtomicInteger(0)
 
@@ -469,7 +479,6 @@ class RoundRobinRouter extends BasicRouter {
       else oldIndex
     }
   }
-
 }
 
 /*

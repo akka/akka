@@ -284,7 +284,7 @@ something in coordination::
 
         "be able to start all nodes" in {
           Cluster.barrier("start", NrOfNodes) {
-            Cluster.node.start()
+            Cluster.node
           }
           Cluster.node.isRunning must be(true)
           Cluster.node.shutdown()
@@ -305,7 +305,7 @@ something in coordination::
 
         "be able to start all nodes" in {
           Cluster.barrier("start", NrOfNodes) {
-            Cluster.node.start()
+            Cluster.node
           }
           Cluster.node.isRunning must be(true)
           Cluster.node.shutdown()

@@ -12,6 +12,7 @@ import akka.cluster._
 import akka.actor._
 import akka.actor.Actor._
 import akka.config.Config
+import LocalCluster._
 import Cluster._
 
 /**
@@ -41,7 +42,7 @@ class RoundRobin3ReplicasMultiJvmNode1 extends WordSpec with MustMatchers with B
 
       //wait till node 1 has started.
       barrier("start-node1", NrOfNodes) {
-        node.start()
+        Cluster.node
       }
 
       //wait till ndoe 2 has started.
@@ -82,7 +83,7 @@ class RoundRobin3ReplicasMultiJvmNode2 extends WordSpec with MustMatchers {
 
       //wait till node 2 has started.
       barrier("start-node2", NrOfNodes) {
-        node.start()
+        Cluster.node
       }
 
       //wait till node 3 has started.
@@ -142,7 +143,7 @@ class RoundRobin3ReplicasMultiJvmNode3 extends WordSpec with MustMatchers {
       barrier("start-node2", NrOfNodes).await()
 
       barrier("start-node3", NrOfNodes) {
-        node.start()
+        Cluster.node
       }
 
       barrier("get-ref-to-actor-on-node2", NrOfNodes).await()
