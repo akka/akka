@@ -38,10 +38,11 @@ class Random3ReplicasMultiJvmNode1 extends MasterClusterTestNode {
     "___" in {
       Cluster.node
 
-      //wait till node 1 has started.
-      barrier("begin", NrOfNodes).await()
+      barrier("start-nodes", NrOfNodes).await()
 
-      barrier("end", NrOfNodes).await()
+      barrier("create-actor", NrOfNodes).await()
+
+      barrier("end-test", NrOfNodes).await()
 
       node.shutdown()
     }
@@ -59,7 +60,7 @@ class Random3ReplicasMultiJvmNode2 extends ClusterTestNode {
       Cluster.node
 
       //wait till node 1 has started.
-      barrier("begin", NrOfNodes).await()
+      barrier("start-nodes", NrOfNodes).await()
 
       //check if the actorRef is the expected remoteActorRef.
       var hello: ActorRef = null
@@ -68,8 +69,7 @@ class Random3ReplicasMultiJvmNode2 extends ClusterTestNode {
       hello.address must equal("service-hello")
       hello.isInstanceOf[ClusterActorRef] must be(true)
 
-      //todo: is there a reason to check for null again since it already has been done in the previous block.
-      hello must not equal (null)
+      barrier("create-actor", NrOfNodes).await()
 
       val replies = collection.mutable.Map.empty[String, Int]
       def count(reply: String) = {
@@ -90,7 +90,7 @@ class Random3ReplicasMultiJvmNode2 extends ClusterTestNode {
       assert(repliesNode3 > 100)
       assert(repliesNode1 + repliesNode2 + repliesNode3 === 1000)
 
-      barrier("end", NrOfNodes).await()
+      barrier("end-test", NrOfNodes).await()
 
       node.shutdown()
     }
@@ -106,10 +106,11 @@ class Random3ReplicasMultiJvmNode3 extends ClusterTestNode {
     "___" in {
       Cluster.node
 
-      //wait till node 1 has started.
-      barrier("begin", NrOfNodes).await()
+      barrier("start-nodes", NrOfNodes).await()
 
-      barrier("end", NrOfNodes).await()
+      barrier("create-actor", NrOfNodes).await()
+
+      barrier("end-test", NrOfNodes).await()
 
       node.shutdown()
     }
