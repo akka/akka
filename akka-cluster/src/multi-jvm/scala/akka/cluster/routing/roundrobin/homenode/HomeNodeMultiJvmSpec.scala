@@ -4,6 +4,7 @@ import akka.config.Config
 import akka.actor.Actor
 import akka.cluster.{ ClusterTestNode, MasterClusterTestNode, Cluster }
 import Cluster._
+import akka.cluster.LocalCluster._
 
 object HomeNodeMultiJvmSpec {
 

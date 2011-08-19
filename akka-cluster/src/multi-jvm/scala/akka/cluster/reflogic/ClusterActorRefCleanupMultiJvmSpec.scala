@@ -12,6 +12,7 @@ import akka.testkit.{ EventFilter, TestEvent }
 import akka.routing.RoutingException
 import java.net.ConnectException
 import java.nio.channels.{ ClosedChannelException, NotYetConnectedException }
+import akka.cluster.LocalCluster._
 
 object ClusterActorRefCleanupMultiJvmSpec {
 

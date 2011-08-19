@@ -8,6 +8,7 @@ import akka.actor._
 import akka.cluster._
 import Cluster._
 import akka.config.Config
+import akka.cluster.LocalCluster._
 
 object ReplicationTransactionLogWriteBehindSnapshotMultiJvmSpec {
   var NrOfNodes = 2
@@ -43,9 +44,9 @@ class ReplicationTransactionLogWriteBehindSnapshotMultiJvmNode1 extends ClusterT
       }
 
       barrier("create-actor-on-node1", NrOfNodes) {
-        val actorRef = Actor.actorOf[HelloWorld]("hello-world").start()
-        node.isInUseOnNode("hello-world") must be(true)
-        actorRef.address must be("hello-world")
+        val actorRef = Actor.actorOf[HelloWorld]("hello-world-write-behind-snapshot").start()
+        node.isInUseOnNode("hello-world-write-behind-snapshot") must be(true)
+        actorRef.address must be("hello-world-write-behind-snapshot")
         var counter = 0
         (actorRef ? Count(counter)).as[String].get must be("World from node [node1]")
         counter += 1
@@ -96,9 +97,9 @@ class ReplicationTransactionLogWriteBehindSnapshotMultiJvmNode2 extends MasterCl
 
       barrier("check-fail-over-to-node2", NrOfNodes - 1) {
         // both remaining nodes should now have the replica
-        node.isInUseOnNode("hello-world") must be(true)
-        val actorRef = Actor.registry.local.actorFor("hello-world").getOrElse(fail("Actor should have been in the local actor registry"))
-        actorRef.address must be("hello-world")
+        node.isInUseOnNode("hello-world-write-behind-snapshot") must be(true)
+        val actorRef = Actor.registry.local.actorFor("hello-world-write-behind-snapshot").getOrElse(fail("Actor should have been in the local actor registry"))
+        actorRef.address must be("hello-world-write-behind-snapshot")
         (actorRef ? GetLog).as[Log].get must be(Log("0123456789"))
       }
 

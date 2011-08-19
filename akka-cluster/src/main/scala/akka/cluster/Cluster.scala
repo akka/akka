@@ -138,69 +138,6 @@ trait ClusterNodeMBean {
   def getActorAddressToUuidsPathForWithNodeName(actorAddress: String, uuid: UUID): String
 }
 
-object LocalCluster {
-  val clusterDirectory = config.getString("akka.cluster.log-directory", "_akka_cluster")
-  val clusterDataDirectory = clusterDirectory + "/data"
-  val clusterLogDirectory = clusterDirectory + "/log"
-
-  private val _zkServer = new AtomicReference[Option[ZkServer]](None)
-
-  /**
-   * Looks up the local hostname.
-   */
-  def lookupLocalhostName = NetworkUtil.getLocalhostName
-
-  /**
-   * Starts up a local ZooKeeper server. Should only be used for testing purposes.
-   */
-  def startLocalCluster(): ZkServer =
-    startLocalCluster(clusterDataDirectory, clusterLogDirectory, 2181, 5000)
-
-  /**
-   * Starts up a local ZooKeeper server. Should only be used for testing purposes.
-   */
-  def startLocalCluster(port: Int, tickTime: Int): ZkServer =
-    startLocalCluster(clusterDataDirectory, clusterLogDirectory, port, tickTime)
-
-  /**
-   * Starts up a local ZooKeeper server. Should only be used for testing purposes.
-   */
-  def startLocalCluster(tickTime: Int): ZkServer =
-    startLocalCluster(clusterDataDirectory, clusterLogDirectory, 2181, tickTime)
-
-  /**
-   * Starts up a local ZooKeeper server. Should only be used for testing purposes.
-   */
-  def startLocalCluster(dataPath: String, logPath: String): ZkServer =
-    startLocalCluster(dataPath, logPath, 2181, 500)
-
-  /**
-   * Starts up a local ZooKeeper server. Should only be used for testing purposes.
-   */
-  def startLocalCluster(dataPath: String, logPath: String, port: Int, tickTime: Int): ZkServer = {
-    try {
-      val zkServer = AkkaZooKeeper.startLocalServer(dataPath, logPath, port, tickTime)
-      _zkServer.set(Some(zkServer))
-      zkServer
-    } catch {
-      case e: Throwable ⇒
-        EventHandler.error(e, this, "Could not start local ZooKeeper cluster")
-        throw e
-    }
-  }
-
-  /**
-   * Shut down the local ZooKeeper server.
-   */
-  def shutdownLocalCluster() {
-    withPrintStackTraceOnError {
-      EventHandler.info(this, "Shuts down local cluster")
-      _zkServer.get.foreach(_.shutdown())
-      _zkServer.set(None)
-    }
-  }
-}
-
 /**
  * Module for the Cluster. Also holds global state such as configuration data etc.
  *
@@ -271,14 +208,6 @@ object Cluster {
    * Creates a new AkkaZkClient.
    */
   def newZkClient(): AkkaZkClient = new AkkaZkClient(zooKeeperServers, sessionTimeout, connectionTimeout, defaultZooKeeperSerializer)
-
-  def createQueue(rootPath: String, blocking: Boolean = true) = new ZooKeeperQueue(node.zkClient, rootPath, blocking)
-
-  def barrier(name: String, count: Int): ZooKeeperBarrier =
-    ZooKeeperBarrier(node.zkClient, node.nodeAddress.clusterName, name, node.nodeAddress.nodeName, count)
-
-  def barrier(name: String, count: Int, timeout: Duration): ZooKeeperBarrier =
-    ZooKeeperBarrier(node.zkClient, node.nodeAddress.clusterName, name, node.nodeAddress.nodeName, count, timeout)
 
   def uuidToString(uuid: UUID): String = uuid.toString
 
@@ -424,10 +353,6 @@ class DefaultClusterNode private[akka] (
     new AtomicReference[VersionedConnectionState](VersionedConnectionState(0, conns))
   }
 
-  // ============================================================================================================
-  // ========== WARNING: THESE FIELDS AND EVERYTHING USING THEM IN THE CONSTRUCTOR NEEDS TO BE LAZY =============
-  // ============================================================================================================
-
   // ZooKeeper client
   private[cluster] val zkClient = new AkkaZkClient(zkServerAddresses, sessionTimeout, connectionTimeout, serializer)
 
@@ -448,8 +373,6 @@ class DefaultClusterNode private[akka] (
     zkClient.connection.getZookeeper,
     LEADER_ELECTION_PATH, null,
     leaderElectionCallback)
-
-  // ============================================================================================================
 
   if (enableJMX) createMBean
 
@@ -474,7 +397,6 @@ class DefaultClusterNode private[akka] (
     joinCluster()
     joinLeaderElection()
     fetchMembershipNodes()
-    //EventHandler.info(this, "Connected to nodes [\n\t%s]".format(nodeConnections.toList.map({ case (_, (address, _)) ⇒ address }).mkString("\n\t")))
     EventHandler.info(this, "Cluster node [%s] started successfully".format(nodeAddress))
   }
 

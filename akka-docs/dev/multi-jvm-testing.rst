@@ -283,7 +283,7 @@ something in coordination::
         }
 
         "be able to start all nodes" in {
-          Cluster.barrier("start", NrOfNodes) {
+          LocalCluster.barrier("start", NrOfNodes) {
             Cluster.node
           }
           Cluster.node.isRunning must be(true)
@@ -304,7 +304,7 @@ something in coordination::
         }
 
         "be able to start all nodes" in {
-          Cluster.barrier("start", NrOfNodes) {
+          LocalCluster.barrier("start", NrOfNodes) {
             Cluster.node
           }
           Cluster.node.isRunning must be(true)

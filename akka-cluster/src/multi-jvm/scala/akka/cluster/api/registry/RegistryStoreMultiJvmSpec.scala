@@ -15,6 +15,7 @@ import ChangeListener._
 import Cluster._
 import akka.config.Config
 import akka.serialization.Serialization
+import akka.cluster.LocalCluster._
 
 import java.util.concurrent._
 

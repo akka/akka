@@ -8,6 +8,7 @@ import akka.cluster._
 import Cluster._
 import akka.actor._
 import akka.config.Config
+import akka.cluster.LocalCluster._
 
 /**
  * Test that if a single node is used with a round robin router with replication factor then the actor is instantiated on the single node.

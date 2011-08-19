@@ -8,6 +8,7 @@ import akka.testkit.{ EventFilter, TestEvent }
 import java.util.{ Collections, Set ⇒ JSet }
 import java.net.ConnectException
 import java.nio.channels.NotYetConnectedException
+import akka.cluster.LocalCluster._
 
 object RandomFailoverMultiJvmSpec {
 
@@ -50,7 +51,7 @@ class RandomFailoverMultiJvmNode1 extends MasterClusterTestNode {
       EventHandler.notify(TestEvent.Mute(ignoreExceptions))
 
       Cluster.node
-      Cluster.barrier("waiting-for-begin", NrOfNodes).await()
+      LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()
 
       // ============= the real testing =================
       val actor = Actor.actorOf[SomeActor]("service-hello").asInstanceOf[ClusterActorRef]
@@ -103,7 +104,7 @@ class RandomFailoverMultiJvmNode2 extends ClusterTestNode {
   "___" must {
     "___" in {
       Cluster.node
-      Cluster.barrier("waiting-for-begin", NrOfNodes).await()
+      LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()
 
       Thread.sleep(30 * 1000)
     }
@@ -117,7 +118,7 @@ class RandomFailoverMultiJvmNode3 extends ClusterTestNode {
   "___" must {
     "___" in {
       Cluster.node
-      Cluster.barrier("waiting-for-begin", NrOfNodes).await()
+      LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()
 
       Thread.sleep(30 * 1000)
     }

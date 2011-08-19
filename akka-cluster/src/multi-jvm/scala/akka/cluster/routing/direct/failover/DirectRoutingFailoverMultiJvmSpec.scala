@@ -8,6 +8,7 @@ import akka.event.EventHandler
 import akka.testkit.{ EventFilter, TestEvent }
 import java.net.ConnectException
 import java.nio.channels.NotYetConnectedException
+import akka.cluster.LocalCluster
 
 object DirectRoutingFailoverMultiJvmSpec {
 
@@ -36,21 +37,21 @@ class DirectRoutingFailoverMultiJvmNode1 extends MasterClusterTestNode {
 
       var actor: ActorRef = null
 
-      Cluster.barrier("node-start", NrOfNodes) {
+      LocalCluster.barrier("node-start", NrOfNodes) {
         Cluster.node
       }
 
-      Cluster.barrier("actor-creation", NrOfNodes) {
+      LocalCluster.barrier("actor-creation", NrOfNodes) {
         actor = Actor.actorOf[SomeActor]("service-hello")
       }
 
-      Cluster.barrier("verify-actor", NrOfNodes) {
+      LocalCluster.barrier("verify-actor", NrOfNodes) {
         (actor ? "identify").get must equal("node2")
       }
 
       Thread.sleep(5000) // wait for fail-over from node2
 
-      Cluster.barrier("verify-fail-over", NrOfNodes - 1) {
+      LocalCluster.barrier("verify-fail-over", NrOfNodes - 1) {
         actor ! "identify" // trigger failure and removal of connection to node2
         intercept[Exception] {
           actor ! "identify" // trigger exception since no more connections
@@ -68,14 +69,14 @@ class DirectRoutingFailoverMultiJvmNode2 extends ClusterTestNode {
 
   "___" must {
     "___" ignore {
-      Cluster.barrier("node-start", NrOfNodes) {
+      LocalCluster.barrier("node-start", NrOfNodes) {
         Cluster.node
       }
 
-      Cluster.barrier("actor-creation", NrOfNodes) {
+      LocalCluster.barrier("actor-creation", NrOfNodes) {
       }
 
-      Cluster.barrier("verify-actor", NrOfNodes) {
+      LocalCluster.barrier("verify-actor", NrOfNodes) {
         Cluster.node.isInUseOnNode("service-hello") must be(true)
       }
 

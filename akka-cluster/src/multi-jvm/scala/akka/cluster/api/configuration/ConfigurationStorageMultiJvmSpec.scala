@@ -10,6 +10,7 @@ import org.scalatest.BeforeAndAfterAll
 
 import akka.cluster._
 import Cluster._
+import akka.cluster.LocalCluster._
 
 object ConfigurationStorageMultiJvmSpec {
   var NrOfNodes = 2

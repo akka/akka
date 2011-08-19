@@ -13,6 +13,7 @@ import akka.cluster._
 import Cluster._
 import akka.config.Config
 import akka.serialization.Serialization
+import akka.cluster.LocalCluster._
 
 object MigrationAutomaticMultiJvmSpec {
   var NrOfNodes = 3

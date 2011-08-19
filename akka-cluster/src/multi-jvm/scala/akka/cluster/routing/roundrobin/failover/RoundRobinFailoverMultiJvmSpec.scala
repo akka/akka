@@ -9,6 +9,7 @@ import java.util.{ Collections, Set ⇒ JSet }
 import java.net.ConnectException
 import java.nio.channels.NotYetConnectedException
 import java.lang.Thread
+import akka.cluster.LocalCluster._
 
 object RoundRobinFailoverMultiJvmSpec {
 
@@ -51,11 +52,11 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
       var oldFoundConnections: JSet[String] = null
       var actor: ActorRef = null
 
-      Cluster.barrier("node-start", NrOfNodes) {
+      LocalCluster.barrier("node-start", NrOfNodes) {
         Cluster.node
       }
 
-      Cluster.barrier("actor-creation", NrOfNodes) {
+      LocalCluster.barrier("actor-creation", NrOfNodes) {
         actor = Actor.actorOf[SomeActor]("service-hello")
         actor.isInstanceOf[ClusterActorRef] must be(true)
 
@@ -72,7 +73,7 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
 
       Thread.sleep(5000) // wait for fail-over from node3
 
-      Cluster.barrier("verify-fail-over", NrOfNodes - 1) {
+      LocalCluster.barrier("verify-fail-over", NrOfNodes - 1) {
         val newFoundConnections = identifyConnections(actor)
 
         //it still must be 2 since a different node should have been used to failover to
@@ -105,18 +106,18 @@ class RoundRobinFailoverMultiJvmNode2 extends ClusterTestNode {
 
   "___" must {
     "___" in {
-      Cluster.barrier("node-start", NrOfNodes) {
+      LocalCluster.barrier("node-start", NrOfNodes) {
         Cluster.node
       }
 
-      Cluster.barrier("actor-creation", NrOfNodes) {
+      LocalCluster.barrier("actor-creation", NrOfNodes) {
       }
 
       Cluster.node.isInUseOnNode("service-hello") must be(false)
 
       Thread.sleep(5000) // wait for fail-over from node3
 
-      Cluster.barrier("verify-fail-over", NrOfNodes - 1) {
+      LocalCluster.barrier("verify-fail-over", NrOfNodes - 1) {
       }
     }
   }
@@ -128,11 +129,11 @@ class RoundRobinFailoverMultiJvmNode3 extends ClusterTestNode {
 
   "___" must {
     "___" in {
-      Cluster.barrier("node-start", NrOfNodes) {
+      LocalCluster.barrier("node-start", NrOfNodes) {
         Cluster.node
       }
 
-      Cluster.barrier("actor-creation", NrOfNodes) {
+      LocalCluster.barrier("actor-creation", NrOfNodes) {
       }
 
       Cluster.node.isInUseOnNode("service-hello") must be(true)

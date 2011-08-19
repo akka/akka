@@ -12,6 +12,7 @@ import akka.actor._
 import Actor._
 import akka.cluster._
 import Cluster._
+import akka.cluster.LocalCluster._
 
 object DeploymentMultiJvmSpec {
   var NrOfNodes = 2

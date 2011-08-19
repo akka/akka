@@ -10,6 +10,7 @@ import java.net.ConnectException
 import java.nio.channels.NotYetConnectedException
 import java.lang.Thread
 import akka.routing.Routing.Broadcast
+import akka.cluster.LocalCluster._
 
 object ScatterGatherFailoverMultiJvmSpec {
 
@@ -57,11 +58,11 @@ class ScatterGatherFailoverMultiJvmNode1 extends MasterClusterTestNode {
       EventHandler.notify(TestEvent.Mute(ignoreExceptions))
 
       Cluster.node
-      Cluster.barrier("waiting-for-begin", NrOfNodes).await()
+      LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()
 
-      /*      
-             FIXME: Uncomment, when custom routers will be fully supported (ticket #1109)  
-             
+      /*
+             FIXME: Uncomment, when custom routers will be fully supported (ticket #1109)
+
              val actor = Actor.actorOf[TestActor]("service-hello").asInstanceOf[ClusterActorRef]
 
              identifyConnections(actor).size() must be(2)
@@ -75,7 +76,7 @@ class ScatterGatherFailoverMultiJvmNode1 extends MasterClusterTestNode {
              (actor ? Broadcast(Shutdown(Some("node2")))).get.asInstanceOf[String] must be("node1")
 
              */
-      Cluster.barrier("waiting-for-end", NrOfNodes).await()
+      LocalCluster.barrier("waiting-for-end", NrOfNodes).await()
       Cluster.node.shutdown()
     }
   }
@@ -98,14 +99,14 @@ class ScatterGatherFailoverMultiJvmNode2 extends ClusterTestNode {
     "___" in {
 
       Cluster.node
-      Cluster.barrier("waiting-for-begin", NrOfNodes).await()
+      LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()
 
-      /*      
-             FIXME: Uncomment, when custom routers will be fully supported (ticket #1109)  
+      /*
+             FIXME: Uncomment, when custom routers will be fully supported (ticket #1109)
              Thread.sleep(30 *1000)
              */
 
-      Cluster.barrier("waiting-for-end", NrOfNodes).await()
+      LocalCluster.barrier("waiting-for-end", NrOfNodes).await()
       Cluster.node.shutdown()
     }
   }

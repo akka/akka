@@ -12,7 +12,7 @@ import akka.cluster._
 import akka.actor._
 import akka.actor.Actor._
 import akka.config.Config
-import LocalCluster._
+import akka.cluster.LocalCluster._
 import Cluster._
 
 /**

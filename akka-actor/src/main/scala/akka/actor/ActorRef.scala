@@ -605,6 +605,11 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
         "Could not create Serializer object for [" + this.getClass.getName + "]")
     }
 
+  private lazy val hasReplicationStorage: Boolean = {
+    import DeploymentConfig._
+    isReplicated(replicationSchemeFor(Deployer.deploymentFor(address)).getOrElse(Transient))
+  }
+
   private lazy val replicationStorage: Option[TransactionLog] = {
     import DeploymentConfig._
     val replicationScheme = replicationSchemeFor(Deployer.deploymentFor(address)).getOrElse(Transient)
@@ -716,7 +721,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
         }
       } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
 
-      if (replicationStorage.isDefined) replicationStorage.get.delete() //TODO shouldn't this be inside the if (isRunning?)
+      if (hasReplicationStorage) replicationStorage.get.delete() //TODO shouldn't this be inside the if (isRunning?)
     }
   }
 
@@ -845,7 +850,7 @@ class LocalActorRef private[akka] (private[this] val actorFactory: () ⇒ Actor,
       }
     } finally {
       guard.lock.unlock()
-      if (replicationStorage.isDefined) replicationStorage.get.recordEntry(messageHandle, this)
+      if (hasReplicationStorage) replicationStorage.get.recordEntry(messageHandle, this)
     }
   }
 

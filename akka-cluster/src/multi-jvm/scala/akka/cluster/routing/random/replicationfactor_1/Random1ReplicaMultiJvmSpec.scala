@@ -8,6 +8,7 @@ import akka.cluster._
 import akka.cluster.Cluster._
 import akka.actor._
 import akka.config.Config
+import akka.cluster.LocalCluster._
 
 /**
  * Test that if a single node is used with a random router with replication factor then the actor is instantiated

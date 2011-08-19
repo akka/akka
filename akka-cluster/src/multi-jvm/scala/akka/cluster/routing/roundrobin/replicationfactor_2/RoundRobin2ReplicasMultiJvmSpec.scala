@@ -10,13 +10,14 @@ import org.scalatest.BeforeAndAfterAll
 
 import akka.cluster._
 import Cluster._
-import LocalCluster._
+import akka.cluster.LocalCluster._
 import akka.actor._
 import akka.actor.Actor._
 import akka.config.Config
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.ConcurrentHashMap
 import akka.util.Duration
+import akka.cluster.LocalCluster._
 
 /**
  * When a MultiJvmNode is started, will it automatically be part of the cluster (so will it automatically be eligible

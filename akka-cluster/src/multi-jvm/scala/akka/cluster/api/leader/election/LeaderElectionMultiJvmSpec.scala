@@ -11,6 +11,7 @@ import org.scalatest.BeforeAndAfterAll
 import akka.cluster._
 import ChangeListener._
 import Cluster._
+import akka.cluster.LocalCluster._
 
 import java.util.concurrent._
 

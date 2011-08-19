@@ -8,6 +8,7 @@ import akka.cluster._
 import akka.actor._
 import akka.config.Config
 import Cluster._
+import akka.cluster.LocalCluster._
 
 /**
  * When a MultiJvmNode is started, will it automatically be part of the cluster (so will it automatically be eligible

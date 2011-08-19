@@ -3,6 +3,7 @@ package akka.cluster.routing.direct.normalusage
 import akka.actor.Actor
 import akka.config.Config
 import akka.cluster.{ ClusterActorRef, ClusterTestNode, MasterClusterTestNode, Cluster }
+import akka.cluster.LocalCluster
 
 object SingleReplicaDirectRoutingMultiJvmSpec {
   val NrOfNodes = 2
@@ -30,9 +31,9 @@ class SingleReplicaDirectRoutingMultiJvmNode1 extends MasterClusterTestNode {
   "___" must {
     "___" in {
       Cluster.node
-      Cluster.barrier("waiting-for-begin", NrOfNodes).await()
+      LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()
 
-      Cluster.barrier("waiting-to-end", NrOfNodes).await()
+      LocalCluster.barrier("waiting-to-end", NrOfNodes).await()
       Cluster.node.shutdown()
     }
   }
@@ -45,7 +46,7 @@ class SingleReplicaDirectRoutingMultiJvmNode2 extends ClusterTestNode {
   "Direct Router: when node send message to existing node it" must {
     "communicate with that node" in {
       Cluster.node
-      Cluster.barrier("waiting-for-begin", NrOfNodes).await()
+      LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()
 
       val actor = Actor.actorOf[SomeActor]("service-hello").start().asInstanceOf[ClusterActorRef]
       actor.isRunning must be(true)
@@ -53,7 +54,7 @@ class SingleReplicaDirectRoutingMultiJvmNode2 extends ClusterTestNode {
       val result = (actor ? "identify").get
       result must equal("node1")
 
-      Cluster.barrier("waiting-to-end", NrOfNodes).await()
+      LocalCluster.barrier("waiting-to-end", NrOfNodes).await()
       Cluster.node.shutdown()
     }
   }
