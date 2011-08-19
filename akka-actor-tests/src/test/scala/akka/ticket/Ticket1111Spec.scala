@@ -16,10 +16,15 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
 
     "return response, even if one of the connections has stopped" in {
 
-      val actor = Routing.actorOf("foo", List(newActor(0), newActor(1)),
+      val shutdownLatch = new CountDownLatch(1)
+
+      val actor = Routing.actorOf("foo", List(newActor(0, Some(shutdownLatch)),
+        newActor(1, Some(shutdownLatch))),
         new ScatterGatherFirstCompletedRouter()).start()
 
       actor ! Broadcast(Stop(Some(0)))
+
+      shutdownLatch.await(5, TimeUnit.SECONDS) must be(true)
 
       (actor ? Broadcast(0)).get.asInstanceOf[Int] must be(1)
 
@@ -27,10 +32,15 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
 
     "throw an exception, if all the connections have stopped" in {
 
-      val actor = Routing.actorOf("foo", List(newActor(0), newActor(1)),
+      val shutdownLatch = new CountDownLatch(2)
+
+      val actor = Routing.actorOf("foo", List(newActor(0, Some(shutdownLatch)),
+        newActor(1, Some(shutdownLatch))),
         new ScatterGatherFirstCompletedRouter()).start()
 
       actor ! Broadcast(Stop())
+
+      shutdownLatch.await(5, TimeUnit.SECONDS) must be(true)
 
       (intercept[RoutingException] {
         actor ? Broadcast(0)
@@ -144,10 +154,10 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
 
     case class Stop(id: Option[Int] = None)
 
-    def newActor(id: Int) = actorOf(new Actor {
+    def newActor(id: Int, shudownLatch: Option[CountDownLatch] = None) = actorOf(new Actor {
       def receive = {
-        case Stop(None)                     ⇒ self.stop()
-        case Stop(Some(_id)) if (_id == id) ⇒ self.stop()
+        case Stop(None)                     ⇒ self.stop(); shudownLatch.map(_.countDown())
+        case Stop(Some(_id)) if (_id == id) ⇒ self.stop(); shudownLatch.map(_.countDown())
         case _id: Int if (_id == id)        ⇒
         case _                              ⇒ Thread sleep 100 * id; self tryReply id
       }
