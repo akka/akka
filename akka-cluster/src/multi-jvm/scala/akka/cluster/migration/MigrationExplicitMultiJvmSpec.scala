@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  *
  *
- * package akka.cluster.migration.explicit
+ * package akka.cluster.migration
  *
  * import org.scalatest.WordSpec
  * import org.scalatest.matchers.MustMatchers
