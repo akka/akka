@@ -15,18 +15,18 @@ object RandomFailoverMultiJvmSpec {
   val NrOfNodes = 3
 
   class SomeActor extends Actor with Serializable {
-    //println("---------------------------------------------------------------------------")
-    //println("SomeActor has been created on node [" + Config.nodename + "]")
-    //println("---------------------------------------------------------------------------")
 
     def receive = {
       case "identify" ⇒ {
-        //println("The node received the 'identify' command")
         self.reply(Config.nodename)
       }
       case "shutdown" ⇒ {
-        //println("The node received the 'shutdown' command")
-        Cluster.node.shutdown()
+        new Thread() {
+          override def run() {
+            Thread.sleep(2000)
+            Cluster.node.shutdown()
+          }
+        }.start()
       }
     }
   }
@@ -39,49 +39,49 @@ class RandomFailoverMultiJvmNode1 extends MasterClusterTestNode {
 
   def testNodes = NrOfNodes
 
-  def sleepSome() {
-    //println("Starting sleep")
-    Thread.sleep(1000) //nasty.. but ok for now.
-    //println("Finished doing sleep")
-  }
-
-  "Random: when routing fails" must {
+  "Random: when random router fails" must {
     "jump to another replica" in {
-      val ignoreExceptions = Seq(EventFilter[NotYetConnectedException], EventFilter[ConnectException])
-      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
+      val ignoreExceptions = Seq(
+        EventFilter[NotYetConnectedException],
+        EventFilter[ConnectException],
+        EventFilter[ClusterException])
 
-      Cluster.node
-      LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()
+      var oldFoundConnections: JSet[String] = null
+      var actor: ActorRef = null
 
-      // ============= the real testing =================
-      val actor = Actor.actorOf[SomeActor]("service-hello").asInstanceOf[ClusterActorRef]
+      barrier("node-start", NrOfNodes) {
+        EventHandler.notify(TestEvent.Mute(ignoreExceptions))
+        Cluster.node
+      }
 
-      val oldFoundConnections = identifyConnections(actor)
-      //println("---------------------------- oldFoundConnections ------------------------")
-      //println(oldFoundConnections)
+      barrier("actor-creation", NrOfNodes) {
+        actor = Actor.actorOf[SomeActor]("service-hello")
+        actor.isInstanceOf[ClusterActorRef] must be(true)
 
-      //since we have replication factor 2
-      oldFoundConnections.size() must be(2)
+        // val actor2 = Actor.registry.local.actorFor("service-hello")
+        //   .getOrElse(fail("Actor should have been in the local actor registry"))
 
-      //terminate a node
-      actor ! "shutdown"
+        Cluster.node.isInUseOnNode("service-hello") must be(true)
+        oldFoundConnections = identifyConnections(actor)
 
-      sleepSome()
+        //since we have replication factor 2
+        oldFoundConnections.size() must be(2)
+      }
 
-      //this is where the system behaves unpredictable. From time to time it works... from time to time there
-      //all kinds of connection timeouts. So this test shows that there are problems. For the time being
-      //the test code has been deactivated to prevent causing problems.
+      Thread.sleep(5000) // wait for fail-over from node3
 
-      //val newFoundConnections = identifyConnections(actor)
-      //println("---------------------------- newFoundConnections ------------------------")
-      //println(newFoundConnections)
+      barrier("verify-fail-over", NrOfNodes - 1) {
+        val newFoundConnections = identifyConnections(actor)
 
-      //it still must be 2 since a different node should have been used to failover to
-      //newFoundConnections.size() must be(2)
-      //they are not disjoint since, there must be a single element that is in both
-      //Collections.disjoint(newFoundConnections, oldFoundConnections) must be(false)
-      //but they should not be equal since the shutdown-node has been replaced by another one.
-      //newFoundConnections.equals(oldFoundConnections) must be(false)
+        //it still must be 2 since a different node should have been used to failover to
+        newFoundConnections.size() must be(2)
+
+        //they are not disjoint since, there must be a single element that is in both
+        Collections.disjoint(newFoundConnections, oldFoundConnections) must be(false)
+
+        //but they should not be equal since the shutdown-node has been replaced by another one.
+        newFoundConnections.equals(oldFoundConnections) must be(false)
+      }
 
       Cluster.node.shutdown()
     }
@@ -89,7 +89,7 @@ class RandomFailoverMultiJvmNode1 extends MasterClusterTestNode {
 
   def identifyConnections(actor: ActorRef): JSet[String] = {
     val set = new java.util.HashSet[String]
-    for (i ← 0 until NrOfNodes * 10) {
+    for (i ← 0 until NrOfNodes * 2) {
       val value = (actor ? "identify").get.asInstanceOf[String]
       set.add(value)
     }
@@ -103,10 +103,17 @@ class RandomFailoverMultiJvmNode2 extends ClusterTestNode {
 
   "___" must {
     "___" in {
-      Cluster.node
-      LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()
+      barrier("node-start", NrOfNodes) {
+        Cluster.node
+      }
 
-      Thread.sleep(30 * 1000)
+      barrier("actor-creation", NrOfNodes).await()
+
+      Thread.sleep(5000) // wait for fail-over from node3
+
+      barrier("verify-fail-over", NrOfNodes - 1).await()
+
+      Cluster.node.shutdown()
     }
   }
 }
@@ -117,10 +124,13 @@ class RandomFailoverMultiJvmNode3 extends ClusterTestNode {
 
   "___" must {
     "___" in {
-      Cluster.node
-      LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()
+      barrier("node-start", NrOfNodes) {
+        Cluster.node
+      }
 
-      Thread.sleep(30 * 1000)
+      barrier("actor-creation", NrOfNodes).await()
+
+      Cluster.node.shutdown()
     }
   }
 }

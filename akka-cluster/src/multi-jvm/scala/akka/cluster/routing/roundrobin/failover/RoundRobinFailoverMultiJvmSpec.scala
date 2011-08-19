@@ -40,29 +40,27 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
 
   def testNodes = NrOfNodes
 
-  "Round Robin: when round robin fails" must {
+  "Round Robin: when round robin router fails" must {
     "jump to another replica" in {
       val ignoreExceptions = Seq(
         EventFilter[NotYetConnectedException],
         EventFilter[ConnectException],
         EventFilter[ClusterException])
 
-      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
-
       var oldFoundConnections: JSet[String] = null
       var actor: ActorRef = null
 
-      LocalCluster.barrier("node-start", NrOfNodes) {
+      barrier("node-start", NrOfNodes) {
+        EventHandler.notify(TestEvent.Mute(ignoreExceptions))
         Cluster.node
       }
 
-      LocalCluster.barrier("actor-creation", NrOfNodes) {
+      barrier("actor-creation", NrOfNodes) {
         actor = Actor.actorOf[SomeActor]("service-hello")
         actor.isInstanceOf[ClusterActorRef] must be(true)
 
-        val actor2 = Actor.registry.local.actorFor("service-hello")
-          .getOrElse(fail("Actor should have been in the local actor registry"))
-        //      actor2.isInstanceOf[ClusterActorRef] must be(true)
+        // val actor2 = Actor.registry.local.actorFor("service-hello")
+        //   .getOrElse(fail("Actor should have been in the local actor registry"))
 
         Cluster.node.isInUseOnNode("service-hello") must be(true)
         oldFoundConnections = identifyConnections(actor)
@@ -73,7 +71,7 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
 
       Thread.sleep(5000) // wait for fail-over from node3
 
-      LocalCluster.barrier("verify-fail-over", NrOfNodes - 1) {
+      barrier("verify-fail-over", NrOfNodes - 1) {
         val newFoundConnections = identifyConnections(actor)
 
         //it still must be 2 since a different node should have been used to failover to
@@ -106,19 +104,17 @@ class RoundRobinFailoverMultiJvmNode2 extends ClusterTestNode {
 
   "___" must {
     "___" in {
-      LocalCluster.barrier("node-start", NrOfNodes) {
+      barrier("node-start", NrOfNodes) {
         Cluster.node
       }
 
-      LocalCluster.barrier("actor-creation", NrOfNodes) {
-      }
+      barrier("actor-creation", NrOfNodes).await()
 
       Cluster.node.isInUseOnNode("service-hello") must be(false)
 
       Thread.sleep(5000) // wait for fail-over from node3
 
-      LocalCluster.barrier("verify-fail-over", NrOfNodes - 1) {
-      }
+      barrier("verify-fail-over", NrOfNodes - 1).await()
     }
   }
 }
@@ -129,12 +125,11 @@ class RoundRobinFailoverMultiJvmNode3 extends ClusterTestNode {
 
   "___" must {
     "___" in {
-      LocalCluster.barrier("node-start", NrOfNodes) {
+      barrier("node-start", NrOfNodes) {
         Cluster.node
       }
 
-      LocalCluster.barrier("actor-creation", NrOfNodes) {
-      }
+      barrier("actor-creation", NrOfNodes).await()
 
       Cluster.node.isInUseOnNode("service-hello") must be(true)
 
