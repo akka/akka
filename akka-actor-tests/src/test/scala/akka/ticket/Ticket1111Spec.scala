@@ -14,7 +14,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
 
   "Scatter-gather router" must {
 
-    "return response, even if one of the connections has stopped" ignore {
+    "return response, even if one of the connections has stopped" in {
 
       val shutdownLatch = new CountDownLatch(1)
 

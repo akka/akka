@@ -53,7 +53,7 @@ class NodeConnectedChangeListenerMultiJvmNode2 extends ClusterTestNode {
   "A NodeConnected change listener" must {
 
     "be invoked when a new node joins the cluster" in {
-      barrier("start-node1", NrOfNodes) {}
+      barrier("start-node1", NrOfNodes).await()
 
       barrier("start-node2", NrOfNodes) {
         Cluster.node

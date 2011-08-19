@@ -38,8 +38,7 @@ class NodeDisconnectedChangeListenerMultiJvmNode1 extends MasterClusterTestNode 
         Cluster.node
       }
 
-      barrier("start-node2", NrOfNodes) {
-      }
+      barrier("start-node2", NrOfNodes).await()
 
       latch.await(10, TimeUnit.SECONDS) must be === true
 
@@ -54,8 +53,7 @@ class NodeDisconnectedChangeListenerMultiJvmNode2 extends ClusterTestNode {
   "A NodeDisconnected change listener" must {
 
     "be invoked when a new node leaves the cluster" in {
-      barrier("start-node1", NrOfNodes) {
-      }
+      barrier("start-node1", NrOfNodes).await()
 
       barrier("start-node2", NrOfNodes) {
         Cluster.node

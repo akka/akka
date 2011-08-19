@@ -29,18 +29,15 @@ class ConfigurationStorageMultiJvmNode1 extends MasterClusterTestNode {
         Cluster.node
       }
 
-      barrier("start-node-2", NrOfNodes) {
-      }
+      barrier("start-node-2", NrOfNodes).await()
 
       barrier("store-config-data-node-1", NrOfNodes) {
         node.setConfigElement("key1", "value1".getBytes)
       }
 
-      barrier("read-config-data-node-2", NrOfNodes) {
-      }
+      barrier("read-config-data-node-2", NrOfNodes).await()
 
-      barrier("remove-config-data-node-2", NrOfNodes) {
-      }
+      barrier("remove-config-data-node-2", NrOfNodes).await()
 
       barrier("try-read-config-data-node-1", NrOfNodes) {
         val option = node.getConfigElement("key1")
@@ -62,15 +59,13 @@ class ConfigurationStorageMultiJvmNode2 extends ClusterTestNode {
 
     "be able to store, read and remove custom configuration data" in {
 
-      barrier("start-node-1", NrOfNodes) {
-      }
+      barrier("start-node-1", NrOfNodes).await()
 
       barrier("start-node-2", NrOfNodes) {
         Cluster.node
       }
 
-      barrier("store-config-data-node-1", NrOfNodes) {
-      }
+      barrier("store-config-data-node-1", NrOfNodes).await()
 
       barrier("read-config-data-node-2", NrOfNodes) {
         val option = node.getConfigElement("key1")
@@ -86,8 +81,7 @@ class ConfigurationStorageMultiJvmNode2 extends ClusterTestNode {
         node.removeConfigElement("key1")
       }
 
-      barrier("try-read-config-data-node-1", NrOfNodes) {
-      }
+      barrier("try-read-config-data-node-1", NrOfNodes).await()
 
       node.shutdown()
     }

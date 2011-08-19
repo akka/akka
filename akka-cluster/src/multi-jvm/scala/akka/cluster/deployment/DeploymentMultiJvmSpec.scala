@@ -31,15 +31,13 @@ class DeploymentMultiJvmNode1 extends MasterClusterTestNode {
         Cluster.node
       }
 
-      barrier("start-node-2", NrOfNodes) {
-      }
+      barrier("start-node-2", NrOfNodes).await()
 
       barrier("perform-deployment-on-node-1", NrOfNodes) {
         Deployer.start()
       }
 
-      barrier("lookup-deployment-node-2", NrOfNodes) {
-      }
+      barrier("lookup-deployment-node-2", NrOfNodes).await()
 
       node.shutdown()
     }
@@ -53,15 +51,13 @@ class DeploymentMultiJvmNode2 extends ClusterTestNode {
 
     "be able to store, read and remove custom configuration data" in {
 
-      barrier("start-node-1", NrOfNodes) {
-      }
+      barrier("start-node-1", NrOfNodes).await()
 
       barrier("start-node-2", NrOfNodes) {
         Cluster.node
       }
 
-      barrier("perform-deployment-on-node-1", NrOfNodes) {
-      }
+      barrier("perform-deployment-on-node-1", NrOfNodes).await()
 
       barrier("lookup-deployment-node-2", NrOfNodes) {
         Deployer.start()

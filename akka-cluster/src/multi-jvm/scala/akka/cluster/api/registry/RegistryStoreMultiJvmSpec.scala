@@ -54,22 +54,19 @@ class RegistryStoreMultiJvmNode1 extends MasterClusterTestNode {
         Cluster.node
       }
 
-      barrier("start-node-2", NrOfNodes) {
-      }
+      barrier("start-node-2", NrOfNodes).await()
 
       barrier("store-1-in-node-1", NrOfNodes) {
         node.store("hello-world-1", classOf[HelloWorld1], Serialization.serializerFor(classOf[HelloWorld1]))
       }
 
-      barrier("use-1-in-node-2", NrOfNodes) {
-      }
+      barrier("use-1-in-node-2", NrOfNodes).await()
 
       barrier("store-2-in-node-1", NrOfNodes) {
         node.store("hello-world-2", classOf[HelloWorld1], false, Serialization.serializerFor(classOf[HelloWorld1]))
       }
 
-      barrier("use-2-in-node-2", NrOfNodes) {
-      }
+      barrier("use-2-in-node-2", NrOfNodes).await()
 
       node.shutdown()
     }
@@ -83,15 +80,13 @@ class RegistryStoreMultiJvmNode2 extends ClusterTestNode {
 
     "be able to store an actor in the cluster with 'store' and retrieve it with 'use'" in {
 
-      barrier("start-node-1", NrOfNodes) {
-      }
+      barrier("start-node-1", NrOfNodes).await()
 
       barrier("start-node-2", NrOfNodes) {
         Cluster.node
       }
 
-      barrier("store-1-in-node-1", NrOfNodes) {
-      }
+      barrier("store-1-in-node-1", NrOfNodes).await()
 
       barrier("use-1-in-node-2", NrOfNodes) {
         val actorOrOption = node.use("hello-world-1")
@@ -103,8 +98,7 @@ class RegistryStoreMultiJvmNode2 extends ClusterTestNode {
         (actorRef ? "Hello").as[String].get must be("World from node [node2]")
       }
 
-      barrier("store-2-in-node-1", NrOfNodes) {
-      }
+      barrier("store-2-in-node-1", NrOfNodes).await()
 
       barrier("use-2-in-node-2", NrOfNodes) {
         val actorOrOption = node.use("hello-world-2")
