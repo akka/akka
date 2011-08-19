@@ -19,13 +19,8 @@ object ClusterActorRefCleanupMultiJvmSpec {
   val NrOfNodes = 3
 
   class TestActor extends Actor with Serializable {
-    //println("--------------------------------------")
-    //println("TestActor created")
-    //println("--------------------------------------")
-
     def receive = {
       case "Die" ⇒
-        println("Killing JVM: " + Cluster.node.nodeAddress)
         System.exit(0)
       case _ ⇒ {}
     }
@@ -49,6 +44,8 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
       ref.isInstanceOf[ClusterActorRef] must be(true)
 
       val clusteredRef = ref.asInstanceOf[ClusterActorRef]
+
+      barrier("awaitActorCreated", NrOfNodes).await()
 
       //verify that all remote actors are there.
       clusteredRef.connectionsSize must be(2)
@@ -107,6 +104,8 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
         clusteredRef ! "Hello"
       }
 
+      barrier("finished", NrOfNodes).await()
+
       node.shutdown()
     }
   }
@@ -130,7 +129,10 @@ class ClusterActorRefCleanupMultiJvmNode2 extends ClusterTestNode {
       Cluster.node
       barrier("awaitStarted", NrOfNodes).await()
 
+      barrier("awaitActorCreated", NrOfNodes).await()
+
       barrier("finished", NrOfNodes).await()
+
       node.shutdown()
     }
   }
@@ -153,6 +155,8 @@ class ClusterActorRefCleanupMultiJvmNode3 extends ClusterTestNode {
 
       Cluster.node
       barrier("awaitStarted", NrOfNodes).await()
+
+      barrier("awaitActorCreated", NrOfNodes).await()
 
       barrier("finished", NrOfNodes).await()
       node.shutdown()
