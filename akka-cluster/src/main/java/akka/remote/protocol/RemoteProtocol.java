@@ -594,7 +594,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1388,7 +1388,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2760,7 +2760,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -3235,7 +3235,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -4062,7 +4062,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -5428,7 +5428,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -5936,7 +5936,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -6401,7 +6401,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -6948,7 +6948,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -7381,7 +7381,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -7784,7 +7784,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -8187,7 +8187,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -8657,7 +8657,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }

@@ -7,7 +7,7 @@ option optimize_for = SPEED;
 
 /******************************************
   Compile with:
-  cd ./akka-remote/src/main/protocol
+  cd ./akka-cluster/src/main/protocol
   protoc RemoteProtocol.proto --java_out ../java
 *******************************************/
 
