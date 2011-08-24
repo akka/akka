@@ -281,12 +281,21 @@ abstract class MessageDispatcherConfigurator {
       conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
       conf_?(config getInt "executor-bounds")(bounds ⇒ _.setExecutorBounds(bounds)),
       conf_?(config getBool "allow-core-timeout")(allow ⇒ _.setAllowCoreThreadTimeout(allow)),
+      conf_?(config getInt "task-queue-size" flatMap {
+        case size if size > 0 =>
+          config getString "task-queue-type" map {
+            case "array" => ThreadPoolConfig.arrayBlockingQueue(size, false) //TODO config fairness?
+            case "" | "linked" => ThreadPoolConfig.linkedBlockingQueue(size)
+            case x => throw new IllegalArgumentException("[%s] is not a valid task-queue-type [array|linked]!" format x)
+          }
+        case _ => None
+      })(queueFactory => _.setQueueFactory(queueFactory)),
       conf_?(config getString "rejection-policy" map {
         case "abort"          ⇒ new AbortPolicy()
         case "caller-runs"    ⇒ new CallerRunsPolicy()
         case "discard-oldest" ⇒ new DiscardOldestPolicy()
         case "discard"        ⇒ new DiscardPolicy()
-        case x                ⇒ throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy!" format x)
+        case x                ⇒ throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy [abort|caller-runs|discard-oldest|discard]!" format x)
       })(policy ⇒ _.setRejectionPolicy(policy)))
   }
 }

@@ -25,6 +25,8 @@ class ConfigSpec extends WordSpec with MustMatchers {
       getDouble("akka.actor.default-dispatcher.core-pool-size-factor") must equal(Some(8.0))
       getDouble("akka.actor.default-dispatcher.max-pool-size-factor") must equal(Some(8.0))
       getInt("akka.actor.default-dispatcher.executor-bounds") must equal(Some(-1))
+      getInt("akka.actor.default-dispatcher.task-queue-size") must equal(Some(-1))
+      getString("akka.actor.default-dispatcher.task-queue-type") must equal(Some("linked"))
       getBool("akka.actor.default-dispatcher.allow-core-timeout") must equal(Some(true))
       getString("akka.actor.default-dispatcher.rejection-policy") must equal(Some("caller-runs"))
       getInt("akka.actor.default-dispatcher.mailbox-capacity") must equal(Some(-1))
