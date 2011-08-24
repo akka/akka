@@ -576,12 +576,10 @@ object LocalBookKeeperEnsemble {
    */
   def start() {
     isRunning switchOn {
-      EventHandler.info(this, "Starting LocalBookKeeperEnsemble")
       localBookKeeper = new LocalBookKeeper(TransactionLog.ensembleSize)
       localBookKeeper.runZookeeper(port)
       localBookKeeper.initializeZookeper()
       localBookKeeper.runBookies()
-      EventHandler.info(this, "LocalBookKeeperEnsemble started successfully")
     }
   }
 
