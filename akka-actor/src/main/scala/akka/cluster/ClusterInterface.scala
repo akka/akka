@@ -131,6 +131,8 @@ trait ClusterNode {
 
   def shutdown()
 
+  def isShutdown: Boolean
+
   def disconnect(): ClusterNode
 
   def reconnect(): ClusterNode
@@ -366,7 +368,7 @@ trait ClusterNode {
   /**
    * Returns home address for actor with UUID.
    */
-  def addressesForActor(actorAddress: String): Array[(UUID, InetSocketAddress)]
+  def inetSocketAddressesForActor(actorAddress: String): Array[(UUID, InetSocketAddress)]
 
   /**
    * Send a function 'Function0[Unit]' to be invoked on a random number of nodes (defined by 'replicationFactor' argument).

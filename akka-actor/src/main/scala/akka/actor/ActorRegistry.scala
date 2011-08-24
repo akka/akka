@@ -116,6 +116,10 @@ class LocalActorRegistry(
   private val actorsByUuid: ConcurrentHashMap[Uuid, ActorRef],
   private val typedActorsByUuid: ConcurrentHashMap[Uuid, AnyRef]) {
 
+  // NOTE: currently ClusterActorRef's are only taken into account in 'actorFor(..)' - not in 'find', 'filter' etc.
+  private val clusterActorRefsByAddress = new ConcurrentHashMap[String, ActorRef]
+  private val clusterActorRefsByUuid = new ConcurrentHashMap[Uuid, ActorRef]
+
   /**
    * Returns the number of actors in the system.
    */
@@ -135,17 +139,30 @@ class LocalActorRegistry(
 
   /**
    * Finds the actor that have a specific address.
+   *
+   * If a ClusterActorRef exists in the registry, then return that before we look after a LocalActorRef.
    */
   def actorFor(address: String): Option[ActorRef] = {
+    if (clusterActorRefsByAddress.containsKey(address)) Some(clusterActorRefsByAddress.get(address))
+    else if (actorsByAddress.containsKey(address)) Some(actorsByAddress.get(address))
+    else None
+  }
+
+  private[akka] def actorFor(uuid: Uuid): Option[ActorRef] =
+    if (clusterActorRefsByUuid.containsKey(uuid)) Some(clusterActorRefsByUuid.get(uuid))
+    else if (actorsByUuid.containsKey(uuid)) Some(actorsByUuid.get(uuid))
+    else None
+
+  // By-passes checking the registry for ClusterActorRef and only returns possible LocalActorRefs
+  private[akka] def localActorRefFor(address: String): Option[ActorRef] = {
     if (actorsByAddress.containsKey(address)) Some(actorsByAddress.get(address))
     else None
   }
 
-  /**
-   * Finds the actor that have a specific uuid.
-   */
-  private[akka] def actorFor(uuid: Uuid): Option[ActorRef] =
-    Option(actorsByUuid.get(uuid))
+  // By-passes checking the registry for ClusterActorRef and only returns possible LocalActorRefs
+  private[akka] def localActorRefFor(uuid: Uuid): Option[ActorRef] =
+    if (actorsByUuid.containsKey(uuid)) Some(actorsByUuid.get(uuid))
+    else None
 
   /**
    * Finds the typed actor that have a specific address.
@@ -247,4 +264,28 @@ class LocalActorRegistry(
    */
   private def typedActorFor(actorRef: ActorRef): Option[AnyRef] =
     typedActorFor(actorRef.uuid)
+
+  /**
+   *  Registers an ClusterActorRef in the ActorRegistry.
+   */
+  private[akka] def registerClusterActorRef(actor: ActorRef) {
+    val address = actor.address
+    clusterActorRefsByAddress.put(address, actor)
+    clusterActorRefsByUuid.put(actor.uuid, actor)
+  }
+
+  /**
+   * Unregisters an ClusterActorRef in the ActorRegistry.
+   */
+  private[akka] def unregisterClusterActorRef(address: String) {
+    val actor = clusterActorRefsByAddress remove address
+    clusterActorRefsByUuid remove actor.uuid
+  }
+
+  /**
+   * Unregisters an ClusterActorRef in the ActorRegistry.
+   */
+  private[akka] def unregisterClusterActorRef(actor: ActorRef) {
+    unregisterClusterActorRef(actor.address)
+  }
 }

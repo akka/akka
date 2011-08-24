@@ -19,7 +19,8 @@ import akka.actor.{
   RemoteActorSystemMessage,
   uuidFrom,
   Uuid,
-  LifeCycleMessage
+  LifeCycleMessage,
+  Address
 }
 import akka.actor.Actor._
 import akka.config.Config
@@ -67,8 +68,8 @@ object RemoteEncoder {
 
 trait NettyRemoteClientModule extends RemoteClientModule {
   self: ListenerManagement ⇒
-  private val remoteClients = new HashMap[Address, RemoteClient]
-  private val remoteActors = new Index[Address, Uuid]
+  private val remoteClients = new HashMap[RemoteAddress, RemoteClient]
+  private val remoteActors = new Index[RemoteAddress, Uuid]
   private val lock = new ReadWriteGuard
 
   protected[akka] def send[T](message: Any,
@@ -84,7 +85,7 @@ trait NettyRemoteClientModule extends RemoteClientModule {
   private[akka] def withClientFor[T](
     address: InetSocketAddress, loader: Option[ClassLoader])(fun: RemoteClient ⇒ T): T = {
     // loader.foreach(MessageSerializer.setClassLoader(_))
-    val key = Address(address)
+    val key = RemoteAddress(address)
     lock.readLock.lock
     try {
       val c = remoteClients.get(key) match {
@@ -117,14 +118,14 @@ trait NettyRemoteClientModule extends RemoteClientModule {
   }
 
   def shutdownClientConnection(address: InetSocketAddress): Boolean = lock withWriteGuard {
-    remoteClients.remove(Address(address)) match {
+    remoteClients.remove(RemoteAddress(address)) match {
       case Some(client) ⇒ client.shutdown()
       case None         ⇒ false
     }
   }
 
   def restartClientConnection(address: InetSocketAddress): Boolean = lock withReadGuard {
-    remoteClients.get(Address(address)) match {
+    remoteClients.get(RemoteAddress(address)) match {
       case Some(client) ⇒ client.connect(reconnectIfAlreadyConnected = true)
       case None         ⇒ false
     }
@@ -1044,6 +1045,12 @@ class RemoteServerHandler(
   private def createActor(actorInfo: ActorInfoProtocol, channel: Channel): ActorRef = {
     val uuid = actorInfo.getUuid
     val address = actorInfo.getAddress
+    // val address = {
+    //   // strip off clusterActorRefPrefix if needed
+    //   val addr = actorInfo.getAddress
+    //   if (addr.startsWith(Address.clusterActorRefPrefix)) addr.substring(addr.indexOf('.') + 1, addr.length)
+    //   else addr
+    // }
 
     EventHandler.debug(this,
       "Looking up a remotely available actor for address [%s] on node [%s]"
