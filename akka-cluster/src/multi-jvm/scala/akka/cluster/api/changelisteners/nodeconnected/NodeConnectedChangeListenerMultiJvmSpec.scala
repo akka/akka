@@ -35,7 +35,7 @@ class NodeConnectedChangeListenerMultiJvmNode1 extends MasterClusterTestNode {
       })
 
       barrier("start-node1", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
       barrier("start-node2", NrOfNodes) {
@@ -56,7 +56,7 @@ class NodeConnectedChangeListenerMultiJvmNode2 extends ClusterTestNode {
       barrier("start-node1", NrOfNodes).await()
 
       barrier("start-node2", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
       node.shutdown()

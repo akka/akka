@@ -28,7 +28,7 @@ class NewLeaderChangeListenerMultiJvmNode1 extends MasterClusterTestNode {
 
     "be invoked after leader election is completed" ignore {
       barrier("start-node1", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
       barrier("start-node2", NrOfNodes).await()

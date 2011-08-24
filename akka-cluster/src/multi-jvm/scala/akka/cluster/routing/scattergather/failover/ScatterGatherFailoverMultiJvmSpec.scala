@@ -57,7 +57,7 @@ class ScatterGatherFailoverMultiJvmNode1 extends MasterClusterTestNode {
 
       EventHandler.notify(TestEvent.Mute(ignoreExceptions))
 
-      Cluster.node
+      Cluster.node.start()
       LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()
 
       /*
@@ -98,7 +98,7 @@ class ScatterGatherFailoverMultiJvmNode2 extends ClusterTestNode {
   "___" must {
     "___" in {
 
-      Cluster.node
+      Cluster.node.start()
       LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()
 
       /*

@@ -34,7 +34,7 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
 
   "ClusterActorRef" must {
     "cleanup itself" in {
-      Cluster.node
+      Cluster.node.start()
       barrier("awaitStarted", NrOfNodes).await()
 
       val ref = Actor.actorOf[ClusterActorRefCleanupMultiJvmSpec.TestActor]("service-test")
@@ -116,7 +116,7 @@ class ClusterActorRefCleanupMultiJvmNode2 extends ClusterTestNode {
         }
       })
 
-      Cluster.node
+      Cluster.node.start()
       barrier("awaitStarted", NrOfNodes).await()
 
       barrier("awaitActorCreated", NrOfNodes).await()
@@ -143,7 +143,7 @@ class ClusterActorRefCleanupMultiJvmNode3 extends ClusterTestNode {
         }
       })
 
-      Cluster.node
+      Cluster.node.start()
       barrier("awaitStarted", NrOfNodes).await()
 
       barrier("awaitActorCreated", NrOfNodes).await()

@@ -40,7 +40,7 @@
  * "be able to migrate an actor from one node to another" in {
  *
  * barrier("start-node-1", NrOfNodes) {
- * Cluster.node
+ * Cluster.node.start()
  * }
  *
  * barrier("start-node-2", NrOfNodes) {
@@ -81,7 +81,7 @@
  * }
  *
  * barrier("start-node-2", NrOfNodes) {
- * Cluster.node
+ * Cluster.node.start()
  * }
  *
  * barrier("store-1-in-node-1", NrOfNodes) {
