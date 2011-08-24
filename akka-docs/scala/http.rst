@@ -40,6 +40,9 @@ If you deploy Akka in a JEE container, don't forget to create an Akka initializa
   //     loader.boot(true, new BootableActorLoaderService {}) // If you don't need akka-remote
    }
 
+For Java users, it's currently only possible to use BootableActorLoaderService, but you'll need to use: akka.actor.DefaultBootableActorLoaderService
+
+
 Then you just declare it in your web.xml:
 
 .. code-block:: xml
