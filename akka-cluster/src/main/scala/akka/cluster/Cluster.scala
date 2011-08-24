@@ -378,13 +378,13 @@ class DefaultClusterNode private[akka] (
 
   if (enableJMX) createMBean
 
-  initializeNode()
+  boot()
 
   // =======================================
   // Node
   // =======================================
 
-  private[cluster] def initializeNode() {
+  private[cluster] def boot() {
     EventHandler.info(this,
       ("\nCreating cluster node with" +
         "\n\tcluster name = [%s]" +
@@ -403,6 +403,8 @@ class DefaultClusterNode private[akka] (
   }
 
   def isShutdown = isShutdownFlag.get
+
+  def start() {}
 
   def shutdown() {
     isShutdownFlag.set(true)
@@ -714,6 +716,11 @@ class DefaultClusterNode private[akka] (
    * Is the actor with uuid in use or not?
    */
   def isInUseOnNode(actorAddress: String, node: NodeAddress): Boolean = zkClient.exists(actorAddressToNodesPathFor(actorAddress, node.nodeName))
+
+  /**
+   * Is the actor with uuid in use or not?
+   */
+  def isInUseOnNode(actorAddress: String, nodeName: String): Boolean = zkClient.exists(actorAddressToNodesPathFor(actorAddress, nodeName))
 
   /**
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
@@ -1665,7 +1672,7 @@ class StateListener(self: ClusterNode) extends IZkStateListener {
    */
   def handleNewSession() {
     EventHandler.debug(this, "Session expired re-initializing node [%s]".format(self.nodeAddress))
-    self.initializeNode()
+    self.boot()
     self.publish(NewSession)
   }
 }
