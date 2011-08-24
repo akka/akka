@@ -60,3 +60,8 @@ trait BootableActorLoaderService extends Bootable {
     Actor.registry.local.shutdownAll
   }
 }
+
+/**
+ * Java API for the default JAX-RS/Mist Initializer
+ */
+class DefaultBootableActorLoaderService extends BootableActorLoaderService

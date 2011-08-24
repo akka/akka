@@ -96,7 +96,7 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
         clusteredRef ! "Hello"
       }
 
-g      node.shutdown()
+      node.shutdown()
     }
   }
 }
