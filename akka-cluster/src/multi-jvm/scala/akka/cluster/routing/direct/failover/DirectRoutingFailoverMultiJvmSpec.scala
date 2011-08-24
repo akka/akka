@@ -4,6 +4,8 @@ import akka.config.Config
 import scala.Predef._
 import akka.cluster.{ ClusterActorRef, Cluster, MasterClusterTestNode, ClusterTestNode }
 import akka.actor.{ ActorInitializationException, Actor, ActorRef }
+import akka.util.duration._
+import akka.util.{ Duration, Timer }
 import akka.event.EventHandler
 import akka.testkit.{ EventFilter, TestEvent }
 import java.net.ConnectException
@@ -38,7 +40,7 @@ class DirectRoutingFailoverMultiJvmNode1 extends MasterClusterTestNode {
       var actor: ActorRef = null
 
       LocalCluster.barrier("node-start", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
       LocalCluster.barrier("actor-creation", NrOfNodes) {
@@ -49,7 +51,8 @@ class DirectRoutingFailoverMultiJvmNode1 extends MasterClusterTestNode {
         (actor ? "identify").get must equal("node2")
       }
 
-      Thread.sleep(5000) // wait for fail-over from node2
+      val timer = Timer(30.seconds, true)
+      while (timer.isTicking && !Cluster.node.isInUseOnNode("service-hello")) {}
 
       LocalCluster.barrier("verify-fail-over", NrOfNodes - 1) {
         actor ! "identify" // trigger failure and removal of connection to node2
@@ -70,11 +73,10 @@ class DirectRoutingFailoverMultiJvmNode2 extends ClusterTestNode {
   "___" must {
     "___" ignore {
       LocalCluster.barrier("node-start", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
-      LocalCluster.barrier("actor-creation", NrOfNodes) {
-      }
+      LocalCluster.barrier("actor-creation", NrOfNodes).await()
 
       LocalCluster.barrier("verify-actor", NrOfNodes) {
         Cluster.node.isInUseOnNode("service-hello") must be(true)
