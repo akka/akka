@@ -272,11 +272,7 @@ object EventHandler extends ListenerManagement {
   }
 
   class DefaultListener extends Actor with StandardOutLogger {
-    self.dispatcher = EventHandlerDispatcher
-
-    def receive = {
-      case event ⇒ print(event)
-    }
+    def receive = { case event ⇒ print(event) }
   }
 
   start()
