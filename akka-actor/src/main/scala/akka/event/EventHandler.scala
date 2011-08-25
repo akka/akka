@@ -17,7 +17,7 @@ import akka.AkkaException
  * <p/>
  * Create, add and remove a listener:
  * <pre>
- * val eventHandlerListener = Actor.localActorOf(new Actor {
+ * val eventHandlerListener = Actor.actorOf(new Actor {
  *   self.dispatcher = EventHandler.EventHandlerDispatcher
  *
  *   def receive = {
@@ -54,6 +54,11 @@ import akka.AkkaException
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object EventHandler extends ListenerManagement {
+  val synchronousLogging: Boolean = System.getProperty("akka.event.force-sync") match {
+    case null | "" ⇒ false
+    case _         ⇒ true
+  }
+
   val ErrorLevel = 1
   val WarningLevel = 2
   val InfoLevel = 3
@@ -81,13 +86,15 @@ object EventHandler extends ListenerManagement {
     override val level = DebugLevel
   }
 
-  val error = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
-  val warning = "[WARN] [%s] [%s] [%s] %s".intern
-  val info = "[INFO] [%s] [%s] [%s] %s".intern
-  val debug = "[DEBUG] [%s] [%s] [%s] %s".intern
-  val generic = "[GENERIC] [%s] [%s]".intern
+  val errorFormat = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
+  val warningFormat = "[WARN] [%s] [%s] [%s] %s".intern
+  val infoFormat = "[INFO] [%s] [%s] [%s] %s".intern
+  val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
+  val genericFormat = "[GENERIC] [%s] [%s]".intern
 
   class EventHandlerException extends AkkaException
+
+  lazy val StandardOutLogger = new StandardOutLogger {}
 
   lazy val EventHandlerDispatcher = Dispatchers.newDispatcher("akka:event:handler").build
 
@@ -95,10 +102,10 @@ object EventHandler extends ListenerManagement {
 
   @volatile
   var level: Int = config.getString("akka.event-handler-level", "INFO") match {
-    case "ERROR"   ⇒ ErrorLevel
-    case "WARNING" ⇒ WarningLevel
-    case "INFO"    ⇒ InfoLevel
-    case "DEBUG"   ⇒ DebugLevel
+    case "ERROR" | "error"     ⇒ ErrorLevel
+    case "WARNING" | "warning" ⇒ WarningLevel
+    case "INFO" | "info"       ⇒ InfoLevel
+    case "DEBUG" | "debug"     ⇒ DebugLevel
     case unknown ⇒ throw new ConfigurationException(
       "Configuration option 'akka.event-handler-level' is invalid [" + unknown + "]")
   }
@@ -140,53 +147,52 @@ object EventHandler extends ListenerManagement {
 
   def notify(event: Any) {
     if (event.isInstanceOf[Event]) {
-      if (level >= event.asInstanceOf[Event].level) notifyListeners(event)
-    } else
-      notifyListeners(event)
+      if (level >= event.asInstanceOf[Event].level) log(event)
+    } else log(event)
   }
 
   def notify[T <: Event: ClassManifest](event: ⇒ T) {
-    if (level >= levelFor(classManifest[T].erasure.asInstanceOf[Class[_ <: Event]])) notifyListeners(event)
+    if (level >= levelFor(classManifest[T].erasure.asInstanceOf[Class[_ <: Event]])) log(event)
   }
 
   def error(cause: Throwable, instance: AnyRef, message: ⇒ String) {
-    if (level >= ErrorLevel) notifyListeners(Error(cause, instance, message))
+    if (level >= ErrorLevel) log(Error(cause, instance, message))
   }
 
   def error(cause: Throwable, instance: AnyRef, message: Any) {
-    if (level >= ErrorLevel) notifyListeners(Error(cause, instance, message))
+    if (level >= ErrorLevel) log(Error(cause, instance, message))
   }
 
   def error(instance: AnyRef, message: ⇒ String) {
-    if (level >= ErrorLevel) notifyListeners(Error(new EventHandlerException, instance, message))
+    if (level >= ErrorLevel) log(Error(new EventHandlerException, instance, message))
   }
 
   def error(instance: AnyRef, message: Any) {
-    if (level >= ErrorLevel) notifyListeners(Error(new EventHandlerException, instance, message))
+    if (level >= ErrorLevel) log(Error(new EventHandlerException, instance, message))
   }
 
   def warning(instance: AnyRef, message: ⇒ String) {
-    if (level >= WarningLevel) notifyListeners(Warning(instance, message))
+    if (level >= WarningLevel) log(Warning(instance, message))
   }
 
   def warning(instance: AnyRef, message: Any) {
-    if (level >= WarningLevel) notifyListeners(Warning(instance, message))
+    if (level >= WarningLevel) log(Warning(instance, message))
   }
 
   def info(instance: AnyRef, message: ⇒ String) {
-    if (level >= InfoLevel) notifyListeners(Info(instance, message))
+    if (level >= InfoLevel) log(Info(instance, message))
   }
 
   def info(instance: AnyRef, message: Any) {
-    if (level >= InfoLevel) notifyListeners(Info(instance, message))
+    if (level >= InfoLevel) log(Info(instance, message))
   }
 
   def debug(instance: AnyRef, message: ⇒ String) {
-    if (level >= DebugLevel) notifyListeners(Debug(instance, message))
+    if (level >= DebugLevel) log(Debug(instance, message))
   }
 
   def debug(instance: AnyRef, message: Any) {
-    if (level >= DebugLevel) notifyListeners(Debug(instance, message))
+    if (level >= DebugLevel) log(Debug(instance, message))
   }
 
   def isInfoEnabled = level >= InfoLevel
@@ -209,49 +215,67 @@ object EventHandler extends ListenerManagement {
     else DebugLevel
   }
 
-  class DefaultListener extends Actor {
+  private def log(event: Any) {
+    if (synchronousLogging) StandardOutLogger.print(event)
+    else notifyListeners(event)
+  }
 
+  trait StandardOutLogger {
     import java.text.SimpleDateFormat
     import java.util.Date
-
-    self.dispatcher = EventHandlerDispatcher
 
     val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.S")
 
     def timestamp = dateFormat.format(new Date)
 
+    def print(event: Any) {
+      event match {
+        case e: Error   ⇒ error(e)
+        case e: Warning ⇒ warning(e)
+        case e: Info    ⇒ info(e)
+        case e: Debug   ⇒ debug(e)
+        case e          ⇒ generic(e)
+      }
+    }
+
+    def error(event: Error) =
+      println(errorFormat.format(
+        timestamp,
+        event.thread.getName,
+        event.instance.getClass.getSimpleName,
+        event.message,
+        stackTraceFor(event.cause)))
+
+    def warning(event: Warning) =
+      println(warningFormat.format(
+        timestamp,
+        event.thread.getName,
+        event.instance.getClass.getSimpleName,
+        event.message))
+
+    def info(event: Info) =
+      println(infoFormat.format(
+        timestamp,
+        event.thread.getName,
+        event.instance.getClass.getSimpleName,
+        event.message))
+
+    def debug(event: Debug) =
+      println(debugFormat.format(
+        timestamp,
+        event.thread.getName,
+        event.instance.getClass.getSimpleName,
+        event.message))
+
+    def generic(event: Any) =
+      println(genericFormat.format(timestamp, event.toString))
+  }
+
+  class DefaultListener extends Actor with StandardOutLogger {
+    self.dispatcher = EventHandlerDispatcher
+
     def receive = {
-      case event @ Error(cause, instance, message) ⇒
-        println(error.format(
-          timestamp,
-          event.thread.getName,
-          instance.getClass.getSimpleName,
-          message,
-          stackTraceFor(cause)))
-
-      case event @ Warning(instance, message) ⇒
-        println(warning.format(
-          timestamp,
-          event.thread.getName,
-          instance.getClass.getSimpleName,
-          message))
-
-      case event @ Info(instance, message) ⇒
-        println(info.format(
-          timestamp,
-          event.thread.getName,
-          instance.getClass.getSimpleName,
-          message))
-
-      case event @ Debug(instance, message) ⇒
-        println(debug.format(
-          timestamp,
-          event.thread.getName,
-          instance.getClass.getSimpleName,
-          message))
-
-      case event ⇒
-        println(generic.format(timestamp, event.toString))
+      case event ⇒ print(event)
     }
   }
 

@@ -353,6 +353,8 @@ class DefaultClusterNode private[akka] (
     new AtomicReference[VersionedConnectionState](VersionedConnectionState(0, conns))
   }
 
+  private val isShutdownFlag = new AtomicBoolean(false)
+
   // ZooKeeper client
   private[cluster] val zkClient = new AkkaZkClient(zkServerAddresses, sessionTimeout, connectionTimeout, serializer)
 
@@ -376,13 +378,13 @@ class DefaultClusterNode private[akka] (
 
   if (enableJMX) createMBean
 
-  initializeNode()
+  boot()
 
   // =======================================
   // Node
   // =======================================
 
-  private[cluster] def initializeNode() {
+  private[cluster] def boot() {
     EventHandler.info(this,
       ("\nCreating cluster node with" +
         "\n\tcluster name = [%s]" +
@@ -400,7 +402,12 @@ class DefaultClusterNode private[akka] (
     EventHandler.info(this, "Cluster node [%s] started successfully".format(nodeAddress))
   }
 
+  def isShutdown = isShutdownFlag.get
+
+  def start() {}
+
   def shutdown() {
+    isShutdownFlag.set(true)
 
     def shutdownNode() {
       ignore[ZkNoNodeException](zkClient.deleteRecursive(membershipNodePath))
@@ -711,6 +718,11 @@ class DefaultClusterNode private[akka] (
   def isInUseOnNode(actorAddress: String, node: NodeAddress): Boolean = zkClient.exists(actorAddressToNodesPathFor(actorAddress, node.nodeName))
 
   /**
+   * Is the actor with uuid in use or not?
+   */
+  def isInUseOnNode(actorAddress: String, nodeName: String): Boolean = zkClient.exists(actorAddressToNodesPathFor(actorAddress, nodeName))
+
+  /**
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
    * for remote access through lookup by its UUID.
    */
@@ -761,21 +773,21 @@ class DefaultClusterNode private[akka] (
 
         // create UUID -> NODE mapping
         try {
-          zkClient.createEphemeral(actorUuidRegistryNodePathFor(uuid), nodeName)
+          zkClient.createPersistent(actorUuidRegistryNodePathFor(uuid), nodeName)
         } catch {
           case e: ZkNodeExistsException ⇒ zkClient.writeData(actorUuidRegistryNodePathFor(uuid), nodeName)
         }
 
         // create UUID -> ADDRESS
         try {
-          zkClient.createEphemeral(actorUuidRegistryAddressPathFor(uuid), actorAddress)
+          zkClient.createPersistent(actorUuidRegistryAddressPathFor(uuid), actorAddress)
         } catch {
           case e: ZkNodeExistsException ⇒ zkClient.writeData(actorUuidRegistryAddressPathFor(uuid), actorAddress)
         }
 
         // create UUID -> REMOTE ADDRESS (InetSocketAddress) mapping
         try {
-          zkClient.createEphemeral(actorUuidRegistryRemoteAddressPathFor(uuid), remoteServerAddress)
+          zkClient.createPersistent(actorUuidRegistryRemoteAddressPathFor(uuid), remoteServerAddress)
         } catch {
           case e: ZkNodeExistsException ⇒ zkClient.writeData(actorUuidRegistryRemoteAddressPathFor(uuid), remoteServerAddress)
         }
@@ -885,14 +897,14 @@ class DefaultClusterNode private[akka] (
    * Creates an ActorRef with a Router to a set of clustered actors.
    */
   def ref(actorAddress: String, router: RouterType): ActorRef = {
-    val addresses = addressesForActor(actorAddress)
+    val inetSocketAddresses = inetSocketAddressesForActor(actorAddress)
     EventHandler.debug(this,
       "Checking out cluster actor ref with address [%s] and router [%s] on [%s] connected to [\n\t%s]"
-        .format(actorAddress, router, remoteServerAddress, addresses.map(_._2).mkString("\n\t")))
+        .format(actorAddress, router, remoteServerAddress, inetSocketAddresses.map(_._2).mkString("\n\t")))
 
-    val actorRef = Routing newRouter (router, addresses, actorAddress, Actor.TIMEOUT)
-    addresses foreach {
-      case (_, address) ⇒ clusterActorRefs.put(address, actorRef)
+    val actorRef = ClusterActorRef.newRef(router, inetSocketAddresses, actorAddress, Actor.TIMEOUT)
+    inetSocketAddresses foreach {
+      case (_, inetSocketAddress) ⇒ clusterActorRefs.put(inetSocketAddress, actorRef)
     }
     actorRef.start()
   }
@@ -999,7 +1011,7 @@ class DefaultClusterNode private[akka] (
   /**
    * Returns addresses for nodes that the clustered actor is in use on.
    */
-  def addressesForActor(actorAddress: String): Array[(UUID, InetSocketAddress)] = {
+  def inetSocketAddressesForActor(actorAddress: String): Array[(UUID, InetSocketAddress)] = {
     try {
       for {
         uuid ← uuidsForActorAddress(actorAddress)
@@ -1404,7 +1416,7 @@ class DefaultClusterNode private[akka] (
             throw new IllegalStateException("No actor address found for UUID [" + uuidAsString + "]"))
 
           val migrateToNodeAddress =
-            if (isInUseOnNode(actorAddress)) {
+            if (!isShutdown && isInUseOnNode(actorAddress)) {
               // already in use on this node, pick another node to instantiate the actor on
               val replicaNodesForActor = nodesForActorsInUseWithAddress(actorAddress)
               val nodesAvailableForMigration = (currentClusterNodes.toSet diff failedNodes.toSet) diff replicaNodesForActor.toSet
@@ -1460,7 +1472,7 @@ class DefaultClusterNode private[akka] (
     from: NodeAddress, to: NodeAddress, actorAddress: String, replicateFromUuid: Option[UUID]) {
 
     EventHandler.debug(this, "Migrating actor [%s] from node [%s] to node [%s]".format(actorAddress, from, to))
-    if (!isInUseOnNode(actorAddress, to)) {
+    if (!isInUseOnNode(actorAddress, to) && !isShutdown) {
       release(actorAddress)
 
       val remoteAddress = remoteSocketAddressForNode(to.nodeName).getOrElse(throw new ClusterException("No remote address registered for [" + to.nodeName + "]"))
@@ -1606,30 +1618,32 @@ class DefaultClusterNode private[akka] (
 class MembershipChildListener(self: ClusterNode) extends IZkChildListener with ErrorHandler {
   def handleChildChange(parentPath: String, currentChilds: JList[String]) {
     withErrorHandler {
-      if (currentChilds ne null) {
-        val currentClusterNodes = currentChilds.toList
-        if (!currentClusterNodes.isEmpty) EventHandler.debug(this,
-          "MembershipChildListener at [%s] has children [%s]"
-            .format(self.nodeAddress.nodeName, currentClusterNodes.mkString(" ")))
+      if (!self.isShutdown) {
+        if (currentChilds ne null) {
+          val currentClusterNodes = currentChilds.toList
+          if (!currentClusterNodes.isEmpty) EventHandler.debug(this,
+            "MembershipChildListener at [%s] has children [%s]"
+              .format(self.nodeAddress.nodeName, currentClusterNodes.mkString(" ")))
 
-        // take a snapshot of the old cluster nodes and then update the list with the current connected nodes in the cluster
-        val oldClusterNodes = self.locallyCachedMembershipNodes.toArray.toSet.asInstanceOf[Set[String]]
-        self.locallyCachedMembershipNodes.clear()
-        currentClusterNodes foreach (self.locallyCachedMembershipNodes.add)
+          // take a snapshot of the old cluster nodes and then update the list with the current connected nodes in the cluster
+          val oldClusterNodes = self.locallyCachedMembershipNodes.toArray.toSet.asInstanceOf[Set[String]]
+          self.locallyCachedMembershipNodes.clear()
+          currentClusterNodes foreach (self.locallyCachedMembershipNodes.add)
 
-        val newlyConnectedMembershipNodes = (Set(currentClusterNodes: _*) diff oldClusterNodes).toList
-        val newlyDisconnectedMembershipNodes = (oldClusterNodes diff Set(currentClusterNodes: _*)).toList
+          val newlyConnectedMembershipNodes = (Set(currentClusterNodes: _*) diff oldClusterNodes).toList
+          val newlyDisconnectedMembershipNodes = (oldClusterNodes diff Set(currentClusterNodes: _*)).toList
 
-        // update the connections with the new set of cluster nodes
-        val disconnectedConnections = self.connectToAllNewlyArrivedMembershipNodesInCluster(newlyConnectedMembershipNodes, newlyDisconnectedMembershipNodes)
+          // update the connections with the new set of cluster nodes
+          val disconnectedConnections = self.connectToAllNewlyArrivedMembershipNodesInCluster(newlyConnectedMembershipNodes, newlyDisconnectedMembershipNodes)
 
-        // if node(s) left cluster then migrate actors residing on the failed node
-        if (!newlyDisconnectedMembershipNodes.isEmpty)
-          self.migrateActorsOnFailedNodes(newlyDisconnectedMembershipNodes, currentClusterNodes, oldClusterNodes.toList, disconnectedConnections)
+          // if node(s) left cluster then migrate actors residing on the failed node
+          if (!newlyDisconnectedMembershipNodes.isEmpty)
+            self.migrateActorsOnFailedNodes(newlyDisconnectedMembershipNodes, currentClusterNodes, oldClusterNodes.toList, disconnectedConnections)
 
-        // publish NodeConnected and NodeDisconnect events to the listeners
-        newlyConnectedMembershipNodes foreach (node ⇒ self.publish(NodeConnected(node)))
-        newlyDisconnectedMembershipNodes foreach (node ⇒ self.publish(NodeDisconnected(node)))
+          // publish NodeConnected and NodeDisconnect events to the listeners
+          newlyConnectedMembershipNodes foreach (node ⇒ self.publish(NodeConnected(node)))
+          newlyDisconnectedMembershipNodes foreach (node ⇒ self.publish(NodeDisconnected(node)))
+        }
       }
     }
   }
@@ -1658,7 +1672,7 @@ class StateListener(self: ClusterNode) extends IZkStateListener {
    */
   def handleNewSession() {
     EventHandler.debug(this, "Session expired re-initializing node [%s]".format(self.nodeAddress))
-    self.initializeNode()
+    self.boot()
     self.publish(NewSession)
   }
 }

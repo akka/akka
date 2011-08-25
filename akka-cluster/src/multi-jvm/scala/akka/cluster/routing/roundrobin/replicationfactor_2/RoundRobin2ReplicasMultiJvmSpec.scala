@@ -14,10 +14,12 @@ import akka.cluster.LocalCluster._
 import akka.actor._
 import akka.actor.Actor._
 import akka.config.Config
+import akka.util.duration._
+import akka.util.{ Duration, Timer }
+import akka.cluster.LocalCluster._
+
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.ConcurrentHashMap
-import akka.util.Duration
-import akka.cluster.LocalCluster._
 
 /**
  * When a MultiJvmNode is started, will it automatically be part of the cluster (so will it automatically be eligible
@@ -34,10 +36,6 @@ object RoundRobin2ReplicasMultiJvmSpec {
   }
 }
 
-/**
- * What is the purpose of this node? Is this just a node for the cluster to make use of?
- */
-
 class RoundRobin2ReplicasMultiJvmNode1 extends MasterClusterTestNode {
   import RoundRobin2ReplicasMultiJvmSpec._
 
@@ -51,24 +49,20 @@ class RoundRobin2ReplicasMultiJvmNode1 extends MasterClusterTestNode {
 
       //wait till node 1 has started.
       barrier("start-node1", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
       //wait till ndoe 2 has started.
-      barrier("start-node2", NrOfNodes) {
-      }
-
-      //wait till node 3 has started.
-      barrier("start-node3", NrOfNodes) {
-      }
+      barrier("start-node2", NrOfNodes).await()
 
       //wait till an actor reference on node 2 has become available.
       barrier("get-ref-to-actor-on-node2", NrOfNodes) {
+        val timer = Timer(30.seconds, true)
+        while (timer.isTicking && !node.isInUseOnNode("service-hello")) {}
       }
 
       //wait till the node 2 has send a message to the replica's.
-      barrier("send-message-from-node2-to-replicas", NrOfNodes) {
-      }
+      barrier("send-message-from-node2-to-replicas", NrOfNodes).await()
 
       node.shutdown()
     }
@@ -85,16 +79,11 @@ class RoundRobin2ReplicasMultiJvmNode2 extends ClusterTestNode {
       System.getProperty("akka.cluster.port", "") must be("9992")
 
       //wait till node 1 has started.
-      barrier("start-node1", NrOfNodes) {
-      }
+      barrier("start-node1", NrOfNodes).await()
 
       //wait till node 2 has started.
       barrier("start-node2", NrOfNodes) {
-        Cluster.node
-      }
-
-      //wait till node 3 has started.
-      barrier("start-node3", NrOfNodes) {
+        Cluster.node.start()
       }
 
       //check if the actorRef is the expected remoteActorRef.

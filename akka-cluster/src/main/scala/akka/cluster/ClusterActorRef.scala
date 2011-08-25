@@ -5,17 +5,47 @@ package akka.cluster
 
 import akka.actor._
 import akka.util._
+import akka.event.EventHandler
 import ReflectiveAccess._
 import akka.dispatch.Future
+import akka.routing._
+import RouterType._
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 
 import com.eaio.uuid.UUID
+
 import collection.immutable.Map
 import annotation.tailrec
-import akka.event.EventHandler
-import akka.routing.{ RouterConnections, Router }
+
+/**
+ * ClusterActorRef factory and locator.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object ClusterActorRef {
+
+  def newRef(
+    routerType: RouterType,
+    inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
+    actorAddress: String,
+    timeout: Long): ClusterActorRef = {
+    routerType match {
+      case Direct        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, new DirectRouter())
+      case Random        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, new RandomRouter())
+      case RoundRobin    ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, new RoundRobinRouter())
+      case LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
+      case LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
+      case LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
+    }
+  }
+
+  /**
+   * Finds the cluster actor reference that has a specific address.
+   */
+  def actorFor(address: String): Option[ActorRef] = Actor.registry.local.actorFor(Address.clusterActorRefPrefix + address)
+}
 
 /**
  * ActorRef representing a one or many instances of a clustered, load-balanced and sometimes replicated actor
@@ -24,12 +54,15 @@ import akka.routing.{ RouterConnections, Router }
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
-                                     val address: String,
+                                     _address: String,
                                      _timeout: Long,
                                      val router: Router)
   extends UnsupportedActorRef {
 
   ClusterModule.ensureEnabled()
+
+  //  val address = Address.clusterActorRefPrefix + _address
+  val address = _address
 
   timeout = _timeout
 
@@ -70,7 +103,7 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
   def start(): this.type = synchronized[this.type] {
     if (_status == ActorRefInternals.UNSTARTED) {
       _status = ActorRefInternals.RUNNING
-      //Actor.registry.register(this)
+      Actor.registry.local.registerClusterActorRef(this)
     }
     this
   }
@@ -78,7 +111,7 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
   def stop() {
     synchronized {
       if (_status == ActorRefInternals.RUNNING) {
-        //Actor.registry.unregister(this)
+        Actor.registry.local.unregisterClusterActorRef(this)
         _status = ActorRefInternals.SHUTDOWN
         postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
 

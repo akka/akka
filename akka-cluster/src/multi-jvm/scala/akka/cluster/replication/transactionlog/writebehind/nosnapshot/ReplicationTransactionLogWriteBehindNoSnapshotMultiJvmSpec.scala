@@ -38,7 +38,7 @@ class ReplicationTransactionLogWriteBehindNoSnapshotMultiJvmNode1 extends Cluste
     "be able to replicate an actor with a transaction log and replay transaction log after actor migration" in {
 
       barrier("start-node1", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
       barrier("create-actor-on-node1", NrOfNodes) {
@@ -71,7 +71,7 @@ class ReplicationTransactionLogWriteBehindNoSnapshotMultiJvmNode2 extends Master
       barrier("create-actor-on-node1", NrOfNodes).await()
 
       barrier("start-node2", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
       Thread.sleep(5000) // wait for fail-over from node1 to node2

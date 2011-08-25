@@ -64,4 +64,4 @@ trait BootableActorLoaderService extends Bootable {
 /**
  * Java API for the default JAX-RS/Mist Initializer
  */
-  class DefaultBootableActorLoaderService extends BootableActorLoaderService
+class DefaultBootableActorLoaderService extends BootableActorLoaderService

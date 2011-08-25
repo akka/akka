@@ -103,7 +103,7 @@ object PingPongMultiJvmNode1 {
     pause("start", "Ready to start all nodes")
     println("Starting nodes ...")
 
-    Cluster.node
+    Cluster.node.start()
 
     node.barrier("start", NrOfNodes) {
       // wait for others to start
@@ -205,7 +205,7 @@ class PongNode(number: Int) {
     pause("start")
 
     node.barrier("start", NrOfNodes) {
-      Cluster.node
+      Cluster.node.start()
     }
 
     pause("create")

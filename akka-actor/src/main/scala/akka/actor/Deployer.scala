@@ -287,23 +287,6 @@ object LocalDeployer extends ActorDeployer {
   private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = Option(deployments.get(address))
 }
 
-/**
- * TODO: Improved documentation
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object Address {
-  private val validAddressPattern = java.util.regex.Pattern.compile("[0-9a-zA-Z\\-\\_\\$\\.]+")
-
-  def validate(address: String) {
-    if (!validAddressPattern.matcher(address).matches) {
-      val e = new IllegalArgumentException("Address [" + address + "] is not valid, need to follow pattern: " + validAddressPattern.pattern)
-      EventHandler.error(e, this, e.getMessage)
-      throw e
-    }
-  }
-}
-
 class DeploymentException private[akka] (message: String) extends AkkaException(message)
 class DeploymentAlreadyBoundException private[akka] (message: String) extends AkkaException(message)
 class NoDeploymentBoundException private[akka] (message: String) extends AkkaException(message)

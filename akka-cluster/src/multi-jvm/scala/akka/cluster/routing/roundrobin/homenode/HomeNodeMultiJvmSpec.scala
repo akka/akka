@@ -29,7 +29,7 @@ class HomeNodeMultiJvmNode1 extends MasterClusterTestNode {
   "___" must {
     "___" in {
 
-      Cluster.node
+      Cluster.node.start()
       barrier("waiting-for-begin", NrOfNodes).await()
       barrier("waiting-for-end", NrOfNodes).await()
 
@@ -45,7 +45,7 @@ class HomeNodeMultiJvmNode2 extends ClusterTestNode {
   "Round Robin: A Router" must {
     "obey 'home-node' config option when instantiated actor in cluster" in {
 
-      Cluster.node
+      Cluster.node.start()
       barrier("waiting-for-begin", NrOfNodes).await()
 
       val actorNode1 = Actor.actorOf[SomeActor]("service-node1").start()

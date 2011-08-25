@@ -52,7 +52,7 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
 
       barrier("node-start", NrOfNodes) {
         EventHandler.notify(TestEvent.Mute(ignoreExceptions))
-        Cluster.node
+        Cluster.node.start()
       }
 
       barrier("actor-creation", NrOfNodes) {
@@ -105,7 +105,7 @@ class RoundRobinFailoverMultiJvmNode2 extends ClusterTestNode {
   "___" must {
     "___" in {
       barrier("node-start", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
       barrier("actor-creation", NrOfNodes).await()
@@ -126,7 +126,7 @@ class RoundRobinFailoverMultiJvmNode3 extends ClusterTestNode {
   "___" must {
     "___" in {
       barrier("node-start", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
       barrier("actor-creation", NrOfNodes).await()

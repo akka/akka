@@ -28,7 +28,7 @@ class DeploymentMultiJvmNode1 extends MasterClusterTestNode {
     "be able to deploy deployments in akka.conf and lookup the deployments by 'address'" in {
 
       barrier("start-node-1", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
       barrier("start-node-2", NrOfNodes).await()
@@ -54,7 +54,7 @@ class DeploymentMultiJvmNode2 extends ClusterTestNode {
       barrier("start-node-1", NrOfNodes).await()
 
       barrier("start-node-2", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
       barrier("perform-deployment-on-node-1", NrOfNodes).await()

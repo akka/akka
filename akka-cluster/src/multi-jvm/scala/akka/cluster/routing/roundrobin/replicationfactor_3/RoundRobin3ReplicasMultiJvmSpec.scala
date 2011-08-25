@@ -11,6 +11,8 @@ import org.scalatest.BeforeAndAfterAll
 import akka.cluster._
 import akka.actor._
 import akka.actor.Actor._
+import akka.util.duration._
+import akka.util.{ Duration, Timer }
 import akka.config.Config
 import akka.cluster.LocalCluster._
 import Cluster._
@@ -44,24 +46,23 @@ class RoundRobin3ReplicasMultiJvmNode1 extends MasterClusterTestNode {
 
       //wait till node 1 has started.
       barrier("start-node1", NrOfNodes) {
-        Cluster.node
+        Cluster.node.boot()
       }
 
       //wait till ndoe 2 has started.
-      barrier("start-node2", NrOfNodes) {
-      }
+      barrier("start-node2", NrOfNodes).await()
 
       //wait till node 3 has started.
-      barrier("start-node3", NrOfNodes) {
-      }
+      barrier("start-node3", NrOfNodes).await()
 
       //wait till an actor reference on node 2 has become available.
       barrier("get-ref-to-actor-on-node2", NrOfNodes) {
+        val timer = Timer(30.seconds, true)
+        while (timer.isTicking && !node.isInUseOnNode("service-hello")) {}
       }
 
       //wait till the node 2 has send a message to the replica's.
-      barrier("send-message-from-node2-to-replicas", NrOfNodes) {
-      }
+      barrier("send-message-from-node2-to-replicas", NrOfNodes).await()
 
       node.shutdown()
     }
@@ -77,17 +78,15 @@ class RoundRobin3ReplicasMultiJvmNode2 extends ClusterTestNode {
     "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
 
       //wait till node 1 has started.
-      barrier("start-node1", NrOfNodes) {
-      }
+      barrier("start-node1", NrOfNodes).await()
 
       //wait till node 2 has started.
       barrier("start-node2", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
       //wait till node 3 has started.
-      barrier("start-node3", NrOfNodes) {
-      }
+      barrier("start-node3", NrOfNodes).await()
 
       //check if the actorRef is the expected remoteActorRef.
       var hello: ActorRef = null
@@ -138,21 +137,20 @@ class RoundRobin3ReplicasMultiJvmNode3 extends ClusterTestNode {
   "Round Robin: A cluster" must {
 
     "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
-      barrier("start-node1", NrOfNodes) {
-      }
+      barrier("start-node1", NrOfNodes).await()
 
-      barrier("start-node2", NrOfNodes) {
-      }
+      barrier("start-node2", NrOfNodes).await()
 
       barrier("start-node3", NrOfNodes) {
-        Cluster.node
+        Cluster.node.start()
       }
 
       barrier("get-ref-to-actor-on-node2", NrOfNodes) {
+        val timer = Timer(30.seconds, true)
+        while (timer.isTicking && !node.isInUseOnNode("service-hello")) {}
       }
 
-      barrier("send-message-from-node2-to-replicas", NrOfNodes) {
-      }
+      barrier("send-message-from-node2-to-replicas", NrOfNodes).await()
 
       node.shutdown()
     }

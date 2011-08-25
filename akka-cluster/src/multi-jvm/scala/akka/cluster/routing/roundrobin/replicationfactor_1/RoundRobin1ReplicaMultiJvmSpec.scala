@@ -33,7 +33,7 @@ class RoundRobin1ReplicaMultiJvmNode1 extends MasterClusterTestNode {
   "Round Robin: A cluster" must {
 
     "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
-      Cluster.node
+      Cluster.node.start()
 
       var hello = Actor.actorOf[HelloWorld]("service-hello")
       hello must not equal (null)

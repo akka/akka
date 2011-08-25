@@ -129,7 +129,11 @@ trait ClusterNode {
 
   def remoteServerAddress: InetSocketAddress
 
+  def start()
+
   def shutdown()
+
+  def isShutdown: Boolean
 
   def disconnect(): ClusterNode
 
@@ -299,6 +303,11 @@ trait ClusterNode {
   /**
    * Is the actor with uuid in use or not?
    */
+  def isInUseOnNode(actorAddress: String, nodeName: String): Boolean
+
+  /**
+   * Is the actor with uuid in use or not?
+   */
   def isInUseOnNode(actorAddress: String, node: NodeAddress): Boolean
 
   /**
@@ -366,7 +375,7 @@ trait ClusterNode {
   /**
    * Returns home address for actor with UUID.
    */
-  def addressesForActor(actorAddress: String): Array[(UUID, InetSocketAddress)]
+  def inetSocketAddressesForActor(actorAddress: String): Array[(UUID, InetSocketAddress)]
 
   /**
    * Send a function 'Function0[Unit]' to be invoked on a random number of nodes (defined by 'replicationFactor' argument).
@@ -463,7 +472,7 @@ trait ClusterNode {
    */
   private[cluster] def uuidsForActorsInUseOnNode(nodeName: String): Array[UUID]
 
-  private[cluster] def initializeNode()
+  private[cluster] def boot()
 
   private[cluster] def publish(change: ChangeNotification)
 

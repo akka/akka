@@ -20,8 +20,6 @@ object ClusterActorRefCleanupMultiJvmSpec {
 
   class TestActor extends Actor with Serializable {
     def receive = {
-      case "Die" ⇒
-        System.exit(0)
       case _ ⇒ {}
     }
   }
@@ -36,7 +34,7 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
 
   "ClusterActorRef" must {
     "cleanup itself" in {
-      Cluster.node
+      Cluster.node.start()
       barrier("awaitStarted", NrOfNodes).await()
 
       val ref = Actor.actorOf[ClusterActorRefCleanupMultiJvmSpec.TestActor]("service-test")
@@ -59,9 +57,6 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
 
       EventHandler.notify(TestEvent.Mute(ignoreExceptions))
 
-      //let one of the actors die.
-      clusteredRef ! "Die"
-
       //just some waiting to make sure that the node has died.
       Thread.sleep(5000)
 
@@ -75,20 +70,17 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
         case e: RoutingException         ⇒
       }
 
+      barrier("node-3-dead", NrOfNodes - 1).await()
+
       //since the call to the node failed, the node must have been removed from the list.
       clusteredRef.connectionsSize must be(1)
-
-      //send a message to this node,
-      clusteredRef ! "hello"
-
-      //now kill another node
-      clusteredRef ! "Die"
 
       //just some waiting to make sure that the node has died.
       Thread.sleep(5000)
 
       //trigger the cleanup.
       try {
+        clusteredRef ! "hello"
         clusteredRef ! "hello"
       } catch {
         case e: ClosedChannelException   ⇒
@@ -103,8 +95,6 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
       intercept[RoutingException] {
         clusteredRef ! "Hello"
       }
-
-      barrier("finished", NrOfNodes).await()
 
       node.shutdown()
     }
@@ -126,14 +116,14 @@ class ClusterActorRefCleanupMultiJvmNode2 extends ClusterTestNode {
         }
       })
 
-      Cluster.node
+      Cluster.node.start()
       barrier("awaitStarted", NrOfNodes).await()
 
       barrier("awaitActorCreated", NrOfNodes).await()
 
-      barrier("finished", NrOfNodes).await()
+      barrier("node-3-dead", NrOfNodes - 1).await()
 
-      node.shutdown()
+      System.exit(0)
     }
   }
 }
@@ -153,13 +143,12 @@ class ClusterActorRefCleanupMultiJvmNode3 extends ClusterTestNode {
         }
       })
 
-      Cluster.node
+      Cluster.node.start()
       barrier("awaitStarted", NrOfNodes).await()
 
       barrier("awaitActorCreated", NrOfNodes).await()
 
-      barrier("finished", NrOfNodes).await()
-      node.shutdown()
+      System.exit(0)
     }
   }
 }
