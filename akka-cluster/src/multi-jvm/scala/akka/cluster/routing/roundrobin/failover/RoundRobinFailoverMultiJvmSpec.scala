@@ -5,6 +5,8 @@ import akka.cluster._
 import akka.actor.{ ActorRef, Actor }
 import akka.event.EventHandler
 import akka.testkit.{ EventFilter, TestEvent }
+import akka.util.duration._
+import akka.util.{ Duration, Timer }
 import java.util.{ Collections, Set ⇒ JSet }
 import java.net.ConnectException
 import java.nio.channels.NotYetConnectedException
@@ -18,17 +20,8 @@ object RoundRobinFailoverMultiJvmSpec {
   class SomeActor extends Actor with Serializable {
 
     def receive = {
-      case "identify" ⇒ {
+      case "identify" ⇒
         self.reply(Config.nodename)
-      }
-      case "shutdown" ⇒ {
-        new Thread() {
-          override def run() {
-            Thread.sleep(2000)
-            Cluster.node.shutdown()
-          }
-        }.start()
-      }
     }
   }
 
@@ -58,10 +51,15 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
       barrier("actor-creation", NrOfNodes) {
         actor = Actor.actorOf[SomeActor]("service-hello")
         actor.isInstanceOf[ClusterActorRef] must be(true)
+      }
 
-        // val actor2 = Actor.registry.local.actorFor("service-hello")
-        //   .getOrElse(fail("Actor should have been in the local actor registry"))
+      val timer = Timer(30.seconds, true)
+      while (timer.isTicking &&
+        !Cluster.node.isInUseOnNode("service-hello", "node1") &&
+        !Cluster.node.isInUseOnNode("service-hello", "node3")) {}
+      //Thread.sleep(5000) // wait for all actors to start up on other nodes
 
+      barrier("actor-usage", NrOfNodes) {
         Cluster.node.isInUseOnNode("service-hello") must be(true)
         oldFoundConnections = identifyConnections(actor)
 
@@ -72,6 +70,11 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
       Thread.sleep(5000) // wait for fail-over from node3
 
       barrier("verify-fail-over", NrOfNodes - 1) {
+        val timer = Timer(30.seconds, true)
+        while (timer.isTicking &&
+          !Cluster.node.isInUseOnNode("service-hello", "node1") &&
+          !Cluster.node.isInUseOnNode("service-hello", "node2")) {}
+
         val newFoundConnections = identifyConnections(actor)
 
         //it still must be 2 since a different node should have been used to failover to
@@ -90,7 +93,7 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
 
   def identifyConnections(actor: ActorRef): JSet[String] = {
     val set = new java.util.HashSet[String]
-    for (i ← 0 until NrOfNodes * 2) {
+    for (i ← 0 until 100) {
       val value = (actor ? "identify").get.asInstanceOf[String]
       set.add(value)
     }
@@ -109,6 +112,7 @@ class RoundRobinFailoverMultiJvmNode2 extends ClusterTestNode {
       }
 
       barrier("actor-creation", NrOfNodes).await()
+      barrier("actor-usage", NrOfNodes).await()
 
       Cluster.node.isInUseOnNode("service-hello") must be(false)
 
@@ -130,6 +134,7 @@ class RoundRobinFailoverMultiJvmNode3 extends ClusterTestNode {
       }
 
       barrier("actor-creation", NrOfNodes).await()
+      barrier("actor-usage", NrOfNodes).await()
 
       Cluster.node.isInUseOnNode("service-hello") must be(true)
 
