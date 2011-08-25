@@ -13,8 +13,9 @@ object RemoteClientSettings {
     case ""     ⇒ None
     case cookie ⇒ Some(cookie)
   }
+
   val RECONNECTION_TIME_WINDOW = Duration(config.getInt("akka.cluster.client.reconnection-time-window", 600), TIME_UNIT).toMillis
-  val READ_TIMEOUT = Duration(config.getInt("akka.cluster.client.read-timeout", 10), TIME_UNIT)
+  val READ_TIMEOUT = Duration(config.getInt("akka.cluster.client.read-timeout", 3600), TIME_UNIT)
   val RECONNECT_DELAY = Duration(config.getInt("akka.cluster.client.reconnect-delay", 5), TIME_UNIT)
   val REAP_FUTURES_DELAY = Duration(config.getInt("akka.cluster.client.reap-futures-delay", 5), TIME_UNIT)
   val MESSAGE_FRAME_SIZE = config.getInt("akka.cluster.client.message-frame-size", 1048576)
