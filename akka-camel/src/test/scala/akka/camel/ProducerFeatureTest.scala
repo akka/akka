@@ -95,11 +95,10 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val result = (producer ? message).get
+      val result = (producer ? message).as[Message].get
 
       then("a normal response should have been returned by the producer")
-      val expected = Message("received test", Map(Message.MessageExchangeId -> "123"))
-      assert(result === expected)
+      assert(result.headers(Message.MessageExchangeId) === "123")
     }
 
     scenario("produce message and receive failure response") {
@@ -188,11 +187,11 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val result = (producer ? message).get
+      val result = (producer ? message).as[Message].get
 
       then("a normal response should have been returned by the forward target")
-      val expected = Message("received test", Map(Message.MessageExchangeId -> "123", "test" -> "result"))
-      assert(result === expected)
+      assert(result.headers(Message.MessageExchangeId) === "123")
+      assert(result.headers("test") === "result")
     }
 
     scenario("produce message, forward failure response to a replying target actor and receive response") {

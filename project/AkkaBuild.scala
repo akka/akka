@@ -237,7 +237,6 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-camel"),
     dependencies = Seq(actor, camelTyped, testkit % "test"),
     settings = defaultSettings ++ Seq(
-      ivyXML := Dependencies.sampleCamelXML,
       libraryDependencies ++= Dependencies.sampleCamel
     )
   )
@@ -387,29 +386,16 @@ object Dependencies {
 
   val camel = Seq(camelCore, Test.junit, Test.scalatest, Test.logback)
 
-  val spring = Seq(springBeans, springContext, Test.camelSpring, Test.junit, Test.scalatest)
+  val spring = Seq(springBeans, springContext, camelSpring, Test.junit, Test.scalatest)
 
   val kernel = Seq(
     jettyUtil, jettyXml, jettyServlet, jerseyCore, jerseyJson, jerseyScala,
     jacksonCore, staxApi, Provided.jerseyServer
   )
 
-  val sampleCamel = Seq(camelCore, commonsCodec, Runtime.activemq, Runtime.springJms,
+  // TODO: resolve Jetty version conflict
+  val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
     Test.junit, Test.scalatest, Test.logback)
-
-  val sampleCamelXML =
-    <dependencies>
-      <dependency org="org.apache.camel" name="camel-jms" rev={V.Camel}>
-        <exclude module="camel-core"/>
-      </dependency>
-      <dependency org="org.apache.camel" name="camel-spring" rev={V.Camel}>
-        <exclude module="camel-core"/>
-      </dependency>
-      <!-- TODO: resolve Jetty version conflict -->
-      <!--<dependency org="org.apache.camel" name="camel-jetty" rev={Dependency.V.CamelPatch}>
-        <exclude module="camel-core"/>
-      </dependency>-->
-    </dependencies>
 }
 
 object Dependency {
@@ -417,8 +403,7 @@ object Dependency {
   // Versions
 
   object V {
-    val Camel        = "2.7.1"
-    val CamelPatch   = "2.7.1.1"
+    val Camel        = "2.8.0"
     val Jackson      = "1.8.0"
     val JavaxServlet = "3.0"
     val Jersey       = "1.3"
@@ -437,7 +422,8 @@ object Dependency {
 
   val beanstalk     = "beanstalk"                   % "beanstalk_client"       % "1.4.5"      // New BSD
   val bookkeeper    = "org.apache.hadoop.zookeeper" % "bookkeeper"             % V.Zookeeper  // ApacheV2
-  val camelCore     = "org.apache.camel"            % "camel-core"             % V.CamelPatch // ApacheV2
+  val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
+  val camelSpring   = "org.apache.camel"            % "camel-spring"           % V.Camel      // ApacheV2
   val commonsCodec  = "commons-codec"               % "commons-codec"          % "1.4"        // ApacheV2
   val commonsIo     = "commons-io"                  % "commons-io"             % "2.0.1"      // ApacheV2
   val guice         = "org.guiceyfruit"             % "guice-all"              % "2.0"        // ApacheV2
@@ -481,7 +467,7 @@ object Dependency {
 
   object Runtime {
     val activemq   = "org.apache.activemq" % "activemq-core"   % "5.4.2"      % "runtime" // ApacheV2
-    val camelJetty = "org.apache.camel"    % "camel-jetty"     % V.CamelPatch % "runtime" // ApacheV2
+    val camelJetty = "org.apache.camel"    % "camel-jetty"     % V.Camel      % "runtime" // ApacheV2
     val camelJms   = "org.apache.camel"    % "camel-jms"       % V.Camel      % "runtime" // ApacheV2
     val logback    = "ch.qos.logback"      % "logback-classic" % V.Logback    % "runtime" // MIT
     val springJms  = "org.springframework" % "spring-jms"      % V.Spring     % "runtime" // ApacheV2
@@ -490,7 +476,6 @@ object Dependency {
   // Test
 
   object Test {
-    val camelSpring = "org.apache.camel"    % "camel-spring"        % V.Camel      % "test" // ApacheV2
     val commonsColl = "commons-collections" % "commons-collections" % "3.2.1"      % "test" // ApacheV2
     val commonsMath = "org.apache.commons"  % "commons-math"        % "2.1"        % "test" // ApacheV2
     val jetty       = "org.eclipse.jetty"   % "jetty-server"        % V.Jetty      % "test" // Eclipse license
