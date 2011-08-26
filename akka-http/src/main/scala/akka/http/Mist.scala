@@ -4,7 +4,6 @@
 
 package akka.http
 
-import akka.actor.{ ActorRef, Actor }
 import akka.event.EventHandler
 import akka.config.ConfigurationException
 
@@ -12,6 +11,7 @@ import javax.servlet.http.{ HttpServletResponse, HttpServletRequest }
 import javax.servlet.http.HttpServlet
 import javax.servlet.Filter
 import java.lang.UnsupportedOperationException
+import akka.actor.{ NullChannel, ActorRef, Actor }
 
 /**
  * @author Garrick Evans
@@ -205,7 +205,7 @@ object Endpoint {
   /**
    * leverage the akka config to tweak the dispatcher for our endpoints
    */
-  val Dispatcher = Dispatchers.fromConfig("akka.http.mist-dispatcher")
+  lazy val Dispatcher = Dispatchers.fromConfig("akka.http.mist-dispatcher")
 
   type Hook = PartialFunction[String, ActorRef]
 
@@ -258,9 +258,9 @@ trait Endpoint { this: Actor ⇒
 
       if (!endpoints.isEmpty) endpoints.foreach { _.apply(uri) ! req }
       else {
-        self.sender match {
-          case Some(s) ⇒ s reply NoneAvailable(uri, req)
-          case None    ⇒ _na(uri, req)
+        self.channel match {
+          case null | NullChannel ⇒ _na(uri, req)
+          case channel            ⇒ channel ! NoneAvailable(uri, req)
         }
       }
     }
@@ -279,9 +279,6 @@ class RootEndpoint extends Actor with Endpoint {
   import MistSettings._
 
   final val Root = "/"
-
-  // use the configurable dispatcher
-  self.dispatcher = Endpoint.Dispatcher
 
   override def preStart() =
     _attachments ::= { case `Root` ⇒ this.actor }
