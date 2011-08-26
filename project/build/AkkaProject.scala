@@ -367,6 +367,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
       project("akka-file-mailbox", "akka-file-mailbox", new AkkaFileMailboxProject(_), akka_mailboxes_common)
     lazy val akka_beanstalk_mailbox =
       project("akka-beanstalk-mailbox", "akka-beanstalk-mailbox", new AkkaBeanstalkMailboxProject(_), akka_mailboxes_common)
+
+    override def disableCrossPaths = true
   }
 
   class AkkaMailboxesCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
