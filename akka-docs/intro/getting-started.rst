@@ -75,7 +75,8 @@ More information is available in the documentation of the :ref:`microkernel`.
 Using a build tool
 ------------------
 
-Akka can be used with build tools that support Maven repositories. The Akka Maven repository can be found at `<http://akka.io/repository>`_.
+Akka can be used with build tools that support Maven repositories. The Akka Maven repository can be found at `<http://akka.io/repository>`_ 
+and Typesafe provides `<http://repo.typesafe.com/typesafe/releases/>`_ that proxies several other repositories, including akka.io.
 
 Using Akka with Maven
 ---------------------
@@ -90,9 +91,9 @@ Summary of the essential parts for using Akka with Maven:
 .. code-block:: xml
 
   <repository>
-    <id>Akka</id>
-    <name>Akka Maven2 Repository</name>
-    <url>http://akka.io/repository/ </url>
+    <id>typesafe</id>
+    <name>Typesafe Repository</name>
+    <url>http://repo.typesafe.com/typesafe/releases/</url>
   </repository>
 
 2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 2.0-SNAPSHOT:
@@ -115,44 +116,19 @@ can be found in the :ref:`getting-started-first-scala`.
 
 Summary of the essential parts for using Akka with SBT:
 
-1) Akka has an SBT plugin which makes it very easy to get started with Akka and SBT.
+SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <https://github.com/harrah/xsbt/wiki/Setup>`_
 
-The Scala version in your SBT project needs to match the version that Akka is built against. For Akka 2.0-SNAPSHOT this is
-Scala version 2.9.0.
+``build.sbt`` file::
 
-To use the plugin, first add a plugin definition to your SBT project by creating project/plugins/Plugins.scala with:
+    name := "My Project"
 
-.. code-block:: scala
+    version := "1.0"
 
-  import sbt._
+    scalaVersion := "2.9.0-1"
 
-  class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
-    val akkaRepo = "Akka Repo" at "http://akka.io/repository"
-    val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "2.0-SNAPSHOT"
-  }
+    resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-*Note: the plugin version matches the Akka version provided. The current release is 2.0-SNAPSHOT.*
-
-2) Then mix the AkkaProject trait into your project definition. For example:
-
-.. code-block:: scala
-
-  class MyProject(info: ProjectInfo) extends DefaultProject(info) with AkkaProject
-
-*Note: This adds akka-actor as a dependency by default.*
-
-If you also want to include other Akka modules there is a convenience method: ``akkaModule``. For example, you can add extra Akka modules by adding any of the following lines to your project class:
-
-.. code-block:: scala
-
-  val akkaStm = akkaModule("stm")
-  val akkaTypedActor = akkaModule("typed-actor")
-  val akkaRemote = akkaModule("remote")
-  val akkaHttp = akkaModule("http")
-  val akkaAmqp = akkaModule("amqp")
-  val akkaCamel = akkaModule("camel")
-  val akkaCamelTyped = akkaModule("camel-typed")
-  val akkaSpring = akkaModule("spring")
+    libraryDependencies += "se.scalablesolutions.akka" % "akka-actor" % "2.0-SNAPSHOT"
 
 
 Using Akka with Eclipse
@@ -160,6 +136,8 @@ Using Akka with Eclipse
 
 Information about how to use Akka with Eclipse, including how to create an Akka Eclipse project from scratch,
 can be found in the :ref:`getting-started-first-scala-eclipse`.
+
+Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate Eclipse project. 
 
 Using Akka with IntelliJ IDEA
 -----------------------------
