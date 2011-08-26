@@ -30,7 +30,7 @@ class AkkaException(message: String = "", cause: Throwable = null) extends Runti
 
   def stackTraceToString = {
     val trace = getStackTrace
-    val sb = new StringBuffer
+    val sb = new StringBuilder
     for (i ← 0 until trace.length)
       sb.append("\tat %s\n" format trace(i))
     sb.toString
