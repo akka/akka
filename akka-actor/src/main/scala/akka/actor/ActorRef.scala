@@ -1148,15 +1148,20 @@ private[akka] case class RemoteActorRef private[akka] (
     message: Any,
     timeout: Timeout,
     channel: UntypedChannel): Future[Any] = {
+
     val chSender = channel match {
       case ref: ActorRef ⇒ Some(ref)
       case _             ⇒ None
     }
+
     val chFuture = channel match {
       case f: Promise[_] ⇒ Some(f.asInstanceOf[Promise[Any]])
       case _             ⇒ None
     }
-    val future = Actor.remote.send[Any](message, chSender, chFuture, remoteAddress, timeout.duration.toMillis, false, this, loader)
+
+    val future = Actor.remote.send[Any](
+      message, chSender, chFuture, remoteAddress, timeout.duration.toMillis, false, this, loader)
+
     if (future.isDefined) ActorPromise(future.get)
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
@@ -1346,11 +1351,10 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel with ReplyCha
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
    */
   def ?(message: Any)(implicit channel: UntypedChannel, timeout: Timeout): Future[Any] = {
-    //todo: so it can happen that a message is posted after the actor has been shut down (the isRunning and postMessageToMailboxAndCreateFutureResultWithTimeout
-    //are not atomic.
+    //FIXME: so it can happen that a message is posted after the actor has been shut down (the isRunning and postMessageToMailboxAndCreateFutureResultWithTimeout are not atomic.
     if (isRunning) {
       postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
-      //todo: there is no after check if the running state is still true.. so no 'repairing'
+      //FIXME: there is no after check if the running state is still true.. so no 'repairing'
     } else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }
@@ -1363,11 +1367,10 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel with ReplyCha
    * Works with '!' and '?'/'ask'.
    */
   def forward(message: Any)(implicit channel: ForwardableChannel) = {
-    //todo: so it can happen that a message is posted after the actor has been shut down (the isRunning and postMessageToMailbox
-    //are not atomic.
+    //FIXME: so it can happen that a message is posted after the actor has been shut down (the isRunning and postMessageToMailbox are not atomic.
     if (isRunning) {
       postMessageToMailbox(message, channel.channel)
-      //todo: there is no after check if the running state is still true.. so no 'repairing'
+      //FIXME: there is no after check if the running state is still true.. so no 'repairing'
     } else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start()' before using it")
   }

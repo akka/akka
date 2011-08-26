@@ -484,10 +484,10 @@ class RoundRobinRouter extends BasicRouter {
 /*
  * ScatterGatherRouter broadcasts the message to all connections and gathers results according to the
  * specified strategy (specific router needs to implement `gather` method).
- * Scatter-gather pattern will be applied only to the messages broadcasted using Future 
+ * Scatter-gather pattern will be applied only to the messages broadcasted using Future
  * (wrapped into {@link Routing.Broadcast} and sent with "?" method). For the messages, sent in a fire-forget
- * mode, the router would behave as {@link BasicRouter}, unless it's mixed in with other router type 
- * 
+ * mode, the router would behave as {@link BasicRouter}, unless it's mixed in with other router type
+ *
  *  FIXME: This also is the location where a failover  is done in the future if an ActorRef fails and a different one needs to be selected.
  * FIXME: this is also the location where message buffering should be done in case of failure.
  */
@@ -525,9 +525,9 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
 
 /*
  * Simple router that broadcasts the message to all connections, and replies with the first response
- * Scatter-gather pattern will be applied only to the messages broadcasted using Future 
+ * Scatter-gather pattern will be applied only to the messages broadcasted using Future
  * (wrapped into {@link Routing.Broadcast} and sent with "?" method). For the messages sent in a fire-forget
- * mode, the router would behave as {@link RoundRobinRouter} 
+ * mode, the router would behave as {@link RoundRobinRouter}
  */
 class ScatterGatherFirstCompletedRouter extends RoundRobinRouter with ScatterGatherRouter {
 

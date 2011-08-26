@@ -145,7 +145,7 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
 
     @tailrec
     final def failOver(from: InetSocketAddress, to: InetSocketAddress): Unit = {
-      EventHandler.debug(this, "ClusterActorRef. %s failover from %s to %s".format(address, from, to))
+      EventHandler.debug(this, "ClusterActorRef [%s] failover from [%s] to [%s]".format(address, from, to))
 
       val oldState = state.get
       var change = false
@@ -168,7 +168,7 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
 
     @tailrec
     final def signalDeadActor(deadRef: ActorRef) = {
-      EventHandler.debug(this, "ClusterActorRef. %s signalDeadActor %s".format(uuid, deadRef.uuid))
+      EventHandler.debug(this, "ClusterActorRef [%s] signalDeadActor [%s]".format(uuid, deadRef.uuid))
 
       val oldState = state.get()
 
