@@ -47,23 +47,23 @@ Akka is split up into two different parts:
 
 Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
 
-- ``akka-actor-1.1.jar`` -- Standard Actors
-- ``akka-typed-actor-1.1.jar`` -- Typed Actors
-- ``akka-remote-1.1.jar`` -- Remote Actors
-- ``akka-stm-1.1.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-- ``akka-http-1.1.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
-- ``akka-slf4j-1.1.jar`` -- SLF4J Event Handler Listener
-- ``akka-testkit-1.1.jar`` -- Toolkit for testing Actors
+- ``akka-actor-1.2-SNAPSHOT`` -- Standard Actors
+- ``akka-typed-actor-1.2-SNAPSHOT`` -- Typed Actors
+- ``akka-remote-1.2-SNAPSHOT`` -- Remote Actors
+- ``akka-stm-1.2-SNAPSHOT`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+- ``akka-http-1.2-SNAPSHOT`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
+- ``akka-slf4j-1.2-SNAPSHOT`` -- SLF4J Event Handler Listener
+- ``akka-testkit-1.2-SNAPSHOT`` -- Toolkit for testing Actors
 
 We also have Akka Modules containing add-on modules outside the core of Akka.
 
-- ``akka-kernel-1.1.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
-- ``akka-amqp-1.1.jar`` -- AMQP integration
-- ``akka-camel-1.1.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-- ``akka-camel-typed-1.1.jar`` -- Apache Camel Typed Actors integration
-- ``akka-scalaz-1.1.jar`` -- Support for the Scalaz library
-- ``akka-spring-1.1.jar`` -- Spring framework integration
-- ``akka-osgi-dependencies-bundle-1.1.jar`` -- OSGi support
+- ``akka-kernel-1.2-SNAPSHOT`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
+- ``akka-amqp-1.2-SNAPSHOT`` -- AMQP integration
+- ``akka-camel-1.2-SNAPSHOT`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+- ``akka-camel-typed-1.2-SNAPSHOT`` -- Apache Camel Typed Actors integration
+- ``akka-scalaz-1.2-SNAPSHOT`` -- Support for the Scalaz library
+- ``akka-spring-1.2-SNAPSHOT`` -- Spring framework integration
+- ``akka-osgi-dependencies-bundle-1.2-SNAPSHOT`` -- OSGi support
 
 
 How to see the JARs dependencies of each Akka module is described in the :ref:`dependencies` section. Worth noting
@@ -87,7 +87,8 @@ More information is available in the documentation of the Microkernel in :ref:`a
 Using a build tool
 ------------------
 
-Akka can be used with build tools that support Maven repositories. The Akka Maven repository can be found at `<http://akka.io/repository>`_.
+Akka can be used with build tools that support Maven repositories. The Akka Maven repository can be found at `<http://akka.io/repository>`_ 
+and Typesafe provides `<http://repo.typesafe.com/typesafe/releases/>`_ that proxies several other repositories, including akka.io.
 
 Using Akka with Maven
 ---------------------
@@ -102,19 +103,19 @@ Summary of the essential parts for using Akka with Maven:
 .. code-block:: xml
 
   <repository>
-    <id>Akka</id>
-    <name>Akka Maven2 Repository</name>
-    <url>http://akka.io/repository/ </url>
+    <id>typesafe</id>
+    <name>Typesafe Repository</name>
+    <url>http://repo.typesafe.com/typesafe/releases/</url>
   </repository>
 
-2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 1.1:
+2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 1.2-SNAPSHOT:
 
 .. code-block:: xml
 
   <dependency>
     <groupId>se.scalablesolutions.akka</groupId>
     <artifactId>akka-actor</artifactId>
-    <version>1.1</version>
+    <version>1.2-SNAPSHOT</version>
   </dependency>
 
 
@@ -127,44 +128,19 @@ can be found in the :ref:`getting-started-first-scala`.
 
 Summary of the essential parts for using Akka with SBT:
 
-1) Akka has an SBT plugin which makes it very easy to get started with Akka and SBT.
+SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <https://github.com/harrah/xsbt/wiki/Setup>`_
 
-The Scala version in your SBT project needs to match the version that Akka is built against. For Akka 1.1 this is
-Scala version 2.9.0.
+``build.sbt`` file::
 
-To use the plugin, first add a plugin definition to your SBT project by creating project/plugins/Plugins.scala with:
+    name := "My Project"
 
-.. code-block:: scala
+    version := "1.0"
 
-  import sbt._
+    scalaVersion := "2.9.0-1"
 
-  class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
-    val akkaRepo = "Akka Repo" at "http://akka.io/repository"
-    val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "1.1"
-  }
+    resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-*Note: the plugin version matches the Akka version provided. The current release is 1.1.*
-
-2) Then mix the AkkaProject trait into your project definition. For example:
-
-.. code-block:: scala
-
-  class MyProject(info: ProjectInfo) extends DefaultProject(info) with AkkaProject
-
-*Note: This adds akka-actor as a dependency by default.*
-
-If you also want to include other Akka modules there is a convenience method: ``akkaModule``. For example, you can add extra Akka modules by adding any of the following lines to your project class:
-
-.. code-block:: scala
-
-  val akkaStm = akkaModule("stm")
-  val akkaTypedActor = akkaModule("typed-actor")
-  val akkaRemote = akkaModule("remote")
-  val akkaHttp = akkaModule("http")
-  val akkaAmqp = akkaModule("amqp")
-  val akkaCamel = akkaModule("camel")
-  val akkaCamelTyped = akkaModule("camel-typed")
-  val akkaSpring = akkaModule("spring")
+    libraryDependencies += "se.scalablesolutions.akka" % "akka-actor" % "1.2-SNAPSHOT"
 
 
 Using Akka with Eclipse
@@ -172,6 +148,8 @@ Using Akka with Eclipse
 
 Information about how to use Akka with Eclipse, including how to create an Akka Eclipse project from scratch,
 can be found in the :ref:`getting-started-first-scala-eclipse`.
+
+Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate Eclipse project. 
 
 Using Akka with IntelliJ IDEA
 -----------------------------
