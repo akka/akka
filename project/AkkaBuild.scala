@@ -490,17 +490,17 @@ object Dependency {
   // Test
 
   object Test {
-    val camelSpring = "org.apache.camel"    % "camel-spring"        % V.Camel      % "test" // ApacheV2
-    val commonsColl = "commons-collections" % "commons-collections" % "3.2.1"      % "test" // ApacheV2
-    val commonsMath = "org.apache.commons"  % "commons-math"        % "2.1"        % "test" // ApacheV2
-    val jetty       = "org.eclipse.jetty"   % "jetty-server"        % V.Jetty      % "test" // Eclipse license
-    val jettyWebapp = "org.eclipse.jetty"   % "jetty-webapp"        % V.Jetty      % "test" // Eclipse license
-    val junit       = "junit"               % "junit"               % "4.5"        % "test" // Common Public License 1.0
-    val logback     = "ch.qos.logback"      % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
-    val mockito     = "org.mockito"         % "mockito-all"         % "1.8.1"      % "test" // MIT
-    val multiverse  = "org.multiverse"      % "multiverse-alpha"    % V.Multiverse % "test" // ApacheV2
-    val scalatest   = "org.scalatest"       % "scalatest_2.9.0"     % V.Scalatest  % "test" // ApacheV2
-    val scalacheck  = "org.scala-tools.testing" % "scalacheck_2.9.0" % "1.9"       % "test" // New BSD
-    val sjsonTest   = "net.debasishg"       %% "sjson"              % "0.11"       % "test" // ApacheV2
+    val camelSpring = "org.apache.camel"        % "camel-spring"        % V.Camel      % "test" // ApacheV2
+    val commonsColl = "commons-collections"     % "commons-collections" % "3.2.1"      % "test" // ApacheV2
+    val commonsMath = "org.apache.commons"      % "commons-math"        % "2.1"        % "test" // ApacheV2
+    val jetty       = "org.eclipse.jetty"       % "jetty-server"        % V.Jetty      % "test" // Eclipse license
+    val jettyWebapp = "org.eclipse.jetty"       % "jetty-webapp"        % V.Jetty      % "test" // Eclipse license
+    val junit       = "junit"                   % "junit"               % "4.5"        % "test" // Common Public License 1.0
+    val logback     = "ch.qos.logback"          % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
+    val mockito     = "org.mockito"             % "mockito-all"         % "1.8.1"      % "test" // MIT
+    val multiverse  = "org.multiverse"          % "multiverse-alpha"    % V.Multiverse % "test" // ApacheV2
+    val scalatest   = "org.scalatest"           % "scalatest_2.9.0"     % V.Scalatest  % "test" // ApacheV2
+    val scalacheck  = "org.scala-tools.testing" % "scalacheck_2.9.0"    % "1.9"        % "test" // New BSD
+    val sjsonTest   = "net.debasishg"          %% "sjson"               % "0.11"       % "test" // ApacheV2
   }
 }

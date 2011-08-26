@@ -80,15 +80,17 @@ trait NettyRemoteClientModule extends RemoteClientModule {
                               isOneWay: Boolean,
                               actorRef: ActorRef,
                               loader: Option[ClassLoader]): Option[Promise[T]] =
-    withClientFor(remoteAddress, loader)(_.send[T](message, senderOption, senderFuture, remoteAddress, timeout, isOneWay, actorRef))
+    withClientFor(remoteAddress, loader) { client =>
+      client.send[T](message, senderOption, senderFuture, remoteAddress, timeout, isOneWay, actorRef)
+    }
 
   private[akka] def withClientFor[T](
-    address: InetSocketAddress, loader: Option[ClassLoader])(fun: RemoteClient ⇒ T): T = {
+    address: InetSocketAddress, loader: Option[ClassLoader])(body: RemoteClient ⇒ T): T = {
     // loader.foreach(MessageSerializer.setClassLoader(_))
     val key = RemoteAddress(address)
     lock.readLock.lock
     try {
-      val c = remoteClients.get(key) match {
+      val client = remoteClients.get(key) match {
         case Some(client) ⇒ client
         case None ⇒
           lock.readLock.unlock
@@ -111,7 +113,7 @@ trait NettyRemoteClientModule extends RemoteClientModule {
             lock.writeLock.unlock
           }
       }
-      fun(c)
+      body(client)
     } finally {
       lock.readLock.unlock
     }
@@ -248,7 +250,6 @@ abstract class RemoteClient private[akka] (
         futures.put(futureUuid, futureResult) // Add future prematurely, remove it if write fails
 
         def handleRequestReplyError(future: ChannelFuture) = {
-          notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
           if (useTransactionLog) {
             if (!pendingRequests.offer((false, futureUuid, request))) // Add the request to the tx log after a failing send
               throw new RemoteClientMessageBufferException("Buffer limit [" + transactionLogCapacity + "] reached")
@@ -264,9 +265,15 @@ abstract class RemoteClient private[akka] (
           future = currentChannel.write(RemoteEncoder.encode(request))
           future.awaitUninterruptibly()
           if (future.isCancelled) futures.remove(futureUuid) // Clean up future
-          else if (!future.isSuccess) handleRequestReplyError(future)
+          else if (!future.isSuccess) {
+            notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
+            handleRequestReplyError(future)
+          }
         } catch {
-          case e: Exception ⇒ handleRequestReplyError(future)
+          case e: Exception ⇒
+            notifyListeners(RemoteClientWriteFailed(request, e, module, remoteAddress))
+            handleRequestReplyError(future)
+            throw e
         }
         Some(futureResult)
       }
@@ -567,7 +574,7 @@ class ActiveRemoteClientHandler(
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
     if (event.getCause ne null)
-      EventHandler.error(event.getCause, this, "Unexpected exception from downstream in remote client")
+      EventHandler.error(event.getCause, this, "Unexpected exception from downstream in remote client: %s".format(event))
     else
       EventHandler.error(this, "Unexpected exception from downstream in remote client: %s".format(event))
 
