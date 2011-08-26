@@ -54,17 +54,12 @@ object ClusterActorRef {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
-                                     _address: String,
-                                     _timeout: Long,
+                                     val address: String,
+                                     protected[akka] override val timeout: Long,
                                      val router: Router)
   extends UnsupportedActorRef {
 
   ClusterModule.ensureEnabled()
-
-  //  val address = Address.clusterActorRefPrefix + _address
-  val address = _address
-
-  timeout = _timeout
 
   val connections = new ClusterActorRefConnections((Map[InetSocketAddress, ActorRef]() /: inetSocketAddresses) {
     case (map, (uuid, inetSocketAddress)) ⇒ map + (inetSocketAddress -> createRemoteActorRef(address, inetSocketAddress))

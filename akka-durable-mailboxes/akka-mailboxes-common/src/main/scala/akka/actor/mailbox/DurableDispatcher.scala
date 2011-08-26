@@ -3,21 +3,21 @@
  */
 package akka.actor.mailbox
 
-import akka.actor.{ newUuid, ActorRef }
 import akka.util.ReflectiveAccess
 import akka.dispatch._
 import akka.config._
 import akka.event.EventHandler
 
 import java.lang.reflect.InvocationTargetException
+import akka.actor.{ LocalActorRef, newUuid, ActorRef }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 sealed abstract class DurableMailboxStorage(mailboxFQN: String) {
-  val constructorSignature = Array[Class[_]](classOf[ActorRef])
+  val constructorSignature = Array[Class[_]](classOf[LocalActorRef])
 
-  val mailboxClass: Class[_] = ReflectiveAccess.getClassFor(mailboxFQN, classOf[ActorRef].getClassLoader) match {
+  val mailboxClass: Class[_] = ReflectiveAccess.getClassFor(mailboxFQN, classOf[LocalActorRef].getClassLoader) match {
     case Right(clazz) ⇒ clazz
     case Left(exception) ⇒
       val cause = exception match {
@@ -81,14 +81,14 @@ case class DurableDispatcher(
   def this(_name: String, _storage: DurableMailboxStorage) =
     this(_name, _storage, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 
-  override def register(actorRef: ActorRef) {
+  override def register(actorRef: LocalActorRef) {
     super.register(actorRef)
-    val mbox = actorRef.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
+    val mbox = getMailbox(actorRef)
     if (mbox ne null) //Schedule the ActorRef for initial execution, because we might be resuming operations after a failure
       super.registerForExecution(mbox)
   }
 
-  override def createMailbox(actorRef: ActorRef): AnyRef = _storage.createFor(actorRef)
+  override def createMailbox(actorRef: LocalActorRef): AnyRef = _storage.createFor(actorRef)
 
   private[akka] override def dispatch(invocation: MessageInvocation): Unit = {
     if (invocation.channel.isInstanceOf[ActorPromise])
@@ -96,7 +96,7 @@ case class DurableDispatcher(
     super.dispatch(invocation)
   }
 
-  protected override def cleanUpMailboxFor(actorRef: ActorRef) {} //No need to clean up Futures since we don't support them
+  protected override def cleanUpMailboxFor(actorRef: LocalActorRef) {} //No need to clean up Futures since we don't support them
 }
 
 /**
@@ -118,14 +118,14 @@ case class DurablePinnedDispatcher(
   def this(actor: ActorRef, _storage: DurableMailboxStorage, capacity: Int, pushTimeOut: akka.util.Duration) = //For Java API
     this(actor, _storage, BoundedMailbox(capacity, pushTimeOut))
 
-  override def register(actorRef: ActorRef) {
+  override def register(actorRef: LocalActorRef) {
     super.register(actorRef)
     val mbox = actorRef.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
     if (mbox ne null) //Schedule the ActorRef for initial execution, because we might be resuming operations after a failure
       super.registerForExecution(mbox)
   }
 
-  override def createMailbox(actorRef: ActorRef): AnyRef = _storage.createFor(actorRef)
+  override def createMailbox(actorRef: LocalActorRef): AnyRef = _storage.createFor(actorRef)
 
   private[akka] override def dispatch(invocation: MessageInvocation): Unit = {
     if (invocation.channel.isInstanceOf[ActorPromise])

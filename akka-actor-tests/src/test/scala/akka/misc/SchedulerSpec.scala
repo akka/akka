@@ -119,8 +119,6 @@ class SchedulerSpec extends JUnitSuite {
     val pingLatch = new CountDownLatch(6)
 
     val actor = actorOf(new Actor {
-      self.lifeCycle = Permanent
-
       def receive = {
         case Ping  ⇒ pingLatch.countDown()
         case Crash ⇒ throw new Exception("CRASH")

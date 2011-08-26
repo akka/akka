@@ -28,7 +28,6 @@ object CamelTestSupport {
   }
 
   class Tester3 extends TestActor with Noop {
-    self.timeout = 1
     def handler = noop
   }
 

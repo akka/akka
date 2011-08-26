@@ -5,13 +5,14 @@ import akka.actor._
 import akka.routing._
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
+import akka.config.Supervision.OneForOneStrategy
 
 class Ticket703Spec extends WordSpec with MustMatchers {
 
   "A ? call to an actor pool" should {
     "reuse the proper timeout" in {
       val actorPool = actorOf(
-        new Actor with DefaultActorPool with DefaultActorPoolSupervisionConfig with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
+        Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
           def lowerBound = 2
           def upperBound = 20
           def rampupRate = 0.1
@@ -27,7 +28,7 @@ class Ticket703Spec extends WordSpec with MustMatchers {
                 self.tryReply("Response")
             }
           })
-        }).start()
+        }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 5, 1000)))
       (actorPool.?("Ping", 7000)).await.result must be === Some("Response")
     }
   }

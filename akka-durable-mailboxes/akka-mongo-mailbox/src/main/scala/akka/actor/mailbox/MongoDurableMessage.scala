@@ -3,7 +3,7 @@
  */
 package akka.actor.mailbox
 
-import akka.actor.{ ActorRef, UntypedChannel, NullChannel }
+import akka.actor.{ LocalActorRef, UntypedChannel, NullChannel }
 import akka.config.Config.config
 import akka.dispatch._
 import akka.event.EventHandler
@@ -33,7 +33,7 @@ import org.bson.collection._
  * @author <a href="http://evilmonkeylabs.com">Brendan W. McAdams</a>
  */
 case class MongoDurableMessage(val ownerAddress: String,
-                               val receiver: ActorRef,
+                               val receiver: LocalActorRef,
                                val message: Any,
                                val channel: UntypedChannel,
                                val _id: ObjectId = new ObjectId) {

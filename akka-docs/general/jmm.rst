@@ -9,31 +9,38 @@ The Java Memory Model
 ---------------------
 Prior to Java 5, the Java Memory Model (JMM) was ill defined. It was possible to get all kinds of strange results when
 shared memory was accessed by multiple threads, such as:
+
 * a thread not seeing values written by other threads: a visibility problem
 * a thread observing 'impossible' behavior of other threads, caused by instructions not being executed in the order
-  expected: an instruction reordering problem.
+
+expected: an instruction reordering problem.
 
 With the implementation of JSR 133 in Java 5, a lot of these issues have been resolved. The JMM is a set of rules based
 on the "happens-before" relation, which constrain when one memory access must happen before another, and conversely,
 when they are allowed to happen out of order. Two examples of these rules are:
+
 * **The monitor lock rule:** a release of a lock happens before every subsequent acquire of the same lock.
 * **The volatile variable rule:** a write of a volatile variable happens before every subsequent read of the same volatile variable
+
 Although the JMM can seem complicated, the specification tries to find a balance between ease of use and the ability to
 write performant and scalable concurrent data structures.
 
 Actors and the Java Memory Model
 --------------------------------
 With the Actors implementation in Akka, there are two ways multiple threads can execute actions on shared memory:
+
 * if a message is sent to an actor (e.g. by another actor). In most cases messages are immutable, but if that message
-  is not a properly constructed immutable object, without a "happens before" rule, it would be possible for the receiver
-  to see partially initialized data structures and possibly even values out of thin air (longs/doubles).
+is not a properly constructed immutable object, without a "happens before" rule, it would be possible for the receiver
+to see partially initialized data structures and possibly even values out of thin air (longs/doubles).
 * if an actor makes changes to its internal state while processing a message, and accesses that state while processing
-  another message moments later. It is important to realize that with the actor model you don't get any guarantee that
-  the same thread will be executing the same actor for different messages.
+another message moments later. It is important to realize that with the actor model you don't get any guarantee that
+the same thread will be executing the same actor for different messages.
 
 To prevent visibility and reordering problems on actors, Akka guarantees the following two "happens before" rules:
+
 *  **The actor send rule:** the send of the message to an actor happens before the receive of that message by the same actor.
 *  **The actor subsequent processing rule:** processing of one message happens before processing of the next message by the same actor.
+
 Both rules only apply for the same actor instance and are not valid if different actors are used.
 
 STM and the Java Memory Model

@@ -7,7 +7,8 @@ package akka.dispatch
 import akka.AkkaException
 import akka.event.EventHandler
 import akka.actor.{ Actor, ForwardableChannel, UntypedChannel, Scheduler, Timeout, ExceptionChannel }
-import akka.japi.{ Procedure, Function ⇒ JFunc }
+import scala.Option
+import akka.japi.{ Procedure, Function ⇒ JFunc, Option ⇒ JOption }
 
 import scala.util.continuations._
 
@@ -19,8 +20,7 @@ import java.util.{ LinkedList ⇒ JLinkedList }
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
 import akka.util.{ Switch, Duration, BoxedType }
-
-import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
+import java.util.concurrent.atomic.{ AtomicInteger, AtomicReference, AtomicBoolean }
 
 class FutureTimeoutException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(message: String) = this(message, null)
@@ -71,16 +71,45 @@ object Futures {
     val futureResult = new DefaultPromise[T](timeout)
 
     val completeFirst: Future[T] ⇒ Unit = _.value.foreach(futureResult complete _)
-    for (f ← futures) f onComplete completeFirst
+    futures.foreach(_ onComplete completeFirst)
 
     futureResult
+  }
+
+  /**
+   * Returns a Future that will hold the optional result of the first Future with a result that matches the predicate
+   */
+  def find[T](predicate: T ⇒ Boolean, timeout: Timeout = Timeout.default)(futures: Iterable[Future[T]]): Future[Option[T]] = {
+    if (futures.isEmpty) new KeptPromise[Option[T]](Right(None))
+    else {
+      val result = new DefaultPromise[Option[T]](timeout)
+      val ref = new AtomicInteger(futures.size)
+      val search: Future[T] ⇒ Unit = f ⇒ try {
+        f.result.filter(predicate).foreach(r ⇒ result completeWithResult Some(r))
+      } finally {
+        if (ref.decrementAndGet == 0)
+          result completeWithResult None
+      }
+      futures.foreach(_ onComplete search)
+
+      result
+    }
+  }
+
+  /**
+   * Java API.
+   * Returns a Future that will hold the optional result of the first Future with a result that matches the predicate
+   */
+  def find[T <: AnyRef](futures: JIterable[Future[T]], predicate: JFunc[T, java.lang.Boolean], timeout: Timeout): Future[JOption[T]] = {
+    val pred: T ⇒ Boolean = predicate.apply(_)
+    find[T](pred, timeout)(scala.collection.JavaConversions.iterableAsScalaIterable(futures)).map(JOption.fromScalaOption(_))
   }
 
   /**
    * Java API.
    * Returns a Future to the result of the first future in the list that is completed
    */
-  def firstCompletedOf[T <: AnyRef](futures: java.lang.Iterable[Future[T]], timeout: Timeout): Future[T] =
+  def firstCompletedOf[T <: AnyRef](futures: JIterable[Future[T]], timeout: Timeout): Future[T] =
     firstCompletedOf(scala.collection.JavaConversions.iterableAsScalaIterable(futures), timeout)
 
   /**
@@ -329,7 +358,7 @@ object Future {
               try {
                 next.apply()
               } catch {
-                case e ⇒ // FIXME
+                case e ⇒ // TODO FIXME: Throwable or Exception, log or do what?
               }
             }
           } finally { _taskStack set None }
@@ -645,7 +674,7 @@ package japi {
   /* Java API */
   trait Future[+T] { self: akka.dispatch.Future[T] ⇒
     private[japi] final def onTimeout[A >: T](proc: Procedure[akka.dispatch.Future[A]]): this.type = self.onTimeout(proc(_))
-    private[japi] final def onResult[A >: T](proc: Procedure[A]): this.type = self.onResult({ case r: A ⇒ proc(r) }: PartialFunction[T, Unit])
+    private[japi] final def onResult[A >: T](proc: Procedure[A]): this.type = self.onResult({ case r ⇒ proc(r.asInstanceOf[A]) }: PartialFunction[T, Unit])
     private[japi] final def onException(proc: Procedure[Throwable]): this.type = self.onException({ case t: Throwable ⇒ proc(t) }: PartialFunction[Throwable, Unit])
     private[japi] final def onComplete[A >: T](proc: Procedure[akka.dispatch.Future[A]]): this.type = self.onComplete(proc(_))
     private[japi] final def map[A >: T, B](f: JFunc[A, B]): akka.dispatch.Future[B] = self.map(f(_))

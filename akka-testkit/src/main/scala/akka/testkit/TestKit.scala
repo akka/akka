@@ -34,8 +34,6 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor with FSM[
   import FSM._
   import TestActor._
 
-  self.dispatcher = CallingThreadDispatcher.global
-
   startWith(0, None)
   when(0, stateTimeout = 5 seconds) {
     case Ev(SetTimeout(d)) ⇒
@@ -100,7 +98,7 @@ trait TestKitLight {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor = localActorOf(new TestActor(queue), "testActor" + TestKit.testActorId.incrementAndGet()).start()
+  val testActor = actorOf(Props(new TestActor(queue)).copy(dispatcher = CallingThreadDispatcher.global, localOnly = true), "testActor" + TestKit.testActorId.incrementAndGet())
 
   /**
    * Implicit sender reference so that replies are possible for messages sent

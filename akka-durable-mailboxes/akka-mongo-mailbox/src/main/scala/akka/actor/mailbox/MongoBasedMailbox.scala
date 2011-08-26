@@ -3,7 +3,7 @@
  */
 package akka.actor.mailbox
 
-import akka.actor.ActorRef
+import akka.actor.{ ActorRef, LocalActorRef }
 import akka.config.Config.config
 import akka.dispatch._
 import akka.event.EventHandler
@@ -28,7 +28,7 @@ class MongoBasedMailboxException(message: String) extends AkkaException(message)
  *
  * @author <a href="http://evilmonkeylabs.com">Brendan W. McAdams</a>
  */
-class MongoBasedNaiveMailbox(val owner: ActorRef) extends DurableExecutableMailbox(owner) {
+class MongoBasedNaiveMailbox(val owner: LocalActorRef) extends DurableExecutableMailbox(owner) {
   // this implicit object provides the context for reading/writing things as MongoDurableMessage
   implicit val mailboxBSONSer = BSONSerializableMailbox
   implicit val safeWrite = WriteConcern.Safe // TODO - Replica Safe when appropriate!

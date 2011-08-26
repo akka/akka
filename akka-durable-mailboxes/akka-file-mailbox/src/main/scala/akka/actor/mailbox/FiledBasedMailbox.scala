@@ -4,7 +4,7 @@
 
 package akka.actor.mailbox
 
-import akka.actor.ActorRef
+import akka.actor.LocalActorRef
 import akka.dispatch._
 import akka.config.Config._
 import akka.event.EventHandler
@@ -18,7 +18,7 @@ private[akka] object FileBasedMailboxUtil {
   val queuePath = config.getString("akka.actor.mailbox.file-based.directory-path", "./_mb") // /var/spool/akka
 }
 
-class FileBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbox(owner) {
+class FileBasedMailbox(val owner: LocalActorRef) extends DurableExecutableMailbox(owner) {
   import FileBasedMailboxUtil._
 
   private val queue = try {

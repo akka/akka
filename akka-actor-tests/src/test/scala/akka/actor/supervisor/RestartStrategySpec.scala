@@ -34,10 +34,9 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
   @Test
   def slaveShouldStayDeadAfterMaxRestartsWithinTimeRange = {
 
-    val boss = actorOf(new Actor {
-      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), Some(1000))
+    val boss = actorOf(Props(new Actor {
       protected def receive = { case _ ⇒ () }
-    }).start()
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 1000)))
 
     val restartLatch = new StandardLatch
     val secondRestartLatch = new StandardLatch
@@ -61,7 +60,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
         stopLatch.open
       }
     })
-    boss.startLink(slave)
+    boss.link(slave).start()
 
     slave ! Ping
     slave ! Crash
@@ -88,10 +87,9 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
   @Test
   def slaveShouldBeImmortalWithoutMaxRestartsAndTimeRange = {
 
-    val boss = actorOf(new Actor {
-      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), None, None)
-      protected def receive = { case _ ⇒ () }
-    }).start()
+    val boss = actorOf(Props(new Actor {
+      def receive = { case _ ⇒ () }
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
 
     val countDownLatch = new CountDownLatch(100)
 
@@ -106,7 +104,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
       }
     })
 
-    boss.startLink(slave)
+    boss.link(slave).start()
     (1 to 100) foreach { _ ⇒ slave ! Crash }
     assert(countDownLatch.await(120, TimeUnit.SECONDS))
     assert(slave.isRunning)
@@ -115,10 +113,9 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
   @Test
   def slaveShouldRestartAfterNumberOfCrashesNotWithinTimeRange = {
 
-    val boss = actorOf(new Actor {
-      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), Some(500))
-      protected def receive = { case _ ⇒ () }
-    }).start()
+    val boss = actorOf(Props(new Actor {
+      def receive = { case _ ⇒ () }
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 500)))
 
     val restartLatch = new StandardLatch
     val secondRestartLatch = new StandardLatch
@@ -148,7 +145,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
         }
       }
     })
-    boss.startLink(slave)
+    boss.link(slave).start()
 
     slave ! Ping
     slave ! Crash
@@ -176,10 +173,9 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def slaveShouldNotRestartAfterMaxRetries = {
-    val boss = actorOf(new Actor {
-      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), None)
-      protected def receive = { case _ ⇒ () }
-    }).start()
+    val boss = actorOf(Props(new Actor {
+      def receive = { case _ ⇒ () }
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), Some(2), None)))
 
     val restartLatch = new StandardLatch
     val secondRestartLatch = new StandardLatch
@@ -203,7 +199,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
         stopLatch.open
       }
     })
-    boss.startLink(slave)
+    boss.link(slave).start()
 
     slave ! Ping
     slave ! Crash
@@ -235,12 +231,9 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
     val restartLatch, stopLatch, maxNoOfRestartsLatch = new StandardLatch
     val countDownLatch = new CountDownLatch(2)
 
-    val boss = actorOf(new Actor {
-      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), None, Some(1000))
-      protected def receive = {
-        case m: MaximumNumberOfRestartsWithinTimeRangeReached ⇒ maxNoOfRestartsLatch.open
-      }
-    }).start()
+    val boss = actorOf(Props(new Actor {
+      def receive = { case m: MaximumNumberOfRestartsWithinTimeRangeReached ⇒ maxNoOfRestartsLatch.open }
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, Some(1000))))
 
     val slave = actorOf(new Actor {
 
@@ -257,7 +250,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
         stopLatch.open
       }
     })
-    boss.startLink(slave)
+    boss.link(slave).start()
 
     slave ! Ping
     slave ! Crash

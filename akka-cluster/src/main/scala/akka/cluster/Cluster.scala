@@ -15,8 +15,6 @@ import org.I0Itec.zkclient.exception._
 import java.util.{ List ⇒ JList }
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 import java.net.InetSocketAddress
-import javax.management.StandardMBean
-
 import scala.collection.mutable.ConcurrentMap
 import scala.collection.JavaConversions._
 
@@ -29,7 +27,7 @@ import Status._
 import DeploymentConfig._
 
 import akka.event.EventHandler
-import akka.dispatch.{ Dispatchers, Future }
+import akka.dispatch.{ Dispatchers, Future, PinnedDispatcher }
 import akka.remoteinterface._
 import akka.routing.RouterType
 
@@ -53,6 +51,7 @@ import com.google.protobuf.ByteString
 import java.util.concurrent.{ CopyOnWriteArrayList, Callable, ConcurrentHashMap }
 
 import annotation.tailrec
+import javax.management.{ StandardMBean }
 
 // FIXME add watch for each node that when the entry for the node is removed then the node shuts itself down
 
@@ -277,15 +276,15 @@ class DefaultClusterNode private[akka] (
 
   //  private val connectToAllNewlyArrivedMembershipNodesInClusterLock = new AtomicBoolean(false)
 
-  private[cluster] lazy val remoteClientLifeCycleListener = localActorOf(new Actor {
+  private[cluster] lazy val remoteClientLifeCycleListener = actorOf(Props(new Actor {
     def receive = {
       case RemoteClientError(cause, client, address) ⇒ client.shutdownClientModule()
       case RemoteClientDisconnected(client, address) ⇒ client.shutdownClientModule()
       case _                                         ⇒ //ignore other
     }
-  }, "akka.cluster.RemoteClientLifeCycleListener").start()
+  }), "akka.cluster.RemoteClientLifeCycleListener")
 
-  private[cluster] lazy val remoteDaemon = localActorOf(new RemoteClusterDaemon(this), RemoteClusterDaemon.Address).start()
+  private[cluster] lazy val remoteDaemon = actorOf(Props(new RemoteClusterDaemon(this)).copy(dispatcher = new PinnedDispatcher(), localOnly = true), RemoteClusterDaemon.Address)
 
   private[cluster] lazy val remoteDaemonSupervisor = Supervisor(
     SupervisorConfig(
@@ -1714,8 +1713,6 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
   import RemoteClusterDaemon._
   import Cluster._
 
-  self.dispatcher = Dispatchers.newPinnedDispatcher(self)
-
   override def preRestart(reason: Throwable, msg: Option[Any]) {
     EventHandler.debug(this, "RemoteClusterDaemon failed due to [%s] restarting...".format(reason))
   }
@@ -1863,59 +1860,25 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
   }
 
   def handle_fun0_unit(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
-    localActorOf(new Actor() {
-      self.dispatcher = computeGridDispatcher
-
-      def receive = {
-        case f: Function0[_] ⇒ try {
-          f()
-        } finally {
-          self.stop()
-        }
-      }
-    }).start ! payloadFor(message, classOf[Function0[Unit]])
+    actorOf(Props(
+      self ⇒ { case f: Function0[_] ⇒ try { f() } finally { self.stop() } }).copy(dispatcher = computeGridDispatcher, localOnly = true)) ! payloadFor(message, classOf[Function0[Unit]])
   }
 
   def handle_fun0_any(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
-    localActorOf(new Actor() {
-      self.dispatcher = computeGridDispatcher
-
-      def receive = {
-        case f: Function0[_] ⇒ try {
-          self.reply(f())
-        } finally {
-          self.stop()
-        }
-      }
-    }).start forward payloadFor(message, classOf[Function0[Any]])
+    actorOf(Props(
+      self ⇒ { case f: Function0[_] ⇒ try { self.reply(f()) } finally { self.stop() } }).copy(dispatcher = computeGridDispatcher, localOnly = true)) forward payloadFor(message, classOf[Function0[Any]])
   }
 
   def handle_fun1_arg_unit(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
-    localActorOf(new Actor() {
-      self.dispatcher = computeGridDispatcher
-
-      def receive = {
-        case (fun: Function[_, _], param: Any) ⇒ try {
-          fun.asInstanceOf[Any ⇒ Unit].apply(param)
-        } finally {
-          self.stop()
-        }
-      }
-    }).start ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
+    actorOf(Props(
+      self ⇒ { case (fun: Function[_, _], param: Any) ⇒ try { fun.asInstanceOf[Any ⇒ Unit].apply(param) } finally { self.stop() } }).copy(dispatcher = computeGridDispatcher, localOnly = true)) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
   }
 
   def handle_fun1_arg_any(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
-    localActorOf(new Actor() {
-      self.dispatcher = computeGridDispatcher
-
-      def receive = {
-        case (fun: Function[_, _], param: Any) ⇒ try {
-          self.reply(fun.asInstanceOf[Any ⇒ Any](param))
-        } finally {
-          self.stop()
-        }
-      }
-    }).start forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
+    actorOf(Props(
+      self ⇒ {
+        case (fun: Function[_, _], param: Any) ⇒ try { self.reply(fun.asInstanceOf[Any ⇒ Any](param)) } finally { self.stop() }
+      }).copy(dispatcher = computeGridDispatcher, localOnly = true)) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
   }
 
   def handleFailover(message: ClusterProtocol.RemoteDaemonMessageProtocol) {

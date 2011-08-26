@@ -15,17 +15,11 @@ import akka.dispatch.MessageDispatcher
 object DurableMailboxSpecActorFactory {
 
   class MailboxTestActor extends Actor {
-    self.lifeCycle = Temporary
-    def receive = {
-      case "sum" ⇒ self.reply("sum")
-    }
+    def receive = { case "sum" ⇒ self.reply("sum") }
   }
 
-  def createMailboxTestActor(id: String)(implicit dispatcher: MessageDispatcher): ActorRef = {
-    val queueActor = localActorOf[MailboxTestActor]
-    queueActor.dispatcher = dispatcher
-    queueActor.start
-  }
+  def createMailboxTestActor(id: String)(implicit dispatcher: MessageDispatcher): ActorRef =
+    actorOf(Props[MailboxTestActor].withDispatcher(dispatcher).withLifeCycle(Temporary))
 }
 
 abstract class DurableMailboxSpec(val backendName: String, val storage: DurableMailboxStorage) extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll {

@@ -14,7 +14,7 @@ class ConsumerPublishRequestorTest extends JUnitSuite {
 
   var publisher: ActorRef = _
   var requestor: ActorRef = _
-  var consumer: ActorRef = _
+  var consumer: LocalActorRef = _
 
   @Before
   def setUp: Unit = {
@@ -24,7 +24,7 @@ class ConsumerPublishRequestorTest extends JUnitSuite {
     consumer = actorOf(new Actor with Consumer {
       def endpointUri = "mock:test"
       protected def receive = null
-    }).start
+    }).start.asInstanceOf[LocalActorRef]
   }
 
   @After
@@ -39,7 +39,7 @@ class ConsumerPublishRequestorTest extends JUnitSuite {
     requestor ! ActorRegistered(consumer.address, consumer, None)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     assert((publisher ? GetRetainedMessage).get ===
-      ConsumerActorRegistered(consumer, consumer.actor.asInstanceOf[Consumer]))
+      ConsumerActorRegistered(consumer, consumer.actorInstance.get.asInstanceOf[Consumer]))
   }
 
   @Test
@@ -48,7 +48,7 @@ class ConsumerPublishRequestorTest extends JUnitSuite {
     requestor ! ActorUnregistered(consumer.address, consumer, None)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     assert((publisher ? GetRetainedMessage).get ===
-      ConsumerActorUnregistered(consumer, consumer.actor.asInstanceOf[Consumer]))
+      ConsumerActorUnregistered(consumer, consumer.actorInstance.get.asInstanceOf[Consumer]))
   }
 }
 

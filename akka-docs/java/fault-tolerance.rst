@@ -233,16 +233,13 @@ Here is the API and how to use it from within an 'Actor':
   getContext().unlink(actorRef);
 
   // starts and links Actors atomically
-  getContext().startLink(actorRef);
-  getContext().startLinkRemote(actorRef);
+  getContext().link(actorRef).start();
 
   // spawns (creates and starts) actors
   getContext().spawn(MyActor.class);
-  getContext().spawnRemote(MyActor.class);
 
   // spawns and links Actors atomically
   getContext().spawnLink(MyActor.class);
-  getContext().spawnLinkRemote(MyActor.class);
 
 A child actor can tell the supervising actor to unlink him by sending him the 'Unlink(this)' message. When the supervisor receives the message he will unlink and shut down the child. The supervisor for an actor is available in the 'supervisor: Option[Actor]' method in the 'ActorRef' class. Here is how it can be used.
 

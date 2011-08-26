@@ -4,9 +4,9 @@
 
 package akka.routing
 
-import akka.actor.{ Actor, ActorRef, PoisonPill, Death, MaximumNumberOfRestartsWithinTimeRangeReached }
 import akka.dispatch.{ Promise }
 import akka.config.Supervision._
+import akka.actor._
 
 /**
  * Actor pooling
@@ -60,28 +60,6 @@ trait ActorPool {
 }
 
 /**
- * Defines the configuration options for how the pool supervises the actors.
- */
-trait ActorPoolSupervisionConfig {
-  /**
-   * Defines the default fault handling strategy to be employed by the pool.
-   */
-  def poolFaultHandler: FaultHandlingStrategy
-}
-
-/**
- * Provides a default implementation of the supervision configuration by
- * defining a One-for-One fault handling strategy, trapping exceptions,
- * limited to 5 retries within 1 second.
- *
- * This is just a basic strategy and implementors are encouraged to define
- * something more appropriate for their needs.
- */
-trait DefaultActorPoolSupervisionConfig extends ActorPoolSupervisionConfig {
-  def poolFaultHandler = OneForOneStrategy(List(classOf[Exception]), 5, 1000)
-}
-
-/**
  * A default implementation of a pool that:
  *  First, invokes the pool's capacitor that tells it, based on the current delegate count
  *  and it's own heuristic by how many delegates the pool should be resized.  Resizing can
@@ -104,14 +82,11 @@ trait DefaultActorPoolSupervisionConfig extends ActorPoolSupervisionConfig {
  *
  *  Lastly, routes by forwarding, the incoming message to each delegate in the selected set.
  */
-trait DefaultActorPool extends ActorPool { this: Actor with ActorPoolSupervisionConfig ⇒
+trait DefaultActorPool extends ActorPool { this: Actor ⇒
   import ActorPool._
 
   protected[akka] var _delegates = Vector[ActorRef]()
 
-  override def preStart() {
-    self.faultHandler = poolFaultHandler
-  }
   override def postStop() {
     _delegates foreach { delegate ⇒
       try {
@@ -141,8 +116,8 @@ trait DefaultActorPool extends ActorPool { this: Actor with ActorPoolSupervision
         _delegates ++ {
           for (i ← 0 until requestedCapacity) yield {
             val delegate = instance()
-            self startLink delegate
-            delegate
+            self link delegate
+            delegate.start()
           }
         }
       case qty if qty < 0 ⇒
@@ -176,8 +151,13 @@ trait SmallestMailboxSelector {
     var set: Seq[ActorRef] = Nil
     var take = if (partialFill) math.min(selectionCount, delegates.length) else selectionCount
 
+    def mailboxSize(a: ActorRef): Int = a match {
+      case l: LocalActorRef ⇒ l.dispatcher.mailboxSize(l)
+      case _                ⇒ Int.MaxValue //Non-local actors mailbox size is unknown, so consider them lowest priority
+    }
+
     while (take > 0) {
-      set = delegates.sortWith((a, b) ⇒ a.dispatcher.mailboxSize(a) < b.dispatcher.mailboxSize(b)).take(take) ++ set //Question, doesn't this risk selecting the same actor multiple times?
+      set = delegates.sortWith((a, b) ⇒ mailboxSize(a) < mailboxSize(b)).take(take) ++ set //Question, doesn't this risk selecting the same actor multiple times?
       take -= set.size
     }
 
@@ -257,7 +237,10 @@ trait BoundedCapacitor {
 trait MailboxPressureCapacitor {
   def pressureThreshold: Int
   def pressure(delegates: Seq[ActorRef]): Int =
-    delegates count { a ⇒ a.dispatcher.mailboxSize(a) > pressureThreshold }
+    delegates count {
+      case a: LocalActorRef ⇒ a.dispatcher.mailboxSize(a) > pressureThreshold
+      case _                ⇒ false
+    }
 }
 
 /**
@@ -265,7 +248,10 @@ trait MailboxPressureCapacitor {
  */
 trait ActiveFuturesPressureCapacitor {
   def pressure(delegates: Seq[ActorRef]): Int =
-    delegates count { _.channel.isInstanceOf[Promise[_]] }
+    delegates count {
+      case fc: ForwardableChannel ⇒ fc.channel.isInstanceOf[Promise[_]]
+      case _                      ⇒ false
+    }
 }
 
 /**

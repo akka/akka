@@ -7,8 +7,7 @@ import akka.performance.trading.domain.Order
 import akka.performance.trading.domain.Orderbook
 import akka.performance.trading.common.AkkaMatchingEngine
 
-class OneWayMatchingEngine(meId: String, orderbooks: List[Orderbook], disp: Option[MessageDispatcher])
-  extends AkkaMatchingEngine(meId, orderbooks, disp) {
+class OneWayMatchingEngine(meId: String, orderbooks: List[Orderbook]) extends AkkaMatchingEngine(meId, orderbooks) {
 
   override def handleOrder(order: Order) {
     orderbooksMap.get(order.orderbookSymbol) match {

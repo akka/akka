@@ -12,9 +12,9 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch, TimeUnit }
 import akka.actor.dispatch.ActorModelSpec.MessageDispatcherInterceptor
 import akka.util.Switch
-import akka.actor.{ ActorKilledException, PoisonPill, ActorRef, Actor }
 import java.rmi.RemoteException
 import org.junit.{ After, Test }
+import akka.actor._
 
 object ActorModelSpec {
 
@@ -49,10 +49,10 @@ object ActorModelSpec {
   val Ping = "Ping"
   val Pong = "Pong"
 
-  class DispatcherActor(dispatcher: MessageDispatcherInterceptor) extends Actor {
-    self.dispatcher = dispatcher.asInstanceOf[MessageDispatcher]
-
+  class DispatcherActor extends Actor {
     private val busy = new Switch(false)
+
+    def dispatcher = self.dispatcher.asInstanceOf[MessageDispatcherInterceptor]
 
     def ack {
       if (!busy.switchOn()) {
@@ -103,22 +103,22 @@ object ActorModelSpec {
       stats.get(actorRef)
     }
 
-    abstract override def suspend(actorRef: ActorRef) {
+    abstract override def suspend(actorRef: LocalActorRef) {
       super.suspend(actorRef)
       getStats(actorRef).suspensions.incrementAndGet()
     }
 
-    abstract override def resume(actorRef: ActorRef) {
+    abstract override def resume(actorRef: LocalActorRef) {
       super.resume(actorRef)
       getStats(actorRef).resumes.incrementAndGet()
     }
 
-    private[akka] abstract override def register(actorRef: ActorRef) {
+    private[akka] abstract override def register(actorRef: LocalActorRef) {
       super.register(actorRef)
       getStats(actorRef).registers.incrementAndGet()
     }
 
-    private[akka] abstract override def unregister(actorRef: ActorRef) {
+    private[akka] abstract override def unregister(actorRef: LocalActorRef) {
       super.unregister(actorRef)
       getStats(actorRef).unregisters.incrementAndGet()
     }
@@ -183,7 +183,7 @@ object ActorModelSpec {
     msgsReceived: Long = statsFor(actorRef).msgsReceived.get(),
     msgsProcessed: Long = statsFor(actorRef).msgsProcessed.get(),
     restarts: Long = statsFor(actorRef).restarts.get()) {
-    val stats = statsFor(actorRef, if (dispatcher eq null) actorRef.dispatcher else dispatcher)
+    val stats = statsFor(actorRef, Option(dispatcher).getOrElse(actorRef.asInstanceOf[SelfActorRef].dispatcher))
     assert(stats.suspensions.get() === suspensions, "Suspensions")
     assert(stats.resumes.get() === resumes, "Resumes")
     assert(stats.registers.get() === registers, "Registers")
@@ -207,7 +207,7 @@ object ActorModelSpec {
     false
   }
 
-  def newTestActor(implicit d: MessageDispatcherInterceptor) = actorOf(new DispatcherActor(d))
+  def newTestActor(implicit d: MessageDispatcherInterceptor) = actorOf(Props[DispatcherActor].withDispatcher(d))
 }
 
 abstract class ActorModelSpec extends JUnitSuite {
@@ -219,8 +219,8 @@ abstract class ActorModelSpec extends JUnitSuite {
   @Test
   def dispatcherShouldDynamicallyHandleItsOwnLifeCycle {
     implicit val dispatcher = newInterceptedDispatcher
-    val a = newTestActor
     assertDispatcher(dispatcher)(starts = 0, stops = 0)
+    val a = newTestActor
     a.start()
     assertDispatcher(dispatcher)(starts = 1, stops = 0)
     a.stop()
@@ -346,7 +346,7 @@ abstract class ActorModelSpec extends JUnitSuite {
   @Test
   def dispatcherShouldNotProcessMessagesForASuspendedActor {
     implicit val dispatcher = newInterceptedDispatcher
-    val a = newTestActor.start()
+    val a = newTestActor.start().asInstanceOf[LocalActorRef]
     val done = new CountDownLatch(1)
     dispatcher.suspend(a)
     a ! CountDown(done)
@@ -384,7 +384,7 @@ abstract class ActorModelSpec extends JUnitSuite {
   @Test
   def dispatcherShouldCompleteAllUncompletedSenderFuturesOnDeregister {
     implicit val dispatcher = newInterceptedDispatcher
-    val a = newTestActor.start()
+    val a = newTestActor.start().asInstanceOf[LocalActorRef]
     dispatcher.suspend(a)
     val f1: Future[String] = a ? Reply("foo") mapTo manifest[String]
     val stopped = a ? PoisonPill

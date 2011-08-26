@@ -108,7 +108,7 @@ public class Pi {
           workers.add(worker);
       }
 
-      router = Routing.actorOfWithRoundRobin("pi", JavaConversions.asIterable(workers));
+      router = Routing.actorOfWithRoundRobin("pi", JavaConversions.collectionAsScalaIterable(workers));
     }
 
     // message handler

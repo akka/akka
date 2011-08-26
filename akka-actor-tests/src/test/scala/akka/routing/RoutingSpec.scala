@@ -3,7 +3,6 @@ package akka.routing
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import akka.routing._
-import akka.routing.Router
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.Actor._
 import akka.actor.{ ActorRef, Actor }

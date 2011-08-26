@@ -21,6 +21,5 @@ Scala API
    routing
    fsm
    http
-   security
    testing
    tutorial-chat-server

@@ -289,6 +289,20 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         }
       }
 
+      "firstCompletedOf" in {
+        val futures = Vector.fill[Future[Int]](10)(new DefaultPromise[Int]()) :+ new KeptPromise[Int](Right(5))
+        Futures.firstCompletedOf(futures).get must be(5)
+      }
+
+      "find" in {
+        val futures = for (i ← 1 to 10) yield Future { i }
+        val result = Futures.find[Int](_ == 3)(futures)
+        result.get must be(Some(3))
+
+        val notFound = Futures.find[Int](_ == 11)(futures)
+        notFound.get must be(None)
+      }
+
       "fold" in {
         val actors = (1 to 10).toList map { _ ⇒
           actorOf(new Actor {

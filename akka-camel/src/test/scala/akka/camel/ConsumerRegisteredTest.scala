@@ -2,7 +2,7 @@ package akka.camel
 
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
-import akka.actor.{ ActorRef, Actor }
+import akka.actor.{ ActorRef, Actor, LocalActorRef }
 
 class ConsumerRegisteredTest extends JUnitSuite {
   import ConsumerRegisteredTest._
@@ -48,7 +48,10 @@ class ConsumerRegisteredTest extends JUnitSuite {
     assert(event === None)
   }
 
-  private def consumerOf(ref: ActorRef) = ref.actor.asInstanceOf[Consumer]
+  private def consumerOf(ref: ActorRef) = ref match {
+    case l: LocalActorRef ⇒ l.actorInstance.get.asInstanceOf[Consumer]
+    case _                ⇒ null: Consumer
+  }
 }
 
 object ConsumerRegisteredTest {

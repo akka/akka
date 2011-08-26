@@ -41,11 +41,11 @@ object TestActorRefSpec {
     def receiveT = {
       case "complexRequest" ⇒ {
         replyTo = self.channel
-        val worker = TestActorRef[WorkerActor].start()
+        val worker = TestActorRef(Props[WorkerActor])
         worker ! "work"
       }
       case "complexRequest2" ⇒
-        val worker = TestActorRef[WorkerActor].start()
+        val worker = TestActorRef(Props[WorkerActor])
         worker ! self.channel
       case "workDone"      ⇒ replyTo ! "complexReply"
       case "simpleRequest" ⇒ self.reply("simpleReply")
@@ -109,10 +109,10 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
     "support nested Actor creation" when {
 
       "used with TestActorRef" in {
-        val a = TestActorRef(new Actor {
-          val nested = TestActorRef(new Actor { def receive = { case _ ⇒ } }).start()
+        val a = TestActorRef(Props(new Actor {
+          val nested = TestActorRef(Props(self ⇒ { case _ ⇒ }))
           def receive = { case _ ⇒ self reply nested }
-        }).start()
+        }))
         a must not be (null)
         val nested = (a ? "any").as[ActorRef].get
         nested must not be (null)
@@ -120,10 +120,10 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       }
 
       "used with ActorRef" in {
-        val a = TestActorRef(new Actor {
-          val nested = Actor.actorOf(new Actor { def receive = { case _ ⇒ } }).start()
+        val a = TestActorRef(Props(new Actor {
+          val nested = Actor.actorOf(Props(self ⇒ { case _ ⇒ }))
           def receive = { case _ ⇒ self reply nested }
-        }).start()
+        }))
         a must not be (null)
         val nested = (a ? "any").as[ActorRef].get
         nested must not be (null)
@@ -133,8 +133,8 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
     }
 
     "support reply via channel" in {
-      val serverRef = TestActorRef[ReplyActor].start()
-      val clientRef = TestActorRef(new SenderActor(serverRef)).start()
+      val serverRef = TestActorRef(Props[ReplyActor])
+      val clientRef = TestActorRef(Props(new SenderActor(serverRef)))
 
       counter = 4
 
@@ -159,7 +159,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
 
     "stop when sent a poison pill" in {
       filterEvents(EventFilter[ActorKilledException]) {
-        val a = TestActorRef[WorkerActor].start()
+        val a = TestActorRef(Props[WorkerActor])
         intercept[ActorKilledException] {
           (a ? PoisonPill).get
         }
@@ -173,17 +173,16 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       filterEvents(EventFilter[ActorKilledException]) {
         counter = 2
 
-        val boss = TestActorRef(new TActor {
-          self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), Some(1000))
-          val ref = TestActorRef(new TActor {
+        val boss = TestActorRef(Props(new TActor {
+
+          val ref = TestActorRef(Props(new TActor {
             def receiveT = { case _ ⇒ }
             override def preRestart(reason: Throwable, msg: Option[Any]) { counter -= 1 }
             override def postRestart(reason: Throwable) { counter -= 1 }
-          }).start()
-          self.dispatcher = CallingThreadDispatcher.global
-          self link ref
+          }).withSupervisor(self))
+
           def receiveT = { case "sendKill" ⇒ ref ! Kill }
-        }).start()
+        }).withFaultHandler(OneForOneStrategy(List(classOf[ActorKilledException]), 5, 1000)))
 
         boss ! "sendKill"
 

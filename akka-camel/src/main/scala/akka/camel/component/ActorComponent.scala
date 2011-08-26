@@ -291,37 +291,16 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
     callback.done(false)
   }
 
-  def actorClass: Class[_ <: Actor] = unsupported
   def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported
-  def makeRemote(hostname: String, port: Int): Unit = unsupported
-  def makeRemote(address: InetSocketAddress): Unit = unsupported
-  def homeAddress_=(address: InetSocketAddress): Unit = unsupported
-  def remoteAddress: Option[InetSocketAddress] = unsupported
-  def link(actorRef: ActorRef): Unit = unsupported
-  def unlink(actorRef: ActorRef): Unit = unsupported
-  def startLink(actorRef: ActorRef): ActorRef = unsupported
-  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = unsupported
-  def spawn(clazz: Class[_ <: Actor]): ActorRef = unsupported
-  def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef = unsupported
-  def spawnLink(clazz: Class[_ <: Actor]): ActorRef = unsupported
-  def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef = unsupported
+  def link(actorRef: ActorRef): ActorRef = unsupported
+  def unlink(actorRef: ActorRef): ActorRef = unsupported
   def shutdownLinkedActors: Unit = unsupported
   def supervisor: Option[ActorRef] = unsupported
-  def homeAddress: Option[InetSocketAddress] = None
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any, timeout: Timeout, channel: UntypedChannel) = unsupported
-  protected[akka] def mailbox: AnyRef = unsupported
-  protected[akka] def mailbox_=(msg: AnyRef): AnyRef = unsupported
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
-  protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
-  def linkedActors: JMap[Uuid, ActorRef] = unsupported
-  protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
-  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported
-  protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = unsupported
   protected[akka] def registerSupervisorAsRemoteActor = unsupported
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = unsupported
-  protected[akka] def actorInstance: AtomicReference[Actor] = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s" format classOf[AsyncCallbackAdapter].getName)
 }

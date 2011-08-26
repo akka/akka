@@ -159,7 +159,9 @@ Here is the layout that Maven created::
 
 As you can see we already have a Java source file called ``App.java``, let's now rename it to ``Pi.java``.
 
-We also need to edit the ``pom.xml`` build file. Let's add the dependency we need as well as the Maven repository it should download it from. It should now look something like this:
+We also need to edit the ``pom.xml`` build file. Let's add the dependency we need as well as the Maven repository it should download it from. The Akka Maven repository can be found at `<http://akka.io/repository>`_ 
+and Typesafe provides `<http://repo.typesafe.com/typesafe/releases/>`_ that proxies several other repositories, including akka.io. 
+It should now look something like this:
 
 .. code-block:: xml
 
@@ -186,9 +188,9 @@ We also need to edit the ``pom.xml`` build file. Let's add the dependency we nee
 
         <repositories>
             <repository>
-                <id>Akka</id>
-                <name>Akka Maven2 Repository</name>
-                <url>http://akka.io/repository/</url>
+                <id>typesafe</id>
+                <name>Typesafe Repository</name>
+                <url>http://repo.typesafe.com/typesafe/releases/</url>
             </repository>
         </repositories>
 

@@ -5,12 +5,12 @@ package akka.actor.mailbox
 
 import MailboxProtocol._
 
-import akka.actor.{ Actor, ActorRef, NullChannel }
 import akka.dispatch._
 import akka.event.EventHandler
 import akka.remote.MessageSerializer
 import akka.remote.protocol.RemoteProtocol.MessageProtocol
 import akka.AkkaException
+import akka.actor._
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -24,12 +24,14 @@ private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
 }
 
-class DurableMailboxException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class DurableMailboxException private[akka] (message: String, cause: Throwable) extends AkkaException(message, cause) {
+  def this(message: String) = this(message, null)
+}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class DurableExecutableMailbox(owner: ActorRef) extends MessageQueue with ExecutableMailbox with DurableMailboxBase {
+abstract class DurableExecutableMailbox(owner: LocalActorRef) extends MessageQueue with ExecutableMailbox with DurableMailboxBase {
   import DurableExecutableMailboxConfig._
 
   val ownerAddress = owner.address
@@ -58,19 +60,17 @@ abstract class DurableExecutableMailbox(owner: ActorRef) extends MessageQueue wi
   //TODO: switch to RemoteProtocol
   def deserialize(bytes: Array[Byte]) = {
     val durableMessage = DurableMailboxMessageProtocol.parseFrom(bytes)
+
+    val owner = Actor.registry.actorFor(durableMessage.getOwnerAddress) match {
+      case Some(l: LocalActorRef) ⇒ l
+      case Some(a)                ⇒ throw new DurableMailboxException("Recipient of message is not a LocalActorRef: " + a)
+      case None                   ⇒ throw new DurableMailboxException("No actor could be found for address [" + ownerAddress + "], could not deserialize message.")
+    }
+
     val messageProtocol = MessageProtocol.parseFrom(durableMessage.getMessage)
     val message = MessageSerializer.deserialize(messageProtocol)
-    val ownerAddress = durableMessage.getOwnerAddress
-    val owner = Actor.registry.actorFor(ownerAddress).getOrElse(
-      throw new DurableMailboxException("No actor could be found for address [" + ownerAddress + "], could not deserialize message."))
 
-    val senderOption = if (durableMessage.hasSenderAddress) {
-      Actor.registry.actorFor(durableMessage.getSenderAddress)
-    } else None
-    val sender = senderOption match {
-      case Some(ref) ⇒ ref
-      case None      ⇒ NullChannel
-    }
+    val sender = if (durableMessage.hasSenderAddress) Actor.registry.actorFor(durableMessage.getSenderAddress).getOrElse(NullChannel) else NullChannel
 
     new MessageInvocation(owner, message, sender)
   }

@@ -193,16 +193,16 @@ object Deployer extends ActorDeployer {
             // akka.actor.deployment.<address>.clustered.replicas
             // --------------------------------
             val replicationFactor = {
-              if (router == Direct) ReplicationFactor(1)
+              if (router == Direct) new ReplicationFactor(1)
               else {
                 clusteredConfig.getAny("replication-factor", "0") match {
                   case "auto" ⇒ AutoReplicationFactor
                   case "0"    ⇒ ZeroReplicationFactor
                   case nrOfReplicas: String ⇒
                     try {
-                      ReplicationFactor(nrOfReplicas.toInt)
+                      new ReplicationFactor(nrOfReplicas.toInt)
                     } catch {
-                      case e: NumberFormatException ⇒
+                      case e: Exception ⇒
                         throw new ConfigurationException(
                           "Config option [" + addressPath +
                             ".clustered.replicas] needs to be either [\"auto\"] or [0-N] - was [" +

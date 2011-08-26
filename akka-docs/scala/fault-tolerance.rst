@@ -213,8 +213,8 @@ Here is the API and how to use it from within an 'Actor':
   self.link(actorRef)
   self.unlink(actorRef)
 
-  // starts and links Actors atomically
-  self.startLink(actorRef)
+  // link first, then start actor
+  self.link(actorRef).start()
 
   // spawns (creates and starts) actors
   self.spawn[MyActor]

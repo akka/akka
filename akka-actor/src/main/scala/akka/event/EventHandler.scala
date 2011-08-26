@@ -119,7 +119,7 @@ object EventHandler extends ListenerManagement {
       defaultListeners foreach { listenerName ⇒
         try {
           ReflectiveAccess.getClassFor[Actor](listenerName) match {
-            case Right(actorClass) ⇒ addListener(Actor.localActorOf(actorClass).start())
+            case Right(actorClass) ⇒ addListener(Actor.actorOf(Props(actorClass).withDispatcher(EventHandlerDispatcher)))
             case Left(exception)   ⇒ throw exception
           }
         } catch {

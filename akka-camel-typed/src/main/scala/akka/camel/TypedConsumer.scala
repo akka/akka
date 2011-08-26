@@ -7,7 +7,7 @@ package akka.camel
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy._
 
-import akka.actor.{ TypedActor, ActorRef }
+import akka.actor.{ LocalActorRef, TypedActor, ActorRef }
 import akka.actor.TypedActor._
 
 /**
@@ -42,10 +42,11 @@ private[camel] object TypedConsumer {
     if (m.isAnnotationPresent(classOf[consume]))
   } yield f(tc, m)
 
-  private def withConsumeAnnotatedMethodsonImplClass[T](tc: AnyRef, actorRef: ActorRef, f: (AnyRef, Method) ⇒ T): List[T] = {
-    val implClass = actorRef.actor.asInstanceOf[TypedActor.TypedActor[AnyRef, AnyRef]].me.getClass
-    for (m ← implClass.getDeclaredMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(tc, m)
-
+  private def withConsumeAnnotatedMethodsonImplClass[T](tc: AnyRef, actorRef: ActorRef, f: (AnyRef, Method) ⇒ T): List[T] = actorRef match {
+    case l: LocalActorRef ⇒
+      val implClass = l.actorInstance.get().asInstanceOf[TypedActor.TypedActor[AnyRef, AnyRef]].me.getClass
+      for (m ← implClass.getDeclaredMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(tc, m)
+    case _ ⇒ Nil
   }
 
   private class ProxyClass(c: Class[_]) {

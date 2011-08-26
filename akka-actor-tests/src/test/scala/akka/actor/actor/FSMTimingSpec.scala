@@ -70,7 +70,7 @@ class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
       fsm ! Tick
       expectMsg(100 millis, Tick)
       Thread.sleep(200)
-      fsm.dispatcher resume fsm
+      resume(fsm)
       expectMsg(100 millis, Transition(fsm, TestCancelStateTimerInNamedTimerMessage, TestCancelStateTimerInNamedTimerMessage2))
       fsm ! Cancel
       within(100 millis) {
@@ -118,6 +118,16 @@ class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
 }
 
 object FSMTimingSpec {
+
+  def suspend(actorRef: ActorRef): Unit = actorRef match {
+    case l: LocalActorRef ⇒ l.dispatcher.suspend(l)
+    case _                ⇒
+  }
+
+  def resume(actorRef: ActorRef): Unit = actorRef match {
+    case l: LocalActorRef ⇒ l.dispatcher.resume(l)
+    case _                ⇒
+  }
 
   trait State
   case object Initial extends State
@@ -189,7 +199,7 @@ object FSMTimingSpec {
     when(TestCancelStateTimerInNamedTimerMessage) {
       // FSM is suspended after processing this message and resumed 200ms later
       case Ev(Tick) ⇒
-        self.dispatcher suspend self
+        suspend(self)
         setTimer("named", Tock, 10 millis, false)
         stay forMax (100 millis) replying Tick
       case Ev(Tock) ⇒

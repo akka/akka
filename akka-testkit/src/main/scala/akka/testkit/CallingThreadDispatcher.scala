@@ -4,7 +4,6 @@
 package akka.testkit
 
 import akka.event.EventHandler
-import akka.actor.ActorRef
 import akka.dispatch.{ MessageDispatcher, MessageInvocation, TaskInvocation, Promise, ActorPromise }
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
@@ -12,6 +11,7 @@ import java.util.concurrent.RejectedExecutionException
 import akka.util.Switch
 import java.lang.ref.WeakReference
 import scala.annotation.tailrec
+import akka.actor.{ LocalActorRef, ActorRef }
 
 /*
  * Locking rules:
@@ -107,9 +107,9 @@ object CallingThreadDispatcher {
 class CallingThreadDispatcher(val name: String = "calling-thread", val warnings: Boolean = true) extends MessageDispatcher {
   import CallingThreadDispatcher._
 
-  private[akka] override def createMailbox(actor: ActorRef) = new CallingThreadMailbox
+  private[akka] override def createMailbox(actor: LocalActorRef) = new CallingThreadMailbox
 
-  private def getMailbox(actor: ActorRef) = actor.mailbox.asInstanceOf[CallingThreadMailbox]
+  private def getMailbox(actor: LocalActorRef) = actor.mailbox.asInstanceOf[CallingThreadMailbox]
 
   private[akka] override def start() {}
 
@@ -117,11 +117,11 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
 
   private[akka] override def timeoutMs = 100L
 
-  override def suspend(actor: ActorRef) {
+  override def suspend(actor: LocalActorRef) {
     getMailbox(actor).suspended.switchOn
   }
 
-  override def resume(actor: ActorRef) {
+  override def resume(actor: LocalActorRef) {
     val mbox = getMailbox(actor)
     val queue = mbox.queue
     val wasActive = queue.isActive
@@ -133,9 +133,9 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
     }
   }
 
-  override def mailboxSize(actor: ActorRef) = getMailbox(actor).queue.size
+  override def mailboxSize(actor: LocalActorRef) = getMailbox(actor).queue.size
 
-  def mailboxIsEmpty(actorRef: ActorRef): Boolean = getMailbox(actorRef).queue.isEmpty
+  override def mailboxIsEmpty(actorRef: LocalActorRef): Boolean = getMailbox(actorRef).queue.isEmpty
 
   private[akka] override def dispatch(handle: MessageInvocation) {
     val mbox = getMailbox(handle.receiver)

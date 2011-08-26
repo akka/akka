@@ -139,12 +139,12 @@ private[camel] object Consumer {
    * to a consumer actor, <code>Some</code> contained the return value of <code>f</code>
    * otherwise.
    */
-  def withConsumer[T](actorRef: ActorRef)(f: Consumer ⇒ T): Option[T] = {
-    if (!actorRef.actor.isInstanceOf[Consumer]) None
-
-    // TODO: check if this is needed at all
-    //else if (actorRef.homeAddress.isDefined) None
-
-    else Some(f(actorRef.actor.asInstanceOf[Consumer]))
+  def withConsumer[T](actorRef: ActorRef)(f: Consumer ⇒ T): Option[T] = actorRef match {
+    case l: LocalActorRef ⇒
+      l.actorInstance.get() match {
+        case c: Consumer ⇒ Some(f(c))
+        case _           ⇒ None
+      }
+    case _ ⇒ None
   }
 }

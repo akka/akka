@@ -13,9 +13,6 @@ import akka.event.EventHandler
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteEventHandler extends Actor {
-  import EventHandler._
-
-  self.dispatcher = EventHandlerDispatcher
 
   def receive = {
 

@@ -7,7 +7,7 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.component.mock.MockEndpoint
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec }
 
-import akka.actor.Actor
+import akka.actor.{ Actor, Props, Timeout }
 import akka.actor.Actor._
 import akka.camel.{ Failure, Message, CamelContextManager }
 import akka.camel.CamelTestSupport._
@@ -47,7 +47,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     }
 
     scenario("two-way communication with timeout") {
-      val actor = actorOf[Tester3].start
+      val actor = actorOf(Props[Tester3].withTimeout(Timeout(1))).start
       intercept[RuntimeCamelException] {
         mandatoryTemplate.requestBody("actor:uuid:%s?blocking=true" format actor.uuid, "Martin")
       }

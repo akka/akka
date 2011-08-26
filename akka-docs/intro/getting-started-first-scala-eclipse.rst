@@ -158,44 +158,21 @@ If you have not already done so, now is the time to create an Eclipse project fo
 Using SBT in Eclipse
 ^^^^^^^^^^^^^^^^^^^^
 
-If you are an `SBT <http://code.google.com/p/simple-build-tool/>`_ user, you can follow the :ref:`getting-started-first-scala-download-sbt` instruction and additionally install the ``sbt-eclipse`` plugin. This adds support for generating Eclipse project files from your SBT project. You need to update your SBT plugins definition in ``project/plugins``::
-
-    import sbt._
-
-    class TutorialPlugins(info: ProjectInfo) extends PluginDefinition(info) {
-      // eclipsify plugin
-      lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.7.0"
-
-      val akkaRepo   = "Akka Repo" at "http://akka.io/repository"
-      val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "2.0-SNAPSHOT"
-    }
-
-and then update your SBT project definition by mixing in ``Eclipsify`` in your project definition::
-
-    import sbt._
-    import de.element34.sbteclipsify._
-
-    class MySbtProject(info: ProjectInfo) extends DefaultProject(info)
-      with Eclipsify with AkkaProject  {
-      // the project definition here
-      // akka dependencies
-    }
+If you are an `SBT <https://github.com/harrah/xsbt/wiki>`_ user, you can follow the :ref:`getting-started-first-scala-download-sbt` instruction and additionally install the ``sbteclipse`` plugin. This adds support for generating Eclipse project files from your SBT project. 
+You need to install the plugin as described in the `README of sbteclipse <https://github.com/typesafehub/sbteclipse>`_
 
 Then run the ``eclipse`` target to generate the Eclipse project::
 
-    dragos@dragos-imac pi $ sbt eclipse
-    [info] Building project AkkaPi 1.0 against Scala 2.9.0
-    [info]    using MySbtProject with sbt 0.7.4 and Scala 2.7.7
-    [info]
-    [info] == eclipse ==
-    [info] Creating eclipse project...
-    [info] == eclipse ==
-    [success] Successful.
-    [info]
-    [info] Total time: 0 s, completed Apr 20, 2011 2:48:03 PM
-    [info]
-    [info] Total session time: 1 s, completed Apr 20, 2011 2:48:03 PM
-    [success] Build completed successfully.
+    $ sbt
+    > eclipse
+
+The options `create-src` and `with-sources` are useful::
+
+    $ sbt
+    > eclipse create-src with-sources
+
+* create-src to create the common source directories, e.g. src/main/scala, src/main/test
+* with-sources to create source attachments for the library dependencies
 
 Next you need to import this project in Eclipse, by choosing ``Eclipse/Import.. Existing Projects into Workspace``. Navigate to the directory where you defined your SBT project and choose import:
 

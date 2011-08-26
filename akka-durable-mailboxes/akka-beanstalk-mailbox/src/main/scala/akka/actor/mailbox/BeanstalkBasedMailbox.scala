@@ -5,7 +5,7 @@ package akka.actor.mailbox
 
 import MailboxProtocol._
 
-import akka.actor.ActorRef
+import akka.actor.LocalActorRef
 import akka.dispatch._
 import akka.config.Config._
 import akka.util.Duration
@@ -20,7 +20,7 @@ class BeanstalkBasedMailboxException(message: String) extends AkkaException(mess
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class BeanstalkBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbox(owner) {
+class BeanstalkBasedMailbox(val owner: LocalActorRef) extends DurableExecutableMailbox(owner) {
 
   val hostname = config.getString("akka.actor.mailbox.beanstalk.hostname", "0.0.0.0")
   val port = config.getInt("akka.actor.mailbox.beanstalk.port", 11300)

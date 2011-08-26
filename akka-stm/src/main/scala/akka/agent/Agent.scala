@@ -5,9 +5,10 @@
 package akka.agent
 
 import akka.stm._
-import akka.actor.Actor
 import akka.japi.{ Function ⇒ JFunc, Procedure ⇒ JProc }
-import akka.dispatch.{ DefaultPromise, Dispatchers, Future }
+import akka.dispatch.{ PinnedDispatcher, DefaultPromise, Dispatchers, Future }
+import akka.actor.{ Props, LocalActorRef, Actor }
+import akka.actor.Actor._
 
 /**
  * Used internally to send functions.
@@ -94,7 +95,7 @@ object Agent {
  */
 class Agent[T](initialValue: T) {
   private[akka] val ref = Ref(initialValue)
-  private[akka] val updater = Actor.actorOf(new AgentUpdater(this)).start()
+  private[akka] val updater = actorOf(Props(new AgentUpdater(this))).asInstanceOf[LocalActorRef] //TODO can we avoid this somehow?
 
   /**
    * Read the internal state of the agent.
@@ -151,7 +152,7 @@ class Agent[T](initialValue: T) {
    */
   def sendOff(f: T ⇒ T): Unit = send((value: T) ⇒ {
     suspend
-    val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this)).start()
+    val threadBased = actorOf(Props(new ThreadBasedAgentUpdater(this)).withDispatcher(new PinnedDispatcher()))
     threadBased ! Update(f)
     value
   })
@@ -293,8 +294,6 @@ class AgentUpdater[T](agent: Agent[T]) extends Actor {
  * Thread-based agent updater actor. Used internally for `sendOff` actions.
  */
 class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
-  self.dispatcher = Dispatchers.newPinnedDispatcher(self)
-
   val txFactory = TransactionFactory(familyName = "ThreadBasedAgentUpdater", readonly = false)
 
   def receive = {

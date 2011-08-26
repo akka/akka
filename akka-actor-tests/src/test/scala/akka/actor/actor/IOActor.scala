@@ -34,7 +34,8 @@ object IOActorSpec {
     })
 
     def receive = {
-      case msg: NewClient ⇒ self startLink createWorker forward msg
+      case msg: NewClient ⇒
+        self.link(createWorker).start() forward msg
     }
 
   }
@@ -103,7 +104,7 @@ object IOActorSpec {
     })
 
     def receive = {
-      case msg: NewClient ⇒ self startLink createWorker forward msg
+      case msg: NewClient ⇒ self.link(createWorker).start() forward msg
       case ('set, key: String, value: ByteString) ⇒
         kvs += (key -> value)
         self tryReply (())

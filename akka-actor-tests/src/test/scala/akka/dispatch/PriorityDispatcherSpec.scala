@@ -1,10 +1,9 @@
 package akka.dispatch
 
 import akka.actor.Actor._
-import akka.actor.Actor
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import java.util.concurrent.CountDownLatch
+import akka.actor.{ Props, LocalActorRef, Actor }
 
 class PriorityDispatcherSpec extends WordSpec with MustMatchers {
 
@@ -27,15 +26,14 @@ class PriorityDispatcherSpec extends WordSpec with MustMatchers {
       throughput = 1,
       mailboxType = mboxType)
 
-    val actor = actorOf(new Actor {
-      self.dispatcher = dispatcher
+    val actor = actorOf(Props(new Actor {
       var acc: List[Int] = Nil
 
       def receive = {
         case i: Int  ⇒ acc = i :: acc
         case 'Result ⇒ self tryReply acc
       }
-    }).start()
+    }).withDispatcher(dispatcher)).asInstanceOf[LocalActorRef]
 
     dispatcher.suspend(actor) //Make sure the actor isn't treating any messages, let it buffer the incoming messages
 
