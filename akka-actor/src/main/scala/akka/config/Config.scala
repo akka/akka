@@ -15,7 +15,7 @@ class ModuleNotAvailableException(message: String, cause: Throwable = null) exte
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Config {
-  val VERSION = "1.2-SNAPSHOT"
+  val VERSION = "1.2-RC5"
 
   val HOME = {
     val envHome = System.getenv("AKKA_HOME") match {
