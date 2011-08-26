@@ -208,10 +208,10 @@ object EventHandler extends ListenerManagement {
   }
 
   private def levelFor(eventClass: Class[_ <: Event]) = {
-    if (eventClass.isInstanceOf[Error]) ErrorLevel
-    else if (eventClass.isInstanceOf[Warning]) WarningLevel
-    else if (eventClass.isInstanceOf[Info]) InfoLevel
-    else if (eventClass.isInstanceOf[Debug]) DebugLevel
+    if (classOf[Error].isAssignableFrom(eventClass)) ErrorLevel
+    else if (classOf[Warning].isAssignableFrom(eventClass)) WarningLevel
+    else if (classOf[Info].isAssignableFrom(eventClass)) InfoLevel
+    else if (classOf[Debug].isAssignableFrom(eventClass)) DebugLevel
     else DebugLevel
   }
 
@@ -272,11 +272,7 @@ object EventHandler extends ListenerManagement {
   }
 
   class DefaultListener extends Actor with StandardOutLogger {
-    self.dispatcher = EventHandlerDispatcher
-
-    def receive = {
-      case event ⇒ print(event)
-    }
+    def receive = { case event ⇒ print(event) }
   }
 
   start()
