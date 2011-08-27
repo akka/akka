@@ -411,7 +411,7 @@ class DefaultClusterNode private[akka] (
   private val changeListeners = new CopyOnWriteArrayList[ChangeListener]()
 
   // Address -> ClusterActorRef
-  private val clusterActorRefs = new Index[InetSocketAddress, ClusterActorRef]
+  private[akka] val clusterActorRefs = new Index[InetSocketAddress, ClusterActorRef]
 
   // ============================================================================================================
   // ========== WARNING: THESE FIELDS AND EVERYTHING USING THEM IN THE CONSTRUCTOR NEEDS TO BE LAZY =============
@@ -979,15 +979,7 @@ class DefaultClusterNode private[akka] (
    * Creates an ActorRef with a Router to a set of clustered actors.
    */
   def ref(actorAddress: String, router: RouterType): ActorRef = if (isConnected.isOn) {
-    val addresses = addressesForActor(actorAddress)
-    EventHandler.debug(this,
-      "Checking out cluster actor ref with address [%s] and router [%s] on [%s] connected to [\n\t%s]"
-        .format(actorAddress, router, remoteServerAddress, addresses.map(_._2).mkString("\n\t")))
-
-    val actorRef = Routing newRouter (router, addresses, actorAddress, Actor.TIMEOUT)
-    addresses foreach {
-      case (_, address) ⇒ clusterActorRefs.put(address, actorRef)
-    }
+    val actorRef = Routing newRouter (router, actorAddress, Actor.TIMEOUT)
     actorRef.start()
 
   } else throw new ClusterException("Not connected to cluster")

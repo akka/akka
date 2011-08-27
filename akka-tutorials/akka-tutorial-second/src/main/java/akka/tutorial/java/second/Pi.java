@@ -9,6 +9,7 @@ import static akka.actor.Actors.poisonPill;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 
+import akka.routing.RoutedProps;
 import akka.routing.Routing;
 import scala.Option;
 import akka.actor.ActorRef;
@@ -102,7 +103,12 @@ public class Pi {
          workers.add(worker);
       }
 
-      router = Routing.actorOfWithRoundRobin("pi", JavaConversions.asIterable(workers));
+      router = Routing.actorOf(
+        RoutedProps.apply()
+              .withConnections(workers)
+              .withRoundRobinRouter()
+              .withDeployId("pi")
+      )
     }
 
     @Override

@@ -4,11 +4,11 @@
 
 package akka.tutorial.first.scala
 
-import akka.actor.{ Actor, PoisonPill }
+import akka.actor.{Actor, PoisonPill}
 import Actor._
 import java.util.concurrent.CountDownLatch
 import akka.routing.Routing.Broadcast
-import akka.routing.Routing
+import akka.routing.{RoutedProps, Routing}
 
 object Pi extends App {
 
@@ -18,8 +18,11 @@ object Pi extends App {
   // ===== Messages =====
   // ====================
   sealed trait PiMessage
+
   case object Calculate extends PiMessage
+
   case class Work(start: Int, nrOfElements: Int) extends PiMessage
+
   case class Result(value: Double) extends PiMessage
 
   // ==================
@@ -55,7 +58,12 @@ object Pi extends App {
     val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
 
     // wrap them with a load-balancing router
-    val router = Routing.actorOfWithRoundRobin("pi", workers)
+    val router = Routing.actor(
+      RoutedProps.default
+        .withRoundRobinRouter()
+        .withConnections(workers)
+        .withDeployId("pi")
+    )
 
     // message handler
     def receive = {

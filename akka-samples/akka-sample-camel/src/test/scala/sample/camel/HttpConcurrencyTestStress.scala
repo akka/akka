@@ -1,5 +1,6 @@
 package sample.camel
 
+import _root_.akka.routing.{RoutedProps, Routing}
 import collection.mutable.Set
 
 import java.util.concurrent.CountDownLatch
@@ -11,8 +12,6 @@ import akka.actor.Actor._
 import akka.actor.{ ActorRegistry, ActorRef, Actor }
 import akka.camel._
 import akka.camel.CamelServiceManager._
-import akka.routing.Routing
-
 /**
  * @author Martin Krasser
  */
@@ -50,8 +49,10 @@ object HttpConcurrencyTestStress {
     startCamelService
 
     val workers = for (i ← 1 to 8) yield actorOf[HttpServerWorker].start
-    val balancer = Routing.actorOfWithRoundRobin("loadbalancer", workers)
-    //service.get.awaitEndpointActivation(1) {
+    val balancer = Routing.actorOf(
+      RoutedProps.apply.withRoundRobinRouter.withConnections(workers).withDeployId("loadbalancer")
+    )
+     //service.get.awaitEndpointActivation(1) {
     //  actorOf(new HttpServerActor(balancer)).start
     //}
   }
