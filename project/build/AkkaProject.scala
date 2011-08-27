@@ -369,6 +369,11 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
       project("akka-beanstalk-mailbox", "akka-beanstalk-mailbox", new AkkaBeanstalkMailboxProject(_), akka_mailboxes_common)
 
     override def disableCrossPaths = true
+
+    lazy val publishRelease = {
+      val releaseConfiguration = new DefaultPublishConfiguration(localReleaseRepository, "release", false)
+      publishTask(publishIvyModule, releaseConfiguration) dependsOn (deliver, publishLocal, makePom)
+    }
   }
 
   class AkkaMailboxesCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
