@@ -18,6 +18,11 @@ import com.eaio.uuid.UUID
 import java.net.InetSocketAddress
 import java.util.concurrent.{ ConcurrentSkipListSet }
 
+import akka.cluster.metrics._
+
+import akka.util.Duration
+import akka.util.duration._
+
 class ClusterException(message: String) extends AkkaException(message)
 
 object ChangeListener {
@@ -109,6 +114,76 @@ object NodeAddress {
   }
 }
 
+/*
+ * Allows user to access metrics of a different nodes in the cluster. Changing metrics can be monitored 
+ * using {@link MetricsAlterationMonitor}
+ * Metrics of the cluster nodes are distributed through ZooKeeper. For better performance, metrics are
+ * cached internally, and refreshed from ZooKeeper after an interval
+ */
+trait NodeMetricsManager {
+
+  /*
+     * Gets metrics of a local node directly from JMX monitoring beans/Hyperic Sigar
+     */
+  def getLocalMetrics: NodeMetrics
+
+  /*
+     * Gets metrics of a specified node
+     * @param nodeName metrics of the node specified by the name will be returned
+     * @param useCached if <code>true</code>, returns metrics cached in the metrics manager,
+     * gets metrics directly from ZooKeeper otherwise
+     */
+  def getMetrics(nodeName: String, useCached: Boolean = true): Option[NodeMetrics]
+
+  /*
+     * Gets cached metrics of all nodes in the cluster
+     */
+  def getAllMetrics: Array[NodeMetrics]
+
+  /*
+     * Adds monitor that reacts, when specific conditions are satisfied  
+     */
+  def addMonitor(monitor: MetricsAlterationMonitor): Unit
+
+  /*
+     * Removes monitor
+     */
+  def removeMonitor(monitor: MetricsAlterationMonitor): Unit
+
+  /*
+     * Removes metrics of s specified node from ZooKeeper and metrics manager cache
+     */
+  def removeNodeMetrics(nodeName: String): Unit
+
+  /*
+     * Sets timeout after which metrics, cached in the metrics manager, will be refreshed from ZooKeeper
+     */
+  def refreshTimeout_=(newValue: Duration): Unit
+
+  /*
+     * Timeout after which metrics, cached in the metrics manager, will be refreshed from ZooKeeper
+     */
+  def refreshTimeout: Duration
+
+  /*
+     * Starts metrics manager. When metrics manager is started, it refreshes cache from ZooKeeper 
+     * after <code>refreshTimeout</code>, and invokes plugged monitors
+     */
+  def start(): NodeMetricsManager
+
+  /*
+     * Stops metrics manager. Stopped metrics manager doesn't refresh cache from ZooKeeper, 
+     * and doesn't invoke plugged monitors
+     */
+  def stop(): Unit
+
+  /*
+     * If the value is <code>true</code>, metrics manages is started and running. Stopped, otherwise
+     */
+  def isRunning: Boolean
+
+}
+
 /**
  * Interface for cluster node.
  *
@@ -138,6 +213,8 @@ trait ClusterNode {
   def disconnect(): ClusterNode
 
   def reconnect(): ClusterNode
+
+  def metricsManager: NodeMetricsManager
 
   /**
    * Registers a cluster change listener.

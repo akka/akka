@@ -132,6 +132,11 @@ class ClusterActorRef private[akka] (inetSocketAddresses: Array[Tuple2[UUID, Ine
       (s.version, s.connections.values)
     }
 
+    def versionedSocketAddressToRefMap = {
+      val s = state.get
+      (s.version, s.connections)
+    }
+
     def size: Int = state.get().connections.size
 
     def stopAll() {
