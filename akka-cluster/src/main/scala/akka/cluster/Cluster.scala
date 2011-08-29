@@ -340,7 +340,7 @@ class DefaultClusterNode private[akka] (
   private val changeListeners = new CopyOnWriteArrayList[ChangeListener]()
 
   // Address -> ClusterActorRef
-  private val clusterActorRefs = new Index[InetSocketAddress, ClusterActorRef]
+  private[akka] val clusterActorRefs = new Index[InetSocketAddress, ClusterActorRef]
 
   case class VersionedConnectionState(version: Long, connections: Map[String, Tuple2[InetSocketAddress, ActorRef]])
 
@@ -895,18 +895,7 @@ class DefaultClusterNode private[akka] (
   /**
    * Creates an ActorRef with a Router to a set of clustered actors.
    */
-  def ref(actorAddress: String, router: RouterType): ActorRef = {
-    val inetSocketAddresses = inetSocketAddressesForActor(actorAddress)
-    EventHandler.debug(this,
-      "Checking out cluster actor ref with address [%s] and router [%s] on [%s] connected to [\n\t%s]"
-        .format(actorAddress, router, remoteServerAddress, inetSocketAddresses.map(_._2).mkString("\n\t")))
-
-    val actorRef = ClusterActorRef.newRef(router, inetSocketAddresses, actorAddress, Actor.TIMEOUT)
-    inetSocketAddresses foreach {
-      case (_, inetSocketAddress) ⇒ clusterActorRefs.put(inetSocketAddress, actorRef)
-    }
-    actorRef.start()
-  }
+  def ref(actorAddress: String, router: RouterType): ActorRef = ClusterActorRef.newRef(router, actorAddress, Actor.TIMEOUT)
 
   /**
    * Returns the UUIDs of all actors checked out on this node.

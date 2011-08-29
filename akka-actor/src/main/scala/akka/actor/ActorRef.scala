@@ -17,7 +17,6 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ ScheduledFuture, ConcurrentHashMap, TimeUnit }
 import java.util.{ Map ⇒ JMap }
 
-import scala.reflect.BeanProperty
 import scala.collection.immutable.Stack
 import scala.annotation.tailrec
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
