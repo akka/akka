@@ -909,13 +909,12 @@ class LocalActorRef private[akka] (
               currentMessage = null // received message while actor is shutting down, ignore
             case e ⇒
               handleExceptionInDispatch(e, messageHandle.message)
-          }
-          finally {
+          } finally {
             checkReceiveTimeout // Reschedule receive timeout
           }
         } catch {
           case e ⇒
-            EventHandler.error(e, actor, messageHandle.message.toString)
+            EventHandler.error(e, actor, e.getMessage)
             throw e
         }
       }
@@ -1018,8 +1017,7 @@ class LocalActorRef private[akka] (
                 case e ⇒
                   EventHandler.error(e, this, "Exception in restart of Actor [%s]".format(toString))
                   false // an error or exception here should trigger a retry
-              }
-              finally {
+              } finally {
                 currentMessage = null
               }
               if (success) {
@@ -1106,7 +1104,7 @@ class LocalActorRef private[akka] (
   }
 
   private def handleExceptionInDispatch(reason: Throwable, message: Any) = {
-    EventHandler.error(reason, this, message.toString)
+    EventHandler.error(reason, this, reason.getMessage)
 
     //Prevent any further messages to be processed until the actor has been restarted
     dispatcher.suspend(this)
