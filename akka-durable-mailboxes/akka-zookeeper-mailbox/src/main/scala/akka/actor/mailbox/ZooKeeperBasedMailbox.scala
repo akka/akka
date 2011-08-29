@@ -5,7 +5,7 @@ package akka.actor.mailbox
 
 import MailboxProtocol._
 
-import akka.actor.ActorRef
+import akka.actor.LocalActorRef
 import akka.dispatch._
 import akka.config.Config._
 import akka.event.EventHandler
@@ -43,7 +43,7 @@ private[akka] object ZooKeeperMailboxConfig {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ZooKeeperBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbox(owner) {
+class ZooKeeperBasedMailbox(val owner: LocalActorRef) extends DurableExecutableMailbox(owner) {
   import ZooKeeperMailboxConfig._
 
   private val zkClient = new AkkaZkClient(zkServerAddresses, sessionTimeout, connectionTimeout)
@@ -79,5 +79,5 @@ class ZooKeeperBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbo
     case e ⇒ false
   }
 
-  def close = zkClient.close
+  def close() = zkClient.close
 }

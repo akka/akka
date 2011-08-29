@@ -27,9 +27,7 @@ object ActorFireForgetRequestReplySpec {
     }
   }
 
-  class CrashingTemporaryActor extends Actor {
-    self.lifeCycle = Temporary
-
+  class CrashingActor extends Actor {
     def receive = {
       case "Die" ⇒
         state.finished.await
@@ -86,7 +84,7 @@ class ActorFireForgetRequestReplySpec extends WordSpec with MustMatchers with Be
 
     "should shutdown crashed temporary actor" in {
       filterEvents(EventFilter[Exception]("Expected")) {
-        val actor = actorOf[CrashingTemporaryActor].start()
+        val actor = actorOf(Props[CrashingActor].withLifeCycle(Temporary)).start()
         actor.isRunning must be(true)
         actor ! "Die"
         state.finished.await

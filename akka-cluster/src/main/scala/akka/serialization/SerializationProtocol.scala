@@ -9,7 +9,7 @@ import akka.actor.{ uuidFrom, newUuid }
 import akka.actor._
 import DeploymentConfig._
 import akka.dispatch.MessageInvocation
-import akka.util.ReflectiveAccess
+import akka.util.{ ReflectiveAccess, Duration }
 import akka.cluster.{ RemoteClientSettings, MessageSerializer }
 import akka.cluster.protocol.RemoteProtocol
 import RemoteProtocol._
@@ -22,6 +22,7 @@ import com.google.protobuf.ByteString
 
 import com.eaio.uuid.UUID
 import akka.event.EventHandler
+import java.util.{ LinkedList, Collections }
 
 /**
  * Module for local actor serialization.
@@ -60,6 +61,11 @@ object ActorSerialization {
     serializeMailBox: Boolean,
     replicationScheme: ReplicationScheme): SerializedActorRefProtocol = {
 
+    val localRef: Option[LocalActorRef] = actorRef match {
+      case l: LocalActorRef ⇒ Some(l)
+      case _                ⇒ None
+    }
+
     val lifeCycleProtocol: Option[LifeCycleProtocol] = {
       actorRef.lifeCycle match {
         case Permanent          ⇒ Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.PERMANENT).build)
@@ -71,8 +77,10 @@ object ActorSerialization {
     val builder = SerializedActorRefProtocol.newBuilder
       .setUuid(UuidProtocol.newBuilder.setHigh(actorRef.uuid.getTime).setLow(actorRef.uuid.getClockSeqAndNode).build)
       .setAddress(actorRef.address)
-      .setActorClassname(actorRef.actorInstance.get.getClass.getName)
       .setTimeout(actorRef.timeout)
+
+    if (localRef.isDefined)
+      builder.setActorClassname(localRef.get.actorInstance.get.getClass.getName) //TODO FIXME Why is the classname needed anymore?
 
     replicationScheme match {
       case _: Transient | Transient ⇒
@@ -86,47 +94,53 @@ object ActorSerialization {
         builder.setReplicationStorage(storageType)
 
         val strategyType = strategy match {
-          case _: WriteBehind | WriteBehind   ⇒ ReplicationStrategyType.WRITE_BEHIND
-          case _: WriteThrough | WriteThrough ⇒ ReplicationStrategyType.WRITE_THROUGH
+          case _: WriteBehind  ⇒ ReplicationStrategyType.WRITE_BEHIND
+          case _: WriteThrough ⇒ ReplicationStrategyType.WRITE_THROUGH
         }
         builder.setReplicationStrategy(strategyType)
     }
 
-    if (serializeMailBox == true) {
-      if (actorRef.mailbox eq null) throw new IllegalActorStateException("Can't serialize an actor that has not been started.")
-      val messages =
-        actorRef.mailbox match {
+    lifeCycleProtocol.foreach(builder.setLifeCycle(_))
+    actorRef.supervisor.foreach(s ⇒ builder.setSupervisor(RemoteActorSerialization.toRemoteActorRefProtocol(s)))
+
+    localRef foreach { l ⇒
+      if (serializeMailBox) {
+        l.mailbox match {
+          case null ⇒ throw new IllegalActorStateException("Can't serialize an actor that has not been started.")
           case q: java.util.Queue[_] ⇒
             val l = new scala.collection.mutable.ListBuffer[MessageInvocation]
             val it = q.iterator
             while (it.hasNext) l += it.next.asInstanceOf[MessageInvocation]
-            l
+
+            l map { m ⇒
+              RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+                Option(m.receiver),
+                Left(actorRef.uuid),
+                actorRef.address,
+                actorRef.timeout,
+                Right(m.message),
+                false,
+                m.channel match {
+                  case a: ActorRef ⇒ Some(a)
+                  case _           ⇒ None
+                })
+            } foreach {
+              builder.addMessages(_)
+            }
         }
+      }
 
-      val requestProtocols =
-        messages.map(m ⇒
-          RemoteActorSerialization.createRemoteMessageProtocolBuilder(
-            Some(actorRef),
-            Left(actorRef.uuid),
-            actorRef.address,
-            actorRef.timeout,
-            Right(m.message),
-            false,
-            actorRef.getSender))
-
-      requestProtocols.foreach(builder.addMessages(_))
+      l.receiveTimeout.foreach(builder.setReceiveTimeout(_))
+      val actorInstance = l.actorInstance.get
+      Serialization.serialize(actorInstance.asInstanceOf[T]) match {
+        case Right(bytes)    ⇒ builder.setActorInstance(ByteString.copyFrom(bytes))
+        case Left(exception) ⇒ throw new Exception("Error serializing : " + actorInstance.getClass.getName)
+      }
+      val stack = l.hotswap
+      if (!stack.isEmpty)
+        builder.setHotswapStack(ByteString.copyFrom(akka.serialization.JavaSerializer.toBinary(stack)))
     }
 
-    actorRef.receiveTimeout.foreach(builder.setReceiveTimeout(_))
-    Serialization.serialize(actorRef.actor.asInstanceOf[T]) match {
-      case Right(bytes)    ⇒ builder.setActorInstance(ByteString.copyFrom(bytes))
-      case Left(exception) ⇒ throw new Exception("Error serializing : " + actorRef.actor.getClass.getName)
-    }
-
-    lifeCycleProtocol.foreach(builder.setLifeCycle(_))
-    actorRef.supervisor.foreach(s ⇒ builder.setSupervisor(RemoteActorSerialization.toRemoteActorRefProtocol(s)))
-    // if (!actorRef.hotswap.isEmpty) builder.setHotswapStack(ByteString.copyFrom(Serializers.Java.toBinary(actorRef.hotswap)))
-    if (!actorRef.hotswap.isEmpty) builder.setHotswapStack(ByteString.copyFrom(akka.serialization.JavaSerializer.toBinary(actorRef.hotswap)))
     builder.build
   }
 
@@ -144,19 +158,6 @@ object ActorSerialization {
     loader: Option[ClassLoader]): ActorRef = {
 
     EventHandler.debug(this, "Deserializing SerializedActorRefProtocol to LocalActorRef:\n%s".format(protocol))
-
-    val lifeCycle =
-      if (protocol.hasLifeCycle) {
-        protocol.getLifeCycle.getLifeCycle match {
-          case LifeCycleType.PERMANENT ⇒ Permanent
-          case LifeCycleType.TEMPORARY ⇒ Temporary
-          case unknown                 ⇒ throw new IllegalActorStateException("LifeCycle type is not valid [" + unknown + "]")
-        }
-      } else UndefinedLifeCycle
-
-    val supervisor =
-      if (protocol.hasSupervisor) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
-      else None
 
     // import ReplicationStorageType._
     // import ReplicationStrategyType._
@@ -180,7 +181,7 @@ object ActorSerialization {
     //     }
     //   } else Transient
 
-    val hotswap =
+    val storedHotswap =
       try {
         Serialization.deserialize(
           protocol.getHotswapStack.toByteArray,
@@ -193,17 +194,26 @@ object ActorSerialization {
         case e: Exception ⇒ Stack[PartialFunction[Any, Unit]]()
       }
 
-    val classLoader = loader.getOrElse(this.getClass.getClassLoader)
-
-    val factory = () ⇒ {
-      val actorClass = classLoader.loadClass(protocol.getActorClassname)
-      try {
-        Serialization.deserialize(protocol.getActorInstance.toByteArray, actorClass, loader) match {
-          case Right(r) ⇒ r.asInstanceOf[Actor]
-          case Left(ex) ⇒ throw new Exception("Cannot de-serialize : " + actorClass)
+    val storedLifeCycle =
+      if (protocol.hasLifeCycle) {
+        protocol.getLifeCycle.getLifeCycle match {
+          case LifeCycleType.PERMANENT ⇒ Permanent
+          case LifeCycleType.TEMPORARY ⇒ Temporary
+          case unknown                 ⇒ UndefinedLifeCycle
         }
-      } catch {
-        case e: Exception ⇒ actorClass.newInstance.asInstanceOf[Actor]
+      } else UndefinedLifeCycle
+
+    val storedSupervisor =
+      if (protocol.hasSupervisor) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
+      else None
+
+    val classLoader = loader.getOrElse(this.getClass.getClassLoader)
+    val bytes = protocol.getActorInstance.toByteArray
+    val actorClass = classLoader.loadClass(protocol.getActorClassname)
+    val factory = () ⇒ {
+      Serialization.deserialize(bytes, actorClass, loader) match {
+        case Right(r) ⇒ r.asInstanceOf[Actor]
+        case Left(ex) ⇒ throw new Exception("Cannot de-serialize : " + actorClass)
       }
     }
 
@@ -212,18 +222,25 @@ object ActorSerialization {
       case None       ⇒ uuidFrom(protocol.getUuid.getHigh, protocol.getUuid.getLow)
     }
 
-    val ar = new LocalActorRef(
-      actorUuid,
-      protocol.getAddress,
-      if (protocol.hasTimeout) protocol.getTimeout else Actor.TIMEOUT,
-      if (protocol.hasReceiveTimeout) Some(protocol.getReceiveTimeout) else None,
-      lifeCycle,
-      supervisor,
-      hotswap,
-      factory)
+    val props = Props(creator = factory,
+      timeout = if (protocol.hasTimeout) protocol.getTimeout else Timeout.default,
+      lifeCycle = storedLifeCycle,
+      supervisor = storedSupervisor //TODO what dispatcher should it use?
+      //TODO what faultHandler should it use?
+      //
+      )
 
-    val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteMessageProtocol]]
-    messages.foreach(message ⇒ ar ! MessageSerializer.deserialize(message.getMessage, Some(classLoader)))
+    val receiveTimeout = if (protocol.hasReceiveTimeout) Some(protocol.getReceiveTimeout) else None //TODO FIXME, I'm expensive and slow
+
+    val ar = new LocalActorRef(actorUuid, protocol.getAddress, props, receiveTimeout, storedHotswap)
+
+    //Deserialize messages
+    {
+      val iterator = protocol.getMessagesList.iterator()
+      while (iterator.hasNext())
+        ar ! MessageSerializer.deserialize(iterator.next().getMessage, Some(classLoader)) //TODO This is broken, why aren't we preserving the sender?
+    }
+
     ar
   }
 }

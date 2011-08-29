@@ -13,6 +13,7 @@ import akka.event.EventHandler
 import akka.cluster.ClusterNode
 
 import java.net.InetSocketAddress
+import akka.routing.{ RoutedProps, Router }
 
 /**
  * Helper class for reflective access to different modules in order to allow optional loading of modules.
@@ -32,6 +33,21 @@ object ReflectiveAccess {
    */
   object ClusterModule {
     lazy val isEnabled = Config.isClusterEnabled //&& clusterInstance.isDefined
+
+    lazy val clusterRefClass: Class[_] = getClassFor("akka.cluster.ClusterActorRef") match {
+      case Left(e)  ⇒ throw e
+      case Right(b) ⇒ b
+    }
+
+    def newClusteredActorRef(props: RoutedProps): ActorRef = {
+      val params: Array[Class[_]] = Array(classOf[RoutedProps])
+      val args: Array[AnyRef] = Array(props)
+
+      createInstance(clusterRefClass, params, args) match {
+        case Left(e)  ⇒ throw e
+        case Right(b) ⇒ b.asInstanceOf[ActorRef]
+      }
+    }
 
     def ensureEnabled() {
       if (!isEnabled) {

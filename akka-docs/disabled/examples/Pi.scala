@@ -1,9 +1,9 @@
 //#imports
 package akka.tutorial.scala.first
 
+import _root_.akka.routing.{RoutedProps, Routing, CyclicIterator}
 import akka.actor.{Actor, PoisonPill}
 import Actor._
-import akka.routing.{Routing, CyclicIterator}
 import Routing._
 
 import System.{currentTimeMillis => now}
@@ -65,7 +65,14 @@ object Pi extends App {
     val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
 
     // wrap them with a load-balancing router
-    val router = Routing.loadBalancerActor(CyclicIterator(workers)).start()
+    val router = Routing.actorOf(
+      RoutedProps.apply
+        .withRoundRobinRouter
+        .withConnections(workers)
+        .withDeployId("pi")
+    )
+
+    loadBalancerActor(CyclicIterator(workers)).start()
     //#create-workers
 
     //#master-receive

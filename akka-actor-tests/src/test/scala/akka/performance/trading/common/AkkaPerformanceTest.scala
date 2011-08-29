@@ -6,12 +6,10 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import akka.performance.trading.domain._
 import akka.performance.trading.common._
-import akka.actor.ActorRef
-import akka.actor.Actor
 import akka.actor.Actor.actorOf
 import akka.dispatch.Dispatchers
-import akka.actor.PoisonPill
 import akka.event.EventHandler
+import akka.actor.{ Props, ActorRef, Actor, PoisonPill }
 
 abstract class AkkaPerformanceTest extends BenchmarkScenarios {
 
@@ -38,7 +36,7 @@ abstract class AkkaPerformanceTest extends BenchmarkScenarios {
     val receivers = tradingSystem.orderReceivers.toIndexedSeq
     val clients = (for (i ← 0 until numberOfClients) yield {
       val receiver = receivers(i % receivers.size)
-      actorOf(new Client(receiver, orders, latch, repeatsPerClient + (if (i < oddRepeats) 1 else 0), delayMs))
+      actorOf(Props(new Client(receiver, orders, latch, repeatsPerClient + (if (i < oddRepeats) 1 else 0), delayMs)).withDispatcher(clientDispatcher))
     }).toList
 
     clients.foreach(_.start)
@@ -54,9 +52,6 @@ abstract class AkkaPerformanceTest extends BenchmarkScenarios {
   }
 
   class Client(orderReceiver: ActorRef, orders: List[Order], latch: CountDownLatch, repeat: Int, delayMs: Int) extends Actor {
-
-    self.dispatcher = clientDispatcher
-
     def this(orderReceiver: ActorRef, orders: List[Order], latch: CountDownLatch, repeat: Int) {
       this(orderReceiver, orders, latch, repeat, 0)
     }

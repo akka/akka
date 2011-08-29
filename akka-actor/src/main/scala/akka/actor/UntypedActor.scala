@@ -65,12 +65,12 @@ abstract class UntypedActor extends Actor {
   /**
    * Returns the 'self' reference with the API.
    */
-  def getContext(): ActorRef = self
+  def getContext(): SelfActorRef = self
 
   /**
    * Returns the 'self' reference with the API.
    */
-  def context(): ActorRef = self
+  def context(): SelfActorRef = self
 
   /**
    * Java API for become

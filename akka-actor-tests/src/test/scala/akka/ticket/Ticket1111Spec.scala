@@ -18,25 +18,30 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
 
       val shutdownLatch = new CountDownLatch(1)
 
-      val actor = Routing.actorOf("foo", List(newActor(0, Some(shutdownLatch)),
-        newActor(1, Some(shutdownLatch))),
-        new ScatterGatherFirstCompletedRouter()).start()
+      val props = RoutedProps.apply()
+        .withDeployId("foo")
+        .withConnections(List(newActor(0, Some(shutdownLatch)), newActor(1, Some(shutdownLatch))))
+        .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
+
+      val actor = Routing.actorOf(props)
 
       actor ! Broadcast(Stop(Some(0)))
 
       shutdownLatch.await(5, TimeUnit.SECONDS) must be(true)
 
       (actor ? Broadcast(0)).get.asInstanceOf[Int] must be(1)
-
     }
 
     "throw an exception, if all the connections have stopped" in {
 
       val shutdownLatch = new CountDownLatch(2)
 
-      val actor = Routing.actorOf("foo", List(newActor(0, Some(shutdownLatch)),
-        newActor(1, Some(shutdownLatch))),
-        new ScatterGatherFirstCompletedRouter()).start()
+      val props = RoutedProps.apply()
+        .withDeployId("foo")
+        .withConnections(List(newActor(0, Some(shutdownLatch)), newActor(1, Some(shutdownLatch))))
+        .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
+
+      val actor = Routing.actorOf(props)
 
       actor ! Broadcast(Stop())
 
@@ -50,35 +55,48 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
 
     "return the first response from connections, when all of them replied" in {
 
-      val actor = Routing.actorOf("foo", List(newActor(0), newActor(1)),
-        new ScatterGatherFirstCompletedRouter()).start()
+      val props = RoutedProps.apply()
+        .withDeployId("foo")
+        .withConnections(List(newActor(0), newActor(1)))
+        .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
+
+      val actor = Routing.actorOf(props)
 
       (actor ? Broadcast("Hi!")).get.asInstanceOf[Int] must be(0)
 
     }
 
     "return the first response from connections, when some of them failed to reply" in {
+      val props = RoutedProps.apply()
+        .withDeployId("foo")
+        .withConnections(List(newActor(0), newActor(1)))
+        .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
-      val actor = Routing.actorOf("foo", List(newActor(0), newActor(1)),
-        new ScatterGatherFirstCompletedRouter()).start()
+      val actor = Routing.actorOf(props)
 
       (actor ? Broadcast(0)).get.asInstanceOf[Int] must be(1)
 
     }
 
     "be started when constructed" in {
-
-      val actor = Routing.actorOf("foo", List(newActor(0)),
-        new ScatterGatherFirstCompletedRouter()).start()
+      val props = RoutedProps.apply()
+        .withDeployId("foo")
+        .withConnections(List(newActor(0)))
+        .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
+      val actor = Routing.actorOf(props)
 
       actor.isRunning must be(true)
 
     }
 
     "throw IllegalArgumentException at construction when no connections" in {
+      val props = RoutedProps.apply()
+        .withDeployId("foo")
+        .withConnections(List())
+        .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
+
       try {
-        Routing.actorOf("foo", List(),
-          new ScatterGatherFirstCompletedRouter()).start()
+        Routing.actorOf(props)
         fail()
       } catch {
         case e: IllegalArgumentException ⇒
@@ -104,7 +122,12 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
         connections = connections :+ connection
       }
 
-      val actor = Routing.actorOf("foo", connections, new ScatterGatherFirstCompletedRouter()).start()
+      val props = RoutedProps.apply()
+        .withDeployId("foo")
+        .withConnections(connections)
+        .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
+
+      val actor = Routing.actorOf(props)
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
@@ -141,7 +164,12 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
         }
       }).start()
 
-      val actor = Routing.actorOf("foo", List(connection1, connection2), new ScatterGatherFirstCompletedRouter()).start()
+      val props = RoutedProps.apply()
+        .withDeployId("foo")
+        .withConnections(List(connection1, connection2))
+        .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
+
+      val actor = Routing.actorOf(props)
 
       actor ! Broadcast(1)
       actor ! Broadcast("end")

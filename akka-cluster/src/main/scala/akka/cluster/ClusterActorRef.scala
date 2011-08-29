@@ -7,15 +7,12 @@ import akka.actor._
 import akka.util._
 import akka.event.EventHandler
 import ReflectiveAccess._
-import akka.dispatch.Future
 import akka.routing._
 import RouterType._
 import akka.cluster._
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
-
-import com.eaio.uuid.UUID
 
 import collection.immutable.Map
 import annotation.tailrec
@@ -27,19 +24,19 @@ import annotation.tailrec
  */
 object ClusterActorRef {
 
-  def newRef(
-    routerType: RouterType,
-    inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
-    actorAddress: String,
-    timeout: Long): ClusterActorRef = {
-    routerType match {
-      case Direct        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, new DirectRouter())
-      case Random        ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, new RandomRouter())
-      case RoundRobin    ⇒ new ClusterActorRef(inetSocketAddresses, actorAddress, timeout, new RoundRobinRouter())
+  def newRef(routerType: RouterType, actorAddress: String, timeout: Long): ClusterActorRef = {
+
+    val routerFactory: () ⇒ Router = routerType match {
+      case Direct        ⇒ () ⇒ new DirectRouter
+      case Random        ⇒ () ⇒ new RandomRouter()
+      case RoundRobin    ⇒ () ⇒ new RoundRobinRouter()
       case LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
       case LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
       case LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
     }
+
+    val props = RoutedProps.apply().withDeployId(actorAddress).withTimeout(timeout).withRouter(routerFactory)
+    new ClusterActorRef(props).start()
   }
 
   /**
@@ -58,47 +55,28 @@ object ClusterActorRef {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ClusterActorRef private[akka] (
-  inetSocketAddresses: Array[Tuple2[UUID, InetSocketAddress]],
-  _address: String,
-  _timeout: Long,
-  val router: Router)
-  extends UnsupportedActorRef {
+private[akka] class ClusterActorRef(props: RoutedProps) extends AbstractRoutedActorRef(props) {
 
   import ClusterActorRef._
 
   ClusterModule.ensureEnabled()
 
-  //  val address = Address.clusterActorRefPrefix + _address
-  val address = _address
+  val addresses = Cluster.node.inetSocketAddressesForActor(address)
+  EventHandler.debug(this,
+    "Checking out cluster actor ref with address [%s] and router [%s] on [%s] connected to [\n\t%s]"
+      .format(address, router, Cluster.node.remoteServerAddress, addresses.map(_._2).mkString("\n\t")))
 
-  timeout = _timeout
+  addresses foreach {
+    case (_, address) ⇒ Cluster.node.clusterActorRefs.put(address, this)
+  }
 
-  val connections = new ClusterActorRefConnections((Map[InetSocketAddress, ActorRef]() /: inetSocketAddresses) {
+  val connections = new ClusterActorRefConnections((Map[InetSocketAddress, ActorRef]() /: addresses) {
     case (map, (uuid, inetSocketAddress)) ⇒ map + (inetSocketAddress -> createRemoteActorRef(address, inetSocketAddress))
-  })
+  }, props.connections)
 
   router.init(connections)
 
   def connectionsSize(): Int = connections.size
-
-  override def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
-    val sender = channel match {
-      case ref: ActorRef ⇒ Some(ref)
-      case _             ⇒ None
-    }
-    router.route(message)(sender)
-  }
-
-  override def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any,
-                                                                    timeout: Timeout,
-                                                                    channel: UntypedChannel): Future[Any] = {
-    val sender = channel match {
-      case ref: ActorRef ⇒ Some(ref)
-      case _             ⇒ None
-    }
-    router.route[Any](message, timeout.duration.toMillis)(sender)
-  }
 
   private[akka] def failOver(from: InetSocketAddress, to: InetSocketAddress): Unit = {
     connections.failOver(from, to)
@@ -131,24 +109,19 @@ class ClusterActorRefConnections() extends RouterConnections {
 
   private val state = new AtomicReference[State]()
 
-  def this(connectionMap: Map[InetSocketAddress, ActorRef]) = {
+  def this(clusteredConnections: Map[InetSocketAddress, ActorRef], explicitConnections: Iterable[ActorRef]) = {
     this()
-    state.set(new State(Long.MinValue, connectionMap))
+    state.set(new State(Long.MinValue, clusteredConnections, explicitConnections))
   }
 
   def version: Long = state.get().version
 
-  def connections: Map[InetSocketAddress, ActorRef] = state.get.connections
+  def versionedIterable = state.get
 
-  def versionedIterator = {
-    val s = state.get
-    (s.version, s.connections.values)
-  }
-
-  def size: Int = state.get().connections.size
+  def size(): Int = state.get().iterable.size
 
   def stopAll() {
-    state.get().connections.values foreach (_.stop()) // shut down all remote connections
+    state.get().clusteredConnections.values foreach (_.stop()) // shut down all remote connections
   }
 
   @tailrec
@@ -156,18 +129,18 @@ class ClusterActorRefConnections() extends RouterConnections {
     EventHandler.debug(this, "ClusterActorRef failover from [%s] to [%s]".format(from, to))
 
     val oldState = state.get
-    var change = false
-    val newMap = oldState.connections map {
+    var changed = false
+    val newMap = oldState.clusteredConnections map {
       case (`from`, actorRef) ⇒
-        change = true
-        //          actorRef.stop()
+        changed = true
+        //actorRef.stop()
         (to, createRemoteActorRef(actorRef.address, to))
       case other ⇒ other
     }
 
-    if (change) {
+    if (changed) {
       //there was a state change, so we are now going to update the state.
-      val newState = new State(oldState.version + 1, newMap)
+      val newState = new State(oldState.version + 1, newMap, oldState.explicitConnections)
 
       //if we are not able to update, the state, we are going to try again.
       if (!state.compareAndSet(oldState, newState)) failOver(from, to)
@@ -180,22 +153,41 @@ class ClusterActorRefConnections() extends RouterConnections {
 
     val oldState = state.get()
 
-    //remote the ref from the connections.
+    var changed = false
+
+    //remote the deadRef from the clustered-connections.
     var newConnections = Map[InetSocketAddress, ActorRef]()
-    oldState.connections.keys.foreach(
+    oldState.clusteredConnections.keys.foreach(
       address ⇒ {
-        val actorRef: ActorRef = oldState.connections.get(address).get
-        if (actorRef ne deadRef) newConnections = newConnections + ((address, actorRef))
+        val actorRef: ActorRef = oldState.clusteredConnections.get(address).get
+        if (actorRef ne deadRef) {
+          newConnections = newConnections + ((address, actorRef))
+        } else {
+          changed = true
+        }
       })
 
-    if (newConnections.size != oldState.connections.size) {
+    //remove the deadRef also from the explicit connections.
+    var newExplicitConnections = oldState.explicitConnections.filter(
+      actorRef ⇒
+        if (actorRef == deadRef) {
+          changed = true
+          false
+        } else {
+          true
+        })
+
+    if (changed) {
       //one or more occurrances of the actorRef were removed, so we need to update the state.
-      val newState = new State(oldState.version + 1, newConnections)
+      val newState = new State(oldState.version + 1, newConnections, newExplicitConnections)
 
       //if we are not able to update the state, we just try again.
       if (!state.compareAndSet(oldState, newState)) remove(deadRef)
     }
   }
 
-  case class State(val version: Long, val connections: Map[InetSocketAddress, ActorRef])
+  class State(version: Long = Integer.MIN_VALUE,
+              val clusteredConnections: Map[InetSocketAddress, ActorRef],
+              val explicitConnections: Iterable[ActorRef])
+    extends VersionedIterable[ActorRef](version, explicitConnections ++ clusteredConnections.values)
 }

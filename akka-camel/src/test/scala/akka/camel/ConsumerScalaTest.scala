@@ -103,7 +103,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
     "receiving an in-out message exchange" must {
       "lead to a TimeoutException" in {
         service.awaitEndpointActivation(1) {
-          actorOf(new TestBlocker("direct:publish-test-5")).start
+          actorOf(Props(creator = () ⇒ new TestBlocker("direct:publish-test-5"), timeout = Timeout(1000))).start
         } must be(true)
 
         try {
@@ -188,7 +188,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
     }
 
     "be able to reply on failure during postStop" in {
-      val consumer = Actor.actorOf(new SupervisedConsumer("reply-channel-test-3"))
+      val consumer = Actor.actorOf(Props(new SupervisedConsumer("reply-channel-test-3")).withLifeCycle(Temporary))
       val supervisor = Supervisor(
         SupervisorConfig(
           OneForOneStrategy(List(classOf[Exception]), 2, 10000),
@@ -216,7 +216,6 @@ object ConsumerScalaTest {
   }
 
   class TestBlocker(uri: String) extends Actor with BlockingConsumer {
-    self.timeout = 1000
     def endpointUri = uri
     protected def receive = {
       case msg: Message ⇒ { /* do not reply */ }

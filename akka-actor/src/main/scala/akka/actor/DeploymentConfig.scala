@@ -80,17 +80,18 @@ object DeploymentConfig {
   // --------------------------------
   // --- Replicas
   // --------------------------------
-  sealed case class ReplicationFactor(val factor: Int) {
+
+  case class ReplicationFactor(val factor: Int) {
     if (factor < 0) throw new IllegalArgumentException("replication-factor can not be negative")
   }
 
   // For Java API
-  case class AutoReplicationFactor() extends ReplicationFactor(-1)
-  case class ZeroReplicationFactor() extends ReplicationFactor(0)
+  class AutoReplicationFactor extends ReplicationFactor(-1)
+  class ZeroReplicationFactor extends ReplicationFactor(0)
 
   // For Scala API
-  case object AutoReplicationFactor extends ReplicationFactor(-1)
-  case object ZeroReplicationFactor extends ReplicationFactor(0)
+  case object AutoReplicationFactor extends AutoReplicationFactor
+  case object ZeroReplicationFactor extends ZeroReplicationFactor
 
   // --------------------------------
   // --- Replication
@@ -125,12 +126,12 @@ object DeploymentConfig {
   sealed trait ReplicationStrategy
 
   // For Java API
-  case class WriteBehind() extends ReplicationStrategy
-  case class WriteThrough() extends ReplicationStrategy
+  sealed class WriteBehind extends ReplicationStrategy
+  sealed class WriteThrough extends ReplicationStrategy
 
   // For Scala API
-  case object WriteBehind extends ReplicationStrategy
-  case object WriteThrough extends ReplicationStrategy
+  case object WriteBehind extends WriteBehind
+  case object WriteThrough extends WriteThrough
 
   // --------------------------------
   // --- Helper methods for parsing

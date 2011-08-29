@@ -16,12 +16,8 @@ trait MatchingEngine {
 
 }
 
-class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook], disp: Option[MessageDispatcher])
+class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook])
   extends Actor with MatchingEngine {
-
-  for (d ← disp) {
-    self.dispatcher = d
-  }
 
   var standby: Option[ActorRef] = None
 

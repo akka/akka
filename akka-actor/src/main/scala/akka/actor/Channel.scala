@@ -155,7 +155,7 @@ trait ForwardableChannel extends UntypedChannel with AvailableChannel[Any] {
 }
 
 object ForwardableChannel {
-  implicit def someS2FC(sender: Some[ActorRef]): ForwardableChannel = sender.get
-  implicit def someIS2FC(implicit sender: Some[ActorRef]): ForwardableChannel = sender.get
+  implicit def someS2FC(sender: Some[SelfActorRef]): ForwardableChannel = sender.get
+  implicit def someIS2FC(implicit sender: Some[SelfActorRef]): ForwardableChannel = sender.get
 }
 

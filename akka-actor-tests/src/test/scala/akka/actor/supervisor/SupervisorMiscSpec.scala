@@ -5,10 +5,10 @@ package akka.actor
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import akka.dispatch.Dispatchers
 import akka.config.Supervision.{ SupervisorConfig, OneForOneStrategy, Supervise, Permanent }
 import java.util.concurrent.CountDownLatch
 import akka.testkit.{ filterEvents, EventFilter }
+import akka.dispatch.{ PinnedDispatcher, Dispatchers }
 
 class SupervisorMiscSpec extends WordSpec with MustMatchers {
   "A Supervisor" should {
@@ -17,45 +17,41 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
       filterEvents(EventFilter[Exception]("killed")) {
         val countDownLatch = new CountDownLatch(4)
 
-        val actor1 = Actor.actorOf(new Actor {
-          self.dispatcher = Dispatchers.newPinnedDispatcher(self)
+        val actor1 = Actor.actorOf(Props(new Actor {
           override def postRestart(cause: Throwable) { countDownLatch.countDown() }
 
           protected def receive = {
             case "kill" ⇒ throw new Exception("killed")
             case _      ⇒ println("received unknown message")
           }
-        }).start()
+        }).withDispatcher(new PinnedDispatcher()))
 
-        val actor2 = Actor.actorOf(new Actor {
-          self.dispatcher = Dispatchers.newPinnedDispatcher(self)
+        val actor2 = Actor.actorOf(Props(new Actor {
           override def postRestart(cause: Throwable) { countDownLatch.countDown() }
 
           protected def receive = {
             case "kill" ⇒ throw new Exception("killed")
             case _      ⇒ println("received unknown message")
           }
-        }).start()
+        }).withDispatcher(new PinnedDispatcher()))
 
-        val actor3 = Actor.actorOf(new Actor {
-          self.dispatcher = Dispatchers.newDispatcher("test").build
+        val actor3 = Actor.actorOf(Props(new Actor {
           override def postRestart(cause: Throwable) { countDownLatch.countDown() }
 
           protected def receive = {
             case "kill" ⇒ throw new Exception("killed")
             case _      ⇒ println("received unknown message")
           }
-        }).start()
+        }).withDispatcher(Dispatchers.newDispatcher("test").build))
 
-        val actor4 = Actor.actorOf(new Actor {
-          self.dispatcher = Dispatchers.newPinnedDispatcher(self)
+        val actor4 = Actor.actorOf(Props(new Actor {
           override def postRestart(cause: Throwable) { countDownLatch.countDown() }
 
           protected def receive = {
             case "kill" ⇒ throw new Exception("killed")
             case _      ⇒ println("received unknown message")
           }
-        }).start()
+        }).withDispatcher(new PinnedDispatcher()))
 
         val sup = Supervisor(
           SupervisorConfig(

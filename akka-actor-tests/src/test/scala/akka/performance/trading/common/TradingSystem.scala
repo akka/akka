@@ -3,9 +3,8 @@ package akka.performance.trading.common
 import akka.performance.trading.domain.Orderbook
 import akka.performance.trading.domain.OrderbookRepository
 import akka.actor.Actor._
-import akka.actor.ActorRef
-import akka.actor.PoisonPill
 import akka.dispatch.MessageDispatcher
+import akka.actor.{ Props, ActorRef, PoisonPill }
 
 trait TradingSystem {
   type ME
@@ -69,7 +68,10 @@ class AkkaTradingSystem extends TradingSystem {
   }
 
   def createMatchingEngine(meId: String, orderbooks: List[Orderbook]) =
-    actorOf(new AkkaMatchingEngine(meId, orderbooks, meDispatcher))
+    meDispatcher match {
+      case Some(d) ⇒ actorOf(Props(new AkkaMatchingEngine(meId, orderbooks)).withDispatcher(d))
+      case _       ⇒ actorOf(Props(new AkkaMatchingEngine(meId, orderbooks)))
+    }
 
   override def createOrderReceivers: List[ActorRef] = {
     (1 to 10).toList map (i ⇒ createOrderReceiver())
@@ -87,8 +89,10 @@ class AkkaTradingSystem extends TradingSystem {
     MatchingEngineRouting(Map() ++ rules)
   }
 
-  def createOrderReceiver() =
-    actorOf(new AkkaOrderReceiver(orDispatcher))
+  def createOrderReceiver() = orDispatcher match {
+    case Some(d) ⇒ actorOf(Props(new AkkaOrderReceiver()).withDispatcher(d))
+    case _       ⇒ actorOf(Props(new AkkaOrderReceiver()))
+  }
 
   override def start() {
     for (MatchingEngineInfo(p, s, o) ← matchingEngines) {

@@ -16,7 +16,7 @@ import akka.actor._
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final case class MessageInvocation(val receiver: ActorRef,
+final case class MessageInvocation(val receiver: LocalActorRef,
                                    val message: Any,
                                    val channel: UntypedChannel) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
@@ -63,7 +63,7 @@ abstract class MessageDispatcher {
   /**
    *  Creates and returns a mailbox for the given actor.
    */
-  private[akka] def createMailbox(actorRef: ActorRef): AnyRef
+  private[akka] def createMailbox(actorRef: LocalActorRef): AnyRef
 
   /**
    * Name of this dispatcher.
@@ -73,7 +73,7 @@ abstract class MessageDispatcher {
   /**
    * Attaches the specified actorRef to this dispatcher
    */
-  final def attach(actorRef: ActorRef) {
+  final def attach(actorRef: LocalActorRef) {
     guard withGuard {
       register(actorRef)
     }
@@ -82,7 +82,7 @@ abstract class MessageDispatcher {
   /**
    * Detaches the specified actorRef from this dispatcher
    */
-  final def detach(actorRef: ActorRef) {
+  final def detach(actorRef: LocalActorRef) {
     guard withGuard {
       unregister(actorRef)
     }
@@ -129,7 +129,7 @@ abstract class MessageDispatcher {
    * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
    * and only call it under the dispatcher-guard, see "attach" for the only invocation
    */
-  private[akka] def register(actorRef: ActorRef) {
+  private[akka] def register(actorRef: LocalActorRef) {
     if (actorRef.mailbox eq null)
       actorRef.mailbox = createMailbox(actorRef)
 
@@ -145,7 +145,7 @@ abstract class MessageDispatcher {
    * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
    * and only call it under the dispatcher-guard, see "detach" for the only invocation
    */
-  private[akka] def unregister(actorRef: ActorRef) = {
+  private[akka] def unregister(actorRef: LocalActorRef) = {
     if (uuids remove actorRef.uuid) {
       cleanUpMailboxFor(actorRef)
       actorRef.mailbox = null
@@ -166,7 +166,7 @@ abstract class MessageDispatcher {
    * Overridable callback to clean up the mailbox for a given actor,
    * called when an actor is unregistered.
    */
-  protected def cleanUpMailboxFor(actorRef: ActorRef) {}
+  protected def cleanUpMailboxFor(actorRef: LocalActorRef) {}
 
   /**
    * Traverses the list of actors (uuids) currently being attached to this dispatcher and stops those actors
@@ -211,12 +211,12 @@ abstract class MessageDispatcher {
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
    */
-  def suspend(actorRef: ActorRef)
+  def suspend(actorRef: LocalActorRef)
 
   /*
    * After the call to this method, the dispatcher must begin any new message processing for the specified reference
    */
-  def resume(actorRef: ActorRef)
+  def resume(actorRef: LocalActorRef)
 
   /**
    *   Will be called when the dispatcher is to queue an invocation for execution
@@ -238,12 +238,12 @@ abstract class MessageDispatcher {
   /**
    * Returns the size of the mailbox for the specified actor
    */
-  def mailboxSize(actorRef: ActorRef): Int
+  def mailboxSize(actorRef: LocalActorRef): Int
 
   /**
    * Returns the "current" emptiness status of the mailbox for the specified actor
    */
-  def mailboxIsEmpty(actorRef: ActorRef): Boolean
+  def mailboxIsEmpty(actorRef: LocalActorRef): Boolean
 
   /**
    * Returns the amount of tasks queued for execution

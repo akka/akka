@@ -6,9 +6,9 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
-import akka.actor.{ IllegalActorStateException, Actor }
-import Actor._
+import akka.actor.Actor._
 import akka.dispatch.{ MessageQueue, Dispatchers }
+import akka.actor.{ LocalActorRef, IllegalActorStateException, Actor, Props }
 
 object BalancingDispatcherSpec {
 
@@ -17,7 +17,6 @@ object BalancingDispatcherSpec {
   val delayableActorDispatcher, sharedActorDispatcher, parentActorDispatcher = newWorkStealer()
 
   class DelayableActor(delay: Int, finishedCounter: CountDownLatch) extends Actor {
-    self.dispatcher = delayableActorDispatcher
     @volatile
     var invocationCount = 0
 
@@ -31,17 +30,14 @@ object BalancingDispatcherSpec {
   }
 
   class FirstActor extends Actor {
-    self.dispatcher = sharedActorDispatcher
     def receive = { case _ ⇒ {} }
   }
 
   class SecondActor extends Actor {
-    self.dispatcher = sharedActorDispatcher
     def receive = { case _ ⇒ {} }
   }
 
   class ParentActor extends Actor {
-    self.dispatcher = parentActorDispatcher
     def receive = { case _ ⇒ {} }
   }
 
@@ -59,8 +55,8 @@ class BalancingDispatcherSpec extends JUnitSuite with MustMatchers {
   def fastActorShouldStealWorkFromSlowActor {
     val finishedCounter = new CountDownLatch(110)
 
-    val slow = actorOf(new DelayableActor(50, finishedCounter), "slow").start
-    val fast = actorOf(new DelayableActor(10, finishedCounter), "fast").start
+    val slow = actorOf(Props(new DelayableActor(50, finishedCounter)).withDispatcher(delayableActorDispatcher), "slow").asInstanceOf[LocalActorRef]
+    val fast = actorOf(Props(new DelayableActor(10, finishedCounter)).withDispatcher(delayableActorDispatcher), "fast").asInstanceOf[LocalActorRef]
 
     var sentToFast = 0
 
@@ -86,32 +82,32 @@ class BalancingDispatcherSpec extends JUnitSuite with MustMatchers {
     finishedCounter.await(5, TimeUnit.SECONDS)
     fast.mailbox.asInstanceOf[MessageQueue].isEmpty must be(true)
     slow.mailbox.asInstanceOf[MessageQueue].isEmpty must be(true)
-    fast.actor.asInstanceOf[DelayableActor].invocationCount must be > sentToFast
-    fast.actor.asInstanceOf[DelayableActor].invocationCount must be >
-      (slow.actor.asInstanceOf[DelayableActor].invocationCount)
+    fast.actorInstance.get().asInstanceOf[DelayableActor].invocationCount must be > sentToFast
+    fast.actorInstance.get().asInstanceOf[DelayableActor].invocationCount must be >
+      (slow.actorInstance.get().asInstanceOf[DelayableActor].invocationCount)
     slow.stop()
     fast.stop()
   }
 
   @Test
   def canNotUseActorsOfDifferentTypesInSameDispatcher(): Unit = {
-    val first = actorOf[FirstActor]
-    val second = actorOf[SecondActor]
+    val first = actorOf(Props[FirstActor].withDispatcher(sharedActorDispatcher))
 
-    first.start()
     intercept[IllegalActorStateException] {
-      second.start()
+      actorOf(Props[SecondActor].withDispatcher(sharedActorDispatcher))
     }
+    first.stop()
   }
 
   @Test
   def canNotUseActorsOfDifferentSubTypesInSameDispatcher(): Unit = {
-    val parent = actorOf[ParentActor]
-    val child = actorOf[ChildActor]
+    val parent = actorOf(Props[ParentActor].withDispatcher(parentActorDispatcher))
 
-    parent.start()
     intercept[IllegalActorStateException] {
-      child.start()
+      val child = actorOf(Props[ChildActor].withDispatcher(parentActorDispatcher))
+      child.stop()
     }
+
+    parent.stop()
   }
 }

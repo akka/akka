@@ -4,9 +4,10 @@
 
 package akka.cluster
 
-import akka.actor.Actor
+import akka.actor.{ Actor, Props }
+import Actor._
 import akka.cluster._
-import akka.dispatch.Dispatchers
+import akka.dispatch.{ Dispatchers, Future, PinnedDispatcher }
 import akka.util.ListenerManagement
 
 import scala.collection.mutable.{ HashMap, Set }
@@ -19,14 +20,13 @@ object FailureDetector {
   private case class Register(strategy: FailOverStrategy, address: InetSocketAddress) extends FailureDetectorEvent
   private case class Unregister(strategy: FailOverStrategy, address: InetSocketAddress) extends FailureDetectorEvent
 
-  private[akka] val registry = Actor.localActorOf[Registry].start()
+  private[akka] val registry = actorOf(Props(new Registry).copy(dispatcher = new PinnedDispatcher(), localOnly = true))
 
   def register(strategy: FailOverStrategy, address: InetSocketAddress) = registry ! Register(strategy, address)
 
   def unregister(strategy: FailOverStrategy, address: InetSocketAddress) = registry ! Unregister(strategy, address)
 
   private class Registry extends Actor {
-    self.dispatcher = Dispatchers.newPinnedDispatcher(self)
 
     val strategies = new HashMap[InetSocketAddress, Set[FailOverStrategy]]() {
       override def default(k: InetSocketAddress) = Set.empty[FailOverStrategy]

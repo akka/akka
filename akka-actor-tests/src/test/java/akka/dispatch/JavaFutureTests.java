@@ -1,5 +1,6 @@
 package akka.dispatch;
 
+import akka.actor.Timeout;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import java.util.concurrent.Callable;
@@ -11,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import akka.japi.Function;
 import akka.japi.Function2;
 import akka.japi.Procedure;
+import akka.japi.Option;
 import scala.Some;
 import scala.Right;
 import static akka.dispatch.Futures.*;
@@ -230,5 +232,26 @@ public class JavaFutureTests {
         });
 
         assertEquals(result.get(), expectedStrings);
+    }
+
+    @Test public void findForJavaApiMustWork() {
+      LinkedList<Future<Integer>> listFutures = new LinkedList<Future<Integer>>();
+      for (int i = 0; i < 10; i++) {
+            final Integer fi = i;
+            listFutures.add(future(new Callable<Integer>() {
+                        public Integer call() {
+                            return fi;
+                        }
+                    }));
+        }
+      final Integer expect = 5;
+      Future<Option<Integer>> f = Futures.find(listFutures, new Function<Integer,Boolean>() {
+        public Boolean apply(Integer i) {
+            return i == 5;
+        }
+      }, Timeout.getDefault());
+
+      final Integer got = f.get().get();
+      assertEquals(expect, got);
     }
 }

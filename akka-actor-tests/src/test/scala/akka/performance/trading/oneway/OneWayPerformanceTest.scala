@@ -5,16 +5,18 @@ import java.util.concurrent.TimeUnit
 import org.junit.Test
 
 import akka.actor.Actor.actorOf
-import akka.actor.ActorRef
 import akka.performance.trading.common.AkkaPerformanceTest
 import akka.performance.trading.common.Rsp
 import akka.performance.trading.domain._
+import akka.actor.{ Props, ActorRef }
 
 class OneWayPerformanceTest extends AkkaPerformanceTest {
 
   override def createTradingSystem: TS = new OneWayTradingSystem {
-    override def createMatchingEngine(meId: String, orderbooks: List[Orderbook]) =
-      actorOf(new OneWayMatchingEngine(meId, orderbooks, meDispatcher) with LatchMessageCountDown)
+    override def createMatchingEngine(meId: String, orderbooks: List[Orderbook]) = meDispatcher match {
+      case Some(d) ⇒ actorOf(Props(new OneWayMatchingEngine(meId, orderbooks) with LatchMessageCountDown).withDispatcher(d))
+      case _       ⇒ actorOf(new OneWayMatchingEngine(meId, orderbooks) with LatchMessageCountDown)
+    }
   }
 
   override def placeOrder(orderReceiver: ActorRef, order: Order): Rsp = {

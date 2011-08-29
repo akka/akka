@@ -55,15 +55,10 @@ object SupervisorSpec {
     }
   }
 
-  class TemporaryActor extends PingPongActor {
-    self.lifeCycle = Temporary
-  }
-
   class Master extends Actor {
-    self.faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, (1 second).dilated.toMillis.toInt)
 
     val temp = {
-      val a = actorOf[TemporaryActor]
+      val a = actorOf(Props[PingPongActor].withLifeCycle(Temporary))
       self link a
       a.start
     }
@@ -79,7 +74,7 @@ object SupervisorSpec {
   // =====================================================
 
   def temporaryActorAllForOne = {
-    val temporaryActor = actorOf[TemporaryActor].start()
+    val temporaryActor = actorOf(Props[PingPongActor].withLifeCycle(Temporary))
 
     val supervisor = Supervisor(
       SupervisorConfig(
@@ -226,7 +221,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
   "A supervisor" must {
 
     "not restart programmatically linked temporary actor" in {
-      val master = actorOf[Master].start()
+      val master = actorOf(Props[Master].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 5, (1 second).dilated.toMillis.toInt)))
 
       intercept[RuntimeException] {
         (master.?(Die, TimeoutMillis)).get
@@ -369,8 +364,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
     "must attempt restart when exception during restart" in {
       val inits = new AtomicInteger(0)
 
-      val dyingActor = actorOf(new Actor {
-        self.lifeCycle = Permanent
+      val dyingActor = actorOf(Props(new Actor {
         inits.incrementAndGet
 
         if (inits.get % 2 == 0) throw new IllegalStateException("Don't wanna!")
@@ -379,7 +373,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
           case Ping ⇒ self.tryReply(PongMessage)
           case Die  ⇒ throw new Exception("expected")
         }
-      })
+      }))
 
       val supervisor =
         Supervisor(

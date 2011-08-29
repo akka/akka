@@ -11,6 +11,7 @@ import static java.util.Arrays.asList;
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
+import akka.routing.RoutedProps;
 import akka.routing.RouterType;
 import akka.routing.Routing;
 import akka.routing.Routing.Broadcast;
@@ -108,7 +109,12 @@ public class Pi {
           workers.add(worker);
       }
 
-      router = Routing.actorOfWithRoundRobin("pi", JavaConversions.asIterable(workers));
+      router = Routing.actorOf(
+        RoutedProps.apply()
+            .withRoundRobinRouter()
+            .withConnections(workers)
+            .withDeployId("pi")
+      );
     }
 
     // message handler

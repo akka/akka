@@ -3,20 +3,17 @@ package akka.actor.dispatch
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import akka.dispatch.{ Dispatchers, Dispatcher }
-import akka.actor.Actor
-import Actor._
+import akka.actor.Actor._
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.testkit.{ filterEvents, EventFilter }
+import akka.dispatch.{ PinnedDispatcher, Dispatchers, Dispatcher }
+import akka.actor.{ Props, Actor }
 
 object DispatcherActorSpec {
   class TestActor extends Actor {
-    self.dispatcher = Dispatchers.newDispatcher(self.uuid.toString).build
     def receive = {
-      case "Hello" ⇒
-        self.reply("World")
-      case "Failure" ⇒
-        throw new RuntimeException("Expected exception; to test fault-tolerance")
+      case "Hello"   ⇒ self.reply("World")
+      case "Failure" ⇒ throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
 
@@ -24,7 +21,6 @@ object DispatcherActorSpec {
     val oneWay = new CountDownLatch(1)
   }
   class OneWayTestActor extends Actor {
-    self.dispatcher = Dispatchers.newDispatcher(self.uuid.toString).build
     def receive = {
       case "OneWay" ⇒ OneWayTestActor.oneWay.countDown()
     }
@@ -37,7 +33,7 @@ class DispatcherActorSpec extends JUnitSuite {
 
   @Test
   def shouldTell = {
-    val actor = actorOf[OneWayTestActor].start()
+    val actor = actorOf(Props[OneWayTestActor].withDispatcher(new PinnedDispatcher()))
     val result = actor ! "OneWay"
     assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
     actor.stop()
@@ -45,7 +41,7 @@ class DispatcherActorSpec extends JUnitSuite {
 
   @Test
   def shouldSendReplySync = {
-    val actor = actorOf[TestActor].start()
+    val actor = actorOf(Props[TestActor].withDispatcher(new PinnedDispatcher()))
     val result = (actor.?("Hello", 10000)).as[String]
     assert("World" === result.get)
     actor.stop()
@@ -53,7 +49,7 @@ class DispatcherActorSpec extends JUnitSuite {
 
   @Test
   def shouldSendReplyAsync = {
-    val actor = actorOf[TestActor].start()
+    val actor = actorOf(Props[TestActor].withDispatcher(new PinnedDispatcher()))
     val result = (actor ? "Hello").as[String]
     assert("World" === result.get)
     actor.stop()
@@ -62,7 +58,7 @@ class DispatcherActorSpec extends JUnitSuite {
   @Test
   def shouldSendReceiveException = {
     filterEvents(EventFilter[RuntimeException]("Expected")) {
-      val actor = actorOf[TestActor].start()
+      val actor = actorOf(Props[TestActor].withDispatcher(new PinnedDispatcher()))
       try {
         (actor ? "Failure").get
         fail("Should have thrown an exception")
@@ -85,19 +81,13 @@ class DispatcherActorSpec extends JUnitSuite {
     val latch = new CountDownLatch(100)
     val start = new CountDownLatch(1)
     val fastOne = actorOf(
-      new Actor {
-        self.dispatcher = throughputDispatcher
-        def receive = { case "sabotage" ⇒ works.set(false) }
-      }).start()
+      Props(self ⇒ { case "sabotage" ⇒ works.set(false) }).withDispatcher(throughputDispatcher))
 
     val slowOne = actorOf(
-      new Actor {
-        self.dispatcher = throughputDispatcher
-        def receive = {
-          case "hogexecutor" ⇒ start.await
-          case "ping"        ⇒ if (works.get) latch.countDown()
-        }
-      }).start()
+      Props(self ⇒ {
+        case "hogexecutor" ⇒ start.await
+        case "ping"        ⇒ if (works.get) latch.countDown()
+      }).withDispatcher(throughputDispatcher))
 
     slowOne ! "hogexecutor"
     (1 to 100) foreach { _ ⇒ slowOne ! "ping" }
@@ -122,19 +112,15 @@ class DispatcherActorSpec extends JUnitSuite {
     val ready = new CountDownLatch(1)
 
     val fastOne = actorOf(
-      new Actor {
-        self.dispatcher = throughputDispatcher
-        def receive = { case "ping" ⇒ if (works.get) latch.countDown(); self.stop() }
-      }).start()
+      Props(self ⇒ {
+        case "ping" ⇒ if (works.get) latch.countDown(); self.stop()
+      }).withDispatcher(throughputDispatcher))
 
     val slowOne = actorOf(
-      new Actor {
-        self.dispatcher = throughputDispatcher
-        def receive = {
-          case "hogexecutor" ⇒ ready.countDown(); start.await
-          case "ping"        ⇒ works.set(false); self.stop()
-        }
-      }).start()
+      Props(self ⇒ {
+        case "hogexecutor" ⇒ ready.countDown(); start.await
+        case "ping"        ⇒ works.set(false); self.stop()
+      }).withDispatcher(throughputDispatcher))
 
     slowOne ! "hogexecutor"
     slowOne ! "ping"

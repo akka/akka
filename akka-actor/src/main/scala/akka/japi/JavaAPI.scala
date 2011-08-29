@@ -1,5 +1,7 @@
 package akka.japi
 
+import scala.Some
+
 /**
  * A Function interface. Used to create first-class-functions is Java (sort of).
  */
@@ -85,6 +87,14 @@ object Option {
   def option[A](v: A): Option[A] = if (v == null) none else some(v)
 
   /**
+   * Converts a Scala Option to a Java Option
+   */
+  def fromScalaOption[T](scalaOption: scala.Option[T]): Option[T] = scalaOption match {
+    case scala.Some(r) ⇒ some(r)
+    case scala.None    ⇒ none
+  }
+
+  /**
    * Class <code>Some[A]</code> represents existing values of type
    * <code>A</code>.
    */
@@ -104,5 +114,5 @@ object Option {
   }
 
   implicit def java2ScalaOption[A](o: Option[A]): scala.Option[A] = o.asScala
-  implicit def scala2JavaOption[A](o: scala.Option[A]): Option[A] = option(o.get)
+  implicit def scala2JavaOption[A](o: scala.Option[A]): Option[A] = if (o.isDefined) some(o.get) else none
 }

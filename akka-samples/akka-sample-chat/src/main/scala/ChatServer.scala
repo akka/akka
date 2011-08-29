@@ -169,7 +169,7 @@
    * Creates and links a MemoryChatStorage.
    */
   trait MemoryChatStorageFactory { this: Actor =>
-    val storage = this.self.startLink(actorOf[MemoryChatStorage]) // starts and links ChatStorage
+    val storage = this.self.link(actorOf[MemoryChatStorage]).start() // starts and links ChatStorage
   }
 
   /**

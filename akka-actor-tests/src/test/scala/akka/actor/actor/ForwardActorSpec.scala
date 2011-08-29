@@ -11,49 +11,22 @@ import akka.testkit._
 import akka.util.duration._
 
 import Actor._
+import akka.util.Duration
 
 object ForwardActorSpec {
-  object ForwardState {
-    var sender: Option[ActorRef] = None
-  }
+  val ExpectedMessage = "FOO"
 
-  class ReceiverActor extends Actor {
-    val latch = TestLatch()
-    def receive = {
-      case "SendBang" ⇒ {
-        ForwardState.sender = self.sender
-        latch.countDown()
-      }
-      case "SendBangBang" ⇒ self.reply("SendBangBang")
-    }
-  }
+  def createForwardingChain(): ActorRef = {
+    val replier = actorOf(new Actor {
+      def receive = { case x ⇒ self reply x }
+    }).start()
 
-  class ForwardActor extends Actor {
-    val receiverActor = actorOf[ReceiverActor]
-    receiverActor.start()
-    def receive = {
-      case "SendBang"     ⇒ receiverActor.forward("SendBang")
-      case "SendBangBang" ⇒ receiverActor.forward("SendBangBang")
-    }
-  }
+    def mkforwarder(forwardTo: ActorRef) = actorOf(
+      new Actor {
+        def receive = { case x ⇒ forwardTo forward x }
+      }).start()
 
-  class BangSenderActor extends Actor {
-    val forwardActor = actorOf[ForwardActor]
-    forwardActor.start()
-    forwardActor ! "SendBang"
-    def receive = {
-      case _ ⇒ {}
-    }
-  }
-
-  class BangBangSenderActor extends Actor {
-    val latch = TestLatch()
-    val forwardActor = actorOf[ForwardActor]
-    forwardActor.start()
-    forwardActor ? "SendBangBang" onComplete { _ ⇒ latch.countDown() }
-    def receive = {
-      case _ ⇒ {}
-    }
+    mkforwarder(mkforwarder(mkforwarder(replier)))
   }
 }
 
@@ -61,23 +34,21 @@ class ForwardActorSpec extends WordSpec with MustMatchers {
   import ForwardActorSpec._
 
   "A Forward Actor" must {
+
     "forward actor reference when invoking forward on bang" in {
-      val senderActor = actorOf[BangSenderActor]
-      val latch = senderActor.actor.asInstanceOf[BangSenderActor]
-        .forwardActor.actor.asInstanceOf[ForwardActor]
-        .receiverActor.actor.asInstanceOf[ReceiverActor]
-        .latch
-      senderActor.start()
-      latch.await
-      ForwardState.sender must not be (null)
-      senderActor.toString must be(ForwardState.sender.get.toString)
+      val latch = new TestLatch(1)
+
+      val replyTo = actorOf(new Actor { def receive = { case ExpectedMessage ⇒ latch.countDown() } }).start()
+
+      val chain = createForwardingChain()
+
+      chain.tell(ExpectedMessage, replyTo)
+      latch.await(Duration(5, "s")) must be === true
     }
 
     "forward actor reference when invoking forward on bang bang" in {
-      val senderActor = actorOf[BangBangSenderActor]
-      senderActor.start()
-      val latch = senderActor.actor.asInstanceOf[BangBangSenderActor].latch
-      latch.await
+      val chain = createForwardingChain()
+      chain.ask(ExpectedMessage, 5000).get must be === ExpectedMessage
     }
   }
 }

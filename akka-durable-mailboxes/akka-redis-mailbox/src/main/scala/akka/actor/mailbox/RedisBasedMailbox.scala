@@ -3,7 +3,7 @@
  */
 package akka.actor.mailbox
 
-import akka.actor.ActorRef
+import akka.actor.LocalActorRef
 import akka.config.Config.config
 import akka.dispatch._
 import akka.event.EventHandler
@@ -18,7 +18,7 @@ class RedisBasedMailboxException(message: String) extends AkkaException(message)
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RedisBasedMailbox(val owner: ActorRef) extends DurableExecutableMailbox(owner) {
+class RedisBasedMailbox(val owner: LocalActorRef) extends DurableExecutableMailbox(owner) {
   @volatile
   private var clients = connect() // returns a RedisClientPool for multiple asynchronous message handling
 

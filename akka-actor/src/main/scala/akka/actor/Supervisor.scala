@@ -8,9 +8,9 @@ import akka.AkkaException
 import akka.util._
 import ReflectiveAccess._
 import Actor._
-
-import java.util.concurrent.{ CopyOnWriteArrayList, ConcurrentHashMap }
+import java.util.concurrent.{ CopyOnWriteArrayList }
 import akka.config.Supervision._
+import collection.mutable.ListBuffer
 
 class SupervisorException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null);
@@ -110,10 +110,10 @@ case class SupervisorFactory(val config: SupervisorConfig) {
 sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached) ⇒ Unit) {
   import Supervisor._
 
-  private val _childActors = new ConcurrentHashMap[String, List[ActorRef]]
+  private val _childActors = new CopyOnWriteArrayList[ActorRef]
   private val _childSupervisors = new CopyOnWriteArrayList[Supervisor]
 
-  private[akka] val supervisor = localActorOf(new SupervisorActor(handler, maxRestartsHandler)).start()
+  private[akka] val supervisor = actorOf(Props(new SupervisorActor(maxRestartsHandler)).withFaultHandler(handler))
 
   def uuid = supervisor.uuid
 
@@ -125,39 +125,39 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (Act
 
   def link(child: ActorRef) = supervisor.link(child)
 
-  def startLink(child: ActorRef) = supervisor.startLink(child)
-
   def unlink(child: ActorRef) = supervisor.unlink(child)
 
-  def children: List[ActorRef] =
-    _childActors.values.toArray.toList.asInstanceOf[List[List[ActorRef]]].flatten
+  def children: List[ActorRef] = {
+    val buf = new ListBuffer[ActorRef]
+    val i = _childActors.iterator()
+    while (i.hasNext) buf += i.next()
+    buf.toList
+  }
 
-  def childSupervisors: List[Supervisor] =
-    _childActors.values.toArray.toList.asInstanceOf[List[Supervisor]]
+  def childSupervisors: List[Supervisor] = {
+    val buf = new ListBuffer[Supervisor]
+    val i = _childSupervisors.iterator()
+    while (i.hasNext) buf += i.next()
+    buf.toList
+  }
 
   def configure(config: SupervisorConfig): Unit = config match {
     case SupervisorConfig(_, servers, _) ⇒
+      servers foreach {
+        case Supervise(actorRef, lifeCycle, registerAsRemoteService) ⇒
+          // actorRef.lifeCycle = lifeCycle THIS IS NOT COOL, BUT WAITING FOR https://www.assembla.com/spaces/akka/tickets/1124-supervisor-dsl-doesn-t-make-much-sense-after-the-introduction-of-props
+          supervisor.link(actorRef)
+          actorRef.start()
 
-      servers.map(server ⇒
-        server match {
-          case Supervise(actorRef, lifeCycle, registerAsRemoteService) ⇒
-            actorRef.start()
-            val className = actorRef.actor.getClass.getName
-            val currentActors = {
-              val list = _childActors.get(className)
-              if (list eq null) List[ActorRef]()
-              else list
-            }
-            _childActors.put(className, actorRef :: currentActors)
-            actorRef.lifeCycle = lifeCycle
-            supervisor.link(actorRef)
-            if (ClusterModule.isEnabled && registerAsRemoteService)
-              Actor.remote.register(actorRef)
-          case supervisorConfig @ SupervisorConfig(_, _, _) ⇒ // recursive supervisor configuration
-            val childSupervisor = Supervisor(supervisorConfig)
-            supervisor.link(childSupervisor.supervisor)
-            _childSupervisors.add(childSupervisor)
-        })
+          _childActors.add(actorRef) //TODO Why do we keep this here, mem leak?
+
+          if (ClusterModule.isEnabled && registerAsRemoteService)
+            Actor.remote.register(actorRef)
+        case supervisorConfig @ SupervisorConfig(_, _, _) ⇒ // recursive supervisor configuration
+          val childSupervisor = Supervisor(supervisorConfig)
+          supervisor.link(childSupervisor.supervisor)
+          _childSupervisors.add(childSupervisor)
+      }
   }
 }
 
@@ -166,8 +166,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (Act
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final class SupervisorActor private[akka] (handler: FaultHandlingStrategy, maxRestartsHandler: (ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached) ⇒ Unit) extends Actor {
-  self.faultHandler = handler
+final class SupervisorActor private[akka] (maxRestartsHandler: (ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached) ⇒ Unit) extends Actor {
 
   override def postStop(): Unit = {
     val i = self.linkedActors.values.iterator

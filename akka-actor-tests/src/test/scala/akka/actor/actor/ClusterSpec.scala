@@ -48,7 +48,7 @@ class ClusterSpec extends WordSpec with MustMatchers {
       getInt("akka.cluster.server.max-total-memory-size") must equal(Some(0))
 
       //akka.cluster.client
-      getBool("akka.cluster.client.buffering.retry-message-send-on-failure") must equal(Some(true))
+      getBool("akka.cluster.client.buffering.retry-message-send-on-failure") must equal(Some(false))
       getInt("akka.cluster.client.buffering.capacity") must equal(Some(-1))
       getInt("akka.cluster.client.reconnect-delay") must equal(Some(5))
       getInt("akka.cluster.client.read-timeout") must equal(Some(3600))

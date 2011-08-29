@@ -36,7 +36,7 @@ sealed trait LifeCycleMessage extends Serializable
  */
 sealed trait AutoReceivedMessage { self: LifeCycleMessage ⇒ }
 
-case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true) extends AutoReceivedMessage with LifeCycleMessage {
+case class HotSwap(code: SelfActorRef ⇒ Actor.Receive, discardOld: Boolean = true) extends AutoReceivedMessage with LifeCycleMessage {
 
   /**
    * Java API
@@ -137,6 +137,7 @@ object Timeout {
   /**
    * The default timeout, based on the config setting 'akka.actor.timeout'
    */
+  @BeanProperty
   implicit val default = new Timeout(Actor.TIMEOUT)
 
   /**
@@ -172,8 +173,8 @@ object Actor {
    */
   type Receive = PartialFunction[Any, Unit]
 
-  private[actor] val actorRefInCreation = new ThreadLocal[Stack[ActorRef]] {
-    override def initialValue = Stack[ActorRef]()
+  private[actor] val actorRefInCreation = new ThreadLocal[Stack[ScalaActorRef with SelfActorRef]] {
+    override def initialValue = Stack[ScalaActorRef with SelfActorRef]()
   }
 
   private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
@@ -343,7 +344,7 @@ object Actor {
    * </pre>
    */
   def actorOf[T <: Actor](creator: ⇒ T, address: String): ActorRef = {
-    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator, address))
+    createActor(address, () ⇒ new LocalActorRef(Props(creator = () ⇒ creator), address))
   }
 
   /**
@@ -366,28 +367,22 @@ object Actor {
    * JAVA API
    */
   def actorOf[T <: Actor](creator: Creator[T], address: String): ActorRef = {
-    createActor(address, () ⇒ new LocalActorRef(() ⇒ creator.create, address))
+    createActor(address, () ⇒ new LocalActorRef(Props(creator = () ⇒ creator.create), address))
   }
 
+  def actorOf(props: Props): ActorRef = actorOf(props, newUuid.toString)
   //TODO FIXME
-  def actorOf(props: Props): ActorRef = {
+  def actorOf(props: Props, address: String): ActorRef = {
     //TODO Implement support for configuring by deployment ID etc
     //TODO If localOnly = true, never use the config file deployment and always create a new actor
     //TODO If deployId matches an already created actor (Ahead-of-time deployed) return that actor
     //TODO If deployId exists in config, it will override the specified Props (should we attempt to merge?)
 
-    val address = props.deployId match { //TODO handle deployId separately from address?
+    /*val address = props.deployId match { //TODO handle deployId separately from address?
       case "" | null ⇒ newUuid().toString
       case other     ⇒ other
-    }
-    val newActor = new LocalActorRef(props.creator, address)
-    newActor.dispatcher = props.dispatcher
-    newActor.faultHandler = props.faultHandler
-    newActor.lifeCycle = props.lifeCycle
-    newActor.timeout = props.timeout.duration.toMillis
-    newActor.receiveTimeout = props.receiveTimeout.map(_.toMillis)
-    props.supervisor.foreach(newActor.link(_))
-    newActor.start
+    } */
+    new LocalActorRef(props, address).start()
   }
 
   def localActorOf[T <: Actor: Manifest]: ActorRef = {
@@ -407,11 +402,11 @@ object Actor {
   }
 
   def localActorOf[T <: Actor](factory: ⇒ T): ActorRef = {
-    new LocalActorRef(() ⇒ factory, newUuid().toString)
+    new LocalActorRef(Props(creator = () ⇒ factory), newUuid().toString)
   }
 
   def localActorOf[T <: Actor](factory: ⇒ T, address: String): ActorRef = {
-    new LocalActorRef(() ⇒ factory, address)
+    new LocalActorRef(Props(creator = () ⇒ factory), address)
   }
 
   /**
@@ -432,13 +427,9 @@ object Actor {
    * </pre>
    */
   def spawn(body: ⇒ Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit = {
-    case object Spawn
-    actorOf(new Actor() {
-      self.dispatcher = dispatcher
-      def receive = {
-        case Spawn ⇒ try { body } finally { self.stop() }
-      }
-    }).start() ! Spawn
+    actorOf(Props(new Actor() {
+      def receive = { case "go" ⇒ try { body } finally { self.stop() } }
+    }).withDispatcher(dispatcher)) ! "go"
   }
 
   /**
@@ -464,7 +455,7 @@ object Actor {
   }
 
   private[akka] def newLocalActorRef(clazz: Class[_ <: Actor], address: String): ActorRef = {
-    new LocalActorRef(() ⇒ {
+    new LocalActorRef(Props(creator = () ⇒ {
       import ReflectiveAccess.{ createInstance, noParams, noArgs }
       createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs) match {
         case Right(actor) ⇒ actor
@@ -480,7 +471,7 @@ object Actor {
               "\nif so put it outside the class/trait, f.e. in a companion object," +
               "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
       }
-    }, address)
+    }), address)
   }
 
   private[akka] def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef =
@@ -548,7 +539,7 @@ object Actor {
  * <p/>
  * Here you find functions like:
  *   - !, ? and forward
- *   - link, unlink, startLink etc
+ *   - link, unlink etc
  *   - start, stop
  *   - etc.
  *
@@ -593,7 +584,7 @@ trait Actor {
    * the 'forward' function.
    */
   @transient
-  val someSelf: Some[ActorRef] = {
+  val someSelf: Some[ScalaActorRef with SelfActorRef] = {
     val refStack = Actor.actorRefInCreation.get
     if (refStack.isEmpty) throw new ActorInitializationException(
       "\n\tYou can not create an instance of an " + getClass.getName + " explicitly using 'new MyActor'." +
@@ -619,7 +610,7 @@ trait Actor {
    * Mainly for internal use, functions as the implicit sender references when invoking
    * one of the message send functions ('!' and '?').
    */
-  def optionSelf: Option[ActorRef] = someSelf
+  def optionSelf: Option[ScalaActorRef with SelfActorRef] = someSelf
 
   /**
    * The 'self' field holds the ActorRef for this actor.
@@ -649,7 +640,7 @@ trait Actor {
    * </pre>
    */
   @transient
-  implicit val self: ScalaActorRef = someSelf.get
+  implicit val self = someSelf.get
 
   /**
    * User overridable callback/setting.

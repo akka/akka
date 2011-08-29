@@ -131,12 +131,9 @@ class LoggingReceiveSpec
 
     "log LifeCycle changes if requested" in {
       within(2 seconds) {
-        val supervisor = TestActorRef(new Actor {
-          self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), 5, 5000)
-          def receive = {
-            case _ ⇒
-          }
-        }).start()
+        val supervisor = TestActorRef(Props(new Actor {
+          def receive = { case _ ⇒ }
+        }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 5000)))
         val f = Actor.getClass.getDeclaredField("debugLifecycle")
         f.setAccessible(true)
         f.setBoolean(Actor, true)

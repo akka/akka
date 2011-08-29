@@ -59,7 +59,6 @@ object ActorRestartSpec {
   }
 
   class Supervisor extends Actor {
-    self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), 5, 5000)
     def receive = {
       case _ ⇒
     }
@@ -79,11 +78,14 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
   }
 
   private var toStop = new java.util.concurrent.ConcurrentSkipListSet[ActorRef]
-  private def newActor(f: ⇒ Actor): ActorRef = {
-    val ref = actorOf(f)
+  private def collect(f: ⇒ ActorRef): ActorRef = {
+    val ref = f
     toStop add ref
     ref.start()
   }
+
+  private def createSupervisor =
+    actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 5000)))
 
   val expectedEvents = Seq(EventFilter[ActorKilledException], EventFilter[IllegalActorStateException]("expected"))
 
@@ -91,9 +93,9 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
 
     "invoke preRestart, preStart, postRestart" in {
       filterEvents(expectedEvents) {
-        val actor = newActor(new Restarter(testActor))
+        val actor = collect(actorOf(new Restarter(testActor)))
         expectMsg(1 second, ("preStart", 1))
-        val supervisor = newActor(new Supervisor)
+        val supervisor = collect(createSupervisor)
         supervisor link actor
         actor ! Kill
         within(1 second) {
@@ -107,9 +109,9 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
 
     "support creation of nested actors in freshInstance()" in {
       filterEvents(expectedEvents) {
-        val actor = newActor(new Restarter(testActor))
+        val actor = collect(actorOf(new Restarter(testActor)))
         expectMsg(1 second, ("preStart", 1))
-        val supervisor = newActor(new Supervisor)
+        val supervisor = collect(createSupervisor)
         supervisor link actor
         actor ! Nested
         actor ! Kill
@@ -128,9 +130,9 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
 
     "use freshInstance() if available" in {
       filterEvents(expectedEvents) {
-        val actor = newActor(new Restarter(testActor))
+        val actor = collect(actorOf(new Restarter(testActor)))
         expectMsg(1 second, ("preStart", 1))
-        val supervisor = newActor(new Supervisor)
+        val supervisor = collect(createSupervisor)
         supervisor link actor
         actor ! 42
         actor ! Handover
@@ -148,9 +150,9 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
 
     "fall back to default factory if freshInstance() fails" in {
       filterEvents(expectedEvents) {
-        val actor = newActor(new Restarter(testActor))
+        val actor = collect(actorOf(new Restarter(testActor)))
         expectMsg(1 second, ("preStart", 1))
-        val supervisor = newActor(new Supervisor)
+        val supervisor = collect(createSupervisor)
         supervisor link actor
         actor ! 42
         actor ! Fail

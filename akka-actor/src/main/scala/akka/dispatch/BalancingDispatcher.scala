@@ -4,9 +4,8 @@
 
 package akka.dispatch
 
-import akka.actor.{ ActorRef, Actor, IllegalActorStateException }
-
 import util.DynamicVariable
+import akka.actor.{ LocalActorRef, ActorRef, Actor, IllegalActorStateException }
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -53,15 +52,15 @@ class BalancingDispatcher(
   @volatile
   private var actorType: Option[Class[_]] = None
   @volatile
-  private var members = Vector[ActorRef]()
+  private var members = Vector[LocalActorRef]()
   private val donationInProgress = new DynamicVariable(false)
 
-  private[akka] override def register(actorRef: ActorRef) = {
+  private[akka] override def register(actorRef: LocalActorRef) = {
     //Verify actor type conformity
     actorType match {
-      case None ⇒ actorType = Some(actorRef.actor.getClass)
+      case None ⇒ actorType = Some(actorRef.actorInstance.get().getClass)
       case Some(aType) ⇒
-        if (aType != actorRef.actor.getClass)
+        if (aType != actorRef.actorInstance.get().getClass)
           throw new IllegalActorStateException(String.format(
             "Can't register actor %s in a work stealing dispatcher which already knows actors of type %s",
             actorRef, aType))
@@ -71,7 +70,7 @@ class BalancingDispatcher(
     super.register(actorRef)
   }
 
-  private[akka] override def unregister(actorRef: ActorRef) = {
+  private[akka] override def unregister(actorRef: LocalActorRef) = {
     synchronized { members = members.filterNot(actorRef eq) } //Update members
     super.unregister(actorRef)
   }
@@ -137,7 +136,7 @@ class BalancingDispatcher(
   /**
    * Returns an available recipient for the message, if any
    */
-  protected def doFindDonorRecipient(donorMbox: MessageQueue with ExecutableMailbox, potentialRecipients: Vector[ActorRef], startIndex: Int): ActorRef = {
+  protected def doFindDonorRecipient(donorMbox: MessageQueue with ExecutableMailbox, potentialRecipients: Vector[LocalActorRef], startIndex: Int): ActorRef = {
     val prSz = potentialRecipients.size
     var i = 0
     var recipient: ActorRef = null

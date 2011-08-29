@@ -15,12 +15,11 @@ import org.I0Itec.zkclient.exception._
 import java.util.{ List ⇒ JList }
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 import java.net.InetSocketAddress
-import javax.management.StandardMBean
-
 import scala.collection.mutable.ConcurrentMap
 import scala.collection.JavaConversions._
 
 import akka.util._
+import duration._
 import Helpers._
 
 import akka.actor._
@@ -29,8 +28,7 @@ import Status._
 import DeploymentConfig._
 
 import akka.event.EventHandler
-import akka.dispatch.{ Dispatchers, Future }
-import akka.cluster._
+import akka.dispatch.{ Dispatchers, Future, PinnedDispatcher }
 import akka.cluster._
 import akka.routing.RouterType
 
@@ -42,6 +40,7 @@ import akka.serialization.{ Serialization, Serializer, ActorSerialization }
 import ActorSerialization._
 import akka.serialization.Compression.LZF
 
+import akka.cluster.metrics._
 import akka.cluster.zookeeper._
 import ChangeListener._
 import ClusterProtocol._
@@ -54,6 +53,7 @@ import com.google.protobuf.ByteString
 import java.util.concurrent.{ CopyOnWriteArrayList, Callable, ConcurrentHashMap }
 
 import annotation.tailrec
+import javax.management.{ StandardMBean }
 
 // FIXME add watch for each node that when the entry for the node is removed then the node shuts itself down
 
@@ -152,6 +152,7 @@ object Cluster {
   val zooKeeperServers = config.getString("akka.cluster.zookeeper-server-addresses", "localhost:2181")
   val remoteServerPort = config.getInt("akka.cluster.remote-server-port", 2552)
   val sessionTimeout = Duration(config.getInt("akka.cluster.session-timeout", 60), TIME_UNIT).toMillis.toInt
+  val metricsRefreshInterval = Duration(config.getInt("akka.cluster.metrics-refresh-timeout", 2), TIME_UNIT)
   val connectionTimeout = Duration(config.getInt("akka.cluster.connection-timeout", 60), TIME_UNIT).toMillis.toInt
   val maxTimeToWaitUntilConnected = Duration(config.getInt("akka.cluster.max-time-to-wait-until-connected", 30), TIME_UNIT).toMillis.toInt
   val shouldCompressData = config.getBool("akka.cluster.use-compression", false)
@@ -278,15 +279,15 @@ class DefaultClusterNode private[akka] (
 
   //  private val connectToAllNewlyArrivedMembershipNodesInClusterLock = new AtomicBoolean(false)
 
-  private[cluster] lazy val remoteClientLifeCycleHandler = localActorOf(new Actor {
+  private[cluster] lazy val remoteClientLifeCycleHandler = actorOf(Props(new Actor {
     def receive = {
       case RemoteClientError(cause, client, address) ⇒ client.shutdownClientModule()
       case RemoteClientDisconnected(client, address) ⇒ client.shutdownClientModule()
       case _                                         ⇒ //ignore other
     }
-  }, "akka.cluster.RemoteClientLifeCycleListener").start()
+  }), "akka.cluster.RemoteClientLifeCycleListener")
 
-  private[cluster] lazy val remoteDaemon = localActorOf(new RemoteClusterDaemon(this), RemoteClusterDaemon.Address).start()
+  private[cluster] lazy val remoteDaemon = actorOf(Props(new RemoteClusterDaemon(this)).copy(dispatcher = new PinnedDispatcher(), localOnly = true), RemoteClusterDaemon.Address)
 
   private[cluster] lazy val remoteDaemonSupervisor = Supervisor(
     SupervisorConfig(
@@ -307,6 +308,8 @@ class DefaultClusterNode private[akka] (
 
   lazy val remoteServerAddress: InetSocketAddress = remoteService.address
 
+  lazy val metricsManager: NodeMetricsManager = new LocalNodeMetricsManager(zkClient, Cluster.metricsRefreshInterval).start()
+
   // static nodes
   val CLUSTER_PATH = "/" + nodeAddress.clusterName
   val MEMBERSHIP_PATH = CLUSTER_PATH + "/members"
@@ -317,6 +320,7 @@ class DefaultClusterNode private[akka] (
   val ACTOR_UUID_REGISTRY_PATH = CLUSTER_PATH + "/actor-uuid-registry"
   val ACTOR_ADDRESS_TO_UUIDS_PATH = CLUSTER_PATH + "/actor-address-to-uuids"
   val NODE_TO_ACTOR_UUIDS_PATH = CLUSTER_PATH + "/node-to-actors-uuids"
+  val NODE_METRICS = CLUSTER_PATH + "/metrics"
 
   val basePaths = List(
     CLUSTER_PATH,
@@ -327,7 +331,8 @@ class DefaultClusterNode private[akka] (
     NODE_TO_ACTOR_UUIDS_PATH,
     ACTOR_ADDRESS_TO_UUIDS_PATH,
     CONFIGURATION_PATH,
-    PROVISIONING_PATH)
+    PROVISIONING_PATH,
+    NODE_METRICS)
 
   val LEADER_ELECTION_PATH = CLUSTER_PATH + "/leader" // should NOT be part of 'basePaths' only used by 'leaderLock'
 
@@ -343,7 +348,7 @@ class DefaultClusterNode private[akka] (
   private val changeListeners = new CopyOnWriteArrayList[ChangeListener]()
 
   // Address -> ClusterActorRef
-  private val clusterActorRefs = new Index[InetSocketAddress, ClusterActorRef]
+  private[akka] val clusterActorRefs = new Index[InetSocketAddress, ClusterActorRef]
 
   case class VersionedConnectionState(version: Long, connections: Map[String, Tuple2[InetSocketAddress, ActorRef]])
 
@@ -900,18 +905,7 @@ class DefaultClusterNode private[akka] (
   /**
    * Creates an ActorRef with a Router to a set of clustered actors.
    */
-  def ref(actorAddress: String, router: RouterType): ActorRef = {
-    val inetSocketAddresses = inetSocketAddressesForActor(actorAddress)
-    EventHandler.debug(this,
-      "Checking out cluster actor ref with address [%s] and router [%s] on [%s] connected to [\n\t%s]"
-        .format(actorAddress, router, remoteServerAddress, inetSocketAddresses.map(_._2).mkString("\n\t")))
-
-    val actorRef = ClusterActorRef.newRef(router, inetSocketAddresses, actorAddress, Actor.TIMEOUT)
-    inetSocketAddresses foreach {
-      case (_, inetSocketAddress) ⇒ clusterActorRefs.put(inetSocketAddress, actorRef)
-    }
-    actorRef.start()
-  }
+  def ref(actorAddress: String, router: RouterType): ActorRef = ClusterActorRef.newRef(router, actorAddress, Actor.TIMEOUT)
 
   /**
    * Returns the UUIDs of all actors checked out on this node.
@@ -1643,7 +1637,11 @@ class MembershipChildListener(self: ClusterNode) extends IZkChildListener with E
 
           // publish NodeConnected and NodeDisconnect events to the listeners
           newlyConnectedMembershipNodes foreach (node ⇒ self.publish(NodeConnected(node)))
-          newlyDisconnectedMembershipNodes foreach (node ⇒ self.publish(NodeDisconnected(node)))
+          newlyDisconnectedMembershipNodes foreach { node ⇒
+            self.publish(NodeDisconnected(node))
+            // remove metrics of a disconnected node from ZK and local cache
+            self.metricsManager.removeNodeMetrics(node)
+          }
         }
       }
     }
@@ -1714,8 +1712,6 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
   import RemoteClusterDaemon._
   import Cluster._
-
-  self.dispatcher = Dispatchers.newPinnedDispatcher(self)
 
   override def preRestart(reason: Throwable, msg: Option[Any]) {
     EventHandler.debug(this, "RemoteClusterDaemon failed due to [%s] restarting...".format(reason))
@@ -1865,59 +1861,25 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
   }
 
   def handle_fun0_unit(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
-    localActorOf(new Actor() {
-      self.dispatcher = computeGridDispatcher
-
-      def receive = {
-        case f: Function0[_] ⇒ try {
-          f()
-        } finally {
-          self.stop()
-        }
-      }
-    }).start ! payloadFor(message, classOf[Function0[Unit]])
+    actorOf(Props(
+      self ⇒ { case f: Function0[_] ⇒ try { f() } finally { self.stop() } }).copy(dispatcher = computeGridDispatcher, localOnly = true)) ! payloadFor(message, classOf[Function0[Unit]])
   }
 
   def handle_fun0_any(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
-    localActorOf(new Actor() {
-      self.dispatcher = computeGridDispatcher
-
-      def receive = {
-        case f: Function0[_] ⇒ try {
-          self.reply(f())
-        } finally {
-          self.stop()
-        }
-      }
-    }).start forward payloadFor(message, classOf[Function0[Any]])
+    actorOf(Props(
+      self ⇒ { case f: Function0[_] ⇒ try { self.reply(f()) } finally { self.stop() } }).copy(dispatcher = computeGridDispatcher, localOnly = true)) forward payloadFor(message, classOf[Function0[Any]])
   }
 
   def handle_fun1_arg_unit(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
-    localActorOf(new Actor() {
-      self.dispatcher = computeGridDispatcher
-
-      def receive = {
-        case (fun: Function[_, _], param: Any) ⇒ try {
-          fun.asInstanceOf[Any ⇒ Unit].apply(param)
-        } finally {
-          self.stop()
-        }
-      }
-    }).start ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
+    actorOf(Props(
+      self ⇒ { case (fun: Function[_, _], param: Any) ⇒ try { fun.asInstanceOf[Any ⇒ Unit].apply(param) } finally { self.stop() } }).copy(dispatcher = computeGridDispatcher, localOnly = true)) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
   }
 
   def handle_fun1_arg_any(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
-    localActorOf(new Actor() {
-      self.dispatcher = computeGridDispatcher
-
-      def receive = {
-        case (fun: Function[_, _], param: Any) ⇒ try {
-          self.reply(fun.asInstanceOf[Any ⇒ Any](param))
-        } finally {
-          self.stop()
-        }
-      }
-    }).start forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
+    actorOf(Props(
+      self ⇒ {
+        case (fun: Function[_, _], param: Any) ⇒ try { self.reply(fun.asInstanceOf[Any ⇒ Any](param)) } finally { self.stop() }
+      }).copy(dispatcher = computeGridDispatcher, localOnly = true)) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
   }
 
   def handleFailover(message: ClusterProtocol.RemoteDaemonMessageProtocol) {

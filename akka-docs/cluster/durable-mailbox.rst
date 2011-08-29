@@ -30,6 +30,7 @@ The durable mailboxes currently supported are:
   - ``ZooKeeperDurableMailboxStorage`` -- backed by ZooKeeper
   - ``BeanstalkDurableMailboxStorage`` -- backed by Beanstalkd
   - ``MongoNaiveDurableMailboxStorage`` -- backed by MongoDB
+
 We'll walk through each one of these in detail in the sections below.
 
 Soon Akka will also have:
@@ -235,7 +236,7 @@ MongoDB is a fast, lightweight and scalable document-oriented database.  It cont
 features cohesive to a fast, reliable & durable queueing mechanism which the Akka Mailbox takes advantage of.
 
 
-Akka's implementations of MongoDB mailboxes are built on top of the purely asynchronous MongoDB driver (often known as `Hammersmith <http://github.com/bwmcadams/hammersmith>`_ and ``com.mongodb.async``) and as such are purely callback based with a Netty network layer.  This makes them extremely fast & lightweight versus building on other MongoDB implementations such as `mongo-java-driver <http://github.com/mongodb/mongo-java-driver>`_ and `Casbah <http://github.com/mongodb/casbah`_.
+Akka's implementations of MongoDB mailboxes are built on top of the purely asynchronous MongoDB driver (often known as `Hammersmith <http://github.com/bwmcadams/hammersmith>`_ and ``com.mongodb.async``) and as such are purely callback based with a Netty network layer.  This makes them extremely fast & lightweight versus building on other MongoDB implementations such as `mongo-java-driver <http://github.com/mongodb/mongo-java-driver>`_ and `Casbah <http://github.com/mongodb/casbah>`_.
 
 You will need to configure the URI for the MongoDB server, using the URI Format specified in the `MongoDB Documentation <http://www.mongodb.org/display/DOCS/Connections>`_. This is done in
 the ``akka.actor.mailbox.mongodb`` section in the ``akka.conf`` configuration

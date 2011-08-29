@@ -1,6 +1,6 @@
 package akka.actor.mailbox
 
-import akka.actor.Actor
+import akka.actor.{ Actor, LocalActorRef }
 import akka.cluster.zookeeper._
 
 import org.I0Itec.zkclient._
@@ -17,10 +17,12 @@ class ZooKeeperBasedMailboxSpec extends DurableMailboxSpec("ZooKeeper", ZooKeepe
   }
 
   override def afterEach() {
-    Actor.registry.local.actors.foreach(_.mailbox match {
-      case zkm: ZooKeeperBasedMailbox ⇒ zkm.close
-      case _                          ⇒ ()
-    })
+    Actor.registry.local.actors foreach {
+      case l: LocalActorRef ⇒ l.mailbox match {
+        case zk: ZooKeeperBasedMailbox ⇒ zk.close()
+        case _                         ⇒
+      }
+    }
     super.afterEach
   }
 

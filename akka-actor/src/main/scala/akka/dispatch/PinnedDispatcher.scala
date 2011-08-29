@@ -5,7 +5,7 @@
 package akka.dispatch
 
 import java.util.concurrent.atomic.AtomicReference
-import akka.actor.ActorRef
+import akka.actor.{ LocalActorRef, ActorRef }
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
@@ -33,14 +33,14 @@ class PinnedDispatcher(_actor: ActorRef, _name: String, _mailboxType: MailboxTyp
   private[akka] val owner = new AtomicReference[ActorRef](_actor)
 
   //Relies on an external lock provided by MessageDispatcher.attach
-  private[akka] override def register(actorRef: ActorRef) = {
+  private[akka] override def register(actorRef: LocalActorRef) = {
     val actor = owner.get()
     if ((actor ne null) && actorRef != actor) throw new IllegalArgumentException("Cannot register to anyone but " + actor)
     owner.compareAndSet(null, actorRef) //Register if unregistered
     super.register(actorRef)
   }
   //Relies on an external lock provided by MessageDispatcher.detach
-  private[akka] override def unregister(actorRef: ActorRef) = {
+  private[akka] override def unregister(actorRef: LocalActorRef) = {
     super.unregister(actorRef)
     owner.compareAndSet(actorRef, null) //Unregister (prevent memory leak)
   }

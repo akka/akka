@@ -10,6 +10,7 @@ import org.junit.{ After, Test }
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.BeforeAndAfterAll
 
+import akka.actor.{ Props, Timeout }
 import akka.actor.Actor._
 import akka.camel.{ Failure, Message }
 import akka.camel.CamelTestSupport._
@@ -228,7 +229,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldSendMessageToActorAndTimeout(): Unit = {
-    val actor = actorOf[Tester3].start
+    val actor = actorOf(Props[Tester3].withTimeout(Timeout(1))).start
     val endpoint = actorEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)
     exchange.getIn.setBody("Martin")

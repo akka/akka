@@ -34,9 +34,9 @@ import com.eaio.uuid.UUID
  * @author Roland Kuhn
  * @since 1.2
  */
-class TestFSMRef[S, D, T <: Actor](factory: () ⇒ T, address: String)(implicit ev: T <:< FSM[S, D]) extends TestActorRef(factory, address) {
+class TestFSMRef[S, D, T <: Actor](props: Props, address: String)(implicit ev: T <:< FSM[S, D]) extends TestActorRef(props, address) {
 
-  private def fsm = underlyingActor
+  private def fsm: T = underlyingActor
 
   /**
    * Get current state name of this FSM.
@@ -79,8 +79,8 @@ class TestFSMRef[S, D, T <: Actor](factory: () ⇒ T, address: String)(implicit 
 
 object TestFSMRef {
 
-  def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D]): TestFSMRef[S, D, T] = new TestFSMRef(() ⇒ factory, new UUID().toString)
+  def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D]): TestFSMRef[S, D, T] = new TestFSMRef(Props(creator = () ⇒ factory), new UUID().toString)
 
-  def apply[S, D, T <: Actor](factory: ⇒ T, address: String)(implicit ev: T <:< FSM[S, D]): TestFSMRef[S, D, T] = new TestFSMRef(() ⇒ factory, address)
+  def apply[S, D, T <: Actor](factory: ⇒ T, address: String)(implicit ev: T <:< FSM[S, D]): TestFSMRef[S, D, T] = new TestFSMRef(Props(creator = () ⇒ factory), address)
 
 }

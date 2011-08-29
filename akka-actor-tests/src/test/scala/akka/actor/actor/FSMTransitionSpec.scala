@@ -17,7 +17,6 @@ import FSM._
 object FSMTransitionSpec {
 
   class Supervisor extends Actor {
-    self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), None, None)
     def receive = { case _ ⇒ }
   }
 
@@ -63,7 +62,7 @@ class FSMTransitionSpec extends WordSpec with MustMatchers with TestKit {
     "not fail when listener goes away" in {
       val forward = Actor.actorOf(new Forwarder(testActor)).start()
       val fsm = Actor.actorOf(new MyFSM(testActor)).start()
-      val sup = Actor.actorOf[Supervisor].start()
+      val sup = Actor.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
       sup link fsm
       within(300 millis) {
         fsm ! SubscribeTransitionCallBack(forward)
@@ -77,7 +76,7 @@ class FSMTransitionSpec extends WordSpec with MustMatchers with TestKit {
     "not fail when listener is invalid" in {
       val forward = Actor.actorOf(new Forwarder(testActor))
       val fsm = Actor.actorOf(new MyFSM(testActor)).start()
-      val sup = Actor.actorOf[Supervisor].start()
+      val sup = Actor.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
       sup link fsm
       within(300 millis) {
         filterEvents(EventFilter.custom {

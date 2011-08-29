@@ -34,8 +34,6 @@ object Logger {
 class Slf4jEventHandler extends Actor with Logging {
   import EventHandler._
 
-  self.dispatcher = EventHandlerDispatcher
-
   def receive = {
     case event @ Error(cause, instance, message) ⇒
       log.error("[{}] [{}] [{}] [{}]",

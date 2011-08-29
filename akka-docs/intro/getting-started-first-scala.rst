@@ -146,59 +146,38 @@ Downloading and installing SBT
 
 SBT, short for 'Simple Build Tool' is an excellent build system written in Scala. It uses Scala to write the build scripts which gives you a lot of power. It has a plugin architecture with many plugins available, something that we will take advantage of soon. SBT is the preferred way of building software in Scala and is probably the easiest way of getting through this tutorial. If you want to use SBT for this tutorial then follow the following instructions, if not you can skip this section and the next.
 
-First browse to  `http://code.google.com/p/simple-build-tool/downloads/list <http://code.google.com/p/simple-build-tool/downloads/list>`_ and download the ``0.7.6.RC0`` distribution.
-
-To install SBT and create a project for this tutorial it is easiest to follow the instructions on `http://code.google.com/p/simple-build-tool/wiki/Setup <http://code.google.com/p/simple-build-tool/wiki/Setup>`_.
+To install SBT and create a project for this tutorial it is easiest to follow the instructions on `https://github.com/harrah/xsbt/wiki/Setup <https://github.com/harrah/xsbt/wiki/Setup>`_.
 
 Now we need to create our first Akka project. You could add the dependencies manually to the build script, but the easiest way is to use Akka's SBT Plugin, covered in the next section.
 
 Creating an Akka SBT project
 ----------------------------
 
-If you have not already done so, now is the time to create an SBT project for our tutorial. You do that by stepping into the directory you want to create your project in and invoking the ``sbt`` command answering the questions for setting up your project (just pressing ENTER will choose the default in square brackets)::
+If you have not already done so, now is the time to create an SBT project for our tutorial. You do that by adding the following content to ``build.sbt`` file in the directory you want to create your project in::
 
-    $ sbt
-    Project does not exist, create new project? (y/N/s) y
-    Name: Tutorial 1
-    Organization: Hakkers Inc
-    Version [1.0]:
-    Scala version [2.9.0]:
-    sbt version [0.7.6.RC0]:
+    name := "My Project"
 
-Now we have the basis for an SBT project. Akka has an SBT Plugin making it very easy to use Akka is an SBT-based project so let's use that.
+    version := "1.0"
 
-To use the plugin, first add a plugin definition to your SBT project by creating a ``Plugins.scala`` file in the ``project/plugins`` directory containing::
+    scalaVersion := "2.9.0-1"
 
-    import sbt._
+    resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-    class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
-      val akkaRepo   = "Akka Repo" at "http://akka.io/repository"
-      val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "2.0-SNAPSHOT"
-    }
+    libraryDependencies += "se.scalablesolutions.akka" % "akka-actor" % "1.2-SNAPSHOT"
 
-Now we need to create a project definition using our Akka SBT plugin. We do that by creating a ``project/build/Project.scala`` file containing::
+Create a directory ``src/main/scala`` in which you will store the Scala source files.
 
-    import sbt._
+Not needed in this tutorial, but if you would like to use additional Akka modules beyond ``akka-actor``, you can add these as ``libraryDependencies`` in ``build.sbt``. Note that there must be a blank line between each. Here is an example adding ``akka-remote`` and ``akka-stm``::
 
-    class TutorialOneProject(info: ProjectInfo) extends DefaultProject(info) with AkkaProject
+    libraryDependencies += "se.scalablesolutions.akka" % "akka-actor" % "1.2-SNAPSHOT"
+    
+    libraryDependencies += "se.scalablesolutions.akka" % "akka-remote" % "1.2-SNAPSHOT"
+    
+    libraryDependencies += "se.scalablesolutions.akka" % "akka-stm" % "1.2-SNAPSHOT"
 
-The magic is in mixing in the ``AkkaProject`` trait.
+So, now we are all set.
 
-Not needed in this tutorial, but if you would like to use additional Akka modules beyond ``akka-actor``, you can add these as "module configurations" in the project file. Here is an example adding ``akka-remote`` and ``akka-stm``::
-
-    class AkkaSampleProject(info: ProjectInfo) extends DefaultProject(info) with AkkaProject {
-      val akkaSTM    = akkaModule("stm")
-      val akkaRemote = akkaModule("remote")
-    }
-
-So, now we are all set. Just one final thing to do; make SBT download the dependencies it needs. That is done by invoking::
-
-    > reload
-    > update
-
-The first reload command is needed because we have changed the project definition since the sbt session started.
-
-SBT itself needs a whole bunch of dependencies but our project will only need one; ``akka-actor-2.0-SNAPSHOT.jar``. SBT downloads that as well.
+SBT itself needs a whole bunch of dependencies but our project will only need one; ``akka-actor-2.0-SNAPSHOT.jar``. SBT will download that as well.
 
 Start writing the code
 ----------------------
@@ -537,8 +516,6 @@ Run it inside SBT
 If you used SBT, then you can run the application directly inside SBT. First you need to compile the project::
 
     $ sbt
-    > update
-    ...
     > compile
     ...
 

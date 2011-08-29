@@ -25,13 +25,8 @@ trait OrderReceiver {
 
 }
 
-class AkkaOrderReceiver(disp: Option[MessageDispatcher])
-  extends Actor with OrderReceiver {
+class AkkaOrderReceiver extends Actor with OrderReceiver {
   type ME = ActorRef
-
-  for (d ← disp) {
-    self.dispatcher = d
-  }
 
   def receive = {
     case routing @ MatchingEngineRouting(mapping) ⇒

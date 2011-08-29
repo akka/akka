@@ -3,7 +3,7 @@
  */
 package akka.actor.mailbox
 
-import akka.actor.{ Actor, ActorRef, NullChannel }
+import akka.actor.{ Actor, ActorRef, LocalActorRef, NullChannel, Channel }
 import akka.config.Config.config
 import akka.dispatch._
 import akka.event.EventHandler
@@ -37,7 +37,7 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
 
     msg.channel match {
       case a: ActorRef ⇒ { b += "senderAddress" -> a.address }
-      case _           ⇒
+      case _           ⇒ ()
     }
     /**
      * TODO - Figure out a way for custom serialization of the message instance
@@ -72,24 +72,25 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
   def decode(in: InputStream): MongoDurableMessage = {
     val deserializer = new DefaultBSONDeserializer
     // TODO - Skip the whole doc step for performance, fun, and profit! (Needs Salat / custom Deser)
-    val doc = deserializer.decodeAndFetch(in).asInstanceOf[BSONDocument]
+    val doc: BSONDocument = deserializer.decodeAndFetch(in).asInstanceOf[BSONDocument]
     EventHandler.debug(this, "Deserializing a durable message from MongoDB: %s".format(doc))
-    val msgData = MessageProtocol.parseFrom(doc.as[org.bson.types.Binary]("message").getData)
-    val msg = MessageSerializer.deserialize(msgData)
+
     val ownerAddress = doc.as[String]("ownerAddress")
-    val owner = Actor.registry.actorFor(ownerAddress).getOrElse(
-      throw new DurableMailboxException("No actor could be found for address [" + ownerAddress + "], could not deserialize message."))
-
-    val senderOption = if (doc.contains("senderAddress")) {
-      Actor.registry.actorFor(doc.as[String]("senderAddress"))
-    } else None
-
-    val sender = senderOption match {
-      case Some(ref) ⇒ ref
-      case None      ⇒ NullChannel
+    val owner = Actor.registry.actorFor(ownerAddress) match {
+      case Some(l: LocalActorRef) ⇒ l
+      case Some(a)                ⇒ throw new DurableMailboxException("Recipient of message is not a LocalActorRef: " + a)
+      case None                   ⇒ throw new DurableMailboxException("No actor could be found for address [" + ownerAddress + "], could not deserialize message.")
     }
 
-    MongoDurableMessage(ownerAddress, owner, msg, sender)
+    val msgData = MessageProtocol.parseFrom(doc.as[org.bson.types.Binary]("message").getData)
+    val msg = MessageSerializer.deserialize(msgData)
+
+    val sender = if (doc.contains("senderAddress"))
+      Actor.registry.actorFor(doc.as[String]("senderAddress"))
+    else
+      None
+
+    MongoDurableMessage(ownerAddress, owner, msg, sender.getOrElse(NullChannel))
   }
 
   def checkObject(msg: MongoDurableMessage, isQuery: Boolean = false) = {} // object expected to be OK with this message type.

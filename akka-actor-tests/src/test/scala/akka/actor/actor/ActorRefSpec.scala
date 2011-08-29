@@ -15,6 +15,7 @@ import akka.dispatch.Future
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import java.lang.IllegalStateException
 import akka.util.ReflectiveAccess
+import akka.actor.Actor.actorOf
 
 object ActorRefSpec {
 
@@ -26,11 +27,11 @@ object ActorRefSpec {
     def receive = {
       case "complexRequest" ⇒ {
         replyTo = self.channel
-        val worker = Actor.actorOf[WorkerActor].start()
+        val worker = actorOf(Props[WorkerActor])
         worker ! "work"
       }
       case "complexRequest2" ⇒
-        val worker = Actor.actorOf[WorkerActor].start()
+        val worker = actorOf(Props[WorkerActor])
         worker ! self.channel
       case "workDone"      ⇒ replyTo ! "complexReply"
       case "simpleRequest" ⇒ self.reply("simpleReply")
@@ -122,7 +123,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
       }
 
       intercept[akka.actor.ActorInitializationException] {
-        Actor.actorOf(new Actor {
+        actorOf(new Actor {
           val nested = new Actor { def receive = { case _ ⇒ } }
           def receive = { case _ ⇒ }
         }).start()
@@ -133,43 +134,43 @@ class ActorRefSpec extends WordSpec with MustMatchers {
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        Actor.actorOf(new FailingOuterActor(Actor.actorOf(new InnerActor).start)).start()
+        actorOf(new FailingOuterActor(actorOf(new InnerActor).start)).start()
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        Actor.actorOf(new OuterActor(Actor.actorOf(new FailingInnerActor).start)).start()
+        actorOf(new OuterActor(actorOf(new FailingInnerActor).start)).start()
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        Actor.actorOf(new FailingInheritingOuterActor(Actor.actorOf(new InnerActor).start)).start()
+        actorOf(new FailingInheritingOuterActor(actorOf(new InnerActor).start)).start()
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        Actor.actorOf(new FailingOuterActor(Actor.actorOf(new FailingInheritingInnerActor).start)).start()
+        actorOf(new FailingOuterActor(actorOf(new FailingInheritingInnerActor).start)).start()
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        Actor.actorOf(new FailingInheritingOuterActor(Actor.actorOf(new FailingInheritingInnerActor).start)).start()
+        actorOf(new FailingInheritingOuterActor(actorOf(new FailingInheritingInnerActor).start)).start()
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        Actor.actorOf(new FailingInheritingOuterActor(Actor.actorOf(new FailingInnerActor).start)).start()
+        actorOf(new FailingInheritingOuterActor(actorOf(new FailingInnerActor).start)).start()
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        Actor.actorOf(new OuterActor(Actor.actorOf(new InnerActor {
+        actorOf(new OuterActor(actorOf(new InnerActor {
           val a = new InnerActor
         }).start)).start()
       }
@@ -177,32 +178,32 @@ class ActorRefSpec extends WordSpec with MustMatchers {
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        Actor.actorOf(new FailingOuterActor(Actor.actorOf(new FailingInheritingInnerActor).start)).start()
+        actorOf(new FailingOuterActor(actorOf(new FailingInheritingInnerActor).start)).start()
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        Actor.actorOf(new OuterActor(Actor.actorOf(new FailingInheritingInnerActor).start)).start()
+        actorOf(new OuterActor(actorOf(new FailingInheritingInnerActor).start)).start()
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        Actor.actorOf(new OuterActor(Actor.actorOf({ new InnerActor; new InnerActor }).start)).start()
+        actorOf(new OuterActor(actorOf({ new InnerActor; new InnerActor }).start)).start()
       }
 
       refStackMustBeEmpty
 
       (intercept[java.lang.IllegalStateException] {
-        Actor.actorOf(new OuterActor(Actor.actorOf({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor }).start)).start()
+        actorOf(new OuterActor(actorOf({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor }).start)).start()
       }).getMessage must be === "Ur state be b0rked"
 
       refStackMustBeEmpty
     }
 
     "be serializable using Java Serialization on local node" in {
-      val a = Actor.actorOf[InnerActor].start
+      val a = actorOf[InnerActor].start
 
       import java.io._
 
@@ -225,7 +226,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
     "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
       ReflectiveAccess.RemoteModule.isEnabled must be === false
 
-      val a = Actor.actorOf[InnerActor].start
+      val a = actorOf[InnerActor].start
 
       val inetAddress = ReflectiveAccess.RemoteModule.configDefaultAddress
 
@@ -255,8 +256,8 @@ class ActorRefSpec extends WordSpec with MustMatchers {
     }
 
     "support nested actorOfs" in {
-      val a = Actor.actorOf(new Actor {
-        val nested = Actor.actorOf(new Actor { def receive = { case _ ⇒ } }).start()
+      val a = actorOf(new Actor {
+        val nested = actorOf(new Actor { def receive = { case _ ⇒ } }).start()
         def receive = { case _ ⇒ self reply nested }
       }).start()
 
@@ -267,7 +268,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
     }
 
     "support advanced nested actorOfs" in {
-      val a = Actor.actorOf(new OuterActor(Actor.actorOf(new InnerActor).start)).start
+      val a = actorOf(Props(new OuterActor(actorOf(Props(new InnerActor)))))
       val inner = (a ? "innerself").as[Any].get
 
       (a ? a).as[ActorRef].get must be(a)
@@ -278,8 +279,8 @@ class ActorRefSpec extends WordSpec with MustMatchers {
     }
 
     "support reply via channel" in {
-      val serverRef = Actor.actorOf[ReplyActor].start()
-      val clientRef = Actor.actorOf(new SenderActor(serverRef)).start()
+      val serverRef = actorOf(Props[ReplyActor])
+      val clientRef = actorOf(Props(new SenderActor(serverRef)))
 
       clientRef ! "complex"
       clientRef ! "simple"
@@ -302,16 +303,14 @@ class ActorRefSpec extends WordSpec with MustMatchers {
     }
 
     "stop when sent a poison pill" in {
-      val ref = Actor.actorOf(
-        new Actor {
-          def receive = {
-            case 5    ⇒ self tryReply "five"
-            case null ⇒ self tryReply "null"
-          }
-        }).start()
+      val timeout = Timeout(20000)
+      val ref = actorOf(Props(self ⇒ {
+        case 5    ⇒ self tryReply "five"
+        case null ⇒ self tryReply "null"
+      }))
 
-      val ffive = (ref ? 5).mapTo[String]
-      val fnull = (ref ? null).mapTo[String]
+      val ffive = (ref ? (5, timeout)).mapTo[String]
+      val fnull = (ref ? (null, timeout)).mapTo[String]
 
       intercept[ActorKilledException] {
         (ref ? PoisonPill).get
@@ -329,20 +328,17 @@ class ActorRefSpec extends WordSpec with MustMatchers {
       filterException[ActorKilledException] {
         val latch = new CountDownLatch(2)
 
-        val boss = Actor.actorOf(new Actor {
-          self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), scala.Some(2), scala.Some(1000))
+        val boss = actorOf(Props(new Actor {
 
-          val ref = Actor.actorOf(
-            new Actor {
+          val ref = actorOf(
+            Props(new Actor {
               def receive = { case _ ⇒ }
               override def preRestart(reason: Throwable, msg: Option[Any]) = latch.countDown()
               override def postRestart(reason: Throwable) = latch.countDown()
-            }).start()
-
-          self link ref
+            }).withSupervisor(self))
 
           protected def receive = { case "sendKill" ⇒ ref ! Kill }
-        }).start()
+        }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 1000)))
 
         boss ! "sendKill"
         latch.await(5, TimeUnit.SECONDS) must be === true

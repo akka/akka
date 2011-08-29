@@ -36,18 +36,16 @@ class SupervisorHierarchySpec extends JUnitSuite {
     val workerTwo = actorOf(new CountDownActor(countDown))
     val workerThree = actorOf(new CountDownActor(countDown))
 
-    val boss = actorOf(new Actor {
-      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), 5, 1000)
-
+    val boss = actorOf(Props(new Actor {
       protected def receive = { case _ ⇒ () }
-    }).start()
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 1000)))
 
     val manager = actorOf(new CountDownActor(countDown))
-    boss.startLink(manager)
+    boss.link(manager).start()
 
-    manager.startLink(workerOne)
-    manager.startLink(workerTwo)
-    manager.startLink(workerThree)
+    manager.link(workerOne).start()
+    manager.link(workerTwo).start()
+    manager.link(workerThree).start()
 
     workerOne ! Death(workerOne, new FireWorkerException("Fire the worker!"))
 
@@ -61,14 +59,12 @@ class SupervisorHierarchySpec extends JUnitSuite {
   def supervisorShouldReceiveNotificationMessageWhenMaximumNumberOfRestartsWithinTimeRangeIsReached = {
     val countDown = new CountDownLatch(2)
     val crasher = actorOf(new CountDownActor(countDown))
-    val boss = actorOf(new Actor {
-      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), 1, 5000)
+    val boss = actorOf(Props(new Actor {
       protected def receive = {
-        case MaximumNumberOfRestartsWithinTimeRangeReached(_, _, _, _) ⇒
-          countDown.countDown()
+        case MaximumNumberOfRestartsWithinTimeRangeReached(_, _, _, _) ⇒ countDown.countDown()
       }
-    }).start()
-    boss.startLink(crasher)
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 1, 5000)))
+    boss.link(crasher).start()
 
     crasher ! Death(crasher, new FireWorkerException("Fire the worker!"))
     crasher ! Death(crasher, new FireWorkerException("Fire the worker!"))

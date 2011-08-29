@@ -17,9 +17,7 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
 
   var log = ""
   case object Die
-  class Chainer(a: Option[ActorRef] = None) extends Actor {
-    self.lifeCycle = Permanent
-    self.faultHandler = OneForOneStrategy(List(classOf[Exception]), 3, 1000)
+  class Chainer(a: Option[ActorRef]) extends Actor {
     a.foreach(self.link(_))
 
     def receive = {
@@ -37,9 +35,10 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
       filterException[Exception] {
         log = "INIT"
 
-        val lastActor = actorOf(new Chainer, "lastActor").start
-        val middleActor = actorOf(new Chainer(Some(lastActor)), "middleActor").start
-        val headActor = actorOf(new Chainer(Some(middleActor)), "headActor").start
+        val p = Props.default.withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 1000))
+        val lastActor = actorOf(p.withCreator(new Chainer(None)), "lastActor")
+        val middleActor = actorOf(p.withCreator(new Chainer(Some(lastActor))), "middleActor")
+        val headActor = actorOf(p.withCreator(new Chainer(Some(middleActor))), "headActor")
 
         middleActor ! Die
         sleepFor(500 millis)
