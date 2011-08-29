@@ -242,7 +242,7 @@ object EventHandler extends ListenerManagement {
       println(errorFormat.format(
         timestamp,
         event.thread.getName,
-        event.instance.getClass.getSimpleName,
+        instanceName(event.instance),
         event.message,
         stackTraceFor(event.cause)))
 
@@ -250,25 +250,30 @@ object EventHandler extends ListenerManagement {
       println(warningFormat.format(
         timestamp,
         event.thread.getName,
-        event.instance.getClass.getSimpleName,
+        instanceName(event.instance),
         event.message))
 
     def info(event: Info) =
       println(infoFormat.format(
         timestamp,
         event.thread.getName,
-        event.instance.getClass.getSimpleName,
+        instanceName(event.instance),
         event.message))
 
     def debug(event: Debug) =
       println(debugFormat.format(
         timestamp,
         event.thread.getName,
-        event.instance.getClass.getSimpleName,
+        instanceName(event.instance),
         event.message))
 
     def generic(event: Any) =
       println(genericFormat.format(timestamp, event.toString))
+
+    def instanceName(instance: AnyRef): String = instance match {
+      case a: ActorRef ⇒ a.address
+      case _           ⇒ instance.getClass.getSimpleName
+    }
   }
 
   class DefaultListener extends Actor with StandardOutLogger {
