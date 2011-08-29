@@ -44,7 +44,7 @@ private[akka] object ActorRefInternals {
  * ActorRef configuration object, this is threadsafe and fully sharable
  *
  * Props() returns default configuration
- * TODO document me
+ * FIXME document me
  */
 object Props {
   object Default {
@@ -91,6 +91,7 @@ case class Props(creator: () ⇒ Actor = Props.Default.creator,
     faultHandler = Props.Default.faultHandler,
     supervisor = Props.Default.supervisor,
     localOnly = Props.Default.localOnly)
+
   /**
    * Returns a new Props with the specified creator set
    *  Scala API

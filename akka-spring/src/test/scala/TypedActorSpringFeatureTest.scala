@@ -15,7 +15,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext
 import org.springframework.core.io.{ ClassPathResource, Resource }
 import org.scalatest.{ BeforeAndAfterAll, FeatureSpec }
 import java.util.concurrent.CountDownLatch
-import akka.remote.netty.NettyRemoteSupport
+import akka.cluster.netty.NettyRemoteSupport
 import akka.actor._
 import akka.actor.Actor._
 

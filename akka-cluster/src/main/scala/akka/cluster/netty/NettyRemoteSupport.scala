@@ -2,14 +2,14 @@
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.remote.netty
+package akka.cluster.netty
 
 import akka.dispatch.{ ActorPromise, DefaultPromise, Promise }
-import akka.remote.{ MessageSerializer, RemoteClientSettings, RemoteServerSettings }
-import akka.remote.protocol.RemoteProtocol._
+import akka.cluster.{ MessageSerializer, RemoteClientSettings, RemoteServerSettings }
+import akka.cluster.protocol.RemoteProtocol._
 import akka.serialization.RemoteActorSerialization
 import akka.serialization.RemoteActorSerialization._
-import akka.remoteinterface._
+import akka.cluster._
 import akka.actor.{
   PoisonPill,
   Actor,
@@ -80,7 +80,7 @@ trait NettyRemoteClientModule extends RemoteClientModule {
                               isOneWay: Boolean,
                               actorRef: ActorRef,
                               loader: Option[ClassLoader]): Option[Promise[T]] =
-    withClientFor(remoteAddress, loader) { client =>
+    withClientFor(remoteAddress, loader) { client ⇒
       client.send[T](message, senderOption, senderFuture, remoteAddress, timeout, isOneWay, actorRef)
     }
 
@@ -159,7 +159,7 @@ abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) {
 
-  val useTransactionLog = config.getBool("akka.cluster.client.buffering.retry-message-send-on-failure", true)
+  val useTransactionLog = config.getBool("akka.cluster.client.buffering.retry-message-send-on-failure", false)
   val transactionLogCapacity = config.getInt("akka.cluster.client.buffering.capacity", -1)
 
   val name = this.getClass.getSimpleName + "@" +
@@ -172,9 +172,9 @@ abstract class RemoteClient private[akka] (
     else new LinkedBlockingQueue[(Boolean, Uuid, RemoteMessageProtocol)](transactionLogCapacity)
   }
 
-  private[remote] val runSwitch = new Switch()
+  private[cluster] val runSwitch = new Switch()
 
-  private[remote] def isRunning = runSwitch.isOn
+  private[cluster] def isRunning = runSwitch.isOn
 
   protected def notifyListeners(msg: ⇒ Any): Unit
 
@@ -207,10 +207,11 @@ abstract class RemoteClient private[akka] (
     remoteAddress: InetSocketAddress,
     timeout: Long,
     isOneWay: Boolean,
-    actorRef: ActorRef): Option[Promise[T]] =
-    send(createRemoteMessageProtocolBuilder(
-      Some(actorRef), Left(actorRef.uuid), actorRef.address, timeout, Right(message), isOneWay, senderOption).build,
-      senderFuture)
+    actorRef: ActorRef): Option[Promise[T]] = {
+    val messageProtocol = createRemoteMessageProtocolBuilder(
+      Some(actorRef), Left(actorRef.uuid), actorRef.address, timeout, Right(message), isOneWay, senderOption).build
+    send(messageProtocol, senderFuture)
+  }
 
   /**
    * Sends the message across the wire
@@ -222,25 +223,26 @@ abstract class RemoteClient private[akka] (
     if (isRunning) {
       EventHandler.debug(this, "Sending to connection [%s] message [\n%s]".format(remoteAddress, request))
 
+      // tell
       if (request.getOneWay) {
         try {
           val future = currentChannel.write(RemoteEncoder.encode(request))
           future.awaitUninterruptibly()
           if (!future.isCancelled && !future.isSuccess) {
             notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
-            throw future.getCause
           }
         } catch {
-          case e: Throwable ⇒
-            // add the request to the tx log after a failing send
+          case e: Exception ⇒
             notifyListeners(RemoteClientError(e, module, remoteAddress))
-            if (useTransactionLog) {
-              if (!pendingRequests.offer((true, null, request)))
-                throw new RemoteClientMessageBufferException("Buffer limit [" + transactionLogCapacity + "] reached")
-            } else throw e
+
+            if (useTransactionLog && !pendingRequests.offer((true, null, request))) { // Add the request to the tx log after a failing send
+              pendingRequests.clear()
+              throw new RemoteClientMessageBufferException("Buffer limit [" + transactionLogCapacity + "] reached")
+            }
         }
         None
 
+        // ask
       } else {
         val futureResult =
           if (senderFuture.isDefined) senderFuture.get
@@ -250,9 +252,10 @@ abstract class RemoteClient private[akka] (
         futures.put(futureUuid, futureResult) // Add future prematurely, remove it if write fails
 
         def handleRequestReplyError(future: ChannelFuture) = {
-          if (useTransactionLog) {
-            if (!pendingRequests.offer((false, futureUuid, request))) // Add the request to the tx log after a failing send
-              throw new RemoteClientMessageBufferException("Buffer limit [" + transactionLogCapacity + "] reached")
+          if (useTransactionLog && !pendingRequests.offer((false, futureUuid, request))) { // Add the request to the tx log after a failing send
+            pendingRequests.clear()
+            throw new RemoteClientMessageBufferException("Buffer limit [" + transactionLogCapacity + "] reached")
+
           } else {
             val f = futures.remove(futureUuid) // Clean up future
             if (f ne null) f.completeWithException(future.getCause)
@@ -264,53 +267,57 @@ abstract class RemoteClient private[akka] (
           // try to send the original one
           future = currentChannel.write(RemoteEncoder.encode(request))
           future.awaitUninterruptibly()
-          if (future.isCancelled) futures.remove(futureUuid) // Clean up future
-          else if (!future.isSuccess) {
+
+          if (future.isCancelled || !future.isSuccess) {
             notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
             handleRequestReplyError(future)
           }
+
         } catch {
           case e: Exception ⇒
             notifyListeners(RemoteClientWriteFailed(request, e, module, remoteAddress))
             handleRequestReplyError(future)
-            throw e
         }
         Some(futureResult)
       }
 
     } else {
-      val exception = new RemoteClientException("RemoteModule client is not running, make sure you have invoked 'RemoteClient.connect' before using it.", module, remoteAddress)
+      val exception = new RemoteClientException("RemoteModule client is not running, make sure you have invoked 'RemoteClient.connect()' before using it.", module, remoteAddress)
       notifyListeners(RemoteClientError(exception, module, remoteAddress))
       throw exception
     }
   }
 
-  private[remote] def sendPendingRequests() = pendingRequests synchronized {
+  private[cluster] def sendPendingRequests() = pendingRequests synchronized {
     // ensure only one thread at a time can flush the log
     val nrOfMessages = pendingRequests.size
     if (nrOfMessages > 0) EventHandler.info(this, "Resending [%s] previously failed messages after remote client reconnect" format nrOfMessages)
     var pendingRequest = pendingRequests.peek
+
     while (pendingRequest ne null) {
       val (isOneWay, futureUuid, message) = pendingRequest
+
       if (isOneWay) {
         // tell
         val future = currentChannel.write(RemoteEncoder.encode(message))
         future.awaitUninterruptibly()
-        if (!future.isCancelled && !future.isSuccess) {
+
+        if (future.isCancelled && !future.isSuccess) {
           notifyListeners(RemoteClientWriteFailed(message, future.getCause, module, remoteAddress))
-          throw future.getCause
         }
+
       } else {
-        // sendRequestReply
+        // ask
         val future = currentChannel.write(RemoteEncoder.encode(message))
         future.awaitUninterruptibly()
-        if (future.isCancelled) futures.remove(futureUuid) // Clean up future
-        else if (!future.isSuccess) {
+
+        if (future.isCancelled || !future.isSuccess) {
           val f = futures.remove(futureUuid) // Clean up future
           if (f ne null) f.completeWithException(future.getCause)
           notifyListeners(RemoteClientWriteFailed(message, future.getCause, module, remoteAddress))
         }
       }
+
       pendingRequests.remove(pendingRequest)
       pendingRequest = pendingRequests.peek // try to grab next message
     }
@@ -332,9 +339,9 @@ class ActiveRemoteClient private[akka] (
   @volatile
   private var bootstrap: ClientBootstrap = _
   @volatile
-  private[remote] var connection: ChannelFuture = _
+  private[cluster] var connection: ChannelFuture = _
   @volatile
-  private[remote] var openChannels: DefaultChannelGroup = _
+  private[cluster] var openChannels: DefaultChannelGroup = _
   @volatile
   private var timer: HashedWheelTimer = _
   @volatile
@@ -344,7 +351,40 @@ class ActiveRemoteClient private[akka] (
 
   def currentChannel = connection.getChannel
 
+  /**
+   * Connect to remote server.
+   */
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = {
+
+    def sendSecureCookie(connection: ChannelFuture) {
+      val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
+      if (SECURE_COOKIE.nonEmpty) handshake.setCookie(SECURE_COOKIE.get)
+      connection.getChannel.write(RemoteEncoder.encode(handshake.build))
+    }
+
+    def closeChannel(connection: ChannelFuture) = {
+      val channel = connection.getChannel
+      openChannels.remove(channel)
+      channel.close
+    }
+
+    def attemptReconnect(): Boolean = {
+      EventHandler.debug(this, "Remote client reconnecting to [%s]".format(remoteAddress))
+
+      val connection = bootstrap.connect(remoteAddress)
+      openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
+
+      if (!connection.isSuccess) {
+        notifyListeners(RemoteClientError(connection.getCause, module, remoteAddress))
+        EventHandler.error(connection.getCause, this, "Reconnection to [%s] has failed".format(remoteAddress))
+        false
+
+      } else {
+        sendSecureCookie(connection)
+        true
+      }
+    }
+
     runSwitch switchOn {
       openChannels = new DefaultDisposableChannelGroup(classOf[RemoteClient].getName)
       timer = new HashedWheelTimer
@@ -356,29 +396,18 @@ class ActiveRemoteClient private[akka] (
 
       EventHandler.debug(this, "Starting remote client connection to [%s]".format(remoteAddress))
 
-      // Wait until the connection attempt succeeds or fails.
+      connection = bootstrap.connect(remoteAddress)
 
-      try {
-        connection = bootstrap.connect(remoteAddress)
-      } catch {
-        case e: Exception ⇒
-          EventHandler.error(e, this, "Remote client failed to connect to [%s]".format(remoteAddress))
-          throw e
-      }
-
-      openChannels.add(connection.awaitUninterruptibly.getChannel)
+      val channel = connection.awaitUninterruptibly.getChannel
+      openChannels.add(channel)
 
       if (!connection.isSuccess) {
         notifyListeners(RemoteClientError(connection.getCause, module, remoteAddress))
         EventHandler.error(connection.getCause, this, "Remote client connection to [%s] has failed".format(remoteAddress))
         false
-      } else {
-        //Send cookie
-        val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
-        if (SECURE_COOKIE.nonEmpty)
-          handshake.setCookie(SECURE_COOKIE.get)
 
-        connection.getChannel.write(RemoteEncoder.encode(handshake.build))
+      } else {
+        sendSecureCookie(connection)
 
         //Add a task that does GCing of expired Futures
         timer.newTimeout(new TimerTask() {
@@ -399,31 +428,16 @@ class ActiveRemoteClient private[akka] (
     } match {
       case true ⇒ true
       case false if reconnectIfAlreadyConnected ⇒
+        closeChannel(connection)
+
         EventHandler.debug(this, "Remote client reconnecting to [%s]".format(remoteAddress))
+        attemptReconnect()
 
-        openChannels.remove(connection.getChannel)
-        connection.getChannel.close
-        connection = bootstrap.connect(remoteAddress)
-        openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
-        if (!connection.isSuccess) {
-          notifyListeners(RemoteClientError(connection.getCause, module, remoteAddress))
-          EventHandler.error(connection.getCause, this, "Reconnection to [%s] has failed".format(remoteAddress))
-
-          false
-        } else {
-          //Send cookie
-          val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
-          if (SECURE_COOKIE.nonEmpty)
-            handshake.setCookie(SECURE_COOKIE.get)
-
-          connection.getChannel.write(RemoteEncoder.encode(handshake.build))
-          true
-        }
       case false ⇒ false
     }
   }
 
-  //Please note that this method does _not_ remove the ARC from the NettyRemoteClientModule's map of clients
+  // Please note that this method does _not_ remove the ARC from the NettyRemoteClientModule's map of clients
   def shutdown() = runSwitch switchOff {
     EventHandler.info(this, "Shutting down remote client [%s]".format(name))
 
@@ -511,8 +525,7 @@ class ActiveRemoteClientHandler(
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
           val reply = arp.getMessage
           val replyUuid = uuidFrom(reply.getActorInfo.getUuid.getHigh, reply.getActorInfo.getUuid.getLow)
-          EventHandler.debug(this, "Remote client received RemoteMessageProtocol[\n%s]".format(reply))
-          EventHandler.debug(this, "Trying to map back to future: %s".format(replyUuid))
+          EventHandler.debug(this, "Remote client received RemoteMessageProtocol[\n%s]\nTrying to map back to future: %s".format(reply, replyUuid))
 
           futures.remove(replyUuid).asInstanceOf[Promise[Any]] match {
             case null ⇒
@@ -531,10 +544,9 @@ class ActiveRemoteClientHandler(
           throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.module, client.remoteAddress)
       }
     } catch {
-      case e: Throwable ⇒
+      case e: Exception ⇒
         EventHandler.error(e, this, e.getMessage)
         client.notifyListeners(RemoteClientError(e, client.module, client.remoteAddress))
-        throw e
     }
   }
 
@@ -549,7 +561,7 @@ class ActiveRemoteClientHandler(
         }
       }, RemoteClientSettings.RECONNECT_DELAY.toMillis, TimeUnit.MILLISECONDS)
     } else spawn {
-      client.module.shutdownClientConnection(remoteAddress)
+      client.module.shutdownClientConnection(remoteAddress) // spawn in another thread
     }
   }
 
@@ -560,10 +572,9 @@ class ActiveRemoteClientHandler(
       EventHandler.debug(this, "Remote client connected to [%s]".format(ctx.getChannel.getRemoteAddress))
       client.resetReconnectionTimeWindow
     } catch {
-      case e: Throwable ⇒
+      case e: Exception ⇒
         EventHandler.error(e, this, e.getMessage)
         client.notifyListeners(RemoteClientError(e, client.module, client.remoteAddress))
-        throw e
     }
   }
 
@@ -573,20 +584,21 @@ class ActiveRemoteClientHandler(
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    if (event.getCause ne null)
-      EventHandler.error(event.getCause, this, "Unexpected exception from downstream in remote client: %s".format(event))
-    else
-      EventHandler.error(this, "Unexpected exception from downstream in remote client: %s".format(event))
+    val cause = event.getCause
+    if (cause ne null) {
+      EventHandler.error(event.getCause, this, "Unexpected exception [%s] from downstream in remote client [%s]".format(event.getCause, event))
 
-    event.getCause match {
-      case e: ReadTimeoutException ⇒
-        spawn {
-          client.module.shutdownClientConnection(remoteAddress)
-        }
-      case e: Exception ⇒
-        client.notifyListeners(RemoteClientError(e, client.module, client.remoteAddress))
-        event.getChannel.close //FIXME Is this the correct behavior?
-    }
+      cause match {
+        case e: ReadTimeoutException ⇒
+          spawn {
+            client.module.shutdownClientConnection(remoteAddress) // spawn in another thread
+          }
+        case e: Exception ⇒
+          client.notifyListeners(RemoteClientError(e, client.module, client.remoteAddress))
+          event.getChannel.close //FIXME Is this the correct behavior?
+      }
+
+    } else EventHandler.error(this, "Unexpected exception from downstream in remote client [%s]".format(event))
   }
 
   private def parseException(reply: RemoteMessageProtocol, loader: Option[ClassLoader]): Throwable = {
@@ -872,7 +884,7 @@ class RemoteServerAuthenticationHandler(secureCookie: Option[String]) extends Si
                   "The remote client [" + ctx.getChannel.getRemoteAddress + "] secure cookie is not the same as remote server secure cookie")
             }
           case _ ⇒
-            throw new SecurityException("The remote client [" + ctx.getChannel.getRemoteAddress + "] is not Authorized!")
+            throw new SecurityException("The remote client [" + ctx.getChannel.getRemoteAddress + "] is not authorized!")
         }
       }
   }
@@ -957,9 +969,12 @@ class RemoteServerHandler(
     event.getMessage match {
       case null ⇒
         throw new IllegalActorStateException("Message in remote MessageEvent is null: " + event)
+
       case remote: AkkaRemoteProtocol if remote.hasMessage ⇒
         handleRemoteMessageProtocol(remote.getMessage, event.getChannel)
+
       //case remote: AkkaRemoteProtocol if remote.hasInstruction => RemoteServer cannot receive control messages (yet)
+
       case _ ⇒ //ignore
     }
   }
@@ -1065,8 +1080,8 @@ class RemoteServerHandler(
 
     val actorRef = Actor.createActor(address, () ⇒ createSessionActor(actorInfo, channel))
 
-    if (actorRef eq null) throw new IllegalActorStateException(
-      "Could not find a remote actor with address [" + address + "] or uuid [" + uuid + "]")
+    if (actorRef eq null) throw new IllegalActorStateException("Could not find a remote actor with address [" + address + "] or uuid [" + uuid + "]")
+
     actorRef
   }
 

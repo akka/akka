@@ -18,7 +18,7 @@ If you deploy Akka in a JEE container, don't forget to create an Akka initializa
 
   package com.my //<--- your own package
   import akka.util.AkkaLoader
-  import akka.remote.BootableRemoteActorService
+  import akka.cluster.BootableRemoteActorService
   import akka.actor.BootableActorLoaderService
   import javax.servlet.{ServletContextListener, ServletContextEvent}
 
@@ -63,7 +63,7 @@ If you want to use akka-camel or any other modules that have their own "Bootable
 .. code-block:: scala
 
   package com.my //<--- your own package
-  import akka.remote.BootableRemoteActorService
+  import akka.cluster.BootableRemoteActorService
   import akka.actor.BootableActorLoaderService
   import akka.camel.CamelService
   import javax.servlet.{ServletContextListener, ServletContextEvent}

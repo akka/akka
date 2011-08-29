@@ -10,8 +10,8 @@ import akka.actor._
 import DeploymentConfig._
 import akka.dispatch.MessageInvocation
 import akka.util.ReflectiveAccess
-import akka.remote.{ RemoteClientSettings, MessageSerializer }
-import akka.remote.protocol.RemoteProtocol
+import akka.cluster.{ RemoteClientSettings, MessageSerializer }
+import akka.cluster.protocol.RemoteProtocol
 import RemoteProtocol._
 
 import scala.collection.immutable.Stack

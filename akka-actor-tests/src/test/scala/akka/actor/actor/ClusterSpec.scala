@@ -23,7 +23,7 @@ class ClusterSpec extends WordSpec with MustMatchers {
       getBool("akka.cluster.include-ref-node-in-replica-set") must equal(Some(true))
       getString("akka.cluster.compression-scheme") must equal(Some(""))
       getInt("akka.cluster.zlib-compression-level") must equal(Some(6))
-      getString("akka.cluster.layer") must equal(Some("akka.remote.netty.NettyRemoteSupport"))
+      getString("akka.cluster.layer") must equal(Some("akka.cluster.netty.NettyRemoteSupport"))
       getString("akka.cluster.secure-cookie") must equal(Some(""))
       getString("akka.cluster.log-directory") must equal(Some("_akka_cluster"))
 
@@ -38,7 +38,7 @@ class ClusterSpec extends WordSpec with MustMatchers {
       //akka.cluster.server
       getInt("akka.cluster.server.port") must equal(Some(2552))
       getInt("akka.cluster.server.message-frame-size") must equal(Some(1048576))
-      getInt("akka.cluster.server.connection-timeout") must equal(Some(100))
+      getInt("akka.cluster.server.connection-timeout") must equal(Some(120))
       getBool("akka.cluster.server.require-cookie") must equal(Some(false))
       getBool("akka.cluster.server.untrusted-mode") must equal(Some(false))
       getInt("akka.cluster.server.backlog") must equal(Some(4096))
@@ -51,7 +51,7 @@ class ClusterSpec extends WordSpec with MustMatchers {
       getBool("akka.cluster.client.buffering.retry-message-send-on-failure") must equal(Some(true))
       getInt("akka.cluster.client.buffering.capacity") must equal(Some(-1))
       getInt("akka.cluster.client.reconnect-delay") must equal(Some(5))
-      getInt("akka.cluster.client.read-timeout") must equal(Some(10))
+      getInt("akka.cluster.client.read-timeout") must equal(Some(3600))
       getInt("akka.cluster.client.reap-futures-delay") must equal(Some(5))
       getInt("akka.cluster.client.reconnection-time-window") must equal(Some(600))
     }

@@ -133,13 +133,13 @@ trait RouterConnections {
    * reasons this can happen is that multiple thread could at the 'same' moment discover for the same ActorRef that
    * not working.
    *
-   * It could be that even after a signalDeadActor has been called for a specific ActorRef, that the ActorRef
+   * It could be that even after a remove has been called for a specific ActorRef, that the ActorRef
    * is still being used. A good behaving Router will eventually discard this reference, but no guarantees are
    * made how long this takes place.
    *
    * @param ref the dead
    */
-  def signalDeadActor(deadRef: ActorRef): Unit
+  def remove(deadRef: ActorRef): Unit
 }
 
 object Routing {
@@ -250,7 +250,7 @@ class RoutedActorRef(val address: String, val router: Router, val connectionIter
     }
 
     @tailrec
-    final def signalDeadActor(ref: ActorRef) = {
+    final def remove(ref: ActorRef) = {
       val oldState = state.get()
 
       //remote the ref from the connections.
@@ -261,7 +261,7 @@ class RoutedActorRef(val address: String, val router: Router, val connectionIter
 
         val newState = new State(oldState.version + 1, newList)
         //if we are not able to update the state, we just try again.
-        if (!state.compareAndSet(oldState, newState)) signalDeadActor(ref)
+        if (!state.compareAndSet(oldState, newState)) remove(ref)
       }
     }
 
@@ -293,7 +293,7 @@ trait BasicRouter extends Router {
           actor.!(message)(sender)
         } catch {
           case e: Exception ⇒
-            connections.signalDeadActor(actor)
+            connections.remove(actor)
             throw e
         })
     case _ ⇒
@@ -304,7 +304,7 @@ trait BasicRouter extends Router {
             actor.!(message)(sender)
           } catch {
             case e: Exception ⇒
-              connections.signalDeadActor(actor)
+              connections.remove(actor)
               throw e
           }
         case None ⇒
@@ -323,7 +323,7 @@ trait BasicRouter extends Router {
             actor.?(message, timeout)(sender).asInstanceOf[Future[T]]
           } catch {
             case e: Exception ⇒
-              connections.signalDeadActor(actor)
+              connections.remove(actor)
               throw e
           }
         case None ⇒
@@ -505,7 +505,7 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
         Some(actor.?(message, timeout)(sender).asInstanceOf[Future[S]])
       } catch {
         case e: Exception ⇒
-          connections.signalDeadActor(actor)
+          connections.remove(actor)
           None
       }
     }

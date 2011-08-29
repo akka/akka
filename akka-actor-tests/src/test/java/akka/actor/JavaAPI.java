@@ -3,7 +3,7 @@ package akka.actor;
 import akka.japi.Creator;
 import org.junit.Test;
 import akka.actor.Actors;
-import akka.remoteinterface.RemoteSupport;
+import akka.cluster.RemoteSupport;
 import static org.junit.Assert.*;
 
 public class JavaAPI {

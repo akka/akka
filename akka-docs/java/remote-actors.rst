@@ -503,7 +503,7 @@ So a simple listener actor can look like this:
 .. code-block:: java
 
   import akka.actor.UntypedActor;
-  import akka.remoteinterface.*;
+  import akka.cluster.*;
   
   class Listener extends UntypedActor {
 
@@ -561,7 +561,7 @@ So a simple listener actor can look like this:
 .. code-block:: java
 
   import akka.actor.UntypedActor;
-  import akka.remoteinterface.*;
+  import akka.cluster.*;
 
   class Listener extends UntypedActor {
 

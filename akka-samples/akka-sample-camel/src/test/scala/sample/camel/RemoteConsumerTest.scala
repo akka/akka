@@ -5,8 +5,8 @@ import org.scalatest.{ GivenWhenThen, BeforeAndAfterAll, FeatureSpec }
 import akka.actor.Actor._
 import akka.actor._
 import akka.camel._
-//import akka.remote.netty.NettyRemoteSupport
-//import akka.remoteinterface.RemoteServerModule
+//import akka.cluster.netty.NettyRemoteSupport
+//import akka.cluster.RemoteServerModule
 
 /**
  * @author Martin Krasser

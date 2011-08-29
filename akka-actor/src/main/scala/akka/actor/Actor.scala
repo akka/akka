@@ -11,7 +11,7 @@ import akka.config._
 import Config._
 import akka.util.{ ReflectiveAccess, Duration }
 import ReflectiveAccess._
-import akka.remoteinterface.RemoteSupport
+import akka.cluster.RemoteSupport
 import akka.japi.{ Creator, Procedure }
 import akka.AkkaException
 import akka.serialization.{ Serializer, Serialization }

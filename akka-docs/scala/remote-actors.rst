@@ -580,7 +580,7 @@ So a simple listener actor can look like this:
 
   import akka.actor.Actor
   import akka.actor.Actor._
-  import akka.remoteinterface._
+  import akka.cluster._
 
   val listener = actorOf(new Actor {
     def receive = {
@@ -638,7 +638,7 @@ So a simple listener actor can look like this:
 
   import akka.actor.Actor
   import akka.actor.Actor._
-  import akka.remoteinterface._
+  import akka.cluster._
 
   val listener = actorOf(new Actor {
     def receive = {

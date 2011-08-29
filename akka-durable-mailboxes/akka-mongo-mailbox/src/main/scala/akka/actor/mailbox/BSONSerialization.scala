@@ -8,8 +8,8 @@ import akka.config.Config.config
 import akka.dispatch._
 import akka.event.EventHandler
 import akka.AkkaException
-import akka.remote.MessageSerializer
-import akka.remote.protocol.RemoteProtocol.MessageProtocol
+import akka.cluster.MessageSerializer
+import akka.cluster.protocol.RemoteProtocol.MessageProtocol
 
 import MailboxProtocol._
 

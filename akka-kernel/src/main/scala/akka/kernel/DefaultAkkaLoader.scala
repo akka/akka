@@ -6,7 +6,7 @@ package akka.http
 
 import akka.config.Config
 import akka.util.{ Bootable, AkkaLoader }
-import akka.remote.BootableRemoteActorService
+import akka.cluster.BootableRemoteActorService
 import akka.actor.BootableActorLoaderService
 
 class DefaultAkkaLoader extends AkkaLoader {

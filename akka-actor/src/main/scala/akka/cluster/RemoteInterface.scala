@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.remoteinterface
+package akka.cluster
 
 import akka.japi.Creator
 import akka.actor._
@@ -89,9 +89,17 @@ trait RemoteModule {
 }
 
 /**
+ * Remote life-cycle events.
+ */
+sealed trait RemoteLifeCycleEvent
+
+/**
  * Life-cycle events for RemoteClient.
  */
-sealed trait RemoteClientLifeCycleEvent
+trait RemoteClientLifeCycleEvent extends RemoteLifeCycleEvent {
+  def remoteAddress: InetSocketAddress
+}
+
 case class RemoteClientError(
   @BeanProperty cause: Throwable,
   @BeanProperty client: RemoteClientModule,
@@ -117,7 +125,8 @@ case class RemoteClientWriteFailed(
 /**
  *  Life-cycle events for RemoteServer.
  */
-sealed trait RemoteServerLifeCycleEvent
+trait RemoteServerLifeCycleEvent extends RemoteLifeCycleEvent
+
 case class RemoteServerStarted(
   @BeanProperty val server: RemoteServerModule) extends RemoteServerLifeCycleEvent
 case class RemoteServerShutdown(

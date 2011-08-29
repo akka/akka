@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
-option java_package = "akka.remote.protocol";
+option java_package = "akka.cluster.protocol";
 option optimize_for = SPEED;
 
 /******************************************

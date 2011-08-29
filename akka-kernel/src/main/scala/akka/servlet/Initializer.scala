@@ -4,7 +4,7 @@
 
 package akka.servlet
 
-import akka.remote.BootableRemoteActorService
+import akka.cluster.BootableRemoteActorService
 import akka.actor.BootableActorLoaderService
 import akka.config.Config
 import akka.util.{ Bootable, AkkaLoader }

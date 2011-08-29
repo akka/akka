@@ -4,7 +4,7 @@
 
 package akka.cluster
 
-import akka.remoteinterface.RemoteSupport
+import akka.cluster.RemoteSupport
 import akka.serialization.Serializer
 import akka.actor._
 import DeploymentConfig._
@@ -426,9 +426,9 @@ trait ClusterNode {
 
   // =============== PRIVATE METHODS ===============
 
-  // FIXME considering moving all these private[cluster] methods to a separate trait to get them out of the user's view
+  // FIXME BAD BAD BAD - considering moving all these private[cluster] methods to a separate trait to get them out of the user's view
 
-  private[cluster] def remoteClientLifeCycleListener: ActorRef
+  private[cluster] def remoteClientLifeCycleHandler: ActorRef
 
   private[cluster] def remoteDaemon: ActorRef
 

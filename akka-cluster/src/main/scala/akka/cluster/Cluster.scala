@@ -30,7 +30,8 @@ import DeploymentConfig._
 
 import akka.event.EventHandler
 import akka.dispatch.{ Dispatchers, Future }
-import akka.remoteinterface._
+import akka.cluster._
+import akka.cluster._
 import akka.routing.RouterType
 
 import akka.config.{ Config, Supervision }
@@ -277,7 +278,7 @@ class DefaultClusterNode private[akka] (
 
   //  private val connectToAllNewlyArrivedMembershipNodesInClusterLock = new AtomicBoolean(false)
 
-  private[cluster] lazy val remoteClientLifeCycleListener = localActorOf(new Actor {
+  private[cluster] lazy val remoteClientLifeCycleHandler = localActorOf(new Actor {
     def receive = {
       case RemoteClientError(cause, client, address) ⇒ client.shutdownClientModule()
       case RemoteClientDisconnected(client, address) ⇒ client.shutdownClientModule()
@@ -296,10 +297,11 @@ class DefaultClusterNode private[akka] (
         :: Nil))
 
   lazy val remoteService: RemoteSupport = {
-    val remote = new akka.remote.netty.NettyRemoteSupport
+    val remote = new akka.cluster.netty.NettyRemoteSupport
     remote.start(hostname, port)
     remote.register(RemoteClusterDaemon.Address, remoteDaemon)
-    remote.addListener(remoteClientLifeCycleListener)
+    remote.addListener(FailureDetector.registry)
+    remote.addListener(remoteClientLifeCycleHandler)
     remote
   }
 
@@ -421,7 +423,8 @@ class DefaultClusterNode private[akka] (
 
       remoteService.shutdown() // shutdown server
 
-      remoteClientLifeCycleListener.stop()
+      FailureDetector.registry.stop()
+      remoteClientLifeCycleHandler.stop()
       remoteDaemon.stop()
 
       // for monitoring remote listener
@@ -1756,8 +1759,8 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 
   def handleUse(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
     def deserializeMessages(entriesAsBytes: Vector[Array[Byte]]): Vector[AnyRef] = {
-      import akka.remote.protocol.RemoteProtocol._
-      import akka.remote.MessageSerializer
+      import akka.cluster.protocol.RemoteProtocol._
+      import akka.cluster.MessageSerializer
 
       entriesAsBytes map { bytes ⇒
         val messageBytes =

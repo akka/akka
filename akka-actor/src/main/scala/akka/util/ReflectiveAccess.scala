@@ -6,7 +6,7 @@ package akka.util
 
 import akka.dispatch.MessageInvocation
 import akka.config.{ Config, ModuleNotAvailableException }
-import akka.remoteinterface.RemoteSupport
+import akka.cluster.RemoteSupport
 import akka.actor._
 import DeploymentConfig.ReplicationScheme
 import akka.event.EventHandler
@@ -122,7 +122,7 @@ object ReflectiveAccess {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object RemoteModule {
-    val TRANSPORT = Config.config.getString("akka.remote.layer", "akka.remote.netty.NettyRemoteSupport")
+    val TRANSPORT = Config.config.getString("akka.cluster.layer", "akka.cluster.netty.NettyRemoteSupport")
 
     val configDefaultAddress = new InetSocketAddress(Config.hostname, Config.remoteServerPort)
 

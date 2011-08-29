@@ -1,7 +1,7 @@
 package akka.actor;
 
 import akka.japi.Creator;
-import akka.remoteinterface.RemoteSupport;
+import akka.cluster.RemoteSupport;
 
 import com.eaio.uuid.UUID;
 
