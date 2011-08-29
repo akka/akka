@@ -115,7 +115,7 @@ object NodeAddress {
 }
 
 /*
- * Allows user to access metrics of a different nodes in the cluster. Changing metrics can be monitored 
+ * Allows user to access metrics of a different nodes in the cluster. Changing metrics can be monitored
  * using {@link MetricsAlterationMonitor}
  * Metrics of the cluster nodes are distributed through ZooKeeper. For better performance, metrics are
  * cached internally, and refreshed from ZooKeeper after an interval
@@ -141,7 +141,7 @@ trait NodeMetricsManager {
   def getAllMetrics: Array[NodeMetrics]
 
   /*
-     * Adds monitor that reacts, when specific conditions are satisfied  
+     * Adds monitor that reacts, when specific conditions are satisfied
      */
   def addMonitor(monitor: MetricsAlterationMonitor): Unit
 
@@ -166,13 +166,13 @@ trait NodeMetricsManager {
   def refreshTimeout: Duration
 
   /*
-     * Starts metrics manager. When metrics manager is started, it refreshes cache from ZooKeeper 
+     * Starts metrics manager. When metrics manager is started, it refreshes cache from ZooKeeper
      * after <code>refreshTimeout</code>, and invokes plugged monitors
      */
   def start(): NodeMetricsManager
 
   /*
-     * Stops metrics manager. Stopped metrics manager doesn't refresh cache from ZooKeeper, 
+     * Stops metrics manager. Stopped metrics manager doesn't refresh cache from ZooKeeper,
      * and doesn't invoke plugged monitors
      */
   def stop(): Unit

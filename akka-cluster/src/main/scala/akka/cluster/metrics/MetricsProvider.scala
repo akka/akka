@@ -12,16 +12,16 @@ import akka.util.Switch
 
 /*
  * Snapshot of the JVM / system that's the node is running on
- * 
+ *
  * @param nodeName name of the node, where metrics are gathered at
  * @param usedHeapMemory amount of heap memory currently used
- * @param committedHeapMemory amount of heap memory guaranteed to be available 
+ * @param committedHeapMemory amount of heap memory guaranteed to be available
  * @param maxHeapMemory maximum amount of heap memory that can be used
  * @param avaiableProcessors number of the processors avalable to the JVM
- * @param systemLoadAverage system load average. If OS-specific Sigar's native library is plugged, 
- * it's used to calculate average load on the CPUs in the system. Otherwise, value is retreived from monitoring 
+ * @param systemLoadAverage system load average. If OS-specific Sigar's native library is plugged,
+ * it's used to calculate average load on the CPUs in the system. Otherwise, value is retreived from monitoring
  * MBeans. Hyperic Sigar provides more precise values, and, thus, if the library is provided, it's used by default.
- * 
+ *
  */
 case class DefaultNodeMetrics(nodeName: String,
                               usedHeapMemory: Long,
@@ -74,7 +74,7 @@ class JMXMetricsProvider extends MetricsProvider {
 
   /*
      * Validates and calculates system load average
-     * 
+     *
      * @param avg system load average obtained from a specific monitoring provider (may be incorrect)
      * @return system load average, or default value(<code>0.5</code>), if passed value was out of permitted
      * bounds (0.0 to 1.0)
@@ -97,7 +97,7 @@ class JMXMetricsProvider extends MetricsProvider {
 
 /*
  * Loads wider range of metrics of a better quality with Hyperic Sigar (native library)
- * 
+ *
  * @param refreshTimeout Sigar gathers metrics during this interval
  */
 class SigarMetricsProvider private (private val sigarInstance: AnyRef) extends JMXMetricsProvider {
@@ -109,7 +109,7 @@ class SigarMetricsProvider private (private val sigarInstance: AnyRef) extends J
 
   /*
      * Wraps reflective calls to Hyperic Sigar
-     * 
+     *
      * @param f reflective call to Hyperic Sigar
      * @param fallback function, which is invoked, if call to Sigar has been finished with exception
      */

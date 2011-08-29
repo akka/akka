@@ -20,13 +20,13 @@ import org.I0Itec.zkclient.exception.ZkNoNodeException
 import akka.event.EventHandler
 
 /*
- * Instance of the metrics manager running on the node. To keep the fine performance, metrics of all the 
+ * Instance of the metrics manager running on the node. To keep the fine performance, metrics of all the
  * nodes in the cluster are cached internally, and refreshed from monitoring MBeans / Sigar (when if's local node),
- * of ZooKeeper (if it's metrics of all the nodes in the cluster) after a specified timeout - 
+ * of ZooKeeper (if it's metrics of all the nodes in the cluster) after a specified timeout -
  * <code>metricsRefreshTimeout</code>
  * <code>metricsRefreshTimeout</code> defaults to 2 seconds, and can be declaratively defined through
  * akka.conf:
- * 
+ *
  * @exampl {{{
  *      akka.cluster.metrics-refresh-timeout = 2
  * }}}
@@ -55,7 +55,7 @@ In order to get better metrics, please put "sigar.jar" to the classpath, and add
   @volatile
   private var _refreshTimeout = metricsRefreshTimeout
 
-  /* 
+  /*
      * Plugged monitors (both local and cluster-wide)
      */
   private val alterationMonitors = new ConcurrentSkipListSet[MetricsAlterationMonitor]
@@ -68,7 +68,7 @@ In order to get better metrics, please put "sigar.jar" to the classpath, and add
   def isRunning = _isRunning.isOn
 
   /*
-     * Starts metrics manager. When metrics manager is started, it refreshes cache from ZooKeeper 
+     * Starts metrics manager. When metrics manager is started, it refreshes cache from ZooKeeper
      * after <code>refreshTimeout</code>, and invokes plugged monitors
      */
   def start() = {
@@ -79,7 +79,7 @@ In order to get better metrics, please put "sigar.jar" to the classpath, and add
   private[cluster] def metricsForNode(nodeName: String): String = "%s/%s".format(node.NODE_METRICS, nodeName)
 
   /*
-     * Adds monitor that reacts, when specific conditions are satisfied  
+     * Adds monitor that reacts, when specific conditions are satisfied
      */
   def addMonitor(monitor: MetricsAlterationMonitor) = alterationMonitors add monitor
 
@@ -181,7 +181,7 @@ In order to get better metrics, please put "sigar.jar" to the classpath, and add
     }
 
     // RACY: metrics for the node might have been removed both from ZK and local cache by the moment,
-    // but will be re-cached, since they're still present in allMetricsFromZK snapshot. Not important, because 
+    // but will be re-cached, since they're still present in allMetricsFromZK snapshot. Not important, because
     // cache will be fixed soon, at the next iteration of refresh
     allMetricsFromZK map {
       case (node, metrics) ⇒
@@ -199,8 +199,8 @@ In order to get better metrics, please put "sigar.jar" to the classpath, and add
     val localNodeMetrics = clusterNodesMetrics.find(_.nodeName == nodeAddress.nodeName)
     val iterator = alterationMonitors.iterator
 
-    // RACY: there might be new monitors added after the iterator has been obtained. Not important, 
-    // becuse refresh interval is meant to be very short, and all the new monitors will be called ad the 
+    // RACY: there might be new monitors added after the iterator has been obtained. Not important,
+    // becuse refresh interval is meant to be very short, and all the new monitors will be called ad the
     // next refresh iteration
     while (iterator.hasNext) {
 

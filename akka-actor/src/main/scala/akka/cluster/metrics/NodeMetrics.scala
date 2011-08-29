@@ -20,7 +20,7 @@ trait NodeMetrics {
   def usedHeapMemory: Long
 
   /*
-     * Amount of heap memory guaranteed to be available 
+     * Amount of heap memory guaranteed to be available
      */
   def committedHeapMemory: Long
 
@@ -35,8 +35,8 @@ trait NodeMetrics {
   def avaiableProcessors: Int
 
   /*
-     * If OS-specific Hyperic Sigar library is plugged, it's used to calculate 
-     * average load on the CPUs in the system. Otherwise, value is retreived from monitoring MBeans. 
+     * If OS-specific Hyperic Sigar library is plugged, it's used to calculate
+     * average load on the CPUs in the system. Otherwise, value is retreived from monitoring MBeans.
      * Hyperic Sigar provides more precise values, and, thus, if the library is provided, it's used by default.
      */
   def systemLoadAverage: Double

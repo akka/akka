@@ -36,8 +36,8 @@ object AkkaMicrokernelPlugin extends Plugin {
   val additionalLibs = TaskKey[Seq[File]]("additional-libs", "Additional dependency jar files")
   val distConfig = TaskKey[DistConfig]("dist-config")
 
-  val distNeedsPackageBin = dist <<= dist.dependsOn(packageBin in Compile) 
-  
+  val distNeedsPackageBin = dist <<= dist.dependsOn(packageBin in Compile)
+
   override lazy val settings =
     inConfig(Dist)(Seq(
       dist <<= packageBin.identity,
@@ -53,27 +53,27 @@ object AkkaMicrokernelPlugin extends Plugin {
       additionalLibs <<= defaultAdditionalLibs,
       distConfig <<= (outputDirectory, configSourceDirs, distJvmOptions, distMainClass, libFilter, additionalLibs) map DistConfig)) ++
       Seq(
-        dist <<= (dist in Dist).identity, distNeedsPackageBin) 
+        dist <<= (dist in Dist).identity, distNeedsPackageBin)
 
   private def distTask: Initialize[Task[File]] =
-    (distConfig, sourceDirectory, crossTarget, dependencyClasspath, projectDependencies, allDependencies, buildStructure, state) map { 
+    (distConfig, sourceDirectory, crossTarget, dependencyClasspath, projectDependencies, allDependencies, buildStructure, state) map {
     (conf, src, tgt, cp, projDeps, allDeps, buildStruct, st) ⇒
-      
+
       if (isKernelProject(allDeps)) {
         val log = logger(st)
         val distBinPath = conf.outputDirectory / "bin"
         val distConfigPath = conf.outputDirectory / "config"
         val distDeployPath = conf.outputDirectory / "deploy"
         val distLibPath = conf.outputDirectory / "lib"
-        
-        val subProjectDependencies: Set[SubProjectInfo] = allSubProjectDependencies(projDeps, buildStruct, st) 
-      
+
+        val subProjectDependencies: Set[SubProjectInfo] = allSubProjectDependencies(projDeps, buildStruct, st)
+
         log.info("Creating distribution %s ..." format conf.outputDirectory)
         IO.createDirectory(conf.outputDirectory)
         Scripts(conf.distJvmOptions, conf.distMainClass).writeScripts(distBinPath)
         copyDirectories(conf.configSourceDirs, distConfigPath)
         copyJars(tgt, distDeployPath)
-        
+
         copyFiles(libFiles(cp, conf.libFilter), distLibPath)
         copyFiles(conf.additionalLibs, distLibPath)
         for (subTarget <- subProjectDependencies.map(_.target)) {
@@ -86,7 +86,7 @@ object AkkaMicrokernelPlugin extends Plugin {
 
   private def distCleanTask: Initialize[Task[Unit]] =
     (outputDirectory, allDependencies, streams) map { (outDir, deps, s) ⇒
-    
+
       if (isKernelProject(deps)) {
         val log = s.log
         log.info("Cleaning " + outDir)
@@ -97,7 +97,7 @@ object AkkaMicrokernelPlugin extends Plugin {
   def isKernelProject(dependencies: Seq[ModuleID]): Boolean = {
     dependencies.exists(moduleId => moduleId.organization == "se.scalablesolutions.akka" && moduleId.name == "akka-kernel")
   }
-  
+
   private def defaultConfigSourceDirs = (sourceDirectory, unmanagedResourceDirectories) map { (src, resources) ⇒
     Seq(src / "config", src / "main" / "config") ++ resources
   }
@@ -173,25 +173,25 @@ object AkkaMicrokernelPlugin extends Plugin {
     val (libs, directories) = classpath.map(_.data).partition(ClasspathUtilities.isArchive)
     libs.map(_.asFile).filter(libFilter)
   }
-  
+
   private def allSubProjectDependencies(projDeps: Seq[ModuleID], buildStruct: BuildStructure, state: State): Set[SubProjectInfo] = {
     val buildUnit = buildStruct.units(buildStruct.root)
     val uri = buildStruct.root
     val allProjects = buildUnit.defined.map {
       case (id, proj) => (ProjectRef(uri, id) -> proj)
     }
-    
+
     val projDepsNames = projDeps.map(_.name)
     def include(project: ResolvedProject): Boolean = projDepsNames.exists(_ == project.id)
     val subProjects: Seq[SubProjectInfo] = allProjects.collect {
       case (projRef, project) if include(project) => projectInfo(projRef, project, buildStruct, state, allProjects)
     }.toList
-    
+
     val allSubProjects = subProjects.map(_.recursiveSubProjects).flatten.toSet
     allSubProjects
 }
-  
-  private def projectInfo(projectRef: ProjectRef, project: ResolvedProject, buildStruct: BuildStructure, state: State, 
+
+  private def projectInfo(projectRef: ProjectRef, project: ResolvedProject, buildStruct: BuildStructure, state: State,
       allProjects: Map[ProjectRef, ResolvedProject]): SubProjectInfo = {
 
     def optionalSetting[A](key: ScopedSetting[A]) = key in projectRef get buildStruct.data
@@ -202,26 +202,26 @@ object AkkaMicrokernelPlugin extends Plugin {
         throw new IllegalArgumentException()
       }
     }
-    
+
     def evaluateTask[T](taskKey: sbt.Project.ScopedKey[sbt.Task[T]]) = {
       EvaluateTask.evaluateTask(buildStruct, taskKey, state, projectRef, false, EvaluateTask.SystemProcessors)
     }
-    
+
     val projDeps: Seq[ModuleID] = evaluateTask(Keys.projectDependencies) match {
       case Some(Value(moduleIds)) => moduleIds
       case _ => Seq.empty
     }
-    
+
     val projDepsNames = projDeps.map(_.name)
     def include(project: ResolvedProject): Boolean = projDepsNames.exists(_ == project.id)
     val subProjects = allProjects.collect {
       case (projRef, proj) if include(proj) => projectInfo(projRef, proj, buildStruct, state, allProjects)
     }.toList
-    
+
     val target = setting(Keys.crossTarget, "Missing crossTarget directory")
     SubProjectInfo(project.id, target, subProjects)
   }
-  
+
   private case class SubProjectInfo(id: String, target: File, subProjects: Seq[SubProjectInfo]) {
 
     def recursiveSubProjects: Set[SubProjectInfo] = {
@@ -229,10 +229,10 @@ object AkkaMicrokernelPlugin extends Plugin {
         x <- subProjects
         y <- x.recursiveSubProjects
       } yield y
-      
+
       flatSubProjects.toSet + this
     }
-    
+
   }
 
 }

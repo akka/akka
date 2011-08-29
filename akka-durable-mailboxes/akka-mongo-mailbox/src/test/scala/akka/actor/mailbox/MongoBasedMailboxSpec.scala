@@ -41,7 +41,7 @@ class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb", MongoNaiveDura
 
 /*class MongoBasedMailboxSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll {
   import DurableMongoMailboxSpecActorFactory._
-  
+
   implicit val dispatcher = DurableDispatcher("mongodb", MongoNaiveDurableMailboxStorage, 1)
 
   "A MongoDB based naive mailbox backed actor" should {
