@@ -779,7 +779,7 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
           }
         } catch {
           case e ⇒
-            EventHandler.error(e, actorInstance.get(), messageHandle.message.toString)
+            EventHandler.error(e, actorInstance.get(), e.getMessage)
             throw e
         }
       } else {
@@ -959,7 +959,7 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
   }
 
   private def handleExceptionInDispatch(reason: Throwable, message: Any) {
-    EventHandler.error(reason, this, message.toString)
+    EventHandler.error(reason, this, reason.getMessage)
 
     //Prevent any further messages to be processed until the actor has been restarted
     dispatcher.suspend(this)

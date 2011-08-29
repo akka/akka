@@ -90,7 +90,7 @@ class LoggingReceiveSpec
       actor ! "bah"
       within(300 millis) {
         expectMsgPF() {
-          case EventHandler.Error(ex: UnhandledMessageException, ref, "bah") if ref eq actor ⇒ true
+          case EventHandler.Error(ex: UnhandledMessageException, ref, exMsg) if ref eq actor ⇒ true
         }
       }
       actor.stop()
