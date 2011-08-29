@@ -35,22 +35,14 @@ class Slf4jEventHandler extends Actor with Logging {
   import EventHandler._
 
   def receive = {
-    case event @ Error(cause, instance, message) ⇒
-      log.error("[{}] [{}] [{}] [{}]",
-        Array[AnyRef](event.thread.getName, instance.getClass.getName, message.asInstanceOf[AnyRef], stackTraceFor(cause)))
-
-    case event @ Warning(instance, message) ⇒
-      log.warn("[{}] [{}] [{}]",
-        Array[AnyRef](event.thread.getName, instance.getClass.getName, message.asInstanceOf[AnyRef]))
-
-    case event @ Info(instance, message) ⇒
-      log.info("[{}] [{}] [{}]",
-        Array[AnyRef](event.thread.getName, instance.getClass.getName, message.asInstanceOf[AnyRef]))
-
-    case event @ Debug(instance, message) ⇒
-      log.debug("[{}] [{}] [{}]",
-        Array[AnyRef](event.thread.getName, instance.getClass.getName, message.asInstanceOf[AnyRef]))
-
+    case Error(cause, instance, message) ⇒
+      Logger(instance.getClass.getName).error(String.valueOf(message), cause)
+    case Warning(instance, message) ⇒
+      Logger(instance.getClass.getName).warn(String.valueOf(message))
+    case Info(instance, message) ⇒
+      Logger(instance.getClass.getName).info(String.valueOf(message))
+    case Debug(instance, message) ⇒
+      Logger(instance.getClass.getName).debug(String.valueOf(message))
     case event ⇒ log.debug("[{}]", event.toString)
   }
 }
