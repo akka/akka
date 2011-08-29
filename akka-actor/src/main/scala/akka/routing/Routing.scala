@@ -71,7 +71,7 @@ object RoutedProps {
   /**
    * The default RoutedProps instance, uses the settings from the RoutedProps object starting with default*
    */
-  final val default = new RoutedProps()
+  final val default = new RoutedProps
 
   def apply(): RoutedProps = default
 }
@@ -88,7 +88,12 @@ object RoutedProps {
  *
  * This configuration object makes it possible to either
  */
-case class RoutedProps(routerFactory: () ⇒ Router, deployId: String, connections: Iterable[ActorRef], timeout: Timeout, localOnly: Boolean) {
+case class RoutedProps(
+  routerFactory: () ⇒ Router,
+  deployId: String,
+  connections: Iterable[ActorRef],
+  timeout: Timeout,
+  localOnly: Boolean) {
 
   def this() = this(
     routerFactory = RoutedProps.defaultRouterFactory,
@@ -109,21 +114,21 @@ case class RoutedProps(routerFactory: () ⇒ Router, deployId: String, connectio
    *
    * Java and Scala API.
    */
-  def withRandomRouter(): RoutedProps = copy(routerFactory = () ⇒ new RandomRouter())
+  def withRandomRouter(): RoutedProps = copy(routerFactory = () ⇒ new RandomRouter)
 
   /**
    * Returns a new RoutedProps configured with a round robin router.
    *
    * Java and Scala API.
    */
-  def withRoundRobinRouter(): RoutedProps = copy(routerFactory = () ⇒ new RoundRobinRouter())
+  def withRoundRobinRouter(): RoutedProps = copy(routerFactory = () ⇒ new RoundRobinRouter)
 
   /**
    * Returns a new RoutedProps configured with a direct router.
    *
    * Java and Scala API.
    */
-  def withDirectRouter(): RoutedProps = copy(routerFactory = () ⇒ new DirectRouter())
+  def withDirectRouter(): RoutedProps = copy(routerFactory = () ⇒ new DirectRouter)
 
   /**
    * Makes it possible to change the default behavior in a clustered environment that a clustered actor ref is created.
@@ -189,14 +194,14 @@ trait Router {
    * JMM Guarantees:
    * This method guarantees that all changes made in this method, are visible before one of the routing methods is called.
    */
-  def init(connections: RouterConnections): Unit
+  def init(connections: RouterConnections)
 
   /**
    * Routes the message to one of the connections.
    *
    * @throws RoutingException if something goes wrong while routing the message
    */
-  def route(message: Any)(implicit sender: Option[ActorRef]): Unit
+  def route(message: Any)(implicit sender: Option[ActorRef])
 
   /**
    * Routes the message using a timeout to one of the connections and returns a Future to synchronize on the
@@ -265,7 +270,7 @@ trait RouterConnections {
    *
    * @param ref the dead
    */
-  def remove(deadRef: ActorRef): Unit
+  def remove(deadRef: ActorRef)
 }
 
 /**
@@ -283,7 +288,7 @@ object Routing {
   case class Broadcast(message: Any) extends RoutingMessage
 
   /**
-   * todo: will very likely be moved to the ActorRef.
+   * FIXME: will very likely be moved to the ActorRef.
    */
   def actorOf(props: RoutedProps): ActorRef = {
     //TODO Implement support for configuring by deployment ID etc
@@ -315,17 +320,17 @@ object Routing {
    * @throws IllegalArgumentException if the number of connections is zero, or if it depends on the actual router implementation
    *                                  how many connections it can handle.
    */
-  @deprecated
+  @deprecated("will be removed")
   def actorOf(actorAddress: String, connections: Iterable[ActorRef], routerType: RouterType): ActorRef = {
     val router = routerType match {
       case RouterType.Direct if connections.size > 1 ⇒
         throw new IllegalArgumentException("A direct router can't have more than 1 connection")
       case RouterType.Direct ⇒
-        new DirectRouter()
+        new DirectRouter
       case RouterType.Random ⇒
-        new RandomRouter()
+        new RandomRouter
       case RouterType.RoundRobin ⇒
-        new RoundRobinRouter()
+        new RoundRobinRouter
       case r ⇒
         throw new IllegalArgumentException("Unsupported routerType " + r)
     }
@@ -333,8 +338,8 @@ object Routing {
     if (connections.size == 0)
       throw new IllegalArgumentException("To create a routed actor ref, at least one connection is required")
 
-    val props = new RoutedProps(() ⇒ router, actorAddress, connections, RoutedProps.defaultTimeout, true)
-    new RoutedActorRef(props).start()
+    new RoutedActorRef(
+      new RoutedProps(() ⇒ router, actorAddress, connections, RoutedProps.defaultTimeout, true)).start()
   }
 }
 
@@ -343,11 +348,11 @@ object Routing {
  */
 abstract private[akka] class AbstractRoutedActorRef(val props: RoutedProps) extends UnsupportedActorRef {
 
-  val router = props.routerFactory.apply()
+  val router = props.routerFactory()
 
   def address = props.deployId
 
-  override def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
+  override def postMessageToMailbox(message: Any, channel: UntypedChannel) = {
     val sender = channel match {
       case ref: ActorRef ⇒ Some(ref)
       case _             ⇒ None
@@ -389,24 +394,24 @@ private[akka] class RoutedActorRef(val routedProps: RoutedProps)
     }
   }
 
-  private class RoutedActorRefConnections() extends RouterConnections {
+  private class RoutedActorRefConnections extends RouterConnections {
 
-    private val state = new AtomicReference[VersionedIterable[ActorRef]]()
+    private val state = new AtomicReference[VersionedIterable[ActorRef]]
 
     def this(connectionIterable: Iterable[ActorRef]) = {
       this()
       state.set(new VersionedIterable[ActorRef](Long.MinValue, connectionIterable))
     }
 
-    def version: Long = state.get().version
+    def version: Long = state.get.version
 
-    def size: Int = state.get().iterable.size
+    def size: Int = state.get.iterable.size
 
     def versionedIterable = state.get
 
     @tailrec
     final def remove(ref: ActorRef) = {
-      val oldState = state.get()
+      val oldState = state.get
 
       //remote the ref from the connections.
       var newList = oldState.iterable.filter(currentActorRef ⇒ currentActorRef ne ref)
@@ -438,7 +443,7 @@ trait BasicRouter extends Router {
     this.connections = connections
   }
 
-  def route(message: Any)(implicit sender: Option[ActorRef]): Unit = message match {
+  def route(message: Any)(implicit sender: Option[ActorRef]) = message match {
     case Routing.Broadcast(message) ⇒
       //it is a broadcast message, we are going to send to message to all connections.
       connections.versionedIterable.iterable.foreach(actor ⇒
@@ -461,7 +466,7 @@ trait BasicRouter extends Router {
               throw e
           }
         case None ⇒
-          throwNoConnectionsError()
+          throwNoConnectionsError
       }
   }
 
@@ -480,13 +485,13 @@ trait BasicRouter extends Router {
               throw e
           }
         case None ⇒
-          throwNoConnectionsError()
+          throwNoConnectionsError
       }
   }
 
   protected def next: Option[ActorRef]
 
-  private def throwNoConnectionsError() = {
+  private def throwNoConnectionsError = {
     val error = new RoutingException("No replica connections for router")
     EventHandler.error(error, this, error.toString)
     throw error
@@ -496,21 +501,20 @@ trait BasicRouter extends Router {
 /**
  * A DirectRouter a Router that only has a single connected actorRef and forwards all request to that actorRef.
  *
- *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class DirectRouter extends BasicRouter {
 
-  private val state = new AtomicReference[DirectRouterState]()
+  private val state = new AtomicReference[DirectRouterState]
 
   lazy val next: Option[ActorRef] = {
-    val currentState = getState()
+    val currentState = getState
     if (currentState.ref == null) None else Some(currentState.ref)
   }
 
   @tailrec
-  private def getState(): DirectRouterState = {
-    val currentState = state.get()
+  private def getState: DirectRouterState = {
+    val currentState = state.get
 
     if (currentState != null && connections.version == currentState.version) {
       //we are lucky since nothing has changed in the connections.
@@ -529,7 +533,7 @@ class DirectRouter extends BasicRouter {
         //we are lucky since we just updated the state, so we can send it back as the state to use
         newState
       else //we failed to update the state, lets try again... better luck next time.
-        getState()
+        getState
     }
   }
 
@@ -544,19 +548,19 @@ class DirectRouter extends BasicRouter {
  */
 class RandomRouter extends BasicRouter {
 
-  private val state = new AtomicReference[RandomRouterState]()
+  private val state = new AtomicReference[RandomRouterState]
 
   //FIXME: threadlocal random?
-  private val random = new java.util.Random(System.nanoTime())
+  private val random = new java.util.Random(System.nanoTime)
 
-  def next: Option[ActorRef] = getState().array match {
+  def next: Option[ActorRef] = getState.array match {
     case a if a.isEmpty ⇒ None
     case a              ⇒ Some(a(random.nextInt(a.length)))
   }
 
   @tailrec
-  private def getState(): RandomRouterState = {
-    val currentState = state.get()
+  private def getState: RandomRouterState = {
+    val currentState = state.get
 
     if (currentState != null && currentState.version == connections.version) {
       //we are lucky, since there has not been any change in the connections. So therefor we can use the existing state.
@@ -570,7 +574,7 @@ class RandomRouter extends BasicRouter {
         //we are lucky since we just updated the state, so we can send it back as the state to use
         newState
       else //we failed to update the state, lets try again... better luck next time.
-        getState()
+        getState
     }
   }
 
@@ -584,13 +588,13 @@ class RandomRouter extends BasicRouter {
  */
 class RoundRobinRouter extends BasicRouter {
 
-  private val state = new AtomicReference[RoundRobinState]()
+  private val state = new AtomicReference[RoundRobinState]
 
-  def next: Option[ActorRef] = getState().next()
+  def next: Option[ActorRef] = getState.next
 
   @tailrec
-  private def getState(): RoundRobinState = {
-    val currentState = state.get()
+  private def getState: RoundRobinState = {
+    val currentState = state.get
 
     if (currentState != null && currentState.version == connections.version) {
       //we are lucky, since there has not been any change in the connections. So therefor we can use the existing state.
@@ -604,7 +608,7 @@ class RoundRobinRouter extends BasicRouter {
         //we are lucky since we just updated the state, so we can send it back as the state to use
         newState
       else //we failed to update the state, lets try again... better luck next time.
-        getState()
+        getState
     }
   }
 
@@ -612,20 +616,20 @@ class RoundRobinRouter extends BasicRouter {
 
     private val index = new AtomicInteger(0)
 
-    def next(): Option[ActorRef] = if (array.isEmpty) None else Some(array(nextIndex()))
+    def next: Option[ActorRef] = if (array.isEmpty) None else Some(array(nextIndex))
 
     @tailrec
-    private def nextIndex(): Int = {
-      val oldIndex = index.get()
+    private def nextIndex: Int = {
+      val oldIndex = index.get
       var newIndex = if (oldIndex == array.length - 1) 0 else oldIndex + 1
 
-      if (!index.compareAndSet(oldIndex, newIndex)) nextIndex()
+      if (!index.compareAndSet(oldIndex, newIndex)) nextIndex
       else oldIndex
     }
   }
 }
 
-/*
+/**
  * ScatterGatherRouter broadcasts the message to all connections and gathers results according to the
  * specified strategy (specific router needs to implement `gather` method).
  * Scatter-gather pattern will be applied only to the messages broadcasted using Future
@@ -637,10 +641,10 @@ class RoundRobinRouter extends BasicRouter {
  */
 trait ScatterGatherRouter extends BasicRouter with Serializable {
 
-  /*
-     * Aggregates the responses into a single Future
-     * @param results Futures of the responses from connections
-     */
+  /**
+   * Aggregates the responses into a single Future
+   * @param results Futures of the responses from connections
+   */
   protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G]
 
   private def scatterGather[S, G >: S](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[G] = {
@@ -656,18 +660,16 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
 
     if (responses.isEmpty)
       throw new RoutingException("No connections can process the message [%s] sent to scatter-gather router" format (message))
-    else
-      gather(responses)
+    else gather(responses)
   }
 
   override def route[T](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[T] = message match {
     case Routing.Broadcast(message) ⇒ scatterGather(message, timeout)
     case message                    ⇒ super.route(message, timeout)(sender)
   }
-
 }
 
-/*
+/**
  * Simple router that broadcasts the message to all connections, and replies with the first response
  * Scatter-gather pattern will be applied only to the messages broadcasted using Future
  * (wrapped into {@link Routing.Broadcast} and sent with "?" method). For the messages sent in a fire-forget

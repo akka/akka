@@ -1,6 +1,7 @@
 /**
  *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
+
 package akka.cluster
 
 import akka.actor._
@@ -35,14 +36,18 @@ object ClusterActorRef {
       case LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
     }
 
-    val props = RoutedProps.apply().withDeployId(actorAddress).withTimeout(timeout).withRouter(routerFactory)
-    new ClusterActorRef(props).start()
+    new ClusterActorRef(
+      RoutedProps()
+        .withDeployId(actorAddress)
+        .withTimeout(timeout)
+        .withRouter(routerFactory)).start()
   }
 
   /**
    * Finds the cluster actor reference that has a specific address.
    */
-  def actorFor(address: String): Option[ActorRef] = Actor.registry.local.actorFor(Address.clusterActorRefPrefix + address)
+  def actorFor(address: String): Option[ActorRef] =
+    Actor.registry.local.actorFor(Address.clusterActorRefPrefix + address)
 
   private[cluster] def createRemoteActorRef(actorAddress: String, inetSocketAddress: InetSocketAddress) = {
     RemoteActorRef(inetSocketAddress, actorAddress, Actor.TIMEOUT, None)
@@ -76,7 +81,7 @@ private[akka] class ClusterActorRef(props: RoutedProps) extends AbstractRoutedAc
 
   router.init(connections)
 
-  def connectionsSize(): Int = connections.size
+  def nrOfConnections: Int = connections.size
 
   private[akka] def failOver(from: InetSocketAddress, to: InetSocketAddress): Unit = {
     connections.failOver(from, to)
@@ -104,7 +109,7 @@ private[akka] class ClusterActorRef(props: RoutedProps) extends AbstractRoutedAc
   }
 }
 
-class ClusterActorRefConnections() extends RouterConnections {
+class ClusterActorRefConnections extends RouterConnections {
   import ClusterActorRef._
 
   private val state = new AtomicReference[State]()
@@ -118,7 +123,7 @@ class ClusterActorRefConnections() extends RouterConnections {
 
   def versionedIterable = state.get
 
-  def size(): Int = state.get().iterable.size
+  def size: Int = state.get().iterable.size
 
   def stopAll() {
     state.get().clusteredConnections.values foreach (_.stop()) // shut down all remote connections
