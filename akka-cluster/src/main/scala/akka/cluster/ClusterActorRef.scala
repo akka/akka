@@ -7,14 +7,11 @@ import akka.actor._
 import akka.util._
 import akka.event.EventHandler
 import ReflectiveAccess._
-import akka.dispatch.Future
 import akka.routing._
 import RouterType._
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
-
-import com.eaio.uuid.UUID
 
 import collection.immutable.Map
 import annotation.tailrec

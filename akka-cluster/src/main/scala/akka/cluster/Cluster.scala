@@ -19,6 +19,7 @@ import scala.collection.mutable.ConcurrentMap
 import scala.collection.JavaConversions._
 
 import akka.util._
+import duration._
 import Helpers._
 
 import akka.actor._
@@ -39,6 +40,7 @@ import akka.serialization.{ Serialization, Serializer, ActorSerialization }
 import ActorSerialization._
 import akka.serialization.Compression.LZF
 
+import akka.cluster.metrics._
 import akka.cluster.zookeeper._
 import ChangeListener._
 import ClusterProtocol._
@@ -150,6 +152,7 @@ object Cluster {
   val zooKeeperServers = config.getString("akka.cluster.zookeeper-server-addresses", "localhost:2181")
   val remoteServerPort = config.getInt("akka.cluster.remote-server-port", 2552)
   val sessionTimeout = Duration(config.getInt("akka.cluster.session-timeout", 60), TIME_UNIT).toMillis.toInt
+  val metricsRefreshInterval = Duration(config.getInt("akka.cluster.metrics-refresh-timeout", 2), TIME_UNIT)
   val connectionTimeout = Duration(config.getInt("akka.cluster.connection-timeout", 60), TIME_UNIT).toMillis.toInt
   val maxTimeToWaitUntilConnected = Duration(config.getInt("akka.cluster.max-time-to-wait-until-connected", 30), TIME_UNIT).toMillis.toInt
   val shouldCompressData = config.getBool("akka.cluster.use-compression", false)
@@ -304,6 +307,8 @@ class DefaultClusterNode private[akka] (
 
   lazy val remoteServerAddress: InetSocketAddress = remoteService.address
 
+  lazy val metricsManager: NodeMetricsManager = new LocalNodeMetricsManager(zkClient, Cluster.metricsRefreshInterval).start()
+
   // static nodes
   val CLUSTER_PATH = "/" + nodeAddress.clusterName
   val MEMBERSHIP_PATH = CLUSTER_PATH + "/members"
@@ -314,6 +319,7 @@ class DefaultClusterNode private[akka] (
   val ACTOR_UUID_REGISTRY_PATH = CLUSTER_PATH + "/actor-uuid-registry"
   val ACTOR_ADDRESS_TO_UUIDS_PATH = CLUSTER_PATH + "/actor-address-to-uuids"
   val NODE_TO_ACTOR_UUIDS_PATH = CLUSTER_PATH + "/node-to-actors-uuids"
+  val NODE_METRICS = CLUSTER_PATH + "/metrics"
 
   val basePaths = List(
     CLUSTER_PATH,
@@ -324,7 +330,8 @@ class DefaultClusterNode private[akka] (
     NODE_TO_ACTOR_UUIDS_PATH,
     ACTOR_ADDRESS_TO_UUIDS_PATH,
     CONFIGURATION_PATH,
-    PROVISIONING_PATH)
+    PROVISIONING_PATH,
+    NODE_METRICS)
 
   val LEADER_ELECTION_PATH = CLUSTER_PATH + "/leader" // should NOT be part of 'basePaths' only used by 'leaderLock'
 
@@ -1630,7 +1637,11 @@ class MembershipChildListener(self: ClusterNode) extends IZkChildListener with E
 
           // publish NodeConnected and NodeDisconnect events to the listeners
           newlyConnectedMembershipNodes foreach (node ⇒ self.publish(NodeConnected(node)))
-          newlyDisconnectedMembershipNodes foreach (node ⇒ self.publish(NodeDisconnected(node)))
+          newlyDisconnectedMembershipNodes foreach { node ⇒
+            self.publish(NodeDisconnected(node))
+            // remove metrics of a disconnected node from ZK and local cache          
+            self.metricsManager.removeNodeMetrics(node)
+          }
         }
       }
     }
