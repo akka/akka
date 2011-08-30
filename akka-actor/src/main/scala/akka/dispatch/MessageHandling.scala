@@ -63,7 +63,7 @@ abstract class MessageDispatcher {
   /**
    *  Creates and returns a mailbox for the given actor.
    */
-  private[akka] def createMailbox(actorRef: LocalActorRef): AnyRef
+  protected[akka] def createMailbox(actorRef: LocalActorRef): AnyRef
 
   /**
    * Name of this dispatcher.
@@ -88,11 +88,9 @@ abstract class MessageDispatcher {
     }
   }
 
-  private[akka] final def dispatchMessage(invocation: MessageInvocation) {
-    dispatch(invocation)
-  }
+  protected[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = dispatch(invocation)
 
-  private[akka] final def dispatchTask(block: () ⇒ Unit): Unit = {
+  protected[akka] final def dispatchTask(block: () ⇒ Unit): Unit = {
     _tasks.getAndIncrement()
     try {
       if (active.isOff)
@@ -129,7 +127,7 @@ abstract class MessageDispatcher {
    * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
    * and only call it under the dispatcher-guard, see "attach" for the only invocation
    */
-  private[akka] def register(actorRef: LocalActorRef) {
+  protected[akka] def register(actorRef: LocalActorRef) {
     if (actorRef.mailbox eq null)
       actorRef.mailbox = createMailbox(actorRef)
 
@@ -145,7 +143,7 @@ abstract class MessageDispatcher {
    * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
    * and only call it under the dispatcher-guard, see "detach" for the only invocation
    */
-  private[akka] def unregister(actorRef: LocalActorRef) = {
+  protected[akka] def unregister(actorRef: LocalActorRef) = {
     if (uuids remove actorRef.uuid) {
       cleanUpMailboxFor(actorRef)
       actorRef.mailbox = null
@@ -206,7 +204,7 @@ abstract class MessageDispatcher {
    * When the dispatcher no longer has any actors registered, how long will it wait until it shuts itself down, in Ms
    * defaulting to your akka configs "akka.actor.dispatcher-shutdown-timeout" or otherwise, 1 Second
    */
-  private[akka] def timeoutMs: Long = Dispatchers.DEFAULT_SHUTDOWN_TIMEOUT.toMillis
+  protected[akka] def timeoutMs: Long = Dispatchers.DEFAULT_SHUTDOWN_TIMEOUT.toMillis
 
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
@@ -221,19 +219,19 @@ abstract class MessageDispatcher {
   /**
    *   Will be called when the dispatcher is to queue an invocation for execution
    */
-  private[akka] def dispatch(invocation: MessageInvocation)
+  protected[akka] def dispatch(invocation: MessageInvocation)
 
-  private[akka] def executeTask(invocation: TaskInvocation)
+  protected[akka] def executeTask(invocation: TaskInvocation)
 
   /**
    * Called one time every time an actor is attached to this dispatcher and this dispatcher was previously shutdown
    */
-  private[akka] def start()
+  protected[akka] def start(): Unit
 
   /**
    * Called one time every time an actor is detached from this dispatcher and this dispatcher has no actors left attached
    */
-  private[akka] def shutdown()
+  protected[akka] def shutdown(): Unit
 
   /**
    * Returns the size of the mailbox for the specified actor

@@ -55,7 +55,7 @@ class BalancingDispatcher(
   private var members = Vector[LocalActorRef]()
   private val donationInProgress = new DynamicVariable(false)
 
-  private[akka] override def register(actorRef: LocalActorRef) = {
+  protected[akka] override def register(actorRef: LocalActorRef) = {
     //Verify actor type conformity
     actorType match {
       case None ⇒ actorType = Some(actorRef.actorInstance.get().getClass)
@@ -70,12 +70,12 @@ class BalancingDispatcher(
     super.register(actorRef)
   }
 
-  private[akka] override def unregister(actorRef: LocalActorRef) = {
+  protected[akka] override def unregister(actorRef: LocalActorRef) = {
     synchronized { members = members.filterNot(actorRef eq) } //Update members
     super.unregister(actorRef)
   }
 
-  override private[akka] def dispatch(invocation: MessageInvocation) = {
+  override protected[akka] def dispatch(invocation: MessageInvocation) = {
     val mbox = getMailbox(invocation.receiver)
     if (donationInProgress.value == false && (!mbox.isEmpty || mbox.dispatcherLock.locked) && attemptDonationOf(invocation, mbox)) {
       //We were busy and we got to donate the message to some other lucky guy, we're done here
@@ -85,7 +85,7 @@ class BalancingDispatcher(
     }
   }
 
-  override private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
+  override protected[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
     try {
       donationInProgress.value = true
       while (donateFrom(mbox)) {} //When we reregister, first donate messages to another actor

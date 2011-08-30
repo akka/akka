@@ -43,7 +43,7 @@ object CallingThreadDispatcher {
     queues = queues mapValues (_ filter (_.get ne null)) filter (!_._2.isEmpty)
   }
 
-  private[akka] def registerQueue(mbox: CallingThreadMailbox, q: NestingQueue): Unit = synchronized {
+  protected[akka] def registerQueue(mbox: CallingThreadMailbox, q: NestingQueue): Unit = synchronized {
     if (queues contains mbox) {
       val newSet = queues(mbox) + new WeakReference(q)
       queues += mbox -> newSet
@@ -58,7 +58,7 @@ object CallingThreadDispatcher {
    * given mailbox. When this method returns, the queue will be entered
    * (active).
    */
-  private[akka] def gatherFromAllInactiveQueues(mbox: CallingThreadMailbox, own: NestingQueue): Unit = synchronized {
+  protected[akka] def gatherFromAllInactiveQueues(mbox: CallingThreadMailbox, own: NestingQueue): Unit = synchronized {
     if (!own.isActive) own.enter
     if (queues contains mbox) {
       for {
@@ -107,15 +107,15 @@ object CallingThreadDispatcher {
 class CallingThreadDispatcher(val name: String = "calling-thread", val warnings: Boolean = true) extends MessageDispatcher {
   import CallingThreadDispatcher._
 
-  private[akka] override def createMailbox(actor: LocalActorRef) = new CallingThreadMailbox
+  protected[akka] override def createMailbox(actor: LocalActorRef) = new CallingThreadMailbox
 
   private def getMailbox(actor: LocalActorRef) = actor.mailbox.asInstanceOf[CallingThreadMailbox]
 
-  private[akka] override def start() {}
+  protected[akka] override def start() {}
 
-  private[akka] override def shutdown() {}
+  protected[akka] override def shutdown() {}
 
-  private[akka] override def timeoutMs = 100L
+  protected[akka] override def timeoutMs = 100L
 
   override def suspend(actor: LocalActorRef) {
     getMailbox(actor).suspended.switchOn
@@ -137,7 +137,7 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
 
   override def mailboxIsEmpty(actorRef: LocalActorRef): Boolean = getMailbox(actorRef).queue.isEmpty
 
-  private[akka] override def dispatch(handle: MessageInvocation) {
+  protected[akka] override def dispatch(handle: MessageInvocation) {
     val mbox = getMailbox(handle.receiver)
     val queue = mbox.queue
     val execute = mbox.suspended.fold {
@@ -161,7 +161,7 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
     if (execute) runQueue(mbox, queue)
   }
 
-  private[akka] override def executeTask(invocation: TaskInvocation) { invocation.run }
+  protected[akka] override def executeTask(invocation: TaskInvocation) { invocation.run }
 
   /*
    * This method must be called with this thread's queue, which must already
