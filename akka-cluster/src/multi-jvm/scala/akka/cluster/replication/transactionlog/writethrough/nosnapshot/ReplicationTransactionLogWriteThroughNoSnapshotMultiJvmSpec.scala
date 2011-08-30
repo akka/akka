@@ -2,97 +2,98 @@
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.cluster.replication.transactionlog.writethrough.nosnapshot
-import akka.actor._
-import akka.cluster._
-import Cluster._
-import akka.config.Config
-import akka.cluster.LocalCluster._
+// package akka.cluster.replication.transactionlog.writethrough.nosnapshot
 
-object ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmSpec {
-  var NrOfNodes = 2
+// import akka.actor._
+// import akka.cluster._
+// import Cluster._
+// import akka.config.Config
+// import akka.cluster.LocalCluster._
 
-  sealed trait TransactionLogMessage extends Serializable
-  case class Count(nr: Int) extends TransactionLogMessage
-  case class Log(full: String) extends TransactionLogMessage
-  case object GetLog extends TransactionLogMessage
+// object ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmSpec {
+//   var NrOfNodes = 2
 
-  class HelloWorld extends Actor with Serializable {
-    var log = ""
-    def receive = {
-      case Count(nr) ⇒
-        println("Received number: " + nr + " on " + self.uuid)
-        log += nr.toString
-        self.reply("World from node [" + Config.nodename + "]")
-      case GetLog ⇒
-        println("Received getLog on " + self.uuid)
-        self.reply(Log(log))
-    }
-  }
-}
+//   sealed trait TransactionLogMessage extends Serializable
+//   case class Count(nr: Int) extends TransactionLogMessage
+//   case class Log(full: String) extends TransactionLogMessage
+//   case object GetLog extends TransactionLogMessage
 
-class ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmNode1 extends ClusterTestNode {
-  import ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmSpec._
+//   class HelloWorld extends Actor with Serializable {
+//     var log = ""
+//     def receive = {
+//       case Count(nr) ⇒
+//         println("Received number: " + nr + " on " + self.uuid)
+//         log += nr.toString
+//         self.reply("World from node [" + Config.nodename + "]")
+//       case GetLog ⇒
+//         println("Received getLog on " + self.uuid)
+//         self.reply(Log(log))
+//     }
+//   }
+// }
 
-  "A cluster" must {
+// class ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmNode1 extends ClusterTestNode {
+//   import ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmSpec._
 
-    "be able to replicate an actor with a transaction log and replay transaction log after actor migration" ignore {
+//   "A cluster" must {
 
-      barrier("start-node1", NrOfNodes) {
-        Cluster.node.start()
-      }
+//     "be able to replicate an actor with a transaction log and replay transaction log after actor migration" ignore {
 
-      barrier("create-actor-on-node1", NrOfNodes) {
-        val actorRef = Actor.actorOf[HelloWorld]("hello-world-write-through-nosnapshot").start()
-        actorRef.address must be("hello-world-write-through-nosnapshot")
-        for (i ← 0 until 10)
-          (actorRef ? Count(i)).as[String] must be(Some("World from node [node1]"))
-      }
+//       barrier("start-node1", NrOfNodes) {
+//         Cluster.node.start()
+//       }
 
-      barrier("start-node2", NrOfNodes).await()
+//       barrier("create-actor-on-node1", NrOfNodes) {
+//         val actorRef = Actor.actorOf[HelloWorld]("hello-world-write-through-nosnapshot").start()
+//         actorRef.address must be("hello-world-write-through-nosnapshot")
+//         for (i ← 0 until 10)
+//           (actorRef ? Count(i)).as[String] must be(Some("World from node [node1]"))
+//       }
 
-      node.shutdown()
-    }
-  }
-}
+//       barrier("start-node2", NrOfNodes).await()
 
-class ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmNode2 extends MasterClusterTestNode {
-  import ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmSpec._
+//       node.shutdown()
+//     }
+//   }
+// }
 
-  val testNodes = NrOfNodes
+// class ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmNode2 extends MasterClusterTestNode {
+//   import ReplicationTransactionLogWriteThroughNoSnapshotMultiJvmSpec._
 
-  "A cluster" must {
+//   val testNodes = NrOfNodes
 
-    "be able to replicate an actor with a transaction log and replay transaction log after actor migration" ignore {
+//   "A cluster" must {
 
-      barrier("start-node1", NrOfNodes).await()
+//     "be able to replicate an actor with a transaction log and replay transaction log after actor migration" ignore {
 
-      barrier("create-actor-on-node1", NrOfNodes).await()
+//       barrier("start-node1", NrOfNodes).await()
 
-      barrier("start-node2", NrOfNodes) {
-        Cluster.node.start()
-      }
+//       barrier("create-actor-on-node1", NrOfNodes).await()
 
-      Thread.sleep(5000) // wait for fail-over from node1 to node2
+//       barrier("start-node2", NrOfNodes) {
+//         Cluster.node.start()
+//       }
 
-      barrier("check-fail-over-to-node2", NrOfNodes - 1) {
-        // both remaining nodes should now have the replica
-        node.isInUseOnNode("hello-world-write-through-nosnapshot") must be(true)
-        val actorRef = Actor.registry.local.actorFor("hello-world-write-through-nosnapshot").getOrElse(fail("Actor should have been in the local actor registry"))
-        actorRef.address must be("hello-world-write-through-nosnapshot")
-        (actorRef ? GetLog).as[Log].get must be(Log("0123456789"))
-      }
+//       Thread.sleep(5000) // wait for fail-over from node1 to node2
 
-      node.shutdown()
-    }
-  }
+//       barrier("check-fail-over-to-node2", NrOfNodes - 1) {
+//         // both remaining nodes should now have the replica
+//         node.isInUseOnNode("hello-world-write-through-nosnapshot") must be(true)
+//         val actorRef = Actor.registry.local.actorFor("hello-world-write-through-nosnapshot").getOrElse(fail("Actor should have been in the local actor registry"))
+//         actorRef.address must be("hello-world-write-through-nosnapshot")
+//         (actorRef ? GetLog).as[Log].get must be(Log("0123456789"))
+//       }
 
-  override def onReady() {
-    LocalBookKeeperEnsemble.start()
-  }
+//       node.shutdown()
+//     }
+//   }
 
-  override def onShutdown() {
-    TransactionLog.shutdown()
-    LocalBookKeeperEnsemble.shutdown()
-  }
-}
+//   override def onReady() {
+//     LocalBookKeeperEnsemble.start()
+//   }
+
+//   override def onShutdown() {
+//     TransactionLog.shutdown()
+//     LocalBookKeeperEnsemble.shutdown()
+//   }
+// }
