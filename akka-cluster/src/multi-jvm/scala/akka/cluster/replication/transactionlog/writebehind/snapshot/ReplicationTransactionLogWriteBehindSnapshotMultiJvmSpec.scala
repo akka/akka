@@ -37,7 +37,7 @@ class ReplicationTransactionLogWriteBehindSnapshotMultiJvmNode1 extends ClusterT
 
   "A cluster" must {
 
-    "be able to replicate an actor with a transaction log and replay transaction log after actor migration" in {
+    "be able to replicate an actor with a transaction log and replay transaction log after actor migration" ignore {
 
       barrier("start-node1", NrOfNodes) {
         Cluster.node.start()
@@ -83,7 +83,7 @@ class ReplicationTransactionLogWriteBehindSnapshotMultiJvmNode2 extends MasterCl
 
   "A cluster" must {
 
-    "be able to replicate an actor with a transaction log and replay transaction log after actor migration" in {
+    "be able to replicate an actor with a transaction log and replay transaction log after actor migration" ignore {
 
       barrier("start-node1", NrOfNodes).await()
 
