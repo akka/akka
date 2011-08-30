@@ -87,16 +87,16 @@ class Dispatcher(
 
   val name = "akka:event-driven:dispatcher:" + _name
 
-  private[akka] val executorServiceFactory = executorServiceFactoryProvider.createExecutorServiceFactory(name)
-  private[akka] val executorService = new AtomicReference[ExecutorService](new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))
+  protected[akka] val executorServiceFactory = executorServiceFactoryProvider.createExecutorServiceFactory(name)
+  protected[akka] val executorService = new AtomicReference[ExecutorService](new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))
 
-  private[akka] def dispatch(invocation: MessageInvocation) = {
+  protected[akka] def dispatch(invocation: MessageInvocation) = {
     val mbox = getMailbox(invocation.receiver)
     mbox enqueue invocation
     registerForExecution(mbox)
   }
 
-  private[akka] def executeTask(invocation: TaskInvocation): Unit = if (active.isOn) {
+  protected[akka] def executeTask(invocation: TaskInvocation): Unit = if (active.isOn) {
     try executorService.get() execute invocation
     catch {
       case e: RejectedExecutionException ⇒
@@ -131,16 +131,16 @@ class Dispatcher(
       }
   }
 
-  private[akka] def start {}
+  protected[akka] def start {}
 
-  private[akka] def shutdown {
+  protected[akka] def shutdown {
     val old = executorService.getAndSet(new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))
     if (old ne null) {
       old.shutdownNow()
     }
   }
 
-  private[akka] def registerForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
+  protected[akka] def registerForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
     if (mbox.dispatcherLock.tryLock()) {
       if (active.isOn && !mbox.suspended.locked) { //If the dispatcher is active and the actor not suspended
         try {
@@ -157,7 +157,7 @@ class Dispatcher(
     }
   }
 
-  private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
+  protected[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
     registerForExecution(mbox)
 
   protected override def cleanUpMailboxFor(actorRef: LocalActorRef) {
