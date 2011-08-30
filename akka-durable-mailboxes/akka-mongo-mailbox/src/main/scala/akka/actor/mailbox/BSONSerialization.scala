@@ -49,7 +49,7 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
     serializer.putObject(doc)
   }
 
-  /* 
+  /*
    * TODO - Implement some object pooling for the Encoders/decoders
    */
   def encode(msg: MongoDurableMessage, out: OutputBuffer) = {

@@ -4,24 +4,21 @@
 
 package akka.cluster
 
-import akka.cluster.RemoteSupport
-import akka.serialization.Serializer
 import akka.actor._
 import DeploymentConfig._
 import akka.dispatch.Future
 import akka.config.Config
-import akka.routing.RouterType
+import akka.routing._
+import akka.serialization.Serializer
+import akka.cluster.metrics._
+import akka.util.Duration
+import akka.util.duration._
 import akka.AkkaException
 
 import com.eaio.uuid.UUID
 
 import java.net.InetSocketAddress
 import java.util.concurrent.{ ConcurrentSkipListSet }
-
-import akka.cluster.metrics._
-
-import akka.util.Duration
-import akka.util.duration._
 
 class ClusterException(message: String) extends AkkaException(message)
 
@@ -115,7 +112,7 @@ object NodeAddress {
 }
 
 /*
- * Allows user to access metrics of a different nodes in the cluster. Changing metrics can be monitored 
+ * Allows user to access metrics of a different nodes in the cluster. Changing metrics can be monitored
  * using {@link MetricsAlterationMonitor}
  * Metrics of the cluster nodes are distributed through ZooKeeper. For better performance, metrics are
  * cached internally, and refreshed from ZooKeeper after an interval
@@ -141,7 +138,7 @@ trait NodeMetricsManager {
   def getAllMetrics: Array[NodeMetrics]
 
   /*
-     * Adds monitor that reacts, when specific conditions are satisfied  
+     * Adds monitor that reacts, when specific conditions are satisfied
      */
   def addMonitor(monitor: MetricsAlterationMonitor): Unit
 
@@ -166,13 +163,13 @@ trait NodeMetricsManager {
   def refreshTimeout: Duration
 
   /*
-     * Starts metrics manager. When metrics manager is started, it refreshes cache from ZooKeeper 
+     * Starts metrics manager. When metrics manager is started, it refreshes cache from ZooKeeper
      * after <code>refreshTimeout</code>, and invokes plugged monitors
      */
   def start(): NodeMetricsManager
 
   /*
-     * Stops metrics manager. Stopped metrics manager doesn't refresh cache from ZooKeeper, 
+     * Stops metrics manager. Stopped metrics manager doesn't refresh cache from ZooKeeper,
      * and doesn't invoke plugged monitors
      */
   def stop(): Unit
@@ -427,7 +424,7 @@ trait ClusterNode {
   /**
    * Creates an ActorRef with a Router to a set of clustered actors.
    */
-  def ref(actorAddress: String, router: RouterType): ActorRef
+  def ref(actorAddress: String, router: RouterType, failureDetector: FailureDetectorType): ActorRef
 
   /**
    * Returns the addresses of all actors checked out on this node.

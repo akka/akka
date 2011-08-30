@@ -41,10 +41,10 @@
              <New id="AkkaMistHandler" class="org.eclipse.jetty.servlet.ServletContextHandler">
                <Set name="contextPath">/</Set>
                <Call name="addServlet">
-	             <Arg>akka.http.AkkaMistServlet</Arg>
-	             <Arg>/*</Arg>
-	           </Call>
-	         </New>
+                     <Arg>akka.http.AkkaMistServlet</Arg>
+                     <Arg>/*</Arg>
+                   </Call>
+                 </New>
            </Item>
            <Item>
              <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>

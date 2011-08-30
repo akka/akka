@@ -6,7 +6,7 @@ import akka.actor.{ FSM, Actor, ActorRef }
 
 /*
  * generic typed object buncher.
- * 
+ *
  * To instantiate it, use the factory method like so:
  *   Buncher(100, 500)(x : List[AnyRef] => x foreach println)
  * which will yield a fully functional ActorRef.

@@ -5,20 +5,21 @@
 package akka.actor
 
 import DeploymentConfig._
-import akka.experimental
 import akka.dispatch._
 import akka.config._
+import akka.routing._
 import Config._
 import akka.util.{ ReflectiveAccess, Duration }
 import ReflectiveAccess._
 import akka.cluster.RemoteSupport
-import akka.japi.{ Creator, Procedure }
-import akka.AkkaException
-import akka.serialization.{ Serializer, Serialization }
 import akka.cluster.ClusterNode
+import akka.japi.{ Creator, Procedure }
+import akka.serialization.{ Serializer, Serialization }
 import akka.event.EventHandler
-import scala.collection.immutable.Stack
+import akka.experimental
+import akka.AkkaException
 
+import scala.collection.immutable.Stack
 import scala.reflect.BeanProperty
 
 import com.eaio.uuid.UUID
@@ -496,7 +497,7 @@ object Actor {
             cluster.store(address, factory, replicas.factor, replicationScheme, false, serializer)
 
           // remote node (not home node), check out as ClusterActorRef
-          cluster.ref(address, DeploymentConfig.routerTypeFor(router))
+          cluster.ref(address, DeploymentConfig.routerTypeFor(router), FailureDetectorType.RemoveConnectionOnFirstFailure) //DeploymentConfig.failureDetectorTypeFor(failureDetector))
         }
 
         replication match {

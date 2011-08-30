@@ -4,32 +4,36 @@
 
 package akka.cluster
 
-import akka.actor.{ Actor, Props }
+import akka.actor.{ Actor, ActorRef, Props }
 import Actor._
 import akka.cluster._
+import akka.routing._
+import akka.event.EventHandler
 import akka.dispatch.{ Dispatchers, Future, PinnedDispatcher }
 import akka.util.ListenerManagement
 
 import scala.collection.mutable.{ HashMap, Set }
+import scala.annotation.tailrec
 
 import java.net.InetSocketAddress
+import java.util.concurrent.atomic.AtomicReference
 
 object FailureDetector {
 
   private sealed trait FailureDetectorEvent
-  private case class Register(strategy: FailOverStrategy, address: InetSocketAddress) extends FailureDetectorEvent
-  private case class Unregister(strategy: FailOverStrategy, address: InetSocketAddress) extends FailureDetectorEvent
+  private case class Register(strategy: RemoteFailureListener, address: InetSocketAddress) extends FailureDetectorEvent
+  private case class Unregister(strategy: RemoteFailureListener, address: InetSocketAddress) extends FailureDetectorEvent
 
   private[akka] val registry = actorOf(Props(new Registry).copy(dispatcher = new PinnedDispatcher(), localOnly = true))
 
-  def register(strategy: FailOverStrategy, address: InetSocketAddress) = registry ! Register(strategy, address)
+  def register(strategy: RemoteFailureListener, address: InetSocketAddress) = registry ! Register(strategy, address)
 
-  def unregister(strategy: FailOverStrategy, address: InetSocketAddress) = registry ! Unregister(strategy, address)
+  def unregister(strategy: RemoteFailureListener, address: InetSocketAddress) = registry ! Unregister(strategy, address)
 
   private class Registry extends Actor {
 
-    val strategies = new HashMap[InetSocketAddress, Set[FailOverStrategy]]() {
-      override def default(k: InetSocketAddress) = Set.empty[FailOverStrategy]
+    val strategies = new HashMap[InetSocketAddress, Set[RemoteFailureListener]]() {
+      override def default(k: InetSocketAddress) = Set.empty[RemoteFailureListener]
     }
 
     def receive = {
@@ -47,72 +51,161 @@ object FailureDetector {
       case _ ⇒ //ignore other
     }
   }
+}
 
-  trait FailOverStrategy {
+abstract class FailureDetectorBase(initialConnections: Map[InetSocketAddress, ActorRef]) extends FailureDetector {
+  import ClusterActorRef._
 
-    def notify(event: RemoteLifeCycleEvent) = event match {
-      case RemoteClientWriteFailed(request, cause, client, address) ⇒
-        remoteClientWriteFailed(request, cause, client, address)
-        println("--------->>> RemoteClientWriteFailed")
-      case RemoteClientError(cause, client, address) ⇒
-        println("--------->>> RemoteClientError")
-        remoteClientError(cause, client, address)
-      case RemoteClientDisconnected(client, address) ⇒
-        remoteClientDisconnected(client, address)
-        println("--------->>> RemoteClientDisconnected")
-      case RemoteClientShutdown(client, address) ⇒
-        remoteClientShutdown(client, address)
-        println("--------->>> RemoteClientShutdown")
-      case RemoteServerWriteFailed(request, cause, server, clientAddress) ⇒
-        remoteServerWriteFailed(request, cause, server, clientAddress)
-      case RemoteServerError(cause, server) ⇒
-        remoteServerError(cause, server)
-      case RemoteServerShutdown(server) ⇒
-        remoteServerShutdown(server)
-    }
+  //  type C
 
-    def remoteClientWriteFailed(request: AnyRef, cause: Throwable, client: RemoteClientModule, address: InetSocketAddress) {}
+  private val state = new AtomicReference[State]()
 
-    def remoteClientError(cause: Throwable, client: RemoteClientModule, address: InetSocketAddress) {}
+  state.set(new State(Long.MinValue, initialConnections))
 
-    def remoteClientDisconnected(client: RemoteClientModule, address: InetSocketAddress) {}
+  def version: Long = state.get().version
 
-    def remoteClientShutdown(client: RemoteClientModule, address: InetSocketAddress) {}
+  def versionedIterable = state.get
 
-    def remoteServerWriteFailed(request: AnyRef, cause: Throwable, server: RemoteServerModule, clientAddress: Option[InetSocketAddress]) {}
+  def size: Int = state.get.iterable.size
 
-    def remoteServerError(cause: Throwable, server: RemoteServerModule) {}
+  def connections: Map[InetSocketAddress, ActorRef] = state.get.connections
 
-    def remoteServerShutdown(server: RemoteServerModule) {}
+  def stopAll() {
+    state.get().connections.values foreach (_.stop()) // shut down all remote connections
   }
 
-  trait RemoveConnectionOnFirstFailureFailOverStrategy extends FailOverStrategy {
+  @tailrec
+  final def failOver(from: InetSocketAddress, to: InetSocketAddress) {
+    EventHandler.debug(this, "ClusterActorRef failover from [%s] to [%s]".format(from, to))
 
-    override def remoteClientWriteFailed(request: AnyRef, cause: Throwable, client: RemoteClientModule, address: InetSocketAddress) {
-      removeConnection(address)
+    val oldState = state.get
+    var changed = false
+    val newMap = oldState.connections map {
+      case (`from`, actorRef) ⇒
+        changed = true
+        //actorRef.stop()
+        (to, createRemoteActorRef(actorRef.address, to))
+      case other ⇒ other
     }
 
-    override def remoteClientError(cause: Throwable, client: RemoteClientModule, address: InetSocketAddress) {
-      removeConnection(address)
+    if (changed) {
+      //there was a state change, so we are now going to update the state.
+      val newState = new State(oldState.version + 1, newMap)
+
+      //if we are not able to update, the state, we are going to try again.
+      if (!state.compareAndSet(oldState, newState)) failOver(from, to)
+    }
+  }
+
+  @tailrec
+  final def remove(deadRef: ActorRef) {
+    EventHandler.debug(this, "ClusterActorRef remove [%s]".format(deadRef.uuid))
+
+    val oldState = state.get()
+
+    var changed = false
+
+    //remote the deadRef from the clustered-connections.
+    var newConnections = Map.empty[InetSocketAddress, ActorRef]
+    oldState.connections.keys foreach { address ⇒
+      val actorRef: ActorRef = oldState.connections.get(address).get
+      if (actorRef ne deadRef) {
+        newConnections = newConnections + ((address, actorRef))
+      } else {
+        changed = true
+      }
     }
 
-    override def remoteClientDisconnected(client: RemoteClientModule, address: InetSocketAddress) {
-      removeConnection(address)
+    if (changed) {
+      //one or more occurrances of the actorRef were removed, so we need to update the state.
+      val newState = new State(oldState.version + 1, newConnections)
+
+      //if we are not able to update the state, we just try again.
+      if (!state.compareAndSet(oldState, newState)) remove(deadRef)
     }
-
-    override def remoteClientShutdown(client: RemoteClientModule, address: InetSocketAddress) {
-      removeConnection(address)
-    }
-
-    private def removeConnection(address: InetSocketAddress) = {} //connections.get(address) foreach (remove(connection))
   }
 
-  trait LinearBackoffFailOverStrategy extends FailOverStrategy {
+  class State(version: Long = Integer.MIN_VALUE,
+              val connections: Map[InetSocketAddress, ActorRef])
+    extends VersionedIterable[ActorRef](version, connections.values)
+
+  // class State[C](version: Long = Integer.MIN_VALUE,
+  //                val connections: Map[InetSocketAddress, ActorRef],
+  //                val explicitConnections: Iterable[ActorRef],
+  //                val context: C)
+  //   extends VersionedIterable[ActorRef](version, explicitConnections ++ connections.values)
+}
+
+trait RemoteFailureListener {
+
+  def notify(event: RemoteLifeCycleEvent) = event match {
+    case RemoteClientWriteFailed(request, cause, client, address) ⇒
+      remoteClientWriteFailed(request, cause, client, address)
+      println("--------->>> RemoteClientWriteFailed")
+    case RemoteClientError(cause, client, address) ⇒
+      println("--------->>> RemoteClientError")
+      remoteClientError(cause, client, address)
+    case RemoteClientDisconnected(client, address) ⇒
+      remoteClientDisconnected(client, address)
+      println("--------->>> RemoteClientDisconnected")
+    case RemoteClientShutdown(client, address) ⇒
+      remoteClientShutdown(client, address)
+      println("--------->>> RemoteClientShutdown")
+    case RemoteServerWriteFailed(request, cause, server, clientAddress) ⇒
+      remoteServerWriteFailed(request, cause, server, clientAddress)
+    case RemoteServerError(cause, server) ⇒
+      remoteServerError(cause, server)
+    case RemoteServerShutdown(server) ⇒
+      remoteServerShutdown(server)
   }
 
-  trait ExponentialBackoffFailOverStrategy extends FailOverStrategy {
+  def remoteClientWriteFailed(
+    request: AnyRef, cause: Throwable, client: RemoteClientModule, address: InetSocketAddress) {}
+
+  def remoteClientError(cause: Throwable, client: RemoteClientModule, address: InetSocketAddress) {}
+
+  def remoteClientDisconnected(client: RemoteClientModule, address: InetSocketAddress) {}
+
+  def remoteClientShutdown(client: RemoteClientModule, address: InetSocketAddress) {}
+
+  def remoteServerWriteFailed(
+    request: AnyRef, cause: Throwable, server: RemoteServerModule, clientAddress: Option[InetSocketAddress]) {}
+
+  def remoteServerError(cause: Throwable, server: RemoteServerModule) {}
+
+  def remoteServerShutdown(server: RemoteServerModule) {}
+}
+
+class RemoveConnectionOnFirstFailureFailureDetector(initialConnections: Map[InetSocketAddress, ActorRef])
+  extends FailureDetectorBase(initialConnections)
+  with RemoteFailureListener {
+
+  override def remoteClientWriteFailed(
+    request: AnyRef, cause: Throwable, client: RemoteClientModule, address: InetSocketAddress) {
+    removeConnection(address)
   }
 
-  trait CircuitBreakerFailOverStrategy extends FailOverStrategy {
+  override def remoteClientError(cause: Throwable, client: RemoteClientModule, address: InetSocketAddress) {
+    removeConnection(address)
   }
+
+  override def remoteClientDisconnected(client: RemoteClientModule, address: InetSocketAddress) {
+    removeConnection(address)
+  }
+
+  override def remoteClientShutdown(client: RemoteClientModule, address: InetSocketAddress) {
+    removeConnection(address)
+  }
+
+  private def removeConnection(address: InetSocketAddress) =
+    connections.get(address) foreach { connection ⇒ remove(connection) }
+}
+
+trait LinearBackoffRemoteFailureListener extends RemoteFailureListener {
+}
+
+trait ExponentialBackoffRemoteFailureListener extends RemoteFailureListener {
+}
+
+trait CircuitBreakerRemoteFailureListener extends RemoteFailureListener {
 }

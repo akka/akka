@@ -20,8 +20,8 @@ import akka.performance.workbench.Stats
 
 trait PerformanceTest extends JUnitSuite {
 
-  //	jvm parameters
-  //	-server -Xms512m -Xmx1024m -XX:+UseConcMarkSweepGC
+  //    jvm parameters
+  //    -server -Xms512m -Xmx1024m -XX:+UseConcMarkSweepGC
 
   var isWarm = false
 

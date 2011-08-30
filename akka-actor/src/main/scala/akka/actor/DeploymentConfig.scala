@@ -23,6 +23,7 @@ object DeploymentConfig {
     address: String,
     recipe: Option[ActorRecipe],
     routing: Routing = Direct,
+    //    failureDetector: FailureDetector = RemoveConnectionOnFirstFailure,
     scope: Scope = Local) {
     Address.validate(address)
   }
@@ -55,6 +56,17 @@ object DeploymentConfig {
   case object LeastMessages extends Routing
 
   // --------------------------------
+  // --- FailureDetector
+  // --------------------------------
+  sealed trait FailureDetector
+
+  // For Java API
+  case class RemoveConnectionOnFirstFailure() extends FailureDetector
+
+  // For Scala API
+  case object RemoveConnectionOnFirstFailure extends FailureDetector
+
+  // --------------------------------
   // --- Scope
   // --------------------------------
   sealed trait Scope
@@ -81,7 +93,10 @@ object DeploymentConfig {
   // --- Replicas
   // --------------------------------
 
-  case class ReplicationFactor(val factor: Int) {
+  object ReplicationFactor {
+    def apply(factor: Int) = new ReplicationFactor(factor)
+  }
+  class ReplicationFactor(val factor: Int) {
     if (factor < 0) throw new IllegalArgumentException("replication-factor can not be negative")
   }
 
@@ -147,6 +162,11 @@ object DeploymentConfig {
   }
 
   def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == Config.nodename)
+
+  // def failureDetectorTypeFor(failureDetector: FailureDetector): FailureDetectorType = FailureDetectorType match {
+  //   case RemoveConnectionOnFirstFailure ⇒ FailureDetectorType.RemoveConnectionOnFirstFailure
+  //   case unknown                        ⇒ throw new UnsupportedOperationException("Unknown FailureDetector [" + unknown + "]")
+  // }
 
   def routerTypeFor(routing: Routing): RouterType = routing match {
     case Direct          ⇒ RouterType.Direct
