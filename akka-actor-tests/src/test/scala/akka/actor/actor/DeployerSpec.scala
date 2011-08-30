@@ -21,7 +21,7 @@ class DeployerSpec extends WordSpec with MustMatchers {
           None,
           LeastCPU,
           Clustered(
-            Vector(Node("node1")),
+            List(Node("node1")),
             new ReplicationFactor(3),
             Replication(
               TransactionLog,

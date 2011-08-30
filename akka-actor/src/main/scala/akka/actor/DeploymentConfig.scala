@@ -93,12 +93,19 @@ object DeploymentConfig {
   // --- Replicas
   // --------------------------------
 
-  object ReplicationFactor {
-    def apply(factor: Int) = new ReplicationFactor(factor)
-  }
   class ReplicationFactor(val factor: Int) extends Serializable {
     if (factor < 0) throw new IllegalArgumentException("replication-factor can not be negative")
-    def toString = "ReplicationFactor(" + factor +")"
+    override def hashCode = 0 + factor.##
+    override def equals(other: Any) = ReplicationFactor.unapply(this) == ReplicationFactor.unapply(other)
+    override def toString = "ReplicationFactor(" + factor + ")"
+  }
+
+  object ReplicationFactor {
+    def apply(factor: Int): ReplicationFactor = new ReplicationFactor(factor)
+    def unapply(other: Any) = other match {
+      case x: ReplicationFactor ⇒ import x._; Some(factor)
+      case _                    ⇒ None
+    }
   }
 
   // For Java API
