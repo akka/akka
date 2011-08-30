@@ -66,12 +66,12 @@ class BalancingDispatcher(
             actorRef, aType))
     }
 
-    synchronized { members :+= actorRef } //Update members
+    members :+= actorRef //Update members, doesn't need synchronized, is guarded in attach
     super.register(actorRef)
   }
 
   protected[akka] override def unregister(actorRef: LocalActorRef) = {
-    synchronized { members = members.filterNot(actorRef eq) } //Update members
+    members = members.filterNot(actorRef eq) //Update members, doesn't need synchronized, is guarded in detach
     super.unregister(actorRef)
   }
 
