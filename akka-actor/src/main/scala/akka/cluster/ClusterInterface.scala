@@ -4,24 +4,21 @@
 
 package akka.cluster
 
-import akka.cluster.RemoteSupport
-import akka.serialization.Serializer
 import akka.actor._
 import DeploymentConfig._
 import akka.dispatch.Future
 import akka.config.Config
-import akka.routing.RouterType
+import akka.routing._
+import akka.serialization.Serializer
+import akka.cluster.metrics._
+import akka.util.Duration
+import akka.util.duration._
 import akka.AkkaException
 
 import com.eaio.uuid.UUID
 
 import java.net.InetSocketAddress
 import java.util.concurrent.{ ConcurrentSkipListSet }
-
-import akka.cluster.metrics._
-
-import akka.util.Duration
-import akka.util.duration._
 
 class ClusterException(message: String) extends AkkaException(message)
 
@@ -427,7 +424,7 @@ trait ClusterNode {
   /**
    * Creates an ActorRef with a Router to a set of clustered actors.
    */
-  def ref(actorAddress: String, router: RouterType): ActorRef
+  def ref(actorAddress: String, router: RouterType, failureDetector: FailureDetectorType): ActorRef
 
   /**
    * Returns the addresses of all actors checked out on this node.

@@ -17,7 +17,6 @@ import akka.actor._
 import DeploymentConfig.ReplicationScheme
 import akka.event.EventHandler
 import akka.dispatch.{ DefaultPromise, Promise, MessageInvocation }
-import akka.cluster.MessageSerializer
 import akka.cluster.zookeeper._
 import akka.serialization.ActorSerialization._
 import akka.serialization.Compression.LZF

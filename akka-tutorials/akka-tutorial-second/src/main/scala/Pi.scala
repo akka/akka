@@ -56,7 +56,7 @@ object Pi extends App {
     val router = Routing.actorOf(
       RoutedProps.apply()
         .withConnections(workers)
-        .withRoundRobinRouter()
+        .withRoundRobinRouter
         .withDeployId("pi"))
 
     // phase 1, can accept a Calculate message

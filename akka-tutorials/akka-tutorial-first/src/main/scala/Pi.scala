@@ -60,7 +60,7 @@ object Pi extends App {
     // wrap them with a load-balancing router
     val router = Routing.actorOf(
       RoutedProps.default
-        .withRoundRobinRouter()
+        .withRoundRobinRouter
         .withConnections(workers)
         .withDeployId("pi"))
 

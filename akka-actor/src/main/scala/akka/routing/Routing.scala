@@ -4,181 +4,21 @@
 
 package akka.routing
 
-import annotation.tailrec
-
 import akka.AkkaException
 import akka.actor._
 import akka.event.EventHandler
 import akka.actor.UntypedChannel._
-
-import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 import akka.dispatch.{ Future, Futures }
 import akka.util.ReflectiveAccess
-import collection.JavaConversions.iterableAsScalaIterable
 
-sealed trait RouterType
+import java.net.InetSocketAddress
+import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 
-/**
- * Used for declarative configuration of Routing.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object RouterType {
-
-  object Direct extends RouterType
-
-  /**
-   * A RouterType that randomly selects a connection to send a message to.
-   */
-  object Random extends RouterType
-
-  /**
-   * A RouterType that selects the connection by using round robin.
-   */
-  object RoundRobin extends RouterType
-
-  /**
-   * A RouterType that selects the connection based on the least amount of cpu usage
-   */
-  object LeastCPU extends RouterType
-
-  /**
-   * A RouterType that select the connection based on the least amount of ram used.
-   *
-   * FIXME: this is extremely vague currently since there are so many ways to define least amount of ram.
-   */
-  object LeastRAM extends RouterType
-
-  /**
-   * A RouterType that select the connection where the actor has the least amount of messages in its mailbox.
-   */
-  object LeastMessages extends RouterType
-
-  /**
-   * A user-defined custom RouterType.
-   */
-  object Custom extends RouterType
-
-}
-
-object RoutedProps {
-
-  final val defaultTimeout = Actor.TIMEOUT
-  final val defaultRouterFactory = () ⇒ new RoundRobinRouter
-  final val defaultDeployId = ""
-  final val defaultLocalOnly = !ReflectiveAccess.ClusterModule.isEnabled
-
-  /**
-   * The default RoutedProps instance, uses the settings from the RoutedProps object starting with default*
-   */
-  final val default = new RoutedProps
-
-  def apply(): RoutedProps = default
-}
-
-/**
- * Contains the configuration to create local and clustered routed actor references.
- *
- * Routed ActorRef configuration object, this is thread safe and fully sharable.
- *
- * Because the Routers are stateful, a new Router instance needs to be created for every ActorRef that relies on routing
- * (currently the ClusterActorRef and the RoutedActorRef). That is why a Router factory is used (a function that returns
- * a new Router instance) instead of a single Router instance. This makes sharing the same RoutedProps between multiple
- * threads safe.
- *
- * This configuration object makes it possible to either
- */
-case class RoutedProps(
-  routerFactory: () ⇒ Router,
-  deployId: String,
-  connections: Iterable[ActorRef],
-  timeout: Timeout,
-  localOnly: Boolean) {
-
-  def this() = this(
-    routerFactory = RoutedProps.defaultRouterFactory,
-    deployId = RoutedProps.defaultDeployId,
-    connections = List(),
-    timeout = RoutedProps.defaultTimeout,
-    localOnly = RoutedProps.defaultLocalOnly)
-
-  /**
-   * Returns a new RoutedProps with the specified deployId set
-   *
-   *  Java and Scala API
-   */
-  def withDeployId(id: String): RoutedProps = copy(deployId = if (id eq null) "" else id)
-
-  /**
-   * Returns a new RoutedProps configured with a random router.
-   *
-   * Java and Scala API.
-   */
-  def withRandomRouter(): RoutedProps = copy(routerFactory = () ⇒ new RandomRouter)
-
-  /**
-   * Returns a new RoutedProps configured with a round robin router.
-   *
-   * Java and Scala API.
-   */
-  def withRoundRobinRouter(): RoutedProps = copy(routerFactory = () ⇒ new RoundRobinRouter)
-
-  /**
-   * Returns a new RoutedProps configured with a direct router.
-   *
-   * Java and Scala API.
-   */
-  def withDirectRouter(): RoutedProps = copy(routerFactory = () ⇒ new DirectRouter)
-
-  /**
-   * Makes it possible to change the default behavior in a clustered environment that a clustered actor ref is created.
-   * In some cases you just want to have local actor references, even though the Cluster Module is up and running.
-   *
-   * Java and Scala API.
-   */
-  def withLocalOnly(l: Boolean = true) = copy(localOnly = l)
-
-  /**
-   * Sets the Router factory method to use. Since Router instance contain state, and should be linked to a single 'routed' ActorRef, a new
-   * Router instance is needed for every 'routed' ActorRef. That is why a 'factory' function is used to create new
-   * instances.
-   *
-   * Scala API.
-   */
-  def withRouter(f: () ⇒ Router): RoutedProps = copy(routerFactory = f)
-
-  /**
-   * Sets the RouterFactory to use. Since Router instance contain state, and should be linked to a single 'routed' ActorRef, a new
-   * Router instance is needed for every 'routed' ActorRef. That is why a RouterFactory interface is used to create new
-   * instances.
-   *
-   * Java API.
-   */
-  def withRouter(f: RouterFactory): RoutedProps = copy(routerFactory = () ⇒ f.newRouter())
-
-  /**
-   *
-   */
-  def withTimeout(t: Timeout): RoutedProps = copy(timeout = t)
-
-  /**
-   * Sets the connections to use.
-   *
-   * Scala API.
-   */
-  def withConnections(c: Iterable[ActorRef]): RoutedProps = copy(connections = c)
-
-  /**
-   * Sets the connections to use.
-   *
-   * Java API.
-   */
-  def withConnections(c: java.lang.Iterable[ActorRef]): RoutedProps = copy(connections = iterableAsScalaIterable(c))
-}
+import scala.annotation.tailrec
 
 /**
  * The Router is responsible for sending a message to one (or more) of its connections. Connections are stored in the
- * {@link RouterConnections} and each Router should be linked to only one {@link RouterConnections}.
+ * {@link FailureDetector} and each Router should be linked to only one {@link FailureDetector}.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -194,7 +34,7 @@ trait Router {
    * JMM Guarantees:
    * This method guarantees that all changes made in this method, are visible before one of the routing methods is called.
    */
-  def init(connections: RouterConnections)
+  def init(connections: FailureDetector)
 
   /**
    * Routes the message to one of the connections.
@@ -213,13 +53,22 @@ trait Router {
 }
 
 /**
+ * An Iterable that also contains a version.
+ */
+class VersionedIterable[A](val version: Long, val iterable: Iterable[A]) {
+  def apply() = iterable
+}
+
+/**
  * An {@link AkkaException} thrown when something goes wrong while routing a message
  */
 class RoutingException(message: String) extends AkkaException(message)
 
 /**
- * The RouterConnection acts like a middleman between the Router and the actor reference that does the routing.
- * Through the RouterConnection:
+ * The FailureDetector acts like a middleman between the Router and the actor reference that does the routing
+ * and can dectect and act upon failur.
+ *
+ * Through the FailureDetector:
  * <ol>
  *   <li>
  *     the actor ref can signal that something has changed in the known set of connections. The Router can see
@@ -229,10 +78,8 @@ class RoutingException(message: String) extends AkkaException(message)
  *      the Router can indicate that some happened happened with a actor ref, e.g. the actor ref dying.
  *   </li>
  * </ol>
- *
- * It is very likely that the implementation of the RouterConnection will be part of the ActorRef itself.
  */
-trait RouterConnections {
+trait FailureDetector {
 
   /**
    * A version that is useful to see if there is any change in the connections. If there is a change, a router is
@@ -245,6 +92,11 @@ trait RouterConnections {
    * with an atomic read of and size and version.
    */
   def size: Int
+
+  /**
+   * Stops all managed actors
+   */
+  def stopAll()
 
   /**
    * Returns a VersionedIterator containing all connectected ActorRefs at some moment in time. Since there is
@@ -271,12 +123,55 @@ trait RouterConnections {
    * @param ref the dead
    */
   def remove(deadRef: ActorRef)
+
+  /**
+   * Fails over connections from one address to another.
+   */
+  def failOver(from: InetSocketAddress, to: InetSocketAddress)
 }
 
 /**
- * An Iterable that also contains a version.
+ * Default "local" failure detector. This failure detector removes an actor from the
+ * router if an exception occured in the router's thread (e.g. when trying to add
+ * the message to the receiver's mailbox).
  */
-case class VersionedIterable[A](version: Long, val iterable: Iterable[A])
+class LocalFailureDetector extends FailureDetector {
+
+  private val state = new AtomicReference[VersionedIterable[ActorRef]]
+
+  def this(connectionIterable: Iterable[ActorRef]) = {
+    this()
+    state.set(new VersionedIterable[ActorRef](Long.MinValue, connectionIterable))
+  }
+
+  def version: Long = state.get.version
+
+  def size: Int = state.get.iterable.size
+
+  def versionedIterable = state.get
+
+  def stopAll() {
+    state.get.iterable foreach (_.stop())
+  }
+
+  def failOver(from: InetSocketAddress, to: InetSocketAddress) {} // do nothing here
+
+  @tailrec
+  final def remove(ref: ActorRef) = {
+    val oldState = state.get
+
+    //remote the ref from the connections.
+    var newList = oldState.iterable.filter(currentActorRef ⇒ currentActorRef ne ref)
+
+    if (newList.size != oldState.iterable.size) {
+      //one or more occurrences of the actorRef were removed, so we need to update the state.
+
+      val newState = new VersionedIterable[ActorRef](oldState.version + 1, newList)
+      //if we are not able to update the state, we just try again.
+      if (!state.compareAndSet(oldState, newState)) remove(ref)
+    }
+  }
+}
 
 /**
  * A Helper class to create actor references that use routing.
@@ -320,7 +215,7 @@ object Routing {
    * @throws IllegalArgumentException if the number of connections is zero, or if it depends on the actual router implementation
    *                                  how many connections it can handle.
    */
-  @deprecated("will be removed")
+  @deprecated("Use 'Routing.actorOf(props: RoutedProps)' instead.", "2.0")
   def actorOf(actorAddress: String, connections: Iterable[ActorRef], routerType: RouterType): ActorRef = {
     val router = routerType match {
       case RouterType.Direct if connections.size > 1 ⇒
@@ -339,7 +234,12 @@ object Routing {
       throw new IllegalArgumentException("To create a routed actor ref, at least one connection is required")
 
     new RoutedActorRef(
-      new RoutedProps(() ⇒ router, actorAddress, connections, RoutedProps.defaultTimeout, true)).start()
+      new RoutedProps(
+        () ⇒ router,
+        RoutedProps.defaultFailureDetectorFactory,
+        actorAddress,
+        connections,
+        RoutedProps.defaultTimeout, true)).start()
   }
 }
 
@@ -377,7 +277,7 @@ abstract private[akka] class AbstractRoutedActorRef(val props: RoutedProps) exte
 private[akka] class RoutedActorRef(val routedProps: RoutedProps)
   extends AbstractRoutedActorRef(routedProps) {
 
-  router.init(new RoutedActorRefConnections(routedProps.connections))
+  router.init(new LocalFailureDetector(routedProps.connections))
 
   def start(): this.type = synchronized[this.type] {
     if (_status == ActorRefInternals.UNSTARTED)
@@ -393,38 +293,6 @@ private[akka] class RoutedActorRef(val routedProps: RoutedProps)
       }
     }
   }
-
-  private class RoutedActorRefConnections extends RouterConnections {
-
-    private val state = new AtomicReference[VersionedIterable[ActorRef]]
-
-    def this(connectionIterable: Iterable[ActorRef]) = {
-      this()
-      state.set(new VersionedIterable[ActorRef](Long.MinValue, connectionIterable))
-    }
-
-    def version: Long = state.get.version
-
-    def size: Int = state.get.iterable.size
-
-    def versionedIterable = state.get
-
-    @tailrec
-    final def remove(ref: ActorRef) = {
-      val oldState = state.get
-
-      //remote the ref from the connections.
-      var newList = oldState.iterable.filter(currentActorRef ⇒ currentActorRef ne ref)
-
-      if (newList.size != oldState.iterable.size) {
-        //one or more occurrences of the actorRef were removed, so we need to update the state.
-
-        val newState = new VersionedIterable[ActorRef](oldState.version + 1, newList)
-        //if we are not able to update the state, we just try again.
-        if (!state.compareAndSet(oldState, newState)) remove(ref)
-      }
-    }
-  }
 }
 
 /**
@@ -437,9 +305,9 @@ private[akka] class RoutedActorRef(val routedProps: RoutedProps)
 trait BasicRouter extends Router {
 
   @volatile
-  protected var connections: RouterConnections = _
+  protected var connections: FailureDetector = _
 
-  def init(connections: RouterConnections) = {
+  def init(connections: FailureDetector) = {
     this.connections = connections
   }
 

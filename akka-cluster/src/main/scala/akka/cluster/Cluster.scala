@@ -15,9 +15,13 @@ import org.I0Itec.zkclient.exception._
 
 import java.util.{ List ⇒ JList }
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
+import java.util.concurrent.{ CopyOnWriteArrayList, Callable, ConcurrentHashMap }
+import javax.management.StandardMBean
 import java.net.InetSocketAddress
+
 import scala.collection.mutable.ConcurrentMap
 import scala.collection.JavaConversions._
+import scala.annotation.tailrec
 
 import akka.util._
 import duration._
@@ -30,17 +34,16 @@ import DeploymentConfig._
 
 import akka.event.EventHandler
 import akka.dispatch.{ Dispatchers, Future, PinnedDispatcher }
-import akka.cluster._
-import akka.routing.RouterType
-
 import akka.config.{ Config, Supervision }
 import Supervision._
 import Config._
 
-import akka.serialization.{ Serialization, Serializer, ActorSerialization }
+import akka.serialization.{ Serialization, Serializer, ActorSerialization, Compression }
 import ActorSerialization._
-import akka.serialization.Compression.LZF
+import Compression.LZF
 
+import akka.routing._
+import akka.cluster._
 import akka.cluster.metrics._
 import akka.cluster.zookeeper._
 import ChangeListener._
@@ -50,11 +53,6 @@ import RemoteDaemonMessageType._
 import com.eaio.uuid.UUID
 
 import com.google.protobuf.ByteString
-
-import java.util.concurrent.{ CopyOnWriteArrayList, Callable, ConcurrentHashMap }
-
-import annotation.tailrec
-import javax.management.{ StandardMBean }
 
 // FIXME add watch for each node that when the entry for the node is removed then the node shuts itself down
 
@@ -906,7 +904,8 @@ class DefaultClusterNode private[akka] (
   /**
    * Creates an ActorRef with a Router to a set of clustered actors.
    */
-  def ref(actorAddress: String, router: RouterType): ActorRef = ClusterActorRef.newRef(router, actorAddress, Actor.TIMEOUT)
+  def ref(actorAddress: String, router: RouterType, failureDetector: FailureDetectorType): ActorRef =
+    ClusterActorRef.newRef(actorAddress, router, failureDetector, Actor.TIMEOUT)
 
   /**
    * Returns the UUIDs of all actors checked out on this node.
