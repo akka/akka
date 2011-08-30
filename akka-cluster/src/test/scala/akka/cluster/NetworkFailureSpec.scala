@@ -4,25 +4,25 @@
 
 package akka.cluster
 
-import org.scalatest.{Spec, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.{ Spec, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.junit.JUnitRunner
 
 import org.junit.runner.RunWith
 
-import akka.remote.netty.NettyRemoteSupport
-import akka.actor.{Actor, ActorRegistry}
+import akka.cluster.netty.NettyRemoteSupport
+import akka.actor.{ Actor, ActorRegistry }
 
-import java.util.concurrent. {TimeUnit, CountDownLatch}
+import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import java.util.concurrent.atomic.AtomicBoolean
 
-trait NetworkFailureSpec { self: WordSpec =>
+trait NetworkFailureSpec { self: WordSpec ⇒
   import Actor._
   import akka.util.Duration
 
   val BytesPerSecond = "60KByte/s"
-  val DelayMillis    = "350ms"
-  val PortRang       = "1024-65535"
+  val DelayMillis = "350ms"
+  val PortRang = "1024-65535"
 
   def replyWithTcpResetFor(duration: Duration, dead: AtomicBoolean) = {
     spawn {
@@ -32,7 +32,7 @@ trait NetworkFailureSpec { self: WordSpec =>
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e =>
+        case e ⇒
           dead.set(true)
           e.printStackTrace
       }
@@ -43,11 +43,11 @@ trait NetworkFailureSpec { self: WordSpec =>
     spawn {
       try {
         enableNetworkThrottling()
-        println("===>>> Throttling network with [" +  BytesPerSecond + ", " + DelayMillis + "] for [" + duration + "]")
+        println("===>>> Throttling network with [" + BytesPerSecond + ", " + DelayMillis + "] for [" + duration + "]")
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e =>
+        case e ⇒
           dead.set(true)
           e.printStackTrace
       }
@@ -62,7 +62,7 @@ trait NetworkFailureSpec { self: WordSpec =>
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e =>
+        case e ⇒
           dead.set(true)
           e.printStackTrace
       }
@@ -78,8 +78,8 @@ trait NetworkFailureSpec { self: WordSpec =>
     restoreIP()
     assert(new ProcessBuilder("ipfw", "add", "pipe", "1", "ip", "from", "any", "to", "any").start.waitFor == 0)
     assert(new ProcessBuilder("ipfw", "add", "pipe", "2", "ip", "from", "any", "to", "any").start.waitFor == 0)
-    assert(new ProcessBuilder("ipfw", "pipe", "1", "config", "bw",  BytesPerSecond, "delay", DelayMillis).start.waitFor == 0)
-    assert(new ProcessBuilder("ipfw", "pipe", "2", "config", "bw",  BytesPerSecond, "delay", DelayMillis).start.waitFor == 0)
+    assert(new ProcessBuilder("ipfw", "pipe", "1", "config", "bw", BytesPerSecond, "delay", DelayMillis).start.waitFor == 0)
+    assert(new ProcessBuilder("ipfw", "pipe", "2", "config", "bw", BytesPerSecond, "delay", DelayMillis).start.waitFor == 0)
   }
 
   def enableNetworkDrop() = {
