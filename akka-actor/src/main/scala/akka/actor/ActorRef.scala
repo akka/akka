@@ -1052,11 +1052,12 @@ class LocalActorRef private[akka] (
     }
   }
 
-  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = guard.withGuard {
+  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = {
     ensureRemotingEnabled
-    if (_supervisor.isDefined) {
+    val sup = _supervisor
+    if (sup.isDefined) {
       if (homeAddress.isDefined) Actor.remote.registerSupervisorForActor(this)
-      Some(_supervisor.get.uuid)
+      Some(sup.get.uuid)
     } else None
   }
 
