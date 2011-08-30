@@ -18,7 +18,7 @@ class ThreadBasedDispatcher(_actor: ActorRef, _mailboxType: MailboxType)
   extends ExecutorBasedEventDrivenDispatcher(
     _actor.uuid.toString, Dispatchers.THROUGHPUT, -1, _mailboxType, ThreadBasedDispatcher.oneThread) {
 
-  private[akka] val owner = new AtomicReference[ActorRef](_actor)
+  protected[akka] val owner = new AtomicReference[ActorRef](_actor)
 
   def this(actor: ActorRef) =
     this(actor, UnboundedMailbox()) // For Java API

@@ -55,7 +55,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   private var members = Vector[ActorRef]()
   private val donationInProgress = new DynamicVariable(false)
 
-  private[akka] override def register(actorRef: ActorRef) = {
+  protected[akka] override def register(actorRef: ActorRef) = {
     //Verify actor type conformity
     actorType match {
       case None ⇒ actorType = Some(actorRef.actor.getClass)
@@ -70,12 +70,12 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     super.register(actorRef)
   }
 
-  private[akka] override def unregister(actorRef: ActorRef) = {
+  protected[akka] override def unregister(actorRef: ActorRef) = {
     synchronized { members = members.filterNot(actorRef eq) } //Update members
     super.unregister(actorRef)
   }
 
-  override private[akka] def dispatch(invocation: MessageInvocation) = {
+  override protected[akka] def dispatch(invocation: MessageInvocation) = {
     getMailbox(invocation.receiver) match {
       case null => throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start()' before using it")
       case mbox =>
@@ -88,7 +88,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     }
   }
 
-  override private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
+  override protected[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
     try {
       donationInProgress.value = true
       while (donateFrom(mbox)) {} //When we reregister, first donate messages to another actor

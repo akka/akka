@@ -66,7 +66,7 @@ trait MessageDispatcher {
   /**
    *  Creates and returns a mailbox for the given actor.
    */
-  private[akka] def createMailbox(actorRef: ActorRef): AnyRef
+  protected[akka] def createMailbox(actorRef: ActorRef): AnyRef
 
   /**
    * Name of this dispatcher.
@@ -87,9 +87,9 @@ trait MessageDispatcher {
     unregister(actorRef)
   }
 
-  private[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = dispatch(invocation)
+  protected[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = dispatch(invocation)
 
-  private[akka] final def dispatchTask(block: () ⇒ Unit): Unit = {
+  protected[akka] final def dispatchTask(block: () ⇒ Unit): Unit = {
     _tasks.getAndIncrement()
     try {
       if (active.isOff)
@@ -122,7 +122,7 @@ trait MessageDispatcher {
       }
     }
 
-  private[akka] def register(actorRef: ActorRef) {
+  protected[akka] def register(actorRef: ActorRef) {
     if (actorRef.mailbox eq null)
       actorRef.mailbox = createMailbox(actorRef)
 
@@ -134,7 +134,7 @@ trait MessageDispatcher {
     }
   }
 
-  private[akka] def unregister(actorRef: ActorRef) = {
+  protected[akka] def unregister(actorRef: ActorRef) = {
     if (uuids remove actorRef.uuid) {
       actorRef.mailbox = null
       if (uuids.isEmpty && _tasks.get == 0) {
@@ -186,7 +186,7 @@ trait MessageDispatcher {
    * When the dispatcher no longer has any actors registered, how long will it wait until it shuts itself down, in Ms
    * defaulting to your akka configs "akka.actor.dispatcher-shutdown-timeout" or otherwise, 1 Second
    */
-  private[akka] def timeoutMs: Long = Dispatchers.DEFAULT_SHUTDOWN_TIMEOUT.toMillis
+  protected[akka] def timeoutMs: Long = Dispatchers.DEFAULT_SHUTDOWN_TIMEOUT.toMillis
 
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
@@ -201,19 +201,19 @@ trait MessageDispatcher {
   /**
    *   Will be called when the dispatcher is to queue an invocation for execution
    */
-  private[akka] def dispatch(invocation: MessageInvocation): Unit
+  protected[akka] def dispatch(invocation: MessageInvocation): Unit
 
-  private[akka] def executeTask(invocation: TaskInvocation): Unit
+  protected[akka] def executeTask(invocation: TaskInvocation): Unit
 
   /**
    * Called one time every time an actor is attached to this dispatcher and this dispatcher was previously shutdown
    */
-  private[akka] def start(): Unit
+  protected[akka] def start(): Unit
 
   /**
    * Called one time every time an actor is detached from this dispatcher and this dispatcher has no actors left attached
    */
-  private[akka] def shutdown(): Unit
+  protected[akka] def shutdown(): Unit
 
   /**
    * Returns the size of the mailbox for the specified actor

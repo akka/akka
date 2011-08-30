@@ -87,10 +87,10 @@ class ExecutorBasedEventDrivenDispatcher(
 
   val name = "akka:event-driven:dispatcher:" + _name
 
-  private[akka] val threadFactory = new MonitorableThreadFactory(name)
-  private[akka] val executorService = new AtomicReference[ExecutorService](config.createLazyExecutorService(threadFactory))
+  protected[akka] val threadFactory = new MonitorableThreadFactory(name)
+  protected[akka] val executorService = new AtomicReference[ExecutorService](config.createLazyExecutorService(threadFactory))
 
-  private[akka] def dispatch(invocation: MessageInvocation) = {
+  protected[akka] def dispatch(invocation: MessageInvocation) = {
     getMailbox(invocation.receiver) match {
       case null => throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start()' before using it")
       case mbox =>
@@ -99,7 +99,7 @@ class ExecutorBasedEventDrivenDispatcher(
     }
   }
 
-  private[akka] def executeTask(invocation: TaskInvocation): Unit = if (active.isOn) {
+  protected[akka] def executeTask(invocation: TaskInvocation): Unit = if (active.isOn) {
     try executorService.get() execute invocation
     catch {
       case e: RejectedExecutionException ⇒
@@ -134,16 +134,16 @@ class ExecutorBasedEventDrivenDispatcher(
       }
   }
 
-  private[akka] def start {}
+  protected[akka] def start {}
 
-  private[akka] def shutdown {
+  protected[akka] def shutdown {
     val old = executorService.getAndSet(config.createLazyExecutorService(threadFactory))
     if (old ne null) {
       old.shutdownNow()
     }
   }
 
-  private[akka] def registerForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
+  protected[akka] def registerForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
     if (mbox.dispatcherLock.tryLock()) {
       if (active.isOn && !mbox.suspended.locked) { //If the dispatcher is active and the actor not suspended
         try {
@@ -160,7 +160,7 @@ class ExecutorBasedEventDrivenDispatcher(
     }
   }
 
-  private[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
+  protected[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
     registerForExecution(mbox)
 
   override val toString = getClass.getSimpleName + "[" + name + "]"
