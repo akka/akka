@@ -46,8 +46,10 @@ object ClusterActorRef {
     val failureDetectorFactory: (Map[InetSocketAddress, ActorRef]) ⇒ FailureDetector = failureDetectorType match {
       case RemoveConnectionOnFirstFailure ⇒
         (connections: Map[InetSocketAddress, ActorRef]) ⇒ new RemoveConnectionOnFirstFailureFailureDetector(connections)
-      case _ ⇒
+      case Local ⇒
         (connections: Map[InetSocketAddress, ActorRef]) ⇒ new LocalFailureDetector
+      case _ ⇒
+        (connections: Map[InetSocketAddress, ActorRef]) ⇒ new RemoveConnectionOnFirstFailureFailureDetector(connections)
     }
 
     new ClusterActorRef(

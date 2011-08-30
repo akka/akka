@@ -55,8 +55,12 @@ trait Router {
 /**
  * An Iterable that also contains a version.
  */
-class VersionedIterable[A](val version: Long, val iterable: Iterable[A]) {
-  def apply() = iterable
+trait VersionedIterable[A] {
+  val version: Long
+
+  def iterable: Iterable[A]
+
+  def apply(): Iterable[A] = iterable
 }
 
 /**
@@ -137,11 +141,13 @@ trait FailureDetector {
  */
 class LocalFailureDetector extends FailureDetector {
 
-  private val state = new AtomicReference[VersionedIterable[ActorRef]]
+  case class State(val version: Long, val iterable: Iterable[ActorRef]) extends VersionedIterable[ActorRef]
+
+  private val state = new AtomicReference[State]
 
   def this(connectionIterable: Iterable[ActorRef]) = {
     this()
-    state.set(new VersionedIterable[ActorRef](Long.MinValue, connectionIterable))
+    state.set(State(Long.MinValue, connectionIterable))
   }
 
   def version: Long = state.get.version
@@ -166,7 +172,7 @@ class LocalFailureDetector extends FailureDetector {
     if (newList.size != oldState.iterable.size) {
       //one or more occurrences of the actorRef were removed, so we need to update the state.
 
-      val newState = new VersionedIterable[ActorRef](oldState.version + 1, newList)
+      val newState = State(oldState.version + 1, newList)
       //if we are not able to update the state, we just try again.
       if (!state.compareAndSet(oldState, newState)) remove(ref)
     }
@@ -196,9 +202,11 @@ object Routing {
 
     if (!localOnly && !clusteringEnabled)
       throw new IllegalArgumentException("Can't have clustered actor reference without the ClusterModule being enabled")
-    else if (clusteringEnabled && !props.localOnly) {
+
+    else if (clusteringEnabled && !props.localOnly)
       ReflectiveAccess.ClusterModule.newClusteredActorRef(props).start()
-    } else {
+
+    else {
       if (props.connections.isEmpty)
         throw new IllegalArgumentException("A routed actorRef can't have an empty connection set")
 
@@ -220,12 +228,16 @@ object Routing {
     val router = routerType match {
       case RouterType.Direct if connections.size > 1 ⇒
         throw new IllegalArgumentException("A direct router can't have more than 1 connection")
+
       case RouterType.Direct ⇒
         new DirectRouter
+
       case RouterType.Random ⇒
         new RandomRouter
+
       case RouterType.RoundRobin ⇒
         new RoundRobinRouter
+
       case r ⇒
         throw new IllegalArgumentException("Unsupported routerType " + r)
     }
@@ -274,8 +286,7 @@ abstract private[akka] class AbstractRoutedActorRef(val props: RoutedProps) exte
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to send a message to
  * on (or more) of these actors.
  */
-private[akka] class RoutedActorRef(val routedProps: RoutedProps)
-  extends AbstractRoutedActorRef(routedProps) {
+private[akka] class RoutedActorRef(val routedProps: RoutedProps) extends AbstractRoutedActorRef(routedProps) {
 
   router.init(new LocalFailureDetector(routedProps.connections))
 
@@ -405,8 +416,7 @@ class DirectRouter extends BasicRouter {
     }
   }
 
-  private case class DirectRouterState(val ref: ActorRef, val version: Long)
-
+  private case class DirectRouterState(ref: ActorRef, version: Long)
 }
 
 /**
@@ -546,5 +556,4 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
 class ScatterGatherFirstCompletedRouter extends RoundRobinRouter with ScatterGatherRouter {
 
   protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G] = Futures.firstCompletedOf(results)
-
 }

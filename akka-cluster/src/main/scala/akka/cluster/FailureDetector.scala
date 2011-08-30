@@ -56,22 +56,26 @@ object FailureDetector {
 abstract class FailureDetectorBase(initialConnections: Map[InetSocketAddress, ActorRef]) extends FailureDetector {
   import ClusterActorRef._
 
+  case class State(val version: Long = Integer.MIN_VALUE, val connections: Map[InetSocketAddress, ActorRef]) extends VersionedIterable[ActorRef] {
+    def iterable: Iterable[ActorRef] = connections.values
+  }
+
   //  type C
 
   private val state = new AtomicReference[State]()
 
-  state.set(new State(Long.MinValue, initialConnections))
+  state.set(State(Long.MinValue, initialConnections))
 
   def version: Long = state.get().version
 
   def versionedIterable = state.get
 
-  def size: Int = state.get.iterable.size
+  def size: Int = state.get.connections.size
 
   def connections: Map[InetSocketAddress, ActorRef] = state.get.connections
 
   def stopAll() {
-    state.get().connections.values foreach (_.stop()) // shut down all remote connections
+    state.get().iterable foreach (_.stop()) // shut down all remote connections
   }
 
   @tailrec
@@ -90,7 +94,7 @@ abstract class FailureDetectorBase(initialConnections: Map[InetSocketAddress, Ac
 
     if (changed) {
       //there was a state change, so we are now going to update the state.
-      val newState = new State(oldState.version + 1, newMap)
+      val newState = State(oldState.version + 1, newMap)
 
       //if we are not able to update, the state, we are going to try again.
       if (!state.compareAndSet(oldState, newState)) failOver(from, to)
@@ -98,18 +102,18 @@ abstract class FailureDetectorBase(initialConnections: Map[InetSocketAddress, Ac
   }
 
   @tailrec
-  final def remove(deadRef: ActorRef) {
-    EventHandler.debug(this, "ClusterActorRef remove [%s]".format(deadRef.uuid))
+  final def remove(faultyConnection: ActorRef) {
+    EventHandler.debug(this, "ClusterActorRef remove [%s]".format(faultyConnection.uuid))
 
     val oldState = state.get()
 
     var changed = false
 
-    //remote the deadRef from the clustered-connections.
+    //remote the faultyConnection from the clustered-connections.
     var newConnections = Map.empty[InetSocketAddress, ActorRef]
     oldState.connections.keys foreach { address ⇒
       val actorRef: ActorRef = oldState.connections.get(address).get
-      if (actorRef ne deadRef) {
+      if (actorRef ne faultyConnection) {
         newConnections = newConnections + ((address, actorRef))
       } else {
         changed = true
@@ -118,22 +122,12 @@ abstract class FailureDetectorBase(initialConnections: Map[InetSocketAddress, Ac
 
     if (changed) {
       //one or more occurrances of the actorRef were removed, so we need to update the state.
-      val newState = new State(oldState.version + 1, newConnections)
+      val newState = State(oldState.version + 1, newConnections)
 
       //if we are not able to update the state, we just try again.
-      if (!state.compareAndSet(oldState, newState)) remove(deadRef)
+      if (!state.compareAndSet(oldState, newState)) remove(faultyConnection)
     }
   }
-
-  class State(version: Long = Integer.MIN_VALUE,
-              val connections: Map[InetSocketAddress, ActorRef])
-    extends VersionedIterable[ActorRef](version, connections.values)
-
-  // class State[C](version: Long = Integer.MIN_VALUE,
-  //                val connections: Map[InetSocketAddress, ActorRef],
-  //                val explicitConnections: Iterable[ActorRef],
-  //                val context: C)
-  //   extends VersionedIterable[ActorRef](version, explicitConnections ++ connections.values)
 }
 
 trait RemoteFailureListener {
