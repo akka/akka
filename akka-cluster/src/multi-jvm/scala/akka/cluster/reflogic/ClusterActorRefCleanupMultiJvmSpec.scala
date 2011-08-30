@@ -33,7 +33,7 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
   val testNodes = NrOfNodes
 
   "ClusterActorRef" must {
-    "cleanup itself" in {
+    "cleanup itself" ignore {
       Cluster.node.start()
       barrier("awaitStarted", NrOfNodes).await()
 
@@ -109,7 +109,7 @@ class ClusterActorRefCleanupMultiJvmNode2 extends ClusterTestNode {
 
   //we are only using the nodes for their capacity, not for testing on this node itself.
   "___" must {
-    "___" in {
+    "___" ignore {
       Runtime.getRuntime.addShutdownHook(new Thread() {
         override def run() {
           ClusterTestNode.exit(classOf[ClusterActorRefCleanupMultiJvmNode2].getName)
@@ -136,7 +136,7 @@ class ClusterActorRefCleanupMultiJvmNode3 extends ClusterTestNode {
 
   //we are only using the nodes for their capacity, not for testing on this node itself.
   "___" must {
-    "___" in {
+    "___" ignore {
       Runtime.getRuntime.addShutdownHook(new Thread() {
         override def run() {
           ClusterTestNode.exit(classOf[ClusterActorRefCleanupMultiJvmNode3].getName)
