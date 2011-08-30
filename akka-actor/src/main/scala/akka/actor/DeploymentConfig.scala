@@ -96,8 +96,9 @@ object DeploymentConfig {
   object ReplicationFactor {
     def apply(factor: Int) = new ReplicationFactor(factor)
   }
-  class ReplicationFactor(val factor: Int) {
+  class ReplicationFactor(val factor: Int) extends Serializable {
     if (factor < 0) throw new IllegalArgumentException("replication-factor can not be negative")
+    def toString = "ReplicationFactor(" + factor +")"
   }
 
   // For Java API
