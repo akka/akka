@@ -35,10 +35,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
   /**
    * Finds the actor that has a specific address.
    */
-  def actorFor(address: String): Option[ActorRef] = {
-    if (actorsByAddress.containsKey(address)) Some(actorsByAddress.get(address))
-    else None
-  }
+  def actorFor(address: String): Option[ActorRef] = Option(actorsByAddress.get(address))
 
   /**
    * Finds the typed actors that have a specific address.
