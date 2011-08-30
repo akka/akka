@@ -87,7 +87,7 @@ object EventHandler extends ListenerManagement {
   val generic = "[GENERIC] [%s] [%s]".intern
   val ID = "event:handler".intern
 
-  class EventHandlerException extends AkkaException
+  class EventHandlerException(message: String = "") extends AkkaException(message)
 
   lazy val EventHandlerDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(ID).build
 

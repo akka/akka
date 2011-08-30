@@ -13,7 +13,9 @@ import java.util.concurrent.{ CopyOnWriteArrayList }
 import akka.config.Supervision._
 import collection.mutable.ListBuffer
 
-class SupervisorException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class SupervisorException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause){
+  def this(message: String) = this(message, null)
+}
 
 /**
  * Factory object for creating supervisors declarative. It creates instances of the 'Supervisor' class.

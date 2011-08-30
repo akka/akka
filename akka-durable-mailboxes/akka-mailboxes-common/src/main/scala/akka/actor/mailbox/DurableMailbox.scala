@@ -24,7 +24,9 @@ private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
 }
 
-class DurableMailboxException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class DurableMailboxException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause){
+  def this(message: String) = this(message, null)
+}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

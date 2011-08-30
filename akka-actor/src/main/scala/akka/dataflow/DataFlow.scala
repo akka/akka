@@ -23,7 +23,9 @@ object DataFlow {
   object Start
   object Exit
 
-  class DataFlowVariableException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
+  class DataFlowVariableException(message: String, cause: Throwable = null) extends AkkaException(message, cause){
+    def this(message: String) = this(message, null)
+  }
 
   /**
    * Executes the supplied thunk in another thread.

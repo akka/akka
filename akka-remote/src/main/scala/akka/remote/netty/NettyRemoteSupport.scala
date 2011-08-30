@@ -55,7 +55,9 @@ import java.util.concurrent._
 import akka.AkkaException
 import java.util.Queue
 
-class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause){
+  def this(message: String) = this(message, null)
+}
 
 object RemoteEncoder {
   def encode(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {
@@ -1125,6 +1127,8 @@ class RemoteServerHandler(
       case RemoteActorSystemMessage.Stop ⇒
         if (UNTRUSTED_MODE) throw new SecurityException("Remote server is operating is untrusted mode, can not stop the actor")
         else TypedActor.poisonPill(typedActor) //TODO stop may block, but it might be better to do spawn { typedActor.stop() }
+      case _: LifeCycleMessage if (UNTRUSTED_MODE) ⇒
+        throw new SecurityException("Remote server is operating is untrusted mode, can not pass on a LifeCycleMessage to the remote actor")
       case (ownerTypeHint: String, argClasses: Array[Class[_]], args: Array[AnyRef]) ⇒
         try {
 
@@ -1171,6 +1175,38 @@ class RemoteServerHandler(
             write(channel, createErrorReplyMessage(e, request, AkkaActorType.TypedActor))
             server.notifyListeners(RemoteServerError(e, server))
         }
+      /** Non-performant fix for TypedActor.poisonPill
+       *case message ⇒ // then match on user defined messages
+        val actorRef = TypedActor.actorFor(typedActor).get
+
+        val sender = if (request.hasSender) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(request.getSender, applicationLoader)) else None
+
+        if (request.getOneWay) actorRef.!(message)(sender)
+        else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(
+          message,
+          request.getActorInfo.getTimeout,
+          new ActorCompletableFuture(request.getActorInfo.getTimeout).
+            onComplete((fa: Future[Any]) ⇒ fa.value.get match {
+              case l: Left[Throwable, Any] ⇒ write(channel, createErrorReplyMessage(l.a, request, AkkaActorType.TypedActor))
+              case r: Right[Throwable, Any] ⇒
+                val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+                  None,
+                  Right(request.getUuid),
+                  actorInfo.getId,
+                  actorInfo.getTarget,
+                  actorInfo.getTimeout,
+                  r,
+                  true,
+                  None,
+                  None,
+                  AkkaActorType.TypedActor,
+                  None)
+
+                // FIXME lift in the supervisor uuid management into toh createRemoteMessageProtocolBuilder method
+                if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
+
+                write(channel, RemoteEncoder.encode(messageBuilder.build))
+            }))*/
     }
   }
 

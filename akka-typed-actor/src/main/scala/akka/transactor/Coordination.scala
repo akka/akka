@@ -9,7 +9,9 @@ import akka.stm.Atomic
 
 import scala.util.DynamicVariable
 
-class CoordinateException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class CoordinateException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause){
+  def this(message: String) = this(message, null)
+}
 
 /**
  * Coordinating transactions between typed actors.

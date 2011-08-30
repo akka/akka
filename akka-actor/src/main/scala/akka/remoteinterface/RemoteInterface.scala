@@ -119,7 +119,9 @@ case class RemoteServerWriteFailed(
 class RemoteClientException private[akka] (
   message: String,
   @BeanProperty val client: RemoteClientModule,
-  val remoteAddress: InetSocketAddress, cause: Throwable = null) extends AkkaException(message, cause)
+  val remoteAddress: InetSocketAddress, cause: Throwable = null) extends AkkaException(message, cause){
+  def this(message: String) = this(message, null, null, null)
+}
 
 /**
  * Thrown when the remote server actor dispatching fails for some reason.
@@ -131,7 +133,8 @@ class RemoteServerException private[akka] (message: String) extends AkkaExceptio
  */
 case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorException private[akka] (cause: Throwable, originalClassName: String, originalMessage: String)
   extends AkkaException("\nParsingError[%s]\nOriginalException[%s]\nOriginalMessage[%s]"
-    .format(cause.toString, originalClassName, originalMessage)) {
+    .format(cause.toString, originalClassName, originalMessage)){
+  def this(message: String) = this(null, null, message)
   override def printStackTrace = cause.printStackTrace
   override def printStackTrace(printStream: PrintStream) = cause.printStackTrace(printStream)
   override def printStackTrace(printWriter: PrintWriter) = cause.printStackTrace(printWriter)
