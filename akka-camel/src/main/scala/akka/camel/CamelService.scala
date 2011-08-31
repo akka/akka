@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit
 
 import org.apache.camel.CamelContext
 
+import akka.actor.Props
 import akka.actor.Actor._
 import akka.config.Config._
 import akka.japi.{ SideEffect, Option ⇒ JOption }
@@ -26,9 +27,9 @@ import TypedCamelAccess._
  * @author Martin Krasser
  */
 trait CamelService extends Bootable {
-  private[camel] val activationTracker = localActorOf(new ActivationTracker)
-  private[camel] val consumerPublisher = localActorOf(new ConsumerPublisher(activationTracker))
-  private[camel] val publishRequestor = localActorOf(new ConsumerPublishRequestor)
+  private[camel] val activationTracker = actorOf(Props(new ActivationTracker).withLocalOnly(true))
+  private[camel] val consumerPublisher = actorOf(Props(new ConsumerPublisher(activationTracker)).withLocalOnly(true))
+  private[camel] val publishRequestor = actorOf(Props(new ConsumerPublishRequestor).withLocalOnly(true))
 
   private val serviceEnabled = config.getList("akka.enabled-modules").exists(_ == "camel")
 

@@ -386,30 +386,6 @@ object Actor {
     new LocalActorRef(props, address).start()
   }
 
-  def localActorOf[T <: Actor: Manifest]: ActorRef = {
-    newLocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], new UUID().toString)
-  }
-
-  def localActorOf[T <: Actor: Manifest](address: String): ActorRef = {
-    newLocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], address)
-  }
-
-  def localActorOf[T <: Actor](clazz: Class[T]): ActorRef = {
-    newLocalActorRef(clazz, newUuid().toString)
-  }
-
-  def localActorOf[T <: Actor](clazz: Class[T], address: String): ActorRef = {
-    newLocalActorRef(clazz, address)
-  }
-
-  def localActorOf[T <: Actor](factory: ⇒ T): ActorRef = {
-    new LocalActorRef(Props(creator = () ⇒ factory), newUuid().toString)
-  }
-
-  def localActorOf[T <: Actor](factory: ⇒ T, address: String): ActorRef = {
-    new LocalActorRef(Props(creator = () ⇒ factory), address)
-  }
-
   /**
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
    * the block has been executed.
