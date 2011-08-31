@@ -6,11 +6,12 @@ package akka.cluster
 
 import akka.actor._
 import akka.util._
-import akka.event.EventHandler
 import ReflectiveAccess._
 import akka.routing._
 import akka.cluster._
 import FailureDetector._
+import akka.event.EventHandler
+import akka.config.ConfigurationException
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
@@ -44,12 +45,14 @@ object ClusterActorRef {
     }
 
     val failureDetectorFactory: (Map[InetSocketAddress, ActorRef]) ⇒ FailureDetector = failureDetectorType match {
-      case RemoveConnectionOnFirstFailure ⇒
-        (connections: Map[InetSocketAddress, ActorRef]) ⇒ new RemoveConnectionOnFirstFailureFailureDetector(connections)
-      case Local ⇒
-        (connections: Map[InetSocketAddress, ActorRef]) ⇒ new LocalFailureDetector
-      case _ ⇒
-        (connections: Map[InetSocketAddress, ActorRef]) ⇒ new RemoveConnectionOnFirstFailureFailureDetector(connections)
+      case RemoveConnectionOnFirstFailureLocalFailureDetector ⇒
+        (connections: Map[InetSocketAddress, ActorRef]) ⇒ new RemoveConnectionOnFirstFailureLocalFailureDetector(connections.values)
+
+      case RemoveConnectionOnFirstFailureRemoteFailureDetector ⇒
+        (connections: Map[InetSocketAddress, ActorRef]) ⇒ new RemoveConnectionOnFirstFailureRemoteFailureDetector(connections)
+
+      case CustomFailureDetector(implClass) ⇒
+        (connections: Map[InetSocketAddress, ActorRef]) ⇒ FailureDetector.createCustomFailureDetector(implClass, connections)
     }
 
     new ClusterActorRef(

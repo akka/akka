@@ -20,6 +20,7 @@ class DeployerSpec extends WordSpec with MustMatchers {
           "service-ping",
           None,
           LeastCPU,
+          RemoveConnectionOnFirstFailureRemoteFailureDetector,
           Clustered(
             List(Node("node1")),
             new ReplicationFactor(3),

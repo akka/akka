@@ -7,11 +7,13 @@ package akka.routing
 import akka.AkkaException
 import akka.actor._
 import akka.event.EventHandler
+import akka.config.ConfigurationException
 import akka.actor.UntypedChannel._
 import akka.dispatch.{ Future, Futures }
 import akka.util.ReflectiveAccess
 
 import java.net.InetSocketAddress
+import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 
 import scala.annotation.tailrec
@@ -68,6 +70,23 @@ trait VersionedIterable[A] {
  */
 class RoutingException(message: String) extends AkkaException(message)
 
+/**
+ * Misc helper and factory methods for failure detection.
+ */
+object FailureDetector {
+
+  def createCustomFailureDetector(implClass: String, connections: Map[InetSocketAddress, ActorRef]): FailureDetector = {
+    ReflectiveAccess.createInstance(implClass, Array[Class[_]](classOf[Map[InetSocketAddress, ActorRef]]), Array[AnyRef](connections)) match {
+      case Right(actor) ⇒ actor
+      case Left(exception) ⇒
+        val cause = exception match {
+          case i: InvocationTargetException ⇒ i.getTargetException
+          case _                            ⇒ exception
+        }
+        throw new ConfigurationException("Could not instantiate custom FailureDetector of [" + implClass + "] due to: " + cause, cause)
+    }
+  }
+}
 /**
  * The FailureDetector acts like a middleman between the Router and the actor reference that does the routing
  * and can dectect and act upon failur.
@@ -139,7 +158,7 @@ trait FailureDetector {
  * router if an exception occured in the router's thread (e.g. when trying to add
  * the message to the receiver's mailbox).
  */
-class LocalFailureDetector extends FailureDetector {
+class RemoveConnectionOnFirstFailureLocalFailureDetector extends FailureDetector {
 
   case class State(val version: Long, val iterable: Iterable[ActorRef]) extends VersionedIterable[ActorRef]
 
@@ -288,7 +307,7 @@ abstract private[akka] class AbstractRoutedActorRef(val props: RoutedProps) exte
  */
 private[akka] class RoutedActorRef(val routedProps: RoutedProps) extends AbstractRoutedActorRef(routedProps) {
 
-  router.init(new LocalFailureDetector(routedProps.connections))
+  router.init(new RemoveConnectionOnFirstFailureLocalFailureDetector(routedProps.connections))
 
   def start(): this.type = synchronized[this.type] {
     if (_status == ActorRefInternals.UNSTARTED)

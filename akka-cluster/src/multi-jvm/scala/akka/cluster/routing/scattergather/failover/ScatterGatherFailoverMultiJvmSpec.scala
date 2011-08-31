@@ -49,7 +49,7 @@ class ScatterGatherFailoverMultiJvmNode1 extends MasterClusterTestNode {
   def testNodes = NrOfNodes
 
   "When the message is sent with ?, and all connections are up, router" must {
-    "return the first came reponse" in {
+    "return the first came reponse" ignore {
       val ignoreExceptions = Seq(
         EventFilter[NotYetConnectedException],
         EventFilter[ConnectException],
@@ -96,7 +96,7 @@ class ScatterGatherFailoverMultiJvmNode2 extends ClusterTestNode {
   import ScatterGatherFailoverMultiJvmSpec._
 
   "___" must {
-    "___" in {
+    "___" ignore {
 
       Cluster.node.start()
       LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()

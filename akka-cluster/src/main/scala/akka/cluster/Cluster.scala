@@ -301,7 +301,7 @@ class DefaultClusterNode private[akka] (
     val remote = new akka.cluster.netty.NettyRemoteSupport
     remote.start(hostname, port)
     remote.register(RemoteClusterDaemon.Address, remoteDaemon)
-    remote.addListener(FailureDetector.registry)
+    remote.addListener(RemoteFailureDetector.registry)
     remote.addListener(remoteClientLifeCycleHandler)
     remote
   }
@@ -428,7 +428,7 @@ class DefaultClusterNode private[akka] (
 
       remoteService.shutdown() // shutdown server
 
-      FailureDetector.registry.stop()
+      RemoteFailureDetector.registry.stop()
       remoteClientLifeCycleHandler.stop()
       remoteDaemon.stop()
 
@@ -1234,7 +1234,7 @@ class DefaultClusterNode private[akka] (
       if (actorAddress.isDefined) {
         // use 'preferred-nodes' in deployment config for the actor
         Deployer.deploymentFor(actorAddress.get) match {
-          case Deploy(_, _, _, Clustered(nodes, _, _)) ⇒
+          case Deploy(_, _, _, _, Clustered(nodes, _, _)) ⇒
             nodes map (node ⇒ DeploymentConfig.nodeNameFor(node)) take replicationFactor
           case _ ⇒
             throw new ClusterException("Actor [" + actorAddress.get + "] is not configured as clustered")
