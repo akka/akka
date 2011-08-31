@@ -1058,7 +1058,7 @@ class RemoteServerHandler(
         throw new SecurityException("Remote server is operating is untrusted mode, can not pass on a LifeCycleMessage to the remote actor")
 
       case _ ⇒ // then match on user defined messages
-        if (request.getOneWay) actorRef.!(message)(sender)
+        if (request.getOneWay) { if (actorRef.isRunning) actorRef.postMessageToMailbox(message, sender) }
         else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(
           message,
           request.getActorInfo.getTimeout,
