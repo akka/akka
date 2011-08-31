@@ -36,7 +36,6 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val JBossRepo              = MavenRepository("JBoss Repo", "http://repository.jboss.org/nexus/content/groups/public/")
     lazy val JavaNetRepo            = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
     lazy val SonatypeSnapshotRepo   = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
-    lazy val GlassfishRepo          = MavenRepository("Glassfish Repo", "http://download.java.net/maven/glassfish")
     lazy val ScalaToolsRelRepo      = MavenRepository("Scala Tools Releases Repo", "http://scala-tools.org/repo-releases")
     lazy val DatabinderRepo         = MavenRepository("Databinder Repo", "http://databinder.net/repo")
     lazy val ScalaToolsSnapshotRepo = MavenRepository("Scala-Tools Snapshot Repo", "http://scala-tools.org/repo-snapshots")
@@ -52,9 +51,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   import Repositories._
   lazy val jettyModuleConfig       = ModuleConfiguration("org.eclipse.jetty", sbt.DefaultMavenRepository)
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
-  lazy val glassfishModuleConfig   = ModuleConfiguration("org.glassfish", GlassfishRepo)
+  lazy val servletModuleConfig     = ModuleConfiguration("org.apache.geronimo.specs", sbt.DefaultMavenRepository)
   lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
-  lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
+  lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", sbt.DefaultMavenRepository)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsRelRepo)
@@ -83,7 +82,6 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val MULTIVERSE_VERSION    = "0.6.2"
   lazy val SCALATEST_VERSION     = "1.6.1"
   lazy val JETTY_VERSION         = "7.4.0.v20110414"
-  lazy val JAVAX_SERVLET_VERSION = "3.0"
   lazy val SLF4J_VERSION         = "1.6.0"
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -101,7 +99,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val commons_io = "commons-io" % "commons-io" % "2.0.1" % "compile" //ApacheV2
 
-    lazy val javax_servlet_30 = "org.glassfish" % "javax.servlet" % JAVAX_SERVLET_VERSION % "provided" //CDDL v1
+    lazy val javax_servlet_30 = "org.apache.geronimo.specs" % "geronimo-servlet_3.0_spec" % "1.0" % "provided" //CDDL v1
 
     lazy val jetty         = "org.eclipse.jetty" % "jetty-server"  % JETTY_VERSION % "provided" //Eclipse license
     lazy val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile" //ApacheV2
@@ -146,7 +144,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test" //Common Public License 1.0
     lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test" //MIT
-    lazy val scalatest      = "org.scalatest"          %% "scalatest"          % SCALATEST_VERSION % "test" //ApacheV2
+    lazy val scalatest      = "org.scalatest"          % "scalatest_2.9.0-1"   % SCALATEST_VERSION % "test" //ApacheV2
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -408,6 +406,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
     override def disableCrossPaths = true
     override def spdeSourcePath = mainSourcePath / "spde"
+    override def spde_artifact = "us.technically.spde" % "spde-core_2.9.0-1" % spdeVersion.value
 
     lazy val sourceArtifact = Artifact(this.artifactID, "src", "jar", Some("sources"), Nil, None)
     lazy val docsArtifact = Artifact(this.artifactID, "doc", "jar", Some("docs"), Nil, None)
