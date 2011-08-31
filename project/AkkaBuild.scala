@@ -458,7 +458,7 @@ object Dependency {
   // Provided
 
   object Provided {
-    val javaxServlet = "org.glassfish"     % "javax.servlet" % V.JavaxServlet % "provided" // CDDL v1
+    val javaxServlet = "org.apache.geronimo.specs" % "geronimo-servlet_3.0_spec" % "1.0" % "provided" //CDDL v1
     val jerseyServer = "com.sun.jersey"    % "jersey-server" % V.Jersey       % "provided" // CDDL v1
     val jetty        = "org.eclipse.jetty" % "jetty-server"  % V.Jetty        % "provided" // Eclipse license
   }
