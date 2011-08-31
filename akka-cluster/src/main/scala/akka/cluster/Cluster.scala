@@ -83,7 +83,7 @@ trait ClusterNodeMBean {
 
   def getMemberNodes: Array[String]
 
-  def getNodeAddres(): NodeAddress
+  def getNodeAddress(): NodeAddress
 
   def getLeaderLockName: String
 
@@ -111,7 +111,7 @@ trait ClusterNodeMBean {
 
   def getConfigElementKeys: Array[String]
 
-  def getMemberShipPathFor(node: String): String
+  def getMembershipPathFor(node: String): String
 
   def getConfigurationPathFor(key: String): String
 
@@ -121,6 +121,7 @@ trait ClusterNodeMBean {
 
   def getNodeToUuidsPathFor(node: String): String
 
+  // FIXME All MBean methods that take a UUID are useless, change to String
   def getNodeToUuidsPathFor(node: String, uuid: UUID): String
 
   def getActorAddressRegistryPathFor(actorAddress: String): String
@@ -1280,6 +1281,7 @@ class DefaultClusterNode private[akka] (
 
   /**
    * Update the list of connections to other nodes in the cluster.
+   * Tail recursive, using lockless optimimistic concurrency.
    *
    * @returns a Map with the remote socket addresses to of disconnected node connections
    */
@@ -1348,8 +1350,9 @@ class DefaultClusterNode private[akka] (
       zkClient.createEphemeral(membershipNodePath, remoteServerAddress)
     } catch {
       case e: ZkNodeExistsException ⇒
+        e.printStackTrace
         val error = new ClusterException(
-          "Can't join the cluster. The node name [" + nodeAddress.nodeName + "] is already in by another node")
+          "Can't join the cluster. The node name [" + nodeAddress.nodeName + "] is already in use by another node.")
         EventHandler.error(error, this, error.toString)
         throw error
     }
@@ -1532,7 +1535,7 @@ class DefaultClusterNode private[akka] (
 
       override def resign() = self.resign()
 
-      override def getNodeAddres = self.nodeAddress
+      override def getNodeAddress = self.nodeAddress
 
       override def getRemoteServerHostname = self.hostname
 
@@ -1572,7 +1575,7 @@ class DefaultClusterNode private[akka] (
 
       override def getConfigElementKeys = self.getConfigElementKeys.toArray
 
-      override def getMemberShipPathFor(node: String) = self.membershipPathFor(node)
+      override def getMembershipPathFor(node: String) = self.membershipPathFor(node)
 
       override def getConfigurationPathFor(key: String) = self.configurationPathFor(key)
 
