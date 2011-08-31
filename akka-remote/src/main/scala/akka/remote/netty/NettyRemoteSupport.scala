@@ -1058,32 +1058,34 @@ class RemoteServerHandler(
         throw new SecurityException("Remote server is operating is untrusted mode, can not pass on a LifeCycleMessage to the remote actor")
 
       case _ ⇒ // then match on user defined messages
-        if (request.getOneWay) { if (actorRef.isRunning) actorRef.postMessageToMailbox(message, sender) }
-        else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(
-          message,
-          request.getActorInfo.getTimeout,
-          new ActorCompletableFuture(request.getActorInfo.getTimeout).
-            onComplete((fa: Future[Any]) ⇒ fa.value.get match {
-              case l: Left[Throwable, Any] ⇒ write(channel, createErrorReplyMessage(l.a, request, AkkaActorType.ScalaActor))
-              case r: Right[Throwable, Any] ⇒
-                val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
-                  Some(actorRef),
-                  Right(request.getUuid),
-                  actorInfo.getId,
-                  actorInfo.getTarget,
-                  actorInfo.getTimeout,
-                  r,
-                  true,
-                  Some(actorRef),
-                  None,
-                  AkkaActorType.ScalaActor,
-                  None)
+        if (actorRef.isRunning) {
+          if (request.getOneWay) actorRef.postMessageToMailbox(message, sender)
+          else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(
+            message,
+            request.getActorInfo.getTimeout,
+            new ActorCompletableFuture(request.getActorInfo.getTimeout).
+              onComplete((fa: Future[Any]) ⇒ fa.value.get match {
+                case l: Left[Throwable, Any] ⇒ write(channel, createErrorReplyMessage(l.a, request, AkkaActorType.ScalaActor))
+                case r: Right[Throwable, Any] ⇒
+                  val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+                    Some(actorRef),
+                    Right(request.getUuid),
+                    actorInfo.getId,
+                    actorInfo.getTarget,
+                    actorInfo.getTimeout,
+                    r,
+                    true,
+                    Some(actorRef),
+                    None,
+                    AkkaActorType.ScalaActor,
+                    None)
 
-                // FIXME lift in the supervisor uuid management into toh createRemoteMessageProtocolBuilder method
-                if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
+                  // FIXME lift in the supervisor uuid management into toh createRemoteMessageProtocolBuilder method
+                  if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
 
-                write(channel, RemoteEncoder.encode(messageBuilder.build))
-            }))
+                  write(channel, RemoteEncoder.encode(messageBuilder.build))
+              }))
+        }
     }
   }
 
