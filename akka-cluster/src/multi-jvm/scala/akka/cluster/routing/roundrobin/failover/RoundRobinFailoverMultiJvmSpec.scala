@@ -34,7 +34,7 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
   def testNodes = NrOfNodes
 
   "Round Robin: when round robin router fails" must {
-    "jump to another replica" in {
+    "jump to another replica" ignore {
       val ignoreExceptions = Seq(
         EventFilter[NotYetConnectedException],
         EventFilter[ConnectException],
@@ -106,7 +106,7 @@ class RoundRobinFailoverMultiJvmNode2 extends ClusterTestNode {
   import RoundRobinFailoverMultiJvmSpec._
 
   "___" must {
-    "___" in {
+    "___" ignore {
       barrier("node-start", NrOfNodes) {
         Cluster.node.start()
       }
@@ -128,7 +128,7 @@ class RoundRobinFailoverMultiJvmNode3 extends ClusterTestNode {
   import RoundRobinFailoverMultiJvmSpec._
 
   "___" must {
-    "___" in {
+    "___" ignore {
       barrier("node-start", NrOfNodes) {
         Cluster.node.start()
       }

@@ -6,7 +6,7 @@ package akka.cluster.netty
 
 import akka.dispatch.{ ActorPromise, DefaultPromise, Promise }
 import akka.cluster.{ MessageSerializer, RemoteClientSettings, RemoteServerSettings }
-import akka.cluster.protocol.RemoteProtocol._
+import akka.cluster.RemoteProtocol._
 import akka.serialization.RemoteActorSerialization
 import akka.serialization.RemoteActorSerialization._
 import akka.cluster._

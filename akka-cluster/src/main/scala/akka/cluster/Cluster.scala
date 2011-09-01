@@ -47,7 +47,7 @@ import akka.cluster._
 import akka.cluster.metrics._
 import akka.cluster.zookeeper._
 import ChangeListener._
-import ClusterProtocol._
+import RemoteProtocol._
 import RemoteDaemonMessageType._
 
 import com.eaio.uuid.UUID
@@ -301,7 +301,7 @@ class DefaultClusterNode private[akka] (
     val remote = new akka.cluster.netty.NettyRemoteSupport
     remote.start(hostname, port)
     remote.register(RemoteClusterDaemon.Address, remoteDaemon)
-    remote.addListener(FailureDetector.registry)
+    remote.addListener(RemoteFailureDetector.registry)
     remote.addListener(remoteClientLifeCycleHandler)
     remote
   }
@@ -428,7 +428,7 @@ class DefaultClusterNode private[akka] (
 
       remoteService.shutdown() // shutdown server
 
-      FailureDetector.registry.stop()
+      RemoteFailureDetector.registry.stop()
       remoteClientLifeCycleHandler.stop()
       remoteDaemon.stop()
 
@@ -1234,7 +1234,7 @@ class DefaultClusterNode private[akka] (
       if (actorAddress.isDefined) {
         // use 'preferred-nodes' in deployment config for the actor
         Deployer.deploymentFor(actorAddress.get) match {
-          case Deploy(_, _, _, Clustered(nodes, _, _)) ⇒
+          case Deploy(_, _, _, _, Clustered(nodes, _, _)) ⇒
             nodes map (node ⇒ DeploymentConfig.nodeNameFor(node)) take replicationFactor
           case _ ⇒
             throw new ClusterException("Actor [" + actorAddress.get + "] is not configured as clustered")
@@ -1743,7 +1743,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
     case unknown ⇒ EventHandler.warning(this, "Unknown message [%s]".format(unknown))
   }
 
-  def handleRelease(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
+  def handleRelease(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
     if (message.hasActorUuid) {
       cluster.actorAddressForUuid(uuidProtocolToUuid(message.getActorUuid)) foreach { address ⇒
         cluster.release(address)
@@ -1756,9 +1756,9 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
     }
   }
 
-  def handleUse(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
+  def handleUse(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
     def deserializeMessages(entriesAsBytes: Vector[Array[Byte]]): Vector[AnyRef] = {
-      import akka.cluster.protocol.RemoteProtocol._
+      import akka.cluster.RemoteProtocol._
       import akka.cluster.MessageSerializer
 
       entriesAsBytes map { bytes ⇒
@@ -1863,29 +1863,29 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
     }
   }
 
-  def handle_fun0_unit(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
+  def handle_fun0_unit(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
     actorOf(Props(
       self ⇒ { case f: Function0[_] ⇒ try { f() } finally { self.stop() } }).copy(dispatcher = computeGridDispatcher, localOnly = true)) ! payloadFor(message, classOf[Function0[Unit]])
   }
 
-  def handle_fun0_any(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
+  def handle_fun0_any(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
     actorOf(Props(
       self ⇒ { case f: Function0[_] ⇒ try { self.reply(f()) } finally { self.stop() } }).copy(dispatcher = computeGridDispatcher, localOnly = true)) forward payloadFor(message, classOf[Function0[Any]])
   }
 
-  def handle_fun1_arg_unit(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
+  def handle_fun1_arg_unit(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
     actorOf(Props(
       self ⇒ { case (fun: Function[_, _], param: Any) ⇒ try { fun.asInstanceOf[Any ⇒ Unit].apply(param) } finally { self.stop() } }).copy(dispatcher = computeGridDispatcher, localOnly = true)) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
   }
 
-  def handle_fun1_arg_any(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
+  def handle_fun1_arg_any(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
     actorOf(Props(
       self ⇒ {
         case (fun: Function[_, _], param: Any) ⇒ try { self.reply(fun.asInstanceOf[Any ⇒ Any](param)) } finally { self.stop() }
       }).copy(dispatcher = computeGridDispatcher, localOnly = true)) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
   }
 
-  def handleFailover(message: ClusterProtocol.RemoteDaemonMessageProtocol) {
+  def handleFailover(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
     val (from, to) = payloadFor(message, classOf[(InetSocketAddress, InetSocketAddress)])
     cluster.failOverClusterActorRefConnections(from, to)
   }

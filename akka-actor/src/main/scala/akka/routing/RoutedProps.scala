@@ -19,10 +19,9 @@ sealed trait FailureDetectorType
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object FailureDetectorType {
-
-  object Local extends FailureDetectorType
-
-  object RemoveConnectionOnFirstFailure extends FailureDetectorType
+  case object RemoveConnectionOnFirstFailureLocalFailureDetector extends FailureDetectorType
+  case object RemoveConnectionOnFirstFailureRemoteFailureDetector extends FailureDetectorType
+  case class CustomFailureDetector(className: String) extends FailureDetectorType
 }
 
 sealed trait RouterType
@@ -76,7 +75,7 @@ object RoutedProps {
   final val defaultRouterFactory = () ⇒ new RoundRobinRouter
   final val defaultDeployId = ""
   final val defaultLocalOnly = !ReflectiveAccess.ClusterModule.isEnabled
-  final val defaultFailureDetectorFactory = (connections: Map[InetSocketAddress, ActorRef]) ⇒ new LocalFailureDetector(connections.values)
+  final val defaultFailureDetectorFactory = (connections: Map[InetSocketAddress, ActorRef]) ⇒ new RemoveConnectionOnFirstFailureLocalFailureDetector(connections.values)
 
   /**
    * The default RoutedProps instance, uses the settings from the RoutedProps object starting with default*

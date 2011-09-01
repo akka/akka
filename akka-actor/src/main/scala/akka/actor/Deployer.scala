@@ -46,7 +46,7 @@ object Deployer extends ActorDeployer {
   def deploy(deployment: Deploy): Unit = instance.deploy(deployment)
 
   def isLocal(deployment: Deploy): Boolean = deployment match {
-    case Deploy(_, _, _, Local) | Deploy(_, _, _, _: Local) ⇒ true
+    case Deploy(_, _, _, _, Local) | Deploy(_, _, _, _, _: Local) ⇒ true
     case _ ⇒ false
   }
 
@@ -121,7 +121,9 @@ object Deployer extends ActorDeployer {
     // --------------------------------
     val addressPath = "akka.actor.deployment." + address
     configuration.getSection(addressPath) match {
-      case None ⇒ Some(Deploy(address, None, Direct, Local))
+      case None ⇒
+        Some(Deploy(address, None, Direct, RemoveConnectionOnFirstFailureLocalFailureDetector, Local))
+
       case Some(addressConfig) ⇒
 
         // --------------------------------
@@ -138,8 +140,17 @@ object Deployer extends ActorDeployer {
             createInstance[AnyRef](customRouterClassName, emptyParams, emptyArguments).fold(
               e ⇒ throw new ConfigurationException(
                 "Config option [" + addressPath + ".router] needs to be one of " +
-                  "[\"direct\", \"round-robin\", \"random\", \"least-cpu\", \"least-ram\", \"least-messages\" or FQN of router class]", e),
+                  "[\"direct\", \"round-robin\", \"random\", \"least-cpu\", \"least-ram\", \"least-messages\" or the fully qualified name of Router class]", e),
               CustomRouter(_))
+        }
+
+        // --------------------------------
+        // akka.actor.deployment.<address>.failure-detector
+        // --------------------------------
+        val failureDetector: FailureDetector = addressConfig.getString("failure-detector", "remove-connection-on-first-local-failure") match {
+          case "remove-connection-on-first-local-failure"  ⇒ RemoveConnectionOnFirstFailureLocalFailureDetector
+          case "remove-connection-on-first-remote-failure" ⇒ RemoveConnectionOnFirstFailureRemoteFailureDetector
+          case customFailureDetectorClassName              ⇒ CustomFailureDetector(customFailureDetectorClassName)
         }
 
         val recipe: Option[ActorRecipe] = addressConfig.getSection("create-as") map { section ⇒
@@ -157,7 +168,7 @@ object Deployer extends ActorDeployer {
         // --------------------------------
         addressConfig.getSection("clustered") match {
           case None ⇒
-            Some(Deploy(address, recipe, router, Local)) // deploy locally
+            Some(Deploy(address, recipe, router, RemoveConnectionOnFirstFailureLocalFailureDetector, Local)) // deploy locally
 
           case Some(clusteredConfig) ⇒
 
@@ -217,7 +228,7 @@ object Deployer extends ActorDeployer {
             // --------------------------------
             clusteredConfig.getSection("replication") match {
               case None ⇒
-                Some(Deploy(address, recipe, router, Clustered(preferredNodes, replicationFactor, Transient)))
+                Some(Deploy(address, recipe, router, failureDetector, Clustered(preferredNodes, replicationFactor, Transient)))
 
               case Some(replicationConfig) ⇒
                 val storage = replicationConfig.getString("storage", "transaction-log") match {
@@ -236,7 +247,7 @@ object Deployer extends ActorDeployer {
                       ".clustered.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
                       unknown + "]")
                 }
-                Some(Deploy(address, recipe, router, Clustered(preferredNodes, replicationFactor, Replication(storage, strategy))))
+                Some(Deploy(address, recipe, router, failureDetector, Clustered(preferredNodes, replicationFactor, Replication(storage, strategy))))
             }
         }
     }

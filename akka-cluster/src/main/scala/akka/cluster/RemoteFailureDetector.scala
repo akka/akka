@@ -18,7 +18,7 @@ import scala.annotation.tailrec
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 
-object FailureDetector {
+object RemoteFailureDetector {
 
   private sealed trait FailureDetectorEvent
   private case class Register(strategy: RemoteFailureListener, address: InetSocketAddress) extends FailureDetectorEvent
@@ -53,7 +53,7 @@ object FailureDetector {
   }
 }
 
-abstract class FailureDetectorBase(initialConnections: Map[InetSocketAddress, ActorRef]) extends FailureDetector {
+abstract class RemoteFailureDetectorBase(initialConnections: Map[InetSocketAddress, ActorRef]) extends FailureDetector {
   import ClusterActorRef._
 
   case class State(val version: Long = Integer.MIN_VALUE, val connections: Map[InetSocketAddress, ActorRef]) extends VersionedIterable[ActorRef] {
@@ -170,8 +170,8 @@ trait RemoteFailureListener {
   def remoteServerShutdown(server: RemoteServerModule) {}
 }
 
-class RemoveConnectionOnFirstFailureFailureDetector(initialConnections: Map[InetSocketAddress, ActorRef])
-  extends FailureDetectorBase(initialConnections)
+class RemoveConnectionOnFirstFailureRemoteFailureDetector(initialConnections: Map[InetSocketAddress, ActorRef])
+  extends RemoteFailureDetectorBase(initialConnections)
   with RemoteFailureListener {
 
   override def remoteClientWriteFailed(

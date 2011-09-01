@@ -4,7 +4,7 @@
 
 package akka.cluster
 
-import akka.cluster.protocol.RemoteProtocol._
+import akka.cluster.RemoteProtocol._
 import akka.serialization.Serialization
 
 import com.google.protobuf.ByteString

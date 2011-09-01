@@ -33,7 +33,7 @@ class RandomFailoverMultiJvmNode1 extends MasterClusterTestNode {
   def testNodes = NrOfNodes
 
   "Random: when random router fails" must {
-    "jump to another replica" in {
+    "jump to another replica" ignore {
       val ignoreExceptions = Seq(
         EventFilter[NotYetConnectedException],
         EventFilter[ConnectException],
@@ -103,7 +103,7 @@ class RandomFailoverMultiJvmNode2 extends ClusterTestNode {
   import RandomFailoverMultiJvmSpec._
 
   "___" must {
-    "___" in {
+    "___" ignore {
       barrier("node-start", NrOfNodes) {
         Cluster.node.start()
       }
@@ -127,7 +127,7 @@ class RandomFailoverMultiJvmNode3 extends ClusterTestNode {
   import RandomFailoverMultiJvmSpec._
 
   "___" must {
-    "___" in {
+    "___" ignore {
       barrier("node-start", NrOfNodes) {
         Cluster.node.start()
       }

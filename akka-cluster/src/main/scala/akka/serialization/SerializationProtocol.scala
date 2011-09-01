@@ -11,7 +11,7 @@ import DeploymentConfig._
 import akka.dispatch.MessageInvocation
 import akka.util.{ ReflectiveAccess, Duration }
 import akka.cluster.{ RemoteClientSettings, MessageSerializer }
-import akka.cluster.protocol.RemoteProtocol
+import akka.cluster.RemoteProtocol
 import RemoteProtocol._
 
 import scala.collection.immutable.Stack

@@ -420,8 +420,8 @@ object Actor {
       case None ⇒ // it is not -> create it
         try {
           Deployer.deploymentFor(address) match {
-            case Deploy(_, _, router, Local) ⇒ actorFactory() // create a local actor
-            case deploy                      ⇒ newClusterActorRef(actorFactory, address, deploy)
+            case Deploy(_, _, router, _, Local) ⇒ actorFactory() // create a local actor
+            case deploy                         ⇒ newClusterActorRef(actorFactory, address, deploy)
           }
         } catch {
           case e: DeploymentException ⇒
@@ -453,7 +453,7 @@ object Actor {
 
   private[akka] def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef =
     deploy match {
-      case Deploy(configAddress, recipe, router, Clustered(preferredHomeNodes, replicas, replication)) ⇒
+      case Deploy(configAddress, recipe, router, failureDetector, Clustered(preferredHomeNodes, replicas, replication)) ⇒
 
         ClusterModule.ensureEnabled()
 
@@ -473,7 +473,7 @@ object Actor {
             cluster.store(address, factory, replicas.factor, replicationScheme, false, serializer)
 
           // remote node (not home node), check out as ClusterActorRef
-          cluster.ref(address, DeploymentConfig.routerTypeFor(router), FailureDetectorType.RemoveConnectionOnFirstFailure) //DeploymentConfig.failureDetectorTypeFor(failureDetector))
+          cluster.ref(address, DeploymentConfig.routerTypeFor(router), DeploymentConfig.failureDetectorTypeFor(failureDetector))
         }
 
         replication match {

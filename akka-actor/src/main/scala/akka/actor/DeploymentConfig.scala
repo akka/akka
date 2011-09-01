@@ -5,7 +5,7 @@
 package akka.actor
 
 import akka.config.Config
-import akka.routing.RouterType
+import akka.routing.{ RouterType, FailureDetectorType }
 
 /**
  * Module holding the programmatic deployment configuration classes.
@@ -23,7 +23,7 @@ object DeploymentConfig {
     address: String,
     recipe: Option[ActorRecipe],
     routing: Routing = Direct,
-    //    failureDetector: FailureDetector = RemoveConnectionOnFirstFailure,
+    failureDetector: FailureDetector = RemoveConnectionOnFirstFailureLocalFailureDetector,
     scope: Scope = Local) {
     Address.validate(address)
   }
@@ -59,12 +59,15 @@ object DeploymentConfig {
   // --- FailureDetector
   // --------------------------------
   sealed trait FailureDetector
+  case class CustomFailureDetector(className: String) extends FailureDetector
 
   // For Java API
-  case class RemoveConnectionOnFirstFailure() extends FailureDetector
+  case class RemoveConnectionOnFirstFailureLocalFailureDetector() extends FailureDetector
+  case class RemoveConnectionOnFirstFailureRemoteFailureDetector() extends FailureDetector
 
   // For Scala API
-  case object RemoveConnectionOnFirstFailure extends FailureDetector
+  case object RemoveConnectionOnFirstFailureLocalFailureDetector extends FailureDetector
+  case object RemoveConnectionOnFirstFailureRemoteFailureDetector extends FailureDetector
 
   // --------------------------------
   // --- Scope
@@ -171,10 +174,14 @@ object DeploymentConfig {
 
   def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == Config.nodename)
 
-  // def failureDetectorTypeFor(failureDetector: FailureDetector): FailureDetectorType = FailureDetectorType match {
-  //   case RemoveConnectionOnFirstFailure ⇒ FailureDetectorType.RemoveConnectionOnFirstFailure
-  //   case unknown                        ⇒ throw new UnsupportedOperationException("Unknown FailureDetector [" + unknown + "]")
-  // }
+  def failureDetectorTypeFor(failureDetector: FailureDetector): FailureDetectorType = failureDetector match {
+    case RemoveConnectionOnFirstFailureLocalFailureDetector ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureLocalFailureDetector
+    case RemoveConnectionOnFirstFailureLocalFailureDetector() ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureLocalFailureDetector
+    case RemoveConnectionOnFirstFailureRemoteFailureDetector ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureRemoteFailureDetector
+    case RemoveConnectionOnFirstFailureRemoteFailureDetector() ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureRemoteFailureDetector
+    case CustomFailureDetector(implClass) ⇒ FailureDetectorType.CustomFailureDetector(implClass)
+    case unknown ⇒ throw new UnsupportedOperationException("Unknown FailureDetector [" + unknown + "]")
+  }
 
   def routerTypeFor(routing: Routing): RouterType = routing match {
     case Direct          ⇒ RouterType.Direct
@@ -193,7 +200,7 @@ object DeploymentConfig {
   }
 
   def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {
-    case Deploy(_, _, _, Clustered(_, _, replicationScheme)) ⇒ Some(replicationScheme)
+    case Deploy(_, _, _, _, Clustered(_, _, replicationScheme)) ⇒ Some(replicationScheme)
     case _ ⇒ None
   }
 

@@ -165,8 +165,8 @@ object ClusterDeployer extends ActorDeployer {
     ensureRunning {
       LocalDeployer.deploy(deployment)
       deployment match {
-        case Deploy(_, _, _, Local) | Deploy(_, _, _, _: Local) ⇒ //TODO LocalDeployer.deploy(deployment)??
-        case Deploy(address, recipe, routing, _) ⇒ // cluster deployment
+        case Deploy(_, _, _, _, Local) | Deploy(_, _, _, _, _: Local) ⇒ //TODO LocalDeployer.deploy(deployment)??
+        case Deploy(address, recipe, routing, _, _) ⇒ // cluster deployment
           /*TODO recipe foreach { r ⇒
             Deployer.newClusterActorRef(() ⇒ Actor.actorOf(r.implementationClass), address, deployment).start()
           }*/

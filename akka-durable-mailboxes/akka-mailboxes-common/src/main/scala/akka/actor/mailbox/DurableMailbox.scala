@@ -8,7 +8,7 @@ import MailboxProtocol._
 import akka.dispatch._
 import akka.event.EventHandler
 import akka.cluster.MessageSerializer
-import akka.cluster.protocol.RemoteProtocol.MessageProtocol
+import akka.cluster.RemoteProtocol.MessageProtocol
 import akka.AkkaException
 import akka.actor._
 
