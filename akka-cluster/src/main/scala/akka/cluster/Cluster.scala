@@ -301,7 +301,7 @@ class DefaultClusterNode private[akka] (
     val remote = new akka.cluster.netty.NettyRemoteSupport
     remote.start(hostname, port)
     remote.register(RemoteClusterDaemon.Address, remoteDaemon)
-    remote.addListener(RemoteFailureDetector.registry)
+    remote.addListener(RemoteFailureDetector.channel)
     remote.addListener(remoteClientLifeCycleHandler)
     remote
   }

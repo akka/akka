@@ -20,33 +20,33 @@ import java.util.concurrent.atomic.AtomicReference
 
 object RemoteFailureDetector {
 
-  private sealed trait FailureDetectorEvent
-  private case class Register(strategy: RemoteFailureListener, address: InetSocketAddress) extends FailureDetectorEvent
-  private case class Unregister(strategy: RemoteFailureListener, address: InetSocketAddress) extends FailureDetectorEvent
+  private sealed trait RemoteFailureDetectorChannelEvent
+  private case class Register(listener: RemoteFailureListener, address: InetSocketAddress) extends RemoteFailureDetectorChannelEvent
+  private case class Unregister(listener: RemoteFailureListener, address: InetSocketAddress) extends RemoteFailureDetectorChannelEvent
 
-  private[akka] val registry = actorOf(Props(new Registry).copy(dispatcher = new PinnedDispatcher(), localOnly = true))
+  private[akka] val channel = actorOf(Props(new Channel).copy(dispatcher = new PinnedDispatcher(), localOnly = true))
 
-  def register(strategy: RemoteFailureListener, address: InetSocketAddress) = registry ! Register(strategy, address)
+  def register(listener: RemoteFailureListener, address: InetSocketAddress) = channel ! Register(listener, address)
 
-  def unregister(strategy: RemoteFailureListener, address: InetSocketAddress) = registry ! Unregister(strategy, address)
+  def unregister(listener: RemoteFailureListener, address: InetSocketAddress) = channel ! Unregister(listener, address)
 
-  private class Registry extends Actor {
+  private class Channel extends Actor {
 
-    val strategies = new HashMap[InetSocketAddress, Set[RemoteFailureListener]]() {
+    val listeners = new HashMap[InetSocketAddress, Set[RemoteFailureListener]]() {
       override def default(k: InetSocketAddress) = Set.empty[RemoteFailureListener]
     }
 
     def receive = {
       case event: RemoteClientLifeCycleEvent ⇒
-        strategies(event.remoteAddress) foreach (_ notify event)
+        listeners(event.remoteAddress) foreach (_ notify event)
 
       case event: RemoteServerLifeCycleEvent ⇒ // FIXME handle RemoteServerLifeCycleEvent
 
-      case Register(strategy, address) ⇒
-        strategies(address) += strategy
+      case Register(listener, address) ⇒
+        listeners(address) += listener
 
-      case Unregister(strategy, address) ⇒
-        strategies(address) -= strategy
+      case Unregister(listener, address) ⇒
+        listeners(address) -= listener
 
       case _ ⇒ //ignore other
     }
@@ -56,7 +56,8 @@ object RemoteFailureDetector {
 abstract class RemoteFailureDetectorBase(initialConnections: Map[InetSocketAddress, ActorRef]) extends FailureDetector {
   import ClusterActorRef._
 
-  case class State(val version: Long = Integer.MIN_VALUE, val connections: Map[InetSocketAddress, ActorRef]) extends VersionedIterable[ActorRef] {
+  case class State(val version: Long = Integer.MIN_VALUE, val connections: Map[InetSocketAddress, ActorRef])
+    extends VersionedIterable[ActorRef] {
     def iterable: Iterable[ActorRef] = connections.values
   }
 
@@ -66,7 +67,7 @@ abstract class RemoteFailureDetectorBase(initialConnections: Map[InetSocketAddre
 
   state.set(State(Long.MinValue, initialConnections))
 
-  def version: Long = state.get().version
+  def version: Long = state.get.version
 
   def versionedIterable = state.get
 
@@ -75,7 +76,7 @@ abstract class RemoteFailureDetectorBase(initialConnections: Map[InetSocketAddre
   def connections: Map[InetSocketAddress, ActorRef] = state.get.connections
 
   def stopAll() {
-    state.get().iterable foreach (_.stop()) // shut down all remote connections
+    state.get.iterable foreach (_.stop()) // shut down all remote connections
   }
 
   @tailrec
@@ -132,23 +133,29 @@ abstract class RemoteFailureDetectorBase(initialConnections: Map[InetSocketAddre
 
 trait RemoteFailureListener {
 
-  def notify(event: RemoteLifeCycleEvent) = event match {
+  final def notify(event: RemoteLifeCycleEvent) = event match {
     case RemoteClientWriteFailed(request, cause, client, address) ⇒
       remoteClientWriteFailed(request, cause, client, address)
       println("--------->>> RemoteClientWriteFailed")
+
     case RemoteClientError(cause, client, address) ⇒
       println("--------->>> RemoteClientError")
       remoteClientError(cause, client, address)
+
     case RemoteClientDisconnected(client, address) ⇒
       remoteClientDisconnected(client, address)
       println("--------->>> RemoteClientDisconnected")
+
     case RemoteClientShutdown(client, address) ⇒
       remoteClientShutdown(client, address)
       println("--------->>> RemoteClientShutdown")
+
     case RemoteServerWriteFailed(request, cause, server, clientAddress) ⇒
       remoteServerWriteFailed(request, cause, server, clientAddress)
+
     case RemoteServerError(cause, server) ⇒
       remoteServerError(cause, server)
+
     case RemoteServerShutdown(server) ⇒
       remoteServerShutdown(server)
   }
@@ -195,11 +202,17 @@ class RemoveConnectionOnFirstFailureRemoteFailureDetector(initialConnections: Ma
     connections.get(address) foreach { connection ⇒ remove(connection) }
 }
 
-trait LinearBackoffRemoteFailureListener extends RemoteFailureListener {
+trait LinearBackoffRemoteFailureListener(initialConnections: Map[InetSocketAddress, ActorRef])
+  extends RemoteFailureDetectorBase(initialConnections)
+  with RemoteFailureListener {
 }
 
-trait ExponentialBackoffRemoteFailureListener extends RemoteFailureListener {
+trait ExponentialBackoffRemoteFailureListener(initialConnections: Map[InetSocketAddress, ActorRef])
+  extends RemoteFailureDetectorBase(initialConnections)
+  with RemoteFailureListener {
 }
 
-trait CircuitBreakerRemoteFailureListener extends RemoteFailureListener {
+trait CircuitBreakerRemoteFailureListener(initialConnections: Map[InetSocketAddress, ActorRef])
+  extends RemoteFailureDetectorBase(initialConnections)
+  with RemoteFailureListener {
 }

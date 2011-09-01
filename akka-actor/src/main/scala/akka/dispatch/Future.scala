@@ -528,9 +528,9 @@ sealed trait Future[+T] extends japi.Future[T] {
    * a valid result then the new Future will contain the same.
    * Example:
    * <pre>
-   * Future(6 / 0) failure { case e: ArithmeticException ⇒ 0 } // result: 0
-   * Future(6 / 0) failure { case e: NotFoundException   ⇒ 0 } // result: exception
-   * Future(6 / 2) failure { case e: ArithmeticException ⇒ 0 } // result: 3
+   * Future(6 / 0) recover { case e: ArithmeticException ⇒ 0 } // result: 0
+   * Future(6 / 0) recover { case e: NotFoundException   ⇒ 0 } // result: exception
+   * Future(6 / 2) recover { case e: ArithmeticException ⇒ 0 } // result: 3
    * </pre>
    */
   final def recover[A >: T](pf: PartialFunction[Throwable, A])(implicit timeout: Timeout): Future[A] = {

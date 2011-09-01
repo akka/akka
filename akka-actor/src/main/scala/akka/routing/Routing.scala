@@ -328,9 +328,6 @@ private[akka] class RoutedActorRef(val routedProps: RoutedProps) extends Abstrac
 /**
  * An Abstract Router implementation that already provides the basic infrastructure so that a concrete
  * Router only needs to implement the next method.
- *
- * FIXME: This also is the location where a failover  is done in the future if an ActorRef fails and a different one needs to be selected.
- * FIXME: this is also the location where message buffering should be done in case of failure.
  */
 trait BasicRouter extends Router {
 
@@ -370,7 +367,7 @@ trait BasicRouter extends Router {
 
   def route[T](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[T] = message match {
     case Routing.Broadcast(message) ⇒
-      throw new RoutingException("Broadcasting using '?' is for the time being is not supported. Use ScatterGatherRouter.")
+      throw new RoutingException("Broadcasting using '?'/'ask' is for the time being is not supported. Use ScatterGatherRouter.")
     case _ ⇒
       //it no broadcast message, we are going to select an actor from the connections and send the message to him.
       next match {

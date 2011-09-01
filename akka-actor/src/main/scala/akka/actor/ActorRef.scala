@@ -290,7 +290,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   def ask(message: AnyRef, sender: ActorRef): Future[AnyRef] = ask(message, timeout, sender)
 
   /**
-   *  Akka Java API. <p/>
+   * Akka Java API. <p/>
    * Sends a message asynchronously returns a future holding the eventual reply message.
    * <p/>
    * <b>NOTE:</b>
