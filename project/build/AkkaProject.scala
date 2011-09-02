@@ -29,6 +29,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // -------------------------------------------------------------------------------------------------------------------
 
   object Repositories {
+    lazy val TypesafeRepo = MavenRepository("Typesafe Repo", "http://repo.typesafe.com/typesafe/releases/")
+    /*
     lazy val LocalMavenRepo         = MavenRepository("Local Maven Repo", (Path.userHome / ".m2" / "repository").asURL.toString)
     lazy val AkkaRepo               = MavenRepository("Akka Repository", "http://akka.io/repository")
     lazy val CodehausRepo           = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
@@ -39,6 +41,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val ScalaToolsRelRepo      = MavenRepository("Scala Tools Releases Repo", "http://scala-tools.org/repo-releases")
     lazy val DatabinderRepo         = MavenRepository("Databinder Repo", "http://databinder.net/repo")
     lazy val ScalaToolsSnapshotRepo = MavenRepository("Scala-Tools Snapshot Repo", "http://scala-tools.org/repo-snapshots")
+    */
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -49,6 +52,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // -------------------------------------------------------------------------------------------------------------------
 
   import Repositories._
+  lazy val typesafeRepo = TypesafeRepo
+  /*
   lazy val jettyModuleConfig       = ModuleConfiguration("org.eclipse.jetty", sbt.DefaultMavenRepository)
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
   lazy val servletModuleConfig     = ModuleConfiguration("org.apache.geronimo.specs", sbt.DefaultMavenRepository)
@@ -72,6 +77,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val zookeeperModuleConfig   = ModuleConfiguration("org.apache.hadoop.zookeeper", AkkaRepo)
 
   lazy val localMavenRepo          = LocalMavenRepo // Second exception, also fast! ;-)
+  */
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
