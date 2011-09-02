@@ -26,11 +26,6 @@ object Helpers {
     (0 until 4).foldLeft(0)((value, index) ⇒ value + ((bytes(index + offset) & 0x000000FF) << ((4 - 1 - index) * 8)))
   }
 
-  def flatten[T: ClassManifest](array: Array[Any]) = array.flatMap {
-    case arr: Array[T] ⇒ arr
-    case elem: T       ⇒ Array(elem)
-  }
-
   def ignore[E: Manifest](body: ⇒ Unit) {
     try {
       body
