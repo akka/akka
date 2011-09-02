@@ -21,7 +21,7 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
   describe("Serializable actor") {
     it("should be able to serialize and de-serialize a stateful actor with a given serializer") {
 
-      val actor1 = localActorOf[MyJavaSerializableActor].start().asInstanceOf[LocalActorRef]
+      val actor1 = actorOf(Props[MyJavaSerializableActor].withLocalOnly(true)).asInstanceOf[LocalActorRef]
       (actor1 ? "hello").get should equal("world 1")
       (actor1 ? "hello").get should equal("world 2")
 
@@ -36,17 +36,9 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
 
     it("should be able to serialize and deserialize a MyStatelessActorWithMessagesInMailbox") {
 
-      val actor1 = localActorOf[MyStatelessActorWithMessagesInMailbox].start().asInstanceOf[LocalActorRef]
-      (actor1 ! "hello")
-      (actor1 ! "hello")
-      (actor1 ! "hello")
-      (actor1 ! "hello")
-      (actor1 ! "hello")
-      (actor1 ! "hello")
-      (actor1 ! "hello")
-      (actor1 ! "hello")
-      (actor1 ! "hello")
-      (actor1 ! "hello")
+      val actor1 = actorOf(Props[MyStatelessActorWithMessagesInMailbox].withLocalOnly(true)).asInstanceOf[LocalActorRef]
+      for (i ← 1 to 10) actor1 ! "hello"
+
       actor1.getDispatcher.mailboxSize(actor1) should be > (0)
       val actor2 = fromBinary(toBinary(actor1)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
@@ -62,7 +54,7 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
     it("should be able to serialize and deserialize a PersonActorWithMessagesInMailbox") {
 
       val p1 = Person("debasish ghosh", 25, SerializeSpec.Address("120", "Monroe Street", "Santa Clara", "95050"))
-      val actor1 = localActorOf[PersonActorWithMessagesInMailbox].start().asInstanceOf[LocalActorRef]
+      val actor1 = actorOf(Props[PersonActorWithMessagesInMailbox].withLocalOnly(true)).asInstanceOf[LocalActorRef]
       (actor1 ! p1)
       (actor1 ! p1)
       (actor1 ! p1)
@@ -106,19 +98,10 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
   describe("serialize actor that accepts protobuf message") {
     it("should serialize") {
 
-      val actor1 = localActorOf[MyActorWithProtobufMessagesInMailbox].start().asInstanceOf[LocalActorRef]
+      val actor1 = actorOf(Props[MyActorWithProtobufMessagesInMailbox].withLocalOnly(true)).asInstanceOf[LocalActorRef]
       val msg = MyMessage(123, "debasish ghosh", true)
       val b = ProtobufProtocol.MyMessage.newBuilder.setId(msg.id).setName(msg.name).setStatus(msg.status).build
-      (actor1 ! b)
-      (actor1 ! b)
-      (actor1 ! b)
-      (actor1 ! b)
-      (actor1 ! b)
-      (actor1 ! b)
-      (actor1 ! b)
-      (actor1 ! b)
-      (actor1 ! b)
-      (actor1 ! b)
+      for (i ← 1 to 10) actor1 ! b
       actor1.getDispatcher.mailboxSize(actor1) should be > (0)
       val actor2 = fromBinary(toBinary(actor1)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
