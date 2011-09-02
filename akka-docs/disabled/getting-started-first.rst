@@ -95,16 +95,16 @@ Downloading and installing Scala
 
 To build and run the tutorial sample from the command line, you have to install the Scala distribution. If you prefer to use SBT to build and run the sample then you can skip this section and jump to the next one.
 
-Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0 release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
+Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.1 release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
 
-You also need to make sure that the ``scala-2.9.0/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
+You also need to make sure that the ``scala-2.9.1/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
 
-    $ export PATH=$PATH:scala-2.9.0/bin
+    $ export PATH=$PATH:scala-2.9.1/bin
 
 You can test your installation by invoking scala::
 
     $ scala -version
-    Scala code runner version 2.9.0.final -- Copyright 2002-2011, LAMP/EPFL
+    Scala code runner version 2.9.1.final -- Copyright 2002-2011, LAMP/EPFL
 
 Looks like we are all good. Finally let's create a source file ``Pi.scala`` for the tutorial and put it in the root of the Akka distribution in the ``tutorial`` directory (you have to create it first).
 
@@ -133,7 +133,7 @@ If you have not already done so, now is the time to create an SBT project for ou
     Name: Tutorial 1
     Organization: Hakkers Inc
     Version [1.0]:
-    Scala version [2.9.0]:
+    Scala version [2.9.1]:
     sbt version [0.7.6.RC0]:
 
 Now we have the basis for an SBT project. Akka has an SBT Plugin making it very easy to use Akka is an SBT-based project so let's use that.
