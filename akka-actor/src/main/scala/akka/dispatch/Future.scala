@@ -397,9 +397,12 @@ sealed trait Future[+T] extends japi.Future[T] {
 
   /**
    * Blocks the current thread until the Future has been completed or the
-   * timeout has expired. The timeout will be the least value of 'atMost' and the timeout
-   * supplied at the constructuion of this Future.
-   * In the case of the timeout expiring a FutureTimeoutException will be thrown.
+   * timeout has expired, additionally bounding the waiting period according to
+   * the <code>atMost</code> parameter. The timeout will be the lesser value of
+   * 'atMost' and the timeout supplied at the constructuion of this Future.  In
+   * the case of the timeout expiring a FutureTimeoutException will be thrown.
+   * Other callers of this method are not affected by the additional bound
+   * imposed by <code>atMost</code>.
    */
   def await(atMost: Duration): Future[T]
 
