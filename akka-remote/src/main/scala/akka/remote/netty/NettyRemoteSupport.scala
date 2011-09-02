@@ -1058,35 +1058,42 @@ class RemoteServerHandler(
         throw new SecurityException("Remote server is operating is untrusted mode, can not pass on a LifeCycleMessage to the remote actor")
 
       case _ ⇒ // then match on user defined messages
-        if (actorRef.isRunning) {
-          if (request.getOneWay) actorRef.postMessageToMailbox(message, sender)
-          else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(
-            message,
-            request.getActorInfo.getTimeout,
-            new ActorCompletableFuture(request.getActorInfo.getTimeout).
-              onComplete((fa: Future[Any]) ⇒ fa.value.get match {
-                case l: Left[Throwable, Any] ⇒ write(channel, createErrorReplyMessage(l.a, request, AkkaActorType.ScalaActor))
-                case r: Right[Throwable, Any] ⇒
-                  val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
-                    Some(actorRef),
-                    Right(request.getUuid),
-                    actorInfo.getId,
-                    actorInfo.getTarget,
-                    actorInfo.getTimeout,
-                    r,
-                    true,
-                    Some(actorRef),
-                    None,
-                    AkkaActorType.ScalaActor,
-                    None)
+        if (request.getOneWay) dispatchMessageToMailbox(actorRef, message, sender)
+        else dispatchMessageToMailboxWithFuture(
+          actorRef,
+          message,
+          request.getActorInfo.getTimeout,
+          new ActorCompletableFuture(request.getActorInfo.getTimeout).
+            onComplete((fa: Future[Any]) ⇒ fa.value.get match {
+              case l: Left[Throwable, Any] ⇒ write(channel, createErrorReplyMessage(l.a, request, AkkaActorType.ScalaActor))
+              case r: Right[Throwable, Any] ⇒
+                val messageBuilder = RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+                  Some(actorRef),
+                  Right(request.getUuid),
+                  actorInfo.getId,
+                  actorInfo.getTarget,
+                  actorInfo.getTimeout,
+                  r,
+                  true,
+                  Some(actorRef),
+                  None,
+                  AkkaActorType.ScalaActor,
+                  None)
 
-                  // FIXME lift in the supervisor uuid management into toh createRemoteMessageProtocolBuilder method
-                  if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
+                // FIXME lift in the supervisor uuid management into toh createRemoteMessageProtocolBuilder method
+                if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
 
-                  write(channel, RemoteEncoder.encode(messageBuilder.build))
-              }))
-        }
+                write(channel, RemoteEncoder.encode(messageBuilder.build))
+            }))
     }
+  }
+
+  private def dispatchMessageToMailbox(actorRef: ActorRef, message: Any, sender: Option[ActorRef]): Unit = {
+    if (actorRef.isRunning) actorRef.postMessageToMailbox(message, sender)
+  }
+
+  private def dispatchMessageToMailboxWithFuture(actorRef: ActorRef, message: Any, timeout: Long, future: ActorCompletableFuture): Unit = {
+    if (actorRef.isRunning) actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, future)
   }
 
   private def dispatchToTypedActor(request: RemoteMessageProtocol, channel: Channel) = {
@@ -1350,7 +1357,7 @@ class RemoteServerHandler(
             /*            val e = new RemoteServerException("Can't load remote Typed Actor for [" + actorInfo.getId + "]")
             EventHandler.error(e, this, e.getMessage)
             server.notifyListeners(RemoteServerError(e, server))
-            throw e            
+            throw e
 */ createClientManagedTypedActor(actorInfo) // client-managed actor
           case sessionActor ⇒ sessionActor
         }
