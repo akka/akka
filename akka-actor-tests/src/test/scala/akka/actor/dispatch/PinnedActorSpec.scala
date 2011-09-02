@@ -64,6 +64,7 @@ class PinnedActorSpec extends JUnitSuite {
   @Test
   def shouldSendReceiveException = {
     val actor = actorOf(Props[TestActor].withDispatcher(new PinnedDispatcher()))
+    EventHandler.notify(Mute(EventFilter[RuntimeException]("Expected exception; to test fault-tolerance")))
     try {
       (actor ? "Failure").get
       fail("Should have thrown an exception")
