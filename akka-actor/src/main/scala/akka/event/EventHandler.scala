@@ -64,25 +64,68 @@ object EventHandler extends ListenerManagement {
   val InfoLevel = 3
   val DebugLevel = 4
 
-  sealed trait Event {
-    @transient
-    val thread: Thread = Thread.currentThread
-    val level: Int
+  /**
+   * Very simple `Event` extractor.
+   *
+   * Useful for listeners that don't really care which type of event it is:
+   *
+   * {{{
+   * def receive = {
+   *   case Event(instance, message) → println(instance.toString + " " + message.toString)
+   *   case anyEvent → println(anyEvent)
+   * }
+   * }}}
+   *
+   * Also useful to use like this:
+   *
+   * {{{
+   * def receive = {
+   *   case Error(cause, instance, message) → println(stackTraceFor(cause))
+   *   case Event(instance, message) → println(instance.toString + " " + message.toString)
+   *   case anyEvent → println(anyEvent)
+   * }
+   * }}}
+   */
+  object Event {
+    def unapply(e: Event): Option[(AnyRef, Any)] =
+      Some((e.instance, e.message))
   }
 
+  sealed trait Event {
+    /** Returns the thread that created this event. */
+    @transient
+    val thread: Thread = Thread.currentThread
+
+    /** Returns the instance that created this event. */
+    val instance: AnyRef
+
+    /** Returns the log level. */
+    val level: Int
+
+    /** Returns the message describing this event. */
+    val message: Any
+  }
+
+  /**
+   * @param cause Returns the cause of this error.
+   */
   case class Error(cause: Throwable, instance: AnyRef, message: Any = "") extends Event {
+    /** Returns [[akka.event.EventHandler.ErrorLevel]]. */
     override val level = ErrorLevel
   }
 
   case class Warning(instance: AnyRef, message: Any = "") extends Event {
+    /** Returns [[akka.event.EventHandler.WarningLevel]]. */
     override val level = WarningLevel
   }
 
   case class Info(instance: AnyRef, message: Any = "") extends Event {
+    /** Returns [[akka.event.EventHandler.InfoLevel]]. */
     override val level = InfoLevel
   }
 
   case class Debug(instance: AnyRef, message: Any = "") extends Event {
+    /** Returns [[akka.event.EventHandler.DebugLevel]]. */
     override val level = DebugLevel
   }
 
