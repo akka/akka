@@ -881,12 +881,12 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
           val runnable = new Runnable {
             def run() {
               if (!isCompleted) {
-                if (!isExpired) Scheduler.scheduleOnce(this, timeLeft, NANOS)
+                if (!isExpired) Scheduler.scheduleOnce(this, timeLeftNoinline(), NANOS)
                 else func(DefaultPromise.this)
               }
             }
           }
-          Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
+          Scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
           false
         } else true
       } else false
@@ -907,12 +907,12 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
           val runnable = new Runnable {
             def run() {
               if (!isCompleted) {
-                if (!isExpired) Scheduler.scheduleOnce(this, timeLeft, NANOS)
+                if (!isExpired) Scheduler.scheduleOnce(this, timeLeftNoinline(), NANOS)
                 else promise complete (try { Right(fallback) } catch { case e: Exception ⇒ Left(e) })
               }
             }
           }
-          Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
+          Scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
           promise
       }
     } else this
@@ -926,6 +926,8 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
   //TODO: the danger of Math.abs is that it could break the ordering of time. So I would not recommend an abs.
   @inline
   private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
+
+  private def timeLeftNoinline(): Long = timeLeft()
 }
 
 class ActorPromise(timeout: Timeout)(implicit dispatcher: MessageDispatcher) extends DefaultPromise[Any](timeout)(dispatcher) with ForwardableChannel with ExceptionChannel[Any] {

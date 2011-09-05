@@ -58,7 +58,7 @@ object TestActorRefSpec {
         self.reply("workDone")
         self.stop()
       }
-      case replyTo: Channel[Any] ⇒ {
+      case replyTo: UntypedChannel ⇒ {
         replyTo ! "complexReply"
       }
     }
