@@ -848,7 +848,6 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
       val freshActor = newActor
       setActorSelfFields(failedActor, null) // Only null out the references if we could instantiate the new actor
       actorInstance.set(freshActor) // Assign it here so if preStart fails, we can null out the sef-refs next call
-      freshActor.preStart()
       freshActor.postRestart(reason)
       if (Actor.debugLifecycle) EventHandler.debug(freshActor, "restarted")
     }
