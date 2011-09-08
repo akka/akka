@@ -1,4 +1,4 @@
-package akka.actor.actor
+package akka.actor
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers

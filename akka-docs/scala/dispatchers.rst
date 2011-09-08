@@ -80,6 +80,7 @@ The 'Dispatcher' binds a set of Actors to a thread pool backed up by a 'Blocking
 The event-driven dispatchers **must be shared** between multiple Actors. One best practice is to let each top-level Actor, e.g. the Actors you define in the declarative supervisor config, to get their own dispatcher but reuse the dispatcher for each new Actor that the top-level Actor creates. But you can also share dispatcher between multiple top-level Actors. This is very use-case specific and needs to be tried out on a case by case basis. The important thing is that Akka tries to provide you with the freedom you need to design and implement your system in the most efficient way in regards to performance, throughput and latency.
 
 It comes with many different predefined BlockingQueue configurations:
+
 * Bounded LinkedBlockingQueue
 * Unbounded LinkedBlockingQueue
 * Bounded ArrayBlockingQueue

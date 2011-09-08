@@ -67,23 +67,23 @@ object EventHandler extends ListenerManagement {
   sealed trait Event {
     @transient
     val thread: Thread = Thread.currentThread
-    val level: Int
+    def level: Int
   }
 
   case class Error(cause: Throwable, instance: AnyRef, message: Any = "") extends Event {
-    override val level = ErrorLevel
+    def level = ErrorLevel
   }
 
   case class Warning(instance: AnyRef, message: Any = "") extends Event {
-    override val level = WarningLevel
+    def level = WarningLevel
   }
 
   case class Info(instance: AnyRef, message: Any = "") extends Event {
-    override val level = InfoLevel
+    def level = InfoLevel
   }
 
   case class Debug(instance: AnyRef, message: Any = "") extends Event {
-    override val level = DebugLevel
+    def level = DebugLevel
   }
 
   val errorFormat = "[ERROR] [%s] [%s] [%s] %s\n%s".intern

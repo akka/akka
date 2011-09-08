@@ -371,7 +371,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
         def receive = {
           case Ping ⇒ self.tryReply(PongMessage)
-          case Die  ⇒ throw new Exception("expected")
+          case Die  ⇒ throw new RuntimeException("Expected")
         }
       }))
 
@@ -381,7 +381,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
             OneForOneStrategy(classOf[Exception] :: Nil, 3, 10000),
             Supervise(dyingActor, Permanent) :: Nil))
 
-      intercept[Exception] {
+      intercept[RuntimeException] {
         (dyingActor.?(Die, TimeoutMillis)).get
       }
 
