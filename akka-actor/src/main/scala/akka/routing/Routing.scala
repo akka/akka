@@ -574,5 +574,5 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
  */
 class ScatterGatherFirstCompletedRouter extends RoundRobinRouter with ScatterGatherRouter {
 
-  protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G] = Futures.firstCompletedOf(results)
+  protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G] = Future.firstCompletedOf(results)
 }
