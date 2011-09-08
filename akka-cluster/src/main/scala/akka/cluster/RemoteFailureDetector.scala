@@ -4,8 +4,8 @@
 
 package akka.cluster
 
-import akka.actor.{ Actor, ActorRef, Props }
-import Actor._
+import akka.actor.{ newUuid, Actor, ActorRef, Props, LocalActorRef }
+import akka.actor.Actor._
 import akka.cluster._
 import akka.routing._
 import akka.event.EventHandler
@@ -24,7 +24,7 @@ object RemoteFailureDetector {
   private case class Register(strategy: RemoteFailureListener, address: InetSocketAddress) extends FailureDetectorEvent
   private case class Unregister(strategy: RemoteFailureListener, address: InetSocketAddress) extends FailureDetectorEvent
 
-  private[akka] val registry = actorOf(Props(new Registry).copy(dispatcher = new PinnedDispatcher(), localOnly = true))
+  private[akka] val registry = new LocalActorRef(Props[Registry].copy(dispatcher = new PinnedDispatcher()), newUuid.toString, systemService = true)
 
   def register(strategy: RemoteFailureListener, address: InetSocketAddress) = registry ! Register(strategy, address)
 

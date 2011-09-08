@@ -214,7 +214,7 @@ Here is the API and how to use it from within an 'Actor':
   self.unlink(actorRef)
 
   // link first, then start actor
-  self.link(actorRef).start()
+  self.link(actorRef)
 
   // spawns (creates and starts) actors
   self.spawn[MyActor]
@@ -368,7 +368,7 @@ Here is an example:
         victimActorRef, maxNrOfRetries, withinTimeRange, lastExceptionCausingRestart) =>
         ... // handle the error situation
     }
-  }).start()
+  })
 
 You will also get this log warning similar to this:
 

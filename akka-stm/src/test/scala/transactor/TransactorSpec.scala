@@ -84,9 +84,9 @@ class TransactorSpec extends WordSpec with MustMatchers {
   val timeout = 5 seconds
 
   def createTransactors = {
-    def createCounter(i: Int) = Actor.actorOf(new Counter("counter" + i)).start()
+    def createCounter(i: Int) = Actor.actorOf(new Counter("counter" + i))
     val counters = (1 to numCounters) map createCounter
-    val failer = Actor.actorOf(new Failer).start()
+    val failer = Actor.actorOf(new Failer)
     (counters, failer)
   }
 
@@ -124,7 +124,7 @@ class TransactorSpec extends WordSpec with MustMatchers {
 
   "Transactor" should {
     "be usable without overriding normally" in {
-      val transactor = Actor.actorOf(new Setter).start()
+      val transactor = Actor.actorOf(new Setter)
       val ref = Ref(0)
       val latch = new CountDownLatch(1)
       transactor ! Set(ref, 5, latch)

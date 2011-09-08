@@ -29,7 +29,7 @@ class ChannelSpec extends WordSpec with MustMatchers {
         def receive = {
           case str: String ⇒ ch ! str
         }
-      }).start()
+      })
       a ! "hallo"
       s must be(("hallo", a))
 

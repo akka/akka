@@ -107,8 +107,9 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with ApplicationConte
       case UNTYPED_ACTOR_TAG ⇒
         val untypedActor = createUntypedInstance()
         setProperties(untypedActor.actor)
-        if (autostart)
-          untypedActor.start
+        //Will always auto start
+        //if (autostart)
+        //  untypedActor
         untypedActor
       case _ ⇒ throw new IllegalArgumentException("Unknown actor type")
     }

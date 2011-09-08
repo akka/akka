@@ -19,7 +19,7 @@ import akka.actor.Props._
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestActorRef[T <: Actor](props: Props, address: String) extends LocalActorRef(props.withDispatcher(CallingThreadDispatcher.global), address) {
+class TestActorRef[T <: Actor](props: Props, address: String) extends LocalActorRef(props.withDispatcher(CallingThreadDispatcher.global), address, false) {
   /**
    * Directly inject messages into actor receive behavior. Any exceptions
    * thrown will be available to you, while still being able to use
@@ -62,9 +62,9 @@ object TestActorRef {
 
   def apply[T <: Actor](factory: ⇒ T, address: String): TestActorRef[T] = apply[T](Props(factory), address)
 
-  def apply[T <: Actor](props: Props): TestActorRef[T] = apply[T](props, new UUID().toString).start()
+  def apply[T <: Actor](props: Props): TestActorRef[T] = apply[T](props, new UUID().toString)
 
-  def apply[T <: Actor](props: Props, address: String): TestActorRef[T] = new TestActorRef(props, address).start()
+  def apply[T <: Actor](props: Props, address: String): TestActorRef[T] = new TestActorRef(props, address)
 
   def apply[T <: Actor: Manifest]: TestActorRef[T] = apply[T](new UUID().toString)
 

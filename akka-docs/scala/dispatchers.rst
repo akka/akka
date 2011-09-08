@@ -154,15 +154,11 @@ Creating a PriorityDispatcher using PriorityGenerator:
    }
   
    val a = Actor.actorOf( // We create a new Actor that just prints out what it processes
-         new Actor {
+       Props(new Actor {
          def receive = {
            case x => println(x)
          }
-    })
-  
-    // We create a new Priority dispatcher and seed it with the priority generator
-    a.dispatcher = new PriorityDispatcher("foo", gen)
-    a.start // Start the Actor
+    }).withDispatcher(new PriorityDispatcher("foo", gen))) // We create a new Priority dispatcher and seed it with the priority generator
 
     a.dispatcher.suspend(a) // Suspending the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
 

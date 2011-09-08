@@ -287,7 +287,7 @@ class DefaultClusterNode private[akka] (
     }
   }), "akka.cluster.RemoteClientLifeCycleListener")
 
-  private[cluster] lazy val remoteDaemon = actorOf(Props(new RemoteClusterDaemon(this)).copy(dispatcher = new PinnedDispatcher(), localOnly = true), RemoteClusterDaemon.Address)
+  private[cluster] lazy val remoteDaemon = new LocalActorRef(Props(new RemoteClusterDaemon(this)).copy(dispatcher = new PinnedDispatcher()), RemoteClusterDaemon.Address, systemService = true)
 
   private[cluster] lazy val remoteDaemonSupervisor = Supervisor(
     SupervisorConfig(
@@ -295,7 +295,7 @@ class DefaultClusterNode private[akka] (
       Supervise(
         remoteDaemon,
         Permanent)
-        :: Nil))
+        :: Nil)).start()
 
   lazy val remoteService: RemoteSupport = {
     val remote = new akka.cluster.netty.NettyRemoteSupport
@@ -502,7 +502,7 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store[T <: Actor](actorAddress: String, actorClass: Class[T], serializer: Serializer): ClusterNode =
-    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress).start, 0, Transient, false, serializer)
+    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress), 0, Transient, false, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -510,7 +510,7 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store[T <: Actor](actorAddress: String, actorClass: Class[T], replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode =
-    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress).start, 0, replicationScheme, false, serializer)
+    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress), 0, replicationScheme, false, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -518,7 +518,7 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store[T <: Actor](actorAddress: String, actorClass: Class[T], replicationFactor: Int, serializer: Serializer): ClusterNode =
-    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress).start, replicationFactor, Transient, false, serializer)
+    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress), replicationFactor, Transient, false, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -526,7 +526,7 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store[T <: Actor](actorAddress: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode =
-    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress).start, replicationFactor, replicationScheme, false, serializer)
+    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress), replicationFactor, replicationScheme, false, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -534,7 +534,7 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store[T <: Actor](actorAddress: String, actorClass: Class[T], serializeMailbox: Boolean, serializer: Serializer): ClusterNode =
-    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress).start, 0, Transient, serializeMailbox, serializer)
+    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress), 0, Transient, serializeMailbox, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -542,7 +542,7 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store[T <: Actor](actorAddress: String, actorClass: Class[T], replicationScheme: ReplicationScheme, serializeMailbox: Boolean, serializer: Serializer): ClusterNode =
-    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress).start, 0, replicationScheme, serializeMailbox, serializer)
+    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress), 0, replicationScheme, serializeMailbox, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -550,7 +550,7 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store[T <: Actor](actorAddress: String, actorClass: Class[T], replicationFactor: Int, serializeMailbox: Boolean, serializer: Serializer): ClusterNode =
-    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress).start, replicationFactor, Transient, serializeMailbox, serializer)
+    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress), replicationFactor, Transient, serializeMailbox, serializer)
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -558,7 +558,7 @@ class DefaultClusterNode private[akka] (
    * available durable store.
    */
   def store[T <: Actor](actorAddress: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, serializer: Serializer): ClusterNode =
-    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress).start, replicationFactor, replicationScheme, serializeMailbox, serializer)
+    store(actorAddress, () ⇒ Actor.actorOf(actorClass, actorAddress), replicationFactor, replicationScheme, serializeMailbox, serializer)
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
@@ -814,7 +814,6 @@ class DefaultClusterNode private[akka] (
         // create ADDRESS -> NODE mapping
         ignore[ZkNodeExistsException](zkClient.createPersistent(actorAddressToNodesPathFor(actorAddress, nodeName)))
 
-        actorRef.start()
         actorRef
     }
   }
@@ -1318,7 +1317,7 @@ class DefaultClusterNode private[akka] (
           EventHandler.debug(this, "Setting up connection to node with nodename [%s] and address [%s]".format(node, address))
 
           val clusterDaemon = remoteService.actorFor(
-            RemoteClusterDaemon.Address, address.getHostName, address.getPort).start()
+            RemoteClusterDaemon.Address, address.getHostName, address.getPort)
           newConnections = newConnections + (node -> (address, clusterDaemon))
           change = true
         }
@@ -1784,7 +1783,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
             if (Cluster.shouldCompressData) LZF.uncompress(bytes)
             else bytes
 
-          val snapshotActorRef = fromBinary(uncompressedBytes, newActorRef.uuid).start()
+          val snapshotActorRef = fromBinary(uncompressedBytes, newActorRef.uuid)
           cluster.remoteService.register(actorAddress, snapshotActorRef)
 
           // FIXME we should call 'stop()' here (to GC the actor), but can't since that will currently
@@ -1864,25 +1863,35 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
   }
 
   def handle_fun0_unit(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
-    actorOf(Props(
-      self ⇒ { case f: Function0[_] ⇒ try { f() } finally { self.stop() } }).copy(dispatcher = computeGridDispatcher, localOnly = true)) ! payloadFor(message, classOf[Function0[Unit]])
+    new LocalActorRef(
+      Props(
+        self ⇒ {
+          case f: Function0[_] ⇒ try { f() } finally { self.stop() }
+        }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
   }
 
   def handle_fun0_any(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
-    actorOf(Props(
-      self ⇒ { case f: Function0[_] ⇒ try { self.reply(f()) } finally { self.stop() } }).copy(dispatcher = computeGridDispatcher, localOnly = true)) forward payloadFor(message, classOf[Function0[Any]])
+    new LocalActorRef(
+      Props(
+        self ⇒ {
+          case f: Function0[_] ⇒ try { self.reply(f()) } finally { self.stop() }
+        }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
   }
 
   def handle_fun1_arg_unit(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
-    actorOf(Props(
-      self ⇒ { case (fun: Function[_, _], param: Any) ⇒ try { fun.asInstanceOf[Any ⇒ Unit].apply(param) } finally { self.stop() } }).copy(dispatcher = computeGridDispatcher, localOnly = true)) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
+    new LocalActorRef(
+      Props(
+        self ⇒ {
+          case (fun: Function[_, _], param: Any) ⇒ try { fun.asInstanceOf[Any ⇒ Unit].apply(param) } finally { self.stop() }
+        }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
   }
 
   def handle_fun1_arg_any(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
-    actorOf(Props(
-      self ⇒ {
-        case (fun: Function[_, _], param: Any) ⇒ try { self.reply(fun.asInstanceOf[Any ⇒ Any](param)) } finally { self.stop() }
-      }).copy(dispatcher = computeGridDispatcher, localOnly = true)) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
+    new LocalActorRef(
+      Props(
+        self ⇒ {
+          case (fun: Function[_, _], param: Any) ⇒ try { self.reply(fun.asInstanceOf[Any ⇒ Any](param)) } finally { self.stop() }
+        }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
   }
 
   def handleFailover(message: RemoteProtocol.RemoteDaemonMessageProtocol) {

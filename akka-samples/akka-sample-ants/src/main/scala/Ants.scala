@@ -65,7 +65,7 @@ object World {
   val homeOff = Dim / 4
   lazy val places = Vector.fill(Dim, Dim)(new Place)
   lazy val ants = setup
-  lazy val evaporator = actorOf[Evaporator].start()
+  lazy val evaporator = actorOf[Evaporator]
 
   private val snapshotFactory = TransactionFactory(readonly = true, familyName = "snapshot")
 
@@ -81,7 +81,7 @@ object World {
     for (x <- homeRange; y <- homeRange) yield {
       place(x, y).makeHome
       place(x, y) enter Ant(randomInt(8))
-      actorOf(new AntActor(x, y)).start()
+      actorOf(new AntActor(x, y))
     }
   }
 

@@ -53,7 +53,6 @@ object Props {
   final val defaultLifeCycle: LifeCycle = Permanent
   final val defaultFaultHandler: FaultHandlingStrategy = NoFaultHandlingStrategy
   final val defaultSupervisor: Option[ActorRef] = None
-  final val defaultLocalOnly: Boolean = false
 
   /**
    * The default Props instance, uses the settings from the Props object starting with default*
@@ -85,8 +84,13 @@ object Props {
    */
   def apply(creator: ⇒ Actor): Props = default.withCreator(creator)
 
-  def apply(behavior: (ScalaActorRef with SelfActorRef) ⇒ Actor.Receive): Props =
-    apply(new Actor { def receive = behavior(self) })
+  /**
+   * Returns a Props that has default values except for "creator" which will be a function that creates an instance
+   * using the supplied thunk
+   */
+  def apply(creator: Creator[_ <: Actor]): Props = default.withCreator(creator.create)
+
+  def apply(behavior: (ScalaActorRef with SelfActorRef) ⇒ Actor.Receive): Props = apply(new Actor { def receive = behavior(self) })
 }
 
 /**
@@ -94,12 +98,11 @@ object Props {
  */
 case class Props(creator: () ⇒ Actor = Props.defaultCreator,
                  deployId: String = Props.defaultDeployId,
-                 dispatcher: MessageDispatcher = Props.defaultDispatcher,
+                 @transient dispatcher: MessageDispatcher = Props.defaultDispatcher,
                  timeout: Timeout = Props.defaultTimeout,
                  lifeCycle: LifeCycle = Props.defaultLifeCycle,
                  faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler,
-                 supervisor: Option[ActorRef] = Props.defaultSupervisor,
-                 localOnly: Boolean = Props.defaultLocalOnly) {
+                 supervisor: Option[ActorRef] = Props.defaultSupervisor) {
   /**
    * No-args constructor that sets all the default values
    * Java API
@@ -111,8 +114,7 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
     timeout = Props.defaultTimeout,
     lifeCycle = Props.defaultLifeCycle,
     faultHandler = Props.defaultFaultHandler,
-    supervisor = Props.defaultSupervisor,
-    localOnly = Props.defaultLocalOnly)
+    supervisor = Props.defaultSupervisor)
 
   /**
    * Returns a new Props with the specified creator set
@@ -173,12 +175,6 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
    * Scala API
    */
   def withSupervisor(s: scala.Option[ActorRef]) = copy(supervisor = s)
-
-  /**
-   * Returns a new Props with the specified localOnly set
-   * Java and Scala API
-   */
-  def withLocalOnly(l: Boolean) = copy(localOnly = l)
 }
 
 /**
@@ -191,14 +187,13 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
  *   import Actor._
  *
  *   val actor = actorOf[MyActor]
- *   actor.start()
  *   actor ! message
  *   actor.stop()
  * </pre>
  *
  * You can also create and start actors like this:
  * <pre>
- *   val actor = actorOf[MyActor].start()
+ *   val actor = actorOf[MyActor]
  * </pre>
  *
  * Here is an example on how to create an actor with a non-default constructor.
@@ -206,7 +201,6 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
  *   import Actor._
  *
  *   val actor = actorOf(new MyActor(...))
- *   actor.start()
  *   actor ! message
  *   actor.stop()
  * </pre>
@@ -218,6 +212,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile
   protected[akka] var _uuid = newUuid
+
   @volatile
   protected[this] var _status: ActorRefInternals.StatusType = ActorRefInternals.UNSTARTED
 
@@ -240,19 +235,6 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   def getUuid = _uuid
 
   def uuid = _uuid
-
-  /**
-   * Is the actor running?
-   */
-  def isRunning: Boolean = _status match {
-    case ActorRefInternals.BEING_RESTARTED | ActorRefInternals.RUNNING ⇒ true
-    case _ ⇒ false
-  }
-
-  /**
-   * Is the actor shut down?
-   */
-  def isShutdown: Boolean = _status == ActorRefInternals.SHUTDOWN
 
   /**
    * Only for internal use. UUID is effectively final.
@@ -313,11 +295,6 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   }
 
   /**
-   * Starts up the actor and its message queue.
-   */
-  def start(): this.type
-
-  /**
    * Shuts down the actor its dispatcher and message queue.
    * Alias for 'stop'.
    */
@@ -328,7 +305,20 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   /**
    * Shuts down the actor its dispatcher and message queue.
    */
-  def stop()
+  def stop(): Unit
+
+  /**
+   * Is the actor running?
+   */
+  def isRunning: Boolean = _status match { //TODO Remove this method
+    case ActorRefInternals.BEING_RESTARTED | ActorRefInternals.RUNNING ⇒ true
+    case _ ⇒ false
+  }
+
+  /**
+   * Is the actor shut down?
+   */
+  def isShutdown: Boolean = _status == ActorRefInternals.SHUTDOWN
 
   /**
    * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will
@@ -511,10 +501,10 @@ abstract class SelfActorRef extends ActorRef with ForwardableChannel { self: Loc
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class LocalActorRef private[akka] (private[this] val props: Props, val address: String)
+class LocalActorRef private[akka] (private[this] val props: Props, val address: String, val systemService: Boolean)
   extends SelfActorRef with ScalaActorRef {
 
-  protected[akka] val guard = new ReentrantGuard
+  protected[akka] val guard = new ReentrantGuard //TODO FIXME remove the last synchronization point
 
   @volatile
   protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
@@ -550,12 +540,12 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
         "Could not create Serializer object for [" + this.getClass.getName + "]")
     }
 
-  private lazy val hasReplicationStorage: Boolean = {
+  private lazy val hasReplicationStorage: Boolean = if (!systemService) {
     import DeploymentConfig._
     isReplicated(replicationSchemeFor(Deployer.deploymentFor(address)).getOrElse(Transient))
-  }
+  } else false
 
-  private lazy val replicationStorage: Option[TransactionLog] = {
+  private lazy val replicationStorage: Option[TransactionLog] = if (!systemService) {
     import DeploymentConfig._
     val replicationScheme = replicationSchemeFor(Deployer.deploymentFor(address)).getOrElse(Transient)
     if (isReplicated(replicationScheme)) {
@@ -569,7 +559,7 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
         throw new ConfigurationException("Unknown replication storage type [" + replicationScheme + "]")
       }
     } else None
-  }
+  } else None
 
   // If it was started inside "newActor", initialize it
   if (isRunning) initializeActorInstance
@@ -582,13 +572,12 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
     __receiveTimeout: Option[Long],
     __hotswap: Stack[PartialFunction[Any, Unit]]) = {
 
-    this(__props, __address)
+    this(__props, __address, systemService = false) //Doesn't make any sense to move a system service
 
     _uuid = __uuid
     hotswap = __hotswap
     receiveTimeout = __receiveTimeout
     setActorSelfFields(actorInstance.get(), this) //TODO Why is this needed?
-    start()
   }
 
   // ========= PUBLIC FUNCTIONS =========
@@ -601,9 +590,8 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
   /**
    * Starts up the actor and its message queue.
    */
-  def start(): this.type = guard.withGuard[this.type] {
-    if (isShutdown) throw new ActorStartException(
-      "Can't restart an actor that has been shut down with 'stop' or 'exit'")
+  protected[akka] def startInternal(): this.type = guard.withGuard[this.type] {
+    if (isShutdown) throw new ActorStartException("Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
       dispatcher.attach(this)
       _status = ActorRefInternals.RUNNING
@@ -642,8 +630,13 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
           a.postStop()
         } finally {
           currentMessage = null
-
-          setActorSelfFields(actorInstance.get, null)
+          try { //When a supervisor is stopped, it's linked actors should also be stopped
+            val i = _linkedActors.values.iterator
+            while (i.hasNext) {
+              i.next.stop()
+              i.remove
+            }
+          } finally { setActorSelfFields(actorInstance.get, null) }
         }
       }
 
@@ -741,19 +734,20 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
   }
 
   protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
-    dispatcher dispatchMessage new MessageInvocation(this, message, channel)
+    if (isRunning) dispatcher dispatchMessage new MessageInvocation(this, message, channel)
+    else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor' before using it")
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
     timeout: Timeout,
-    channel: UntypedChannel): Future[Any] = {
+    channel: UntypedChannel): Future[Any] = if (isRunning) {
     val future = channel match {
       case f: ActorPromise ⇒ f
       case _               ⇒ new ActorPromise(timeout)(dispatcher)
     }
     dispatcher dispatchMessage new MessageInvocation(this, message, future)
     future
-  }
+  } else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor' before using it")
 
   /**
    * Callback for the dispatcher. This is the single entry point to the user Actor implementation.
@@ -800,8 +794,7 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
         dead.restart(reason, maxRetries, within)
 
       case _ ⇒
-        if (_supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason))
-        else dead.stop()
+        if (_supervisor.isDefined) throw reason else dead.stop() //Escalate problem if not handled here
     }
   }
 
@@ -975,22 +968,8 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
   }
 
   private def notifySupervisorWithMessage(notification: LifeCycleMessage) {
-    // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
-    _supervisor.foreach { sup ⇒
-      if (sup.isShutdown) {
-        // if supervisor is shut down, game over for all linked actors
-        //Scoped stop all linked actors, to avoid leaking the 'i' val
-        {
-          val i = _linkedActors.values.iterator
-          while (i.hasNext) {
-            i.next.stop()
-            i.remove
-          }
-        }
-        //Stop the actor itself
-        stop
-      } else sup ! notification // else notify supervisor
-    }
+    val sup = _supervisor
+    if (sup.isDefined) sup.get ! notification
   }
 
   private def setActorSelfFields(actor: Actor, value: ActorRef) {
@@ -1043,6 +1022,8 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
       _futureTimeout = None
     }
   }
+
+  startInternal()
 }
 
 /**
@@ -1069,8 +1050,6 @@ private[akka] case class RemoteActorRef private[akka] (
 
   ClusterModule.ensureEnabled()
 
-  start()
-
   protected[akka] override def timeout: Long = _timeout
 
   def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
@@ -1089,12 +1068,6 @@ private[akka] case class RemoteActorRef private[akka] (
 
     if (future.isDefined) ActorPromise(future.get)
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
-  }
-
-  def start(): this.type = synchronized[this.type] {
-    if (_status == ActorRefInternals.UNSTARTED)
-      _status = ActorRefInternals.RUNNING
-    this
   }
 
   def stop() {
@@ -1126,6 +1099,10 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
+
+  /* If you start me up... */
+  if (_status == ActorRefInternals.UNSTARTED)
+    _status = ActorRefInternals.RUNNING
 }
 
 /**
@@ -1156,8 +1133,7 @@ trait ActorRefShared {
  * There are implicit conversions in ../actor/Implicits.scala
  * from ActorRef -> ScalaActorRef and back
  */
-trait ScalaActorRef extends ActorRefShared with ReplyChannel[Any] {
-  ref: ActorRef ⇒
+trait ScalaActorRef extends ActorRefShared with ReplyChannel[Any] { ref: ActorRef ⇒
 
   /**
    * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
@@ -1173,23 +1149,12 @@ trait ScalaActorRef extends ActorRefShared with ReplyChannel[Any] {
    * </pre>
    * <p/>
    */
-  def !(message: Any)(implicit channel: UntypedChannel): Unit = {
-    if (isRunning) postMessageToMailbox(message, channel)
-    else throw new ActorInitializationException(
-      "Actor has not been started, you need to invoke 'actor.start()' before using it")
-  }
+  def !(message: Any)(implicit channel: UntypedChannel): Unit = postMessageToMailbox(message, channel)
 
   /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
    */
-  def ?(message: Any)(implicit channel: UntypedChannel, timeout: Timeout): Future[Any] = {
-    //FIXME: so it can happen that a message is posted after the actor has been shut down (the isRunning and postMessageToMailboxAndCreateFutureResultWithTimeout are not atomic.
-    if (isRunning) {
-      postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
-      //FIXME: there is no after check if the running state is still true.. so no 'repairing'
-    } else throw new ActorInitializationException(
-      "Actor has not been started, you need to invoke 'actor.start()' before using it")
-  }
+  def ?(message: Any)(implicit channel: UntypedChannel, timeout: Timeout): Future[Any] = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
 
   def ?(message: Any, timeout: Timeout)(implicit channel: UntypedChannel): Future[Any] = ?(message)(channel, timeout)
 
@@ -1198,14 +1163,7 @@ trait ScalaActorRef extends ActorRefShared with ReplyChannel[Any] {
    * <p/>
    * Works with '!' and '?'/'ask'.
    */
-  def forward(message: Any)(implicit channel: ForwardableChannel) = {
-    //FIXME: so it can happen that a message is posted after the actor has been shut down (the isRunning and postMessageToMailbox are not atomic.
-    if (isRunning) {
-      postMessageToMailbox(message, channel.channel)
-      //FIXME: there is no after check if the running state is still true.. so no 'repairing'
-    } else throw new ActorInitializationException(
-      "Actor has not been started, you need to invoke 'actor.start()' before using it")
-  }
+  def forward(message: Any)(implicit channel: ForwardableChannel) = postMessageToMailbox(message, channel.channel)
 }
 
 /**

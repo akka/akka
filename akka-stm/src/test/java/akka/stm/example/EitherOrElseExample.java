@@ -12,7 +12,7 @@ public class EitherOrElseExample {
         final Ref<Integer> left = new Ref<Integer>(100);
         final Ref<Integer> right = new Ref<Integer>(100);
 
-        ActorRef brancher = Actors.actorOf(Brancher.class).start();
+        ActorRef brancher = Actors.actorOf(Brancher.class);
 
         brancher.tell(new Branch(left, right, 500));
 

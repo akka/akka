@@ -168,7 +168,7 @@ class Agent[T](initialValue: T) {
     val result = new DefaultPromise[T](timeout)
     send((value: T) ⇒ {
       suspend
-      val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this)).start()
+      val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this))
       result completeWith threadBased.?(Update(f), timeout).asInstanceOf[Future[T]]
       value
     })

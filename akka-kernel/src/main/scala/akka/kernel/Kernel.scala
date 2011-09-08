@@ -32,7 +32,7 @@ object Kernel extends AkkaLoader {
 
   // For testing purposes only
   def startRemoteService(): Unit = bundles.foreach(_ match {
-    case x: BootableRemoteActorService ⇒ x.startRemoteService
+    case x: BootableRemoteActorService ⇒ x.startRemoteService()
     case _                             ⇒
   })
 }

@@ -45,7 +45,6 @@ public class Actors {
    *       return new MyUntypedActor("service:name", 5);
    *     }
    *   }, "my-actor-address");
-   *   actor.start();
    *   actor.tell(message, context);
    *   actor.stop();
    * </pre>
@@ -69,7 +68,6 @@ public class Actors {
    *       return new MyUntypedActor("service:name", 5);
    *     }
    *   });
-   *   actor.start();
    *   actor.tell(message, context);
    *   actor.stop();
    * </pre>
@@ -83,13 +81,12 @@ public class Actors {
    *  Example in Java:
    * <pre>
    *   ActorRef actor = Actors.actorOf(MyUntypedActor.class, "my-actor-address");
-   *   actor.start();
    *   actor.tell(message, context);
    *   actor.stop();
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = Actors.actorOf(MyActor.class, "my-actor-address").start();
+   *   val actor = Actors.actorOf(MyActor.class, "my-actor-address");
    * </pre>
    */
     public static ActorRef actorOf(final Class<? extends Actor> type, final String address) {
@@ -101,13 +98,12 @@ public class Actors {
    *  Example in Java:
    * <pre>
    *   ActorRef actor = Actors.actorOf(MyUntypedActor.class, "my-actor-address");
-   *   actor.start();
    *   actor.tell(message, context);
    *   actor.stop();
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = Actors.actorOf(MyActor.class).start();
+   *   val actor = Actors.actorOf(MyActor.class);
    * </pre>
    */
     public static ActorRef actorOf(final Class<? extends Actor> type) {

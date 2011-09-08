@@ -338,7 +338,7 @@ The master actor is a little bit more involved. In its constructor we need to cr
         // create the workers
         final ActorRef[] workers = new ActorRef[nrOfWorkers];
         for (int i = 0; i < nrOfWorkers; i++) {
-          workers[i] = actorOf(Worker.class).start();
+          workers[i] = actorOf(Worker.class);
         }
 
         // wrap them with a load-balancing router
@@ -346,7 +346,7 @@ The master actor is a little bit more involved. In its constructor we need to cr
           public UntypedActor create() {
             return new PiRouter(workers);
           }
-        }).start();
+        });
       }
     }
 
@@ -360,8 +360,7 @@ One thing to note is that we used two different versions of the ``actorOf`` meth
 
 The actor's life-cycle is:
 
-- Created -- ``Actor.actorOf[MyActor]`` -- can **not** receive messages
-- Started -- ``actorRef.start()`` -- can receive messages
+- Created & Started -- ``Actor.actorOf[MyActor]`` -- can receive messages
 - Stopped -- ``actorRef.stop()`` -- can **not** receive messages
 
 Once the actor has been stopped it is dead and can not be started again.
@@ -406,7 +405,7 @@ Here is the master actor::
         // create the workers
         final ActorRef[] workers = new ActorRef[nrOfWorkers];
         for (int i = 0; i < nrOfWorkers; i++) {
-          workers[i] = actorOf(Worker.class).start();
+          workers[i] = actorOf(Worker.class);
         }
 
         // wrap them with a load-balancing router
@@ -414,7 +413,7 @@ Here is the master actor::
           public UntypedActor create() {
             return new PiRouter(workers);
           }
-        }).start();
+        });
       }
 
       // message handler
@@ -501,7 +500,7 @@ Now the only thing that is left to implement is the runner that should bootstrap
           public UntypedActor create() {
             return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
           }
-        }).start();
+        });
 
         // start the calculation
         master.tell(new Calculate());
@@ -631,7 +630,7 @@ Before we package it up and run it, let's take a look at the full code now, with
           // create the workers
           final ActorRef[] workers = new ActorRef[nrOfWorkers];
           for (int i = 0; i < nrOfWorkers; i++) {
-            workers[i] = actorOf(Worker.class).start();
+            workers[i] = actorOf(Worker.class);
           }
 
           // wrap them with a load-balancing router
@@ -639,7 +638,7 @@ Before we package it up and run it, let's take a look at the full code now, with
             public UntypedActor create() {
               return new PiRouter(workers);
             }
-          }).start();
+          });
         }
 
         // message handler
@@ -697,7 +696,7 @@ Before we package it up and run it, let's take a look at the full code now, with
           public UntypedActor create() {
             return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
           }
-        }).start();
+        });
 
         // start the calculation
         master.tell(new Calculate());

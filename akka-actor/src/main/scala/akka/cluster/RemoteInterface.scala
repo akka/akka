@@ -178,7 +178,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
   val eventHandler: ActorRef = {
     implicit object format extends StatelessActorFormat[RemoteEventHandler]
     val clazz = classOf[RemoteEventHandler]
-    val handler = Actor.actorOf(Props(clazz).withLocalOnly(true), clazz.getName)
+    val handler = new LocalActorRef(Props(clazz), clazz.getName, true)
     // add the remote client and server listener that pipes the events to the event handler system
     addListener(handler)
     handler

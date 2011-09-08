@@ -192,7 +192,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
     }
 
     "support futures" in {
-      val a = TestActorRef[WorkerActor].start()
+      val a = TestActorRef[WorkerActor]
       val f = a ? "work" mapTo manifest[String]
       f must be('completed)
       f.get must equal("workDone")
@@ -208,7 +208,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
         def receiveT = {
           case x: String ⇒ s = x
         }
-      }).start()
+      })
       ref ! "hallo"
       val actor = ref.underlyingActor
       actor.s must equal("hallo")
@@ -225,8 +225,8 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
     }
 
     "warn about scheduled supervisor" in {
-      val boss = Actor.actorOf(new Actor { def receive = { case _ ⇒ } }).start()
-      val ref = TestActorRef[WorkerActor].start()
+      val boss = Actor.actorOf(new Actor { def receive = { case _ ⇒ } })
+      val ref = TestActorRef[WorkerActor]
 
       val filter = EventFilter.custom(_ ⇒ true)
       EventHandler.notify(TestEvent.Mute(filter))
@@ -241,7 +241,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
     }
 
     "proxy apply for the underlying actor" in {
-      val ref = TestActorRef[WorkerActor].start()
+      val ref = TestActorRef[WorkerActor]
       intercept[IllegalActorStateException] { ref("work") }
       val ch = Promise.channel()
       ref ! ch

@@ -370,7 +370,7 @@ Here is an example of using ``retry`` to block until an account has enough money
   val account1 = Ref(100.0)
   val account2 = Ref(100.0)
 
-  val transferer = Actor.actorOf(new Transferer).start()
+  val transferer = Actor.actorOf(new Transferer)
 
   transferer ! Transfer(account1, account2, 500.0)
   // INFO Transferer: not enough money - retrying
@@ -426,7 +426,7 @@ You can also have two alternative blocking transactions, one of which can succee
   val ref1 = Ref(0)
   val ref2 = Ref(0)
 
-  val brancher = Actor.actorOf(new Brancher).start()
+  val brancher = Actor.actorOf(new Brancher)
 
   brancher ! Branch(ref1, ref2, 1)
   // INFO Brancher: not enough on left - retrying

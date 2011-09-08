@@ -60,7 +60,7 @@ object ClusterActorRef {
         .withDeployId(actorAddress)
         .withTimeout(timeout)
         .withRouter(routerFactory)
-        .withFailureDetector(failureDetectorFactory)).start()
+        .withFailureDetector(failureDetectorFactory))
   }
 
   /**
@@ -112,14 +112,6 @@ private[akka] class ClusterActorRef(props: RoutedProps) extends AbstractRoutedAc
     connections.failOver(from, to)
   }
 
-  def start(): this.type = synchronized[this.type] {
-    if (_status == ActorRefInternals.UNSTARTED) {
-      _status = ActorRefInternals.RUNNING
-      Actor.registry.local.registerClusterActorRef(this)
-    }
-    this
-  }
-
   def stop() {
     synchronized {
       if (_status == ActorRefInternals.RUNNING) {
@@ -131,5 +123,11 @@ private[akka] class ClusterActorRef(props: RoutedProps) extends AbstractRoutedAc
         connections.stopAll()
       }
     }
+  }
+
+  /* If you start me up */
+  if (_status == ActorRefInternals.UNSTARTED) {
+    _status = ActorRefInternals.RUNNING
+    Actor.registry.local.registerClusterActorRef(this)
   }
 }

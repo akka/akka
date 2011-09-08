@@ -22,7 +22,7 @@ object IOActorSpec {
       listen(ioManager, host, port)
     }
 
-    def createWorker = Actor.actorOf(new Actor with IO {
+    def createWorker = Actor.actorOf(Props(new Actor with IO {
       def receiveIO = {
         case NewClient(server) ⇒
           val socket = server.accept()
@@ -31,11 +31,11 @@ object IOActorSpec {
             socket write bytes
           }
       }
-    })
+    }).withSupervisor(optionSelf))
 
     def receive = {
       case msg: NewClient ⇒
-        self.link(createWorker).start() forward msg
+        createWorker forward msg
     }
 
   }
@@ -51,7 +51,7 @@ object IOActorSpec {
             self reply bytes
         }
       }
-    }.start
+    }
 
     def receiveIO = {
       case bytes: ByteString ⇒
@@ -69,7 +69,7 @@ object IOActorSpec {
       listen(ioManager, host, port)
     }
 
-    def createWorker = Actor.actorOf(new Actor with IO {
+    def createWorker = Actor.actorOf(Props(new Actor with IO {
       def receiveIO = {
         case NewClient(server) ⇒
           val socket = server.accept()
@@ -101,10 +101,10 @@ object IOActorSpec {
             }
           }
       }
-    })
+    }).withSupervisor(self))
 
     def receive = {
-      case msg: NewClient ⇒ self.link(createWorker).start() forward msg
+      case msg: NewClient ⇒ createWorker forward msg
       case ('set, key: String, value: ByteString) ⇒
         kvs += (key -> value)
         self tryReply (())
@@ -172,9 +172,9 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
 
   "an IO Actor" must {
     "run echo server" in {
-      val ioManager = Actor.actorOf(new IOManager(2)).start // teeny tiny buffer
-      val server = Actor.actorOf(new SimpleEchoServer("localhost", 8064, ioManager)).start
-      val client = Actor.actorOf(new SimpleEchoClient("localhost", 8064, ioManager)).start
+      val ioManager = Actor.actorOf(new IOManager(2)) // teeny tiny buffer
+      val server = Actor.actorOf(new SimpleEchoServer("localhost", 8064, ioManager))
+      val client = Actor.actorOf(new SimpleEchoClient("localhost", 8064, ioManager))
       val f1 = client ? ByteString("Hello World!1")
       val f2 = client ? ByteString("Hello World!2")
       val f3 = client ? ByteString("Hello World!3")
@@ -187,9 +187,9 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
     }
 
     "run echo server under high load" in {
-      val ioManager = Actor.actorOf(new IOManager()).start
-      val server = Actor.actorOf(new SimpleEchoServer("localhost", 8065, ioManager)).start
-      val client = Actor.actorOf(new SimpleEchoClient("localhost", 8065, ioManager)).start
+      val ioManager = Actor.actorOf(new IOManager())
+      val server = Actor.actorOf(new SimpleEchoServer("localhost", 8065, ioManager))
+      val client = Actor.actorOf(new SimpleEchoClient("localhost", 8065, ioManager))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
       assert(f.get.size === 1000)
@@ -199,9 +199,9 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
     }
 
     "run echo server under high load with small buffer" in {
-      val ioManager = Actor.actorOf(new IOManager(2)).start
-      val server = Actor.actorOf(new SimpleEchoServer("localhost", 8066, ioManager)).start
-      val client = Actor.actorOf(new SimpleEchoClient("localhost", 8066, ioManager)).start
+      val ioManager = Actor.actorOf(new IOManager(2))
+      val server = Actor.actorOf(new SimpleEchoServer("localhost", 8066, ioManager))
+      val client = Actor.actorOf(new SimpleEchoClient("localhost", 8066, ioManager))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
       assert(f.get.size === 1000)
@@ -211,10 +211,10 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
     }
 
     "run key-value store" in {
-      val ioManager = Actor.actorOf(new IOManager(2)).start // teeny tiny buffer
-      val server = Actor.actorOf(new KVStore("localhost", 8067, ioManager)).start
-      val client1 = Actor.actorOf(new KVClient("localhost", 8067, ioManager)).start
-      val client2 = Actor.actorOf(new KVClient("localhost", 8067, ioManager)).start
+      val ioManager = Actor.actorOf(new IOManager(2)) // teeny tiny buffer
+      val server = Actor.actorOf(new KVStore("localhost", 8067, ioManager))
+      val client1 = Actor.actorOf(new KVClient("localhost", 8067, ioManager))
+      val client2 = Actor.actorOf(new KVClient("localhost", 8067, ioManager))
       val f1 = client1 ? (('set, "hello", ByteString("World")))
       val f2 = client1 ? (('set, "test", ByteString("No one will read me")))
       val f3 = client1 ? (('get, "hello"))

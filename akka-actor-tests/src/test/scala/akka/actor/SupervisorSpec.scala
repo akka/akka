@@ -57,11 +57,7 @@ object SupervisorSpec {
 
   class Master extends Actor {
 
-    val temp = {
-      val a = actorOf(Props[PingPongActor].withLifeCycle(Temporary))
-      self link a
-      a.start
-    }
+    val temp = actorOf(Props[PingPongActor].withLifeCycle(Temporary).withSupervisor(self))
 
     override def receive = {
       case Die ⇒ (temp.?(Die, TimeoutMillis)).get
@@ -88,7 +84,7 @@ object SupervisorSpec {
   }
 
   def singleActorAllForOne = {
-    val pingpong = actorOf[PingPongActor].start()
+    val pingpong = actorOf[PingPongActor]
 
     val supervisor = Supervisor(
       SupervisorConfig(
@@ -102,7 +98,7 @@ object SupervisorSpec {
   }
 
   def singleActorOneForOne = {
-    val pingpong = actorOf[PingPongActor].start()
+    val pingpong = actorOf[PingPongActor]
 
     val supervisor = Supervisor(
       SupervisorConfig(
@@ -116,9 +112,9 @@ object SupervisorSpec {
   }
 
   def multipleActorsAllForOne = {
-    val pingpong1 = actorOf[PingPongActor].start()
-    val pingpong2 = actorOf[PingPongActor].start()
-    val pingpong3 = actorOf[PingPongActor].start()
+    val pingpong1 = actorOf[PingPongActor]
+    val pingpong2 = actorOf[PingPongActor]
+    val pingpong3 = actorOf[PingPongActor]
 
     val supervisor = Supervisor(
       SupervisorConfig(
@@ -140,9 +136,9 @@ object SupervisorSpec {
   }
 
   def multipleActorsOneForOne = {
-    val pingpong1 = actorOf[PingPongActor].start()
-    val pingpong2 = actorOf[PingPongActor].start()
-    val pingpong3 = actorOf[PingPongActor].start()
+    val pingpong1 = actorOf[PingPongActor]
+    val pingpong2 = actorOf[PingPongActor]
+    val pingpong3 = actorOf[PingPongActor]
 
     val supervisor = Supervisor(
       SupervisorConfig(

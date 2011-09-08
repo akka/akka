@@ -240,13 +240,12 @@ object Actor {
    * <pre>
    *   import Actor._
    *   val actor = actorOf[MyActor]
-   *   actor.start()
    *   actor ! message
    *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf[MyActor].start()
+   *   val actor = actorOf[MyActor]
    * </pre>
    */
   def actorOf[T <: Actor: Manifest](address: String): ActorRef =
@@ -258,13 +257,12 @@ object Actor {
    * <pre>
    *   import Actor._
    *   val actor = actorOf[MyActor]
-   *   actor.start
    *   actor ! message
    *   actor.stop
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf[MyActor].start
+   *   val actor = actorOf[MyActor]
    * </pre>
    */
   def actorOf[T <: Actor: Manifest]: ActorRef =
@@ -276,13 +274,12 @@ object Actor {
    * <pre>
    *   import Actor._
    *   val actor = actorOf(classOf[MyActor])
-   *   actor.start()
    *   actor ! message
    *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(classOf[MyActor]).start()
+   *   val actor = actorOf(classOf[MyActor])
    * </pre>
    */
   def actorOf[T <: Actor](clazz: Class[T]): ActorRef =
@@ -293,18 +290,15 @@ object Actor {
    * <pre>
    *   import Actor._
    *   val actor = actorOf(classOf[MyActor])
-   *   actor.start
    *   actor ! message
    *   actor.stop
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(classOf[MyActor]).start
+   *   val actor = actorOf(classOf[MyActor])
    * </pre>
    */
-  def actorOf[T <: Actor](clazz: Class[T], address: String): ActorRef = {
-    createActor(address, () ⇒ newLocalActorRef(clazz, address))
-  }
+  def actorOf[T <: Actor](clazz: Class[T], address: String): ActorRef = actorOf(Props(clazz), address)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -315,16 +309,15 @@ object Actor {
    * <pre>
    *   import Actor._
    *   val actor = actorOf(new MyActor)
-   *   actor.start()
    *   actor ! message
    *   actor.stop()
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(new MyActor).start()
+   *   val actor = actorOf(new MyActor)
    * </pre>
    */
-  def actorOf[T <: Actor](factory: ⇒ T): ActorRef = actorOf(factory, new UUID().toString)
+  def actorOf[T <: Actor](factory: ⇒ T): ActorRef = actorOf(factory, newUuid().toString)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -335,18 +328,15 @@ object Actor {
    * <pre>
    *   import Actor._
    *   val actor = actorOf(new MyActor)
-   *   actor.start
    *   actor ! message
    *   actor.stop
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   val actor = actorOf(new MyActor).start
+   *   val actor = actorOf(new MyActor)
    * </pre>
    */
-  def actorOf[T <: Actor](creator: ⇒ T, address: String): ActorRef = {
-    createActor(address, () ⇒ new LocalActorRef(Props(creator = () ⇒ creator), address))
-  }
+  def actorOf[T <: Actor](creator: ⇒ T, address: String): ActorRef = actorOf(Props(creator), address)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
@@ -356,8 +346,7 @@ object Actor {
    * <p/>
    * JAVA API
    */
-  def actorOf[T <: Actor](creator: Creator[T]): ActorRef =
-    actorOf(creator, newUuid().toString)
+  def actorOf[T <: Actor](creator: Creator[T]): ActorRef = actorOf(Props(creator), newUuid().toString)
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory (Creator<Actor>)
@@ -367,24 +356,61 @@ object Actor {
    * This function should <b>NOT</b> be used for remote actors.
    * JAVA API
    */
-  def actorOf[T <: Actor](creator: Creator[T], address: String): ActorRef = {
-    createActor(address, () ⇒ new LocalActorRef(Props(creator = () ⇒ creator.create), address))
-  }
+  def actorOf[T <: Actor](creator: Creator[T], address: String): ActorRef = actorOf(Props(creator), address)
 
   def actorOf(props: Props): ActorRef = actorOf(props, newUuid.toString)
   //TODO FIXME
   def actorOf(props: Props, address: String): ActorRef = {
     //TODO Implement support for configuring by deployment ID etc
-    //TODO If localOnly = true, never use the config file deployment and always create a new actor
     //TODO If deployId matches an already created actor (Ahead-of-time deployed) return that actor
     //TODO If deployId exists in config, it will override the specified Props (should we attempt to merge?)
 
-    /*val address = props.deployId match { //TODO handle deployId separately from address?
-      case "" | null ⇒ newUuid().toString
-      case other     ⇒ other
-    } */
-    new LocalActorRef(props, address).start()
+    //FIXME Hack, either remove deployId or rename it to address and remove the other param
+    val realAddress = props.deployId match { //TODO handle deployId separately from address?
+      case Props.`defaultDeployId` | null ⇒ address
+      case other                          ⇒ other
+    }
+
+    createActor(realAddress, props, systemService = false)
   }
+
+  private[akka] def createActor(address: String, props: Props, systemService: Boolean): ActorRef = if (!systemService) {
+    Address.validate(address)
+    registry.actorFor(address) match { // check if the actor for the address is already in the registry
+      case Some(actorRef) ⇒ actorRef // it is     -> return it
+      case None ⇒ // it is not -> create it
+        try {
+          Deployer.deploymentFor(address) match {
+            case Deploy(_, _, router, _, Local) ⇒ new LocalActorRef(props, address, systemService) // create a local actor
+            case deploy ⇒
+              val factory = props.creator
+              newClusterActorRef(() ⇒ new LocalActorRef(Props(factory), address, systemService), address, deploy) //create a clustered actor
+          }
+        } catch {
+          case e: DeploymentException ⇒
+            EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
+            new LocalActorRef(props, address, systemService) // if deployment fails, fall back to local actors
+        }
+    }
+  } else new LocalActorRef(props, address, systemService)
+
+  private[akka] def createActor(address: String, factory: () ⇒ ActorRef, systemService: Boolean): ActorRef = if (!systemService) {
+    Address.validate(address)
+    registry.actorFor(address) match { // check if the actor for the address is already in the registry
+      case Some(actorRef) ⇒ actorRef // it is     -> return it
+      case None ⇒ // it is not -> create it
+        try {
+          Deployer.deploymentFor(address) match {
+            case Deploy(_, _, router, _, Local) ⇒ factory() // create a local actor
+            case deploy                         ⇒ newClusterActorRef(factory, address, deploy) //create a clustered actor
+          }
+        } catch {
+          case e: DeploymentException ⇒
+            EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
+            factory() // if deployment fails, fall back to local actors
+        }
+    }
+  } else factory()
 
   /**
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
@@ -407,48 +433,6 @@ object Actor {
     actorOf(Props(new Actor() {
       def receive = { case "go" ⇒ try { body } finally { self.stop() } }
     }).withDispatcher(dispatcher)) ! "go"
-  }
-
-  /**
-   * Creates an actor according to the deployment plan for the 'address'; local or clustered.
-   * If already created then it just returns it from the registry.
-   */
-  private[akka] def createActor(address: String, actorFactory: () ⇒ ActorRef): ActorRef = {
-    Address.validate(address)
-    registry.actorFor(address) match { // check if the actor for the address is already in the registry
-      case Some(actorRef) ⇒ actorRef // it is     -> return it
-      case None ⇒ // it is not -> create it
-        try {
-          Deployer.deploymentFor(address) match {
-            case Deploy(_, _, router, _, Local) ⇒ actorFactory() // create a local actor
-            case deploy                         ⇒ newClusterActorRef(actorFactory, address, deploy)
-          }
-        } catch {
-          case e: DeploymentException ⇒
-            EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
-            actorFactory() // if deployment fails, fall back to local actors
-        }
-    }
-  }
-
-  private[akka] def newLocalActorRef(clazz: Class[_ <: Actor], address: String): ActorRef = {
-    new LocalActorRef(Props(creator = () ⇒ {
-      import ReflectiveAccess.{ createInstance, noParams, noArgs }
-      createInstance[Actor](clazz.asInstanceOf[Class[_]], noParams, noArgs) match {
-        case Right(actor) ⇒ actor
-        case Left(exception) ⇒
-          val cause = exception match {
-            case i: InvocationTargetException ⇒ i.getTargetException
-            case _                            ⇒ exception
-          }
-
-          throw new ActorInitializationException(
-            "Could not instantiate Actor of " + clazz +
-              "\nMake sure Actor is NOT defined inside a class/trait," +
-              "\nif so put it outside the class/trait, f.e. in a companion object," +
-              "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", cause)
-      }
-    }), address)
   }
 
   private[akka] def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef =
@@ -601,7 +585,6 @@ trait Actor {
    * For example fields like:
    * <pre>
    * self.dispatcher = ...
-   * self.trapExit = ...
    * self.faultHandler = ...
    * self.lifeCycle = ...
    * self.sender
@@ -612,7 +595,6 @@ trait Actor {
    * self.reply(..)
    * self.link(..)
    * self.unlink(..)
-   * self.start(..)
    * self.stop(..)
    * </pre>
    */
@@ -645,7 +627,7 @@ trait Actor {
   /**
    * User overridable callback.
    * <p/>
-   * Is called when an Actor is started by invoking 'actor.start()'.
+   * Is called when an Actor is started by invoking 'actor'.
    */
   def preStart() {}
 

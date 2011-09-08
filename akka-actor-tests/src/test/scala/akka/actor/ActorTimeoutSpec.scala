@@ -19,7 +19,7 @@ class ActorTimeoutSpec
     def receive = {
       case x ⇒
     }
-  }, timeout = t)).start()
+  }, timeout = t))
 
   val testTimeout = if (Timeout.default.duration < 400.millis) 500 millis else 100 millis
 

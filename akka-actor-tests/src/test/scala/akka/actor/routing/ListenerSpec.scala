@@ -22,7 +22,7 @@ class ListenerSpec extends WordSpec with MustMatchers {
         def receive = listenerManagement orElse {
           case "foo" ⇒ gossip("bar")
         }
-      }).start()
+      })
 
       def newListener = actorOf(new Actor {
         def receive = {
@@ -32,7 +32,7 @@ class ListenerSpec extends WordSpec with MustMatchers {
           case "foo" ⇒
             fooLatch.countDown()
         }
-      }).start()
+      })
 
       val a1 = newListener
       val a2 = newListener

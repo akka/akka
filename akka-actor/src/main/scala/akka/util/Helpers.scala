@@ -5,6 +5,7 @@
 package akka.util
 
 import akka.event.EventHandler
+import java.io.{ PrintWriter, StringWriter }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -39,6 +40,11 @@ object Helpers {
       body
     } catch {
       case e: Throwable ⇒
+        val sw = new java.io.StringWriter()
+        var root = e
+        while (root.getCause ne null) root = e.getCause
+        root.printStackTrace(new java.io.PrintWriter(sw))
+        System.err.println(sw.toString)
         EventHandler.error(e, this, e.toString)
         throw e
     }

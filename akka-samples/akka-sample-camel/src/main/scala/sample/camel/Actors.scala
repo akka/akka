@@ -75,7 +75,7 @@ class Consumer5 extends Actor with Consumer {
 
   def receive = {
     case _ ⇒ {
-      Actor.actorOf[Consumer4].start
+      Actor.actorOf[Consumer4]
       self.reply("Consumer4 started")
     }
   }

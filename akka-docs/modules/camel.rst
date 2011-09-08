@@ -62,7 +62,7 @@ one-liner. Here's an example.
    }
 
    // start and expose actor via tcp
-   val myActor = actorOf[MyActor].start
+   val myActor = actorOf[MyActor]
 
 The above example exposes an actor over a tcp endpoint on port 6200 via Apache
 Camel's `Mina component`_. The actor implements the endpointUri method to define
@@ -354,7 +354,7 @@ Actors (untyped)
 Publishing a consumer actor at its Camel endpoint occurs when the actor is
 started. Publication is done asynchronously; setting up an endpoint (more
 precisely, the route from that endpoint to the actor) may still be in progress
-after the ActorRef.start method returned.
+after the ActorRef method returned.
 
 **Scala**
 
@@ -362,8 +362,7 @@ after the ActorRef.start method returned.
 
    import akka.actor.Actor._
 
-   val actor = actorOf[Consumer1] // create Consumer actor
-   actor.start                    // activate endpoint in background
+   val actor = actorOf[Consumer1] // create Consumer actor and activate endpoint in background
 
 **Java**
 
@@ -372,8 +371,7 @@ after the ActorRef.start method returned.
    import static akka.actor.Actors.*;
    import akka.actor.ActorRef;
 
-   ActorRef actor = actorOf(Consumer1.class); // create Consumer actor
-   actor.start();                             // activate endpoint in background
+   ActorRef actor = actorOf(Consumer1.class); // create Consumer actor and activate endpoint in background
 
 
 Typed actors
@@ -547,7 +545,7 @@ still in progress after the ``ActorRef.stop`` method returned.
    import akka.actor.Actor._
 
    val actor = actorOf[Consumer1] // create Consumer actor
-   actor.start                    // activate endpoint in background
+   actor                    // activate endpoint in background
    // ...
    actor.stop                     // deactivate endpoint in background
 
@@ -558,8 +556,7 @@ still in progress after the ``ActorRef.stop`` method returned.
    import static akka.actor.Actors.*;
    import akka.actor.ActorRef;
 
-   ActorRef actor = actorOf(Consumer1.class); // create Consumer actor
-   actor.start();                             // activate endpoint in background
+   ActorRef actor = actorOf(Consumer1.class); // create Consumer actor and activate endpoint in background
    // ...
    actor.stop();                              // deactivate endpoint in background
 
@@ -958,7 +955,7 @@ actors (see below) is an initialized and started CamelContextManager.
    import akka.camel.CamelContextManager;
 
    CamelContextManager.init();  // optionally takes a CamelContext as argument
-   CamelContextManager.start(); // starts the managed CamelContext
+   CamelContextManager; // starts the managed CamelContext
 
 For using producer actors, application may also start a CamelService. This will
 not only setup a CamelContextManager behind the scenes but also register
@@ -1031,7 +1028,7 @@ used.
    import akka.actor.Actor._
    import akka.actor.ActorRef
 
-   val producer = actorOf[Producer1].start
+   val producer = actorOf[Producer1]
    val response = producer !! "akka rocks"
    val body = response.bodyAs[String]
 
@@ -1043,7 +1040,7 @@ used.
    import static akka.actor.Actors.*;
    import akka.camel.Message;
 
-   ActorRef producer = actorOf(Producer1.class).start();
+   ActorRef producer = actorOf(Producer1.class);
    Message response = (Message)producer.sendRequestReply("akka rocks");
    String body = response.getBodyAs(String.class)
 
@@ -1160,7 +1157,7 @@ argument.
 
    ActorRef target = ...
    ActorRef producer = actorOf(new Producer1Factory(target));
-   producer.start();
+   producer;
 
 Before producing messages to endpoints, producer actors can pre-process them by
 overriding the receiveBeforeProduce method (Scala) or onReceiveBeforeProduce
@@ -1949,7 +1946,7 @@ ends at the target actor.
    import akka.camel.{Message, CamelContextManager, CamelServiceManager}
 
    object CustomRouteExample extends Application {
-     val target = actorOf[CustomRouteTarget].start
+     val target = actorOf[CustomRouteTarget]
 
      CamelServiceManager.startCamelService
      CamelContextManager.mandatoryContext.addRoutes(new CustomRouteBuilder(target.uuid))
@@ -1985,7 +1982,7 @@ ends at the target actor.
 
    public class CustomRouteExample {
        public static void main(String... args) throws Exception {
-           ActorRef target = actorOf(CustomRouteTarget.class).start();
+           ActorRef target = actorOf(CustomRouteTarget.class);
            CamelServiceManager.startCamelService();
            CamelContextManager.getMandatoryContext().addRoutes(new CustomRouteBuilder(target.getUuid()));
        }
@@ -2550,9 +2547,9 @@ as shown in the following snippet (see also `sample.camel.Boot`_).
    }
 
    // Wire and start the example actors
-   val httpTransformer = actorOf(new HttpTransformer).start
-   val httpProducer = actorOf(new HttpProducer(httpTransformer)).start
-   val httpConsumer = actorOf(new HttpConsumer(httpProducer)).start
+   val httpTransformer = actorOf(new HttpTransformer)
+   val httpProducer = actorOf(new HttpProducer(httpTransformer))
+   val httpConsumer = actorOf(new HttpConsumer(httpProducer))
 
 The `jetty endpoints`_ of HttpConsumer and HttpProducer support asynchronous
 in-out message exchanges and do not allocate threads for the full duration of
@@ -2645,10 +2642,6 @@ follows.
      val producer = actorOf[Producer1]
      val mediator = actorOf(new Transformer(producer))
      val consumer = actorOf(new Consumer3(mediator))
-
-     producer.start
-     mediator.start
-     consumer.start
    }
 
    class CustomRouteBuilder extends RouteBuilder {
@@ -2750,11 +2743,11 @@ Wiring these actors to implement the above example is as simple as
 
      // Setup publish/subscribe example
      val jmsUri = "jms:topic:test"
-     val jmsSubscriber1 = actorOf(new Subscriber("jms-subscriber-1", jmsUri)).start
-     val jmsSubscriber2 = actorOf(new Subscriber("jms-subscriber-2", jmsUri)).start
-     val jmsPublisher   = actorOf(new Publisher("jms-publisher", jmsUri)).start
+     val jmsSubscriber1 = actorOf(new Subscriber("jms-subscriber-1", jmsUri))
+     val jmsSubscriber2 = actorOf(new Subscriber("jms-subscriber-2", jmsUri))
+     val jmsPublisher   = actorOf(new Publisher("jms-publisher", jmsUri))
 
-     val jmsPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher)).start
+     val jmsPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher))
    }
 
 To publish messages to subscribers one could of course also use the JMS API
@@ -2847,10 +2840,10 @@ to be changed.
 
      // Setup publish/subscribe example
      val cometdUri = "cometd://localhost:8111/test/abc?resourceBase=target"
-     val cometdSubscriber = actorOf(new Subscriber("cometd-subscriber", cometdUri)).start
-     val cometdPublisher  = actorOf(new Publisher("cometd-publisher", cometdUri)).start
+     val cometdSubscriber = actorOf(new Subscriber("cometd-subscriber", cometdUri))
+     val cometdPublisher  = actorOf(new Publisher("cometd-publisher", cometdUri))
 
-     val cometdPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher)).start
+     val cometdPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher))
    }
 
 
@@ -2892,11 +2885,8 @@ seconds:
            // start the Camel service
            startCamelService
 
-           // create a quartz actor
+           // create and start a quartz actor
            val myActor = actorOf[MyQuartzActor]
-
-           // start the quartz actor
-           myActor.start
 
        } // end main
 

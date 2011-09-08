@@ -32,7 +32,7 @@ public class ConsumerJavaTestBase {
     public void shouldHandleExceptionThrownByActorAndGenerateCustomResponse() {
         getMandatoryService().awaitEndpointActivation(1, new SideEffect() {
             public void apply() {
-                actorOf(SampleErrorHandlingConsumer.class).start();
+                actorOf(SampleErrorHandlingConsumer.class);
             }
         });
         String result = getMandatoryTemplate().requestBody("direct:error-handler-test-java", "hello", String.class);

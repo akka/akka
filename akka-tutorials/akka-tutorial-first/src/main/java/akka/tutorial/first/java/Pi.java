@@ -105,7 +105,7 @@ public class Pi {
 
       LinkedList<ActorRef> workers = new LinkedList<ActorRef>();
       for (int i = 0; i < nrOfWorkers; i++) {
-          ActorRef worker = actorOf(Worker.class, "worker").start();
+          ActorRef worker = actorOf(Worker.class, "worker");
           workers.add(worker);
       }
 
@@ -172,7 +172,7 @@ public class Pi {
       public UntypedActor create() {
         return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
       }
-    }, "master").start();
+    }, "master");
 
     // start the calculation
     master.tell(new Calculate());

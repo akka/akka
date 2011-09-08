@@ -76,7 +76,7 @@ abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfte
         case e: Throwable ⇒ result.completeWithException(e)
       }
     })
-    t.start()
+    t.start
     result
   }
 

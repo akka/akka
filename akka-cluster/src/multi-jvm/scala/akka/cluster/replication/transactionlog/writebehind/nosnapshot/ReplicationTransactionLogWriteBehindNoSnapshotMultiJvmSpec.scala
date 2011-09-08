@@ -42,7 +42,7 @@
 //       }
 
 //       barrier("create-actor-on-node1", NrOfNodes) {
-//         val actorRef = Actor.actorOf[HelloWorld]("hello-world-write-behind-nosnapshot").start()
+//         val actorRef = Actor.actorOf[HelloWorld]("hello-world-write-behind-nosnapshot")
 //         //        node.isInUseOnNode("hello-world") must be(true)
 //         actorRef.address must be("hello-world-write-behind-nosnapshot")
 //         for (i ← 0 until 10) {

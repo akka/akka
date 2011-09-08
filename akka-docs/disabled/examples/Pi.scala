@@ -62,7 +62,7 @@ object Pi extends App {
 
     //#create-workers
     // create the workers
-    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
+    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker])
 
     // wrap them with a load-balancing router
     val router = Routing.actorOf(
@@ -72,7 +72,7 @@ object Pi extends App {
         .withDeployId("pi")
     )
 
-    loadBalancerActor(CyclicIterator(workers)).start()
+    loadBalancerActor(CyclicIterator(workers))
     //#create-workers
 
     //#master-receive
@@ -123,7 +123,7 @@ object Pi extends App {
 
     // create the master
     val master = actorOf(
-      new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start()
+      new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch))
 
     // start the calculation
     master ! Calculate

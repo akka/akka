@@ -11,7 +11,7 @@ object ClientApplication extends App {
 
   /* TODO: fix remote example
 
-  val actor1 = remote.actorOf[RemoteActor1]("localhost", 7777).start
+  val actor1 = remote.actorOf[RemoteActor1]("localhost", 7777)
   val actor2 = remote.actorFor("remote2", "localhost", 7777)
 
   val typedActor1 =

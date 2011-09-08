@@ -26,7 +26,7 @@ object ScatterGatherFailoverMultiJvmSpec {
         Thread.sleep(2000)
         Cluster.node.shutdown()
       }
-    }.start()
+    }
 
     def receive = {
       case Shutdown(None) ⇒ shutdownNode

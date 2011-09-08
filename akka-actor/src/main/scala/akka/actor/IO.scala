@@ -258,7 +258,7 @@ class IOManager(bufferSize: Int = 8192) extends Actor {
 
   override def preStart: Unit = {
     worker = new IOWorker(self, bufferSize)
-    worker.start
+    worker.start()
   }
 
   def receive = {
@@ -307,7 +307,7 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
     addRequest(request)
 
   def start(): Unit =
-    thread.start
+    thread.start()
 
   // private
 

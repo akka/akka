@@ -35,8 +35,8 @@ class DispatcherActorsSpec extends JUnitSuite with MustMatchers {
   def slowActorShouldntBlockFastActor {
     val sFinished = new CountDownLatch(50)
     val fFinished = new CountDownLatch(10)
-    val s = actorOf(new SlowActor(sFinished), "SlowActor").start
-    val f = actorOf(new FastActor(fFinished), "FastActor").start
+    val s = actorOf(new SlowActor(sFinished), "SlowActor")
+    val f = actorOf(new FastActor(fFinished), "FastActor")
 
     // send a lot of stuff to s
     for (i ← 1 to 50) {

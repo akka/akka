@@ -61,7 +61,6 @@ The following JUnit snippet first creates an actor using the default constructor
   @Test public void mustBeAbleToSerializeAfterCreateActorRefFromClass() {
       ActorRef ref = Actors.actorOf(SerializationTestActor.class);
       assertNotNull(ref);
-      ref.start();
       try {
           Object result = ref.sendRequestReply("Hello");
           assertEquals("got it!", result);
@@ -73,7 +72,7 @@ The following JUnit snippet first creates an actor using the default constructor
       byte[] bytes = toBinaryJ(ref, f, false);
       ActorRef r = fromBinaryJ(bytes, f);
       assertNotNull(r);
-      r.start();
+
       try {
           Object result = r.sendRequestReply("Hello");
           assertEquals("got it!", result);
@@ -151,7 +150,6 @@ Step 3: Serialize and de-serialize
   @Test public void mustBeAbleToSerializeAStatefulActor() {
       ActorRef ref = Actors.actorOf(MyUntypedActor.class);
       assertNotNull(ref);
-      ref.start();
       try {
           Object result = ref.sendRequestReply("hello");
           assertEquals("world 1", result);
@@ -165,7 +163,6 @@ Step 3: Serialize and de-serialize
       byte[] bytes = toBinaryJ(ref, f, false);
       ActorRef r = fromBinaryJ(bytes, f);
       assertNotNull(r);
-      r.start();
       try {
           Object result = r.sendRequestReply("hello");
           assertEquals("world 3", result);

@@ -48,7 +48,7 @@ class SingleReplicaDirectRoutingMultiJvmNode2 extends ClusterTestNode {
       Cluster.node.start()
       LocalCluster.barrier("waiting-for-begin", NrOfNodes).await()
 
-      val actor = Actor.actorOf[SomeActor]("service-hello").start().asInstanceOf[ClusterActorRef]
+      val actor = Actor.actorOf[SomeActor]("service-hello").asInstanceOf[ClusterActorRef]
       actor.isRunning must be(true)
 
       val result = (actor ? "identify").get

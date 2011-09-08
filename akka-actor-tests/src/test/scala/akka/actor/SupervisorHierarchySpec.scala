@@ -16,12 +16,8 @@ object SupervisorHierarchySpec {
   class FireWorkerException(msg: String) extends Exception(msg)
 
   class CountDownActor(countDown: CountDownLatch) extends Actor {
-    protected def receive = { case _ ⇒ () }
+    protected def receive = { case _ ⇒ }
     override def postRestart(reason: Throwable) = countDown.countDown()
-  }
-
-  class CrasherActor extends Actor {
-    protected def receive = { case _ ⇒ () }
   }
 }
 
@@ -32,20 +28,13 @@ class SupervisorHierarchySpec extends JUnitSuite {
   def killWorkerShouldRestartMangerAndOtherWorkers = {
     val countDown = new CountDownLatch(4)
 
-    val workerOne = actorOf(new CountDownActor(countDown))
-    val workerTwo = actorOf(new CountDownActor(countDown))
-    val workerThree = actorOf(new CountDownActor(countDown))
-
     val boss = actorOf(Props(new Actor {
       protected def receive = { case _ ⇒ () }
     }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 1000)))
 
-    val manager = actorOf(new CountDownActor(countDown))
-    boss.link(manager).start()
+    val manager = actorOf(Props(new CountDownActor(countDown)).withSupervisor(boss))
 
-    manager.link(workerOne).start()
-    manager.link(workerTwo).start()
-    manager.link(workerThree).start()
+    val workerOne, workerTwo, workerThree = actorOf(Props(new CountDownActor(countDown)).withSupervisor(manager))
 
     workerOne ! Death(workerOne, new FireWorkerException("Fire the worker!"))
 
@@ -57,19 +46,21 @@ class SupervisorHierarchySpec extends JUnitSuite {
 
   @Test
   def supervisorShouldReceiveNotificationMessageWhenMaximumNumberOfRestartsWithinTimeRangeIsReached = {
-    val countDown = new CountDownLatch(2)
-    val crasher = actorOf(new CountDownActor(countDown))
+    val countDownMessages = new CountDownLatch(1)
+    val countDownMax = new CountDownLatch(1)
     val boss = actorOf(Props(new Actor {
       protected def receive = {
-        case MaximumNumberOfRestartsWithinTimeRangeReached(_, _, _, _) ⇒ countDown.countDown()
+        case MaximumNumberOfRestartsWithinTimeRangeReached(_, _, _, _) ⇒ countDownMax.countDown()
       }
     }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 1, 5000)))
-    boss.link(crasher).start()
 
-    crasher ! Death(crasher, new FireWorkerException("Fire the worker!"))
-    crasher ! Death(crasher, new FireWorkerException("Fire the worker!"))
+    val crasher = actorOf(Props(new CountDownActor(countDownMessages)).withSupervisor(boss))
 
-    assert(countDown.await(2, TimeUnit.SECONDS))
+    crasher ! Kill
+    crasher ! Kill
+
+    assert(countDownMessages.await(2, TimeUnit.SECONDS))
+    assert(countDownMax.await(2, TimeUnit.SECONDS))
   }
 }
 

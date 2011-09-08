@@ -45,7 +45,6 @@ import akka.japi.{ Creator, Procedure }
  *
  *    public static void main(String[] args) {
  *      ActorRef actor = Actors.actorOf(SampleUntypedActor.class);
- *      actor.start();
  *      actor.tell("SendToSelf");
  *      actor.stop();
  *    }
@@ -86,7 +85,7 @@ abstract class UntypedActor extends Actor {
   /**
    * User overridable callback.
    * <p/>
-   * Is called when an Actor is started by invoking 'actor.start()'.
+   * Is called when an Actor is started, this only happens at most once in the life of an actor.
    */
   override def preStart() {}
 

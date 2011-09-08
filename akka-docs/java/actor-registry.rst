@@ -77,5 +77,5 @@ The above actor can be added as listener of registry events:
 
   import static akka.actor.Actors.*;
 
-  ActorRef listener = actorOf(RegistryListener.class).start();
+  ActorRef listener = actorOf(RegistryListener.class);
   registry().addListener(listener);

@@ -166,11 +166,11 @@ object DiningHakkersOnFsm {
 
   def run = {
     // Create 5 chopsticks
-    val chopsticks = for (i ← 1 to 5) yield actorOf(new Chopstick("Chopstick " + i)).start()
+    val chopsticks = for (i ← 1 to 5) yield actorOf(new Chopstick("Chopstick " + i))
     // Create 5 awesome fsm hakkers and assign them their left and right chopstick
     val hakkers = for {
       (name, i) ← List("Ghosh", "Bonér", "Klang", "Krasser", "Manie").zipWithIndex
-    } yield actorOf(new FSMHakker(name, chopsticks(i), chopsticks((i + 1) % 5))).start()
+    } yield actorOf(new FSMHakker(name, chopsticks(i), chopsticks((i + 1) % 5)))
 
     hakkers.foreach(_ ! Think)
   }

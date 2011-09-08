@@ -45,7 +45,7 @@ object ActorRestartSpec {
           val ref = TestActorRef(new Actor {
             def receive = { case _ ⇒ }
             override def preStart { testActor ! ((this, self)) }
-          }).start()
+          })
           testActor ! ((ref.underlyingActor, ref))
           None
         case Handover ⇒
@@ -81,7 +81,7 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
   private def collect(f: ⇒ ActorRef): ActorRef = {
     val ref = f
     toStop add ref
-    ref.start()
+    ref
   }
 
   private def createSupervisor =

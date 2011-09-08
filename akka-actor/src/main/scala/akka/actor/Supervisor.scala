@@ -79,7 +79,7 @@ object Supervisor {
  *
  * <pre>
  * val supervisor = factory.newInstance
- * supervisor.start // start up all managed servers
+ * supervisor.start() // start up all managed servers
  * </pre>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -91,8 +91,7 @@ case class SupervisorFactory(val config: SupervisorConfig) {
   def newInstanceFor(config: SupervisorConfig): Supervisor = {
     val supervisor = new Supervisor(config.restartStrategy, config.maxRestartsHandler)
     supervisor.configure(config)
-    supervisor.start
-    supervisor
+    supervisor.start()
   }
 }
 
@@ -147,7 +146,6 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (Act
         case Supervise(actorRef, lifeCycle, registerAsRemoteService) ⇒
           // actorRef.lifeCycle = lifeCycle THIS IS NOT COOL, BUT WAITING FOR https://www.assembla.com/spaces/akka/tickets/1124-supervisor-dsl-doesn-t-make-much-sense-after-the-introduction-of-props
           supervisor.link(actorRef)
-          actorRef.start()
 
           _childActors.add(actorRef) //TODO Why do we keep this here, mem leak?
 

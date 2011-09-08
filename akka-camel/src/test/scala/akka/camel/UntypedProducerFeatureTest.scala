@@ -31,7 +31,6 @@ class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with
     scenario("produce message and receive normal response") {
       given("a registered two-way producer")
       val producer = actorOf(classOf[SampleUntypedReplyingProducer])
-      producer.start
 
       when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
@@ -45,7 +44,6 @@ class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with
     scenario("produce message and receive failure response") {
       given("a registered two-way producer")
       val producer = actorOf(classOf[SampleUntypedReplyingProducer])
-      producer.start
 
       when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
@@ -65,7 +63,6 @@ class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with
     scenario("produce message and send normal response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
       val producer = actorOf(classOf[SampleUntypedForwardingProducer])
-      producer.start
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("received test")

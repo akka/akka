@@ -254,10 +254,10 @@ Now create a new class for the master actor. The master actor is a little bit mo
 and then we can create the workers::
 
     // create the workers
-    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
+    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker])
 
     // wrap them with a load-balancing router
-    val router = Routing.loadBalancerActor(CyclicIterator(workers)).start()
+    val router = Routing.loadBalancerActor(CyclicIterator(workers))
 
 As you can see we are using the ``actorOf`` factory method to create actors, this method returns as an ``ActorRef`` which is a reference to our newly created actor.  This method is available in the ``Actor`` object but is usually imported::
 
@@ -268,7 +268,7 @@ There are two versions of ``actorOf``; one of them taking a actor type and the o
 The actor's life-cycle is:
 
 - Created -- ``Actor.actorOf[MyActor]`` -- can **not** receive messages
-- Started -- ``actorRef.start()`` -- can receive messages
+- Started -- ``actorRef`` -- can receive messages
 - Stopped -- ``actorRef.stop()`` -- can **not** receive messages
 
 Once the actor has been stopped it is dead and can not be started again.
@@ -290,10 +290,10 @@ Here is the master actor::
       var start: Long = _
 
       // create the workers
-      val workers = Vector.fill(nrOfWorkers)(actorOf[Worker].start())
+      val workers = Vector.fill(nrOfWorkers)(actorOf[Worker])
 
       // wrap them with a load-balancing router
-      val router = Routing.loadBalancerActor(CyclicIterator(workers)).start()
+      val router = Routing.loadBalancerActor(CyclicIterator(workers))
 
       def receive = { ... }
 
@@ -366,7 +366,7 @@ The ``Pi`` object is a perfect container module for our actors and messages, so 
 
         // create the master
         val master = actorOf(
-          new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)).start()
+          new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch))
 
         // start the calculation
         master ! Calculate

@@ -221,7 +221,6 @@ abstract class ActorModelSpec extends JUnitSuite {
     implicit val dispatcher = newInterceptedDispatcher
     assertDispatcher(dispatcher)(starts = 0, stops = 0)
     val a = newTestActor
-    a.start()
     assertDispatcher(dispatcher)(starts = 1, stops = 0)
     a.stop()
     await(dispatcher.stops.get == 1)(withinMs = dispatcher.timeoutMs * 5)
@@ -242,10 +241,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     assertDispatcher(dispatcher)(starts = 2, stops = 2)
 
     val a2 = newTestActor
-    a2.start
-    val futures2 = for (i ← 1 to 10) yield Future {
-      i
-    }
+    val futures2 = for (i ← 1 to 10) yield Future { i }
 
     await(dispatcher.starts.get == 3)(withinMs = dispatcher.timeoutMs * 5)
     assertDispatcher(dispatcher)(starts = 3, stops = 2)
@@ -258,9 +254,8 @@ abstract class ActorModelSpec extends JUnitSuite {
   @Test
   def dispatcherShouldProcessMessagesOneAtATime {
     implicit val dispatcher = newInterceptedDispatcher
-    val a = newTestActor
     val start, oneAtATime = new CountDownLatch(1)
-    a.start()
+    val a = newTestActor
 
     a ! CountDown(start)
     assertCountDown(start, Testing.testTime(3000), "Should process first message within 3 seconds")
@@ -279,9 +274,8 @@ abstract class ActorModelSpec extends JUnitSuite {
   @Test
   def dispatcherShouldHandleQueueingFromMultipleThreads {
     implicit val dispatcher = newInterceptedDispatcher
-    val a = newTestActor
     val counter = new CountDownLatch(200)
-    a.start()
+    val a = newTestActor
 
     for (i ← 1 to 10) {
       spawn {
@@ -312,8 +306,8 @@ abstract class ActorModelSpec extends JUnitSuite {
   @Test
   def dispatcherShouldProcessMessagesInParallel: Unit = {
     implicit val dispatcher = newInterceptedDispatcher
-    val a, b = newTestActor.start()
     val aStart, aStop, bParallel = new CountDownLatch(1)
+    val a, b = newTestActor
 
     a ! Meet(aStart, aStop)
     assertCountDown(aStart, Testing.testTime(3000), "Should process first message within 3 seconds")
@@ -332,7 +326,7 @@ abstract class ActorModelSpec extends JUnitSuite {
   def dispatcherShouldSuspendAndResumeAFailingNonSupervisedPermanentActor {
     filterEvents(EventFilter[Exception]("Restart")) {
       implicit val dispatcher = newInterceptedDispatcher
-      val a = newTestActor.start()
+      val a = newTestActor
       val done = new CountDownLatch(1)
       a ! Restart
       a ! CountDown(done)
@@ -346,7 +340,7 @@ abstract class ActorModelSpec extends JUnitSuite {
   @Test
   def dispatcherShouldNotProcessMessagesForASuspendedActor {
     implicit val dispatcher = newInterceptedDispatcher
-    val a = newTestActor.start().asInstanceOf[LocalActorRef]
+    val a = newTestActor.asInstanceOf[LocalActorRef]
     val done = new CountDownLatch(1)
     dispatcher.suspend(a)
     a ! CountDown(done)
@@ -370,7 +364,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     def flood(num: Int) {
       val cachedMessage = CountDownNStop(new CountDownLatch(num))
       (1 to num) foreach { _ ⇒
-        newTestActor.start() ! cachedMessage
+        newTestActor ! cachedMessage
       }
       assertCountDown(cachedMessage.latch, Testing.testTime(10000), "Should process " + num + " countdowns")
     }
@@ -384,7 +378,7 @@ abstract class ActorModelSpec extends JUnitSuite {
   @Test
   def dispatcherShouldCompleteAllUncompletedSenderFuturesOnDeregister {
     implicit val dispatcher = newInterceptedDispatcher
-    val a = newTestActor.start().asInstanceOf[LocalActorRef]
+    val a = newTestActor.asInstanceOf[LocalActorRef]
     dispatcher.suspend(a)
     val f1: Future[String] = a ? Reply("foo") mapTo manifest[String]
     val stopped = a ? PoisonPill
@@ -401,7 +395,7 @@ abstract class ActorModelSpec extends JUnitSuite {
   def dispatcherShouldContinueToProcessMessagesWhenAThreadGetsInterrupted {
     filterEvents(EventFilter[InterruptedException]("Ping!"), EventFilter[akka.event.EventHandler.EventHandlerException]) {
       implicit val dispatcher = newInterceptedDispatcher
-      val a = newTestActor.start()
+      val a = newTestActor
       val f1 = a ? Reply("foo")
       val f2 = a ? Reply("bar")
       val f3 = a ? Interrupt
@@ -426,7 +420,7 @@ abstract class ActorModelSpec extends JUnitSuite {
   def dispatcherShouldContinueToProcessMessagesWhenExceptionIsThrown {
     filterEvents(EventFilter[IndexOutOfBoundsException], EventFilter[RemoteException]) {
       implicit val dispatcher = newInterceptedDispatcher
-      val a = newTestActor.start()
+      val a = newTestActor
       val f1 = a ? Reply("foo")
       val f2 = a ? Reply("bar")
       val f3 = a ? new ThrowException(new IndexOutOfBoundsException("IndexOutOfBoundsException"))

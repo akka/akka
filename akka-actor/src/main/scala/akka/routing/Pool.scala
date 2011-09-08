@@ -117,7 +117,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
           for (i ← 0 until requestedCapacity) yield {
             val delegate = instance()
             self link delegate
-            delegate.start()
+            delegate
           }
         }
       case qty if qty < 0 ⇒

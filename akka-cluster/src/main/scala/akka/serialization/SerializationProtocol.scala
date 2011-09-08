@@ -230,7 +230,7 @@ object ActorSerialization {
       //
       )
 
-    val receiveTimeout = if (protocol.hasReceiveTimeout) Some(protocol.getReceiveTimeout) else None //TODO FIXME, I'm expensive and slow
+    val receiveTimeout = if (protocol.hasReceiveTimeout) Some(protocol.getReceiveTimeout) else None
 
     val ar = new LocalActorRef(actorUuid, protocol.getAddress, props, receiveTimeout, storedHotswap)
 

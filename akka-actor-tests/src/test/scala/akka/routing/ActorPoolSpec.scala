@@ -45,7 +45,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                 latch.countDown()
                 self tryReply "success"
             }
-          }).start()
+          })
 
           def limit = 2
           def selectionCount = 1
@@ -59,7 +59,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
         def receive = {
           case "success" ⇒ successes.countDown()
         }
-      }).start()
+      })
 
       implicit val replyTo = successCounter
       pool ! "a"
@@ -387,7 +387,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            }).start()
+            })
           }).withFaultHandler(faultHandler))
 
         val pool2 = actorOf(
@@ -411,7 +411,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            }).start()
+            })
           }).withFaultHandler(faultHandler))
 
         val pool3 = actorOf(
@@ -534,7 +534,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            }).start()
+            })
           }).withFaultHandler(OneForOneStrategy(List(classOf[IllegalStateException]), 5, 1000)))
 
         // actor comes back right away

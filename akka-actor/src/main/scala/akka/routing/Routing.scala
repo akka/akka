@@ -219,17 +219,13 @@ object Routing {
     val clusteringEnabled = ReflectiveAccess.ClusterModule.isEnabled
     val localOnly = props.localOnly
 
-    if (!localOnly && !clusteringEnabled)
-      throw new IllegalArgumentException("Can't have clustered actor reference without the ClusterModule being enabled")
-
-    else if (clusteringEnabled && !props.localOnly)
-      ReflectiveAccess.ClusterModule.newClusteredActorRef(props).start()
-
+    if (clusteringEnabled && !props.localOnly)
+      ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
     else {
       if (props.connections.isEmpty)
         throw new IllegalArgumentException("A routed actorRef can't have an empty connection set")
 
-      new RoutedActorRef(props).start()
+      new RoutedActorRef(props)
     }
   }
 
@@ -270,7 +266,7 @@ object Routing {
         RoutedProps.defaultFailureDetectorFactory,
         actorAddress,
         connections,
-        RoutedProps.defaultTimeout, true)).start()
+        RoutedProps.defaultTimeout, true))
   }
 }
 
@@ -309,12 +305,6 @@ private[akka] class RoutedActorRef(val routedProps: RoutedProps) extends Abstrac
 
   router.init(new RemoveConnectionOnFirstFailureLocalFailureDetector(routedProps.connections))
 
-  def start(): this.type = synchronized[this.type] {
-    if (_status == ActorRefInternals.UNSTARTED)
-      _status = ActorRefInternals.RUNNING
-    this
-  }
-
   def stop() {
     synchronized {
       if (_status == ActorRefInternals.RUNNING) {
@@ -323,6 +313,10 @@ private[akka] class RoutedActorRef(val routedProps: RoutedProps) extends Abstrac
       }
     }
   }
+
+  /*If you start me up*/
+  if (_status == ActorRefInternals.UNSTARTED)
+    _status = ActorRefInternals.RUNNING
 }
 
 /**

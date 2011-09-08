@@ -91,11 +91,11 @@ object StandaloneJmsApplication extends App {
   startCamelService
 
   val jmsUri = "jms:topic:test"
-  val jmsPublisher = Actor.actorOf(new Publisher(jmsUri), "jms-publisher").start
+  val jmsPublisher = Actor.actorOf(new Publisher(jmsUri), "jms-publisher")
 
   mandatoryService.awaitEndpointActivation(2) {
-    Actor.actorOf(new Subscriber("jms-subscriber-1", jmsUri)).start
-    Actor.actorOf(new Subscriber("jms-subscriber-2", jmsUri)).start
+    Actor.actorOf(new Subscriber("jms-subscriber-1", jmsUri))
+    Actor.actorOf(new Subscriber("jms-subscriber-2", jmsUri))
   }
 
   // Send 10 messages to via publisher actor
@@ -121,7 +121,7 @@ object StandaloneFileApplication {
   def main(args: Array[String]) {
     startCamelService
     mandatoryService.awaitEndpointActivation(1) {
-      Actor.actorOf(new FileConsumer).start
+      Actor.actorOf(new FileConsumer)
     }
   }
 }

@@ -287,7 +287,7 @@ object LocalDeployer extends ActorDeployer {
     deployments.putIfAbsent(deployment.address, deployment) /* match {
       case null ⇒
         deployment match {
-          case Deploy(address, Some(recipe), routing, _) ⇒ Actor.actorOf(recipe.implementationClass, address).start() //FIXME use routing?
+          case Deploy(address, Some(recipe), routing, _) ⇒ Actor.actorOf(recipe.implementationClass, address) //FIXME use routing?
           case _                                         ⇒
         }
       case `deployment` ⇒ //Already deployed TODO should it be like this?

@@ -42,7 +42,7 @@ You can also start it in the same statement:
 
 .. code-block:: scala
 
-  val a = actorOf[MyActor].start
+  val a = actorOf[MyActor]
 
 Creating Actors with non-default constructor
 --------------------------------------------

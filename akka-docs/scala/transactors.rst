@@ -64,8 +64,8 @@ Here is an example of coordinating two simple counter Actors so that they both i
     }
   }
 
-  val counter1 = Actor.actorOf[Counter].start()
-  val counter2 = Actor.actorOf[Counter].start()
+  val counter1 = Actor.actorOf[Counter]
+  val counter2 = Actor.actorOf[Counter]
 
   counter1 ! Coordinated(Increment(Some(counter2)))
 
