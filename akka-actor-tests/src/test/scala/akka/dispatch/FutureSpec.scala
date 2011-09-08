@@ -289,15 +289,15 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
 
       "firstCompletedOf" in {
         val futures = Vector.fill[Future[Int]](10)(new DefaultPromise[Int]()) :+ new KeptPromise[Int](Right(5))
-        Futures.firstCompletedOf(futures).get must be(5)
+        Future.firstCompletedOf(futures).get must be(5)
       }
 
       "find" in {
         val futures = for (i ← 1 to 10) yield Future { i }
-        val result = Futures.find[Int](_ == 3)(futures)
+        val result = Future.find[Int](_ == 3)(futures)
         result.get must be(Some(3))
 
-        val notFound = Futures.find[Int](_ == 11)(futures)
+        val notFound = Future.find[Int](_ == 11)(futures)
         notFound.get must be(None)
       }
 
@@ -309,7 +309,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         }
         val timeout = 10000
         def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), timeout).mapTo[Int] }
-        Futures.fold(0, timeout)(futures)(_ + _).get must be(45)
+        Future.fold(0, timeout)(futures)(_ + _).get must be(45)
       }
 
       "fold by composing" in {
@@ -336,7 +336,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           }
           val timeout = 10000
           def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100), timeout).mapTo[Int] }
-          Futures.fold(0, timeout)(futures)(_ + _).await.exception.get.getMessage must be("shouldFoldResultsWithException: expected")
+          Future.fold(0, timeout)(futures)(_ + _).await.exception.get.getMessage must be("shouldFoldResultsWithException: expected")
         }
       }
 
@@ -344,7 +344,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         import scala.collection.mutable.ArrayBuffer
         def test(testNumber: Int) {
           val fs = (0 to 1000) map (i ⇒ Future(i, 10000))
-          val result = Futures.fold(ArrayBuffer.empty[AnyRef], 10000)(fs) {
+          val result = Future.fold(ArrayBuffer.empty[AnyRef], 10000)(fs) {
             case (l, i) if i % 2 == 0 ⇒ l += i.asInstanceOf[AnyRef]
             case (l, _)               ⇒ l
           }.get.asInstanceOf[ArrayBuffer[Int]].sum
@@ -356,7 +356,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       }
 
       "return zero value if folding empty list" in {
-        Futures.fold(0)(List[Future[Int]]())(_ + _).get must be(0)
+        Future.fold(0)(List[Future[Int]]())(_ + _).get must be(0)
       }
 
       "shouldReduceResults" in {
@@ -367,7 +367,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         }
         val timeout = 10000
         def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), timeout).mapTo[Int] }
-        assert(Futures.reduce(futures, timeout)(_ + _).get === 45)
+        assert(Future.reduce(futures, timeout)(_ + _).get === 45)
       }
 
       "shouldReduceResultsWithException" in {
@@ -384,13 +384,13 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           }
           val timeout = 10000
           def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100), timeout).mapTo[Int] }
-          assert(Futures.reduce(futures, timeout)(_ + _).await.exception.get.getMessage === "shouldFoldResultsWithException: expected")
+          assert(Future.reduce(futures, timeout)(_ + _).await.exception.get.getMessage === "shouldFoldResultsWithException: expected")
         }
       }
 
       "shouldReduceThrowIAEOnEmptyInput" in {
         filterException[IllegalArgumentException] {
-          intercept[UnsupportedOperationException] { Futures.reduce(List[Future[Int]]())(_ + _).get }
+          intercept[UnsupportedOperationException] { Future.reduce(List[Future[Int]]())(_ + _).get }
         }
       }
 
