@@ -428,7 +428,7 @@ class DefaultClusterNode private[akka] (
 
       remoteService.shutdown() // shutdown server
 
-      RemoteFailureDetector.registry.stop()
+      RemoteFailureDetector.channel.stop()
       remoteClientLifeCycleHandler.stop()
       remoteDaemon.stop()
 
