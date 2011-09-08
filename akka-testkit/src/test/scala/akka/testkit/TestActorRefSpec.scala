@@ -232,10 +232,13 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       EventHandler.notify(TestEvent.Mute(filter))
       val log = TestActorRef[Logger]
       EventHandler.addListener(log)
+      val eventHandlerLevel = EventHandler.level
+      EventHandler.level = EventHandler.WarningLevel
       boss link ref
       val la = log.underlyingActor
       la.count must be(1)
       la.msg must (include("supervisor") and include("CallingThreadDispatcher"))
+      EventHandler.level = eventHandlerLevel
       EventHandler.removeListener(log)
       EventHandler.notify(TestEvent.UnMute(filter))
     }

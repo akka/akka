@@ -84,7 +84,7 @@ class TransactionLog private (
   def recordEntry(entry: Array[Byte]) {
     if (isOpen.isOn) {
       val entryBytes =
-        if (Cluster.shouldCompressData) LZF.compress(entry)
+        if (shouldCompressData) LZF.compress(entry)
         else entry
 
       try {
@@ -118,7 +118,7 @@ class TransactionLog private (
   def recordSnapshot(snapshot: Array[Byte]) {
     if (isOpen.isOn) {
       val snapshotBytes =
-        if (Cluster.shouldCompressData) LZF.compress(snapshot)
+        if (shouldCompressData) LZF.compress(snapshot)
         else snapshot
 
       try {
@@ -311,7 +311,7 @@ class TransactionLog private (
     while (enumeration.hasMoreElements) {
       val bytes = enumeration.nextElement.getEntry
       val entry =
-        if (Cluster.shouldCompressData) LZF.uncompress(bytes)
+        if (shouldCompressData) LZF.uncompress(bytes)
         else bytes
       entries = entries :+ entry
     }
@@ -356,6 +356,10 @@ class TransactionLog private (
  */
 object TransactionLog {
 
+  val zooKeeperServers = config.getString("akka.cluster.zookeeper-server-addresses", "localhost:2181")
+  val sessionTimeout = Duration(config.getInt("akka.cluster.session-timeout", 60), TIME_UNIT).toMillis.toInt
+  val connectionTimeout = Duration(config.getInt("akka.cluster.connection-timeout", 60), TIME_UNIT).toMillis.toInt
+
   val digestType = config.getString("akka.cluster.replication.digest-type", "CRC32") match {
     case "CRC32" ⇒ BookKeeper.DigestType.CRC32
     case "MAC"   ⇒ BookKeeper.DigestType.MAC
@@ -367,40 +371,17 @@ object TransactionLog {
   val quorumSize = config.getInt("akka.cluster.replication.quorum-size", 2)
   val snapshotFrequency = config.getInt("akka.cluster.replication.snapshot-frequency", 1000)
   val timeout = Duration(config.getInt("akka.cluster.replication.timeout", 30), TIME_UNIT).toMillis
+  val shouldCompressData = config.getBool("akka.cluster.use-compression", false)
 
   private[akka] val transactionLogNode = "/transaction-log-ids"
 
   private val isConnected = new Switch(false)
 
-  private[akka] lazy val (bookieClient, zkClient) = {
-    val bk = new BookKeeper(Cluster.zooKeeperServers)
+  @volatile
+  private[akka] var bookieClient: BookKeeper = _
 
-    val zk = new AkkaZkClient(
-      Cluster.zooKeeperServers,
-      Cluster.sessionTimeout,
-      Cluster.connectionTimeout,
-      Cluster.defaultZooKeeperSerializer)
-
-    try {
-      zk.create(transactionLogNode, null, CreateMode.PERSISTENT)
-    } catch {
-      case e: ZkNodeExistsException ⇒ {} // do nothing
-      case e: Throwable             ⇒ handleError(e)
-    }
-
-    EventHandler.info(this,
-      ("Transaction log service started with" +
-        "\n\tdigest type [%s]" +
-        "\n\tensemble size [%s]" +
-        "\n\tquorum size [%s]" +
-        "\n\tlogging time out [%s]").format(
-          digestType,
-          ensembleSize,
-          quorumSize,
-          timeout))
-    isConnected.switchOn
-    (bk, zk)
-  }
+  @volatile
+  private[akka] var zkClient: AkkaZkClient = _
 
   private[akka] def apply(
     ledger: LedgerHandle,
@@ -408,6 +389,34 @@ object TransactionLog {
     isAsync: Boolean,
     replicationScheme: ReplicationScheme) =
     new TransactionLog(ledger, id, isAsync, replicationScheme)
+
+  /**
+   * Starts up the transaction log.
+   */
+  def start(): Unit = {
+    isConnected switchOn {
+      bookieClient = new BookKeeper(zooKeeperServers)
+      zkClient = new AkkaZkClient(zooKeeperServers, sessionTimeout, connectionTimeout)
+
+      try {
+        zkClient.create(transactionLogNode, null, CreateMode.PERSISTENT)
+      } catch {
+        case e: ZkNodeExistsException ⇒ {} // do nothing
+        case e: Throwable             ⇒ handleError(e)
+      }
+
+      EventHandler.info(this,
+        ("Transaction log service started with" +
+          "\n\tdigest type [%s]" +
+          "\n\tensemble size [%s]" +
+          "\n\tquorum size [%s]" +
+          "\n\tlogging time out [%s]").format(
+            digestType,
+            ensembleSize,
+            quorumSize,
+            timeout))
+    }
+  }
 
   /**
    * Shuts down the transaction log.
@@ -575,10 +584,12 @@ object LocalBookKeeperEnsemble {
    */
   def start() {
     isRunning switchOn {
+      EventHandler.info(this, "Starting up LocalBookKeeperEnsemble...")
       localBookKeeper = new LocalBookKeeper(TransactionLog.ensembleSize)
       localBookKeeper.runZookeeper(port)
       localBookKeeper.initializeZookeper()
       localBookKeeper.runBookies()
+      EventHandler.info(this, "LocalBookKeeperEnsemble started up successfully")
     }
   }
 
