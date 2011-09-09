@@ -21,7 +21,8 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       rstdocDirectory <<= baseDirectory / "akka-docs"
     ),
-    aggregate = Seq(actor, testkit, actorTests, stm, cluster, http, slf4j, mailboxes, camel, camelTyped, samples, tutorials)
+    aggregate = Seq(actor, testkit, actorTests, stm, http, slf4j, camel, camelTyped, samples, tutorials)
+    //aggregate = Seq(actor, testkit, actorTests, stm, http, slf4j, cluster, mailboxes, camel, camelTyped, samples, tutorials)
   )
 
   lazy val actor = Project(
@@ -64,22 +65,22 @@ object AkkaBuild extends Build {
     )
   )
 
-  lazy val cluster = Project(
-    id = "akka-cluster",
-    base = file("akka-cluster"),
-    dependencies = Seq(stm, actorTests % "test->test", testkit % "test"),
-    settings = defaultSettings ++ multiJvmSettings ++ Seq(
-      libraryDependencies ++= Dependencies.cluster,
-      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
-        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
-      },
-      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
-      jvmOptions in MultiJvm := {
-        if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
-      },
-      test in Test <<= (test in Test) dependsOn (test in MultiJvm)
-    )
-  ) configs (MultiJvm)
+  // lazy val cluster = Project(
+  //   id = "akka-cluster",
+  //   base = file("akka-cluster"),
+  //   dependencies = Seq(stm, actorTests % "test->test", testkit % "test"),
+  //   settings = defaultSettings ++ multiJvmSettings ++ Seq(
+  //     libraryDependencies ++= Dependencies.cluster,
+  //     extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+  //       (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+  //     },
+  //     scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+  //     jvmOptions in MultiJvm := {
+  //       if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
+  //     },
+  //     test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+  //   )
+  // ) configs (MultiJvm)
 
   lazy val http = Project(
     id = "akka-http",
@@ -99,62 +100,62 @@ object AkkaBuild extends Build {
     )
   )
 
-  lazy val mailboxes = Project(
-    id = "akka-durable-mailboxes",
-    base = file("akka-durable-mailboxes"),
-    settings = parentSettings,
-    aggregate = Seq(mailboxesCommon, beanstalkMailbox, fileMailbox, redisMailbox, zookeeperMailbox)
-    // aggregate = Seq(mailboxesCommon, beanstalkMailbox, fileMailbox, redisMailbox, zookeeperMailbox, mongoMailbox)
-  )
+  // lazy val mailboxes = Project(
+  //   id = "akka-durable-mailboxes",
+  //   base = file("akka-durable-mailboxes"),
+  //   settings = parentSettings,
+  //   aggregate = Seq(mailboxesCommon, beanstalkMailbox, fileMailbox, redisMailbox, zookeeperMailbox)
+  //   // aggregate = Seq(mailboxesCommon, beanstalkMailbox, fileMailbox, redisMailbox, zookeeperMailbox, mongoMailbox)
+  // )
 
-  lazy val mailboxesCommon = Project(
-    id = "akka-mailboxes-common",
-    base = file("akka-durable-mailboxes/akka-mailboxes-common"),
-    dependencies = Seq(cluster),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.mailboxes
-    )
-  )
+  // lazy val mailboxesCommon = Project(
+  //   id = "akka-mailboxes-common",
+  //   base = file("akka-durable-mailboxes/akka-mailboxes-common"),
+  //   dependencies = Seq(cluster),
+  //   settings = defaultSettings ++ Seq(
+  //     libraryDependencies ++= Dependencies.mailboxes
+  //   )
+  // )
 
-  val testBeanstalkMailbox = SettingKey[Boolean]("test-beanstalk-mailbox")
+  // val testBeanstalkMailbox = SettingKey[Boolean]("test-beanstalk-mailbox")
 
-  lazy val beanstalkMailbox = Project(
-    id = "akka-beanstalk-mailbox",
-    base = file("akka-durable-mailboxes/akka-beanstalk-mailbox"),
-    dependencies = Seq(mailboxesCommon % "compile;test->test"),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.beanstalkMailbox,
-      testBeanstalkMailbox := false,
-      testOptions in Test <+= testBeanstalkMailbox map { test => Tests.Filter(s => test) }
-    )
-  )
+  // lazy val beanstalkMailbox = Project(
+  //   id = "akka-beanstalk-mailbox",
+  //   base = file("akka-durable-mailboxes/akka-beanstalk-mailbox"),
+  //   dependencies = Seq(mailboxesCommon % "compile;test->test"),
+  //   settings = defaultSettings ++ Seq(
+  //     libraryDependencies ++= Dependencies.beanstalkMailbox,
+  //     testBeanstalkMailbox := false,
+  //     testOptions in Test <+= testBeanstalkMailbox map { test => Tests.Filter(s => test) }
+  //   )
+  // )
 
-  lazy val fileMailbox = Project(
-    id = "akka-file-mailbox",
-    base = file("akka-durable-mailboxes/akka-file-mailbox"),
-    dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
-    settings = defaultSettings
-  )
+  // lazy val fileMailbox = Project(
+  //   id = "akka-file-mailbox",
+  //   base = file("akka-durable-mailboxes/akka-file-mailbox"),
+  //   dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
+  //   settings = defaultSettings
+  // )
 
-  val testRedisMailbox = SettingKey[Boolean]("test-redis-mailbox")
+  // val testRedisMailbox = SettingKey[Boolean]("test-redis-mailbox")
 
-  lazy val redisMailbox = Project(
-    id = "akka-redis-mailbox",
-    base = file("akka-durable-mailboxes/akka-redis-mailbox"),
-    dependencies = Seq(mailboxesCommon % "compile;test->test"),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.redisMailbox,
-      testRedisMailbox := false,
-      testOptions in Test <+= testRedisMailbox map { test => Tests.Filter(s => test) }
-    )
-  )
+  // lazy val redisMailbox = Project(
+  //   id = "akka-redis-mailbox",
+  //   base = file("akka-durable-mailboxes/akka-redis-mailbox"),
+  //   dependencies = Seq(mailboxesCommon % "compile;test->test"),
+  //   settings = defaultSettings ++ Seq(
+  //     libraryDependencies ++= Dependencies.redisMailbox,
+  //     testRedisMailbox := false,
+  //     testOptions in Test <+= testRedisMailbox map { test => Tests.Filter(s => test) }
+  //   )
+  // )
 
-  lazy val zookeeperMailbox = Project(
-    id = "akka-zookeeper-mailbox",
-    base = file("akka-durable-mailboxes/akka-zookeeper-mailbox"),
-    dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
-    settings = defaultSettings
-  )
+  // lazy val zookeeperMailbox = Project(
+  //   id = "akka-zookeeper-mailbox",
+  //   base = file("akka-durable-mailboxes/akka-zookeeper-mailbox"),
+  //   dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
+  //   settings = defaultSettings
+  // )
 
   // val testMongoMailbox = SettingKey[Boolean]("test-mongo-mailbox")
 
