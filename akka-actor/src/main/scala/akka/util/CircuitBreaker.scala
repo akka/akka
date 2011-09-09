@@ -10,6 +10,11 @@ import scala.annotation.tailrec
 
 import java.util.concurrent.atomic.AtomicReference
 
+// NOTE: This CircuitBreaker is work-in-progress and does NOT work as normal ones.
+//       It is not meant to be used as a regular CircuitBreaker, since it does not
+//       prevent using the failed connection but only calls the registered call-backs.
+//       Is meant to be changed a bit and used in the FailurDetector later.
+
 /**
  * <pre>
  *   // Create the CircuitBreaker
