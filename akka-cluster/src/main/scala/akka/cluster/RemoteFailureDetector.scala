@@ -224,6 +224,8 @@ class BannagePeriodFailureDetector(
   timeToBan: Duration)
   extends RemoteFailureDetectorBase(initialConnections) {
 
+  // FIXME considering adding a Scheduler event to notify the BannagePeriodFailureDetector unban the banned connection after the timeToBan have exprired
+
   type T = Map[InetSocketAddress, BannedConnection]
 
   case class BannedConnection(bannedSince: Long, connection: ActorRef)
