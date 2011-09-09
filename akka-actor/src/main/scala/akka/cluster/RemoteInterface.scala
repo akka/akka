@@ -104,18 +104,23 @@ case class RemoteClientError(
   @BeanProperty cause: Throwable,
   @BeanProperty client: RemoteClientModule,
   @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+
 case class RemoteClientDisconnected(
   @BeanProperty client: RemoteClientModule,
   @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+
 case class RemoteClientConnected(
   @BeanProperty client: RemoteClientModule,
   @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+
 case class RemoteClientStarted(
   @BeanProperty client: RemoteClientModule,
   @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+
 case class RemoteClientShutdown(
   @BeanProperty client: RemoteClientModule,
   @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+
 case class RemoteClientWriteFailed(
   @BeanProperty request: AnyRef,
   @BeanProperty cause: Throwable,
