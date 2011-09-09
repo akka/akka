@@ -33,7 +33,7 @@ object RemoteFailureDetector {
   private case class Unregister(listener: RemoteFailureListener, connectionAddress: InetSocketAddress)
     extends RemoteFailureDetectorChannelEvent
 
-  private[akka] val channel = actorOf(Props(new Channel).copy(dispatcher = new PinnedDispatcher(), localOnly = true))
+  private[akka] val channel = new LocalActorRef(Props[Channel].copy(dispatcher = new PinnedDispatcher()), newUuid.toString, systemService = true)
 
   def register(listener: RemoteFailureListener, connectionAddress: InetSocketAddress) =
     channel ! Register(listener, connectionAddress)

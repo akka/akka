@@ -493,7 +493,7 @@ abstract class SelfActorRef extends ActorRef with ForwardableChannel { self: Loc
   final def getDispatcher(): MessageDispatcher = dispatcher
 
   /** INTERNAL API ONLY **/
-  protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable)
+  protected[akka] def handleDeath(death: Death)
 }
 
 /**
@@ -763,11 +763,24 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
             actorInstance.get().apply(messageHandle.message)
             currentMessage = null // reset current message after successful invocation
           } catch {
-            case e: InterruptedException ⇒
-              handleExceptionInDispatch(e, messageHandle.message)
-              throw e
             case e ⇒
-              handleExceptionInDispatch(e, messageHandle.message)
+              {
+                EventHandler.error(e, this, e.getMessage)
+
+                //Prevent any further messages to be processed until the actor has been restarted
+                dispatcher.suspend(this)
+
+                channel.sendException(e)
+
+                if (supervisor.isDefined) notifySupervisorWithMessage(Death(this, e, true))
+                else {
+                  lifeCycle match {
+                    case Temporary ⇒ shutDownTemporaryActor(this, e)
+                    case _         ⇒ dispatcher.resume(this) //Resume processing for this actor
+                  }
+                }
+              }
+              if (e.isInstanceOf[InterruptedException]) throw e //Re-throw InterruptedExceptions as expected
           } finally {
             checkReceiveTimeout // Reschedule receive timeout
           }
@@ -785,16 +798,16 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
     }
   }
 
-  protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable) {
+  protected[akka] def handleDeath(death: Death) {
     props.faultHandler match {
-      case AllForOneStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(reason.getClass)) ⇒
-        restartLinkedActors(reason, maxRetries, within)
+      case AllForOneStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
+        restartLinkedActors(death.cause, maxRetries, within)
 
-      case OneForOneStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(reason.getClass)) ⇒
-        dead.restart(reason, maxRetries, within)
+      case OneForOneStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
+        death.deceased.restart(death.cause, maxRetries, within)
 
       case _ ⇒
-        if (_supervisor.isDefined) throw reason else dead.stop() //Escalate problem if not handled here
+        if (_supervisor.isDefined) throw death.cause else death.deceased.stop() //Escalate problem if not handled here
     }
   }
 
@@ -943,28 +956,11 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
   private def shutDownTemporaryActor(temporaryActor: ActorRef, reason: Throwable) {
     temporaryActor.stop()
     _linkedActors.remove(temporaryActor.uuid) // remove the temporary actor
-    // when this comes down through the handleTrapExit path, we get here when the temp actor is restarted
+    // when this comes down through the handleDeath path, we get here when the temp actor is restarted
     notifySupervisorWithMessage(MaximumNumberOfRestartsWithinTimeRangeReached(temporaryActor, Some(0), None, reason))
     // if last temporary actor is gone, then unlink me from supervisor
     if (_linkedActors.isEmpty) notifySupervisorWithMessage(UnlinkAndStop(this))
     true
-  }
-
-  private def handleExceptionInDispatch(reason: Throwable, message: Any) {
-    EventHandler.error(reason, this, reason.getMessage)
-
-    //Prevent any further messages to be processed until the actor has been restarted
-    dispatcher.suspend(this)
-
-    channel.sendException(reason)
-
-    if (supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason))
-    else {
-      lifeCycle match {
-        case Temporary ⇒ shutDownTemporaryActor(this, reason)
-        case _         ⇒ dispatcher.resume(this) //Resume processing for this actor
-      }
-    }
   }
 
   private def notifySupervisorWithMessage(notification: LifeCycleMessage) {

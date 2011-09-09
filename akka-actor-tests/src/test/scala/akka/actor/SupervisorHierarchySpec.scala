@@ -36,7 +36,7 @@ class SupervisorHierarchySpec extends JUnitSuite {
 
     val workerOne, workerTwo, workerThree = actorOf(Props(new CountDownActor(countDown)).withSupervisor(manager))
 
-    workerOne ! Death(workerOne, new FireWorkerException("Fire the worker!"))
+    workerOne ! Death(workerOne, new FireWorkerException("Fire the worker!"), true)
 
     // manager + all workers should be restarted by only killing a worker
     // manager doesn't trap exits, so boss will restart manager

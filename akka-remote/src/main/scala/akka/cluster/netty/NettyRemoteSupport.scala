@@ -769,10 +769,8 @@ trait NettyRemoteServerModule extends RemoteServerModule {
   }
 
   private def register[Key](id: Key, actorRef: ActorRef, registry: ConcurrentHashMap[Key, ActorRef]) {
-    if (_isRunning.isOn) {
+    if (_isRunning.isOn)
       registry.put(id, actorRef) //TODO change to putIfAbsent
-      if (!actorRef.isRunning) actorRef.start()
-    }
   }
 
   /**
@@ -1078,7 +1076,7 @@ class RemoteServerHandler(
       "Looking up a remotely available actor for address [%s] on node [%s]"
         .format(address, Config.nodename))
 
-    val actorRef = Actor.createActor(address, () ⇒ createSessionActor(actorInfo, channel))
+    val actorRef = Actor.createActor(address, () ⇒ createSessionActor(actorInfo, channel), false)
 
     if (actorRef eq null) throw new IllegalActorStateException("Could not find a remote actor with address [" + address + "] or uuid [" + uuid + "]")
 
@@ -1098,9 +1096,8 @@ class RemoteServerHandler(
           case null ⇒ null
           case factory ⇒
             val actorRef = factory()
-            actorRef.uuid = parseUuid(uuid) //FIXME is this sensible?
             sessionActors.get(channel).put(address, actorRef)
-            actorRef.start() //Start it where's it's created
+            actorRef //Start it where's it's created
         }
       case sessionActor ⇒ sessionActor
     }
