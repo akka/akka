@@ -299,7 +299,7 @@ object AkkaBuild extends Build {
 
     // compile options
     scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked") ++ (
-      if (System getProperty "java.runtime.version" startsWith "1.7") Seq() else Seq("-optimize")), // -optimize fails with jdk7
+      if (true || (System getProperty "java.runtime.version" startsWith "1.7")) Seq() else Seq("-optimize")), // -optimize fails with jdk7
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 
     // add config dir to classpaths
