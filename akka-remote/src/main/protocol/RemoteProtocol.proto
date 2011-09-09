@@ -1,0 +1,230 @@
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+option java_package = "akka.cluster";
+option optimize_for = SPEED;
+
+/******************************************
+  Compile with:
+  cd ./akka-cluster/src/main/protocol
+  protoc RemoteProtocol.proto --java_out ../java
+*******************************************/
+
+message AkkaRemoteProtocol {
+  optional RemoteMessageProtocol message = 1;
+  optional RemoteControlProtocol instruction = 2;
+}
+
+/**
+ * Defines a remote message.
+ */
+message RemoteMessageProtocol {
+  required UuidProtocol uuid = 1;
+  required ActorInfoProtocol actorInfo = 2;
+  required bool oneWay = 3;
+  optional MessageProtocol message = 4;
+  optional ExceptionProtocol exception = 5;
+  optional UuidProtocol supervisorUuid = 6;
+  optional RemoteActorRefProtocol sender = 7;
+  repeated MetadataEntryProtocol metadata = 8;
+}
+
+/**
+ * Defines some control messages for the remoting
+ */
+message RemoteControlProtocol {
+  optional string cookie = 1;
+  required CommandType commandType = 2;
+}
+
+/**
+ * Defines the type of the RemoteControlProtocol command type
+ */
+enum CommandType {
+  CONNECT = 1;
+  SHUTDOWN = 2;
+}
+
+/**
+ * Defines the type of the ReplicationStorage
+ */
+enum ReplicationStorageType {
+  TRANSIENT = 1;
+  TRANSACTION_LOG = 2;
+  DATA_GRID = 3;
+}
+
+/**
+ * Defines the type of the ReplicationStrategy
+ */
+enum ReplicationStrategyType {
+  WRITE_THROUGH = 1;
+  WRITE_BEHIND = 2;
+}
+
+/**
+ * Defines a remote ActorRef that "remembers" and uses its original Actor instance
+ * on the original node.
+ */
+message RemoteActorRefProtocol {
+  required string address = 1;
+  required bytes inetSocketAddress = 2;
+  optional uint64 timeout = 3;
+}
+
+/**
+ * Defines a fully serialized remote ActorRef (with serialized Actor instance)
+ * that is about to be instantiated on the remote node. It is fully disconnected
+ * from its original host.
+ */
+message SerializedActorRefProtocol {
+  required UuidProtocol uuid = 1;
+  required string address = 2;
+  required string actorClassname = 3;
+  optional bytes actorInstance = 4;
+  optional string serializerClassname = 5;
+  optional uint64 timeout = 6;
+  optional uint64 receiveTimeout = 7;
+  optional LifeCycleProtocol lifeCycle = 8;
+  optional RemoteActorRefProtocol supervisor = 9;
+  optional bytes hotswapStack = 10;
+  optional ReplicationStorageType replicationStorage = 11;
+  optional ReplicationStrategyType replicationStrategy = 12;
+  repeated RemoteMessageProtocol messages = 13;
+}
+
+/**
+ * Defines a fully serialized remote ActorRef (with serialized typed actor instance)
+ * that is about to be instantiated on the remote node. It is fully disconnected
+ * from its original host.
+ */
+message SerializedTypedActorRefProtocol {
+  required SerializedActorRefProtocol actorRef = 1;
+  required string interfaceName = 2;
+}
+
+/**
+ * Defines a message.
+ */
+message MessageProtocol {
+  required bytes message = 1;
+  optional bytes messageManifest = 2;
+}
+
+/**
+ * Defines the actor info.
+ */
+message ActorInfoProtocol {
+  required UuidProtocol uuid = 1;
+  required uint64 timeout = 2;
+  optional string address = 3;
+}
+
+/**
+ * Defines a UUID.
+ */
+message UuidProtocol {
+  required uint64 high = 1;
+  required uint64 low = 2;
+}
+
+/**
+ * Defines a meta data entry.
+ */
+message MetadataEntryProtocol {
+  required string key = 1;
+  required bytes value = 2;
+}
+
+/**
+ * Defines the serialization scheme used to serialize the message and/or Actor instance.
+ */
+enum SerializationSchemeType {
+  JAVA = 1;
+  SBINARY = 2;
+  SCALA_JSON = 3;
+  JAVA_JSON = 4;
+  PROTOBUF = 5;
+}
+
+/**
+ * Defines the type of the life-cycle of a supervised Actor.
+ */
+enum LifeCycleType {
+  PERMANENT = 1;
+  TEMPORARY = 2;
+}
+
+/*
+enum DispatcherType {
+  GLOBAL_EVENT_EXECUTOR_BASED = 1;
+  GLOBAL_REACTOR_SINGLE_THREAD_BASED = 2;
+  GLOBAL_REACTOR_THREAD_POOL_BASED = 3;
+  EVENT_EXECUTOR_BASED = 4;
+  THREAD_BASED = 5;
+}
+*/
+
+/**
+ * Defines the life-cycle of a supervised Actor.
+ */
+message LifeCycleProtocol {
+  required LifeCycleType lifeCycle = 1;
+}
+
+/**
+ * Defines a remote address.
+ */
+message AddressProtocol {
+  required string hostname = 1;
+  required uint32 port = 2;
+}
+
+/**
+ * Defines an exception.
+ */
+message ExceptionProtocol {
+  required string classname  = 1;
+  required string message = 2;
+}
+
+/**
+ * Defines the remote daemon message.
+ */
+message RemoteDaemonMessageProtocol {
+  required RemoteDaemonMessageType messageType = 1;
+  optional UuidProtocol actorUuid = 2;
+  optional string actorAddress = 3;
+  optional bytes payload = 5;
+  optional UuidProtocol replicateActorFromUuid = 6;
+}
+
+/**
+ * Defines the remote daemon message type.
+ */
+enum RemoteDaemonMessageType {
+  STOP = 1;
+  USE = 2;
+  RELEASE = 3;
+  MAKE_AVAILABLE = 4;
+  MAKE_UNAVAILABLE = 5;
+  DISCONNECT = 6;
+  RECONNECT = 7;
+  RESIGN = 8;
+  FAIL_OVER_CONNECTIONS = 9;
+  FUNCTION_FUN0_UNIT = 10;
+  FUNCTION_FUN0_ANY = 11;
+  FUNCTION_FUN1_ARG_UNIT = 12;
+  FUNCTION_FUN1_ARG_ANY = 13;
+}
+
+/**
+ * Defines the durable mailbox message.
+ */
+message DurableMailboxMessageProtocol {
+  required string ownerActorAddress= 1;
+  optional string senderActorAddress = 2;
+  optional UuidProtocol futureUuid = 3;
+  required bytes message = 4;
+}

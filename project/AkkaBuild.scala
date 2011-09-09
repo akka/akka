@@ -21,7 +21,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       rstdocDirectory <<= baseDirectory / "akka-docs"
     ),
-    aggregate = Seq(actor, testkit, actorTests, stm, http, slf4j, camel, camelTyped, samples, tutorials)
+    aggregate = Seq(actor, testkit, actorTests, stm, http, remote, slf4j, camel, camelTyped, samples, tutorials)
     //aggregate = Seq(actor, testkit, actorTests, stm, http, slf4j, cluster, mailboxes, camel, camelTyped, samples, tutorials)
   )
 
@@ -64,6 +64,23 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.stm
     )
   )
+
+  lazy val remote = Project(
+    id = "akka-remote",
+    base = file("akka-remote"),
+    dependencies = Seq(stm, actorTests % "test->test", testkit % "test"),
+    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+      libraryDependencies ++= Dependencies.cluster,
+      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      },
+      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+      jvmOptions in MultiJvm := {
+        if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
+      },
+      test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+    )
+  ) configs (MultiJvm)
 
   // lazy val cluster = Project(
   //   id = "akka-cluster",

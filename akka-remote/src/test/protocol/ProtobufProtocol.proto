@@ -1,0 +1,18 @@
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package akka.actor;
+
+/*
+  Compile with:
+  cd ./akka-remote/src/test/protocol
+  protoc ProtobufProtocol.proto --java_out ../java
+*/
+
+message MyMessage {
+  required uint64 id = 1;
+  required string name = 2;
+  required bool status = 3;
+}
+
