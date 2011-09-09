@@ -9,7 +9,6 @@ import Actor._
 import akka.cluster._
 import akka.routing._
 import akka.event.EventHandler
-import akka.dispatch.{ Dispatchers, Future, PinnedDispatcher }
 import akka.util.{ ListenerManagement, Duration }
 
 import scala.collection.immutable.Map
@@ -19,6 +18,7 @@ import scala.annotation.tailrec
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 import System.{ currentTimeMillis ⇒ newTimestamp }
+import akka.dispatch.PinnedDispatcher
 
 /**
  * Holds error event channel Actor instance and provides API for channel listener management.
@@ -69,9 +69,7 @@ object RemoteFailureDetector {
  */
 abstract class RemoteFailureDetectorBase(initialConnections: Map[InetSocketAddress, ActorRef])
   extends FailureDetector
-  with RemoteFailureListener {
-
-  //  import ClusterActorRef._
+  with NetworkEventStream.Listener {
 
   type T <: AnyRef
 
@@ -83,14 +81,10 @@ abstract class RemoteFailureDetectorBase(initialConnections: Map[InetSocketAddre
     def iterable: Iterable[ActorRef] = connections.values
   }
 
-  protected val state: AtomicReference[State] = {
-    val ref = new AtomicReference[State]
-    ref set newState()
-    ref
-  }
+  protected val state: AtomicReference[State] = new AtomicReference[State](newState())
 
   /**
-   * State factory. To be defined by subclass that wants to add extra info in the 'meta: Option[T]' field.
+   * State factory. To be defined by subclass that wants to add extra info in the 'meta: T' field.
    */
   protected def newState(): State
 
@@ -198,21 +192,20 @@ class RemoveConnectionOnFirstFailureRemoteFailureDetector(
 
   def recordFailure(connectionAddress: InetSocketAddress, timestamp: Long) {}
 
-  override def remoteClientWriteFailed(
-    request: AnyRef, cause: Throwable, client: RemoteClientModule, connectionAddress: InetSocketAddress) {
-    removeConnection(connectionAddress)
-  }
+  def notify(event: RemoteLifeCycleEvent) = event match {
+    case RemoteClientWriteFailed(request, cause, client, connectionAddress) ⇒
+      removeConnection(connectionAddress)
 
-  override def remoteClientError(cause: Throwable, client: RemoteClientModule, connectionAddress: InetSocketAddress) {
-    removeConnection(connectionAddress)
-  }
+    case RemoteClientError(cause, client, connectionAddress) ⇒
+      removeConnection(connectionAddress)
 
-  override def remoteClientDisconnected(client: RemoteClientModule, connectionAddress: InetSocketAddress) {
-    removeConnection(connectionAddress)
-  }
+    case RemoteClientDisconnected(client, connectionAddress) ⇒
+      removeConnection(connectionAddress)
 
-  override def remoteClientShutdown(client: RemoteClientModule, connectionAddress: InetSocketAddress) {
-    removeConnection(connectionAddress)
+    case RemoteClientShutdown(client, connectionAddress) ⇒
+      removeConnection(connectionAddress)
+
+    case _ ⇒ {}
   }
 
   private def removeConnection(connectionAddress: InetSocketAddress) =
@@ -290,39 +283,36 @@ class BannagePeriodFailureDetector(
   }
 
   // ===================================================================================
-  // RemoteFailureListener callbacks
+  // NetworkEventStream.Listener callback
   // ===================================================================================
 
-  override def remoteClientStarted(client: RemoteClientModule, connectionAddress: InetSocketAddress) {
-    recordSuccess(connectionAddress, newTimestamp)
-  }
+  def notify(event: RemoteLifeCycleEvent) = event match {
+    case RemoteClientStarted(client, connectionAddress) ⇒
+      recordSuccess(connectionAddress, newTimestamp)
 
-  override def remoteClientConnected(client: RemoteClientModule, connectionAddress: InetSocketAddress) {
-    recordSuccess(connectionAddress, newTimestamp)
-  }
+    case RemoteClientConnected(client, connectionAddress) ⇒
+      recordSuccess(connectionAddress, newTimestamp)
 
-  override def remoteClientWriteFailed(
-    request: AnyRef, cause: Throwable, client: RemoteClientModule, connectionAddress: InetSocketAddress) {
-    recordFailure(connectionAddress, newTimestamp)
-  }
+    case RemoteClientWriteFailed(request, cause, client, connectionAddress) ⇒
+      recordFailure(connectionAddress, newTimestamp)
 
-  override def remoteClientError(cause: Throwable, client: RemoteClientModule, connectionAddress: InetSocketAddress) {
-    recordFailure(connectionAddress, newTimestamp)
-  }
+    case RemoteClientError(cause, client, connectionAddress) ⇒
+      recordFailure(connectionAddress, newTimestamp)
 
-  override def remoteClientDisconnected(client: RemoteClientModule, connectionAddress: InetSocketAddress) {
-    recordFailure(connectionAddress, newTimestamp)
-  }
+    case RemoteClientDisconnected(client, connectionAddress) ⇒
+      recordFailure(connectionAddress, newTimestamp)
 
-  override def remoteClientShutdown(client: RemoteClientModule, connectionAddress: InetSocketAddress) {
-    recordFailure(connectionAddress, newTimestamp)
+    case RemoteClientShutdown(client, connectionAddress) ⇒
+      recordFailure(connectionAddress, newTimestamp)
+
+    case _ ⇒ {}
   }
 }
 
 /**
  * Failure detector that uses the Circuit Breaker pattern to detect and recover from failing connections.
  *
- * class CircuitBreakerRemoteFailureListener(initialConnections: Map[InetSocketAddress, ActorRef])
+ * class CircuitBreakerNetworkEventStream.Listener(initialConnections: Map[InetSocketAddress, ActorRef])
  * extends RemoteFailureDetectorBase(initialConnections) {
  *
  * def newState() = State(Long.MinValue, initialConnections, None)
@@ -333,7 +323,7 @@ class BannagePeriodFailureDetector(
  *
  * def recordFailure(connectionAddress: InetSocketAddress, timestamp: Long) {}
  *
- * // FIXME implement CircuitBreakerRemoteFailureListener
+ * // FIXME implement CircuitBreakerNetworkEventStream.Listener
  * }
  */
 
