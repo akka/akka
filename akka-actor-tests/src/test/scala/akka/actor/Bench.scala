@@ -28,7 +28,6 @@ object Chameneos {
 
   class Chameneo(var mall: ActorRef, var colour: Colour, cid: Int) extends Actor {
     var meetings = 0
-    self.start()
     mall ! Meet(self, colour)
 
     def receive = {
@@ -110,7 +109,7 @@ object Chameneos {
   def run {
     //    System.setProperty("akka.config", "akka.conf")
     Chameneos.start = System.currentTimeMillis
-    actorOf(new Mall(1000000, 4)).start()
+    actorOf(new Mall(1000000, 4))
     Thread.sleep(10000)
     println("Elapsed: " + (end - start))
   }

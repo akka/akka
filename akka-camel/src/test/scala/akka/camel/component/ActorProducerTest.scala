@@ -23,7 +23,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldSendMessageToActorWithSyncProcessor = {
-    val actor = actorOf[Tester1].start
+    val actor = actorOf[Tester1]
     val latch = (actor ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOnly)
@@ -38,7 +38,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldSendMessageToActorWithAsyncProcessor = {
-    val actor = actorOf[Tester1].start
+    val actor = actorOf[Tester1]
     val latch = (actor ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOnly)
@@ -55,7 +55,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   def shouldSendMessageToActorAndReceiveResponseWithSyncProcessor = {
     val actor = actorOf(new Tester2 {
       override def response(msg: Message) = Message(super.response(msg), Map("k2" -> "v2"))
-    }).start
+    })
     val endpoint = actorEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)
     exchange.getIn.setBody("Martin")
@@ -69,7 +69,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   def shouldSendMessageToActorAndReceiveResponseWithAsyncProcessor = {
     val actor = actorOf(new Tester2 {
       override def response(msg: Message) = Message(super.response(msg), Map("k2" -> "v2"))
-    }).start
+    })
     val completion = expectAsyncCompletion
     val endpoint = actorEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)
@@ -85,7 +85,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   def shouldSendMessageToActorAndReceiveFailureWithAsyncProcessor = {
     val actor = actorOf(new Tester2 {
       override def response(msg: Message) = Failure(new Exception("testmsg"), Map("k3" -> "v3"))
-    }).start
+    })
     val completion = expectAsyncCompletion
     val endpoint = actorEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)
@@ -102,7 +102,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   def shouldSendMessageToActorAndReceiveAckWithAsyncProcessor = {
     val actor = actorOf(new Tester2 {
       override def response(msg: Message) = akka.camel.Ack
-    }).start
+    })
     val completion = expectAsyncCompletion
     val endpoint = actorEndpoint("actor:uuid:%s?autoack=false" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOnly)
@@ -117,8 +117,8 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   def shouldDynamicallyRouteMessageToActorWithDefaultId = {
     val actor1 = actorOf[Tester1]("x")
     val actor2 = actorOf[Tester1]("y")
-    actor1.start
-    actor2.start
+    actor1
+    actor2
     val latch1 = (actor1 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val latch2 = (actor2 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:id:%s" format actor1.address)
@@ -141,8 +141,8 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   def shouldDynamicallyRouteMessageToActorWithoutDefaultId = {
     val actor1 = actorOf[Tester1]("x")
     val actor2 = actorOf[Tester1]("y")
-    actor1.start
-    actor2.start
+    actor1
+    actor2
     val latch1 = (actor1 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val latch2 = (actor2 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:id:")
@@ -164,8 +164,8 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldDynamicallyRouteMessageToActorWithDefaultUuid = {
-    val actor1 = actorOf[Tester1].start
-    val actor2 = actorOf[Tester1].start
+    val actor1 = actorOf[Tester1]
+    val actor2 = actorOf[Tester1]
     val latch1 = (actor1 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val latch2 = (actor2 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:uuid:%s" format actor1.uuid)
@@ -186,8 +186,8 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldDynamicallyRouteMessageToActorWithoutDefaultUuid = {
-    val actor1 = actorOf[Tester1].start
-    val actor2 = actorOf[Tester1].start
+    val actor1 = actorOf[Tester1]
+    val actor2 = actorOf[Tester1]
     val latch1 = (actor1 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val latch2 = (actor2 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:uuid:")
@@ -209,7 +209,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldThrowExceptionWhenIdNotSet: Unit = {
-    val actor = actorOf[Tester1].start
+    val actor = actorOf[Tester1]
     val latch = (actor ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:id:")
     intercept[ActorIdentifierNotSetException] {
@@ -219,7 +219,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldThrowExceptionWhenUuidNotSet: Unit = {
-    val actor = actorOf[Tester1].start
+    val actor = actorOf[Tester1]
     val latch = (actor ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:uuid:")
     intercept[ActorIdentifierNotSetException] {
@@ -229,7 +229,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldSendMessageToActorAndTimeout(): Unit = {
-    val actor = actorOf(Props[Tester3].withTimeout(Timeout(1))).start
+    val actor = actorOf(Props[Tester3].withTimeout(Timeout(1)))
     val endpoint = actorEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)
     exchange.getIn.setBody("Martin")

@@ -97,13 +97,13 @@ object EventHandler extends ListenerManagement {
     val thread: Thread = Thread.currentThread
 
     /** Returns the instance that created this event. */
-    val instance: AnyRef
-
-    /** Returns the log level. */
-    val level: Int
+    def instance: AnyRef
 
     /** Returns the message describing this event. */
-    val message: Any
+    def message: Any
+
+    /** Returns the log level. */
+    def level: Int
   }
 
   /**
@@ -111,22 +111,22 @@ object EventHandler extends ListenerManagement {
    */
   case class Error(cause: Throwable, instance: AnyRef, message: Any = "") extends Event {
     /** Returns [[akka.event.EventHandler.ErrorLevel]]. */
-    override val level = ErrorLevel
+    def level = ErrorLevel
   }
 
   case class Warning(instance: AnyRef, message: Any = "") extends Event {
     /** Returns [[akka.event.EventHandler.WarningLevel]]. */
-    override val level = WarningLevel
+    def level = WarningLevel
   }
 
   case class Info(instance: AnyRef, message: Any = "") extends Event {
     /** Returns [[akka.event.EventHandler.InfoLevel]]. */
-    override val level = InfoLevel
+    def level = InfoLevel
   }
 
   case class Debug(instance: AnyRef, message: Any = "") extends Event {
     /** Returns [[akka.event.EventHandler.DebugLevel]]. */
-    override val level = DebugLevel
+    def level = DebugLevel
   }
 
   val errorFormat = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
@@ -162,7 +162,7 @@ object EventHandler extends ListenerManagement {
       defaultListeners foreach { listenerName ⇒
         try {
           ReflectiveAccess.getClassFor[Actor](listenerName) match {
-            case Right(actorClass) ⇒ addListener(Actor.actorOf(Props(actorClass).withDispatcher(EventHandlerDispatcher)))
+            case Right(actorClass) ⇒ addListener(new LocalActorRef(Props(actorClass).withDispatcher(EventHandlerDispatcher), newUuid.toString, systemService = true))
             case Left(exception)   ⇒ throw exception
           }
         } catch {

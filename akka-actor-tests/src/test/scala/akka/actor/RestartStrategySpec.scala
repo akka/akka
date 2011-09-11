@@ -43,7 +43,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
     val countDownLatch = new CountDownLatch(3)
     val stopLatch = new StandardLatch
 
-    val slave = actorOf(new Actor {
+    val slave = actorOf(Props(new Actor {
 
       protected def receive = {
         case Ping  ⇒ countDownLatch.countDown()
@@ -59,8 +59,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
       override def postStop() = {
         stopLatch.open
       }
-    })
-    boss.link(slave).start()
+    }).withSupervisor(boss))
 
     slave ! Ping
     slave ! Crash
@@ -93,7 +92,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     val countDownLatch = new CountDownLatch(100)
 
-    val slave = actorOf(new Actor {
+    val slave = actorOf(Props(new Actor {
 
       protected def receive = {
         case Crash ⇒ throw new Exception("Crashing...")
@@ -102,9 +101,8 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
       override def postRestart(reason: Throwable) = {
         countDownLatch.countDown()
       }
-    })
+    }).withSupervisor(boss))
 
-    boss.link(slave).start()
     (1 to 100) foreach { _ ⇒ slave ! Crash }
     assert(countDownLatch.await(120, TimeUnit.SECONDS))
     assert(slave.isRunning)
@@ -123,7 +121,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
     val pingLatch = new StandardLatch
     val secondPingLatch = new StandardLatch
 
-    val slave = actorOf(new Actor {
+    val slave = actorOf(Props(new Actor {
 
       protected def receive = {
         case Ping ⇒
@@ -144,8 +142,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
           secondRestartLatch.open
         }
       }
-    })
-    boss.link(slave).start()
+    }).withSupervisor(boss))
 
     slave ! Ping
     slave ! Crash
@@ -182,7 +179,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
     val countDownLatch = new CountDownLatch(3)
     val stopLatch = new StandardLatch
 
-    val slave = actorOf(new Actor {
+    val slave = actorOf(Props(new Actor {
 
       protected def receive = {
         case Ping  ⇒ countDownLatch.countDown()
@@ -198,8 +195,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
       override def postStop() = {
         stopLatch.open
       }
-    })
-    boss.link(slave).start()
+    }).withSupervisor(boss))
 
     slave ! Ping
     slave ! Crash
@@ -235,7 +231,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
       def receive = { case m: MaximumNumberOfRestartsWithinTimeRangeReached ⇒ maxNoOfRestartsLatch.open }
     }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, Some(1000))))
 
-    val slave = actorOf(new Actor {
+    val slave = actorOf(Props(new Actor {
 
       protected def receive = {
         case Ping  ⇒ countDownLatch.countDown()
@@ -249,8 +245,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
       override def postStop() = {
         stopLatch.open
       }
-    })
-    boss.link(slave).start()
+    }).withSupervisor(boss))
 
     slave ! Ping
     slave ! Crash

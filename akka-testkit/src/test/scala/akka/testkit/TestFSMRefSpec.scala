@@ -25,7 +25,7 @@ class TestFSMRefSpec extends WordSpec with MustMatchers with TestKit {
         when(2) {
           case Ev("back") ⇒ goto(1) using "back"
         }
-      }).start()
+      })
       fsm.stateName must be(1)
       fsm.stateData must be("")
       fsm ! "go"

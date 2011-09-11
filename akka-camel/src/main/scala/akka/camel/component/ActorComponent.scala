@@ -266,7 +266,8 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   val address = exchange.getExchangeId
 
   def start = {
-    _status = ActorRefInternals.RUNNING
+    if (_status == ActorRefInternals.UNSTARTED)
+      _status = ActorRefInternals.RUNNING
     this
   }
 

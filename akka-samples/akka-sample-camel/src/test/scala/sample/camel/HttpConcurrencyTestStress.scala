@@ -26,9 +26,9 @@ class HttpConcurrencyTestStress extends JUnitSuite {
     val latch1 = new CountDownLatch(num)
     val latch2 = new CountDownLatch(num)
     val latch3 = new CountDownLatch(num)
-    val client1 = actorOf(new HttpClientActor("client1", latch1)).start
-    val client2 = actorOf(new HttpClientActor("client2", latch2)).start
-    val client3 = actorOf(new HttpClientActor("client3", latch3)).start
+    val client1 = actorOf(new HttpClientActor("client1", latch1))
+    val client2 = actorOf(new HttpClientActor("client2", latch2))
+    val client3 = actorOf(new HttpClientActor("client3", latch3))
     for (i <- 1 to num) {
       client1 ! Message("client1", Map(Message.MessageExchangeId -> i))
       client2 ! Message("client2", Map(Message.MessageExchangeId -> i))
@@ -48,11 +48,11 @@ object HttpConcurrencyTestStress {
   def beforeClass: Unit = {
     startCamelService
 
-    val workers = for (i ← 1 to 8) yield actorOf[HttpServerWorker].start
+    val workers = for (i ← 1 to 8) yield actorOf[HttpServerWorker]
     val balancer = Routing.actorOf(
       RoutedProps.apply.withRoundRobinRouter.withConnections(workers).withDeployId("loadbalancer"))
     //service.get.awaitEndpointActivation(1) {
-    //  actorOf(new HttpServerActor(balancer)).start
+    //  actorOf(new HttpServerActor(balancer))
     //}
   }
 

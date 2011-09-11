@@ -48,7 +48,7 @@ class FSMTransitionSpec extends WordSpec with MustMatchers with TestKit {
   "A FSM transition notifier" must {
 
     "notify listeners" in {
-      val fsm = Actor.actorOf(new MyFSM(testActor)).start()
+      val fsm = Actor.actorOf(new MyFSM(testActor))
       within(1 second) {
         fsm ! SubscribeTransitionCallBack(testActor)
         expectMsg(CurrentState(fsm, 0))
@@ -60,8 +60,8 @@ class FSMTransitionSpec extends WordSpec with MustMatchers with TestKit {
     }
 
     "not fail when listener goes away" in {
-      val forward = Actor.actorOf(new Forwarder(testActor)).start()
-      val fsm = Actor.actorOf(new MyFSM(testActor)).start()
+      val forward = Actor.actorOf(new Forwarder(testActor))
+      val fsm = Actor.actorOf(new MyFSM(testActor))
       val sup = Actor.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
       sup link fsm
       within(300 millis) {
@@ -72,27 +72,6 @@ class FSMTransitionSpec extends WordSpec with MustMatchers with TestKit {
         expectNoMsg
       }
     }
-
-    "not fail when listener is invalid" in {
-      val forward = Actor.actorOf(new Forwarder(testActor))
-      val fsm = Actor.actorOf(new MyFSM(testActor)).start()
-      val sup = Actor.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
-      sup link fsm
-      within(300 millis) {
-        filterEvents(EventFilter.custom {
-          case EventHandler.Warning(_: MyFSM, _) ⇒ true
-          case _                                 ⇒ false
-        }) {
-          fsm ! SubscribeTransitionCallBack(forward)
-          fsm ! "reply"
-          expectMsg("reply")
-        }
-        forward.start()
-        fsm ! SubscribeTransitionCallBack(forward)
-        expectMsg(CurrentState(fsm, 0))
-      }
-    }
-
   }
 
 }

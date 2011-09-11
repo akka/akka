@@ -42,11 +42,9 @@ public class UntypedCoordinatedIncrementTest {
                     return new UntypedCoordinatedCounter(name);
                 }
             });
-            counter.start();
             counters.add(counter);
         }
         failer = Actors.actorOf(UntypedFailer.class);
-        failer.start();
     }
 
     @Test public void incrementAllCountersWithSuccessfulTransaction() {

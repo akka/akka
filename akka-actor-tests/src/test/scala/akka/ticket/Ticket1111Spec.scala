@@ -18,7 +18,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
 
       val shutdownLatch = new CountDownLatch(1)
 
-      val props = RoutedProps.apply()
+      val props = RoutedProps()
         .withDeployId("foo")
         .withConnections(List(newActor(0, Some(shutdownLatch)), newActor(1, Some(shutdownLatch))))
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
@@ -118,7 +118,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
             case "end"    ⇒ doneLatch.countDown()
             case msg: Int ⇒ counters.get(i).get.addAndGet(msg)
           }
-        }).start()
+        })
         connections = connections :+ connection
       }
 
@@ -154,7 +154,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
         }
-      }).start()
+      })
 
       val counter2 = new AtomicInteger
       val connection2 = actorOf(new Actor {
@@ -162,7 +162,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter2.addAndGet(msg)
         }
-      }).start()
+      })
 
       val props = RoutedProps.apply()
         .withDeployId("foo")
@@ -189,7 +189,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
         case _id: Int if (_id == id)        ⇒
         case _                              ⇒ Thread sleep 100 * id; self tryReply id
       }
-    }).start()
+    })
 
   }
 

@@ -21,8 +21,8 @@ class Boot {
   // Basic example
   // -----------------------------------------------------------------------
 
-  actorOf[Consumer1].start
-  actorOf[Consumer2].start
+  actorOf[Consumer1]
+  actorOf[Consumer2]
 
   // Alternatively, use a supervisor for these actors
   //val supervisor = Supervisor(
@@ -47,17 +47,13 @@ class Boot {
   val mediator = actorOf(new Transformer(producer))
   val consumer = actorOf(new Consumer3(mediator))
 
-  producer.start
-  mediator.start
-  consumer.start
-
   // -----------------------------------------------------------------------
   // Asynchronous consumer-producer example (Akka homepage transformation)
   // -----------------------------------------------------------------------
 
-  val httpTransformer = actorOf(new HttpTransformer).start
-  val httpProducer = actorOf(new HttpProducer(httpTransformer)).start
-  val httpConsumer = actorOf(new HttpConsumer(httpProducer)).start
+  val httpTransformer = actorOf(new HttpTransformer)
+  val httpProducer = actorOf(new HttpProducer(httpTransformer))
+  val httpConsumer = actorOf(new HttpConsumer(httpProducer))
 
   // -----------------------------------------------------------------------
   // Publish subscribe examples
@@ -68,23 +64,23 @@ class Boot {
   //
 
   //val cometdUri = "cometd://localhost:8111/test/abc?baseResource=file:target"
-  //val cometdSubscriber = actorOf(new Subscriber("cometd-subscriber", cometdUri)).start
-  //val cometdPublisher = actorOf(new Publisher("cometd-publisher", cometdUri)).start
+  //val cometdSubscriber = actorOf(new Subscriber("cometd-subscriber", cometdUri))
+  //val cometdPublisher = actorOf(new Publisher("cometd-publisher", cometdUri))
 
   val jmsUri = "jms:topic:test"
-  val jmsSubscriber1 = actorOf(new Subscriber("jms-subscriber-1", jmsUri)).start
-  val jmsSubscriber2 = actorOf(new Subscriber("jms-subscriber-2", jmsUri)).start
-  val jmsPublisher = actorOf(new Publisher(jmsUri), "jms-publisher").start
+  val jmsSubscriber1 = actorOf(new Subscriber("jms-subscriber-1", jmsUri))
+  val jmsSubscriber2 = actorOf(new Subscriber("jms-subscriber-2", jmsUri))
+  val jmsPublisher = actorOf(new Publisher(jmsUri), "jms-publisher")
 
-  //val cometdPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher)).start
-  val jmsPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher)).start
+  //val cometdPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher))
+  val jmsPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher))
 
   // -----------------------------------------------------------------------
   // Actor un-publishing and re-publishing example
   // -----------------------------------------------------------------------
 
-  actorOf[Consumer4].start // POSTing "stop" to http://0.0.0.0:8877/camel/stop stops and unpublishes this actor
-  actorOf[Consumer5].start // POSTing any msg to http://0.0.0.0:8877/camel/start starts and published Consumer4 again.
+  actorOf[Consumer4] // POSTing "stop" to http://0.0.0.0:8877/camel/stop stops and unpublishes this actor
+  actorOf[Consumer5] // POSTing any msg to http://0.0.0.0:8877/camel/start starts and published Consumer4 again.
 
   // -----------------------------------------------------------------------
   // Active object example

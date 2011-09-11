@@ -174,7 +174,6 @@ Creating a PriorityDispatcher using PriorityGenerator:
       // We create a new Priority dispatcher and seed it with the priority generator
       ref.setDispatcher(new PriorityDispatcher("foo", gen));
 
-          ref.start(); // Start the actor
       ref.getDispatcher().suspend(ref); // Suspending the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
           ref.tell("lowpriority");
           ref.tell("lowpriority");

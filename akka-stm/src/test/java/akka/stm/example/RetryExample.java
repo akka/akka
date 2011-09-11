@@ -12,7 +12,7 @@ public class RetryExample {
         final Ref<Double> account1 = new Ref<Double>(100.0);
         final Ref<Double> account2 = new Ref<Double>(100.0);
 
-        ActorRef transferer = Actors.actorOf(Transferer.class).start();
+        ActorRef transferer = Actors.actorOf(Transferer.class);
 
         transferer.tell(new Transfer(account1, account2, 500.0));
         // Transferer: not enough money - retrying

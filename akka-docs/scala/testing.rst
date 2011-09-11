@@ -105,7 +105,7 @@ and in addition allows access to the internal state::
       when (2) {
         case Ev("back") => goto(1) using "back"
       }
-    }).start()
+    })
   
   assert (fsm.stateName == 1)
   assert (fsm.stateData == "")
@@ -236,7 +236,7 @@ common task easy:
 
        "send back messages unchanged" in {
          
-         val echo = Actor.actorOf[EchoActor].start()
+         val echo = Actor.actorOf[EchoActor]
          echo ! "hello world"
          expectMsg("hello world")
 
@@ -474,7 +474,7 @@ You would then need to make an implicit available in locally confined scopes
 which need it, e.g. different test cases. If this cannot be done, you will need
 to resort to explicitly specifying the sender reference::
 
-  val actor = actorOf[MyWorker].start()
+  val actor = actorOf[MyWorker]
   actor.!(msg)(testActor)
 
 Using Multiple Probe Actors
@@ -503,7 +503,7 @@ using a small example::
 
   val probe1 = TestProbe()
   val probe2 = TestProbe()
-  val actor = Actor.actorOf[MyDoubleEcho].start()
+  val actor = Actor.actorOf[MyDoubleEcho]
   actor ! (probe1.ref, probe2.ref)
   actor ! "hello"
   probe1.expectMsg(50 millis, "hello")
@@ -550,8 +550,8 @@ concerning volume and timing of the message flow while still keeping the
 network functioning::
 
   val probe = TestProbe()
-  val source = Actor.actorOf(new Source(probe)).start()
-  val dest = Actor.actorOf[Destination].start()
+  val source = Actor.actorOf(new Source(probe))
+  val dest = Actor.actorOf[Destination]
   source ! "start"
   probe.expectMsg("work")
   probe.forward(dest)
@@ -610,9 +610,7 @@ or from the client code
 
 .. code-block:: scala
 
-   val ref = Actor.actorOf[MyActor]
-   ref.dispatcher = CallingThreadDispatcher.global
-   ref.start()
+   val ref = Actor.actorOf(Props[MyActor].withDispatcher(CallingThreadDispatcher.global))
 
 As the :class:`CallingThreadDispatcher` does not have any configurable state,
 you may always use the (lazily) preallocated one as shown in the examples.

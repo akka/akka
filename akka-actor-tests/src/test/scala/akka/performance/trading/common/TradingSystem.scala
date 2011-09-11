@@ -96,14 +96,11 @@ class AkkaTradingSystem extends TradingSystem {
 
   override def start() {
     for (MatchingEngineInfo(p, s, o) ← matchingEngines) {
-      p.start()
       // standby is optional
-      s.foreach(_.start())
       s.foreach(p ! _)
     }
     val routing = matchingEngineRouting
     for (or ← orderReceivers) {
-      or.start()
       or ! routing
     }
   }

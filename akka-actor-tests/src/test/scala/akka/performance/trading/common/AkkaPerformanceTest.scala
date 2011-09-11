@@ -34,13 +34,12 @@ abstract class AkkaPerformanceTest extends BenchmarkScenarios {
     val oddRepeats = repeat - (repeatsPerClient * numberOfClients)
     val latch = new CountDownLatch(numberOfClients)
     val receivers = tradingSystem.orderReceivers.toIndexedSeq
+    val start = System.nanoTime
     val clients = (for (i ← 0 until numberOfClients) yield {
       val receiver = receivers(i % receivers.size)
-      actorOf(Props(new Client(receiver, orders, latch, repeatsPerClient + (if (i < oddRepeats) 1 else 0), delayMs)).withDispatcher(clientDispatcher))
-    }).toList
+      Props(new Client(receiver, orders, latch, repeatsPerClient + (if (i < oddRepeats) 1 else 0), delayMs)).withDispatcher(clientDispatcher)
+    }).toList.map(actorOf(_))
 
-    clients.foreach(_.start)
-    val start = System.nanoTime
     clients.foreach(_ ! "run")
     val ok = latch.await((5000 + (2 + delayMs) * totalNumberOfRequests) * timeDilation, TimeUnit.MILLISECONDS)
     val durationNs = (System.nanoTime - start)

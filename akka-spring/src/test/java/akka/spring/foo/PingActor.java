@@ -60,7 +60,7 @@ public class PingActor extends UntypedActor implements ApplicationContextAware {
     if (message instanceof String) {
       lastMessage = (String) message;
       if (message.equals("longRunning")) {
-        ActorRef pongActor = actorOf(PongActor.class).start();
+        ActorRef pongActor = actorOf(PongActor.class);
         pongActor.sendRequestReply("longRunning", getContext());
       }
     latch.countDown();

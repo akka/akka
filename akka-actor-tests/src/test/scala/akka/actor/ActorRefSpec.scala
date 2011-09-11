@@ -126,7 +126,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         actorOf(new Actor {
           val nested = new Actor { def receive = { case _ ⇒ } }
           def receive = { case _ ⇒ }
-        }).start()
+        })
       }
 
       def refStackMustBeEmpty = Actor.actorRefInCreation.get.headOption must be === None
@@ -134,37 +134,37 @@ class ActorRefSpec extends WordSpec with MustMatchers {
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        actorOf(new FailingOuterActor(actorOf(new InnerActor).start)).start()
+        actorOf(new FailingOuterActor(actorOf(new InnerActor)))
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        actorOf(new OuterActor(actorOf(new FailingInnerActor).start)).start()
+        actorOf(new OuterActor(actorOf(new FailingInnerActor)))
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        actorOf(new FailingInheritingOuterActor(actorOf(new InnerActor).start)).start()
+        actorOf(new FailingInheritingOuterActor(actorOf(new InnerActor)))
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        actorOf(new FailingOuterActor(actorOf(new FailingInheritingInnerActor).start)).start()
+        actorOf(new FailingOuterActor(actorOf(new FailingInheritingInnerActor)))
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        actorOf(new FailingInheritingOuterActor(actorOf(new FailingInheritingInnerActor).start)).start()
+        actorOf(new FailingInheritingOuterActor(actorOf(new FailingInheritingInnerActor)))
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        actorOf(new FailingInheritingOuterActor(actorOf(new FailingInnerActor).start)).start()
+        actorOf(new FailingInheritingOuterActor(actorOf(new FailingInnerActor)))
       }
 
       refStackMustBeEmpty
@@ -172,38 +172,38 @@ class ActorRefSpec extends WordSpec with MustMatchers {
       intercept[akka.actor.ActorInitializationException] {
         actorOf(new OuterActor(actorOf(new InnerActor {
           val a = new InnerActor
-        }).start)).start()
+        })))
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        actorOf(new FailingOuterActor(actorOf(new FailingInheritingInnerActor).start)).start()
+        actorOf(new FailingOuterActor(actorOf(new FailingInheritingInnerActor)))
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        actorOf(new OuterActor(actorOf(new FailingInheritingInnerActor).start)).start()
+        actorOf(new OuterActor(actorOf(new FailingInheritingInnerActor)))
       }
 
       refStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
-        actorOf(new OuterActor(actorOf({ new InnerActor; new InnerActor }).start)).start()
+        actorOf(new OuterActor(actorOf({ new InnerActor; new InnerActor })))
       }
 
       refStackMustBeEmpty
 
       (intercept[java.lang.IllegalStateException] {
-        actorOf(new OuterActor(actorOf({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor }).start)).start()
+        actorOf(new OuterActor(actorOf({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor })))
       }).getMessage must be === "Ur state be b0rked"
 
       refStackMustBeEmpty
     }
 
     "be serializable using Java Serialization on local node" in {
-      val a = actorOf[InnerActor].start
+      val a = actorOf[InnerActor]
 
       import java.io._
 
@@ -226,7 +226,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
     "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
       ReflectiveAccess.RemoteModule.isEnabled must be === false
 
-      val a = actorOf[InnerActor].start
+      val a = actorOf[InnerActor]
 
       val inetAddress = ReflectiveAccess.RemoteModule.configDefaultAddress
 
@@ -257,9 +257,9 @@ class ActorRefSpec extends WordSpec with MustMatchers {
 
     "support nested actorOfs" in {
       val a = actorOf(new Actor {
-        val nested = actorOf(new Actor { def receive = { case _ ⇒ } }).start()
+        val nested = actorOf(new Actor { def receive = { case _ ⇒ } })
         def receive = { case _ ⇒ self reply nested }
-      }).start()
+      })
 
       val nested = (a ? "any").as[ActorRef].get
       a must not be null

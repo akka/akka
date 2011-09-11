@@ -77,7 +77,7 @@ class LoggingReceiveSpec
         def receive = loggable(this) {
           case _ ⇒ self reply "x"
         }
-      }).start()
+      })
       actor ! "buh"
       within(1 second) {
         expectMsg(EventHandler.Debug(actor.underlyingActor, "received handled message buh"))
@@ -104,7 +104,7 @@ class LoggingReceiveSpec
         def receive = loggable(this)(loggable(this) {
           case _ ⇒ self reply "x"
         })
-      }).start()
+      })
       actor ! "buh"
       within(1 second) {
         expectMsg(EventHandler.Debug(actor.underlyingActor, "received handled message buh"))
@@ -124,7 +124,7 @@ class LoggingReceiveSpec
         def receive = {
           case _ ⇒
         }
-      }).start()
+      })
       actor ! PoisonPill
       expectMsg(300 millis, EventHandler.Debug(actor.underlyingActor, "received AutoReceiveMessage PoisonPill"))
     }
@@ -141,7 +141,7 @@ class LoggingReceiveSpec
           def receive = {
             case _ ⇒
           }
-        }).start()
+        })
         val actor1 = actor.underlyingActor
         expectMsg(EventHandler.Debug(actor1, "started"))
         supervisor link actor

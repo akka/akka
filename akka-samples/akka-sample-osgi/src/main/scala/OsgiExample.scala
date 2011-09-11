@@ -12,7 +12,7 @@ class Activator extends BundleActivator {
 
   def start(context: BundleContext) {
     println("Starting the OSGi example ...")
-    val echo = actorOf[EchoActor].start()
+    val echo = actorOf[EchoActor]
     val answer = (echo ? "OSGi example").as[String]
     println(answer getOrElse "No answer!")
   }

@@ -199,7 +199,7 @@ Then there's a method that's called ``fold`` that takes a start-value, a sequenc
 
   val futures = for(i <- 1 to 1000) yield Future(i * 2) // Create a sequence of Futures
   
-  val futureSum = Futures.fold(0)(futures)(_ + _)
+  val futureSum = Future.fold(0)(futures)(_ + _)
 
 That's all it takes!
 
@@ -210,7 +210,7 @@ If the sequence passed to ``fold`` is empty, it will return the start-value, in 
 
   val futures = for(i <- 1 to 1000) yield Future(i * 2) // Create a sequence of Futures
 
-  val futureSum = Futures.reduce(futures)(_ + _)
+  val futureSum = Future.reduce(futures)(_ + _)
 
 Same as with ``fold``, the execution will be done by the Thread that completes the last of the Futures, you can also parallize it by chunking your futures into sub-sequences and reduce them, and then reduce the reduced results again.
 

@@ -101,7 +101,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
       self tryReply Stats(_delegates length)
     case MaximumNumberOfRestartsWithinTimeRangeReached(victim, _, _, _) ⇒
       _delegates = _delegates filterNot { _.uuid == victim.uuid }
-    case Death(victim, _) ⇒
+    case Death(victim, _, _) ⇒
       _delegates = _delegates filterNot { _.uuid == victim.uuid }
     case msg ⇒
       resizeIfAppropriate()
@@ -117,7 +117,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
           for (i ← 0 until requestedCapacity) yield {
             val delegate = instance()
             self link delegate
-            delegate.start()
+            delegate
           }
         }
       case qty if qty < 0 ⇒

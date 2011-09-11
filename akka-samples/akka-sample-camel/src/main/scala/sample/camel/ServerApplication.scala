@@ -14,7 +14,7 @@ object ServerApplication extends App {
 
   startCamelService
 
-  val ua = actorOf[RemoteActor2].start
+  val ua = actorOf[RemoteActor2]
   val ta = TypedActor.typedActorOf(
     classOf[RemoteTypedConsumer2],
     classOf[RemoteTypedConsumer2Impl], Props())

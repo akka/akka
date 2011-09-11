@@ -5,6 +5,7 @@
 package akka.util
 
 import akka.event.EventHandler
+import java.io.{ PrintWriter, StringWriter }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -26,11 +27,6 @@ object Helpers {
     (0 until 4).foldLeft(0)((value, index) ⇒ value + ((bytes(index + offset) & 0x000000FF) << ((4 - 1 - index) * 8)))
   }
 
-  def flatten[T: ClassManifest](array: Array[Any]) = array.flatMap {
-    case arr: Array[T] ⇒ arr
-    case elem: T       ⇒ Array(elem)
-  }
-
   def ignore[E: Manifest](body: ⇒ Unit) {
     try {
       body
@@ -44,6 +40,11 @@ object Helpers {
       body
     } catch {
       case e: Throwable ⇒
+        val sw = new java.io.StringWriter()
+        var root = e
+        while (root.getCause ne null) root = e.getCause
+        root.printStackTrace(new java.io.PrintWriter(sw))
+        System.err.println(sw.toString)
         EventHandler.error(e, this, e.toString)
         throw e
     }

@@ -33,9 +33,9 @@ class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb", MongoNaiveDura
   }
 
   def createMongoMailboxTestActor(id: String)(implicit dispatcher: MessageDispatcher): ActorRef = {
-    val queueActor = localActorOf[MongoMailboxTestActor]
+    val queueActor = actorOf[MongoMailboxTestActor]
     queueActor.dispatcher = dispatcher
-    queueActor.start
+    queueActor
   }
 }*/
 
@@ -48,7 +48,7 @@ class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb", MongoNaiveDura
     "should handle reply to ! for 1 message" in {
       val latch = new CountDownLatch(1)
       val queueActor = createMongoMailboxTestActor("mongoDB Backend should handle Reply to !")
-      val sender = localActorOf(new Actor { def receive = { case "sum" => latch.countDown } }).start
+      val sender = actorOf(new Actor { def receive = { case "sum" => latch.countDown } })
 
       queueActor.!("sum")(Some(sender))
       latch.await(10, TimeUnit.SECONDS) must be (true)
@@ -57,7 +57,7 @@ class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb", MongoNaiveDura
     "should handle reply to ! for multiple messages" in {
       val latch = new CountDownLatch(5)
       val queueActor = createMongoMailboxTestActor("mongoDB Backend should handle reply to !")
-      val sender = localActorOf( new Actor { def receive = { case "sum" => latch.countDown } } ).start
+      val sender = actorOf( new Actor { def receive = { case "sum" => latch.countDown } } )
 
       queueActor.!("sum")(Some(sender))
       queueActor.!("sum")(Some(sender))

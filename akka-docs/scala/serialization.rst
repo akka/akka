@@ -95,13 +95,12 @@ Step 3: Import the type class module definition and serialize / de-serialize::
     import akka.serialization.ActorSerialization._
     import BinaryFormatMyActor._
 
-    val actor1 = actorOf[MyActor].start()
+    val actor1 = actorOf[MyActor]
     (actor1 ? "hello").as[String].getOrElse("_") should equal("world 1")
     (actor1 ? "hello").as[String].getOrElse("_") should equal("world 2")
 
     val bytes = toBinary(actor1)
     val actor2 = fromBinary(bytes)
-    actor2.start()
     (actor2 ? "hello").as[String].getOrElse("_") should equal("world 3")
   }
 
@@ -137,13 +136,12 @@ and use it for serialization::
     import akka.serialization.ActorSerialization._
     import BinaryFormatMyStatelessActor._
 
-    val actor1 = actorOf[MyStatelessActor].start()
+    val actor1 = actorOf[MyStatelessActor]
     (actor1 ? "hello").as[String].getOrElse("_") should equal("world")
     (actor1 ? "hello").as[String].getOrElse("_") should equal("world")
 
     val bytes = toBinary(actor1)
     val actor2 = fromBinary(bytes)
-    actor2.start()
     (actor2 ? "hello").as[String].getOrElse("_") should equal("world")
   }
 
@@ -188,13 +186,12 @@ and serialize / de-serialize::
     import akka.serialization.ActorSerialization._
     import BinaryFormatMyJavaSerializableActor._
 
-    val actor1 = actorOf[MyJavaSerializableActor].start()
+    val actor1 = actorOf[MyJavaSerializableActor]
     (actor1 ? "hello").as[String].getOrElse("_") should equal("world 1")
     (actor1 ? "hello").as[String].getOrElse("_") should equal("world 2")
 
     val bytes = toBinary(actor1)
     val actor2 = fromBinary(bytes)
-    actor2.start()
     (actor2 ? "hello").as[String].getOrElse("_") should equal("world 3")
   }
 

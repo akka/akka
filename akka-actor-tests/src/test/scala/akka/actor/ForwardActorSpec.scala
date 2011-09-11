@@ -19,12 +19,12 @@ object ForwardActorSpec {
   def createForwardingChain(): ActorRef = {
     val replier = actorOf(new Actor {
       def receive = { case x ⇒ self reply x }
-    }).start()
+    })
 
     def mkforwarder(forwardTo: ActorRef) = actorOf(
       new Actor {
         def receive = { case x ⇒ forwardTo forward x }
-      }).start()
+      })
 
     mkforwarder(mkforwarder(mkforwarder(replier)))
   }
@@ -38,7 +38,7 @@ class ForwardActorSpec extends WordSpec with MustMatchers {
     "forward actor reference when invoking forward on bang" in {
       val latch = new TestLatch(1)
 
-      val replyTo = actorOf(new Actor { def receive = { case ExpectedMessage ⇒ latch.countDown() } }).start()
+      val replyTo = actorOf(new Actor { def receive = { case ExpectedMessage ⇒ latch.countDown() } })
 
       val chain = createForwardingChain()
 

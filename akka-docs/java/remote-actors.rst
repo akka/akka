@@ -38,7 +38,7 @@ Here is how to start up the server and specify the hostname and port in the ‘a
 
   import static akka.actor.Actors.*;
 
-  remote().start();
+  remote();
 
   // Specify the classloader to use to load the remote class (actor)
   remote().start(classLoader);

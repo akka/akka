@@ -41,11 +41,9 @@ public class UntypedTransactorTest {
                     return new UntypedCounter(name);
                 }
             });
-            counter.start();
             counters.add(counter);
         }
         failer = Actors.actorOf(UntypedFailer.class);
-        failer.start();
     }
 
     @Test public void incrementAllCountersWithSuccessfulTransaction() {

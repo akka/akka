@@ -61,9 +61,9 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers with BeforeAnd
   val timeout = 5 seconds
 
   def createActors = {
-    def createCounter(i: Int) = Actor.actorOf(new Counter("counter" + i)).start()
+    def createCounter(i: Int) = Actor.actorOf(new Counter("counter" + i))
     val counters = (1 to numCounters) map createCounter
-    val failer = Actor.actorOf(new Failer).start()
+    val failer = Actor.actorOf(new Failer)
     (counters, failer)
   }
 

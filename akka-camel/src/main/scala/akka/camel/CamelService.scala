@@ -8,8 +8,7 @@ import java.util.concurrent.TimeUnit
 
 import org.apache.camel.CamelContext
 
-import akka.actor.Props
-import akka.actor.Actor._
+import akka.actor.{ newUuid, Props, LocalActorRef, Actor }
 import akka.config.Config._
 import akka.japi.{ SideEffect, Option ⇒ JOption }
 import akka.util.Bootable
@@ -27,9 +26,9 @@ import TypedCamelAccess._
  * @author Martin Krasser
  */
 trait CamelService extends Bootable {
-  private[camel] val activationTracker = actorOf(Props(new ActivationTracker).withLocalOnly(true))
-  private[camel] val consumerPublisher = actorOf(Props(new ConsumerPublisher(activationTracker)).withLocalOnly(true))
-  private[camel] val publishRequestor = actorOf(Props(new ConsumerPublishRequestor).withLocalOnly(true))
+  private[camel] val activationTracker = new LocalActorRef(Props[ActivationTracker], newUuid.toString, true)
+  private[camel] val consumerPublisher = new LocalActorRef(Props(new ConsumerPublisher(activationTracker)), newUuid.toString, true)
+  private[camel] val publishRequestor = new LocalActorRef(Props(new ConsumerPublishRequestor), newUuid.toString, true)
 
   private val serviceEnabled = config.getList("akka.enabled-modules").exists(_ == "camel")
 
@@ -64,9 +63,6 @@ trait CamelService extends Bootable {
     if (!CamelContextManager.started) CamelContextManager.start
 
     registerPublishRequestor
-
-    activationTracker.start
-    consumerPublisher.start
 
     // send registration events for all (un)typed actors that have been registered in the past.
     for (event ← PublishRequestor.pastActorRegisteredEvents) publishRequestor ! event
@@ -179,10 +175,10 @@ trait CamelService extends Bootable {
     (activationTracker ? SetExpectedDeactivationCount(count)).as[CountDownLatch].get
 
   private[camel] def registerPublishRequestor: Unit =
-    registry.addListener(publishRequestor)
+    Actor.registry.addListener(publishRequestor)
 
   private[camel] def unregisterPublishRequestor: Unit =
-    registry.removeListener(publishRequestor)
+    Actor.registry.removeListener(publishRequestor)
 }
 
 /**

@@ -7,8 +7,7 @@ package akka.camel
 import org.apache.camel.CamelContext
 
 import akka.actor.Actor._
-import akka.actor.Props
-import akka.actor.ActorRef
+import akka.actor._
 import akka.camel.component.TypedActorComponent
 
 /**
@@ -33,8 +32,8 @@ private[camel] object TypedCamel {
    * and re-uses the <code>activationTracker</code> of <code>service</code>.
    */
   def onCamelServiceStart(service: CamelService) {
-    consumerPublisher = actorOf(Props(new TypedConsumerPublisher(service.activationTracker)).withLocalOnly(true))
-    publishRequestor = actorOf(Props(new TypedConsumerPublishRequestor).withLocalOnly(true))
+    consumerPublisher = new LocalActorRef(Props(new TypedConsumerPublisher(service.activationTracker)), newUuid.toString, true)
+    publishRequestor = new LocalActorRef(Props(new TypedConsumerPublishRequestor), newUuid.toString, true)
 
     registerPublishRequestor
 

@@ -9,6 +9,8 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 
 import akka.actor._
+import akka.event.EventHandler
+import akka.testkit.{ EventFilter, TestEvent }
 
 import com.eaio.uuid.UUID
 
@@ -33,8 +35,10 @@ class SynchronousTransactionLogSpec extends WordSpec with MustMatchers with Befo
     }
 
     "fail to be opened if non existing - synchronous" in {
+      EventHandler.notify(TestEvent.Mute(EventFilter[ReplicationException]))
       val uuid = (new UUID).toString
       intercept[ReplicationException](TransactionLog.logFor(uuid, false, null))
+      EventHandler.notify(TestEvent.UnMuteAll)
     }
 
     "be able to be checked for existence - synchronous" in {
@@ -175,16 +179,12 @@ class SynchronousTransactionLogSpec extends WordSpec with MustMatchers with Befo
   }
 
   override def beforeAll() = {
-    LocalCluster.startLocalCluster()
     LocalBookKeeperEnsemble.start()
+    TransactionLog.start()
   }
 
   override def afterAll() = {
-    Cluster.node.shutdown()
-    LocalCluster.shutdownLocalCluster()
     TransactionLog.shutdown()
     LocalBookKeeperEnsemble.shutdown()
-    Actor.registry.local.shutdownAll()
-    Scheduler.shutdown()
   }
 }

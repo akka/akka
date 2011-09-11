@@ -173,7 +173,7 @@ trait ProducerSupport { this: Actor ⇒
    */
   private def createSendProcessor = {
     val sendProcessor = new SendProcessor(endpoint)
-    sendProcessor.start
+    sendProcessor.start()
     sendProcessor
   }
 }

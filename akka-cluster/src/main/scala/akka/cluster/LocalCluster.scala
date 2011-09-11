@@ -88,9 +88,8 @@ object LocalCluster {
    */
   def shutdownLocalCluster() {
     withPrintStackTraceOnError {
-      EventHandler.info(this, "Shuts down local cluster")
-      zkServer.get.foreach(_.shutdown())
-      zkServer.set(None)
+      EventHandler.debug(this, "Shuts down local cluster")
+      zkServer.getAndSet(None).foreach(_.shutdown())
     }
   }
 

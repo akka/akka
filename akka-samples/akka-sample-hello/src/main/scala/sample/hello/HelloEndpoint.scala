@@ -19,7 +19,7 @@ class HelloEndpoint extends Actor with Endpoint {
       def receive = {
         case get: Get => get OK "Hello at " + time
       }
-    }).start
+    })
 
   def hook: Endpoint.Hook = { case _ => hello }
 

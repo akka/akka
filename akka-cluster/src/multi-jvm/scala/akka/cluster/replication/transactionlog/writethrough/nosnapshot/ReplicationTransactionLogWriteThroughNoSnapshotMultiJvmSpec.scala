@@ -44,7 +44,7 @@
 //       }
 
 //       barrier("create-actor-on-node1", NrOfNodes) {
-//         val actorRef = Actor.actorOf[HelloWorld]("hello-world-write-through-nosnapshot").start()
+//         val actorRef = Actor.actorOf[HelloWorld]("hello-world-write-through-nosnapshot")
 //         actorRef.address must be("hello-world-write-through-nosnapshot")
 //         for (i ← 0 until 10)
 //           (actorRef ? Count(i)).as[String] must be(Some("World from node [node1]"))

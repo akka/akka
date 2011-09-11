@@ -42,7 +42,6 @@ Creating an Actor is done using the 'akka.actor.Actors.actorOf' factory method. 
 .. code-block:: java
 
   ActorRef myActor = Actors.actorOf(SampleUntypedActor.class);
-  myActor.start();
 
 Normally you would want to import the 'actorOf' method like this:
 
@@ -57,7 +56,7 @@ You can also create & start the actor in one statement:
 
 .. code-block:: java
 
-  ActorRef myActor = actorOf(SampleUntypedActor.class).start();
+  ActorRef myActor = actorOf(SampleUntypedActor.class);
 
 The call to 'actorOf' returns an instance of 'ActorRef'. This is a handle to the 'UntypedActor' instance which you can use to interact with the Actor, like send messages to it etc. more on this shortly. The 'ActorRef' is immutable and has a one to one relationship with the Actor it represents. The 'ActorRef' is also serializable and network-aware. This means that you can serialize it, send it over the wire and use it on a remote host and it will still be representing the same Actor on the original node, across the network.
 
@@ -315,20 +314,13 @@ Promise represents the write-side of a Future, enabled by the methods
 Starting actors
 ---------------
 
-Actors are started by invoking the ‘start’ method.
+Actors are started when they are created by invoking the ‘actorOf’ method.
 
 .. code-block:: java
 
   ActorRef actor = actorOf(SampleUntypedActor.class);
-  myActor.start();
 
-You can create and start the Actor in a one liner like this:
-
-.. code-block:: java
-
-  ActorRef actor = actorOf(SampleUntypedActor.class).start();
-
-When you start the actor then it will automatically call the 'preStart' callback method on the 'UntypedActor'. This is an excellent place to add initialization code for the actor.
+When you create the actor then it will automatically call the 'preStart' callback method on the 'UntypedActor'. This is an excellent place to add initialization code for the actor.
 
 .. code-block:: java
 

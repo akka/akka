@@ -39,7 +39,7 @@ class SchedulerSpec extends JUnitSuite {
     val countDownLatch = new CountDownLatch(3)
     val tickActor = actorOf(new Actor {
       def receive = { case Tick ⇒ countDownLatch.countDown() }
-    }).start()
+    })
     // run every 50 millisec
     collectFuture(Scheduler.schedule(tickActor, Tick, 0, 50, TimeUnit.MILLISECONDS))
 
@@ -60,7 +60,7 @@ class SchedulerSpec extends JUnitSuite {
     val countDownLatch = new CountDownLatch(3)
     val tickActor = actorOf(new Actor {
       def receive = { case Tick ⇒ countDownLatch.countDown() }
-    }).start()
+    })
     // run every 50 millisec
     collectFuture(Scheduler.scheduleOnce(tickActor, Tick, 50, TimeUnit.MILLISECONDS))
     collectFuture(Scheduler.scheduleOnce(() ⇒ countDownLatch.countDown(), 50, TimeUnit.MILLISECONDS))
@@ -80,7 +80,7 @@ class SchedulerSpec extends JUnitSuite {
     val ticks = new CountDownLatch(1000)
     val actor = actorOf(new Actor {
       def receive = { case Ping ⇒ ticks.countDown }
-    }).start
+    })
     val numActors = Actor.registry.local.actors.length
     (1 to 1000).foreach(_ ⇒ collectFuture(Scheduler.scheduleOnce(actor, Ping, 1, TimeUnit.MILLISECONDS)))
     assert(ticks.await(10, TimeUnit.SECONDS))
@@ -97,7 +97,7 @@ class SchedulerSpec extends JUnitSuite {
 
     val actor = actorOf(new Actor {
       def receive = { case Ping ⇒ ticks.countDown() }
-    }).start()
+    })
 
     (1 to 10).foreach { i ⇒
       val future = collectFuture(Scheduler.scheduleOnce(actor, Ping, 1, TimeUnit.SECONDS))
@@ -133,7 +133,7 @@ class SchedulerSpec extends JUnitSuite {
         Supervise(
           actor,
           Permanent)
-          :: Nil)).start
+          :: Nil))
 
     collectFuture(Scheduler.schedule(actor, Ping, 500, 500, TimeUnit.MILLISECONDS))
     // appx 2 pings before crash

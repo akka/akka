@@ -12,8 +12,8 @@ public class UntypedCoordinatedExample {
         System.out.println("Untyped transactor example");
         System.out.println();
 
-        ActorRef counter1 = Actors.actorOf(UntypedCoordinatedCounter.class).start();
-        ActorRef counter2 = Actors.actorOf(UntypedCoordinatedCounter.class).start();
+        ActorRef counter1 = Actors.actorOf(UntypedCoordinatedCounter.class);
+        ActorRef counter2 = Actors.actorOf(UntypedCoordinatedCounter.class);
 
         counter1.tell(new Coordinated(new Increment(counter2)));
 

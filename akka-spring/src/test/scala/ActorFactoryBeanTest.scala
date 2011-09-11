@@ -88,7 +88,6 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
     it("should stop the created untyped actor when scope is singleton and the context is closed") {
       var ctx = new ClassPathXmlApplicationContext("appContext.xml");
       val target = ctx.getBean("untypedActor").asInstanceOf[ActorRef]
-      target.start
       assert(target.isRunning)
       ctx.close
       assert(!target.isRunning)

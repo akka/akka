@@ -45,7 +45,7 @@ object ActorRestartSpec {
           val ref = TestActorRef(new Actor {
             def receive = { case _ ⇒ }
             override def preStart { testActor ! ((this, self)) }
-          }).start()
+          })
           testActor ! ((ref.underlyingActor, ref))
           None
         case Handover ⇒
@@ -81,7 +81,7 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
   private def collect(f: ⇒ ActorRef): ActorRef = {
     val ref = f
     toStop add ref
-    ref.start()
+    ref
   }
 
   private def createSupervisor =
@@ -100,7 +100,6 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
         actor ! Kill
         within(1 second) {
           expectMsg(("preRestart", Some(Kill), 1))
-          expectMsg(("preStart", 2))
           expectMsg(("postRestart", 2))
           expectNoMsg
         }
@@ -121,7 +120,6 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
           tRef.underlyingActor must be(tActor)
           expectMsg((tActor, tRef))
           tRef.stop()
-          expectMsg(("preStart", 2))
           expectMsg(("postRestart", 2))
           expectNoMsg
         }
@@ -139,7 +137,6 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
         actor ! Kill
         within(1 second) {
           expectMsg(("preRestart", Some(Kill), 1))
-          expectMsg(("preStart", 2))
           expectMsg(("postRestart", 2))
           expectNoMsg
         }
@@ -159,7 +156,6 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
         actor ! Kill
         within(1 second) {
           expectMsg(("preRestart", Some(Kill), 1))
-          expectMsg(("preStart", 2))
           expectMsg(("postRestart", 2))
           expectNoMsg
         }

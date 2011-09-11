@@ -6,7 +6,7 @@
 
   import scala.collection.mutable.HashMap
 
-  import akka.actor.{Actor, ActorRef}
+  import akka.actor.{Actor, ActorRef, Props}
   import akka.stm._
   import akka.config.Supervision.{OneForOneStrategy,Permanent}
   import Actor._
@@ -24,7 +24,7 @@
   2. In the first REPL you get execute:
     - scala> import sample.chat._
     - scala> import akka.actor.Actor._
-    - scala> val chatService = actorOf[ChatService].start()
+    - scala> val chatService = actorOf[ChatService]
   3. In the second REPL you get execute:
       - scala> import sample.chat._
       - scala> ClientRunner.run
@@ -127,7 +127,7 @@
       case Login(username) =>
         EventHandler.info(this, "User [%s] has logged in".format(username))
         val session = actorOf(new Session(username, storage))
-        session.start()
+        session
         sessions += (username -> session)
 
       case Logout(username) =>
@@ -169,7 +169,7 @@
    * Creates and links a MemoryChatStorage.
    */
   trait MemoryChatStorageFactory { this: Actor =>
-    val storage = this.self.link(actorOf[MemoryChatStorage]).start() // starts and links ChatStorage
+    val storage = actorOf(Props[MemoryChatStorage].withSupervisor(this.self)) // starts and links ChatStorage
   }
 
   /**
@@ -201,7 +201,7 @@
    * Class encapsulating the full Chat Service.
    * Start service by invoking:
    * <pre>
-   * val chatService = Actor.actorOf[ChatService].start()
+   * val chatService = Actor.actorOf[ChatService]
    * </pre>
    */
   class ChatService extends
@@ -223,7 +223,7 @@
     def main(args: Array[String]) { ServerRunner.run() }
 
     def run() {
-      actorOf[ChatService].start()
+      actorOf[ChatService]
     }
   }
 

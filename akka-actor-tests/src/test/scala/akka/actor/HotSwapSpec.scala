@@ -21,7 +21,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
       var _log = ""
       val a = actorOf(new Actor {
         def receive = { case _ ⇒ _log += "default" }
-      }).start()
+      })
       a ! HotSwap(self ⇒ {
         case _ ⇒
           _log += "swapped"
@@ -47,7 +47,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
               barrier.await
           })
         }
-      }).start()
+      })
 
       a ! "init"
       barrier.await
@@ -71,7 +71,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
             _log += "init"
             barrier.await
         }
-      }).start()
+      })
 
       a ! "init"
       barrier.await
@@ -126,7 +126,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
             })
             barrier.await
         }
-      }).start()
+      })
 
       a ! "init"
       barrier.await

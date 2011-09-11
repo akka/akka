@@ -53,18 +53,7 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       assert(executor.getQueue().remainingCapacity() === Integer.MAX_VALUE)
       assert(dispatcher.name === EVENT_DRIVEN_PREFIX + "dispatcher-2")
     }
-    /*
-    scenario("get a executor-event-driven-dispatcher with bounded-blocking-queue and with bounded mailbox capacity") {
-      val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
-      val dispatcher = context.getBean("executor-event-driven-dispatcher-mc").asInstanceOf[ExecutorBasedEventDrivenDispatcher]
-      assert(dispatcher.name === EVENT_DRIVEN_PREFIX + "dispatcher-mc")
-      val actorRef = UntypedActor.actorOf(classOf[PingActor])
-      actorRef.dispatcher = dispatcher
-      actorRef.start
-      assert(actorRef.mailbox.isInstanceOf[BlockingQueue[MessageInvocation]])
-      assert((actorRef.mailbox.asInstanceOf[BlockingQueue[MessageInvocation]]).remainingCapacity === 1000)
-    }
-*/
+
     scenario("get a executor-event-driven-dispatcher with unbounded-linked-blocking-queue with bounded capacity from context") {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val dispatcher = context.getBean("executor-event-driven-dispatcher-4").asInstanceOf[ExecutorBasedEventDrivenDispatcher]
@@ -110,7 +99,6 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val actorRef = context.getBean("untyped-actor-with-thread-based-dispatcher").asInstanceOf[ActorRef]
       assert(actorRef.getActorClassName() === "akka.spring.foo.PingActor")
-      actorRef.start()
       actorRef.tell("Hello")
       assert(actorRef.getDispatcher.isInstanceOf[ThreadBasedDispatcher])
     }

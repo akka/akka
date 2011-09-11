@@ -134,14 +134,14 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
     "unlock the lock" in {
 
       // lock that locked after being open for 1 sec
-      val lock = Actor.actorOf(new Lock("33221", 1 second)).start()
+      val lock = Actor.actorOf(new Lock("33221", 1 second))
 
       val transitionTester = Actor.actorOf(new Actor {
         def receive = {
           case Transition(_, _, _)     ⇒ transitionCallBackLatch.open
           case CurrentState(_, Locked) ⇒ initialStateLatch.open
         }
-      }).start()
+      })
 
       lock ! SubscribeTransitionCallBack(transitionTester)
       initialStateLatch.await
@@ -174,7 +174,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
           case "world" ⇒ answerLatch.open
           case Bye     ⇒ lock ! "bye"
         }
-      }).start()
+      })
       tester ! Hello
       answerLatch.await
 
@@ -188,7 +188,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
         when(1) {
           case Ev("go") ⇒ goto(2)
         }
-      }).start()
+      })
       logger = Actor.actorOf(new Actor {
         def receive = {
           case x ⇒ testActor forward x
@@ -209,7 +209,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
           case x ⇒ testActor ! x
         }
       }
-      val ref = Actor.actorOf(fsm).start()
+      val ref = Actor.actorOf(fsm)
       ref.stop()
       expectMsg(1 second, fsm.StopEvent(Shutdown, 1, null))
     }
@@ -230,7 +230,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
         onTermination {
           case StopEvent(r, _, _) ⇒ testActor ! r
         }
-      }).start()
+      })
       val fsm = fsmref.underlyingActor
       logger = Actor.actorOf(new Actor {
         def receive = {
@@ -261,7 +261,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
           case Event("count", c) ⇒ stay using (c + 1)
           case Event("log", _)   ⇒ stay replying getLog
         }
-      }).start()
+      })
       fsmref ! "log"
       val fsm = fsmref.underlyingActor
       expectMsg(1 second, IndexedSeq(LogEntry(1, 0, "log")))

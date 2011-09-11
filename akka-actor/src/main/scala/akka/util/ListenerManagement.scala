@@ -26,7 +26,6 @@ trait ListenerManagement {
    * The <code>listener</code> is started by this method if manageLifeCycleOfListeners yields true.
    */
   def addListener(listener: ActorRef) {
-    if (manageLifeCycleOfListeners) listener.start()
     listeners add listener
   }
 

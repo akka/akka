@@ -16,5 +16,5 @@ class Boot {
         Supervise(Actor.actorOf[RootEndpoint], Permanent) ::
         Supervise(Actor.actorOf[HelloEndpoint], Permanent) :: Nil))
 
-  factory.newInstance.start
+  factory.newInstance.start()
 }

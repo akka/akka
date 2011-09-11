@@ -233,7 +233,7 @@ Here is the API and how to use it from within an 'Actor':
   getContext().unlink(actorRef);
 
   // starts and links Actors atomically
-  getContext().link(actorRef).start();
+  getContext().link(actorRef);
 
   // spawns (creates and starts) actors
   getContext().spawn(MyActor.class);

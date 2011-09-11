@@ -99,8 +99,8 @@ trait CamelContextLifecycle {
       c ← context
       t ← template
     } {
-      c.start
-      t.start
+      c.start()
+      t.start()
       _started = true
       EventHandler.info(this, "Camel context started")
     }

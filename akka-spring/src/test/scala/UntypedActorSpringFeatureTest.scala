@@ -42,7 +42,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
     val context = new ClassPathXmlApplicationContext(config)
     val pingActor = context.getBean(id).asInstanceOf[ActorRef]
     assert(pingActor.getActorClassName() === "akka.spring.foo.PingActor")
-    pingActor.start()
+    pingActor
   }
 
   feature("parse Spring application context") {
@@ -133,7 +133,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
       val context = new ClassPathXmlApplicationContext("/server-managed-config.xml")
       val pingActor = context.getBean("server-managed-remote-untyped-actor-custom-id").asInstanceOf[ActorRef]
       assert(pingActor.getActorClassName() === "akka.spring.foo.PingActor")
-      pingActor.start()
+      pingActor
       val nrOfActors = Actor.registry.actors.length
       // get client actor ref from spring context
       val actorRef = context.getBean("client-1").asInstanceOf[ActorRef]

@@ -168,7 +168,7 @@ object ClusterDeployer extends ActorDeployer {
         case Deploy(_, _, _, _, Local) | Deploy(_, _, _, _, _: Local) ⇒ //TODO LocalDeployer.deploy(deployment)??
         case Deploy(address, recipe, routing, _, _) ⇒ // cluster deployment
           /*TODO recipe foreach { r ⇒
-            Deployer.newClusterActorRef(() ⇒ Actor.actorOf(r.implementationClass), address, deployment).start()
+            Deployer.newClusterActorRef(() ⇒ Actor.actorOf(r.implementationClass), address, deployment)
           }*/
           val path = deploymentAddressPath.format(address)
           try {

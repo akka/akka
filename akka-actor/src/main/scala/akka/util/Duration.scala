@@ -249,7 +249,7 @@ object Duration {
  * val d3 = d2 + 1.millisecond
  * </pre>
  */
-abstract class Duration {
+abstract class Duration extends Serializable {
   def length: Long
   def unit: TimeUnit
   def toNanos: Long

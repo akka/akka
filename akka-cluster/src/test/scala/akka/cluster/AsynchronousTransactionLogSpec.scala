@@ -9,6 +9,8 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 
 import akka.actor._
+import akka.event.EventHandler
+import akka.testkit.{ EventFilter, TestEvent }
 
 import com.eaio.uuid.UUID
 
@@ -49,8 +51,10 @@ class AsynchronousTransactionLogSpec extends WordSpec with MustMatchers with Bef
     }
 
     "fail to be opened if non existing - asynchronous" in {
+      EventHandler.notify(TestEvent.Mute(EventFilter[ReplicationException]))
       val uuid = (new UUID).toString
       intercept[ReplicationException](TransactionLog.logFor(uuid, true, null))
+      EventHandler.notify(TestEvent.UnMuteAll)
     }
 
     "be able to overweite an existing txlog if one already exists - asynchronous" in {
@@ -67,6 +71,7 @@ class AsynchronousTransactionLogSpec extends WordSpec with MustMatchers with Bef
     }
 
     "be able to record and delete entries - asynchronous" in {
+      EventHandler.notify(TestEvent.Mute(EventFilter[ReplicationException]))
       val uuid = (new UUID).toString
       val txlog1 = TransactionLog.newLogFor(uuid, true, null)
       Thread.sleep(200)
@@ -78,6 +83,7 @@ class AsynchronousTransactionLogSpec extends WordSpec with MustMatchers with Bef
       txlog1.delete
       Thread.sleep(200)
       intercept[ReplicationException](TransactionLog.logFor(uuid, true, null))
+      EventHandler.notify(TestEvent.UnMuteAll)
     }
 
     "be able to record entries and read entries with 'entriesInRange' - asynchronous" in {
@@ -214,14 +220,11 @@ class AsynchronousTransactionLogSpec extends WordSpec with MustMatchers with Bef
 
   override def beforeAll() = {
     LocalBookKeeperEnsemble.start()
+    TransactionLog.start()
   }
 
   override def afterAll() = {
-    Cluster.node.shutdown()
-    LocalCluster.shutdownLocalCluster()
     TransactionLog.shutdown()
     LocalBookKeeperEnsemble.shutdown()
-    Actor.registry.local.shutdownAll()
-    Scheduler.shutdown()
   }
 }

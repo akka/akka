@@ -34,7 +34,7 @@ class CamelServiceFactoryBean extends FactoryBean[CamelService] with Initializin
       CamelContextManager.init(camelContext)
     }
     instance = CamelServiceFactory.createCamelService
-    instance.start
+    instance.start()
   }
 
   /**
