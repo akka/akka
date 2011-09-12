@@ -1076,7 +1076,7 @@ class RemoteServerHandler(
       "Looking up a remotely available actor for address [%s] on node [%s]"
         .format(address, Config.nodename))
 
-    val actorRef = Actor.createActor(address, () ⇒ createSessionActor(actorInfo, channel), false)
+    val actorRef = createSessionActor(actorInfo, channel)
 
     if (actorRef eq null) throw new IllegalActorStateException("Could not find a remote actor with address [" + address + "] or uuid [" + uuid + "]")
 

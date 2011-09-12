@@ -90,7 +90,8 @@ object Props {
    */
   def apply(creator: Creator[_ <: Actor]): Props = default.withCreator(creator.create)
 
-  def apply(behavior: (ScalaActorRef with SelfActorRef) ⇒ Actor.Receive): Props = apply(new Actor { def receive = behavior(self) })
+  def apply(behavior: (ScalaActorRef with SelfActorRef) ⇒ Actor.Receive): Props =
+    apply(new Actor { def receive = behavior(self) })
 }
 
 /**

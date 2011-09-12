@@ -182,6 +182,11 @@ object Actor {
   private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**
+   * Handle to the ActorRefProviders for looking up and creating ActorRefs.
+   */
+  val provider = new ActorRefProviders
+
+  /**
    * Handle to the ActorRegistry.
    */
   val registry = new ActorRegistry
@@ -282,8 +287,7 @@ object Actor {
    *   val actor = actorOf(classOf[MyActor])
    * </pre>
    */
-  def actorOf[T <: Actor](clazz: Class[T]): ActorRef =
-    actorOf(clazz, new UUID().toString)
+  def actorOf[T <: Actor](clazz: Class[T]): ActorRef = actorOf(clazz, new UUID().toString)
 
   /**
    * Creates an ActorRef out of the Actor of the specified Class.
@@ -324,7 +328,7 @@ object Actor {
    * that creates the Actor. Please note that this function can be invoked multiple
    * times if for example the Actor is supervised and needs to be restarted.
    * <p/>
-   * This function should <b>NOT</b> be used for remote actors.o
+   * This function should <b>NOT</b> be used for remote actors.
    * <pre>
    *   import Actor._
    *   val actor = actorOf(new MyActor)
@@ -358,59 +362,23 @@ object Actor {
    */
   def actorOf[T <: Actor](creator: Creator[T], address: String): ActorRef = actorOf(Props(creator), address)
 
+  /**
+   * Creates an ActorRef out of the Actor.
+   * <p/>
+   * <pre>
+   *   FIXME document
+   * </pre>
+   */
   def actorOf(props: Props): ActorRef = actorOf(props, newUuid.toString)
-  //TODO FIXME
-  def actorOf(props: Props, address: String): ActorRef = {
-    //TODO Implement support for configuring by deployment ID etc
-    //TODO If deployId matches an already created actor (Ahead-of-time deployed) return that actor
-    //TODO If deployId exists in config, it will override the specified Props (should we attempt to merge?)
 
-    //FIXME Hack, either remove deployId or rename it to address and remove the other param
-    val realAddress = props.deployId match { //TODO handle deployId separately from address?
-      case Props.`defaultDeployId` | null ⇒ address
-      case other                          ⇒ other
-    }
-
-    createActor(realAddress, props, systemService = false)
-  }
-
-  private[akka] def createActor(address: String, props: Props, systemService: Boolean): ActorRef = if (!systemService) {
-    Address.validate(address)
-    registry.actorFor(address) match { // check if the actor for the address is already in the registry
-      case Some(actorRef) ⇒ actorRef // it is     -> return it
-      case None ⇒ // it is not -> create it
-        try {
-          Deployer.deploymentFor(address) match {
-            case Deploy(_, _, router, _, Local) ⇒ new LocalActorRef(props, address, systemService) // create a local actor
-            case deploy ⇒
-              val factory = props.creator
-              newClusterActorRef(() ⇒ new LocalActorRef(Props(factory), address, systemService), address, deploy) //create a clustered actor
-          }
-        } catch {
-          case e: DeploymentException ⇒
-            EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
-            new LocalActorRef(props, address, systemService) // if deployment fails, fall back to local actors
-        }
-    }
-  } else new LocalActorRef(props, address, systemService)
-
-  private[akka] def createActor(address: String, factory: () ⇒ ActorRef, systemService: Boolean): ActorRef = if (!systemService) {
-    Address.validate(address)
-    registry.actorFor(address) match { // check if the actor for the address is already in the registry
-      case Some(actorRef) ⇒ actorRef // it is     -> return it
-      case None ⇒ // it is not -> create it
-        try {
-          Deployer.deploymentFor(address) match {
-            case Deploy(_, _, router, _, Local) ⇒ factory() // create a local actor
-            case deploy                         ⇒ newClusterActorRef(factory, address, deploy) //create a clustered actor
-          }
-        } catch {
-          case e: DeploymentException ⇒
-            EventHandler.error(e, this, "Look up deployment for address [%s] falling back to local actor." format address)
-            factory() // if deployment fails, fall back to local actors
-        }
-    }
-  } else factory()
+  /**
+   * Creates an ActorRef out of the Actor.
+   * <p/>
+   * <pre>
+   *   FIXME document
+   * </pre>
+   */
+  def actorOf(props: Props, address: String): ActorRef = provider.actorOf(props, address)
 
   /**
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
@@ -434,53 +402,6 @@ object Actor {
       def receive = { case "go" ⇒ try { body } finally { self.stop() } }
     }).withDispatcher(dispatcher)) ! "go"
   }
-
-  private[akka] def newClusterActorRef(factory: () ⇒ ActorRef, address: String, deploy: Deploy): ActorRef =
-    deploy match {
-      case Deploy(configAddress, recipe, router, failureDetector, Clustered(preferredHomeNodes, replicas, replication)) ⇒
-
-        ClusterModule.ensureEnabled()
-
-        if (configAddress != address) throw new IllegalStateException("Deployment config for [" + address + "] is wrong [" + deploy + "]")
-        if (!remote.isRunning) throw new IllegalStateException("Remote server is not running")
-
-        val isHomeNode = DeploymentConfig.isHomeNode(preferredHomeNodes)
-
-        val serializer = recipe match {
-          case Some(r) ⇒ Serialization.serializerFor(r.implementationClass)
-          case None    ⇒ Serialization.serializerFor(classOf[Actor]) //TODO revisit this decision of default
-        }
-
-        def storeActorAndGetClusterRef(replicationScheme: ReplicationScheme, serializer: Serializer): ActorRef = {
-          // add actor to cluster registry (if not already added)
-          if (!cluster.isClustered(address)) //WARNING!!!! Racy
-            cluster.store(address, factory, replicas.factor, replicationScheme, false, serializer)
-
-          // remote node (not home node), check out as ClusterActorRef
-          cluster.ref(address, DeploymentConfig.routerTypeFor(router), DeploymentConfig.failureDetectorTypeFor(failureDetector))
-        }
-
-        replication match {
-          case _: Transient | Transient ⇒
-            storeActorAndGetClusterRef(Transient, serializer)
-
-          case replication: Replication ⇒
-            if (DeploymentConfig.routerTypeFor(router) != akka.routing.RouterType.Direct) throw new ConfigurationException(
-              "Can't replicate an actor [" + address + "] configured with another router than \"direct\" - found [" + router + "]")
-
-            if (isHomeNode) { // stateful actor's home node
-              cluster.use(address, serializer)
-                .getOrElse(throw new ConfigurationException(
-                  "Could not check out actor [" + address + "] from cluster registry as a \"local\" actor"))
-
-            } else {
-              storeActorAndGetClusterRef(replication, serializer)
-            }
-        }
-
-      case invalid ⇒ throw new IllegalActorStateException(
-        "Could not create actor with address [" + address + "], not bound to a valid deployment scheme [" + invalid + "]")
-    }
 }
 
 /**
