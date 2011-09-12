@@ -118,7 +118,7 @@ class LocalActorRefProvider extends ActorRefProvider {
           case other                          ⇒ other
         }
 
-        Deployer.lookupDeploymentFor(deployId) match {
+        Deployer.lookupDeploymentFor(deployId) match { // see if the deployment already exists, if so use it, if not create actor
 
           case Some(Deploy(_, _, router, _, Local)) ⇒
             // FIXME create RoutedActorRef if 'router' is specified
