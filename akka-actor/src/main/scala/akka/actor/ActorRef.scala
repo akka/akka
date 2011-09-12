@@ -15,7 +15,7 @@ import ClusterModule._
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ ScheduledFuture, ConcurrentHashMap, TimeUnit }
-import java.util.{ Map ⇒ JMap }
+import java.util.{ Collection ⇒ JCollection }
 
 import scala.collection.immutable.Stack
 import scala.annotation.tailrec
@@ -210,8 +210,8 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
 abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyChannel[Any] with java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: ScalaActorRef ⇒
   // Only mutable for RemoteServer in order to maintain identity across nodes
-  @volatile
-  protected[akka] var _uuid = newUuid
+
+  private[akka] val uuid = newUuid
 
   @volatile
   protected[this] var _status: ActorRefInternals.StatusType = ActorRefInternals.UNSTARTED
@@ -228,20 +228,6 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
    * Comparison only takes address into account.
    */
   def compareTo(other: ActorRef) = this.address compareTo other.address
-
-  /**
-   * Returns the uuid for the actor.
-   */
-  def getUuid = _uuid
-
-  def uuid = _uuid
-
-  /**
-   * Only for internal use. UUID is effectively final.
-   */
-  protected[akka] def uuid_=(uid: Uuid) {
-    _uuid = uid
-  }
 
   protected[akka] def timeout: Long = Props.defaultTimeout.duration.toMillis //TODO Remove me if possible
 
@@ -357,14 +343,14 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
 
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int])
 
-  override def hashCode: Int = HashCode.hash(HashCode.SEED, uuid)
+  override def hashCode: Int = HashCode.hash(HashCode.SEED, address)
 
   override def equals(that: Any): Boolean = {
     that.isInstanceOf[ActorRef] &&
       that.asInstanceOf[ActorRef].address == address
   }
 
-  override def toString = "Actor[%s:%s]".format(address, uuid)
+  override def toString = "Actor[%s]".format(address)
 }
 
 abstract class SelfActorRef extends ActorRef with ForwardableChannel { self: LocalActorRef with ScalaActorRef ⇒
@@ -468,17 +454,17 @@ abstract class SelfActorRef extends ActorRef with ForwardableChannel { self: Loc
   def tryReply(message: Any): Boolean = channel.tryTell(message)(this)
 
   /**
-   * Returns an unmodifiable Java Map containing the linked actors,
+   * Returns an unmodifiable Java Collection containing the linked actors,
    * please note that the backing map is thread-safe but not immutable
    */
-  def linkedActors: JMap[Uuid, ActorRef]
+  def linkedActors: JCollection[ActorRef]
 
   /**
    * Java API. <p/>
-   * Returns an unmodifiable Java Map containing the linked actors,
+   * Returns an unmodifiable Java Collection containing the linked actors,
    * please note that the backing map is thread-safe but not immutable
    */
-  def getLinkedActors: JMap[Uuid, ActorRef] = linkedActors
+  def getLinkedActors: JCollection[ActorRef] = linkedActors
 
   /**
    * Scala API
@@ -501,7 +487,11 @@ abstract class SelfActorRef extends ActorRef with ForwardableChannel { self: Loc
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class LocalActorRef private[akka] (private[this] val props: Props, val address: String, val systemService: Boolean)
+class LocalActorRef private[akka] (
+  private[this] val props: Props,
+  val address: String,
+  val systemService: Boolean,
+  override private[akka] val uuid: Uuid = newUuid)
   extends SelfActorRef with ScalaActorRef {
 
   protected[akka] val guard = new ReentrantGuard //TODO FIXME remove the last synchronization point
@@ -552,7 +542,7 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
       if (isReplicatedWithTransactionLog(replicationScheme)) {
         EventHandler.debug(this, "Creating a transaction log for Actor [%s] with replication strategy [%s]".format(address, replicationScheme))
 
-        Some(transactionLog.newLogFor(_uuid.toString, isWriteBehindReplication(replicationScheme), replicationScheme)) //TODO FIXME @jboner shouldn't this be address?
+        Some(transactionLog.newLogFor(uuid.toString, isWriteBehindReplication(replicationScheme), replicationScheme)) //TODO FIXME @jboner shouldn't this be address?
       } else if (isReplicatedWithDataGrid(replicationScheme)) {
         throw new ConfigurationException("Replication storage type \"data-grid\" is not yet supported")
       } else {
@@ -572,9 +562,8 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
     __receiveTimeout: Option[Long],
     __hotswap: Stack[PartialFunction[Any, Unit]]) = {
 
-    this(__props, __address, systemService = false) //Doesn't make any sense to move a system service
+    this(__props, __address, false, __uuid) //Doesn't make any sense to move a system service
 
-    _uuid = __uuid
     hotswap = __hotswap
     receiveTimeout = __receiveTimeout
     setActorSelfFields(actorInstance.get(), this) //TODO Why is this needed?
@@ -920,7 +909,7 @@ class LocalActorRef private[akka] (private[this] val props: Props, val address: 
     }
   }
 
-  def linkedActors: JMap[Uuid, ActorRef] = java.util.Collections.unmodifiableMap(_linkedActors)
+  def linkedActors: JCollection[ActorRef] = java.util.Collections.unmodifiableCollection(_linkedActors.values)
 
   // ========= PRIVATE FUNCTIONS =========
 
@@ -1117,11 +1106,6 @@ trait ActorRefShared {
    * Returns the address for the actor.
    */
   def address: String
-
-  /**
-   * Returns the uuid for the actor.
-   */
-  def uuid: Uuid
 }
 
 /**

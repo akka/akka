@@ -167,7 +167,7 @@ sealed class Supervisor(handler: FaultHandlingStrategy, maxRestartsHandler: (Act
 final class SupervisorActor private[akka] (maxRestartsHandler: (ActorRef, MaximumNumberOfRestartsWithinTimeRangeReached) ⇒ Unit) extends Actor {
 
   override def postStop(): Unit = {
-    val i = self.linkedActors.values.iterator
+    val i = self.linkedActors.iterator
     while (i.hasNext) {
       val ref = i.next
       ref.stop()
