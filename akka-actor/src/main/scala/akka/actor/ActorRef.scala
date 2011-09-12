@@ -226,9 +226,9 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   protected[akka] var currentMessage: MessageInvocation = null
 
   /**
-   * Comparison only takes uuid into account.
+   * Comparison only takes address into account.
    */
-  def compareTo(other: ActorRef) = this.uuid compareTo other.uuid
+  def compareTo(other: ActorRef) = this.address compareTo other.address
 
   /**
    * Returns the uuid for the actor.
@@ -362,7 +362,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
 
   override def equals(that: Any): Boolean = {
     that.isInstanceOf[ActorRef] &&
-      that.asInstanceOf[ActorRef].uuid == uuid
+      that.asInstanceOf[ActorRef].address == address
   }
 
   override def toString = "Actor[%s:%s]".format(address, uuid)
