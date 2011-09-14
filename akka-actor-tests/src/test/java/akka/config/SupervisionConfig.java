@@ -18,6 +18,6 @@ public class SupervisionConfig {
    }
 
 
-   return new SupervisorConfig(new AllForOneStrategy(new Class[] { Exception.class }, 50, 1000), targets.toArray(new Server[targets.size()]));
+   return new SupervisorConfig(new AllForOnePermanentStrategy(new Class[] { Exception.class }, 50, 1000), targets.toArray(new Server[targets.size()]));
  }
 }

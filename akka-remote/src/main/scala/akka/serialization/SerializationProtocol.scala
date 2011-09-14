@@ -66,13 +66,12 @@ object ActorSerialization {
       case _                ⇒ None
     }
 
-    val lifeCycleProtocol: Option[LifeCycleProtocol] = {
+    val lifeCycleProtocol: Option[LifeCycleProtocol] = None /*{
       actorRef.lifeCycle match {
-        case Permanent          ⇒ Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.PERMANENT).build)
-        case Temporary          ⇒ Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.TEMPORARY).build)
-        case UndefinedLifeCycle ⇒ None //No need to send the undefined lifecycle over the wire  //builder.setLifeCycle(LifeCycleType.UNDEFINED)
+        case Permanent ⇒ Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.PERMANENT).build)
+        case Temporary ⇒ Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.TEMPORARY).build)
       }
-    }
+    }*/
 
     val builder = SerializedActorRefProtocol.newBuilder
       .setUuid(UuidProtocol.newBuilder.setHigh(actorRef.uuid.getTime).setLow(actorRef.uuid.getClockSeqAndNode).build)
@@ -199,9 +198,8 @@ object ActorSerialization {
         protocol.getLifeCycle.getLifeCycle match {
           case LifeCycleType.PERMANENT ⇒ Permanent
           case LifeCycleType.TEMPORARY ⇒ Temporary
-          case unknown                 ⇒ UndefinedLifeCycle
         }
-      } else UndefinedLifeCycle
+      } else LifeCycleType.PERMANENT
 
     val storedSupervisor =
       if (protocol.hasSupervisor) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
@@ -224,7 +222,6 @@ object ActorSerialization {
 
     val props = Props(creator = factory,
       timeout = if (protocol.hasTimeout) protocol.getTimeout else Timeout.default,
-      lifeCycle = storedLifeCycle,
       supervisor = storedSupervisor //TODO what dispatcher should it use?
       //TODO what faultHandler should it use?
       //

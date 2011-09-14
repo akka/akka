@@ -50,8 +50,7 @@ object Props {
   final val defaultDeployId: String = ""
   final val defaultDispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
   final val defaultTimeout: Timeout = Timeout(Duration(Actor.TIMEOUT, "millis"))
-  final val defaultLifeCycle: LifeCycle = Permanent
-  final val defaultFaultHandler: FaultHandlingStrategy = NoFaultHandlingStrategy
+  final val defaultFaultHandler: FaultHandlingStrategy = AllForOnePermanentStrategy(classOf[Exception] :: Nil, None, None)
   final val defaultSupervisor: Option[ActorRef] = None
 
   /**
@@ -90,8 +89,7 @@ object Props {
    */
   def apply(creator: Creator[_ <: Actor]): Props = default.withCreator(creator.create)
 
-  def apply(behavior: (ScalaActorRef with SelfActorRef) ⇒ Actor.Receive): Props =
-    apply(new Actor { def receive = behavior(self) })
+  def apply(behavior: (ScalaActorRef with SelfActorRef) ⇒ Actor.Receive): Props = apply(new Actor { def receive = behavior(self) })
 }
 
 /**
@@ -101,7 +99,6 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
                  deployId: String = Props.defaultDeployId,
                  @transient dispatcher: MessageDispatcher = Props.defaultDispatcher,
                  timeout: Timeout = Props.defaultTimeout,
-                 lifeCycle: LifeCycle = Props.defaultLifeCycle,
                  faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler,
                  supervisor: Option[ActorRef] = Props.defaultSupervisor) {
   /**
@@ -113,7 +110,6 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
     deployId = Props.defaultDeployId,
     dispatcher = Props.defaultDispatcher,
     timeout = Props.defaultTimeout,
-    lifeCycle = Props.defaultLifeCycle,
     faultHandler = Props.defaultFaultHandler,
     supervisor = Props.defaultSupervisor)
 
@@ -146,12 +142,6 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
    * Java API
    */
   def withTimeout(t: Timeout) = copy(timeout = t)
-
-  /**
-   * Returns a new Props with the specified lifecycle set
-   * Java API
-   */
-  def withLifeCycle(l: LifeCycle) = copy(lifeCycle = l)
 
   /**
    * Returns a new Props with the specified faulthandler set
@@ -231,11 +221,6 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   def compareTo(other: ActorRef) = this.address compareTo other.address
 
   protected[akka] def timeout: Long = Props.defaultTimeout.duration.toMillis //TODO Remove me if possible
-
-  /**
-   * Defines the life-cycle for a supervised actor.
-   */
-  protected[akka] def lifeCycle: LifeCycle = UndefinedLifeCycle //TODO Remove me if possible
 
   /**
    * Akka Java API. <p/>
@@ -523,7 +508,6 @@ class LocalActorRef private[akka] (
   } //TODO Why is the guard needed here?
 
   protected[akka] override def timeout: Long = props.timeout.duration.toMillis //TODO remove this if possible
-  protected[akka] override def lifeCycle: LifeCycle = props.lifeCycle //TODO remove this if possible
 
   private def serializer: Serializer = //TODO Is this used or needed?
     try { Serialization.serializerFor(this.getClass) } catch {
@@ -754,22 +738,14 @@ class LocalActorRef private[akka] (
             currentMessage = null // reset current message after successful invocation
           } catch {
             case e ⇒
-              {
-                EventHandler.error(e, this, e.getMessage)
+              EventHandler.error(e, this, e.getMessage)
 
-                //Prevent any further messages to be processed until the actor has been restarted
-                dispatcher.suspend(this)
+              //Prevent any further messages to be processed until the actor has been restarted
+              dispatcher.suspend(this)
 
-                channel.sendException(e)
+              channel.sendException(e)
 
-                if (supervisor.isDefined) notifySupervisorWithMessage(Death(this, e, true))
-                else {
-                  lifeCycle match {
-                    case Temporary ⇒ shutDownTemporaryActor(this, e)
-                    case _         ⇒ dispatcher.resume(this) //Resume processing for this actor
-                  }
-                }
-              }
+              if (supervisor.isDefined) supervisor.get ! Death(this, e, true) else dispatcher.resume(this)
               if (e.isInstanceOf[InterruptedException]) throw e //Re-throw InterruptedExceptions as expected
           } finally {
             checkReceiveTimeout // Reschedule receive timeout
@@ -790,11 +766,21 @@ class LocalActorRef private[akka] (
 
   protected[akka] def handleDeath(death: Death) {
     props.faultHandler match {
-      case AllForOneStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
+      case AllForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
         restartLinkedActors(death.cause, maxRetries, within)
 
-      case OneForOneStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
+      case AllForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
+        restartLinkedActors(death.cause, None, None)
+
+      case OneForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
         death.deceased.restart(death.cause, maxRetries, within)
+
+      case OneForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
+        unlink(death.deceased)
+        death.deceased.stop()
+        System.err.println("Do not restart: " + death.deceased)
+        System.err.println("Notifying Supervisor: " + death.deceased + " of MaximumNORWTRR")
+        this ! MaximumNumberOfRestartsWithinTimeRangeReached(death.deceased, None, None, death.cause)
 
       case _ ⇒
         if (_supervisor.isDefined) throw death.cause else death.deceased.stop() //Escalate problem if not handled here
@@ -848,46 +834,36 @@ class LocalActorRef private[akka] (
       if (Actor.debugLifecycle) EventHandler.debug(freshActor, "restarted")
     }
 
-    def tooManyRestarts() {
-      notifySupervisorWithMessage(
-        MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason))
-      stop()
-    }
-
     @tailrec
     def attemptRestart() {
       val success = if (requestRestartPermission(maxNrOfRetries, withinTimeRange)) {
         guard.withGuard[Boolean] {
           _status = ActorRefInternals.BEING_RESTARTED
 
-          lifeCycle match {
-            case Temporary ⇒
-              shutDownTemporaryActor(this, reason)
+          val success =
+            try {
+              performRestart()
               true
+            } catch {
+              case e ⇒
+                EventHandler.error(e, this, "Exception in restart of Actor [%s]".format(toString))
+                false // an error or exception here should trigger a retry
+            } finally {
+              currentMessage = null
+            }
 
-            case _ ⇒ // either permanent or none where default is permanent
-              val success =
-                try {
-                  performRestart()
-                  true
-                } catch {
-                  case e ⇒
-                    EventHandler.error(e, this, "Exception in restart of Actor [%s]".format(toString))
-                    false // an error or exception here should trigger a retry
-                } finally {
-                  currentMessage = null
-                }
-
-              if (success) {
-                _status = ActorRefInternals.RUNNING
-                dispatcher.resume(this)
-                restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
-              }
-              success
+          if (success) {
+            _status = ActorRefInternals.RUNNING
+            dispatcher.resume(this)
+            restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
           }
+          success
         }
       } else {
-        tooManyRestarts()
+        // tooManyRestarts
+        if (supervisor.isDefined)
+          supervisor.get ! MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
+        stop()
         true // done
       }
 
@@ -898,17 +874,30 @@ class LocalActorRef private[akka] (
     attemptRestart() // recur
   }
 
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) = {
-    val i = _linkedActors.values.iterator
-    while (i.hasNext) {
-      val actorRef = i.next
-      actorRef.lifeCycle match {
-        // either permanent or none where default is permanent
-        case Temporary ⇒ shutDownTemporaryActor(actorRef, reason)
-        case _         ⇒ actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
-      }
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) =
+    props.faultHandler.lifeCycle match {
+      case Temporary ⇒
+        val i = _linkedActors.values.iterator
+        while (i.hasNext) {
+          val actorRef = i.next()
+
+          i.remove()
+
+          actorRef.stop()
+          // when this comes down through the handleDeath path, we get here when the temp actor is restarted
+          if (supervisor.isDefined) {
+            supervisor.get ! MaximumNumberOfRestartsWithinTimeRangeReached(actorRef, Some(0), None, reason)
+
+            //FIXME if last temporary actor is gone, then unlink me from supervisor <-- should this exist?
+            if (!i.hasNext)
+              supervisor.get ! UnlinkAndStop(this)
+          }
+        }
+
+      case Permanent ⇒
+        val i = _linkedActors.values.iterator
+        while (i.hasNext) i.next().restart(reason, maxNrOfRetries, withinTimeRange)
     }
-  }
 
   def linkedActors: JCollection[ActorRef] = java.util.Collections.unmodifiableCollection(_linkedActors.values)
 
@@ -941,21 +930,6 @@ class LocalActorRef private[akka] (
   } match {
     case null  ⇒ throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
     case valid ⇒ valid
-  }
-
-  private def shutDownTemporaryActor(temporaryActor: ActorRef, reason: Throwable) {
-    temporaryActor.stop()
-    _linkedActors.remove(temporaryActor.uuid) // remove the temporary actor
-    // when this comes down through the handleDeath path, we get here when the temp actor is restarted
-    notifySupervisorWithMessage(MaximumNumberOfRestartsWithinTimeRangeReached(temporaryActor, Some(0), None, reason))
-    // if last temporary actor is gone, then unlink me from supervisor
-    if (_linkedActors.isEmpty) notifySupervisorWithMessage(UnlinkAndStop(this))
-    true
-  }
-
-  private def notifySupervisorWithMessage(notification: LifeCycleMessage) {
-    val sup = _supervisor
-    if (sup.isDefined) sup.get ! notification
   }
 
   private def setActorSelfFields(actor: Actor, value: ActorRef) {

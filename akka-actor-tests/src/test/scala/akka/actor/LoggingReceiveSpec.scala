@@ -133,7 +133,7 @@ class LoggingReceiveSpec
       within(2 seconds) {
         val supervisor = TestActorRef(Props(new Actor {
           def receive = { case _ ⇒ }
-        }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 5000)))
+        }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 5, 5000)))
         val f = Actor.getClass.getDeclaredField("debugLifecycle")
         f.setAccessible(true)
         f.setBoolean(Actor, true)

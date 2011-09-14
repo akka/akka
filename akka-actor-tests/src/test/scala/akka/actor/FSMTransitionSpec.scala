@@ -62,7 +62,7 @@ class FSMTransitionSpec extends WordSpec with MustMatchers with TestKit {
     "not fail when listener goes away" in {
       val forward = Actor.actorOf(new Forwarder(testActor))
       val fsm = Actor.actorOf(new MyFSM(testActor))
-      val sup = Actor.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
+      val sup = Actor.actorOf(Props[Supervisor].withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), None, None)))
       sup link fsm
       within(300 millis) {
         fsm ! SubscribeTransitionCallBack(forward)

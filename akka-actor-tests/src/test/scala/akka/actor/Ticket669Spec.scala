@@ -29,7 +29,7 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
 
         val supervised = Actor.actorOf[Supervised]
         val supervisor = Supervisor(SupervisorConfig(
-          AllForOneStrategy(List(classOf[Exception]), 5, 10000),
+          AllForOnePermanentStrategy(List(classOf[Exception]), 5, 10000),
           Supervise(supervised, Permanent) :: Nil))
 
         supervised.!("test")(Some(sender))
@@ -44,7 +44,7 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
 
         val supervised = Actor.actorOf[Supervised]
         val supervisor = Supervisor(SupervisorConfig(
-          AllForOneStrategy(List(classOf[Exception]), 5, 10000),
+          AllForOnePermanentStrategy(List(classOf[Exception]), 5, 10000),
           Supervise(supervised, Temporary) :: Nil))
 
         supervised.!("test")(Some(sender))

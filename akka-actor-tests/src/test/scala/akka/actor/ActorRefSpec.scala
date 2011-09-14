@@ -10,7 +10,7 @@ import org.scalatest.matchers.MustMatchers
 import akka.testkit._
 import akka.util.duration._
 import akka.testkit.Testing.sleepFor
-import akka.config.Supervision.{ OneForOneStrategy }
+import akka.config.Supervision.{ OneForOnePermanentStrategy }
 import akka.dispatch.Future
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import java.lang.IllegalStateException
@@ -338,7 +338,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
             }).withSupervisor(self))
 
           protected def receive = { case "sendKill" ⇒ ref ! Kill }
-        }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 1000)))
+        }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 2, 1000)))
 
         boss ! "sendKill"
         latch.await(5, TimeUnit.SECONDS) must be === true

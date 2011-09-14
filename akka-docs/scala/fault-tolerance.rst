@@ -82,7 +82,7 @@ Here is an example of how to define a restart strategy:
 
 .. code-block:: scala
 
-  AllForOneStrategy( //FaultHandlingStrategy; AllForOneStrategy or OneForOneStrategy
+  AllForOnePermanentStrategy( //FaultHandlingStrategy; AllForOnePermanentStrategy or OneForOnePermanentStrategy
     List(classOf[Exception]), //What exceptions will be handled
     3,           // maximum number of restart retries
     5000        // within time in millis
@@ -116,7 +116,7 @@ The Actor's supervision can be declaratively defined by creating a "Supervisor' 
 
   val supervisor = Supervisor(
     SupervisorConfig(
-      AllForOneStrategy(List(classOf[Exception]), 3, 1000),
+      AllForOnePermanentStrategy(List(classOf[Exception]), 3, 1000),
       Supervise(
         actorOf[MyActor1],
         Permanent) ::
@@ -140,7 +140,7 @@ MaximumNumberOfRestartsWithinTimeRangeReached message.
 
   val supervisor = Supervisor(
     SupervisorConfig(
-      AllForOneStrategy(List(classOf[Exception]), 3, 1000),
+      AllForOnePermanentStrategy(List(classOf[Exception]), 3, 1000),
       Supervise(
         actorOf[MyActor1],
         Permanent) ::
@@ -166,7 +166,7 @@ Example usage:
 
   val factory = SupervisorFactory(
     SupervisorConfig(
-      OneForOneStrategy(List(classOf[Exception]), 3, 10),
+      OneForOnePermanentStrategy(List(classOf[Exception]), 3, 10),
       Supervise(
         myFirstActor,
         Permanent) ::
@@ -193,7 +193,7 @@ Here is an example:
 
   val supervisor = Supervisor(
     SupervisorConfig(
-      AllForOneStrategy(List(classOf[Exception]), 3, 1000),
+      AllForOnePermanentStrategy(List(classOf[Exception]), 3, 1000),
       Supervise(
         actorOf[MyActor1],
         Permanent,
@@ -247,11 +247,11 @@ The supervising Actor also needs to define a fault handler that defines the rest
 
 The different options are:
 
-- AllForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
+- AllForOnePermanentStrategy(trapExit, maxNrOfRetries, withinTimeRange)
 
   - trapExit is a List or Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
 
-- OneForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
+- OneForOnePermanentStrategy(trapExit, maxNrOfRetries, withinTimeRange)
 
   - trapExit is a List or Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
 
@@ -259,14 +259,14 @@ Here is an example:
 
 .. code-block:: scala
 
-  self.faultHandler = AllForOneStrategy(List(classOf[Throwable]), 3, 1000)
+  self.faultHandler = AllForOnePermanentStrategy(List(classOf[Throwable]), 3, 1000)
 
 Putting all this together it can look something like this:
 
 .. code-block:: scala
 
   class MySupervisor extends Actor {
-    self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), 5, 5000)
+    self.faultHandler = OneForOnePermanentStrategy(List(classOf[Throwable]), 5, 5000)
 
     def receive = {
       case Register(actor) =>
@@ -340,7 +340,7 @@ If you remember, when you define the 'RestartStrategy' you also defined maximum 
 
 .. code-block:: scala
 
-  AllForOneStrategy( //Restart policy, AllForOneStrategy or OneForOneStrategy
+  AllForOnePermanentStrategy( //Restart policy, AllForOnePermanentStrategy or OneForOnePermanentStrategy
     List(classOf[Exception]), //What kinds of exception it will handle
     3,           // maximum number of restart retries
     5000         // within time in millis
@@ -362,7 +362,7 @@ Here is an example:
 .. code-block:: scala
 
   val supervisor = actorOf(new Actor{
-    self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), 5, 5000)
+    self.faultHandler = OneForOnePermanentStrategy(List(classOf[Throwable]), 5, 5000)
     protected def receive = {
       case MaximumNumberOfRestartsWithinTimeRangeReached(
         victimActorRef, maxNrOfRetries, withinTimeRange, lastExceptionCausingRestart) =>
@@ -397,7 +397,7 @@ Here is an example:
   val manager = new TypedActorConfigurator
 
   manager.configure(
-    AllForOneStrategy(List(classOf[Exception]), 3, 1000),
+    AllForOnePermanentStrategy(List(classOf[Exception]), 3, 1000),
       List(
         SuperviseTypedActor(
           Foo.class,
@@ -435,7 +435,7 @@ If the parent TypedActor (supervisor) wants to be able to do handle failing chil
 
 .. code-block:: scala
 
-  TypedActor.faultHandler(supervisor, AllForOneStrategy(Array(classOf[IOException]), 3, 2000))
+  TypedActor.faultHandler(supervisor, AllForOnePermanentStrategy(Array(classOf[IOException]), 3, 2000))
 
 For convenience there is an overloaded link that takes trapExit and faultHandler for the supervisor as arguments. Here is an example:
 
@@ -446,10 +446,10 @@ For convenience there is an overloaded link that takes trapExit and faultHandler
   val foo = newInstance(classOf[Foo], 1000)
   val bar = newInstance(classOf[Bar], 1000)
 
-  link(foo, bar, new AllForOneStrategy(Array(classOf[IOException]), 3, 2000))
+  link(foo, bar, new AllForOnePermanentStrategy(Array(classOf[IOException]), 3, 2000))
 
   // alternative: chaining
-  bar = faultHandler(foo, new AllForOneStrategy(Array(classOf[IOException]), 3, 2000))
+  bar = faultHandler(foo, new AllForOnePermanentStrategy(Array(classOf[IOException]), 3, 2000))
     .newInstance(Bar.class, 1000)
 
   link(foo, bar

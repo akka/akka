@@ -11,7 +11,7 @@ import ScalaDom._
 
 import org.w3c.dom.Element
 import org.springframework.beans.factory.support.BeanDefinitionBuilder
-import akka.config.Supervision.{ FaultHandlingStrategy, AllForOneStrategy }
+import akka.config.Supervision.{ FaultHandlingStrategy, AllForOnePermanentStrategy }
 
 /**
  * Test for SupervisionBeanDefinitionParser
@@ -36,9 +36,9 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
       parser.parseSupervisor(createSupervisorElement, builder);
       val strategy = builder.getBeanDefinition.getPropertyValues.getPropertyValue("restartStrategy").getValue.asInstanceOf[FaultHandlingStrategy]
       assert(strategy ne null)
-      assert(strategy.isInstanceOf[AllForOneStrategy])
-      expect(3) { strategy.asInstanceOf[AllForOneStrategy].maxNrOfRetries.get }
-      expect(1000) { strategy.asInstanceOf[AllForOneStrategy].withinTimeRange.get }
+      assert(strategy.isInstanceOf[AllForOnePermanentStrategy])
+      expect(3) { strategy.asInstanceOf[AllForOnePermanentStrategy].maxNrOfRetries.get }
+      expect(1000) { strategy.asInstanceOf[AllForOnePermanentStrategy].withinTimeRange.get }
     }
 
     it("should parse the supervised typed actors") {

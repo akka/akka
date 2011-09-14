@@ -15,7 +15,7 @@ import akka.testkit.EventFilter
 
 import Actor._
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
-import akka.config.Supervision.{ Permanent, LifeCycle, OneForOneStrategy }
+import akka.config.Supervision.{ Permanent, LifeCycle, OneForOnePermanentStrategy }
 import org.multiverse.api.latches.StandardLatch
 
 class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
@@ -36,7 +36,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     val boss = actorOf(Props(new Actor {
       protected def receive = { case _ ⇒ () }
-    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 1000)))
+    }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 2, 1000)))
 
     val restartLatch = new StandardLatch
     val secondRestartLatch = new StandardLatch
@@ -88,7 +88,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     val boss = actorOf(Props(new Actor {
       def receive = { case _ ⇒ () }
-    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
+    }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), None, None)))
 
     val countDownLatch = new CountDownLatch(100)
 
@@ -113,7 +113,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     val boss = actorOf(Props(new Actor {
       def receive = { case _ ⇒ () }
-    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 500)))
+    }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 2, 500)))
 
     val restartLatch = new StandardLatch
     val secondRestartLatch = new StandardLatch
@@ -172,7 +172,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
   def slaveShouldNotRestartAfterMaxRetries = {
     val boss = actorOf(Props(new Actor {
       def receive = { case _ ⇒ () }
-    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), Some(2), None)))
+    }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), Some(2), None)))
 
     val restartLatch = new StandardLatch
     val secondRestartLatch = new StandardLatch
@@ -229,7 +229,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     val boss = actorOf(Props(new Actor {
       def receive = { case m: MaximumNumberOfRestartsWithinTimeRangeReached ⇒ maxNoOfRestartsLatch.open }
-    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, Some(1000))))
+    }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), None, Some(1000))))
 
     val slave = actorOf(Props(new Actor {
 

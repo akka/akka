@@ -10,7 +10,7 @@ import org.scalatest.matchers.MustMatchers
 import Actor.actorOf
 import akka.testkit._
 import akka.util.duration._
-import akka.config.Supervision.OneForOneStrategy
+import akka.config.Supervision.OneForOnePermanentStrategy
 
 import java.util.concurrent.atomic._
 
@@ -85,7 +85,7 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
   }
 
   private def createSupervisor =
-    actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 5000)))
+    actorOf(Props[Supervisor].withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 5, 5000)))
 
   val expectedEvents = Seq(EventFilter[ActorKilledException], EventFilter[IllegalActorStateException]("expected"))
 
