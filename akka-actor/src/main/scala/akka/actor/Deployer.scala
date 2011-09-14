@@ -166,17 +166,17 @@ object Deployer extends ActorDeployer {
         // --------------------------------
         // akka.actor.deployment.<address>.cluster
         // --------------------------------
-        addressConfig.getSection("clustered") match {
+        addressConfig.getSection("cluster") match {
           case None ⇒
             Some(Deploy(address, recipe, router, RemoveConnectionOnFirstFailureLocalFailureDetector, Local)) // deploy locally
 
-          case Some(clusteredConfig) ⇒
+          case Some(clusterConfig) ⇒
 
             // --------------------------------
             // akka.actor.deployment.<address>.cluster.preferred-nodes
             // --------------------------------
 
-            val preferredNodes = clusteredConfig.getList("preferred-nodes") match {
+            val preferredNodes = clusterConfig.getList("preferred-nodes") match {
               case Nil ⇒ Nil
               case homes ⇒
                 def raiseHomeConfigError() = throw new ConfigurationException(
@@ -206,7 +206,7 @@ object Deployer extends ActorDeployer {
             val replicationFactor = {
               if (router == Direct) new ReplicationFactor(1)
               else {
-                clusteredConfig.getAny("replication-factor", "0") match {
+                clusterConfig.getAny("replication-factor", "0") match {
                   case "auto" ⇒ AutoReplicationFactor
                   case "0"    ⇒ ZeroReplicationFactor
                   case nrOfReplicas: String ⇒
@@ -226,7 +226,7 @@ object Deployer extends ActorDeployer {
             // --------------------------------
             // akka.actor.deployment.<address>.cluster.replication
             // --------------------------------
-            clusteredConfig.getSection("replication") match {
+            clusterConfig.getSection("replication") match {
               case None ⇒
                 Some(Deploy(address, recipe, router, failureDetector, Clustered(preferredNodes, replicationFactor, Transient)))
 
