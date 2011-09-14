@@ -1,0 +1,48 @@
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+option java_package = "akka.remote.testconductor";
+option optimize_for = SPEED;
+
+/******************************************
+  Compile with:
+  cd ./akka-remote/src/main/protocol
+  protoc TestConductorProtocol.proto --java_out ../java
+*******************************************/
+
+message Wrapper {
+  optional Hello hello = 1;
+  optional EnterBarrier barrier = 2;
+  optional InjectFailure failure = 3;
+}
+
+message Hello {
+  required string name = 1;
+  required string host = 2;
+  required int32 port = 3;
+}
+
+message EnterBarrier {
+  required string name = 1;
+}
+
+enum FailType {
+  Throttle = 1;
+  Disconnect = 2;
+  Abort = 3;
+  Shutdown = 4;
+}
+enum Direction {
+  Send = 1;
+  Receive = 2;
+}
+message InjectFailure {
+  required FailType failure = 1;
+  optional Direction direction = 2;
+  optional string host = 3;
+  optional int32 port = 4;
+  optional float rateMBit = 5;
+  optional int32 exitValue = 6;
+}
+
