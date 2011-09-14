@@ -11,7 +11,7 @@ import sbt.CommandSupport._
 import java.io.File
 import scala.collection.mutable.{ Set => MutableSet }
 
-object AkkaMicrokernelPlugin extends Plugin {
+object AkkaKernelPlugin extends Plugin {
 
   case class DistConfig(
     outputDirectory: File,
