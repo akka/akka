@@ -428,8 +428,6 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             def pressureThreshold = 1
             def factory = actorOf(Props(new Actor {
 
-              System.err.println("Going up: " + self)
-
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {
@@ -439,10 +437,6 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
-              }
-
-              override def postStop() {
-                System.err.println("Going down: " + self)
               }
             }))
           }).withFaultHandler(OneForOneTemporaryStrategy(List(classOf[Exception]))))

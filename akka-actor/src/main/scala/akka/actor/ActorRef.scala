@@ -778,8 +778,6 @@ class LocalActorRef private[akka] (
       case OneForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
         unlink(death.deceased)
         death.deceased.stop()
-        System.err.println("Do not restart: " + death.deceased)
-        System.err.println("Notifying Supervisor: " + death.deceased + " of MaximumNORWTRR")
         this ! MaximumNumberOfRestartsWithinTimeRangeReached(death.deceased, None, None, death.cause)
 
       case _ ⇒
