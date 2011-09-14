@@ -164,7 +164,7 @@ object Deployer extends ActorDeployer {
         }
 
         // --------------------------------
-        // akka.actor.deployment.<address>.clustered
+        // akka.actor.deployment.<address>.cluster
         // --------------------------------
         addressConfig.getSection("clustered") match {
           case None ⇒
@@ -173,7 +173,7 @@ object Deployer extends ActorDeployer {
           case Some(clusteredConfig) ⇒
 
             // --------------------------------
-            // akka.actor.deployment.<address>.clustered.preferred-nodes
+            // akka.actor.deployment.<address>.cluster.preferred-nodes
             // --------------------------------
 
             val preferredNodes = clusteredConfig.getList("preferred-nodes") match {
@@ -181,7 +181,7 @@ object Deployer extends ActorDeployer {
               case homes ⇒
                 def raiseHomeConfigError() = throw new ConfigurationException(
                   "Config option [" + addressPath +
-                    ".clustered.preferred-nodes] needs to be a list with elements on format\n'host:<hostname>', 'ip:<ip address>' or 'node:<node name>', was [" +
+                    ".cluster.preferred-nodes] needs to be a list with elements on format\n'host:<hostname>', 'ip:<ip address>' or 'node:<node name>', was [" +
                     homes + "]")
 
                 homes map { home ⇒
@@ -201,7 +201,7 @@ object Deployer extends ActorDeployer {
             }
 
             // --------------------------------
-            // akka.actor.deployment.<address>.clustered.replicas
+            // akka.actor.deployment.<address>.cluster.replicas
             // --------------------------------
             val replicationFactor = {
               if (router == Direct) new ReplicationFactor(1)
@@ -216,7 +216,7 @@ object Deployer extends ActorDeployer {
                       case e: Exception ⇒
                         throw new ConfigurationException(
                           "Config option [" + addressPath +
-                            ".clustered.replicas] needs to be either [\"auto\"] or [0-N] - was [" +
+                            ".cluster.replicas] needs to be either [\"auto\"] or [0-N] - was [" +
                             nrOfReplicas + "]")
                     }
                 }
@@ -224,7 +224,7 @@ object Deployer extends ActorDeployer {
             }
 
             // --------------------------------
-            // akka.actor.deployment.<address>.clustered.replication
+            // akka.actor.deployment.<address>.cluster.replication
             // --------------------------------
             clusteredConfig.getSection("replication") match {
               case None ⇒
@@ -236,7 +236,7 @@ object Deployer extends ActorDeployer {
                   case "data-grid"       ⇒ DataGrid
                   case unknown ⇒
                     throw new ConfigurationException("Config option [" + addressPath +
-                      ".clustered.replication.storage] needs to be either [\"transaction-log\"] or [\"data-grid\"] - was [" +
+                      ".cluster.replication.storage] needs to be either [\"transaction-log\"] or [\"data-grid\"] - was [" +
                       unknown + "]")
                 }
                 val strategy = replicationConfig.getString("strategy", "write-through") match {
@@ -244,7 +244,7 @@ object Deployer extends ActorDeployer {
                   case "write-behind"  ⇒ WriteBehind
                   case unknown ⇒
                     throw new ConfigurationException("Config option [" + addressPath +
-                      ".clustered.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
+                      ".cluster.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
                       unknown + "]")
                 }
                 Some(Deploy(address, recipe, router, failureDetector, Clustered(preferredNodes, replicationFactor, Replication(storage, strategy))))
