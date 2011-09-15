@@ -591,10 +591,11 @@ trait Actor {
    * User overridable callback.
    * <p/>
    * Is called when a message isn't handled by the current behavior of the actor
-   * by default it throws an UnhandledMessageException
+   * by default it does: EventHandler.warning(self, message)
    */
-  def unhandled(msg: Any) {
-    throw new UnhandledMessageException(msg, self)
+  def unhandled(message: Any) {
+    //EventHandler.warning(self, message)
+    throw new UnhandledMessageException(message, self)
   }
 
   /**

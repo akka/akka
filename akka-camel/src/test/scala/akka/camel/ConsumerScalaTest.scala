@@ -178,7 +178,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
       val consumer = Actor.actorOf(new SupervisedConsumer("reply-channel-test-2"))
       val supervisor = Supervisor(
         SupervisorConfig(
-          OneForOneStrategy(List(classOf[Exception]), 2, 10000),
+          OneForOnePermanentStrategy(List(classOf[Exception]), 2, 10000),
           Supervise(consumer, Permanent) :: Nil))
 
       val latch = new CountDownLatch(1)
@@ -189,10 +189,10 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
     }
 
     "be able to reply on failure during postStop" in {
-      val consumer = Actor.actorOf(Props(new SupervisedConsumer("reply-channel-test-3")).withLifeCycle(Temporary))
+      val consumer = Actor.actorOf(Props(new SupervisedConsumer("reply-channel-test-3")))
       val supervisor = Supervisor(
         SupervisorConfig(
-          OneForOneStrategy(List(classOf[Exception]), 2, 10000),
+          OneForOneTemporaryStrategy(List(classOf[Exception])),
           Supervise(consumer, Temporary) :: Nil))
 
       val latch = new CountDownLatch(1)

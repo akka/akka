@@ -129,7 +129,7 @@ class SchedulerSpec extends JUnitSuite {
 
     Supervisor(
       SupervisorConfig(
-        AllForOneStrategy(List(classOf[Exception]), 3, 1000),
+        AllForOnePermanentStrategy(List(classOf[Exception]), 3, 1000),
         Supervise(
           actor,
           Permanent)

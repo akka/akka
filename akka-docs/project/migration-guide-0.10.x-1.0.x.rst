@@ -177,7 +177,7 @@ to FaultHandlingStrategy:
 
   import akka.config.Supervision._
 
-  self.faultHandler = OneForOneStrategy(List(classOf[Exception]), 3, 5000)
+  self.faultHandler = OneForOnePermanentStrategy(List(classOf[Exception]), 3, 5000)
 
 **Java**
 
@@ -185,9 +185,9 @@ to FaultHandlingStrategy:
 
   import static akka.Supervision.*;
 
-  getContext().setFaultHandler(new OneForOneStrategy(new Class[] { Exception.class },50,1000))
+  getContext().setFaultHandler(new OneForOnePermanentStrategy(new Class[] { Exception.class },50,1000))
 
-**RestartStrategy, AllForOne, OneForOne** have been replaced with **AllForOneStrategy** and **OneForOneStrategy** in **se.scalablesolutions.akka.config.Supervision**
+**RestartStrategy, AllForOne, OneForOne** have been replaced with **AllForOnePermanentStrategy** and **OneForOnePermanentStrategy** in **se.scalablesolutions.akka.config.Supervision**
 
 **Scala**
 
@@ -195,7 +195,7 @@ to FaultHandlingStrategy:
 
   import akka.config.Supervision._
   SupervisorConfig(
-    OneForOneStrategy(List(classOf[Exception]), 3, 5000),
+    OneForOnePermanentStrategy(List(classOf[Exception]), 3, 5000),
       Supervise(pingpong1,Permanent) :: Nil
   )
 
@@ -206,7 +206,7 @@ to FaultHandlingStrategy:
   import static akka.Supervision.*;
 
   new SupervisorConfig(
-    new OneForOneStrategy(new Class[] { Exception.class },50,1000),
+    new OneForOnePermanentStrategy(new Class[] { Exception.class },50,1000),
     new Server[] { new Supervise(pingpong1, permanent()) }
   )
 

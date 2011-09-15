@@ -5,7 +5,7 @@ package akka.actor
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import akka.config.Supervision.{ SupervisorConfig, OneForOneStrategy, Supervise, Permanent }
+import akka.config.Supervision.{ SupervisorConfig, OneForOnePermanentStrategy, Supervise, Permanent }
 import java.util.concurrent.CountDownLatch
 import akka.testkit.{ filterEvents, EventFilter }
 import akka.dispatch.{ PinnedDispatcher, Dispatchers }
@@ -55,7 +55,7 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
 
         val sup = Supervisor(
           SupervisorConfig(
-            OneForOneStrategy(List(classOf[Exception]), 3, 5000),
+            OneForOnePermanentStrategy(List(classOf[Exception]), 3, 5000),
             Supervise(actor1, Permanent) ::
               Supervise(actor2, Permanent) ::
               Supervise(actor3, Permanent) ::

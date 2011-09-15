@@ -3,13 +3,13 @@ package akka.routing
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import akka.dispatch.{ KeptPromise, Future }
-import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.Actor._
 import akka.testkit.Testing._
 import akka.actor.{ TypedActor, Actor, Props }
 import akka.testkit.{ TestLatch, filterEvents, EventFilter, filterException }
 import akka.util.duration._
-import akka.config.Supervision.OneForOneStrategy
+import akka.config.Supervision.OneForOnePermanentStrategy
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 
 object ActorPoolSpec {
 
@@ -24,7 +24,7 @@ object ActorPoolSpec {
     }
   }
 
-  val faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, 1000)
+  val faultHandler = OneForOnePermanentStrategy(List(classOf[Exception]), 5, 1000)
 }
 
 class ActorPoolSpec extends WordSpec with MustMatchers {
@@ -364,58 +364,10 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
         import akka.config.Supervision._
         val pingCount = new AtomicInteger(0)
         val deathCount = new AtomicInteger(0)
-        var keepDying = false
+        val keepDying = new AtomicBoolean(false)
 
         val pool1 = actorOf(
           Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
-            def lowerBound = 2
-            def upperBound = 5
-            def rampupRate = 0.1
-            def backoffRate = 0.1
-            def backoffThreshold = 0.5
-            def partialFill = true
-            def selectionCount = 1
-            def instance = factory
-            def receive = _route
-            def pressureThreshold = 1
-            def factory = actorOf(new Actor {
-              if (deathCount.get > 5) deathCount.set(0)
-              if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
-              def receive = {
-                case akka.Die ⇒
-                  if (keepDying) deathCount.incrementAndGet
-                  throw new RuntimeException
-                case _ ⇒ pingCount.incrementAndGet
-              }
-            })
-          }).withFaultHandler(faultHandler))
-
-        val pool2 = actorOf(
-          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
-            def lowerBound = 2
-            def upperBound = 5
-            def rampupRate = 0.1
-            def backoffRate = 0.1
-            def backoffThreshold = 0.5
-            def partialFill = true
-            def selectionCount = 1
-            def instance = factory
-            def receive = _route
-            def pressureThreshold = 1
-            def factory = actorOf(new Actor {
-              if (deathCount.get > 5) deathCount.set(0)
-              if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
-              def receive = {
-                case akka.Die ⇒
-                  if (keepDying) deathCount.incrementAndGet
-                  throw new RuntimeException
-                case _ ⇒ pingCount.incrementAndGet
-              }
-            })
-          }).withFaultHandler(faultHandler))
-
-        val pool3 = actorOf(
-          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with RoundRobinSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
             def rampupRate = 0.1
@@ -431,17 +383,68 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {
                 case akka.Die ⇒
-                  if (keepDying) deathCount.incrementAndGet
+                  if (keepDying.get) deathCount.incrementAndGet
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            }).withLifeCycle(Temporary))
+            }))
           }).withFaultHandler(faultHandler))
+
+        val pool2 = actorOf(
+          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
+            def lowerBound = 2
+            def upperBound = 5
+            def rampupRate = 0.1
+            def backoffRate = 0.1
+            def backoffThreshold = 0.5
+            def partialFill = true
+            def selectionCount = 1
+            def instance = factory
+            def receive = _route
+            def pressureThreshold = 1
+            def factory = actorOf(Props(new Actor {
+              if (deathCount.get > 5) deathCount.set(0)
+              if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
+              def receive = {
+                case akka.Die ⇒
+                  if (keepDying.get) deathCount.incrementAndGet
+                  throw new RuntimeException
+                case _ ⇒ pingCount.incrementAndGet
+              }
+            }))
+          }).withFaultHandler(faultHandler))
+
+        val pool3 = actorOf(
+          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with RoundRobinSelector with BasicFilter {
+            def lowerBound = 2
+            def upperBound = 5
+            def rampupRate = 0.1
+            def backoffRate = 0.1
+            def backoffThreshold = 0.5
+            def partialFill = true
+            def selectionCount = 1
+            def instance = factory
+            def receive = _route
+            def pressureThreshold = 1
+            def factory = actorOf(Props(new Actor {
+
+              if (deathCount.get > 5) deathCount.set(0)
+              if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
+              def receive = {
+                case akka.Die ⇒
+                  if (keepDying.get)
+                    deathCount.incrementAndGet
+
+                  throw new RuntimeException
+                case _ ⇒ pingCount.incrementAndGet
+              }
+            }))
+          }).withFaultHandler(OneForOneTemporaryStrategy(List(classOf[Exception]))))
 
         // default lifecycle
         // actor comes back right away
         pingCount.set(0)
-        keepDying = false
+        keepDying.set(false)
         pool1 ! "ping"
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool1 ! akka.Die
@@ -452,7 +455,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
         // default lifecycle
         // actor dies completely
         pingCount.set(0)
-        keepDying = true
+        keepDying.set(true)
         pool1 ! "ping"
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool1 ! akka.Die
@@ -465,7 +468,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
         // permanent lifecycle
         // actor comes back right away
         pingCount.set(0)
-        keepDying = false
+        keepDying.set(false)
         pool2 ! "ping"
         (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool2 ! akka.Die
@@ -476,7 +479,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
         // permanent lifecycle
         // actor dies completely
         pingCount.set(0)
-        keepDying = true
+        keepDying.set(true)
         pool2 ! "ping"
         (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool2 ! akka.Die
@@ -488,7 +491,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
         // temporary lifecycle
         pingCount.set(0)
-        keepDying = false
+        keepDying.set(false)
         pool3 ! "ping"
         (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool3 ! akka.Die
@@ -507,7 +510,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
         import akka.config.Supervision._
         val pingCount = new AtomicInteger(0)
         val deathCount = new AtomicInteger(0)
-        var keepDying = false
+        var keepDying = new AtomicBoolean(false)
 
         object BadState
 
@@ -528,18 +531,18 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {
                 case BadState ⇒
-                  if (keepDying) deathCount.incrementAndGet
+                  if (keepDying.get) deathCount.incrementAndGet
                   throw new IllegalStateException
                 case akka.Die ⇒
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
             })
-          }).withFaultHandler(OneForOneStrategy(List(classOf[IllegalStateException]), 5, 1000)))
+          }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[IllegalStateException]), 5, 1000)))
 
         // actor comes back right away
         pingCount.set(0)
-        keepDying = false
+        keepDying.set(false)
         pool1 ! "ping"
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool1 ! BadState
@@ -549,7 +552,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
         // actor dies completely
         pingCount.set(0)
-        keepDying = true
+        keepDying.set(true)
         pool1 ! "ping"
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool1 ! BadState

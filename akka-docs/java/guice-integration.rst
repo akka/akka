@@ -20,7 +20,7 @@ Here is an example:
   TypedActorConfigurator manager = new TypedActorConfigurator();
 
   manager.configure(
-    new AllForOneStrategy(new Class[]{Exception.class}, 3, 1000),
+    new AllForOnePermanentStrategy(new Class[]{Exception.class}, 3, 1000),
       new SuperviseTypedActor[] {
         new SuperviseTypedActor(
           Foo.class,

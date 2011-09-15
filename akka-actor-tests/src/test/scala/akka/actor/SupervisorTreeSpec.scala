@@ -10,7 +10,7 @@ import akka.util.duration._
 import akka.testkit.Testing.sleepFor
 import akka.testkit.{ EventFilter, filterEvents, filterException }
 import akka.dispatch.Dispatchers
-import akka.config.Supervision.{ SupervisorConfig, OneForOneStrategy, Supervise, Permanent }
+import akka.config.Supervision.{ SupervisorConfig, OneForOnePermanentStrategy, Supervise, Permanent }
 import Actor._
 
 class SupervisorTreeSpec extends WordSpec with MustMatchers {
@@ -35,7 +35,7 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers {
       filterException[Exception] {
         log = "INIT"
 
-        val p = Props.default.withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 1000))
+        val p = Props.default.withFaultHandler(OneForOnePermanentStrategy(List(classOf[Exception]), 3, 1000))
         val lastActor = actorOf(p.withCreator(new Chainer(None)), "lastActor")
         val middleActor = actorOf(p.withCreator(new Chainer(Some(lastActor))), "middleActor")
         val headActor = actorOf(p.withCreator(new Chainer(Some(middleActor))), "headActor")

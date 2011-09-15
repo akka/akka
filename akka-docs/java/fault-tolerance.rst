@@ -81,7 +81,7 @@ Here is an example of how to define a restart strategy:
 
 .. code-block:: java
 
-  new AllForOneStrategy( //Or OneForOneStrategy
+  new AllForOnePermanentStrategy( //Or OneForOnePermanentStrategy
     new Class[]{ Exception.class }, //List of Exceptions/Throwables to handle
     3,               // maximum number of restart retries
     5000             // within time in millis
@@ -119,7 +119,7 @@ The Actor’s supervision can be declaratively defined by creating a ‘Supervis
 
   Supervisor supervisor = Supervisor.apply(
       new SupervisorConfig(
-        new AllForOneStrategy(new Class[]{Exception.class}, 3, 5000),
+        new AllForOnePermanentStrategy(new Class[]{Exception.class}, 3, 5000),
         new Supervise[] {
           new Supervise(
             actorOf(MyActor1.class),
@@ -151,7 +151,7 @@ MaximumNumberOfRestartsWithinTimeRangeReached message.
 
   Supervisor supervisor = Supervisor.apply(
       new SupervisorConfig(
-        new AllForOneStrategy(new Class[]{Exception.class}, 3, 5000),
+        new AllForOnePermanentStrategy(new Class[]{Exception.class}, 3, 5000),
         new Supervise[] {
           new Supervise(
             actorOf(MyActor1.class),
@@ -180,7 +180,7 @@ Example usage:
 
   SupervisorFactory factory = new SupervisorFactory(
     new SupervisorConfig(
-      new OneForOneStrategy(new Class[]{Exception.class}, 3, 5000),
+      new OneForOnePermanentStrategy(new Class[]{Exception.class}, 3, 5000),
       new Supervise[] {
         new Supervise(
           actorOf(MyActor1.class),
@@ -211,7 +211,7 @@ Here is an example:
 
   Supervisor supervisor = Supervisor.apply(
     new SupervisorConfig(
-      new AllForOneStrategy(new Class[]{Exception.class}, 3, 5000),
+      new AllForOnePermanentStrategy(new Class[]{Exception.class}, 3, 5000),
       new Supervise[] {
         new Supervise(
           actorOf(MyActor1.class),
@@ -257,11 +257,11 @@ The supervising Actor also needs to define a fault handler that defines the rest
 
 The different options are:
 
-- AllForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
+- AllForOnePermanentStrategy(trapExit, maxNrOfRetries, withinTimeRange)
 
   - trapExit is an Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
 
-- OneForOneStrategy(trapExit, maxNrOfRetries, withinTimeRange)
+- OneForOnePermanentStrategy(trapExit, maxNrOfRetries, withinTimeRange)
 
   - trapExit is an Array of classes inheriting from Throwable, they signal which types of exceptions this actor will handle
 
@@ -269,7 +269,7 @@ Here is an example:
 
 .. code-block:: java
 
-  getContext().setFaultHandler(new AllForOneStrategy(new Class[]{MyException.class, IOException.class}, 3, 1000));
+  getContext().setFaultHandler(new AllForOnePermanentStrategy(new Class[]{MyException.class, IOException.class}, 3, 1000));
 
 Putting all this together it can look something like this:
 
@@ -277,7 +277,7 @@ Putting all this together it can look something like this:
 
   class MySupervisor extends UntypedActor {
     public MySupervisor() {
-      getContext().setFaultHandler(new AllForOneStrategy(new Class[]{MyException.class, IOException.class}, 3, 1000));
+      getContext().setFaultHandler(new AllForOnePermanentStrategy(new Class[]{MyException.class, IOException.class}, 3, 1000));
     }
 
     public void onReceive(Object message) throws Exception {
@@ -362,7 +362,7 @@ If you remember, when you define the 'RestartStrategy' you also defined maximum 
 
 .. code-block:: java
 
-  new AllForOneStrategy( // FaultHandlingStrategy policy (AllForOneStrategy or OneForOneStrategy)
+  new AllForOnePermanentStrategy( // FaultHandlingStrategy policy (AllForOnePermanentStrategy or OneForOnePermanentStrategy)
     new Class[]{MyException.class, IOException.class}, //What types of errors will be handled
     3,               // maximum number of restart retries
     5000             // within time in millis
@@ -425,7 +425,7 @@ Here is an example:
   TypedActorConfigurator manager = new TypedActorConfigurator();
 
   manager.configure(
-    new AllForOneStrategy(new Class[]{Exception.class}, 3, 1000),
+    new AllForOnePermanentStrategy(new Class[]{Exception.class}, 3, 1000),
       new SuperviseTypedActor[] {
         new SuperviseTypedActor(
           Foo.class,
@@ -480,7 +480,7 @@ If the parent TypedActor (supervisor) wants to be able to do handle failing chil
 
 .. code-block:: java
 
-  TypedActor.faultHandler(supervisor, new AllForOneStrategy(new Class[]{IOException.class}, 3, 2000));
+  TypedActor.faultHandler(supervisor, new AllForOnePermanentStrategy(new Class[]{IOException.class}, 3, 2000));
 
 For convenience there is an overloaded link that takes trapExit and faultHandler for the supervisor as arguments. Here is an example:
 
@@ -492,9 +492,9 @@ For convenience there is an overloaded link that takes trapExit and faultHandler
   foo = newInstance(Foo.class, FooImpl.class, 1000);
   bar = newInstance(Bar.class, BarImpl.class, 1000);
 
-  link(foo, bar, new AllForOneStrategy(new Class[]{IOException.class}, 3, 2000));
+  link(foo, bar, new AllForOnePermanentStrategy(new Class[]{IOException.class}, 3, 2000));
 
   // alternative: chaining
-  bar = faultHandler(foo, new AllForOneStrategy(new Class[]{IOException.class}, 3, 2000)).newInstance(Bar.class, 1000);
+  bar = faultHandler(foo, new AllForOnePermanentStrategy(new Class[]{IOException.class}, 3, 2000)).newInstance(Bar.class, 1000);
 
   link(foo, bar);

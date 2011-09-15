@@ -57,7 +57,7 @@ object SupervisorSpec {
 
   class Master extends Actor {
 
-    val temp = actorOf(Props[PingPongActor].withLifeCycle(Temporary).withSupervisor(self))
+    val temp = actorOf(Props[PingPongActor].withSupervisor(self))
 
     override def receive = {
       case Die ⇒ (temp.?(Die, TimeoutMillis)).get
@@ -70,11 +70,11 @@ object SupervisorSpec {
   // =====================================================
 
   def temporaryActorAllForOne = {
-    val temporaryActor = actorOf(Props[PingPongActor].withLifeCycle(Temporary))
+    val temporaryActor = actorOf(Props[PingPongActor])
 
     val supervisor = Supervisor(
       SupervisorConfig(
-        AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis),
+        AllForOneTemporaryStrategy(List(classOf[Exception])),
         Supervise(
           temporaryActor,
           Temporary)
@@ -88,7 +88,7 @@ object SupervisorSpec {
 
     val supervisor = Supervisor(
       SupervisorConfig(
-        AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis),
+        AllForOnePermanentStrategy(List(classOf[Exception]), 3, TimeoutMillis),
         Supervise(
           pingpong,
           Permanent)
@@ -102,7 +102,7 @@ object SupervisorSpec {
 
     val supervisor = Supervisor(
       SupervisorConfig(
-        OneForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis),
+        OneForOnePermanentStrategy(List(classOf[Exception]), 3, TimeoutMillis),
         Supervise(
           pingpong,
           Permanent)
@@ -118,7 +118,7 @@ object SupervisorSpec {
 
     val supervisor = Supervisor(
       SupervisorConfig(
-        AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis),
+        AllForOnePermanentStrategy(List(classOf[Exception]), 3, TimeoutMillis),
         Supervise(
           pingpong1,
           Permanent)
@@ -142,7 +142,7 @@ object SupervisorSpec {
 
     val supervisor = Supervisor(
       SupervisorConfig(
-        OneForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis),
+        OneForOnePermanentStrategy(List(classOf[Exception]), 3, TimeoutMillis),
         Supervise(
           pingpong1,
           Permanent)
@@ -166,13 +166,13 @@ object SupervisorSpec {
 
     val supervisor = Supervisor(
       SupervisorConfig(
-        AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis),
+        AllForOnePermanentStrategy(List(classOf[Exception]), 3, TimeoutMillis),
         Supervise(
           pingpong1,
           Permanent)
           ::
           SupervisorConfig(
-            AllForOneStrategy(Nil, 3, TimeoutMillis),
+            AllForOnePermanentStrategy(Nil, 3, TimeoutMillis),
             Supervise(
               pingpong2,
               Permanent)
@@ -217,7 +217,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
   "A supervisor" must {
 
     "not restart programmatically linked temporary actor" in {
-      val master = actorOf(Props[Master].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 5, (1 second).dilated.toMillis.toInt)))
+      val master = actorOf(Props[Master].withFaultHandler(OneForOneTemporaryStrategy(List(classOf[Exception]))))
 
       intercept[RuntimeException] {
         (master.?(Die, TimeoutMillis)).get
@@ -374,7 +374,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
       val supervisor =
         Supervisor(
           SupervisorConfig(
-            OneForOneStrategy(classOf[Exception] :: Nil, 3, 10000),
+            OneForOnePermanentStrategy(classOf[Exception] :: Nil, 3, 10000),
             Supervise(dyingActor, Permanent) :: Nil))
 
       intercept[RuntimeException] {
