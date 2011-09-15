@@ -194,13 +194,13 @@ object Actor {
   /**
    * Handle to the ClusterNode. API for the cluster client.
    */
-  lazy val cluster: ClusterNode = ClusterModule.node
+  //  lazy val cluster: ClusterNode = ClusterModule.node
 
   /**
    * Handle to the RemoteSupport. API for the remote client/server.
    * Only for internal use.
    */
-  private[akka] lazy val remote: RemoteSupport = cluster.remoteService
+  private[akka] lazy val remote: RemoteSupport = RemoteModule.remoteService.server
 
   /**
    * This decorator adds invocation logging to a Receive function.
@@ -248,10 +248,6 @@ object Actor {
    *   actor ! message
    *   actor.stop()
    * </pre>
-   * You can create and start the actor in one statement like this:
-   * <pre>
-   *   val actor = actorOf[MyActor]
-   * </pre>
    */
   def actorOf[T <: Actor: Manifest](address: String): ActorRef =
     actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]], address)
@@ -264,10 +260,6 @@ object Actor {
    *   val actor = actorOf[MyActor]
    *   actor ! message
    *   actor.stop
-   * </pre>
-   * You can create and start the actor in one statement like this:
-   * <pre>
-   *   val actor = actorOf[MyActor]
    * </pre>
    */
   def actorOf[T <: Actor: Manifest]: ActorRef =
@@ -282,10 +274,6 @@ object Actor {
    *   actor ! message
    *   actor.stop()
    * </pre>
-   * You can create and start the actor in one statement like this:
-   * <pre>
-   *   val actor = actorOf(classOf[MyActor])
-   * </pre>
    */
   def actorOf[T <: Actor](clazz: Class[T]): ActorRef = actorOf(clazz, new UUID().toString)
 
@@ -296,10 +284,6 @@ object Actor {
    *   val actor = actorOf(classOf[MyActor])
    *   actor ! message
    *   actor.stop
-   * </pre>
-   * You can create and start the actor in one statement like this:
-   * <pre>
-   *   val actor = actorOf(classOf[MyActor])
    * </pre>
    */
   def actorOf[T <: Actor](clazz: Class[T], address: String): ActorRef = actorOf(Props(clazz), address)
@@ -316,10 +300,6 @@ object Actor {
    *   actor ! message
    *   actor.stop()
    * </pre>
-   * You can create and start the actor in one statement like this:
-   * <pre>
-   *   val actor = actorOf(new MyActor)
-   * </pre>
    */
   def actorOf[T <: Actor](factory: ⇒ T): ActorRef = actorOf(factory, newUuid().toString)
 
@@ -334,10 +314,6 @@ object Actor {
    *   val actor = actorOf(new MyActor)
    *   actor ! message
    *   actor.stop
-   * </pre>
-   * You can create and start the actor in one statement like this:
-   * <pre>
-   *   val actor = actorOf(new MyActor)
    * </pre>
    */
   def actorOf[T <: Actor](creator: ⇒ T, address: String): ActorRef = actorOf(Props(creator), address)

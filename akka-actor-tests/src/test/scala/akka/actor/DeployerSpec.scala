@@ -21,7 +21,7 @@ class DeployerSpec extends WordSpec with MustMatchers {
           None,
           LeastCPU,
           RemoveConnectionOnFirstFailureRemoteFailureDetector,
-          Clustered(
+          ClusterScope(
             List(Node("node1")),
             new ReplicationFactor(3),
             Replication(

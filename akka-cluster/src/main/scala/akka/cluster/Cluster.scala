@@ -734,13 +734,7 @@ class DefaultClusterNode private[akka] (
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
    * for remote access through lookup by its UUID.
    */
-  def use[T <: Actor](actorAddress: String): Option[LocalActorRef] = use(actorAddress, serializerForActor(actorAddress))
-
-  /**
-   * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
-   * for remote access through lookup by its UUID.
-   */
-  def use[T <: Actor](actorAddress: String, serializer: Serializer): Option[LocalActorRef] = {
+  def use[T <: Actor](actorAddress: String): Option[LocalActorRef] = {
     val nodeName = nodeAddress.nodeName
 
     val actorFactoryPath = actorAddressRegistryPathFor(actorAddress)
@@ -1233,7 +1227,7 @@ class DefaultClusterNode private[akka] (
       if (actorAddress.isDefined) {
         // use 'preferred-nodes' in deployment config for the actor
         Deployer.deploymentFor(actorAddress.get) match {
-          case Deploy(_, _, _, _, Clustered(nodes, _, _)) ⇒
+          case Deploy(_, _, _, _, Cluster(nodes, _, _)) ⇒
             nodes map (node ⇒ DeploymentConfig.nodeNameFor(node)) take replicationFactor
           case _ ⇒
             throw new ClusterException("Actor [" + actorAddress.get + "] is not configured as clustered")

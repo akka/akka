@@ -4,16 +4,15 @@
 
 package akka.util
 
-import akka.dispatch.MessageInvocation
-import akka.config.{ Config, ModuleNotAvailableException }
-import akka.cluster.RemoteSupport
 import akka.actor._
 import DeploymentConfig.ReplicationScheme
+import akka.dispatch.MessageInvocation
+import akka.config.{ Config, ModuleNotAvailableException }
 import akka.event.EventHandler
-import akka.cluster.ClusterNode
+import akka.cluster.{ RemoteSupport, ClusterNode, RemoteService }
+import akka.routing.{ RoutedProps, Router }
 
 import java.net.InetSocketAddress
-import akka.routing.{ RoutedProps, Router }
 
 /**
  * Helper class for reflective access to different modules in order to allow optional loading of modules.
@@ -150,6 +149,18 @@ object ReflectiveAccess {
         EventHandler.debug(this, e.toString)
         throw e
       }
+    }
+
+    lazy val remoteInstance: Option[RemoteService] = getObjectFor("akka.cluster.Remote$") match {
+      case Right(value) ⇒ Some(value)
+      case Left(exception) ⇒
+        EventHandler.debug(this, exception.toString)
+        None
+    }
+
+    lazy val remoteService: RemoteService = {
+      ensureEnabled()
+      remoteInstance.get
     }
 
     val remoteSupportClass = getClassFor[RemoteSupport](TRANSPORT) match {

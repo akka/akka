@@ -24,7 +24,7 @@ object DeploymentConfig {
     recipe: Option[ActorRecipe],
     routing: Routing = Direct,
     failureDetector: FailureDetector = RemoveConnectionOnFirstFailureLocalFailureDetector,
-    scope: Scope = Local) {
+    scope: Scope = LocalScope) {
     Address.validate(address)
   }
 
@@ -73,16 +73,20 @@ object DeploymentConfig {
   // --- Scope
   // --------------------------------
   sealed trait Scope
-  case class Clustered(
+  case class ClusterScope(
     preferredNodes: Iterable[Home] = Vector(Node(Config.nodename)),
     replicas: ReplicationFactor = ZeroReplicationFactor,
     replication: ReplicationScheme = Transient) extends Scope
 
+  case class RemoteScope(
+    hostname: String = "localhost",
+    port: Int = 2552) extends Scope
+
   // For Java API
-  case class Local() extends Scope
+  case class LocalScope() extends Scope
 
   // For Scala API
-  case object Local extends Scope
+  case object LocalScope extends Scope
 
   // --------------------------------
   // --- Home
@@ -200,7 +204,7 @@ object DeploymentConfig {
   }
 
   def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {
-    case Deploy(_, _, _, _, Clustered(_, _, replicationScheme)) ⇒ Some(replicationScheme)
+    case Deploy(_, _, _, _, ClusterScope(_, _, replicationScheme)) ⇒ Some(replicationScheme)
     case _ ⇒ None
   }
 
