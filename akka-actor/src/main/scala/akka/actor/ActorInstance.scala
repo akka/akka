@@ -23,8 +23,8 @@ private[akka] object ActorInstance {
     object Shutdown extends Status
   }
 
-  val refStack = new ThreadLocal[Stack[ScalaActorRef with SelfActorRef]] {
-    override def initialValue = Stack[ScalaActorRef with SelfActorRef]()
+  val contextStack = new ThreadLocal[Stack[ActorContext]] {
+    override def initialValue = Stack[ActorContext]()
   }
 }
 
@@ -93,8 +93,8 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
   }
 
   def newActor: Actor = {
-    val stackBefore = refStack.get
-    refStack.set(stackBefore.push(self))
+    val stackBefore = contextStack.get
+    contextStack.set(stackBefore.push(new ActorContext(self)))
     try {
       if (status == Status.BeingRestarted) {
         val a = actor.get()
@@ -111,9 +111,9 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
         props.creator()
       }
     } finally {
-      val stackAfter = refStack.get
+      val stackAfter = contextStack.get
       if (stackAfter.nonEmpty)
-        refStack.set(if (stackAfter.head eq null) stackAfter.pop.pop else stackAfter.pop) //pop null marker plus self
+        contextStack.set(if (stackAfter.head eq null) stackAfter.pop.pop else stackAfter.pop) // pop null marker plus our context
     }
   } match {
     case null  ⇒ throw new ActorInitializationException("Actor instance passed to actorOf can't be 'null'")
@@ -138,7 +138,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
         stopSupervisedActors()
       } finally {
         self.currentMessage = null
-        setActorSelf(null)
+        clearActorContext()
       }
     }
   }
@@ -283,7 +283,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
       val message = if (self.currentMessage ne null) Some(self.currentMessage.message) else None
       failedActor.preRestart(reason, message)
       val freshActor = newActor
-      setActorSelf(null) // only null out the references if we could instantiate the new actor
+      clearActorContext()
       actor.set(freshActor) // assign it here so if preStart fails, we can null out the sef-refs next call
       freshActor.postRestart(reason)
       if (Actor.debugLifecycle) EventHandler.debug(freshActor, "restarted")
@@ -404,16 +404,15 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
     }
   }
 
-  def setActorSelf(value: ActorRef): Unit = {
+  def clearActorContext(): Unit = setActorContext(null)
+
+  def setActorContext(newContext: ActorContext): Unit = {
     @tailrec
-    def lookupAndSetSelfFields(clazz: Class[_], actor: Actor, value: ActorRef): Boolean = {
+    def lookupAndSetSelfFields(clazz: Class[_], actor: Actor, newContext: ActorContext): Boolean = {
       val success = try {
-        val selfField = clazz.getDeclaredField("self")
-        val someSelfField = clazz.getDeclaredField("someSelf")
-        selfField.setAccessible(true)
-        someSelfField.setAccessible(true)
-        selfField.set(actor, value)
-        someSelfField.set(actor, if (value ne null) Some(value) else null)
+        val contextField = clazz.getDeclaredField("actorContext")
+        contextField.setAccessible(true)
+        contextField.set(actor, newContext)
         true
       } catch {
         case e: NoSuchFieldException ⇒ false
@@ -424,10 +423,10 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
         val parent = clazz.getSuperclass
         if (parent eq null)
           throw new IllegalActorStateException(toString + " is not an Actor since it have not mixed in the 'Actor' trait")
-        lookupAndSetSelfFields(parent, actor, value)
+        lookupAndSetSelfFields(parent, actor, newContext)
       }
     }
 
-    lookupAndSetSelfFields(actor.get.getClass, actor.get, value)
+    lookupAndSetSelfFields(actor.get.getClass, actor.get, newContext)
   }
 }

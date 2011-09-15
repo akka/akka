@@ -341,7 +341,7 @@ class LocalActorRef private[akka] (
 
     hotswap = __hotswap
     receiveTimeout = __receiveTimeout
-    actorInstance.setActorSelf(this) // TODO: why is this needed?
+    actorInstance.setActorContext(new ActorContext(this)) // this is needed for deserialization - why?
   }
 
   private[this] val actorInstance = new ActorInstance(props, this)
