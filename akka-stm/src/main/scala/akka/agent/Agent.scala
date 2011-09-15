@@ -151,7 +151,7 @@ class Agent[T](initialValue: T) {
    * still be executed in order.
    */
   def sendOff(f: T ⇒ T): Unit = send((value: T) ⇒ {
-    suspend
+    suspend()
     val threadBased = actorOf(Props(new ThreadBasedAgentUpdater(this)).withDispatcher(new PinnedDispatcher()))
     threadBased ! Update(f)
     value
@@ -167,7 +167,7 @@ class Agent[T](initialValue: T) {
   def alterOff(f: T ⇒ T)(timeout: Long): Future[T] = {
     val result = new DefaultPromise[T](timeout)
     send((value: T) ⇒ {
-      suspend
+      suspend()
       val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this))
       result completeWith threadBased.?(Update(f), timeout).asInstanceOf[Future[T]]
       value
@@ -206,12 +206,12 @@ class Agent[T](initialValue: T) {
   /**
    * Suspends processing of `send` actions for the agent.
    */
-  def suspend() = updater.dispatcher.suspend(updater)
+  def suspend() = updater.suspend()
 
   /**
    * Resumes processing of `send` actions for the agent.
    */
-  def resume() = updater.dispatcher.resume(updater)
+  def resume() = updater.resume()
 
   /**
    * Closes the agents and makes it eligible for garbage collection.
@@ -300,7 +300,7 @@ class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
     case update: Update[_] ⇒ try {
       self.tryReply(atomic(txFactory) { agent.ref alter update.function.asInstanceOf[T ⇒ T] })
     } finally {
-      agent.resume
+      agent.resume()
       self.stop()
     }
     case _ ⇒ self.stop()

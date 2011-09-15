@@ -103,28 +103,28 @@ object ActorModelSpec {
       stats.get(actorRef)
     }
 
-    abstract override def suspend(actorRef: LocalActorRef) {
-      super.suspend(actorRef)
-      getStats(actorRef).suspensions.incrementAndGet()
+    abstract override def suspend(actor: ActorInstance) {
+      super.suspend(actor)
+      getStats(actor.ref).suspensions.incrementAndGet()
     }
 
-    abstract override def resume(actorRef: LocalActorRef) {
-      super.resume(actorRef)
-      getStats(actorRef).resumes.incrementAndGet()
+    abstract override def resume(actor: ActorInstance) {
+      super.resume(actor)
+      getStats(actor.ref).resumes.incrementAndGet()
     }
 
-    protected[akka] abstract override def register(actorRef: LocalActorRef) {
-      super.register(actorRef)
-      getStats(actorRef).registers.incrementAndGet()
+    protected[akka] abstract override def register(actor: ActorInstance) {
+      super.register(actor)
+      getStats(actor.ref).registers.incrementAndGet()
     }
 
-    protected[akka] abstract override def unregister(actorRef: LocalActorRef) {
-      super.unregister(actorRef)
-      getStats(actorRef).unregisters.incrementAndGet()
+    protected[akka] abstract override def unregister(actor: ActorInstance) {
+      super.unregister(actor)
+      getStats(actor.ref).unregisters.incrementAndGet()
     }
 
     protected[akka] abstract override def dispatch(invocation: MessageInvocation) {
-      getStats(invocation.receiver).msgsReceived.incrementAndGet()
+      getStats(invocation.receiver.ref).msgsReceived.incrementAndGet()
       super.dispatch(invocation)
     }
 
@@ -342,12 +342,12 @@ abstract class ActorModelSpec extends JUnitSuite {
     implicit val dispatcher = newInterceptedDispatcher
     val a = newTestActor.asInstanceOf[LocalActorRef]
     val done = new CountDownLatch(1)
-    dispatcher.suspend(a)
+    a.suspend
     a ! CountDown(done)
     assertNoCountDown(done, 1000, "Should not process messages while suspended")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, suspensions = 1)
 
-    dispatcher.resume(a)
+    a.resume
     assertCountDown(done, Testing.testTime(3000), "Should resume processing of messages when resumed")
     assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, msgsProcessed = 1,
       suspensions = 1, resumes = 1)
@@ -379,11 +379,11 @@ abstract class ActorModelSpec extends JUnitSuite {
   def dispatcherShouldCompleteAllUncompletedSenderFuturesOnDeregister {
     implicit val dispatcher = newInterceptedDispatcher
     val a = newTestActor.asInstanceOf[LocalActorRef]
-    dispatcher.suspend(a)
+    a.suspend
     val f1: Future[String] = a ? Reply("foo") mapTo manifest[String]
     val stopped = a ? PoisonPill
     val shouldBeCompleted = for (i ← 1 to 10) yield a ? Reply(i)
-    dispatcher.resume(a)
+    a.resume
     assert(f1.get === "foo")
     stopped.await
     for (each ← shouldBeCompleted)

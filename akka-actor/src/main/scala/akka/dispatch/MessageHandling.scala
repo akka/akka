@@ -16,7 +16,7 @@ import akka.actor._
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final case class MessageInvocation(val receiver: LocalActorRef,
+final case class MessageInvocation(val receiver: ActorInstance,
                                    val message: Any,
                                    val channel: UntypedChannel) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
@@ -68,7 +68,7 @@ abstract class MessageDispatcher extends Serializable {
   /**
    *  Creates and returns a mailbox for the given actor.
    */
-  protected[akka] def createMailbox(actorRef: LocalActorRef): AnyRef
+  protected[akka] def createMailbox(actor: ActorInstance): AnyRef
 
   /**
    * Name of this dispatcher.
@@ -76,20 +76,20 @@ abstract class MessageDispatcher extends Serializable {
   def name: String
 
   /**
-   * Attaches the specified actorRef to this dispatcher
+   * Attaches the specified actor instance to this dispatcher
    */
-  final def attach(actorRef: LocalActorRef) {
+  final def attach(actor: ActorInstance) {
     guard withGuard {
-      register(actorRef)
+      register(actor)
     }
   }
 
   /**
-   * Detaches the specified actorRef from this dispatcher
+   * Detaches the specified actor instance from this dispatcher
    */
-  final def detach(actorRef: LocalActorRef) {
+  final def detach(actor: ActorInstance) {
     guard withGuard {
-      unregister(actorRef)
+      unregister(actor)
     }
   }
 
@@ -132,11 +132,11 @@ abstract class MessageDispatcher extends Serializable {
    * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
    * and only call it under the dispatcher-guard, see "attach" for the only invocation
    */
-  protected[akka] def register(actorRef: LocalActorRef) {
-    if (actorRef.mailbox eq null)
-      actorRef.mailbox = createMailbox(actorRef)
+  protected[akka] def register(actor: ActorInstance) {
+    if (actor.mailbox eq null)
+      actor.mailbox = createMailbox(actor)
 
-    uuids add actorRef.uuid
+    uuids add actor.uuid
     if (active.isOff) {
       active.switchOn {
         start()
@@ -148,10 +148,10 @@ abstract class MessageDispatcher extends Serializable {
    * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
    * and only call it under the dispatcher-guard, see "detach" for the only invocation
    */
-  protected[akka] def unregister(actorRef: LocalActorRef) = {
-    if (uuids remove actorRef.uuid) {
-      cleanUpMailboxFor(actorRef)
-      actorRef.mailbox = null
+  protected[akka] def unregister(actor: ActorInstance) = {
+    if (uuids remove actor.uuid) {
+      cleanUpMailboxFor(actor)
+      actor.mailbox = null
       if (uuids.isEmpty && _tasks.get == 0) {
         shutdownSchedule match {
           case UNSCHEDULED ⇒
@@ -169,7 +169,7 @@ abstract class MessageDispatcher extends Serializable {
    * Overridable callback to clean up the mailbox for a given actor,
    * called when an actor is unregistered.
    */
-  protected def cleanUpMailboxFor(actorRef: LocalActorRef) {}
+  protected def cleanUpMailboxFor(actor: ActorInstance) {}
 
   /**
    * Traverses the list of actors (uuids) currently being attached to this dispatcher and stops those actors
@@ -214,12 +214,12 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
    */
-  def suspend(actorRef: LocalActorRef)
+  def suspend(actor: ActorInstance)
 
   /*
    * After the call to this method, the dispatcher must begin any new message processing for the specified reference
    */
-  def resume(actorRef: LocalActorRef)
+  def resume(actor: ActorInstance)
 
   /**
    *   Will be called when the dispatcher is to queue an invocation for execution
@@ -241,12 +241,12 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * Returns the size of the mailbox for the specified actor
    */
-  def mailboxSize(actorRef: LocalActorRef): Int
+  def mailboxSize(actor: ActorInstance): Int
 
   /**
    * Returns the "current" emptiness status of the mailbox for the specified actor
    */
-  def mailboxIsEmpty(actorRef: LocalActorRef): Boolean
+  def mailboxIsEmpty(actor: ActorInstance): Boolean
 
   /**
    * Returns the amount of tasks queued for execution

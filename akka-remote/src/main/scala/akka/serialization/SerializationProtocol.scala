@@ -79,7 +79,7 @@ object ActorSerialization {
       .setTimeout(actorRef.timeout)
 
     if (localRef.isDefined)
-      builder.setActorClassname(localRef.get.actorInstance.get.getClass.getName) //TODO FIXME Why is the classname needed anymore?
+      builder.setActorClassname(localRef.get.actorClass.getName) //TODO FIXME Why is the classname needed anymore?
 
     replicationScheme match {
       case _: Transient | Transient ⇒
@@ -104,7 +104,7 @@ object ActorSerialization {
 
     localRef foreach { l ⇒
       if (serializeMailBox) {
-        l.mailbox match {
+        l.underlying.mailbox match {
           case null ⇒ throw new IllegalActorStateException("Can't serialize an actor that has not been started.")
           case q: java.util.Queue[_] ⇒
             val l = new scala.collection.mutable.ListBuffer[MessageInvocation]
@@ -113,7 +113,7 @@ object ActorSerialization {
 
             l map { m ⇒
               RemoteActorSerialization.createRemoteMessageProtocolBuilder(
-                Option(m.receiver),
+                Option(m.receiver.ref),
                 Left(actorRef.uuid),
                 actorRef.address,
                 actorRef.timeout,
@@ -130,7 +130,7 @@ object ActorSerialization {
       }
 
       l.receiveTimeout.foreach(builder.setReceiveTimeout(_))
-      val actorInstance = l.actorInstance.get
+      val actorInstance = l.underlyingActorInstance
       Serialization.serialize(actorInstance.asInstanceOf[T]) match {
         case Right(bytes)    ⇒ builder.setActorInstance(ByteString.copyFrom(bytes))
         case Left(exception) ⇒ throw new Exception("Error serializing : " + actorInstance.getClass.getName)

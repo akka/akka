@@ -44,7 +44,7 @@ private[camel] object TypedConsumer {
 
   private def withConsumeAnnotatedMethodsonImplClass[T](tc: AnyRef, actorRef: ActorRef, f: (AnyRef, Method) ⇒ T): List[T] = actorRef match {
     case l: LocalActorRef ⇒
-      val implClass = l.actorInstance.get().asInstanceOf[TypedActor.TypedActor[AnyRef, AnyRef]].me.getClass
+      val implClass = l.underlyingActorInstance.asInstanceOf[TypedActor.TypedActor[AnyRef, AnyRef]].me.getClass
       for (m ← implClass.getDeclaredMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(tc, m)
     case _ ⇒ Nil
   }

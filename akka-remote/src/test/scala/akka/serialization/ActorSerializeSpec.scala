@@ -39,15 +39,15 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
       val actor1 = new LocalActorRef(Props[MyStatelessActorWithMessagesInMailbox], newUuid.toString, systemService = true)
       for (i ← 1 to 10) actor1 ! "hello"
 
-      actor1.getDispatcher.mailboxSize(actor1) should be > (0)
+      actor1.getDispatcher.mailboxSize(actor1.underlying) should be > (0)
       val actor2 = fromBinary(toBinary(actor1)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor2.getDispatcher.mailboxSize(actor1) should be > (0)
+      actor2.getDispatcher.mailboxSize(actor1.underlying) should be > (0)
       (actor2 ? "hello-reply").get should equal("world")
 
       val actor3 = fromBinary(toBinary(actor1, false)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor3.getDispatcher.mailboxSize(actor1) should equal(0)
+      actor3.getDispatcher.mailboxSize(actor1.underlying) should equal(0)
       (actor3 ? "hello-reply").get should equal("world")
     }
 
@@ -65,15 +65,15 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
       (actor1 ! p1)
       (actor1 ! p1)
       (actor1 ! p1)
-      actor1.getDispatcher.mailboxSize(actor1) should be > (0)
+      actor1.getDispatcher.mailboxSize(actor1.underlying) should be > (0)
       val actor2 = fromBinary(toBinary(actor1)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor2.getDispatcher.mailboxSize(actor1) should be > (0)
+      actor2.getDispatcher.mailboxSize(actor1.underlying) should be > (0)
       (actor2 ? "hello-reply").get should equal("hello")
 
       val actor3 = fromBinary(toBinary(actor1, false)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor3.getDispatcher.mailboxSize(actor1) should equal(0)
+      actor3.getDispatcher.mailboxSize(actor1.underlying) should equal(0)
       (actor3 ? "hello-reply").get should equal("hello")
     }
   }
@@ -102,15 +102,15 @@ class ActorSerializeSpec extends Spec with ShouldMatchers with BeforeAndAfterAll
       val msg = MyMessage(123, "debasish ghosh", true)
       val b = ProtobufProtocol.MyMessage.newBuilder.setId(msg.id).setName(msg.name).setStatus(msg.status).build
       for (i ← 1 to 10) actor1 ! b
-      actor1.getDispatcher.mailboxSize(actor1) should be > (0)
+      actor1.getDispatcher.mailboxSize(actor1.underlying) should be > (0)
       val actor2 = fromBinary(toBinary(actor1)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor2.getDispatcher.mailboxSize(actor1) should be > (0)
+      actor2.getDispatcher.mailboxSize(actor1.underlying) should be > (0)
       (actor2 ? "hello-reply").get should equal("world")
 
       val actor3 = fromBinary(toBinary(actor1, false)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor3.getDispatcher.mailboxSize(actor1) should equal(0)
+      actor3.getDispatcher.mailboxSize(actor1.underlying) should equal(0)
       (actor3 ? "hello-reply").get should equal("world")
     }
   }

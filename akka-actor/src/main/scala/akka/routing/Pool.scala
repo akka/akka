@@ -152,7 +152,7 @@ trait SmallestMailboxSelector {
     var take = if (partialFill) math.min(selectionCount, delegates.length) else selectionCount
 
     def mailboxSize(a: ActorRef): Int = a match {
-      case l: LocalActorRef ⇒ l.dispatcher.mailboxSize(l)
+      case l: LocalActorRef ⇒ l.dispatcher.mailboxSize(l.underlying)
       case _                ⇒ Int.MaxValue //Non-local actors mailbox size is unknown, so consider them lowest priority
     }
 
@@ -238,7 +238,7 @@ trait MailboxPressureCapacitor {
   def pressureThreshold: Int
   def pressure(delegates: Seq[ActorRef]): Int =
     delegates count {
-      case a: LocalActorRef ⇒ a.dispatcher.mailboxSize(a) > pressureThreshold
+      case a: LocalActorRef ⇒ a.dispatcher.mailboxSize(a.underlying) > pressureThreshold
       case _                ⇒ false
     }
 }

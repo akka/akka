@@ -11,7 +11,7 @@ import java.util.concurrent.RejectedExecutionException
 import akka.util.Switch
 import java.lang.ref.WeakReference
 import scala.annotation.tailrec
-import akka.actor.{ LocalActorRef, ActorRef }
+import akka.actor.ActorInstance
 
 /*
  * Locking rules:
@@ -107,9 +107,9 @@ object CallingThreadDispatcher {
 class CallingThreadDispatcher(val name: String = "calling-thread", val warnings: Boolean = true) extends MessageDispatcher {
   import CallingThreadDispatcher._
 
-  protected[akka] override def createMailbox(actor: LocalActorRef) = new CallingThreadMailbox
+  protected[akka] override def createMailbox(actor: ActorInstance) = new CallingThreadMailbox
 
-  private def getMailbox(actor: LocalActorRef) = actor.mailbox.asInstanceOf[CallingThreadMailbox]
+  private def getMailbox(actor: ActorInstance) = actor.mailbox.asInstanceOf[CallingThreadMailbox]
 
   protected[akka] override def start() {}
 
@@ -117,11 +117,11 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
 
   protected[akka] override def timeoutMs = 100L
 
-  override def suspend(actor: LocalActorRef) {
+  override def suspend(actor: ActorInstance) {
     getMailbox(actor).suspended.switchOn
   }
 
-  override def resume(actor: LocalActorRef) {
+  override def resume(actor: ActorInstance) {
     val mbox = getMailbox(actor)
     val queue = mbox.queue
     val wasActive = queue.isActive
@@ -133,9 +133,9 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
     }
   }
 
-  override def mailboxSize(actor: LocalActorRef) = getMailbox(actor).queue.size
+  override def mailboxSize(actor: ActorInstance) = getMailbox(actor).queue.size
 
-  override def mailboxIsEmpty(actorRef: LocalActorRef): Boolean = getMailbox(actorRef).queue.isEmpty
+  override def mailboxIsEmpty(actor: ActorInstance): Boolean = getMailbox(actor).queue.isEmpty
 
   protected[akka] override def dispatch(handle: MessageInvocation) {
     val mbox = getMailbox(handle.receiver)

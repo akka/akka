@@ -35,12 +35,12 @@ class PriorityDispatcherSpec extends WordSpec with MustMatchers {
       }
     }).withDispatcher(dispatcher)).asInstanceOf[LocalActorRef]
 
-    dispatcher.suspend(actor) //Make sure the actor isn't treating any messages, let it buffer the incoming messages
+    actor.suspend //Make sure the actor isn't treating any messages, let it buffer the incoming messages
 
     val msgs = (1 to 100).toList
     for (m ← msgs) actor ! m
 
-    dispatcher.resume(actor) //Signal the actor to start treating it's message backlog
+    actor.resume //Signal the actor to start treating it's message backlog
 
     actor.?('Result).as[List[Int]].get must be === (msgs.reverse)
   }

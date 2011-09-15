@@ -19,7 +19,6 @@ import akka.event.EventHandler
 import akka.experimental
 import akka.AkkaException
 
-import scala.collection.immutable.Stack
 import scala.reflect.BeanProperty
 
 import com.eaio.uuid.UUID
@@ -173,10 +172,6 @@ object Actor {
    * a PartialFunction[Any, Unit].
    */
   type Receive = PartialFunction[Any, Unit]
-
-  private[actor] val actorRefInCreation = new ThreadLocal[Stack[ScalaActorRef with SelfActorRef]] {
-    override def initialValue = Stack[ScalaActorRef with SelfActorRef]()
-  }
 
   private[akka] val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
   private[akka] val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
@@ -467,7 +462,7 @@ trait Actor {
    */
   @transient
   val someSelf: Some[ScalaActorRef with SelfActorRef] = {
-    val refStack = Actor.actorRefInCreation.get
+    val refStack = ActorInstance.refStack.get
     if (refStack.isEmpty) throw new ActorInitializationException(
       "\n\tYou can not create an instance of an " + getClass.getName + " explicitly using 'new MyActor'." +
         "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
@@ -481,7 +476,7 @@ trait Actor {
       throw new ActorInitializationException("Trying to create an instance of " + getClass.getName + " outside of a wrapping 'actorOf'")
     else {
       // Push a null marker so any subsequent calls to new Actor doesn't reuse this actor ref
-      Actor.actorRefInCreation.set(refStack.push(null))
+      ActorInstance.refStack.set(refStack.push(null))
       Some(ref)
     }
   }

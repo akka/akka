@@ -25,14 +25,14 @@ class TestActorRef[T <: Actor](props: Props, address: String) extends LocalActor
    * thrown will be available to you, while still being able to use
    * become/unbecome and their message counterparts.
    */
-  def apply(o: Any) { actorInstance.get().apply(o) }
+  def apply(o: Any) { underlyingActorInstance.apply(o) }
 
   /**
    * Retrieve reference to the underlying actor, where the static type matches the factory used inside the
    * constructor. Beware that this reference is discarded by the ActorRef upon restarting the actor (should this
    * reference be linked to a supervisor). The old Actor may of course still be used in post-mortem assertions.
    */
-  def underlyingActor: T = actorInstance.get().asInstanceOf[T]
+  def underlyingActor: T = underlyingActorInstance.asInstanceOf[T]
 
   override def toString = "TestActor[" + address + ":" + uuid + "]"
 

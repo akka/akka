@@ -265,14 +265,24 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
 
   val address = exchange.getExchangeId
 
+  @volatile
+  private var running: Boolean = false
+
+  def isRunning: Boolean = running
+
+  def isShutdown: Boolean = !running
+
   def start = {
-    if (_status == ActorRefInternals.UNSTARTED)
-      _status = ActorRefInternals.RUNNING
+    running = true
     this
   }
 
-  def stop() = {
-    _status = ActorRefInternals.SHUTDOWN
+  def suspend(): Unit = ()
+
+  def resume(): Unit = ()
+
+  def stop(): Unit = {
+    running = false
   }
 
   /**

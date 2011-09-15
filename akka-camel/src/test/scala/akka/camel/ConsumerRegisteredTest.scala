@@ -49,7 +49,7 @@ class ConsumerRegisteredTest extends JUnitSuite {
   }
 
   private def consumerOf(ref: ActorRef) = ref match {
-    case l: LocalActorRef ⇒ l.actorInstance.get.asInstanceOf[Consumer]
+    case l: LocalActorRef ⇒ l.underlyingActorInstance.asInstanceOf[Consumer]
     case _                ⇒ null: Consumer
   }
 }

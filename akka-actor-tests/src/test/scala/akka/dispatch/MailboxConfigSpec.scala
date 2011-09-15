@@ -84,7 +84,7 @@ abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfte
     new MessageInvocation(
       actorOf(new Actor { //Dummy actor
         def receive = { case _ ⇒ }
-      }).asInstanceOf[LocalActorRef], msg, NullChannel)
+      }).asInstanceOf[LocalActorRef].underlying, msg, NullChannel)
   }
 
   def ensureInitialMailboxState(config: MailboxType, q: MessageQueue) {

@@ -120,12 +120,12 @@ class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
 object FSMTimingSpec {
 
   def suspend(actorRef: ActorRef): Unit = actorRef match {
-    case l: LocalActorRef ⇒ l.dispatcher.suspend(l)
+    case l: LocalActorRef ⇒ l.suspend()
     case _                ⇒
   }
 
   def resume(actorRef: ActorRef): Unit = actorRef match {
-    case l: LocalActorRef ⇒ l.dispatcher.resume(l)
+    case l: LocalActorRef ⇒ l.resume()
     case _                ⇒
   }
 

@@ -200,7 +200,7 @@ trait IO {
     if (!reinvoked && (_next eq Idle) && _messages.nonEmpty) {
       try {
         reinvoked = true
-        while ((_next eq Idle) && _messages.nonEmpty) self.asInstanceOf[LocalActorRef] invoke _messages.dequeue
+        while ((_next eq Idle) && _messages.nonEmpty) self.asInstanceOf[LocalActorRef].underlying invoke _messages.dequeue
       } finally {
         reinvoked = false
       }

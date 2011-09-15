@@ -5,7 +5,7 @@
 package akka.dispatch
 
 import util.DynamicVariable
-import akka.actor.{ LocalActorRef, ActorRef, Actor, IllegalActorStateException }
+import akka.actor.{ ActorInstance, Actor, IllegalActorStateException }
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -52,27 +52,27 @@ class BalancingDispatcher(
   @volatile
   private var actorType: Option[Class[_]] = None
   @volatile
-  private var members = Vector[LocalActorRef]()
+  private var members = Vector[ActorInstance]()
   private val donationInProgress = new DynamicVariable(false)
 
-  protected[akka] override def register(actorRef: LocalActorRef) = {
+  protected[akka] override def register(actor: ActorInstance) = {
     //Verify actor type conformity
     actorType match {
-      case None ⇒ actorType = Some(actorRef.actorInstance.get().getClass)
+      case None ⇒ actorType = Some(actor.actorClass)
       case Some(aType) ⇒
-        if (aType != actorRef.actorInstance.get().getClass)
+        if (aType != actor.actorClass)
           throw new IllegalActorStateException(String.format(
             "Can't register actor %s in a work stealing dispatcher which already knows actors of type %s",
-            actorRef, aType))
+            actor, aType))
     }
 
-    members :+= actorRef //Update members, doesn't need synchronized, is guarded in attach
-    super.register(actorRef)
+    members :+= actor //Update members, doesn't need synchronized, is guarded in attach
+    super.register(actor)
   }
 
-  protected[akka] override def unregister(actorRef: LocalActorRef) = {
-    members = members.filterNot(actorRef eq) //Update members, doesn't need synchronized, is guarded in detach
-    super.unregister(actorRef)
+  protected[akka] override def unregister(actor: ActorInstance) = {
+    members = members.filterNot(actor eq) //Update members, doesn't need synchronized, is guarded in detach
+    super.unregister(actor)
   }
 
   override protected[akka] def dispatch(invocation: MessageInvocation) = {
@@ -126,7 +126,7 @@ class BalancingDispatcher(
    * Rewrites the message and adds that message to the recipients mailbox
    * returns true if the message is non-null
    */
-  protected def donate(organ: MessageInvocation, recipient: ActorRef): Boolean = {
+  protected def donate(organ: MessageInvocation, recipient: ActorInstance): Boolean = {
     if (organ ne null) {
       recipient.postMessageToMailbox(organ.message, organ.channel)
       true
@@ -136,10 +136,10 @@ class BalancingDispatcher(
   /**
    * Returns an available recipient for the message, if any
    */
-  protected def doFindDonorRecipient(donorMbox: MessageQueue with ExecutableMailbox, potentialRecipients: Vector[LocalActorRef], startIndex: Int): ActorRef = {
+  protected def doFindDonorRecipient(donorMbox: MessageQueue with ExecutableMailbox, potentialRecipients: Vector[ActorInstance], startIndex: Int): ActorInstance = {
     val prSz = potentialRecipients.size
     var i = 0
-    var recipient: ActorRef = null
+    var recipient: ActorInstance = null
 
     while ((i < prSz) && (recipient eq null)) {
       val actor = potentialRecipients((i + startIndex) % prSz) //Wrap-around, one full lap

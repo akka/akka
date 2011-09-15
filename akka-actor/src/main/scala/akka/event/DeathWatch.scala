@@ -123,4 +123,4 @@ trait Supervision { self: DeathWatch =>
 * Default implementation of preRestart == postStop
 * Default implementation of postRestart == preStart
 *
-* */
+* */ 

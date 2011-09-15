@@ -62,9 +62,9 @@ class ActorRegistrySpec extends JUnitSuite with BeforeAndAfterAll {
   def shouldFindThingsFromLocalActorRegistry {
     Actor.registry.local.shutdownAll
     val actor = actorOf[TestActor]("test-actor-1")
-    val found: Option[LocalActorRef] = Actor.registry.local.find({ case a: LocalActorRef if a.actorInstance.get().isInstanceOf[TestActor] ⇒ a })
+    val found: Option[LocalActorRef] = Actor.registry.local.find({ case a: LocalActorRef if a.underlyingActorInstance.isInstanceOf[TestActor] ⇒ a })
     assert(found.isDefined)
-    assert(found.get.actorInstance.get().isInstanceOf[TestActor])
+    assert(found.get.underlyingActorInstance.isInstanceOf[TestActor])
     assert(found.get.address === "test-actor-1")
     actor.stop
   }
@@ -76,8 +76,8 @@ class ActorRegistrySpec extends JUnitSuite with BeforeAndAfterAll {
     val actor2 = actorOf[TestActor]("test-actor-2")
     val actors = Actor.registry.local.actors
     assert(actors.size === 2)
-    assert(actors.find(_.address == "test-actor-2").get.asInstanceOf[LocalActorRef].actorInstance.get().isInstanceOf[TestActor])
-    assert(actors.find(_.address == "test-actor-1").get.asInstanceOf[LocalActorRef].actorInstance.get().isInstanceOf[TestActor])
+    assert(actors.find(_.address == "test-actor-2").get.asInstanceOf[LocalActorRef].underlyingActorInstance.isInstanceOf[TestActor])
+    assert(actors.find(_.address == "test-actor-1").get.asInstanceOf[LocalActorRef].underlyingActorInstance.isInstanceOf[TestActor])
     actor1.stop
     actor2.stop
   }

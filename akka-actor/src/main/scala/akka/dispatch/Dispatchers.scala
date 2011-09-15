@@ -4,7 +4,7 @@
 
 package akka.dispatch
 
-import akka.actor.ActorRef
+import akka.actor.LocalActorRef
 import akka.actor.newUuid
 import akka.config.Config._
 import akka.util.{ Duration, ReflectiveAccess }
@@ -65,9 +65,9 @@ object Dispatchers {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newPinnedDispatcher(actor: ActorRef) = actor match {
+  def newPinnedDispatcher(actor: LocalActorRef) = actor match {
     case null ⇒ new PinnedDispatcher()
-    case some ⇒ new PinnedDispatcher(some)
+    case some ⇒ new PinnedDispatcher(some.underlying)
   }
 
   /**
@@ -76,9 +76,9 @@ object Dispatchers {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newPinnedDispatcher(actor: ActorRef, mailboxType: MailboxType) = actor match {
+  def newPinnedDispatcher(actor: LocalActorRef, mailboxType: MailboxType) = actor match {
     case null ⇒ new PinnedDispatcher(mailboxType)
-    case some ⇒ new PinnedDispatcher(some, mailboxType)
+    case some ⇒ new PinnedDispatcher(some.underlying, mailboxType)
   }
 
   /**

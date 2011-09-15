@@ -80,11 +80,11 @@ class BalancingDispatcherSpec extends JUnitSuite with MustMatchers {
     }
 
     finishedCounter.await(5, TimeUnit.SECONDS)
-    fast.mailbox.asInstanceOf[MessageQueue].isEmpty must be(true)
-    slow.mailbox.asInstanceOf[MessageQueue].isEmpty must be(true)
-    fast.actorInstance.get().asInstanceOf[DelayableActor].invocationCount must be > sentToFast
-    fast.actorInstance.get().asInstanceOf[DelayableActor].invocationCount must be >
-      (slow.actorInstance.get().asInstanceOf[DelayableActor].invocationCount)
+    fast.underlying.mailbox.asInstanceOf[MessageQueue].isEmpty must be(true)
+    slow.underlying.mailbox.asInstanceOf[MessageQueue].isEmpty must be(true)
+    fast.underlyingActorInstance.asInstanceOf[DelayableActor].invocationCount must be > sentToFast
+    fast.underlyingActorInstance.asInstanceOf[DelayableActor].invocationCount must be >
+      (slow.underlyingActorInstance.asInstanceOf[DelayableActor].invocationCount)
     slow.stop()
     fast.stop()
   }

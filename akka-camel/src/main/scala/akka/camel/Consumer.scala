@@ -141,7 +141,7 @@ private[camel] object Consumer {
    */
   def withConsumer[T](actorRef: ActorRef)(f: Consumer ⇒ T): Option[T] = actorRef match {
     case l: LocalActorRef ⇒
-      l.actorInstance.get() match {
+      l.underlyingActorInstance match {
         case c: Consumer ⇒ Some(f(c))
         case _           ⇒ None
       }

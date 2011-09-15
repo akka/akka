@@ -39,7 +39,7 @@ class ConsumerPublishRequestorTest extends JUnitSuite {
     requestor ! ActorRegistered(consumer.address, consumer, None)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     assert((publisher ? GetRetainedMessage).get ===
-      ConsumerActorRegistered(consumer, consumer.actorInstance.get.asInstanceOf[Consumer]))
+      ConsumerActorRegistered(consumer, consumer.underlyingActorInstance.asInstanceOf[Consumer]))
   }
 
   @Test
@@ -48,7 +48,7 @@ class ConsumerPublishRequestorTest extends JUnitSuite {
     requestor ! ActorUnregistered(consumer.address, consumer, None)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     assert((publisher ? GetRetainedMessage).get ===
-      ConsumerActorUnregistered(consumer, consumer.actorInstance.get.asInstanceOf[Consumer]))
+      ConsumerActorUnregistered(consumer, consumer.underlyingActorInstance.asInstanceOf[Consumer]))
   }
 }
 

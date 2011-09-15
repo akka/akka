@@ -129,7 +129,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         })
       }
 
-      def refStackMustBeEmpty = Actor.actorRefInCreation.get.headOption must be === None
+      def refStackMustBeEmpty = ActorInstance.refStack.get.headOption must be === None
 
       refStackMustBeEmpty
 

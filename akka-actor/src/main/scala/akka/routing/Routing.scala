@@ -227,20 +227,23 @@ abstract private[akka] class AbstractRoutedActorRef(val props: RoutedProps) exte
  */
 private[akka] class RoutedActorRef(val routedProps: RoutedProps) extends AbstractRoutedActorRef(routedProps) {
 
-  router.init(new RemoveConnectionOnFirstFailureLocalFailureDetector(routedProps.connections))
+  @volatile
+  private var running: Boolean = true
+
+  def isRunning: Boolean = running
+
+  def isShutdown: Boolean = !running
 
   def stop() {
     synchronized {
-      if (_status == ActorRefInternals.RUNNING) {
-        _status = ActorRefInternals.SHUTDOWN
+      if (running) {
+        running = false
         postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
       }
     }
   }
 
-  /*If you start me up*/
-  if (_status == ActorRefInternals.UNSTARTED)
-    _status = ActorRefInternals.RUNNING
+  router.init(new RemoveConnectionOnFirstFailureLocalFailureDetector(routedProps.connections))
 }
 
 /**
