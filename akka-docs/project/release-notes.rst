@@ -50,7 +50,9 @@ development cycle please refer to
 
   - add :class:`LoggingFSM` (transition tracing, rolling event log)
 
-- updated dependencies:
+- **updated dependencies:**
+
+  - **Scala 2.9.1**
 
   - Jackson 1.8.0
 
@@ -91,8 +93,9 @@ development cycle please refer to
 Trivia
 ^^^^^^
 
-This release contains changes to 213 files, with 16053 insertions and 3624
-deletions. The authorship of the corresponding commits is distributed as shown
+This release contains changes to 221 files, with 16844 insertions and 4010
+deletions (diff between two points, does not count multiple changes to the same
+line). The authorship of the corresponding commits is distributed as shown
 below; the listing should not be taken too seriously, though, it has just been
 done using ``git log --shortstat`` and summing up the numbers, so it certainly
 misses details like who originally authored changes which were then back-ported
@@ -102,10 +105,10 @@ stats for 2.0 are made).
 =======  ==========  =========  =========
 Commits  Insertions  Deletions  Author
 =======  ==========  =========  =========
-     69       11805        170  Viktor Klang
-     34        9694         97  Patrik Nordwall
-     72        3563        179  Roland Kuhn
-     27        1749        115  Peter Vlugter
+     90       12315        245  Viktor Klang
+     78        3823        200  Roland Kuhn
+     41        9834        130  Patrik Nordwall
+     31        1819        131  Peter Vlugter
       7         238         22  Derek Williams
       4          86         25  Peter Veentjer
       1          17          5  Debasish Ghosh
