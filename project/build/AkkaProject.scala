@@ -274,6 +274,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info) with OsgiProject with AutoCompilerPlugins {
     override def bndExportPackage = super.bndExportPackage ++ Seq("com.eaio.*;version=3.2")
+    override def bndImportPackage = "*" :: Nil
     val cont = compilerPlugin("org.scala-lang.plugins" % "continuations" % buildScalaVersion)
     override def compileOptions = super.compileOptions ++ compileOptions("-P:continuations:enable")
   }
