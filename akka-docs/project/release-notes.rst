@@ -77,7 +77,6 @@ development cycle please refer to
   ActorRef.replyUnsafe              ActorRef.reply
   ActorRef.replySafe                ActorRef.tryReply
   ActorRef.mailboxSize              ActorRef.dispatcher.mailboxSize(actorRef)
-  ActorRef.sender/senderFuture      ActorRef.channel
   ActorRef.!!                       ActorRef.?(...).as[T]
   ActorRef.!!!                      ActorRef.?
   ActorRef.reply\_?                 ActorRef.tryReply
