@@ -438,7 +438,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            }))
+            }).withSupervisor(self))
           }).withFaultHandler(OneForOneTemporaryStrategy(List(classOf[Exception]))))
 
         // default lifecycle

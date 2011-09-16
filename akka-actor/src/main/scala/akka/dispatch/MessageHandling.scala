@@ -50,12 +50,6 @@ object MessageDispatcher {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class MessageDispatcher extends Serializable {
-
-  private def writeObject(out: java.io.ObjectOutputStream) {
-    (new Exception).printStackTrace()
-    throw new Exception("Damn you!")
-  }
-
   import MessageDispatcher._
 
   protected val uuids = new ConcurrentSkipListSet[Uuid]
@@ -82,6 +76,9 @@ abstract class MessageDispatcher extends Serializable {
     guard withGuard {
       register(actor)
     }
+    val promise = new ActorPromise(Timeout.never)(this)
+    dispatchMessage(new MessageInvocation(actor, Init, promise))
+    promise.get
   }
 
   /**

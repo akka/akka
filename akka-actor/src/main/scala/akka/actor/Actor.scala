@@ -27,16 +27,16 @@ import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.TimeUnit
 
 /**
- * Life-cycle messages for the Actors
- */
-sealed trait LifeCycleMessage extends Serializable
-
-/**
  * Marker trait to show which Messages are automatically handled by Akka
  */
-sealed trait AutoReceivedMessage { self: LifeCycleMessage ⇒ }
+sealed trait AutoReceivedMessage extends Serializable
 
-case class HotSwap(code: SelfActorRef ⇒ Actor.Receive, discardOld: Boolean = true) extends AutoReceivedMessage with LifeCycleMessage {
+/**
+ * Life-cycle messages for the Actors
+ */
+sealed trait LifeCycleMessage extends Serializable { self: AutoReceivedMessage ⇒ }
+
+case class HotSwap(code: SelfActorRef ⇒ Actor.Receive, discardOld: Boolean = true) extends AutoReceivedMessage {
 
   /**
    * Java API
@@ -55,29 +55,29 @@ case class HotSwap(code: SelfActorRef ⇒ Actor.Receive, discardOld: Boolean = t
   def this(code: akka.japi.Function[ActorRef, Procedure[Any]]) = this(code, true)
 }
 
-case object RevertHotSwap extends AutoReceivedMessage with LifeCycleMessage
-
+case object Init extends AutoReceivedMessage with LifeCycleMessage
+case class Death(deceased: ActorRef, cause: Throwable, recoverable: Boolean) extends AutoReceivedMessage with LifeCycleMessage
 case class Restart(reason: Throwable) extends AutoReceivedMessage with LifeCycleMessage
 
-case class Death(deceased: ActorRef, cause: Throwable, recoverable: Boolean) extends AutoReceivedMessage with LifeCycleMessage
+case object RevertHotSwap extends AutoReceivedMessage
 
-case class Link(child: ActorRef) extends AutoReceivedMessage with LifeCycleMessage
+case class Link(child: ActorRef) extends AutoReceivedMessage
 
-case class Unlink(child: ActorRef) extends AutoReceivedMessage with LifeCycleMessage
+case class Unlink(child: ActorRef) extends AutoReceivedMessage
 
-case class UnlinkAndStop(child: ActorRef) extends AutoReceivedMessage with LifeCycleMessage
+case class UnlinkAndStop(child: ActorRef) extends AutoReceivedMessage
 
-case object PoisonPill extends AutoReceivedMessage with LifeCycleMessage
+case object PoisonPill extends AutoReceivedMessage
 
-case object Kill extends AutoReceivedMessage with LifeCycleMessage
+case object Kill extends AutoReceivedMessage
 
-case object ReceiveTimeout extends LifeCycleMessage
+case object ReceiveTimeout
 
 case class MaximumNumberOfRestartsWithinTimeRangeReached(
   @BeanProperty victim: ActorRef,
   @BeanProperty maxNrOfRetries: Option[Int],
   @BeanProperty withinTimeRange: Option[Int],
-  @BeanProperty lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
+  @BeanProperty lastExceptionCausingRestart: Throwable)
 
 // Exceptions for Actors
 class ActorStartException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
@@ -393,9 +393,7 @@ object Actor {
    * </pre>
    */
   def spawn(body: ⇒ Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit = {
-    actorOf(Props(new Actor() {
-      def receive = { case "go" ⇒ try { body } finally { self.stop() } }
-    }).withDispatcher(dispatcher)) ! "go"
+    actorOf(Props(self ⇒ { case "go" ⇒ try { body } finally { self.stop() } }).withDispatcher(dispatcher)) ! "go"
   }
 }
 
@@ -621,32 +619,48 @@ trait Actor {
   private[akka] final def apply(msg: Any) = {
     if (msg.isInstanceOf[AnyRef] && (msg.asInstanceOf[AnyRef] eq null))
       throw new InvalidMessageException("Message from [" + self.channel + "] to [" + self.toString + "] is null")
-    val behaviorStack = self.hotswap
 
-    msg match {
-      case l: AutoReceivedMessage ⇒ autoReceiveMessage(l)
-      case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
-      case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
-      case unknown ⇒ unhandled(unknown) //This is the only line that differs from processingbehavior
+    def autoReceiveMessage(msg: AutoReceivedMessage): Boolean = {
+      if (debugAutoReceive) EventHandler.debug(this, "received AutoReceiveMessage " + msg)
+
+      /**
+       * System priority messages that should be handled by the dispatcher
+       *
+       * Init
+       * Death
+       * Restart
+       * Suspend
+       * Resume
+       * Terminate
+       */
+
+      msg match {
+        case Init                      ⇒ self.reply(()); false //All gud nao FIXME remove reply when we can have fully async init
+        case HotSwap(code, discardOld) ⇒ become(code(self), discardOld); false
+        case RevertHotSwap             ⇒ unbecome(); false
+        case d: Death                  ⇒ self.handleDeath(d); false
+        case Link(child)               ⇒ self.link(child); false
+        case Unlink(child)             ⇒ self.unlink(child); false
+        case UnlinkAndStop(child)      ⇒ self.unlink(child); child.stop(); false
+        case Restart(reason)           ⇒ throw reason
+        case Kill                      ⇒ throw new ActorKilledException("Kill")
+        case PoisonPill ⇒
+          val ch = self.channel
+          self.stop()
+          ch.sendException(new ActorKilledException("PoisonPill"))
+          false
+      }
     }
-  }
 
-  private final def autoReceiveMessage(msg: AutoReceivedMessage) {
-    if (debugAutoReceive)
-      EventHandler.debug(this, "received AutoReceiveMessage " + msg)
-    msg match {
-      case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
-      case RevertHotSwap             ⇒ unbecome()
-      case d: Death                  ⇒ self.handleDeath(d)
-      case Link(child)               ⇒ self.link(child)
-      case Unlink(child)             ⇒ self.unlink(child)
-      case UnlinkAndStop(child)      ⇒ self.unlink(child); child.stop()
-      case Restart(reason)           ⇒ throw reason
-      case Kill                      ⇒ throw new ActorKilledException("Kill")
-      case PoisonPill ⇒
-        val ch = self.channel
-        self.stop()
-        ch.sendException(new ActorKilledException("PoisonPill"))
+    if (msg.isInstanceOf[AutoReceivedMessage])
+      autoReceiveMessage(msg.asInstanceOf[AutoReceivedMessage])
+    else {
+      val behaviorStack = self.hotswap
+      msg match {
+        case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
+        case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
+        case unknown ⇒ unhandled(unknown) //This is the only line that differs from processingbehavior
+      }
     }
   }
 

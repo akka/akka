@@ -88,26 +88,4 @@ class BalancingDispatcherSpec extends JUnitSuite with MustMatchers {
     slow.stop()
     fast.stop()
   }
-
-  @Test
-  def canNotUseActorsOfDifferentTypesInSameDispatcher(): Unit = {
-    val first = actorOf(Props[FirstActor].withDispatcher(sharedActorDispatcher))
-
-    intercept[IllegalActorStateException] {
-      actorOf(Props[SecondActor].withDispatcher(sharedActorDispatcher))
-    }
-    first.stop()
-  }
-
-  @Test
-  def canNotUseActorsOfDifferentSubTypesInSameDispatcher(): Unit = {
-    val parent = actorOf(Props[ParentActor].withDispatcher(parentActorDispatcher))
-
-    intercept[IllegalActorStateException] {
-      val child = actorOf(Props[ChildActor].withDispatcher(parentActorDispatcher))
-      child.stop()
-    }
-
-    parent.stop()
-  }
 }

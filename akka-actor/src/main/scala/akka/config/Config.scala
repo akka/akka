@@ -37,7 +37,7 @@ object Config {
       case value     ⇒ Some(value)
     }
 
-    envHome orElse systemHome
+    systemHome orElse envHome
   }
 
   val config: Configuration = {
@@ -52,7 +52,7 @@ object Config {
         case value     ⇒ Some(value)
       }
 
-      (envConf orElse systemConf).map("akka." + _ + ".conf").getOrElse("akka.conf")
+      (systemConf orElse envConf).map("akka." + _ + ".conf").getOrElse("akka.conf")
     }
 
     val (newInstance, source) =

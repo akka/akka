@@ -17,9 +17,7 @@ import scala.collection.immutable.Stack
 private[akka] object ActorInstance {
   sealed trait Status
   object Status {
-    object Unstarted extends Status
     object Running extends Status
-    object BeingRestarted extends Status
     object Shutdown extends Status
   }
 
@@ -34,7 +32,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
   val guard = new ReentrantGuard // TODO: remove this last synchronization point
 
   @volatile
-  var status: Status = Status.Unstarted
+  var status: Status = Status.Running
 
   @volatile
   var mailbox: AnyRef = _
@@ -64,39 +62,21 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
 
   def dispatcher: MessageDispatcher = props.dispatcher
 
-  def isRunning: Boolean = status match {
-    case Status.BeingRestarted | Status.Running ⇒ true
-    case _                                      ⇒ false
-  }
-
+  def isRunning: Boolean = status == Status.Running
   def isShutdown: Boolean = status == Status.Shutdown
 
-  def start(): Unit = guard.withGuard {
+  def start(): Unit = {
     if (isShutdown) throw new ActorStartException("Can't start an actor that has been stopped")
-    if (!isRunning) {
-      if (props.supervisor.isDefined) props.supervisor.get.link(self)
-      actor.set(newActor)
-      dispatcher.attach(this)
-      status = Status.Running
-      try {
-        val a = actor.get
-        if (Actor.debugLifecycle) EventHandler.debug(a, "started")
-        a.preStart()
-        Actor.registry.register(self)
-        checkReceiveTimeout // schedule the initial receive timeout
-      } catch {
-        case e ⇒
-          status = Status.Unstarted
-          throw e
-      }
-    }
+    if (props.supervisor.isDefined) props.supervisor.get.link(self)
+    dispatcher.attach(this)
+    Actor.registry.register(self)
   }
 
-  def newActor: Actor = {
+  def newActor(restart: Boolean): Actor = {
     val stackBefore = contextStack.get
     contextStack.set(stackBefore.push(new ActorContext(self)))
     try {
-      if (status == Status.BeingRestarted) {
+      if (restart) {
         val a = actor.get()
         val fresh = try a.freshInstance catch {
           case e ⇒
@@ -124,7 +104,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
 
   def resume(): Unit = dispatcher.resume(this)
 
-  def stop(): Unit = guard.withGuard {
+  private[akka] def stop(): Unit = guard.withGuard {
     if (isRunning) {
       self.receiveTimeout = None
       cancelReceiveTimeout
@@ -134,20 +114,21 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
       try {
         val a = actor.get
         if (Actor.debugLifecycle) EventHandler.debug(a, "stopping")
-        a.postStop()
-        stopSupervisedActors()
+        if (a ne null) a.postStop()
+
+        { //Stop supervised actors
+          val i = _linkedActors.values.iterator
+          while (i.hasNext) {
+            i.next.stop()
+            i.remove()
+          }
+        }
+
       } finally {
+        //if (supervisor.isDefined) supervisor.get ! Death(self, new ActorKilledException("Stopped"), false)
         self.currentMessage = null
         clearActorContext()
       }
-    }
-  }
-
-  def stopSupervisedActors(): Unit = guard.withGuard {
-    val i = _linkedActors.values.iterator
-    while (i.hasNext) {
-      i.next.stop()
-      i.remove()
     }
   }
 
@@ -203,7 +184,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
 
   def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
     if (isRunning) dispatcher dispatchMessage new MessageInvocation(this, message, channel)
-    else throw new ActorInitializationException("Actor has not been started")
+    else throw new ActorInitializationException("Actor " + self + " is dead")
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
@@ -215,7 +196,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
     }
     dispatcher dispatchMessage new MessageInvocation(this, message, future)
     future
-  } else throw new ActorInitializationException("Actor has not been started")
+  } else throw new ActorInitializationException("Actor " + self + " is dead")
 
   def invoke(messageHandle: MessageInvocation): Unit = {
     guard.lock.lock()
@@ -225,7 +206,18 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
         try {
           try {
             cancelReceiveTimeout() // FIXME: leave this here?
-            actor.get().apply(messageHandle.message)
+
+            val a = actor.get() match {
+              case null ⇒
+                val created = newActor(restart = false)
+                actor.set(created)
+                if (Actor.debugLifecycle) EventHandler.debug(created, "started")
+                created.preStart()
+                created
+              case instance ⇒ instance
+            }
+
+            a.apply(messageHandle.message)
             self.currentMessage = null // reset current message after successful invocation
           } catch {
             case e ⇒
@@ -255,7 +247,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
     }
   }
 
-  def handleDeath(death: Death) {
+  def handleDeath(death: Death): Unit = {
     props.faultHandler match {
       case AllForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
         restartLinkedActors(death.cause, maxRetries, within)
@@ -267,7 +259,6 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
         death.deceased.restart(death.cause, maxRetries, within)
 
       case OneForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
-        unlink(death.deceased)
         death.deceased.stop()
         self ! MaximumNumberOfRestartsWithinTimeRangeReached(death.deceased, None, None, death.cause)
 
@@ -281,8 +272,8 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
       val failedActor = actor.get
       if (Actor.debugLifecycle) EventHandler.debug(failedActor, "restarting")
       val message = if (self.currentMessage ne null) Some(self.currentMessage.message) else None
-      failedActor.preRestart(reason, message)
-      val freshActor = newActor
+      if (failedActor ne null) failedActor.preRestart(reason, message)
+      val freshActor = newActor(restart = true)
       clearActorContext()
       actor.set(freshActor) // assign it here so if preStart fails, we can null out the sef-refs next call
       freshActor.postRestart(reason)
@@ -293,8 +284,6 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
     def attemptRestart() {
       val success = if (requestRestartPermission(maxNrOfRetries, withinTimeRange)) {
         guard.withGuard[Boolean] {
-          status = Status.BeingRestarted
-
           val success =
             try {
               performRestart()
@@ -308,7 +297,6 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
             }
 
           if (success) {
-            status = Status.Running
             dispatcher.resume(this)
             restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
           }
@@ -372,14 +360,10 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
           i.remove()
 
           actorRef.stop()
-          // when this comes down through the handleDeath path, we get here when the temp actor is restarted
-          if (supervisor.isDefined) {
-            supervisor.get ! MaximumNumberOfRestartsWithinTimeRangeReached(actorRef, Some(0), None, reason)
 
-            //FIXME if last temporary actor is gone, then unlink me from supervisor <-- should this exist?
-            if (!i.hasNext)
-              supervisor.get ! UnlinkAndStop(self)
-          }
+          //FIXME if last temporary actor is gone, then unlink me from supervisor <-- should this exist?
+          if (!i.hasNext && supervisor.isDefined)
+            supervisor.get ! UnlinkAndStop(self)
         }
 
       case Permanent ⇒

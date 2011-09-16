@@ -314,7 +314,7 @@ abstract class SelfActorRef extends ActorRef with ForwardableChannel { self: Loc
   final def getDispatcher(): MessageDispatcher = dispatcher
 
   /** INTERNAL API ONLY **/
-  protected[akka] def handleDeath(death: Death)
+  protected[akka] def handleDeath(death: Death): Unit
 }
 
 /**
@@ -345,8 +345,7 @@ class LocalActorRef private[akka] (
   }
 
   private[this] val actorInstance = new ActorInstance(props, this)
-
-  actorInstance.start()
+  actorInstance.start() //Nonsense
 
   /**
    * Is the actor running?
@@ -433,13 +432,11 @@ class LocalActorRef private[akka] (
 
   protected[akka] override def timeout: Long = props.timeout.duration.toMillis // TODO: remove this if possible
 
-  protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = {
+  protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit =
     actorInstance.supervisor = sup
-  }
 
-  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
+  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
     actorInstance.postMessageToMailbox(message, channel)
-  }
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
@@ -450,13 +447,8 @@ class LocalActorRef private[akka] (
 
   protected[akka] def handleDeath(death: Death): Unit = actorInstance.handleDeath(death)
 
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = {
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit =
     actorInstance.restart(reason, maxNrOfRetries, withinTimeRange)
-  }
-
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = {
-    actorInstance.restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
-  }
 
   // ========= PRIVATE FUNCTIONS =========
 
@@ -524,7 +516,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def resume(): Unit = unsupported
 
-  def stop() {
+  def stop() { //FIXME send the cause as well!
     synchronized {
       if (running) {
         running = false

@@ -92,7 +92,7 @@ private[akka] class ActorRefProviders(
       .actorOf(props, address, true)
   }
 
-  private def providersAsList = List(localProvider, remoteProvider, clusterProvider).filter(_.isDefined).map(_.get)
+  private def providersAsList = List(localProvider, remoteProvider, clusterProvider).flatten
 }
 
 /**

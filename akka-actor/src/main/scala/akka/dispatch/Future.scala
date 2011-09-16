@@ -908,7 +908,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
             def run() {
               if (!isCompleted) {
                 if (!isExpired) Scheduler.scheduleOnce(this, timeLeftNoinline(), NANOS)
-                else promise complete (try { Right(fallback) } catch { case e: Exception ⇒ Left(e) })
+                else promise complete (try { Right(fallback) } catch { case e ⇒ Left(e) })
               }
             }
           }

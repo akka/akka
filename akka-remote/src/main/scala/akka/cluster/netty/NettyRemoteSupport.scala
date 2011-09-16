@@ -4,27 +4,16 @@
 
 package akka.cluster.netty
 
+import akka.actor.{ ActorRef, Uuid, newUuid, uuidFrom, IllegalActorStateException, RemoteActorRef, PoisonPill, RemoteActorSystemMessage, AutoReceivedMessage }
 import akka.dispatch.{ ActorPromise, DefaultPromise, Promise }
 import akka.cluster.{ MessageSerializer, RemoteClientSettings, RemoteServerSettings }
 import akka.cluster.RemoteProtocol._
 import akka.serialization.RemoteActorSerialization
 import akka.serialization.RemoteActorSerialization._
 import akka.cluster._
-import akka.actor.{
-  PoisonPill,
-  Actor,
-  RemoteActorRef,
-  ActorRef,
-  IllegalActorStateException,
-  RemoteActorSystemMessage,
-  uuidFrom,
-  Uuid,
-  LifeCycleMessage,
-  Address
-}
 import akka.actor.Actor._
 import akka.config.Config
-import Config._
+import akka.config.Config._
 import akka.util._
 import akka.event.EventHandler
 
@@ -44,8 +33,8 @@ import scala.collection.mutable.HashMap
 import scala.collection.JavaConversions._
 
 import java.net.InetSocketAddress
-import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 import java.util.concurrent._
+import java.util.concurrent.atomic._
 import akka.AkkaException
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
@@ -1026,8 +1015,8 @@ class RemoteServerHandler(
         if (UNTRUSTED_MODE) throw new SecurityException("RemoteModule server is operating is untrusted mode, can not stop the actor")
         else actorRef.stop()
 
-      case _: LifeCycleMessage if (UNTRUSTED_MODE) ⇒
-        throw new SecurityException("RemoteModule server is operating is untrusted mode, can not pass on a LifeCycleMessage to the remote actor")
+      case _: AutoReceivedMessage if (UNTRUSTED_MODE) ⇒
+        throw new SecurityException("RemoteModule server is operating is untrusted mode, can not pass on a AutoReceivedMessage to the remote actor")
 
       case _ ⇒ // then match on user defined messages
         if (request.getOneWay) actorRef.!(message)(sender)

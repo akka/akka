@@ -50,22 +50,10 @@ class BalancingDispatcher(
     this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
 
   @volatile
-  private var actorType: Option[Class[_]] = None
-  @volatile
   private var members = Vector[ActorInstance]()
   private val donationInProgress = new DynamicVariable(false)
 
   protected[akka] override def register(actor: ActorInstance) = {
-    //Verify actor type conformity
-    actorType match {
-      case None ⇒ actorType = Some(actor.actorClass)
-      case Some(aType) ⇒
-        if (aType != actor.actorClass)
-          throw new IllegalActorStateException(String.format(
-            "Can't register actor %s in a work stealing dispatcher which already knows actors of type %s",
-            actor, aType))
-    }
-
     members :+= actor //Update members, doesn't need synchronized, is guarded in attach
     super.register(actor)
   }
