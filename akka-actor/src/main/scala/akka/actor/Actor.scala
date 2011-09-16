@@ -455,31 +455,34 @@ trait Actor {
   type Receive = Actor.Receive
 
   /**
+   * Stores the context for this actor, including self, sender, and hotswap.
+   */
+  @transient
+  private[akka] val actorContext: ActorContext = {
+    val contextStack = ActorInstance.contextStack.get
+
+    def noContextError = {
+      throw new ActorInitializationException(
+        "\n\tYou cannot create an instance of " + getClass.getName + " explicitly using the constructor (new)." +
+          "\n\tYou have to use one of the factory methods to create a new actor. Either use:" +
+          "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
+          "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
+    }
+
+    if (contextStack.isEmpty) noContextError
+    val context = contextStack.head
+    if (context eq null) noContextError
+    ActorInstance.contextStack.set(contextStack.push(null))
+    context
+  }
+
+  /**
    * Some[ActorRef] representation of the 'self' ActorRef reference.
    * <p/>
    * Mainly for internal use, functions as the implicit sender references when invoking
    * the 'forward' function.
    */
-  @transient
-  val someSelf: Some[ScalaActorRef with SelfActorRef] = {
-    val refStack = ActorInstance.refStack.get
-    if (refStack.isEmpty) throw new ActorInitializationException(
-      "\n\tYou can not create an instance of an " + getClass.getName + " explicitly using 'new MyActor'." +
-        "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
-        "\n\tEither use:" +
-        "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
-        "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
-
-    val ref = refStack.head
-
-    if (ref eq null)
-      throw new ActorInitializationException("Trying to create an instance of " + getClass.getName + " outside of a wrapping 'actorOf'")
-    else {
-      // Push a null marker so any subsequent calls to new Actor doesn't reuse this actor ref
-      ActorInstance.refStack.set(refStack.push(null))
-      Some(ref)
-    }
-  }
+  def someSelf: Some[ScalaActorRef with SelfActorRef] = Some(actorContext.self)
 
   /*
    * Option[ActorRef] representation of the 'self' ActorRef reference.
@@ -515,7 +518,7 @@ trait Actor {
    * </pre>
    */
   @transient
-  implicit val self = someSelf.get
+  implicit def self = someSelf.get
 
   /**
    * User overridable callback/setting.

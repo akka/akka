@@ -129,45 +129,45 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         })
       }
 
-      def refStackMustBeEmpty = ActorInstance.refStack.get.headOption must be === None
+      def contextStackMustBeEmpty = ActorInstance.contextStack.get.headOption must be === None
 
-      refStackMustBeEmpty
+      contextStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
         actorOf(new FailingOuterActor(actorOf(new InnerActor)))
       }
 
-      refStackMustBeEmpty
+      contextStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
         actorOf(new OuterActor(actorOf(new FailingInnerActor)))
       }
 
-      refStackMustBeEmpty
+      contextStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
         actorOf(new FailingInheritingOuterActor(actorOf(new InnerActor)))
       }
 
-      refStackMustBeEmpty
+      contextStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
         actorOf(new FailingOuterActor(actorOf(new FailingInheritingInnerActor)))
       }
 
-      refStackMustBeEmpty
+      contextStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
         actorOf(new FailingInheritingOuterActor(actorOf(new FailingInheritingInnerActor)))
       }
 
-      refStackMustBeEmpty
+      contextStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
         actorOf(new FailingInheritingOuterActor(actorOf(new FailingInnerActor)))
       }
 
-      refStackMustBeEmpty
+      contextStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
         actorOf(new OuterActor(actorOf(new InnerActor {
@@ -175,31 +175,31 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         })))
       }
 
-      refStackMustBeEmpty
+      contextStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
         actorOf(new FailingOuterActor(actorOf(new FailingInheritingInnerActor)))
       }
 
-      refStackMustBeEmpty
+      contextStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
         actorOf(new OuterActor(actorOf(new FailingInheritingInnerActor)))
       }
 
-      refStackMustBeEmpty
+      contextStackMustBeEmpty
 
       intercept[akka.actor.ActorInitializationException] {
         actorOf(new OuterActor(actorOf({ new InnerActor; new InnerActor })))
       }
 
-      refStackMustBeEmpty
+      contextStackMustBeEmpty
 
       (intercept[java.lang.IllegalStateException] {
         actorOf(new OuterActor(actorOf({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor })))
       }).getMessage must be === "Ur state be b0rked"
 
-      refStackMustBeEmpty
+      contextStackMustBeEmpty
     }
 
     "be serializable using Java Serialization on local node" in {
