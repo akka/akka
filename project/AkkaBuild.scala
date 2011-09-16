@@ -329,7 +329,9 @@ object AkkaBuild extends Build {
 
     // for excluding tests in jenkins builds (-Dakka.test.exclude=TimingSpec)
     testExcludes := akkaTestExcludes,
-    testOptions in Test <++= testExcludes map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) }
+    testOptions in Test <++= testExcludes map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) },
+
+    testOptions in Test += Tests.Argument("-oF") //Gimmeh gud stacktraces plz
   )
 
   lazy val formatSettings = ScalariformPlugin.settings ++ Seq(
