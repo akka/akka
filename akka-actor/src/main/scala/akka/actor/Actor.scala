@@ -105,24 +105,6 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef) extends Exception 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor {
-
-  /**
-   * Add shutdown cleanups
-   */
-  private[akka] lazy val shutdownHook = {
-    val hook = new Runnable {
-      override def run {
-        // Clear Thread.subclassAudits
-        val tf = classOf[java.lang.Thread].getDeclaredField("subclassAudits")
-        tf.setAccessible(true)
-        val subclassAudits = tf.get(null).asInstanceOf[java.util.Map[_, _]]
-        subclassAudits synchronized { subclassAudits.clear }
-      }
-    }
-    Runtime.getRuntime.addShutdownHook(new Thread(hook))
-    hook
-  }
-
   /**
    * Handle to the ActorRegistry.
    */

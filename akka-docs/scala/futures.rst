@@ -42,6 +42,31 @@ A common use case within Akka is to have some computation performed concurrently
 
 In the above code the block passed to ``Future`` will be executed by the default ``Dispatcher``, with the return value of the block used to complete the ``Future`` (in this case, the result would be the string: "HelloWorld"). Unlike a ``Future`` that is returned from an ``Actor``, this ``Future`` is properly typed, and we also avoid the overhead of managing an ``Actor``.
 
+
+onComplete
+----------
+
+The mother of ``Future`-composition is the onComplete callback, which allows you to get notified asynchronously when the ``Future```gets completed:
+
+.. code-block:: scala
+
+  val future: Future[Any] = ...
+  future onComplete {
+    _.value.get match {
+      case Left(problem) => handleCompletedWithException(problem)
+      case Right(result) => handleCompletedWithResult(result)
+    }
+  }
+
+  //You can also short that down to:
+  future onComplete { _.value.get.fold(handleCompletedWithException(_), handleCompletedWithResult(_)) }
+
+
+  //There's also a callback named ``onResult`` that only deals with results (and the other, ``onException`` is described further down in this document)
+  future onResult {
+    case "foo" => logResult("GOT MYSELF A FOO OH YEAH BABY!")
+  }
+
 Functional Futures
 ------------------
 
@@ -62,7 +87,7 @@ The first method for working with ``Future`` functionally is ``map``. This metho
     x.length
   }
 
-  val result = f2.get()
+  val result = f2.get
 
 In this example we are joining two strings together within a Future. Instead of waiting for this to complete, we apply our function that calculates the length of the string using the ``map`` method. Now we have a second Future that will eventually contain an ``Int``. When our original ``Future`` completes, it will also apply our function and complete the second Future with it's result. When we finally ``get`` the result, it will contain the number 10. Our original Future still contains the string "HelloWorld" and is unaffected by the ``map``.
 
@@ -84,7 +109,7 @@ The ``map`` method is fine if we are modifying a single ``Future``, but if 2 or 
     }
   }
 
-  val result = f2.get().get()
+  val result = f2.get.get
 
 The ``get`` method had to be used twice because ``f3`` is a ``Future[Future[Int]]`` instead of the desired ``Future[Int]``. Instead, the ``flatMap`` method should be used:
 
@@ -104,7 +129,7 @@ The ``get`` method had to be used twice because ``f3`` is a ``Future[Future[Int]
     }
   }
 
-  val result = f2.get()
+  val result = f2.get
 
 For Comprehensions
 ^^^^^^^^^^^^^^^^^^
@@ -119,7 +144,7 @@ Since ``Future`` has a ``map`` and ``flatMap`` method it can be easily used in a
     c <- Future(a - 1)  //  5 - 1 = 4
   } yield b * c         //  6 * 4 = 24
 
-  val result = f.get()
+  val result = f.get
 
 Something to keep in mind when doing this is even though it looks like parts of the above example can run in parallel, each step of the for comprehension is run sequentially. This will happen on separate threads for each step but there isn't much benefit over running the calculations all within a single Future. The real benefit comes when the ``Future``\s are created first, and then combining them together.
 
@@ -133,12 +158,12 @@ The example for comprehension above is an example of composing ``Future``\s. A c
   val f1 = actor1 ? msg1
   val f2 = actor2 ? msg2
 
-  val a: Int = f1.get()
-  val b: Int = f2.get()
+  val a: Int = f1.get
+  val b: Int = f2.get
 
   val f3 = actor3 ? (a + b)
 
-  val result: String = f3.get()
+  val result: String = f3.get
 
 Here we wait for the results from the first 2 ``Actor``\s before sending that result to the third ``Actor``. We called ``get`` 3 times, which caused our little program to block 3 times before getting our final result. Now compare that to this example:
 
@@ -153,7 +178,7 @@ Here we wait for the results from the first 2 ``Actor``\s before sending that re
     c: String <- actor3 ? (a + b)
   } yield c
 
-  val result = f3.get()
+  val result = f3.get
 
 Here we have 2 actors processing a single message each. Once the 2 results are available (note that we don't block to get these results!), they are being added together and sent to a third ``Actor``, which replies with a string, which we assign to 'result'.
 
@@ -168,7 +193,7 @@ This is fine when dealing with a known amount of Actors, but can grow unwieldy i
   val futureList = Future.sequence(listOfFutures)
 
   // Find the sum of the odd numbers
-  val oddSum = futureList.map(_.sum).get()
+  val oddSum = futureList.map(_.sum).get
 
 To better explain what happened in the example, ``Future.sequence`` is taking the ``List[Future[Int]]`` and turning it into a ``Future[List[Int]]``. We can then use ``map`` to work with the ``List[Int]`` directly, and we find the sum of the ``List``.
 
@@ -176,13 +201,13 @@ The ``traverse`` method is similar to ``sequence``, but it takes a ``T[A]`` and 
 
 .. code-block:: scala
 
-  val oddSum = Future.traverse((1 to 100).toList)(x => Future(x * 2 - 1)).map(_.sum).get()
+  val oddSum = Future.traverse((1 to 100).toList)(x => Future(x * 2 - 1)).map(_.sum).get
 
 This is the same result as this example:
 
 .. code-block:: scala
 
-  val oddSum = Future.sequence((1 to 100).toList.map(x => Future(x * 2 - 1))).map(_.sum).get()
+  val oddSum = Future.sequence((1 to 100).toList.map(x => Future(x * 2 - 1))).map(_.sum).get
 
 But it may be faster to use ``traverse`` as it doesn't have to create an intermediate ``List[Future[Int]]``.
 
@@ -222,15 +247,29 @@ Exceptions
 
 Since the result of a ``Future`` is created concurrently to the rest of the program, exceptions must be handled differently. It doesn't matter if an ``Actor`` or the dispatcher is completing the ``Future``, if an ``Exception`` is caught the ``Future`` will contain it instead of a valid result. If a ``Future`` does contain an ``Exception``, calling ``get`` will cause it to be thrown again so it can be handled properly.
 
-It is also possible to handle an ``Exception`` by returning a different result. This is done with the ``failure`` method. For example:
+It is also possible to handle an ``Exception`` by returning a different result. This is done with the ``recover`` method. For example:
 
 .. code-block:: scala
 
-  val future = actor ? msg1 failure {
+  val future = actor ? msg1 recover {
     case e: ArithmeticException => 0
   }
 
 In this example, if an ``ArithmeticException`` was thrown while the ``Actor`` processed the message, our ``Future`` would have a result of 0. The ``failure`` method works very similarly to the standard try/catch blocks, so multiple ``Exception``\s can be handled in this manner, and if an ``Exception`` is not handled this way it will be behave as if we hadn't used the ``failure`` method.
+
+You also have the option to register a callback that will be executed if the ``Future`` is completed with an exception:
+
+.. code-block:: scala
+
+  val f: Future[Any] = ...
+    f onException {
+      case npe: NullPointerExcep => doSomething
+      case 6 => doSomethingElse
+      case SomeRegex(param) => doSomethingOther
+      case _ => doAnything
+    } // Applies the specified partial function to the result of the future when it is completed with an exception
+
+
 
 Timeouts
 --------

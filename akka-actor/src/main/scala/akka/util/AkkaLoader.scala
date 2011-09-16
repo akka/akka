@@ -38,7 +38,6 @@ class AkkaLoader {
       println("Shutting down Akka...")
       _bundles.foreach(_.onUnload)
       _bundles = None
-      Actor.shutdownHook.run
       println("Akka succesfully shut down")
     }
   }
