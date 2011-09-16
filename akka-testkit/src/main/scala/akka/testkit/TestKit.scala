@@ -463,7 +463,7 @@ trait TestKitLight {
   /**
    * Same as `receiveWhile(remaining)(f)`, but correctly treating the timeFactor.
    */
-  @deprecated("insert empty first parameter list", "1.2")
+  @deprecated("insert empty first parameter list: receiveWhile()(pf)", "1.2")
   def receiveWhile[T](f: PartialFunction[AnyRef, T]): Seq[T] = receiveWhile(remaining / Duration.timeFactor)(f)
 
   /**

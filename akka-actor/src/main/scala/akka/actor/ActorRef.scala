@@ -1358,7 +1358,6 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel with ReplyCha
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
-  @deprecated("will be removed in 2.0, use channel instead", "1.2")
   def sender: Option[ActorRef] = {
     val msg = currentMessage
     if (msg eq null) None
@@ -1372,7 +1371,6 @@ trait ScalaActorRef extends ActorRefShared with ForwardableChannel with ReplyCha
    * The reference sender future of the last received message.
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
-  @deprecated("will be removed in 2.0, use channel instead", "1.2")
   def senderFuture(): Option[CompletableFuture[Any]] = {
     val msg = currentMessage
     if (msg eq null) None
