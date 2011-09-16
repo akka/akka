@@ -466,13 +466,16 @@ sealed trait Future[+T] extends japi.Future[T] {
   /**
    * When this Future is completed, apply the provided function to the
    * Future. If the Future has already been completed, this will apply
-   * immediately.
+   * immediately. Will not be called in case of a timeout, which also holds if
+   * corresponding Promise is attempted to complete after expiry. Multiple
+   * callbacks may be registered; there is no guarantee that they will be
+   * executed in a particular order.
    */
   def onComplete(func: Future[T] ⇒ Unit): this.type
 
   /**
    * When the future is completed with a valid result, apply the provided
-   * PartialFunction to the result.
+   * PartialFunction to the result. See `onComplete` for more details.
    * <pre>
    *   future receive {
    *     case Foo ⇒ target ! "foo"
@@ -485,7 +488,7 @@ sealed trait Future[+T] extends japi.Future[T] {
 
   /**
    * When the future is completed with a valid result, apply the provided
-   * PartialFunction to the result.
+   * PartialFunction to the result. See `onComplete` for more details.
    * <pre>
    *   future onResult {
    *     case Foo ⇒ target ! "foo"
@@ -502,7 +505,7 @@ sealed trait Future[+T] extends japi.Future[T] {
 
   /**
    * When the future is completed with an exception, apply the provided
-   * PartialFunction to that.
+   * PartialFunction to the exception. See `onComplete` for more details.
    * <pre>
    *   future onException {
    *     case NumberFormatException ⇒ target ! "wrong format"
