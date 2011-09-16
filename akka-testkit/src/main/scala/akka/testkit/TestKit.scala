@@ -254,29 +254,10 @@ trait TestKitLight {
 
   private def expectMsg_internal[T](max: Duration, obj: T): T = {
     val o = receiveOne(max)
-    assert(o ne null, "timeout during expectMsg")
+    assert(o ne null, "timeout during expectMsg while waiting for " + obj)
     assert(obj == o, "expected " + obj + ", found " + o)
     o.asInstanceOf[T]
   }
-
-  /**
-   * Same as `expectMsg(remaining)(f)`, but correctly treating the timeFactor.
-   */
-  @deprecated("use expectMsgPF instead", "1.2")
-  def expectMsg[T](f: PartialFunction[Any, T]): T = expectMsgPF()(f)
-
-  /**
-   * Receive one message from the test actor and assert that the given
-   * partial function accepts it. Wait time is bounded by the given duration,
-   * with an AssertionFailure being thrown in case of timeout.
-   *
-   * Use this variant to implement more complicated or conditional
-   * processing.
-   *
-   * @return the received object as transformed by the partial function
-   */
-  @deprecated("use expectMsgPF instead", "1.2")
-  def expectMsg[T](max: Duration)(f: PartialFunction[Any, T]): T = expectMsgPF(max)(f)
 
   /**
    * Receive one message from the test actor and assert that the given
@@ -326,7 +307,7 @@ trait TestKitLight {
 
   private def expectMsgClass_internal[C](max: Duration, c: Class[C]): C = {
     val o = receiveOne(max)
-    assert(o ne null, "timeout during expectMsgClass")
+    assert(o ne null, "timeout during expectMsgClass waiting for " + c)
     assert(c isInstance o, "expected " + c + ", found " + o.getClass)
     o.asInstanceOf[C]
   }
@@ -347,7 +328,7 @@ trait TestKitLight {
 
   private def expectMsgAnyOf_internal[T](max: Duration, obj: T*): T = {
     val o = receiveOne(max)
-    assert(o ne null, "timeout during expectMsgAnyOf")
+    assert(o ne null, "timeout during expectMsgAnyOf waiting for " + obj.mkString("(", ", ", ")"))
     assert(obj exists (_ == o), "found unexpected " + o)
     o.asInstanceOf[T]
   }
@@ -368,7 +349,7 @@ trait TestKitLight {
 
   private def expectMsgAnyClassOf_internal[C](max: Duration, obj: Class[_ <: C]*): C = {
     val o = receiveOne(max)
-    assert(o ne null, "timeout during expectMsgAnyClassOf")
+    assert(o ne null, "timeout during expectMsgAnyClassOf waiting for " + obj.mkString("(", ", ", ")"))
     assert(obj exists (_ isInstance o), "found unexpected " + o)
     o.asInstanceOf[C]
   }
