@@ -75,10 +75,10 @@ abstract class MessageDispatcher extends Serializable {
   final def attach(actor: ActorInstance) {
     guard withGuard {
       register(actor)
-    }
-    val promise = new ActorPromise(Timeout.never)(this)
-    dispatchMessage(new MessageInvocation(actor, Init, promise))
-    promise.get
+      val promise = new ActorPromise(Timeout.never)(this)
+      dispatchMessage(new MessageInvocation(actor, Init, promise))
+      promise
+    }.get
   }
 
   /**
