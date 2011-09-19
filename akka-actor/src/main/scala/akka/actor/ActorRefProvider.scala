@@ -44,8 +44,8 @@ private[akka] class ActorRefProviders(
   }
 
   //FIXME Implement support for configuring by deployment ID etc
-  //FIXME If deployId matches an already created actor (Ahead-of-time deployed) return that actor
-  //FIXME If deployId exists in config, it will override the specified Props (should we attempt to merge?)
+  //FIXME If address matches an already created actor (Ahead-of-time deployed) return that actor
+  //FIXME If address exists in config, it will override the specified Props (should we attempt to merge?)
 
   def actorOf(props: Props, address: String): ActorRef = {
 
@@ -54,7 +54,7 @@ private[akka] class ActorRefProviders(
       providers match {
         case Nil ⇒ None
         case provider :: rest ⇒
-          provider.actorOf(props, address) match {
+          provider.actorOf(props, address) match { //WARNING FIXME RACE CONDITION NEEDS TO BE SOLVED
             case None ⇒ actorOf(props, address, rest) // recur
             case ref  ⇒ ref
           }
@@ -112,13 +112,8 @@ class LocalActorRefProvider extends ActorRefProvider {
 
       case None ⇒ // it is not -> create it
 
-        // if 'Props.deployId' is not specified then use 'address' as 'deployId'
-        val deployId = props.deployId match {
-          case Props.`defaultDeployId` | null ⇒ address
-          case other                          ⇒ other
-        }
-
-        Deployer.lookupDeploymentFor(deployId) match { // see if the deployment already exists, if so use it, if not create actor
+        //WARNING FIXME HUGE RACE CONDITION THAT NEEDS GETTING FIXED
+        Deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
 
           case Some(Deploy(_, _, router, _, Local)) ⇒
             // FIXME create RoutedActorRef if 'router' is specified

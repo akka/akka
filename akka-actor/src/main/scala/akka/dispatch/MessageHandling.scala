@@ -73,12 +73,15 @@ abstract class MessageDispatcher extends Serializable {
    * Attaches the specified actor instance to this dispatcher
    */
   final def attach(actor: ActorInstance) {
-    guard withGuard {
+    var promise = new ActorPromise(Timeout.never)(this)
+    guard.lock.lock()
+    try {
       register(actor)
-      val promise = new ActorPromise(Timeout.never)(this)
       dispatchMessage(new MessageInvocation(actor, Init, promise))
-      promise
-    }.get
+    } finally {
+      guard.lock.unlock()
+    }
+    promise.get
   }
 
   /**

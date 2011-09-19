@@ -134,10 +134,10 @@ object Routing {
   /**
    * FIXME: will very likely be moved to the ActorRef.
    */
-  def actorOf(props: RoutedProps): ActorRef = {
+  def actorOf(props: RoutedProps, address: String = newUuid().toString): ActorRef = {
     //TODO Implement support for configuring by deployment ID etc
-    //TODO If deployId matches an already created actor (Ahead-of-time deployed) return that actor
-    //TODO If deployId exists in config, it will override the specified Props (should we attempt to merge?)
+    //TODO If address matches an already created actor (Ahead-of-time deployed) return that actor
+    //TODO If address exists in config, it will override the specified Props (should we attempt to merge?)
     //TODO If the actor deployed uses a different config, then ignore or throw exception?
 
     val clusteringEnabled = ReflectiveAccess.ClusterModule.isEnabled
@@ -146,10 +146,10 @@ object Routing {
     if (clusteringEnabled && !props.localOnly)
       ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
     else {
-      if (props.connections.isEmpty)
+      if (props.connections.isEmpty) //FIXME Shouldn't this be checked when instance is created so that it works with linking instead of barfing?
         throw new IllegalArgumentException("A routed actorRef can't have an empty connection set")
 
-      new RoutedActorRef(props)
+      new RoutedActorRef(props, address)
     }
   }
 
@@ -188,9 +188,9 @@ object Routing {
       new RoutedProps(
         () ⇒ router,
         RoutedProps.defaultFailureDetectorFactory,
-        actorAddress,
         connections,
-        RoutedProps.defaultTimeout, true))
+        RoutedProps.defaultTimeout, true),
+      actorAddress)
   }
 }
 
@@ -200,8 +200,6 @@ object Routing {
 abstract private[akka] class AbstractRoutedActorRef(val props: RoutedProps) extends UnsupportedActorRef {
 
   val router = props.routerFactory()
-
-  def address = props.deployId
 
   override def postMessageToMailbox(message: Any, channel: UntypedChannel) = {
     val sender = channel match {
@@ -225,7 +223,7 @@ abstract private[akka] class AbstractRoutedActorRef(val props: RoutedProps) exte
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to send a message to
  * on (or more) of these actors.
  */
-private[akka] class RoutedActorRef(val routedProps: RoutedProps) extends AbstractRoutedActorRef(routedProps) {
+private[akka] class RoutedActorRef(val routedProps: RoutedProps, val address: String) extends AbstractRoutedActorRef(routedProps) {
 
   @volatile
   private var running: Boolean = true

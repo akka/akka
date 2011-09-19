@@ -21,8 +21,6 @@ class ClusterSpec extends WordSpec with MustMatchers {
       getInt("akka.cluster.connection-timeout") must equal(Some(60))
       getInt("akka.cluster.remote-daemon-ack-timeout") must equal(Some(30))
       getBool("akka.cluster.include-ref-node-in-replica-set") must equal(Some(true))
-      getString("akka.cluster.compression-scheme") must equal(Some(""))
-      getInt("akka.cluster.zlib-compression-level") must equal(Some(6))
       getString("akka.cluster.layer") must equal(Some("akka.cluster.netty.NettyRemoteSupport"))
       getString("akka.cluster.secure-cookie") must equal(Some(""))
       getString("akka.cluster.log-directory") must equal(Some("_akka_cluster"))

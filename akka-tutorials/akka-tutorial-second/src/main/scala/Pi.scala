@@ -53,11 +53,7 @@ object Pi extends App {
     val workers = Vector.fill(nrOfWorkers)(actorOf[Worker])
 
     // wrap them with a load-balancing router
-    val router = Routing.actorOf(
-      RoutedProps.apply()
-        .withConnections(workers)
-        .withRoundRobinRouter
-        .withDeployId("pi"))
+    val router = Routing.actorOf(RoutedProps().withConnections(workers).withRoundRobinRouter, "pi")
 
     // phase 1, can accept a Calculate message
     def scatter: Receive = {

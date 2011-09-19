@@ -73,7 +73,6 @@ object RoutedProps {
 
   final val defaultTimeout = Actor.TIMEOUT
   final val defaultRouterFactory = () ⇒ new RoundRobinRouter
-  final val defaultDeployId = ""
   final val defaultLocalOnly = !ReflectiveAccess.ClusterModule.isEnabled
   final val defaultFailureDetectorFactory = (connections: Map[InetSocketAddress, ActorRef]) ⇒ new RemoveConnectionOnFirstFailureLocalFailureDetector(connections.values)
 
@@ -100,7 +99,6 @@ object RoutedProps {
 case class RoutedProps(
   routerFactory: () ⇒ Router,
   failureDetectorFactory: (Map[InetSocketAddress, ActorRef]) ⇒ FailureDetector,
-  deployId: String,
   connections: Iterable[ActorRef],
   timeout: Timeout,
   localOnly: Boolean) {
@@ -108,17 +106,9 @@ case class RoutedProps(
   def this() = this(
     routerFactory = RoutedProps.defaultRouterFactory,
     failureDetectorFactory = RoutedProps.defaultFailureDetectorFactory,
-    deployId = RoutedProps.defaultDeployId,
     connections = List(),
     timeout = RoutedProps.defaultTimeout,
     localOnly = RoutedProps.defaultLocalOnly)
-
-  /**
-   * Returns a new RoutedProps with the specified deployId set
-   *
-   *  Java and Scala API
-   */
-  def withDeployId(id: String): RoutedProps = copy(deployId = if (id eq null) "" else id)
 
   /**
    * Returns a new RoutedProps configured with a random router.

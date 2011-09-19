@@ -57,10 +57,10 @@ object ClusterActorRef {
 
     new ClusterActorRef(
       RoutedProps()
-        .withDeployId(actorAddress)
         .withTimeout(timeout)
         .withRouter(routerFactory)
-        .withFailureDetector(failureDetectorFactory))
+        .withFailureDetector(failureDetectorFactory),
+      actorAddress)
   }
 
   /**
@@ -80,7 +80,7 @@ object ClusterActorRef {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[akka] class ClusterActorRef(props: RoutedProps) extends AbstractRoutedActorRef(props) {
+private[akka] class ClusterActorRef(props: RoutedProps, val address: String) extends AbstractRoutedActorRef(props) {
 
   import ClusterActorRef._
 

@@ -109,12 +109,7 @@ public class Pi {
           workers.add(worker);
       }
 
-      router = Routing.actorOf(
-        RoutedProps.apply()
-            .withRoundRobinRouter()
-            .withConnections(workers)
-            .withDeployId("pi")
-      );
+      router = Routing.actorOf(RoutedProps.apply().withRoundRobinRouter().withConnections(workers), "pi");
     }
 
     // message handler

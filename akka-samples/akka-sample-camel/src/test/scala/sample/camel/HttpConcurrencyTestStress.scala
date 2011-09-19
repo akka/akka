@@ -49,8 +49,7 @@ object HttpConcurrencyTestStress {
     startCamelService
 
     val workers = for (i ← 1 to 8) yield actorOf[HttpServerWorker]
-    val balancer = Routing.actorOf(
-      RoutedProps.apply.withRoundRobinRouter.withConnections(workers).withDeployId("loadbalancer"))
+    val balancer = Routing.actorOf(RoutedProps().withRoundRobinRouter.withConnections(workers), "loadbalancer")
     //service.get.awaitEndpointActivation(1) {
     //  actorOf(new HttpServerActor(balancer))
     //}

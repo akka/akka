@@ -66,7 +66,6 @@ object Props {
  * ActorRef configuration object, this is thread safe and fully sharable
  */
 case class Props(creator: () ⇒ Actor = Props.defaultCreator,
-                 deployId: String = Props.defaultDeployId,
                  @transient dispatcher: MessageDispatcher = Props.defaultDispatcher,
                  timeout: Timeout = Props.defaultTimeout,
                  faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler,
@@ -77,7 +76,6 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
    */
   def this() = this(
     creator = Props.defaultCreator,
-    deployId = Props.defaultDeployId,
     dispatcher = Props.defaultDispatcher,
     timeout = Props.defaultTimeout,
     faultHandler = Props.defaultFaultHandler,
@@ -94,12 +92,6 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
    *  Java API
    */
   def withCreator(c: Creator[Actor]) = copy(creator = () ⇒ c.create)
-
-  /**
-   * Returns a new Props with the specified deployId set
-   *  Java and Scala API
-   */
-  def withDeployId(id: String) = copy(deployId = if (id eq null) "" else id)
 
   /**
    * Returns a new Props with the specified dispatcher set
