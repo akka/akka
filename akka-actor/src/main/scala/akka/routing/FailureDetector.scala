@@ -59,6 +59,8 @@ object FailureDetector {
  *      the Router can indicate that some happened happened with a actor ref, e.g. the actor ref dying.
  *   </li>
  * </ol>
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait FailureDetector {
 
@@ -119,6 +121,11 @@ trait FailureDetector {
    * @param ref the dead
    */
   def remove(deadRef: ActorRef)
+
+  /**
+   * TODO: document
+   */
+  def putIfAbsent(address: InetSocketAddress, newConnectionFactory: () ⇒ ActorRef): ActorRef
 
   /**
    * Fails over connections from one address to another.

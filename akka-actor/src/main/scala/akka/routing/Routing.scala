@@ -103,8 +103,6 @@ class RemoveConnectionOnFirstFailureLocalFailureDetector extends FailureDetector
     state.get.iterable foreach (_.stop())
   }
 
-  def failOver(from: InetSocketAddress, to: InetSocketAddress) {} // do nothing here
-
   @tailrec
   final def remove(ref: ActorRef) = {
     val oldState = state.get
@@ -119,6 +117,12 @@ class RemoveConnectionOnFirstFailureLocalFailureDetector extends FailureDetector
       //if we are not able to update the state, we just try again.
       if (!state.compareAndSet(oldState, newState)) remove(ref)
     }
+  }
+
+  def failOver(from: InetSocketAddress, to: InetSocketAddress) {} // do nothing here
+
+  def putIfAbsent(address: InetSocketAddress, newConnectionFactory: () ⇒ ActorRef): ActorRef = {
+    throw new UnsupportedOperationException("Not supported")
   }
 }
 
