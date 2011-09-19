@@ -15,7 +15,7 @@ import akka.actor.{ Props, Actor }
 object PinnedActorSpec {
   class TestActor extends Actor {
     def receive = {
-      case "Hello"   ⇒ self.reply("World")
+      case "Hello"   ⇒ reply("World")
       case "Failure" ⇒ throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }

@@ -32,11 +32,11 @@ object ScatterGatherFailoverMultiJvmSpec {
       case Shutdown(None) ⇒ shutdownNode
       case Sleep(node) if node.equals(Config.nodename) ⇒
         Thread sleep 100
-        self.reply(Config.nodename)
+        reply(Config.nodename)
       case Shutdown(Some(node)) if node.equals(Config.nodename) ⇒ shutdownNode
       case _ ⇒
         Thread sleep 100
-        self.reply(Config.nodename)
+        reply(Config.nodename)
     }
   }
 

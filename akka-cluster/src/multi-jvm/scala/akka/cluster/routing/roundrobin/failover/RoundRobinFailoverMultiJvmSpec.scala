@@ -21,7 +21,7 @@ object RoundRobinFailoverMultiJvmSpec {
 
     def receive = {
       case "identify" ⇒
-        self.reply(Config.nodename)
+        reply(Config.nodename)
     }
   }
 

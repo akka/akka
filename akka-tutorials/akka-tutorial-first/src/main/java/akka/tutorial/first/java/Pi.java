@@ -78,7 +78,7 @@ public class Pi {
         double result = calculatePiFor(work.getStart(), work.getNrOfElements());
 
         // reply with the result
-        getContext().reply(new Result(result));
+        reply(new Result(result));
 
       } else throw new IllegalArgumentException("Unknown message [" + message + "]");
     }
@@ -118,7 +118,7 @@ public class Pi {
       if (message instanceof Calculate) {
         // schedule work
         for (int start = 0; start < nrOfMessages; start++) {
-          router.tell(new Work(start, nrOfElements), getContext());
+          router.tell(new Work(start, nrOfElements), getSelf());
         }
 
         // send a PoisonPill to all workers telling them to shut down themselves
@@ -133,7 +133,7 @@ public class Pi {
         Result result = (Result) message;
         pi += result.getValue();
         nrOfResults += 1;
-        if (nrOfResults == nrOfMessages) getContext().stop();
+        if (nrOfResults == nrOfMessages) getSelf().stop();
 
       } else throw new IllegalArgumentException("Unknown message [" + message + "]");
     }

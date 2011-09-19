@@ -58,7 +58,7 @@ object PingPongMultiJvmExample {
     def receive = {
       case Ping ⇒
         println("---->> PONG")
-        self reply Pong
+        reply(Pong)
     }
   }
 }

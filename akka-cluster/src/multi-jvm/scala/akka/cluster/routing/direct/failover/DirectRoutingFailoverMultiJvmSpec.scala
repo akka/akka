@@ -20,7 +20,7 @@ object DirectRoutingFailoverMultiJvmSpec {
 
     def receive = {
       case "identify" ⇒
-        self.reply(Config.nodename)
+        reply(Config.nodename)
     }
   }
 }

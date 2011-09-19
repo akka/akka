@@ -22,12 +22,12 @@
 //     var log = ""
 //     def receive = {
 //       case Count(nr) ⇒
-//         println("Received number: " + nr + " on " + self.uuid)
+//         println("Received number: " + nr + " on " + self.address)
 //         log += nr.toString
-//         self.reply("World from node [" + Config.nodename + "]")
+//         reply("World from node [" + Config.nodename + "]")
 //       case GetLog ⇒
-//         println("Received getLog on " + self.uuid)
-//         self.reply(Log(log))
+//         println("Received getLog on " + uuid)
+//         reply(Log(log))
 //     }
 //   }
 // }

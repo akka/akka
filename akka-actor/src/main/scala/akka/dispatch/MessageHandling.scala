@@ -72,8 +72,8 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * Attaches the specified actor instance to this dispatcher
    */
-  final def attach(actor: ActorInstance) {
-    var promise = new ActorPromise(Timeout.never)(this)
+  final def attach(actor: ActorInstance): Unit = {
+    val promise = new ActorPromise(Timeout.never)(this)
     guard.lock.lock()
     try {
       register(actor)
@@ -87,7 +87,7 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * Detaches the specified actor instance from this dispatcher
    */
-  final def detach(actor: ActorInstance) {
+  final def detach(actor: ActorInstance): Unit = {
     guard withGuard {
       unregister(actor)
     }

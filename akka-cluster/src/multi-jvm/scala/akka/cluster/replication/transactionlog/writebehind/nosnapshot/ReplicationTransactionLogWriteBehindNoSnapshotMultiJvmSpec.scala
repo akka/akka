@@ -23,9 +23,9 @@
 //     def receive = {
 //       case Count(nr) ⇒
 //         log += nr.toString
-//         self.reply("World from node [" + Config.nodename + "]")
+//         reply("World from node [" + Config.nodename + "]")
 //       case GetLog ⇒
-//         self.reply(Log(log))
+//         reply(Log(log))
 //     }
 //   }
 // }

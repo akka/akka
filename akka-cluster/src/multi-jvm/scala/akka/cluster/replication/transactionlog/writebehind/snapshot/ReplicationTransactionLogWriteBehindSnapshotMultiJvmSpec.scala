@@ -25,9 +25,9 @@
 //       case Count(nr) ⇒
 //         log += nr.toString
 //         //println("Message to HelloWorld log =======> " + log)
-//         self.reply("World from node [" + Config.nodename + "]")
+//         reply("World from node [" + Config.nodename + "]")
 //       case GetLog ⇒
-//         self.reply(Log(log))
+//         reply(Log(log))
 //     }
 //   }
 // }

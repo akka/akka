@@ -5,6 +5,8 @@
 package akka.actor
 
 import akka.japi.{ Creator, Procedure }
+import akka.dispatch.{ MessageDispatcher, Promise }
+import java.util.{ Collection ⇒ JCollection }
 
 /**
  * Subclass this abstract class to create a MDB-style untyped actor.
@@ -20,20 +22,20 @@ import akka.japi.{ Creator, Procedure }
  *
  *        if (msg.equals("UseReply")) {
  *          // Reply to original sender of message using the 'reply' method
- *          getContext().reply(msg + ":" + getContext().getUuid());
+ *          reply(msg + ":" + getSelf().getAddress());
  *
- *        } else if (msg.equals("UseSender") && getContext().getSender().isDefined()) {
+ *        } else if (msg.equals("UseSender") && getSender().isDefined()) {
  *          // Reply to original sender of message using the sender reference
- *          // also passing along my own reference (the context)
- *          getContext().getSender().get().tell(msg, context);
+ *          // also passing along my own reference (the self)
+ *          getSender().get().tell(msg, getSelf());
  *
- *        } else if (msg.equals("UseSenderFuture") && getContext().getSenderFuture().isDefined()) {
+ *        } else if (msg.equals("UseSenderFuture") && getSenderFuture().isDefined()) {
  *          // Reply to original sender of message using the sender future reference
- *          getContext().getSenderFuture().get().completeWithResult(msg);
+ *          getSenderFuture().get().completeWithResult(msg);
  *
  *        } else if (msg.equals("SendToSelf")) {
  *          // Send message to the actor itself recursively
- *          getContext().tell(msg)
+ *          getSelf().tell(msg)
  *
  *        } else if (msg.equals("ForwardMessage")) {
  *          // Retreive an actor from the ActorRegistry by ID and get an ActorRef back
@@ -62,14 +64,49 @@ abstract class UntypedActor extends Actor {
   def onReceive(message: Any): Unit
 
   /**
-   * Returns the 'self' reference with the API.
+   * Returns the 'self' reference.
    */
-  def getContext(): SelfActorRef = self
+  def getSelf(): ActorRef = self
 
   /**
-   * Returns the 'self' reference with the API.
+   * The reference sender Actor of the last received message.
+   * Is defined if the message was sent from another Actor, else None.
    */
-  def context(): SelfActorRef = self
+  def getSender: Option[ActorRef] = sender
+
+  /**
+   * The reference sender future of the last received message.
+   * Is defined if the message was sent with sent with '?'/'ask', else None.
+   */
+  def getSenderFuture: Option[Promise[Any]] = senderFuture
+
+  /**
+   * Abstraction for unification of sender and senderFuture for later reply
+   */
+  def getChannel: UntypedChannel = channel
+
+  /**
+   * Gets the current receive timeout
+   * When specified, the receive method should be able to handle a 'ReceiveTimeout' message.
+   */
+  def getReceiveTimeout: Option[Long] = receiveTimeout
+
+  /**
+   * Defines the default timeout for an initial receive invocation.
+   * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
+   */
+  def setReceiveTimeout(timeout: Long): Unit = receiveTimeout = Some(timeout)
+
+  /**
+   * Returns an unmodifiable Java Collection containing the linked actors,
+   * please note that the backing map is thread-safe but not immutable
+   */
+  def getLinkedActors: JCollection[ActorRef] = linkedActors
+
+  /**
+   * Returns the dispatcher (MessageDispatcher) that is used for this Actor
+   */
+  def getDispatcher(): MessageDispatcher = dispatcher
 
   /**
    * Java API for become

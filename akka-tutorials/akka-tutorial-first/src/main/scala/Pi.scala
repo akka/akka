@@ -40,7 +40,7 @@ object Pi extends App {
 
     def receive = {
       case Work(start, nrOfElements) ⇒
-        self reply Result(calculatePiFor(start, nrOfElements)) // perform the work
+        reply(Result(calculatePiFor(start, nrOfElements))) // perform the work
     }
   }
 

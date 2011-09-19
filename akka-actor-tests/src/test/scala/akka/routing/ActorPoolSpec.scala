@@ -43,7 +43,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
               case _ ⇒
                 count.incrementAndGet
                 latch.countDown()
-                self tryReply "success"
+                tryReply("success")
             }
           })
 
@@ -92,7 +92,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             def receive = {
               case req: String ⇒ {
                 sleepFor(10 millis)
-                self.tryReply("Response")
+                tryReply("Response")
               }
             }
           })

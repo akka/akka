@@ -26,9 +26,8 @@ class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb", MongoNaiveDura
 /*object DurableMongoMailboxSpecActorFactory {
 
   class MongoMailboxTestActor extends Actor {
-    self.lifeCycle = Temporary
     def receive = {
-      case "sum" => self.reply("sum")
+      case "sum" => reply("sum")
     }
   }
 

@@ -483,7 +483,7 @@ trait FSM[S, D] extends ListenerManagement {
         timeoutFuture = None
       }
       generation += 1
-      processMsg(value, self.channel)
+      processMsg(value, channel)
     }
   }
 
@@ -507,7 +507,7 @@ trait FSM[S, D] extends ListenerManagement {
     nextState.stopReason match {
       case None ⇒ makeTransition(nextState)
       case _ ⇒
-        nextState.replies.reverse foreach (self reply _)
+        nextState.replies.reverse foreach reply
         terminate(nextState)
         self.stop()
     }
@@ -517,7 +517,7 @@ trait FSM[S, D] extends ListenerManagement {
     if (!stateFunctions.contains(nextState.stateName)) {
       terminate(stay withStopReason Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
-      nextState.replies.reverse foreach (self reply _)
+      nextState.replies.reverse foreach reply
       if (currentState.stateName != nextState.stateName) {
         handleTransition(currentState.stateName, nextState.stateName)
         notifyListeners(Transition(self, currentState.stateName, nextState.stateName))

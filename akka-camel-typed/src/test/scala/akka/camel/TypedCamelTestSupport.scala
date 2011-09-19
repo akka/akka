@@ -24,7 +24,7 @@ object TypedCamelTestSupport {
     def countdown: Handler = {
       case SetExpectedMessageCount(num) ⇒ {
         latch = new CountDownLatch(num)
-        self.reply(latch)
+        reply(latch)
       }
       case msg ⇒ latch.countDown
     }
@@ -32,7 +32,7 @@ object TypedCamelTestSupport {
 
   trait Respond { this: Actor ⇒
     def respond: Handler = {
-      case msg: Message ⇒ self.reply(response(msg))
+      case msg: Message ⇒ reply(response(msg))
     }
 
     def response(msg: Message): Any = "Hello %s" format msg.body
@@ -42,8 +42,8 @@ object TypedCamelTestSupport {
     val messages = Buffer[Any]()
 
     def retain: Handler = {
-      case GetRetainedMessage     ⇒ self.reply(messages.last)
-      case GetRetainedMessages(p) ⇒ self.reply(messages.toList.filter(p))
+      case GetRetainedMessage     ⇒ reply(messages.last)
+      case GetRetainedMessages(p) ⇒ reply(messages.toList.filter(p))
       case msg ⇒ {
         messages += msg
         msg

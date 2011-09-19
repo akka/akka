@@ -48,7 +48,7 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook])
   }
 
   def done(status: Boolean) {
-    self.channel ! new Rsp(status)
+    channel ! new Rsp(status)
   }
 
   def waitForStandby(pendingStandbyFuture: Future[_]) {

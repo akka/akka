@@ -99,7 +99,7 @@ trait ProducerSupport { this: Actor ⇒
       val producer = self
       // Need copies of channel reference here since the callback could be done
       // later by another thread.
-      val channel = self.channel
+      val replyChannel = channel
 
       def done(doneSync: Boolean): Unit = {
         (doneSync, exchange.isFailed) match {
@@ -114,11 +114,11 @@ trait ProducerSupport { this: Actor ⇒
         receiveAfterProduce(result)
 
       private def dispatchAsync(result: Any) = {
-        channel match {
+        replyChannel match {
           case _: ActorPromise ⇒
-            producer.postMessageToMailboxAndCreateFutureResultWithTimeout(result, producer.timeout, channel)
+            producer.postMessageToMailboxAndCreateFutureResultWithTimeout(result, producer.timeout, replyChannel)
           case _ ⇒
-            producer.postMessageToMailbox(result, channel)
+            producer.postMessageToMailbox(result, replyChannel)
         }
       }
     })
@@ -159,7 +159,7 @@ trait ProducerSupport { this: Actor ⇒
    * actor).
    */
   protected def receiveAfterProduce: Receive = {
-    case msg ⇒ if (!oneway) self.reply(msg)
+    case msg ⇒ if (!oneway) reply(msg)
   }
 
   /**

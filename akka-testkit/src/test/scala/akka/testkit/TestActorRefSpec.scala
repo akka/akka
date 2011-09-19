@@ -40,22 +40,22 @@ object TestActorRefSpec {
 
     def receiveT = {
       case "complexRequest" ⇒ {
-        replyTo = self.channel
+        replyTo = channel
         val worker = TestActorRef(Props[WorkerActor])
         worker ! "work"
       }
       case "complexRequest2" ⇒
         val worker = TestActorRef(Props[WorkerActor])
-        worker ! self.channel
+        worker ! channel
       case "workDone"      ⇒ replyTo ! "complexReply"
-      case "simpleRequest" ⇒ self.reply("simpleReply")
+      case "simpleRequest" ⇒ reply("simpleReply")
     }
   }
 
   class WorkerActor() extends TActor {
     def receiveT = {
       case "work" ⇒ {
-        self.reply("workDone")
+        reply("workDone")
         self.stop()
       }
       case replyTo: UntypedChannel ⇒ {
@@ -111,7 +111,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       "used with TestActorRef" in {
         val a = TestActorRef(Props(new Actor {
           val nested = TestActorRef(Props(self ⇒ { case _ ⇒ }))
-          def receive = { case _ ⇒ self reply nested }
+          def receive = { case _ ⇒ reply(nested) }
         }))
         a must not be (null)
         val nested = (a ? "any").as[ActorRef].get
@@ -122,7 +122,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       "used with ActorRef" in {
         val a = TestActorRef(Props(new Actor {
           val nested = Actor.actorOf(Props(self ⇒ { case _ ⇒ }))
-          def receive = { case _ ⇒ self reply nested }
+          def receive = { case _ ⇒ reply(nested) }
         }))
         a must not be (null)
         val nested = (a ? "any").as[ActorRef].get
@@ -216,12 +216,12 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
 
     "set receiveTimeout to None" in {
       val a = TestActorRef[WorkerActor]
-      a.receiveTimeout must be(None)
+      a.underlyingActor.receiveTimeout must be(None)
     }
 
     "set CallingThreadDispatcher" in {
       val a = TestActorRef[WorkerActor]
-      a.dispatcher.getClass must be(classOf[CallingThreadDispatcher])
+      a.underlying.dispatcher.getClass must be(classOf[CallingThreadDispatcher])
     }
 
     "warn about scheduled supervisor" in {

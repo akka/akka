@@ -44,7 +44,7 @@ object Chameneos {
 
       case Exit ⇒
         colour = FADED
-        self.sender.get ! MeetingCount(meetings)
+        sender.get ! MeetingCount(meetings)
     }
 
     def complement(otherColour: Colour): Colour = colour match {
@@ -97,11 +97,11 @@ object Chameneos {
               n -= 1
               chameneo ! msg
               waitingChameneo = None
-            case None ⇒ waitingChameneo = self.sender
+            case None ⇒ waitingChameneo = sender
           }
         } else {
           waitingChameneo.foreach(_ ! Exit)
-          self.channel ! Exit
+          channel ! Exit
         }
     }
   }

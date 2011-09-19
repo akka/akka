@@ -75,7 +75,7 @@ class LoggingReceiveSpec
       f.setBoolean(Actor, true)
       val actor = TestActorRef(new Actor {
         def receive = loggable(this) {
-          case _ ⇒ self reply "x"
+          case _ ⇒ reply("x")
         }
       })
       actor ! "buh"
@@ -102,7 +102,7 @@ class LoggingReceiveSpec
       f.setBoolean(Actor, true)
       val actor = TestActorRef(new Actor {
         def receive = loggable(this)(loggable(this) {
-          case _ ⇒ self reply "x"
+          case _ ⇒ reply("x")
         })
       })
       actor ! "buh"

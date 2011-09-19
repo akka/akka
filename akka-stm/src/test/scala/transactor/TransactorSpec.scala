@@ -50,7 +50,7 @@ object TransactorIncrement {
     }
 
     override def normally = {
-      case GetCount ⇒ self.reply(count.get)
+      case GetCount ⇒ reply(count.get)
     }
   }
 

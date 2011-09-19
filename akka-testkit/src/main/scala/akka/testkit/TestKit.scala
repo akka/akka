@@ -45,7 +45,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor with FSM[
     case Event(x: AnyRef, ign) ⇒
       val ignore = ign map (z ⇒ if (z isDefinedAt x) z(x) else false) getOrElse false
       if (!ignore) {
-        queue.offerLast(RealMessage(x, self.channel))
+        queue.offerLast(RealMessage(x, channel))
       }
       stay
   }

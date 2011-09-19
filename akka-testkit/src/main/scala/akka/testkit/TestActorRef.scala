@@ -47,7 +47,7 @@ class TestActorRef[T <: Actor](props: Props, address: String) extends LocalActor
    */
   override def supervisor_=(a: Option[ActorRef]) {
     a match { //TODO This should probably be removed since the Supervisor could be a remote actor for all we know
-      case Some(l: SelfActorRef) if !l.dispatcher.isInstanceOf[CallingThreadDispatcher] ⇒
+      case Some(l: LocalActorRef) if !l.underlying.dispatcher.isInstanceOf[CallingThreadDispatcher] ⇒
         EventHandler.warning(this, "supervisor " + l + " does not use CallingThreadDispatcher")
       case _ ⇒
     }

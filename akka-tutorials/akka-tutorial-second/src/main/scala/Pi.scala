@@ -38,7 +38,7 @@ object Pi extends App {
 
     def receive = {
       case Work(arg, nrOfElements) ⇒
-        self reply Result(calculatePiFor(arg, nrOfElements)) // perform the work
+        reply(Result(calculatePiFor(arg, nrOfElements))) // perform the work
     }
   }
 
@@ -62,7 +62,7 @@ object Pi extends App {
         for (arg ← 0 until nrOfMessages) router ! Work(arg, nrOfElements)
 
         //Assume the gathering behavior
-        this become gather(self.channel)
+        this become gather(channel)
     }
 
     // phase 2, aggregate the results of the Calculation

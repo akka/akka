@@ -15,7 +15,7 @@ import akka.dispatch.MessageDispatcher
 object DurableMailboxSpecActorFactory {
 
   class MailboxTestActor extends Actor {
-    def receive = { case "sum" ⇒ self.reply("sum") }
+    def receive = { case "sum" ⇒ reply("sum") }
   }
 
   def createMailboxTestActor(id: String)(implicit dispatcher: MessageDispatcher): ActorRef =
