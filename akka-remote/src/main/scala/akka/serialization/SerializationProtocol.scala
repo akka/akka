@@ -129,13 +129,13 @@ object ActorSerialization {
         }
       }
 
-      l.receiveTimeout.foreach(builder.setReceiveTimeout(_))
+      l.underlying.receiveTimeout.foreach(builder.setReceiveTimeout(_))
       val actorInstance = l.underlyingActorInstance
       Serialization.serialize(actorInstance.asInstanceOf[T]) match {
         case Right(bytes)    ⇒ builder.setActorInstance(ByteString.copyFrom(bytes))
         case Left(exception) ⇒ throw new Exception("Error serializing : " + actorInstance.getClass.getName)
       }
-      val stack = l.hotswap
+      val stack = l.underlying.hotswap
       if (!stack.isEmpty)
         builder.setHotswapStack(ByteString.copyFrom(akka.serialization.JavaSerializer.toBinary(stack)))
     }

@@ -52,18 +52,18 @@ object ActorModelSpec {
   class DispatcherActor extends Actor {
     private val busy = new Switch(false)
 
-    def dispatcher = self.dispatcher.asInstanceOf[MessageDispatcherInterceptor]
+    def interceptor = dispatcher.asInstanceOf[MessageDispatcherInterceptor]
 
     def ack {
       if (!busy.switchOn()) {
         throw new Exception("isolation violated")
       } else {
-        dispatcher.getStats(self).msgsProcessed.incrementAndGet()
+        interceptor.getStats(self).msgsProcessed.incrementAndGet()
       }
     }
 
     override def postRestart(reason: Throwable) {
-      dispatcher.getStats(self).restarts.incrementAndGet()
+      interceptor.getStats(self).restarts.incrementAndGet()
     }
 
     def receive = {
@@ -71,8 +71,8 @@ object ActorModelSpec {
       case Meet(sign, wait)             ⇒ ack; sign.countDown(); wait.await(); busy.switchOff()
       case Wait(time)                   ⇒ ack; Thread.sleep(time); busy.switchOff()
       case WaitAck(time, l)             ⇒ ack; Thread.sleep(time); l.countDown(); busy.switchOff()
-      case Reply(msg)                   ⇒ ack; self.reply(msg); busy.switchOff()
-      case TryReply(msg)                ⇒ ack; self.tryReply(msg); busy.switchOff()
+      case Reply(msg)                   ⇒ ack; reply(msg); busy.switchOff()
+      case TryReply(msg)                ⇒ ack; tryReply(msg); busy.switchOff()
       case Forward(to, msg)             ⇒ ack; to.forward(msg); busy.switchOff()
       case CountDown(latch)             ⇒ ack; latch.countDown(); busy.switchOff()
       case Increment(count)             ⇒ ack; count.incrementAndGet(); busy.switchOff()
@@ -184,7 +184,7 @@ object ActorModelSpec {
     msgsReceived: Long = statsFor(actorRef).msgsReceived.get(),
     msgsProcessed: Long = statsFor(actorRef).msgsProcessed.get(),
     restarts: Long = statsFor(actorRef).restarts.get()) {
-    val stats = statsFor(actorRef, Option(dispatcher).getOrElse(actorRef.asInstanceOf[SelfActorRef].dispatcher))
+    val stats = statsFor(actorRef, Option(dispatcher).getOrElse(actorRef.asInstanceOf[LocalActorRef].underlying.dispatcher))
     assert(stats.suspensions.get() === suspensions, "Suspensions")
     assert(stats.resumes.get() === resumes, "Resumes")
     assert(stats.registers.get() === registers, "Registers")

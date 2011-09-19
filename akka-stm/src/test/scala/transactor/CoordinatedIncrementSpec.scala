@@ -35,7 +35,7 @@ object CoordinatedIncrement {
         }
       }
 
-      case GetCount ⇒ self.reply(count.get)
+      case GetCount ⇒ reply(count.get)
     }
   }
 

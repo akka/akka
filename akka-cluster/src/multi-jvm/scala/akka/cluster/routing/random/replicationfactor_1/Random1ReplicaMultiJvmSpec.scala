@@ -19,7 +19,7 @@ object Random1ReplicaMultiJvmSpec {
   class HelloWorld extends Actor with Serializable {
     def receive = {
       case "Hello" ⇒
-        self.reply("World from node [" + Config.nodename + "]")
+        reply("World from node [" + Config.nodename + "]")
     }
   }
 

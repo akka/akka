@@ -42,7 +42,7 @@ class AkkaOrderReceiver extends Actor with OrderReceiver {
         m.forward(order)
       case None ⇒
         EventHandler.warning(this, "Unknown orderbook: " + order.orderbookSymbol)
-        self.channel ! new Rsp(false)
+        channel ! new Rsp(false)
     }
   }
 }

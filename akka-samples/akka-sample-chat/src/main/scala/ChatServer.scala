@@ -92,8 +92,6 @@
    * Memory-backed chat storage implementation.
    */
   class MemoryChatStorage extends ChatStorage {
-    self.lifeCycle = Permanent
-
     private var chatLog = TransactionalVector[Array[Byte]]()
 
     EventHandler.info(this, "Memory-based chat storage is starting up...")
@@ -105,7 +103,7 @@
 
       case GetChatLog(_) =>
         val messageList = atomic { chatLog.map(bytes => new String(bytes, "UTF-8")).toList }
-        self.reply(ChatLog(messageList))
+        reply(ChatLog(messageList))
     }
 
     override def postRestart(reason: Throwable) {
@@ -176,7 +174,7 @@
    * Chat server. Manages sessions and redirects all other messages to the Session for the client.
    */
   trait ChatServer extends Actor {
-    self.faultHandler = OneForOnePermanentStrategy(List(classOf[Exception]),5, 5000)
+    //faultHandler = OneForOnePermanentStrategy(List(classOf[Exception]),5, 5000)
     val storage: ActorRef
 
     EventHandler.info(this, "Chat server is starting up...")

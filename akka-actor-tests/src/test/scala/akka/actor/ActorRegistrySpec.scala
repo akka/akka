@@ -12,16 +12,16 @@ object ActorRegistrySpec {
   class TestActor extends Actor {
     def receive = {
       case "ping" ⇒
-        self.reply("got ping")
+        reply("got ping")
     }
   }
 
   class TestActor2 extends Actor {
     def receive = {
       case "ping" ⇒
-        self.reply("got ping")
+        reply("got ping")
       case "ping2" ⇒
-        self.reply("got ping")
+        reply("got ping")
     }
   }
 }

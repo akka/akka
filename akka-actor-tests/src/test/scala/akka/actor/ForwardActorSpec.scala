@@ -18,7 +18,7 @@ object ForwardActorSpec {
 
   def createForwardingChain(): ActorRef = {
     val replier = actorOf(new Actor {
-      def receive = { case x ⇒ self reply x }
+      def receive = { case x ⇒ reply(x) }
     })
 
     def mkforwarder(forwardTo: ActorRef) = actorOf(

@@ -187,7 +187,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
         case Stop(None)                     ⇒ self.stop(); shudownLatch.map(_.countDown())
         case Stop(Some(_id)) if (_id == id) ⇒ self.stop(); shudownLatch.map(_.countDown())
         case _id: Int if (_id == id)        ⇒
-        case _                              ⇒ Thread sleep 100 * id; self tryReply id
+        case _                              ⇒ Thread sleep 100 * id; tryReply(id)
       }
     })
 

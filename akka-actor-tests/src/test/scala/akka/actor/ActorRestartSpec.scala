@@ -33,7 +33,7 @@ object ActorRestartSpec {
     def receive = {
       case x: Int         ⇒ xx = x
       case t: RestartType ⇒ restart = t
-      case "get"          ⇒ self reply xx
+      case "get"          ⇒ reply(xx)
     }
     override def preStart { testActor ! (("preStart", gen)) }
     override def preRestart(cause: Throwable, msg: Option[Any]) { testActor ! (("preRestart", msg, gen)) }

@@ -11,7 +11,6 @@ import akka.serialization.{ Serializer, Serialization }
 import ReflectiveAccess._
 import ClusterModule._
 import java.net.InetSocketAddress
-import java.util.{ Collection ⇒ JCollection }
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 
@@ -99,9 +98,9 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
    * Akka Java API. <p/>
    * Forwards the message specified to this actor and preserves the original sender of the message
    */
-  def forward(message: AnyRef, sender: SelfActorRef) {
+  def forward(message: AnyRef, sender: ActorRef) {
     if (sender eq null) throw new IllegalArgumentException("The 'sender' argument to 'forward' can't be null")
-    else forward(message)(sender)
+    else forward(message)(ForwardableChannel(sender))
   }
 
   /**
@@ -182,141 +181,6 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   override def toString = "Actor[%s]".format(address)
 }
 
-abstract class SelfActorRef extends ActorRef with ForwardableChannel { self: LocalActorRef with ScalaActorRef ⇒
-  /**
-   *   Holds the hot swapped partial function.
-   *   WARNING: DO NOT USE THIS, IT IS INTERNAL AKKA USE ONLY
-   */
-  @volatile
-  protected[akka] var hotswap = Stack[PartialFunction[Any, Unit]]()
-
-  /**
-   *  This is a reference to the message currently being processed by the actor
-   */
-  @volatile
-  protected[akka] var currentMessage: MessageInvocation = null
-
-  /**
-   * User overridable callback/setting.
-   * <p/>
-   * Defines the default timeout for an initial receive invocation.
-   * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
-   */
-  @volatile
-  var receiveTimeout: Option[Long] = None
-
-  /**
-   * Akka Java API. <p/>
-   * The reference sender Actor of the last received message.
-   * Is defined if the message was sent from another Actor, else None.
-   */
-  @deprecated("will be removed in 2.0, use channel instead", "1.2")
-  def getSender: Option[ActorRef] = sender
-
-  /**
-   * Akka Java API. <p/>
-   * The reference sender future of the last received message.
-   * Is defined if the message was sent with sent with '?'/'ask', else None.
-   */
-  @deprecated("will be removed in 2.0, use channel instead", "1.2")
-  def getSenderFuture: Option[Promise[Any]] = senderFuture
-
-  /**
-   * The reference sender Actor of the last received message.
-   * Is defined if the message was sent from another Actor, else None.
-   */
-  @deprecated("will be removed in 2.0, use channel instead", "1.2")
-  def sender: Option[ActorRef]
-
-  /**
-   * The reference sender future of the last received message.
-   * Is defined if the message was sent with sent with '?'/'ask', else None.
-   */
-  @deprecated("will be removed in 2.0, use channel instead", "1.2")
-  def senderFuture(): Option[Promise[Any]]
-
-  /**
-   * Abstraction for unification of sender and senderFuture for later reply
-   */
-  def channel: UntypedChannel = self.currentMessage match {
-    case null ⇒ NullChannel
-    case msg  ⇒ msg.channel
-  }
-
-  /**
-   * Akka Java API. <p/>
-   * Defines the default timeout for an initial receive invocation.
-   * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
-   */
-  def setReceiveTimeout(timeout: Long): Unit = this.receiveTimeout = Some(timeout)
-
-  /**
-   * Akka Java API. <p/>
-   * Gets the current receive timeout
-   * When specified, the receive method should be able to handle a 'ReceiveTimeout' message.
-   */
-  def getReceiveTimeout: Option[Long] = receiveTimeout
-
-  /**
-   * Java API. <p/>
-   * Abstraction for unification of sender and senderFuture for later reply
-   */
-  def getChannel: UntypedChannel = channel
-
-  /**
-   * Akka Scala & Java API
-   * Use <code>self.reply(..)</code> to reply with a message to the original sender of the message currently
-   * being processed. This method  fails if the original sender of the message could not be determined with an
-   * IllegalStateException.
-   *
-   * If you don't want deal with this IllegalStateException, but just a boolean, just use the <code>tryReply(...)</code>
-   * version.
-   *
-   * <p/>
-   * Throws an IllegalStateException if unable to determine what to reply to.
-   */
-  def reply(message: Any) = channel.!(message)(this)
-
-  /**
-   * Akka Scala & Java API
-   * Use <code>tryReply(..)</code> to try reply with a message to the original sender of the message currently
-   * being processed. This method
-   * <p/>
-   * Returns true if reply was sent, and false if unable to determine what to reply to.
-   *
-   * If you would rather have an exception, check the <code>reply(..)</code> version.
-   */
-  def tryReply(message: Any): Boolean = channel.tryTell(message)(this)
-
-  /**
-   * Returns an unmodifiable Java Collection containing the linked actors,
-   * please note that the backing map is thread-safe but not immutable
-   */
-  def linkedActors: JCollection[ActorRef]
-
-  /**
-   * Java API. <p/>
-   * Returns an unmodifiable Java Collection containing the linked actors,
-   * please note that the backing map is thread-safe but not immutable
-   */
-  def getLinkedActors: JCollection[ActorRef] = linkedActors
-
-  /**
-   * Scala API
-   * Returns the dispatcher (MessageDispatcher) that is used for this Actor
-   */
-  def dispatcher: MessageDispatcher
-
-  /**
-   * Java API
-   * Returns the dispatcher (MessageDispatcher) that is used for this Actor
-   */
-  final def getDispatcher(): MessageDispatcher = dispatcher
-
-  /** INTERNAL API ONLY **/
-  protected[akka] def handleDeath(death: Death): Unit
-}
-
 /**
  *  Local (serializable) ActorRef that is used when referencing the Actor on its "home" node.
  *
@@ -325,9 +189,11 @@ abstract class SelfActorRef extends ActorRef with ForwardableChannel { self: Loc
 class LocalActorRef private[akka] (
   private[this] val props: Props,
   val address: String,
-  val systemService: Boolean,
-  override private[akka] val uuid: Uuid = newUuid)
-  extends SelfActorRef with ScalaActorRef {
+  val systemService: Boolean = false,
+  override private[akka] val uuid: Uuid = newUuid,
+  receiveTimeout: Option[Long] = None,
+  hotswap: Stack[PartialFunction[Any, Unit]] = Stack.empty)
+  extends ActorRef with ScalaActorRef {
 
   // used only for deserialization
   private[akka] def this(
@@ -337,15 +203,13 @@ class LocalActorRef private[akka] (
     __receiveTimeout: Option[Long],
     __hotswap: Stack[PartialFunction[Any, Unit]]) = {
 
-    this(__props, __address, false, __uuid) //Doesn't make any sense to move a system service
+    this(__props, __address, false, __uuid, __receiveTimeout, __hotswap)
 
-    hotswap = __hotswap
-    receiveTimeout = __receiveTimeout
-    actorInstance.setActorContext(new ActorContext(this)) // this is needed for deserialization - why?
+    actorInstance.setActorContext(actorInstance) // this is needed for deserialization - why?
   }
 
-  private[this] val actorInstance = new ActorInstance(props, this)
-  actorInstance.start() //Nonsense
+  private[this] val actorInstance = new ActorInstance(this, props, receiveTimeout, hotswap)
+  actorInstance.start()
 
   /**
    * Is the actor running?
@@ -356,11 +220,6 @@ class LocalActorRef private[akka] (
    * Is the actor shut down?
    */
   def isShutdown: Boolean = actorInstance.isShutdown
-
-  /**
-   * Returns the dispatcher (MessageDispatcher) that is used for this Actor
-   */
-  def dispatcher: MessageDispatcher = props.dispatcher
 
   /**
    * Suspends the actor. It will not process messages while suspended.
@@ -399,28 +258,9 @@ class LocalActorRef private[akka] (
   def unlink(actorRef: ActorRef): ActorRef = actorInstance.unlink(actorRef)
 
   /**
-   * Returns an unmodifiable Java Collection containing the linked actors
-   */
-  def linkedActors: JCollection[ActorRef] = actorInstance.linkedActors
-
-  /**
    * Returns the supervisor, if there is one.
    */
   def supervisor: Option[ActorRef] = actorInstance.supervisor
-
-  /**
-   * The reference sender Actor of the last received message.
-   * Is defined if the message was sent from another Actor, else None.
-   */
-  @deprecated("will be removed in 2.0, use channel instead", "1.2")
-  def sender: Option[ActorRef] = actorInstance.sender
-
-  /**
-   * The reference sender future of the last received message.
-   * Is defined if the message was sent with sent with '?'/'ask', else None.
-   */
-  @deprecated("will be removed in 2.0, use channel instead", "1.2")
-  def senderFuture(): Option[Promise[Any]] = actorInstance.senderFuture
 
   // ========= AKKA PROTECTED FUNCTIONS =========
 
@@ -600,7 +440,7 @@ trait ScalaActorRef extends ActorRefShared with ReplyChannel[Any] { ref: ActorRe
    * <p/>
    * Works with '!' and '?'/'ask'.
    */
-  def forward(message: Any)(implicit channel: ForwardableChannel) = postMessageToMailbox(message, channel.channel)
+  def forward(message: Any)(implicit forwardable: ForwardableChannel) = postMessageToMailbox(message, forwardable.channel)
 }
 
 /**

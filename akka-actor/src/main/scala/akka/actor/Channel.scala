@@ -141,21 +141,6 @@ case object NullChannel extends UntypedChannel {
 }
 
 /**
- * A channel which may be forwarded: a message received with such a reply
- * channel attached can be passed on transparently such that a reply from a
- * later processing stage is sent directly back to the origin. Keep in mind
- * that not all channels can be used multiple times.
+ * Wraps a forwardable channel. Used implicitly by ScalaActorRef.forward
  */
-trait ForwardableChannel extends UntypedChannel with AvailableChannel[Any] {
-  /**
-   * Get channel by which this channel would reply (ActorRef.forward takes an
-   * implicit ForwardableChannel and uses its .channel as message origin)
-   */
-  def channel: UntypedChannel
-}
-
-object ForwardableChannel {
-  implicit def someS2FC(sender: Some[SelfActorRef]): ForwardableChannel = sender.get
-  implicit def someIS2FC(implicit sender: Some[SelfActorRef]): ForwardableChannel = sender.get
-}
-
+case class ForwardableChannel(val channel: UntypedChannel)

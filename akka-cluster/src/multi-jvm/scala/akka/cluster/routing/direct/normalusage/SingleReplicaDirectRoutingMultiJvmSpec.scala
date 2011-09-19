@@ -16,7 +16,7 @@ object SingleReplicaDirectRoutingMultiJvmSpec {
     def receive = {
       case "identify" ⇒ {
         //println("The node received the 'identify' command: " + Config.nodename)
-        self.reply(Config.nodename)
+        reply(Config.nodename)
       }
     }
   }

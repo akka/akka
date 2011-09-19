@@ -127,11 +127,11 @@ private[camel] class ActivationTracker extends Actor {
   def receive = {
     case SetExpectedActivationCount(num) ⇒ {
       activationLatch = new CountDownLatch(num)
-      self.reply(activationLatch)
+      reply(activationLatch)
     }
     case SetExpectedDeactivationCount(num) ⇒ {
       deactivationLatch = new CountDownLatch(num)
-      self.reply(deactivationLatch)
+      reply(deactivationLatch)
     }
     case EndpointActivated   ⇒ activationLatch.countDown
     case EndpointDeactivated ⇒ deactivationLatch.countDown

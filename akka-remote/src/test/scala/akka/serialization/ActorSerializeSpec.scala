@@ -30,7 +30,7 @@ class ActorSerializeSpec extends WordSpec with ShouldMatchers with BeforeAndAfte
       val actor2 = fromBinary(bytes).asInstanceOf[LocalActorRef]
       (actor2 ? "hello").get should equal("world 3")
 
-      actor2.receiveTimeout should equal(Some(1000))
+      actor2.underlying.receiveTimeout should equal(Some(1000))
       actor1.stop()
       actor2.stop()
     }
@@ -40,15 +40,15 @@ class ActorSerializeSpec extends WordSpec with ShouldMatchers with BeforeAndAfte
       val actor1 = new LocalActorRef(Props[MyStatelessActorWithMessagesInMailbox], newUuid.toString, systemService = true)
       for (i ← 1 to 10) actor1 ! "hello"
 
-      actor1.getDispatcher.mailboxSize(actor1.underlying) should be > (0)
+      actor1.underlying.dispatcher.mailboxSize(actor1.underlying) should be > (0)
       val actor2 = fromBinary(toBinary(actor1)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor2.getDispatcher.mailboxSize(actor1.underlying) should be > (0)
+      actor2.underlying.dispatcher.mailboxSize(actor1.underlying) should be > (0)
       (actor2 ? "hello-reply").get should equal("world")
 
       val actor3 = fromBinary(toBinary(actor1, false)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor3.getDispatcher.mailboxSize(actor1.underlying) should equal(0)
+      actor3.underlying.dispatcher.mailboxSize(actor1.underlying) should equal(0)
       (actor3 ? "hello-reply").get should equal("world")
     }
 
@@ -66,15 +66,15 @@ class ActorSerializeSpec extends WordSpec with ShouldMatchers with BeforeAndAfte
       (actor1 ! p1)
       (actor1 ! p1)
       (actor1 ! p1)
-      actor1.getDispatcher.mailboxSize(actor1.underlying) should be > (0)
+      actor1.underlying.dispatcher.mailboxSize(actor1.underlying) should be > (0)
       val actor2 = fromBinary(toBinary(actor1)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor2.getDispatcher.mailboxSize(actor1.underlying) should be > (0)
+      actor2.underlying.dispatcher.mailboxSize(actor1.underlying) should be > (0)
       (actor2 ? "hello-reply").get should equal("hello")
 
       val actor3 = fromBinary(toBinary(actor1, false)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor3.getDispatcher.mailboxSize(actor1.underlying) should equal(0)
+      actor3.underlying.dispatcher.mailboxSize(actor1.underlying) should equal(0)
       (actor3 ? "hello-reply").get should equal("hello")
     }
   }
@@ -103,15 +103,15 @@ class ActorSerializeSpec extends WordSpec with ShouldMatchers with BeforeAndAfte
       val msg = MyMessage(123, "debasish ghosh", true)
       val b = ProtobufProtocol.MyMessage.newBuilder.setId(msg.id).setName(msg.name).setStatus(msg.status).build
       for (i ← 1 to 10) actor1 ! b
-      actor1.getDispatcher.mailboxSize(actor1.underlying) should be > (0)
+      actor1.underlying.dispatcher.mailboxSize(actor1.underlying) should be > (0)
       val actor2 = fromBinary(toBinary(actor1)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor2.getDispatcher.mailboxSize(actor1.underlying) should be > (0)
+      actor2.underlying.dispatcher.mailboxSize(actor1.underlying) should be > (0)
       (actor2 ? "hello-reply").get should equal("world")
 
       val actor3 = fromBinary(toBinary(actor1, false)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor3.getDispatcher.mailboxSize(actor1.underlying) should equal(0)
+      actor3.underlying.dispatcher.mailboxSize(actor1.underlying) should equal(0)
       (actor3 ? "hello-reply").get should equal("world")
     }
   }
@@ -119,12 +119,12 @@ class ActorSerializeSpec extends WordSpec with ShouldMatchers with BeforeAndAfte
 
 class MyJavaSerializableActor extends Actor with scala.Serializable {
   var count = 0
-  self.receiveTimeout = Some(1000)
+  receiveTimeout = Some(1000)
 
   def receive = {
     case "hello" ⇒
       count = count + 1
-      self.reply("world " + count)
+      reply("world " + count)
   }
 }
 
@@ -132,7 +132,7 @@ class MyStatelessActorWithMessagesInMailbox extends Actor with scala.Serializabl
   def receive = {
     case "hello" ⇒
       Thread.sleep(500)
-    case "hello-reply" ⇒ self.reply("world")
+    case "hello-reply" ⇒ reply("world")
   }
 }
 
@@ -140,7 +140,7 @@ class MyActorWithProtobufMessagesInMailbox extends Actor with scala.Serializable
   def receive = {
     case m: Message ⇒
       Thread.sleep(500)
-    case "hello-reply" ⇒ self.reply("world")
+    case "hello-reply" ⇒ reply("world")
   }
 }
 
@@ -148,6 +148,6 @@ class PersonActorWithMessagesInMailbox extends Actor with scala.Serializable {
   def receive = {
     case p: Person ⇒
       Thread.sleep(500)
-    case "hello-reply" ⇒ self.reply("hello")
+    case "hello-reply" ⇒ reply("hello")
   }
 }

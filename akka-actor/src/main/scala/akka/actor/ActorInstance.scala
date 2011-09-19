@@ -14,6 +14,40 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable.Stack
 
+/**
+ * The actor context - the view into the actor instance from the actor.
+ * Exposes contextual information for the actor and the current message.
+ * TODO: everything here for current compatibility - could be limited more
+ */
+private[akka] trait ActorContext {
+
+  def self: ActorRef with ScalaActorRef
+
+  def receiveTimeout: Option[Long]
+
+  def receiveTimeout_=(timeout: Option[Long]): Unit
+
+  def hotswap: Stack[PartialFunction[Any, Unit]]
+
+  def hotswap_=(stack: Stack[PartialFunction[Any, Unit]]): Unit
+
+  def currentMessage: MessageInvocation
+
+  def currentMessage_=(invocation: MessageInvocation): Unit
+
+  def sender: Option[ActorRef]
+
+  def senderFuture(): Option[Promise[Any]]
+
+  def channel: UntypedChannel
+
+  def linkedActors: JCollection[ActorRef]
+
+  def dispatcher: MessageDispatcher
+
+  def handleDeath(death: Death)
+}
+
 private[akka] object ActorInstance {
   sealed trait Status
   object Status {
@@ -26,7 +60,13 @@ private[akka] object ActorInstance {
   }
 }
 
-private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
+private[akka] class ActorInstance(
+  val self: ActorRef with ScalaActorRef,
+  props: Props,
+  _receiveTimeout: Option[Long],
+  _hotswap: Stack[PartialFunction[Any, Unit]])
+  extends ActorContext {
+
   import ActorInstance._
 
   val guard = new ReentrantGuard // TODO: remove this last synchronization point
@@ -52,9 +92,18 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
   @volatile
   lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
 
+  @volatile
+  var hotswap: Stack[PartialFunction[Any, Unit]] = _hotswap // TODO: currently settable from outside for compatibility
+
+  @volatile
+  var receiveTimeout: Option[Long] = _receiveTimeout // TODO: currently settable from outside for compatibility
+
+  @volatile
+  var currentMessage: MessageInvocation = null
+
   val actor: AtomicReference[Actor] = new AtomicReference[Actor]()
 
-  def ref: ActorRef = self
+  def ref: ActorRef with ScalaActorRef = self
 
   def uuid: Uuid = self.uuid
 
@@ -74,7 +123,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
 
   def newActor(restart: Boolean): Actor = {
     val stackBefore = contextStack.get
-    contextStack.set(stackBefore.push(new ActorContext(self)))
+    contextStack.set(stackBefore.push(this))
     try {
       if (restart) {
         val a = actor.get()
@@ -106,7 +155,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
 
   private[akka] def stop(): Unit = guard.withGuard {
     if (isRunning) {
-      self.receiveTimeout = None
+      receiveTimeout = None
       cancelReceiveTimeout
       Actor.registry.unregister(self)
       status = Status.Shutdown
@@ -126,7 +175,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
 
       } finally {
         //if (supervisor.isDefined) supervisor.get ! Death(self, new ActorKilledException("Stopped"), false)
-        self.currentMessage = null
+        currentMessage = null
         clearActorContext()
       }
     }
@@ -164,24 +213,6 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
 
   def supervisor_=(sup: Option[ActorRef]): Unit = _supervisor = sup
 
-  def sender: Option[ActorRef] = {
-    val msg = self.currentMessage
-    if (msg eq null) None
-    else msg.channel match {
-      case ref: ActorRef ⇒ Some(ref)
-      case _             ⇒ None
-    }
-  }
-
-  def senderFuture(): Option[Promise[Any]] = {
-    val msg = self.currentMessage
-    if (msg eq null) None
-    else msg.channel match {
-      case f: ActorPromise ⇒ Some(f)
-      case _               ⇒ None
-    }
-  }
-
   def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
     if (isRunning) dispatcher dispatchMessage new MessageInvocation(this, message, channel)
     else throw new ActorInitializationException("Actor " + self + " is dead")
@@ -198,11 +229,34 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
     future
   } else throw new ActorInitializationException("Actor " + self + " is dead")
 
+  def sender: Option[ActorRef] = {
+    val msg = currentMessage
+    if (msg eq null) None
+    else msg.channel match {
+      case ref: ActorRef ⇒ Some(ref)
+      case _             ⇒ None
+    }
+  }
+
+  def senderFuture(): Option[Promise[Any]] = {
+    val msg = currentMessage
+    if (msg eq null) None
+    else msg.channel match {
+      case f: ActorPromise ⇒ Some(f)
+      case _               ⇒ None
+    }
+  }
+
+  def channel: UntypedChannel = currentMessage match {
+    case null ⇒ NullChannel
+    case msg  ⇒ msg.channel
+  }
+
   def invoke(messageHandle: MessageInvocation): Unit = {
     guard.lock.lock()
     try {
       if (!isShutdown) {
-        self.currentMessage = messageHandle
+        currentMessage = messageHandle
         try {
           try {
             cancelReceiveTimeout() // FIXME: leave this here?
@@ -218,7 +272,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
             }
 
             a.apply(messageHandle.message)
-            self.currentMessage = null // reset current message after successful invocation
+            currentMessage = null // reset current message after successful invocation
           } catch {
             case e ⇒
               EventHandler.error(e, self, e.getMessage)
@@ -226,7 +280,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
               // prevent any further messages to be processed until the actor has been restarted
               dispatcher.suspend(this)
 
-              self.channel.sendException(e)
+              channel.sendException(e)
 
               if (supervisor.isDefined) supervisor.get ! Death(self, e, true) else dispatcher.resume(this)
 
@@ -271,7 +325,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
     def performRestart() {
       val failedActor = actor.get
       if (Actor.debugLifecycle) EventHandler.debug(failedActor, "restarting")
-      val message = if (self.currentMessage ne null) Some(self.currentMessage.message) else None
+      val message = if (currentMessage ne null) Some(currentMessage.message) else None
       if (failedActor ne null) failedActor.preRestart(reason, message)
       val freshActor = newActor(restart = true)
       clearActorContext()
@@ -293,7 +347,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
                 EventHandler.error(e, self, "Exception in restart of Actor [%s]".format(toString))
                 false // an error or exception here should trigger a retry
             } finally {
-              self.currentMessage = null
+              currentMessage = null
             }
 
           if (success) {
@@ -374,7 +428,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
 
   def checkReceiveTimeout() {
     cancelReceiveTimeout()
-    val recvtimeout = self.receiveTimeout
+    val recvtimeout = receiveTimeout
     if (recvtimeout.isDefined && dispatcher.mailboxIsEmpty(this)) {
       //Only reschedule if desired and there are currently no more messages to be processed
       futureTimeout = Some(Scheduler.scheduleOnce(self, ReceiveTimeout, recvtimeout.get, TimeUnit.MILLISECONDS))
@@ -394,7 +448,7 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
     @tailrec
     def lookupAndSetSelfFields(clazz: Class[_], actor: Actor, newContext: ActorContext): Boolean = {
       val success = try {
-        val contextField = clazz.getDeclaredField("actorContext")
+        val contextField = clazz.getDeclaredField("context")
         contextField.setAccessible(true)
         contextField.set(actor, newContext)
         true
@@ -413,4 +467,13 @@ private[akka] class ActorInstance(props: Props, self: LocalActorRef) {
 
     lookupAndSetSelfFields(actor.get.getClass, actor.get, newContext)
   }
+
+  override def hashCode: Int = HashCode.hash(HashCode.SEED, uuid)
+
+  override def equals(that: Any): Boolean = {
+    that.isInstanceOf[ActorInstance] && that.asInstanceOf[ActorInstance].uuid == uuid
+  }
+
+  override def toString = "ActorInstance[%s]".format(uuid)
 }
+

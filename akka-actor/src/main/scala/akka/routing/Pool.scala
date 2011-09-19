@@ -98,7 +98,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
   protected def _route(): Receive = {
     // for testing...
     case Stat ⇒
-      self tryReply Stats(_delegates length)
+      tryReply(Stats(_delegates length))
     case MaximumNumberOfRestartsWithinTimeRangeReached(victim, _, _, _) ⇒
       _delegates = _delegates filterNot { _.uuid == victim.uuid }
     case Death(victim, _, _) ⇒
@@ -152,7 +152,7 @@ trait SmallestMailboxSelector {
     var take = if (partialFill) math.min(selectionCount, delegates.length) else selectionCount
 
     def mailboxSize(a: ActorRef): Int = a match {
-      case l: LocalActorRef ⇒ l.dispatcher.mailboxSize(l.underlying)
+      case l: LocalActorRef ⇒ l.underlying.dispatcher.mailboxSize(l.underlying)
       case _                ⇒ Int.MaxValue //Non-local actors mailbox size is unknown, so consider them lowest priority
     }
 
@@ -238,7 +238,7 @@ trait MailboxPressureCapacitor {
   def pressureThreshold: Int
   def pressure(delegates: Seq[ActorRef]): Int =
     delegates count {
-      case a: LocalActorRef ⇒ a.dispatcher.mailboxSize(a.underlying) > pressureThreshold
+      case a: LocalActorRef ⇒ a.underlying.dispatcher.mailboxSize(a.underlying) > pressureThreshold
       case _                ⇒ false
     }
 }
@@ -249,8 +249,8 @@ trait MailboxPressureCapacitor {
 trait ActiveFuturesPressureCapacitor {
   def pressure(delegates: Seq[ActorRef]): Int =
     delegates count {
-      case fc: ForwardableChannel ⇒ fc.channel.isInstanceOf[Promise[_]]
-      case _                      ⇒ false
+      case a: LocalActorRef ⇒ a.underlying.channel.isInstanceOf[Promise[_]]
+      case _                ⇒ false
     }
 }
 

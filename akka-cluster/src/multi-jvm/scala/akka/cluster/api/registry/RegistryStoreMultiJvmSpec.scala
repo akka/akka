@@ -25,7 +25,7 @@ object RegistryStoreMultiJvmSpec {
   class HelloWorld1 extends Actor with Serializable {
     def receive = {
       case "Hello" ⇒
-        self.reply("World from node [" + Config.nodename + "]")
+        reply("World from node [" + Config.nodename + "]")
     }
   }
 
@@ -36,7 +36,7 @@ object RegistryStoreMultiJvmSpec {
         Thread.sleep(1000)
         counter += 1
       case "Count" ⇒
-        self.reply(counter)
+        reply(counter)
     }
   }
 }

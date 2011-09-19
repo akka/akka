@@ -26,15 +26,15 @@ object ActorRefSpec {
 
     def receive = {
       case "complexRequest" ⇒ {
-        replyTo = self.channel
+        replyTo = channel
         val worker = actorOf(Props[WorkerActor])
         worker ! "work"
       }
       case "complexRequest2" ⇒
         val worker = actorOf(Props[WorkerActor])
-        worker ! self.channel
+        worker ! channel
       case "workDone"      ⇒ replyTo ! "complexReply"
-      case "simpleRequest" ⇒ self.reply("simpleReply")
+      case "simpleRequest" ⇒ reply("simpleReply")
     }
   }
 
@@ -42,7 +42,7 @@ object ActorRefSpec {
     def receive = {
       case "work" ⇒ {
         work
-        self.reply("workDone")
+        reply("workDone")
         self.stop()
       }
       case replyTo: Channel[Any] ⇒ {
@@ -73,7 +73,7 @@ object ActorRefSpec {
 
   class OuterActor(val inner: ActorRef) extends Actor {
     def receive = {
-      case "self" ⇒ self reply self
+      case "self" ⇒ reply(self)
       case x      ⇒ inner forward x
     }
   }
@@ -82,7 +82,7 @@ object ActorRefSpec {
     val fail = new InnerActor
 
     def receive = {
-      case "self" ⇒ self reply self
+      case "self" ⇒ reply(self)
       case x      ⇒ inner forward x
     }
   }
@@ -93,8 +93,8 @@ object ActorRefSpec {
 
   class InnerActor extends Actor {
     def receive = {
-      case "innerself" ⇒ self reply self
-      case other       ⇒ self reply other
+      case "innerself" ⇒ reply(self)
+      case other       ⇒ reply(other)
     }
   }
 
@@ -102,8 +102,8 @@ object ActorRefSpec {
     val fail = new InnerActor
 
     def receive = {
-      case "innerself" ⇒ self reply self
-      case other       ⇒ self reply other
+      case "innerself" ⇒ reply(self)
+      case other       ⇒ reply(other)
     }
   }
 
@@ -258,7 +258,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
     "support nested actorOfs" in {
       val a = actorOf(new Actor {
         val nested = actorOf(new Actor { def receive = { case _ ⇒ } })
-        def receive = { case _ ⇒ self reply nested }
+        def receive = { case _ ⇒ reply(nested) }
       })
 
       val nested = (a ? "any").as[ActorRef].get
@@ -304,9 +304,11 @@ class ActorRefSpec extends WordSpec with MustMatchers {
 
     "stop when sent a poison pill" in {
       val timeout = Timeout(20000)
-      val ref = actorOf(Props(self ⇒ {
-        case 5    ⇒ self tryReply "five"
-        case null ⇒ self tryReply "null"
+      val ref = actorOf(Props(new Actor {
+        def receive = {
+          case 5    ⇒ tryReply("five")
+          case null ⇒ tryReply("null")
+        }
       }))
 
       val ffive = (ref ? (5, timeout)).mapTo[String]

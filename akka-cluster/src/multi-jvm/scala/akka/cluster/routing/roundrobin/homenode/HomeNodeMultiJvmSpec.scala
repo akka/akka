@@ -13,7 +13,7 @@ object HomeNodeMultiJvmSpec {
   class SomeActor extends Actor with Serializable {
     def receive = {
       case "identify" ⇒ {
-        self.reply(Config.nodename)
+        reply(Config.nodename)
       }
     }
   }

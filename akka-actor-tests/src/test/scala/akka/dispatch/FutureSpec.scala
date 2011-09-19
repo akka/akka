@@ -21,7 +21,7 @@ object FutureSpec {
   class TestActor extends Actor {
     def receive = {
       case "Hello" ⇒
-        self.reply("World")
+        reply("World")
       case "NoReply" ⇒ {}
       case "Failure" ⇒
         throw new RuntimeException("Expected exception; to test fault-tolerance")
@@ -32,7 +32,7 @@ object FutureSpec {
     def receive = {
       case "Hello" ⇒
         await.await
-        self.reply("World")
+        reply("World")
       case "NoReply" ⇒ { await.await }
       case "Failure" ⇒
         await.await
@@ -143,7 +143,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       "will return a result" must {
         behave like futureWithResult { test ⇒
           val actor1 = actorOf[TestActor]
-          val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply s.toUpperCase } })
+          val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ reply(s.toUpperCase) } })
           val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
           future.await
           test(future, "WORLD")
@@ -155,7 +155,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         behave like futureWithException[ArithmeticException] { test ⇒
           filterException[ArithmeticException] {
             val actor1 = actorOf[TestActor]
-            val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply (s.length / 0) } })
+            val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ reply(s.length / 0) } })
             val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
             future.await
             test(future, "/ by zero")
@@ -168,7 +168,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         behave like futureWithException[MatchError] { test ⇒
           filterException[MatchError] {
             val actor1 = actorOf[TestActor]
-            val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ self reply s.toUpperCase } })
+            val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ reply(s.toUpperCase) } })
             val future = actor1 ? "Hello" flatMap { case i: Int ⇒ actor2 ? i }
             future.await
             test(future, "World (of class java.lang.String)")
@@ -185,8 +185,8 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         filterException[ClassCastException] {
           val actor = actorOf(new Actor {
             def receive = {
-              case s: String ⇒ self reply s.length
-              case i: Int    ⇒ self reply (i * 2).toString
+              case s: String ⇒ reply(s.length)
+              case i: Int    ⇒ reply((i * 2).toString)
             }
           })
 
@@ -217,8 +217,8 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           case class Res[T](res: T)
           val actor = actorOf(new Actor {
             def receive = {
-              case Req(s: String) ⇒ self reply Res(s.length)
-              case Req(i: Int)    ⇒ self reply Res((i * 2).toString)
+              case Req(s: String) ⇒ reply(Res(s.length))
+              case Req(i: Int)    ⇒ reply(Res((i * 2).toString))
             }
           })
 
@@ -304,7 +304,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       "fold" in {
         val actors = (1 to 10).toList map { _ ⇒
           actorOf(new Actor {
-            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); self tryReply add }
+            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); tryReply(add) }
           })
         }
         val timeout = 10000
@@ -315,7 +315,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       "fold by composing" in {
         val actors = (1 to 10).toList map { _ ⇒
           actorOf(new Actor {
-            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); self tryReply add }
+            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); tryReply(add) }
           })
         }
         def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), 10000).mapTo[Int] }
@@ -330,7 +330,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
                 case (add: Int, wait: Int) ⇒
                   Thread.sleep(wait)
                   if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
-                  self tryReply add
+                  tryReply(add)
               }
             })
           }
@@ -362,7 +362,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       "shouldReduceResults" in {
         val actors = (1 to 10).toList map { _ ⇒
           actorOf(new Actor {
-            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); self tryReply add }
+            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); tryReply(add) }
           })
         }
         val timeout = 10000
@@ -378,7 +378,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
                 case (add: Int, wait: Int) ⇒
                   Thread.sleep(wait)
                   if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
-                  self tryReply add
+                  tryReply(add)
               }
             })
           }
@@ -407,7 +407,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           var counter = 1
           def receive = {
             case 'GetNext ⇒
-              self reply counter
+              reply(counter)
               counter += 2
           }
         })

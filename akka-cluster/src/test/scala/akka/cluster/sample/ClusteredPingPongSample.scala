@@ -39,9 +39,9 @@ object PingPong {
         if (count < NrOfPings) {
           println("---->> PING (%s)" format count)
           count += 1
-          self reply Ball
+          reply(Ball)
         } else {
-          self.sender.foreach(s ⇒ (s ? Stop).await)
+          sender.foreach(s ⇒ (s ? Stop).await)
           gameOverLatch.countDown
           self.stop
         }
@@ -53,9 +53,9 @@ object PingPong {
   class PongActor extends Actor with Serializable {
     def receive = {
       case Ball ⇒
-        self reply Ball
+        reply(Ball)
       case Stop ⇒
-        self reply Stop
+        reply(Stop)
         self.stop
     }
   }

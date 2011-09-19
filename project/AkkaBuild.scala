@@ -331,7 +331,8 @@ object AkkaBuild extends Build {
     testExcludes := akkaTestExcludes,
     testOptions in Test <++= testExcludes map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) },
 
-    testOptions in Test += Tests.Argument("-oF") //Gimmeh gud stacktraces plz
+    // show full stack traces
+    testOptions in Test += Tests.Argument("-oF")
   )
 
   lazy val formatSettings = ScalariformPlugin.settings ++ Seq(

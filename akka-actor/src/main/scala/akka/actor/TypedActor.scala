@@ -242,11 +242,11 @@ object TypedActor {
         try {
           if (m.isOneWay) m(me)
           else if (m.returnsFuture_?) {
-            self.channel match {
+            channel match {
               case p: ActorPromise ⇒ p completeWith m(me).asInstanceOf[Future[Any]]
               case _               ⇒ throw new IllegalStateException("Future-returning TypedActor didn't use ?/ask so cannot reply")
             }
-          } else self reply m(me)
+          } else reply(m(me))
 
         } finally { selfReference set null }
     }

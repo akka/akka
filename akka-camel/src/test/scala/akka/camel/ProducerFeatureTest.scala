@@ -253,8 +253,8 @@ object ProducerFeatureTest {
   class TestResponder extends Actor {
     protected def receive = {
       case msg: Message ⇒ msg.body match {
-        case "fail" ⇒ self.reply(Failure(new Exception("failure"), msg.headers))
-        case _      ⇒ self.reply(msg.transformBody { body: String ⇒ "received %s" format body })
+        case "fail" ⇒ reply(Failure(new Exception("failure"), msg.headers))
+        case _      ⇒ reply(msg.transformBody { body: String ⇒ "received %s" format body })
       }
     }
   }
@@ -262,9 +262,9 @@ object ProducerFeatureTest {
   class ReplyingForwardTarget extends Actor {
     protected def receive = {
       case msg: Message ⇒
-        self.reply(msg.addHeader("test" -> "result"))
+        reply(msg.addHeader("test" -> "result"))
       case msg: Failure ⇒
-        self.reply(Failure(msg.cause, msg.headers + ("test" -> "failure")))
+        reply(Failure(msg.cause, msg.headers + ("test" -> "failure")))
     }
   }
 

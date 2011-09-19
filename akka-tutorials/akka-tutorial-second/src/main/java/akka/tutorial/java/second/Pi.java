@@ -76,7 +76,7 @@ public class Pi {
     public void onReceive(Object message) {
       if (message instanceof Work) {
         Work work = (Work) message;
-        getContext().reply(new Result(calculatePiFor(work.getArg(), work.getNrOfElements()))); // perform the work
+        reply(new Result(calculatePiFor(work.getArg(), work.getNrOfElements()))); // perform the work
       } else throw new IllegalArgumentException("Unknown message [" + message + "]");
     }
   }
@@ -125,10 +125,10 @@ public class Pi {
       public void apply(Object msg) {
         // schedule work
         for (int arg = 0; arg < nrOfMessages; arg++) {
-          router.tell(new Work(arg, nrOfElements), getContext());
+          router.tell(new Work(arg, nrOfElements), getSelf());
         }
         // Assume the gathering behavior
-        become(gather(getContext().getChannel()));
+        become(gather(getChannel()));
       }
     };
 
@@ -143,7 +143,7 @@ public class Pi {
             // send the pi result back to the guy who started the calculation
             recipient.tell(pi);
             // shut ourselves down, we're done
-            getContext().stop();
+            getSelf().stop();
           }
         }
       };
