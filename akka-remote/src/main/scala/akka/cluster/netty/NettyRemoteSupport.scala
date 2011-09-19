@@ -476,14 +476,9 @@ class ActiveRemoteClientPipelineFactory(
     val lenPrep = new LengthFieldPrepender(4)
     val protobufDec = new ProtobufDecoder(AkkaRemoteProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
-    val (enc, dec) = RemoteServerSettings.COMPRESSION_SCHEME match {
-      case "zlib" ⇒ (new ZlibEncoder(RemoteServerSettings.ZLIB_COMPRESSION_LEVEL) :: Nil, new ZlibDecoder :: Nil)
-      case _      ⇒ (Nil, Nil)
-    }
-
     val remoteClient = new ActiveRemoteClientHandler(name, futures, bootstrap, remoteAddress, timer, client)
-    val stages: List[ChannelHandler] = timeout :: dec ::: lenDec :: protobufDec :: enc ::: lenPrep :: protobufEnc :: remoteClient :: Nil
-    new StaticChannelPipeline(stages: _*)
+
+    new StaticChannelPipeline(timeout, lenDec, protobufDec, lenPrep, protobufEnc, remoteClient)
   }
 }
 
@@ -840,13 +835,10 @@ class RemoteServerPipelineFactory(
     val lenPrep = new LengthFieldPrepender(4)
     val protobufDec = new ProtobufDecoder(AkkaRemoteProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
-    val (enc, dec) = COMPRESSION_SCHEME match {
-      case "zlib" ⇒ (new ZlibEncoder(ZLIB_COMPRESSION_LEVEL) :: Nil, new ZlibDecoder :: Nil)
-      case _      ⇒ (Nil, Nil)
-    }
+
     val authenticator = if (REQUIRE_COOKIE) new RemoteServerAuthenticationHandler(SECURE_COOKIE) :: Nil else Nil
     val remoteServer = new RemoteServerHandler(name, openChannels, loader, server)
-    val stages: List[ChannelHandler] = dec ::: lenDec :: protobufDec :: enc ::: lenPrep :: protobufEnc :: executor :: authenticator ::: remoteServer :: Nil
+    val stages: List[ChannelHandler] = lenDec :: protobufDec :: lenPrep :: protobufEnc :: executor :: authenticator ::: remoteServer :: Nil
     new StaticChannelPipeline(stages: _*)
   }
 }

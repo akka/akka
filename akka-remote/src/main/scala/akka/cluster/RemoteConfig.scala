@@ -35,13 +35,6 @@ object RemoteServerSettings {
   val UNTRUSTED_MODE = config.getBool("akka.cluster.server.untrusted-mode", false)
   val PORT = config.getInt("akka.cluster.server.port", 2552)
   val CONNECTION_TIMEOUT = Duration(config.getInt("akka.cluster.server.connection-timeout", 100), TIME_UNIT)
-  val COMPRESSION_SCHEME = config.getString("akka.cluster.compression-scheme", "")
-  val ZLIB_COMPRESSION_LEVEL = {
-    val level = config.getInt("akka.cluster.zlib-compression-level", 6)
-    if (level < 1 && level > 9) throw new IllegalArgumentException(
-      "zlib compression level has to be within 1-9, with 1 being fastest and 9 being the most compressed")
-    level
-  }
 
   val BACKLOG = config.getInt("akka.cluster.server.backlog", 4096)
 
