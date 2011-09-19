@@ -163,6 +163,9 @@ object Deployer extends ActorDeployer {
           ActorRecipe(implementationClass)
         }
 
+        // --------------------------------
+        // akka.actor.deployment.<address>.remote
+        // --------------------------------
         addressConfig.getSection("remote") match {
           case Some(remoteConfig) ⇒ // we have a 'remote' config section
 

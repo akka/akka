@@ -60,6 +60,7 @@ object DeploymentConfig {
   // --------------------------------
   sealed trait FailureDetector
   case class CustomFailureDetector(className: String) extends FailureDetector
+  case class BannagePeriodFailureDetectorFailureDetector(timeToBan: Long) extends FailureDetector
 
   // For Java API
   case class RemoveConnectionOnFirstFailureLocalFailureDetector() extends FailureDetector
