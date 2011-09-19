@@ -20,13 +20,14 @@ class DeployerSpec extends WordSpec with MustMatchers {
           "service-ping",
           None,
           LeastCPU,
-          RemoveConnectionOnFirstFailureRemoteFailureDetector,
-          ClusterScope(
-            List(Node("node1")),
-            new ReplicationFactor(3),
-            Replication(
-              TransactionLog,
-              WriteThrough)))))
+          BannagePeriodFailureDetector(10),
+          RemoteScope("localhost", 2552))))
+      // ClusterScope(
+      //   List(Node("node1")),
+      //   new ReplicationFactor(3),
+      //   Replication(
+      //     TransactionLog,
+      //     WriteThrough)))))
     }
   }
 }

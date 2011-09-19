@@ -30,8 +30,8 @@ import com.eaio.uuid.UUID
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Remote extends RemoteService {
-  val shouldCompressData = config.getBool("akka.cluster.use-compression", false)
-  val remoteDaemonAckTimeout = Duration(config.getInt("akka.cluster.remote-daemon-ack-timeout", 30), TIME_UNIT).toMillis.toInt
+  val shouldCompressData = config.getBool("akka.remote.use-compression", false)
+  val remoteDaemonAckTimeout = Duration(config.getInt("akka.remote.remote-daemon-ack-timeout", 30), TIME_UNIT).toMillis.toInt
 
   val hostname = Config.hostname
   val port = Config.remoteServerPort

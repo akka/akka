@@ -159,8 +159,8 @@ abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) {
 
-  val useTransactionLog = config.getBool("akka.cluster.client.buffering.retry-message-send-on-failure", false)
-  val transactionLogCapacity = config.getInt("akka.cluster.client.buffering.capacity", -1)
+  val useTransactionLog = config.getBool("akka.remote.client.buffering.retry-message-send-on-failure", false)
+  val transactionLogCapacity = config.getInt("akka.remote.client.buffering.capacity", -1)
 
   val name = this.getClass.getSimpleName + "@" +
     remoteAddress.getAddress.getHostAddress + "::" +

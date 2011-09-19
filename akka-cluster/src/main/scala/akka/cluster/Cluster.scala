@@ -150,14 +150,14 @@ object Cluster {
   // config options
   val name = Config.clusterName
   val zooKeeperServers = config.getString("akka.cluster.zookeeper-server-addresses", "localhost:2181")
-  val remoteServerPort = config.getInt("akka.cluster.remote-server-port", 2552)
+  val remoteServerPort = config.getInt("akka.remote.server.port", 2552)
   val sessionTimeout = Duration(config.getInt("akka.cluster.session-timeout", 60), TIME_UNIT).toMillis.toInt
   val metricsRefreshInterval = Duration(config.getInt("akka.cluster.metrics-refresh-timeout", 2), TIME_UNIT)
   val connectionTimeout = Duration(config.getInt("akka.cluster.connection-timeout", 60), TIME_UNIT).toMillis.toInt
   val maxTimeToWaitUntilConnected = Duration(config.getInt("akka.cluster.max-time-to-wait-until-connected", 30), TIME_UNIT).toMillis.toInt
-  val shouldCompressData = config.getBool("akka.cluster.use-compression", false)
+  val shouldCompressData = config.getBool("akka.remote.use-compression", false)
   val enableJMX = config.getBool("akka.enable-jmx", true)
-  val remoteDaemonAckTimeout = Duration(config.getInt("akka.cluster.remote-daemon-ack-timeout", 30), TIME_UNIT).toMillis.toInt
+  val remoteDaemonAckTimeout = Duration(config.getInt("akka.remote.remote-daemon-ack-timeout", 30), TIME_UNIT).toMillis.toInt
   val includeRefNodeInReplicaSet = config.getBool("akka.cluster.include-ref-node-in-replica-set", true)
 
   @volatile

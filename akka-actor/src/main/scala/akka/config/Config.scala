@@ -115,8 +115,8 @@ object Config {
 
   val remoteServerPort = System.getProperty("akka.cluster.port") match {
     case null | "" ⇒
-      System.getProperty("akka.cluster.remote-server-port") match {
-        case null | "" ⇒ config.getInt("akka.cluster.remote-server-port", 2552)
+      System.getProperty("akka.remote.server.port") match {
+        case null | "" ⇒ config.getInt("akka.remote.server.port", 2552)
         case value     ⇒ value.toInt
       }
     case value ⇒ value.toInt

@@ -145,21 +145,56 @@ object Deployer extends ActorDeployer {
         }
 
         // --------------------------------
-        // akka.actor.deployment.<address>.failure-detector
+        // akka.actor.deployment.<address>.failure-detector.xxx
         // --------------------------------
-        val failureDetector: FailureDetector = addressConfig.getString("failure-detector", "remove-connection-on-first-local-failure") match {
-          case "remove-connection-on-first-local-failure"  ⇒ RemoveConnectionOnFirstFailureLocalFailureDetector
-          case "remove-connection-on-first-remote-failure" ⇒ RemoveConnectionOnFirstFailureRemoteFailureDetector
-          case customFailureDetectorClassName              ⇒ CustomFailureDetector(customFailureDetectorClassName)
+        val failureDetectorOption: Option[FailureDetector] = addressConfig.getSection("failure-detector") match {
+          case Some(failureDetectorConfig) ⇒
+            failureDetectorConfig.keys.toList match {
+              case Nil ⇒ None
+              case detector :: Nil ⇒
+                detector match {
+                  case "remove-connection-on-first-local-failure" ⇒
+                    Some(RemoveConnectionOnFirstFailureLocalFailureDetector)
+
+                  case "remove-connection-on-first-failure" ⇒
+                    Some(RemoveConnectionOnFirstFailureFailureDetector)
+
+                  case "bannage-period" ⇒
+                    failureDetectorConfig.getSection("bannage-period") map { section ⇒
+                      BannagePeriodFailureDetector(section.getInt("time-to-ban", 10))
+                    }
+
+                  case "custom" ⇒
+                    failureDetectorConfig.getSection("custom") map { section ⇒
+                      val implementationClass = section.getString("class").getOrElse(throw new ConfigurationException(
+                        "Configuration for [" + addressPath +
+                          "failure-detector.custom] must have a 'class' element with the fully qualified name of the failure detector class"))
+                      CustomFailureDetector(implementationClass)
+                    }
+
+                  case _ ⇒ None
+                }
+              case detectors ⇒
+                throw new ConfigurationException(
+                  "Configuration for [" + addressPath +
+                    "failure-detector] can not have multiple sections - found [" + detectors.mkString(", ") + "]")
+            }
+          case None ⇒ None
         }
+        val failureDetector = failureDetectorOption getOrElse { BannagePeriodFailureDetector(10) } // fall back to default failure detector
 
+        // --------------------------------
+        // akka.actor.deployment.<address>.create-as
+        // --------------------------------
         val recipe: Option[ActorRecipe] = addressConfig.getSection("create-as") map { section ⇒
-          val implementationClass = section.getString("implementation-class") match {
+          val implementationClass = section.getString("class") match {
             case Some(impl) ⇒
-              getClassFor[Actor](impl).fold(e ⇒ throw new ConfigurationException("Config option [" + addressPath + ".create-as.implementation-class] load failed", e), identity)
-            case None ⇒ throw new ConfigurationException("Config option [" + addressPath + ".create-as.implementation-class] is missing")
+              getClassFor[Actor](impl).fold(e ⇒ throw new ConfigurationException(
+                "Config option [" + addressPath + ".create-as.class] load failed", e), identity)
+            case None ⇒
+              throw new ConfigurationException(
+                "Config option [" + addressPath + ".create-as.class] is missing, need the fully qualified name of the class")
           }
-
           ActorRecipe(implementationClass)
         }
 

@@ -18,6 +18,20 @@ import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 
 import scala.annotation.tailrec
 
+sealed trait FailureDetectorType
+
+/**
+ * Used for declarative configuration of failure detection.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object FailureDetectorType {
+  case object RemoveConnectionOnFirstFailureLocalFailureDetector extends FailureDetectorType
+  case object RemoveConnectionOnFirstFailureFailureDetector extends FailureDetectorType
+  case class BannagePeriodFailureDetector(timeToBan: Long) extends FailureDetectorType
+  case class CustomFailureDetector(className: String) extends FailureDetectorType
+}
+
 /**
  * Misc helper and factory methods for failure detection.
  */

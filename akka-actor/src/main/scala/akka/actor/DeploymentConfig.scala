@@ -59,16 +59,16 @@ object DeploymentConfig {
   // --- FailureDetector
   // --------------------------------
   sealed trait FailureDetector
+  case class BannagePeriodFailureDetector(timeToBan: Long) extends FailureDetector
   case class CustomFailureDetector(className: String) extends FailureDetector
-  case class BannagePeriodFailureDetectorFailureDetector(timeToBan: Long) extends FailureDetector
 
   // For Java API
   case class RemoveConnectionOnFirstFailureLocalFailureDetector() extends FailureDetector
-  case class RemoveConnectionOnFirstFailureRemoteFailureDetector() extends FailureDetector
+  case class RemoveConnectionOnFirstFailureFailureDetector() extends FailureDetector
 
   // For Scala API
   case object RemoveConnectionOnFirstFailureLocalFailureDetector extends FailureDetector
-  case object RemoveConnectionOnFirstFailureRemoteFailureDetector extends FailureDetector
+  case object RemoveConnectionOnFirstFailureFailureDetector extends FailureDetector
 
   // --------------------------------
   // --- Scope
@@ -180,10 +180,11 @@ object DeploymentConfig {
   def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == Config.nodename)
 
   def failureDetectorTypeFor(failureDetector: FailureDetector): FailureDetectorType = failureDetector match {
+    case BannagePeriodFailureDetector(timeToBan) ⇒ FailureDetectorType.BannagePeriodFailureDetector(timeToBan)
     case RemoveConnectionOnFirstFailureLocalFailureDetector ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureLocalFailureDetector
     case RemoveConnectionOnFirstFailureLocalFailureDetector() ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureLocalFailureDetector
-    case RemoveConnectionOnFirstFailureRemoteFailureDetector ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureRemoteFailureDetector
-    case RemoveConnectionOnFirstFailureRemoteFailureDetector() ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureRemoteFailureDetector
+    case RemoveConnectionOnFirstFailureFailureDetector ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureFailureDetector
+    case RemoveConnectionOnFirstFailureFailureDetector() ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureFailureDetector
     case CustomFailureDetector(implClass) ⇒ FailureDetectorType.CustomFailureDetector(implClass)
     case unknown ⇒ throw new UnsupportedOperationException("Unknown FailureDetector [" + unknown + "]")
   }

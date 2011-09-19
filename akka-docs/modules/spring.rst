@@ -323,7 +323,7 @@ The Akka configuration can be made available as property placeholders by using a
   <akka:property-placeholder location="akka.conf"/>
 
   <akka:untyped-actor id="actor-1" implementation="com.biz.MyActor" timeout="${akka.actor.timeout}">
-    <akka:remote host="${akka.cluster.server.hostname}" port="${akka.cluster.server.port}"/>
+    <akka:remote host="${akka.remote.server.hostname}" port="${akka.remote.server.port}"/>
   </akka:untyped-actor>
 
 Camel configuration
