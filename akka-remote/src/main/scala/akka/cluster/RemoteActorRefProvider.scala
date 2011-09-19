@@ -9,15 +9,26 @@ import DeploymentConfig._
 import Actor._
 import Status._
 import akka.event.EventHandler
+import akka.util.duration._
+import akka.config.ConfigurationException
 import akka.AkkaException
 import RemoteProtocol._
+import RemoteDaemonMessageType._
+import akka.serialization.{ Serialization, Serializer, ActorSerialization, Compression }
+import Compression.LZF
 
 import java.net.InetSocketAddress
 
+import com.google.protobuf.ByteString
+
 /**
- * Remote ActorRefProvider.
+ * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteActorRefProvider extends ActorRefProvider {
+
+  private val failureDetector = new BannagePeriodFailureDetector(timeToBan = 60 seconds) // FIXME make timeToBan configurable
 
   def actorOf(props: Props, address: String): Option[ActorRef] = {
     Address.validate(address)
@@ -32,11 +43,13 @@ class RemoteActorRefProvider extends ActorRefProvider {
       }
 
       Deployer.lookupDeploymentFor(deployId) match {
-        case Some(Deploy(_, _, router, _, RemoteConfig(host, port))) ⇒
+        case Some(Deploy(_, _, router, _, RemoteScope(host, port))) ⇒
           // FIXME create RoutedActorRef if 'router' is specified
 
-          val inetSocketAddress = null
-          Some(createRemoteActorRef(address, inetSocketAddress)) // create a remote actor
+          val remoteAddress = new InetSocketAddress(host, port)
+          useActorOnNode(remoteAddress, address, props.creator)
+
+          Some(newRemoteActorRef(address, remoteAddress)) // create a remote actor
 
         case deploy ⇒ None // non-remote actor
       }
@@ -45,11 +58,39 @@ class RemoteActorRefProvider extends ActorRefProvider {
 
   def findActorRef(address: String): Option[ActorRef] = throw new UnsupportedOperationException
 
-  private def createRemoteActorRef(actorAddress: String, inetSocketAddress: InetSocketAddress) = {
+  /**
+   * Using (checking out) actor on a specific node.
+   */
+  def useActorOnNode(remoteAddress: InetSocketAddress, actorAddress: String, actorFactory: () ⇒ Actor) {
+    EventHandler.debug(this, "Instantiating Actor [%s] on node [%s]".format(actorAddress, remoteAddress))
+
+    val actorFactoryBytes =
+      Serialization.serialize(actorFactory) match {
+        case Left(error) ⇒ throw error
+        case Right(bytes) ⇒
+          if (Remote.shouldCompressData) LZF.compress(bytes)
+          else bytes
+      }
+
+    val command = RemoteDaemonMessageProtocol.newBuilder
+      .setMessageType(USE)
+      .setActorAddress(actorAddress)
+      .setPayload(ByteString.copyFrom(actorFactoryBytes))
+      .build()
+
+    val connectionFactory = () ⇒ newRemoteActorRef(actorAddress, remoteAddress)
+
+    // try to get the connection for the remote address, if not already there then create it
+    val connection = failureDetector.putIfAbsent(remoteAddress, connectionFactory)
+
+    sendCommandToRemoteNode(connection, command, async = false) // ensure we get an ACK on the USE command
+  }
+
+  private def newRemoteActorRef(actorAddress: String, inetSocketAddress: InetSocketAddress) = {
     RemoteActorRef(inetSocketAddress, actorAddress, Actor.TIMEOUT, None)
   }
 
-  private def sendCommandToConnection(
+  private def sendCommandToRemoteNode(
     connection: ActorRef,
     command: RemoteDaemonMessageProtocol,
     async: Boolean = true) {
@@ -59,8 +100,8 @@ class RemoteActorRefProvider extends ActorRefProvider {
     } else {
       try {
         (connection ? (command, Remote.remoteDaemonAckTimeout)).as[Status] match {
-          case Some(Success(status)) ⇒
-            EventHandler.debug(this, "Remote command sent to [%s] successfully received".format(status))
+          case Some(Success(receiver)) ⇒
+            EventHandler.debug(this, "Remote command sent to [%s] successfully received".format(receiver))
 
           case Some(Failure(cause)) ⇒
             EventHandler.error(cause, this, cause.toString)

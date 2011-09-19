@@ -66,7 +66,7 @@ object Remote extends RemoteService {
     val remote = new akka.cluster.netty.NettyRemoteSupport
     remote.start(hostname, port)
     remote.register(Remote.remoteAddress, remoteDaemon)
-    remote.addListener(RemoteFailureDetector.channel)
+    remote.addListener(NetworkEventStream.channel)
     remote.addListener(remoteClientLifeCycleHandler)
     remote
   }
@@ -123,102 +123,21 @@ class RemoteDaemon extends Actor {
   def handleUse(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
     try {
       if (message.hasActorAddress) {
-        val props =
-          Serialization.deserialize(propsBytes, classOf[Props], None) match {
+
+        val actorFactoryBytes =
+          if (shouldCompressData) LZF.uncompress(message.getPayload.toByteArray)
+          else message.getPayload.toByteArray
+
+        val actorFactory =
+          Serialization.deserialize(actorFactoryBytes, classOf[() ⇒ Actor], None) match {
             case Left(error)     ⇒ throw error
-            case Right(instance) ⇒ instance.asInstanceOf[Props]
+            case Right(instance) ⇒ instance.asInstanceOf[() ⇒ Actor]
           }
 
         val actorAddress = message.getActorAddress
-        val newActorRef = actorOf(props)
+        val newActorRef = actorOf(Props(creator = actorFactory, deployId = actorAddress))
 
         Remote.server.register(actorAddress, newActorRef)
-
-        // if (message.hasReplicateActorFromUuid) {
-
-        // def deserializeMessages(entriesAsBytes: Vector[Array[Byte]]): Vector[AnyRef] = {
-        //   import akka.cluster.RemoteProtocol._
-        //   import akka.cluster.MessageSerializer
-
-        //   entriesAsBytes map { bytes ⇒
-        //     val messageBytes =
-        //       if (shouldCompressData) LZF.uncompress(bytes)
-        //       else bytes
-        //     MessageSerializer.deserialize(MessageProtocol.parseFrom(messageBytes), None)
-        //   }
-        // }
-        // def createActorRefToUseForReplay(snapshotAsBytes: Option[Array[Byte]], actorAddress: String, newActorRef: LocalActorRef): ActorRef = {
-        //   snapshotAsBytes match {
-
-        //     // we have a new actor ref - the snapshot
-        //     case Some(bytes) ⇒
-        //       // stop the new actor ref and use the snapshot instead
-        //       //TODO: What if that actor already has been retrieved and is being used??
-        //       //So do we have a race here?
-        //       server.unregister(actorAddress)
-
-        //       // deserialize the snapshot actor ref and register it as remote actor
-        //       val uncompressedBytes =
-        //         if (shouldCompressData) LZF.uncompress(bytes)
-        //         else bytes
-
-        //       val snapshotActorRef = fromBinary(uncompressedBytes, newActorRef.uuid)
-        //       server.register(actorAddress, snapshotActorRef)
-
-        //       // FIXME we should call 'stop()' here (to GC the actor), but can't since that will currently
-        //       //shut down the TransactionLog for this UUID - since both this actor and the new snapshotActorRef
-        //       //have the same UUID (which they should)
-        //       //newActorRef.stop()
-
-        //       snapshotActorRef
-
-        //     // we have no snapshot - use the new actor ref
-        //     case None ⇒
-        //       newActorRef
-        //   }
-        // }
-
-        //   // replication is used - fetch the messages and replay them
-        //   val replicateFromUuid = uuidProtocolToUuid(message.getReplicateActorFromUuid)
-        //   val deployment = Deployer.deploymentFor(actorAddress)
-        //   val replicationScheme = DeploymentConfig.replicationSchemeFor(deployment).getOrElse(
-        //     throw new IllegalStateException(
-        //       "Actor [" + actorAddress + "] should have been configured as a replicated actor but could not find its ReplicationScheme"))
-        //   val isWriteBehind = DeploymentConfig.isWriteBehindReplication(replicationScheme)
-
-        //   try {
-        //     // get the transaction log for the actor UUID
-        //     val readonlyTxLog = TransactionLog.logFor(replicateFromUuid.toString, isWriteBehind, replicationScheme)
-
-        //     // get the latest snapshot (Option[Array[Byte]]) and all the subsequent messages (Array[Byte])
-        //     val (snapshotAsBytes, entriesAsBytes) = readonlyTxLog.latestSnapshotAndSubsequentEntries
-
-        //     // deserialize and restore actor snapshot. This call will automatically recreate a transaction log.
-        //     val actorRef = createActorRefToUseForReplay(snapshotAsBytes, actorAddress, newActorRef)
-
-        //     // deserialize the messages
-        //     val messages: Vector[AnyRef] = deserializeMessages(entriesAsBytes)
-
-        //     EventHandler.info(this, "Replaying [%s] messages to actor [%s]".format(messages.size, actorAddress))
-
-        //     // replay all messages
-        //     messages foreach { message ⇒
-        //       EventHandler.debug(this, "Replaying message [%s] to actor [%s]".format(message, actorAddress))
-
-        //       // FIXME how to handle '?' messages?
-        //       // We can *not* replay them with the correct semantics. Should we:
-        //       // 1. Ignore/drop them and log warning?
-        //       // 2. Throw exception when about to log them?
-        //       // 3. Other?
-        //       actorRef ! message
-        //     }
-
-        //   } catch {
-        //     case e: Throwable ⇒
-        //       EventHandler.error(e, this, e.toString)
-        //       throw e
-        //   }
-        // }
 
       } else {
         EventHandler.error(this, "Actor 'address' is not defined, ignoring remote daemon command [%s]".format(message))
@@ -233,16 +152,18 @@ class RemoteDaemon extends Actor {
   }
 
   def handleRelease(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
-    if (message.hasActorUuid) {
-      cluster.actorAddressForUuid(uuidProtocolToUuid(message.getActorUuid)) foreach { address ⇒
-        cluster.release(address)
-      }
-    } else if (message.hasActorAddress) {
-      cluster release message.getActorAddress
-    } else {
-      EventHandler.warning(this,
-        "None of 'uuid' or 'actorAddress'' is specified, ignoring remote cluster daemon command [%s]".format(message))
-    }
+    // FIXME implement handleRelease without Cluster
+
+    // if (message.hasActorUuid) {
+    //   cluster.actorAddressForUuid(uuidProtocolToUuid(message.getActorUuid)) foreach { address ⇒
+    //     cluster.release(address)
+    //   }
+    // } else if (message.hasActorAddress) {
+    //   cluster release message.getActorAddress
+    // } else {
+    //   EventHandler.warning(this,
+    //     "None of 'uuid' or 'actorAddress'' is specified, ignoring remote cluster daemon command [%s]".format(message))
+    // }
   }
 
   def handle_fun0_unit(message: RemoteProtocol.RemoteDaemonMessageProtocol) {

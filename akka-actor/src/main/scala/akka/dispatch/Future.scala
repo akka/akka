@@ -767,7 +767,6 @@ trait Promise[T] extends Future[T] {
     }
     fr
   }
-
 }
 
 //Companion object to FState, just to provide a cheap, immutable default entry
