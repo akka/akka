@@ -258,7 +258,7 @@ trait Endpoint { this: Actor ⇒
 
       if (!endpoints.isEmpty) endpoints.foreach { _.apply(uri) ! req }
       else {
-        self.channel match {
+        channel match {
           case null | NullChannel ⇒ _na(uri, req)
           case channel            ⇒ channel ! NoneAvailable(uri, req)
         }
