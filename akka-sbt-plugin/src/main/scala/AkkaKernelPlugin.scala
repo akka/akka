@@ -38,7 +38,7 @@ object AkkaKernelPlugin extends Plugin {
 
   val distNeedsPackageBin = dist <<= dist.dependsOn(packageBin in Compile)
 
-  override lazy val settings =
+  lazy val distSettings: Seq[Setting[_]] =
     inConfig(Dist)(Seq(
       dist <<= packageBin.identity,
       packageBin <<= distTask,
