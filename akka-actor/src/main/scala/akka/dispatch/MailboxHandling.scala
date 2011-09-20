@@ -16,12 +16,24 @@ class MessageQueueAppendFailedException(message: String, cause: Throwable = null
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait MessageQueue {
-  val dispatcherLock = new SimpleLock
-  val suspended = new SimpleLock
+  val dispatcherLock = new SimpleLock(startLocked = false)
+  val suspended = new SimpleLock(startLocked = false) //(startLocked = true)
+  val systemMessages = new ConcurrentLinkedQueue[SystemMessageInvocation]()
+
   def enqueue(handle: MessageInvocation)
   def dequeue(): MessageInvocation
+  def systemEnqueue(handle: SystemMessageInvocation): Unit = systemMessages.offer(handle)
+  def systemDequeue(): SystemMessageInvocation = systemMessages.poll()
   def size: Int
   def isEmpty: Boolean
+
+  def processAllSystemMessages(): Unit = {
+    var nextMessage = systemDequeue()
+    while (nextMessage ne null) {
+      nextMessage.invoke()
+      nextMessage = systemDequeue()
+    }
+  }
 }
 
 /**

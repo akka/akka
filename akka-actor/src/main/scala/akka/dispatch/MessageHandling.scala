@@ -16,14 +16,22 @@ import akka.actor._
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final case class MessageInvocation(val receiver: ActorCell,
-                                   val message: Any,
-                                   val channel: UntypedChannel) {
+final case class MessageInvocation(val receiver: ActorCell, val message: Any, val channel: UntypedChannel) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
 
-  final def invoke() {
-    receiver invoke this
-  }
+  final def invoke() { receiver invoke this }
+}
+
+sealed trait SystemMessage
+case object Create extends SystemMessage
+case object Recreate extends SystemMessage
+case object Suspend extends SystemMessage
+case object Resume extends SystemMessage
+case object Terminate extends SystemMessage
+
+final case class SystemMessageInvocation(val receiver: ActorCell, val message: SystemMessage, val channel: UntypedChannel) {
+  if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
+  final def invoke() { receiver systemInvoke this }
 }
 
 final case class TaskInvocation(function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
@@ -73,15 +81,12 @@ abstract class MessageDispatcher extends Serializable {
    * Attaches the specified actor instance to this dispatcher
    */
   final def attach(actor: ActorCell): Unit = {
-    val promise = new ActorPromise(Timeout.never)(this)
     guard.lock.lock()
     try {
       register(actor)
-      dispatchMessage(new MessageInvocation(actor, Init, promise))
     } finally {
       guard.lock.unlock()
     }
-    promise.get
   }
 
   /**
@@ -225,6 +230,11 @@ abstract class MessageDispatcher extends Serializable {
    *   Will be called when the dispatcher is to queue an invocation for execution
    */
   protected[akka] def dispatch(invocation: MessageInvocation)
+
+  /**
+   *   Will be called when the dispatcher is to queue an invocation for execution
+   */
+  protected[akka] def systemDispatch(invocation: SystemMessageInvocation)
 
   protected[akka] def executeTask(invocation: TaskInvocation)
 

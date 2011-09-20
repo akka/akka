@@ -4,7 +4,6 @@
 package akka.testkit
 
 import akka.event.EventHandler
-import akka.dispatch.{ MessageDispatcher, MessageInvocation, TaskInvocation, Promise, ActorPromise }
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
 import java.util.concurrent.RejectedExecutionException
@@ -12,6 +11,7 @@ import akka.util.Switch
 import java.lang.ref.WeakReference
 import scala.annotation.tailrec
 import akka.actor.ActorCell
+import akka.dispatch._
 
 /*
  * Locking rules:
@@ -136,6 +136,10 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
   override def mailboxSize(actor: ActorCell) = getMailbox(actor).queue.size
 
   override def mailboxIsEmpty(actor: ActorCell): Boolean = getMailbox(actor).queue.isEmpty
+
+  protected[akka] override def systemDispatch(handle: SystemMessageInvocation) {
+    handle.invoke() //Roland, look at me
+  }
 
   protected[akka] override def dispatch(handle: MessageInvocation) {
     val mbox = getMailbox(handle.receiver)

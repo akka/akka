@@ -92,8 +92,18 @@ class Dispatcher(
 
   protected[akka] def dispatch(invocation: MessageInvocation) = {
     val mbox = getMailbox(invocation.receiver)
-    mbox enqueue invocation
-    registerForExecution(mbox)
+    if (mbox ne null) {
+      mbox enqueue invocation
+      registerForExecution(mbox)
+    }
+  }
+
+  protected[akka] def systemDispatch(invocation: SystemMessageInvocation) = {
+    val mbox = getMailbox(invocation.receiver)
+    if (mbox ne null) {
+      mbox systemEnqueue invocation
+      registerForExecution(mbox)
+    }
   }
 
   protected[akka] def executeTask(invocation: TaskInvocation): Unit = if (active.isOn) {
@@ -142,7 +152,7 @@ class Dispatcher(
 
   protected[akka] def registerForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
     if (mbox.dispatcherLock.tryLock()) {
-      if (active.isOn && !mbox.suspended.locked) { //If the dispatcher is active and the actor not suspended
+      if (active.isOn && (!mbox.suspended.locked || !mbox.systemMessages.isEmpty)) { //If the dispatcher is active and the actor not suspended
         try {
           executorService.get() execute mbox
         } catch {
@@ -196,7 +206,7 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue ⇒
       case ie: InterruptedException ⇒ Thread.currentThread().interrupt() //Restore interrupt
     } finally {
       dispatcherLock.unlock()
-      if (!self.isEmpty)
+      if (!self.isEmpty || !self.systemMessages.isEmpty)
         dispatcher.reRegisterForExecution(this)
     }
   }
@@ -207,6 +217,7 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue ⇒
    * @return true if the processing finished before the mailbox was empty, due to the throughput constraint
    */
   final def processMailbox() {
+    processAllSystemMessages()
     if (!self.suspended.locked) {
       var nextMessage = self.dequeue
       if (nextMessage ne null) { //If we have a message
@@ -219,6 +230,7 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue ⇒
           else 0
           do {
             nextMessage.invoke
+            processAllSystemMessages()
             nextMessage =
               if (self.suspended.locked) {
                 null // If we are suspended, abort

@@ -49,12 +49,6 @@ private[akka] trait ActorContext {
 }
 
 private[akka] object ActorCell {
-  sealed trait Status
-  object Status {
-    object Running extends Status
-    object Shutdown extends Status
-  }
-
   val contextStack = new ThreadLocal[Stack[ActorContext]] {
     override def initialValue = Stack[ActorContext]()
   }
@@ -72,7 +66,7 @@ private[akka] class ActorCell(
   val guard = new ReentrantGuard // TODO: remove this last synchronization point
 
   @volatile
-  var status: Status = Status.Running
+  var terminated = false
 
   @volatile
   var mailbox: AnyRef = _
@@ -111,14 +105,13 @@ private[akka] class ActorCell(
 
   def dispatcher: MessageDispatcher = props.dispatcher
 
-  def isRunning: Boolean = status == Status.Running
-  def isShutdown: Boolean = status == Status.Shutdown
+  def isRunning: Boolean = !terminated
+  def isShutdown: Boolean = terminated
 
   def start(): Unit = {
-    if (isShutdown) throw new ActorStartException("Can't start an actor that has been stopped")
     if (props.supervisor.isDefined) props.supervisor.get.link(self)
     dispatcher.attach(this)
-    Actor.registry.register(self)
+    dispatcher.systemDispatch(SystemMessageInvocation(this, Create, NullChannel))
   }
 
   def newActor(restart: Boolean): Actor = {
@@ -153,33 +146,8 @@ private[akka] class ActorCell(
 
   def resume(): Unit = dispatcher.resume(this)
 
-  private[akka] def stop(): Unit = guard.withGuard {
-    if (isRunning) {
-      receiveTimeout = None
-      cancelReceiveTimeout
-      Actor.registry.unregister(self)
-      status = Status.Shutdown
-      dispatcher.detach(this)
-      try {
-        val a = actor.get
-        if (Actor.debugLifecycle) EventHandler.debug(a, "stopping")
-        if (a ne null) a.postStop()
-
-        { //Stop supervised actors
-          val i = _linkedActors.values.iterator
-          while (i.hasNext) {
-            i.next.stop()
-            i.remove()
-          }
-        }
-
-      } finally {
-        //if (supervisor.isDefined) supervisor.get ! Death(self, new ActorKilledException("Stopped"), false)
-        currentMessage = null
-        clearActorContext()
-      }
-    }
-  }
+  private[akka] def stop(): Unit =
+    if (!terminated) dispatcher.systemDispatch(SystemMessageInvocation(this, Terminate, NullChannel))
 
   def link(actorRef: ActorRef): ActorRef = {
     guard.withGuard {
@@ -252,7 +220,79 @@ private[akka] class ActorCell(
     case msg  ⇒ msg.channel
   }
 
+  def systemInvoke(envelope: SystemMessageInvocation): Unit = {
+    var isTerminated = terminated
+
+    def create(recreation: Boolean): Unit = try {
+      actor.get() match {
+        case null ⇒
+          val created = newActor(restart = false)
+          actor.set(created)
+          created.preStart()
+          Actor.registry.register(self)
+        case instance if recreation ⇒
+          restart(new Exception("Restart commanded"), None, None)
+        case _ ⇒
+      }
+    } catch {
+      case e ⇒
+        e.printStackTrace()
+        envelope.channel.sendException(e)
+        if (supervisor.isDefined) supervisor.get ! Death(self, e, false) else throw e
+    }
+
+    def suspend(): Unit = dispatcher suspend this
+
+    def resume(): Unit = dispatcher resume this
+
+    def terminate(): Unit = {
+      receiveTimeout = None
+      cancelReceiveTimeout
+      Actor.registry.unregister(self)
+      isTerminated = true
+      dispatcher.detach(this)
+      try {
+        val a = actor.get
+        if (Actor.debugLifecycle) EventHandler.debug(a, "stopping")
+        if (a ne null) a.postStop()
+
+        { //Stop supervised actors
+          val i = _linkedActors.values.iterator
+          while (i.hasNext) {
+            i.next.stop()
+            i.remove()
+          }
+        }
+
+      } finally {
+        if (supervisor.isDefined) supervisor.get ! Death(self, new ActorKilledException("Stopped"), false)
+        currentMessage = null
+        clearActorContext()
+      }
+    }
+    guard.lock.lock()
+    try {
+      if (!isTerminated) {
+        envelope.message match {
+          case Create    ⇒ create(recreation = false)
+          case Recreate  ⇒ create(recreation = true)
+          case Suspend   ⇒ suspend()
+          case Resume    ⇒ resume()
+          case Terminate ⇒ terminate()
+        }
+      }
+    } catch {
+      case e ⇒ //Should we really catch everything here?
+        EventHandler.error(e, actor.get(), e.getMessage)
+        throw e
+    } finally {
+      terminated = isTerminated
+      guard.lock.unlock()
+    }
+  }
+
   def invoke(messageHandle: MessageInvocation): Unit = {
+    var isTerminated = terminated
     guard.lock.lock()
     try {
       if (!isShutdown) {
@@ -261,17 +301,7 @@ private[akka] class ActorCell(
           try {
             cancelReceiveTimeout() // FIXME: leave this here?
 
-            val a = actor.get() match {
-              case null ⇒
-                val created = newActor(restart = false)
-                actor.set(created)
-                if (Actor.debugLifecycle) EventHandler.debug(created, "started")
-                created.preStart()
-                created
-              case instance ⇒ instance
-            }
-
-            a.apply(messageHandle.message)
+            actor.get().apply(messageHandle.message)
             currentMessage = null // reset current message after successful invocation
           } catch {
             case e ⇒
@@ -294,9 +324,11 @@ private[akka] class ActorCell(
             throw e
         }
       } else {
+        messageHandle.channel sendException new ActorKilledException("Actor has been stopped")
         // throwing away message if actor is shut down, no use throwing an exception in receiving actor's thread, isShutdown is enforced on caller side
       }
     } finally {
+      terminated = isTerminated
       guard.lock.unlock()
     }
   }

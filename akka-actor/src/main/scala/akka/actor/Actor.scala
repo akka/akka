@@ -56,9 +56,8 @@ case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true)
   def this(code: akka.japi.Function[ActorRef, Procedure[Any]]) = this(code, true)
 }
 
-case object Init extends AutoReceivedMessage with LifeCycleMessage
 case class Death(deceased: ActorRef, cause: Throwable, recoverable: Boolean) extends AutoReceivedMessage with LifeCycleMessage
-case class Restart(reason: Throwable) extends AutoReceivedMessage with LifeCycleMessage
+case class Crash(reason: Throwable) extends AutoReceivedMessage
 
 case object RevertHotSwap extends AutoReceivedMessage
 
@@ -657,14 +656,13 @@ trait Actor {
        */
 
       msg match {
-        case Init                      ⇒ reply(()); false //All gud nao FIXME remove reply when we can have fully async init
         case HotSwap(code, discardOld) ⇒ become(code(self), discardOld); false
         case RevertHotSwap             ⇒ unbecome(); false
         case d: Death                  ⇒ context.handleDeath(d); false
         case Link(child)               ⇒ self.link(child); false
         case Unlink(child)             ⇒ self.unlink(child); false
         case UnlinkAndStop(child)      ⇒ self.unlink(child); child.stop(); false
-        case Restart(reason)           ⇒ throw reason
+        case Crash(reason)             ⇒ throw reason
         case Kill                      ⇒ throw new ActorKilledException("Kill")
         case PoisonPill ⇒
           val ch = channel
