@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.cluster
+package akka.remote
 
 import akka.actor._
 import Actor._
@@ -41,12 +41,12 @@ object Remote extends RemoteService {
   // FIXME configure computeGridDispatcher to what?
   val computeGridDispatcher = Dispatchers.newDispatcher("akka:compute-grid").build
 
-  private[cluster] lazy val remoteDaemon = new LocalActorRef(
+  private[remote] lazy val remoteDaemon = new LocalActorRef(
     Props(new RemoteDaemon).copy(dispatcher = new PinnedDispatcher()),
     Remote.remoteAddress,
     systemService = true)
 
-  private[cluster] lazy val remoteDaemonSupervisor = Supervisor(
+  private[remote] lazy val remoteDaemonSupervisor = Supervisor(
     SupervisorConfig(
       OneForOneStrategy(List(classOf[Exception]), Int.MaxValue, Int.MaxValue), // is infinite restart what we want?
       Supervise(
@@ -54,7 +54,7 @@ object Remote extends RemoteService {
         Permanent)
         :: Nil))
 
-  private[cluster] lazy val remoteClientLifeCycleHandler = actorOf(Props(new Actor {
+  private[remote] lazy val remoteClientLifeCycleHandler = actorOf(Props(new Actor {
     def receive = {
       case RemoteClientError(cause, client, address) ⇒ client.shutdownClientModule()
       case RemoteClientDisconnected(client, address) ⇒ client.shutdownClientModule()
@@ -63,7 +63,7 @@ object Remote extends RemoteService {
   }), "akka.cluster.RemoteClientLifeCycleListener")
 
   lazy val server: RemoteSupport = {
-    val remote = new akka.cluster.netty.NettyRemoteSupport
+    val remote = new akka.remote.netty.NettyRemoteSupport
     remote.start(hostname, port)
     remote.register(Remote.remoteAddress, remoteDaemon)
     remote.addListener(NetworkEventStream.channel)
@@ -72,6 +72,8 @@ object Remote extends RemoteService {
   }
 
   lazy val address = server.address
+
+  def start() { EventHandler.info(this, "Starting remote server on [%s]".format(address)) }
 
   def uuidProtocolToUuid(uuid: UuidProtocol): UUID = new UUID(uuid.getHigh, uuid.getLow)
 

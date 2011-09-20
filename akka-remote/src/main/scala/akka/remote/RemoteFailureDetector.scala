@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.cluster
+package akka.remote
 
 import akka.actor._
 import Actor._
-import akka.cluster._
 import akka.routing._
+import akka.dispatch.PinnedDispatcher
 import akka.event.EventHandler
 import akka.util.{ ListenerManagement, Duration }
 
@@ -18,7 +18,6 @@ import scala.annotation.tailrec
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 import System.{ currentTimeMillis ⇒ newTimestamp }
-import akka.dispatch.PinnedDispatcher
 
 /**
  * Base class for remote failure detection management.
@@ -170,7 +169,7 @@ abstract class RemoteFailureDetectorBase(initialConnections: Map[InetSocketAddre
     }
   }
 
-  private[cluster] def newConnection(actorAddress: String, inetSocketAddress: InetSocketAddress) = {
+  private[remote] def newConnection(actorAddress: String, inetSocketAddress: InetSocketAddress) = {
     RemoteActorRef(inetSocketAddress, actorAddress, Actor.TIMEOUT, None)
   }
 }

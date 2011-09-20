@@ -265,23 +265,24 @@ trait BasicRouter extends Router {
   def route(message: Any)(implicit sender: Option[ActorRef]) = message match {
     case Routing.Broadcast(message) ⇒
       //it is a broadcast message, we are going to send to message to all connections.
-      connections.versionedIterable.iterable.foreach(actor ⇒
+      connections.versionedIterable.iterable foreach { connection ⇒
         try {
-          actor.!(message)(sender) // we use original sender, so this is essentially a 'forward'
+          connection.!(message)(sender) // we use original sender, so this is essentially a 'forward'
         } catch {
           case e: Exception ⇒
-            connections.remove(actor)
+            connections.remove(connection)
             throw e
-        })
+        }
+      }
     case _ ⇒
       //it no broadcast message, we are going to select an actor from the connections and send the message to him.
       next match {
-        case Some(actor) ⇒
+        case Some(connection) ⇒
           try {
-            actor.!(message)(sender) // we use original sender, so this is essentially a 'forward'
+            connection.!(message)(sender) // we use original sender, so this is essentially a 'forward'
           } catch {
             case e: Exception ⇒
-              connections.remove(actor)
+              connections.remove(connection)
               throw e
           }
         case None ⇒
@@ -295,13 +296,13 @@ trait BasicRouter extends Router {
     case _ ⇒
       //it no broadcast message, we are going to select an actor from the connections and send the message to him.
       next match {
-        case Some(actor) ⇒
+        case Some(connection) ⇒
           try {
             // FIXME is this not wrong? it will not pass on and use the original Future but create a new one. Should reuse 'channel: UntypedChannel' in the AbstractRoutedActorRef
-            actor.?(message, timeout)(sender).asInstanceOf[Future[T]]
+            connection.?(message, timeout)(sender).asInstanceOf[Future[T]]
           } catch {
             case e: Exception ⇒
-              connections.remove(actor)
+              connections.remove(connection)
               throw e
           }
         case None ⇒

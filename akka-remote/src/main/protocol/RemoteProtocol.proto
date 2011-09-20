@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
-option java_package = "akka.cluster";
+option java_package = "akka.remote";
 option optimize_for = SPEED;
 
 /******************************************
   Compile with:
-  cd ./akka-cluster/src/main/protocol
+  cd ./akka-remote/src/main/protocol
   protoc RemoteProtocol.proto --java_out ../java
 *******************************************/
 

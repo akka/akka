@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.cluster
+package akka.remote
 
 import akka.japi.Creator
 import akka.actor._

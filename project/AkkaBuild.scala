@@ -457,7 +457,7 @@ object Dependency {
   val jsr250        = "javax.annotation"            % "jsr250-api"             % "1.0"        // CDDL v1
   val jsr311        = "javax.ws.rs"                 % "jsr311-api"             % "1.1"        // CDDL v1
   val log4j         = "log4j"                       % "log4j"                  % "1.2.15"     // ApacheV2
-  val mongoAsync    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"   % "0.2.7"      //ApacheV2
+  val mongoAsync    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"   % "0.2.7"      // ApacheV2
   val multiverse    = "org.multiverse"              % "multiverse-alpha"       % V.Multiverse // ApacheV2
   val netty         = "org.jboss.netty"             % "netty"                  % V.Netty      // ApacheV2
   val osgi          = "org.osgi"                    % "org.osgi.core"          % "4.2.0"      // ApacheV2
@@ -476,9 +476,9 @@ object Dependency {
   // Provided
 
   object Provided {
-    val javaxServlet = "org.apache.geronimo.specs" % "geronimo-servlet_3.0_spec" % "1.0" % "provided" //CDDL v1
-    val jerseyServer = "com.sun.jersey"    % "jersey-server" % V.Jersey       % "provided" // CDDL v1
-    val jetty        = "org.eclipse.jetty" % "jetty-server"  % V.Jetty        % "provided" // Eclipse license
+    val javaxServlet = "org.apache.geronimo.specs" % "geronimo-servlet_3.0_spec" % "1.0" % "provided" // CDDL v1
+    val jerseyServer = "com.sun.jersey"    % "jersey-server" % V.Jersey       % "provided"            // CDDL v1
+    val jetty        = "org.eclipse.jetty" % "jetty-server"  % V.Jetty        % "provided"            // Eclipse license
   }
 
   // Runtime

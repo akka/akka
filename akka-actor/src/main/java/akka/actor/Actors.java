@@ -1,7 +1,11 @@
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.actor;
 
 import akka.japi.Creator;
-import akka.cluster.RemoteSupport;
+import akka.remote.RemoteSupport;
 
 import com.eaio.uuid.UUID;
 

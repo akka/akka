@@ -11,7 +11,7 @@ import akka.routing._
 import Config._
 import akka.util.{ ReflectiveAccess, Duration }
 import ReflectiveAccess._
-import akka.cluster.RemoteSupport
+import akka.remote.RemoteSupport
 import akka.cluster.ClusterNode
 import akka.japi.{ Creator, Procedure }
 import akka.serialization.{ Serializer, Serialization }

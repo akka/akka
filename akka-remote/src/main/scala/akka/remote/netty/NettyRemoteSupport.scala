@@ -2,14 +2,13 @@
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.cluster.netty
+package akka.remote.netty
 
 import akka.dispatch.{ ActorPromise, DefaultPromise, Promise }
-import akka.cluster.{ MessageSerializer, RemoteClientSettings, RemoteServerSettings }
-import akka.cluster.RemoteProtocol._
 import akka.serialization.RemoteActorSerialization
-import akka.serialization.RemoteActorSerialization._
-import akka.cluster._
+import RemoteActorSerialization._
+import akka.remote._
+import RemoteProtocol._
 import akka.actor.{
   PoisonPill,
   Actor,
@@ -22,7 +21,7 @@ import akka.actor.{
   LifeCycleMessage,
   Address
 }
-import akka.actor.Actor._
+import Actor._
 import akka.config.Config
 import Config._
 import akka.util._
@@ -172,9 +171,9 @@ abstract class RemoteClient private[akka] (
     else new LinkedBlockingQueue[(Boolean, Uuid, RemoteMessageProtocol)](transactionLogCapacity)
   }
 
-  private[cluster] val runSwitch = new Switch()
+  private[remote] val runSwitch = new Switch()
 
-  private[cluster] def isRunning = runSwitch.isOn
+  private[remote] def isRunning = runSwitch.isOn
 
   protected def notifyListeners(msg: ⇒ Any): Unit
 
@@ -288,7 +287,7 @@ abstract class RemoteClient private[akka] (
     }
   }
 
-  private[cluster] def sendPendingRequests() = pendingRequests synchronized {
+  private[remote] def sendPendingRequests() = pendingRequests synchronized {
     // ensure only one thread at a time can flush the log
     val nrOfMessages = pendingRequests.size
     if (nrOfMessages > 0) EventHandler.info(this, "Resending [%s] previously failed messages after remote client reconnect" format nrOfMessages)
@@ -339,9 +338,9 @@ class ActiveRemoteClient private[akka] (
   @volatile
   private var bootstrap: ClientBootstrap = _
   @volatile
-  private[cluster] var connection: ChannelFuture = _
+  private[remote] var connection: ChannelFuture = _
   @volatile
-  private[cluster] var openChannels: DefaultChannelGroup = _
+  private[remote] var openChannels: DefaultChannelGroup = _
   @volatile
   private var timer: HashedWheelTimer = _
   @volatile
