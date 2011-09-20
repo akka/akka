@@ -205,36 +205,36 @@ class LocalActorRef private[akka] (
 
     this(__props, __address, false, __uuid, __receiveTimeout, __hotswap)
 
-    actorInstance.setActorContext(actorInstance) // this is needed for deserialization - why?
+    actorCell.setActorContext(actorCell) // this is needed for deserialization - why?
   }
 
-  private[this] val actorInstance = new ActorInstance(this, props, receiveTimeout, hotswap)
-  actorInstance.start()
+  private[this] val actorCell = new ActorCell(this, props, receiveTimeout, hotswap)
+  actorCell.start()
 
   /**
    * Is the actor running?
    */
-  def isRunning: Boolean = actorInstance.isRunning
+  def isRunning: Boolean = actorCell.isRunning
 
   /**
    * Is the actor shut down?
    */
-  def isShutdown: Boolean = actorInstance.isShutdown
+  def isShutdown: Boolean = actorCell.isShutdown
 
   /**
    * Suspends the actor. It will not process messages while suspended.
    */
-  def suspend(): Unit = actorInstance.suspend()
+  def suspend(): Unit = actorCell.suspend()
 
   /**
    * Resumes a suspended actor.
    */
-  def resume(): Unit = actorInstance.resume()
+  def resume(): Unit = actorCell.resume()
 
   /**
    * Shuts down the actor and its message queue
    */
-  def stop(): Unit = actorInstance.stop()
+  def stop(): Unit = actorCell.stop()
 
   /**
    * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will
@@ -247,7 +247,7 @@ class LocalActorRef private[akka] (
    * To be invoked from within the actor itself.
    * Returns the ref that was passed into it
    */
-  def link(actorRef: ActorRef): ActorRef = actorInstance.link(actorRef)
+  def link(actorRef: ActorRef): ActorRef = actorCell.link(actorRef)
 
   /**
    * Unlink the actor.
@@ -255,40 +255,40 @@ class LocalActorRef private[akka] (
    * To be invoked from within the actor itself.
    * Returns the ref that was passed into it
    */
-  def unlink(actorRef: ActorRef): ActorRef = actorInstance.unlink(actorRef)
+  def unlink(actorRef: ActorRef): ActorRef = actorCell.unlink(actorRef)
 
   /**
    * Returns the supervisor, if there is one.
    */
-  def supervisor: Option[ActorRef] = actorInstance.supervisor
+  def supervisor: Option[ActorRef] = actorCell.supervisor
 
   // ========= AKKA PROTECTED FUNCTIONS =========
 
-  protected[akka] def actorClass: Class[_] = actorInstance.actorClass
+  protected[akka] def actorClass: Class[_] = actorCell.actorClass
 
-  protected[akka] def underlying: ActorInstance = actorInstance
+  protected[akka] def underlying: ActorCell = actorCell
 
-  protected[akka] def underlyingActorInstance: Actor = actorInstance.actor.get
+  protected[akka] def underlyingActorInstance: Actor = actorCell.actor.get
 
   protected[akka] override def timeout: Long = props.timeout.duration.toMillis // TODO: remove this if possible
 
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit =
-    actorInstance.supervisor = sup
+    actorCell.supervisor = sup
 
   protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
-    actorInstance.postMessageToMailbox(message, channel)
+    actorCell.postMessageToMailbox(message, channel)
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
     timeout: Timeout,
     channel: UntypedChannel): Future[Any] = {
-    actorInstance.postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
+    actorCell.postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
   }
 
-  protected[akka] def handleDeath(death: Death): Unit = actorInstance.handleDeath(death)
+  protected[akka] def handleDeath(death: Death): Unit = actorCell.handleDeath(death)
 
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit =
-    actorInstance.restart(reason, maxNrOfRetries, withinTimeRange)
+    actorCell.restart(reason, maxNrOfRetries, withinTimeRange)
 
   // ========= PRIVATE FUNCTIONS =========
 

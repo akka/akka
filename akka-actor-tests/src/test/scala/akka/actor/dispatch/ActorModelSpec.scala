@@ -103,22 +103,22 @@ object ActorModelSpec {
       stats.get(actorRef)
     }
 
-    abstract override def suspend(actor: ActorInstance) {
+    abstract override def suspend(actor: ActorCell) {
       super.suspend(actor)
       getStats(actor.ref).suspensions.incrementAndGet()
     }
 
-    abstract override def resume(actor: ActorInstance) {
+    abstract override def resume(actor: ActorCell) {
       super.resume(actor)
       getStats(actor.ref).resumes.incrementAndGet()
     }
 
-    protected[akka] abstract override def register(actor: ActorInstance) {
+    protected[akka] abstract override def register(actor: ActorCell) {
       super.register(actor)
       getStats(actor.ref).registers.incrementAndGet()
     }
 
-    protected[akka] abstract override def unregister(actor: ActorInstance) {
+    protected[akka] abstract override def unregister(actor: ActorCell) {
       super.unregister(actor)
       getStats(actor.ref).unregisters.incrementAndGet()
     }

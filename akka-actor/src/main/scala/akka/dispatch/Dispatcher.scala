@@ -7,7 +7,7 @@ package akka.dispatch
 import akka.event.EventHandler
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue }
-import akka.actor.{ ActorInstance, ActorKilledException }
+import akka.actor.{ ActorCell, ActorKilledException }
 
 /**
  * Default settings are:
@@ -108,13 +108,13 @@ class Dispatcher(
   /**
    * @return the mailbox associated with the actor
    */
-  protected def getMailbox(receiver: ActorInstance) = receiver.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
+  protected def getMailbox(receiver: ActorCell) = receiver.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
 
-  override def mailboxIsEmpty(actor: ActorInstance): Boolean = getMailbox(actor).isEmpty
+  override def mailboxIsEmpty(actor: ActorCell): Boolean = getMailbox(actor).isEmpty
 
-  override def mailboxSize(actor: ActorInstance): Int = getMailbox(actor).size
+  override def mailboxSize(actor: ActorCell): Int = getMailbox(actor).size
 
-  def createMailbox(actor: ActorInstance): AnyRef = mailboxType match {
+  def createMailbox(actor: ActorCell): AnyRef = mailboxType match {
     case b: UnboundedMailbox ⇒
       new ConcurrentLinkedQueue[MessageInvocation] with MessageQueue with ExecutableMailbox {
         @inline
@@ -160,7 +160,7 @@ class Dispatcher(
   protected[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
     registerForExecution(mbox)
 
-  protected override def cleanUpMailboxFor(actor: ActorInstance) {
+  protected override def cleanUpMailboxFor(actor: ActorCell) {
     val m = getMailbox(actor)
     if (!m.isEmpty) {
       var invocation = m.dequeue
@@ -174,10 +174,10 @@ class Dispatcher(
 
   override val toString = getClass.getSimpleName + "[" + name + "]"
 
-  def suspend(actor: ActorInstance): Unit =
+  def suspend(actor: ActorCell): Unit =
     getMailbox(actor).suspended.tryLock
 
-  def resume(actor: ActorInstance): Unit = {
+  def resume(actor: ActorCell): Unit = {
     val mbox = getMailbox(actor)
     mbox.suspended.tryUnlock
     reRegisterForExecution(mbox)
@@ -296,7 +296,7 @@ class PriorityDispatcher(
 trait PriorityMailbox { self: Dispatcher ⇒
   def comparator: java.util.Comparator[MessageInvocation]
 
-  override def createMailbox(actor: ActorInstance): AnyRef = self.mailboxType match {
+  override def createMailbox(actor: ActorCell): AnyRef = self.mailboxType match {
     case b: UnboundedMailbox ⇒
       new UnboundedPriorityMessageQueue(comparator) with ExecutableMailbox {
         @inline

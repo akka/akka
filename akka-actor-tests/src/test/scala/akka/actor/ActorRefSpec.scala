@@ -129,7 +129,7 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         })
       }
 
-      def contextStackMustBeEmpty = ActorInstance.contextStack.get.headOption must be === None
+      def contextStackMustBeEmpty = ActorCell.contextStack.get.headOption must be === None
 
       contextStackMustBeEmpty
 

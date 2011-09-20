@@ -427,7 +427,7 @@ trait Actor {
    */
   @transient
   private[akka] val context: ActorContext = {
-    val contextStack = ActorInstance.contextStack.get
+    val contextStack = ActorCell.contextStack.get
 
     def noContextError = {
       throw new ActorInitializationException(
@@ -440,7 +440,7 @@ trait Actor {
     if (contextStack.isEmpty) noContextError
     val context = contextStack.head
     if (context eq null) noContextError
-    ActorInstance.contextStack.set(contextStack.push(null))
+    ActorCell.contextStack.set(contextStack.push(null))
     context
   }
 

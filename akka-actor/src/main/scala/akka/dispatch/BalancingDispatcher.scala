@@ -5,7 +5,7 @@
 package akka.dispatch
 
 import util.DynamicVariable
-import akka.actor.{ ActorInstance, Actor, IllegalActorStateException }
+import akka.actor.{ ActorCell, Actor, IllegalActorStateException }
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -50,15 +50,15 @@ class BalancingDispatcher(
     this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
 
   @volatile
-  private var members = Vector[ActorInstance]()
+  private var members = Vector[ActorCell]()
   private val donationInProgress = new DynamicVariable(false)
 
-  protected[akka] override def register(actor: ActorInstance) = {
+  protected[akka] override def register(actor: ActorCell) = {
     members :+= actor //Update members, doesn't need synchronized, is guarded in attach
     super.register(actor)
   }
 
-  protected[akka] override def unregister(actor: ActorInstance) = {
+  protected[akka] override def unregister(actor: ActorCell) = {
     members = members.filterNot(actor eq) //Update members, doesn't need synchronized, is guarded in detach
     super.unregister(actor)
   }
@@ -114,7 +114,7 @@ class BalancingDispatcher(
    * Rewrites the message and adds that message to the recipients mailbox
    * returns true if the message is non-null
    */
-  protected def donate(organ: MessageInvocation, recipient: ActorInstance): Boolean = {
+  protected def donate(organ: MessageInvocation, recipient: ActorCell): Boolean = {
     if (organ ne null) {
       recipient.postMessageToMailbox(organ.message, organ.channel)
       true
@@ -124,10 +124,10 @@ class BalancingDispatcher(
   /**
    * Returns an available recipient for the message, if any
    */
-  protected def doFindDonorRecipient(donorMbox: MessageQueue with ExecutableMailbox, potentialRecipients: Vector[ActorInstance], startIndex: Int): ActorInstance = {
+  protected def doFindDonorRecipient(donorMbox: MessageQueue with ExecutableMailbox, potentialRecipients: Vector[ActorCell], startIndex: Int): ActorCell = {
     val prSz = potentialRecipients.size
     var i = 0
-    var recipient: ActorInstance = null
+    var recipient: ActorCell = null
 
     while ((i < prSz) && (recipient eq null)) {
       val actor = potentialRecipients((i + startIndex) % prSz) //Wrap-around, one full lap

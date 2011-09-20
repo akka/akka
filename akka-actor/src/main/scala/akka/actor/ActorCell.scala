@@ -15,7 +15,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.Stack
 
 /**
- * The actor context - the view into the actor instance from the actor.
+ * The actor context - the view of the actor cell from the actor.
  * Exposes contextual information for the actor and the current message.
  * TODO: everything here for current compatibility - could be limited more
  */
@@ -48,7 +48,7 @@ private[akka] trait ActorContext {
   def handleDeath(death: Death)
 }
 
-private[akka] object ActorInstance {
+private[akka] object ActorCell {
   sealed trait Status
   object Status {
     object Running extends Status
@@ -60,14 +60,14 @@ private[akka] object ActorInstance {
   }
 }
 
-private[akka] class ActorInstance(
+private[akka] class ActorCell(
   val self: ActorRef with ScalaActorRef,
   props: Props,
   _receiveTimeout: Option[Long],
   _hotswap: Stack[PartialFunction[Any, Unit]])
   extends ActorContext {
 
-  import ActorInstance._
+  import ActorCell._
 
   val guard = new ReentrantGuard // TODO: remove this last synchronization point
 
@@ -471,9 +471,9 @@ private[akka] class ActorInstance(
   override def hashCode: Int = HashCode.hash(HashCode.SEED, uuid)
 
   override def equals(that: Any): Boolean = {
-    that.isInstanceOf[ActorInstance] && that.asInstanceOf[ActorInstance].uuid == uuid
+    that.isInstanceOf[ActorCell] && that.asInstanceOf[ActorCell].uuid == uuid
   }
 
-  override def toString = "ActorInstance[%s]".format(uuid)
+  override def toString = "ActorCell[%s]".format(uuid)
 }
 

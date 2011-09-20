@@ -16,7 +16,7 @@ import akka.actor._
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final case class MessageInvocation(val receiver: ActorInstance,
+final case class MessageInvocation(val receiver: ActorCell,
                                    val message: Any,
                                    val channel: UntypedChannel) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
@@ -62,7 +62,7 @@ abstract class MessageDispatcher extends Serializable {
   /**
    *  Creates and returns a mailbox for the given actor.
    */
-  protected[akka] def createMailbox(actor: ActorInstance): AnyRef
+  protected[akka] def createMailbox(actor: ActorCell): AnyRef
 
   /**
    * Name of this dispatcher.
@@ -72,7 +72,7 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * Attaches the specified actor instance to this dispatcher
    */
-  final def attach(actor: ActorInstance): Unit = {
+  final def attach(actor: ActorCell): Unit = {
     val promise = new ActorPromise(Timeout.never)(this)
     guard.lock.lock()
     try {
@@ -87,7 +87,7 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * Detaches the specified actor instance from this dispatcher
    */
-  final def detach(actor: ActorInstance): Unit = {
+  final def detach(actor: ActorCell): Unit = {
     guard withGuard {
       unregister(actor)
     }
@@ -132,7 +132,7 @@ abstract class MessageDispatcher extends Serializable {
    * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
    * and only call it under the dispatcher-guard, see "attach" for the only invocation
    */
-  protected[akka] def register(actor: ActorInstance) {
+  protected[akka] def register(actor: ActorCell) {
     if (actor.mailbox eq null)
       actor.mailbox = createMailbox(actor)
 
@@ -148,7 +148,7 @@ abstract class MessageDispatcher extends Serializable {
    * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
    * and only call it under the dispatcher-guard, see "detach" for the only invocation
    */
-  protected[akka] def unregister(actor: ActorInstance) = {
+  protected[akka] def unregister(actor: ActorCell) = {
     if (uuids remove actor.uuid) {
       cleanUpMailboxFor(actor)
       actor.mailbox = null
@@ -169,7 +169,7 @@ abstract class MessageDispatcher extends Serializable {
    * Overridable callback to clean up the mailbox for a given actor,
    * called when an actor is unregistered.
    */
-  protected def cleanUpMailboxFor(actor: ActorInstance) {}
+  protected def cleanUpMailboxFor(actor: ActorCell) {}
 
   /**
    * Traverses the list of actors (uuids) currently being attached to this dispatcher and stops those actors
@@ -214,12 +214,12 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
    */
-  def suspend(actor: ActorInstance)
+  def suspend(actor: ActorCell)
 
   /*
    * After the call to this method, the dispatcher must begin any new message processing for the specified reference
    */
-  def resume(actor: ActorInstance)
+  def resume(actor: ActorCell)
 
   /**
    *   Will be called when the dispatcher is to queue an invocation for execution
@@ -241,12 +241,12 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * Returns the size of the mailbox for the specified actor
    */
-  def mailboxSize(actor: ActorInstance): Int
+  def mailboxSize(actor: ActorCell): Int
 
   /**
    * Returns the "current" emptiness status of the mailbox for the specified actor
    */
-  def mailboxIsEmpty(actor: ActorInstance): Boolean
+  def mailboxIsEmpty(actor: ActorCell): Boolean
 
   /**
    * Returns the amount of tasks queued for execution
