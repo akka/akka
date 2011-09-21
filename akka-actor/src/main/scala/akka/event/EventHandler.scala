@@ -274,7 +274,6 @@ object EventHandler extends ListenerManagement {
     def instanceName(instance: AnyRef): String = instance match {
       case null        ⇒ "NULL"
       case a: ActorRef ⇒ a.address
-      case null        ⇒ "null instance"
       case _           ⇒ instance.getClass.getSimpleName
     }
   }

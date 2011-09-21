@@ -45,7 +45,7 @@ private[akka] trait ActorContext {
 
   def dispatcher: MessageDispatcher
 
-  def handleDeath(death: Death)
+  def handleFailure(fail: Failed)
 }
 
 private[akka] object ActorCell {
@@ -74,28 +74,28 @@ private[akka] class ActorCell(
   @volatile
   var futureTimeout: Option[ScheduledFuture[AnyRef]] = None
 
-  @volatile
+  @volatile //Should be a final field
   var _supervisor: Option[ActorRef] = None
 
-  @volatile
+  @volatile //FIXME doesn't need to be volatile
   var maxNrOfRetriesCount: Int = 0
 
-  @volatile
+  @volatile //FIXME doesn't need to be volatile
   var restartTimeWindowStartNanos: Long = 0L
 
   @volatile
   lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
 
-  @volatile
+  @volatile //FIXME doesn't need to be volatile
   var hotswap: Stack[PartialFunction[Any, Unit]] = _hotswap // TODO: currently settable from outside for compatibility
 
   @volatile
   var receiveTimeout: Option[Long] = _receiveTimeout // TODO: currently settable from outside for compatibility
 
-  @volatile
+  @volatile //FIXME volatile can be removed
   var currentMessage: MessageInvocation = null
 
-  val actor: AtomicReference[Actor] = new AtomicReference[Actor]()
+  val actor: AtomicReference[Actor] = new AtomicReference[Actor]() //FIXME We can most probably make this just a regular reference to Actor
 
   def ref: ActorRef with ScalaActorRef = self
 
@@ -240,7 +240,7 @@ private[akka] class ActorCell(
     } catch {
       case e ⇒
         envelope.channel.sendException(e)
-        if (supervisor.isDefined) supervisor.get ! Death(self, e, false) else throw e
+        if (supervisor.isDefined) supervisor.get ! Failed(self, e, false, maxNrOfRetriesCount, restartTimeWindowStartNanos) else throw e
     }
 
     def suspend(): Unit = dispatcher suspend this
@@ -268,10 +268,11 @@ private[akka] class ActorCell(
 
       } finally {
         try {
-          if (supervisor.isDefined) supervisor.get ! Death(self, new ActorKilledException("Stopped"), false)
+          if (supervisor.isDefined)
+            supervisor.get ! Failed(self, new ActorKilledException("Stopped"), false, maxNrOfRetriesCount, restartTimeWindowStartNanos) //Death(self, new ActorKilledException("Stopped"), false)
         } catch {
           case e: ActorInitializationException ⇒
-            // TODO: remove when ! cannot throw anymore
+          // TODO: remove when ! cannot throw anymore
         }
         currentMessage = null
         clearActorContext()
@@ -319,7 +320,7 @@ private[akka] class ActorCell(
 
               channel.sendException(e)
 
-              if (supervisor.isDefined) supervisor.get ! Death(self, e, true) else dispatcher.resume(this)
+              if (supervisor.isDefined) supervisor.get ! Failed(self, e, true, maxNrOfRetriesCount, restartTimeWindowStartNanos) else dispatcher.resume(this)
 
               if (e.isInstanceOf[InterruptedException]) throw e //Re-throw InterruptedExceptions as expected
           } finally {
@@ -340,23 +341,23 @@ private[akka] class ActorCell(
     }
   }
 
-  def handleDeath(death: Death): Unit = {
+  def handleFailure(fail: Failed): Unit = {
     props.faultHandler match {
-      case AllForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
-        restartLinkedActors(death.cause, maxRetries, within)
+      case AllForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(fail.cause.getClass)) ⇒
+        restartLinkedActors(fail.cause, maxRetries, within)
 
-      case AllForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
-        restartLinkedActors(death.cause, None, None)
+      case AllForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(fail.cause.getClass)) ⇒
+        restartLinkedActors(fail.cause, None, None)
 
-      case OneForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
-        death.deceased.restart(death.cause, maxRetries, within)
+      case OneForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(fail.cause.getClass)) ⇒
+        fail.actor.restart(fail.cause, maxRetries, within)
 
-      case OneForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(death.cause.getClass)) ⇒
-        death.deceased.stop()
-        self ! MaximumNumberOfRestartsWithinTimeRangeReached(death.deceased, None, None, death.cause)
+      case OneForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(fail.cause.getClass)) ⇒
+        fail.actor.stop()
+        self ! MaximumNumberOfRestartsWithinTimeRangeReached(fail.actor, None, None, fail.cause) //FIXME this should be removed, you should link to an actor to get Terminated messages
 
       case _ ⇒
-        if (_supervisor.isDefined) throw death.cause else death.deceased.stop() //Escalate problem if not handled here
+        if (_supervisor.isDefined) throw fail.cause else fail.actor.stop() //Escalate problem if not handled here
     }
   }
 

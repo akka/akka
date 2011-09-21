@@ -125,8 +125,7 @@ object ActorModelSpec {
     }
 
     protected[akka] abstract override def dispatch(invocation: MessageInvocation) {
-      if (!invocation.message.isInstanceOf[LifeCycleMessage])
-        getStats(invocation.receiver.ref).msgsReceived.incrementAndGet()
+      getStats(invocation.receiver.ref).msgsReceived.incrementAndGet()
       super.dispatch(invocation)
     }
 

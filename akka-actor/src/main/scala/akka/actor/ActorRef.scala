@@ -115,12 +115,6 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
 
   /**
    * Shuts down the actor its dispatcher and message queue.
-   * Alias for 'stop'.
-   */
-  def exit(): Unit = stop()
-
-  /**
-   * Shuts down the actor its dispatcher and message queue.
    */
   def stop(): Unit
 
@@ -285,7 +279,7 @@ class LocalActorRef private[akka] (
     actorCell.postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
   }
 
-  protected[akka] def handleDeath(death: Death): Unit = actorCell.handleDeath(death)
+  protected[akka] def handleFailure(fail: Failed): Unit = actorCell.handleFailure(fail)
 
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit =
     actorCell.restart(reason, maxNrOfRetries, withinTimeRange)
