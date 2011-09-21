@@ -15,7 +15,7 @@ import akka.actor.{ LocalActorRef, Actor, ActorRegistry, NullChannel }
 abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
   def name: String
 
-  def factory: MailboxType ⇒ MessageQueue
+  def factory: MailboxType ⇒ Mailbox
 
   name should {
     "create an unbounded mailbox" in {
@@ -80,14 +80,14 @@ abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfte
     result
   }
 
-  def createMessageInvocation(msg: Any): MessageInvocation = {
-    new MessageInvocation(
+  def createMessageInvocation(msg: Any): Envelope = {
+    new Envelope(
       actorOf(new Actor { //Dummy actor
         def receive = { case _ ⇒ }
       }).asInstanceOf[LocalActorRef].underlying, msg, NullChannel)
   }
 
-  def ensureInitialMailboxState(config: MailboxType, q: MessageQueue) {
+  def ensureInitialMailboxState(config: MailboxType, q: Mailbox) {
     q must not be null
     q match {
       case aQueue: BlockingQueue[_] ⇒
@@ -106,7 +106,7 @@ abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfte
     val q = factory(config)
     ensureInitialMailboxState(config, q)
 
-    def createProducer(fromNum: Int, toNum: Int): Future[Vector[MessageInvocation]] = spawn {
+    def createProducer(fromNum: Int, toNum: Int): Future[Vector[Envelope]] = spawn {
       val messages = Vector() ++ (for (i ← fromNum to toNum) yield createMessageInvocation(i))
       for (i ← messages) q.enqueue(i)
       messages
@@ -117,8 +117,8 @@ abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfte
 
     val producers = for (i ← (1 to totalMessages by step).toList) yield createProducer(i, i + step - 1)
 
-    def createConsumer: Future[Vector[MessageInvocation]] = spawn {
-      var r = Vector[MessageInvocation]()
+    def createConsumer: Future[Vector[Envelope]] = spawn {
+      var r = Vector[Envelope]()
       while (producers.exists(_.isCompleted == false) || !q.isEmpty) {
         q.dequeue match {
           case null    ⇒
@@ -146,8 +146,8 @@ abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfte
 class DefaultMailboxSpec extends MailboxSpec {
   lazy val name = "The default mailbox implementation"
   def factory = {
-    case UnboundedMailbox()                    ⇒ new DefaultUnboundedMessageQueue()
-    case BoundedMailbox(capacity, pushTimeOut) ⇒ new DefaultBoundedMessageQueue(capacity, pushTimeOut)
+    case u: UnboundedMailbox ⇒ u.create(null)
+    case b: BoundedMailbox   ⇒ b.create(null)
   }
 }
 
@@ -155,7 +155,7 @@ class PriorityMailboxSpec extends MailboxSpec {
   val comparator = PriorityGenerator(_.##)
   lazy val name = "The priority mailbox implementation"
   def factory = {
-    case UnboundedMailbox()                    ⇒ new UnboundedPriorityMessageQueue(comparator)
-    case BoundedMailbox(capacity, pushTimeOut) ⇒ new BoundedPriorityMessageQueue(capacity, pushTimeOut, comparator)
+    case UnboundedMailbox()                    ⇒ UnboundedPriorityMailbox(comparator).create(null)
+    case BoundedMailbox(capacity, pushTimeOut) ⇒ BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(null)
   }
 }

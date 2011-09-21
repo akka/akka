@@ -16,7 +16,7 @@ import akka.actor._
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final case class MessageInvocation(val receiver: ActorCell, val message: Any, val channel: UntypedChannel) {
+final case class Envelope(val receiver: ActorCell, val message: Any, val channel: UntypedChannel) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
 
   final def invoke() { receiver invoke this }
@@ -29,9 +29,12 @@ case object Suspend extends SystemMessage
 case object Resume extends SystemMessage
 case object Terminate extends SystemMessage
 
-final case class SystemMessageInvocation(val receiver: ActorCell, val message: SystemMessage, val channel: UntypedChannel) {
+final case class SystemEnvelope(val receiver: ActorCell, val message: SystemMessage, val channel: UntypedChannel) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
-  final def invoke() { receiver systemInvoke this }
+  /**
+   * @return whether to proceed with processing other messages
+   */
+  final def invoke(): Boolean = receiver systemInvoke this
 }
 
 final case class TaskInvocation(function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
@@ -70,7 +73,18 @@ abstract class MessageDispatcher extends Serializable {
   /**
    *  Creates and returns a mailbox for the given actor.
    */
-  protected[akka] def createMailbox(actor: ActorCell): AnyRef
+  protected[akka] def createMailbox(actor: ActorCell): Mailbox
+
+  /**
+   * Create a blackhole mailbox for the purpose of replacing the real one upon actor termination
+   */
+  protected[akka] def createDeadletterMailbox = new Mailbox {
+    override def dispatcher = MessageDispatcher.this
+    override def enqueue(envelope: Envelope) {}
+    override def dequeue() = null
+    override def isEmpty = true
+    override def size = 0
+  }
 
   /**
    * Name of this dispatcher.
@@ -98,7 +112,7 @@ abstract class MessageDispatcher extends Serializable {
     }
   }
 
-  protected[akka] final def dispatchMessage(invocation: MessageInvocation): Unit = dispatch(invocation)
+  protected[akka] final def dispatchMessage(invocation: Envelope): Unit = dispatch(invocation)
 
   protected[akka] final def dispatchTask(block: () ⇒ Unit): Unit = {
     _tasks.getAndIncrement()
@@ -156,7 +170,7 @@ abstract class MessageDispatcher extends Serializable {
   protected[akka] def unregister(actor: ActorCell) = {
     if (uuids remove actor.uuid) {
       cleanUpMailboxFor(actor)
-      actor.mailbox = null
+      actor.mailbox = createDeadletterMailbox
       if (uuids.isEmpty && _tasks.get == 0) {
         shutdownSchedule match {
           case UNSCHEDULED ⇒
@@ -229,12 +243,21 @@ abstract class MessageDispatcher extends Serializable {
   /**
    *   Will be called when the dispatcher is to queue an invocation for execution
    */
-  protected[akka] def dispatch(invocation: MessageInvocation)
+  protected[akka] def dispatch(invocation: Envelope)
+
+  /**
+   * Callback for processMailbox() which is called after one sweep of processing is done.
+   */
+  protected[akka] def reRegisterForExecution(mbox: Mailbox)
+
+  // TODO check whether this should not actually be a property of the mailbox
+  protected[akka] def throughput: Int
+  protected[akka] def throughputDeadlineTime: Int
 
   /**
    *   Will be called when the dispatcher is to queue an invocation for execution
    */
-  protected[akka] def systemDispatch(invocation: SystemMessageInvocation)
+  protected[akka] def systemDispatch(invocation: SystemEnvelope)
 
   protected[akka] def executeTask(invocation: TaskInvocation)
 
@@ -251,12 +274,12 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * Returns the size of the mailbox for the specified actor
    */
-  def mailboxSize(actor: ActorCell): Int
+  def mailboxSize(actor: ActorCell): Int = actor.mailbox.size
 
   /**
    * Returns the "current" emptiness status of the mailbox for the specified actor
    */
-  def mailboxIsEmpty(actor: ActorCell): Boolean
+  def mailboxIsEmpty(actor: ActorCell): Boolean = actor.mailbox.isEmpty
 
   /**
    * Returns the amount of tasks queued for execution

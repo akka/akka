@@ -124,7 +124,7 @@ object ActorModelSpec {
       getStats(actor.ref).unregisters.incrementAndGet()
     }
 
-    protected[akka] abstract override def dispatch(invocation: MessageInvocation) {
+    protected[akka] abstract override def dispatch(invocation: Envelope) {
       getStats(invocation.receiver.ref).msgsReceived.incrementAndGet()
       super.dispatch(invocation)
     }

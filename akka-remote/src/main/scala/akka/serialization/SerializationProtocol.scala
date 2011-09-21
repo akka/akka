@@ -8,7 +8,7 @@ import akka.config.Supervision._
 import akka.actor.{ uuidFrom, newUuid }
 import akka.actor._
 import DeploymentConfig._
-import akka.dispatch.MessageInvocation
+import akka.dispatch.Envelope
 import akka.util.{ ReflectiveAccess, Duration }
 import akka.cluster.{ RemoteClientSettings, MessageSerializer }
 import akka.cluster.RemoteProtocol
@@ -107,9 +107,9 @@ object ActorSerialization {
         l.underlying.mailbox match {
           case null ⇒ throw new IllegalActorStateException("Can't serialize an actor that has not been started.")
           case q: java.util.Queue[_] ⇒
-            val l = new scala.collection.mutable.ListBuffer[MessageInvocation]
+            val l = new scala.collection.mutable.ListBuffer[Envelope]
             val it = q.iterator
-            while (it.hasNext) l += it.next.asInstanceOf[MessageInvocation]
+            while (it.hasNext) l += it.next.asInstanceOf[Envelope]
 
             l map { m ⇒
               RemoteActorSerialization.createRemoteMessageProtocolBuilder(

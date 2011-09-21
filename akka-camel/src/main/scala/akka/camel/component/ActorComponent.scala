@@ -16,7 +16,7 @@ import akka.actor._
 import akka.camel.{ Ack, Failure, Message }
 import akka.camel.CamelMessageConversion.toExchangeAdapter
 import scala.reflect.BeanProperty
-import akka.dispatch.{ FutureTimeoutException, Promise, MessageInvocation, MessageDispatcher }
+import akka.dispatch.{ FutureTimeoutException, Promise, MessageDispatcher }
 
 /**
  * @author Martin Krasser

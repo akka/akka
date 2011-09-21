@@ -63,8 +63,8 @@ class BalancingDispatcher(
     super.unregister(actor)
   }
 
-  override protected[akka] def dispatch(invocation: MessageInvocation) = {
-    val mbox = getMailbox(invocation.receiver)
+  override protected[akka] def dispatch(invocation: Envelope) = {
+    val mbox = invocation.receiver.mailbox
     if (donationInProgress.value == false && (!mbox.isEmpty || mbox.dispatcherLock.locked) && attemptDonationOf(invocation, mbox)) {
       //We were busy and we got to donate the message to some other lucky guy, we're done here
     } else {
@@ -73,7 +73,7 @@ class BalancingDispatcher(
     }
   }
 
-  override protected[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
+  override protected[akka] def reRegisterForExecution(mbox: Mailbox): Unit = {
     try {
       donationInProgress.value = true
       while (donateFrom(mbox)) {} //When we reregister, first donate messages to another actor
@@ -86,7 +86,7 @@ class BalancingDispatcher(
   /**
    * Returns true if it successfully donated a message
    */
-  protected def donateFrom(donorMbox: MessageQueue with ExecutableMailbox): Boolean = {
+  protected def donateFrom(donorMbox: Mailbox): Boolean = {
     val actors = members // copy to prevent concurrent modifications having any impact
 
     // we risk to pick a thief which is unregistered from the dispatcher in the meantime, but that typically means
@@ -101,7 +101,7 @@ class BalancingDispatcher(
   /**
    * Returns true if the donation succeeded or false otherwise
    */
-  protected def attemptDonationOf(message: MessageInvocation, donorMbox: MessageQueue with ExecutableMailbox): Boolean = try {
+  protected def attemptDonationOf(message: Envelope, donorMbox: Mailbox): Boolean = try {
     donationInProgress.value = true
     val actors = members // copy to prevent concurrent modifications having any impact
     doFindDonorRecipient(donorMbox, actors, System.identityHashCode(message) % actors.size) match {
@@ -114,7 +114,7 @@ class BalancingDispatcher(
    * Rewrites the message and adds that message to the recipients mailbox
    * returns true if the message is non-null
    */
-  protected def donate(organ: MessageInvocation, recipient: ActorCell): Boolean = {
+  protected def donate(organ: Envelope, recipient: ActorCell): Boolean = {
     if (organ ne null) {
       recipient.postMessageToMailbox(organ.message, organ.channel)
       true
@@ -124,14 +124,14 @@ class BalancingDispatcher(
   /**
    * Returns an available recipient for the message, if any
    */
-  protected def doFindDonorRecipient(donorMbox: MessageQueue with ExecutableMailbox, potentialRecipients: Vector[ActorCell], startIndex: Int): ActorCell = {
+  protected def doFindDonorRecipient(donorMbox: Mailbox, potentialRecipients: Vector[ActorCell], startIndex: Int): ActorCell = {
     val prSz = potentialRecipients.size
     var i = 0
     var recipient: ActorCell = null
 
     while ((i < prSz) && (recipient eq null)) {
       val actor = potentialRecipients((i + startIndex) % prSz) //Wrap-around, one full lap
-      val mbox = getMailbox(actor)
+      val mbox = actor.mailbox
 
       if ((mbox ne donorMbox) && mbox.isEmpty) { //Don't donate to yourself
         recipient = actor //Found!

@@ -31,9 +31,9 @@ private[akka] trait ActorContext {
 
   def hotswap_=(stack: Stack[PartialFunction[Any, Unit]]): Unit
 
-  def currentMessage: MessageInvocation
+  def currentMessage: Envelope
 
-  def currentMessage_=(invocation: MessageInvocation): Unit
+  def currentMessage_=(invocation: Envelope): Unit
 
   def sender: Option[ActorRef]
 
@@ -69,7 +69,7 @@ private[akka] class ActorCell(
   var terminated = false
 
   @volatile
-  var mailbox: AnyRef = _
+  var mailbox: Mailbox = _
 
   @volatile
   var futureTimeout: Option[ScheduledFuture[AnyRef]] = None
@@ -93,7 +93,7 @@ private[akka] class ActorCell(
   var receiveTimeout: Option[Long] = _receiveTimeout // TODO: currently settable from outside for compatibility
 
   @volatile //FIXME volatile can be removed
-  var currentMessage: MessageInvocation = null
+  var currentMessage: Envelope = null
 
   val actor: AtomicReference[Actor] = new AtomicReference[Actor]() //FIXME We can most probably make this just a regular reference to Actor
 
@@ -112,7 +112,7 @@ private[akka] class ActorCell(
     if (props.supervisor.isDefined) props.supervisor.get.link(self)
     dispatcher.attach(this)
     Actor.registry.register(self)
-    dispatcher.systemDispatch(SystemMessageInvocation(this, Create, NullChannel))
+    dispatcher.systemDispatch(SystemEnvelope(this, Create, NullChannel))
   }
 
   def newActor(restart: Boolean): Actor = {
@@ -150,7 +150,7 @@ private[akka] class ActorCell(
   private[akka] def stop(): Unit =
     if (!terminated) {
       //terminated = true // TODO: turn this into tristate with Running, Terminating, Terminated and use AtomicReferenceFieldUpdater
-      dispatcher.systemDispatch(SystemMessageInvocation(this, Terminate, NullChannel))
+      dispatcher.systemDispatch(SystemEnvelope(this, Terminate, NullChannel))
     }
 
   def link(actorRef: ActorRef): ActorRef = {
@@ -186,7 +186,7 @@ private[akka] class ActorCell(
   def supervisor_=(sup: Option[ActorRef]): Unit = _supervisor = sup
 
   def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
-    if (isRunning) dispatcher dispatchMessage new MessageInvocation(this, message, channel)
+    if (isRunning) dispatcher dispatchMessage new Envelope(this, message, channel)
     else throw new ActorInitializationException("Actor " + self + " is dead")
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout(
@@ -197,7 +197,7 @@ private[akka] class ActorCell(
       case f: ActorPromise ⇒ f
       case _               ⇒ new ActorPromise(timeout)(dispatcher)
     }
-    dispatcher dispatchMessage new MessageInvocation(this, message, future)
+    dispatcher dispatchMessage new Envelope(this, message, future)
     future
   } else throw new ActorInitializationException("Actor " + self + " is dead")
 
@@ -224,10 +224,10 @@ private[akka] class ActorCell(
     case msg  ⇒ msg.channel
   }
 
-  def systemInvoke(envelope: SystemMessageInvocation): Unit = {
+  def systemInvoke(envelope: SystemEnvelope): Boolean = {
     var isTerminated = terminated
 
-    def create(recreation: Boolean): Unit = try {
+    def create(recreation: Boolean): Boolean = try {
       actor.get() match {
         case null ⇒
           val created = newActor(restart = false)
@@ -237,17 +237,27 @@ private[akka] class ActorCell(
           restart(new Exception("Restart commanded"), None, None)
         case _ ⇒
       }
+      true
     } catch {
       case e ⇒
         envelope.channel.sendException(e)
-        if (supervisor.isDefined) supervisor.get ! Failed(self, e, false, maxNrOfRetriesCount, restartTimeWindowStartNanos) else throw e
+        if (supervisor.isDefined) {
+          supervisor.get ! Failed(self, e, false, maxNrOfRetriesCount, restartTimeWindowStartNanos)
+          false // don't continue processing messages right now
+        } else throw e
     }
 
-    def suspend(): Unit = dispatcher suspend this
+    def suspend(): Boolean = {
+      dispatcher suspend this
+      true
+    }
 
-    def resume(): Unit = dispatcher resume this
+    def resume(): Boolean = {
+      dispatcher resume this
+      true
+    }
 
-    def terminate(): Unit = {
+    def terminate(): Boolean = {
       receiveTimeout = None
       cancelReceiveTimeout
       Actor.registry.unregister(self)
@@ -265,6 +275,9 @@ private[akka] class ActorCell(
             i.remove()
           }
         }
+
+        // TODO CHECK: stop message dequeuing, which means that mailbox will not be restarted and GCed
+        false
 
       } finally {
         try {
@@ -288,6 +301,8 @@ private[akka] class ActorCell(
           case Resume    ⇒ resume()
           case Terminate ⇒ terminate()
         }
+      } else {
+        false
       }
     } catch {
       case e ⇒ //Should we really catch everything here?
@@ -299,7 +314,7 @@ private[akka] class ActorCell(
     }
   }
 
-  def invoke(messageHandle: MessageInvocation): Unit = {
+  def invoke(messageHandle: Envelope): Unit = {
     var isTerminated = terminated
     guard.lock.lock()
     try {

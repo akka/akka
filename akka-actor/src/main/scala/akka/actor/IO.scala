@@ -4,7 +4,7 @@
 package akka.actor
 
 import akka.util.ByteString
-import akka.dispatch.MessageInvocation
+import akka.dispatch.Envelope
 import akka.event.EventHandler
 
 import java.net.InetSocketAddress
@@ -130,11 +130,11 @@ object IO {
   }
 
   sealed trait IOSuspendable[+A]
-  sealed trait CurrentMessage { def message: MessageInvocation }
-  private case class ByteStringLength(continuation: (ByteString) ⇒ IOSuspendable[Any], handle: Handle, message: MessageInvocation, length: Int) extends IOSuspendable[ByteString] with CurrentMessage
-  private case class ByteStringDelimited(continuation: (ByteString) ⇒ IOSuspendable[Any], handle: Handle, message: MessageInvocation, delimter: ByteString, inclusive: Boolean, scanned: Int) extends IOSuspendable[ByteString] with CurrentMessage
-  private case class ByteStringAny(continuation: (ByteString) ⇒ IOSuspendable[Any], handle: Handle, message: MessageInvocation) extends IOSuspendable[ByteString] with CurrentMessage
-  private case class Retry(message: MessageInvocation) extends IOSuspendable[Nothing]
+  sealed trait CurrentMessage { def message: Envelope }
+  private case class ByteStringLength(continuation: (ByteString) ⇒ IOSuspendable[Any], handle: Handle, message: Envelope, length: Int) extends IOSuspendable[ByteString] with CurrentMessage
+  private case class ByteStringDelimited(continuation: (ByteString) ⇒ IOSuspendable[Any], handle: Handle, message: Envelope, delimter: ByteString, inclusive: Boolean, scanned: Int) extends IOSuspendable[ByteString] with CurrentMessage
+  private case class ByteStringAny(continuation: (ByteString) ⇒ IOSuspendable[Any], handle: Handle, message: Envelope) extends IOSuspendable[ByteString] with CurrentMessage
+  private case class Retry(message: Envelope) extends IOSuspendable[Nothing]
   private case object Idle extends IOSuspendable[Nothing]
 
 }
@@ -147,7 +147,7 @@ trait IO {
 
   implicit protected def ioActor: Actor with IO = this
 
-  private val _messages: mutable.Queue[MessageInvocation] = mutable.Queue.empty
+  private val _messages: mutable.Queue[Envelope] = mutable.Queue.empty
 
   private var _state: Map[Handle, HandleState] = Map.empty
 

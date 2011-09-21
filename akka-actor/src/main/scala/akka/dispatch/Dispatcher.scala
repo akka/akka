@@ -90,16 +90,16 @@ class Dispatcher(
   protected[akka] val executorServiceFactory = executorServiceFactoryProvider.createExecutorServiceFactory(name)
   protected[akka] val executorService = new AtomicReference[ExecutorService](new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))
 
-  protected[akka] def dispatch(invocation: MessageInvocation) = {
-    val mbox = getMailbox(invocation.receiver)
+  protected[akka] def dispatch(invocation: Envelope) = {
+    val mbox = invocation.receiver.mailbox
     if (mbox ne null) {
       mbox enqueue invocation
       registerForExecution(mbox)
     }
   }
 
-  protected[akka] def systemDispatch(invocation: SystemMessageInvocation) = {
-    val mbox = getMailbox(invocation.receiver)
+  protected[akka] def systemDispatch(invocation: SystemEnvelope) = {
+    val mbox = invocation.receiver.mailbox
     if (mbox ne null) {
       mbox systemEnqueue invocation
       registerForExecution(mbox)
@@ -115,31 +115,7 @@ class Dispatcher(
     }
   }
 
-  /**
-   * @return the mailbox associated with the actor
-   */
-  protected def getMailbox(receiver: ActorCell) = receiver.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
-
-  override def mailboxIsEmpty(actor: ActorCell): Boolean = getMailbox(actor).isEmpty
-
-  override def mailboxSize(actor: ActorCell): Int = getMailbox(actor).size
-
-  def createMailbox(actor: ActorCell): AnyRef = mailboxType match {
-    case b: UnboundedMailbox ⇒
-      new ConcurrentLinkedQueue[MessageInvocation] with MessageQueue with ExecutableMailbox {
-        @inline
-        final def dispatcher = Dispatcher.this
-        @inline
-        final def enqueue(m: MessageInvocation) = this.add(m)
-        @inline
-        final def dequeue(): MessageInvocation = this.poll()
-      }
-    case b: BoundedMailbox ⇒
-      new DefaultBoundedMessageQueue(b.capacity, b.pushTimeOut) with ExecutableMailbox {
-        @inline
-        final def dispatcher = Dispatcher.this
-      }
-  }
+  def createMailbox(actor: ActorCell): Mailbox = mailboxType.create(this)
 
   protected[akka] def start {}
 
@@ -150,7 +126,7 @@ class Dispatcher(
     }
   }
 
-  protected[akka] def registerForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = {
+  protected[akka] def registerForExecution(mbox: Mailbox): Unit = {
     if (mbox.dispatcherLock.tryLock()) {
       if (active.isOn && (!mbox.suspended.locked || !mbox.systemMessages.isEmpty)) { //If the dispatcher is active and the actor not suspended
         try {
@@ -167,11 +143,11 @@ class Dispatcher(
     }
   }
 
-  protected[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
+  protected[akka] def reRegisterForExecution(mbox: Mailbox): Unit =
     registerForExecution(mbox)
 
   protected override def cleanUpMailboxFor(actor: ActorCell) {
-    val m = getMailbox(actor)
+    val m = actor.mailbox
     if (!m.isEmpty) {
       var invocation = m.dequeue
       lazy val exception = new ActorKilledException("Actor has been stopped")
@@ -185,65 +161,12 @@ class Dispatcher(
   override val toString = getClass.getSimpleName + "[" + name + "]"
 
   def suspend(actor: ActorCell): Unit =
-    getMailbox(actor).suspended.tryLock
+    actor.mailbox.suspended.tryLock
 
   def resume(actor: ActorCell): Unit = {
-    val mbox = getMailbox(actor)
+    val mbox = actor.mailbox
     mbox.suspended.tryUnlock
     reRegisterForExecution(mbox)
-  }
-}
-
-/**
- * This is the behavior of an Dispatchers mailbox.
- */
-trait ExecutableMailbox extends Runnable { self: MessageQueue ⇒
-
-  def dispatcher: Dispatcher
-
-  final def run = {
-    try { processMailbox() } catch {
-      case ie: InterruptedException ⇒ Thread.currentThread().interrupt() //Restore interrupt
-    } finally {
-      dispatcherLock.unlock()
-      if (!self.isEmpty || !self.systemMessages.isEmpty)
-        dispatcher.reRegisterForExecution(this)
-    }
-  }
-
-  /**
-   * Process the messages in the mailbox
-   *
-   * @return true if the processing finished before the mailbox was empty, due to the throughput constraint
-   */
-  final def processMailbox() {
-    processAllSystemMessages()
-    if (!self.suspended.locked) {
-      var nextMessage = self.dequeue
-      if (nextMessage ne null) { //If we have a message
-        if (dispatcher.throughput <= 1) //If we only run one message per process
-          nextMessage.invoke //Just run it
-        else { //But otherwise, if we are throttled, we need to do some book-keeping
-          var processedMessages = 0
-          val isDeadlineEnabled = dispatcher.throughputDeadlineTime > 0
-          val deadlineNs = if (isDeadlineEnabled) System.nanoTime + TimeUnit.MILLISECONDS.toNanos(dispatcher.throughputDeadlineTime)
-          else 0
-          do {
-            nextMessage.invoke
-            processAllSystemMessages()
-            nextMessage =
-              if (self.suspended.locked) {
-                null // If we are suspended, abort
-              } else { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
-                processedMessages += 1
-                if ((processedMessages >= dispatcher.throughput) || (isDeadlineEnabled && System.nanoTime >= deadlineNs)) // If we're throttled, break out
-                  null //We reached our boundaries, abort
-                else self.dequeue //Dequeue the next message
-              }
-          } while (nextMessage ne null)
-        }
-      }
-    }
   }
 }
 
@@ -260,12 +183,14 @@ object PriorityGenerator {
  * A PriorityGenerator is a convenience API to create a Comparator that orders the messages of a
  * PriorityDispatcher
  */
-abstract class PriorityGenerator extends java.util.Comparator[MessageInvocation] {
+abstract class PriorityGenerator extends java.util.Comparator[Envelope] {
   def gen(message: Any): Int
 
-  final def compare(thisMessage: MessageInvocation, thatMessage: MessageInvocation): Int =
+  final def compare(thisMessage: Envelope, thatMessage: Envelope): Int =
     gen(thisMessage.message) - gen(thatMessage.message)
 }
+
+// TODO: should this be deleted, given that any dispatcher can now use UnboundedPriorityMailbox?
 
 /**
  * A version of Dispatcher that gives all actors registered to it a priority mailbox,
@@ -275,50 +200,29 @@ abstract class PriorityGenerator extends java.util.Comparator[MessageInvocation]
  */
 class PriorityDispatcher(
   name: String,
-  val comparator: java.util.Comparator[MessageInvocation],
+  val comparator: java.util.Comparator[Envelope],
   throughput: Int = Dispatchers.THROUGHPUT,
   throughputDeadlineTime: Int = Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS,
   mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
-  executorServiceFactoryProvider: ExecutorServiceFactoryProvider = ThreadPoolConfig()) extends Dispatcher(name, throughput, throughputDeadlineTime, mailboxType, executorServiceFactoryProvider) with PriorityMailbox {
+  executorServiceFactoryProvider: ExecutorServiceFactoryProvider = ThreadPoolConfig()) extends Dispatcher(name, throughput, throughputDeadlineTime, mailboxType, executorServiceFactoryProvider) {
 
-  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
+  def this(name: String, comparator: java.util.Comparator[Envelope], throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
     this(name, comparator, throughput, throughputDeadlineTime, mailboxType, ThreadPoolConfig()) // Needed for Java API usage
 
-  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int, mailboxType: MailboxType) =
+  def this(name: String, comparator: java.util.Comparator[Envelope], throughput: Int, mailboxType: MailboxType) =
     this(name, comparator, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
 
-  def this(name: String, comparator: java.util.Comparator[MessageInvocation], throughput: Int) =
+  def this(name: String, comparator: java.util.Comparator[Envelope], throughput: Int) =
     this(name, comparator, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 
-  def this(name: String, comparator: java.util.Comparator[MessageInvocation], executorServiceFactoryProvider: ExecutorServiceFactoryProvider) =
+  def this(name: String, comparator: java.util.Comparator[Envelope], executorServiceFactoryProvider: ExecutorServiceFactoryProvider) =
     this(name, comparator, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE, executorServiceFactoryProvider)
 
-  def this(name: String, comparator: java.util.Comparator[MessageInvocation]) =
+  def this(name: String, comparator: java.util.Comparator[Envelope]) =
     this(name, comparator, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
-}
 
-/**
- * Can be used to give an Dispatcher's actors priority-enabled mailboxes
- *
- * Usage:
- * new Dispatcher(...) with PriorityMailbox {
- *   val comparator = ...comparator that determines mailbox priority ordering...
- * }
- */
-trait PriorityMailbox { self: Dispatcher ⇒
-  def comparator: java.util.Comparator[MessageInvocation]
-
-  override def createMailbox(actor: ActorCell): AnyRef = self.mailboxType match {
-    case b: UnboundedMailbox ⇒
-      new UnboundedPriorityMessageQueue(comparator) with ExecutableMailbox {
-        @inline
-        final def dispatcher = self
-      }
-
-    case b: BoundedMailbox ⇒
-      new BoundedPriorityMessageQueue(b.capacity, b.pushTimeOut, comparator) with ExecutableMailbox {
-        @inline
-        final def dispatcher = self
-      }
+  override def createMailbox(actor: ActorCell): Mailbox = mailboxType match {
+    case _: UnboundedMailbox          ⇒ UnboundedPriorityMailbox(comparator).create(this)
+    case BoundedMailbox(cap, timeout) ⇒ BoundedPriorityMailbox(comparator, cap, timeout).create(this)
   }
 }
