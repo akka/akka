@@ -224,7 +224,7 @@ private[camel] object ActorProducer {
  * @author Martin Krasser
  */
 class ActorNotRegisteredException(uri: String) extends RuntimeException {
-  override def getMessage = "%s not registered" format uri
+  override def getMessage = "'%s' not registered" format uri
 }
 
 /**

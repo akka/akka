@@ -111,6 +111,7 @@ private[akka] class ActorCell(
   def start(): Unit = {
     if (props.supervisor.isDefined) props.supervisor.get.link(self)
     dispatcher.attach(this)
+    Actor.registry.register(self)
     dispatcher.systemDispatch(SystemMessageInvocation(this, Create, NullChannel))
   }
 
@@ -232,7 +233,6 @@ private[akka] class ActorCell(
           val created = newActor(restart = false)
           actor.set(created)
           created.preStart()
-          Actor.registry.register(self)
         case instance if recreation ⇒
           restart(new Exception("Restart commanded"), None, None)
         case _ ⇒

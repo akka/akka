@@ -262,7 +262,14 @@ class LocalActorRef private[akka] (
 
   protected[akka] def underlying: ActorCell = actorCell
 
-  protected[akka] def underlyingActorInstance: Actor = actorCell.actor.get
+  protected[akka] def underlyingActorInstance: Actor = {
+    var instance = actorCell.actor.get
+    while (instance eq null) {
+      try { Thread.sleep(1) } catch { case i: InterruptedException ⇒ }
+      instance = actorCell.actor.get
+    }
+    instance
+  }
 
   protected[akka] override def timeout: Long = props.timeout.duration.toMillis // TODO: remove this if possible
 
