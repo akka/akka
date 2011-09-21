@@ -11,11 +11,11 @@ import akka.testkit._
 import akka.util.duration._
 import akka.testkit.Testing.sleepFor
 import akka.config.Supervision.{ OneForOnePermanentStrategy }
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import java.lang.IllegalStateException
 import akka.util.ReflectiveAccess
 import akka.actor.Actor.actorOf
 import akka.dispatch.{ DefaultPromise, Promise, Future }
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 object ActorRefSpec {
 
@@ -256,19 +256,22 @@ class ActorRefSpec extends WordSpec with MustMatchers {
 
     "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
       ReflectiveAccess.RemoteModule.isEnabled must be === false
-
-      val a = actorOf[InnerActor]
+      val latch = new CountDownLatch(1)
+      val a = actorOf(new InnerActor {
+        override def postStop {
+          Actor.registry.unregister(self)
+          latch.countDown
+        }
+      })
 
       val inetAddress = ReflectiveAccess.RemoteModule.configDefaultAddress
 
       val expectedSerializedRepresentation = SerializedActorRef(
-        a.uuid,
-        a.address,
+        newUuid,
+        "nonsense",
         inetAddress.getAddress.getHostAddress,
         inetAddress.getPort,
         a.timeout)
-
-      Actor.registry.unregister(a)
 
       import java.io._
 
@@ -279,6 +282,9 @@ class ActorRefSpec extends WordSpec with MustMatchers {
 
       out.flush
       out.close
+
+      a.stop()
+      latch.await(5, TimeUnit.SECONDS) must be === true
 
       val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
       (intercept[java.lang.IllegalStateException] {

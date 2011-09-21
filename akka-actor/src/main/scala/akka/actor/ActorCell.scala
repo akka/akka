@@ -239,7 +239,6 @@ private[akka] class ActorCell(
       }
     } catch {
       case e ⇒
-        //e.printStackTrace()
         envelope.channel.sendException(e)
         if (supervisor.isDefined) supervisor.get ! Death(self, e, false) else throw e
     }
