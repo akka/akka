@@ -223,7 +223,9 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         }
 
         contextStackMustBeEmpty
+      }
 
+      filterException[java.lang.IllegalStateException] {
         (intercept[java.lang.IllegalStateException] {
           wrap(result ⇒
             actorOf(new OuterActor(actorOf(promiseIntercept({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor })(result)))))

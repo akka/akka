@@ -234,6 +234,7 @@ private[akka] class ActorCell(
           actor.set(created)
           created.preStart()
           checkReceiveTimeout
+          if (Actor.debugLifecycle) EventHandler.debug(created, "started")
         case instance if recreation ⇒
           restart(new Exception("Restart commanded"), None, None)
         case _ ⇒
@@ -263,6 +264,7 @@ private[akka] class ActorCell(
       cancelReceiveTimeout
       Actor.registry.unregister(self)
       isTerminated = true
+      terminated = isTerminated
       dispatcher.detach(this)
       try {
         val a = actor.get
@@ -292,6 +294,7 @@ private[akka] class ActorCell(
         clearActorContext()
       }
     }
+
     guard.lock.lock()
     try {
       if (!isTerminated) {
@@ -316,7 +319,7 @@ private[akka] class ActorCell(
   }
 
   def invoke(messageHandle: Envelope): Unit = {
-    var isTerminated = terminated
+    val isTerminated = terminated // volatile read
     guard.lock.lock()
     try {
       if (!isTerminated) {
@@ -352,7 +355,8 @@ private[akka] class ActorCell(
         // throwing away message if actor is shut down, no use throwing an exception in receiving actor's thread, isShutdown is enforced on caller side
       }
     } finally {
-      terminated = isTerminated
+      val nowIsTerminated = terminated
+      terminated = nowIsTerminated // volatile write
       guard.lock.unlock()
     }
   }
