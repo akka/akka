@@ -52,7 +52,7 @@ class ReadWriteGuard {
 }
 
 /**
- * A very simple lock that uses CCAS (Compare Compare-And-Swap)
+ * A very simple lock that uses CAS (Compare-And-Swap)
  * Does not keep track of the owner and isn't Reentrant, so don't nest and try to stick to the if*-methods
  */
 class SimpleLock(startLocked: Boolean = false) extends AtomicBoolean(startLocked) {

@@ -147,7 +147,10 @@ private[akka] class ActorCell(
   def resume(): Unit = dispatcher.resume(this)
 
   private[akka] def stop(): Unit =
-    if (!terminated) dispatcher.systemDispatch(SystemMessageInvocation(this, Terminate, NullChannel))
+    if (!terminated) {
+      //terminated = true // TODO: turn this into tristate with Running, Terminating, Terminated and use AtomicReferenceFieldUpdater
+      dispatcher.systemDispatch(SystemMessageInvocation(this, Terminate, NullChannel))
+    }
 
   def link(actorRef: ActorRef): ActorRef = {
     guard.withGuard {
@@ -236,7 +239,7 @@ private[akka] class ActorCell(
       }
     } catch {
       case e ⇒
-        e.printStackTrace()
+        //e.printStackTrace()
         envelope.channel.sendException(e)
         if (supervisor.isDefined) supervisor.get ! Death(self, e, false) else throw e
     }
@@ -265,7 +268,12 @@ private[akka] class ActorCell(
         }
 
       } finally {
-        if (supervisor.isDefined) supervisor.get ! Death(self, new ActorKilledException("Stopped"), false)
+        try {
+          if (supervisor.isDefined) supervisor.get ! Death(self, new ActorKilledException("Stopped"), false)
+        } catch {
+          case e: ActorInitializationException ⇒
+            // TODO: remove when ! cannot throw anymore
+        }
         currentMessage = null
         clearActorContext()
       }
@@ -283,7 +291,7 @@ private[akka] class ActorCell(
       }
     } catch {
       case e ⇒ //Should we really catch everything here?
-        EventHandler.error(e, actor.get(), e.getMessage)
+        EventHandler.error(e, actor.get(), "error while processing " + envelope.message)
         throw e
     } finally {
       terminated = isTerminated

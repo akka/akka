@@ -138,7 +138,13 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
   override def mailboxIsEmpty(actor: ActorCell): Boolean = getMailbox(actor).queue.isEmpty
 
   protected[akka] override def systemDispatch(handle: SystemMessageInvocation) {
-    handle.invoke() //Roland, look at me
+    val mbox = getMailbox(handle.receiver)
+    mbox.lock.lock
+    try {
+      handle.invoke()
+    } finally {
+      mbox.lock.unlock
+    }
   }
 
   protected[akka] override def dispatch(handle: MessageInvocation) {

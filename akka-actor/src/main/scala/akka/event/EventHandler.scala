@@ -132,6 +132,7 @@ object EventHandler extends ListenerManagement {
       info(this, "Starting up EventHandler")
     } catch {
       case e: Exception ⇒
+        System.err.println("error while starting up EventHandler")
         e.printStackTrace()
         throw new ConfigurationException("Could not start Event Handler due to [" + e.toString + "]")
     }
@@ -272,6 +273,7 @@ object EventHandler extends ListenerManagement {
 
     def instanceName(instance: AnyRef): String = instance match {
       case a: ActorRef ⇒ a.address
+      case null        ⇒ "null instance"
       case _           ⇒ instance.getClass.getSimpleName
     }
   }

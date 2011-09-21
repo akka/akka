@@ -139,96 +139,98 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         new Actor { def receive = { case _ ⇒ } }
       }
 
-      intercept[akka.actor.ActorInitializationException] {
-        wrap(result ⇒
-          actorOf(new Actor {
-            val nested = promiseIntercept(new Actor { def receive = { case _ ⇒ } })(result)
-            def receive = { case _ ⇒ }
-          }))
-      }
-
       def contextStackMustBeEmpty = ActorCell.contextStack.get.headOption must be === None
 
-      contextStackMustBeEmpty
+      filterException[akka.actor.ActorInitializationException] {
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new Actor {
+              val nested = promiseIntercept(new Actor { def receive = { case _ ⇒ } })(result)
+              def receive = { case _ ⇒ }
+            }))
+        }
 
-      intercept[akka.actor.ActorInitializationException] {
-        wrap(result ⇒
-          actorOf(promiseIntercept(new FailingOuterActor(actorOf(new InnerActor)))(result)))
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(promiseIntercept(new FailingOuterActor(actorOf(new InnerActor)))(result)))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new OuterActor(actorOf(promiseIntercept(new FailingInnerActor)(result)))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(promiseIntercept(new FailingInheritingOuterActor(actorOf(new InnerActor)))(result)))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new FailingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new FailingInheritingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new FailingInheritingOuterActor(actorOf(promiseIntercept(new FailingInnerActor)(result)))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new OuterActor(actorOf(new InnerActor {
+              val a = promiseIntercept(new InnerActor)(result)
+            }))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new FailingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new OuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new OuterActor(actorOf(promiseIntercept({ new InnerActor; new InnerActor })(result)))))
+        }
+
+        contextStackMustBeEmpty
+
+        (intercept[java.lang.IllegalStateException] {
+          wrap(result ⇒
+            actorOf(new OuterActor(actorOf(promiseIntercept({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor })(result)))))
+        }).getMessage must be === "Ur state be b0rked"
+
+        contextStackMustBeEmpty
       }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        wrap(result ⇒
-          actorOf(new OuterActor(actorOf(promiseIntercept(new FailingInnerActor)(result)))))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        wrap(result ⇒
-          actorOf(promiseIntercept(new FailingInheritingOuterActor(actorOf(new InnerActor)))(result)))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        wrap(result ⇒
-          actorOf(new FailingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        wrap(result ⇒
-          actorOf(new FailingInheritingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        wrap(result ⇒
-          actorOf(new FailingInheritingOuterActor(actorOf(promiseIntercept(new FailingInnerActor)(result)))))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        wrap(result ⇒
-          actorOf(new OuterActor(actorOf(new InnerActor {
-            val a = promiseIntercept(new InnerActor)(result)
-          }))))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        wrap(result ⇒
-          actorOf(new FailingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        wrap(result ⇒
-          actorOf(new OuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        wrap(result ⇒
-          actorOf(new OuterActor(actorOf(promiseIntercept({ new InnerActor; new InnerActor })(result)))))
-      }
-
-      contextStackMustBeEmpty
-
-      (intercept[java.lang.IllegalStateException] {
-        wrap(result ⇒
-          actorOf(new OuterActor(actorOf(promiseIntercept({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor })(result)))))
-      }).getMessage must be === "Ur state be b0rked"
-
-      contextStackMustBeEmpty
     }
 
     "be serializable using Java Serialization on local node" in {

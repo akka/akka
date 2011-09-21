@@ -3,6 +3,7 @@
  */
 package akka.actor.dispatch
 
+import akka.event.EventHandler
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.Assertions._
 import akka.testkit.{ Testing, filterEvents, EventFilter }
@@ -297,7 +298,7 @@ abstract class ActorModelSpec extends JUnitSuite {
         try {
           f
         } catch {
-          case e ⇒ e.printStackTrace
+          case e ⇒ EventHandler.error(e, this, "error in spawned thread")
         }
       }
     }
