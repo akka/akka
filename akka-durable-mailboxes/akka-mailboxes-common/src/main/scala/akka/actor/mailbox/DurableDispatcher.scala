@@ -95,8 +95,6 @@ case class DurableDispatcher(
       throw new IllegalArgumentException("Durable mailboxes do not support Future-based messages from ?")
     super.dispatch(invocation)
   }
-
-  protected override def cleanUpMailboxFor(actorRef: LocalActorRef) {} //No need to clean up Futures since we don't support them
 }
 
 /**

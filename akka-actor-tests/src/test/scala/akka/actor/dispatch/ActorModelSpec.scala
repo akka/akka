@@ -194,18 +194,18 @@ object ActorModelSpec {
     assert(stats.restarts.get() === restarts, "Restarts")
   }
 
-  def await(condition: ⇒ Boolean)(withinMs: Long, intervalMs: Long = 25): Boolean = try {
+  def await(condition: ⇒ Boolean)(withinMs: Long, intervalMs: Long = 25): Unit = try {
     val until = System.currentTimeMillis() + withinMs
     while (System.currentTimeMillis() <= until) {
       try {
-        if (condition) return true
+        if (condition) return
 
         Thread.sleep(intervalMs)
       } catch {
         case e: InterruptedException ⇒
       }
     }
-    false
+    assert(0 === 1, "await failed")
   }
 
   def newTestActor(implicit d: MessageDispatcherInterceptor) = actorOf(Props[DispatcherActor].withDispatcher(d))

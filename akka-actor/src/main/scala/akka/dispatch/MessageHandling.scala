@@ -175,7 +175,6 @@ abstract class MessageDispatcher extends Serializable {
   protected[akka] def unregister(actor: ActorCell) = {
     if (uuids remove actor.uuid) {
       cleanUpMailboxFor(actor)
-      actor.mailbox = deadLetterMailbox
       if (uuids.isEmpty && _tasks.get == 0) {
         shutdownSchedule match {
           case UNSCHEDULED ⇒

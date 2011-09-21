@@ -148,6 +148,7 @@ class Dispatcher(
 
   protected override def cleanUpMailboxFor(actor: ActorCell) {
     val m = actor.mailbox
+    actor.mailbox = deadLetterMailbox //FIXME switch to getAndSet semantics
     if (m.hasMessages) {
       var invocation = m.dequeue
       lazy val exception = new ActorKilledException("Actor has been stopped")
