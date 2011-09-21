@@ -126,7 +126,6 @@ class LoggingReceiveSpec
         }
       })
       actor ! PoisonPill
-      expectMsg(300 millis, EventHandler.Debug(actor.underlyingActor, "received AutoReceiveMessage Init"))
       expectMsg(300 millis, EventHandler.Debug(actor.underlyingActor, "received AutoReceiveMessage PoisonPill"))
     }
 

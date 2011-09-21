@@ -284,7 +284,7 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * Returns the "current" emptiness status of the mailbox for the specified actor
    */
-  def mailboxIsEmpty(actor: ActorCell): Boolean = actor.mailbox.hasMessages
+  def mailboxIsEmpty(actor: ActorCell): Boolean = !actor.mailbox.hasMessages
 
   /**
    * Returns the amount of tasks queued for execution

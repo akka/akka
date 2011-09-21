@@ -233,6 +233,7 @@ private[akka] class ActorCell(
           val created = newActor(restart = false)
           actor.set(created)
           created.preStart()
+          checkReceiveTimeout
         case instance if recreation ⇒
           restart(new Exception("Restart commanded"), None, None)
         case _ ⇒
@@ -318,7 +319,7 @@ private[akka] class ActorCell(
     var isTerminated = terminated
     guard.lock.lock()
     try {
-      if (!isShutdown) {
+      if (!isTerminated) {
         currentMessage = messageHandle
         try {
           try {
