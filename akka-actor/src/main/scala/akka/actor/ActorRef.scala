@@ -264,7 +264,7 @@ class LocalActorRef private[akka] (
 
   protected[akka] def underlyingActorInstance: Actor = {
     var instance = actorCell.actor.get
-    while (instance eq null) {
+    while ((instance eq null) && actorCell.isRunning) {
       try { Thread.sleep(1) } catch { case i: InterruptedException ⇒ }
       instance = actorCell.actor.get
     }

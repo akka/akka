@@ -41,16 +41,16 @@ abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfte
 
       for (i ← 1 to config.capacity) q.enqueue(exampleMessage)
 
-      q.size must be === config.capacity
-      q.isEmpty must be === false
+      q.numberOfMessages must be === config.capacity
+      q.hasMessages must be === true
 
       intercept[MessageQueueAppendFailedException] {
         q.enqueue(exampleMessage)
       }
 
       q.dequeue must be === exampleMessage
-      q.size must be(config.capacity - 1)
-      q.isEmpty must be === false
+      q.numberOfMessages must be(config.capacity - 1)
+      q.hasMessages must be === true
     }
 
     "dequeue what was enqueued properly for unbounded mailboxes" in {
@@ -97,8 +97,8 @@ abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfte
         }
       case _ ⇒
     }
-    q.size must be === 0
-    q.isEmpty must be === true
+    q.numberOfMessages must be === 0
+    q.hasMessages must be === false
   }
 
   def testEnqueueDequeue(config: MailboxType) {
@@ -119,7 +119,7 @@ abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfte
 
     def createConsumer: Future[Vector[Envelope]] = spawn {
       var r = Vector[Envelope]()
-      while (producers.exists(_.isCompleted == false) || !q.isEmpty) {
+      while (producers.exists(_.isCompleted == false) || q.hasMessages) {
         q.dequeue match {
           case null    ⇒
           case message ⇒ r = r :+ message

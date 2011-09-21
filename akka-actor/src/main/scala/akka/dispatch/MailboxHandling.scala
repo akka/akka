@@ -6,10 +6,10 @@ package akka.dispatch
 
 import akka.AkkaException
 import java.util.{ Comparator, PriorityQueue }
-import java.util.concurrent._
 import akka.util._
 import java.util.Queue
 import akka.actor.ActorContext
+import java.util.concurrent._
 
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
@@ -22,19 +22,13 @@ trait Mailbox extends Runnable {
    */
   final val dispatcherLock = new SimpleLock(startLocked = false)
   final val suspended = new SimpleLock(startLocked = false) //(startLocked = true)
-  final val systemMessages = new ConcurrentLinkedQueue[SystemEnvelope]()
-
-  final def systemEnqueue(handle: SystemEnvelope): Unit = systemMessages.offer(handle)
-  final def systemDequeue(): SystemEnvelope = systemMessages.poll()
-
-  def dispatcher: MessageDispatcher
 
   final def run = {
     try { processMailbox() } catch {
       case ie: InterruptedException ⇒ Thread.currentThread().interrupt() //Restore interrupt
     } finally {
       dispatcherLock.unlock()
-      if (!isEmpty || !systemMessages.isEmpty)
+      if (hasMessages || hasSystemMessages)
         dispatcher.reRegisterForExecution(this)
     }
   }
@@ -87,8 +81,24 @@ trait Mailbox extends Runnable {
   def enqueue(handle: Envelope)
   def dequeue(): Envelope
 
-  def size: Int
-  def isEmpty: Boolean
+  def numberOfMessages: Int
+
+  def systemEnqueue(handle: SystemEnvelope): Unit
+  def systemDequeue(): SystemEnvelope
+
+  def hasMessages: Boolean
+  def hasSystemMessages: Boolean
+
+  def dispatcher: MessageDispatcher
+}
+
+trait DefaultSystemMessageImpl { self: Mailbox ⇒
+  val systemMessages = new ConcurrentLinkedQueue[SystemEnvelope]()
+
+  def systemEnqueue(handle: SystemEnvelope): Unit = systemMessages offer handle
+  def systemDequeue(): SystemEnvelope = systemMessages.poll()
+
+  def hasSystemMessages: Boolean = !systemMessages.isEmpty
 }
 
 trait UnboundedMessageQueueSemantics { self: QueueMailbox ⇒
@@ -114,8 +124,8 @@ trait BoundedMessageQueueSemantics { self: BlockingQueueMailbox ⇒
 
 trait QueueMailbox extends Mailbox {
   val queue: Queue[Envelope]
-  final def size = queue.size
-  final def isEmpty = queue.isEmpty
+  final def numberOfMessages = queue.size
+  final def hasMessages = !queue.isEmpty
 }
 
 trait BlockingQueueMailbox extends QueueMailbox {
@@ -142,7 +152,7 @@ trait MailboxType {
 }
 
 case class UnboundedMailbox() extends MailboxType {
-  override def create(dispatcher: MessageDispatcher) = new ConcurrentLinkedQueueMailbox(dispatcher) with UnboundedMessageQueueSemantics
+  override def create(dispatcher: MessageDispatcher) = new ConcurrentLinkedQueueMailbox(dispatcher) with UnboundedMessageQueueSemantics with DefaultSystemMessageImpl
 }
 
 case class BoundedMailbox(
@@ -152,14 +162,14 @@ case class BoundedMailbox(
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 
-  override def create(dispatcher: MessageDispatcher) = new LinkedBlockingQueueMailbox(dispatcher) with BoundedMessageQueueSemantics {
+  override def create(dispatcher: MessageDispatcher) = new LinkedBlockingQueueMailbox(dispatcher) with BoundedMessageQueueSemantics with DefaultSystemMessageImpl {
     val capacity = BoundedMailbox.this.capacity
     val pushTimeOut = BoundedMailbox.this.pushTimeOut
   }
 }
 
 case class UnboundedPriorityMailbox(cmp: Comparator[Envelope]) extends MailboxType {
-  override def create(dispatcher: MessageDispatcher) = new PriorityBlockingQueueMailbox(cmp, dispatcher) with UnboundedMessageQueueSemantics
+  override def create(dispatcher: MessageDispatcher) = new PriorityBlockingQueueMailbox(cmp, dispatcher) with UnboundedMessageQueueSemantics with DefaultSystemMessageImpl
 }
 
 case class BoundedPriorityMailbox(
@@ -170,7 +180,7 @@ case class BoundedPriorityMailbox(
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 
-  override def create(dispatcher: MessageDispatcher) = new PriorityBlockingQueueMailbox(cmp, dispatcher) with BoundedMessageQueueSemantics {
+  override def create(dispatcher: MessageDispatcher) = new PriorityBlockingQueueMailbox(cmp, dispatcher) with BoundedMessageQueueSemantics with DefaultSystemMessageImpl {
     val capacity = BoundedPriorityMailbox.this.capacity
     val pushTimeOut = BoundedPriorityMailbox.this.pushTimeOut
   }

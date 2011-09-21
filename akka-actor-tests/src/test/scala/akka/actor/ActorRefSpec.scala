@@ -267,8 +267,8 @@ class ActorRefSpec extends WordSpec with MustMatchers {
       val inetAddress = ReflectiveAccess.RemoteModule.configDefaultAddress
 
       val expectedSerializedRepresentation = SerializedActorRef(
-        newUuid,
-        "nonsense",
+        a.uuid,
+        a.address,
         inetAddress.getAddress.getHostAddress,
         inetAddress.getPort,
         a.timeout)

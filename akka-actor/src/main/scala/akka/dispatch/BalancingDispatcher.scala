@@ -65,7 +65,7 @@ class BalancingDispatcher(
 
   override protected[akka] def dispatch(invocation: Envelope) = {
     val mbox = invocation.receiver.mailbox
-    if (donationInProgress.value == false && (!mbox.isEmpty || mbox.dispatcherLock.locked) && attemptDonationOf(invocation, mbox)) {
+    if (donationInProgress.value == false && (mbox.hasMessages || mbox.dispatcherLock.locked) && attemptDonationOf(invocation, mbox)) {
       //We were busy and we got to donate the message to some other lucky guy, we're done here
     } else {
       mbox enqueue invocation
@@ -79,7 +79,7 @@ class BalancingDispatcher(
       while (donateFrom(mbox)) {} //When we reregister, first donate messages to another actor
     } finally { donationInProgress.value = false }
 
-    if (!mbox.isEmpty) //If we still have messages left to process, reschedule for execution
+    if (mbox.hasMessages) //If we still have messages left to process, reschedule for execution
       super.reRegisterForExecution(mbox)
   }
 
@@ -131,10 +131,11 @@ class BalancingDispatcher(
 
     while ((i < prSz) && (recipient eq null)) {
       val actor = potentialRecipients((i + startIndex) % prSz) //Wrap-around, one full lap
-      val mbox = actor.mailbox
-
-      if ((mbox ne donorMbox) && mbox.isEmpty) { //Don't donate to yourself
-        recipient = actor //Found!
+      actor.mailbox match {
+        case `donorMbox` | `deadLetterMailbox` ⇒ //Not interesting
+        case mbox ⇒
+          if (!mbox.hasMessages) //Don't donate to yourself
+            recipient = actor //Found!
       }
 
       i += 1

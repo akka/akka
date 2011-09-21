@@ -78,12 +78,17 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * Create a blackhole mailbox for the purpose of replacing the real one upon actor termination
    */
-  protected[akka] def createDeadletterMailbox = new Mailbox {
-    override def dispatcher = MessageDispatcher.this
-    override def enqueue(envelope: Envelope) {}
+  protected[akka] val deadLetterMailbox = new Mailbox {
+    override def dispatcher = null //MessageDispatcher.this
+    dispatcherLock.tryLock()
+
+    override def enqueue(envelope: Envelope) { envelope.channel sendException new ActorKilledException("Actor has been stopped") }
     override def dequeue() = null
-    override def isEmpty = true
-    override def size = 0
+    override def systemEnqueue(handle: SystemEnvelope): Unit = ()
+    override def systemDequeue(): SystemEnvelope = null
+    override def hasMessages = false
+    override def hasSystemMessages = false
+    override def numberOfMessages = 0
   }
 
   /**
@@ -170,7 +175,7 @@ abstract class MessageDispatcher extends Serializable {
   protected[akka] def unregister(actor: ActorCell) = {
     if (uuids remove actor.uuid) {
       cleanUpMailboxFor(actor)
-      actor.mailbox = createDeadletterMailbox
+      actor.mailbox = deadLetterMailbox
       if (uuids.isEmpty && _tasks.get == 0) {
         shutdownSchedule match {
           case UNSCHEDULED ⇒
@@ -274,12 +279,12 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * Returns the size of the mailbox for the specified actor
    */
-  def mailboxSize(actor: ActorCell): Int = actor.mailbox.size
+  def mailboxSize(actor: ActorCell): Int = actor.mailbox.numberOfMessages
 
   /**
    * Returns the "current" emptiness status of the mailbox for the specified actor
    */
-  def mailboxIsEmpty(actor: ActorCell): Boolean = actor.mailbox.isEmpty
+  def mailboxIsEmpty(actor: ActorCell): Boolean = actor.mailbox.hasMessages
 
   /**
    * Returns the amount of tasks queued for execution

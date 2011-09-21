@@ -128,7 +128,7 @@ class Dispatcher(
 
   protected[akka] def registerForExecution(mbox: Mailbox): Unit = {
     if (mbox.dispatcherLock.tryLock()) {
-      if (active.isOn && (!mbox.suspended.locked || !mbox.systemMessages.isEmpty)) { //If the dispatcher is active and the actor not suspended
+      if (active.isOn && (!mbox.suspended.locked || mbox.hasSystemMessages)) { //If the dispatcher is active and the actor not suspended
         try {
           executorService.get() execute mbox
         } catch {
@@ -148,13 +148,16 @@ class Dispatcher(
 
   protected override def cleanUpMailboxFor(actor: ActorCell) {
     val m = actor.mailbox
-    if (!m.isEmpty) {
+    if (m.hasMessages) {
       var invocation = m.dequeue
       lazy val exception = new ActorKilledException("Actor has been stopped")
       while (invocation ne null) {
         invocation.channel.sendException(exception)
         invocation = m.dequeue
       }
+    }
+    while (m.systemDequeue() ne null) {
+      //Empty the system messages
     }
   }
 

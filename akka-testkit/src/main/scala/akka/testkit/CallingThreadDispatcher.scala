@@ -243,7 +243,7 @@ class NestingQueue {
   def isActive = active
 }
 
-class CallingThreadMailbox(val dispatcher: MessageDispatcher) extends Mailbox {
+class CallingThreadMailbox(val dispatcher: MessageDispatcher) extends Mailbox with DefaultSystemMessageImpl {
 
   private val q = new ThreadLocal[NestingQueue]() {
     override def initialValue = new NestingQueue
@@ -256,6 +256,6 @@ class CallingThreadMailbox(val dispatcher: MessageDispatcher) extends Mailbox {
 
   override def enqueue(msg: Envelope) {}
   override def dequeue() = null
-  override def isEmpty = true
-  override def size = 0
+  override def hasMessages = true
+  override def numberOfMessages = 0
 }

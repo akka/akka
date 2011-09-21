@@ -317,8 +317,12 @@ abstract class ActorModelSpec extends JUnitSuite {
     assertCountDown(bParallel, Testing.testTime(3000), "Should process other actors in parallel")
 
     aStop.countDown()
-    a.stop()
-    b.stop()
+
+    a.stop
+    b.stop
+
+    while (a.isRunning && b.isRunning) {} //Busy wait for termination
+
     assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
     assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
   }
