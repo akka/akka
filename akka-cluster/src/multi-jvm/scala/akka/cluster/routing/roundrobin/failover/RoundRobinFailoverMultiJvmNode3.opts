@@ -1,1 +1,1 @@
--Dakka.cluster.nodename=node3 -Dakka.cluster.port=9993 -Dakka.event.force-sync=true
+-Dakka.cluster.nodename=node3 -Dakka.remote.port=9993 -Dakka.event.force-sync=true

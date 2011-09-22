@@ -36,14 +36,14 @@ object Remote extends RemoteService {
   val hostname = Config.hostname
   val port = Config.remoteServerPort
 
-  val remoteAddress = "akka-remote-daemon".intern
+  val remoteDaemonServiceName = "akka-remote-daemon".intern
 
   // FIXME configure computeGridDispatcher to what?
   val computeGridDispatcher = Dispatchers.newDispatcher("akka:compute-grid").build
 
   private[remote] lazy val remoteDaemon = new LocalActorRef(
     Props(new RemoteDaemon).copy(dispatcher = new PinnedDispatcher()),
-    Remote.remoteAddress,
+    Remote.remoteDaemonServiceName,
     systemService = true)
 
   private[remote] lazy val remoteDaemonSupervisor = Supervisor(
@@ -65,15 +65,19 @@ object Remote extends RemoteService {
   lazy val server: RemoteSupport = {
     val remote = new akka.remote.netty.NettyRemoteSupport
     remote.start(hostname, port)
-    remote.register(Remote.remoteAddress, remoteDaemon)
+    remote.register(Remote.remoteDaemonServiceName, remoteDaemon)
     remote.addListener(NetworkEventStream.channel)
     remote.addListener(remoteClientLifeCycleHandler)
+    Actor.provider.register(ActorRefProvider.RemoteProvider, new RemoteActorRefProvider)
     remote
   }
 
   lazy val address = server.address
 
-  def start() { EventHandler.info(this, "Starting remote server on [%s]".format(address)) }
+  def start() {
+    val triggerLazyServerVal = address.toString
+    EventHandler.info(this, "Starting remote server on [%s]".format(triggerLazyServerVal))
+  }
 
   def uuidProtocolToUuid(uuid: UuidProtocol): UUID = new UUID(uuid.getHigh, uuid.getLow)
 
@@ -137,7 +141,7 @@ class RemoteDaemon extends Actor {
           }
 
         val actorAddress = message.getActorAddress
-        val newActorRef = actorOf(Props(creator = actorFactory, deployId = actorAddress))
+        val newActorRef = actorOf(Props(creator = actorFactory, deployId = actorAddress), actorAddress)
 
         Remote.server.register(actorAddress, newActorRef)
 
@@ -201,7 +205,7 @@ class RemoteDaemon extends Actor {
   }
 
   def handleFailover(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
-    // val (from, to) = payloadFor(message, classOf[(InetSocketremoteAddress, InetSocketremoteAddress)])
+    // val (from, to) = payloadFor(message, classOf[(InetSocketremoteDaemonServiceName, InetSocketremoteDaemonServiceName)])
     // cluster.failOverClusterActorRefConnections(from, to)
   }
 

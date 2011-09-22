@@ -45,7 +45,7 @@ class RoundRobin2ReplicasMultiJvmNode1 extends MasterClusterTestNode {
 
     "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
       System.getProperty("akka.cluster.nodename", "") must be("node1")
-      System.getProperty("akka.cluster.port", "") must be("9991")
+      System.getProperty("akka.remote.port", "") must be("9991")
 
       //wait till node 1 has started.
       barrier("start-node1", NrOfNodes) {
@@ -76,7 +76,7 @@ class RoundRobin2ReplicasMultiJvmNode2 extends ClusterTestNode {
 
     "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
       System.getProperty("akka.cluster.nodename", "") must be("node2")
-      System.getProperty("akka.cluster.port", "") must be("9992")
+      System.getProperty("akka.remote.port", "") must be("9992")
 
       //wait till node 1 has started.
       barrier("start-node1", NrOfNodes).await()

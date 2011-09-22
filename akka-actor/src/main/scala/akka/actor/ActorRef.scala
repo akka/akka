@@ -1034,7 +1034,7 @@ private[akka] case class RemoteActorRef private[akka] (
   loader: Option[ClassLoader])
   extends ActorRef with ScalaActorRef {
 
-  ClusterModule.ensureEnabled()
+  RemoteModule.ensureEnabled()
 
   protected[akka] override def timeout: Long = _timeout
 

@@ -168,8 +168,8 @@ object Cluster {
    * Currently supported options are:
    * <pre>
    *   Cluster setProperty ("akka.cluster.nodename", "node1")
-   *   Cluster setProperty ("akka.cluster.hostname", "darkstar.lan")
-   *   Cluster setProperty ("akka.cluster.port", "1234")
+   *   Cluster setProperty ("akka.remote.hostname", "darkstar.lan")
+   *   Cluster setProperty ("akka.remote.port", "1234")
    * </pre>
    */
   def setProperty(property: (String, String)) {
@@ -181,12 +181,12 @@ object Cluster {
     case None           ⇒ Config.nodename
   }
 
-  private def hostname: String = properties.get("akka.cluster.hostname") match {
+  private def hostname: String = properties.get("akka.remote.hostname") match {
     case Some(uberride) ⇒ uberride
     case None           ⇒ Config.hostname
   }
 
-  private def port: Int = properties.get("akka.cluster.port") match {
+  private def port: Int = properties.get("akka.remote.port") match {
     case Some(uberride) ⇒ uberride.toInt
     case None           ⇒ Config.remoteServerPort
   }

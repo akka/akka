@@ -329,8 +329,11 @@ abstract class RemoteClient private[akka] (
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveRemoteClient private[akka] (
-  module: NettyRemoteClientModule, remoteAddress: InetSocketAddress,
-  val loader: Option[ClassLoader] = None, notifyListenersFun: (⇒ Any) ⇒ Unit) extends RemoteClient(module, remoteAddress) {
+  module: NettyRemoteClientModule,
+  remoteAddress: InetSocketAddress,
+  val loader: Option[ClassLoader] = None,
+  notifyListenersFun: (⇒ Any) ⇒ Unit)
+  extends RemoteClient(module, remoteAddress) {
 
   import RemoteClientSettings._
 
@@ -524,11 +527,13 @@ class ActiveRemoteClientHandler(
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
           val reply = arp.getMessage
           val replyUuid = uuidFrom(reply.getActorInfo.getUuid.getHigh, reply.getActorInfo.getUuid.getLow)
-          EventHandler.debug(this, "Remote client received RemoteMessageProtocol[\n%s]\nTrying to map back to future: %s".format(reply, replyUuid))
+          EventHandler.debug(this, "Remote client received RemoteMessageProtocol[\n%s]\nTrying to map back to future [%s]".format(reply, replyUuid))
 
           futures.remove(replyUuid).asInstanceOf[Promise[Any]] match {
             case null ⇒
-              client.notifyListeners(RemoteClientError(new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist"), client.module, client.remoteAddress))
+              client.notifyListeners(RemoteClientError(
+                new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist"), client.module,
+                client.remoteAddress))
 
             case future ⇒
               if (reply.hasMessage) {
@@ -1075,11 +1080,17 @@ class RemoteServerHandler(
       "Looking up a remotely available actor for address [%s] on node [%s]"
         .format(address, Config.nodename))
 
-    val actorRef = createSessionActor(actorInfo, channel)
-
-    if (actorRef eq null) throw new IllegalActorStateException("Could not find a remote actor with address [" + address + "] or uuid [" + uuid + "]")
-
-    actorRef
+    val byAddress = server.actors.get(address) // try actor-by-address
+    if (byAddress eq null) {
+      val byUuid = server.actorsByUuid.get(uuid) // try actor-by-uuid
+      if (byUuid eq null) {
+        val bySession = createSessionActor(actorInfo, channel) // try actor-by-session
+        if (bySession eq null) {
+          throw new IllegalActorStateException(
+            "Could not find a remote actor with address [" + address + "] or uuid [" + uuid + "]")
+        } else bySession
+      } else byUuid
+    } else byAddress
   }
 
   /**
