@@ -34,7 +34,6 @@ class CallingThreadDispatcherModelSpec extends ActorModelSpec {
     }
     for (run ← 1 to 3) {
       flood(10000)
-      await(dispatcher.stops.get == run)(withinMs = 10000)
       assertDispatcher(dispatcher)(starts = run, stops = run)
     }
   }
