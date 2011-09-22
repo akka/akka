@@ -15,7 +15,7 @@ http://akka.io/akka-2.0-SNAPSHOT.xsd">
   <akka:untyped-actor id="actor-1"
                       implementation="akka.spring.foo.PingActor"
                       timeout="${akka.actor.timeout}">
-    <akka:remote host="${akka.cluster.server.hostname}" port="${akka.cluster.server.port}"/>
+    <akka:remote host="${akka.remote.server.hostname}" port="${akka.remote.server.port}"/>
   </akka:untyped-actor>
 
 

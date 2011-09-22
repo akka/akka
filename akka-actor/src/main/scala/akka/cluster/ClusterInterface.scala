@@ -197,10 +197,6 @@ trait ClusterNode {
 
   def zkServerAddresses: String
 
-  def remoteService: RemoteSupport
-
-  def remoteServerAddress: InetSocketAddress
-
   def start()
 
   def shutdown()
@@ -389,12 +385,6 @@ trait ClusterNode {
    * for remote access through lookup by its UUID.
    */
   def use[T <: Actor](actorAddress: String): Option[LocalActorRef]
-
-  /**
-   * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
-   * for remote access through lookup by its UUID.
-   */
-  def use[T <: Actor](actorAddress: String, serializer: Serializer): Option[LocalActorRef]
 
   /**
    * Using (checking out) actor on a specific set of nodes.

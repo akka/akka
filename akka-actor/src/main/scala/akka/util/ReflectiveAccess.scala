@@ -4,16 +4,16 @@
 
 package akka.util
 
-import akka.dispatch.MessageInvocation
-import akka.config.{ Config, ModuleNotAvailableException }
-import akka.cluster.RemoteSupport
 import akka.actor._
 import DeploymentConfig.ReplicationScheme
+import akka.dispatch.MessageInvocation
+import akka.config.{ Config, ModuleNotAvailableException }
 import akka.event.EventHandler
 import akka.cluster.ClusterNode
+import akka.remote.{ RemoteSupport, RemoteService }
+import akka.routing.{ RoutedProps, Router }
 
 import java.net.InetSocketAddress
-import akka.routing.{ RoutedProps, Router }
 
 /**
  * Helper class for reflective access to different modules in order to allow optional loading of modules.
@@ -138,7 +138,7 @@ object ReflectiveAccess {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object RemoteModule {
-    val TRANSPORT = Config.config.getString("akka.cluster.layer", "akka.cluster.netty.NettyRemoteSupport")
+    val TRANSPORT = Config.config.getString("akka.remote.layer", "akka.remote.netty.NettyRemoteSupport")
 
     val configDefaultAddress = new InetSocketAddress(Config.hostname, Config.remoteServerPort)
 
@@ -146,10 +146,23 @@ object ReflectiveAccess {
 
     def ensureEnabled() = {
       if (!isEnabled) {
-        val e = new ModuleNotAvailableException("Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
+        val e = new ModuleNotAvailableException(
+          "Can't load the remote module, make sure it is enabled in the config ('akka.enabled-modules = [\"remote\"])' and that akka-remote.jar is on the classpath")
         EventHandler.debug(this, e.toString)
         throw e
       }
+    }
+
+    lazy val remoteInstance: Option[RemoteService] = getObjectFor("akka.remote.Remote$") match {
+      case Right(value) ⇒ Some(value)
+      case Left(exception) ⇒
+        EventHandler.debug(this, exception.toString)
+        None
+    }
+
+    lazy val remoteService: RemoteService = {
+      ensureEnabled()
+      remoteInstance.get
     }
 
     val remoteSupportClass = getClassFor[RemoteSupport](TRANSPORT) match {

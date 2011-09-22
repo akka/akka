@@ -2,9 +2,9 @@
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.cluster
+package akka.remote
 
-import akka.cluster.RemoteProtocol._
+import akka.remote.RemoteProtocol._
 import akka.serialization.Serialization
 
 import com.google.protobuf.ByteString

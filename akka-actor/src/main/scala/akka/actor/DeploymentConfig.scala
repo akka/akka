@@ -24,7 +24,7 @@ object DeploymentConfig {
     recipe: Option[ActorRecipe],
     routing: Routing = Direct,
     failureDetector: FailureDetector = RemoveConnectionOnFirstFailureLocalFailureDetector,
-    scope: Scope = Local) {
+    scope: Scope = LocalScope) {
     Address.validate(address)
   }
 
@@ -59,30 +59,35 @@ object DeploymentConfig {
   // --- FailureDetector
   // --------------------------------
   sealed trait FailureDetector
+  case class BannagePeriodFailureDetector(timeToBan: Long) extends FailureDetector
   case class CustomFailureDetector(className: String) extends FailureDetector
 
   // For Java API
   case class RemoveConnectionOnFirstFailureLocalFailureDetector() extends FailureDetector
-  case class RemoveConnectionOnFirstFailureRemoteFailureDetector() extends FailureDetector
+  case class RemoveConnectionOnFirstFailureFailureDetector() extends FailureDetector
 
   // For Scala API
   case object RemoveConnectionOnFirstFailureLocalFailureDetector extends FailureDetector
-  case object RemoveConnectionOnFirstFailureRemoteFailureDetector extends FailureDetector
+  case object RemoveConnectionOnFirstFailureFailureDetector extends FailureDetector
 
   // --------------------------------
   // --- Scope
   // --------------------------------
   sealed trait Scope
-  case class Clustered(
+  case class ClusterScope(
     preferredNodes: Iterable[Home] = Vector(Node(Config.nodename)),
     replicas: ReplicationFactor = ZeroReplicationFactor,
     replication: ReplicationScheme = Transient) extends Scope
 
+  case class RemoteScope(
+    hostname: String = "localhost",
+    port: Int = 2552) extends Scope
+
   // For Java API
-  case class Local() extends Scope
+  case class LocalScope() extends Scope
 
   // For Scala API
-  case object Local extends Scope
+  case object LocalScope extends Scope
 
   // --------------------------------
   // --- Home
@@ -175,10 +180,11 @@ object DeploymentConfig {
   def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == Config.nodename)
 
   def failureDetectorTypeFor(failureDetector: FailureDetector): FailureDetectorType = failureDetector match {
+    case BannagePeriodFailureDetector(timeToBan) ⇒ FailureDetectorType.BannagePeriodFailureDetector(timeToBan)
     case RemoveConnectionOnFirstFailureLocalFailureDetector ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureLocalFailureDetector
     case RemoveConnectionOnFirstFailureLocalFailureDetector() ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureLocalFailureDetector
-    case RemoveConnectionOnFirstFailureRemoteFailureDetector ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureRemoteFailureDetector
-    case RemoveConnectionOnFirstFailureRemoteFailureDetector() ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureRemoteFailureDetector
+    case RemoveConnectionOnFirstFailureFailureDetector ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureFailureDetector
+    case RemoveConnectionOnFirstFailureFailureDetector() ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureFailureDetector
     case CustomFailureDetector(implClass) ⇒ FailureDetectorType.CustomFailureDetector(implClass)
     case unknown ⇒ throw new UnsupportedOperationException("Unknown FailureDetector [" + unknown + "]")
   }
@@ -200,7 +206,7 @@ object DeploymentConfig {
   }
 
   def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {
-    case Deploy(_, _, _, _, Clustered(_, _, replicationScheme)) ⇒ Some(replicationScheme)
+    case Deploy(_, _, _, _, ClusterScope(_, _, replicationScheme)) ⇒ Some(replicationScheme)
     case _ ⇒ None
   }
 

@@ -150,14 +150,14 @@ object Cluster {
   // config options
   val name = Config.clusterName
   val zooKeeperServers = config.getString("akka.cluster.zookeeper-server-addresses", "localhost:2181")
-  val remoteServerPort = config.getInt("akka.cluster.remote-server-port", 2552)
+  val remoteServerPort = config.getInt("akka.remote.server.port", 2552)
   val sessionTimeout = Duration(config.getInt("akka.cluster.session-timeout", 60), TIME_UNIT).toMillis.toInt
   val metricsRefreshInterval = Duration(config.getInt("akka.cluster.metrics-refresh-timeout", 2), TIME_UNIT)
   val connectionTimeout = Duration(config.getInt("akka.cluster.connection-timeout", 60), TIME_UNIT).toMillis.toInt
   val maxTimeToWaitUntilConnected = Duration(config.getInt("akka.cluster.max-time-to-wait-until-connected", 30), TIME_UNIT).toMillis.toInt
-  val shouldCompressData = config.getBool("akka.cluster.use-compression", false)
+  val shouldCompressData = config.getBool("akka.remote.use-compression", false)
   val enableJMX = config.getBool("akka.enable-jmx", true)
-  val remoteDaemonAckTimeout = Duration(config.getInt("akka.cluster.remote-daemon-ack-timeout", 30), TIME_UNIT).toMillis.toInt
+  val remoteDaemonAckTimeout = Duration(config.getInt("akka.remote.remote-daemon-ack-timeout", 30), TIME_UNIT).toMillis.toInt
   val includeRefNodeInReplicaSet = config.getBool("akka.cluster.include-ref-node-in-replica-set", true)
 
   @volatile
@@ -168,8 +168,8 @@ object Cluster {
    * Currently supported options are:
    * <pre>
    *   Cluster setProperty ("akka.cluster.nodename", "node1")
-   *   Cluster setProperty ("akka.cluster.hostname", "darkstar.lan")
-   *   Cluster setProperty ("akka.cluster.port", "1234")
+   *   Cluster setProperty ("akka.remote.hostname", "darkstar.lan")
+   *   Cluster setProperty ("akka.remote.port", "1234")
    * </pre>
    */
   def setProperty(property: (String, String)) {
@@ -181,12 +181,12 @@ object Cluster {
     case None           ⇒ Config.nodename
   }
 
-  private def hostname: String = properties.get("akka.cluster.hostname") match {
+  private def hostname: String = properties.get("akka.remote.hostname") match {
     case Some(uberride) ⇒ uberride
     case None           ⇒ Config.hostname
   }
 
-  private def port: Int = properties.get("akka.cluster.port") match {
+  private def port: Int = properties.get("akka.remote.port") match {
     case Some(uberride) ⇒ uberride.toInt
     case None           ⇒ Config.remoteServerPort
   }
@@ -734,13 +734,7 @@ class DefaultClusterNode private[akka] (
    * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
    * for remote access through lookup by its UUID.
    */
-  def use[T <: Actor](actorAddress: String): Option[LocalActorRef] = use(actorAddress, serializerForActor(actorAddress))
-
-  /**
-   * Checks out an actor for use on this node, e.g. checked out as a 'LocalActorRef' but it makes it available
-   * for remote access through lookup by its UUID.
-   */
-  def use[T <: Actor](actorAddress: String, serializer: Serializer): Option[LocalActorRef] = {
+  def use[T <: Actor](actorAddress: String): Option[LocalActorRef] = {
     val nodeName = nodeAddress.nodeName
 
     val actorFactoryPath = actorAddressRegistryPathFor(actorAddress)
@@ -1233,7 +1227,7 @@ class DefaultClusterNode private[akka] (
       if (actorAddress.isDefined) {
         // use 'preferred-nodes' in deployment config for the actor
         Deployer.deploymentFor(actorAddress.get) match {
-          case Deploy(_, _, _, _, Clustered(nodes, _, _)) ⇒
+          case Deploy(_, _, _, _, Cluster(nodes, _, _)) ⇒
             nodes map (node ⇒ DeploymentConfig.nodeNameFor(node)) take replicationFactor
           case _ ⇒
             throw new ClusterException("Actor [" + actorAddress.get + "] is not configured as clustered")

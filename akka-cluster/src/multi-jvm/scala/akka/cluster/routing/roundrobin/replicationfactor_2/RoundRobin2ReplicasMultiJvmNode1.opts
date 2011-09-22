@@ -1,1 +1,1 @@
--Dakka.cluster.nodename=node1 -Dakka.cluster.port=9991
+-Dakka.cluster.nodename=node1 -Dakka.remote.port=9991

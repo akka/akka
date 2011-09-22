@@ -13,16 +13,14 @@ class ClusterSpec extends WordSpec with MustMatchers {
       //akka.cluster
       getString("akka.cluster.name") must equal(Some("test-cluster"))
       getString("akka.cluster.zookeeper-server-addresses") must equal(Some("localhost:2181"))
-      getInt("akka.cluster.server.port") must equal(Some(2552))
+      getInt("akka.remote.server.port") must equal(Some(2552))
       getInt("akka.cluster.max-time-to-wait-until-connected") must equal(Some(30))
       getInt("akka.cluster.session-timeout") must equal(Some(60))
       getInt("akka.cluster.connection-timeout") must equal(Some(60))
-      getBool("akka.cluster.use-compression") must equal(Some(false))
-      getInt("akka.cluster.connection-timeout") must equal(Some(60))
-      getInt("akka.cluster.remote-daemon-ack-timeout") must equal(Some(30))
+      getInt("akka.remote.remote-daemon-ack-timeout") must equal(Some(30))
       getBool("akka.cluster.include-ref-node-in-replica-set") must equal(Some(true))
-      getString("akka.cluster.layer") must equal(Some("akka.cluster.netty.NettyRemoteSupport"))
-      getString("akka.cluster.secure-cookie") must equal(Some(""))
+      getString("akka.remote.layer") must equal(Some("akka.cluster.netty.NettyRemoteSupport"))
+      getString("akka.remote.secure-cookie") must equal(Some(""))
       getString("akka.cluster.log-directory") must equal(Some("_akka_cluster"))
 
       //akka.cluster.replication
@@ -33,25 +31,25 @@ class ClusterSpec extends WordSpec with MustMatchers {
       getInt("akka.cluster.replication.snapshot-frequency") must equal(Some(1000))
       getInt("akka.cluster.replication.timeout") must equal(Some(30))
 
-      //akka.cluster.server
-      getInt("akka.cluster.server.port") must equal(Some(2552))
-      getInt("akka.cluster.server.message-frame-size") must equal(Some(1048576))
-      getInt("akka.cluster.server.connection-timeout") must equal(Some(120))
-      getBool("akka.cluster.server.require-cookie") must equal(Some(false))
-      getBool("akka.cluster.server.untrusted-mode") must equal(Some(false))
-      getInt("akka.cluster.server.backlog") must equal(Some(4096))
-      getInt("akka.cluster.server.execution-pool-keepalive") must equal(Some(60))
-      getInt("akka.cluster.server.execution-pool-size") must equal(Some(16))
-      getInt("akka.cluster.server.max-channel-memory-size") must equal(Some(0))
-      getInt("akka.cluster.server.max-total-memory-size") must equal(Some(0))
+      //akka.remote.server
+      getInt("akka.remote.server.port") must equal(Some(2552))
+      getInt("akka.remote.server.message-frame-size") must equal(Some(1048576))
+      getInt("akka.remote.server.connection-timeout") must equal(Some(120))
+      getBool("akka.remote.server.require-cookie") must equal(Some(false))
+      getBool("akka.remote.server.untrusted-mode") must equal(Some(false))
+      getInt("akka.remote.server.backlog") must equal(Some(4096))
+      getInt("akka.remote.server.execution-pool-keepalive") must equal(Some(60))
+      getInt("akka.remote.server.execution-pool-size") must equal(Some(16))
+      getInt("akka.remote.server.max-channel-memory-size") must equal(Some(0))
+      getInt("akka.remote.server.max-total-memory-size") must equal(Some(0))
 
-      //akka.cluster.client
-      getBool("akka.cluster.client.buffering.retry-message-send-on-failure") must equal(Some(false))
-      getInt("akka.cluster.client.buffering.capacity") must equal(Some(-1))
-      getInt("akka.cluster.client.reconnect-delay") must equal(Some(5))
-      getInt("akka.cluster.client.read-timeout") must equal(Some(3600))
-      getInt("akka.cluster.client.reap-futures-delay") must equal(Some(5))
-      getInt("akka.cluster.client.reconnection-time-window") must equal(Some(600))
+      //akka.remote.client
+      getBool("akka.remote.client.buffering.retry-message-send-on-failure") must equal(Some(false))
+      getInt("akka.remote.client.buffering.capacity") must equal(Some(-1))
+      getInt("akka.remote.client.reconnect-delay") must equal(Some(5))
+      getInt("akka.remote.client.read-timeout") must equal(Some(3600))
+      getInt("akka.remote.client.reap-futures-delay") must equal(Some(5))
+      getInt("akka.remote.client.reconnection-time-window") must equal(Some(600))
     }
   }
 }
