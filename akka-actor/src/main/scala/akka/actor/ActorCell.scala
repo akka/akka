@@ -111,7 +111,6 @@ private[akka] class ActorCell(
   def start(): Unit = {
     if (props.supervisor.isDefined) props.supervisor.get.link(self)
     dispatcher.attach(this)
-    Actor.registry.register(self)
     dispatcher.systemDispatch(SystemEnvelope(this, Create, NullChannel))
   }
 
@@ -234,6 +233,7 @@ private[akka] class ActorCell(
           actor.set(created)
           created.preStart()
           checkReceiveTimeout
+          Actor.registry.register(self)
           if (Actor.debugLifecycle) EventHandler.debug(created, "started")
         case instance if recreation ⇒
           restart(new Exception("Restart commanded"), None, None)
