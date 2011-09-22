@@ -55,8 +55,6 @@ case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true)
 
 case class Failed(actor: ActorRef, cause: Throwable, recoverable: Boolean, timesRestarted: Int, restartTimeWindowStartMs: Long) extends AutoReceivedMessage with PossiblyHarmful
 
-case class Crash(reason: Throwable) extends AutoReceivedMessage with PossiblyHarmful
-
 case object RevertHotSwap extends AutoReceivedMessage with PossiblyHarmful
 
 case class Link(child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
@@ -651,7 +649,6 @@ trait Actor {
         case Link(child)               ⇒ self.link(child)
         case Unlink(child)             ⇒ self.unlink(child)
         case UnlinkAndStop(child)      ⇒ self.unlink(child); child.stop()
-        case Crash(reason)             ⇒ throw reason
         case Kill                      ⇒ throw new ActorKilledException("Kill")
         case PoisonPill ⇒
           val ch = channel
