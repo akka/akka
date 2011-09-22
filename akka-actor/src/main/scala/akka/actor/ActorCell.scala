@@ -111,6 +111,7 @@ private[akka] class ActorCell(
   def start(): Unit = {
     if (props.supervisor.isDefined) props.supervisor.get.link(self)
     dispatcher.attach(this)
+    Actor.registry.register(self)
     dispatcher.systemDispatch(SystemEnvelope(this, Create, NullChannel))
   }
 
@@ -223,17 +224,16 @@ private[akka] class ActorCell(
     case msg  ⇒ msg.channel
   }
 
-  def systemInvoke(envelope: SystemEnvelope): Boolean = {
+  def systemInvoke(envelope: SystemEnvelope): Unit = {
     var isTerminated = terminated
 
-    def create(recreation: Boolean): Boolean = try {
+    def create(recreation: Boolean): Unit = try {
       actor.get() match {
         case null ⇒
           val created = newActor(restart = false)
           actor.set(created)
           created.preStart()
           checkReceiveTimeout
-          Actor.registry.register(self)
           if (Actor.debugLifecycle) EventHandler.debug(created, "started")
         case instance if recreation ⇒
           restart(new Exception("Restart commanded"), None, None)
@@ -245,21 +245,14 @@ private[akka] class ActorCell(
         envelope.channel.sendException(e)
         if (supervisor.isDefined) {
           supervisor.get ! Failed(self, e, false, maxNrOfRetriesCount, restartTimeWindowStartNanos)
-          false // don't continue processing messages right now
         } else throw e
     }
 
-    def suspend(): Boolean = {
-      dispatcher suspend this
-      true
-    }
+    def suspend(): Unit = dispatcher suspend this
 
-    def resume(): Boolean = {
-      dispatcher resume this
-      true
-    }
+    def resume(): Unit = dispatcher resume this
 
-    def terminate(): Boolean = {
+    def terminate(): Unit = {
       receiveTimeout = None
       cancelReceiveTimeout
       Actor.registry.unregister(self)
@@ -278,10 +271,6 @@ private[akka] class ActorCell(
             i.remove()
           }
         }
-
-        // TODO CHECK: stop message dequeuing, which means that mailbox will not be restarted and GCed
-        false
-
       } finally {
         try {
           if (supervisor.isDefined)
@@ -305,8 +294,6 @@ private[akka] class ActorCell(
           case Resume    ⇒ resume()
           case Terminate ⇒ terminate()
         }
-      } else {
-        false
       }
     } catch {
       case e ⇒ //Should we really catch everything here?

@@ -9,6 +9,7 @@ import scala.collection.mutable.ListBuffer
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.util.ListenerManagement
+import reflect.BeanProperty
 
 /**
  * Base trait for ActorRegistry events, allows listen to when an actor is added and removed from the ActorRegistry.
@@ -16,8 +17,10 @@ import akka.util.ListenerManagement
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 sealed trait ActorRegistryEvent
-case class ActorRegistered(address: String, actor: ActorRef, typedActor: Option[AnyRef]) extends ActorRegistryEvent
-case class ActorUnregistered(address: String, actor: ActorRef, typedActor: Option[AnyRef]) extends ActorRegistryEvent
+case class ActorRegistered(@BeanProperty address: String, @BeanProperty actor: ActorRef) extends ActorRegistryEvent
+case class ActorUnregistered(@BeanProperty address: String, @BeanProperty actor: ActorRef) extends ActorRegistryEvent
+case class TypedActorRegistered(@BeanProperty address: String, @BeanProperty actor: ActorRef, @BeanProperty proxy: AnyRef) extends ActorRegistryEvent
+case class TypedActorUnregistered(@BeanProperty address: String, @BeanProperty actor: ActorRef, @BeanProperty proxy: AnyRef) extends ActorRegistryEvent
 
 /**
  * Registry holding all Actor instances in the whole system.
@@ -55,14 +58,18 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
 
     actorsByAddress.put(address, actor)
     actorsByUuid.put(actor.uuid, actor)
-    notifyListeners(ActorRegistered(address, actor, Option(typedActorsByUuid get actor.uuid)))
+    notifyListeners(ActorRegistered(address, actor))
   }
 
-  private[akka] def registerTypedActor(actorRef: ActorRef, interface: AnyRef): Unit =
-    typedActorsByUuid.put(actorRef.uuid, interface)
+  private[akka] def registerTypedActor(actorRef: ActorRef, proxy: AnyRef): Unit = {
+    if (typedActorsByUuid.putIfAbsent(actorRef.uuid, proxy) eq null)
+      notifyListeners(TypedActorRegistered(actorRef.address, actorRef, proxy))
+  }
 
-  private[akka] def unregisterTypedActor(actorRef: ActorRef, interface: AnyRef): Unit =
-    typedActorsByUuid.remove(actorRef.uuid, interface)
+  private[akka] def unregisterTypedActor(actorRef: ActorRef, proxy: AnyRef): Unit = {
+    if (typedActorsByUuid.remove(actorRef.uuid, proxy))
+      notifyListeners(TypedActorUnregistered(actorRef.address, actorRef, proxy))
+  }
 
   /**
    * Unregisters an actor in the ActorRegistry.
@@ -70,7 +77,7 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
   private[akka] def unregister(address: String) {
     val actor = actorsByAddress remove address
     actorsByUuid remove actor.uuid
-    notifyListeners(ActorUnregistered(address, actor, None))
+    notifyListeners(ActorUnregistered(address, actor))
   }
 
   /**
@@ -80,7 +87,12 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
     val address = actor.address
     actorsByAddress remove address
     actorsByUuid remove actor.uuid
-    notifyListeners(ActorUnregistered(address, actor, Option(typedActorsByUuid remove actor.uuid)))
+    notifyListeners(ActorUnregistered(address, actor))
+
+    //Safe cleanup (if called from the outside)
+    val proxy = typedActorsByUuid.remove(actor.uuid)
+    if (proxy ne null)
+      notifyListeners(TypedActorUnregistered(address, actor, proxy))
   }
 
   /**

@@ -43,10 +43,25 @@ The messages sent to this Actor are:
 .. code-block:: java
 
   public class ActorRegistered {
-    ActorRef actor();
+    ActorRef getActor();
+    String getAddress();
   }
+
   public class ActorUnregistered {
     ActorRef actor();
+    String getAddress();
+  }
+
+  public class TypedActorRegistered {
+    ActorRef getActor();
+    String getAddress();
+    Object getProxy();
+  }
+
+  public class TypedActorUnregistered {
+    ActorRef actor();
+    String getAddress();
+    Object getProxy();
   }
 
 So your listener Actor needs to be able to handle these two messages. Example:
@@ -55,6 +70,8 @@ So your listener Actor needs to be able to handle these two messages. Example:
 
   import akka.actor.ActorRegistered;
   import akka.actor.ActorUnregistered;
+  import akka.actor.TypedActorRegistered;
+  import akka.actor.TypedActorUnregistered;
   import akka.actor.UntypedActor;
   import akka.event.EventHandler;
 

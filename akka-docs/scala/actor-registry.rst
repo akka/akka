@@ -73,18 +73,17 @@ The messages sent to this Actor are:
 
 .. code-block:: scala
 
-  case class ActorRegistered(actor: ActorRef)
-  case class ActorUnregistered(actor: ActorRef)
+  case class ActorRegistered(@BeanProperty address: String,@BeanProperty actor: ActorRef) extends ActorRegistryEvent
+  case class ActorUnregistered(@BeanProperty address: String, @BeanProperty actor: ActorRef) extends ActorRegistryEvent
+  case class TypedActorRegistered(@BeanProperty address: String, @BeanProperty actor: ActorRef, @BeanProperty proxy: AnyRef) extends ActorRegistryEvent
+  case class TypedActorUnregistered(@BeanProperty address: String, @BeanProperty actor: ActorRef, @BeanProperty proxy: AnyRef) extends ActorRegistryEvent
 
-So your listener Actor needs to be able to handle these two messages. Example:
+So your listener Actor needs to be able to handle these messages. Example:
 
 .. code-block:: scala
 
-  import akka.actor.Actor
-  import akka.actor.ActorRegistered;
-  import akka.actor.ActorUnregistered;
-  import akka.actor.UntypedActor;
-  import akka.event.EventHandler;
+  import akka.actor._
+  import akka.event.EventHandler
 
   class RegistryListener extends Actor {
     def receive = {

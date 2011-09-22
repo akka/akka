@@ -39,7 +39,9 @@ trait Mailbox extends Runnable {
    * @return true if the processing finished before the mailbox was empty, due to the throughput constraint
    */
   final def processMailbox() {
-    if (processAllSystemMessages() && !suspended.locked) {
+    if (hasSystemMessages)
+      processAllSystemMessages()
+    else if (!suspended.locked) {
       var nextMessage = dequeue()
       if (nextMessage ne null) { //If we have a message
         if (dispatcher.throughput <= 1) //If we only run one message per process
@@ -51,28 +53,29 @@ trait Mailbox extends Runnable {
           else 0
           do {
             nextMessage.invoke
-            nextMessage =
-              if (!processAllSystemMessages() || suspended.locked) {
-                null // If we are suspended, abort
-              } else { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
-                processedMessages += 1
-                if ((processedMessages >= dispatcher.throughput) || (isDeadlineEnabled && System.nanoTime >= deadlineNs)) // If we're throttled, break out
-                  null //We reached our boundaries, abort
-                else dequeue //Dequeue the next message
-              }
+            nextMessage = if (hasSystemMessages) {
+              processAllSystemMessages()
+              null
+            } else if (suspended.locked) {
+              null // If we are suspended, abort
+            } else { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
+              processedMessages += 1
+              if ((processedMessages >= dispatcher.throughput) || (isDeadlineEnabled && System.nanoTime >= deadlineNs)) // If we're throttled, break out
+                null //We reached our boundaries, abort
+              else dequeue //Dequeue the next message
+            }
           } while (nextMessage ne null)
         }
       }
     }
   }
 
-  def processAllSystemMessages(): Boolean = {
+  def processAllSystemMessages(): Unit = {
     var nextMessage = systemDequeue()
     while (nextMessage ne null) {
-      if (!nextMessage.invoke()) return false
+      nextMessage.invoke()
       nextMessage = systemDequeue()
     }
-    true
   }
 
   /*

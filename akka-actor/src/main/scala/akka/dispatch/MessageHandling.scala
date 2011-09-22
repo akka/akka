@@ -34,7 +34,7 @@ final case class SystemEnvelope(val receiver: ActorCell, val message: SystemMess
   /**
    * @return whether to proceed with processing other messages
    */
-  final def invoke(): Boolean = receiver systemInvoke this
+  final def invoke(): Unit = receiver systemInvoke this
 }
 
 final case class TaskInvocation(function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
@@ -174,7 +174,9 @@ abstract class MessageDispatcher extends Serializable {
    */
   protected[akka] def unregister(actor: ActorCell) = {
     if (uuids remove actor.uuid) {
-      cleanUpMailboxFor(actor)
+      val mailBox = actor.mailbox
+      actor.mailbox = deadLetterMailbox //FIXME switch to getAndSet semantics
+      cleanUpMailboxFor(actor, mailBox)
       if (uuids.isEmpty && _tasks.get == 0) {
         shutdownSchedule match {
           case UNSCHEDULED ⇒
@@ -192,7 +194,25 @@ abstract class MessageDispatcher extends Serializable {
    * Overridable callback to clean up the mailbox for a given actor,
    * called when an actor is unregistered.
    */
-  protected def cleanUpMailboxFor(actor: ActorCell) {}
+  protected def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox) {
+    val m = mailBox
+
+    if (m.hasSystemMessages) {
+      var envelope = m.systemDequeue()
+      while (envelope ne null) {
+        deadLetterMailbox.systemEnqueue(envelope)
+        envelope = m.systemDequeue()
+      }
+    }
+
+    if (m.hasMessages) {
+      var envelope = m.dequeue
+      while (envelope ne null) {
+        deadLetterMailbox.enqueue(envelope)
+        envelope = m.dequeue
+      }
+    }
+  }
 
   /**
    * Traverses the list of actors (uuids) currently being attached to this dispatcher and stops those actors

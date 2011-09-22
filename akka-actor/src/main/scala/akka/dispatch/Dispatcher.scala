@@ -146,22 +146,6 @@ class Dispatcher(
   protected[akka] def reRegisterForExecution(mbox: Mailbox): Unit =
     registerForExecution(mbox)
 
-  protected override def cleanUpMailboxFor(actor: ActorCell) {
-    val m = actor.mailbox
-    actor.mailbox = deadLetterMailbox //FIXME switch to getAndSet semantics
-    if (m.hasMessages) {
-      var invocation = m.dequeue
-      lazy val exception = new ActorKilledException("Actor has been stopped")
-      while (invocation ne null) {
-        invocation.channel.sendException(exception)
-        invocation = m.dequeue
-      }
-    }
-    while (m.systemDequeue() ne null) {
-      //Empty the system messages
-    }
-  }
-
   override val toString = getClass.getSimpleName + "[" + name + "]"
 
   def suspend(actor: ActorCell): Unit =
