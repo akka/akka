@@ -256,9 +256,9 @@ private[akka] class ActorCell(
       receiveTimeout = None
       cancelReceiveTimeout
       Actor.registry.unregister(self)
+      dispatcher.detach(this)
       isTerminated = true
       terminated = isTerminated
-      dispatcher.detach(this)
       try {
         val a = actor.get
         if (Actor.debugLifecycle) EventHandler.debug(a, "stopping")
