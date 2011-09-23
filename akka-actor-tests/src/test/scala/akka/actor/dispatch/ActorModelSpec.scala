@@ -390,7 +390,12 @@ abstract class ActorModelSpec extends JUnitSuite {
       (1 to num) foreach { _ ⇒
         newTestActor ! cachedMessage
       }
-      assertCountDown(cachedMessage.latch, Testing.testTime(10000), "Should process " + num + " countdowns")
+      try {
+        assertCountDown(cachedMessage.latch, Testing.testTime(10000), "Should process " + num + " countdowns")
+      } catch {
+        case e ⇒
+          EventHandler.error(null, cachedMessage.latch.getCount())
+      }
     }
     for (run ← 1 to 3) {
       flood(10000)
