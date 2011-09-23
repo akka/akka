@@ -216,7 +216,11 @@ class LocalActorRef private[akka] (
   def isShutdown: Boolean = actorCell.isShutdown
 
   /**
-   * Suspends the actor. It will not process messages while suspended.
+   * Suspends the actor so that it will not process messages until resumed. The
+   * suspend request is processed asynchronously to the caller of this method
+   * as well as to normal message sends: the only ordering guarantee is that
+   * message sends done from the same thread after calling this method will not
+   * be processed until resumed.
    */
   def suspend(): Unit = actorCell.suspend()
 

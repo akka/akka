@@ -401,7 +401,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     val stopped = a ? PoisonPill
     val shouldBeCompleted = for (i ← 1 to 10) yield a ? Reply(i)
     a.resume
-    assert(f1.get === "foo")
+    assert(f1.get == "foo")
     stopped.await
     for (each ← shouldBeCompleted)
       assert(each.await.exception.get.isInstanceOf[ActorKilledException])

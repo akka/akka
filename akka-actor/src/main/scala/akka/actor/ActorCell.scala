@@ -111,8 +111,8 @@ private[akka] class ActorCell(
   def start(): Unit = {
     if (props.supervisor.isDefined) props.supervisor.get.link(self)
     dispatcher.attach(this)
-    Actor.registry.register(self)
     dispatcher.systemDispatch(SystemEnvelope(this, Create, NullChannel))
+    Actor.registry.register(self)
   }
 
   def newActor(restart: Boolean): Actor = {
@@ -143,9 +143,9 @@ private[akka] class ActorCell(
     case valid ⇒ valid
   }
 
-  def suspend(): Unit = dispatcher.suspend(this)
+  def suspend(): Unit = dispatcher.systemDispatch(SystemEnvelope(this, Suspend, NullChannel))
 
-  def resume(): Unit = dispatcher.resume(this)
+  def resume(): Unit = dispatcher.systemDispatch(SystemEnvelope(this, Resume, NullChannel))
 
   private[akka] def stop(): Unit =
     if (!terminated) {

@@ -9,6 +9,7 @@ import org.junit.Test
 
 import Actor._
 import akka.config.Supervision.OneForOnePermanentStrategy
+import akka.testkit._
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 
@@ -34,12 +35,14 @@ class SupervisorHierarchySpec extends JUnitSuite {
 
     val workerOne, workerTwo, workerThree = actorOf(Props(new CountDownActor(countDown)).withSupervisor(manager))
 
-    workerOne ! Kill
+    filterException[ActorKilledException] {
+      workerOne ! Kill
 
-    // manager + all workers should be restarted by only killing a worker
-    // manager doesn't trap exits, so boss will restart manager
+      // manager + all workers should be restarted by only killing a worker
+      // manager doesn't trap exits, so boss will restart manager
 
-    assert(countDown.await(2, TimeUnit.SECONDS))
+      assert(countDown.await(2, TimeUnit.SECONDS))
+    }
   }
 
   @Test
@@ -54,11 +57,13 @@ class SupervisorHierarchySpec extends JUnitSuite {
 
     val crasher = actorOf(Props(new CountDownActor(countDownMessages)).withSupervisor(boss))
 
-    crasher ! Kill
-    crasher ! Kill
+    filterException[ActorKilledException] {
+      crasher ! Kill
+      crasher ! Kill
 
-    assert(countDownMessages.await(2, TimeUnit.SECONDS))
-    assert(countDownMax.await(2, TimeUnit.SECONDS))
+      assert(countDownMessages.await(2, TimeUnit.SECONDS))
+      assert(countDownMax.await(2, TimeUnit.SECONDS))
+    }
   }
 }
 

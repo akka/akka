@@ -112,7 +112,7 @@ object ActorRefSpec {
   }
 }
 
-class ActorRefSpec extends WordSpec with MustMatchers {
+class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
   import akka.actor.ActorRefSpec._
 
   def promiseIntercept(f: ⇒ Actor)(to: Promise[Actor]): Actor = try {
@@ -358,11 +358,11 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         fail("shouldn't get here")
       }
 
-      ffive.resultOrException.get must be("five")
-      fnull.resultOrException.get must be("null")
+      ffive.get must be("five")
+      fnull.get must be("null")
 
+      awaitCond(ref.isShutdown, 100 millis)
       ref.isRunning must be(false)
-      ref.isShutdown must be(true)
     }
 
     "restart when Kill:ed" in {
