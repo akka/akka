@@ -64,15 +64,15 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
    * @return true if the processing finished before the mailbox was empty, due to the throughput constraint
    */
   final def processMailbox() {
-    if (hasSystemMessages)
-      processAllSystemMessages()
+    processAllSystemMessages()
 
     if (status == OPEN) {
       var nextMessage = dequeue()
       if (nextMessage ne null) { //If we have a message
-        if (dispatcher.throughput <= 1) //If we only run one message per process
+        if (dispatcher.throughput <= 1) { //If we only run one message per process {
           nextMessage.invoke //Just run it
-        else { //But otherwise, if we are throttled, we need to do some book-keeping
+          processAllSystemMessages()
+        } else { //But otherwise, if we are throttled, we need to do some book-keeping
           var processedMessages = 0
           val isDeadlineEnabled = dispatcher.throughputDeadlineTime > 0
           val deadlineNs = if (isDeadlineEnabled) System.nanoTime + TimeUnit.MILLISECONDS.toNanos(dispatcher.throughputDeadlineTime)
@@ -80,8 +80,7 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
           do {
             nextMessage.invoke
 
-            if (hasSystemMessages)
-              processAllSystemMessages()
+            processAllSystemMessages()
 
             nextMessage = if (status != OPEN) {
               null // If we are suspended, abort
