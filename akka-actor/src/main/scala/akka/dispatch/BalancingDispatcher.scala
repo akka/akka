@@ -6,8 +6,9 @@ package akka.dispatch
 
 import util.DynamicVariable
 import akka.actor.{ ActorCell, Actor, IllegalActorStateException }
-import java.util.Queue
 import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
+import java.util.{ Comparator, Queue }
+import annotation.tailrec
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -51,7 +52,7 @@ class BalancingDispatcher(
   def this(_name: String, mailboxType: MailboxType) =
     this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
 
-  private val buddies = new ConcurrentLinkedQueue[ActorCell]()
+  private val buddies = new ConcurrentSkipListSet[ActorCell](new Comparator[ActorCell] { def compare(a: ActorCell, b: ActorCell) = a.uuid.compareTo(b.uuid) }) //new ConcurrentLinkedQueue[ActorCell]()
 
   protected val messageQueue: MessageQueue = mailboxType match {
     case u: UnboundedMailbox ⇒ new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
@@ -73,10 +74,8 @@ class BalancingDispatcher(
 
     final def dequeue(): Envelope = {
       val envelope = messageQueue.dequeue()
-      if (envelope eq null) {
-        buddies.add(actor)
-        null
-      } else if (envelope.receiver eq actor) envelope
+      if (envelope eq null) null
+      else if (envelope.receiver eq actor) envelope
       else envelope.copy(receiver = actor)
     }
 
@@ -89,29 +88,27 @@ class BalancingDispatcher(
 
   protected[akka] override def register(actor: ActorCell) = {
     super.register(actor)
-    buddies.add(actor)
+    registerForExecution(actor.mailbox, false, false)
   }
 
   protected[akka] override def unregister(actor: ActorCell) = {
-    buddies.remove(actor)
     super.unregister(actor)
+    buddies.remove(actor)
   }
 
   protected override def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox) {
-    val m = mailBox
-
-    if (m.hasSystemMessages) {
-      var envelope = m.systemDequeue()
+    if (mailBox.hasSystemMessages) {
+      var envelope = mailBox.systemDequeue()
       while (envelope ne null) {
-        deadLetterMailbox.systemEnqueue(envelope)
-        envelope = m.systemDequeue()
+        deadLetterMailbox.systemEnqueue(envelope) //Send to dead letter queue
+        envelope = mailBox.systemDequeue()
       }
     }
   }
 
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessagesHint: Boolean, hasSystemMessagesHint: Boolean): Boolean = {
     if (!super.registerForExecution(mbox, hasMessagesHint, hasSystemMessagesHint)) {
-      if (mbox.isInstanceOf[SharingMailbox]) buddies.add(mbox.asInstanceOf[SharingMailbox].actor)
+      if (!mbox.isClosed && mbox.isInstanceOf[SharingMailbox]) buddies.add(mbox.asInstanceOf[SharingMailbox].actor)
       false
     } else true
   }
@@ -120,9 +117,13 @@ class BalancingDispatcher(
     val receiver = invocation.receiver
     messageQueue enqueue invocation
 
-    buddies.poll() match {
-      case null | `receiver` ⇒ registerForExecution(receiver.mailbox, true, false)
-      case buddy             ⇒ registerForExecution(buddy.mailbox, true, false)
+    @tailrec
+    def getValidBuddy(): ActorCell = buddies.pollFirst() match {
+      case null | `receiver`             ⇒ receiver
+      case buddy if buddy.mailbox.isOpen ⇒ buddy
+      case _                             ⇒ getValidBuddy
     }
+
+    registerForExecution(getValidBuddy().mailbox, true, false)
   }
 }

@@ -120,12 +120,18 @@ object ActorModelSpec {
 
     protected[akka] abstract override def register(actor: ActorCell) {
       super.register(actor)
+      //printMembers("after registering " + actor)
       getStats(actor.ref).registers.incrementAndGet()
     }
 
     protected[akka] abstract override def unregister(actor: ActorCell) {
       super.unregister(actor)
+      //printMembers("after unregistering " + actor)
       getStats(actor.ref).unregisters.incrementAndGet()
+    }
+
+    def printMembers(when: String) {
+      System.err.println(when + " then " + uuids.toArray.toList.map(_.toString.split("-")(0)).mkString("==> ", ", ", "<=="))
     }
 
     protected[akka] abstract override def dispatch(invocation: Envelope) {
@@ -395,12 +401,12 @@ abstract class ActorModelSpec extends JUnitSuite {
         assertCountDown(cachedMessage.latch, Testing.testTime(10000), "Should process " + num + " countdowns")
       } catch {
         case e ⇒
-          System.err.println("Error: " + e.getMessage + " when count was: " + cachedMessage.latch.getCount())
+          System.err.println("Error: " + e.getMessage + " when count was: " + cachedMessage.latch.getCount() + " expected " + num)
         //EventHandler.error(new Exception with NoStackTrace, null, cachedMessage.latch.getCount())
       }
     }
     for (run ← 1 to 3) {
-      flood(10)
+      flood(10000)
       assertDispatcher(dispatcher)(starts = run, stops = run)
     }
   }

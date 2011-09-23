@@ -88,6 +88,7 @@ private[akka] class ActorCell(
   @volatile
   var receiveTimeout: Option[Long] = _receiveTimeout // TODO: currently settable from outside for compatibility
 
+  @volatile
   var currentMessage: Envelope = null
 
   val actor: AtomicReference[Actor] = new AtomicReference[Actor]() //FIXME We can most probably make this just a regular reference to Actor
@@ -182,7 +183,7 @@ private[akka] class ActorCell(
 
   def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
     if (isRunning) dispatcher dispatchMessage new Envelope(this, message, channel)
-    else throw new ActorInitializationException("Actor " + self + " is dead")
+  //else throw new ActorInitializationException("Actor " + self + " is dead")
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
@@ -194,7 +195,7 @@ private[akka] class ActorCell(
     }
     dispatcher dispatchMessage new Envelope(this, message, future)
     future
-  } else throw new ActorInitializationException("Actor " + self + " is dead")
+  } else new KeptPromise[Any](Left(new ActorKilledException("Stopped"))) // else throw new ActorInitializationException("Actor " + self + " is dead")
 
   def sender: Option[ActorRef] = currentMessage match {
     case null                                      ⇒ None

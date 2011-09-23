@@ -45,7 +45,7 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
 
   def shouldBeRegisteredForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
     case CLOSED    ⇒ false
-    case OPEN      ⇒ hasMessageHint || hasSystemMessages || hasMessages
+    case OPEN      ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
     case SUSPENDED ⇒ hasSystemMessageHint || hasSystemMessages
   }
 
@@ -82,14 +82,12 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
 
             processAllSystemMessages()
 
-            nextMessage = if (status != OPEN) {
-              null // If we are suspended, abort
-            } else { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
+            nextMessage = if (status == OPEN) { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
               processedMessages += 1
               if ((processedMessages >= dispatcher.throughput) || (isDeadlineEnabled && System.nanoTime >= deadlineNs)) // If we're throttled, break out
                 null //We reached our boundaries, abort
               else dequeue //Dequeue the next message
-            }
+            } else null //Abort
           } while (nextMessage ne null)
         }
       }
