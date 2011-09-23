@@ -115,7 +115,7 @@ class Dispatcher(
     }
   }
 
-  def createMailbox(actor: ActorCell): Mailbox = mailboxType.create(this)
+  protected[akka] def createMailbox(actor: ActorCell): Mailbox = mailboxType.create(this)
 
   protected[akka] def start {}
 
@@ -126,11 +126,15 @@ class Dispatcher(
     }
   }
 
-  protected[akka] def registerForExecution(mbox: Mailbox): Unit = {
+  /**
+   * Returns if it was registered
+   */
+  protected[akka] def registerForExecution(mbox: Mailbox): Boolean = {
     if (mbox.dispatcherLock.tryLock()) {
       if (active.isOn && (!mbox.suspended.locked || mbox.hasSystemMessages)) { //If the dispatcher is active and the actor not suspended
         try {
           executorService.get() execute mbox
+          true
         } catch {
           case e: RejectedExecutionException ⇒
             EventHandler.warning(this, e.toString)
@@ -139,23 +143,18 @@ class Dispatcher(
         }
       } else {
         mbox.dispatcherLock.unlock() //If the dispatcher isn't active or if the actor is suspended, unlock the dispatcher lock
+        false
       }
-    }
+    } else false
   }
 
-  protected[akka] def reRegisterForExecution(mbox: Mailbox): Unit =
+  /**
+   * Returns if it was reRegistered
+   */
+  protected[akka] def reRegisterForExecution(mbox: Mailbox): Boolean =
     registerForExecution(mbox)
 
   override val toString = getClass.getSimpleName + "[" + name + "]"
-
-  def suspend(actor: ActorCell): Unit =
-    actor.mailbox.suspended.tryLock
-
-  def resume(actor: ActorCell): Unit = {
-    val mbox = actor.mailbox
-    mbox.suspended.tryUnlock
-    reRegisterForExecution(mbox)
-  }
 }
 
 object PriorityGenerator {
@@ -209,8 +208,11 @@ class PriorityDispatcher(
   def this(name: String, comparator: java.util.Comparator[Envelope]) =
     this(name, comparator, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 
-  override def createMailbox(actor: ActorCell): Mailbox = mailboxType match {
-    case _: UnboundedMailbox          ⇒ UnboundedPriorityMailbox(comparator).create(this)
-    case BoundedMailbox(cap, timeout) ⇒ BoundedPriorityMailbox(comparator, cap, timeout).create(this)
+  protected val mailbox = mailboxType match {
+    case _: UnboundedMailbox          ⇒ UnboundedPriorityMailbox(comparator)
+    case BoundedMailbox(cap, timeout) ⇒ BoundedPriorityMailbox(comparator, cap, timeout)
+    case other                        ⇒ throw new IllegalArgumentException("Only handles BoundedMailbox and UnboundedMailbox, but you specified [" + other + "]")
   }
+
+  override def createMailbox(actor: ActorCell): Mailbox = mailbox.create(this)
 }

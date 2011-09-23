@@ -6,6 +6,8 @@ package akka.dispatch
 
 import util.DynamicVariable
 import akka.actor.{ ActorCell, Actor, IllegalActorStateException }
+import java.util.Queue
+import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -49,98 +51,78 @@ class BalancingDispatcher(
   def this(_name: String, mailboxType: MailboxType) =
     this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
 
-  @volatile
-  private var members = Vector[ActorCell]()
-  private val donationInProgress = new DynamicVariable(false)
+  private val buddies = new ConcurrentLinkedQueue[ActorCell]()
+
+  protected val messageQueue: MessageQueue = mailboxType match {
+    case u: UnboundedMailbox ⇒ new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
+      final val queue = new ConcurrentLinkedQueue[Envelope]
+      final val dispatcher = BalancingDispatcher.this
+    }
+    case BoundedMailbox(cap, timeout) ⇒ new QueueBasedMessageQueue with BoundedMessageQueueSemantics {
+      final val queue = new LinkedBlockingQueue[Envelope](cap)
+      final val dispatcher = BalancingDispatcher.this
+      final val pushTimeOut = timeout
+    }
+    case other ⇒ throw new IllegalArgumentException("Only handles BoundedMailbox and UnboundedMailbox, but you specified [" + other + "]")
+  }
+
+  protected[akka] override def createMailbox(actor: ActorCell): Mailbox = new SharingMailbox(actor)
+
+  class SharingMailbox(val actor: ActorCell) extends Mailbox with DefaultSystemMessageQueue {
+    final def enqueue(handle: Envelope) = messageQueue.enqueue(handle)
+
+    final def dequeue(): Envelope = {
+      val envelope = messageQueue.dequeue()
+      if (envelope eq null) {
+        buddies.add(actor)
+        null
+      } else if (envelope.receiver eq actor) envelope
+      else envelope.copy(receiver = actor)
+    }
+
+    final def numberOfMessages: Int = messageQueue.numberOfMessages
+
+    final def hasMessages: Boolean = messageQueue.hasMessages
+
+    final val dispatcher = BalancingDispatcher.this
+  }
 
   protected[akka] override def register(actor: ActorCell) = {
-    members :+= actor //Update members, doesn't need synchronized, is guarded in attach
     super.register(actor)
+    buddies.add(actor)
   }
 
   protected[akka] override def unregister(actor: ActorCell) = {
-    members = members.filterNot(actor eq) //Update members, doesn't need synchronized, is guarded in detach
+    buddies.remove(actor)
     super.unregister(actor)
   }
 
-  override protected[akka] def dispatch(invocation: Envelope) = {
-    val mbox = invocation.receiver.mailbox
-    if (donationInProgress.value == false && (mbox.hasMessages || mbox.dispatcherLock.locked) && attemptDonationOf(invocation, mbox)) {
-      //We were busy and we got to donate the message to some other lucky guy, we're done here
-    } else {
-      mbox enqueue invocation
-      registerForExecution(mbox)
-    }
-  }
+  protected override def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox) {
+    val m = mailBox
 
-  override protected[akka] def reRegisterForExecution(mbox: Mailbox): Unit = {
-    try {
-      donationInProgress.value = true
-      while (donateFrom(mbox)) {} //When we reregister, first donate messages to another actor
-    } finally { donationInProgress.value = false }
-
-    if (mbox.hasMessages) //If we still have messages left to process, reschedule for execution
-      super.reRegisterForExecution(mbox)
-  }
-
-  /**
-   * Returns true if it successfully donated a message
-   */
-  protected def donateFrom(donorMbox: Mailbox): Boolean = {
-    val actors = members // copy to prevent concurrent modifications having any impact
-
-    // we risk to pick a thief which is unregistered from the dispatcher in the meantime, but that typically means
-    // the dispatcher is being shut down...
-    // Starts at is seeded by current time
-    doFindDonorRecipient(donorMbox, actors, (System.currentTimeMillis % actors.size).asInstanceOf[Int]) match {
-      case null      ⇒ false
-      case recipient ⇒ donate(donorMbox.dequeue, recipient)
-    }
-  }
-
-  /**
-   * Returns true if the donation succeeded or false otherwise
-   */
-  protected def attemptDonationOf(message: Envelope, donorMbox: Mailbox): Boolean = try {
-    donationInProgress.value = true
-    val actors = members // copy to prevent concurrent modifications having any impact
-    doFindDonorRecipient(donorMbox, actors, System.identityHashCode(message) % actors.size) match {
-      case null      ⇒ false
-      case recipient ⇒ donate(message, recipient)
-    }
-  } finally { donationInProgress.value = false }
-
-  /**
-   * Rewrites the message and adds that message to the recipients mailbox
-   * returns true if the message is non-null
-   */
-  protected def donate(organ: Envelope, recipient: ActorCell): Boolean = {
-    if (organ ne null) {
-      recipient.postMessageToMailbox(organ.message, organ.channel)
-      true
-    } else false
-  }
-
-  /**
-   * Returns an available recipient for the message, if any
-   */
-  protected def doFindDonorRecipient(donorMbox: Mailbox, potentialRecipients: Vector[ActorCell], startIndex: Int): ActorCell = {
-    val prSz = potentialRecipients.size
-    var i = 0
-    var recipient: ActorCell = null
-
-    while ((i < prSz) && (recipient eq null)) {
-      val actor = potentialRecipients((i + startIndex) % prSz) //Wrap-around, one full lap
-      actor.mailbox match {
-        case `donorMbox` | `deadLetterMailbox` ⇒ //Not interesting
-        case mbox ⇒
-          if (!mbox.hasMessages) //Don't donate to yourself
-            recipient = actor //Found!
+    if (m.hasSystemMessages) {
+      var envelope = m.systemDequeue()
+      while (envelope ne null) {
+        deadLetterMailbox.systemEnqueue(envelope)
+        envelope = m.systemDequeue()
       }
-
-      i += 1
     }
+  }
 
-    recipient // nothing found, reuse same start index next time
+  protected[akka] override def reRegisterForExecution(mbox: Mailbox): Boolean = {
+    if (!super.reRegisterForExecution(mbox)) {
+      buddies.add(mbox.asInstanceOf[SharingMailbox].actor)
+      false
+    } else true
+  }
+
+  override protected[akka] def dispatch(invocation: Envelope) = {
+    val receiver = invocation.receiver
+    messageQueue enqueue invocation
+
+    buddies.poll() match {
+      case null | `receiver` ⇒ registerForExecution(receiver.mailbox)
+      case buddy             ⇒ registerForExecution(buddy.mailbox)
+    }
   }
 }

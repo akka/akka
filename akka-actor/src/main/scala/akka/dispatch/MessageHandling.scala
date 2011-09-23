@@ -157,8 +157,10 @@ abstract class MessageDispatcher extends Serializable {
    * and only call it under the dispatcher-guard, see "attach" for the only invocation
    */
   protected[akka] def register(actor: ActorCell) {
-    if (actor.mailbox eq null)
+    if (actor.mailbox eq null) {
       actor.mailbox = createMailbox(actor)
+      systemDispatch(SystemEnvelope(actor, Create, NullChannel))
+    }
 
     uuids add actor.uuid
     if (active.isOff) {
@@ -257,12 +259,22 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
    */
-  def suspend(actor: ActorCell)
+  def suspend(actor: ActorCell): Unit = if (uuids.contains(actor.uuid)) {
+    val mbox = actor.mailbox
+    if (mbox ne deadLetterMailbox)
+      mbox.suspended.tryLock
+  }
 
   /*
    * After the call to this method, the dispatcher must begin any new message processing for the specified reference
    */
-  def resume(actor: ActorCell)
+  def resume(actor: ActorCell): Unit = if (uuids.contains(actor.uuid)) {
+    val mbox = actor.mailbox
+    if (mbox ne deadLetterMailbox) {
+      mbox.suspended.tryUnlock
+      reRegisterForExecution(mbox)
+    }
+  }
 
   /**
    *   Will be called when the dispatcher is to queue an invocation for execution
@@ -272,7 +284,7 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * Callback for processMailbox() which is called after one sweep of processing is done.
    */
-  protected[akka] def reRegisterForExecution(mbox: Mailbox)
+  protected[akka] def reRegisterForExecution(mbox: Mailbox): Boolean
 
   // TODO check whether this should not actually be a property of the mailbox
   protected[akka] def throughput: Int

@@ -159,7 +159,13 @@ object ActorModelSpec {
   }
 
   def assertCountDown(latch: CountDownLatch, wait: Long, hint: AnyRef) {
-    assert(latch.await(wait, TimeUnit.MILLISECONDS) === true)
+    try {
+      assert(latch.await(wait, TimeUnit.MILLISECONDS) === true)
+    } catch {
+      case e ⇒
+        System.err.println("assertCountDown failed was: " + latch.getCount)
+        throw e
+    }
   }
 
   def assertNoCountDown(latch: CountDownLatch, wait: Long, hint: AnyRef) {

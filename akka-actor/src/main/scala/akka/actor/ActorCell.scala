@@ -111,7 +111,6 @@ private[akka] class ActorCell(
   def start(): Unit = {
     if (props.supervisor.isDefined) props.supervisor.get.link(self)
     dispatcher.attach(this)
-    dispatcher.systemDispatch(SystemEnvelope(this, Create, NullChannel))
     Actor.registry.register(self)
   }
 

@@ -115,7 +115,7 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
 
   protected[akka] override def shutdown() {}
 
-  protected[akka] override def reRegisterForExecution(mbox: Mailbox) {}
+  protected[akka] override def reRegisterForExecution(mbox: Mailbox): Boolean = true
 
   protected[akka] override def throughput = 0
   protected[akka] override def throughputDeadlineTime = 0
@@ -243,7 +243,7 @@ class NestingQueue {
   def isActive = active
 }
 
-class CallingThreadMailbox(val dispatcher: MessageDispatcher) extends Mailbox with DefaultSystemMessageImpl {
+class CallingThreadMailbox(val dispatcher: MessageDispatcher) extends Mailbox with DefaultSystemMessageQueue {
 
   private val q = new ThreadLocal[NestingQueue]() {
     override def initialValue = new NestingQueue
