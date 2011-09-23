@@ -1,6 +1,10 @@
+package akka
+
 import sbt._
 import Keys._
+import com.typesafe.sbtmultijvm.MultiJvmPlugin
 import MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
+import com.typesafe.sbtscalariform.ScalariformPlugin
 import ScalariformPlugin.{ format, formatPreferences }
 import java.lang.Boolean.getBoolean
 
@@ -364,7 +368,7 @@ object AkkaBuild extends Build {
     (dir, s) => {
       s.log.info("Building reStructuredText documentation...")
       val exitCode = Process(List("make", "clean", "html", "pdf"), dir) ! s.log
-      if (exitCode != 0) error("Failed to build docs.")
+      if (exitCode != 0) sys.error("Failed to build docs.")
       s.log.info("Done building docs.")
       dir
     }
