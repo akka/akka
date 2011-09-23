@@ -115,10 +115,9 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
 
   protected[akka] override def shutdown() {}
 
-  protected[akka] override def reRegisterForExecution(mbox: Mailbox): Boolean = true
-
   protected[akka] override def throughput = 0
   protected[akka] override def throughputDeadlineTime = 0
+  protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = false
 
   protected[akka] override def timeoutMs = 100L
 

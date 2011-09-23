@@ -19,7 +19,10 @@ import akka.actor._
 final case class Envelope(val receiver: ActorCell, val message: Any, val channel: UntypedChannel) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
 
-  final def invoke() { receiver invoke this }
+  final def invoke() {
+    System.err.println("Invoking message [" + message + "] for " + receiver + " with channel " + channel)
+    receiver invoke this
+  }
 }
 
 sealed trait SystemMessage
@@ -34,7 +37,10 @@ final case class SystemEnvelope(val receiver: ActorCell, val message: SystemMess
   /**
    * @return whether to proceed with processing other messages
    */
-  final def invoke(): Unit = receiver systemInvoke this
+  final def invoke(): Unit = {
+    System.err.println("Invoking System message [" + message + "] for " + receiver + " with channel " + channel)
+    receiver systemInvoke this
+  }
 }
 
 final case class TaskInvocation(function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
@@ -79,6 +85,8 @@ abstract class MessageDispatcher extends Serializable {
    * Create a blackhole mailbox for the purpose of replacing the real one upon actor termination
    */
   protected[akka] val deadLetterMailbox = new Mailbox {
+    become(Mailbox.CLOSED)
+    override def become(newStatus: Mailbox.Status) { super.become(Mailbox.CLOSED) } //Always transcend to CLOSED to preserve the volatile write
     override def dispatcher = null //MessageDispatcher.this
     dispatcherLock.tryLock()
 
@@ -156,9 +164,10 @@ abstract class MessageDispatcher extends Serializable {
    * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
    * and only call it under the dispatcher-guard, see "attach" for the only invocation
    */
-  protected[akka] def register(actor: ActorCell) {
+  protected[akka] def register(actor: ActorCell): Unit = {
     if (actor.mailbox eq null) {
-      actor.mailbox = createMailbox(actor)
+      val mbox = createMailbox(actor)
+      actor.mailbox = mbox
       systemDispatch(SystemEnvelope(actor, Create, NullChannel))
     }
 
@@ -174,7 +183,7 @@ abstract class MessageDispatcher extends Serializable {
    * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
    * and only call it under the dispatcher-guard, see "detach" for the only invocation
    */
-  protected[akka] def unregister(actor: ActorCell) = {
+  protected[akka] def unregister(actor: ActorCell): Unit = {
     if (uuids remove actor.uuid) {
       val mailBox = actor.mailbox
       actor.mailbox = deadLetterMailbox //FIXME switch to getAndSet semantics
@@ -196,7 +205,7 @@ abstract class MessageDispatcher extends Serializable {
    * Overridable callback to clean up the mailbox for a given actor,
    * called when an actor is unregistered.
    */
-  protected def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox) {
+  protected def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox): Unit = {
     val m = mailBox
 
     if (m.hasSystemMessages) {
@@ -259,21 +268,16 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
    */
-  def suspend(actor: ActorCell): Unit = if (uuids.contains(actor.uuid)) {
-    val mbox = actor.mailbox
-    if (mbox ne deadLetterMailbox)
-      mbox.suspended.tryLock
-  }
+  def suspend(actor: ActorCell): Unit =
+    if (uuids.contains(actor.uuid)) actor.mailbox.become(Mailbox.SUSPENDED)
 
   /*
    * After the call to this method, the dispatcher must begin any new message processing for the specified reference
    */
   def resume(actor: ActorCell): Unit = if (uuids.contains(actor.uuid)) {
     val mbox = actor.mailbox
-    if (mbox ne deadLetterMailbox) {
-      mbox.suspended.tryUnlock
-      reRegisterForExecution(mbox)
-    }
+    mbox.become(Mailbox.OPEN)
+    registerForExecution(mbox, false, false)
   }
 
   /**
@@ -282,9 +286,9 @@ abstract class MessageDispatcher extends Serializable {
   protected[akka] def dispatch(invocation: Envelope)
 
   /**
-   * Callback for processMailbox() which is called after one sweep of processing is done.
+   * Suggest to register the provided mailbox for execution
    */
-  protected[akka] def reRegisterForExecution(mbox: Mailbox): Boolean
+  protected[akka] def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean
 
   // TODO check whether this should not actually be a property of the mailbox
   protected[akka] def throughput: Int

@@ -66,9 +66,6 @@ private[akka] class ActorCell(
   val guard = new ReentrantGuard // TODO: remove this last synchronization point
 
   @volatile
-  var terminated = false
-
-  @volatile
   var mailbox: Mailbox = _
 
   @volatile
@@ -83,7 +80,6 @@ private[akka] class ActorCell(
   @volatile //FIXME doesn't need to be volatile
   var restartTimeWindowStartNanos: Long = 0L
 
-  @volatile
   lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
 
   @volatile //FIXME doesn't need to be volatile
@@ -92,7 +88,6 @@ private[akka] class ActorCell(
   @volatile
   var receiveTimeout: Option[Long] = _receiveTimeout // TODO: currently settable from outside for compatibility
 
-  @volatile //FIXME volatile can be removed
   var currentMessage: Envelope = null
 
   val actor: AtomicReference[Actor] = new AtomicReference[Actor]() //FIXME We can most probably make this just a regular reference to Actor
@@ -105,8 +100,11 @@ private[akka] class ActorCell(
 
   def dispatcher: MessageDispatcher = props.dispatcher
 
-  def isRunning: Boolean = !terminated
-  def isShutdown: Boolean = terminated
+  def isRunning: Boolean = !isShutdown
+  def isShutdown: Boolean = mailbox match {
+    case null ⇒ false
+    case m    ⇒ m.isClosed
+  }
 
   def start(): Unit = {
     if (props.supervisor.isDefined) props.supervisor.get.link(self)
@@ -147,10 +145,8 @@ private[akka] class ActorCell(
   def resume(): Unit = dispatcher.systemDispatch(SystemEnvelope(this, Resume, NullChannel))
 
   private[akka] def stop(): Unit =
-    if (!terminated) {
-      //terminated = true // TODO: turn this into tristate with Running, Terminating, Terminated and use AtomicReferenceFieldUpdater
+    if (isRunning)
       dispatcher.systemDispatch(SystemEnvelope(this, Terminate, NullChannel))
-    }
 
   def link(actorRef: ActorRef): ActorRef = {
     guard.withGuard {
@@ -200,22 +196,16 @@ private[akka] class ActorCell(
     future
   } else throw new ActorInitializationException("Actor " + self + " is dead")
 
-  def sender: Option[ActorRef] = {
-    val msg = currentMessage
-    if (msg eq null) None
-    else msg.channel match {
-      case ref: ActorRef ⇒ Some(ref)
-      case _             ⇒ None
-    }
+  def sender: Option[ActorRef] = currentMessage match {
+    case null                                      ⇒ None
+    case msg if msg.channel.isInstanceOf[ActorRef] ⇒ Some(msg.channel.asInstanceOf[ActorRef])
+    case _                                         ⇒ None
   }
 
-  def senderFuture(): Option[Promise[Any]] = {
-    val msg = currentMessage
-    if (msg eq null) None
-    else msg.channel match {
-      case f: ActorPromise ⇒ Some(f)
-      case _               ⇒ None
-    }
+  def senderFuture(): Option[Promise[Any]] = currentMessage match {
+    case null ⇒ None
+    case msg if msg.channel.isInstanceOf[ActorPromise] ⇒ Some(msg.channel.asInstanceOf[ActorPromise])
+    case _ ⇒ None
   }
 
   def channel: UntypedChannel = currentMessage match {
@@ -224,8 +214,6 @@ private[akka] class ActorCell(
   }
 
   def systemInvoke(envelope: SystemEnvelope): Unit = {
-    var isTerminated = terminated
-
     def create(recreation: Boolean): Unit = try {
       actor.get() match {
         case null ⇒
@@ -236,15 +224,14 @@ private[akka] class ActorCell(
           if (Actor.debugLifecycle) EventHandler.debug(created, "started")
         case instance if recreation ⇒
           restart(new Exception("Restart commanded"), None, None)
+
         case _ ⇒
       }
-      true
     } catch {
       case e ⇒
         envelope.channel.sendException(e)
-        if (supervisor.isDefined) {
-          supervisor.get ! Failed(self, e, false, maxNrOfRetriesCount, restartTimeWindowStartNanos)
-        } else throw e
+        if (supervisor.isDefined) supervisor.get ! Failed(self, e, false, maxNrOfRetriesCount, restartTimeWindowStartNanos)
+        else throw e
     }
 
     def suspend(): Unit = dispatcher suspend this
@@ -256,8 +243,7 @@ private[akka] class ActorCell(
       cancelReceiveTimeout
       Actor.registry.unregister(self)
       dispatcher.detach(this)
-      isTerminated = true
-      terminated = isTerminated
+
       try {
         val a = actor.get
         if (Actor.debugLifecycle) EventHandler.debug(a, "stopping")
@@ -284,8 +270,9 @@ private[akka] class ActorCell(
     }
 
     guard.lock.lock()
+    val m = mailbox
     try {
-      if (!isTerminated) {
+      if (!m.isClosed) {
         envelope.message match {
           case Create    ⇒ create(recreation = false)
           case Recreate  ⇒ create(recreation = true)
@@ -299,16 +286,16 @@ private[akka] class ActorCell(
         EventHandler.error(e, actor.get(), "error while processing " + envelope.message)
         throw e
     } finally {
-      terminated = isTerminated
+      m.become(m.status)
       guard.lock.unlock()
     }
   }
 
   def invoke(messageHandle: Envelope): Unit = {
-    val isTerminated = terminated // volatile read
     guard.lock.lock()
+    val m = mailbox
     try {
-      if (!isTerminated) {
+      if (!m.isClosed) {
         currentMessage = messageHandle
         try {
           try {
@@ -341,8 +328,7 @@ private[akka] class ActorCell(
         // throwing away message if actor is shut down, no use throwing an exception in receiving actor's thread, isShutdown is enforced on caller side
       }
     } finally {
-      val nowIsTerminated = terminated
-      terminated = nowIsTerminated // volatile write
+      m.become(m.status)
       guard.lock.unlock()
     }
   }
@@ -396,10 +382,9 @@ private[akka] class ActorCell(
               currentMessage = null
             }
 
-          if (success) {
-            dispatcher.resume(this)
+          if (success)
             restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
-          }
+
           success
         }
       } else {

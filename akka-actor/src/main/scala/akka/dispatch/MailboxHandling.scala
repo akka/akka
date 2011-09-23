@@ -10,26 +10,51 @@ import akka.util._
 import java.util.Queue
 import akka.actor.ActorContext
 import java.util.concurrent._
+import atomic.AtomicReferenceFieldUpdater
 
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
+
+object Mailbox {
+  sealed trait Status
+  case object OPEN extends Status
+  case object SUSPENDED extends Status
+  case object CLOSED extends Status
+
+  //private[Mailbox] val mailboxStatusUpdater = AtomicReferenceFieldUpdater.newUpdater[Mailbox, Status](classOf[Mailbox], classOf[Status], "_status")
+}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnable {
+  import Mailbox._
   /*
    * Internal implementation of MessageDispatcher uses these, don't touch or rely on
    */
   final val dispatcherLock = new SimpleLock(startLocked = false)
-  final val suspended = new SimpleLock(startLocked = false) //(startLocked = true)
+  @volatile
+  var _status: Status = OPEN //Must be named _status because of the updater
+
+  final def status: Mailbox.Status = _status //mailboxStatusUpdater.get(this)
+
+  final def isSuspended: Boolean = status == SUSPENDED
+  final def isClosed: Boolean = status == CLOSED
+  final def isOpen: Boolean = status == OPEN
+
+  def become(newStatus: Status) = _status = newStatus //mailboxStatusUpdater.set(this, newStatus)
+
+  def shouldBeRegisteredForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
+    case CLOSED    ⇒ false
+    case OPEN      ⇒ hasMessageHint || hasSystemMessages || hasMessages
+    case SUSPENDED ⇒ hasSystemMessageHint || hasSystemMessages
+  }
 
   final def run = {
     try { processMailbox() } catch {
       case ie: InterruptedException ⇒ Thread.currentThread().interrupt() //Restore interrupt
     } finally {
       dispatcherLock.unlock()
-      if (hasMessages || hasSystemMessages)
-        dispatcher.reRegisterForExecution(this)
+      dispatcher.registerForExecution(this, false, false)
     }
   }
 
@@ -41,7 +66,8 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
   final def processMailbox() {
     if (hasSystemMessages)
       processAllSystemMessages()
-    else if (!suspended.locked) {
+
+    if (status == OPEN) {
       var nextMessage = dequeue()
       if (nextMessage ne null) { //If we have a message
         if (dispatcher.throughput <= 1) //If we only run one message per process
@@ -53,10 +79,11 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
           else 0
           do {
             nextMessage.invoke
-            nextMessage = if (hasSystemMessages) {
+
+            if (hasSystemMessages)
               processAllSystemMessages()
-              null
-            } else if (suspended.locked) {
+
+            nextMessage = if (status != OPEN) {
               null // If we are suspended, abort
             } else { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
               processedMessages += 1

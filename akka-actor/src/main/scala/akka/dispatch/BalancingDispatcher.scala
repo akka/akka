@@ -109,9 +109,9 @@ class BalancingDispatcher(
     }
   }
 
-  protected[akka] override def reRegisterForExecution(mbox: Mailbox): Boolean = {
-    if (!super.reRegisterForExecution(mbox)) {
-      buddies.add(mbox.asInstanceOf[SharingMailbox].actor)
+  protected[akka] override def registerForExecution(mbox: Mailbox, hasMessagesHint: Boolean, hasSystemMessagesHint: Boolean): Boolean = {
+    if (!super.registerForExecution(mbox, hasMessagesHint, hasSystemMessagesHint)) {
+      if (mbox.isInstanceOf[SharingMailbox]) buddies.add(mbox.asInstanceOf[SharingMailbox].actor)
       false
     } else true
   }
@@ -121,8 +121,8 @@ class BalancingDispatcher(
     messageQueue enqueue invocation
 
     buddies.poll() match {
-      case null | `receiver` ⇒ registerForExecution(receiver.mailbox)
-      case buddy             ⇒ registerForExecution(buddy.mailbox)
+      case null | `receiver` ⇒ registerForExecution(receiver.mailbox, true, false)
+      case buddy             ⇒ registerForExecution(buddy.mailbox, true, false)
     }
   }
 }

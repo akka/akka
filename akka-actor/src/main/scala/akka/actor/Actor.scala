@@ -120,7 +120,7 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Exc
 /**
  * Classes for passing status back to the sender.
  */
-object Status {
+object Status { //FIXME Why does this exist at all?
   sealed trait Status extends Serializable
   case class Success(status: AnyRef) extends Status
   case class Failure(cause: Throwable) extends Status

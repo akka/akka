@@ -94,7 +94,7 @@ class Dispatcher(
     val mbox = invocation.receiver.mailbox
     if (mbox ne null) {
       mbox enqueue invocation
-      registerForExecution(mbox)
+      registerForExecution(mbox, true, false)
     }
   }
 
@@ -102,7 +102,7 @@ class Dispatcher(
     val mbox = invocation.receiver.mailbox
     if (mbox ne null) {
       mbox systemEnqueue invocation
-      registerForExecution(mbox)
+      registerForExecution(mbox, false, true)
     }
   }
 
@@ -121,17 +121,16 @@ class Dispatcher(
 
   protected[akka] def shutdown {
     val old = executorService.getAndSet(new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))
-    if (old ne null) {
+    if (old ne null)
       old.shutdownNow()
-    }
   }
 
   /**
    * Returns if it was registered
    */
-  protected[akka] def registerForExecution(mbox: Mailbox): Boolean = {
+  protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
     if (mbox.dispatcherLock.tryLock()) {
-      if (active.isOn && (!mbox.suspended.locked || mbox.hasSystemMessages)) { //If the dispatcher is active and the actor not suspended
+      if (active.isOn && mbox.shouldBeRegisteredForExecution(hasMessageHint, hasSystemMessageHint)) { //If the dispatcher is active and the actor not suspended
         try {
           executorService.get() execute mbox
           true
@@ -147,12 +146,6 @@ class Dispatcher(
       }
     } else false
   }
-
-  /**
-   * Returns if it was reRegistered
-   */
-  protected[akka] def reRegisterForExecution(mbox: Mailbox): Boolean =
-    registerForExecution(mbox)
 
   override val toString = getClass.getSimpleName + "[" + name + "]"
 }

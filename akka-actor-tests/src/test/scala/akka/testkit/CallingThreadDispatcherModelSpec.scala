@@ -13,7 +13,7 @@ class CallingThreadDispatcherModelSpec extends ActorModelSpec {
 
   // A CallingThreadDispatcher can by design not process messages in parallel,
   // so disable this test
-  override def dispatcherShouldProcessMessagesInParallel {}
+  //override def dispatcherShouldProcessMessagesInParallel {}
 
   // This test needs to be adapted: CTD runs the flood completely sequentially
   // with start, invocation, stop, schedule shutdown, abort shutdown, repeat;
@@ -38,9 +38,9 @@ class CallingThreadDispatcherModelSpec extends ActorModelSpec {
     }
   }
 
-  override def dispatcherShouldCompleteAllUncompletedSenderFuturesOnDeregister {
+  /*override def dispatcherShouldCompleteAllUncompletedSenderFuturesOnDeregister {
     //Can't handle this...
-  }
+  } */
 
   @After
   def after {
