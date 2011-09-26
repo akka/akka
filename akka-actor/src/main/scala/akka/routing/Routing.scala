@@ -467,6 +467,7 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
   private def scatterGather[S, G >: S](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[G] = {
     val responses = connections.versionedIterable.iterable.flatMap { actor ⇒
       try {
+        if (actor.isShutdown) throw new ActorInitializationException("For compatability - check death first")
         Some(actor.?(message, timeout)(sender).asInstanceOf[Future[S]])
       } catch {
         case e: Exception ⇒
