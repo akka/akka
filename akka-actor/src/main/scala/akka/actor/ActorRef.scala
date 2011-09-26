@@ -208,11 +208,13 @@ class LocalActorRef private[akka] (
   /**
    * Is the actor running?
    */
+  //FIXME TODO REMOVE THIS, NO REPLACEMENT
   def isRunning: Boolean = actorCell.isRunning
 
   /**
    * Is the actor shut down?
    */
+  //FIXME TODO RENAME TO isTerminated
   def isShutdown: Boolean = actorCell.isShutdown
 
   /**
@@ -222,11 +224,13 @@ class LocalActorRef private[akka] (
    * message sends done from the same thread after calling this method will not
    * be processed until resumed.
    */
+  //FIXME TODO REMOVE THIS, NO REPLACEMENT
   def suspend(): Unit = actorCell.suspend()
 
   /**
    * Resumes a suspended actor.
    */
+  //FIXME TODO REMOVE THIS, NO REPLACEMENT
   def resume(): Unit = actorCell.resume()
 
   /**
@@ -266,6 +270,8 @@ class LocalActorRef private[akka] (
 
   protected[akka] def underlying: ActorCell = actorCell
 
+  //FIXME TODO REMOVE THIS
+  @deprecated("This method does a spin-lock to block for the actor, which might never be there, do not use this")
   protected[akka] def underlyingActorInstance: Actor = {
     var instance = actorCell.actor.get
     while ((instance eq null) && actorCell.isRunning) {

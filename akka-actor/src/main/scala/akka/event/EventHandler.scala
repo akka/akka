@@ -97,7 +97,7 @@ object EventHandler extends ListenerManagement {
   lazy val StandardOutLogger = new StandardOutLogger {}
 
   lazy val EventHandlerDispatcher =
-    Dispatchers.fromConfig("event-handler-dispatcher", Dispatchers.newDispatcher("event-handler-dispatcher").setCorePoolSize(2).build)
+    Dispatchers.fromConfig("akka.event-handler-dispatcher", Dispatchers.newDispatcher("event-handler-dispatcher").setCorePoolSize(2).build)
 
   implicit object defaultListenerFormat extends StatelessActorFormat[DefaultListener]
 
