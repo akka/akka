@@ -96,7 +96,8 @@ object EventHandler extends ListenerManagement {
 
   lazy val StandardOutLogger = new StandardOutLogger {}
 
-  lazy val EventHandlerDispatcher = Dispatchers.newDispatcher("akka:event:handler").build
+  lazy val EventHandlerDispatcher =
+    Dispatchers.fromConfig("event-handler-dispatcher", Dispatchers.newDispatcher("event-handler-dispatcher").setCorePoolSize(2).build)
 
   implicit object defaultListenerFormat extends StatelessActorFormat[DefaultListener]
 
@@ -142,8 +143,10 @@ object EventHandler extends ListenerManagement {
    * Shuts down all event handler listeners including the event handle dispatcher.
    */
   def shutdown() {
-    foreachListener(_.stop())
-    EventHandlerDispatcher.shutdown()
+    foreachListener { l ⇒
+      removeListener(l)
+      l.stop()
+    }
   }
 
   def notify(event: Any) {
@@ -235,7 +238,7 @@ object EventHandler extends ListenerManagement {
         case e: Warning ⇒ warning(e)
         case e: Info    ⇒ info(e)
         case e: Debug   ⇒ debug(e)
-        case e ⇒          generic(e)
+        case e          ⇒ generic(e)
       }
     }
 
