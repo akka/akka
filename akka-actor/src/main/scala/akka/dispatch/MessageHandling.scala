@@ -108,6 +108,7 @@ abstract class MessageDispatcher extends Serializable {
   final def attach(actor: ActorCell): Unit = {
     guard.lock.lock()
     try {
+      startIfUnstarted()
       register(actor)
     } finally {
       guard.lock.unlock()
@@ -120,6 +121,16 @@ abstract class MessageDispatcher extends Serializable {
   final def detach(actor: ActorCell): Unit = {
     guard withGuard {
       unregister(actor)
+      if (uuids.isEmpty && _tasks.get == 0) {
+        shutdownSchedule match {
+          case UNSCHEDULED ⇒
+            shutdownSchedule = SCHEDULED
+            Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
+          case SCHEDULED ⇒
+            shutdownSchedule = RESCHEDULED
+          case RESCHEDULED ⇒ //Already marked for reschedule
+        }
+      }
     }
   }
 
@@ -127,11 +138,10 @@ abstract class MessageDispatcher extends Serializable {
     if (active.isOff) guard withGuard { active.switchOn { start() } }
   }
 
-  protected[akka] final def dispatchMessage(invocation: Envelope): Unit = dispatch(invocation)
-
   protected[akka] final def dispatchTask(block: () ⇒ Unit): Unit = {
     _tasks.getAndIncrement()
     try {
+      startIfUnstarted()
       executeTask(TaskInvocation(block, taskCleanup))
     } catch {
       case e ⇒
@@ -176,16 +186,6 @@ abstract class MessageDispatcher extends Serializable {
       mailBox.become(Mailbox.Closed)
       actor.mailbox = deadLetterMailbox //FIXME getAndSet would be preferrable here
       cleanUpMailboxFor(actor, mailBox)
-      if (uuids.isEmpty && _tasks.get == 0) {
-        shutdownSchedule match {
-          case UNSCHEDULED ⇒
-            shutdownSchedule = SCHEDULED
-            Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
-          case SCHEDULED ⇒
-            shutdownSchedule = RESCHEDULED
-          case RESCHEDULED ⇒ //Already marked for reschedule
-        }
-      }
     } else System.err.println("Couldn't unregister: " + actor)
   }
 
@@ -256,6 +256,11 @@ abstract class MessageDispatcher extends Serializable {
   /**
    *   Will be called when the dispatcher is to queue an invocation for execution
    */
+  protected[akka] def systemDispatch(invocation: SystemEnvelope)
+
+  /**
+   *   Will be called when the dispatcher is to queue an invocation for execution
+   */
   protected[akka] def dispatch(invocation: Envelope)
 
   /**
@@ -266,11 +271,6 @@ abstract class MessageDispatcher extends Serializable {
   // TODO check whether this should not actually be a property of the mailbox
   protected[akka] def throughput: Int
   protected[akka] def throughputDeadlineTime: Int
-
-  /**
-   *   Will be called when the dispatcher is to queue an invocation for execution
-   */
-  protected[akka] def systemDispatch(invocation: SystemEnvelope)
 
   protected[akka] def executeTask(invocation: TaskInvocation)
 

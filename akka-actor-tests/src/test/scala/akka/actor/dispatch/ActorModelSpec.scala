@@ -104,13 +104,15 @@ object ActorModelSpec {
     val stops = new AtomicLong(0)
 
     def getStats(actorRef: ActorRef) = {
-      stats.putIfAbsent(actorRef, new InterceptorStats)
-      stats.get(actorRef)
+      stats.putIfAbsent(actorRef, new InterceptorStats) match {
+        case null  ⇒ stats.get(actorRef)
+        case other ⇒ other
+      }
     }
 
     abstract override def suspend(actor: ActorCell) {
-      super.suspend(actor)
       getStats(actor.ref).suspensions.incrementAndGet()
+      super.suspend(actor)
     }
 
     abstract override def resume(actor: ActorCell) {
@@ -119,15 +121,15 @@ object ActorModelSpec {
     }
 
     protected[akka] abstract override def register(actor: ActorCell) {
+      getStats(actor.ref).registers.incrementAndGet()
       super.register(actor)
       //printMembers("after registering " + actor)
-      getStats(actor.ref).registers.incrementAndGet()
     }
 
     protected[akka] abstract override def unregister(actor: ActorCell) {
+      getStats(actor.ref).unregisters.incrementAndGet()
       super.unregister(actor)
       //printMembers("after unregistering " + actor)
-      getStats(actor.ref).unregisters.incrementAndGet()
     }
 
     def printMembers(when: String) {
@@ -135,18 +137,19 @@ object ActorModelSpec {
     }
 
     protected[akka] abstract override def dispatch(invocation: Envelope) {
-      getStats(invocation.receiver.ref).msgsReceived.incrementAndGet()
+      val stats = getStats(invocation.receiver.ref)
+      stats.msgsReceived.incrementAndGet()
       super.dispatch(invocation)
     }
 
     protected[akka] abstract override def start() {
-      super.start()
       starts.incrementAndGet()
+      super.start()
     }
 
     protected[akka] abstract override def shutdown() {
-      super.shutdown()
       stops.incrementAndGet()
+      super.shutdown()
     }
   }
 
@@ -247,7 +250,7 @@ abstract class ActorModelSpec extends JUnitSuite {
 
   protected def newInterceptedDispatcher: MessageDispatcherInterceptor
 
-  /*@Test
+  @Test
   def dispatcherShouldDynamicallyHandleItsOwnLifeCycle {
     implicit val dispatcher = newInterceptedDispatcher
     assertDispatcher(dispatcher)(starts = 0, stops = 0)
@@ -386,7 +389,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     a.stop()
     assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1,
       suspensions = 1, resumes = 1)
-  }*/
+  }
 
   @Test
   def dispatcherShouldHandleWavesOfActors {
@@ -406,12 +409,30 @@ abstract class ActorModelSpec extends JUnitSuite {
       }
     }
     for (run ← 1 to 3) {
-      flood(10000)
-      assertDispatcher(dispatcher)(starts = run, stops = run)
+      flood(40000)
+      try {
+        assertDispatcher(dispatcher)(starts = run, stops = run)
+      } catch {
+        case e ⇒
+
+          Actor.registry.local.foreach {
+            case actor: LocalActorRef ⇒
+              val cell = actor.underlying
+              val mbox = cell.mailbox
+              System.err.println("Left in the registry: " + actor.address + " => " + cell + " => " + mbox.hasMessages + " " + mbox.hasSystemMessages + " " + mbox.numberOfMessages + " " + mbox.dispatcherLock.locked)
+              var message = mbox.dequeue()
+              while (message ne null) {
+                System.err.println("Lingering message for " + cell + " " + message)
+                message = mbox.dequeue()
+              }
+          }
+
+          throw e
+      }
     }
   }
 
-  /*@Test
+  @Test
   def dispatcherShouldCompleteAllUncompletedSenderFuturesOnDeregister {
     implicit val dispatcher = newInterceptedDispatcher
     val a = newTestActor.asInstanceOf[LocalActorRef]
@@ -475,7 +496,7 @@ abstract class ActorModelSpec extends JUnitSuite {
       }).getMessage === "RemoteException")
       assert(f6.get === "bar2")
     }
-  }*/
+  }
 }
 
 class DispatcherModelTest extends ActorModelSpec {
@@ -486,4 +507,8 @@ class DispatcherModelTest extends ActorModelSpec {
 class BalancingDispatcherModelTest extends ActorModelSpec {
   def newInterceptedDispatcher =
     new BalancingDispatcher("foo", throughput = 1) with MessageDispatcherInterceptor
+
+  override def dispatcherShouldCompleteAllUncompletedSenderFuturesOnDeregister {
+    //This is not true for the BalancingDispatcher
+  }
 }

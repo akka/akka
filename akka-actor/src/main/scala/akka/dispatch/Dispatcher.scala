@@ -92,23 +92,18 @@ class Dispatcher(
 
   protected[akka] def dispatch(invocation: Envelope) = {
     val mbox = invocation.receiver.mailbox
-    if (mbox ne null) {
-      mbox enqueue invocation
-      registerForExecution(mbox, true, false)
-    }
+    mbox enqueue invocation
+    registerForExecution(mbox, true, false)
   }
 
   protected[akka] def systemDispatch(invocation: SystemEnvelope) = {
     val mbox = invocation.receiver.mailbox
-    if (mbox ne null) {
-      mbox systemEnqueue invocation
-      registerForExecution(mbox, false, true)
-    }
+    mbox systemEnqueue invocation
+    registerForExecution(mbox, false, true)
   }
 
   protected[akka] def executeTask(invocation: TaskInvocation): Unit = {
     try {
-      startIfUnstarted()
       executorService.get() execute invocation
     } catch {
       case e: RejectedExecutionException ⇒
@@ -131,10 +126,9 @@ class Dispatcher(
    * Returns if it was registered
    */
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
-    if (mbox.dispatcherLock.tryLock()) {
-      if (mbox.shouldBeRegisteredForExecution(hasMessageHint, hasSystemMessageHint)) { //If the dispatcher is active and the actor not suspended
+    if (mbox.shouldBeRegisteredForExecution(hasMessageHint, hasSystemMessageHint)) {
+      if (mbox.dispatcherLock.tryLock()) { //If the dispatcher is active and the actor not suspended
         try {
-          startIfUnstarted()
           executorService.get() execute mbox
           true
         } catch {
@@ -143,10 +137,7 @@ class Dispatcher(
             mbox.dispatcherLock.unlock()
             throw e
         }
-      } else {
-        mbox.dispatcherLock.unlock() //If the dispatcher isn't active or if the actor is suspended, unlock the dispatcher lock
-        false
-      }
+      } else false
     } else false
   }
 

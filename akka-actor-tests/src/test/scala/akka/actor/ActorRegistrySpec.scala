@@ -45,7 +45,7 @@ class ActorRegistrySpec extends WordSpec with MustMatchers with BeforeAndAfterAl
 
   "Actor Registry" must {
 
-    /* "get actor by address from registry" in {
+    "get actor by address from registry" in {
       val started = TestLatch(1)
       val stopped = TestLatch(1)
       val actor = actorOf(new StartStopTestActor(started, stopped), "test-actor-1")
@@ -92,7 +92,7 @@ class ActorRegistrySpec extends WordSpec with MustMatchers with BeforeAndAfterAl
       actors.find(_.address == "test-actor-1").get.asInstanceOf[LocalActorRef].underlyingActorInstance.isInstanceOf[TestActor] must be(true)
       actor1.stop
       actor2.stop
-    } */
+    }
 
     "get response from all actors in local registry using foreach" in {
       val actor1 = actorOf[TestActor]("test-actor-1")
@@ -107,7 +107,7 @@ class ActorRegistrySpec extends WordSpec with MustMatchers with BeforeAndAfterAl
       actor1.stop()
       actor2.stop()
     }
-    /*
+
     "shutdown all actors in local registry" in {
       val actor1 = actorOf[TestActor]("test-actor-1")
       val actor2 = actorOf[TestActor]("test-actor-2")
@@ -123,6 +123,6 @@ class ActorRegistrySpec extends WordSpec with MustMatchers with BeforeAndAfterAl
       Actor.registry.local.actors.size must be(1)
       Actor.registry.unregister(actor2)
       Actor.registry.local.actors.size must be(0)
-    } */
+    }
   }
 }

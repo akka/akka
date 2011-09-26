@@ -169,20 +169,19 @@ private[akka] class ActorCell(
   def supervisor_=(sup: Option[ActorRef]): Unit = _supervisor = sup
 
   def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
-    if (isRunning) dispatcher dispatchMessage new Envelope(this, message, channel)
-  //else throw new ActorInitializationException("Actor " + self + " is dead")
+    dispatcher dispatch Envelope(this, message, channel)
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
     timeout: Timeout,
-    channel: UntypedChannel): Future[Any] = if (isRunning) {
+    channel: UntypedChannel): Future[Any] = {
     val future = channel match {
       case f: ActorPromise ⇒ f
       case _               ⇒ new ActorPromise(timeout)(dispatcher)
     }
-    dispatcher dispatchMessage Envelope(this, message, future)
+    dispatcher dispatch Envelope(this, message, future)
     future
-  } else new KeptPromise[Any](Left(new ActorKilledException("Stopped"))) // else throw new ActorInitializationException("Actor " + self + " is dead")
+  }
 
   def sender: Option[ActorRef] = currentMessage match {
     case null                                      ⇒ None

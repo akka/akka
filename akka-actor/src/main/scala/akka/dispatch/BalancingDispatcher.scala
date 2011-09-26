@@ -96,6 +96,11 @@ class BalancingDispatcher(
     buddies.remove(actor)
   }
 
+  protected[akka] override def shutdown(): Unit = {
+    super.shutdown()
+    buddies.clear()
+  }
+
   protected override def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox) {
     if (mailBox.hasSystemMessages) {
       var envelope = mailBox.systemDequeue()
@@ -117,10 +122,10 @@ class BalancingDispatcher(
     val receiver = invocation.receiver
     messageQueue enqueue invocation
 
+    registerForExecution(receiver.mailbox, true, false)
+
     val buddy = buddies.pollFirst()
     if (buddy ne null)
       registerForExecution(buddy.mailbox, true, false)
-    else
-      registerForExecution(receiver.mailbox, true, false)
   }
 }
