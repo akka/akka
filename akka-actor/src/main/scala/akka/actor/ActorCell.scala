@@ -372,8 +372,10 @@ private[akka] class ActorCell(
               currentMessage = null
             }
 
-          if (success)
+          if (success) {
+            dispatcher.resume(this)
             restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
+          }
 
           success
         }
