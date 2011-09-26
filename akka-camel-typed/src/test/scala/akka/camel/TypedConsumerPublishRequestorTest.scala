@@ -50,12 +50,22 @@ class TypedConsumerPublishRequestorTest extends JUnitSuite {
 
   @Test
   def shouldReceiveOneConsumerMethodUnregisteredEvent = {
-    val obj = TypedActor.typedActorOf(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl], Props())
     val latch = (publisher ? SetExpectedTestMessageCount(1)).as[CountDownLatch].get
     Actor.registry.addListener(requestor)
-    TypedActor.stop(obj)
+
+    val obj = TypedActor.typedActorOf(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl], Props())
+
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
+
+    val ignorableEvent = (publisher ? GetRetainedMessage).as[ConsumerMethodRegistered].get
+
+    val latch2 = (publisher ? SetExpectedTestMessageCount(1)).as[CountDownLatch].get
+    TypedActor.stop(obj)
+
+    assert(latch2.await(5000, TimeUnit.MILLISECONDS))
+
     val event = (publisher ? GetRetainedMessage).as[ConsumerMethodUnregistered].get
+
     assert(event.endpointUri === "direct:foo")
     assert(event.typedActor === obj)
     assert(event.methodName === "foo")
