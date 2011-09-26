@@ -401,7 +401,7 @@ abstract class ActorModelSpec extends JUnitSuite {
         assertCountDown(cachedMessage.latch, Testing.testTime(10000), "Should process " + num + " countdowns")
       } catch {
         case e ⇒
-          System.err.println("Error: " + e.getMessage + " when count was: " + cachedMessage.latch.getCount() + " expected " + num)
+          System.err.println("Error: " + e.getMessage + " missing count downs == " + cachedMessage.latch.getCount() + " out of " + num)
         //EventHandler.error(new Exception with NoStackTrace, null, cachedMessage.latch.getCount())
       }
     }

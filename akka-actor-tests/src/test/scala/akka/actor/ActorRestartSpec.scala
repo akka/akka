@@ -38,24 +38,6 @@ object ActorRestartSpec {
     override def preStart { testActor ! (("preStart", gen)) }
     override def preRestart(cause: Throwable, msg: Option[Any]) { testActor ! (("preRestart", msg, gen)) }
     override def postRestart(cause: Throwable) { testActor ! (("postRestart", gen)) }
-    override def freshInstance() = {
-      restart match {
-        case Normal ⇒ None
-        case Nested ⇒
-          val ref = TestActorRef(new Actor {
-            def receive = { case _ ⇒ }
-            override def preStart { testActor ! ((this, self)) }
-          })
-          testActor ! ((ref.underlyingActor, ref))
-          None
-        case Handover ⇒
-          val fresh = new Restarter(testActor)
-          fresh.xx = xx
-          Some(fresh)
-        case Fail ⇒
-          throw new IllegalActorStateException("expected")
-      }
-    }
   }
 
   class Supervisor extends Actor {
@@ -104,62 +86,6 @@ class ActorRestartSpec extends WordSpec with MustMatchers with TestKit with Befo
         }
       }
     }
-
-    "support creation of nested actors in freshInstance()" in {
-      filterEvents(expectedEvents) {
-        val supervisor = collect(createSupervisor)
-        val actor = collect(actorOf(Props(new Restarter(testActor)) withSupervisor (supervisor)))
-        expectMsg(1 second, ("preStart", 1))
-        actor ! Nested
-        actor ! Kill
-        within(1 second) {
-          expectMsg(("preRestart", Some(Kill), 1))
-          val (tActor, tRef) = expectMsgType[(Actor, TestActorRef[Actor])]
-          tRef.underlyingActor must be(tActor)
-          expectMsg((tActor, tRef))
-          tRef.stop()
-          expectMsg(("postRestart", 2))
-          expectNoMsg
-        }
-      }
-    }
-
-    "use freshInstance() if available" in {
-      filterEvents(expectedEvents) {
-        val supervisor = collect(createSupervisor)
-        val actor = collect(actorOf(Props(new Restarter(testActor)) withSupervisor (supervisor)))
-        expectMsg(1 second, ("preStart", 1))
-        actor ! 42
-        actor ! Handover
-        actor ! Kill
-        within(1 second) {
-          expectMsg(("preRestart", Some(Kill), 1))
-          expectMsg(("postRestart", 2))
-          expectNoMsg
-        }
-        actor ! "get"
-        expectMsg(1 second, 42)
-      }
-    }
-
-    "fall back to default factory if freshInstance() fails" in {
-      filterEvents(expectedEvents) {
-        val supervisor = collect(createSupervisor)
-        val actor = collect(actorOf(Props(new Restarter(testActor)) withSupervisor (supervisor)))
-        expectMsg(1 second, ("preStart", 1))
-        actor ! 42
-        actor ! Fail
-        actor ! Kill
-        within(1 second) {
-          expectMsg(("preRestart", Some(Kill), 1))
-          expectMsg(("postRestart", 2))
-          expectNoMsg
-        }
-        actor ! "get"
-        expectMsg(1 second, 0)
-      }
-    }
-
   }
 
 }

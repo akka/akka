@@ -88,7 +88,7 @@ class BalancingDispatcher(
 
   protected[akka] override def register(actor: ActorCell) = {
     super.register(actor)
-    registerForExecution(actor.mailbox, false, false)
+    registerForExecution(actor.mailbox, false, false) //Allow newcomers to be productive from the first moment
   }
 
   protected[akka] override def unregister(actor: ActorCell) = {
@@ -108,7 +108,7 @@ class BalancingDispatcher(
 
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessagesHint: Boolean, hasSystemMessagesHint: Boolean): Boolean = {
     if (!super.registerForExecution(mbox, hasMessagesHint, hasSystemMessagesHint)) {
-      if (!mbox.isClosed && mbox.isInstanceOf[SharingMailbox]) buddies.add(mbox.asInstanceOf[SharingMailbox].actor)
+      if (mbox.isInstanceOf[SharingMailbox]) buddies.add(mbox.asInstanceOf[SharingMailbox].actor)
       false
     } else true
   }
@@ -117,13 +117,10 @@ class BalancingDispatcher(
     val receiver = invocation.receiver
     messageQueue enqueue invocation
 
-    @tailrec
-    def getValidBuddy(): ActorCell = buddies.pollFirst() match {
-      case null | `receiver`             ⇒ receiver
-      case buddy if buddy.mailbox.isOpen ⇒ buddy
-      case _                             ⇒ getValidBuddy
-    }
-
-    registerForExecution(getValidBuddy().mailbox, true, false)
+    val buddy = buddies.pollFirst()
+    if (buddy ne null)
+      registerForExecution(buddy.mailbox, true, false)
+    else
+      registerForExecution(receiver.mailbox, true, false)
   }
 }

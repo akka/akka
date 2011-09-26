@@ -117,28 +117,17 @@ private[akka] class ActorCell(
     val stackBefore = contextStack.get
     contextStack.set(stackBefore.push(this))
     try {
-      if (restart) {
-        val a = actor.get()
-        val fresh = try a.freshInstance catch {
-          case e ⇒
-            EventHandler.error(e, a, "freshInstance() failed, falling back to initial actor factory")
-            None
-        }
-        fresh match {
-          case Some(actor) ⇒ actor
-          case None        ⇒ props.creator()
-        }
-      } else {
-        props.creator()
-      }
+      val instance = props.creator()
+
+      if (instance eq null)
+        throw new ActorInitializationException("Actor instance passed to actorOf can't be 'null'")
+
+      instance
     } finally {
       val stackAfter = contextStack.get
       if (stackAfter.nonEmpty)
         contextStack.set(if (stackAfter.head eq null) stackAfter.pop.pop else stackAfter.pop) // pop null marker plus our context
     }
-  } match {
-    case null  ⇒ throw new ActorInitializationException("Actor instance passed to actorOf can't be 'null'")
-    case valid ⇒ valid
   }
 
   def suspend(): Unit = dispatcher.systemDispatch(SystemEnvelope(this, Suspend, NullChannel))
