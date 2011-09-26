@@ -105,10 +105,10 @@ private[akka] class ActorCell(
   var mailbox: Mailbox = _
 
   def start(): Unit = {
-    mailbox = dispatcher.createMailbox(this)
     if (props.supervisor.isDefined) props.supervisor.get.link(self)
-    dispatcher.attach(this)
+    mailbox = dispatcher.createMailbox(this)
     Actor.registry.register(self)
+    dispatcher.attach(this)
   }
 
   def newActor(restart: Boolean): Actor = {
@@ -180,7 +180,7 @@ private[akka] class ActorCell(
       case f: ActorPromise ⇒ f
       case _               ⇒ new ActorPromise(timeout)(dispatcher)
     }
-    dispatcher dispatchMessage new Envelope(this, message, future)
+    dispatcher dispatchMessage Envelope(this, message, future)
     future
   } else new KeptPromise[Any](Left(new ActorKilledException("Stopped"))) // else throw new ActorInitializationException("Actor " + self + " is dead")
 
@@ -205,7 +205,7 @@ private[akka] class ActorCell(
     def create(recreation: Boolean): Unit = try {
       actor.get() match {
         case null ⇒
-          val created = newActor(restart = false)
+          val created = newActor(restart = false) //TODO !!!! Notify supervisor on failure to create!
           actor.set(created)
           created.preStart()
           checkReceiveTimeout
@@ -217,6 +217,7 @@ private[akka] class ActorCell(
       }
     } catch {
       case e ⇒
+        e.printStackTrace(System.err)
         envelope.channel.sendException(e)
         if (supervisor.isDefined) supervisor.get ! Failed(self, e, false, maxNrOfRetriesCount, restartTimeWindowStartNanos)
         else throw e
@@ -343,8 +344,10 @@ private[akka] class ActorCell(
     def performRestart() {
       val failedActor = actor.get
       if (Actor.debugLifecycle) EventHandler.debug(failedActor, "restarting")
-      val message = if (currentMessage ne null) Some(currentMessage.message) else None
-      if (failedActor ne null) failedActor.preRestart(reason, message)
+      if (failedActor ne null) {
+        val c = currentMessage //One read only plz
+        failedActor.preRestart(reason, if (c ne null) Some(c.message) else None)
+      }
       val freshActor = newActor(restart = true)
       clearActorContext()
       actor.set(freshActor) // assign it here so if preStart fails, we can null out the sef-refs next call
@@ -483,8 +486,9 @@ private[akka] class ActorCell(
         lookupAndSetSelfFields(parent, actor, newContext)
       }
     }
-
-    lookupAndSetSelfFields(actor.get.getClass, actor.get, newContext)
+    val a = actor.get()
+    if (a ne null)
+      lookupAndSetSelfFields(a.getClass, a, newContext)
   }
 
   override def hashCode: Int = HashCode.hash(HashCode.SEED, uuid)

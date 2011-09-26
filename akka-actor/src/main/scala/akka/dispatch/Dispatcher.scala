@@ -106,9 +106,11 @@ class Dispatcher(
     }
   }
 
-  protected[akka] def executeTask(invocation: TaskInvocation): Unit = if (active.isOn) {
-    try executorService.get() execute invocation
-    catch {
+  protected[akka] def executeTask(invocation: TaskInvocation): Unit = {
+    try {
+      startIfUnstarted()
+      executorService.get() execute invocation
+    } catch {
       case e: RejectedExecutionException ⇒
         EventHandler.warning(this, e.toString)
         throw e
@@ -130,8 +132,9 @@ class Dispatcher(
    */
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
     if (mbox.dispatcherLock.tryLock()) {
-      if (active.isOn && mbox.shouldBeRegisteredForExecution(hasMessageHint, hasSystemMessageHint)) { //If the dispatcher is active and the actor not suspended
+      if (mbox.shouldBeRegisteredForExecution(hasMessageHint, hasSystemMessageHint)) { //If the dispatcher is active and the actor not suspended
         try {
+          startIfUnstarted()
           executorService.get() execute mbox
           true
         } catch {

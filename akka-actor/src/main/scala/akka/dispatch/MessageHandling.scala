@@ -123,17 +123,15 @@ abstract class MessageDispatcher extends Serializable {
     }
   }
 
+  protected final def startIfUnstarted(): Unit = {
+    if (active.isOff) guard withGuard { active.switchOn { start() } }
+  }
+
   protected[akka] final def dispatchMessage(invocation: Envelope): Unit = dispatch(invocation)
 
   protected[akka] final def dispatchTask(block: () ⇒ Unit): Unit = {
     _tasks.getAndIncrement()
     try {
-      if (active.isOff)
-        guard withGuard {
-          active.switchOn {
-            start()
-          }
-        }
       executeTask(TaskInvocation(block, taskCleanup))
     } catch {
       case e ⇒
@@ -165,11 +163,6 @@ abstract class MessageDispatcher extends Serializable {
   protected[akka] def register(actor: ActorCell): Unit = {
     if (uuids add actor.uuid) {
       systemDispatch(SystemEnvelope(actor, Create, NullChannel)) //FIXME should this be here or moved into ActorCell.start perhaps?
-      if (active.isOff) {
-        active.switchOn {
-          start()
-        }
-      }
     } else System.err.println("Couldn't register: " + actor)
   }
 
@@ -219,20 +212,6 @@ abstract class MessageDispatcher extends Serializable {
     }
   }
 
-  /**
-   * Traverses the list of actors (uuids) currently being attached to this dispatcher and stops those actors
-   */
-  def stopAllAttachedActors() {
-    val i = uuids.iterator
-    while (i.hasNext()) {
-      val uuid = i.next()
-      Actor.registry.local.actorFor(uuid) match {
-        case Some(actor) ⇒ actor.stop()
-        case None        ⇒
-      }
-    }
-  }
-
   private val shutdownAction = new Runnable {
     def run() {
       guard withGuard {
@@ -243,8 +222,7 @@ abstract class MessageDispatcher extends Serializable {
           case SCHEDULED ⇒
             if (uuids.isEmpty && _tasks.get == 0) {
               active switchOff {
-                if (uuids.isEmpty && _tasks.get == 0)
-                  shutdown() // shut down in the dispatcher's references is zero
+                shutdown() // shut down in the dispatcher's references is zero
               }
             }
             shutdownSchedule = UNSCHEDULED

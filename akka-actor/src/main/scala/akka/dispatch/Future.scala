@@ -926,7 +926,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
     } else this
 
   private def notifyCompleted(func: Future[T] ⇒ Unit) {
-    try { func(this) } catch { case e ⇒ EventHandler notify EventHandler.Error(e, this, "Future onComplete-callback raised an exception") } //TODO catch, everything? Really?
+    try { func(this) } catch { case e ⇒ EventHandler.error(e, this, "Future onComplete-callback raised an exception") } //TODO catch, everything? Really?
   }
 
   @inline

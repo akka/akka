@@ -235,7 +235,7 @@ object EventHandler extends ListenerManagement {
         case e: Warning ⇒ warning(e)
         case e: Info    ⇒ info(e)
         case e: Debug   ⇒ debug(e)
-        case e          ⇒ generic(e)
+        case e ⇒          generic(e)
       }
     }
 
