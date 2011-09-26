@@ -122,7 +122,7 @@ class Dispatcher(
   protected[akka] def shutdown {
     val old = executorService.getAndSet(new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))
     if (old ne null)
-      old.shutdownNow()
+      old.shutdown()
   }
 
   /**

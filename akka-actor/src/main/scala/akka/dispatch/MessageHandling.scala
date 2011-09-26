@@ -86,8 +86,8 @@ abstract class MessageDispatcher extends Serializable {
 
   object DeadLetterMailbox extends Mailbox {
     dispatcherLock.tryLock()
-    become(Mailbox.CLOSED)
-    override def become(newStatus: Mailbox.Status) { super.become(Mailbox.CLOSED) } //Always transcend to CLOSED to preserve the volatile write
+    become(Mailbox.Closed)
+    override def become(newStatus: Mailbox.Status) { super.become(Mailbox.Closed) } //Always transcend to CLOSED to preserve the volatile write
     override def dispatcher = null //MessageDispatcher.this
     override def enqueue(envelope: Envelope) { envelope.channel sendException new ActorKilledException("Actor has been stopped") }
     override def dequeue() = null
@@ -184,7 +184,7 @@ abstract class MessageDispatcher extends Serializable {
   protected[akka] def unregister(actor: ActorCell): Unit = {
     if (uuids remove actor.uuid) {
       val mailBox = actor.mailbox
-      mailBox.become(Mailbox.CLOSED)
+      mailBox.become(Mailbox.Closed)
       actor.mailbox = deadLetterMailbox //FIXME getAndSet would be preferrable here
       cleanUpMailboxFor(actor, mailBox)
       if (uuids.isEmpty && _tasks.get == 0) {
@@ -205,21 +205,20 @@ abstract class MessageDispatcher extends Serializable {
    * called when an actor is unregistered.
    */
   protected def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox): Unit = {
-    val m = mailBox
 
-    if (m.hasSystemMessages) {
-      var envelope = m.systemDequeue()
+    if (mailBox.hasSystemMessages) {
+      var envelope = mailBox.systemDequeue()
       while (envelope ne null) {
         deadLetterMailbox.systemEnqueue(envelope)
-        envelope = m.systemDequeue()
+        envelope = mailBox.systemDequeue()
       }
     }
 
-    if (m.hasMessages) {
-      var envelope = m.dequeue
+    if (mailBox.hasMessages) {
+      var envelope = mailBox.dequeue
       while (envelope ne null) {
         deadLetterMailbox.enqueue(envelope)
-        envelope = m.dequeue
+        envelope = mailBox.dequeue
       }
     }
   }
@@ -248,7 +247,8 @@ abstract class MessageDispatcher extends Serializable {
           case SCHEDULED ⇒
             if (uuids.isEmpty && _tasks.get == 0) {
               active switchOff {
-                shutdown() // shut down in the dispatcher's references is zero
+                if (uuids.isEmpty && _tasks.get == 0)
+                  shutdown() // shut down in the dispatcher's references is zero
               }
             }
             shutdownSchedule = UNSCHEDULED
@@ -268,14 +268,14 @@ abstract class MessageDispatcher extends Serializable {
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
    */
   def suspend(actor: ActorCell): Unit =
-    if (uuids.contains(actor.uuid)) actor.mailbox.become(Mailbox.SUSPENDED)
+    if (uuids.contains(actor.uuid)) actor.mailbox.become(Mailbox.Suspended)
 
   /*
    * After the call to this method, the dispatcher must begin any new message processing for the specified reference
    */
   def resume(actor: ActorCell): Unit = if (uuids.contains(actor.uuid)) {
     val mbox = actor.mailbox
-    mbox.become(Mailbox.OPEN)
+    mbox.become(Mailbox.Open)
     registerForExecution(mbox, false, false)
   }
 

@@ -15,11 +15,10 @@ import atomic.AtomicReferenceFieldUpdater
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 object Mailbox {
-  sealed trait Status
-  case object OPEN extends Status
-  case object SUSPENDED extends Status
-  case object CLOSED extends Status
-
+  type Status = Int
+  val Open = 0
+  val Suspended = 1
+  val Closed = 2
   //private[Mailbox] val mailboxStatusUpdater = AtomicReferenceFieldUpdater.newUpdater[Mailbox, Status](classOf[Mailbox], classOf[Status], "_status")
 }
 
@@ -33,20 +32,20 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
    */
   final val dispatcherLock = new SimpleLock(startLocked = false)
   @volatile
-  var _status: Status = OPEN //Must be named _status because of the updater
+  var _status: Status = Open //Must be named _status because of the updater
 
   final def status: Mailbox.Status = _status //mailboxStatusUpdater.get(this)
 
-  final def isSuspended: Boolean = status == SUSPENDED
-  final def isClosed: Boolean = status == CLOSED
-  final def isOpen: Boolean = status == OPEN
+  final def isSuspended: Boolean = status == Suspended
+  final def isClosed: Boolean = status == Closed
+  final def isOpen: Boolean = status == Open
 
   def become(newStatus: Status) = _status = newStatus //mailboxStatusUpdater.set(this, newStatus)
 
   def shouldBeRegisteredForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
-    case CLOSED    ⇒ false
-    case OPEN      ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
-    case SUSPENDED ⇒ hasSystemMessageHint || hasSystemMessages
+    case `Open`      ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
+    case `Closed`    ⇒ false
+    case `Suspended` ⇒ hasSystemMessageHint || hasSystemMessages
   }
 
   final def run = {
@@ -66,7 +65,7 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
   final def processMailbox() {
     processAllSystemMessages()
 
-    if (status == OPEN) {
+    if (isOpen) {
       var nextMessage = dequeue()
       if (nextMessage ne null) { //If we have a message
         if (dispatcher.throughput <= 1) { //If we only run one message per process {
@@ -82,7 +81,7 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
 
             processAllSystemMessages()
 
-            nextMessage = if (status == OPEN) { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
+            nextMessage = if (isOpen) { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
               processedMessages += 1
               if ((processedMessages >= dispatcher.throughput) || (isDeadlineEnabled && System.nanoTime >= deadlineNs)) // If we're throttled, break out
                 null //We reached our boundaries, abort
