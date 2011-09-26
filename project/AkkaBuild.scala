@@ -14,7 +14,7 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "se.scalablesolutions.akka",
     version      := "2.0-SNAPSHOT",
-    scalaVersion := "2.9.0-1"
+    scalaVersion := "2.9.1"
   )
 
   lazy val akka = Project(
@@ -469,8 +469,8 @@ object Dependency {
   val netty         = "org.jboss.netty"             % "netty"                  % V.Netty      // ApacheV2
   val osgi          = "org.osgi"                    % "org.osgi.core"          % "4.2.0"      // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
-  val redis         = "net.debasishg"               % "redisclient_2.9.0"      % "2.3.1"      // ApacheV2
-  val sjson         = "net.debasishg"               % "sjson_2.9.0"            % "0.11"       // ApacheV2
+  val redis         = "net.debasishg"               %% "redisclient"           % "2.4.0"      // ApacheV2
+  val sjson         = "net.debasishg"               %% "sjson"                 % "0.15"       // ApacheV2
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
   val springBeans   = "org.springframework"         % "spring-beans"           % V.Spring     // ApacheV2
   val springContext = "org.springframework"         % "spring-context"         % V.Spring     // ApacheV2
@@ -509,8 +509,7 @@ object Dependency {
     val logback     = "ch.qos.logback"          % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"             % "mockito-all"         % "1.8.1"      % "test" // MIT
     val multiverse  = "org.multiverse"          % "multiverse-alpha"    % V.Multiverse % "test" // ApacheV2
-    val scalatest   = "org.scalatest"           % "scalatest_2.9.0"     % V.Scalatest  % "test" // ApacheV2
-    val scalacheck  = "org.scala-tools.testing" % "scalacheck_2.9.0"    % "1.9"        % "test" // New BSD
-    val sjsonTest   = "net.debasishg"          %% "sjson"               % "0.11"       % "test" // ApacheV2
+    val scalatest   = "org.scalatest"           %% "scalatest"          % V.Scalatest  % "test" // ApacheV2
+    val scalacheck  = "org.scala-tools.testing" %% "scalacheck"         % "1.9"        % "test" // New BSD
   }
 }
