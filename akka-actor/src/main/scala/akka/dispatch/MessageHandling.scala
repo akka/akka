@@ -87,7 +87,6 @@ abstract class MessageDispatcher extends Serializable {
   object DeadLetterMailbox extends Mailbox {
     dispatcherLock.tryLock()
     become(Mailbox.Closed)
-    override def become(newStatus: Mailbox.Status) { super.become(Mailbox.Closed) } //Always transcend to CLOSED to preserve the volatile write
     override def dispatcher = null //MessageDispatcher.this
     override def enqueue(envelope: Envelope) { envelope.channel sendException new ActorKilledException("Actor has been stopped") }
     override def dequeue() = null
