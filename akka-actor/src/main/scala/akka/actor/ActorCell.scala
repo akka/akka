@@ -66,9 +66,6 @@ private[akka] class ActorCell(
   val guard = new ReentrantGuard // TODO: remove this last synchronization point
 
   @volatile
-  var mailbox: Mailbox = _
-
-  @volatile
   var futureTimeout: Option[ScheduledFuture[AnyRef]] = None
 
   @volatile //Should be a final field
@@ -102,10 +99,10 @@ private[akka] class ActorCell(
   def dispatcher: MessageDispatcher = props.dispatcher
 
   def isRunning: Boolean = !isShutdown
-  def isShutdown: Boolean = mailbox match {
-    case null ⇒ false
-    case m    ⇒ m.isClosed
-  }
+  def isShutdown: Boolean = mailbox.isClosed
+
+  @volatile
+  var mailbox: Mailbox = dispatcher.createMailbox(this) //FIXME exposing "this" in the constructor is shaky business
 
   def start(): Unit = {
     if (props.supervisor.isDefined) props.supervisor.get.link(self)
@@ -274,6 +271,9 @@ private[akka] class ActorCell(
     } catch {
       case e ⇒ //Should we really catch everything here?
         EventHandler.error(e, actor.get(), "error while processing " + envelope.message)
+
+        e.printStackTrace()
+
         throw e
     } finally {
       m.become(m.status)

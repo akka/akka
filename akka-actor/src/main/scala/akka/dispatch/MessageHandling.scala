@@ -164,10 +164,7 @@ abstract class MessageDispatcher extends Serializable {
    */
   protected[akka] def register(actor: ActorCell): Unit = {
     if (uuids add actor.uuid) {
-      if (actor.mailbox eq null) {
-        actor.mailbox = createMailbox(actor)
-        systemDispatch(SystemEnvelope(actor, Create, NullChannel))
-      }
+      systemDispatch(SystemEnvelope(actor, Create, NullChannel)) //FIXME should this be here or moved into ActorCell.start perhaps?
       if (active.isOff) {
         active.switchOn {
           start()
