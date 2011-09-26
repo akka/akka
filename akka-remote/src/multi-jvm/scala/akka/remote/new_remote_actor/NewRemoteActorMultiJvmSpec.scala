@@ -17,32 +17,44 @@ object NewRemoteActorMultiJvmSpec {
   }
 }
 
-class NewRemoteActorMultiJvmNode1 extends MasterClusterTestNode {
+class NewRemoteActorMultiJvmNode1 extends MultiJvmSync {
 
   import NewRemoteActorMultiJvmSpec._
 
-  val testNodes = NrOfNodes
+  val nodes = NrOfNodes
 
   "___" must {
     "___" in {
+      barrier("setup")
+
       Remote.start()
-      Thread.sleep(5000)
+
+      barrier("start")
+
+      barrier("done")
     }
   }
 }
 
-class NewRemoteActorMultiJvmNode2 extends ClusterTestNode {
+class NewRemoteActorMultiJvmNode2 extends MultiJvmSync {
 
   import NewRemoteActorMultiJvmSpec._
 
+  val nodes = NrOfNodes
+
   "A new remote actor" must {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
+      barrier("setup")
+
       Remote.start()
 
-      val actor = Actor.actorOf[SomeActor]("service-hello")
+      barrier("start")
 
+      val actor = Actor.actorOf[SomeActor]("service-hello")
       val result = (actor ? "identify").get
       result must equal("node1")
+
+      barrier("done")
     }
   }
 }
