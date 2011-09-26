@@ -40,6 +40,16 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
   final def isClosed: Boolean = status == Closed
   final def isOpen: Boolean = status == Open
 
+  /**
+   * Internal method to enforce a volatile write of the status
+   */
+  @tailrec
+  final def acknowledgeStatus(): Unit = {
+    val s = _status.get()
+    if (_status.compareAndSet(s, s)) ()
+    else acknowledgeStatus()
+  }
+
   def become(newStatus: Status): Boolean = {
     @tailrec
     def transcend(): Boolean = {

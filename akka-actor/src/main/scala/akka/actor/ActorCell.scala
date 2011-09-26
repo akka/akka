@@ -102,9 +102,10 @@ private[akka] class ActorCell(
   def isShutdown: Boolean = mailbox.isClosed
 
   @volatile
-  var mailbox: Mailbox = dispatcher.createMailbox(this) //FIXME exposing "this" in the constructor is shaky business
+  var mailbox: Mailbox = _
 
   def start(): Unit = {
+    mailbox = dispatcher.createMailbox(this)
     if (props.supervisor.isDefined) props.supervisor.get.link(self)
     dispatcher.attach(this)
     Actor.registry.register(self)
@@ -257,9 +258,8 @@ private[akka] class ActorCell(
     }
 
     guard.lock.lock()
-    val m = mailbox
     try {
-      if (!m.isClosed) {
+      if (!mailbox.isClosed) {
         envelope.message match {
           case Create    ⇒ create(recreation = false)
           case Recreate  ⇒ create(recreation = true)
@@ -271,21 +271,17 @@ private[akka] class ActorCell(
     } catch {
       case e ⇒ //Should we really catch everything here?
         EventHandler.error(e, actor.get(), "error while processing " + envelope.message)
-
-        e.printStackTrace()
-
         throw e
     } finally {
-      m.become(m.status)
+      mailbox.acknowledgeStatus()
       guard.lock.unlock()
     }
   }
 
   def invoke(messageHandle: Envelope): Unit = {
     guard.lock.lock()
-    val m = mailbox
     try {
-      if (!m.isClosed) {
+      if (!mailbox.isClosed) {
         currentMessage = messageHandle
         try {
           try {
@@ -318,7 +314,7 @@ private[akka] class ActorCell(
         // throwing away message if actor is shut down, no use throwing an exception in receiving actor's thread, isShutdown is enforced on caller side
       }
     } finally {
-      m.become(m.status)
+      mailbox.acknowledgeStatus()
       guard.lock.unlock()
     }
   }
