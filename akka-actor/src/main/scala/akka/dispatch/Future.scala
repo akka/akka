@@ -417,7 +417,12 @@ sealed trait Future[+T] extends japi.Future[T] {
     value match {
       case None           ⇒ None
       case Some(Left(ex)) ⇒ throw ex
-      case Some(Right(v)) ⇒ Some(BoxedType(m.erasure).cast(v).asInstanceOf[A])
+      case Some(Right(v)) ⇒
+        try { Some(BoxedType(m.erasure).cast(v).asInstanceOf[A]) } catch {
+          case c: ClassCastException ⇒
+            if (v.asInstanceOf[AnyRef] eq null) throw new ClassCastException("null cannot be cast to " + m.erasure)
+            else throw new ClassCastException("" + v + " of class " + v.asInstanceOf[AnyRef].getClass + " cannot be cast to " + m.erasure)
+        }
     }
   }
 
