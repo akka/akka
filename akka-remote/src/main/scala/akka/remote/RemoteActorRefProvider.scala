@@ -28,31 +28,45 @@ import com.google.protobuf.ByteString
  */
 class RemoteActorRefProvider extends ActorRefProvider {
 
+  import java.util.concurrent.ConcurrentHashMap
+  import akka.dispatch.Promise
+
+  // FIXME who evicts this registry, and when? Should it be used instead of ActorRegistry?
+  private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
+
   private val failureDetector = new BannagePeriodFailureDetector(timeToBan = 60 seconds) // FIXME make timeToBan configurable
 
   def actorOf(props: Props, address: String): Option[ActorRef] = {
     Address.validate(address)
 
-    val actorRef = Actor.remote.actors.get(address)
-    if (actorRef ne null) Some(actorRef)
-    else {
-      Deployer.lookupDeploymentFor(address) match {
-        case Some(Deploy(_, _, router, _, RemoteScope(host, port))) ⇒
-          // FIXME create RoutedActorRef if 'router' is specified
+    val newFuture = Promise[Option[ActorRef]](5000) // FIXME is this proper timeout?
+    val oldFuture = actors.putIfAbsent(address, newFuture)
 
-          val serverAddress = Remote.address
-          if (serverAddress.getHostName == host && serverAddress.getPort == port) {
-            // home node for this remote actor
-            Some(new LocalActorRef(props, address, false)) // create a local actor
-          } else {
-            // not home node, need to provision it
-            val remoteAddress = new InetSocketAddress(host, port)
-            useActorOnNode(remoteAddress, address, props.creator)
-            Some(RemoteActorRef(remoteAddress, address, Actor.TIMEOUT, None)) // create a remote actor
-          }
+    if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
+      val actor =
+        Deployer.lookupDeploymentFor(address) match {
+          case Some(Deploy(_, _, router, _, RemoteScope(host, port))) ⇒
+            // FIXME create RoutedActorRef if 'router' is specified
 
-        case deploy ⇒ None // non-remote actor
-      }
+            val serverAddress = Remote.address
+            if (serverAddress.getHostName == host && serverAddress.getPort == port) {
+              // home node for this remote actor
+              Some(new LocalActorRef(props, address, false)) // create a local actor
+            } else {
+              // not home node, need to provision it
+              val remoteAddress = new InetSocketAddress(host, port)
+              useActorOnNode(remoteAddress, address, props.creator)
+              Some(RemoteActorRef(remoteAddress, address, Actor.TIMEOUT, None)) // create a remote actor
+            }
+
+          case deploy ⇒ None // non-remote actor
+        }
+
+      newFuture.completeWithResult(actor)
+      actor
+
+    } else { // we lost the race -- wait for future to complete
+      oldFuture.await.result.getOrElse(None)
     }
   }
 

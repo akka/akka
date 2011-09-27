@@ -102,6 +102,11 @@ private[akka] class ActorRefProviders(
  * Local ActorRef provider.
  */
 class LocalActorRefProvider extends ActorRefProvider {
+  import java.util.concurrent.ConcurrentHashMap
+  import akka.dispatch.Promise
+
+  // FIXME who evicts this registry, and when? Should it be used instead of ActorRegistry?
+  private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
 
   def actorOf(props: Props, address: String): Option[ActorRef] = actorOf(props, address, false)
 
@@ -110,20 +115,24 @@ class LocalActorRefProvider extends ActorRefProvider {
   private[akka] def actorOf(props: Props, address: String, systemService: Boolean): Option[ActorRef] = {
     Address.validate(address)
 
-    Actor.registry.actorFor(address) match { // check if the actor for the address is already in the registry
-      case ref @ Some(_) ⇒ ref // it is -> return it
+    val newFuture = Promise[Option[ActorRef]](5000) // FIXME is this proper timeout?
+    val oldFuture = actors.putIfAbsent(address, newFuture)
 
-      case None ⇒ // it is not -> create it
+    if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
+      def newActor() = Some(new LocalActorRef(props, address, systemService))
 
-        //WARNING FIXME HUGE RACE CONDITION THAT NEEDS GETTING FIXED
+      val actor =
         Deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
-
-          case Some(Deploy(_, _, router, _, LocalScope)) ⇒
-            // FIXME create RoutedActorRef if 'router' is specified
-            Some(new LocalActorRef(props, address, systemService)) // create a local actor
-
-          case deploy ⇒ None // non-local actor
+          case Some(Deploy(_, _, router, _, LocalScope)) ⇒ newActor() // create a local actor
+          case None                                      ⇒ newActor() // create a local actor
+          case _                                         ⇒ None // non-local actor
         }
+
+      newFuture.completeWithResult(actor)
+      actor
+
+    } else { // we lost the race -- wait for future to complete
+      oldFuture.await.result.getOrElse(None)
     }
   }
 }
